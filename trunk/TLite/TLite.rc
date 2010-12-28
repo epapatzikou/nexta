@@ -1,0 +1,616 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#include ""res\\TLite.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\TLite.ico"
+IDR_TLiteTYPE           ICON                    "res\\TLiteDoc.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
+IDB_PATH_ICON           BITMAP                  "C:\\temp\\rowlist\\res\\smallico.bmp"
+IDB_PATH_CHECK          BITMAP                  "C:\\temp\\rowlist\\res\\stateico.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_FILE_OPEN_NEW_DOC
+    BUTTON      ID_FILE_SAVE
+    SEPARATOR
+    BUTTON      ID_VIEW_SELECT
+    BUTTON      ID_VIEW_MOVE
+    BUTTON      ID_VIEW_IMAGE
+    SEPARATOR
+    BUTTON      ID_VIEW_ZOOMIN
+    BUTTON      ID_VIEW_ZOOMOUT
+    BUTTON      ID_VIEW_SHOWNETWORK
+    BUTTON      ID_VIEW_SHOWMOE
+    SEPARATOR
+    BUTTON      ID_3DZoom
+    BUTTON      ID_3DPam
+    BUTTON      ID_3DRotate
+    BUTTON      ID_3DReset
+    BUTTON      ID_3DLockZ
+    SEPARATOR
+    BUTTON      ID_WINDOW_NEW3DVIEW
+    BUTTON      ID_WINDOW_TILE_VERT
+    BUTTON      ID_WINDOW_TILE_HORZ
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW
+        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN_NEW_DOC
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About TLite...",             ID_APP_ABOUT
+    END
+END
+
+IDR_TLiteTYPE MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "Zoom In",                     32773
+        MENUITEM "Zoom Out",                    32774
+        MENUITEM "Move",                        32776
+        MENUITEM "Select Object",               32779
+        MENUITEM SEPARATOR
+        MENUITEM "Play",                        32777
+        MENUITEM SEPARATOR
+        MENUITEM "Configure Background Color",  32778
+    END
+    POPUP "&Show"
+    BEGIN
+        MENUITEM "Show Background Image",       ID_VIEW_BACKGROUNDIMAGE
+        MENUITEM "Show Node",                   ID_SHOW_SHOWNODE
+        MENUITEM "Show Link Type",              ID_VIEW_SHOWLINKTYPE
+        MENUITEM "Show Sensor",                 ID_VIEW_SHOWSENSOR
+        MENUITEM "Show All Paths",              ID_SHOW_SHOWALLPATHS
+        MENUITEM SEPARATOR
+        MENUITEM "Show Link MOE",               ID_VIEW_SHOWMOE
+        MENUITEM "Show Path MOE",               ID_SHOW_SHOWPATHMOE
+        MENUITEM "Show Network",                ID_VIEW_SHOWNETWORK
+    END
+    POPUP "Search"
+    BEGIN
+        MENUITEM "Find Link",                   ID_SEARCH_FINDLINK
+    END
+    POPUP "&Image"
+    BEGIN
+        MENUITEM "Save Image Location",         ID_FILE_SAVEIMAGELOCATION
+        MENUITEM "Move Background Image",       ID_VIEW_IMAGE
+        MENUITEM "Shift + Mouse Wheeler -> Change X Resolution Only", ID_IMAGE_SHIFT
+        MENUITEM "Control + Mouse Wheeler -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+    END
+    POPUP "Tool"
+    BEGIN
+        MENUITEM "Generate Senesor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
+    END
+    POPUP "3D Display"
+    BEGIN
+        MENUITEM "Basic View",                  ID_3DDISPLAY_BASICVIEW
+        MENUITEM "Travel Time Variability",     ID_3DDISPLAY_TRAVELTIMEVARIABILITY
+        MENUITEM "Time-dependent Path",         ID_3DDISPLAY_TIME
+        MENUITEM "Animation",                   ID_3DDISPLAY_ANIMATION
+    END
+    POPUP "&Window"
+    BEGIN
+        MENUITEM "New 3D View",                 ID_WINDOW_NEW3DVIEW
+        MENUITEM "&New Window",                 ID_WINDOW_NEW
+        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About NEXTA Version 3...",   ID_APP_ABOUT
+    END
+END
+
+IDR_MENU1 MENU 
+BEGIN
+    POPUP "Node"
+    BEGIN
+        MENUITEM "Direction from here",         ID_NODE_ORIGIN
+        MENUITEM "Direction to here ",          ID_NODE_DESTINATION
+    END
+END
+
+IDR_MENU_LINK_MOE MENU 
+BEGIN
+    POPUP "MOE Type 1"
+    BEGIN
+        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE_LINKVOLUME
+        MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
+        MENUITEM "Cumulative Volume",           ID_MOETYPE_CUMULATIVEVOLUME
+        MENUITEM "Link Volume (vph)",           ID_MOETYPE1_LINKVOLUME
+        MENUITEM "Speed (mph)",                 ID_MOETYPE1_SPEED
+    END
+    POPUP "MOE Type 2"
+    BEGIN
+        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE2_LINKVOLUME
+        MENUITEM "Speed (km/h)",                ID_MOETYPE2_SPEED
+        MENUITEM "Cumulative Volume",           ID_MOETYPE2_CUMULATIVEVOLUME
+        MENUITEM "Link Volume (vph)",           ID_MOETYPE2_LINKVOLUME_VPH
+        MENUITEM "Speed (mph)",                 ID_MOETYPE2_SPEED_MPH
+        MENUITEM "None",                        ID_MOETYPE2_NONE
+        MENUITEM "Density (vpmph)",             ID_MOETYPE2_DENSITY
+    END
+    POPUP "MOEType 3"
+    BEGIN
+        MENUITEM "Q-K Curve",                   ID_MOETYPE3_Q
+    END
+    POPUP "Estimation"
+    BEGIN
+        MENUITEM "Historical Avg Pattern",      ID_ESTIMATION_HISTORICALAVGPATTERN
+        MENUITEM "MOE Variability Plot",        ID_VIEW_MOEVARIABILITYPLOT
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "MOE Time Series",             ID_VIEW_MOETIMESERIES
+        MENUITEM "Q-K Curve",                   ID_VIEW_Q
+        MENUITEM "Reset Time Range",            ID_VIEW_RESETTIMERANGE
+    END
+    POPUP "Data"
+    BEGIN
+        MENUITEM "Export",                      ID_DATA_EXPORT
+    END
+END
+
+IDR_MENU_PATHMOE MENU 
+BEGIN
+    POPUP "MOE Type 1"
+    BEGIN
+        MENUITEM "Mean Travel Time",            ID_MOETYPE1_MEANTRAVELTIME
+        MENUITEM "Max Travel Time",             ID_MOETYPE1_MAXTRAVELTIME
+        MENUITEM "Mean + 1.67*STD Travel Time", ID_MOETYPE1_UTILITY
+        MENUITEM "Band [Min, Max] for Selected Paths", ID_MOETYPE1_BAND
+        MENUITEM "Fuel Consumptions (gallon)",  ID_MOETYPE1_FUELCONSUMPTIONS
+        MENUITEM "CO2 Emissions (pound)",       ID_MOETYPE1_CO2EMISSIONS
+        MENUITEM "Generalized Cost ($)",        ID_MOETYPE1_COST
+    END
+    POPUP "MOE Type 2"
+    BEGIN
+        MENUITEM "Mean Travel Time",            ID_MOETYPE2_MEANTRAVELTIME
+        MENUITEM "Max Travel Time",             ID_MOETYPE2_MAXTRAVELTIME
+        MENUITEM "Mean + 1.67*STD Travel Time", ID_MOETYPE2_UTILITY
+        MENUITEM "Band [Min, Max]  for Selected Paths", ID_MOETYPE2_BAND
+        MENUITEM "Fuel Consumptions (gallon)",  ID_MOETYPE2_FUELCONSUMPTIONS
+        MENUITEM "CO2 Emissions (pound)",       ID_MOETYPE2_CO2EMISSIONS
+        MENUITEM "Generalized Cost ($)",        ID_MOETYPE2_COST
+        MENUITEM "None (No Show)",              ID_MOETYPE2_NONE
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS 
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 170, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About NEXTA Version 3"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
+    LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Open-Source Software",IDC_STATIC,42,26,114,8
+    DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
+END
+
+IDD_DIALOG_MOE DIALOGEX 0, 0, 498, 180
+STYLE DS_LOCALEDIT | DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | DS_CENTERMOUSE | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE
+CAPTION "Link MOE"
+MENU IDR_MENU_LINK_MOE
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
+IDD_PLAYERSEEKBAR DIALOGEX 0, 0, 494, 14
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
+IDD_DIALOG_FIND_LINK DIALOGEX 0, 0, 134, 78
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Find Link"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,69,57,50,14
+    EDITTEXT        IDC_EDIT_FROM_NODE,7,21,50,15,ES_AUTOHSCROLL
+    LTEXT           "From Node:",IDC_STATIC,7,7,38,8
+    LTEXT           "To Node:",IDC_STATIC,69,7,30,8
+    EDITTEXT        IDC_EDIT_To_NODE,69,21,50,15,ES_AUTOHSCROLL
+END
+
+IDD_DIALOG_PATHMOE DIALOGEX 0, 0, 414, 206
+STYLE DS_LOCALEDIT | DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | DS_CENTERMOUSE | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE
+CAPTION "Path MOE"
+MENU IDR_MENU_PATHMOE
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_PATH_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,400,88
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,0,0,1
+ PRODUCTVERSION 3,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904e4"
+        BEGIN
+            VALUE "FileVersion", "3.0.0.1"
+            VALUE "InternalName", "NEXTA.exe"
+            VALUE "LegalCopyright", "Open-Source Software"
+            VALUE "OriginalFilename", "NEXTA.exe"
+            VALUE "ProductName", "Version 3"
+            VALUE "ProductVersion", "3.0.0.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_DIALOG_MOE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 491
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 173
+    END
+
+    IDD_PLAYERSEEKBAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 487
+        BOTTOMMARGIN, 12
+    END
+
+    IDD_DIALOG_FIND_LINK, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 127
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 71
+    END
+
+    IDD_DIALOG_PATHMOE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 407
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 199
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDR_MAINFRAME           "NEXTA Version 3 Beta"
+    IDR_TLiteTYPE           "\nNEXTA\nTLite\n\n\nNEXTA Document\nNEXTA.Document"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "NEXTA Version 3 Beta"
+    AFX_IDS_IDLEMESSAGE     "Ready"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_NEW             "Create a new document\nNew"
+    ID_FILE_OPEN            "Open an existing document\nOpen"
+    ID_FILE_CLOSE           "Close the active document\nClose"
+    ID_FILE_SAVE            "Save the active document\nSave"
+    ID_FILE_SAVE_AS         "Save the active document with a new name\nSave As"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
+    ID_APP_EXIT             "Quit the application; prompts to save documents\nExit"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "Open this document"
+    ID_FILE_MRU_FILE2       "Open this document"
+    ID_FILE_MRU_FILE3       "Open this document"
+    ID_FILE_MRU_FILE4       "Open this document"
+    ID_FILE_MRU_FILE5       "Open this document"
+    ID_FILE_MRU_FILE6       "Open this document"
+    ID_FILE_MRU_FILE7       "Open this document"
+    ID_FILE_MRU_FILE8       "Open this document"
+    ID_FILE_MRU_FILE9       "Open this document"
+    ID_FILE_MRU_FILE10      "Open this document"
+    ID_FILE_MRU_FILE11      "Open this document"
+    ID_FILE_MRU_FILE12      "Open this document"
+    ID_FILE_MRU_FILE13      "Open this document"
+    ID_FILE_MRU_FILE14      "Open this document"
+    ID_FILE_MRU_FILE15      "Open this document"
+    ID_FILE_MRU_FILE16      "Open this document"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
+    ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_WINDOW_NEW           "Open another window for the active document\nNew Window"
+    ID_WINDOW_ARRANGE       "Arrange icons at the bottom of the window\nArrange Icons"
+    ID_WINDOW_CASCADE       "Arrange windows so they overlap\nCascade Windows"
+    ID_WINDOW_TILE_HORZ     "Arrange windows as non-overlapping tiles\nTile Windows"
+    ID_WINDOW_TILE_VERT     "Arrange windows as non-overlapping tiles\nTile Windows"
+    ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_EDIT_CLEAR           "Erase the selection\nErase"
+    ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
+    ID_EDIT_COPY            "Copy the selection and put it on the Clipboard\nCopy"
+    ID_EDIT_CUT             "Cut the selection and put it on the Clipboard\nCut"
+    ID_EDIT_FIND            "Find the specified text\nFind"
+    ID_EDIT_PASTE           "Insert Clipboard contents\nPaste"
+    ID_EDIT_REPEAT          "Repeat the last action\nRepeat"
+    ID_EDIT_REPLACE         "Replace specific text with different text\nReplace"
+    ID_EDIT_SELECT_ALL      "Select the entire document\nSelect All"
+    ID_EDIT_UNDO            "Undo the last action\nUndo"
+    ID_EDIT_REDO            "Redo the previously undone action\nRedo"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
+    ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "Change the window size"
+    AFX_IDS_SCMOVE          "Change the window position"
+    AFX_IDS_SCMINIMIZE      "Reduce the window to an icon"
+    AFX_IDS_SCMAXIMIZE      "Enlarge the window to full size"
+    AFX_IDS_SCNEXTWINDOW    "Switch to the next document window"
+    AFX_IDS_SCPREVWINDOW    "Switch to the previous document window"
+    AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "Restore the window to normal size"
+    AFX_IDS_SCTASKLIST      "Activate Task List"
+    AFX_IDS_MDICHILD        "Activate this window"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_IMAGE           "Enable the background image to be movable"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_3DZoom               "Zoom in and zoom out in 3D View \n 3D Zoom in & out"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#include "res\TLite.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
