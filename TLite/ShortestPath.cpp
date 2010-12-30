@@ -31,23 +31,21 @@
 
 #include "stdafx.h"
 #include "Network.h"
-int g_DepartureTimetInterval = 5; // min
 extern long g_Simulation_Time_Horizon;
 
 
-void DTANetworkForSP::BuildPhysicalNetwork(std::set<DTANode*>*	p_NodeSet, std::set<DTALink*>*		p_LinkSet, bool bRandomCost,bool bOverlappingCost)
+void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, bool bRandomCost,bool bOverlappingCost)
 {
 
 	// build a network from the current zone centriod (1 centriod here) to all the other zones' centriods (all the zones)
 
-	float Perception_error_ratio = 0.7;
+	float Perception_error_ratio = 0.7f;
 
-	std::set<DTANode*>::iterator iterNode;
-	std::set<DTALink*>::iterator iterLink;
+	std::list<DTANode*>::iterator iterNode;
+	std::list<DTALink*>::iterator iterLink;
 
 	m_NodeSize = p_NodeSet->size();
 
-	int IntervalLinkID=0;
 	int FromID, ToID;
 
 	int i,t;
@@ -81,16 +79,16 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::set<DTANode*>*	p_NodeSet, std::s
 		ASSERT(m_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
 		int link_entering_time_interval;
-		for(t=0; t <m_SimulationHorizon; t+=g_DepartureTimetInterval)
+		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
 		{
-			link_entering_time_interval= t/g_DepartureTimetInterval;
-			if(link_entering_time_interval >= m_AssignmentIntervalSize)
-				link_entering_time_interval = m_AssignmentIntervalSize-1;
+			link_entering_time_interval= t/m_OptimizationTimeInveral;
+			if(link_entering_time_interval >= m_OptimizationIntervalSize)
+				link_entering_time_interval = m_OptimizationIntervalSize-1;
 
-			float AvgTravelTime = (*iterLink)->GetTravelTime (t,g_DepartureTimetInterval);
+			float AvgTravelTime = (*iterLink)->GetTravelTime (t,m_OptimizationTimeInveral);
 
 			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
-			
+
 			if(bRandomCost==false)
 				Normal_random_value = 0;
 
@@ -120,7 +118,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::set<DTANode*>*	p_NodeSet, std::s
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type)   // Pointer to previous node (node)
+bool DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type)   // Pointer to previous node (node)
 // time -dependent label correcting algorithm with deque implementation
 {
 
@@ -157,7 +155,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 		SEList_pop_front();
 
 		if(debug_flag)
-			  TRACE("\nScan from node %d",FromID);
+			TRACE("\nScan from node %d",FromID);
 
 		NodeStatusAry[FromID] = 2;        //scaned
 
@@ -170,13 +168,13 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 				continue;
 
 
-//					  TRACE("\n   to node %d",ToID);
+			//					  TRACE("\n   to node %d",ToID);
 			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
 
-			int link_entering_time_interval = int(LabelTimeAry[FromID])/g_DepartureTimetInterval;
-			if(link_entering_time_interval >= m_AssignmentIntervalSize)  // limit the size
-				link_entering_time_interval = m_AssignmentIntervalSize-1;
+			int link_entering_time_interval = int(LabelTimeAry[FromID])/m_OptimizationTimeInveral;
+			if(link_entering_time_interval >= m_OptimizationIntervalSize)  // limit the size
+				link_entering_time_interval = m_OptimizationIntervalSize-1;
 
 			if(link_entering_time_interval < 0)  // limit the size
 				link_entering_time_interval = 0;
@@ -187,10 +185,10 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{
 
-//					       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][link_entering_time_interval]);
+				//					       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][link_entering_time_interval]);
 
-				if(NewTime > g_Simulation_Time_Horizon -1)
-					NewTime = float(g_Simulation_Time_Horizon-1);
+				if(NewTime > m_OptimizationHorizon -1)
+					NewTime = float(m_OptimizationHorizon-1);
 
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
@@ -220,3 +218,243 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 
 
+
+
+void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, int TrainType)
+{
+	std::list<DTANode*>::iterator iterNode;
+	std::list<DTALink*>::iterator iterLink;
+
+	m_NodeSize = p_NodeSet->size();
+
+	int FromID, ToID;
+
+	int i,t;
+
+	for(i=0; i< m_NodeSize; i++)
+	{
+		m_OutboundSizeAry[i] = 0;
+		m_InboundSizeAry[i] = 0;
+
+	}
+
+	// add physical links
+
+	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
+	{
+		FromID = (*iterLink)->m_FromNodeID;
+		ToID   = (*iterLink)->m_ToNodeID;
+
+		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
+		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+
+		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundSizeAry[FromID] +=1;
+
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID  ;
+		m_InboundSizeAry[ToID] +=1;
+
+
+		ASSERT(m_AdjLinkSize > m_OutboundSizeAry[FromID]);
+
+		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
+		{
+			m_LinkTDTimeAry[(*iterLink)->m_LinkID][t] = (*iterLink)->GetTrainRunningTime(TrainType);  // in the future, we can extend it to time-dependent running time
+			m_LinkTDCostAry[(*iterLink)->m_LinkID][t]=  (*iterLink)->m_ResourceAry[t].Price;  // for all train types
+
+			// use travel time now, should use cost later
+		}
+
+
+	}
+
+	m_LinkSize = p_LinkSet->size();
+}
+
+
+bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time)
+// time -dependent label correcting algorithm with deque implementation
+{
+
+	int i;
+	int debug_flag = 0;  // set 1 to debug the detail information
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
+	{
+		NodeStatusAry[i] = 0;
+
+		for(int t=departure_time; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
+		{
+			TD_LabelCostAry[i][t] = MAX_SPLABEL;
+			TD_NodePredAry[i][t] = -1;  // pointer to previous NODE INDEX from the current label at current node and time
+			TD_TimePredAry[i][t] = -1;  // pointer to previous TIME INDEX from the current label at current node and time
+		}
+
+	}
+
+	//	TD_LabelCostAry[origin][departure_time] = 0;
+
+	int AllowedDelayTime  = 10;  // external parameter
+	// Initialization for origin node at the preferred departure time, at departure time, cost = 0, otherwise, the delay at origin node
+	for(int t=departure_time; t <departure_time + AllowedDelayTime; t+=m_OptimizationTimeInveral)
+	{
+		TD_LabelCostAry[origin][t]= t-departure_time;
+	}
+
+	SEList_clear();
+	SEList_push_front(origin);
+
+
+
+	while(!SEList_empty())
+	{
+		int FromID  = SEList_front();
+		SEList_pop_front();  // remove current node FromID from the SE list
+
+
+		NodeStatusAry[FromID] = 2;        //scaned
+
+		//scan all outbound nodes of the current node
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(j)
+		{
+			int LinkNo = m_OutboundLinkAry[FromID][i];
+			int ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)  // remove possible loop back to the origin
+				continue;
+
+			if(debug_flag)
+				TRACE("\nScan from node %d to node %d",FromID,ToID);
+
+			// for each time step, starting from the departure time
+			for(int t=departure_time; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
+			{
+				if(TD_LabelCostAry[FromID][t]<MAX_SPLABEL-1)  // for feasible time-space point only
+				{
+
+					for(int time_delay = 0; time_delay < AllowedDelayTime; time_delay++)
+					{
+						int NewToNodeArrivalTime	 = (int)(t + m_LinkTDTimeAry[LinkNo][t] + time_delay);  // time-dependent travel times for different train type
+						float NewCost  =  TD_LabelCostAry[FromID][t] + m_LinkTDCostAry[LinkNo][t] + m_LinkTDTimeAry[LinkNo][t];
+						// costs come from time-dependent resource price or road toll
+
+						if(NewToNodeArrivalTime > (m_OptimizationHorizon -1))  // prevent out of bound error
+							NewToNodeArrivalTime = (m_OptimizationHorizon-1);
+
+						if(NewCost < TD_LabelCostAry[ToID][NewToNodeArrivalTime] ) // we only compare cost at the downstream node ToID at the new arrival time t
+						{
+
+							if(debug_flag)
+								TRACE("\n         UPDATE to %f, link cost %f at time %d", NewCost, m_LinkTDCostAry[LinkNo][t],NewToNodeArrivalTime);
+
+							// update cost label and node/time predecessor
+
+							TD_LabelCostAry[ToID][NewToNodeArrivalTime] = NewCost;
+							TD_NodePredAry[ToID][NewToNodeArrivalTime] = FromID;  // pointer to previous NODE INDEX from the current label at current node and time
+							TD_TimePredAry[ToID][NewToNodeArrivalTime] = t;  // pointer to previous TIME INDEX from the current label at current node and time
+
+							// Dequeue implementation
+							if(NodeStatusAry[ToID]==2) // in the SEList_TD before
+							{
+								SEList_push_front(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+							if(NodeStatusAry[ToID]==0)  // not be reached
+							{
+								SEList_push_back(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+
+						}
+					}
+				}
+				//another condition: in the SELite now: there is no need to put this node to the SEList, since it is already there.
+			}
+
+		}      // end of for each link
+
+	} // end of while
+	return true;
+}
+
+
+int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int destination, STrainNode* AryTN)
+{
+
+	// step 1: scan all the time label at destination node, consider time cost
+	// step 2: backtrace to the origin (based on node and time predecessors)
+	// step 3: reverse the backward path
+	// return final optimal solution
+
+	// step 1: scan all the time label at destination node, consider time cost
+	STrainNode tmp_AryTN[MAX_NODE_SIZE_IN_A_PATH]; //backward temporal solution
+
+	float min_cost = MAX_SPLABEL;
+	int min_cost_time_index = -1;
+
+	for(int t=departure_time; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
+	{
+		if(TD_LabelCostAry[destination][t] < min_cost)
+		{
+			min_cost = TD_LabelCostAry[destination][t];
+			min_cost_time_index = t;
+		}
+
+	}
+
+	ASSERT(min_cost_time_index>=0); // if min_cost_time_index ==-1, then no feasible path if founded
+
+	// step 2: backtrace to the origin (based on node and time predecessors)
+
+	int	NodeSize = 0;
+
+	//record the first node backward, destination node
+	tmp_AryTN[NodeSize].NodeID = destination;
+	tmp_AryTN[NodeSize].NodeTimestamp = min_cost_time_index;
+
+	NodeSize++;
+
+	int PredTime = TD_TimePredAry[destination][min_cost_time_index];
+	int PredNode = TD_NodePredAry[destination][min_cost_time_index];
+
+	while(PredNode != origin && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+	{
+		ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
+
+		tmp_AryTN[NodeSize].NodeID = PredNode;
+		tmp_AryTN[NodeSize].NodeTimestamp = PredTime;
+
+		NodeSize++;
+
+		//record current values of node and time predecessors, and update PredNode and PredTime
+		int PredTime_cur = PredTime;
+		int PredNode_cur = PredNode;
+
+		PredNode = TD_NodePredAry[PredNode_cur][PredTime_cur];
+		PredTime = TD_TimePredAry[PredNode_cur][PredTime_cur];
+
+	}
+
+	tmp_AryTN[NodeSize].NodeID = origin;
+	tmp_AryTN[NodeSize].NodeTimestamp = departure_time;
+	NodeSize++;
+
+	// step 3: reverse the backward solution
+
+	if(AryTN!=NULL)
+		delete AryTN;
+
+	AryTN = new STrainNode[NodeSize];
+
+	for(int i = 0; i< NodeSize; i++)
+	{
+		AryTN[i].NodeID			= tmp_AryTN[NodeSize-1-i].NodeID;
+		AryTN[i].NodeTimestamp	= tmp_AryTN[NodeSize-1-i].NodeTimestamp;
+	}
+
+	return NodeSize;
+}

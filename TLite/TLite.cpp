@@ -33,6 +33,7 @@
 #include "TLiteDoc.h"
 #include "TLiteView.h"
 #include "GLView.h"
+#include "TSView.h"
 
 
 #ifdef _DEBUG
@@ -95,6 +96,13 @@ BOOL CTLiteApp::InitInstance()
     RUNTIME_CLASS(CTLiteDoc),
     RUNTIME_CLASS(CChildFrame),
     RUNTIME_CLASS(CGLView));
+
+	m_pTemplateTimeTableView = new CMultiDocTemplate(
+    IDR_TLiteTYPE,
+    RUNTIME_CLASS(CTLiteDoc),
+    RUNTIME_CLASS(CChildFrame),
+    RUNTIME_CLASS(CTimeSpaceView));
+
 
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame;
@@ -188,5 +196,7 @@ void CTLiteApp::OnFileOpenNewDoc()
 int CTLiteApp::ExitInstance()
 {
 	delete m_pTemplateGLView;
+	delete m_pTemplateTimeTableView;
+
 	return CWinApp::ExitInstance();
 }

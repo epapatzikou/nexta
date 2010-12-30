@@ -53,11 +53,12 @@ public:
 	tool m_ToolMode; 
 	
 	CPoint m_last_cpoint;
-	bool m_bMoveNetwork;
+	bool m_bMoveDisplay;
 
 	bool m_bMoveImage;
 	
 	bool m_bShowNode;
+	bool m_bShowNodeNumber;
 	bool m_bShowImage;
 	bool m_bShowLinkType;
 
@@ -73,7 +74,7 @@ public:
 
 	CPoint m_ScreenOrigin;
 	GDPoint m_Origin;
-	double m_Resolution;
+	float m_Resolution;
 	bool m_bFitNetworkInitialized;
 
 	int m_OriginOnBottomFlag;
@@ -95,7 +96,7 @@ public:
 		return pt;
 	}
 
-	int FindClosestNode(CPoint point, double Min_distance);
+	int FindClosestNode(CPoint point, float Min_distance);
 	CPoint m_CurrentMousePoint;
 	
 
@@ -158,6 +159,8 @@ public:
 	afx_msg void OnUpdateShowShownode(CCmdUI *pCmdUI);
 	afx_msg void OnShowShowallpaths();
 	afx_msg void OnUpdateShowShowallpaths(CCmdUI *pCmdUI);
+	afx_msg void OnShowShownodenumber();
+	afx_msg void OnUpdateShowShownodenumber(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

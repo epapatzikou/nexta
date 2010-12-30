@@ -34,6 +34,9 @@
 #include <iostream>
 #include <vector>
 #include <list>
+
+#include "Timetable.h"
+
 using namespace std;
 #define MAX_DAY_SIZE 30
 #define	MAX_SPLABEL 99999.0f
@@ -49,17 +52,17 @@ using namespace std;
 
 struct GDPoint
 {
-	double x;
-	double y;
+	float x;
+	float y;
 };
 
 
 struct GDRect
 {
-	double left, right,top, bottom;
+	float left, right,top, bottom;
 
-	double Height() { return top - bottom; }
-	double Width()  { return right - left; }
+	float Height() { return top - bottom; }
+	float Width()  { return right - left; }
 
 	bool PtInRect(GDPoint& pt)
 	{
@@ -91,9 +94,9 @@ struct GDRect
 
 };
 
-extern double g_P2P_Distance(GDPoint p1, GDPoint p2);
+extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
 
-extern double g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
+extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 
 
 /////
@@ -115,6 +118,7 @@ class DTANode
 {
 public:
 	DTANode(){
+		m_NodeNumber = 0;
 		m_ControlType = 0;
 		m_ZoneID = 0;
 		m_TotalCapacity = 0;
@@ -122,8 +126,8 @@ public:
 	};
 	~DTANode(){};
 	GDPoint pt;
-	int m_NodeNo;  // starting from zero, continuous sequence
-	int m_NodeID;  // original node number/id
+	int m_NodeNumber;  //  original node number
+	int m_NodeID;  ///id, starting from zero, continuous sequence
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
@@ -215,9 +219,12 @@ public:
 class DTALink
 {
 public:
-	DTALink(int TimeSize)  // TimeSize's unit: per min
+
+
+
+	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
-		m_SimulationHorizon	= TimeSize;
+		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
 		m_HistLinkMOEAry = new SLinkMOE[min(m_SimulationHorizon+1,1441)];
 		m_StochaticCapcityFlag = 0;
@@ -233,14 +240,31 @@ public:
 		m_MinSpeed = 40;
 		m_MaxSpeed = 40;
 
+		m_ResourceAry = NULL;
+
 
 	};
 
-	float ObtainObsTravelTime(int time)
+	//for timetabling use
+	std::map<int, int> m_RuningTimeMap;  //indexed by train type
+
+	int GetTrainRunningTime(int TrainType)
 	{
-		if(m_LinkMOEAry!=NULL && m_LinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
+		map <int, int> :: iterator mIter  = m_RuningTimeMap.find(TrainType);
+
+		if ( mIter == m_RuningTimeMap.end( ) )
+			return 1400; // very large number for prohibited train type, one day
+		else
+			return  mIter -> second;  // return the running time value matching the train type
+	}
+
+
+	float ObtainObsTravelTime(float time)
+	{
+		int int_time = (int)time;
+		if(m_LinkMOEAry!=NULL && m_LinkMOEAry[int_time].ObsSpeed>0.001 && int_time<m_SimulationHorizon)
 		{
-			return m_Length/m_LinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
+			return m_Length/m_LinkMOEAry[int_time].ObsSpeed*60;  // *60: hour to min
 		}
 		else
 			return m_FreeFlowTravelTime;
@@ -270,15 +294,15 @@ public:
 	{
 		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && m_HistLinkMOEAry[time].ObsSpeed <=80 && time<1440)
 		{
-			return min(1.4,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
+			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
 		else
 			return m_Length*11.58f*pow(m_SpeedLimit,-0.818f);  // Length*fuel per mile(speed_limit), y= 11.58x-0.818
 	}
 
-	void ResetMOEAry(int TimeSize)
+	void ResetMOEAry(int TimeHorizon)
 	{
-		m_SimulationHorizon	= TimeSize;
+		m_SimulationHorizon	= TimeHorizon;
 
 		if(m_LinkMOEAry !=NULL)
 			delete m_LinkMOEAry;
@@ -286,7 +310,7 @@ public:
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
 
 		int t;
-		for(t=0; t<= TimeSize; t++)
+		for(t=0; t<= TimeHorizon; t++)
 		{
 			m_LinkMOEAry[t].SetupMOE();
 		}	
@@ -325,6 +349,7 @@ public:
 		}	
 
 		float VolumeSum = 0;
+		float SpeedSum = 0;
 		int count = 0;
 
 		for(int day =0; day <number_of_weekdays; day ++)
@@ -336,7 +361,7 @@ public:
 				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow/number_of_weekdays;
 				m_HistLinkMOEAry[t].ObsDensity +=m_LinkMOEAry[day*1440+t].ObsDensity/number_of_weekdays;
 
-				if((t>=7*60 && t<9*60) || (t>=16*60 && t<19*60)) //7-9AM, 4-7PM
+				if((t>=8*60 && t<9*60)) //8-9AM
 				{
 					// update link-specific min and max speed
 					if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
@@ -347,6 +372,7 @@ public:
 
 
 					VolumeSum+=m_HistLinkMOEAry[t].ObsFlow;
+					SpeedSum+=m_HistLinkMOEAry[t].ObsSpeed ;
 					count++;
 
 				}
@@ -355,6 +381,7 @@ public:
 
 		}
 		m_MeanVolume = VolumeSum/max(1,count);
+		m_MeanSpeed = SpeedSum/max(1,count);
 
 	}
 
@@ -364,7 +391,7 @@ public:
 	double DefaultDistance()
 	{
 		return pow((m_FromPoint.x - m_ToPoint.x)*(m_FromPoint.x - m_ToPoint.x) + 
-			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5);
+			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5f);
 	}
 
 	bool 	GetImpactedFlag(int DepartureTime)
@@ -380,6 +407,7 @@ public:
 		return false;
 	}
 
+	SResource *m_ResourceAry;
 
 	SLinkMOE *m_LinkMOEAry;
 	SLinkMOE *m_HistLinkMOEAry;
@@ -408,6 +436,10 @@ public:
 		if(m_HistLinkMOEAry) delete m_HistLinkMOEAry;
 		if(aryCFlowA) delete aryCFlowA;
 		if(aryCFlowD) delete aryCFlowD;
+
+		if(m_ResourceAry) delete m_ResourceAry;
+
+
 
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
@@ -474,9 +506,12 @@ public:
 	float	m_SpeedLimit;
 	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 
+	float m_FromNodeY;  // From Node, Y value
+	float m_ToNodeY;    // To Node, Y value
 
 	float m_MinSpeed;
 	float m_MaxSpeed;
+	float m_MeanSpeed;
 	float m_MeanVolume;
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
@@ -495,9 +530,6 @@ public:
 
 	//  multi-day equilibirum: travel time for stochastic capacity
 	float m_BPRLaneCapacity;
-
-
-
 
 	float m_DayDependentTravelTime[MAX_DAY_SIZE];
 	float m_AverageTravelTime;
@@ -573,14 +605,14 @@ public:
 class DTAPath
 {
 public:
-	DTAPath(int LinkSize, int TimeSize)
+	DTAPath(int LinkSize, int TimeHorizon)
 	{
 		m_LinkSize = LinkSize;
 		m_LinkVector = new int[LinkSize];
-		m_TimeDependentTravelTime = new float[TimeSize];
-		m_number_of_days = TimeSize/1440;
+		m_TimeDependentTravelTime = new float[TimeHorizon];
+		m_number_of_days = TimeHorizon/1440;
 
-		for(int t=0; t<TimeSize; t++)
+		for(int t=0; t<TimeHorizon; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
 		}
@@ -880,6 +912,8 @@ public:
 
 };
 
+
+
 class DTA_sensor
 {
 
@@ -986,7 +1020,6 @@ void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 	delete[] dArray;
 
 }
-extern int g_DepartureTimetInterval;
 extern void g_ProgramStop();
 
 class DTANetworkForSP  // mainly for shortest path calculation, not just physical network
@@ -994,10 +1027,11 @@ class DTANetworkForSP  // mainly for shortest path calculation, not just physica
 	// different shortest path calculations have different network structures, depending on their origions/destinations
 {
 public:
-	int m_AssignmentIntervalSize;
+	int m_OptimizationIntervalSize;
 	int m_NodeSize;
 	int m_PhysicalNodeSize;
-	int m_SimulationHorizon;
+	int m_OptimizationHorizon;
+	int m_OptimizationTimeInveral;
 	int m_ListFront;
 	int m_ListTail;
 	int m_LinkSize;
@@ -1018,18 +1052,26 @@ public:
 	float** m_LinkTDCostAry;
 
 	int* NodeStatusAry;                // Node status array used in KSP;
+
 	float* LabelTimeAry;               // label - time
 	int* NodePredAry;
 	float* LabelCostAry;
 
+	//below are time-dependent cost label and predecessor arrays
+	float** TD_LabelCostAry;
+	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
+	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
 
-	DTANetworkForSP(int NodeSize, int LinkSize, int TimeSize,int AdjLinkSize){
+	DTANetworkForSP(int NodeSize, int LinkSize, int TimeHorizon, int TimeInterval, int AdjLinkSize){
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
 
-		m_SimulationHorizon = TimeSize;
+		m_OptimizationHorizon = TimeHorizon;
+		m_OptimizationTimeInveral = TimeInterval;
 		m_AdjLinkSize = AdjLinkSize;
 
 
@@ -1044,9 +1086,9 @@ public:
 
 		m_LinkList = new int[m_NodeSize];
 
-		m_AssignmentIntervalSize = int(TimeSize/g_DepartureTimetInterval)+1;  // make sure it is not zero
-		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
-		m_LinkTDCostAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
+		m_OptimizationIntervalSize = int(m_OptimizationHorizon/m_OptimizationTimeInveral+0.1);  // make sure there is no rounding error
+		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_OptimizationIntervalSize);
+		m_LinkTDCostAry   =  AllocateDynamicArray<float>(m_LinkSize,m_OptimizationIntervalSize);
 
 		m_FromIDAry = new int[m_LinkSize];
 
@@ -1056,6 +1098,11 @@ public:
 		NodePredAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
+
+		TD_LabelCostAry =  AllocateDynamicArray<float>(m_NodeSize,m_OptimizationIntervalSize);
+		TD_NodePredAry = AllocateDynamicArray<int>(m_NodeSize,m_OptimizationIntervalSize);
+		TD_TimePredAry = AllocateDynamicArray<int>(m_NodeSize,m_OptimizationIntervalSize);
+
 
 		if(m_OutboundSizeAry==NULL || m_LinkList==NULL || m_FromIDAry==NULL || m_ToIDAry==NULL  ||
 			NodeStatusAry ==NULL || NodePredAry==NULL || LabelTimeAry==NULL || LabelCostAry==NULL)
@@ -1068,12 +1115,12 @@ public:
 
 	DTANetworkForSP();
 
-	void Init(int NodeSize, int LinkSize, int TimeSize,int AdjLinkSize)
+	void Init(int NodeSize, int LinkSize, int TimeHorizon,int AdjLinkSize)
 	{
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
 
-		m_SimulationHorizon = TimeSize;
+		m_OptimizationHorizon = TimeHorizon;
 		m_AdjLinkSize = AdjLinkSize;
 
 
@@ -1088,9 +1135,9 @@ public:
 
 		m_LinkList = new int[m_NodeSize];
 
-		m_AssignmentIntervalSize = int(TimeSize/g_DepartureTimetInterval)+1;  // make sure it is not zero
-		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
-		m_LinkTDCostAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
+		m_OptimizationIntervalSize = int(TimeHorizon/m_OptimizationTimeInveral)+1;  // make sure it is not zero
+		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_OptimizationIntervalSize);
+		m_LinkTDCostAry   =  AllocateDynamicArray<float>(m_LinkSize,m_OptimizationIntervalSize);
 
 		m_FromIDAry = new int[m_LinkSize];
 
@@ -1100,6 +1147,12 @@ public:
 		NodePredAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
+
+
+		TD_LabelCostAry =  AllocateDynamicArray<float>(m_NodeSize,m_OptimizationIntervalSize);
+		TD_NodePredAry = AllocateDynamicArray<int>(m_NodeSize,m_OptimizationIntervalSize);
+		TD_TimePredAry = AllocateDynamicArray<int>(m_NodeSize,m_OptimizationIntervalSize);
+
 
 		if(m_OutboundSizeAry==NULL || m_LinkList==NULL || m_FromIDAry==NULL || m_ToIDAry==NULL  ||
 			NodeStatusAry ==NULL || NodePredAry==NULL || LabelTimeAry==NULL || LabelCostAry==NULL)
@@ -1123,8 +1176,12 @@ public:
 
 		if(m_LinkList) delete m_LinkList;
 
-		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_AssignmentIntervalSize);
-		DeallocateDynamicArray<float>(m_LinkTDCostAry,m_LinkSize,m_AssignmentIntervalSize);
+		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<float>(m_LinkTDCostAry,m_LinkSize,m_OptimizationIntervalSize);
+
+		DeallocateDynamicArray<float>(TD_LabelCostAry,m_LinkSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_NodePredAry,m_LinkSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_TimePredAry,m_LinkSize,m_OptimizationIntervalSize);
 
 		if(m_FromIDAry)		delete m_FromIDAry;
 		if(m_ToIDAry)	delete m_ToIDAry;
@@ -1145,11 +1202,21 @@ public:
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
 	void BuildTravelerInfoNetwork(int CurrentTime, float Perception_error_ratio);
 
-	void BuildPhysicalNetwork(std::set<DTANode*>* p_NodeSet, std::set<DTALink*>* p_LinkSet, bool bRandomCost, bool bOverlappingCost);
+	void BuildPhysicalNetwork(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, bool bRandomCost, bool bOverlappingCost);
+	void BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, int TrainType);
 
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type);   // Pointer to previous node (node)
+	bool SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type);   // Pointer to previous node (node)
+	// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
+
+	//these two functions are for timetabling
+	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
+	// optimal version use a time-node-dimension of TD_LabelCostAry, TD_NodePredAry
+    int FindOptimalSolution(int origin,  int departure_time,  int destination, STrainNode* AryTN);
+	// return node arrary from origin to destination, return travelling timestamp at each node
+	// return number_of_nodes in path
+
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
@@ -1213,14 +1280,9 @@ public:
 
 };
 
+#pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
+// Stop bugging me about this, live isn't perfect
 
-class CTSSegment  // time-space segment
-{
-public:
-	int Distance;
-	int RunningTime[MAX_TRAIN_TYPE_SIZE]; //high speed train pure running time
-
-};
 
 extern float g_RNNOF();
 

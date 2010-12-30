@@ -112,10 +112,14 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWNODE, &CTLiteView::OnUpdateShowShownode)
 	ON_COMMAND(ID_SHOW_SHOWALLPATHS, &CTLiteView::OnShowShowallpaths)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWALLPATHS, &CTLiteView::OnUpdateShowShowallpaths)
+	ON_COMMAND(ID_SHOW_SHOWNODENUMBER, &CTLiteView::OnShowShownodenumber)
+	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWNODENUMBER, &CTLiteView::OnUpdateShowShownodenumber)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
+
+CBrush g_BlackBrush(RGB(10,10,10));
 CPen g_PenSelectColor(PS_SOLID,2,RGB(255,0,0));
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
@@ -155,7 +159,7 @@ CPen g_PenFreewayColor(PS_SOLID,1,RGB(255,211,155));
 CPen g_PenHighwayColor(PS_SOLID,1,RGB(100,149,237)); 
 CPen g_PenArterialColor(PS_SOLID,1,RGB(0,0,0)); 
 
-void g_SelectMOEColor(CDC* pDC, int ColorCount)
+void g_SelectColorCode(CDC* pDC, int ColorCount)
 {
 	switch(ColorCount)
 	{
@@ -231,17 +235,18 @@ CTLiteView::CTLiteView()
 //	RGB(102,204,204);
 	
 	m_ToolMode = move_tool;
-	m_bMoveNetwork = false;
+	m_bMoveDisplay = false;
 	m_bMoveImage = false;
 	m_bShowImage = true;
 	m_bShowNode = false;
+	m_bShowNodeNumber = false;
 	m_bShowLinkType  = true;
 	m_SelectedNodeID = -1;
 	m_SelectedLinkID = -1;
 
 
 
-	m_NodeSize = 5;
+	m_NodeSize = 80;
 	m_bShowSensor = true;
 
 	m_SelectFromNodeNumber = 0;
@@ -376,7 +381,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	std::set<DTANode*>::iterator iNode;
+	std::list<DTANode*>::iterator iNode;
 
 	if(pDoc->m_NodeSet.size()>0 && !m_bFitNetworkInitialized )
 	{
@@ -388,7 +393,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	pDC->SetBkMode(TRANSPARENT);
 
-	std::set<DTALink*>::iterator iLink;
+	std::list<DTALink*>::iterator iLink;
 	std::list<DTALink*>::iterator iLinkDisplay;
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
@@ -483,7 +488,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 
 	// draw select path
-	if(pDoc->m_PathDisplayList.size()>=pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
+	if((int)(pDoc->m_PathDisplayList.size()) >= pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
 	{
 	g_SelectSuperThickPenColor(pDC,pDoc->m_SelectPathNo);
 
@@ -513,8 +518,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	{
 		CPoint point = NPtoSP((*iNode)->pt);
 
-		int node_size = m_NodeSize;
+		int node_size = max(2,int(m_NodeSize*pDoc->m_UnitFeet*m_Resolution));
 
+		pDC->SelectObject(&g_BlackBrush);
 		if((*iNode)->m_NodeID == m_SelectedNodeID)
 		{
 			pDC->SelectObject(&g_PenSelectColor);
@@ -527,25 +533,25 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		{
 			pDC->SelectObject(&g_PenSelectColor);
 
-			node_size = 8;
+			node_size *= 1.5;
 			pDC->Rectangle (point.x - node_size, point.y + node_size,
 				point.x + node_size, point.y - node_size);
 
 			pDC->SelectObject(&g_PenSelectColor);
-			pDC->SetTextColor(RGB(0,0,0));
+			pDC->SetTextColor(RGB(255,0,0));
 			pDC->SetBkColor(RGB(0,255,0)); 
-			pDC->TextOut(point.x - 6, point.y - node_size, _T("A"));
+			pDC->TextOut(point.x - node_size, point.y - node_size, _T("A"));
 
 
 		}else if((*iNode)->m_NodeID == pDoc->m_DestinationNodeID)
 		{
 			pDC->SelectObject(&g_PenSelectColor);
-			node_size = 8;
+			node_size *= 1.5;
 			pDC->Rectangle (point.x - node_size, point.y + node_size,
 				point.x + node_size, point.y - node_size);
-			pDC->SetTextColor(RGB(0,0,0));
+			pDC->SetTextColor(RGB(255,0,0));
 			pDC->SetBkColor(RGB(0,255,0));
-			pDC->TextOut(point.x - 6, point.y - node_size, _T("B"));
+			pDC->TextOut(point.x - node_size, point.y - node_size, _T("B"));
 
 		}else
 		{
@@ -553,7 +559,17 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 						pDC->Ellipse(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);
+			if(m_bShowNodeNumber)
+			{
+			CString str_nodenumber;
+			str_nodenumber.Format ("%d",(*iNode)->m_NodeNumber );
+			pDC->SetTextColor(RGB(255,255,0));
+			pDC->TextOut(point.x - node_size, point.y - node_size,str_nodenumber);
 			}
+			}
+
+
+
 		}
 	}
 
@@ -581,7 +597,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	
 
 
-	std::set<DTAVehicle*>::iterator iVehicle;
+	std::list<DTAVehicle*>::iterator iVehicle;
 
 }
 
@@ -603,7 +619,7 @@ void CTLiteView::FitNetworkToScreen()
 
 	//+1 to avide devided by zero error;
 
-	m_Resolution*=0.8;
+	m_Resolution*=0.8f;
 
 	m_Origin.x = pDoc->m_NetworkRect.Center ().x ;
 	m_Origin.y = pDoc->m_NetworkRect.Center ().y ;
@@ -640,11 +656,11 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	{
 		if(zDelta > 0)
 		{
-			m_Resolution*=1.1;
+			m_Resolution*=1.1f;
 		}
 		else
 		{
-			m_Resolution/=1.1;
+			m_Resolution/=1.1f;
 		}
 	}else
 	{
@@ -659,18 +675,18 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 			// shift -> X only
 
 			if(nFlags != MK_CONTROL)  // shift or nothing
-				pDoc->m_ImageXResolution*=1.02;
+				pDoc->m_ImageXResolution*=1.02f;
 
 			if(nFlags != MK_SHIFT)  // control or nothing
-				pDoc->m_ImageYResolution*=1.02;
+				pDoc->m_ImageYResolution*=1.02f;
 		}
 		else
 		{
 			if(nFlags != MK_CONTROL)  // shift or nothing
-				pDoc->m_ImageXResolution/=1.02;
+				pDoc->m_ImageXResolution/=1.02f;
 
 			if(nFlags != MK_SHIFT)  // control or nothing
-				pDoc->m_ImageYResolution/=1.02;
+				pDoc->m_ImageYResolution/=1.02f;
 		}
 	
 	}
@@ -688,14 +704,14 @@ BOOL CTLiteView::OnEraseBkgnd(CDC* pDC)
 
 void CTLiteView::OnViewZoomin()
 {
-	m_Resolution*=1.1;
+	m_Resolution*=1.1f;
 	Invalidate();
 
 }
 
 void CTLiteView::OnViewZoomout()
 {
-	m_Resolution/=1.1;
+	m_Resolution/=1.1f;
 	Invalidate();
 }
 
@@ -710,12 +726,12 @@ void CTLiteView::OnViewMove()
 	m_ToolMode = move_tool;
 }
 
-int CTLiteView::FindClosestNode(CPoint point, double Min_distance)
+int CTLiteView::FindClosestNode(CPoint point, float Min_distance)
 {
 	int SelectedNodeID = -1;
 		CTLiteDoc* pDoc = GetDocument();
 
-		std::set<DTANode*>::iterator iNode;
+		std::list<DTANode*>::iterator iNode;
 
 		for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
 		{
@@ -744,7 +760,7 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 	{
 		m_last_cpoint = point;
 		AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
-		m_bMoveNetwork = true;
+		m_bMoveDisplay = true;
 	}
 
 	if(m_ToolMode == bkimage_tool)
@@ -757,7 +773,7 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 	if(m_ToolMode == select_tool)
 	{
 
-		m_SelectedNodeID = FindClosestNode(point, m_NodeSize*2);
+		m_SelectedNodeID = FindClosestNode(point, m_NodeSize*2.0f);
 		OnClickLink(nFlags, point);
 
 	}
@@ -775,7 +791,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		m_Origin.y -= OffSet.cy*m_OriginOnBottomFlag/m_Resolution;
 
 		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
-		m_bMoveNetwork = false;
+		m_bMoveDisplay = false;
 	}
 
 	if(m_ToolMode == bkimage_tool)
@@ -802,7 +818,7 @@ void CTLiteView::OnUpdateViewMove(CCmdUI *pCmdUI)
 
 void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 {
-	if(m_ToolMode == move_tool && m_bMoveNetwork)
+	if(m_ToolMode == move_tool && m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
 		//		if(!(OffSet.cx !=0 && OffSet.cy !=0))
@@ -908,9 +924,9 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 {
 
 	CTLiteDoc* pDoc = GetDocument();
-	double Min_distance = 100;
+	double Min_distance = 1000;
 
-	std::set<DTALink*>::iterator iLink;
+	std::list<DTALink*>::iterator iLink;
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
@@ -922,7 +938,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 		pfrom.x  = FromPoint.x; pfrom.y  = FromPoint.y;
 		pto.x  = ToPoint.x; pto.y  = ToPoint.y;
 
-		double distance = g_DistancePointLine(p0, pfrom, pto);
+		float distance = g_DistancePointLine(p0, pfrom, pto);
 
 		if(distance >0 && distance < Min_distance)
 		{
@@ -986,7 +1002,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	OnClickLink(nFlags, point);
 
 	/*		
-	std::set<DTANode*>::iterator iNode;
+	std::list<DTANode*>::iterator iNode;
 
 
 	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
@@ -1080,6 +1096,7 @@ void CTLiteView::OnUpdateViewShowlinktype(CCmdUI *pCmdUI)
 void CTLiteView::OnShowShownode()
 {
 	m_bShowNode = !m_bShowNode;
+	Invalidate();
 }
 
 void CTLiteView::OnUpdateShowShownode(CCmdUI *pCmdUI)
@@ -1099,3 +1116,19 @@ void CTLiteView::OnUpdateShowShowallpaths(CCmdUI *pCmdUI)
 }
 
 
+
+void CTLiteView::OnShowShownodenumber()
+{
+	m_bShowNodeNumber = !m_bShowNodeNumber;
+
+	if(m_bShowNodeNumber == true)
+		m_bShowNode = true;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateShowShownodenumber(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowNodeNumber);
+	
+}

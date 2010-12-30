@@ -110,6 +110,11 @@ BEGIN
     BUTTON      ID_WINDOW_NEW3DVIEW
     BUTTON      ID_WINDOW_TILE_VERT
     BUTTON      ID_WINDOW_TILE_HORZ
+    SEPARATOR
+    BUTTON      ID_Create1WayLink
+    BUTTON      ID_Create2WayLinks
+    SEPARATOR
+    BUTTON      ID_SHOW_TIMETABLE
 END
 
 
@@ -169,36 +174,50 @@ BEGIN
     POPUP "&Show"
     BEGIN
         MENUITEM "Show Background Image",       ID_VIEW_BACKGROUNDIMAGE
-        MENUITEM "Show Node",                   ID_SHOW_SHOWNODE
-        MENUITEM "Show Link Type",              ID_VIEW_SHOWLINKTYPE
-        MENUITEM "Show Sensor",                 ID_VIEW_SHOWSENSOR
-        MENUITEM "Show All Paths",              ID_SHOW_SHOWALLPATHS
-        MENUITEM SEPARATOR
-        MENUITEM "Show Link MOE",               ID_VIEW_SHOWMOE
-        MENUITEM "Show Path MOE",               ID_SHOW_SHOWPATHMOE
         MENUITEM "Show Network",                ID_VIEW_SHOWNETWORK
+        MENUITEM "Show TimeTable",              ID_SHOW_TIMETABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Show Node",                   ID_SHOW_SHOWNODE
+        MENUITEM "Show Node Number",            ID_SHOW_SHOWNODENUMBER
+        MENUITEM SEPARATOR
+        MENUITEM "Show Link Type",              ID_VIEW_SHOWLINKTYPE
+        MENUITEM "Show Link MOE",               ID_VIEW_SHOWMOE
+        MENUITEM "Show Sensor",                 ID_VIEW_SHOWSENSOR
+        MENUITEM SEPARATOR
+        MENUITEM "Show All Paths",              ID_SHOW_SHOWALLPATHS
+        MENUITEM "Show Path MOE",               ID_SHOW_SHOWPATHMOE
+        MENUITEM SEPARATOR
     END
     POPUP "Search"
     BEGIN
-        MENUITEM "Find Link",                   ID_SEARCH_FINDLINK
+        MENUITEM "Link",                        ID_SEARCH_FINDLINK
+        MENUITEM "Trains",                      ID_SEARCH_LISTTRAINS
     END
-    POPUP "&Image"
-    BEGIN
-        MENUITEM "Save Image Location",         ID_FILE_SAVEIMAGELOCATION
-        MENUITEM "Move Background Image",       ID_VIEW_IMAGE
-        MENUITEM "Shift + Mouse Wheeler -> Change X Resolution Only", ID_IMAGE_SHIFT
-        MENUITEM "Control + Mouse Wheeler -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
-    END
-    POPUP "Tool"
-    BEGIN
-        MENUITEM "Generate Senesor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
-    END
-    POPUP "3D Display"
+    POPUP "3D"
     BEGIN
         MENUITEM "Basic View",                  ID_3DDISPLAY_BASICVIEW
         MENUITEM "Travel Time Variability",     ID_3DDISPLAY_TRAVELTIMEVARIABILITY
         MENUITEM "Time-dependent Path",         ID_3DDISPLAY_TIME
         MENUITEM "Animation",                   ID_3DDISPLAY_ANIMATION
+    END
+    POPUP "Timetable"
+    BEGIN
+        MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
+        MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
+        MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
+        MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
+        MENUITEM "Export Timetable",            ID_TIMETABLE_EXPORTTIMETABLE
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Generate Senesor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
+        POPUP "Image Position"
+        BEGIN
+            MENUITEM "Save Image Location",         ID_FILE_SAVEIMAGELOCATION
+            MENUITEM "Move Background Image",       ID_VIEW_IMAGE
+            MENUITEM "Shift + Mouse Wheeler -> Change X Resolution Only", ID_IMAGE_SHIFT
+            MENUITEM "Control + Mouse Wheeler -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+        END
     END
     POPUP "&Window"
     BEGIN
@@ -367,6 +386,15 @@ BEGIN
     CONTROL         "",IDC_PATH_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,400,88
 END
 
+IDD_DIALOG_Train DIALOGEX 0, 0, 415, 206
+STYLE DS_LOCALEDIT | DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTERMOUSE | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE
+CAPTION "Train Info"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_TRAIN_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,401,133
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -448,6 +476,14 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 407
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 199
+    END
+
+    IDD_DIALOG_Train, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 408
         TOPMARGIN, 7
         BOTTOMMARGIN, 199
     END
@@ -587,6 +623,13 @@ END
 STRINGTABLE 
 BEGIN
     ID_3DZoom               "Zoom in and zoom out in 3D View \n 3D Zoom in & out"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_BUTTON32872          "Create One-way Link\nOne-way Link"
+    ID_Create1WayLink       "Create One-way Link\nOne-way Link"
+    ID_Create2WayLinks      "Create Two-way Link\nTwo-way Link"
 END
 
 #endif    // English (U.S.) resources
