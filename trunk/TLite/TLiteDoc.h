@@ -41,7 +41,7 @@ protected: // create from serialization only
 	m_ColorFreeway = RGB(198,226,255);
 	m_ColorHighway = RGB(100,149,237);
 	m_ColorArterial = RGB(0,0,0);
-	pNetwork = NULL;
+	m_pNetwork = NULL;
     m_OriginNodeID = -1;
 	m_DestinationNodeID = -1;
 	m_NodeSizeSP = 0;
@@ -61,24 +61,33 @@ public:
 	int m_OriginNodeID;
 	int m_DestinationNodeID;
 
+	double m_UnitFeet;
 
    COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
 BOOL OnOpenDocument(LPCTSTR lpszPathName);
+
+void ReadLinkCSVFile(CString directory);   // for road network
+void ReadArcCSVFile(CString directory);   // for rail/air network
+
 void ReadHistoricalData(CString directory);
 void ReadSensorLocationData(CString directory);
 void ReadHistoricalDataFormat2(CString directory);
 
-int FindLinkFromSensorLocation(double x, double y, int direction);
+int FindLinkFromSensorLocation(float x, float y, int direction);
 
 
 public:
-std::set<DTANode*>		m_NodeSet;
-std::set<DTALink*>		m_LinkSet;
+std::list<DTANode*>		m_NodeSet;
+std::list<DTALink*>		m_LinkSet;
 int m_AdjLinkSize;
 
-DTANetworkForSP* pNetwork;
+DTANetworkForSP* m_pNetwork;
 int Routing();
+
+bool ImportTimetableData(LPCTSTR lpszFileName);
+bool TimetableOptimization();  //Lagrangian based.
+
 long m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 long m_NodeSizeSP;
 
@@ -90,6 +99,8 @@ std::map<int, int> m_NodeIDtoNameMap;
 std::map<int, int> m_NodeNametoIDMap;
 
 std::vector<DTA_sensor> m_SensorVector;
+
+std::vector<DTA_Train*> m_TrainVector;
 
 CString m_ProjectDirectory;
 
@@ -129,15 +140,15 @@ int** m_ZoneCentroidNodeAry; //centroid node Id per zone
 
 DTAZone* m_ZoneInfo;
 
-std::set<DTAVehicle*>		m_VehicleSet;
+std::list<DTAVehicle*>		m_VehicleSet;
 std::map<int, DTAVehicle*> m_VehicleMap;
 
 
 bool m_BKBitmapLoaded;
 CImage m_BKBitmap;  // background bitmap
-double m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
-double m_ImageXResolution, m_ImageYResolution;
-double m_ImageMoveSize;
+float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
+float m_ImageXResolution, m_ImageYResolution;
+float m_ImageMoveSize;
 
 
 // Operations
@@ -170,6 +181,9 @@ public:
 	afx_msg void OnUpdateShowShowpathmoe(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowmoe();
 	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
+	afx_msg void OnSearchListtrains();
+	afx_msg void OnToolsTimetablingoptimization();
+	afx_msg void OnTimetableImporttimetable();
 };
 
 

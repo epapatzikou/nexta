@@ -44,7 +44,9 @@ public:
 	m_TmRight = m_Range;  // use 5 days as starting show
 	Cur_MOE_type1 = 0;
 	Cur_MOE_type2 = -1;
-	m_bMoveNetwork = false;
+
+	m_bMoveDisplay = false;
+
 	m_bShowHistPattern = false;
 	m_bShowVariability = false;
 
@@ -58,8 +60,9 @@ public:
 
 	double m_K_Jam;
 	double m_Max_Flow;
+
 	CPoint m_last_cpoint;
-	bool m_bMoveNetwork;
+	bool m_bMoveDisplay;
 
    int m_ViewMode;  // time series, QK curve
 

@@ -35,7 +35,7 @@ extern bool g_LinkMOEDlgShowFlag;
 extern std::list<DTALink*>	g_LinkDisplayList;
 extern long g_Simulation_Time_Stamp;
 
-void g_SelectMOEColor(CDC* pDC, int ColorCount);
+void g_SelectColorCode(CDC* pDC, int ColorCount);
 
 COLORREF s_ProjectColor=RGB(0,0,0);
 
@@ -293,7 +293,7 @@ void CDlgMOE::DrawSingleQKPlot(CPaintDC* pDC, CRect PlotRect)
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
 	{
 
-		g_SelectMOEColor(pDC,(*iLink)->m_DisplayLinkID);
+		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
 		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
 		{
@@ -395,7 +395,7 @@ void CDlgMOE::DrawSingleVKPlot(CPaintDC* pDC, CRect PlotRect)
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
 	{
 
-		g_SelectMOEColor(pDC,(*iLink)->m_DisplayLinkID);
+		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
 		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
 		{
@@ -497,7 +497,7 @@ void CDlgMOE::DrawSingleVQPlot(CPaintDC* pDC, CRect PlotRect)
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
 	{
 
-		g_SelectMOEColor(pDC,(*iLink)->m_DisplayLinkID);
+		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
 		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
 		{
@@ -763,7 +763,7 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 		// draw time series
 		bool b_ini_flag = false;
 
-		g_SelectMOEColor(pDC,(*iLink)->m_DisplayLinkID);
+		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
 		// draw legend
 		// PlotRect.right
@@ -1019,7 +1019,8 @@ void CDlgMOE::OnDataExport()
 bool CDlgMOE::ExportDataToCSVFile(char csv_file[_MAX_PATH])
 {
 
-	FILE* st=fopen(csv_file,"w");
+	FILE* st;
+	fopen_s(&st,csv_file,"w");
 
 	if(st!=NULL)
 	{
@@ -1118,7 +1119,7 @@ void CDlgMOE::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	m_last_cpoint = point;
 	AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
-	m_bMoveNetwork = true;
+	m_bMoveDisplay = true;
 
 
 	CDialog::OnLButtonDown(nFlags, point);
@@ -1127,11 +1128,12 @@ void CDlgMOE::OnLButtonDown(UINT nFlags, CPoint point)
 
 void CDlgMOE::OnMouseMove(UINT nFlags, CPoint point)
 {
-	if(m_bMoveNetwork)
+	if(m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
-		m_TmLeft-= OffSet.cx/m_UnitTime;
-		m_TmRight-= OffSet.cx/m_UnitTime;
+		int time_shift = max(1,OffSet.cx/m_UnitTime);
+		m_TmLeft-= time_shift;
+		m_TmRight-= time_shift;
 
 		m_last_cpoint = point;
 
@@ -1143,14 +1145,15 @@ void CDlgMOE::OnMouseMove(UINT nFlags, CPoint point)
 
 void CDlgMOE::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if(m_bMoveNetwork)
+	if(m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
-		m_TmLeft-= OffSet.cx/m_UnitTime;
-		m_TmRight-= OffSet.cx/m_UnitTime;
+		int time_shift = max(1,OffSet.cx/m_UnitTime);
+		m_TmLeft-= time_shift;
+		m_TmRight-= time_shift;
 
 		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
-		m_bMoveNetwork = false;
+		m_bMoveDisplay = false;
 		Invalidate();
 	}
 
@@ -1169,7 +1172,7 @@ void CDlgMOE::OnRButtonUp(UINT nFlags, CPoint point)
 BOOL CDlgMOE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 
-	int CurrentTime = pt.x - (60)/m_UnitTime + m_TmLeft;
+	int CurrentTime = (int)((pt.x - 60.0f)/m_UnitTime + m_TmLeft);
 
 	if(zDelta <	 0)
 	{

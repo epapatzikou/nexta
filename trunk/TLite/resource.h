@@ -13,12 +13,14 @@
 #define IDD_DIALOG_FIND_LINK            138
 #define IDD_DIALOG_PATHMOE              139
 #define IDR_MENU_PATHMOE                140
+#define IDD_DIALOG_Train                140
 #define IDB_PATH_ICON                   142
 #define IDB_PATH_CHECK                  145
 #define IDR_MENU2                       146
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_PATH_LIST_CONTROL           1010
+#define IDC_TRAIN_LIST_CONTROL          1013
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -107,14 +109,26 @@
 #define ID_3DDISPLAY_TIME               32868
 #define ID_3DDISPLAY_ANIMATION          32869
 #define ID_3DDISPLAY_BASICVIEW          32870
+#define ID_SHOW_SHOWNODENUMBER          32871
+#define ID_BUTTON32872                  32872
+#define ID_Create1WayLink               32873
+#define ID_Create2WayLinks              32874
+#define ID_SEARCH_LISTTRAINS            32875
+#define ID_SHOW_TIMETABLE               32876
+#define ID_SHOW_SHOW                    32877
+#define ID_TOOLS_TIMETABLINGOPTIMIZATION 32878
+#define ID_TIMETABLE_RESOURCEPRICE      32879
+#define ID_TIMETABLE_NODECOSTLABEL      32880
+#define ID_TIMETABLE_EXPORTTIMETABLE    32881
+#define ID_TIMETABLE_IMPORTTIMETABLE    32882
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        147
-#define _APS_NEXT_COMMAND_VALUE         32871
-#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_COMMAND_VALUE         32883
+#define _APS_NEXT_CONTROL_VALUE         1014
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

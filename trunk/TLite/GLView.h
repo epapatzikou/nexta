@@ -148,7 +148,7 @@ public:
 
 	void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v )
 {
-	int i;
+/*	int i;
 	float f, p, q, t;
 	if( s == 0 ) {
 		// achromatic (grey)
@@ -193,13 +193,14 @@ public:
 			*b = q;
 			break;
 	}
-}
+*/
 
-	void GetColorFromPower(double power)
+}
+	void GetColorFromPower(float power)
 {
-    float H = power * 0.4; // Hue (note 0.4 = Green
-    float S = 0.9; // Saturation
-    float B = 0.9; // Brightness
+    float H = power * 0.4f; // Hue (note 0.4 = Green
+    float S = 0.9f; // Saturation
+    float B = 0.9f; // Brightness
 
 	float Red,Green,Blue;
 

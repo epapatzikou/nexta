@@ -211,6 +211,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgTrainInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\GLView.cpp"
 				>
 			</File>
@@ -259,6 +263,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\TSView.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Utility.cpp"
 				>
 			</File>
@@ -286,6 +294,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgPathMOE.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgTrainInfo.h"
 				>
 			</File>
 			<File
@@ -317,6 +329,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Timetable.h"
+				>
+			</File>
+			<File
 				RelativePath=".\TLite.h"
 				>
 			</File>
@@ -326,6 +342,10 @@
 			</File>
 			<File
 				RelativePath=".\TLiteView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TSView.h"
 				>
 			</File>
 			<File

@@ -324,7 +324,7 @@ void CGLView::DrawAllObjects()
 	glBegin(GL_LINES);
 	glColor3f(0.9f,0.9f,0.9f);
 
-	std::set<DTALink*>::iterator iLink;
+	std::list<DTALink*>::iterator iLink;
  		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 		float fromX = NXtoSX_org((*iLink)->m_FromPoint.x);
@@ -343,8 +343,6 @@ void CGLView::DrawAllObjects()
 
 	if(m_ShowAllPaths)
 	{
-
-
 
 	unsigned int iPath;
 
@@ -374,7 +372,7 @@ void CGLView::DrawAllObjects()
 
 		float TimeZFrom = CurrentTime*TimeStep;
 
-		CurrentTime += pLink->ObtainHistTravelTime(CurrentTime);
+		CurrentTime += pLink->ObtainHistTravelTime((int)(CurrentTime));
 
 		float TimeZTo = CurrentTime*TimeStep;
 
@@ -387,17 +385,65 @@ void CGLView::DrawAllObjects()
 	}
 
 	}
-	glEnd();
+
+
+//draw time-dependent train path
+
+	if(m_ShowAllPaths)
+	{
+	float TimeStep = 2.0f;
+
+	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
+	{
+
+		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+
+		SelectNumuericalColor(pTrain->m_TrainType-1);
+
+		for(int n = 1; n< pTrain->m_NodeSize; n++)
+		{
+			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+
+			ASSERT(pLink!=NULL);
+
+		float fromX = NXtoSX_org(pLink->m_FromPoint.x);
+		float fromY = NYtoSY_org(pLink->m_FromPoint.y);
+		float toX = NXtoSX_org(pLink->m_ToPoint.x);
+		float toY = NYtoSY_org(pLink->m_ToPoint.y);
+
+		float TimeZFrom = pTrain->m_aryTN[n-1].NodeTimestamp*TimeStep;
+		float TimeZTo = pTrain->m_aryTN[n].NodeTimestamp*TimeStep;
+
+
+		glVertex3f(fromX,fromY,TimeZFrom);
+		glVertex3f(toX,toY,TimeZTo);
+
+
+		}
+		
+	
+	}
+	}
+		glEnd();
 
 		//show travel time variability
 	if(m_ShowSpeedVariability)
 	{
 	glBegin(GL_QUADS);
 
+	float MaxVariability = 0;
 
 
-	std::set<DTALink*>::iterator iLink;
- 		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	std::list<DTALink*>::iterator iLink;
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+
+		if(MaxVariability < ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed) )
+			MaxVariability = (*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed;
+
+	}
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 		float fromX = NXtoSX_org((*iLink)->m_FromPoint.x);
 		float fromY = NYtoSY_org((*iLink)->m_FromPoint.y);
@@ -409,16 +455,19 @@ void CGLView::DrawAllObjects()
 		// calculate travel time index 
 //		float ZBottom =  (*iLink)->m_SpeedLimit /(*iLink)->m_MaxSpeed *5;
 
-		float VolumeRatio = (*iLink)->m_MeanVolume/2000;
+		float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
 
-		if(VolumeRatio>=1) VolumeRatio=1;
-		if(VolumeRatio<=0) VolumeRatio=0;
+		if(VariabilityRatio>=1) VariabilityRatio=1;
+		if(VariabilityRatio<=0) VariabilityRatio=0;
 
 //		GetColorFromPower(VolumeRatio);
-		GetRGBColorFromPower(VolumeRatio);
+		GetRGBColorFromPower(VariabilityRatio);
 
 		float ZBottom =  5;
-		float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MinSpeed *2;
+//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
+
+		float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
+
 
 		if(ZTop<=5)
 			ZTop = 5;

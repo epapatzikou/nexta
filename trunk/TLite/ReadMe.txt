@@ -1,3 +1,29 @@
+To Do List.
+
+// to do: delete m_TrainVector; m_node, link set;
+memory clean up
+
+1. add link directly
+2. show distance grid
+3. save functions
+4. show node numbers in the center of node
+5. show link arrow
+
+
+1. read train information,+
+2. list train info +
+3. display train timetable -
+
+5. time-dependent shortest path to calculate timetable given resource price vector
+6. calculate resource price vector for additional constraints
+7. performance display
+8. 3D visutalization
+
+
+1. In 3D view, change height as volume, color as reliability measurement
+2. Add node, link and vehicle list
+
+
 ================================================================================
     MICROSOFT FOUNDATION CLASS LIBRARY : TLite Project Overview
 ===============================================================================

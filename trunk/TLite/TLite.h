@@ -43,6 +43,7 @@ public:
 
 
 	CMultiDocTemplate* m_pTemplateGLView;
+	CMultiDocTemplate* m_pTemplateTimeTableView;
 // Overrides
 public:
 	virtual BOOL InitInstance();

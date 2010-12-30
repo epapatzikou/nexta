@@ -16,16 +16,16 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+extern long g_Simulation_Time_Stamp;
+extern CPen s_PenSimulationClock;
+extern void g_SelectColorCode(CDC* pDC, int ColorCount);
+
+
 CPen ThickPen(PS_SOLID,3,RGB(0,255,0));
 CPen DoublePen(PS_SOLID,2,RGB(0,255,0));
 
-CPen HighSpeedPen(PS_SOLID,2,RGB(255,0,0));
-CPen MediumSpeedPen(PS_SOLID,2,RGB(0,0,0));
 
-CPen HighSpeedPen_Scenario(PS_DASH,0,RGB(255,0,0));
-CPen MediumSpeedPen_Scenario(PS_DASH,0,RGB(0,0,0));
-
-CPen NormalPen(PS_SOLID,0,RGB(0,255,0));
+CPen NormalPen(PS_SOLID,1,RGB(0,255,0));
 
 CPen Normal2Pen(PS_SOLID,2,RGB(0,0,255));
 CPen BlackPen(PS_SOLID,1,RGB(0,0,0));
@@ -35,10 +35,6 @@ CPen DashPen(PS_DASH,0,RGB(0,255,0));
 CPen DoubleDashPen(PS_DASH,2,RGB(0,255,0));
 CPen SelectPen(PS_DASH,2,RGB(255,0,0));
 
-
-std::set<CTimeSpaceView*> g_set_TSView;
-extern void g_UpdateAllViews();
-
 /////////////////////////////////////////////////////////////////////////////
 // CTimeSpaceView
 
@@ -46,6 +42,16 @@ IMPLEMENT_DYNCREATE(CTimeSpaceView, CView)
 
 BEGIN_MESSAGE_MAP(CTimeSpaceView, CView)
 	//{{AFX_MSG_MAP(CTimeSpaceView)
+	ON_WM_MOUSEWHEEL()
+	ON_WM_RBUTTONDOWN()
+	ON_COMMAND(ID_TIMETABLE_RESOURCEPRICE, &CTimeSpaceView::OnTimetableResourceprice)
+	ON_UPDATE_COMMAND_UI(ID_TIMETABLE_RESOURCEPRICE, &CTimeSpaceView::OnUpdateTimetableResourceprice)
+	ON_COMMAND(ID_TIMETABLE_NODECOSTLABEL, &CTimeSpaceView::OnTimetableNodecostlabel)
+	ON_UPDATE_COMMAND_UI(ID_TIMETABLE_NODECOSTLABEL, &CTimeSpaceView::OnUpdateTimetableNodecostlabel)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONUP()
+	ON_COMMAND(ID_TIMETABLE_EXPORTTIMETABLE, &CTimeSpaceView::OnTimetableExporttimetable)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,14 +59,20 @@ END_MESSAGE_MAP()
 CTimeSpaceView::CTimeSpaceView()
 {
 	m_bShowTimetable = true;
+
 	m_bShowSlackTime = true;
 
-   m_TmLeft=0;
-   m_TmRight=60 * 8;
-   m_Left=20;
-   m_Right=20;
-   m_Top=20;
-   m_Bottom=20;
+	Cur_MOE_type1 = 0; 
+	Cur_MOE_type2 = -1;
+	m_TmLeft = 0;
+	m_TmRight = 1400; 
+	m_YLowerBound = 0;
+
+	m_bShowResourcePrice = false;
+	m_bShowNodeCostLabel = false;
+
+	m_bMoveDisplay = false;
+
 
 }
 
@@ -74,135 +86,52 @@ BOOL CTimeSpaceView::PreCreateWindow(CREATESTRUCT& cs)
 	return CView::PreCreateWindow(cs);
 }
 
+CTLiteDoc* CTimeSpaceView::GetTLDocument() 
+{ return reinterpret_cast<CTLiteDoc*>(m_pDocument); }
+
 /////////////////////////////////////////////////////////////////////////////
 // CTimeSpaceView drawing
 
 void CTimeSpaceView::OnDraw(CDC* pDC)
 {
-	CTLiteDoc* pDoc = GetDocument();
+	CRect rectClient(0,0,0,0);
+	GetClientRect(&rectClient);
 
-	ASSERT_VALID(pDoc);
+	CRect PlotRect;
+	GetClientRect(PlotRect);
 
-	// draw select path
-	m_SegmentVector.clear();
-	if(g_PathDisplayList.size()>=g_SelectPathNo && g_SelectPathNo!=-1)
-	{
+	PlotRect.top += 100;
+	PlotRect.bottom -= 100;
+	PlotRect.left += 60;
+	PlotRect.right -= 100;
 
-	m_TotalDistance = 0;
+	DrawObjects(pDC,Cur_MOE_type1, PlotRect);
 
-	unsigned int i;
-	for (i=0 ; i<g_PathDisplayList[g_SelectPathNo]->m_LinkSize; i++)
-	{
-		CTSSegment segment;
+	CDC memDC;
+	memDC.CreateCompatibleDC(pDC);
 
-		DTALink* pLink = pDoc->m_LinkMap[g_PathDisplayList[g_SelectPathNo]->m_LinkVector[i]];
-		if(pLink!=NULL)
-		{
-		m_TotalDistance+=pLink->m_Length ;
-		segment.Distance = m_TotalDistance;
-		m_SegmentVector.push_back(segment);
-		}
-	}
-   
-  pViewDC = pDC;
-   CBrush brush;
-   if (!brush.CreateSolidBrush(RGB(255,255,255)))
-      return;
+	CBitmap bmp;
+	bmp.CreateCompatibleBitmap(pDC, rectClient.Width(),
+		rectClient.Height());
+	memDC.SelectObject(&bmp);
 
-   CRect drawrect;
-   GetClientRect(drawrect);
 
-   brush.UnrealizeObject();
-   pDC->FillRect(drawrect, &brush);
+	// Custom draw on top of memDC
+	CBrush brush;
+	if (!brush.CreateSolidBrush(RGB(255,255,255)))
+		return;
+	brush.UnrealizeObject();
+	memDC.FillRect(rectClient, &brush);
 
-   drawrect.NormalizeRect();
+	DrawObjects(&memDC,Cur_MOE_type1,PlotRect);
 
-   double m_SizeX= drawrect.Width () - m_Left -m_Right;
-   double m_SizeY= drawrect.Height () - m_Top -m_Bottom;
+	pDC->BitBlt(0, 0, rectClient.Width(), rectClient.Height(), &memDC, 0,
+		0, SRCCOPY);
 
-   m_TotalDistance = m_SegmentVector[m_SegmentVector.size()-1].Distance;
+	ReleaseDC(pDC);
 
-   m_XScale = m_SizeX *1.0 / (m_TmRight - m_TmLeft)  ;
-   m_YScale = m_SizeY *1.0 / m_TotalDistance  ;
+	// TODO: add draw code for native data here
 
-   // Draw Framework for Time Table
-   pDC->SelectObject (&ThickPen);
-
-   Draw(0,m_TmLeft,0,m_TmRight);
-   Draw(m_SegmentVector.size(),m_TmLeft,m_SegmentVector.size(),m_TmRight);
-
-   Draw(0,m_TmLeft,m_SegmentVector.size(),m_TmLeft);
-   Draw(0,m_TmRight,m_SegmentVector.size(),m_TmRight);
-
-   // Draw station line
-   pDC->SelectObject (&DoublePen);
-   for(i=0; i< m_SegmentVector.size()+1;i++)
-      Draw(i,m_TmLeft,i,m_TmRight);
-
-   // Draw time  line per two minutes
-   pDC->SelectObject (&NormalPen);
-
-   // Draw time  line per ten minutes
-   if(m_GridFlag <= 1)
-   {
-      pDC->SelectObject (&DoublePen);
-      for(i=m_TmLeft; i<m_TmRight;i+=10)
-         Draw(0,i,m_SegmentVector.size(),i);
-   }
-
-   if(m_GridFlag <= 2){
-      for(i=m_TmLeft; i<m_TmRight;i+=60)
-      {
-         pDC->SelectObject (&Normal2Pen);
-         Draw(0,i,m_SegmentVector.size(),i);
-      }
-   }
-
-/*
-   if(m_bShowTimetable)
-   {
-      // Draw Train timetable
-      for(i=0;i<  pDoc->m_TrainSize; i++)
-         DrawTrain(i);
-   
-   }
-	  
-/*
-   // Draw random scenario
-
-	  if(g_SelectedSenario == 1)
-	  {
-		  int s;
-		  for(s=0; s< g_OptScenarioSize ; s++)
-		  DrawSchedule(s);
-	  }
-
-	  if(g_SelectedSenario > 1)
-	  {
-	  DrawSchedule(g_SelectedSenario-2);  // starting from 0
-	  }
-
-	  */
-	}
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// CTimeSpaceView printing
-
-BOOL CTimeSpaceView::OnPreparePrinting(CPrintInfo* pInfo)
-{
-	// default preparation
-	return DoPreparePrinting(pInfo);
-}
-
-void CTimeSpaceView::OnBeginPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
-{
-	// TODO: add extra initialization before printing
-}
-
-void CTimeSpaceView::OnEndPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
-{
-	// TODO: add cleanup after printing
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -219,130 +148,430 @@ void CTimeSpaceView::Dump(CDumpContext& dc) const
 	CView::Dump(dc);
 }
 
-CTLiteDoc* CTimeSpaceView::GetDocument() // non-debug version is inline
-{
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CTLiteDoc)));
-	return (CTLiteDoc*)m_pDocument;
-}
+
 #endif //_DEBUG
 
 /////////////////////////////////////////////////////////////////////////////
 // CTimeSpaceView message handlers
 
-void CTimeSpaceView::Draw(int Sta0, int Time0, int Sta1, int Time1,bool bText, int Value)
+void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 {
-	CTLiteDoc* pDoc = GetDocument();
+	if(m_TmLeft<0)
+		m_TmLeft = 0;
 
-   int x0,y0,x1,y1;
-   x0 = m_Left + int ((Time0 - m_TmLeft) * m_XScale);
-   x1 = m_Left + int ((Time1 - m_TmLeft) * m_XScale);
+	if(m_TmRight > 1400)
+		m_TmRight = 1400;
 
-   y0 = int (( m_TotalDistance - m_SegmentVector[Sta0-1].Distance  )* m_YScale ) + m_Top;
-   y1 = int (( m_TotalDistance - m_SegmentVector[Sta1].Distance )* m_YScale ) + m_Top;
+	CPen DataPen(PS_SOLID,1,RGB(0,0,0));
 
-   pViewDC->MoveTo (x0,y0);
-   pViewDC->LineTo (x1,y1);
+	CPen TimePen(PS_DOT,1,RGB(0,255,0));
 
-   if(bText && Value > 0)
-   {
+	CString str_MOE;
 
-	CString str;
-	str.Format("%d", Value);
+	str_MOE.Format ("Time-Space Graph");
 
-	pViewDC->TextOut((x0+x1)/2, (y0+y1)/2,str );
+	if(m_bShowResourcePrice)
+		str_MOE+=" -- with Resource Price";
 
-      
-   }
+	if(m_bShowNodeCostLabel)
+		str_MOE+=" -- with Node Cost Label";
+
+	pDC->SetBkMode(TRANSPARENT);
+	pDC->SelectObject(&NormalPen);
+
+
+	pDC->TextOut(PlotRect.right/2-100,PlotRect.top-20,str_MOE);
+
+	// step 1: calculate m_YUpperBound;
+	m_YUpperBound = 0;
+
+	int i;
+	std::list<DTALink*>::iterator iLink;
+	CTLiteDoc* pDoc = GetTLDocument();
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_FromNodeY = m_YUpperBound;
+		m_YUpperBound+=(*iLink)->m_Length ;
+		(*iLink)->m_ToNodeY = m_YUpperBound;
+
+	}
+
+	// step 2: calculate m_UnitDistance;
+	// data unit
+	m_UnitDistance = 1;
+	if((m_YUpperBound - m_YLowerBound)>0)
+		m_UnitDistance = (float)(PlotRect.bottom - PlotRect.top)/(m_YUpperBound - m_YLowerBound);
+
+
+	// step 3: time interval
+	int TimeXPosition;
+
+	int TimeInterval = 5;
+
+	if(m_TmRight - m_TmLeft >=1440*7)
+		TimeInterval = 1440;
+	else if(m_TmRight - m_TmLeft >=1440*4)
+		TimeInterval = 720;
+	else if(m_TmRight - m_TmLeft >=2800)
+		TimeInterval = 360;
+	else if(m_TmRight - m_TmLeft >=1400)
+		TimeInterval = 120;
+	else if(m_TmRight - m_TmLeft >=400)
+		TimeInterval = 60;
+	else if(m_TmRight - m_TmLeft >=120)
+		TimeInterval = 30;
+	else 
+		TimeInterval = 10;
+
+	// time unit
+	m_UnitTime = 1;
+	if((m_TmRight - m_TmLeft)>0)
+		m_UnitTime = (float)(PlotRect.right - PlotRect.left)/(m_TmRight - m_TmLeft);
+
+	// step 4: draw time axis
+
+	pDC->SelectObject(&TimePen);
+
+	char buff[20];
+	for(i=m_TmLeft;i<=m_TmRight;i+=TimeInterval)
+	{
+		TimeXPosition=(int)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
+
+		if(i>= m_TmLeft)
+		{
+			pDC->MoveTo(TimeXPosition,PlotRect.bottom+2);
+			pDC->LineTo(TimeXPosition,PlotRect.top);
+
+			if(i/2 <10)
+				TimeXPosition-=5;
+			else
+				TimeXPosition-=3;
+
+			if(TimeInterval < 60)
+			{
+				int hour, min;
+				hour = i/60;
+				min =  i- hour*60;
+				wsprintf(buff,"%2d:%02d",hour, min);
+			}
+			else
+			{
+				int min_in_a_day = i-int(i/1440*1440);
+
+				wsprintf(buff,"%dh",min_in_a_day/60 );
+
+			}
+			pDC->TextOut(TimeXPosition,PlotRect.bottom+3,buff);
+		}
+	}
+
+	// 	step 4: draw time axis
+
+	pDC->SelectObject(&NormalPen);
+
+	pDC->MoveTo(PlotRect.left, PlotRect.top);
+	pDC->LineTo(PlotRect.left,PlotRect.bottom);
+
+	pDC->MoveTo(PlotRect.right, PlotRect.top);
+	pDC->LineTo(PlotRect.right,PlotRect.bottom);
+
+
+	int YPrev = 2000;
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+
+		int YFrom = PlotRect.bottom - (int)(((*iLink)->m_FromNodeY*m_UnitDistance)+0.50);
+		int YTo= PlotRect.bottom - (int)(((*iLink)->m_ToNodeY*m_UnitDistance)+0.50);
+
+
+		pDC->MoveTo(PlotRect.left, YFrom);
+		pDC->LineTo(PlotRect.right,YFrom);
+
+		pDC->MoveTo(PlotRect.left, YTo);
+		pDC->LineTo(PlotRect.right,YTo);
+
+		if(YPrev == 2000)  // first from node
+		{
+			wsprintf(buff,"%d",(*iLink)->m_FromNodeNumber );
+			pDC->TextOut(PlotRect.left-40,YFrom-5,buff);
+			YPrev = PlotRect.bottom;
+		}
+
+		//		if(YTo < YPrev-10 && YPrev >= PlotRect.bottom)
+		{
+			wsprintf(buff,"%d",(*iLink)->m_ToNodeNumber );
+			pDC->TextOut(PlotRect.left-40,YTo-5,buff);
+			YPrev = YTo;
+		}
+
+	}
+
+	// draw trains
+	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
+	{
+
+		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+
+		g_SelectColorCode(pDC, pTrain->m_TrainType-1);
+
+
+		for(int n = 1; n< pTrain->m_NodeSize; n++)
+		{
+			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+
+			ASSERT(pLink!=NULL);
+			int YFrom = PlotRect.bottom - (int)(pLink->m_FromNodeY*m_UnitDistance+0.50);
+			int YTo= PlotRect.bottom - (int)(pLink->m_ToNodeY*m_UnitDistance+0.50);
+
+			int TimeXFrom=(int)(PlotRect.left+(pTrain->m_aryTN[n-1].NodeTimestamp-m_TmLeft)*m_UnitTime);
+			int TimeXTo=(int)(PlotRect.left+(pTrain->m_aryTN[n].NodeTimestamp -m_TmLeft)*m_UnitTime);
+
+			pDC->MoveTo(TimeXFrom, YFrom);
+			pDC->LineTo(TimeXTo,YTo);
+
+			if(n==1)
+			{
+				sprintf_s(buff, "%d",pTrain->m_TrainID);
+				pDC->TextOut(TimeXFrom,YFrom-5,buff);
+
+			}
+
+		}
+
+	}
+
+	// draw resourece price
+
+		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+		{
+
+			int YFrom = PlotRect.bottom - (int)(((*iLink)->m_FromNodeY*m_UnitDistance)+0.50);
+			int YTo= PlotRect.bottom - (int)(((*iLink)->m_ToNodeY*m_UnitDistance)+0.50);
+
+			for(int t=m_TmLeft;t<=m_TmRight;t++)
+			{
+				int TimeXPosition=(int)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
+
+				if(m_bShowResourcePrice  && (*iLink)->m_ResourceAry!=NULL 
+					&& (*iLink)->m_ResourceAry [t].Price > 0 && t%2==0)  // t%2==0 to reduce display overlapping
+				{
+					sprintf_s(buff, "%3.1f",(*iLink)->m_ResourceAry [t].Price);
+					pDC->TextOut(TimeXPosition,int((YFrom+YTo)/2.0f-5),buff);
+
+				}
+
+				if(m_bShowNodeCostLabel && pDoc->m_pNetwork !=NULL)
+				{
+					float NodeCostLabel = pDoc->m_pNetwork->TD_LabelCostAry[(*iLink)->m_ToNodeID][t];
+
+					if(NodeCostLabel >=0 && NodeCostLabel<MAX_SPLABEL-1)
+					{
+					sprintf_s(buff, "%3.1f",NodeCostLabel);
+					pDC->TextOut(TimeXPosition,YTo,buff);
+					}
+
+				}
+
+			}
+
+		}
+}
+void CTimeSpaceView::RefreshWindow()
+{
+	OnUpdate(0, 0, 0);
 
 }
 
-void CTimeSpaceView::DrawTrain(int TrainNo)
-{
 
-	CTLiteDoc* pDoc = GetDocument();
-	   int i;
- /*   
-    if(pDoc->m_Trains[TrainNo].TrainType == 0)
+BOOL CTimeSpaceView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	int CurrentTime = int((pt.x - 60.0f)/m_UnitTime + m_TmLeft);
+
+	int LeftShiftSize = max(5,int(0.2*(CurrentTime-m_TmLeft))/10*10);
+	int RightShiftSize = max(5,int(0.2*(m_TmRight-CurrentTime))/10*10);
+
+	if(zDelta <	 0)
 	{
-	    pViewDC->SelectObject (&HighSpeedPen);
-		pViewDC->SetTextColor(RGB(255,0,0));
+		m_TmLeft-=LeftShiftSize;
+		m_TmRight+=RightShiftSize;
 	}
 	else
 	{
-	   pViewDC->SelectObject (&MediumSpeedPen);
-       pViewDC->SetTextColor(RGB(0,0,0));
+		m_TmLeft+=LeftShiftSize;
+		m_TmRight-=RightShiftSize;
 	}
 
- //   if(g_SelectTrainNo == TrainNo)
- //        pViewDC->SelectObject (&SelectPen);
+	if(m_TmLeft<0)  m_TmLeft = 0;
+	if(m_TmRight>1440) m_TmRight = 1440;
 
-   //Loop for each segment
-   for(i = 0;i< m_SegmentVector.size(); i++)
-   {
-	  int SlackTime = pDoc->m_Trains[TrainNo].Table[i][1] - pDoc->m_Trains[TrainNo].Table[i][0] -  m_SegmentVector[i].RunningTime[pDoc->m_Trains[TrainNo].TrainType];
-
-      Draw(i,pDoc->m_Trains[TrainNo].Table[i][0],i+1,pDoc->m_Trains[TrainNo].Table[i][1], m_bShowSlackTime, SlackTime);
-   }
-*/
-}
-
-
-
-void CTimeSpaceView::DrawSchedule(int ScenarioNo)
-{
-	CTLiteDoc* pDoc = GetDocument();
-/*
-  int j;
-  int i;
-      for(j=0;j< pDoc->m_TrainSize; j++)
-      {
-		if(pDoc->m_Trains[j].TrainType == 0)
-			pViewDC->SelectObject (&HighSpeedPen_Scenario);
-		else
-		   pViewDC->SelectObject (&MediumSpeedPen_Scenario);
-
-		for(i = 0;i< m_SegmentVector.size(); i++)
-		   {
-			  Draw(i,pDoc->m_Trains[j].Schedule[ScenarioNo][i][0],i+1,pDoc->m_Trains[j].Schedule[ScenarioNo][i][1]);
-		   }
-	  
-	  }
-
-*/
-}
-
-void CTimeSpaceView::RefreshWindow()
-{
-   OnUpdate(0, 0, 0);
+	Invalidate();
+	return true;
 
 }
 
-void CTimeSpaceView::OnShowTimetable() 
+void CTimeSpaceView::OnRButtonDown(UINT nFlags, CPoint point)
 {
 
-   m_bShowTimetable = !m_bShowTimetable;
-	
-   OnUpdate(0, 0, 0);
-	
+	int min_timestamp = 1440;
+	int max_timestamp = 0;
+
+	CTLiteDoc* pDoc = GetTLDocument();
+	// narrow the range for display
+
+	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
+	{
+
+		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+
+		for(int n = 0; n< pTrain->m_NodeSize; n++)
+		{
+
+			if(min_timestamp > pTrain->m_aryTN[n].NodeTimestamp)
+				min_timestamp = pTrain->m_aryTN[n].NodeTimestamp;
+				
+			if(max_timestamp < pTrain->m_aryTN[n].NodeTimestamp)
+				max_timestamp = pTrain->m_aryTN[n].NodeTimestamp;
+
+		}
+	}
+
+	m_TmLeft = min_timestamp;
+	m_TmRight = max_timestamp;
+
+	Invalidate();
+	CView::OnRButtonDown(nFlags, point);
 }
 
-void CTimeSpaceView::OnUpdateShowTimetable(CCmdUI* pCmdUI) 
+void CTimeSpaceView::OnTimetableResourceprice()
 {
+	m_bShowResourcePrice = !m_bShowResourcePrice;
+	Invalidate();
 
-   pCmdUI->SetCheck(m_bShowTimetable ? 1 : 0);
-	
-	
 }
 
-void CTimeSpaceView::OnShowSlacktime() 
+void CTimeSpaceView::OnUpdateTimetableResourceprice(CCmdUI *pCmdUI)
 {
-	m_bShowSlackTime = !m_bShowSlackTime;
-    OnUpdate(0, 0, 0);
-	
+	pCmdUI->SetCheck(m_bShowResourcePrice);
 }
 
-void CTimeSpaceView::OnUpdateShowSlacktime(CCmdUI* pCmdUI) 
+void CTimeSpaceView::OnTimetableNodecostlabel()
 {
-   pCmdUI->SetCheck(m_bShowSlackTime ? 1 : 0);
-	
+	m_bShowNodeCostLabel = ! m_bShowNodeCostLabel;
+	Invalidate();
+
+
+}
+
+void CTimeSpaceView::OnUpdateTimetableNodecostlabel(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowNodeCostLabel);
+}
+
+void CTimeSpaceView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	m_last_cpoint = point;
+	AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
+	m_bMoveDisplay = true;
+
+	CView::OnLButtonDown(nFlags, point);
+}
+
+void CTimeSpaceView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if(m_bMoveDisplay)
+	{
+		CSize OffSet = point - m_last_cpoint;
+		int time_shift = max(1,OffSet.cx/m_UnitTime);
+		m_TmLeft-= time_shift;
+		m_TmRight-= time_shift;
+
+		m_last_cpoint = point;
+
+		Invalidate();
+	}
+	CView::OnMouseMove(nFlags, point);
+}
+
+void CTimeSpaceView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if(m_bMoveDisplay)
+	{
+		CSize OffSet = point - m_last_cpoint;
+		int time_shift = max(1,OffSet.cx/m_UnitTime);
+		m_TmLeft-= time_shift;
+		m_TmRight-= time_shift;
+
+		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+		m_bMoveDisplay = false;
+		Invalidate();
+	}
+	CView::OnLButtonUp(nFlags, point);
+}
+
+void CTimeSpaceView::OnTimetableExporttimetable()
+{
+	CString str;
+	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"(*.csv)|*.csv||", NULL);
+	if(dlg.DoModal() == IDOK)
+	{
+		char fname[_MAX_PATH];
+		wsprintf(fname,"%s", dlg.GetPathName());
+		CWaitCursor wait;
+
+		if(!ExportTimetableDataToCSVFile(fname))
+		{
+			str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
+			AfxMessageBox(str);
+		}
+	}
+
+}
+bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
+{
+
+	FILE* st;
+	fopen_s(&st,csv_file,"w");
+
+	if(st!=NULL)
+	{
+		fprintf(st, "train ID,train type,origin,destination,departure time,# of nodes,preferred arrival time,actual trip time,,arc processing time,arc waiting time,timestamp_X,node sequence_Y\n");
+
+		CTLiteDoc* pDoc = GetTLDocument();
+		// narrow the range for display
+		
+	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
+	{
+
+		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+
+		pTrain->m_ActualTripTime = pTrain->m_aryTN[pTrain->m_NodeSize -1].NodeTimestamp - pTrain->m_aryTN[0].NodeTimestamp;
+
+		fprintf(st,"%d,%d,%d,%d,%d,%d,%d,%d\n", pTrain->m_TrainID , pTrain->m_TrainType ,pTrain->m_OriginNodeID ,pTrain->m_DestinationNodeID ,pTrain->m_DepartureTime ,pTrain->m_NodeSize,pTrain->m_PreferredArrivalTime,pTrain->m_ActualTripTime);
+
+		for(int n = 0; n< pTrain->m_NodeSize; n++)
+		{
+			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+
+			if(n==0)
+			{
+			pTrain->m_aryTN[n].TaskProcessingTime = pTrain->m_DepartureTime;
+			pTrain->m_aryTN[n].TaskScheduleWaitingTime = pTrain->m_aryTN[n].NodeTimestamp - pTrain->m_DepartureTime;
+
+			}else
+			{
+			pTrain->m_aryTN[n].TaskProcessingTime = pLink->m_RuningTimeMap [pTrain->m_TrainType];
+			pTrain->m_aryTN[n].TaskScheduleWaitingTime = pTrain->m_aryTN[n].NodeTimestamp - pTrain->m_aryTN[n-1].NodeTimestamp - pTrain->m_aryTN[n].TaskProcessingTime ;
+			}
+
+		fprintf(st,",,,,,,,,,%d,%d,%d,%d\n", pTrain->m_aryTN[n].TaskProcessingTime,pTrain->m_aryTN[n].TaskScheduleWaitingTime ,pTrain->m_aryTN[n].NodeTimestamp , pTrain->m_aryTN[n].NodeID );
+		}
+	}
+
+		fclose(st);
+		return true;
+	}
+	return false;
 }

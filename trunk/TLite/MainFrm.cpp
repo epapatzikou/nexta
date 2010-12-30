@@ -5,6 +5,7 @@
 #include "TLite.h"
 #include "TLiteDoc.h"
 #include "GLView.h"
+#include "TSView.h"
 
 
 #include "MainFrm.h"
@@ -20,6 +21,7 @@ IMPLEMENT_DYNAMIC(CMainFrame, CMDIFrameWnd)
 BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_WINDOW_NEW3DVIEW, &CMainFrame::OnWindowNew3dview)
+	ON_COMMAND(ID_SHOW_TIMETABLE, &CMainFrame::OnShowTimetable)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -142,6 +144,32 @@ CMDIChildWnd* pActiveChild = MDIGetActive();
  
     // Otherwise, we have a new frame!
     CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
+    ASSERT_VALID(pTemplate);
+    CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
+    if (pFrame == NULL)
+   {
+        TRACE("Warning:  failed to create new frame\n");
+        AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+        return; // Command failed
+    }
+ 
+
+
+    pTemplate->InitialUpdateFrame(pFrame, pDocument);
+}
+
+void CMainFrame::OnShowTimetable()
+{
+CMDIChildWnd* pActiveChild = MDIGetActive();
+    CDocument* pDocument;
+    if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+        TRACE("Warning:  No active document for WindowNew command\n");
+        AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+        return; // Command failed
+    }
+ 
+    // Otherwise, we have a new frame!
+    CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateTimeTableView;
     ASSERT_VALID(pTemplate);
     CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
     if (pFrame == NULL)

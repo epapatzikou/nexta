@@ -44,18 +44,18 @@ void g_ProgramStop()
 	exit(0);
 };
 
-double g_P2P_Distance(GDPoint p1, GDPoint p2)
+float g_P2P_Distance(GDPoint p1, GDPoint p2)
 {
-return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
+return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5f);
 }
 
-double g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
+float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
 {
-    double U;
+    float U;
     GDPoint Intersection;
 
 
-    double  LineLength = g_P2P_Distance( FromPt, ToPt );
+    float  LineLength = g_P2P_Distance( FromPt, ToPt );
  
     U = (  (pt.x - ToPt.x) * (FromPt.x - ToPt.x ) + ( pt.y - ToPt.y ) * ( FromPt.y - ToPt.y ) ) /(LineLength * LineLength );
  
@@ -202,7 +202,7 @@ float g_read_float(FILE *f)
 
 }
 
-void ReadDSPNetworkData(char fname[_MAX_PATH])
+void ReadDSm_pNetworkData(char fname[_MAX_PATH])
 {
 /*   FILE* st = NULL;
    fopen_s(&st,fname,"r");
@@ -364,7 +364,7 @@ void ReadDSPVehicleData(char fname[_MAX_PATH])
          g_VehicleSet.insert(pVehicle);
          g_VehicleMap[i]  = pVehicle;
 
-         int AssignmentInterval = int(pVehicle->m_DepartureTime/g_DepartureTimetInterval);
+         int AssignmentInterval = int(pVehicle->m_DepartureTime/m_OptimizationTimeInveral);
 
 
 
@@ -374,7 +374,7 @@ void ReadDSPVehicleData(char fname[_MAX_PATH])
       cout << "Number of Vehicles = "<< g_VehicleSet.size() << endl;
       cout << "Demand Loading Horizon = "<< g_DemandLoadingHorizon << " min" << endl;
       cout << "Simulation Horizon = "<< g_SimulationHorizon << " min" << endl;
-      cout << "Assignment Interval = "<< g_DepartureTimetInterval << " min" << endl;
+      cout << "Assignment Interval = "<< m_OptimizationTimeInveral << " min" << endl;
 
       }
 */
@@ -398,13 +398,13 @@ int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR
 	   return value; 
 }
 
-double g_GetPrivateProfileDouble( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) 
+float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) 
 {
    char lpbuffer[64];
-   double value = def_value;
+   float value = def_value;
    if(GetPrivateProfileString(section,key,"",lpbuffer,sizeof(lpbuffer),filename)) 
    {
-	   value = atof(lpbuffer); 
+	   value = (float)(atof(lpbuffer)); 
    }
 
    if(value == def_value)  //  the parameter might not exist

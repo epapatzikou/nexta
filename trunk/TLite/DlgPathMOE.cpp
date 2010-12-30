@@ -162,7 +162,7 @@ void CDlgPathMOE::InsertPathMOEItem()
 
 	LV_ITEM lvi;
 
-	int i, j;
+	unsigned int i;
 	for(i = 0; i < m_pDoc->m_PathDisplayList.size(); i++)
 	{
 		lvi.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_STATE;
@@ -401,7 +401,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	if(MOEType==3)  // band: use max
 		value_type = 1;
 
-	for(int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++)
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++)
 	{
 		for(int t=m_TmLeft;t<m_TmRight;t+=TimeInterval)
 		{
@@ -412,39 +412,39 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 	}
 
-	if(m_YUpperBound>=10)
-		m_YUpperBound = (m_YUpperBound/10+1)*10;
+	if(m_YUpperBound>=10.0f)
+		m_YUpperBound = (m_YUpperBound/10.0f+1.0f)*10.f;
 	else
-		m_YUpperBound = int(m_YUpperBound)+1;
+		m_YUpperBound = int(m_YUpperBound)+1.0f;
 
-	float YInterval = 0.2;
+	float YInterval = 0.2f;
 
-	if(m_YUpperBound>=2)
-		YInterval = 0.5;
+	if(m_YUpperBound>=2.0f)
+		YInterval = 0.5f;
 
-	if(m_YUpperBound>=5)
-		YInterval = 1;
+	if(m_YUpperBound>=5.0f)
+		YInterval = 1.f;
 
-	if(m_YUpperBound>=10)
-		YInterval = 2;
+	if(m_YUpperBound>=10.0f)
+		YInterval = 2.0f;
 
-	if(m_YUpperBound>=20)
-		YInterval = 5;
+	if(m_YUpperBound>=20.0f)
+		YInterval = 5.0f;
 
-	if(m_YUpperBound>=50)
-		YInterval = 10;
+	if(m_YUpperBound>=50.f)
+		YInterval = 10.f;
 
-	if(m_YUpperBound>=80)
-		YInterval = 20;
+	if(m_YUpperBound>=80.f)
+		YInterval = 20.f;
 
-	if(m_YUpperBound>=150)
-		YInterval = 30;
+	if(m_YUpperBound>=150.f)
+		YInterval = 30.f;
 
 
 
 	// data unit
-	m_UnitData = 1;
-	if((m_YUpperBound - m_YLowerBound)>0)
+	m_UnitData = 1.f;
+	if((m_YUpperBound - m_YLowerBound)>0.0f)
 		m_UnitData = (float)(PlotRect.bottom - PlotRect.top)/(m_YUpperBound - m_YLowerBound);
 
 	// draw Y axis
@@ -460,7 +460,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		else
 			pDC->SelectObject(&DataPen);
 
-		int TimeYPosition= PlotRect.bottom - (int)((ii*m_UnitData)+0.50);
+		int TimeYPosition= PlotRect.bottom - (int)((ii*m_UnitData)+0.50f);
 
 		pDC->MoveTo(PlotRect.left-2, TimeYPosition);
 		pDC->LineTo(PlotRect.right,TimeYPosition);
@@ -468,9 +468,9 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		if(ii <= m_YUpperBound)
 		{
 			if(YInterval>=1)
-			sprintf(buff,"%3.0f",ii);
+			sprintf_s(buff,"%3.0f",ii);
 			else
-			sprintf(buff,"%3.1f",ii);
+			sprintf_s(buff,"%3.1f",ii);
 
 			pDC->TextOut(PlotRect.left-55,TimeYPosition-5,buff);
 		}
@@ -478,7 +478,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 	if(MOEType!=3)
 	{
-	for(int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++)
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++)
 	{
 		if(p== m_pDoc->m_SelectPathNo)
 			g_SelectSuperThickPenColor(pDC,p);
