@@ -220,8 +220,6 @@ class DTALink
 {
 public:
 
-
-
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
 		m_SimulationHorizon	= TimeHorizon;
@@ -272,7 +270,7 @@ public:
 
 	float ObtainHistTravelTime(int time)
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<1440)
+		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
 		{
 			return m_Length/m_HistLinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
 		}
@@ -282,7 +280,7 @@ public:
 
 	float ObtainHistFuelConsumption(int time)
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<1440)
+		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
 		{
 			return m_Length*0.1268f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
@@ -292,7 +290,7 @@ public:
 
 	float ObtainHistCO2Emissions(int time)  // pounds
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && m_HistLinkMOEAry[time].ObsSpeed <=80 && time<1440)
+		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && m_HistLinkMOEAry[time].ObsSpeed <=80 && time<m_SimulationHorizon)
 		{
 			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
@@ -514,6 +512,16 @@ public:
 	float m_MeanSpeed;
 	float m_MeanVolume;
 
+	/* For min-by-min train timetabling, m_LaneCapacity is 1 for each min. 
+	Example in airspace scheduling
+	a sector is a volume of airspace for which a single air traffic control team has responsibility.
+	The number of aircraft that can safely occupy a sector simultaneously is determined by controllers. 
+	A typical range is around 8-15. 
+	During a 15 minute time interval in US en-route airspace, 
+	the typical upper bound limits of the order of 15-20.
+
+	*/
+
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
 	int	m_link_type;
@@ -529,7 +537,7 @@ public:
 	float m_BPRLinkTravelTime;
 
 	//  multi-day equilibirum: travel time for stochastic capacity
-	float m_BPRLaneCapacity;
+	float m_LaneCapacity;
 
 	float m_DayDependentTravelTime[MAX_DAY_SIZE];
 	float m_AverageTravelTime;
@@ -1179,9 +1187,9 @@ public:
 		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_OptimizationIntervalSize);
 		DeallocateDynamicArray<float>(m_LinkTDCostAry,m_LinkSize,m_OptimizationIntervalSize);
 
-		DeallocateDynamicArray<float>(TD_LabelCostAry,m_LinkSize,m_OptimizationIntervalSize);
-		DeallocateDynamicArray<int>(TD_NodePredAry,m_LinkSize,m_OptimizationIntervalSize);
-		DeallocateDynamicArray<int>(TD_TimePredAry,m_LinkSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<float>(TD_LabelCostAry,m_NodeSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_NodePredAry,m_NodeSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_TimePredAry,m_NodeSize,m_OptimizationIntervalSize);
 
 		if(m_FromIDAry)		delete m_FromIDAry;
 		if(m_ToIDAry)	delete m_ToIDAry;
@@ -1213,10 +1221,11 @@ public:
 	//these two functions are for timetabling
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
 	// optimal version use a time-node-dimension of TD_LabelCostAry, TD_NodePredAry
-    int FindOptimalSolution(int origin,  int departure_time,  int destination, STrainNode* AryTN);
+    int FindOptimalSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
 	// return node arrary from origin to destination, return travelling timestamp at each node
 	// return number_of_nodes in path
 
+    int FindInitiallSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);

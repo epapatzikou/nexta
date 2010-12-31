@@ -36,6 +36,8 @@
 /////////////////////////////////////////////////////////////////////////////
 // CGLView view
 #include "GL/glaux.h"
+#include <GL\gl.h>
+#include <GL\glu.h> 
 
 typedef struct VectorTag{
 	double x;
@@ -114,7 +116,16 @@ public:
 
 	 glState m_State;
 	CPoint m_StartPoint;
-	AUX_RGBImageRec *m_pBackImg;
+	AUX_RGBImageRec *m_pBackgroundImage;
+	double m_ViewPortCX;
+	double m_ViewPortCY;
+
+	bool m_bShowBackgroundImage;
+	bool m_bLoadBackgroundImage;
+
+	double m_BackgroundMapHeight;
+
+
 	AUX_RGBImageRec *m_pGrassImg;
 	AUX_RGBImageRec *m_pRoadMap;
 	CClientDC *m_pDC;
@@ -278,8 +289,6 @@ public:
 };
 inline CTLiteDoc* CGLView::GetDocument() const
    { return reinterpret_cast<CTLiteDoc*>(m_pDocument); }
-
-extern CGLView* g_pGLView;
 
 /////////////////////////////////////////////////////////////////////////////
 

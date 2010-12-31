@@ -61,6 +61,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SEARCH_LISTTRAINS, &CTLiteDoc::OnSearchListtrains)
 	ON_COMMAND(ID_TOOLS_TIMETABLINGOPTIMIZATION, &CTLiteDoc::OnToolsTimetablingoptimization)
 	ON_COMMAND(ID_TIMETABLE_IMPORTTIMETABLE, &CTLiteDoc::OnTimetableImporttimetable)
+	ON_COMMAND(ID_TIMETABLE_INITIALIZETIMETABLE, &CTLiteDoc::OnTimetableInitializetimetable)
 END_MESSAGE_MAP()
 
 
@@ -293,12 +294,9 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 	int Interval = 5;
 
 
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
-	}
-
 	int day_count = 0;
+
+	bool bResetMOEAryFlag = false;
 	for(int day_of_month =1; day_of_month <= 31; day_of_month++)
 	{
 
@@ -309,6 +307,17 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 
 		if(st!=NULL)
 		{
+
+			if(!bResetMOEAryFlag)
+			{
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
+			}
+
+			bResetMOEAryFlag = true;
+			}
+
 			g_read_integer(st); // 1140
 			g_read_integer(st); // 5 
 
@@ -429,12 +438,15 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 
 			day_count++;  // increaes day counter if there are data
 			fclose(st);
-		}
-
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			(*iLink)->ComputeHistoricalAvg(23);  // total 23: 8 days as test
 		}
+		
+		
+		}
+
+
 
 	}
 }
@@ -527,7 +539,6 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 
 	ReadSensorLocationData(directory);
 	ReadHistoricalData(directory);
-
 
 	// for train timetabling
 	ImportTimetableData(directory+"timetable.csv");
@@ -1088,7 +1099,7 @@ void CTLiteDoc::ReadLinkCSVFile(CString directory)
 			pLink->m_SpeedLimit= g_read_float(st);
 			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
 			pLink->m_MaximumServiceFlowRatePHPL= g_read_float(st);
-			pLink->m_BPRLaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 			pLink->m_link_type= g_read_integer(st);
 
 			m_NodeMap[pLink->m_FromNodeNumber ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
@@ -1149,7 +1160,7 @@ void CTLiteDoc::ReadLinkCSVFile(CString directory)
 void CTLiteDoc::ReadArcCSVFile(CString directory)
 {
 	FILE* st = NULL;
-	fopen_s(&st,directory+"arc.csv","r");
+	fopen_s(&st,directory+"linktraveltime.csv","r");
 
 	long i = 0;
 	if(st!=NULL)
@@ -1158,8 +1169,6 @@ void CTLiteDoc::ReadArcCSVFile(CString directory)
 
 		double default_distance_sum=0;
 		double length_sum = 0;
-
-
 		while(!feof(st))
 		{
 			int FromNode =  g_read_integer(st);
@@ -1169,87 +1178,25 @@ void CTLiteDoc::ReadArcCSVFile(CString directory)
 
 			int m_SimulationHorizon = 1;
 
-			pLink = new DTALink(m_SimulationHorizon);
+			DTALink* pLink = FindLinkWithNodeNumbers(FromNode, ToNode);
 
-			pLink->m_LinkID = i;
-			pLink->m_FromNodeNumber = FromNode;
-			pLink->m_ToNodeNumber = ToNode;
-			pLink->m_FromNodeID = m_NodeMap[pLink->m_FromNodeNumber ]->m_NodeID;
-			pLink->m_ToNodeID= m_NodeMap[pLink->m_ToNodeNumber]->m_NodeID;
-
-			m_NodeMap[pLink->m_FromNodeNumber ]->m_Connections+=1;
-			m_NodeMap[pLink->m_ToNodeNumber ]->m_Connections+=1;
-
-
-			unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-			m_NodeIDtoLinkMap[LinkKey] = pLink;
-
-			pLink->m_Length  = g_read_float(st);
-			pLink->m_link_type= g_read_integer(st);
-
-			int NumberOfTrainType = g_read_integer(st);
-
-			for(int tt= 0; tt<NumberOfTrainType; tt++)
+			if(pLink!=NULL)
 			{
 			int TrainType = g_read_integer(st);
 			int TrainRunningTime = g_read_integer(st);
 				pLink->m_RuningTimeMap[TrainType] = TrainRunningTime;
 		
-			}
-
-
-			pLink->m_FromPoint = m_NodeMap[pLink->m_FromNodeNumber]->pt;
-			pLink->m_ToPoint = m_NodeMap[pLink->m_ToNodeNumber]->pt;
-
-			default_distance_sum+= pLink->DefaultDistance();
-			length_sum += pLink ->m_Length;
-
-			pLink->SetupMOE();
-			m_LinkSet.push_back (pLink);
-			m_LinkMap[i]  = pLink;
-			i++;
-
-		}
-
-		double multiplier  = 0.001;
-
-			if(length_sum>0.000001f)
-				multiplier= length_sum / default_distance_sum ;
-
-		m_UnitFeet = multiplier/5280.0;
-
-
-		bool m_bLinkShifted = true;
-		if(m_bLinkShifted)
-		{
-
-			double link_offset = m_UnitFeet*80;  // 80 feet
-
-			std::list<DTALink*>::iterator iLink;
-			double PI = 3.14159f;
-
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			}else
 			{
-				double DeltaX = (*iLink)->m_ToPoint.x - (*iLink)->m_FromPoint.x ;
-				double DeltaY = (*iLink)->m_ToPoint.y - (*iLink)->m_FromPoint.y ;
-				double Sita = atan2(DeltaY, DeltaX);
-
-				(*iLink)->m_FromPoint.x += link_offset* cos(Sita-PI/2.0f);
-				(*iLink)->m_ToPoint.x += link_offset* cos(Sita-PI/2.0f);
-
-				(*iLink)->m_FromPoint.y += link_offset* sin(Sita-PI/2.0f);
-				(*iLink)->m_ToPoint.y += link_offset* sin(Sita-PI/2.0f);
-
+			// to do: output error here
+			
 			}
 		}
-		fclose(st);
-	}else
-	{
-		cout << "Error: File link.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-		//		g_ProgramStop();
-	}
 
+		fclose(st);
+	}
 }
+
 void CTLiteDoc::OnToolsTimetablingoptimization()
 {
 	TimetableOptimization();
@@ -1259,17 +1206,18 @@ bool CTLiteDoc::TimetableOptimization()
 {
 	CWaitCursor cw;
 
-	float CapacityConstraint = 1;
-
 	int NumberOfIterationsWithMemory = 200;  // this is much greater than -100 when  LR_Iteration = 0, because  LastUseIterationNo is initialized as -100;
 
 	if(m_pNetwork !=NULL)
 			delete m_pNetwork;
 
+	int OptimizationHorizon = 100;
+
+
 	std::list<DTALink*>::iterator iLink;
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		(*iLink)->m_ResourceAry = new SResource[1440];
+		(*iLink)->m_ResourceAry = new SResource[OptimizationHorizon];
 	}
 
 	for(int LR_Iteration = 0; LR_Iteration< 100; LR_Iteration++)
@@ -1278,7 +1226,7 @@ bool CTLiteDoc::TimetableOptimization()
 		// reset resource usage counter for each timestamp
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		for(int t=0; t< 1440; t++)
+		for(int t=0; t< OptimizationHorizon; t++)
 		{
 			(*iLink)->m_ResourceAry[t].UsageCount =0;
 		}
@@ -1299,7 +1247,7 @@ bool CTLiteDoc::TimetableOptimization()
 			for(int t = pTrain->m_aryTN[n-1].NodeTimestamp; t< pTrain->m_aryTN[n].NodeTimestamp; t++)
 			{
 	
-				ASSERT(t>=0 && t<1440);
+				ASSERT(t>=0 && t<OptimizationHorizon);
 				pLink->m_ResourceAry[t].UsageCount+=1;
 				pLink->m_ResourceAry[t].LastUseIterationNo = LR_Iteration;
 
@@ -1318,9 +1266,9 @@ bool CTLiteDoc::TimetableOptimization()
 	// reset resource usage counter for each timestamp
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		for(int t=0; t< 1440; t++)
+		for(int t=0; t< OptimizationHorizon; t++)
 		{
-			(*iLink)->m_ResourceAry[t].Price  += StepSize*((*iLink)->m_ResourceAry[t].UsageCount - CapacityConstraint);
+			(*iLink)->m_ResourceAry[t].Price  += StepSize*((*iLink)->m_ResourceAry[t].UsageCount - (*iLink)->m_LaneCapacity);
 
 //			if((*iLink)->m_ResourceAry[t].Price > 0)
 //				TRACE("\n arc %d, time %d, price %f", (*iLink)->m_LinkID, t, (*iLink)->m_ResourceAry[t].Price );
@@ -1335,10 +1283,10 @@ bool CTLiteDoc::TimetableOptimization()
 
 	// build time-dependent network with resource price
 
-	// here we allocate 1440 time and cost labels for each node
+	// here we allocate OptimizationHorizon time and cost labels for each node
 
 	if(LR_Iteration==0) //only allocate once
-	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1440, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), OptimizationHorizon, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	
 
 	for(v = 0; v<m_TrainVector.size(); v++)
@@ -1349,7 +1297,7 @@ bool CTLiteDoc::TimetableOptimization()
 		//find time-dependent shortest path with time label
 		m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
 		m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
-		pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain->m_aryTN);
+		pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
 		
 
 		for (int i=1; i< pTrain->m_NodeSize ; i++)
@@ -1460,4 +1408,66 @@ bool CTLiteDoc::ImportTimetableData(LPCTSTR lpszFileName)
 	}
 
 	return false;
+}
+
+void CTLiteDoc::OnTimetableInitializetimetable()
+{
+	CWaitCursor cw;
+
+	int NumberOfIterationsWithMemory = 200;  // this is much greater than -100 when  LR_Iteration = 0, because  LastUseIterationNo is initialized as -100;
+
+	if(m_pNetwork !=NULL)
+			delete m_pNetwork;
+
+	int OptimizationHorizon = 100;
+
+
+	std::list<DTALink*>::iterator iLink;
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_ResourceAry = new SResource[OptimizationHorizon];
+	}
+
+
+	// reset resource usage counter for each timestamp
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		for(int t=0; t< OptimizationHorizon; t++)
+		{
+			(*iLink)->m_ResourceAry[t].Price  = 0;
+		}
+
+	}
+
+	// build time-dependent network with resource price
+
+	// here we allocate OptimizationHorizon time and cost labels for each node
+
+	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), OptimizationHorizon, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	
+	unsigned int v;
+	for(v = 0; v<m_TrainVector.size(); v++)
+	{
+		
+		DTA_Train* pTrain = m_TrainVector[v];
+
+		//find time-dependent shortest path with time label
+		m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
+		m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
+		pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
+		
+
+		for (int i=1; i< pTrain->m_NodeSize ; i++)
+		{
+			DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
+			ASSERT(pLink!=NULL);
+			pTrain->m_aryTN[i].LinkID  = pLink->m_LinkID ;
+
+		}
+
+	}
+
+
+	UpdateAllViews(0);
+
 }

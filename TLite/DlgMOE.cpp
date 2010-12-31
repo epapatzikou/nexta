@@ -295,7 +295,7 @@ void CDlgMOE::DrawSingleQKPlot(CPaintDC* pDC, CRect PlotRect)
 
 		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
-		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
+		for(i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon,m_TmRight);i+=1) // for each timestamp
 		{
 
 			int x=(long)(PlotRect.left+((*iLink)->m_LinkMOEAry[i].ObsDensity)*m_UnitDensity);
@@ -397,7 +397,7 @@ void CDlgMOE::DrawSingleVKPlot(CPaintDC* pDC, CRect PlotRect)
 
 		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
-		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
+		for(i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon , m_TmRight);i+=1) // for each timestamp
 		{
 
 			int x=(long)(PlotRect.left+((*iLink)->m_LinkMOEAry[i].ObsDensity)*m_UnitDensity);
@@ -499,7 +499,7 @@ void CDlgMOE::DrawSingleVQPlot(CPaintDC* pDC, CRect PlotRect)
 
 		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
 
-		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
+		for(i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon ,m_TmRight);i+=1) // for each timestamp
 		{
 
 			int x=(long)(PlotRect.left+((*iLink)->m_LinkMOEAry[i].ObsFlow)*m_UnitFlow);
@@ -712,15 +712,15 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 	{
-		for(int i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
+			float value = 0;
+
+		for(int i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon,m_TmRight);i+=1) // for each timestamp
 		{
 
-			float value;
 
-			if(i<g_Simulation_Time_Horizon)
-			{
 			switch (MOEType)
 			{
+
 			case 0: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
 			case 1: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
 			case 2: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
@@ -729,11 +729,8 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 			case 5: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
 
 			default: value = 0;
-
 			}
-			}else
-			{
-			value = 0;
+
 			}
 
 			if(value > YMax)
@@ -742,7 +739,7 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 
 		}
 
-	}
+
 	return max(10,int(YMax*10/9));
 }
 

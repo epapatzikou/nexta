@@ -203,6 +203,7 @@ BEGIN
     POPUP "Timetable"
     BEGIN
         MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
+        MENUITEM "Initialize Timetable",        ID_TIMETABLE_INITIALIZETIMETABLE
         MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
         MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
         MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
@@ -421,7 +422,7 @@ BEGIN
             VALUE "FileVersion", "3.0.0.1"
             VALUE "InternalName", "NEXTA.exe"
             VALUE "LegalCopyright", "Open-Source Software"
-            VALUE "OriginalFilename", "NEXTA.exe"
+            VALUE "OriginalFilename", "NeXTA.exe"
             VALUE "ProductName", "Version 3"
             VALUE "ProductVersion", "3.0.0.1"
         END
@@ -505,13 +506,13 @@ IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "NEXTA Version 3 Beta"
-    IDR_TLiteTYPE           "\nNEXTA\nTLite\n\n\nNEXTA Document\nNEXTA.Document"
+    IDR_MAINFRAME           "NeXTA Version 3 Beta"
+    IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
 END
 
 STRINGTABLE 
 BEGIN
-    AFX_IDS_APP_TITLE       "NEXTA Version 3 Beta"
+    AFX_IDS_APP_TITLE       "NeXTA Version 3 Beta"
     AFX_IDS_IDLEMESSAGE     "Ready"
 END
 
