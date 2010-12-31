@@ -278,7 +278,7 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 {
 
 	int i;
-	int debug_flag = 0;  // set 1 to debug the detail information
+	int debug_flag = 1;  // set 1 to debug the detail information
 
 	if(m_OutboundSizeAry[origin]== 0)
 		return false;
@@ -298,9 +298,11 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 
 	//	TD_LabelCostAry[origin][departure_time] = 0;
 
-	int AllowedDelayTime  = 10;  // external parameter
+	int AllowedDelayTime  = 0;  // external parameter
 	// Initialization for origin node at the preferred departure time, at departure time, cost = 0, otherwise, the delay at origin node
-	for(int t=departure_time; t <departure_time + AllowedDelayTime; t+=m_OptimizationTimeInveral)
+
+	//+1 in "departure_time + 1+ AllowedDelayTime" is to allow feasible value for t = departure time
+	for(int t=departure_time; t <departure_time + 1+ AllowedDelayTime; t+=m_OptimizationTimeInveral)
 	{
 		TD_LabelCostAry[origin][t]= t-departure_time;
 	}
@@ -336,7 +338,7 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 				if(TD_LabelCostAry[FromID][t]<MAX_SPLABEL-1)  // for feasible time-space point only
 				{
 
-					for(int time_delay = 0; time_delay < AllowedDelayTime; time_delay++)
+					for(int time_delay = 0; time_delay <=AllowedDelayTime; time_delay++)
 					{
 						int NewToNodeArrivalTime	 = (int)(t + m_LinkTDTimeAry[LinkNo][t] + time_delay);  // time-dependent travel times for different train type
 						float NewCost  =  TD_LabelCostAry[FromID][t] + m_LinkTDCostAry[LinkNo][t] + m_LinkTDTimeAry[LinkNo][t];
@@ -382,7 +384,7 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 }
 
 
-int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int destination, STrainNode* AryTN)
+int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int destination, DTA_Train* pTrain)  // the last pointer is used to get the node array
 {
 
 	// step 1: scan all the time label at destination node, consider time cost
@@ -445,16 +447,17 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 	// step 3: reverse the backward solution
 
-	if(AryTN!=NULL)
-		delete AryTN;
+	if(pTrain->m_aryTN !=NULL)
+		delete pTrain->m_aryTN;
 
-	AryTN = new STrainNode[NodeSize];
+	pTrain->m_aryTN = new STrainNode[NodeSize];
 
 	for(int i = 0; i< NodeSize; i++)
 	{
-		AryTN[i].NodeID			= tmp_AryTN[NodeSize-1-i].NodeID;
-		AryTN[i].NodeTimestamp	= tmp_AryTN[NodeSize-1-i].NodeTimestamp;
+		pTrain->m_aryTN[i].NodeID			= tmp_AryTN[NodeSize-1-i].NodeID;
+		pTrain->m_aryTN[i].NodeTimestamp	= tmp_AryTN[NodeSize-1-i].NodeTimestamp;
 	}
 
 	return NodeSize;
 }
+

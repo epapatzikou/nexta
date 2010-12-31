@@ -47,7 +47,12 @@ protected: // create from serialization only
 	m_NodeSizeSP = 0;
 	m_PathMOEDlgShowFlag = false;
 	m_SelectPathNo = -1;
-	
+
+	m_ImageX1 = 0;
+	m_ImageX2 = 1000;
+	m_ImageY1 = 0;
+	m_ImageY2 = 1000;
+
 	}
 	DECLARE_DYNCREATE(CTLiteDoc)
 
@@ -83,6 +88,7 @@ std::list<DTALink*>		m_LinkSet;
 int m_AdjLinkSize;
 
 DTANetworkForSP* m_pNetwork;
+
 int Routing();
 
 bool ImportTimetableData(LPCTSTR lpszFileName);
@@ -184,6 +190,7 @@ public:
 	afx_msg void OnSearchListtrains();
 	afx_msg void OnToolsTimetablingoptimization();
 	afx_msg void OnTimetableImporttimetable();
+	afx_msg void OnTimetableInitializetimetable();
 };
 
 

@@ -8,7 +8,6 @@
 #include "GLView.h"
 #include "Network.h"
 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -21,7 +20,6 @@ static char THIS_FILE[] = __FILE__;
 IMPLEMENT_DYNCREATE(CGLView, CView)
 
 #define PI 3.1415926
-CGLView* g_pGLView;
 CGLView::CGLView()
 {
 	// TODO: add construction code here
@@ -39,13 +37,12 @@ CGLView::CGLView()
 	m_xyAng=PI/2.0;;
 	m_EyeLength=800.0;
 	m_State=glNone;
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-
-	g_pGLView = this;
-
+	m_bShowBackgroundImage = true;
+	m_bLoadBackgroundImage = false;
 	m_ShowSpeedVariability = true;
 	m_ShowAllPaths = true;
+
+	m_BackgroundMapHeight = -5.0;
 
 }
 
@@ -177,6 +174,9 @@ int CGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	fFarPlane = 7000.0f;
 
 	glViewport(0 , 0 , 1024, 768);   //default View Port
+	m_ViewPortCX = 1024;
+	m_ViewPortCY = 768;
+
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -211,6 +211,10 @@ void CGLView::OnSize(UINT nType, int cx, int cy)
 	{
 		glViewport(0, 0, cx, cy);
 
+		m_ViewPortCX = cx;
+		m_ViewPortCY = cy;
+
+
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		gluPerspective(45.0f, (GLdouble)cx/cy, 1.0f, 7000.0f);
@@ -239,20 +243,88 @@ void CGLView::Render()
 	doublePointStruct EyePosition;
 	gluLookAt(m_EyePoint.x,m_EyePoint.y,m_EyePoint.z,m_ObservePoint.x,m_ObservePoint.y,m_ObservePoint.z,0.0,0.0,1.0);
 	glColor3d(0.6,0.6,0.6);
-	//for road map
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);//  GL_CLAMP); 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);////GL_CLAMP); 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST); // GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST); // GL_LINEAR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL); 
 
-
-
-	//
 	float Height0 = 0.0f;
 
 	CTLiteDoc* pDoc = GetDocument();
 
+	if(m_bShowBackgroundImage)
+	{	
+		if(m_bLoadBackgroundImage==false)
+		{
+		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+		m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"Background.bmp");
+		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+		m_bLoadBackgroundImage = true;
+		}
+
+		if(m_pBackgroundImage!=NULL)
+		{
+		glTexImage2D(GL_TEXTURE_2D,0,3,m_pBackgroundImage->sizeX,m_pBackgroundImage->sizeY,0,GL_RGB,GL_UNSIGNED_BYTE,m_pBackgroundImage->data );
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);//  GL_CLAMP); 
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);////GL_CLAMP); 
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST); // GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST); // GL_LINEAR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL); 
+		glEnable(GL_TEXTURE_2D);
+
+		Vector vector;
+		glColor3d(0.0,0.5,0.0);
+		glBegin(GL_QUADS);
+							glTexCoord2d(0.0,0.0);  //2D binding
+		vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+		vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+		vector.v.z=m_BackgroundMapHeight;
+		glVertex3dv(vector.d);
+							glTexCoord2d(1.0,0.0); //2D binding
+		vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+		vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+		vector.v.z=m_BackgroundMapHeight;
+		glVertex3dv(vector.d); 
+							glTexCoord2d(1.0,1.0); //2D binding
+		vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+		vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+		vector.v.z=m_BackgroundMapHeight;
+		glVertex3dv(vector.d);
+							glTexCoord2d(0.0,1.0); //2D binding
+		vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+		vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+		vector.v.z=m_BackgroundMapHeight;
+		glVertex3dv(vector.d);
+	glEnd();
+
+		}
+/*
+		Vector vector;
+		glColor3d(0.0,0.5,0.0);
+		glBegin(GL_QUADS);
+		glTexCoord2d(0.0,0.0);
+		vector.v.x=-100.0;
+		vector.v.y=-100.0;
+		vector.v.z=-20.0;
+		glVertex3dv(vector.d);
+		glTexCoord2d(900.0,0.0);
+		vector.v.x=100.0;
+		vector.v.y=-100.0;
+		vector.v.z=-20.0;
+		glVertex3dv(vector.d);
+		glTexCoord2d(900.0,900.0);
+		vector.v.x=100.0;
+		vector.v.y=100.0;
+		vector.v.z=-20.0;
+		glVertex3dv(vector.d);
+		glTexCoord2d(0.0,900.0);
+		vector.v.x=-100.0;
+		vector.v.y=100.0;
+		vector.v.z=-20.0;
+		glVertex3dv(vector.d);
+		glEnd();
+*/
+
+
+		glDisable(GL_TEXTURE_2D);
+
+	}
 	CRect ScreenRect;
 	GetClientRect(ScreenRect);
 
@@ -265,20 +337,21 @@ void CGLView::Render()
 	m_OrgY = (pDoc->m_NetworkRect.top+pDoc->m_NetworkRect.bottom)/2;
 
 
-	float x0 =  pDoc->m_NetworkRect.left;
-	float x1 =  pDoc->m_NetworkRect.right;
-	float y0 =  pDoc->m_NetworkRect.top;
-	float y1 =  pDoc->m_NetworkRect.bottom;
 
 	DrawAllObjects();
-/*
+/* test code
+	double x0 =  NXtoSX_org(pDoc->m_NetworkRect.left);
+	double x1 =  NXtoSX_org(pDoc->m_NetworkRect.right);
+	double y0 =  NXtoSX_org(pDoc->m_NetworkRect.top);
+	double y1 =  NXtoSX_org(pDoc->m_NetworkRect.bottom);
 	glBegin(GL_QUADS);
 	glColor3f(0.9f,0.9f,0.9f);
 	glVertex3f(x0,y0,Height0);
     glVertex3f(x0,y1,Height0);
     glVertex3f(x1,y1,Height0);
-    glVertex3f(x1,y1,Height0);
+    glVertex3f(x1,y0,Height0);
 	glEnd();
+
 */
 
 
@@ -317,12 +390,13 @@ void CGLView::Render()
 void CGLView::DrawAllObjects()
 {
 	//draw background links
-	float Height0 = 0.0f;
+	double Height0 = m_BackgroundMapHeight+2.0;
 
 	CTLiteDoc* pDoc = GetDocument();
 
 	glBegin(GL_LINES);
-	glColor3f(0.9f,0.9f,0.9f);
+	glColor3f(0.0f,0.5f,0.5f);
+//	glColor3f(0.9f,0.0f,0.0f);
 
 	std::list<DTALink*>::iterator iLink;
  		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
@@ -349,7 +423,7 @@ void CGLView::DrawAllObjects()
 	float TimeStep = 2.0f;
 
 
-    for(int Time= 0; Time<1440; Time+=120)  // draw time-dependent shortest every 2 hours
+    for(int Time= 0; Time<72; Time+=60)  // draw time-dependent shortest every 1 hour
 	{
 
 	for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)
@@ -494,7 +568,7 @@ t=m_EyeLength*cos(m_zAng);
 if(fabs(t)<0.00000001)t=0.0;
 
 x=m_EyeLength*cos(m_xyAng);
-y=m_EyeLength*sin(m_xyAng);
+y=-m_EyeLength*sin(m_xyAng);
 
 if(fabs(x)<0.0001)x=0.0;
 if(fabs(y)<0.0001)y=0.0;
@@ -503,6 +577,9 @@ if(fabs(z)<0.0001)z=0.0;
 m_EyePoint.x=m_ObservePoint.x+x;
 m_EyePoint.y=m_ObservePoint.y+y;
 m_EyePoint.z=m_ObservePoint.z+z;
+
+if(m_EyePoint.z<0)
+m_EyePoint.z = 0;
 ///////////////////
 
 m_Normal.x=0.0;
@@ -536,8 +613,8 @@ if(nFlags&MK_LBUTTON){
 	switch(m_State){
 	case glMove:  // move XY
 
-		m_ObservePoint.x+=(double)size.cx;
-		m_ObservePoint.y-=(double)size.cy;
+		m_ObservePoint.x-=(double)size.cx;
+		m_ObservePoint.y+=(double)size.cy;
 
 		Render();
 		break;
@@ -552,7 +629,7 @@ if(nFlags&MK_LBUTTON){
 		break;
 	case glZoom:
 
-		m_EyeLength-=(double)size.cy*3.0;
+		m_EyeLength-=(double)size.cy*1.5;
 
 		Render();
 		break;
@@ -627,7 +704,7 @@ void CGLView::OnUpdate3DReset(CCmdUI* pCmdUI)
 void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) 
 {
 	
-	double Step = 20;
+	double Step = 10;
 
     switch(nChar)
 	{
@@ -656,7 +733,7 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 BOOL CGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-	m_EyeLength+=zDelta*3.0;
+	m_EyeLength+=zDelta*1.0;
 
 	Render();
 

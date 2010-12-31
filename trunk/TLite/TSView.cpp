@@ -100,10 +100,10 @@ void CTimeSpaceView::OnDraw(CDC* pDC)
 	CRect PlotRect;
 	GetClientRect(PlotRect);
 
-	PlotRect.top += 100;
-	PlotRect.bottom -= 100;
+	PlotRect.top += 60;
+	PlotRect.bottom -= 60;
 	PlotRect.left += 60;
-	PlotRect.right -= 100;
+	PlotRect.right -= 60;
 
 	DrawObjects(pDC,Cur_MOE_type1, PlotRect);
 
@@ -189,8 +189,10 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 	std::list<DTALink*>::iterator iLink;
 	CTLiteDoc* pDoc = GetTLDocument();
 
+
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
+		
 		(*iLink)->m_FromNodeY = m_YUpperBound;
 		m_YUpperBound+=(*iLink)->m_Length ;
 		(*iLink)->m_ToNodeY = m_YUpperBound;
@@ -277,7 +279,8 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 	pDC->LineTo(PlotRect.right,PlotRect.bottom);
 
 
-	int YPrev = 2000;
+		int PrevToNode = -1;
+		bool bSpace = false;
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
@@ -292,20 +295,17 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 		pDC->MoveTo(PlotRect.left, YTo);
 		pDC->LineTo(PlotRect.right,YTo);
 
-		if(YPrev == 2000)  // first from node
+		if(PrevToNode!=(*iLink)->m_FromNodeID)  // first from node or node change
 		{
+			bSpace = !bSpace;
 			wsprintf(buff,"%d",(*iLink)->m_FromNodeNumber );
-			pDC->TextOut(PlotRect.left-40,YFrom-5,buff);
-			YPrev = PlotRect.bottom;
+			pDC->TextOut(PlotRect.left-30-bSpace*10,YFrom-5,buff);
 		}
 
-		//		if(YTo < YPrev-10 && YPrev >= PlotRect.bottom)
-		{
 			wsprintf(buff,"%d",(*iLink)->m_ToNodeNumber );
-			pDC->TextOut(PlotRect.left-40,YTo-5,buff);
-			YPrev = YTo;
-		}
-
+			pDC->TextOut(PlotRect.left-30-bSpace*10,YTo-5,buff);
+		
+		PrevToNode = (*iLink)->m_ToNodeNumber;
 	}
 
 	// draw trains
@@ -549,7 +549,7 @@ bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
 
 		pTrain->m_ActualTripTime = pTrain->m_aryTN[pTrain->m_NodeSize -1].NodeTimestamp - pTrain->m_aryTN[0].NodeTimestamp;
 
-		fprintf(st,"%d,%d,%d,%d,%d,%d,%d,%d\n", pTrain->m_TrainID , pTrain->m_TrainType ,pTrain->m_OriginNodeID ,pTrain->m_DestinationNodeID ,pTrain->m_DepartureTime ,pTrain->m_NodeSize,pTrain->m_PreferredArrivalTime,pTrain->m_ActualTripTime);
+		fprintf(st,"%d,%d,%d,%d,%d,%d,%d,%d\n", pTrain->m_TrainID , pTrain->m_TrainType ,pDoc->m_NodeIDtoNameMap [pTrain->m_OriginNodeID] ,pDoc->m_NodeIDtoNameMap[pTrain->m_DestinationNodeID ],pTrain->m_DepartureTime ,pTrain->m_NodeSize,pTrain->m_PreferredArrivalTime,pTrain->m_ActualTripTime);
 
 		for(int n = 0; n< pTrain->m_NodeSize; n++)
 		{
@@ -566,7 +566,7 @@ bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
 			pTrain->m_aryTN[n].TaskScheduleWaitingTime = pTrain->m_aryTN[n].NodeTimestamp - pTrain->m_aryTN[n-1].NodeTimestamp - pTrain->m_aryTN[n].TaskProcessingTime ;
 			}
 
-		fprintf(st,",,,,,,,,,%d,%d,%d,%d\n", pTrain->m_aryTN[n].TaskProcessingTime,pTrain->m_aryTN[n].TaskScheduleWaitingTime ,pTrain->m_aryTN[n].NodeTimestamp , pTrain->m_aryTN[n].NodeID );
+		fprintf(st,",,,,,,,,,%d,%d,%d,%d\n", pTrain->m_aryTN[n].TaskProcessingTime,pTrain->m_aryTN[n].TaskScheduleWaitingTime ,pTrain->m_aryTN[n].NodeTimestamp , pDoc->m_NodeIDtoNameMap[pTrain->m_aryTN[n].NodeID]);
 		}
 	}
 
