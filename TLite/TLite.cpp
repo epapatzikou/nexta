@@ -10,7 +10,7 @@
 // http://www.gnu.org/licenses/gpl-howto.html
 
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -57,8 +57,9 @@ END_MESSAGE_MAP()
 
 CTLiteApp::CTLiteApp()
 {
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
+	m_pTemplateGLView = false;
+	m_pTemplateTimeTableView = false;
+
 }
 
 
@@ -76,14 +77,14 @@ BOOL CTLiteApp::InitInstance()
 	// Standard initialization
 	SetRegistryKey(_T("NEXTA"));
 	LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
-	CMultiDocTemplate* pDocTemplate;
-	pDocTemplate = new CMultiDocTemplate(IDR_TLiteTYPE,
+
+	m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE,
 		RUNTIME_CLASS(CTLiteDoc),
 		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
 		RUNTIME_CLASS(CTLiteView));
-	if (!pDocTemplate)
+	if (!m_pDocTemplate2DView)
 		return FALSE;
-	AddDocTemplate(pDocTemplate);
+	AddDocTemplate(m_pDocTemplate2DView);
 
 	// add second Doc template for GLView
 

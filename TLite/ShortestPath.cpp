@@ -7,7 +7,7 @@
 // More about "How to use GNU licenses for your own software"
 // http://www.gnu.org/licenses/gpl-howto.html
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -278,7 +278,7 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 {
 
 	int i;
-	int debug_flag = 1;  // set 1 to debug the detail information
+	int debug_flag = 0;  // set 1 to debug the detail information
 
 	if(m_OutboundSizeAry[origin]== 0)
 		return false;
@@ -457,6 +457,8 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 		pTrain->m_aryTN[i].NodeID			= tmp_AryTN[NodeSize-1-i].NodeID;
 		pTrain->m_aryTN[i].NodeTimestamp	= tmp_AryTN[NodeSize-1-i].NodeTimestamp;
 	}
+
+	pTrain->m_ActualTripTime = pTrain->m_aryTN[NodeSize-1].NodeTimestamp - pTrain->m_DepartureTime ;
 
 	return NodeSize;
 }

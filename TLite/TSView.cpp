@@ -52,6 +52,7 @@ BEGIN_MESSAGE_MAP(CTimeSpaceView, CView)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
 	ON_COMMAND(ID_TIMETABLE_EXPORTTIMETABLE, &CTimeSpaceView::OnTimetableExporttimetable)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -574,4 +575,11 @@ bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
 		return true;
 	}
 	return false;
+}
+
+void CTimeSpaceView::OnClose()
+{
+
+ ShowWindow(SW_HIDE);
+//	CView::OnClose();
 }

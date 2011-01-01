@@ -35,12 +35,13 @@ CGLView::CGLView()
 	m_Normal.z=0.0;
 	m_zAng=2.809;//3.1415926/8.0;
 	m_xyAng=PI/2.0;;
-	m_EyeLength=800.0;
+	m_EyeLength=1000.0;
 	m_State=glNone;
 	m_bShowBackgroundImage = true;
 	m_bLoadBackgroundImage = false;
 	m_ShowSpeedVariability = true;
 	m_ShowAllPaths = true;
+	m_ShowAllTrains = true;
 
 	m_BackgroundMapHeight = -5.0;
 
@@ -80,6 +81,7 @@ BEGIN_MESSAGE_MAP(CGLView, CView)
 	ON_UPDATE_COMMAND_UI(ID_3DDISPLAY_TIME, &CGLView::OnUpdate3ddisplayTimeDependentPaths)
 	ON_UPDATE_COMMAND_UI(ID_3DDISPLAY_ANIMATION, &CGLView::OnUpdate3ddisplayAnimation)
 	ON_COMMAND(ID_3DDISPLAY_BASICVIEW, &CGLView::On3ddisplayBasicview)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -248,9 +250,9 @@ void CGLView::Render()
 
 	CTLiteDoc* pDoc = GetDocument();
 
-	if(m_bShowBackgroundImage)
+	if(m_bShowBackgroundImage && pDoc->m_BKBitmapLoaded) //  // 2D background map is loaded
 	{	
-		if(m_bLoadBackgroundImage==false)
+		if(m_bLoadBackgroundImage==false) // and 3D map is not loaded yet
 		{
 		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 		m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"Background.bmp");
@@ -294,34 +296,6 @@ void CGLView::Render()
 	glEnd();
 
 		}
-/*
-		Vector vector;
-		glColor3d(0.0,0.5,0.0);
-		glBegin(GL_QUADS);
-		glTexCoord2d(0.0,0.0);
-		vector.v.x=-100.0;
-		vector.v.y=-100.0;
-		vector.v.z=-20.0;
-		glVertex3dv(vector.d);
-		glTexCoord2d(900.0,0.0);
-		vector.v.x=100.0;
-		vector.v.y=-100.0;
-		vector.v.z=-20.0;
-		glVertex3dv(vector.d);
-		glTexCoord2d(900.0,900.0);
-		vector.v.x=100.0;
-		vector.v.y=100.0;
-		vector.v.z=-20.0;
-		glVertex3dv(vector.d);
-		glTexCoord2d(0.0,900.0);
-		vector.v.x=-100.0;
-		vector.v.y=100.0;
-		vector.v.z=-20.0;
-		glVertex3dv(vector.d);
-		glEnd();
-*/
-
-
 		glDisable(GL_TEXTURE_2D);
 
 	}
@@ -330,7 +304,7 @@ void CGLView::Render()
 
 	float res_wid = ScreenRect.Width()/(pDoc->m_NetworkRect.Width()+1);
 	float res_height = ScreenRect.Height()/(pDoc->m_NetworkRect.Height()+1);
-	m_Resolution = min(res_wid, res_height); 
+	m_XYResolution = min(res_wid, res_height); 
 	m_MinX = pDoc->m_NetworkRect.left;
 	m_MinY = pDoc->m_NetworkRect.top;
 	m_OrgX = (pDoc->m_NetworkRect.left+pDoc->m_NetworkRect.right)/2;
@@ -339,7 +313,9 @@ void CGLView::Render()
 
 
 	DrawAllObjects();
-/* test code
+
+	
+	/* test code
 	double x0 =  NXtoSX_org(pDoc->m_NetworkRect.left);
 	double x1 =  NXtoSX_org(pDoc->m_NetworkRect.right);
 	double y0 =  NXtoSX_org(pDoc->m_NetworkRect.top);
@@ -412,7 +388,6 @@ void CGLView::DrawAllObjects()
 	}
 
 
-	
 	//draw time-dependent path
 
 	if(m_ShowAllPaths)
@@ -463,11 +438,25 @@ void CGLView::DrawAllObjects()
 
 //draw time-dependent train path
 
-	if(m_ShowAllPaths)
+	if(m_ShowAllTrains)
 	{
-	float TimeStep = 2.0f;
 
-	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
+	// find the maximum timesamp
+		float max_time = 0;
+		unsigned int v ;
+
+	for(v = 0; v<pDoc->m_TrainVector.size(); v++)
+	{
+
+		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+
+		if((pTrain->m_DepartureTime + pTrain->m_ActualTripTime) > max_time)
+			max_time = pTrain->m_DepartureTime + pTrain->m_ActualTripTime;
+	}
+	
+		float m_ZResolution = 500.0f/max_time;
+
+	for(v = 0; v<pDoc->m_TrainVector.size(); v++)
 	{
 
 		DTA_Train* pTrain = pDoc->m_TrainVector[v];
@@ -485,8 +474,8 @@ void CGLView::DrawAllObjects()
 		float toX = NXtoSX_org(pLink->m_ToPoint.x);
 		float toY = NYtoSY_org(pLink->m_ToPoint.y);
 
-		float TimeZFrom = pTrain->m_aryTN[n-1].NodeTimestamp*TimeStep;
-		float TimeZTo = pTrain->m_aryTN[n].NodeTimestamp*TimeStep;
+		float TimeZFrom = pTrain->m_aryTN[n-1].NodeTimestamp*m_ZResolution;
+		float TimeZTo = pTrain->m_aryTN[n].NodeTimestamp*m_ZResolution;
 
 
 		glVertex3f(fromX,fromY,TimeZFrom);
@@ -780,3 +769,11 @@ void CGLView::On3ddisplayBasicview()
 	Render();
 }
 
+
+void CGLView::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+	 ShowWindow(SW_HIDE);
+
+//	CView::OnClose();
+}

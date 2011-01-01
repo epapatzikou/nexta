@@ -3,6 +3,8 @@ To Do List.
 // to do: delete m_TrainVector; m_node, link set;
 memory clean up
 
+. load file status, just like TRANSIMS loading utility
+
 1. add link directly
 2. show distance grid
 3. save functions

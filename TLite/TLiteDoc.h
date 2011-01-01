@@ -10,7 +10,7 @@
 // http://www.gnu.org/licenses/gpl-howto.html
 
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -190,7 +190,8 @@ public:
 	afx_msg void OnSearchListtrains();
 	afx_msg void OnToolsTimetablingoptimization();
 	afx_msg void OnTimetableImporttimetable();
-	afx_msg void OnTimetableInitializetimetable();
+	afx_msg void OnInitializetimetable();
+	afx_msg void OnWindow2dview();
 };
 
 

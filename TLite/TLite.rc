@@ -108,13 +108,12 @@ BEGIN
     BUTTON      ID_3DLockZ
     SEPARATOR
     BUTTON      ID_WINDOW_NEW3DVIEW
+    BUTTON      ID_SHOW_TIMETABLE
     BUTTON      ID_WINDOW_TILE_VERT
     BUTTON      ID_WINDOW_TILE_HORZ
     SEPARATOR
+    BUTTON      ID_WINDOW_TILE_HORZ
     BUTTON      ID_Create1WayLink
-    BUTTON      ID_Create2WayLinks
-    SEPARATOR
-    BUTTON      ID_SHOW_TIMETABLE
 END
 
 
@@ -204,7 +203,7 @@ BEGIN
     BEGIN
         MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
         MENUITEM "Initialize Timetable",        ID_TIMETABLE_INITIALIZETIMETABLE
-        MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
+        MENUITEM "Generae Timetable (Lagrangian-based Lower Bound Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
         MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
         MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
         MENUITEM "Export Timetable",            ID_TIMETABLE_EXPORTTIMETABLE
@@ -222,7 +221,8 @@ BEGIN
     END
     POPUP "&Window"
     BEGIN
-        MENUITEM "New 3D View",                 ID_WINDOW_NEW3DVIEW
+        MENUITEM "3D View",                     ID_WINDOW_NEW3DVIEW
+        MENUITEM SEPARATOR
         MENUITEM "&New Window",                 ID_WINDOW_NEW
         MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
         MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ

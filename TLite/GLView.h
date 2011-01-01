@@ -9,7 +9,7 @@
 // http://www.gnu.org/licenses/gpl-howto.html
 
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -87,31 +87,33 @@ protected:
 public:
 
 	CTLiteDoc* GetDocument() const;
-	float m_Resolution;
+	float m_XYResolution;
 	float m_MinX;
 	float m_MinY;
 	float m_OrgX;
 	float m_OrgY;
 
+	float m_ZResolution;
+
 
 	 float NXtoSX(float x) // convert network coordinate to screen coordinate
 	{
-		return (x-m_MinX)*m_Resolution;
+		return (x-m_MinX)*m_XYResolution;
 	}
 
 	 float NYtoSY(float y) // convert network coordinate to screen coordinate
 	{
-		return (y-m_MinY)*m_Resolution;
+		return (y-m_MinY)*m_XYResolution;
 	}
 
 	 float NXtoSX_org(float x) // convert network coordinate to screen coordinate
 	{
-		return (x-m_OrgX)*m_Resolution;
+		return (x-m_OrgX)*m_XYResolution;
 	}
 
 	 float NYtoSY_org(float y) // convert network coordinate to screen coordinate
 	{
-		return (y-m_OrgY)*m_Resolution;
+		return (y-m_OrgY)*m_XYResolution;
 	}
 
 	 glState m_State;
@@ -234,6 +236,7 @@ public:
 
 	bool m_ShowSpeedVariability;
 	bool m_ShowAllPaths;
+	bool m_ShowAllTrains;
 
 
 	void DrawAllObjects();
@@ -286,6 +289,7 @@ public:
 	afx_msg void OnUpdate3ddisplayTimeDependentPaths(CCmdUI *pCmdUI);
 	afx_msg void OnUpdate3ddisplayAnimation(CCmdUI *pCmdUI);
 	afx_msg void On3ddisplayBasicview();
+	afx_msg void OnClose();
 };
 inline CTLiteDoc* CGLView::GetDocument() const
    { return reinterpret_cast<CTLiteDoc*>(m_pDocument); }
