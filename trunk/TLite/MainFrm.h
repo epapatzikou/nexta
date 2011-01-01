@@ -10,7 +10,7 @@
 // http://www.gnu.org/licenses/gpl-howto.html
 
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -58,6 +58,8 @@ protected:  // control bar embedded members
 	CToolBar    m_wndToolBar;
    CPlayerSeekBar m_wndPlayerSeekBar;
 
+   bool m_b3DExist;
+   bool m_bTimetableExist;
 
 // Generated message map functions
 protected:
@@ -66,6 +68,8 @@ protected:
 public:
 	afx_msg void OnWindowNew3dview();
 	afx_msg void OnShowTimetable();
+	afx_msg void OnUpdateWindowNew3dview(CCmdUI *pCmdUI);
+	afx_msg void OnWindow2dview();
 };
 
 

@@ -10,7 +10,7 @@
 // http://www.gnu.org/licenses/gpl-howto.html
 
 
-//    This file is part of NEXTA  Version 3 (Open-source).
+//    This file is part of NeXTA Version 3 (Open-source).
 
 //    NEXTA is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -45,12 +45,12 @@ extern CDlgPathMOE	*g_pPathMOEDlg;
 
 extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
 
-std::list<CTLiteView*>	g_ViewList;
+std::list<CView*>	g_ViewList;
 
 // CTLiteView
 void g_UpdateAllViews(int Flag = 0)  //0: update all windows, 1: called from Link MOE, 2: called from path MOE
 {
-   std::list<CTLiteView*>::iterator it;
+   std::list<CView*>::iterator it;
    for(it = g_ViewList.begin(); it != g_ViewList.end(); it++)
    {
       if((*it)->GetSafeHwnd ())

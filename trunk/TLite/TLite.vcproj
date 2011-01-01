@@ -251,6 +251,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\Timetable.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\TLite.cpp"
 				>
 			</File>
