@@ -28,6 +28,7 @@
 #pragma once
 
 #include "atlimage.h"
+#include "math.h"
 #include "Network.h"
 
 
@@ -36,29 +37,38 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-	MaxNodeKey = 60000;  // max: unsigned short 65,535;
-	m_BKBitmapLoaded  = false;
-	m_ColorFreeway = RGB(198,226,255);
-	m_ColorHighway = RGB(100,149,237);
-	m_ColorArterial = RGB(0,0,0);
-	m_pNetwork = NULL;
-    m_OriginNodeID = -1;
-	m_DestinationNodeID = -1;
-	m_NodeSizeSP = 0;
-	m_PathMOEDlgShowFlag = false;
-	m_SelectPathNo = -1;
+		MaxNodeKey = 60000;  // max: unsigned short 65,535;
+		m_BKBitmapLoaded  = false;
+		m_ColorFreeway = RGB(198,226,255);
+		m_ColorHighway = RGB(100,149,237);
+		m_ColorArterial = RGB(0,0,0);
+		m_pNetwork = NULL;
+		m_OriginNodeID = -1;
+		m_DestinationNodeID = -1;
+		m_NodeSizeSP = 0;
+		m_PathMOEDlgShowFlag = false;
+		m_SelectPathNo = -1;
 
-	m_ImageX1 = 0;
-	m_ImageX2 = 1000;
-	m_ImageY1 = 0;
-	m_ImageY2 = 1000;
+		m_ImageX1 = 0;
+		m_ImageX2 = 1000;
+		m_ImageY1 = 0;
+		m_ImageY2 = 1000;
 
+		m_NetworkRect.top  = 50;
+		m_NetworkRect.bottom = 0;
+
+		m_NetworkRect.left   = 0;
+		m_NetworkRect.right = 100;
+
+		m_UnitMile = 1;
+		m_UnitFeet = 1/5280.0;
+		m_bFitNetworkInitialized = false; 
 	}
 	DECLARE_DYNCREATE(CTLiteDoc)
 
-// Attributes
+	// Attributes
 public:
-    
+
 	std::vector<DTAPath*>	m_PathDisplayList;
 	bool m_PathMOEDlgShowFlag;
 	int m_SelectPathNo;
@@ -66,106 +76,229 @@ public:
 	int m_OriginNodeID;
 	int m_DestinationNodeID;
 
-	double m_UnitFeet;
+	double m_UnitFeet, m_UnitMile;
 
-   COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
+	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
-BOOL OnOpenDocument(LPCTSTR lpszPathName);
+	BOOL OnOpenDocument(LPCTSTR lpszPathName);
 
-void ReadLinkCSVFile(CString directory);   // for road network
-void ReadArcCSVFile(CString directory);   // for rail/air network
+	// two basic input
+	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadLinkCSVFile(LPCTSTR lpszFileName);   // for road network
+	
+	// additional input
+	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
+	void ReadHistoricalData(CString directory);
+	void ReadSensorLocationData(CString directory);
+	void ReadHistoricalDataFormat2(CString directory);
 
-void ReadHistoricalData(CString directory);
-void ReadSensorLocationData(CString directory);
-void ReadHistoricalDataFormat2(CString directory);
+	CString m_NodeDataLoadingStatus;
+	CString m_LinkDataLoadingStatus;
+	CString m_LinkTrainTravelTimeDataLoadingStatus;
+	CString m_TimetableDataLoadingStatus;
 
-int FindLinkFromSensorLocation(float x, float y, int direction);
+	CString m_BackgroundImageFileLoadingStatus;
+
+	CString m_SimulationLinkMOEDataLoadingStatus;
+
+
+	int FindLinkFromSensorLocation(float x, float y, int direction);
 
 
 public:
-std::list<DTANode*>		m_NodeSet;
-std::list<DTALink*>		m_LinkSet;
-int m_AdjLinkSize;
+	std::list<DTANode*>		m_NodeSet;
+	std::list<DTALink*>		m_LinkSet;
+	int m_AdjLinkSize;
 
-DTANetworkForSP* m_pNetwork;
-
-int Routing();
-
-bool ImportTimetableData(LPCTSTR lpszFileName);
-bool TimetableOptimization();  //Lagrangian based.
-
-long m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
-long m_NodeSizeSP;
+	DTANetworkForSP* m_pNetwork;
+	int Routing();
 
 
-std::map<int, DTANode*> m_NodeMap;
-std::map<long, DTALink*> m_LinkMap;
+	void ImportLinkTravelTimeCSVFile(LPCTSTR lpszFileName);
+	bool ImportTimetableCVSFile(LPCTSTR lpszFileName);
+	bool TimetableOptimization_Lagrangian_Method();  //Lagrangian based.
+	bool TimetableOptimization_Priority_Rule();  //Lagrangian based.
 
-std::map<int, int> m_NodeIDtoNameMap;
-std::map<int, int> m_NodeNametoIDMap;
-
-std::vector<DTA_sensor> m_SensorVector;
-
-std::vector<DTA_Train*> m_TrainVector;
-
-CString m_ProjectDirectory;
-
-GDRect m_NetworkRect;
-
-std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
-std::map<long, long> m_SensorIDtoLinkIDMap;
-
-int MaxNodeKey;
-unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
-{
-	unsigned long LinkKey = FromNodeID*MaxNodeKey+ToNodeID;
-	return LinkKey;
-}
-
-DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
-{
-	int FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
-	int ToNodeID = m_NodeNametoIDMap[ToNodeNumber];
-
-	unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
-	return m_NodeIDtoLinkMap[LinkKey];
-}
-
-DTALink* FindLinkWithNodeIDs(int FromNodeID, int ToNodeID)
-{
-
-	unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
-	return m_NodeIDtoLinkMap[LinkKey];
-}
+	void ImportBackgroundImageFile(LPCTSTR lpszFileName);
+	long m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
+	long m_NodeSizeSP;
 
 
+	std::map<int, DTANode*> m_NodeIDMap;
+	std::map<long, DTALink*> m_LinkIDMap;
+
+	std::map<int, int> m_NodeIDtoNameMap;
+	std::map<int, int> m_NodeNametoIDMap;
+
+	std::vector<DTA_sensor> m_SensorVector;
+
+	std::vector<DTA_Train*> m_TrainVector;
+
+	CString m_ProjectDirectory;
+
+	GDRect m_NetworkRect;
+
+	bool AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false)
+	{
+		DTALink* pLink = 0;
+
+		pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
+		if(pLink != NULL)
+			return false;  // a link with the same from and to node numbers exists!
+
+		pLink = new DTALink(1);
+		pLink->m_LinkID = m_LinkSet.size();
+		pLink->m_FromNodeNumber = m_NodeIDtoNameMap[FromNodeID];
+		pLink->m_ToNodeNumber = m_NodeIDtoNameMap[ToNodeID];
+		pLink->m_FromNodeID = FromNodeID;
+		pLink->m_ToNodeID= ToNodeID;
+		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
+		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
+
+		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+		m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+		pLink->m_NumLanes= 2;
+		pLink->m_SpeedLimit= 60;
+		pLink->m_Length= pLink->DefaultDistance();
+		pLink->m_MaximumServiceFlowRatePHPL= 2000;
+		pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+		pLink->m_link_type= 1;
+
+		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
+
+		if(bOffset)
+		{
+			double link_offset = m_UnitFeet*80;
+			double DeltaX = pLink->m_ToPoint.x - pLink->m_FromPoint.x ;
+			double DeltaY = pLink->m_ToPoint.y - pLink->m_FromPoint.y ;
+			double theta = atan2(DeltaY, DeltaX);
+
+			pLink->m_FromPoint.x += link_offset* cos(theta-PI/2.0f);
+			pLink->m_ToPoint.x += link_offset* cos(theta-PI/2.0f);
+
+			pLink->m_FromPoint.y += link_offset* sin(theta-PI/2.0f);
+			pLink->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
+		}
 
 
-int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
-int** m_ZoneCentroidNodeAry; //centroid node Id per zone
-
-DTAZone* m_ZoneInfo;
-
-std::list<DTAVehicle*>		m_VehicleSet;
-std::map<int, DTAVehicle*> m_VehicleMap;
+		pLink->SetupMOE();
+		m_LinkSet.push_back (pLink);
+		m_LinkIDMap[pLink->m_LinkID]  = pLink;
 
 
-bool m_BKBitmapLoaded;
-CImage m_BKBitmap;  // background bitmap
-float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
-float m_ImageXResolution, m_ImageYResolution;
-float m_ImageMoveSize;
+
+		return true;
+	}
+
+	DTANode* AddNewNode(GDPoint newpt)
+	{
+		DTANode* pNode = new DTANode;
+		pNode->pt = newpt;
+		pNode->m_NodeNumber = GetUnusedNodeNumber();
+		pNode->m_NodeID = m_NodeSet.size();
+		pNode->m_ZoneID = 0;
+		m_NodeSet.push_back(pNode);
+		m_NodeIDMap[pNode->m_NodeID] = pNode;
+		m_NodeIDtoNameMap[pNode->m_NodeID ] = pNode->m_NodeNumber;
+		m_NodeNametoIDMap[pNode->m_NodeNumber] = pNode->m_NodeID;
+
+		return pNode;
+	}
+	int GetUnusedNodeNumber()
+	{
+		int NewNodeNumber = 1;
+
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if(NewNodeNumber <= (*iNode)->m_NodeNumber)
+				NewNodeNumber = (*iNode)->m_NodeNumber +1;
+		}
+
+		return NewNodeNumber;
+
+	}
+
+	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
+	std::map<long, long> m_SensorIDtoLinkIDMap;
+
+	int MaxNodeKey;
+	unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
+	{
+		unsigned long LinkKey = FromNodeID*MaxNodeKey+ToNodeID;
+		return LinkKey;
+	}
+
+	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
+	{
+		int FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
+		int ToNodeID = m_NodeNametoIDMap[ToNodeNumber];
+
+		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
+		return m_NodeIDtoLinkMap[LinkKey];
+	}
+
+	DTALink* FindLinkWithNodeIDs(int FromNodeID, int ToNodeID)
+	{
+
+		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
+		return m_NodeIDtoLinkMap[LinkKey];
+	}
 
 
-// Operations
+
+
+	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
+	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
+
+	DTAZone* m_ZoneInfo;
+
+	std::list<DTAVehicle*>		m_VehicleSet;
+	std::map<int, DTAVehicle*> m_VehicleMap;
+
+
+	bool m_BKBitmapLoaded;
+	CImage m_BKBitmap;  // background bitmap
+	float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
+	float m_ImageXResolution, m_ImageYResolution;
+	float m_ImageMoveSize;
+
+
+	// Operations
 public:
 
-// Overrides
+	double  FindClosestResolution(double Value)
+	{
+		double ResolutionVector[23] = {0.001,0.005,0.01,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000};
+		double min_distance  = 9999999;
+
+		double ClosestResolution=1;
+		for(int i=0; i<23;i++)
+		{
+			if(	fabs(Value-ResolutionVector[i]) < min_distance)
+			{
+				min_distance = fabs(Value-ResolutionVector[i]);
+				ClosestResolution = ResolutionVector[i];
+			}
+		}
+		return ClosestResolution;
+	}
+
+	void SendTexttoStatusBar(CString str);
+
+	// Overrides
 public:
+	bool m_bFitNetworkInitialized;
+	void CalculateDrawingRectangle();
+
+	CString m_ProjectFile;
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
+	BOOL SaveProject(LPCTSTR lpszPathName);
 
-// Implementation
+	// Implementation
 public:
 	virtual ~CTLiteDoc();
 #ifdef _DEBUG
@@ -175,7 +308,7 @@ public:
 
 protected:
 
-// Generated message map functions
+	// Generated message map functions
 protected:
 	DECLARE_MESSAGE_MAP()
 public:
@@ -192,6 +325,9 @@ public:
 	afx_msg void OnTimetableImporttimetable();
 	afx_msg void OnInitializetimetable();
 	afx_msg void OnWindow2dview();
+	afx_msg void OnOptimizetimetable_PriorityRule();
+	afx_msg void OnFileSaveProject();
+	afx_msg void OnFileSaveProjectAs();
 };
 
 

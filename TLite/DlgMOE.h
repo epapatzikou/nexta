@@ -40,7 +40,7 @@ public:
 	m_YUpperBound = 100;
 	m_YLowerBound = 0;
 	m_TmLeft = 0;
-	m_Range = 1440*g_Number_of_Weekdays;
+	m_Range = g_Simulation_Time_Horizon;
 	m_TmRight = m_Range;  // use 5 days as starting show
 	Cur_MOE_type1 = 0;
 	Cur_MOE_type2 = -1;

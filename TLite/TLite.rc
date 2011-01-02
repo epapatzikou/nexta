@@ -90,12 +90,12 @@ IDB_PATH_CHECK          BITMAP                  "C:\\temp\\rowlist\\res\\stateic
 IDR_MAINFRAME TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_FILE_OPEN_NEW_DOC
-    BUTTON      ID_FILE_SAVE
+    BUTTON      ID_FILE_SAVE_PROJECT
     SEPARATOR
     BUTTON      ID_VIEW_SELECT
     BUTTON      ID_VIEW_MOVE
     BUTTON      ID_VIEW_IMAGE
-    SEPARATOR
+    BUTTON      ID_SHOW_GRID
     BUTTON      ID_VIEW_ZOOMIN
     BUTTON      ID_VIEW_ZOOMOUT
     BUTTON      ID_VIEW_SHOWNETWORK
@@ -105,15 +105,15 @@ BEGIN
     BUTTON      ID_3DPam
     BUTTON      ID_3DRotate
     BUTTON      ID_3DReset
-    BUTTON      ID_3DLockZ
     SEPARATOR
     BUTTON      ID_WINDOW_NEW3DVIEW
     BUTTON      ID_SHOW_TIMETABLE
+    BUTTON      ID_WINDOW_SHOW2DVIEW
     BUTTON      ID_WINDOW_TILE_VERT
     BUTTON      ID_WINDOW_TILE_HORZ
     SEPARATOR
-    BUTTON      ID_WINDOW_TILE_HORZ
-    BUTTON      ID_Create1WayLink
+    BUTTON      ID_Edit_Create1WayLink
+    BUTTON      ID_Edit_Create2WayLinks
 END
 
 
@@ -149,8 +149,10 @@ IDR_TLiteTYPE MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN
+        MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
         MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM SEPARATOR
@@ -170,11 +172,16 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Configure Background Color",  32778
     END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+    END
     POPUP "&Show"
     BEGIN
         MENUITEM "Show Background Image",       ID_VIEW_BACKGROUNDIMAGE
         MENUITEM "Show Network",                ID_VIEW_SHOWNETWORK
-        MENUITEM "Show TimeTable",              ID_SHOW_TIMETABLE
+        MENUITEM "Show Grid",                   ID_SHOW_GRID
         MENUITEM SEPARATOR
         MENUITEM "Show Node",                   ID_SHOW_SHOWNODE
         MENUITEM "Show Node Number",            ID_SHOW_SHOWNODENUMBER
@@ -186,6 +193,7 @@ BEGIN
         MENUITEM "Show All Paths",              ID_SHOW_SHOWALLPATHS
         MENUITEM "Show Path MOE",               ID_SHOW_SHOWPATHMOE
         MENUITEM SEPARATOR
+        MENUITEM "Show Link Arrow",             ID_SHOW_LINKARROW
     END
     POPUP "Search"
     BEGIN
@@ -203,7 +211,9 @@ BEGIN
     BEGIN
         MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
         MENUITEM "Initialize Timetable",        ID_TIMETABLE_INITIALIZETIMETABLE
-        MENUITEM "Generae Timetable (Lagrangian-based Lower Bound Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
+        MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
+        MENUITEM "Optimize Timetable (Priority Method)", ID_TIMETABLE_OPTIMIZETIMETABLE
+        MENUITEM SEPARATOR
         MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
         MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
         MENUITEM "Export Timetable",            ID_TIMETABLE_EXPORTTIMETABLE
@@ -221,7 +231,9 @@ BEGIN
     END
     POPUP "&Window"
     BEGIN
-        MENUITEM "3D View",                     ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show TimeTable",              ID_SHOW_TIMETABLE
+        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
         MENUITEM SEPARATOR
         MENUITEM "&New Window",                 ID_WINDOW_NEW
         MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
@@ -318,19 +330,19 @@ END
 
 IDR_MAINFRAME ACCELERATORS 
 BEGIN
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
-    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
-    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE_PROJECT,   VIRTKEY, CONTROL, NOINVERT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
 END
 
 
@@ -394,6 +406,20 @@ CAPTION "Train Info"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "",IDC_TRAIN_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,401,133
+END
+
+IDD_DIALOG_FILE_LOADING DIALOGEX 0, 0, 415, 231
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "File Loading Status"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,189,210,50,14
+    LISTBOX         IDC_LIST_NETEWORK_FILE,7,18,401,53,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP,WS_EX_LEFTSCROLLBAR
+    LTEXT           "Network Data:",IDC_STATIC,7,7,53,8
+    LTEXT           "Optimization Input Data:",IDC_STATIC,7,74,90,8
+    LISTBOX         IDC_LIST_NETEWORK_FILE2,7,84,401,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP,WS_EX_LEFTSCROLLBAR
+    LTEXT           "Output Data:",IDC_STATIC,7,129,90,8
+    LISTBOX         IDC_LIST_OUTPUTDTA,7,152,401,57,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP,WS_EX_LEFTSCROLLBAR
 END
 
 
@@ -488,6 +514,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 199
     END
+
+    IDD_DIALOG_FILE_LOADING, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 408
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 224
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -498,6 +532,7 @@ END
 //
 
 IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
+IDC_CREATE_LINK_CURSOR  CURSOR                  "res\\cur00001.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -572,8 +607,8 @@ BEGIN
     ID_WINDOW_NEW           "Open another window for the active document\nNew Window"
     ID_WINDOW_ARRANGE       "Arrange icons at the bottom of the window\nArrange Icons"
     ID_WINDOW_CASCADE       "Arrange windows so they overlap\nCascade Windows"
-    ID_WINDOW_TILE_HORZ     "Arrange windows as non-overlapping tiles\nTile Windows"
-    ID_WINDOW_TILE_VERT     "Arrange windows as non-overlapping tiles\nTile Windows"
+    ID_WINDOW_TILE_HORZ     "\nArrange windows as non-overlapping tiles\nTile Windows"
+    ID_WINDOW_TILE_VERT     "\nArrange windows as non-overlapping tiles\nTile Windows"
     ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
 END
 
@@ -618,12 +653,17 @@ END
 
 STRINGTABLE 
 BEGIN
-    ID_VIEW_IMAGE           "Enable the background image to be movable"
+    ID_VIEW_IMAGE           "\nEnable the background image to be movable"
 END
 
 STRINGTABLE 
 BEGIN
-    ID_3DZoom               "Zoom in and zoom out in 3D View \n 3D Zoom in & out"
+    ID_3DZoom               "\nZoom in and zoom out in 3D View \n 3D Zoom in & out"
+    ID_3DPam                "\nMove Objectives "
+    ID_3DRotate             "\nRotate Objects"
+    ID_3DReset              "\nReset View"
+    ID_3DLockZ              "\nLock Z Axis"
+    ID_WINDOW_NEW3DVIEW     "\nShow 3D View"
 END
 
 STRINGTABLE 
@@ -631,6 +671,17 @@ BEGIN
     ID_BUTTON32872          "Create One-way Link\nOne-way Link"
     ID_Create1WayLink       "Create One-way Link\nOne-way Link"
     ID_Create2WayLinks      "Create Two-way Link\nTwo-way Link"
+    ID_SHOW_TIMETABLE       "\nShow Timetable"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_WINDOW_SHOW2DVIEW    "\nShow 2D View"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_SHOWMOE         "\nShow Link MOE Window"
 END
 
 #endif    // English (U.S.) resources

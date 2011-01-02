@@ -256,12 +256,15 @@ void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p
 		m_InboundSizeAry[ToID] +=1;
 
 
+//		TRACE("------Link %d->%d:\n",FromID,ToID);
 		ASSERT(m_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
 		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
 		{
 			m_LinkTDTimeAry[(*iterLink)->m_LinkID][t] = (*iterLink)->GetTrainRunningTime(TrainType);  // in the future, we can extend it to time-dependent running time
 			m_LinkTDCostAry[(*iterLink)->m_LinkID][t]=  (*iterLink)->m_ResourceAry[t].Price;  // for all train types
+
+//			TRACE("Time %d, Travel Time %f, Cost %f\n", t,m_LinkTDTimeAry[(*iterLink)->m_LinkID][t] ,m_LinkTDCostAry[(*iterLink)->m_LinkID][t]);
 
 			// use travel time now, should use cost later
 		}
@@ -279,6 +282,9 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int depar
 
 	int i;
 	int debug_flag = 0;  // set 1 to debug the detail information
+				if(debug_flag)
+				TRACE("\nCompute shortest path from %d at time %d",origin, departure_time);
+
 
 	if(m_OutboundSizeAry[origin]== 0)
 		return false;
@@ -408,7 +414,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 	}
 
-	ASSERT(min_cost_time_index>=0); // if min_cost_time_index ==-1, then no feasible path if founded
+	ASSERT(min_cost_time_index>0); // if min_cost_time_index ==-1, then no feasible path if founded
 
 	// step 2: backtrace to the origin (based on node and time predecessors)
 

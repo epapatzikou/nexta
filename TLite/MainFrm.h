@@ -58,9 +58,6 @@ protected:  // control bar embedded members
 	CToolBar    m_wndToolBar;
    CPlayerSeekBar m_wndPlayerSeekBar;
 
-   bool m_b3DExist;
-   bool m_bTimetableExist;
-
 // Generated message map functions
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -70,6 +67,7 @@ public:
 	afx_msg void OnShowTimetable();
 	afx_msg void OnUpdateWindowNew3dview(CCmdUI *pCmdUI);
 	afx_msg void OnWindow2dview();
+	afx_msg void OnWindowShow2dview();
 };
 
 

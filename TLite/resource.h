@@ -17,10 +17,16 @@
 #define IDB_PATH_ICON                   142
 #define IDB_PATH_CHECK                  145
 #define IDR_MENU2                       146
+#define IDC_CREATE_LINK_CURSOR          147
+#define IDD_DIALOG_FILE_LOADING         148
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_PATH_LIST_CONTROL           1010
 #define IDC_TRAIN_LIST_CONTROL          1013
+#define IDC_LIST_NETEWORK_FILE          1014
+#define IDC_LIST_NETEWORK_FILE2         1015
+#define IDC_LIST_NETEWORK_FILE3         1016
+#define IDC_LIST_OUTPUTDTA              1016
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -122,14 +128,28 @@
 #define ID_TIMETABLE_EXPORTTIMETABLE    32881
 #define ID_TIMETABLE_IMPORTTIMETABLE    32882
 #define ID_TIMETABLE_INITIALIZETIMETABLE 32883
+#define ID_WINDOW_SHOW2DVIEW            32884
+#define ID_BUTTON32885                  32885
+#define ID_TIMETABLE_OPTIMIZETIMETABLE  32886
+#define ID_EDIT_CREATEONE               32887
+#define ID_Edit_Create1WayLink          32888
+#define ID_Edit_Create2WayLinks         32889
+#define ID_EDIT_CREATETWO               32890
+#define ID_SHOW_GRID                    32891
+#define ID_SHOW_SHOWLINKARROW           32893
+#define ID_SHOW_LINKARROW               32894
+#define ID_FILE_SAVE32895               32895
+#define ID_FILE_SAVE_PROJECT            32896
+#define ID_FILE_SAVEAS                  32897
+#define ID_FILE_SAVE_PROJECT_AS         32898
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        147
-#define _APS_NEXT_COMMAND_VALUE         32884
-#define _APS_NEXT_CONTROL_VALUE         1014
+#define _APS_NEXT_RESOURCE_VALUE        149
+#define _APS_NEXT_COMMAND_VALUE         32899
+#define _APS_NEXT_CONTROL_VALUE         1015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

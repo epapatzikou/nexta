@@ -18,6 +18,8 @@ protected: // create from serialization only
 
 // Attributes
 public:
+	bool bRangeInitialized;
+
 	CTLiteDoc* GetTLDocument();
 
 	bool m_bShowResourcePrice;
@@ -42,6 +44,7 @@ public:
 
 // Operations
 public:
+	void InitializeTimeRange();
 
 	bool ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH]);
 

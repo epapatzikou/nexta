@@ -74,11 +74,13 @@ CTimeSpaceView::CTimeSpaceView()
 
 	m_bMoveDisplay = false;
 
+	bRangeInitialized = false;
 
 }
 
 CTimeSpaceView::~CTimeSpaceView()
 {
+
 }
 
 BOOL CTimeSpaceView::PreCreateWindow(CREATESTRUCT& cs)
@@ -157,6 +159,12 @@ void CTimeSpaceView::Dump(CDumpContext& dc) const
 
 void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 {
+	if(!bRangeInitialized)
+	{
+		InitializeTimeRange();
+		bRangeInitialized = true;
+	}
+
 	if(m_TmLeft<0)
 		m_TmLeft = 0;
 
@@ -189,7 +197,6 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 	int i;
 	std::list<DTALink*>::iterator iLink;
 	CTLiteDoc* pDoc = GetTLDocument();
-
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
@@ -280,8 +287,8 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 	pDC->LineTo(PlotRect.right,PlotRect.bottom);
 
 
-		int PrevToNode = -1;
-		bool bSpace = false;
+		int PrevToNodeNumber = -1;
+		int bSpace = -1;
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
@@ -296,17 +303,20 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 		pDC->MoveTo(PlotRect.left, YTo);
 		pDC->LineTo(PlotRect.right,YTo);
 
-		if(PrevToNode!=(*iLink)->m_FromNodeID)  // first from node or node change
+		if(PrevToNodeNumber!=(*iLink)->m_FromNodeNumber)  // first from node or node change
 		{
-			bSpace = !bSpace;
+			bSpace++;
+			if(bSpace==5)
+				bSpace = 0;
+
 			wsprintf(buff,"%d",(*iLink)->m_FromNodeNumber );
-			pDC->TextOut(PlotRect.left-30-bSpace*10,YFrom-5,buff);
+			pDC->TextOut(PlotRect.left-60+bSpace*10,YFrom-5,buff);
 		}
 
 			wsprintf(buff,"%d",(*iLink)->m_ToNodeNumber );
-			pDC->TextOut(PlotRect.left-30-bSpace*10,YTo-5,buff);
+			pDC->TextOut(PlotRect.left-60+bSpace*10,YTo-5,buff);
 		
-		PrevToNode = (*iLink)->m_ToNodeNumber;
+		PrevToNodeNumber = (*iLink)->m_ToNodeNumber;
 	}
 
 	// draw trains
@@ -320,7 +330,7 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 
 		for(int n = 1; n< pTrain->m_NodeSize; n++)
 		{
-			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+			DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
 
 			ASSERT(pLink!=NULL);
 			int YFrom = PlotRect.bottom - (int)(pLink->m_FromNodeY*m_UnitDistance+0.50);
@@ -412,14 +422,23 @@ BOOL CTimeSpaceView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 }
 
-void CTimeSpaceView::OnRButtonDown(UINT nFlags, CPoint point)
+void CTimeSpaceView::InitializeTimeRange()
 {
-
 	int min_timestamp = 1440;
 	int max_timestamp = 0;
 
 	CTLiteDoc* pDoc = GetTLDocument();
+	
+	if(pDoc->m_TrainVector.size() ==0)
+	{
+	m_TmLeft = 0;
+	m_TmRight = 60;
+
+	return;
+	}
 	// narrow the range for display
+
+
 
 	for(unsigned int v = 0; v<pDoc->m_TrainVector.size(); v++)
 	{
@@ -439,7 +458,14 @@ void CTimeSpaceView::OnRButtonDown(UINT nFlags, CPoint point)
 	}
 
 	m_TmLeft = min_timestamp;
-	m_TmRight = max_timestamp;
+	m_TmRight = max_timestamp+60;
+
+}
+
+void CTimeSpaceView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+
+	InitializeTimeRange();
 
 	Invalidate();
 	CView::OnRButtonDown(nFlags, point);
@@ -554,7 +580,7 @@ bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
 
 		for(int n = 0; n< pTrain->m_NodeSize; n++)
 		{
-			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+			DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
 
 			if(n==0)
 			{
@@ -579,7 +605,7 @@ bool CTimeSpaceView::ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH])
 
 void CTimeSpaceView::OnClose()
 {
-
- ShowWindow(SW_HIDE);
-//	CView::OnClose();
+	CView::OnClose();
 }
+
+
