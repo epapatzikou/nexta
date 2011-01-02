@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgFileLoading.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgFindALink.cpp"
 				>
 			</File>
@@ -289,6 +293,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgFileLoading.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgFindALink.h"
 				>
 			</File>
@@ -367,6 +375,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\cur00001.cur"
+				>
+			</File>
+			<File
 				RelativePath=".\res\cursor1.cur"
 				>
 			</File>
@@ -403,10 +415,6 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\ClassDiagram1.cd"
-			>
-		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "TLite.h"
+#include "math.h"
 
 #include "TLiteDoc.h"
 #include "TLiteView.h"
@@ -48,29 +49,29 @@ extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
 std::list<CView*>	g_ViewList;
 
 // CTLiteView
-void g_UpdateAllViews(int Flag = 0)  //0: update all windows, 1: called from Link MOE, 2: called from path MOE
+void g_UpdateAllViews(int Flag = -1)  //0: called from TLiteView, 1: called from Link MOE, 2: called from path MOE
 {
-   std::list<CView*>::iterator it;
-   for(it = g_ViewList.begin(); it != g_ViewList.end(); it++)
-   {
-      if((*it)->GetSafeHwnd ())
-      {
-	 (*it)->Invalidate (true);
-      }
-   }
+	std::list<CView*>::iterator it;
+	for(it = g_ViewList.begin(); it != g_ViewList.end(); it++)
+	{
+		if(Flag !=0 &&(*it)->GetSafeHwnd ())
+		{
+			(*it)->Invalidate (true);
+		}
+	}
 
 
-   if(Flag !=1 && g_LinkMOEDlg  && g_LinkMOEDlg ->GetSafeHwnd ())
-   {
-      g_LinkMOEDlg->Invalidate (true);
-   }
+	if(Flag !=1 && g_LinkMOEDlg  && g_LinkMOEDlg ->GetSafeHwnd ())
+	{
+		g_LinkMOEDlg->Invalidate (true);
+	}
 
 
-   if(Flag !=2&& g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
-   {
-      g_pPathMOEDlg->InsertPathMOEItem();
-      g_pPathMOEDlg->Invalidate (true);
-   }
+	if(Flag !=2&& g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
+	{
+		g_pPathMOEDlg->InsertPathMOEItem();
+		g_pPathMOEDlg->Invalidate (true);
+	}
 
 }
 
@@ -114,6 +115,16 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWALLPATHS, &CTLiteView::OnUpdateShowShowallpaths)
 	ON_COMMAND(ID_SHOW_SHOWNODENUMBER, &CTLiteView::OnShowShownodenumber)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWNODENUMBER, &CTLiteView::OnUpdateShowShownodenumber)
+	ON_COMMAND(ID_Edit_Create1WayLink, &CTLiteView::OnEditCreate1waylink)
+	ON_COMMAND(ID_Edit_Create2WayLinks, &CTLiteView::OnEditCreate2waylinks)
+	ON_UPDATE_COMMAND_UI(ID_Edit_Create1WayLink, &CTLiteView::OnUpdateEditCreate1waylink)
+	ON_UPDATE_COMMAND_UI(ID_Edit_Create2WayLinks, &CTLiteView::OnUpdateEditCreate2waylinks)
+	ON_COMMAND(ID_SHOW_GRID, &CTLiteView::OnShowGrid)
+	ON_UPDATE_COMMAND_UI(ID_SHOW_GRID, &CTLiteView::OnUpdateShowGrid)
+	ON_COMMAND(ID_SHOW_LINKARROW, &CTLiteView::OnShowLinkarrow)
+	ON_UPDATE_COMMAND_UI(ID_SHOW_LINKARROW, &CTLiteView::OnUpdateShowLinkarrow)
+	ON_COMMAND(ID_VIEW_SHOWMOE, &CTLiteView::OnViewShowmoe)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOWMOE, &CTLiteView::OnUpdateViewShowmoe)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -158,12 +169,14 @@ CPen g_SuperThickPenSelectColor5(PS_SOLID,5,RGB(255,255,0)); // yellow
 CPen g_PenFreewayColor(PS_SOLID,1,RGB(255,211,155));  
 CPen g_PenHighwayColor(PS_SOLID,1,RGB(100,149,237)); 
 CPen g_PenArterialColor(PS_SOLID,1,RGB(0,0,0)); 
+CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
+CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 void g_SelectColorCode(CDC* pDC, int ColorCount)
 {
 	switch(ColorCount)
 	{
-	
+
 	case 0: pDC->SelectObject(&g_PenSelectColor0); break;
 	case 1: pDC->SelectObject(&g_PenSelectColor1); break;
 	case 2: pDC->SelectObject(&g_PenSelectColor2); break;
@@ -211,7 +224,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 {
 	switch(ColorCount)
 	{
-	
+
 	case 0: pDC->SelectObject(&g_SuperThickPenSelectColor0); break;
 	case 1: pDC->SelectObject(&g_SuperThickPenSelectColor1); break;
 	case 2: pDC->SelectObject(&g_SuperThickPenSelectColor2); break;
@@ -228,16 +241,18 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
 	m_OriginOnBottomFlag = -1;
-	m_bFitNetworkInitialized = false;
 	m_BackgroundColor =  RGB(0,100,0);
-//	RGB(102,204,204);
-	
+	//	RGB(102,204,204);
+
 	m_ToolMode = move_tool;
 	m_bMoveDisplay = false;
 	m_bMoveImage = false;
 	m_bShowImage = true;
+	m_bShowGrid  = true;
+	m_bShowLinkArrow = true;
 	m_bShowNode = false;
 	m_bShowNodeNumber = false;
 	m_bShowLinkType  = true;
@@ -245,6 +260,8 @@ CTLiteView::CTLiteView()
 	m_SelectedLinkID = -1;
 
 
+	m_Origin.x = 0;
+	m_Origin.y = 0;
 
 	m_NodeSize = 80;
 	m_bShowSensor = true;
@@ -273,32 +290,32 @@ BOOL CTLiteView::PreCreateWindow(CREATESTRUCT& cs)
 void CTLiteView::DrawBitmap(CDC *pDC, CPoint point,UINT nIDResource )
 {
 
-   CBitmap bitmapImage;
-   //load bitmap from resource
-   bitmapImage.LoadBitmap(nIDResource);
+	CBitmap bitmapImage;
+	//load bitmap from resource
+	bitmapImage.LoadBitmap(nIDResource);
 
-   BITMAP bmpInfo;
-   CSize bitSize;
-   //get size of bitmap
-   bitmapImage.GetBitmap(&bmpInfo);
-   bitSize = CSize(bmpInfo.bmWidth, bmpInfo.bmHeight);
+	BITMAP bmpInfo;
+	CSize bitSize;
+	//get size of bitmap
+	bitmapImage.GetBitmap(&bmpInfo);
+	bitSize = CSize(bmpInfo.bmWidth, bmpInfo.bmHeight);
 
-   CDC* pwholeWndDC;
-   pwholeWndDC=pDC;
+	CDC* pwholeWndDC;
+	pwholeWndDC=pDC;
 
-   CImageList imageList;
-   //create ImageList
-   imageList.Create(bitSize.cx, bitSize.cy, ILC_COLOR|ILC_MASK, 1, 1);
-   //select color yellow is transparent color
-   imageList.Add(&bitmapImage, RGB(255,255,0));// Add bitmap to CImageList.
+	CImageList imageList;
+	//create ImageList
+	imageList.Create(bitSize.cx, bitSize.cy, ILC_COLOR|ILC_MASK, 1, 1);
+	//select color yellow is transparent color
+	imageList.Add(&bitmapImage, RGB(255,255,0));// Add bitmap to CImageList.
 
-   point.x-=bitSize.cx /2;
-   point.y-=bitSize.cy /2;
+	point.x-=bitSize.cx /2;
+	point.y-=bitSize.cy /2;
 
 
-   //drawing the first bitmap of imagelist Transparently
-   //imageList.SetBkColor(RGB(0,0,0));
-   imageList.Draw(pwholeWndDC,0, point, ILD_TRANSPARENT );
+	//drawing the first bitmap of imagelist Transparently
+	//imageList.SetBkColor(RGB(0,0,0));
+	imageList.Draw(pwholeWndDC,0, point, ILD_TRANSPARENT );
 
 }
 void CTLiteView::OnDraw(CDC* pDC)
@@ -327,7 +344,7 @@ void CTLiteView::OnDraw(CDC* pDC)
 	{
 		pDoc->m_ImageX2  = pDoc->m_ImageX1+ pDoc->m_ImageWidth * pDoc->m_ImageXResolution;
 		pDoc->m_ImageY2  = pDoc->m_ImageY1+ pDoc->m_ImageHeight * pDoc->m_ImageYResolution;
-		
+
 		GDPoint IMPoint1;
 		IMPoint1.x = pDoc->m_ImageX1;
 		IMPoint1.y = pDoc->m_ImageY1;
@@ -381,23 +398,107 @@ void CTLiteView::DrawObjects(CDC* pDC)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
+
 	std::list<DTANode*>::iterator iNode;
 
-	if(pDoc->m_NodeSet.size()>0 && !m_bFitNetworkInitialized )
+	if(pDoc->m_NodeSet.size()>0 && !pDoc->m_bFitNetworkInitialized )
 	{
 		FitNetworkToScreen();
-		m_bFitNetworkInitialized = true;
+		pDoc->m_bFitNetworkInitialized = true;
 
 	}
 
-
 	pDC->SetBkMode(TRANSPARENT);
 
+	// draw grids
+	if(m_bShowGrid)
+	{
+		pDC->SelectObject(&g_GridPen);
+		pDC->SetTextColor(RGB(255,228,181));
+
+		CPoint FromPoint, ToPoint;
+		GDPoint fromp, top;
+
+		CRect ScreenRect;
+		GetClientRect(ScreenRect);
+
+		// get the closest power 10 number
+		double grid_resolution = pDoc->FindClosestResolution(ScreenRect.Width ()/m_Resolution/10.0f);
+
+		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x);
+
+		if(grid_resolution>1)
+			LeftX = LeftX- LeftX%int(grid_resolution);
+
+		for(double x = LeftX; x<= int(SPtoNP(ScreenRect.BottomRight ()).x)+1; x+=grid_resolution)
+		{
+			fromp.x = x;
+			fromp.y = SPtoNP(ScreenRect.TopLeft()).y;
+
+			top.x = x;
+			top.y = SPtoNP(ScreenRect.BottomRight()).y;
+
+			FromPoint = NPtoSP(fromp);
+			ToPoint = NPtoSP(top);
+
+			pDC->SelectObject(&g_GridPen);
+
+			pDC->MoveTo(FromPoint);
+			pDC->LineTo(ToPoint);
+
+			CString str;
+
+			if(grid_resolution<1)
+				str.Format ("%.2f",x);
+			else
+				str.Format ("%.0f",x);
+
+			pDC->TextOut(FromPoint.x,ScreenRect.TopLeft().y+10,str);
+		}
+
+		int BottomY  = int(SPtoNP(ScreenRect.BottomRight()).y);
+
+		if(grid_resolution>1)
+			BottomY = BottomY- BottomY%int(grid_resolution);
+
+		for(double y = BottomY; y<= int(SPtoNP(ScreenRect.TopLeft ()).y)+1; y+=grid_resolution)
+		{
+
+			fromp.x =  SPtoNP(ScreenRect.TopLeft()).x ;
+			fromp.y = y;
+
+			top.x = SPtoNP(ScreenRect.BottomRight()).x ;
+			top.y = y ;
+
+			FromPoint = NPtoSP(fromp);
+			ToPoint = NPtoSP(top);
+
+			pDC->MoveTo(FromPoint);
+			pDC->LineTo(ToPoint);
+
+			CString str;
+			if(grid_resolution<1)
+				str.Format ("%.2f",y);
+			else
+				str.Format ("%.0f",y);
+
+			pDC->TextOut(ScreenRect.TopLeft().x+10,FromPoint.y,str);
+
+		}
+
+
+
+	}
+
+	// draw links
 	std::list<DTALink*>::iterator iLink;
 	std::list<DTALink*>::iterator iLinkDisplay;
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
+		GDPoint P0 = (*iLink)->m_FromPoint;
+		GDPoint P1 = (*iLink)->m_FromPoint;
+
 		CPoint FromPoint = NPtoSP((*iLink)->m_FromPoint);
 		CPoint ToPoint = NPtoSP((*iLink)->m_ToPoint);
 
@@ -407,14 +508,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
 			continue; 
 
-			if((*iLink)->m_DisplayLinkID>=0)
-			{
-				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
-			}else if(m_bShowLinkType)
-			{
-	//		COLORREF link_color = pDoc->GetLinkTypeColor((*iLink)->m_link_type );
-	//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
-	//		pDC->SelectObject(&LinkTypePen);
+		if((*iLink)->m_DisplayLinkID>=0)
+		{
+			g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
+		}else if(m_bShowLinkType)
+		{
+			//		COLORREF link_color = pDoc->GetLinkTypeColor((*iLink)->m_link_type );
+			//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
+			//		pDC->SelectObject(&LinkTypePen);
 
 			switch ((*iLink)->m_link_type)
 			{
@@ -426,14 +527,43 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				break;
 			default:
 				pDC->SelectObject(&g_PenArterialColor);
-			
+
 			}
-			}else
-				pDC->SelectObject(&g_PenArterialColor);
-			
+		}else
+			pDC->SelectObject(&g_PenArterialColor);
+
 
 		pDC->MoveTo(FromPoint);
 		pDC->LineTo(ToPoint);
+
+		if(m_bShowLinkArrow)
+		{
+			double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
+			double cosy = cos(slopy);
+			double siny = sin(slopy);   
+			double display_length  = sqrt((double)(FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y)+(double)(FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x));
+			double arrow_size = min(7,display_length/5.0);
+
+			if(arrow_size>0.2)
+			{
+				CPoint pts[3];
+				pts[0] = ToPoint;
+				pts[1].x = ToPoint.x + (int)(arrow_size * cosy - (arrow_size / 2.0 * siny) + 0.5);
+				pts[1].y = ToPoint.y + (int)(arrow_size * siny + (arrow_size / 2.0 * cosy) + 0.5);
+				pts[2].x = ToPoint.x + (int)(arrow_size * cosy + arrow_size / 2.0 * siny + 0.5);
+				pts[2].y = ToPoint.y - (int)(arrow_size / 2.0 * cosy - arrow_size * siny + 0.5);
+
+				pDC->Polygon(pts, 3);
+			}
+
+		}
+
+
+		// draw link arrow
+
+		//************************************
+
+
 
 		// draw sensor flag
 
@@ -457,61 +587,61 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 
 	}
-// draw shortest path
+	// draw shortest path
 	int i;
 
 	unsigned int iPath;
 
 	if(m_ShowAllPaths)
 	{
-	for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)
-	{
-	g_SelectThickPenColor(pDC,iPath);
-
-	for (i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
-	{
-		DTALink* pLink = pDoc->m_LinkMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
-		if(pLink!=NULL)
+		for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)
 		{
-		CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
-		CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
+			g_SelectThickPenColor(pDC,iPath);
 
-		if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
-			continue; 
+			for (i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
+			{
+				DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+				if(pLink!=NULL)
+				{
+					CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
+					CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
 
-		pDC->MoveTo(FromPoint);
-		pDC->LineTo(ToPoint);
-		
+					if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
+						continue; 
+
+					pDC->MoveTo(FromPoint);
+					pDC->LineTo(ToPoint);
+
+				}
+			}
 		}
-	}
-	}
 	}
 
 	// draw select path
 	if((int)(pDoc->m_PathDisplayList.size()) >= pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
 	{
-	g_SelectSuperThickPenColor(pDC,pDoc->m_SelectPathNo);
+		g_SelectSuperThickPenColor(pDC,pDoc->m_SelectPathNo);
 
-	for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkSize; i++)
-	{
-		DTALink* pLink = pDoc->m_LinkMap[pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkVector[i]];
-		if(pLink!=NULL)
+		for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkSize; i++)
 		{
-		CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
-		CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
+			DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkVector[i]];
+			if(pLink!=NULL)
+			{
+				CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
+				CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
 
-		if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
-			continue; 
+				if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
+					continue; 
 
-		pDC->MoveTo(FromPoint);
-		pDC->LineTo(ToPoint);
-		
+				pDC->MoveTo(FromPoint);
+				pDC->LineTo(ToPoint);
+
+			}
 		}
 	}
-	}
-	
-	
-	
+
+
+
 
 
 	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
@@ -557,15 +687,15 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		{
 			if(m_bShowNode)
 			{
-						pDC->Ellipse(point.x - node_size, point.y + node_size,
-							point.x + node_size, point.y - node_size);
-			if(m_bShowNodeNumber)
-			{
-			CString str_nodenumber;
-			str_nodenumber.Format ("%d",(*iNode)->m_NodeNumber );
-			pDC->SetTextColor(RGB(255,255,0));
-			pDC->TextOut(point.x - node_size, point.y - node_size,str_nodenumber);
-			}
+				pDC->Ellipse(point.x - node_size, point.y + node_size,
+					point.x + node_size, point.y - node_size);
+				if(m_bShowNodeNumber)
+				{
+					CString str_nodenumber;
+					str_nodenumber.Format ("%d",(*iNode)->m_NodeNumber );
+					pDC->SetTextColor(RGB(255,255,0));
+					pDC->TextOut(point.x - node_size, point.y - node_size,str_nodenumber);
+				}
 			}
 
 
@@ -577,24 +707,24 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if(m_bShowSensor)
 	{
 
-				pDC->SelectObject(&g_PenNotMatchedSensorColor);
+		pDC->SelectObject(&g_PenNotMatchedSensorColor);
 
-	std::vector<DTA_sensor>::iterator iSensor;
+		std::vector<DTA_sensor>::iterator iSensor;
 
-	for (iSensor = pDoc->m_SensorVector.begin(); iSensor != pDoc->m_SensorVector.end(); iSensor++)
-	{
-		CPoint point = NPtoSP((*iSensor).pt);
+		for (iSensor = pDoc->m_SensorVector.begin(); iSensor != pDoc->m_SensorVector.end(); iSensor++)
+		{
+			CPoint point = NPtoSP((*iSensor).pt);
 
-		int sensor_size = 2;
-	if((*iSensor).LinkID<0)
-	{
-			pDC->Ellipse(point.x - sensor_size, point.y + sensor_size,
-				point.x + sensor_size, point.y - sensor_size);
-	}
+			int sensor_size = 2;
+			if((*iSensor).LinkID<0)
+			{
+				pDC->Ellipse(point.x - sensor_size, point.y + sensor_size,
+					point.x + sensor_size, point.y - sensor_size);
+			}
 		}
 	}
 
-	
+
 
 
 	std::list<DTAVehicle*>::iterator iVehicle;
@@ -623,7 +753,7 @@ void CTLiteView::FitNetworkToScreen()
 
 	m_Origin.x = pDoc->m_NetworkRect.Center ().x ;
 	m_Origin.y = pDoc->m_NetworkRect.Center ().y ;
-//	TRACE("Wid: %d, %f, m_Resolution=%f,m_Origin: x = %f\n",ScreenRect.Width(),pDoc->m_NetworkRect.Width(), m_Resolution, m_Origin.x);
+	//	TRACE("Wid: %d, %f, m_Resolution=%f,m_Origin: x = %f\n",ScreenRect.Width(),pDoc->m_NetworkRect.Width(), m_Resolution, m_Origin.x);
 
 }
 
@@ -688,7 +818,7 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 			if(nFlags != MK_SHIFT)  // control or nothing
 				pDoc->m_ImageYResolution/=1.02f;
 		}
-	
+
 	}
 
 	Invalidate();
@@ -729,29 +859,29 @@ void CTLiteView::OnViewMove()
 int CTLiteView::FindClosestNode(CPoint point, float Min_distance)
 {
 	int SelectedNodeID = -1;
-		CTLiteDoc* pDoc = GetDocument();
+	CTLiteDoc* pDoc = GetDocument();
 
-		std::list<DTANode*>::iterator iNode;
+	std::list<DTANode*>::iterator iNode;
 
-		for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
+	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
+	{
+		CPoint NodePoint = NPtoSP((*iNode)->pt);
+
+		CSize size = NodePoint - point;
+		double distance = pow((size.cx*size.cx + size.cy*size.cy),0.5);
+		if( distance < Min_distance)
 		{
-			CPoint NodePoint = NPtoSP((*iNode)->pt);
-
-			CSize size = NodePoint - point;
-			double distance = pow((size.cx*size.cx + size.cy*size.cy),0.5);
-			if( distance < Min_distance)
-			{
-				SelectedNodeID = (*iNode)->m_NodeID ;
-				Min_distance = distance;
-			}
-
+			SelectedNodeID = (*iNode)->m_NodeID ;
+			Min_distance = distance;
 		}
 
-		if(Min_distance > m_NodeSize*30)
-		{
-			SelectedNodeID = -1;
-		}
-		return SelectedNodeID;
+	}
+
+	if(Min_distance > m_NodeSize*30)
+	{
+		SelectedNodeID = -1;
+	}
+	return SelectedNodeID;
 }
 
 void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
@@ -775,6 +905,16 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 
 		m_SelectedNodeID = FindClosestNode(point, m_NodeSize*2.0f);
 		OnClickLink(nFlags, point);
+
+	}
+
+	if(m_ToolMode == create_1waylink_tool || m_ToolMode == create_2waylinks_tool)
+	{
+		m_TempLinkStartPoint = point;
+		m_TempLinkEndPoint = point;
+		m_bMouseDownFlag = true;
+
+		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
 
 	}
 
@@ -806,8 +946,57 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		m_bMoveImage = false;
 	}
 
-	Invalidate();
+	if(m_ToolMode == create_1waylink_tool || m_ToolMode == create_2waylinks_tool)
+	{
+		m_bMouseDownFlag = false;
+		CTLiteDoc* pDoc = GetDocument();
 
+		CSize OffSet = m_TempLinkStartPoint - m_TempLinkEndPoint;
+
+		if(abs(OffSet.cx) +  abs(OffSet.cy) <3)  // clicking on the same point, do not create links
+			return;
+
+		DTANode* pFromNode = 0;// create from node if there is no overlapping node
+		float min_selection_distance = 20.0f;
+		int FromNodeID = FindClosestNode(m_TempLinkStartPoint, min_selection_distance);
+		if(FromNodeID ==-1)
+		{
+			pFromNode = pDoc->AddNewNode(SPtoNP(m_TempLinkStartPoint));
+		}else
+		{
+			pFromNode = pDoc-> m_NodeIDMap[FromNodeID];
+		}
+
+		DTANode* pToNode = 0;// create from node if there is no overlapping node
+		int ToNodeID = FindClosestNode(m_TempLinkEndPoint, min_selection_distance);
+		if(ToNodeID ==-1)
+		{
+			pToNode = pDoc->AddNewNode(SPtoNP(m_TempLinkEndPoint));
+		}else
+		{
+			pToNode = pDoc-> m_NodeIDMap[ToNodeID];
+		}
+
+		// create one way link
+
+		if(m_ToolMode == create_1waylink_tool)
+		{
+		pDoc->AddNewLink(pFromNode->m_NodeID, pToNode->m_NodeID,false);
+		}
+
+		// create 2 way links with opposite direction
+		if(m_ToolMode == create_2waylinks_tool)
+		{
+			pDoc->AddNewLink(pFromNode->m_NodeID, pToNode->m_NodeID,true);
+			pDoc->AddNewLink(pToNode->m_NodeID,pFromNode->m_NodeID,true);
+
+		}
+
+		pDoc->m_bFitNetworkInitialized = true; // do not reflesh after adding links
+
+	}
+
+	Invalidate();
 	CView::OnLButtonUp(nFlags, point);
 }
 
@@ -828,6 +1017,7 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			m_last_cpoint = point;
 
 		}
+		Invalidate();
 
 	}
 
@@ -836,17 +1026,38 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 		CSize OffSet = point - m_last_cpoint;
 		//		if(!(OffSet.cx !=0 && OffSet.cy !=0))
 		{
-		CTLiteDoc* pDoc = GetDocument();
-		pDoc->m_ImageX1  += OffSet.cx*pDoc->m_ImageMoveSize;
-		pDoc->m_ImageY1  += OffSet.cy*m_OriginOnBottomFlag*pDoc->m_ImageMoveSize;
+			CTLiteDoc* pDoc = GetDocument();
+			pDoc->m_ImageX1  += OffSet.cx*pDoc->m_ImageMoveSize;
+			pDoc->m_ImageY1  += OffSet.cy*m_OriginOnBottomFlag*pDoc->m_ImageMoveSize;
 
-		m_last_cpoint = point;
+			m_last_cpoint = point;
 
 		}
+		Invalidate();
+
+	}
+	if(m_ToolMode == create_1waylink_tool || m_ToolMode == create_2waylinks_tool)
+	{
+		if(m_bMouseDownFlag)
+		{
+			// if it is the first moving operation, erase the previous temporal link
+			if(m_TempLinkStartPoint!=m_TempLinkEndPoint)
+				DrawTemporalLink(m_TempLinkStartPoint,m_TempLinkEndPoint);
+
+			// update m_TempLinkEndPoint from the current mouse point
+			m_TempLinkEndPoint = point;
+
+			// draw a new temporal link
+			DrawTemporalLink(m_TempLinkStartPoint,m_TempLinkEndPoint);
+		}
+
+
+		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
 
 	}
 
-	Invalidate();
+
+
 
 	CView::OnMouseMove(nFlags, point);
 }
@@ -866,6 +1077,7 @@ void CTLiteView::OnRButtonDown(UINT nFlags, CPoint point)
 	// TODO: Add your message handler code here and/or call default
 
 	CView::OnRButtonDown(nFlags, point);
+	Invalidate();
 }
 
 void CTLiteView::OnNodeOrigin()
@@ -896,10 +1108,10 @@ void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 
 	m_CurrentMousePoint = point;
 
-//	CPoint select_pt = NPtoSP (pDoc->m_NodeMap[m_SelectedNodeID]->pt);
+	//	CPoint select_pt = NPtoSP (pDoc->m_NodeIDMap[m_SelectedNodeID]->pt);
 
-//	CSize size = point-select_pt;
-//	if(pow((size.cx*size.cx + size.cy*size.cy),0.5) < m_NodeSize*2)
+	//	CSize size = point-select_pt;
+	//	if(pow((size.cx*size.cx + size.cy*size.cy),0.5) < m_NodeSize*2)
 	{
 		// In our client area - load the context menu
 		CMenu cm;
@@ -960,9 +1172,9 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 			g_LinkDisplayList.clear ();
 		}
 
-		g_LinkDisplayList.push_back(pDoc->m_LinkMap[m_SelectedLinkID]);
+		g_LinkDisplayList.push_back(pDoc->m_LinkIDMap[m_SelectedLinkID]);
 
-	
+
 	}
 
 	std::list<DTALink*>::iterator iLinkDisplay;
@@ -980,26 +1192,21 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 
 	}
 
-	if(g_LinkDisplayList.size() > 0 && g_LinkMOEDlg!=NULL)  // if g_LinkMOEDlg is open, update
-	{
-		g_LinkMOEDlg->Invalidate ();
-		g_LinkMOEDlg->ShowWindow(SW_SHOW);
-
-	}
-
+	g_UpdateAllViews();
 
 }
 void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	// create MOE Dlg when double clicking
-		if(g_LinkMOEDlg==NULL)
-		{
-			g_LinkMOEDlg = new CDlgMOE();
-			g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
+	if(g_LinkMOEDlg==NULL)
+	{
+		g_LinkMOEDlg = new CDlgMOE();
+		g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 
-		}
+	}
 
 	OnClickLink(nFlags, point);
+	OnViewShowmoe();
 
 	/*		
 	std::list<DTANode*>::iterator iNode;
@@ -1130,5 +1337,90 @@ void CTLiteView::OnShowShownodenumber()
 void CTLiteView::OnUpdateShowShownodenumber(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowNodeNumber);
+
+}
+
+void  CTLiteView::DrawTemporalLink(CPoint start_point, CPoint end_point)
+{
+	CClientDC dc(this);
+	OnPrepareDC(&dc);
+
+	dc.SelectObject(&g_TempLinkPen);
+	// Select drawing mode
+
+	int oldROP2 = dc.SetROP2(R2_XORPEN);
+
+	// Draw the line
+	dc.MoveTo(start_point);
+	dc.LineTo(end_point);
+
+	// Reset drawing mode
+	dc.SetROP2(oldROP2);
+
+}
+
+void CTLiteView::OnEditCreate1waylink()
+{
+	if(m_ToolMode != create_1waylink_tool)
+		m_ToolMode = create_1waylink_tool;
+	else   //reset to default selection tool
+		m_ToolMode = select_tool;
+
+}
+
+void CTLiteView::OnEditCreate2waylinks()
+{
+	if(m_ToolMode != create_2waylinks_tool)
+		m_ToolMode = create_2waylinks_tool;
+	else   //reset to default selection tool
+		m_ToolMode = select_tool;
+
+}
+
+void CTLiteView::OnUpdateEditCreate1waylink(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_ToolMode == create_1waylink_tool);
+
+}
+
+void CTLiteView::OnUpdateEditCreate2waylinks(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_ToolMode == create_2waylinks_tool);
+}
+
+void CTLiteView::OnShowGrid()
+{
+	m_bShowGrid = !m_bShowGrid;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateShowGrid(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowGrid);
+}
+
+void CTLiteView::OnShowLinkarrow()
+{
+	m_bShowLinkArrow = !m_bShowLinkArrow;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateShowLinkarrow(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowLinkArrow);
+}
+
+void CTLiteView::OnViewShowmoe()
+{
+	if(g_LinkDisplayList.size() > 0 && g_LinkMOEDlg!=NULL)  // if g_LinkMOEDlg is open, update
+	{
+		g_LinkMOEDlg->Invalidate ();
+		g_LinkMOEDlg->ShowWindow(SW_SHOW);
+
+	}
+}
+
+void CTLiteView::OnUpdateViewShowmoe(CCmdUI *pCmdUI)
+{
 	
 }

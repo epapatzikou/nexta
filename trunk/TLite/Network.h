@@ -38,8 +38,10 @@
 #include "Timetable.h"
 
 using namespace std;
+#define PI 3.1415926
+
 #define MAX_DAY_SIZE 30
-#define	MAX_SPLABEL 99999.0f
+#define	MAX_SPLABEL 99999
 #define MAX_NODE_SIZE_IN_A_PATH 2000
 
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
@@ -84,7 +86,7 @@ struct GDRect
 		bottom = min(bottom, pt.y);
 	}
 
-	void Expand(GDRect& rect)  // Inflate by another rectange
+	void Expand(GDRect& rect)  // Inflate by another Rectangle
 	{
 		left = min(left, rect.left);
 		top = max(top, rect.top);
@@ -146,13 +148,8 @@ typedef struct{
 class SLinkMOE  // time-dependent link MOE
 {
 public:
-	float TotalTravelTime;   // cumulative travel time for vehicles departing at this time interval
-
-	int CumulativeArrivalCount; 
-	int CumulativeDepartureCount;
-	int ExitQueueLength;
-	int EndTimeOfCongestion;  // time in min to the end of congestion
-
+	float ObsQueuePerc;
+	float ObsTravelTime;
 	float ObsSpeed;  // speed
 	float ObsFlow;   // flow volume
 	float ObsCumulativeFlow;   // flow volume
@@ -164,11 +161,8 @@ public:
 
 	SLinkMOE()
 	{
-		TotalTravelTime = 0;
-		CumulativeArrivalCount  = 0;
-		CumulativeDepartureCount = 0;
-		ExitQueueLength = 0;
-		EndTimeOfCongestion = 0;
+		ObsQueuePerc = 0;
+		ObsTravelTime = 0;
 		ObsSpeed = 0;
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
@@ -178,11 +172,8 @@ public:
 
 	void SetupMOE()
 	{
-		TotalTravelTime = 0;
-		CumulativeArrivalCount  = 0;
-		CumulativeDepartureCount = 0;
-		ExitQueueLength = 0;
-		EndTimeOfCongestion = 0;
+		ObsQueuePerc = 0;
+		ObsTravelTime = 0;
 		ObsSpeed = 0;
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
@@ -239,8 +230,6 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
-
-
 	};
 
 	//for timetabling use
@@ -248,25 +237,17 @@ public:
 
 	int GetTrainRunningTime(int TrainType)
 	{
+		if(m_LaneCapacity<0.001)
+			return 1440;
+
 		map <int, int> :: iterator mIter  = m_RuningTimeMap.find(TrainType);
 
 		if ( mIter == m_RuningTimeMap.end( ) )
-			return 1400; // very large number for prohibited train type, one day
+			return 1440; // very large number for prohibited train type, one day
 		else
 			return  mIter -> second;  // return the running time value matching the train type
 	}
 
-
-	float ObtainObsTravelTime(float time)
-	{
-		int int_time = (int)time;
-		if(m_LinkMOEAry!=NULL && m_LinkMOEAry[int_time].ObsSpeed>0.001 && int_time<m_SimulationHorizon)
-		{
-			return m_Length/m_LinkMOEAry[int_time].ObsSpeed*60;  // *60: hour to min
-		}
-		else
-			return m_FreeFlowTravelTime;
-	}
 
 	float ObtainHistTravelTime(int time)
 	{
@@ -406,6 +387,13 @@ public:
 	}
 
 	SResource *m_ResourceAry;
+	void ResetResourceAry(int OptimizationHorizon)
+	{
+		if(m_ResourceAry!=NULL)
+			delete m_ResourceAry;
+
+		m_ResourceAry = new SResource[OptimizationHorizon];
+	}
 
 	SLinkMOE *m_LinkMOEAry;
 	SLinkMOE *m_HistLinkMOEAry;
@@ -559,47 +547,26 @@ public:
 		return m_Length/GetTravelTime(time,1)*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
 
-	int GetArrivalFlow(int time)
+
+	float GetTravelTime(int starting_time, int time_interval = 1)
 	{
-		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
-			return m_LinkMOEAry[time+1].CumulativeArrivalCount - m_LinkMOEAry[time].CumulativeArrivalCount;
-		else
-			return 0;
+		float travel_time  = m_FreeFlowTravelTime;
 
-	};
-
-	int GetDepartureFlow(int time)
-	{
-		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
-			return m_LinkMOEAry[time+1].CumulativeDepartureCount - m_LinkMOEAry[time].CumulativeDepartureCount;
-		else
-			return 0;
-
-	};
-
-	float GetTravelTime(int starting_time, int time_interval)
-	{
-		float travel_time  = 0.0f;
-		int total_flow = m_LinkMOEAry[min(starting_time+time_interval, m_SimulationHorizon)].CumulativeArrivalCount - m_LinkMOEAry[starting_time].CumulativeArrivalCount;
-
-		if(total_flow >= 1)
+		if(starting_time + time_interval< m_SimulationHorizon)
 		{
 			float total_travel_time = 0;
-			int time_end = min(starting_time+time_interval, m_SimulationHorizon);
-			for(int t=starting_time; t< time_end; t++)
+			for(int t=starting_time; t< starting_time + time_interval; t++)
 			{
-				total_travel_time += m_LinkMOEAry[t].TotalTravelTime;
+				total_travel_time += m_LinkMOEAry[t].ObsTravelTime;
 			}
 
-			travel_time =  total_travel_time/total_flow;
+			travel_time =  total_travel_time/time_interval;
 
 			if(travel_time < m_FreeFlowTravelTime)
 				travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
 
 		}
-		else
-			travel_time =  m_FreeFlowTravelTime;
-
+		
 		ASSERT(travel_time>=0.09);
 
 		return travel_time;
@@ -618,7 +585,7 @@ public:
 		m_LinkSize = LinkSize;
 		m_LinkVector = new int[LinkSize];
 		m_TimeDependentTravelTime = new float[TimeHorizon];
-		m_number_of_days = TimeHorizon/1440;
+		m_number_of_days = max(1,TimeHorizon/1440);
 
 		for(int t=0; t<TimeHorizon; t++)
 		{

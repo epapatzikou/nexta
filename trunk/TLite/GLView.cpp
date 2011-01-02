@@ -19,7 +19,6 @@ static char THIS_FILE[] = __FILE__;
 
 IMPLEMENT_DYNCREATE(CGLView, CView)
 
-#define PI 3.1415926
 CGLView::CGLView()
 {
 	// TODO: add construction code here
@@ -371,8 +370,10 @@ void CGLView::DrawAllObjects()
 	CTLiteDoc* pDoc = GetDocument();
 
 	glBegin(GL_LINES);
-	glColor3f(0.0f,0.5f,0.5f);
-//	glColor3f(0.9f,0.0f,0.0f);
+	if(m_bShowBackgroundImage && pDoc->m_BKBitmapLoaded) //  // 2D background map is loaded
+		glColor3f(0.0f,0.5f,0.5f);   // dark blue
+	else
+		glColor3f(1.0f,1.0f,0.5f);  //yellow
 
 	std::list<DTALink*>::iterator iLink;
  		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
@@ -410,7 +411,7 @@ void CGLView::DrawAllObjects()
 
 		for (int i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
 	{
-		DTALink* pLink = pDoc->m_LinkMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+		DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
 		if(pLink!=NULL)
 		{
 
@@ -454,7 +455,7 @@ void CGLView::DrawAllObjects()
 			max_time = pTrain->m_DepartureTime + pTrain->m_ActualTripTime;
 	}
 	
-		float m_ZResolution = 500.0f/max_time;
+		float m_ZResolution = 300.0f/max_time;
 
 	for(v = 0; v<pDoc->m_TrainVector.size(); v++)
 	{
@@ -465,7 +466,7 @@ void CGLView::DrawAllObjects()
 
 		for(int n = 1; n< pTrain->m_NodeSize; n++)
 		{
-			DTALink* pLink = pDoc->m_LinkMap[pTrain->m_aryTN[n].LinkID];
+			DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
 
 			ASSERT(pLink!=NULL);
 

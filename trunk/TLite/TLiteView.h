@@ -33,7 +33,7 @@
 
 
 enum tool
-   { move_tool, select_tool, bkimage_tool
+   { move_tool, select_tool, bkimage_tool, create_1waylink_tool, create_2waylinks_tool
    };
 
 class CTLiteView : public CView
@@ -56,7 +56,8 @@ public:
 	bool m_bMoveDisplay;
 
 	bool m_bMoveImage;
-	
+	bool m_bShowGrid;
+	bool m_bShowLinkArrow;
 	bool m_bShowNode;
 	bool m_bShowNodeNumber;
 	bool m_bShowImage;
@@ -71,19 +72,22 @@ public:
 	void FitNetworkToScreen();
 	void DrawObjects(CDC* pDC);
 	void DrawBitmap(CDC *pDC, CPoint point,UINT nIDResource );
+	void DrawTemporalLink(CPoint start_point, CPoint end_point);
+
+	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;
+	bool m_bMouseDownFlag;
 
 	CPoint m_ScreenOrigin;
 	GDPoint m_Origin;
 	float m_Resolution;
-	bool m_bFitNetworkInitialized;
 
 	int m_OriginOnBottomFlag;
 
     CPoint NPtoSP(GDPoint net_point) // convert network coordinate to screen coordinate
 	{
 		CPoint pt;
-		pt.x = long((net_point.x-m_Origin.x)*m_Resolution+0.5)+ m_ScreenOrigin.x;
-		pt.y = long((net_point.y-m_Origin.y)*m_OriginOnBottomFlag*m_Resolution+0.5)+ m_ScreenOrigin.y;
+		pt.x = int((net_point.x-m_Origin.x)*m_Resolution+ m_ScreenOrigin.x+0.5);
+		pt.y = int((net_point.y-m_Origin.y)*m_OriginOnBottomFlag*m_Resolution + m_ScreenOrigin.y+0.5);
 		return pt;
 	}
 
@@ -161,6 +165,16 @@ public:
 	afx_msg void OnUpdateShowShowallpaths(CCmdUI *pCmdUI);
 	afx_msg void OnShowShownodenumber();
 	afx_msg void OnUpdateShowShownodenumber(CCmdUI *pCmdUI);
+	afx_msg void OnEditCreate1waylink();
+	afx_msg void OnEditCreate2waylinks();
+	afx_msg void OnUpdateEditCreate1waylink(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateEditCreate2waylinks(CCmdUI *pCmdUI);
+	afx_msg void OnShowGrid();
+	afx_msg void OnUpdateShowGrid(CCmdUI *pCmdUI);
+	afx_msg void OnShowLinkarrow();
+	afx_msg void OnUpdateShowLinkarrow(CCmdUI *pCmdUI);
+	afx_msg void OnViewShowmoe();
+	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

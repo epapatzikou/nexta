@@ -53,7 +53,6 @@ public:
 		UsageCount = 0;
 		Price = 0;
 		LastUseIterationNo = -100;
-	
 	}
 
 

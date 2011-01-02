@@ -209,6 +209,8 @@ void CDlgMOE::DrawQKCurve()
 }
 void CDlgMOE::OnPaint()
 {
+
+
 	if(m_ViewMode == 0)
 		DrawTimeSeriesPlot();
 
@@ -712,11 +714,12 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 	{
-			float value = 0;
+			float value = 50;
 
-		for(int i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon,m_TmRight);i+=1) // for each timestamp
+			int TimeRight = min( (*iLink)->m_SimulationHorizon,m_TmRight);
+
+		for(int i=m_TmLeft;i<TimeRight;i+=1) // for each timestamp
 		{
-
 
 			switch (MOEType)
 			{
@@ -727,10 +730,7 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 			case 3: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
 			case 4: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
 			case 5: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
-
-			default: value = 0;
-			}
-
+			default: 0;
 			}
 
 			if(value > YMax)
@@ -738,6 +738,7 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 
 
 		}
+	}
 
 
 	return max(10,int(YMax*10/9));
@@ -803,7 +804,7 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 			float value = 0;
 
-			if(i<g_Simulation_Time_Horizon)
+			if(i<(*iLink)->m_SimulationHorizon )
 			{
 
 			switch (MOEType)
@@ -838,13 +839,13 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 		if(m_bShowVariability)
 		{
-		for(i=0;i<1440*g_Number_of_Weekdays;i+=1) // for each timestamp
+		for(i=0;i<g_Simulation_Time_Horizon;i+=1) // for each timestamp
 		{
 
 			TimeXPosition=(long)(PlotRect.left+(i%1440-m_TmLeft)*m_UnitTime);
 			float value = 0;
 
-			if(i<g_Simulation_Time_Horizon)
+			if(i<(*iLink)->m_SimulationHorizon)
 			{
 
 			switch (MOEType)
@@ -890,7 +891,7 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 			float value = 0;
 			int time_of_day = i%1440;  
 
-			if(i<g_Simulation_Time_Horizon)
+			if(i<(*iLink)->m_SimulationHorizon)
 			{
 			switch (MOEType)
 			{
@@ -1160,7 +1161,7 @@ void CDlgMOE::OnLButtonUp(UINT nFlags, CPoint point)
 void CDlgMOE::OnRButtonUp(UINT nFlags, CPoint point)
 {
 	m_TmLeft = 0;
-	m_TmRight = 1440*g_Number_of_Weekdays;
+	m_TmRight = g_Simulation_Time_Horizon;
 	Invalidate();
 
 	CDialog::OnRButtonUp(nFlags, point);
@@ -1182,6 +1183,9 @@ BOOL CDlgMOE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		m_TmRight-=(0.2*(m_TmRight-CurrentTime));
 	}
 
+	if(m_TmLeft < 0)
+		m_TmLeft = 0;
+
 	Invalidate();
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
 }
@@ -1189,7 +1193,7 @@ BOOL CDlgMOE::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 void CDlgMOE::OnViewResettimerange()
 {
 	m_TmLeft = 0;
-	m_TmRight = 1440*g_Number_of_Weekdays;
+	m_TmRight = g_Simulation_Time_Horizon;
 	Invalidate();
 }
 

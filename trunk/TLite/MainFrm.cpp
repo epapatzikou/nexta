@@ -23,6 +23,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_WINDOW_NEW3DVIEW, &CMainFrame::OnWindowNew3dview)
 	ON_COMMAND(ID_SHOW_TIMETABLE, &CMainFrame::OnShowTimetable)
 	ON_UPDATE_COMMAND_UI(ID_WINDOW_NEW3DVIEW, &CMainFrame::OnUpdateWindowNew3dview)
+	ON_COMMAND(ID_WINDOW_SHOW2DVIEW, &CMainFrame::OnWindowShow2dview)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -38,8 +39,6 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
-	m_b3DExist = false;
-	m_bTimetableExist = false;
 }
 
 CMainFrame::~CMainFrame()
@@ -154,15 +153,14 @@ void CMainFrame::OnWindowNew3dview()
 			AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
 			return; // Command failed
 			// make it visisable
-			pTemplate->InitialUpdateFrame(pFrame, pDocument);
 		}
-
-		m_b3DExist = true;
+		pTemplate->InitialUpdateFrame(pFrame, pDocument);
 
 }
 
 void CMainFrame::OnShowTimetable()
 {
+
 	CMDIChildWnd* pActiveChild = MDIGetActive();
 	CDocument* pDocument;
 	if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
@@ -183,6 +181,7 @@ void CMainFrame::OnShowTimetable()
 			return; // Command failed
 		}
 		pTemplate->InitialUpdateFrame(pFrame, pDocument);
+	
 }
 
 void CMainFrame::OnUpdateWindowNew3dview(CCmdUI *pCmdUI)
@@ -190,3 +189,8 @@ void CMainFrame::OnUpdateWindowNew3dview(CCmdUI *pCmdUI)
 	
 }
 
+
+void CMainFrame::OnWindowShow2dview()
+{
+		MDITile(MDITILE_VERTICAL);
+}
