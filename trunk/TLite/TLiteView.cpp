@@ -35,6 +35,7 @@
 #include "Network.h"
 #include "DlgFindALink.h"
 #include "DlgPathMOE.h"
+#include "GLView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -45,29 +46,37 @@ extern CDlgMOE *g_LinkMOEDlg;
 extern CDlgPathMOE	*g_pPathMOEDlg;
 
 extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
-
+extern float g_Simulation_Time_Stamp;
+extern std::list<CGLView*>	g_GLViewList;
 std::list<CView*>	g_ViewList;
 
+
 // CTLiteView
-void g_UpdateAllViews(int Flag = -1)  //0: called from TLiteView, 1: called from Link MOE, 2: called from path MOE
+void g_UpdateAllViews(int Flag = 0)  //1: called from TLiteView, 2: called from Link MOE, 3: called from path MOE
 {
 	std::list<CView*>::iterator it;
 	for(it = g_ViewList.begin(); it != g_ViewList.end(); it++)
 	{
-		if(Flag !=0 &&(*it)->GetSafeHwnd ())
+		if(Flag !=1 &&(*it)->GetSafeHwnd ())
 		{
 			(*it)->Invalidate (true);
 		}
 	}
 
+	std::list<CGLView*>::iterator itGL;
+	for(itGL = g_GLViewList.begin(); itGL != g_GLViewList.end(); itGL++)
+	{
+		(*itGL)->Render();
+	}
 
-	if(Flag !=1 && g_LinkMOEDlg  && g_LinkMOEDlg ->GetSafeHwnd ())
+
+	if(Flag !=2 && g_LinkMOEDlg  && g_LinkMOEDlg ->GetSafeHwnd ())
 	{
 		g_LinkMOEDlg->Invalidate (true);
 	}
 
 
-	if(Flag !=2&& g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
+	if(Flag !=3&& g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
 	{
 		g_pPathMOEDlg->InsertPathMOEItem();
 		g_pPathMOEDlg->Invalidate (true);
@@ -125,12 +134,15 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_LINKARROW, &CTLiteView::OnUpdateShowLinkarrow)
 	ON_COMMAND(ID_VIEW_SHOWMOE, &CTLiteView::OnViewShowmoe)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOWMOE, &CTLiteView::OnUpdateViewShowmoe)
+	ON_COMMAND(ID_MOE_VEHICLE, &CTLiteView::OnMoeVehicle)
+	ON_UPDATE_COMMAND_UI(ID_MOE_VEHICLE, &CTLiteView::OnUpdateMoeVehicle)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
 
 CBrush g_BlackBrush(RGB(10,10,10));
+CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
 CPen g_PenSelectColor(PS_SOLID,2,RGB(255,0,0));
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
@@ -264,7 +276,9 @@ CTLiteView::CTLiteView()
 	m_Origin.y = 0;
 
 	m_NodeSize = 80;
+	m_VehicleSize = 1;
 	m_bShowSensor = true;
+	m_bShowVehicle = false;
 
 	m_SelectFromNodeNumber = 0;
 	m_SelectToNodeNumber = 0;
@@ -423,7 +437,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		GetClientRect(ScreenRect);
 
 		// get the closest power 10 number
-		double grid_resolution = pDoc->FindClosestResolution(ScreenRect.Width ()/m_Resolution/10.0f);
+		double grid_resolution = g_FindClosestYResolution(ScreenRect.Width ()/m_Resolution/10.0f);
 
 		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x);
 
@@ -532,6 +546,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}else
 			pDC->SelectObject(&g_PenArterialColor);
 
+
+		if(m_bShowVehicle)  // when showing vehicles, use black
+			pDC->SelectObject(&g_BlackPen);
 
 		pDC->MoveTo(FromPoint);
 		pDC->LineTo(ToPoint);
@@ -725,10 +742,40 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 
 
+	if(m_bShowVehicle)
+	{
 
+		std::list<DTAVehicle*>::iterator iVehicle;
+		for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
+		{
+			if((*iVehicle)->m_bComplete && (*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
+				g_Simulation_Time_Stamp <=(*iVehicle)->m_ArrivalTime && (*iVehicle)->m_NodeSize>=2)
+			{
 
-	std::list<DTAVehicle*>::iterator iVehicle;
+				float ratio = 0;
+				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
 
+				DTALink* pLink = pDoc->m_LinkIDMap[LinkID];
+				if(pLink!=NULL)
+				{
+					CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
+					CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
+					CPoint VehPoint;
+					VehPoint.x= ratio*FromPoint.x + (1-ratio)*ToPoint.x;
+					VehPoint.y= ratio*FromPoint.y + (1-ratio)*ToPoint.y;
+
+					int vehicle_size = 1;
+
+					pDC->SelectObject(&g_PenSelectColor1);  //green
+					pDC->SelectObject(&g_BrushColor1); //green
+					pDC->Ellipse (VehPoint.x - vehicle_size, VehPoint.y - vehicle_size,
+						VehPoint.x + vehicle_size, VehPoint.y + vehicle_size);
+				}
+
+			}
+
+		}
+	}
 }
 
 void CTLiteView::FitNetworkToScreen()
@@ -981,7 +1028,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if(m_ToolMode == create_1waylink_tool)
 		{
-		pDoc->AddNewLink(pFromNode->m_NodeID, pToNode->m_NodeID,false);
+			pDoc->AddNewLink(pFromNode->m_NodeID, pToNode->m_NodeID,false);
 		}
 
 		// create 2 way links with opposite direction
@@ -1422,5 +1469,21 @@ void CTLiteView::OnViewShowmoe()
 
 void CTLiteView::OnUpdateViewShowmoe(CCmdUI *pCmdUI)
 {
-	
+
+}
+
+void CTLiteView::OnMoeVehicle()
+{
+	m_bShowVehicle = !m_bShowVehicle;
+	if(GetDocument()->m_SimulationVehicleDataLoadingStatus.GetLength ()>0 && m_bShowVehicle)
+	{
+		AfxMessageBox("No vehicle data have been loaded. Plesae check if the vehicle file exists.");
+		return;
+	}
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateMoeVehicle(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowVehicle);
 }

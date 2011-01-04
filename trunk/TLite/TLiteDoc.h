@@ -88,6 +88,9 @@ public:
 	
 	// additional input
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
+	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
+
+	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
 	void ReadSensorLocationData(CString directory);
 	void ReadHistoricalDataFormat2(CString directory);
@@ -97,35 +100,43 @@ public:
 	CString m_LinkTrainTravelTimeDataLoadingStatus;
 	CString m_TimetableDataLoadingStatus;
 
+	CString m_ObsLinkVolumeStatus;
 	CString m_BackgroundImageFileLoadingStatus;
 
 	CString m_SimulationLinkMOEDataLoadingStatus;
-
+	CString m_SimulationVehicleDataLoadingStatus;
+	
 
 	int FindLinkFromSensorLocation(float x, float y, int direction);
 
+int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 
 public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
+	std::list<DTAVehicle*>	m_VehicleSet;
+	
 	int m_AdjLinkSize;
 
 	DTANetworkForSP* m_pNetwork;
 	int Routing();
 
 
-	void ImportLinkTravelTimeCSVFile(LPCTSTR lpszFileName);
-	bool ImportTimetableCVSFile(LPCTSTR lpszFileName);
+	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
+	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
+	
 	bool TimetableOptimization_Lagrangian_Method();  //Lagrangian based.
 	bool TimetableOptimization_Priority_Rule();  //Lagrangian based.
 
-	void ImportBackgroundImageFile(LPCTSTR lpszFileName);
-	long m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
+	void ReadBackgroundImageFile(LPCTSTR lpszFileName);
+	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
 
 
 	std::map<int, DTANode*> m_NodeIDMap;
 	std::map<long, DTALink*> m_LinkIDMap;
+	std::map<long, DTAVehicle*> m_VehicleIDMap;
+	
 
 	std::map<int, int> m_NodeIDtoNameMap;
 	std::map<int, int> m_NodeNametoIDMap;
@@ -255,10 +266,6 @@ public:
 
 	DTAZone* m_ZoneInfo;
 
-	std::list<DTAVehicle*>		m_VehicleSet;
-	std::map<int, DTAVehicle*> m_VehicleMap;
-
-
 	bool m_BKBitmapLoaded;
 	CImage m_BKBitmap;  // background bitmap
 	float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
@@ -269,22 +276,6 @@ public:
 	// Operations
 public:
 
-	double  FindClosestResolution(double Value)
-	{
-		double ResolutionVector[23] = {0.001,0.005,0.01,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000};
-		double min_distance  = 9999999;
-
-		double ClosestResolution=1;
-		for(int i=0; i<23;i++)
-		{
-			if(	fabs(Value-ResolutionVector[i]) < min_distance)
-			{
-				min_distance = fabs(Value-ResolutionVector[i]);
-				ClosestResolution = ResolutionVector[i];
-			}
-		}
-		return ClosestResolution;
-	}
 
 	void SendTexttoStatusBar(CString str);
 
@@ -328,6 +319,7 @@ public:
 	afx_msg void OnOptimizetimetable_PriorityRule();
 	afx_msg void OnFileSaveProject();
 	afx_msg void OnFileSaveProjectAs();
+	afx_msg void OnEstimationOdestimation();
 };
 
 

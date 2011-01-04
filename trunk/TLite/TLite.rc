@@ -114,6 +114,11 @@ BEGIN
     SEPARATOR
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
+    SEPARATOR
+    BUTTON      ID_ANIMATION_PLAY
+    BUTTON      ID_ANIMATION_REWIND
+    BUTTON      ID_ANIMATION_PAUSE
+    BUTTON      ID_ANIMATION_STOP
 END
 
 
@@ -179,21 +184,25 @@ BEGIN
     END
     POPUP "&Show"
     BEGIN
-        MENUITEM "Show Background Image",       ID_VIEW_BACKGROUNDIMAGE
-        MENUITEM "Show Network",                ID_VIEW_SHOWNETWORK
-        MENUITEM "Show Grid",                   ID_SHOW_GRID
+        MENUITEM "Background Image",            ID_VIEW_BACKGROUNDIMAGE
+        MENUITEM "Network",                     ID_VIEW_SHOWNETWORK
+        MENUITEM "Grid",                        ID_SHOW_GRID
         MENUITEM SEPARATOR
-        MENUITEM "Show Node",                   ID_SHOW_SHOWNODE
-        MENUITEM "Show Node Number",            ID_SHOW_SHOWNODENUMBER
+        MENUITEM "Node",                        ID_SHOW_SHOWNODE
+        MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
         MENUITEM SEPARATOR
-        MENUITEM "Show Link Type",              ID_VIEW_SHOWLINKTYPE
-        MENUITEM "Show Link MOE",               ID_VIEW_SHOWMOE
-        MENUITEM "Show Sensor",                 ID_VIEW_SHOWSENSOR
+        MENUITEM "Link Type",                   ID_VIEW_SHOWLINKTYPE
+        MENUITEM "Link MOE",                    ID_VIEW_SHOWMOE
+        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
+        MENUITEM "Sensor",                      ID_VIEW_SHOWSENSOR
         MENUITEM SEPARATOR
-        MENUITEM "Show All Paths",              ID_SHOW_SHOWALLPATHS
-        MENUITEM "Show Path MOE",               ID_SHOW_SHOWPATHMOE
+        MENUITEM "Path Trajectory",             ID_SHOW_SHOWALLPATHS
+        MENUITEM "Path MOE",                    ID_SHOW_SHOWPATHMOE
         MENUITEM SEPARATOR
-        MENUITEM "Show Link Arrow",             ID_SHOW_LINKARROW
+    END
+    POPUP "MOE"
+    BEGIN
+        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
     END
     POPUP "Search"
     BEGIN
@@ -205,7 +214,7 @@ BEGIN
         MENUITEM "Basic View",                  ID_3DDISPLAY_BASICVIEW
         MENUITEM "Travel Time Variability",     ID_3DDISPLAY_TRAVELTIMEVARIABILITY
         MENUITEM "Time-dependent Path",         ID_3DDISPLAY_TIME
-        MENUITEM "Animation",                   ID_3DDISPLAY_ANIMATION
+        MENUITEM "Car-Following Fly Over",      ID_3D_CARFOL
     END
     POPUP "Timetable"
     BEGIN
@@ -241,9 +250,20 @@ BEGIN
         MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
         MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
     END
+    POPUP "Estimation"
+    BEGIN
+        MENUITEM "OD Estimation",               ID_ESTIMATION_ODESTIMATION
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About NEXTA Version 3...",   ID_APP_ABOUT
+    END
+    POPUP "Animation"
+    BEGIN
+        MENUITEM "Play",                        ID_ANIMATION_PLAY
+        MENUITEM "Rewind",                      ID_ANIMATION_REWIND
+        MENUITEM "Pause",                       ID_ANIMATION_PAUSE
+        MENUITEM "Stop",                        ID_ANIMATION_STOP
     END
 END
 
@@ -659,7 +679,7 @@ END
 STRINGTABLE 
 BEGIN
     ID_3DZoom               "\nZoom in and zoom out in 3D View \n 3D Zoom in & out"
-    ID_3DPam                "\nMove Objectives "
+    ID_3DPam                "\nPanning. Moving the objects "
     ID_3DRotate             "\nRotate Objects"
     ID_3DReset              "\nReset View"
     ID_3DLockZ              "\nLock Z Axis"

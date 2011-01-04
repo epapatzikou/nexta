@@ -16,12 +16,18 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // CGLView
+extern float g_Simulation_Time_Stamp;
+std::list<CGLView*>	g_GLViewList;
+
 
 IMPLEMENT_DYNCREATE(CGLView, CView)
 
 CGLView::CGLView()
 {
-	// TODO: add construction code here
+	g_GLViewList.push_back(this);
+
+	m_bAnimation = false;
+
 	m_bLockZ=false;
 	m_bShowGrass=true;
 	m_bFollowCar=false;
@@ -81,6 +87,8 @@ BEGIN_MESSAGE_MAP(CGLView, CView)
 	ON_UPDATE_COMMAND_UI(ID_3DDISPLAY_ANIMATION, &CGLView::OnUpdate3ddisplayAnimation)
 	ON_COMMAND(ID_3DDISPLAY_BASICVIEW, &CGLView::On3ddisplayBasicview)
 	ON_WM_CLOSE()
+	ON_COMMAND(ID_3D_CARFOL, &CGLView::On3dCarfol)
+	ON_UPDATE_COMMAND_UI(ID_3D_CARFOL, &CGLView::OnUpdate3dCarfol)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -89,7 +97,7 @@ END_MESSAGE_MAP()
 void CGLView::OnDraw(CDC* pDC)
 {
 	Render();
-	
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -128,8 +136,8 @@ int CGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		sizeof(PIXELFORMATDESCRIPTOR),  // size of this pfd
 		1,                              // version number
 		PFD_DRAW_TO_WINDOW |            // support window
-		  PFD_SUPPORT_OPENGL |          // support OpenGL
-		  PFD_DOUBLEBUFFER|PFD_GENERIC_ACCELERATED|PFD_SWAP_LAYER_BUFFERS ,             // double buffered
+		PFD_SUPPORT_OPENGL |          // support OpenGL
+		PFD_DOUBLEBUFFER|PFD_GENERIC_ACCELERATED|PFD_SWAP_LAYER_BUFFERS ,             // double buffered
 		PFD_TYPE_RGBA,                  // RGBA type
 		24,                             // 24-bit color depth
 		0, 0, 0, 0, 0, 0,               // color bits ignored
@@ -158,7 +166,7 @@ int CGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 
-	
+
 	n = ::GetPixelFormat(m_pDC->GetSafeHdc());
 	::DescribePixelFormat(m_pDC->GetSafeHdc(), n, sizeof(pfd), &pfd);
 
@@ -200,14 +208,14 @@ void CGLView::OnDestroy()
 
 
 	if (m_pDC)
-	CView::OnDestroy();	
+		CView::OnDestroy();	
 }
 
 void CGLView::OnSize(UINT nType, int cx, int cy) 
 {
-	
+
 	CView::OnSize(nType, cx, cy);
-	
+
 	if(cy > 0)
 	{
 		glViewport(0, 0, cx, cy);
@@ -221,7 +229,7 @@ void CGLView::OnSize(UINT nType, int cx, int cy)
 		gluPerspective(45.0f, (GLdouble)cx/cy, 1.0f, 7000.0f);
 		glMatrixMode(GL_MODELVIEW);
 	}	
-	
+
 }
 
 BOOL CGLView::OnEraseBkgnd(CDC* pDC) 
@@ -242,7 +250,28 @@ void CGLView::Render()
 	double Length;
 	Length=30.0;
 	doublePointStruct EyePosition;
-	gluLookAt(m_EyePoint.x,m_EyePoint.y,m_EyePoint.z,m_ObservePoint.x,m_ObservePoint.y,m_ObservePoint.z,0.0,0.0,1.0);
+
+	// fly over animation
+
+
+	//
+	if(m_bFollowCar)
+	{
+	double Length;
+	Length=100.0;
+
+		// m_CarPosition has been pre-set in vehicle drawing
+
+		//EyePosition.z=car.m_Position.z;//10.0;
+//		m_EyePoint.x = m_CarPosition.x+Length*cos(m_EyeAng);
+//		m_EyePoint.y = m_CarPosition.y+Length*sin(m_EyeAng);
+
+		// keep the z position
+
+		gluLookAt(m_EyePoint.x,m_EyePoint.y,m_EyePoint.z,m_CarPosition.x,m_CarPosition.y,m_CarPosition.z+10.0,0.0,0.0,1.0);
+	}
+	else
+		gluLookAt(m_EyePoint.x,m_EyePoint.y,m_EyePoint.z,m_ObservePoint.x,m_ObservePoint.y,m_ObservePoint.z,0.0,0.0,1.0);
 	glColor3d(0.6,0.6,0.6);
 
 	float Height0 = 0.0f;
@@ -253,46 +282,46 @@ void CGLView::Render()
 	{	
 		if(m_bLoadBackgroundImage==false) // and 3D map is not loaded yet
 		{
-		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-		m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"Background.bmp");
-		glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-		m_bLoadBackgroundImage = true;
+			glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+			m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"Background.bmp");
+			glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+			m_bLoadBackgroundImage = true;
 		}
 
 		if(m_pBackgroundImage!=NULL)
 		{
-		glTexImage2D(GL_TEXTURE_2D,0,3,m_pBackgroundImage->sizeX,m_pBackgroundImage->sizeY,0,GL_RGB,GL_UNSIGNED_BYTE,m_pBackgroundImage->data );
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);//  GL_CLAMP); 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);////GL_CLAMP); 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST); // GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST); // GL_LINEAR);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL); 
-		glEnable(GL_TEXTURE_2D);
+			glTexImage2D(GL_TEXTURE_2D,0,3,m_pBackgroundImage->sizeX,m_pBackgroundImage->sizeY,0,GL_RGB,GL_UNSIGNED_BYTE,m_pBackgroundImage->data );
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);//  GL_CLAMP); 
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);////GL_CLAMP); 
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST); // GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST); // GL_LINEAR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL); 
+			glEnable(GL_TEXTURE_2D);
 
-		Vector vector;
-		glColor3d(0.0,0.5,0.0);
-		glBegin(GL_QUADS);
-							glTexCoord2d(0.0,0.0);  //2D binding
-		vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
-		vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
-		vector.v.z=m_BackgroundMapHeight;
-		glVertex3dv(vector.d);
-							glTexCoord2d(1.0,0.0); //2D binding
-		vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
-		vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
-		vector.v.z=m_BackgroundMapHeight;
-		glVertex3dv(vector.d); 
-							glTexCoord2d(1.0,1.0); //2D binding
-		vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
-		vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
-		vector.v.z=m_BackgroundMapHeight;
-		glVertex3dv(vector.d);
-							glTexCoord2d(0.0,1.0); //2D binding
-		vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
-		vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
-		vector.v.z=m_BackgroundMapHeight;
-		glVertex3dv(vector.d);
-	glEnd();
+			Vector vector;
+			glColor3d(0.0,0.5,0.0);
+			glBegin(GL_QUADS);
+			glTexCoord2d(0.0,0.0);  //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+			vector.v.z=m_BackgroundMapHeight;
+			glVertex3dv(vector.d);
+			glTexCoord2d(1.0,0.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+			vector.v.z=m_BackgroundMapHeight;
+			glVertex3dv(vector.d); 
+			glTexCoord2d(1.0,1.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+			vector.v.z=m_BackgroundMapHeight;
+			glVertex3dv(vector.d);
+			glTexCoord2d(0.0,1.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+			vector.v.z=m_BackgroundMapHeight;
+			glVertex3dv(vector.d);
+			glEnd();
 
 		}
 		glDisable(GL_TEXTURE_2D);
@@ -313,7 +342,7 @@ void CGLView::Render()
 
 	DrawAllObjects();
 
-	
+
 	/* test code
 	double x0 =  NXtoSX_org(pDoc->m_NetworkRect.left);
 	double x1 =  NXtoSX_org(pDoc->m_NetworkRect.right);
@@ -322,12 +351,12 @@ void CGLView::Render()
 	glBegin(GL_QUADS);
 	glColor3f(0.9f,0.9f,0.9f);
 	glVertex3f(x0,y0,Height0);
-    glVertex3f(x0,y1,Height0);
-    glVertex3f(x1,y1,Height0);
-    glVertex3f(x1,y0,Height0);
+	glVertex3f(x0,y1,Height0);
+	glVertex3f(x1,y1,Height0);
+	glVertex3f(x1,y0,Height0);
 	glEnd();
 
-*/
+	*/
 
 
 	if(m_bShowGrass){
@@ -376,7 +405,7 @@ void CGLView::DrawAllObjects()
 		glColor3f(1.0f,1.0f,0.5f);  //yellow
 
 	std::list<DTALink*>::iterator iLink;
- 		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 		float fromX = NXtoSX_org((*iLink)->m_FromPoint.x);
 		float fromY = NYtoSY_org((*iLink)->m_FromPoint.y);
@@ -389,192 +418,278 @@ void CGLView::DrawAllObjects()
 	}
 
 
+
+
+
+
+
 	//draw time-dependent path
 
 	if(m_ShowAllPaths)
 	{
 
-	unsigned int iPath;
+		unsigned int iPath;
 
-	float TimeStep = 2.0f;
+		float TimeStep = 2.0f;
 
 
-    for(int Time= 0; Time<72; Time+=60)  // draw time-dependent shortest every 1 hour
-	{
-
-	for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)
-	{
-
-		float CurrentTime = Time;
-
-		SelectNumuericalColor(iPath);
-
-		for (int i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
-	{
-		DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
-		if(pLink!=NULL)
+		for(int Time= 0; Time<72; Time+=60)  // draw time-dependent shortest every 1 hour
 		{
 
-		float fromX = NXtoSX_org(pLink->m_FromPoint.x);
-		float fromY = NYtoSY_org(pLink->m_FromPoint.y);
-		float toX = NXtoSX_org(pLink->m_ToPoint.x);
-		float toY = NYtoSY_org(pLink->m_ToPoint.y);
+			for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)
+			{
 
-		float TimeZFrom = CurrentTime*TimeStep;
+				float CurrentTime = Time;
 
-		CurrentTime += pLink->ObtainHistTravelTime((int)(CurrentTime));
+				SelectNumuericalColor(iPath);
 
-		float TimeZTo = CurrentTime*TimeStep;
+				for (int i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
+				{
+					DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+					if(pLink!=NULL)
+					{
 
-		glVertex3f(fromX,fromY,TimeZFrom);
-		glVertex3f(toX,toY,TimeZTo);
-		
+						float fromX = NXtoSX_org(pLink->m_FromPoint.x);
+						float fromY = NYtoSY_org(pLink->m_FromPoint.y);
+						float toX = NXtoSX_org(pLink->m_ToPoint.x);
+						float toY = NYtoSY_org(pLink->m_ToPoint.y);
+
+						float TimeZFrom = CurrentTime*TimeStep;
+
+						CurrentTime += pLink->ObtainHistTravelTime((int)(CurrentTime));
+
+						float TimeZTo = CurrentTime*TimeStep;
+
+						glVertex3f(fromX,fromY,TimeZFrom);
+						glVertex3f(toX,toY,TimeZTo);
+
+					}
+				}
+			}
 		}
-	}
-	}
-	}
 
 	}
 
 
-//draw time-dependent train path
+	//draw time-dependent train path
 
 	if(m_ShowAllTrains)
 	{
 
-	// find the maximum timesamp
+		// find the maximum timesamp
 		float max_time = 0;
 		unsigned int v ;
 
-	for(v = 0; v<pDoc->m_TrainVector.size(); v++)
-	{
+		for(v = 0; v<pDoc->m_TrainVector.size(); v++)
+		{
 
-		DTA_Train* pTrain = pDoc->m_TrainVector[v];
+			DTA_Train* pTrain = pDoc->m_TrainVector[v];
 
-		if((pTrain->m_DepartureTime + pTrain->m_ActualTripTime) > max_time)
-			max_time = pTrain->m_DepartureTime + pTrain->m_ActualTripTime;
-	}
-	
+			if((pTrain->m_DepartureTime + pTrain->m_ActualTripTime) > max_time)
+				max_time = pTrain->m_DepartureTime + pTrain->m_ActualTripTime;
+		}
+
 		float m_ZResolution = 300.0f/max_time;
 
-	for(v = 0; v<pDoc->m_TrainVector.size(); v++)
-	{
-
-		DTA_Train* pTrain = pDoc->m_TrainVector[v];
-
-		SelectNumuericalColor(pTrain->m_TrainType-1);
-
-		for(int n = 1; n< pTrain->m_NodeSize; n++)
+		for(v = 0; v<pDoc->m_TrainVector.size(); v++)
 		{
-			DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
 
-			ASSERT(pLink!=NULL);
+			DTA_Train* pTrain = pDoc->m_TrainVector[v];
 
-		float fromX = NXtoSX_org(pLink->m_FromPoint.x);
-		float fromY = NYtoSY_org(pLink->m_FromPoint.y);
-		float toX = NXtoSX_org(pLink->m_ToPoint.x);
-		float toY = NYtoSY_org(pLink->m_ToPoint.y);
+			SelectNumuericalColor(pTrain->m_TrainType-1);
 
-		float TimeZFrom = pTrain->m_aryTN[n-1].NodeTimestamp*m_ZResolution;
-		float TimeZTo = pTrain->m_aryTN[n].NodeTimestamp*m_ZResolution;
+			for(int n = 1; n< pTrain->m_NodeSize; n++)
+			{
+				DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
+
+				ASSERT(pLink!=NULL);
+
+				float fromX = NXtoSX_org(pLink->m_FromPoint.x);
+				float fromY = NYtoSY_org(pLink->m_FromPoint.y);
+				float toX = NXtoSX_org(pLink->m_ToPoint.x);
+				float toY = NYtoSY_org(pLink->m_ToPoint.y);
+
+				float TimeZFrom = pTrain->m_aryTN[n-1].NodeTimestamp*m_ZResolution;
+				float TimeZTo = pTrain->m_aryTN[n].NodeTimestamp*m_ZResolution;
 
 
-		glVertex3f(fromX,fromY,TimeZFrom);
-		glVertex3f(toX,toY,TimeZTo);
+				glVertex3f(fromX,fromY,TimeZFrom);
+				glVertex3f(toX,toY,TimeZTo);
+
+
+			}
 
 
 		}
-		
-	
-	}
-	}
-		glEnd();
-
-		//show travel time variability
-	if(m_ShowSpeedVariability)
-	{
-	glBegin(GL_QUADS);
-
-	float MaxVariability = 0;
-
-
-	std::list<DTALink*>::iterator iLink;
-	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
-	{
-
-		if(MaxVariability < ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed) )
-			MaxVariability = (*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed;
-
-	}
-
-	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
-	{
-		float fromX = NXtoSX_org((*iLink)->m_FromPoint.x);
-		float fromY = NYtoSY_org((*iLink)->m_FromPoint.y);
-		float toX = NXtoSX_org((*iLink)->m_ToPoint.x);
-		float toY = NYtoSY_org((*iLink)->m_ToPoint.y);
-
-//		SelectNumuericalColor();
-
-		// calculate travel time index 
-//		float ZBottom =  (*iLink)->m_SpeedLimit /(*iLink)->m_MaxSpeed *5;
-
-		float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
-
-		if(VariabilityRatio>=1) VariabilityRatio=1;
-		if(VariabilityRatio<=0) VariabilityRatio=0;
-
-//		GetColorFromPower(VolumeRatio);
-		GetRGBColorFromPower(VariabilityRatio);
-
-		float ZBottom =  5;
-//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
-
-		float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
-
-
-		if(ZTop<=5)
-			ZTop = 5;
-
-
-		glVertex3f(fromX,fromY,ZBottom);
-		glVertex3f(toX,toY,ZBottom);
-
-		glVertex3f(toX,toY,ZTop);
-		glVertex3f(fromX,fromY,ZTop);
-
-	}
 	}
 	glEnd();
 
-	
+	//show travel time variability
+	if(m_ShowSpeedVariability)
+	{
+		glBegin(GL_QUADS);
+
+		float MaxVariability = 0;
+
+
+		std::list<DTALink*>::iterator iLink;
+		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+		{
+
+			if(MaxVariability < ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed) )
+				MaxVariability = (*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed;
+
+		}
+
+		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+		{
+			float fromX = NXtoSX_org((*iLink)->m_FromPoint.x);
+			float fromY = NYtoSY_org((*iLink)->m_FromPoint.y);
+			float toX = NXtoSX_org((*iLink)->m_ToPoint.x);
+			float toY = NYtoSY_org((*iLink)->m_ToPoint.y);
+
+			float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
+
+			if(VariabilityRatio>=1) VariabilityRatio=1;
+			if(VariabilityRatio<=0) VariabilityRatio=0;
+
+			//		GetColorFromPower(VolumeRatio);
+			GetRGBColorFromPower(VariabilityRatio);
+
+			float ZBottom =  5;
+			//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
+
+			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
+
+
+			if(ZTop<=5)
+				ZTop = 5;
+
+
+			glVertex3f(fromX,fromY,ZBottom);
+			glVertex3f(toX,toY,ZBottom);
+
+			glVertex3f(toX,toY,ZTop);
+			glVertex3f(fromX,fromY,ZTop);
+
+		}
+	}
+	glEnd();
+
+
+	// draw vehicles
+
+	bool bSelectVehicle = false;
+	std::list<DTAVehicle*>::iterator iVehicle;
+	for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
+	{
+		if((*iVehicle)->m_VehicleID %100==0)
+		{
+
+			if((*iVehicle)->m_bComplete && (*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
+				g_Simulation_Time_Stamp <=(*iVehicle)->m_ArrivalTime && (*iVehicle)->m_NodeSize>=2)
+			{
+
+				float ratio = 0;
+				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
+
+				DTALink* pLink = pDoc->m_LinkIDMap[LinkID];
+				if(pLink!=NULL)
+				{
+					float fromX = NXtoSX_org(pLink->m_FromPoint.x);
+					float fromY = NYtoSY_org(pLink->m_FromPoint.y);
+					float toX = NXtoSX_org(pLink->m_ToPoint.x);
+					float toY = NYtoSY_org(pLink->m_ToPoint.y);
+
+					m_EyeAng = atan2(toY-fromY,toX-fromX);
+					float VehPointX = ratio*fromX + (1-ratio)*toX;
+					float VehPointY = ratio*fromY + (1-ratio)*toY;
+
+		
+
+					//							glTranslatef(VehPointX,VehPointY,4);
+					//							auxWireCube(2.0f); 
+					//							glFlush();
+
+					glPushMatrix();
+					glTranslated(VehPointX,VehPointY,4);
+					double HuAng;
+					double Ang;
+					doublePointStruct m_Normal;
+					m_Normal.x=0.0;
+					m_Normal.y=0.0;
+					m_Normal.z=1.0;
+
+					Ang=atan2(m_Normal.y,m_Normal.x);
+
+					HuAng=Ang*180.0/3.1415926;
+					glRotated(HuAng+270.0,0.0,0.0,1.0);
+					//for z angle
+					Ang=asin(m_Normal.z);
+					HuAng=Ang*180.0/3.1415926;
+					glRotated(HuAng,1.0,0.0,0.0);
+
+					float m_Height = 4;
+					float m_Width = 4;
+					glColor3d(1,1,0);
+					glTranslated(0.0,0.0,m_Height/2.0);//0.0);
+					auxSolidBox(m_Height,m_Width,m_Height);
+			
+					if(!bSelectVehicle)  // not select vehicle yet
+					{
+						m_CarPosition.x = VehPointX;
+						m_CarPosition.y = VehPointY;
+						m_CarPosition.z = 4;
+					
+						glColor3d(1.0,0.0,0.0);  //red
+						bSelectVehicle = true;
+						m_Height = 8;
+						m_Width = 6;
+					}else
+					{
+						glColor3d(0.0,0.0,0.0);
+					}
+					glTranslated(0.0,m_Width/2.0+1.0,0.0);
+					auxSolidBox(m_Height,2.0,m_Height);
+					glPopMatrix();
+
+
+
+				}
+
+			}
+		}
+
+	}
+
+
 }
 
 void CGLView::ComputeEyePosition()
 {
-double x,y,z,t;
-z=m_EyeLength*sin(m_zAng);
-t=m_EyeLength*cos(m_zAng);
-if(fabs(t)<0.00000001)t=0.0;
+	double x,y,z,t;
+	z=m_EyeLength*sin(m_zAng);
+	t=m_EyeLength*cos(m_zAng);
+	if(fabs(t)<0.00000001)t=0.0;
 
-x=m_EyeLength*cos(m_xyAng);
-y=-m_EyeLength*sin(m_xyAng);
+	x=m_EyeLength*cos(m_xyAng);
+	y=-m_EyeLength*sin(m_xyAng);
 
-if(fabs(x)<0.0001)x=0.0;
-if(fabs(y)<0.0001)y=0.0;
-if(fabs(z)<0.0001)z=0.0;
+	if(fabs(x)<0.0001)x=0.0;
+	if(fabs(y)<0.0001)y=0.0;
+	if(fabs(z)<0.0001)z=0.0;
 
-m_EyePoint.x=m_ObservePoint.x+x;
-m_EyePoint.y=m_ObservePoint.y+y;
-m_EyePoint.z=m_ObservePoint.z+z;
+	m_EyePoint.x=m_ObservePoint.x+x;
+	m_EyePoint.y=m_ObservePoint.y+y;
+	m_EyePoint.z=m_ObservePoint.z+z;
 
-if(m_EyePoint.z<0)
-m_EyePoint.z = 0;
-///////////////////
+	if(m_EyePoint.z<0)
+		m_EyePoint.z = 0;
+	///////////////////
 
-m_Normal.x=0.0;
-m_Normal.y=0.0;
-m_Normal.z=1.0;
+	m_Normal.x=0.0;
+	m_Normal.y=0.0;
+	m_Normal.z=1.0;
 
 }
 
@@ -599,8 +714,8 @@ void CGLView::OnMouseMove(UINT nFlags, CPoint point)
 	CSize size;
 	size=point-m_StartPoint;
 	m_StartPoint=point;
-if(nFlags&MK_LBUTTON){
-	switch(m_State){
+	if(nFlags&MK_LBUTTON){
+		switch(m_State){
 	case glMove:  // move XY
 
 		m_ObservePoint.x-=(double)size.cx;
@@ -625,8 +740,8 @@ if(nFlags&MK_LBUTTON){
 		break;
 	default:
 		break;
+		}
 	}
-}
 	CView::OnMouseMove(nFlags, point);
 }
 
@@ -645,19 +760,19 @@ void CGLView::On3DPam()
 void CGLView::OnUpdate3DPam(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(m_State==glMove);	
-	
+
 }
 
 void CGLView::On3DRotate() 
 {
 	m_State=glRotate;
-	
+
 }
 
 void CGLView::OnUpdate3DRotate(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(m_State==glRotate);	
-	
+
 }
 
 void CGLView::On3DLockZ() 
@@ -684,7 +799,7 @@ void CGLView::On3DReset()
 	m_EyeLength=800.0;
 	m_State=glNone;
 	Render();
-	
+
 }
 
 void CGLView::OnUpdate3DReset(CCmdUI* pCmdUI) 
@@ -693,10 +808,10 @@ void CGLView::OnUpdate3DReset(CCmdUI* pCmdUI)
 
 void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) 
 {
-	
+
 	double Step = 10;
 
-    switch(nChar)
+	switch(nChar)
 	{
 	case VK_UP :
 		m_ObservePoint.y-=Step;
@@ -706,7 +821,7 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		m_ObservePoint.y+=Step;
 		break;
 
-    case VK_LEFT :
+	case VK_LEFT :
 		m_ObservePoint.x+=Step;
 		break;
 
@@ -717,7 +832,7 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 
 	}
-		Render();
+	Render();
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
@@ -774,7 +889,20 @@ void CGLView::On3ddisplayBasicview()
 void CGLView::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
-	 ShowWindow(SW_HIDE);
+	ShowWindow(SW_HIDE);
 
-//	CView::OnClose();
+	//	CView::OnClose();
+}
+
+
+void CGLView::On3dCarfol()
+{
+	m_bFollowCar = !m_bFollowCar;
+	Render();
+
+}
+
+void CGLView::OnUpdate3dCarfol(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bFollowCar);
 }

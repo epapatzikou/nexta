@@ -312,73 +312,6 @@ void ReadDSPDestinationData(char fname[_MAX_PATH])
 */
 }
 
-void ReadDSPVehicleData(char fname[_MAX_PATH])
-{
- /*  cout << "Read vehicle file... "  << endl;
-
-   FILE* st = NULL;
-   fopen_s(&st,fname,"r");
-   if(st!=NULL)
-      {
-      int num_vehicles = g_read_integer(st);
-      int num_stops    = g_read_integer(st);
-
-      DTAVehicle* pVehicle = 0;
-      for(int i = 0; i< num_vehicles; i++)
-         {
-
-         pVehicle = new DTAVehicle;
-         pVehicle->m_VehicleID		= i;
-//         pVehicle->m_VehicleName	= g_read_integer(st);
-		 pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
-
-         int USN  = g_read_integer(st);
-         int DSN  = g_read_integer(st);
-
-         if(g_NodeMap[USN])
-            int UpstreamNodeID	= g_NodeMap[USN]->m_NodeID;
-
-         if(g_NodeMap[DSN])
-            int DownstreamNodeID = g_NodeMap[DSN]->m_NodeID;
-
-         pVehicle->m_DepartureTime	= g_read_float(st);
-
-
-         pVehicle->m_VehicleType	= g_read_integer(st);
-         pVehicle->m_VehicleType	= g_read_integer(st);
-         pVehicle->m_Occupancy		= g_read_integer(st);
-         int NodeSize		= g_read_integer(st);
-         int NumberOfDestinations= g_read_integer(st);
-         pVehicle->m_InformationClass		= g_read_integer(st);
-         float ribf			= g_read_float(st);
-         float comp			= g_read_float(st);
-         pVehicle->m_OriginZoneID	= g_read_integer(st);
-
-         for(int j=0; j<NumberOfDestinations;j++)
-            {
-            pVehicle->m_DestinationZoneID=g_read_integer(st);
-            float waiting_time =  g_read_float(st);
-            }
-
-         pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
-         g_VehicleSet.insert(pVehicle);
-         g_VehicleMap[i]  = pVehicle;
-
-         int AssignmentInterval = int(pVehicle->m_DepartureTime/m_OptimizationTimeInveral);
-
-
-
-         }
-
-      fclose(st);
-      cout << "Number of Vehicles = "<< g_VehicleSet.size() << endl;
-      cout << "Demand Loading Horizon = "<< g_DemandLoadingHorizon << " min" << endl;
-      cout << "Simulation Horizon = "<< g_SimulationHorizon << " min" << endl;
-      cout << "Assignment Interval = "<< m_OptimizationTimeInveral << " min" << endl;
-
-      }
-*/
-}
 
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) 
 {
@@ -415,3 +348,39 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 
 	   return value; 
 } 
+
+double  g_FindClosestYResolution(double Value)
+{
+		double ResolutionVector[23] = {0.001,0.005,0.01,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000};
+		double min_distance  = 9999999;
+
+		double ClosestResolution=1;
+		for(int i=0; i<23;i++)
+		{
+			if(	fabs(Value-ResolutionVector[i]) < min_distance)
+			{
+				min_distance = fabs(Value-ResolutionVector[i]);
+				ClosestResolution = ResolutionVector[i];
+			}
+		}
+		return ClosestResolution;
+}
+
+int  g_FindClosestTimeResolution(double Value)
+{
+		int ResolutionVector[9] = {1,10,30,60,120,240,480,720,1440};
+		double min_distance  = 9999999;
+
+		Value = max(1,Value/6);  //1/6 of time horizion as resolution
+
+		int ClosestResolution=1;
+		for(int i=0; i<9;i++)
+		{
+			if(	fabs(Value-ResolutionVector[i]) < min_distance)
+			{
+				min_distance = fabs(Value-ResolutionVector[i]);
+				ClosestResolution = ResolutionVector[i];
+			}
+		}
+		return ClosestResolution;
+}

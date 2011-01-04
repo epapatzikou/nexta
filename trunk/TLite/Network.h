@@ -213,6 +213,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
 		m_HistLinkMOEAry = new SLinkMOE[min(m_SimulationHorizon+1,1441)];
@@ -399,6 +400,8 @@ public:
 	SLinkMOE *m_HistLinkMOEAry;
 
 	bool m_bSensorData;
+
+	float m_ObsHourlyLinkVolume;
 	int *aryCFlowA;
 	int *aryCFlowD;
 
@@ -707,12 +710,12 @@ public:
 class SVehicleLink
 {  public:
 unsigned short  LinkID;  // range:
-float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
+float ArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
 {
 	LinkID = 0;
-	AbsArrivalTimeOnDSN = 0;
+	ArrivalTimeOnDSN = 0;
 	//		LinkWaitingTime = 0;
 
 }
@@ -754,7 +757,7 @@ public:
 
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
-	SVehicleLink *m_aryVN; // link list arrary of a vehicle path
+	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path
 
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
@@ -793,20 +796,17 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
-
 	DTAVehicle()
 	{
 		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
 
-
-		m_aryVN = NULL;
+		m_NodeAry = NULL;
 		m_NodeSize	= 0;
 		m_bImpacted = false; 
 		m_InformationClass = 0;
 		m_VehicleType = 0;
 		m_Occupancy = 0;
-
 
 		m_ArrivalTime = 0;
 		//      m_FinalArrivalTime = 0;
@@ -820,8 +820,8 @@ public:
 	};
 	~DTAVehicle()
 	{
-		if(m_aryVN != NULL)
-			delete m_aryVN;
+		if(m_NodeAry != NULL)
+			delete m_NodeAry;
 
 		if(pVehData!=NULL)
 			delete pVehData;
@@ -1264,3 +1264,4 @@ extern float g_RNNOF();
 
 extern std::vector<DTAPath*>	m_PathDisplayList;
 extern int m_SelectPathNo;
+extern float g_Simulation_Time_Stamp;

@@ -29,3 +29,6 @@ int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);
 
+double  g_FindClosestYResolution(double Value);
+
+int  g_FindClosestTimeResolution(double Value);

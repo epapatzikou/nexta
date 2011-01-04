@@ -49,6 +49,7 @@ public:
 	int m_SelectToNodeNumber;
 
 	bool m_bShowSensor;
+	bool m_bShowVehicle;
 	CTLiteDoc* GetDocument() const;
 	tool m_ToolMode; 
 	
@@ -64,6 +65,7 @@ public:
 	bool m_bShowLinkType;
 
 	int m_NodeSize;
+	int m_VehicleSize;
 	int m_SelectedNodeID;
 	int m_SelectedLinkID;
 
@@ -175,6 +177,8 @@ public:
 	afx_msg void OnUpdateShowLinkarrow(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowmoe();
 	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
+	afx_msg void OnMoeVehicle();
+	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

@@ -14,16 +14,23 @@
 #define new DEBUG_NEW
 #endif
 
-
+extern 	void g_UpdateAllViews(int Flag);
+int  g_Player_Status=-1;	     //-1: edit 0: stop, 1: play, 2: pause
 
 IMPLEMENT_DYNAMIC(CMainFrame, CMDIFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_WM_CREATE()
+	ON_WM_TIMER()
 	ON_COMMAND(ID_WINDOW_NEW3DVIEW, &CMainFrame::OnWindowNew3dview)
 	ON_COMMAND(ID_SHOW_TIMETABLE, &CMainFrame::OnShowTimetable)
 	ON_UPDATE_COMMAND_UI(ID_WINDOW_NEW3DVIEW, &CMainFrame::OnUpdateWindowNew3dview)
 	ON_COMMAND(ID_WINDOW_SHOW2DVIEW, &CMainFrame::OnWindowShow2dview)
+	ON_COMMAND(ID_3DDISPLAY_ANIMATION, &CMainFrame::On3ddisplayAnimation)
+	ON_COMMAND(ID_ANIMATION_PLAY, &CMainFrame::OnAnimationPlay)
+	ON_COMMAND(ID_ANIMATION_REWIND, &CMainFrame::OnAnimationRewind)
+	ON_COMMAND(ID_ANIMATION_PAUSE, &CMainFrame::OnAnimationPause)
+	ON_COMMAND(ID_ANIMATION_STOP, &CMainFrame::OnAnimationStop)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -86,6 +93,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 
+	SetTimer(0,1000, NULL); // simulation reflesh timer
+
 	m_wndPlayerSeekBar.Enable(true);
 	//	   m_wndPlayerSeekBar.SetRange(0,100);
 	m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
@@ -94,6 +103,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 	//	EnableDocking(CBRS_ALIGN_ANY);
 	//	DockControlBar(&m_wndToolBar);
+
 
 	return 0;
 }
@@ -147,14 +157,14 @@ void CMainFrame::OnWindowNew3dview()
 	ASSERT_VALID(pTemplate);
 
 	CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
-		if (pFrame == NULL)
-		{
-			TRACE("Warning:  failed to create new frame\n");
-			AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-			return; // Command failed
-			// make it visisable
-		}
-		pTemplate->InitialUpdateFrame(pFrame, pDocument);
+	if (pFrame == NULL)
+	{
+		TRACE("Warning:  failed to create new frame\n");
+		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+		return; // Command failed
+		// make it visisable
+	}
+	pTemplate->InitialUpdateFrame(pFrame, pDocument);
 
 }
 
@@ -173,24 +183,78 @@ void CMainFrame::OnShowTimetable()
 	CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateTimeTableView;
 	ASSERT_VALID(pTemplate);
 
-		CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
-		if (pFrame == NULL)
-		{
-			TRACE("Warning:  failed to create new frame\n");
-			AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-			return; // Command failed
-		}
-		pTemplate->InitialUpdateFrame(pFrame, pDocument);
-	
+	CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	if (pFrame == NULL)
+	{
+		TRACE("Warning:  failed to create new frame\n");
+		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+		return; // Command failed
+	}
+	pTemplate->InitialUpdateFrame(pFrame, pDocument);
+
 }
 
 void CMainFrame::OnUpdateWindowNew3dview(CCmdUI *pCmdUI)
 {
-	
+
 }
 
 
 void CMainFrame::OnWindowShow2dview()
 {
-		MDITile(MDITILE_VERTICAL);
+	MDITile(MDITILE_VERTICAL);
+}
+
+void CMainFrame::On3ddisplayAnimation()
+{
+	// TODO: Add your command handler code here
+}
+void CMainFrame::OnTimer(UINT nIDEvent)
+{
+
+	if(g_Player_Status == 1) // play
+	{
+		if(g_Simulation_Time_Stamp < g_Simulation_Time_Horizon)
+		{
+			g_Simulation_Time_Stamp += 1.0f;  // second
+		}else
+		{
+			g_Simulation_Time_Stamp = g_Simulation_Time_Horizon;
+			g_Player_Status = 0; // automatically stops when we reach the end of simulation horizon
+
+		}
+
+		m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
+
+		g_UpdateAllViews(0);
+	}
+
+}
+void CMainFrame::OnAnimationPlay()
+{
+	g_Player_Status = 1;
+
+	g_UpdateAllViews(0);
+}
+
+void CMainFrame::OnAnimationRewind()
+{
+	g_Player_Status = 1;
+	g_Simulation_Time_Stamp = 0;
+	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
+
+	g_UpdateAllViews(0);}
+
+void CMainFrame::OnAnimationPause()
+{
+	g_Player_Status = 2;
+}
+
+void CMainFrame::OnAnimationStop()
+{
+	g_Player_Status = 0;
+	g_Simulation_Time_Stamp = 0;
+	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
+
+	g_UpdateAllViews(0);
 }

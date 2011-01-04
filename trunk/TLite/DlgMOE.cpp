@@ -30,10 +30,11 @@
 #include "Network.h"
 
 
+
 extern CDlgMOE *g_LinkMOEDlg;
 extern bool g_LinkMOEDlgShowFlag;
 extern std::list<DTALink*>	g_LinkDisplayList;
-extern long g_Simulation_Time_Stamp;
+
 
 void g_SelectColorCode(CDC* pDC, int ColorCount);
 
@@ -539,22 +540,7 @@ void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextF
 
 	int TimeXPosition;
 
-	int TimeInterval = 5;
-
-	if(m_TmRight - m_TmLeft >=1440*7)
-		TimeInterval = 1440;
-	else if(m_TmRight - m_TmLeft >=1440*4)
-		TimeInterval = 720;
-	else if(m_TmRight - m_TmLeft >=2800)
-		TimeInterval = 360;
-	else if(m_TmRight - m_TmLeft >=1400)
-		TimeInterval = 120;
-	else if(m_TmRight - m_TmLeft >=400)
-		TimeInterval = 60;
-	else if(m_TmRight - m_TmLeft >=120)
-		TimeInterval = 30;
-	else 
-		TimeInterval = 10;
+	int TimeInterval = g_FindClosestTimeResolution(m_TmRight - m_TmLeft);
 
 	// time unit
 	m_UnitTime = 1;
@@ -636,38 +622,7 @@ void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextF
 	int i;
 
 
-	if(YInterval >= 10000 && YInterval < 20000)
-		YInterval = 20000;
-
-	if(YInterval >= 5000 && YInterval < 10000)
-		YInterval = 10000;
-
-	if(YInterval >= 2500 && YInterval < 5000)
-		YInterval = 5000;
-
-	if(YInterval >= 1000 && YInterval < 2500)
-		YInterval = 2500;
-
-	if(YInterval >= 500 && YInterval < 1000)
-		YInterval = 1000;
-
-	if(YInterval >= 250 && YInterval < 500)
-		YInterval = 500;
-
-	if(YInterval >= 100 && YInterval < 250)
-		YInterval = 250;
-
-	if(YInterval >= 50 && YInterval < 100)
-		YInterval = 100;
-
-	if(YInterval >= 25 && YInterval < 50)
-		YInterval = 50;
-
-	if(YInterval >= 10 && YInterval < 25)
-		YInterval = 25;
-	else if(YInterval<10)
-		YInterval = 10;
-
+	YInterval = (int)(max(1,g_FindClosestYResolution(m_YUpperBound)));
 
 	for(i=m_YLowerBound; i <= m_YUpperBound + YInterval-1; i+= YInterval)
 	{
