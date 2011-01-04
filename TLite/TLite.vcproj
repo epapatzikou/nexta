@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Estimation.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\GLView.cpp"
 				>
 			</File>

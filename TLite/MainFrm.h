@@ -68,6 +68,13 @@ public:
 	afx_msg void OnUpdateWindowNew3dview(CCmdUI *pCmdUI);
 	afx_msg void OnWindow2dview();
 	afx_msg void OnWindowShow2dview();
+	afx_msg void On3ddisplayAnimation();
+	afx_msg void OnTimer(UINT nIDEvent);
+
+	afx_msg void OnAnimationPlay();
+	afx_msg void OnAnimationRewind();
+	afx_msg void OnAnimationPause();
+	afx_msg void OnAnimationStop();
 };
 
 

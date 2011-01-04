@@ -125,6 +125,8 @@ public:
 	bool m_bShowBackgroundImage;
 	bool m_bLoadBackgroundImage;
 
+	bool m_bAnimation;
+
 	double m_BackgroundMapHeight;
 
 
@@ -135,7 +137,8 @@ public:
 	BOOL m_bShowGrass;
 	BOOL m_bFollowCar;
 	doublePointStruct m_ObservePoint;
-	doublePointStruct m_EyePoint;
+	doublePointStruct m_EyePoint, m_CarPosition;
+	double m_EyeAng; // eye angle
 	doublePointStruct m_Normal;
 	double m_zAng;
 	double m_xyAng;
@@ -290,6 +293,9 @@ public:
 	afx_msg void OnUpdate3ddisplayAnimation(CCmdUI *pCmdUI);
 	afx_msg void On3ddisplayBasicview();
 	afx_msg void OnClose();
+	afx_msg void OnTimer(UINT nIDEvent);
+	afx_msg void On3dCarfol();
+	afx_msg void OnUpdate3dCarfol(CCmdUI *pCmdUI);
 };
 inline CTLiteDoc* CGLView::GetDocument() const
    { return reinterpret_cast<CTLiteDoc*>(m_pDocument); }

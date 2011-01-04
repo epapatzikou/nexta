@@ -34,7 +34,7 @@
 #define new DEBUG_NEW
 #endif
 
-void CTLiteDoc::ImportLinkTravelTimeCSVFile(LPCTSTR lpszFileName)
+void CTLiteDoc::ReadTrainProfileCSVFile(LPCTSTR lpszFileName)
 {
         FILE* st = NULL;
         fopen_s(&st,lpszFileName,"r");
@@ -77,7 +77,7 @@ void CTLiteDoc::ImportLinkTravelTimeCSVFile(LPCTSTR lpszFileName)
         }
 }
 
-bool CTLiteDoc::ImportTimetableCVSFile(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 {
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
@@ -171,7 +171,7 @@ void CTLiteDoc::OnTimetableImporttimetable()
 		wsprintf(fname,"%s", dlg.GetPathName());
 		CWaitCursor wait;
 
-		if(!ImportTimetableCVSFile(fname))
+		if(!ReadTimetableCVSFile(fname))
 		{
 			str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
 			AfxMessageBox(str);

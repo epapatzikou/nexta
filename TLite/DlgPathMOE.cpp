@@ -34,7 +34,7 @@
 
  
 
-extern long g_Simulation_Time_Stamp;
+extern float g_Simulation_Time_Stamp;
 extern CPen s_PenSimulationClock;
 
 extern 	void g_UpdateAllViews(int Flag);
@@ -215,7 +215,7 @@ void CDlgPathMOE::OnLvnItemchangedPathListControl(NMHDR *pNMHDR, LRESULT *pResul
 		m_pDoc->m_SelectPathNo = m_PathListControl.GetNextSelectedItem(pos);
 		Invalidate();
 
-		g_UpdateAllViews(2);
+		g_UpdateAllViews(3);
 	}
 
 }
@@ -313,22 +313,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	// step 3: time interval
 	int TimeXPosition;
 
-	int TimeInterval = 5;
-
-	if(m_TmRight - m_TmLeft >=1440*7)
-		TimeInterval = 1440;
-	else if(m_TmRight - m_TmLeft >=1440*4)
-		TimeInterval = 720;
-	else if(m_TmRight - m_TmLeft >=2800)
-		TimeInterval = 360;
-	else if(m_TmRight - m_TmLeft >=1400)
-		TimeInterval = 120;
-	else if(m_TmRight - m_TmLeft >=400)
-		TimeInterval = 60;
-	else if(m_TmRight - m_TmLeft >=120)
-		TimeInterval = 30;
-	else 
-		TimeInterval = 10;
+	int TimeInterval = g_FindClosestTimeResolution(m_TmRight - m_TmLeft);
 
 	// time unit
 	m_UnitTime = 1;

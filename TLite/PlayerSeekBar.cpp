@@ -32,7 +32,7 @@
 #include "MainFrm.h"
 // CPlayerSeekBar
 
-long g_Simulation_Time_Stamp;
+float g_Simulation_Time_Stamp;
 
 long g_Simulation_Time_Horizon=1440;  // 24 hours
 int g_Data_Time_Interval = 1;

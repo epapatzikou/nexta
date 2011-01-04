@@ -16,7 +16,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-extern long g_Simulation_Time_Stamp;
+extern float g_Simulation_Time_Stamp;
 extern CPen s_PenSimulationClock;
 extern void g_SelectColorCode(CDC* pDC, int ColorCount);
 
@@ -217,22 +217,7 @@ void CTimeSpaceView::DrawObjects(CDC* pDC,int MOEType,CRect PlotRect)
 	// step 3: time interval
 	int TimeXPosition;
 
-	int TimeInterval = 5;
-
-	if(m_TmRight - m_TmLeft >=1440*7)
-		TimeInterval = 1440;
-	else if(m_TmRight - m_TmLeft >=1440*4)
-		TimeInterval = 720;
-	else if(m_TmRight - m_TmLeft >=2800)
-		TimeInterval = 360;
-	else if(m_TmRight - m_TmLeft >=1400)
-		TimeInterval = 120;
-	else if(m_TmRight - m_TmLeft >=400)
-		TimeInterval = 60;
-	else if(m_TmRight - m_TmLeft >=120)
-		TimeInterval = 30;
-	else 
-		TimeInterval = 10;
+	int TimeInterval = g_FindClosestTimeResolution(m_TmRight - m_TmLeft);
 
 	// time unit
 	m_UnitTime = 1;
@@ -458,7 +443,7 @@ void CTimeSpaceView::InitializeTimeRange()
 	}
 
 	m_TmLeft = min_timestamp;
-	m_TmRight = max_timestamp+60;
+	m_TmRight = max_timestamp=10;
 
 }
 
