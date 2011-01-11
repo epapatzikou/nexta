@@ -19,6 +19,10 @@
 #define IDR_MENU2                       146
 #define IDC_CREATE_LINK_CURSOR          147
 #define IDD_DIALOG_FILE_LOADING         148
+#define IDR_TOOLBAR1                    149
+#define IDD_DIALOG_CARFOLLOWING         151
+#define IDR_MENU3                       152
+#define IDR_MENU_CARFOLLOWING           152
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_PATH_LIST_CONTROL           1010
@@ -148,13 +152,34 @@
 #define ID_ANIMATION_PAUSE              32903
 #define ID_ANIMATION_STOP               32904
 #define ID_3D_CARFOL                    32909
+#define ID_IMAGE_IMPORTBACKGROUNDIMAGE  32910
+#define ID_MOE_DENSITY                  32911
+#define ID_MOE_SPEED                    32912
+#define ID_MOE_VOLUME                   32913
+#define ID_MOE_QUEUELENGTH              32914
+#define ID_MOE_FUELCONSUMPTION          32915
+#define ID_MOE_EMISSIONS                32916
+#define ID_SEARCH_NODE                  32917
+#define ID_SEARCH_VEHICLES              32918
+#define ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION 32919
+#define ID_FILE_DATALOADINGSTATUS       32920
+#define ID_MOE_NONE                     32921
+#define ID_BUTTON32943                  32943
+#define ID_BUTTON32944                  32944
+#define ID_BUTTON32945                  32945
+#define ID_BUTTON32946                  32946
+#define ID_VIEW_MOETOOLBAR              32948
+#define ID_TOOLS_SIMULATION             32949
+#define ID_SIMULATION_CARFOLLOWING      32950
+#define ID_TOOLS_CARFOLLOWINGSIMULATION 32951
+#define ID_SIMULATION_RUN               32952
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        149
-#define _APS_NEXT_COMMAND_VALUE         32910
+#define _APS_NEXT_RESOURCE_VALUE        153
+#define _APS_NEXT_COMMAND_VALUE         32953
 #define _APS_NEXT_CONTROL_VALUE         1015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

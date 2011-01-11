@@ -179,6 +179,7 @@ public:
 	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 	afx_msg void OnMoeVehicle();
 	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
+	afx_msg void OnImageLockbackgroundimageposition();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

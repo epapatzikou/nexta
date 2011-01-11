@@ -33,6 +33,8 @@
 #include "DlgPathMOE.h"
 #include "DlgTrainInfo.h"
 #include "DlgFileLoading.h"
+#include "DlgCarFollowing.h"
+
 
 
 #ifdef _DEBUG
@@ -56,7 +58,6 @@ IMPLEMENT_DYNCREATE(CTLiteDoc, CDocument)
 
 BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_OPEN, &CTLiteDoc::OnFileOpen)
-	ON_COMMAND(ID_FILE_SAVEIMAGELOCATION, &CTLiteDoc::OnFileSaveimagelocation)
 	ON_COMMAND(ID_TOOL_GENERATESENESORMAPPINGTABLE, &CTLiteDoc::OnToolGeneratesenesormappingtable)
 	ON_COMMAND(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnShowShowpathmoe)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnUpdateShowShowpathmoe)
@@ -68,6 +69,23 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_SAVE_PROJECT, &CTLiteDoc::OnFileSaveProject)
 	ON_COMMAND(ID_FILE_SAVE_PROJECT_AS, &CTLiteDoc::OnFileSaveProjectAs)
 	ON_COMMAND(ID_ESTIMATION_ODESTIMATION, &CTLiteDoc::OnEstimationOdestimation)
+	ON_COMMAND(ID_IMAGE_IMPORTBACKGROUNDIMAGE, &CTLiteDoc::OnImageImportbackgroundimage)
+	ON_COMMAND(ID_FILE_DATALOADINGSTATUS, &CTLiteDoc::OnFileDataloadingstatus)
+	ON_COMMAND(ID_MOE_VOLUME, &CTLiteDoc::OnMoeVolume)
+	ON_COMMAND(ID_MOE_SPEED, &CTLiteDoc::OnMoeSpeed)
+	ON_COMMAND(ID_MOE_DENSITY, &CTLiteDoc::OnMoeDensity)
+	ON_COMMAND(ID_MOE_QUEUELENGTH, &CTLiteDoc::OnMoeQueuelength)
+	ON_COMMAND(ID_MOE_FUELCONSUMPTION, &CTLiteDoc::OnMoeFuelconsumption)
+	ON_COMMAND(ID_MOE_EMISSIONS, &CTLiteDoc::OnMoeEmissions)
+	ON_UPDATE_COMMAND_UI(ID_MOE_VOLUME, &CTLiteDoc::OnUpdateMoeVolume)
+	ON_UPDATE_COMMAND_UI(ID_MOE_SPEED, &CTLiteDoc::OnUpdateMoeSpeed)
+	ON_UPDATE_COMMAND_UI(ID_MOE_DENSITY, &CTLiteDoc::OnUpdateMoeDensity)
+	ON_UPDATE_COMMAND_UI(ID_MOE_QUEUELENGTH, &CTLiteDoc::OnUpdateMoeQueuelength)
+	ON_UPDATE_COMMAND_UI(ID_MOE_FUELCONSUMPTION, &CTLiteDoc::OnUpdateMoeFuelconsumption)
+	ON_UPDATE_COMMAND_UI(ID_MOE_EMISSIONS, &CTLiteDoc::OnUpdateMoeEmissions)
+	ON_COMMAND(ID_MOE_NONE, &CTLiteDoc::OnMoeNone)
+	ON_UPDATE_COMMAND_UI(ID_MOE_NONE, &CTLiteDoc::OnUpdateMoeNone)
+	ON_COMMAND(ID_TOOLS_CARFOLLOWINGSIMULATION, &CTLiteDoc::OnToolsCarfollowingsimulation)
 END_MESSAGE_MAP()
 
 
@@ -234,7 +252,7 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 				pLink->m_LinkMOEAry[t].ObsTravelTime = g_read_float(st);
 				float delay_in_min = g_read_float(st);
 				pLink->m_LinkMOEAry[t].ObsFlow  = g_read_float(st);
-				float volume_for_alllinks = g_read_float(st);
+				float volume_for_alllanes = g_read_float(st);
 				pLink->m_LinkMOEAry[t].ObsDensity = g_read_float(st);
 				pLink->m_LinkMOEAry[t].ObsSpeed = g_read_float(st);
 				pLink->m_LinkMOEAry[t].ObsQueuePerc = g_read_float(st);
@@ -642,12 +660,12 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 {
 	//read impage file Background.bmp
-	m_BKBitmap.Load(lpszFileName);
+	m_BackgroundBitmap.Load(lpszFileName);
 
-	m_BKBitmapLoaded = !(m_BKBitmap.IsNull ());
-	//	m_BKBitmapLoaded = true;
+	m_BackgroundBitmapLoaded = !(m_BackgroundBitmap.IsNull ());
+	//	m_BackgroundBitmapLoaded = true;
 
-	TCHAR IniFilePath[_MAX_PATH] = _T("./BackgroundImage.ini");
+	TCHAR IniFilePath[_MAX_PATH] = _T("./backgroundImage.ini");
 
 	m_ImageX1 = g_GetPrivateProfileFloat("BackgroundImage", "x1", m_NetworkRect.left, IniFilePath);
 	m_ImageY1 = g_GetPrivateProfileFloat("BackgroundImage", "y1", m_NetworkRect.top, IniFilePath);
@@ -658,7 +676,7 @@ void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 	m_ImageYResolution = g_GetPrivateProfileFloat("BackgroundImage", "ImageYResolution", 1, IniFilePath);
 	m_ImageMoveSize = m_ImageWidth/1000.0f;
 
-	if(m_BKBitmapLoaded)
+	if(m_BackgroundBitmapLoaded)
 		m_BackgroundImageFileLoadingStatus.Format ("Optional background image file %s is loaded.",lpszFileName);
 	else
 		m_BackgroundImageFileLoadingStatus.Format ("Optional background image file %s is not loaded.",lpszFileName);
@@ -678,7 +696,8 @@ void CTLiteDoc::OnFileOpen()
 
 void CTLiteDoc::OnFileSaveimagelocation()
 {
-	TCHAR IniFilePath[_MAX_PATH] = _T("./Background.ini");
+
+	TCHAR IniFilePath[_MAX_PATH] = _T("./background.ini");
 
 	char lpbuffer[64];
 	sprintf_s(lpbuffer,"%f",m_ImageX1);
@@ -1357,6 +1376,13 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
+	if(m_BackgroundBitmapImportedButnotSaved)
+	{
+		m_BackgroundBitmap.Save(directory+"background.bmp",Gdiplus::ImageFormatBMP);  // always use bmp format
+		m_BackgroundBitmapImportedButnotSaved = false;
+	}
+
+	OnFileSaveimagelocation();
 
 	return true;
 }
@@ -1482,7 +1508,7 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 		}
 
 		fclose(st);
-		m_SimulationLinkMOEDataLoadingStatus.Format ("%d vehicles are loaded from file %s.",count,lpszFileName);
+		m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded from file %s.",count,lpszFileName);
 
 	}
 }
@@ -1556,4 +1582,127 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 	}
 
 	return 0;
+}
+void CTLiteDoc::OnImageImportbackgroundimage()
+{
+	CString strFilter = "Bitmap image|*.bmp|JPEG image|*.jpg|GIF image|*.gif|PNG image|*.png||";
+
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,strFilter);
+//	dlg.m_ofn.nFilterIndex = m_nFilterLoad;
+	HRESULT hResult = (int)dlg.DoModal();
+	if (FAILED(hResult)) {
+		return;
+	}
+	ReadBackgroundImageFile(dlg.GetPathName());
+	m_bFitNetworkInitialized = false;
+	m_BackgroundBitmapImportedButnotSaved = true;
+	UpdateAllViews(0);
+}
+
+
+void CTLiteDoc::OnFileDataloadingstatus()
+{
+	CDlgFileLoading dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal ();
+}
+
+void CTLiteDoc::OnMoeVolume()
+{
+	m_LinkMOEMode = volume;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnMoeSpeed()
+{
+	m_LinkMOEMode = speed;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnMoeDensity()
+{
+	m_LinkMOEMode = density;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnMoeQueuelength()
+{
+	m_LinkMOEMode = queuelength;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnMoeFuelconsumption()
+{
+	m_LinkMOEMode = fuel;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnMoeEmissions()
+{
+	m_LinkMOEMode = emissions;
+	UpdateAllViews(0);}
+
+void CTLiteDoc::OnUpdateMoeVolume(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == volume);
+}
+
+void CTLiteDoc::OnUpdateMoeSpeed(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == speed);
+}
+
+void CTLiteDoc::OnUpdateMoeDensity(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == density);
+}
+
+void CTLiteDoc::OnUpdateMoeQueuelength(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == queuelength);
+}
+
+void CTLiteDoc::OnUpdateMoeFuelconsumption(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == fuel);
+}
+
+void CTLiteDoc::OnUpdateMoeEmissions(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == emissions);
+
+}
+
+void CTLiteDoc::OnMoeNone()
+{
+	m_LinkMOEMode = none;
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnUpdateMoeNone(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == none);
+}
+
+float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime)
+{
+			float power = 0.0f;
+			float max_link_volume = 8000.0f;
+			float max_speed_ratio = 2.0f; 
+			float max_density = 45.0f;
+			switch (LinkMOEMode)
+			{
+			case volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsFlow* pLink->m_NumLanes/max_link_volume; break;
+			case speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_LinkMOEAry [CurrentTime].ObsSpeed)/max_speed_ratio; break;
+			case density: power = pLink->m_LinkMOEAry[CurrentTime].ObsDensity /max_density; break;
+			case fuel:
+			case emissions: 
+
+			default: power = 0.0;
+
+			}
+			if(power>=1.0f) power = 1.0f;
+			if(power<0.0f) power = 0.0f;
+
+			return power;
+}
+void CTLiteDoc::OnToolsCarfollowingsimulation()
+{
+	CDlgCarFollowing dlg;
+	dlg.DoModal ();
 }

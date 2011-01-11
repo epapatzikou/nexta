@@ -128,6 +128,10 @@ public:
 	bool m_bAnimation;
 
 	double m_BackgroundMapHeight;
+	double m_BackgroundMapHeight_UpperLayer;
+	double m_BackgroundMapHeight_MedLayer;
+
+	bool m_bShowDualLayer;
 
 
 	AUX_RGBImageRec *m_pGrassImg;

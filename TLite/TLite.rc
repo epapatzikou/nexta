@@ -81,6 +81,7 @@ IDR_TLiteTYPE           ICON                    "res\\TLiteDoc.ico"
 IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
 IDB_PATH_ICON           BITMAP                  "C:\\temp\\rowlist\\res\\smallico.bmp"
 IDB_PATH_CHECK          BITMAP                  "C:\\temp\\rowlist\\res\\stateico.bmp"
+IDR_TOOLBAR1            BITMAP                  "c:\\temp\\rowlist\\res\\toolbar1.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -121,6 +122,27 @@ BEGIN
     BUTTON      ID_ANIMATION_STOP
 END
 
+IDR_TOOLBAR1 TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_MOE_NONE
+    BUTTON      ID_MOE_VOLUME
+    BUTTON      ID_MOE_SPEED
+    SEPARATOR
+    BUTTON      ID_MOE_EMISSIONS
+    BUTTON      ID_MOE_FUELCONSUMPTION
+    SEPARATOR
+    BUTTON      ID_MOE_DENSITY
+    BUTTON      ID_MOE_QUEUELENGTH
+    BUTTON      ID_MOE_VEHICLE
+    SEPARATOR
+    BUTTON      ID_BUTTON32943
+    SEPARATOR
+    BUTTON      ID_BUTTON32944
+    SEPARATOR
+    BUTTON      ID_BUTTON32945
+    BUTTON      ID_BUTTON32946
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -155,35 +177,29 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
-        MENUITEM "&Close",                      ID_FILE_CLOSE
+        POPUP "Image"
+        BEGIN
+            MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
+            MENUITEM "Unlock Background Image Position", ID_VIEW_IMAGE
+            MENUITEM "Lock Background Image Position", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
+            MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
+            MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+        END
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
+        MENUITEM "Data Loading Status",         ID_FILE_DATALOADINGSTATUS
+        MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
-    POPUP "&View"
+    POPUP "View"
     BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
-        MENUITEM "Zoom In",                     32773
-        MENUITEM "Zoom Out",                    32774
-        MENUITEM "Move",                        32776
-        MENUITEM "Select Object",               32779
-        MENUITEM SEPARATOR
-        MENUITEM "Play",                        32777
-        MENUITEM SEPARATOR
-        MENUITEM "Configure Background Color",  32778
-    END
-    POPUP "Edit"
-    BEGIN
-        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
-        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
-    END
-    POPUP "&Show"
-    BEGIN
         MENUITEM "Background Image",            ID_VIEW_BACKGROUNDIMAGE
         MENUITEM "Network",                     ID_VIEW_SHOWNETWORK
         MENUITEM "Grid",                        ID_SHOW_GRID
@@ -199,44 +215,79 @@ BEGIN
         MENUITEM "Path Trajectory",             ID_SHOW_SHOWALLPATHS
         MENUITEM "Path MOE",                    ID_SHOW_SHOWPATHMOE
         MENUITEM SEPARATOR
+        MENUITEM "Configure Background Color",  32778
+        POPUP "&View"
+        BEGIN
+            MENUITEM SEPARATOR
+            MENUITEM "Zoom In",                     32773
+            MENUITEM "Zoom Out",                    32774
+            MENUITEM "Move Network",                32776
+            MENUITEM "Select Object",               32779
+            MENUITEM SEPARATOR
+            MENUITEM "Play",                        32777
+            MENUITEM SEPARATOR
+        END
     END
     POPUP "MOE"
     BEGIN
-        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
-    END
-    POPUP "Search"
-    BEGIN
-        MENUITEM "Link",                        ID_SEARCH_FINDLINK
-        MENUITEM "Trains",                      ID_SEARCH_LISTTRAINS
+        MENUITEM "Vehicle Animation",           ID_MOE_VEHICLE
+        MENUITEM SEPARATOR
+        MENUITEM "None",                        ID_MOE_NONE
+        MENUITEM "Volume",                      ID_MOE_VOLUME
+        MENUITEM "Speed",                       ID_MOE_SPEED
+        MENUITEM "Density",                     ID_MOE_DENSITY
+        MENUITEM "Queue Length",                ID_MOE_QUEUELENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "Fuel Consumption",            ID_MOE_FUELCONSUMPTION
+        MENUITEM "Emissions",                   ID_MOE_EMISSIONS
+        MENUITEM SEPARATOR
+        POPUP "Animation"
+        BEGIN
+            MENUITEM "Play",                        ID_ANIMATION_PLAY
+            MENUITEM "Rewind",                      ID_ANIMATION_REWIND
+            MENUITEM "Pause",                       ID_ANIMATION_PAUSE
+            MENUITEM "Stop",                        ID_ANIMATION_STOP
+        END
     END
     POPUP "3D"
     BEGIN
         MENUITEM "Basic View",                  ID_3DDISPLAY_BASICVIEW
         MENUITEM "Travel Time Variability",     ID_3DDISPLAY_TRAVELTIMEVARIABILITY
         MENUITEM "Time-dependent Path",         ID_3DDISPLAY_TIME
-        MENUITEM "Car-Following Fly Over",      ID_3D_CARFOL
+        MENUITEM "Car-Following View",          ID_3D_CARFOL
     END
-    POPUP "Timetable"
+    POPUP "Edit"
     BEGIN
-        MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
-        MENUITEM "Initialize Timetable",        ID_TIMETABLE_INITIALIZETIMETABLE
-        MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
-        MENUITEM "Optimize Timetable (Priority Method)", ID_TIMETABLE_OPTIMIZETIMETABLE
+        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+    END
+    POPUP "Search"
+    BEGIN
+        MENUITEM "Node",                        ID_SEARCH_NODE
+        MENUITEM "Link",                        ID_SEARCH_FINDLINK
+        MENUITEM "Vehicle",                     ID_SEARCH_VEHICLES
         MENUITEM SEPARATOR
-        MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
-        MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
-        MENUITEM "Export Timetable",            ID_TIMETABLE_EXPORTTIMETABLE
+        MENUITEM "Train",                       ID_SEARCH_LISTTRAINS
     END
     POPUP "Tools"
     BEGIN
-        MENUITEM "Generate Senesor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
-        POPUP "Image Position"
+        POPUP "Timetable"
         BEGIN
-            MENUITEM "Save Image Location",         ID_FILE_SAVEIMAGELOCATION
-            MENUITEM "Move Background Image",       ID_VIEW_IMAGE
-            MENUITEM "Shift + Mouse Wheeler -> Change X Resolution Only", ID_IMAGE_SHIFT
-            MENUITEM "Control + Mouse Wheeler -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+            MENUITEM "Import Timetable",            ID_TIMETABLE_IMPORTTIMETABLE
+            MENUITEM "Initialize Timetable",        ID_TIMETABLE_INITIALIZETIMETABLE
+            MENUITEM "Optimize Timetable (Lagrangian Method)", ID_TOOLS_TIMETABLINGOPTIMIZATION
+            MENUITEM "Optimize Timetable (Priority Method)", ID_TIMETABLE_OPTIMIZETIMETABLE
+            MENUITEM SEPARATOR
+            MENUITEM "Show Resource Price",         ID_TIMETABLE_RESOURCEPRICE
+            MENUITEM "Show Node Cost Label",        ID_TIMETABLE_NODECOSTLABEL
+            MENUITEM "Export Timetable",            ID_TIMETABLE_EXPORTTIMETABLE
         END
+        POPUP "Estimation"
+        BEGIN
+            MENUITEM "OD Estimation",               ID_ESTIMATION_ODESTIMATION
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Car Following Simulation",    ID_TOOLS_CARFOLLOWINGSIMULATION
     END
     POPUP "&Window"
     BEGIN
@@ -250,20 +301,9 @@ BEGIN
         MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
         MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
     END
-    POPUP "Estimation"
-    BEGIN
-        MENUITEM "OD Estimation",               ID_ESTIMATION_ODESTIMATION
-    END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About NEXTA Version 3...",   ID_APP_ABOUT
-    END
-    POPUP "Animation"
-    BEGIN
-        MENUITEM "Play",                        ID_ANIMATION_PLAY
-        MENUITEM "Rewind",                      ID_ANIMATION_REWIND
-        MENUITEM "Pause",                       ID_ANIMATION_PAUSE
-        MENUITEM "Stop",                        ID_ANIMATION_STOP
+        MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
     END
 END
 
@@ -339,6 +379,14 @@ BEGIN
         MENUITEM "CO2 Emissions (pound)",       ID_MOETYPE2_CO2EMISSIONS
         MENUITEM "Generalized Cost ($)",        ID_MOETYPE2_COST
         MENUITEM "None (No Show)",              ID_MOETYPE2_NONE
+    END
+END
+
+IDR_MENU_CARFOLLOWING MENU 
+BEGIN
+    POPUP "Simulation"
+    BEGIN
+        MENUITEM "Run",                         ID_SIMULATION_RUN
     END
 END
 
@@ -442,6 +490,14 @@ BEGIN
     LISTBOX         IDC_LIST_OUTPUTDTA,7,152,401,57,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP,WS_EX_LEFTSCROLLBAR
 END
 
+IDD_DIALOG_CARFOLLOWING DIALOGEX 0, 0, 316, 180
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Car Following"
+MENU IDR_MENU_CARFOLLOWING
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -541,6 +597,14 @@ BEGIN
         RIGHTMARGIN, 408
         TOPMARGIN, 7
         BOTTOMMARGIN, 224
+    END
+
+    IDD_DIALOG_CARFOLLOWING, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 173
     END
 END
 #endif    // APSTUDIO_INVOKED
