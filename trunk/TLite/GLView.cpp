@@ -49,6 +49,9 @@ CGLView::CGLView()
 	m_ShowAllTrains = true;
 
 	m_BackgroundMapHeight = -5.0;
+	m_BackgroundMapHeight_UpperLayer = 300.0;
+	m_BackgroundMapHeight_MedLayer = 150.0;
+	m_bShowDualLayer = true;
 
 }
 
@@ -278,7 +281,7 @@ void CGLView::Render()
 
 	CTLiteDoc* pDoc = GetDocument();
 
-	if(m_bShowBackgroundImage && pDoc->m_BKBitmapLoaded) //  // 2D background map is loaded
+	if(m_bShowBackgroundImage && pDoc->m_BackgroundBitmapLoaded) //  // 2D background map is loaded
 	{	
 		if(m_bLoadBackgroundImage==false) // and 3D map is not loaded yet
 		{
@@ -298,6 +301,7 @@ void CGLView::Render()
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL); 
 			glEnable(GL_TEXTURE_2D);
 
+// lower layer
 			Vector vector;
 			glColor3d(0.0,0.5,0.0);
 			glBegin(GL_QUADS);
@@ -323,6 +327,34 @@ void CGLView::Render()
 			glVertex3dv(vector.d);
 			glEnd();
 
+			if(m_bShowDualLayer)
+			{
+/// upper layer
+
+						glBegin(GL_QUADS);
+			glTexCoord2d(0.0,0.0);  //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+			vector.v.z=m_BackgroundMapHeight_UpperLayer;
+			glVertex3dv(vector.d);
+			glTexCoord2d(1.0,0.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
+			vector.v.z=m_BackgroundMapHeight_UpperLayer;
+			glVertex3dv(vector.d); 
+			glTexCoord2d(1.0,1.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX2);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+			vector.v.z=m_BackgroundMapHeight_MedLayer;
+			glVertex3dv(vector.d);
+			glTexCoord2d(0.0,1.0); //2D binding
+			vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
+			vector.v.y=NYtoSY_org(pDoc->m_ImageY1);
+			vector.v.z=m_BackgroundMapHeight_MedLayer;
+			glVertex3dv(vector.d);
+			glEnd();
+
+			}
 		}
 		glDisable(GL_TEXTURE_2D);
 
@@ -399,7 +431,7 @@ void CGLView::DrawAllObjects()
 	CTLiteDoc* pDoc = GetDocument();
 
 	glBegin(GL_LINES);
-	if(m_bShowBackgroundImage && pDoc->m_BKBitmapLoaded) //  // 2D background map is loaded
+	if(m_bShowBackgroundImage && pDoc->m_BackgroundBitmapLoaded) //  // 2D background map is loaded
 		glColor3f(0.0f,0.5f,0.5f);   // dark blue
 	else
 		glColor3f(1.0f,1.0f,0.5f);  //yellow
@@ -548,6 +580,7 @@ void CGLView::DrawAllObjects()
 			float toX = NXtoSX_org((*iLink)->m_ToPoint.x);
 			float toY = NYtoSY_org((*iLink)->m_ToPoint.y);
 
+			/*
 			float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
 
 			if(VariabilityRatio>=1) VariabilityRatio=1;
@@ -556,15 +589,36 @@ void CGLView::DrawAllObjects()
 			//		GetColorFromPower(VolumeRatio);
 			GetRGBColorFromPower(VariabilityRatio);
 
-			float ZBottom =  5;
+
+			*/
+
 			//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
+						int current_time  = g_Simulation_Time_Stamp;
 
-			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
+			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 
-			if(ZTop<=5)
-				ZTop = 5;
+			float maximum_link_volume = 6000.0f;
+			float max_density = 200.0f;
 
+			float link_volume = 0;
+
+			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon)
+			{
+				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time].ObsFlow)* (*iLink)->m_NumLanes;
+			}
+//			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
+			
+			GetRGBColorFromPower(color_power);
+			
+			float ZBottom =  0;
+
+
+			//top use volume as default
+			float ZTop = link_volume/maximum_link_volume*10;  // convert to 10 scale
+
+			if(ZTop<=0)
+				ZTop = 0;
 
 			glVertex3f(fromX,fromY,ZBottom);
 			glVertex3f(toX,toY,ZBottom);
@@ -838,7 +892,13 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 BOOL CGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-	m_EyeLength+=zDelta*1.0;
+	if(nFlags != MK_CONTROL)  // shift or nothing
+	{
+		m_EyeLength+=zDelta*1.0;
+	}else  //control + mouse wheel
+	{
+		m_BackgroundMapHeight_MedLayer+=zDelta*0.10f;
+	}
 
 	Render();
 

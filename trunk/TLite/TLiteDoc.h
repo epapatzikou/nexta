@@ -31,14 +31,16 @@
 #include "math.h"
 #include "Network.h"
 
+enum Link_MOE {none,volume, speed, density, queuelength,fuel,emissions};
 
 class CTLiteDoc : public CDocument
 {
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_LinkMOEMode = none;
 		MaxNodeKey = 60000;  // max: unsigned short 65,535;
-		m_BKBitmapLoaded  = false;
+		m_BackgroundBitmapLoaded  = false;
 		m_ColorFreeway = RGB(198,226,255);
 		m_ColorHighway = RGB(100,149,237);
 		m_ColorArterial = RGB(0,0,0);
@@ -63,12 +65,15 @@ protected: // create from serialization only
 		m_UnitMile = 1;
 		m_UnitFeet = 1/5280.0;
 		m_bFitNetworkInitialized = false; 
+	    m_BackgroundBitmapImportedButnotSaved = false;
+
 	}
 	DECLARE_DYNCREATE(CTLiteDoc)
 
 	// Attributes
 public:
 
+	Link_MOE m_LinkMOEMode;
 	std::vector<DTAPath*>	m_PathDisplayList;
 	bool m_PathMOEDlgShowFlag;
 	int m_SelectPathNo;
@@ -106,11 +111,11 @@ public:
 	CString m_SimulationLinkMOEDataLoadingStatus;
 	CString m_SimulationVehicleDataLoadingStatus;
 	
-
+	
 	int FindLinkFromSensorLocation(float x, float y, int direction);
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
-
+float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
 public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
@@ -266,11 +271,12 @@ public:
 
 	DTAZone* m_ZoneInfo;
 
-	bool m_BKBitmapLoaded;
-	CImage m_BKBitmap;  // background bitmap
+	bool m_BackgroundBitmapLoaded;
+	CImage m_BackgroundBitmap;  // background bitmap
 	float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
 	float m_ImageXResolution, m_ImageYResolution;
 	float m_ImageMoveSize;
+	bool m_BackgroundBitmapImportedButnotSaved;
 
 
 	// Operations
@@ -320,6 +326,23 @@ public:
 	afx_msg void OnFileSaveProject();
 	afx_msg void OnFileSaveProjectAs();
 	afx_msg void OnEstimationOdestimation();
+	afx_msg void OnImageImportbackgroundimage();
+	afx_msg void OnFileDataloadingstatus();
+	afx_msg void OnMoeVolume();
+	afx_msg void OnMoeSpeed();
+	afx_msg void OnMoeDensity();
+	afx_msg void OnMoeQueuelength();
+	afx_msg void OnMoeFuelconsumption();
+	afx_msg void OnMoeEmissions();
+	afx_msg void OnUpdateMoeVolume(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMoeSpeed(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMoeDensity(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMoeQueuelength(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMoeFuelconsumption(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMoeEmissions(CCmdUI *pCmdUI);
+	afx_msg void OnMoeNone();
+	afx_msg void OnUpdateMoeNone(CCmdUI *pCmdUI);
+	afx_msg void OnToolsCarfollowingsimulation();
 };
 
 

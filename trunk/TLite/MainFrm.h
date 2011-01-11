@@ -58,6 +58,9 @@ protected:  // control bar embedded members
 	CToolBar    m_wndToolBar;
    CPlayerSeekBar m_wndPlayerSeekBar;
 
+   CToolBar m_MOEToolBar;
+   bool m_bShowMOEToolBar;
+
 // Generated message map functions
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -75,6 +78,8 @@ public:
 	afx_msg void OnAnimationRewind();
 	afx_msg void OnAnimationPause();
 	afx_msg void OnAnimationStop();
+	afx_msg void OnViewMoetoolbar();
+	afx_msg void OnUpdateViewMoetoolbar(CCmdUI *pCmdUI);
 };
 
 

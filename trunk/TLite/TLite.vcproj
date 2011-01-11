@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgCarFollowing.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgFileLoading.cpp"
 				>
 			</File>
@@ -294,6 +298,10 @@
 			</File>
 			<File
 				RelativePath=".\ChildFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgCarFollowing.h"
 				>
 			</File>
 			<File
@@ -416,6 +424,10 @@
 			</File>
 			<File
 				RelativePath=".\res\Toolbar.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 				>
 			</File>
 		</Filter>

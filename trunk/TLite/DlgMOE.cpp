@@ -63,8 +63,6 @@ CBrush s_BrushTTI_Sensor(RGB(0,0,255));
 
 IMPLEMENT_DYNAMIC(CDlgMOE, CDialog)
 
-
-
 CDlgMOE::~CDlgMOE()
 {
 }
@@ -530,7 +528,6 @@ void CDlgMOE::DrawSingleVQPlot(CPaintDC* pDC, CRect PlotRect)
 void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextFlag)
 {
 	CPen NormalPen(PS_SOLID,2,RGB(0,0,0));
-
 	CPen TimePen(PS_DOT,1,RGB(0,0,0));
 	CPen DataPen(PS_DOT,0,RGB(0,0,0));
 

@@ -31,6 +31,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_ANIMATION_REWIND, &CMainFrame::OnAnimationRewind)
 	ON_COMMAND(ID_ANIMATION_PAUSE, &CMainFrame::OnAnimationPause)
 	ON_COMMAND(ID_ANIMATION_STOP, &CMainFrame::OnAnimationStop)
+	ON_COMMAND(ID_VIEW_MOETOOLBAR, &CMainFrame::OnViewMoetoolbar)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_MOETOOLBAR, &CMainFrame::OnUpdateViewMoetoolbar)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -46,6 +48,7 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
+	m_bShowMOEToolBar = true;
 }
 
 CMainFrame::~CMainFrame()
@@ -84,6 +87,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 
+if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+		!m_MOEToolBar.LoadToolBar(IDR_TOOLBAR1))
+	{
+		TRACE0("Failed to create toolbar\n");
+		return -1;      // fail to create
+	}
+
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
@@ -99,6 +110,20 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//	   m_wndPlayerSeekBar.SetRange(0,100);
 	m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
 
+	m_MOEToolBar.SetButtonText(0,"");
+	m_MOEToolBar.SetButtonText(1,"Volume");
+	m_MOEToolBar.SetButtonText(2,"Speed");
+	m_MOEToolBar.SetButtonText(4,"Emissions");
+	m_MOEToolBar.SetButtonText(5,"Fuel");
+	m_MOEToolBar.SetButtonText(7,"Density");
+	m_MOEToolBar.SetButtonText(8,"Queue");
+	m_MOEToolBar.SetButtonText(9,"Vehicle");
+	m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
+
+
+	m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+	EnableDocking(CBRS_ALIGN_ANY);
+	DockControlBar(&m_MOEToolBar);
 	//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
 	//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 	//	EnableDocking(CBRS_ALIGN_ANY);
@@ -257,4 +282,18 @@ void CMainFrame::OnAnimationStop()
 	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
 	g_UpdateAllViews(0);
+}
+
+void CMainFrame::OnViewMoetoolbar()
+{
+	m_bShowMOEToolBar= !m_bShowMOEToolBar;
+	if(m_bShowMOEToolBar)
+		m_MOEToolBar.ShowWindow (true);
+	else
+		m_MOEToolBar.ShowWindow (false);
+}
+
+void CMainFrame::OnUpdateViewMoetoolbar(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck (m_bShowMOEToolBar);
 }
