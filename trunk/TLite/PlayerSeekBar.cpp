@@ -29,6 +29,7 @@
 
 #include "PlayerSeekBar.h"
 #include "TLite.h"
+#include "Network.h"
 #include "MainFrm.h"
 // CPlayerSeekBar
 

@@ -50,6 +50,7 @@ public:
 
 	bool m_bShowSensor;
 	bool m_bShowVehicle;
+	bool m_bShowText;
 	CTLiteDoc* GetDocument() const;
 	tool m_ToolMode; 
 	
@@ -180,6 +181,11 @@ public:
 	afx_msg void OnMoeVehicle();
 	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
 	afx_msg void OnImageLockbackgroundimageposition();
+	afx_msg void OnViewTextlabel();
+	afx_msg void OnUpdateViewTextlabel(CCmdUI *pCmdUI);
+	afx_msg void OnLinkDelete();
+	afx_msg void OnUpdateEditDeleteselectedlink(CCmdUI *pCmdUI);
+	afx_msg void OnLinkEditlink();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

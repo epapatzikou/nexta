@@ -31,6 +31,8 @@
 
 #include "resource.h"       // main symbols
 
+extern bool b_gStaticAssignmentFlag;
+
 
 // CTLiteApp:
 // See TLite.cpp for the implementation of this class

@@ -199,7 +199,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgAssignmentSettings.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgCarFollowing.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgDefaultLinkProperties.cpp"
 				>
 			</File>
 			<File
@@ -208,6 +216,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgLinkProperties.cpp"
 				>
 			</File>
 			<File
@@ -301,7 +313,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgAssignmentSettings.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgCarFollowing.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgDefaultLinkProperties.h"
 				>
 			</File>
 			<File
@@ -310,6 +330,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgLinkProperties.h"
 				>
 			</File>
 			<File
@@ -399,6 +423,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 				>
 			</File>
@@ -428,6 +456,10 @@
 			</File>
 			<File
 				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 				>
 			</File>
 		</Filter>

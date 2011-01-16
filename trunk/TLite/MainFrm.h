@@ -52,6 +52,8 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
+		char m_CurrentDirectory[MAX_PATH+1];
+
 protected:  // control bar embedded members
 	CStatusBar  m_wndStatusBar;
    CReBar      m_wndReBar;

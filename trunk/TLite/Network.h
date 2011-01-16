@@ -42,7 +42,7 @@ using namespace std;
 
 #define MAX_DAY_SIZE 30
 #define	MAX_SPLABEL 99999
-#define MAX_NODE_SIZE_IN_A_PATH 2000
+#define MAX_NODE_SIZE_IN_A_PATH 4000
 
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_PATHS   6
@@ -231,7 +231,15 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
+		StaticSpeed = 0;
+		StaticFlow = 0;
+		StaticTravelTime = 0;
+		StaticVOC  = 0;
+
 	};
+
+	float StaticSpeed, StaticFlow;
+	float StaticTravelTime, StaticVOC;
 
 	//for timetabling use
 	std::map<int, int> m_RuningTimeMap;  //indexed by train type
@@ -262,7 +270,7 @@ public:
 
 	float ObtainHistFuelConsumption(int time)
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
+		if(m_HistLinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
 		{
 			return m_Length*0.1268f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
@@ -374,17 +382,17 @@ public:
 			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5f);
 	}
 
-	bool 	GetImpactedFlag(int DepartureTime)
+	float 	GetImpactedFlag(int DepartureTime)
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
 			if(DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60)  // 60 impacted after capacity reduction
 			{
-				return true;
+				return CapacityReductionVector[il].LaneClosureRatio;
 			}
 		}
 
-		return false;
+		return 0;
 	}
 
 	SResource *m_ResourceAry;
@@ -457,6 +465,7 @@ public:
 	{
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
+		StaticTravelTime = m_FreeFlowTravelTime;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
 
@@ -553,7 +562,11 @@ public:
 
 	float GetTravelTime(int starting_time, int time_interval = 1)
 	{
-		float travel_time  = m_FreeFlowTravelTime;
+
+		if(GetImpactedFlag(120))
+			return 100;
+
+		float travel_time  = StaticTravelTime;
 
 		if(starting_time + time_interval< m_SimulationHorizon)
 		{
@@ -572,7 +585,7 @@ public:
 		
 		ASSERT(travel_time>=0.09);
 
-		return travel_time;
+		return travel_time*2;
 
 	};
 

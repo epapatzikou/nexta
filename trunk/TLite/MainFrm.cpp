@@ -58,76 +58,143 @@ CMainFrame::~CMainFrame()
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
+
 	if (CMDIFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
+	if(b_gStaticAssignmentFlag)
 	{
-		TRACE0("Failed to create toolbar\n");
-		return -1;      // fail to create
+		if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_wndToolBar.LoadToolBar(IDR_StaticMAINFRAME))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
+
+		if (!m_wndReBar.Create(this) ||
+			!m_wndReBar.AddBar(&m_wndToolBar)
+			)
+		{
+			TRACE0("Failed to create rebar\n");
+			return -1;      // fail to create
+		}
+
+		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_MOEToolBar.LoadToolBar(IDR_STA_TOOLBAR))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
+
+
+		if (!m_wndStatusBar.Create(this) ||
+			!m_wndStatusBar.SetIndicators(indicators,
+			sizeof(indicators)/sizeof(UINT)))
+		{
+			TRACE0("Failed to create status bar\n");
+			return -1;      // fail to create
+		}
+
+		m_MOEToolBar.SetButtonText(0,"Assignment");
+		m_MOEToolBar.SetButtonText(1,"Edit");
+		m_MOEToolBar.SetButtonText(2,"Volume");
+		m_MOEToolBar.SetButtonText(3,"Speed");
+		m_MOEToolBar.SetButtonText(5,"V/C");
+		m_MOEToolBar.SetButtonText(6,"Travel Time");
+
+		m_MOEToolBar.SetButtonText(8,"Link Capacity");
+		m_MOEToolBar.SetButtonText(9,"Speed Limit");
+		m_MOEToolBar.SetButtonText(10,"FreeFlow TT");
+		m_MOEToolBar.SetButtonText(11,"Length");
+
+		m_MOEToolBar.SetButtonText(13,"Demand");
+
+		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
+
+
+		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		EnableDocking(CBRS_ALIGN_ANY);
+		DockControlBar(&m_MOEToolBar);
+		//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
+		//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		//	EnableDocking(CBRS_ALIGN_ANY);
+		//	DockControlBar(&m_wndToolBar);
+
+	}
+	else  {
+		if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_wndToolBar.LoadToolBar(IDR_MAINFRAME1))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
+
+
+		if(!m_wndPlayerSeekBar.Create(this))
+		{
+			TRACE0("Failed to create m_wndPlayerSeekBar toolbar\n");
+			return -1;     // fail to create
+		}
+
+		m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
+			CBRS_TOOLTIPS | CBRS_FLYBY);
+
+		if (!m_wndReBar.Create(this) ||
+			!m_wndReBar.AddBar(&m_wndToolBar) ||
+			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
+			)
+		{
+			TRACE0("Failed to create rebar\n");
+			return -1;      // fail to create
+		}
+
+		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_MOEToolBar.LoadToolBar(IDR_TOOLBAR))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
+
+
+		if (!m_wndStatusBar.Create(this) ||
+			!m_wndStatusBar.SetIndicators(indicators,
+			sizeof(indicators)/sizeof(UINT)))
+		{
+			TRACE0("Failed to create status bar\n");
+			return -1;      // fail to create
+		}
+
+		SetTimer(0,1000, NULL); // simulation reflesh timer
+
+		m_wndPlayerSeekBar.Enable(true);
+		//	   m_wndPlayerSeekBar.SetRange(0,100);
+		m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
+
+		m_MOEToolBar.SetButtonText(0,"");
+		m_MOEToolBar.SetButtonText(1,"Volume");
+		m_MOEToolBar.SetButtonText(2,"Speed");
+		m_MOEToolBar.SetButtonText(4,"Emissions");
+		m_MOEToolBar.SetButtonText(5,"Fuel");
+		m_MOEToolBar.SetButtonText(7,"Density");
+		m_MOEToolBar.SetButtonText(8,"Queue");
+		m_MOEToolBar.SetButtonText(9,"Vehicle");
+		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
+
+
+		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		EnableDocking(CBRS_ALIGN_ANY);
+		DockControlBar(&m_MOEToolBar);
+		//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
+		//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		//	EnableDocking(CBRS_ALIGN_ANY);
+		//	DockControlBar(&m_wndToolBar);
+
 	}
 
-	if(!m_wndPlayerSeekBar.Create(this))
-	{
-		TRACE0("Failed to create m_wndPlayerSeekBar toolbar\n");
-		return -1;     // fail to create
-	}
-
-	m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
-		CBRS_TOOLTIPS | CBRS_FLYBY);
-
-	if (!m_wndReBar.Create(this) ||
-		!m_wndReBar.AddBar(&m_wndToolBar) ||
-		!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
-		)
-	{
-		TRACE0("Failed to create rebar\n");
-		return -1;      // fail to create
-	}
-
-if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-		!m_MOEToolBar.LoadToolBar(IDR_TOOLBAR1))
-	{
-		TRACE0("Failed to create toolbar\n");
-		return -1;      // fail to create
-	}
-
-
-	if (!m_wndStatusBar.Create(this) ||
-		!m_wndStatusBar.SetIndicators(indicators,
-		sizeof(indicators)/sizeof(UINT)))
-	{
-		TRACE0("Failed to create status bar\n");
-		return -1;      // fail to create
-	}
-
-	SetTimer(0,1000, NULL); // simulation reflesh timer
-
-	m_wndPlayerSeekBar.Enable(true);
-	//	   m_wndPlayerSeekBar.SetRange(0,100);
-	m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
-
-	m_MOEToolBar.SetButtonText(0,"");
-	m_MOEToolBar.SetButtonText(1,"Volume");
-	m_MOEToolBar.SetButtonText(2,"Speed");
-	m_MOEToolBar.SetButtonText(4,"Emissions");
-	m_MOEToolBar.SetButtonText(5,"Fuel");
-	m_MOEToolBar.SetButtonText(7,"Density");
-	m_MOEToolBar.SetButtonText(8,"Queue");
-	m_MOEToolBar.SetButtonText(9,"Vehicle");
-	m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
-
-
-	m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
-	EnableDocking(CBRS_ALIGN_ANY);
-	DockControlBar(&m_MOEToolBar);
-	//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
-	//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
-	//	EnableDocking(CBRS_ALIGN_ANY);
-	//	DockControlBar(&m_wndToolBar);
 
 
 	return 0;

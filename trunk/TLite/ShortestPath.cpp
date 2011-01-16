@@ -61,6 +61,9 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
 	{
+		if((*iterLink) == NULL)
+			continue;
+
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
