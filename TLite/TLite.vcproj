@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgLinkList.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgLinkProperties.cpp"
 				>
 			</File>
@@ -330,6 +334,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgLinkList.h"
 				>
 			</File>
 			<File

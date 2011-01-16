@@ -31,7 +31,7 @@
 #include "math.h"
 #include "Network.h"
 
-enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand density, queuelength,fuel,emissions};
+enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions};
 enum OD_MOE {odnone,critical_volume};
 
 class CTLiteDoc : public CDocument
@@ -78,6 +78,7 @@ protected: // create from serialization only
 		m_DemandMatrix = NULL;
 		m_ODSize = 0;
 		m_MaxODDemand = 1;
+		m_SelectedLinkID = -1;
 	}
 
 	DECLARE_DYNCREATE(CTLiteDoc)
@@ -183,6 +184,7 @@ public:
 	std::map<int, int> m_NodeIDtoZoneNameMap;
 	std::map<int, int> m_ZoneIDtoNodeIDMap;
 
+	int m_SelectedLinkID;
 
 
 	std::vector<DTA_sensor> m_SensorVector;
@@ -479,6 +481,8 @@ public:
 		afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
 		afx_msg void OnOdtableImportOdTripFile();
 		afx_msg void OnToolsEditassignmentsettings();
+		afx_msg void OnToolsEditoddemandtable();
+		afx_msg void OnSearchLinklist();
 };
 
 

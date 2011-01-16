@@ -278,8 +278,7 @@ CTLiteView::CTLiteView()
 	m_bShowNodeNumber = false;
 	m_bShowLinkType  = true;
 	m_SelectedNodeID = -1;
-	m_SelectedLinkID = -1;
-
+	
 
 	m_Origin.x = 0;
 	m_Origin.y = 0;
@@ -650,7 +649,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if(m_bShowSensor && (*iLink)->m_bSensorData )
 		{
-			if((*iLink)->m_LinkID == m_SelectedLinkID)
+			if((*iLink)->m_LinkID == pDoc->m_SelectedLinkID)
 			{
 				pDC->SelectObject(&g_PenSelectColor);
 			}else
@@ -843,7 +842,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//////////////////////////////////////
 	// draw OD demand
 
-	if(pDoc->m_ODMOEMode !=odnone && pDoc->m_DemandMatrix!=NULL)
+	if(pDoc->m_LinkMOEMode == oddemand && pDoc->m_DemandMatrix!=NULL)
 	{
 		int i,j;
 		for (i = 0; i< pDoc->m_ODSize ; i++)
@@ -1282,7 +1281,7 @@ void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 		CClientDC dc(this);
 		// Put it up
 
-		if(m_SelectedLinkID>=0)  // link is selected 
+		if(pDoc->m_SelectedLinkID>=0)  // link is selected 
 		{
 			// Get point in logical coordinates
 			cm.GetSubMenu(1)->TrackPopupMenu(
@@ -1327,7 +1326,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 
 		if(distance >0 && distance < Min_distance)
 		{
-			m_SelectedLinkID = (*iLink)->m_LinkID ;
+			pDoc->m_SelectedLinkID = (*iLink)->m_LinkID ;
 
 			Min_distance = distance;
 		}
@@ -1335,7 +1334,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 
 	if(Min_distance > m_NodeSize*2)
 	{
-		m_SelectedLinkID = -1;
+		pDoc->m_SelectedLinkID = -1;
 		g_LinkDisplayList.clear ();
 	}else
 	{
@@ -1345,7 +1344,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 			g_LinkDisplayList.clear ();
 		}
 
-		g_LinkDisplayList.push_back(pDoc->m_LinkIDMap[m_SelectedLinkID]);
+		g_LinkDisplayList.push_back(pDoc->m_LinkIDMap[pDoc->m_SelectedLinkID]);
 
 
 	}
@@ -1432,7 +1431,7 @@ void CTLiteView::OnSearchFindlink()
 
 		if(pLink !=NULL)
 		{
-			m_SelectedLinkID = pLink->m_LinkID ;
+			pDoc->m_SelectedLinkID = pLink->m_LinkID ;
 
 			m_SelectFromNodeNumber = dlg.m_FromNodeNumber;
 			m_SelectToNodeNumber = dlg.m_ToNodeNumber;
@@ -1644,21 +1643,22 @@ void CTLiteView::OnUpdateViewTextlabel(CCmdUI *pCmdUI)
 
 void CTLiteView::OnLinkDelete()
 {
-	GetDocument()->DeleteLink(m_SelectedLinkID);
-	m_SelectedLinkID = -1;
+	CTLiteDoc* pDoc = GetDocument();
+	pDoc->DeleteLink(pDoc->m_SelectedLinkID);
+	pDoc->m_SelectedLinkID = -1;
 	Invalidate();
 }
 
 void CTLiteView::OnUpdateEditDeleteselectedlink(CCmdUI *pCmdUI)
 {
-	pCmdUI->Enable (m_SelectedLinkID>=0);
+	pCmdUI->Enable (GetDocument()->m_SelectedLinkID>=0);
 }
 
 void CTLiteView::OnLinkEditlink()
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	DTALink* pLink= pDoc->m_LinkIDMap [m_SelectedLinkID];
+	DTALink* pLink= pDoc->m_LinkIDMap [pDoc->m_SelectedLinkID];
 	if(pLink!=NULL)
 	{
 		CDlgLinkProperties dlg;

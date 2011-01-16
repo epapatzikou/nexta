@@ -30,6 +30,7 @@
 #define IDD_DIALOG_LinkProperties       154
 #define IDD_DIALOG_Settings             155
 #define IDD_DIALOG_DefaultLinkProperties 156
+#define IDD_DIALOG_LINK_LIST            157
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -47,6 +48,7 @@
 #define IDC_LinkTypeLIST                1020
 #define IDC_EDIT_Number_Iterations      1021
 #define IDC_EDIT_Multiplier             1022
+#define IDC_LIST                        1022
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -223,14 +225,16 @@
 #define ID_ODTABLE_IMPORT               33001
 #define ID_ODTABLE_IMPORT_OD_TRIP_FILE  33002
 #define ID_TOOLS_EDITASSIGNMENTSETTINGS 33003
+#define ID_TOOLS_EDITODDEMANDTABLE      33004
+#define ID_SEARCH_LINKLIST              33005
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        156
-#define _APS_NEXT_COMMAND_VALUE         33004
-#define _APS_NEXT_CONTROL_VALUE         1022
+#define _APS_NEXT_RESOURCE_VALUE        158
+#define _APS_NEXT_COMMAND_VALUE         33006
+#define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

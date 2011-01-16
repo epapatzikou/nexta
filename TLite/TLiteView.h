@@ -68,7 +68,6 @@ public:
 	int m_NodeSize;
 	int m_VehicleSize;
 	int m_SelectedNodeID;
-	int m_SelectedLinkID;
 
 
 		COLORREF m_BackgroundColor;

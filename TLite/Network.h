@@ -234,7 +234,7 @@ public:
 		StaticSpeed = 0;
 		StaticFlow = 0;
 		StaticTravelTime = 0;
-		StaticVOC  = 0;
+		StaticVOC  = -1;
 
 	};
 
