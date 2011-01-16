@@ -38,7 +38,7 @@
 #include "Shellapi.h"
 #include "DlgDefaultLinkProperties.h"
 #include "DlgAssignmentSettings.h"
-
+#include "DlgLinkList.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -113,6 +113,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_UPDATE_COMMAND_UI(ID_MOE_NOODMOE, &CTLiteDoc::OnUpdateMoeNoodmoe)
 	ON_COMMAND(ID_ODTABLE_IMPORT_OD_TRIP_FILE, &CTLiteDoc::OnOdtableImportOdTripFile)
 	ON_COMMAND(ID_TOOLS_EDITASSIGNMENTSETTINGS, &CTLiteDoc::OnToolsEditassignmentsettings)
+	ON_COMMAND(ID_TOOLS_EDITODDEMANDTABLE, &CTLiteDoc::OnToolsEditoddemandtable)
+	ON_COMMAND(ID_SEARCH_LINKLIST, &CTLiteDoc::OnSearchLinklist)
 END_MESSAGE_MAP()
 
 
@@ -1985,8 +1987,6 @@ void CTLiteDoc::OnUpdateMoeEmissions(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeNone()
 {
 	m_LinkMOEMode = none;
-	m_ODMOEMode = odnone;
-
 	UpdateAllViews(0);
 }
 
@@ -2336,13 +2336,13 @@ void CTLiteDoc::OnToolsOpennextaprogramfolder()
 
 void CTLiteDoc::OnMoeOddemand()
 {
-	m_ODMOEMode = critical_volume;
+	m_LinkMOEMode = oddemand;
 	UpdateAllViews(0);
 }
 
 void CTLiteDoc::OnUpdateMoeOddemand(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(m_ODMOEMode == critical_volume);
+	pCmdUI->SetCheck(m_LinkMOEMode == oddemand);
 }
 
 void CTLiteDoc::OnMoeNoodmoe()
@@ -2397,5 +2397,18 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 	WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
 
 	}
+
+}
+
+void CTLiteDoc::OnToolsEditoddemandtable()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnSearchLinklist()
+{
+	CDlgLinkList dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal ();
 
 }
