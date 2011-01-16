@@ -25,6 +25,7 @@ IMPLEMENT_DYNCREATE(CGLView, CView)
 CGLView::CGLView()
 {
 	g_GLViewList.push_back(this);
+	m_WindowText = "3D";
 
 	m_bAnimation = false;
 
@@ -45,13 +46,13 @@ CGLView::CGLView()
 	m_bShowBackgroundImage = true;
 	m_bLoadBackgroundImage = false;
 	m_ShowSpeedVariability = true;
-	m_ShowAllPaths = true;
+	m_ShowAllPaths = false;
 	m_ShowAllTrains = true;
 
 	m_BackgroundMapHeight = -5.0;
 	m_BackgroundMapHeight_UpperLayer = 300.0;
 	m_BackgroundMapHeight_MedLayer = 150.0;
-	m_bShowDualLayer = true;
+	m_bShowDualLayer = false;
 
 }
 
@@ -242,6 +243,8 @@ BOOL CGLView::OnEraseBkgnd(CDC* pDC)
 
 void CGLView::Render()
 {
+    SetWindowText(m_WindowText);
+
 	glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -593,15 +596,16 @@ void CGLView::DrawAllObjects()
 			*/
 
 			//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
-						int current_time  = g_Simulation_Time_Stamp;
+			int current_time  = g_Simulation_Time_Stamp;
 
-			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
+//			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
+			float color_power = (*iLink)->m_SpeedLimit / max(1, (*iLink)->StaticSpeed)/2;
 
-			float maximum_link_volume = 6000.0f;
+			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;
 
-			float link_volume = 0;
+			float link_volume = (*iLink)->StaticFlow ;
 
 			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon)
 			{
@@ -615,7 +619,7 @@ void CGLView::DrawAllObjects()
 
 
 			//top use volume as default
-			float ZTop = link_volume/maximum_link_volume*10;  // convert to 10 scale
+			float ZTop = link_volume/maximum_link_volume*100;  // convert to 100 scale
 
 			if(ZTop<=0)
 				ZTop = 0;

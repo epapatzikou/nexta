@@ -245,6 +245,8 @@ public:
 	bool m_ShowAllPaths;
 	bool m_ShowAllTrains;
 
+	CString m_WindowText;
+
 
 	void DrawAllObjects();
 	void Render();

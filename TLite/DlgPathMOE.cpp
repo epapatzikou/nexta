@@ -101,7 +101,7 @@ END_MESSAGE_MAP()
 CDlgPathMOE::CDlgPathMOE(CWnd* pParent /*=NULL*/)
 : CBaseDialog(CDlgPathMOE::IDD, pParent)
 {
-	Cur_MOE_type1 = 0; 
+	Cur_MOE_type1 = -1; 
 	Cur_MOE_type2 = -1;
 	m_TmLeft = 0;
 	m_TmRight = 1440; 
@@ -215,7 +215,7 @@ void CDlgPathMOE::OnLvnItemchangedPathListControl(NMHDR *pNMHDR, LRESULT *pResul
 		m_pDoc->m_SelectPathNo = m_PathListControl.GetNextSelectedItem(pos);
 		Invalidate();
 
-		g_UpdateAllViews(3);
+		m_pDoc->UpdateAllViews(0);
 	}
 
 }
@@ -237,7 +237,9 @@ void CDlgPathMOE::OnPaint()
 		m_TmRight= m_TmLeft+30;
 
 
-	if(Cur_MOE_type2==-1)
+	if(Cur_MOE_type1>=0)
+	{
+	if(Cur_MOE_type2==-1 )
 	{
 		PlotRect.top += 200;
 		PlotRect.bottom -= 35;
@@ -261,6 +263,7 @@ void CDlgPathMOE::OnPaint()
 
 		DrawPlot(&dc,Cur_MOE_type2, PlotRect);
 
+	}
 	}
 }
 

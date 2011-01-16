@@ -2,8 +2,10 @@
 // Microsoft Visual C++ generated include file.
 // Used by TLite.rc
 //
+#define IDSAVEASDEFAULT                 2
 #define IDD_ABOUTBOX                    100
 #define IDR_MAINFRAME                   128
+#define IDR_StaticMAINFRAME             128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
 #define IDD_PLAYERSEEKBAR               131
@@ -19,17 +21,32 @@
 #define IDR_MENU2                       146
 #define IDC_CREATE_LINK_CURSOR          147
 #define IDD_DIALOG_FILE_LOADING         148
-#define IDR_TOOLBAR1                    149
+#define IDR_STA_TOOLBAR                 149
+#define IDR_MAINFRAME1                  150
 #define IDD_DIALOG_CARFOLLOWING         151
-#define IDR_MENU3                       152
+#define IDR_TOOLBAR                     151
 #define IDR_MENU_CARFOLLOWING           152
+#define IDR_TLiteTYPE1                  153
+#define IDD_DIALOG_LinkProperties       154
+#define IDD_DIALOG_Settings             155
+#define IDD_DIALOG_DefaultLinkProperties 156
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
+#define IDC_EDIT_LENGTH                 1002
+#define IDC_EDIT_SPEEDLIMIT             1003
+#define IDC_EDIT_FFTT                   1004
+#define IDC_EDIT_LANE_CAPACITY          1005
+#define IDC_EDIT_NUMLANES               1006
 #define IDC_PATH_LIST_CONTROL           1010
 #define IDC_TRAIN_LIST_CONTROL          1013
 #define IDC_LIST_NETEWORK_FILE          1014
 #define IDC_LIST_NETEWORK_FILE2         1015
 #define IDC_LIST_OUTPUTDTA              1016
+#define IDC_COMBO1                      1018
+#define ID_CANCEL                       1019
+#define IDC_LinkTypeLIST                1020
+#define IDC_EDIT_Number_Iterations      1021
+#define IDC_EDIT_Multiplier             1022
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -173,14 +190,47 @@
 #define ID_SIMULATION_CARFOLLOWING      32950
 #define ID_TOOLS_CARFOLLOWINGSIMULATION 32951
 #define ID_SIMULATION_RUN               32952
+#define ID_TOOLS_STATICTRAFFICASSIGNMENT 32954
+#define ID_TOOLS_STATICTRAFFICASSIGNMENT32955 32955
+#define ID_STATICTRAFFICASSIGNMENT_SHOWMOE 32956
+#define ID_STATICTRAFFICASSIGNMENT_EDITODDEMANDTABLE 32957
+#define ID_STATICTRAFFICASSIGNMENT_SHOWVOC 32958
+#define ID_VIEW_TEXTLABEL               32962
+#define ID_VIEW_TEXTLABEL32963          32963
+#define ID_TOOLS_PERFORMTRAFFICASSIGNMENT 32968
+#define ID_MOE_VC_Ratio                 32970
+#define ID_MOE_V                        32971
+#define ID_MOE_TRAVELTIME               32972
+#define ID_BUTTON32976                  32976
+#define ID_MOE_                         32978
+#define ID_MOE_CAPACITY                 32979
+#define ID_MOE_SPEEDLIMIT               32980
+#define ID_MOE_FREE                     32981
+#define ID_MOE_FREEFLOWTRAVLETIME       32982
+#define ID_EDIT_DELETESELECTEDLINK      32983
+#define ID_VIEW_PATHTRAJECTORY          32984
+#define ID_LINK_DELETE                  32985
+#define ID_LINK_EDITLINK                32988
+#define ID_MOE_LENGTH                   32989
+#define ID_MOE_LENGTH32990              32990
+#define ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS 32991
+#define ID_TOOLS_PROJECTFOLDER          32995
+#define ID_TOOLS_OPENNEXTAPROGRAMFOLDER 32996
+#define ID_MOE_ODDEMAND                 32997
+#define ID_MOE_NOODMOE                  32998
+#define ID_TOOLS_IMPORTODTRIPTABLEFORMAT 32999
+#define ID_FILE_ODTABLE                 33000
+#define ID_ODTABLE_IMPORT               33001
+#define ID_ODTABLE_IMPORT_OD_TRIP_FILE  33002
+#define ID_TOOLS_EDITASSIGNMENTSETTINGS 33003
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        153
-#define _APS_NEXT_COMMAND_VALUE         32953
-#define _APS_NEXT_CONTROL_VALUE         1015
+#define _APS_NEXT_RESOURCE_VALUE        156
+#define _APS_NEXT_COMMAND_VALUE         33004
+#define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
