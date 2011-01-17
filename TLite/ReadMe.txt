@@ -1,5 +1,8 @@
 To Do List.
-0. Load image from the scratch, save background information automatically when saving a project
+1. ask about the appximate world coordiate width of the image
+2. unlock image moving mode
+3. add single node
+
 1. Add node, link and vehicle list, link information editing
 2. Provide timetabling statistics
 3. Estimation and prediction view
