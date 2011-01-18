@@ -127,7 +127,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
+				AdditionalIncludeDirectories="$(SolutionDir)$(ProjectName)\ODDemandTable_src;$(SolutionDir)$(ProjectName)\GridCtrl_src"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -199,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ODDemandTable_src\DemandInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgAssignmentSettings.cpp"
 				>
 			</File>
@@ -216,6 +221,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgGridCtrl.cpp"
 				>
 			</File>
 			<File
@@ -247,7 +256,39 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\GridCell.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridCellBase.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridCtrl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridDropTarget.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\InPlaceEdit.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\Interval.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\ODDemandTableExt.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\ODPair.cpp"
 				>
 			</File>
 			<File
@@ -283,6 +324,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\TitleTip.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\TLite.cpp"
 				>
 			</File>
@@ -313,7 +358,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\CellRange.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ChildFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\DemandInfo.h"
 				>
 			</File>
 			<File
@@ -334,6 +387,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgGridCtrl.h"
 				>
 			</File>
 			<File
@@ -361,11 +418,47 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\GridCell.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridCellBase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridCtrl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\GridDropTarget.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\InPlaceEdit.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\Interval.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.h"
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\MemDC.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Network.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\ODDemandTableExt.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODDemandTable_src\ODPair.h"
 				>
 			</File>
 			<File
@@ -386,6 +479,10 @@
 			</File>
 			<File
 				RelativePath=".\Timetable.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GridCtrl_src\TitleTip.h"
 				>
 			</File>
 			<File
@@ -435,11 +532,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\mainfram.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 				>
 			</File>
 			<File
+				RelativePath=".\res\smallico.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\stateico.bmp"
 				>
 			</File>
 			<File
@@ -467,7 +576,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\toolbar1.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\toolbar2.bmp"
 				>
 			</File>
 		</Filter>
