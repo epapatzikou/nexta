@@ -30,12 +30,12 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE
+2 TEXTINCLUDE 
 BEGIN
     "#ifndef APSTUDIO_INVOKED\r\n"
     "#include ""targetver.h""\r\n"
@@ -44,7 +44,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE
+3 TEXTINCLUDE 
 BEGIN
     "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
     "#define _AFX_NO_OLE_RESOURCES\r\n"
@@ -220,7 +220,7 @@ END
 // Menu
 //
 
-IDR_MAINFRAME MENU
+IDR_MAINFRAME MENU 
 BEGIN
     POPUP "&File"
     BEGIN
@@ -243,7 +243,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE MENU
+IDR_TLiteTYPE MENU 
 BEGIN
     POPUP "&File"
     BEGIN
@@ -386,7 +386,7 @@ BEGIN
     END
 END
 
-IDR_MENU1 MENU
+IDR_MENU1 MENU 
 BEGIN
     POPUP "Node"
     BEGIN
@@ -400,7 +400,7 @@ BEGIN
     END
 END
 
-IDR_MENU_LINK_MOE MENU
+IDR_MENU_LINK_MOE MENU 
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
@@ -441,7 +441,7 @@ BEGIN
     END
 END
 
-IDR_MENU_PATHMOE MENU
+IDR_MENU_PATHMOE MENU 
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
@@ -466,7 +466,7 @@ BEGIN
     END
 END
 
-IDR_MENU_CARFOLLOWING MENU
+IDR_MENU_CARFOLLOWING MENU 
 BEGIN
     POPUP "Simulation"
     BEGIN
@@ -474,7 +474,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE1 MENU
+IDR_TLiteTYPE1 MENU 
 BEGIN
     POPUP "&File"
     BEGIN
@@ -588,7 +588,7 @@ END
 // Accelerator
 //
 
-IDR_MAINFRAME ACCELERATORS
+IDR_MAINFRAME ACCELERATORS 
 BEGIN
     "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
     VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
@@ -756,6 +756,16 @@ BEGIN
     CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,538,139
 END
 
+IDD_ODGRID_DIALOG DIALOGEX 0, 0, 615, 249
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "OD Demand Table"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Save and Quit",ID_GRID_SAVEQUIT,237,225,64,14
+    PUSHBUTTON      "Quit",ID_GRID_QUIT,315,225,64,14
+    CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,16,12,589,203
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -800,7 +810,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
+GUIDELINES DESIGNINFO 
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -896,6 +906,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 171
     END
+
+    IDD_ODGRID_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 608
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 242
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -913,19 +931,19 @@ IDC_CREATE_LINK_CURSOR  CURSOR                  "res\\cur00001.cur"
 // String Table
 //
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDR_MAINFRAME           "NeXTA Version 3 Beta"
     IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     AFX_IDS_APP_TITLE       "NeXTA Version 3 Beta"
     AFX_IDS_IDLEMESSAGE     "Ready"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_INDICATOR_EXT        "EXT"
     ID_INDICATOR_CAPS       "CAP"
@@ -935,7 +953,7 @@ BEGIN
     ID_INDICATOR_REC        "REC"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_FILE_NEW             "Create a new document\nNew"
     ID_FILE_OPEN            "Open an existing document\nOpen"
@@ -944,13 +962,13 @@ BEGIN
     ID_FILE_SAVE_AS         "Save the active document with a new name\nSave As"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
     ID_APP_EXIT             "Quit the application; prompts to save documents\nExit"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_FILE_MRU_FILE1       "Open this document"
     ID_FILE_MRU_FILE2       "Open this document"
@@ -970,13 +988,13 @@ BEGIN
     ID_FILE_MRU_FILE16      "Open this document"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
     ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_WINDOW_NEW           "Open another window for the active document\nNew Window"
     ID_WINDOW_ARRANGE       "Arrange icons at the bottom of the window\nArrange Icons"
@@ -986,7 +1004,7 @@ BEGIN
     ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_EDIT_CLEAR           "Erase the selection\nErase"
     ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
@@ -1001,13 +1019,13 @@ BEGIN
     ID_EDIT_REDO            "Redo the previously undone action\nRedo"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
     ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     AFX_IDS_SCSIZE          "Change the window size"
     AFX_IDS_SCMOVE          "Change the window position"
@@ -1018,19 +1036,19 @@ BEGIN
     AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     AFX_IDS_SCRESTORE       "Restore the window to normal size"
     AFX_IDS_SCTASKLIST      "Activate Task List"
     AFX_IDS_MDICHILD        "Activate this window"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_VIEW_IMAGE           "\nEnable the background image to be movable"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_3DZoom               "\nZoom in and zoom out in 3D View \n 3D Zoom in & out"
     ID_3DPam                "\nPanning. Moving the objects "
@@ -1040,7 +1058,7 @@ BEGIN
     ID_WINDOW_NEW3DVIEW     "\nShow 3D View"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_BUTTON32872          "Create One-way Link\nOne-way Link"
     ID_Create1WayLink       "Create One-way Link\nOne-way Link"
@@ -1048,29 +1066,29 @@ BEGIN
     ID_SHOW_TIMETABLE       "\nShow Timetable"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_WINDOW_SHOW2DVIEW    "\nShow 2D View"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_VIEW_SHOWMOE         "\nShow Link MOE Window"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_MOE_SPEED            "/nUnit: mph"
     ID_MOE_VOLUME           "\nUnit: veh/link"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_MOE_VC_Ratio         "\nVolume/Capacity Ratio"
     ID_MOE_TRAVELTIME       "/n Unit: min"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     ID_MOE_CAPACITY         "\n Unit: veh per link"
     ID_MOE_SPEEDLIMIT       "\nUnit: mph"

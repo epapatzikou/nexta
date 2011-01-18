@@ -39,6 +39,7 @@
 #include "DlgDefaultLinkProperties.h"
 #include "DlgAssignmentSettings.h"
 #include "DlgLinkList.h"
+#include "DlgGridCtrl.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -2402,7 +2403,8 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 
 void CTLiteDoc::OnToolsEditoddemandtable()
 {
-	// TODO: Add your command handler code here
+	CDlgGridCtrl dlg;
+	dlg.DoModal();
 }
 
 void CTLiteDoc::OnSearchLinklist()
