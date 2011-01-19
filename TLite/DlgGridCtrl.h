@@ -1,7 +1,7 @@
 #pragma once
 
+#include "TLiteDoc.h"
 #include "GridCtrl.h"
-#include "ODDemandTableExt.h"
 
 // CDlgGridCtrl dialog
 
@@ -16,9 +16,10 @@ public:
 // Dialog Data
 	enum { IDD = IDD_ODGRID_DIALOG };
 
+	CTLiteDoc* m_pDoc;
+
 private:
 	CGridCtrl m_Grid;
-	CODDemandTableExt m_ODTable;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -29,4 +30,7 @@ protected:
 public:
 	afx_msg void OnBnClickedGridSavequit();
 	afx_msg void OnBnClickedGridQuit();
+
+	void OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult);
+	bool SaveDemandCSVFile(LPCTSTR lpszFileName);
 };
