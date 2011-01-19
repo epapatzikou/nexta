@@ -335,26 +335,6 @@
 					>
 				</File>
 			</Filter>
-			<Filter
-				Name="ODDemandTable"
-				>
-				<File
-					RelativePath=".\ODDemandTable_src\DemandInfo.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\Interval.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\ODDemandTableExt.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\ODPair.cpp"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -501,26 +481,6 @@
 					>
 				</File>
 			</Filter>
-			<Filter
-				Name="ODDemandTable"
-				>
-				<File
-					RelativePath=".\ODDemandTable_src\DemandInfo.h"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\Interval.h"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\ODDemandTableExt.h"
-					>
-				</File>
-				<File
-					RelativePath=".\ODDemandTable_src\ODPair.h"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -544,19 +504,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\mainfram.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\smallico.bmp"
+				RelativePath=".\res\mainfram.bmp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\smallico.bmp"
 				>
 			</File>
 			<File
@@ -588,19 +548,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar1.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar2.bmp"
+				RelativePath=".\res\toolbar1.bmp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\toolbar2.bmp"
 				>
 			</File>
 		</Filter>

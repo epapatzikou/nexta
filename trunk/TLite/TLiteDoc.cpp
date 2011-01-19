@@ -129,7 +129,7 @@ CTLiteDoc::~CTLiteDoc()
 
 	//	m_ODSize is used to keep the original size for m_DemandMatrix, in case some of nodes are deleted during operation
 	if(m_DemandMatrix!=NULL)
-			DeallocateDynamicArray<float>(m_DemandMatrix,m_ODSize,m_ODSize);
+		DeallocateDynamicArray<float>(m_DemandMatrix,m_ODSize,m_ODSize);
 
 	// to do: delete m_TrainVector; m_node, link set;
 
@@ -664,7 +664,7 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	if(!ReadNodeCSVFile(directory+"in_node.csv")) return false;
 	if(!ReadLinkCSVFile(directory+"in_link.csv")) return false;
 
-//	if(!ReadIncidentFile(directory+"incident.dat")) return false;
+	//	if(!ReadIncidentFile(directory+"incident.dat")) return false;
 
 
 	CalculateDrawingRectangle();
@@ -760,18 +760,18 @@ void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 
 	if(m_BackgroundBitmapLoaded)
 	{
-	TCHAR IniFilePath[_MAX_PATH] = _T("./in_opt_BackgroundImage.ini");
+		TCHAR IniFilePath[_MAX_PATH] = _T("./in_opt_BackgroundImage.ini");
 
-	m_ImageX1 = g_GetPrivateProfileFloat("BackgroundImage", "x1", m_NetworkRect.left, IniFilePath);
-	m_ImageY1 = g_GetPrivateProfileFloat("BackgroundImage", "y1", m_NetworkRect.top, IniFilePath);
-	m_ImageWidth = g_GetPrivateProfileFloat("BackgroundImage", "ImageWidth", m_NetworkRect.right-m_NetworkRect.left, IniFilePath);
-	m_ImageHeight = g_GetPrivateProfileFloat("BackgroundImage", "ImageHeight", m_NetworkRect.bottom-m_NetworkRect.top, IniFilePath);
+		m_ImageX1 = g_GetPrivateProfileFloat("BackgroundImage", "x1", m_NetworkRect.left, IniFilePath);
+		m_ImageY1 = g_GetPrivateProfileFloat("BackgroundImage", "y1", m_NetworkRect.top, IniFilePath);
+		m_ImageWidth = g_GetPrivateProfileFloat("BackgroundImage", "ImageWidth", m_NetworkRect.right-m_NetworkRect.left, IniFilePath);
+		m_ImageHeight = g_GetPrivateProfileFloat("BackgroundImage", "ImageHeight", m_NetworkRect.bottom-m_NetworkRect.top, IniFilePath);
 
-	m_ImageXResolution = g_GetPrivateProfileFloat("BackgroundImage", "ImageXResolution", 1, IniFilePath);
-	m_ImageYResolution = g_GetPrivateProfileFloat("BackgroundImage", "ImageYResolution", 1, IniFilePath);
-	m_ImageMoveSize = m_ImageWidth/1000.0f;
+		m_ImageXResolution = g_GetPrivateProfileFloat("BackgroundImage", "ImageXResolution", 1, IniFilePath);
+		m_ImageYResolution = g_GetPrivateProfileFloat("BackgroundImage", "ImageYResolution", 1, IniFilePath);
+		m_ImageMoveSize = m_ImageWidth/1000.0f;
 		m_BackgroundImageFileLoadingStatus.Format ("Optional background image file %s is loaded.",lpszFileName);
-	
+
 	}
 	else
 		m_BackgroundImageFileLoadingStatus.Format ("Optional background image file %s is not loaded.",lpszFileName);
@@ -1410,8 +1410,8 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 	fopen_s(&st,lpszFileName,"r");
 
 	m_NodeIDtoZoneNameMap.clear ();
-		if(m_DemandMatrix!=NULL)
-			DeallocateDynamicArray<float>(m_DemandMatrix,m_ODSize,m_ODSize);
+	if(m_DemandMatrix!=NULL)
+		DeallocateDynamicArray<float>(m_DemandMatrix,m_ODSize,m_ODSize);
 
 
 	int lineno = 0 ;
@@ -1460,35 +1460,35 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 		for(int i= 0; i<m_ODSize; i++)
 			for(int j= 0; j<m_ODSize; j++)
 			{
-			m_DemandMatrix[i][j]= 0.0f;
+				m_DemandMatrix[i][j]= 0.0f;
 			}
 
 			m_MaxODDemand  = 1;
-		while(!feof(st))
-		{
-			int origin_zone = g_read_integer(st);
-			if(origin_zone == -1)  // reach end of file
-				break;
+			while(!feof(st))
+			{
+				int origin_zone = g_read_integer(st);
+				if(origin_zone == -1)  // reach end of file
+					break;
 
-			int destination_zone =  g_read_integer(st);
-			float number_of_vehicles =  g_read_float(st);
-			int vehicle_type =  g_read_integer(st);
-			float starting_time_in_min = g_read_float(st);
-			float ending_time_in_min = g_read_float(st);
+				int destination_zone =  g_read_integer(st);
+				float number_of_vehicles =  g_read_float(st);
+				int vehicle_type =  g_read_integer(st);
+				float starting_time_in_min = g_read_float(st);
+				float ending_time_in_min = g_read_float(st);
 
-			int origin_zone_id  = origin_zone - 1;
-			int destination_zone_id  = destination_zone - 1;
+				int origin_zone_id  = origin_zone - 1;
+				int destination_zone_id  = destination_zone - 1;
 
-			m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
+				m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
 
-			if(m_MaxODDemand < number_of_vehicles)
-				m_MaxODDemand =  number_of_vehicles ;
-	
-			lineno++;
-		}
-		fclose(st);
-		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
-		return true;
+				if(m_MaxODDemand < number_of_vehicles)
+					m_MaxODDemand =  number_of_vehicles ;
+
+				lineno++;
+			}
+			fclose(st);
+			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
+			return true;
 	}else
 	{
 		AfxMessageBox("Error: File in_demand.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
@@ -1510,47 +1510,47 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 		for(int i= 0; i<m_ODSize; i++)
 			for(int j= 0; j<m_ODSize; j++)
 			{
-			m_DemandMatrix[i][j]= 0.0f;
+				m_DemandMatrix[i][j]= 0.0f;
 			}
 
 			m_MaxODDemand  = 1;
 
-		while(!feof(st))
-		{
-		for(int i = 1; i <=m_ODSize; i++)
-		{
-			int origin_zone	       = g_read_integer(st);
-			if(origin_zone == -1)  // reach end of file
-				break;
-
-			for(int j = 1; j <=m_ODSize; j++)
+			while(!feof(st))
 			{
-				int destination_zone	   = g_read_integer_with_char_O(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
-
-				if(destination_zone == 0) // we reach "O" of string Origin 
+				for(int i = 1; i <=m_ODSize; i++)
 				{
-					break;
+					int origin_zone	       = g_read_integer(st);
+					if(origin_zone == -1)  // reach end of file
+						break;
+
+					for(int j = 1; j <=m_ODSize; j++)
+					{
+						int destination_zone	   = g_read_integer_with_char_O(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
+
+						if(destination_zone == 0) // we reach "O" of string Origin 
+						{
+							break;
+						}
+
+						destination_zone = j;  // use destination that we read to override j
+
+						float number_of_vehicles = g_read_float(st);
+
+						int origin_zone_id  = origin_zone - 1;
+						int destination_zone_id  = destination_zone - 1;
+
+						m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
+
+						if(m_MaxODDemand < number_of_vehicles)
+							m_MaxODDemand =  number_of_vehicles ;
+
+						lineno++;
+					}
 				}
-
-				destination_zone = j;  // use destination that we read to override j
-
-				float number_of_vehicles = g_read_float(st);
-
-			int origin_zone_id  = origin_zone - 1;
-			int destination_zone_id  = destination_zone - 1;
-
-			m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
-
-			if(m_MaxODDemand < number_of_vehicles)
-				m_MaxODDemand =  number_of_vehicles ;
-	
-			lineno++;
 			}
-			}
-		}
-		fclose(st);
-		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
-		return true;
+			fclose(st);
+			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
+			return true;
 	}else
 	{
 		AfxMessageBox("Error: OD Trip file cannot be opened.");
@@ -1674,25 +1674,25 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
-/*
+	/*
 	fopen_s(&st,directory+"in_zone.csv","w");
 	if(st!=NULL)
 	{
-		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"in_node, to_node, length_in_mile, number_of_lanes, speed_limit_in_mph, lane_capacity_in_veh_per_time_interval (e.g. hour in traffic assignment), link_type_for_display\n");
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			fprintf(st,"%d, %d, %10.4f, %d, %5.0f, %7.2f, %d\n",
-				(*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber ,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type);
-		}
-		fclose(st);
+	std::list<DTALink*>::iterator iLink;
+	fprintf(st,"in_node, to_node, length_in_mile, number_of_lanes, speed_limit_in_mph, lane_capacity_in_veh_per_time_interval (e.g. hour in traffic assignment), link_type_for_display\n");
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+	fprintf(st,"%d, %d, %10.4f, %d, %5.0f, %7.2f, %d\n",
+	(*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber ,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type);
+	}
+	fclose(st);
 	}else
 	{
-		AfxMessageBox("Error: File in_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
-		return false;
+	AfxMessageBox("Error: File in_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+	return false;
 	}
 
-*/
+	*/
 	// save in_demand here
 
 	if(m_BackgroundBitmapImportedButnotSaved)
@@ -2076,58 +2076,58 @@ void CTLiteDoc::OnToolsCarfollowingsimulation()
 
 DWORD g_ProcessWait(DWORD PID) 
 {
-   DWORD dwRetVal = DWORD(-1);
-   HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, PID);
-   if(hProcess) {
-      do 
-	  {
-	 ::Sleep(500);
-	 ::GetExitCodeProcess(hProcess, &dwRetVal);
-      } while(dwRetVal == STILL_ACTIVE);
-      CloseHandle(hProcess);
-   }
-   return dwRetVal;
+	DWORD dwRetVal = DWORD(-1);
+	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, PID);
+	if(hProcess) {
+		do 
+		{
+			::Sleep(500);
+			::GetExitCodeProcess(hProcess, &dwRetVal);
+		} while(dwRetVal == STILL_ACTIVE);
+		CloseHandle(hProcess);
+	}
+	return dwRetVal;
 }
 
 DWORD g_ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait)
 {
 
-   STARTUPINFO StartupInfo;
-   ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
-   StartupInfo.cb = sizeof(STARTUPINFO);
+	STARTUPINFO StartupInfo;
+	ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
+	StartupInfo.cb = sizeof(STARTUPINFO);
 
-   PROCESS_INFORMATION ProcessInfo;
-   DWORD dwRetVal = DWORD(-1);
+	PROCESS_INFORMATION ProcessInfo;
+	DWORD dwRetVal = DWORD(-1);
 
-   BOOL bStat =	CreateProcess(
-			      strCmd,						// pointer to name of executable module
-			      0,			// pointer to command line string
-			      0,						// pointer to process security attributes
-			      0,						// pointer to thread security attributes
-			      TRUE,						// handle inheritance flag
-			      0,						// creation flags
-			      0,						// pointer to new environment block
-			      strDir.IsEmpty() ? 0 : LPCTSTR(strDir),
-			      &StartupInfo,				// pointer to STARTUPINFO
-			      &ProcessInfo				// pointer to PROCESS_INFORMATION
-			     );
-   if( bStat ) 
-   {
-      if( bWait ) 
-	  {
-		 ::WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
-		 dwRetVal = g_ProcessWait(ProcessInfo.dwProcessId);
-      } else {
-	 // before we return to the caller, we wait for the currently
-	 // started application until it is ready to work.
-		 ::WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
-		 dwRetVal = ProcessInfo.dwProcessId;
-      }
+	BOOL bStat =	CreateProcess(
+		strCmd,						// pointer to name of executable module
+		0,			// pointer to command line string
+		0,						// pointer to process security attributes
+		0,						// pointer to thread security attributes
+		TRUE,						// handle inheritance flag
+		0,						// creation flags
+		0,						// pointer to new environment block
+		strDir.IsEmpty() ? 0 : LPCTSTR(strDir),
+		&StartupInfo,				// pointer to STARTUPINFO
+		&ProcessInfo				// pointer to PROCESS_INFORMATION
+		);
+	if( bStat ) 
+	{
+		if( bWait ) 
+		{
+			::WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
+			dwRetVal = g_ProcessWait(ProcessInfo.dwProcessId);
+		} else {
+			// before we return to the caller, we wait for the currently
+			// started application until it is ready to work.
+			::WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
+			dwRetVal = ProcessInfo.dwProcessId;
+		}
 
-      ::CloseHandle(ProcessInfo.hThread);
-   }
-   
-   return dwRetVal;
+		::CloseHandle(ProcessInfo.hThread);
+	}
+
+	return dwRetVal;
 }
 
 
@@ -2153,34 +2153,34 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 	}
 
 	CString sCommand;
-   CString strParam;
-   CTime ExeStartTime = CTime::GetCurrentTime();
+	CString strParam;
+	CTime ExeStartTime = CTime::GetCurrentTime();
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	sCommand.Format("%s\\TrafficAssignment.exe", pMainFrame->m_CurrentDirectory);
 
 	g_ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
-	
-   CTime ExeEndTime = CTime::GetCurrentTime();
 
-   CTimeSpan ts = ExeEndTime  - ExeStartTime;
-   CString str_running_time;
-   str_running_time.Format ("%s\nProgram execution time: %d hour(s) %d min(s) %d sec(s) \n%s", "Program execution has completed.",
-			    ts.GetHours(), ts.GetMinutes(), ts.GetSeconds(), "Do you want to load the output now?");
+	CTime ExeEndTime = CTime::GetCurrentTime();
 
-   if( AfxMessageBox(str_running_time, MB_YESNO| MB_ICONINFORMATION)==IDYES)
-   {
+	CTimeSpan ts = ExeEndTime  - ExeStartTime;
+	CString str_running_time;
+	str_running_time.Format ("%s\nProgram execution time: %d hour(s) %d min(s) %d sec(s) \n%s", "Program execution has completed.",
+		ts.GetHours(), ts.GetMinutes(), ts.GetSeconds(), "Do you want to load the output now?");
+
+	if( AfxMessageBox(str_running_time, MB_YESNO| MB_ICONINFORMATION)==IDYES)
+	{
 		LoadSimulationOutput();
 		UpdateAllViews(0);
-   }
+	}
 
 }
 void CTLiteDoc::LoadSimulationOutput()
 {
-//	ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
+	//	ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
 	ReadSimulationLinkStaticMOEData(m_ProjectDirectory+"LinkStaticMOE.csv");
-//	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
+	//	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
 }
 
 
@@ -2246,38 +2246,38 @@ void CTLiteDoc::OnUpdateMoeFreeflowtravletime(CCmdUI *pCmdUI)
 
 CString CTLiteDoc::GetWorkspaceTitleName(CString strFullPath)
 {
-   int len = strFullPath.GetLength();
-   /////////////////////////////////
+	int len = strFullPath.GetLength();
+	/////////////////////////////////
 
-   CString	strPathTitleName;
+	CString	strPathTitleName;
 
-   strPathTitleName.Empty ();
-   bool StartFlag = false;
+	strPathTitleName.Empty ();
+	bool StartFlag = false;
 
-   for(int k=len-1;k>=0;k--)
-   {
-      if(strFullPath[k]=='\\')
-	 break;
+	for(int k=len-1;k>=0;k--)
+	{
+		if(strFullPath[k]=='\\')
+			break;
 
-      if(strFullPath[k]=='.' && StartFlag == false)
-      {
-	 StartFlag = true;
-	 continue;
-      }
+		if(strFullPath[k]=='.' && StartFlag == false)
+		{
+			StartFlag = true;
+			continue;
+		}
 
-      if(StartFlag == true)
-	 strPathTitleName+=strFullPath[k];
+		if(StartFlag == true)
+			strPathTitleName+=strFullPath[k];
 
-   }
+	}
 
-   strPathTitleName.MakeReverse();
+	strPathTitleName.MakeReverse();
 
-   return strPathTitleName;
+	return strPathTitleName;
 
 }
 void CTLiteDoc::OnEditDeleteselectedlink()
 {
-	
+
 	// TODO: Add your command handler code here
 }
 
@@ -2298,19 +2298,19 @@ void CTLiteDoc::OnEditSetdefaultlinkpropertiesfornewlinks()
 {
 	CDlgDefaultLinkProperties dlg;
 
-		dlg.SpeedLimit = m_DefaultSpeedLimit ;
-		dlg.LaneCapacity = m_DefaultCapacity ;
-		dlg.NumLanes = m_DefaultNumLanes;
-		dlg.LinkType = m_DefaultLinkType;
+	dlg.SpeedLimit = m_DefaultSpeedLimit ;
+	dlg.LaneCapacity = m_DefaultCapacity ;
+	dlg.NumLanes = m_DefaultNumLanes;
+	dlg.LinkType = m_DefaultLinkType;
 
-		if(dlg.DoModal() == IDOK)
-		{
+	if(dlg.DoModal() == IDOK)
+	{
 		m_DefaultSpeedLimit = dlg.SpeedLimit;
 		m_DefaultCapacity = dlg.LaneCapacity;
 		m_DefaultNumLanes = dlg.NumLanes;
 		m_DefaultLinkType = dlg.LinkType;
 
-		}
+	}
 }
 
 void CTLiteDoc::OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI)
@@ -2320,18 +2320,18 @@ void CTLiteDoc::OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI)
 
 void CTLiteDoc::OnToolsProjectfolder()
 {
-  if(m_ProjectDirectory.GetLength()==0)
-   {
-      AfxMessageBox("The project directory has not been specified.");
-      return;
-   }
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified.");
+		return;
+	}
 
 	ShellExecute( NULL,  "explore", m_ProjectDirectory, NULL,  NULL, SW_SHOWNORMAL );
 }
 
 void CTLiteDoc::OnToolsOpennextaprogramfolder()
 {
-   CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	ShellExecute( NULL,  "explore", pMainFrame->m_CurrentDirectory, NULL,  NULL, SW_SHOWNORMAL );
 }
 
@@ -2359,7 +2359,7 @@ void CTLiteDoc::OnUpdateMoeNoodmoe(CCmdUI *pCmdUI)
 
 
 void CTLiteDoc::OnOdtableImportOdTripFile()
-	{
+{
 	CString strFilter = "OD Trip File|*.txt";
 
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,strFilter);
@@ -2387,15 +2387,15 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 
 	if(dlg.DoModal() ==IDOK)
 	{
-	 NumberOfIterations = dlg.m_NumberOfIterations;
-	 DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
+		NumberOfIterations = dlg.m_NumberOfIterations;
+		DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
 
-	 char lpbuffer[64];
-	sprintf_s(lpbuffer,"%4d",NumberOfIterations);
-	WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
+		char lpbuffer[64];
+		sprintf_s(lpbuffer,"%4d",NumberOfIterations);
+		WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
 
-	sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
-	WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
+		sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
+		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
 
 	}
 
@@ -2404,6 +2404,7 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 void CTLiteDoc::OnToolsEditoddemandtable()
 {
 	CDlgGridCtrl dlg;
+	dlg.m_pDoc = this;
 	dlg.DoModal();
 }
 
