@@ -145,7 +145,9 @@ void CDlgGridCtrl::OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult)
 
 void CDlgGridCtrl::OnBnClickedGridSavequit()
 {
-	bool ret = SaveDemandCSVFile(m_pDoc->m_ProjectDirectory+"in_demand.csv");
+	CWaitCursor wait;
+	bool ret = SaveDemandCSVFile(m_pDoc->m_ProjectDirectory+"input_demand.csv");
+
 
 	if (!ret)
 	{
