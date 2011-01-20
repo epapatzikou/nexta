@@ -40,6 +40,8 @@
 #include "DlgAssignmentSettings.h"
 #include "DlgLinkList.h"
 #include "DlgGridCtrl.h"
+#include "Dlg_ImageSettings.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -661,8 +663,8 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	CWaitCursor wc;
 
 
-	if(!ReadNodeCSVFile(directory+"in_node.csv")) return false;
-	if(!ReadLinkCSVFile(directory+"in_link.csv")) return false;
+	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
+	if(!ReadLinkCSVFile(directory+"input_link.csv")) return false;
 
 	//	if(!ReadIncidentFile(directory+"incident.dat")) return false;
 
@@ -722,8 +724,8 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 
 	//: comment out now, it uses alternative format	ReadHistoricalDataFormat2(directory);
 
-	if(!ReadZoneCSVFile(directory+"in_zone.csv")) return false;
-	ReadDemandCSVFile(directory+"in_demand.csv");
+	if(!ReadZoneCSVFile(directory+"input_zone.csv")) return false;
+	ReadDemandCSVFile(directory+"input_demand.csv");
 
 	LoadSimulationOutput();
 
@@ -753,6 +755,10 @@ BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 {
 	//read impage file Background.bmp
+
+	if(m_BackgroundBitmapLoaded)
+		m_BackgroundBitmap.Detach ();
+
 	m_BackgroundBitmap.Load(lpszFileName);
 
 	m_BackgroundBitmapLoaded = !(m_BackgroundBitmap.IsNull ());
@@ -1311,7 +1317,7 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 		return true;
 	}else
 	{
-		AfxMessageBox("Error: File in_node.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+		AfxMessageBox("Error: File input_node.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 		//		g_ProgramStop();
 
@@ -1396,7 +1402,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		return true;
 	}else
 	{
-		AfxMessageBox("Error: File in_link.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
+		AfxMessageBox("Error: File input_link.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
 		return false;
 		//		g_ProgramStop();
 	}
@@ -1441,7 +1447,7 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 		return true;
 	}else
 	{
-		m_ZoneDataLoadingStatus.Format ("File in_zone.csv does not exist. Use default node-zone mapping table.");
+		m_ZoneDataLoadingStatus.Format ("File input_zone.csv does not exist. Use default node-zone mapping table.");
 
 		return false;
 	}
@@ -1491,7 +1497,7 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 			return true;
 	}else
 	{
-		AfxMessageBox("Error: File in_demand.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
+		AfxMessageBox("Error: File input_demand.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
 		return false;
 		//		g_ProgramStop();
 	}
@@ -1640,7 +1646,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error in writing the project file. Please check if the file is opened by another project or the folder is read-only.");
 	}
 
-	fopen_s(&st,directory+"in_node.csv","w");
+	fopen_s(&st,directory+"input_node.csv","w");
 	if(st!=NULL)
 	{
 		std::list<DTANode*>::iterator iNode;
@@ -1657,7 +1663,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
-	fopen_s(&st,directory+"in_link.csv","w");
+	fopen_s(&st,directory+"input_link.csv","w");
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
@@ -1674,8 +1680,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
-	/*
-	fopen_s(&st,directory+"in_zone.csv","w");
+	fopen_s(&st,directory+"input_zone.csv","w");
 	if(st!=NULL)
 	{
 	std::list<DTALink*>::iterator iLink;
@@ -1688,11 +1693,10 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fclose(st);
 	}else
 	{
-	AfxMessageBox("Error: File in_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+	AfxMessageBox("Error: File input_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 	return false;
 	}
 
-	*/
 	// save in_demand here
 
 	if(m_BackgroundBitmapImportedButnotSaved)
@@ -1911,6 +1915,30 @@ void CTLiteDoc::OnImageImportbackgroundimage()
 		return;
 	}
 	ReadBackgroundImageFile(dlg.GetPathName());
+
+	CDlg_ImageSettings dlg_image;
+	dlg_image.m_RealworldWidth = m_NetworkRect.right;
+	dlg_image.m_RealworldHeight = m_NetworkRect.top;
+
+	if(dlg_image.DoModal ()==IDOK)
+	{
+	m_NetworkRect.left  = 0;
+	m_NetworkRect.bottom = 0;
+
+	m_NetworkRect.right = dlg_image.m_RealworldWidth;
+	m_NetworkRect.top = dlg_image.m_RealworldHeight;
+	m_ImageWidth = dlg_image.m_RealworldWidth;
+	m_ImageHeight = dlg_image.m_RealworldHeight;
+	m_ImageXResolution = 1;
+	m_ImageYResolution = 1;
+
+		m_ImageX1 = 0;
+		m_ImageY1 = 0;
+		m_ImageX2 = dlg_image.m_RealworldWidth;
+		m_ImageY2 = dlg_image.m_RealworldHeight;
+
+	}
+
 	m_bFitNetworkInitialized = false;
 	m_BackgroundBitmapImportedButnotSaved = true;
 	UpdateAllViews(0);
@@ -2158,7 +2186,7 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-	sCommand.Format("%s\\TrafficAssignment.exe", pMainFrame->m_CurrentDirectory);
+	sCommand.Format("%s\\DTALite.exe", pMainFrame->m_CurrentDirectory);
 
 	g_ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
 
@@ -2369,6 +2397,7 @@ void CTLiteDoc::OnOdtableImportOdTripFile()
 		return;
 	}
 	ReadTripTxtFile(dlg.GetPathName());
+	OnToolsEditoddemandtable();
 	m_bFitNetworkInitialized = false;
 	UpdateAllViews(0);
 }

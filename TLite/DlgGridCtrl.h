@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TLiteDoc.h"
-#include "GridCtrl.h"
+#include "GridCtrl_src\\GridCtrl.h"
 
 // CDlgGridCtrl dialog
 

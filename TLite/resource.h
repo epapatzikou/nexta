@@ -32,6 +32,7 @@
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDD_DIALOG_LINK_LIST            157
 #define IDD_ODGRID_DIALOG               158
+#define IDD_DIALOG_Image_Width          159
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -54,6 +55,8 @@
 #define IDC_GRID_CTRL                   1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
+#define IDC_EDIT_WIDTH                  1026
+#define IDC_EDIT_WIDTH2                 1027
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -232,14 +235,15 @@
 #define ID_TOOLS_EDITASSIGNMENTSETTINGS 33003
 #define ID_TOOLS_EDITODDEMANDTABLE      33004
 #define ID_SEARCH_LINKLIST              33005
+#define ID_TOOLS_IMPORTODTABLE          33006
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        159
-#define _APS_NEXT_COMMAND_VALUE         33006
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_RESOURCE_VALUE        160
+#define _APS_NEXT_COMMAND_VALUE         33007
+#define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
