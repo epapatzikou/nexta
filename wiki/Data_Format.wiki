@@ -2,7 +2,7 @@
 
 = Introduction =
 
-Please create a project file *.dlp under the data folder.
+Please create a project file "*.dlp" under the data folder.
 
 = Required input files =
 
@@ -39,18 +39,14 @@ Users can use Paint to save the screenshot of your background map to a file call
 =Output file format for visualization =
 
 LinkStaticMOE.csv (for static traffic assignment)
-|| FromNodeID, ToNodeID, Link Capacity per hour, Link Flow per hour, VOC Ratio, Free-Flow Travel Time (min), Travel Time (min), Speed (mph)
-||
+|| FromNodeID, ToNodeID, Link Capacity per hour, Link Flow per hour, VOC Ratio, Free-Flow Travel Time (min), Travel Time (min), Speed (mph)||
 
 LinkMOE.csv (for dynamic traffic assignment)
-||from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh_per_hour_per_lane, link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane, speed_in_mph, exit_queue_length, cumulative_arrival_count, cumulative_departure_count
-||
+||from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh_per_hour_per_lane, link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane, speed_in_mph, exit_queue_length, cumulative_arrival_count, cumulative_departure_count||
 
 Vehicle.csv (for dynamic traffic assignment)
-||vehicle_id,  originput_zone_id, destination_zone_id, departure_time, arrival_time, complete_flag, trip_time, vehicle_type, occupancy, information_type, value_of_time, path_min_cost,distance_in_mile, number_of_nodes,  node id, node arrival time
-||
+||vehicle_id,  originput_zone_id, destination_zone_id, departure_time, arrival_time, complete_flag, trip_time, vehicle_type, occupancy, information_type, value_of_time, path_min_cost,distance_in_mile, number_of_nodes,  node id, node arrival time||
+Use "0" as the default values if you do not have data for a certain field
  
-Use "0" as the default values if you do not have data.
-DayLinkMOE*.csv (for multi-day traffic observations)
+"DayLinkMOE1.csv", "DayLinkMOE2.csv", ...(for multi-day traffic observations)
 || ||
-
