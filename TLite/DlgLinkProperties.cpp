@@ -40,7 +40,7 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, SpeedLimit, 5, 120);
 	DDX_Text(pDX, IDC_EDIT_FFTT, FreeFlowTravelTime);
 	DDX_Text(pDX, IDC_EDIT_LANE_CAPACITY, LaneCapacity);
-	DDV_MinMaxInt(pDX, LaneCapacity, 0, 3000);
+	DDV_MinMaxInt(pDX, LaneCapacity, 0, 300000);
 	DDX_Text(pDX, IDC_EDIT_NUMLANES, nLane);
 	DDV_MinMaxInt(pDX, nLane, 0, 10);
 	DDX_Control(pDX, IDC_COMBO1, m_LinkTypeComboBox);

@@ -29,12 +29,37 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_NumberOfIterations, 1, 100);
 	DDX_Text(pDX, IDC_EDIT_Multiplier, m_DemandGlobalMultiplier);
 	DDV_MinMaxFloat(pDX, m_DemandGlobalMultiplier, 0.001f, 10.0f);
+	DDX_Control(pDX, IDC_LIST_SIMULATION_METHOD, m_SimulationMethodControl);
 }
 
 
 BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
+	ON_LBN_SELCHANGE(IDC_LIST_SIMULATION_METHOD, &CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod)
 END_MESSAGE_MAP()
 
 
 // CDlgAssignmentSettings message handlers
 
+
+BOOL CDlgAssignmentSettings::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	m_SimulationMethodControl.AddString ("BPR Function");
+	m_SimulationMethodControl.AddString ("Point Queue Model");
+	m_SimulationMethodControl.AddString ("Spatial Queue Model");
+	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
+	m_SimulationMethodControl.SetCurSel(m_SimultionMethod);
+
+
+	// TODO:  Add extra initialization here
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+
+void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
+{
+	m_SimultionMethod = m_SimulationMethodControl.GetCurSel();
+}

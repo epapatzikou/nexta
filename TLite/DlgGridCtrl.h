@@ -33,4 +33,6 @@ public:
 
 	void OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult);
 	bool SaveDemandCSVFile(LPCTSTR lpszFileName);
+	afx_msg void OnBnClickedButtonCreatezones();
+	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
 };

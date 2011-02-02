@@ -73,7 +73,6 @@ void CTLiteDoc::ReadTrainProfileCSVFile(LPCTSTR lpszFileName)
 
                 fclose(st);
 		m_LinkTrainTravelTimeDataLoadingStatus.Format ("%d train-link travel time records are loaded from file %s.",i,lpszFileName);
-
         }
 }
 
@@ -287,7 +286,7 @@ bool CTLiteDoc::TimetableOptimization_Lagrangian_Method()
 			m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
 			//step 6.2 perform shortest path algorithm
 			m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
-			//step 6.3 featch the train path  solution
+			//step 6.3 fetch the train path  solution
 			pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
 
 

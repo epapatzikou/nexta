@@ -33,8 +33,9 @@
 
 
 enum tool
-   { move_tool, select_tool, bkimage_tool, create_1waylink_tool, create_2waylinks_tool
+   { move_tool, select_tool, select_node_tool, bkimage_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool
    };
+
 
 class CTLiteView : public CView
 {
@@ -49,11 +50,11 @@ public:
 	int m_SelectToNodeNumber;
 
 	bool m_bShowSensor;
-	bool m_bShowVehicle;
 	bool m_bShowText;
 	CTLiteDoc* GetDocument() const;
 	tool m_ToolMode; 
 	
+	double m_GridResolution;
 	CPoint m_last_cpoint;
 	bool m_bMoveDisplay;
 
@@ -67,7 +68,6 @@ public:
 
 	int m_NodeSize;
 	int m_VehicleSize;
-	int m_SelectedNodeID;
 
 
 		COLORREF m_BackgroundColor;
@@ -84,6 +84,29 @@ public:
 	float m_Resolution;
 
 	int m_OriginOnBottomFlag;
+
+	int m_ViewID;
+
+	void FollowGlobalViewParameters(int CurrentViewID)
+	{
+/*		if(GetDocument()->m_bSetView && m_ViewID!=CurrentViewID)
+		{
+		 GetDocument()->m_Doc_Origin = m_Origin;
+		 GetDocument()->m_Doc_Resolution = m_Resolution;
+		}
+		 
+*/
+	}
+	void SetGlobalViewParameters()
+	{
+/*		m_Origin = GetDocument()->m_Doc_Origin;
+		m_Resolution = GetDocument()->m_Doc_Resolution;
+		GetDocument()->m_bSetView = true;
+		GetDocument()->m_CurrentViewID  = m_ViewID;
+		GetDocument()->UpdateAllViews(this);
+*/
+	}
+
 
     CPoint NPtoSP(GDPoint net_point) // convert network coordinate to screen coordinate
 	{
@@ -177,7 +200,6 @@ public:
 	afx_msg void OnUpdateShowLinkarrow(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowmoe();
 	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
-	afx_msg void OnMoeVehicle();
 	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
 	afx_msg void OnImageLockbackgroundimageposition();
 	afx_msg void OnViewTextlabel();
@@ -185,6 +207,13 @@ public:
 	afx_msg void OnLinkDelete();
 	afx_msg void OnUpdateEditDeleteselectedlink(CCmdUI *pCmdUI);
 	afx_msg void OnLinkEditlink();
+	afx_msg void OnEditCreatenode();
+	afx_msg void OnUpdateEditCreatenode(CCmdUI *pCmdUI);
+	afx_msg void OnEditDeleteselectednode();
+	afx_msg void OnEditSelectnode();
+	afx_msg void OnViewSelectNode();
+	afx_msg void OnUpdateViewSelectNode(CCmdUI *pCmdUI);
+	afx_msg void OnSearchNode();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

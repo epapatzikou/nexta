@@ -17,6 +17,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CGLView
 extern float g_Simulation_Time_Stamp;
+extern CString g_time_to_string(long timestamp);
 std::list<CGLView*>	g_GLViewList;
 
 
@@ -53,6 +54,8 @@ CGLView::CGLView()
 	m_BackgroundMapHeight_UpperLayer = 300.0;
 	m_BackgroundMapHeight_MedLayer = 150.0;
 	m_bShowDualLayer = false;
+	m_bShowSecurityCube = false;
+	m_PredictionHorizon  = 120;
 
 }
 
@@ -289,7 +292,7 @@ void CGLView::Render()
 		if(m_bLoadBackgroundImage==false) // and 3D map is not loaded yet
 		{
 			glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-			m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"Background.bmp");
+			m_pBackgroundImage = auxDIBImageLoad(pDoc->m_ProjectDirectory+"background.bmp");
 			glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 			m_bLoadBackgroundImage = true;
 		}
@@ -334,7 +337,7 @@ void CGLView::Render()
 			{
 /// upper layer
 
-						glBegin(GL_QUADS);
+			glBegin(GL_QUADS);
 			glTexCoord2d(0.0,0.0);  //2D binding
 			vector.v.x=NXtoSX_org(pDoc->m_ImageX1);
 			vector.v.y=NYtoSY_org(pDoc->m_ImageY2);
@@ -452,12 +455,6 @@ void CGLView::DrawAllObjects()
 
 	}
 
-
-
-
-
-
-
 	//draw time-dependent path
 
 	if(m_ShowAllPaths)
@@ -560,7 +557,7 @@ void CGLView::DrawAllObjects()
 	glEnd();
 
 	//show travel time variability
-	if(m_ShowSpeedVariability)
+	if(pDoc->m_LinkMOEMode == volume || pDoc->m_LinkMOEMode == speed)
 	{
 		glBegin(GL_QUADS);
 
@@ -600,16 +597,17 @@ void CGLView::DrawAllObjects()
 
 //			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
-			float color_power = (*iLink)->m_SpeedLimit / max(1, (*iLink)->StaticSpeed)/2;
+			float value = 0;
+			float color_power = pDoc->GetStaticLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
 
 			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;
 
 			float link_volume = (*iLink)->StaticFlow ;
 
-			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon)
+			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp + m_PredictionHorizon< (*iLink)->m_SimulationHorizon)
 			{
-				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time].ObsFlow)* (*iLink)->m_NumLanes;
+				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time + m_PredictionHorizon].ObsFlow)* (*iLink)->m_NumLanes;
 			}
 //			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
 			
@@ -632,16 +630,67 @@ void CGLView::DrawAllObjects()
 
 		}
 	}
-	glEnd();
 
+
+		//show travel time variability
+	if(m_bShowSecurityCube )
+	{
+		glBegin(GL_LINES);
+
+                /*      This is the top face*/
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(0.0f, 0.0f, -1.0f);
+                glVertex3f(-1.0f, 0.0f, -1.0f);
+                glVertex3f(-1.0f, 0.0f, 0.0f);
+
+                /*      This is the front face*/
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(-1.0f, 0.0f, 0.0f);
+                glVertex3f(-1.0f, -1.0f, 0.0f);
+                glVertex3f(0.0f, -1.0f, 0.0f);
+
+                /*      This is the right face*/
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(0.0f, -1.0f, 0.0f);
+                glVertex3f(0.0f, -1.0f, -1.0f);
+                glVertex3f(0.0f, 0.0f, -1.0f);
+
+                /*      This is the left face*/
+                glVertex3f(-1.0f, 0.0f, 0.0f);
+                glVertex3f(-1.0f, 0.0f, -1.0f);
+                glVertex3f(-1.0f, -1.0f, -1.0f);
+                glVertex3f(-1.0f, -1.0f, 0.0f);
+
+                /*      This is the bottom face*/
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(0.0f, -1.0f, -1.0f);
+                glVertex3f(-1.0f, -1.0f, -1.0f);
+                glVertex3f(-1.0f, -1.0f, 0.0f);
+
+                /*      This is the back face*/
+                glVertex3f(0.0f, 0.0f, 0.0f);
+                glVertex3f(-1.0f, 0.0f, -1.0f);
+                glVertex3f(-1.0f, -1.0f, -1.0f);
+                glVertex3f(0.0f, -1.0f, -1.0f);
+	}
+	glEnd();
 
 	// draw vehicles
 
+
+	if(pDoc->m_LinkMOEMode == vehicle)
+	{
 	bool bSelectVehicle = false;
 	std::list<DTAVehicle*>::iterator iVehicle;
+
+	int VehicleFilteringMode = 1;
+	
+	if (pDoc->m_VehicleSet.size() > 50000)
+		VehicleFilteringMode = int(pDoc->m_VehicleSet.size()/50000)+1;
+
 	for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
 	{
-		if((*iVehicle)->m_VehicleID %100==0)
+		if((*iVehicle)->m_VehicleID %VehicleFilteringMode==0)
 		{
 
 			if((*iVehicle)->m_bComplete && (*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
@@ -720,7 +769,7 @@ void CGLView::DrawAllObjects()
 
 	}
 
-
+	}
 }
 
 void CGLView::ComputeEyePosition()
@@ -869,6 +918,9 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 	double Step = 10;
 
+    CString title_str;
+
+
 	switch(nChar)
 	{
 	case VK_UP :
@@ -885,10 +937,25 @@ void CGLView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 	case VK_RIGHT :
 		m_ObservePoint.x-=Step;
-
 		break;
 
+	case VK_PRIOR: 
+		m_PredictionHorizon -=5;
 
+		if(m_PredictionHorizon < 0)
+			m_PredictionHorizon = 0;
+
+	  title_str.Format("prediction: +%d min", m_PredictionHorizon);
+      GetParentFrame()->SetWindowText(title_str);
+
+        break;
+    case VK_NEXT:
+		m_PredictionHorizon +=5;
+
+	   title_str.Format("prediction: +%d min", m_PredictionHorizon);
+      GetParentFrame()->SetWindowText(title_str);
+
+	  break;
 	}
 	Render();
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);

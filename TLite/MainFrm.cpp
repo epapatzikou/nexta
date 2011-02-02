@@ -14,9 +14,7 @@
 #define new DEBUG_NEW
 #endif
 
-extern 	void g_UpdateAllViews(int Flag);
 int  g_Player_Status=-1;	     //-1: edit 0: stop, 1: play, 2: pause
-
 IMPLEMENT_DYNAMIC(CMainFrame, CMDIFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
@@ -33,6 +31,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_ANIMATION_STOP, &CMainFrame::OnAnimationStop)
 	ON_COMMAND(ID_VIEW_MOETOOLBAR, &CMainFrame::OnViewMoetoolbar)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_MOETOOLBAR, &CMainFrame::OnUpdateViewMoetoolbar)
+	ON_COMMAND(ID_WINDOW_SHOWESTIMATIONVIEW, &CMainFrame::OnWindowShowestimationview)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -66,14 +65,24 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	{
 		if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_wndToolBar.LoadToolBar(IDR_StaticMAINFRAME))
+			!m_wndToolBar.LoadToolBar(IDR_MAINFRAME1))
 		{
 			TRACE0("Failed to create toolbar\n");
 			return -1;      // fail to create
 		}
 
+		if(!m_wndPlayerSeekBar.Create(this))
+		{
+			TRACE0("Failed to create m_wndPlayerSeekBar toolbar\n");
+			return -1;     // fail to create
+		}
+
+		m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
+			CBRS_TOOLTIPS | CBRS_FLYBY);
+
 		if (!m_wndReBar.Create(this) ||
-			!m_wndReBar.AddBar(&m_wndToolBar)
+			!m_wndReBar.AddBar(&m_wndToolBar) ||
+			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
 			)
 		{
 			TRACE0("Failed to create rebar\n");
@@ -110,6 +119,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(11,"Length");
 
 		m_MOEToolBar.SetButtonText(13,"Demand");
+		m_MOEToolBar.SetButtonText(14,"Vehicle");
+
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
@@ -117,6 +128,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_MOEToolBar);
+
+		SetTimer(0,1000, NULL); // simulation reflesh timer
+		m_wndPlayerSeekBar.Enable(true);
+		//	   m_wndPlayerSeekBar.SetRange(0,100);
+		m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
+
 		//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
 		//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		//	EnableDocking(CBRS_ALIGN_ANY);
@@ -153,7 +170,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_MOEToolBar.LoadToolBar(IDR_TOOLBAR))
+			!m_MOEToolBar.LoadToolBar(IDR_STA_TOOLBAR))
 		{
 			TRACE0("Failed to create toolbar\n");
 			return -1;      // fail to create
@@ -318,7 +335,7 @@ void CMainFrame::OnTimer(UINT nIDEvent)
 
 		m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
-		g_UpdateAllViews(0);
+		UpdateAllViews();
 	}
 
 }
@@ -326,7 +343,7 @@ void CMainFrame::OnAnimationPlay()
 {
 	g_Player_Status = 1;
 
-	g_UpdateAllViews(0);
+	UpdateAllViews();
 }
 
 void CMainFrame::OnAnimationRewind()
@@ -335,7 +352,8 @@ void CMainFrame::OnAnimationRewind()
 	g_Simulation_Time_Stamp = 0;
 	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
-	g_UpdateAllViews(0);}
+	UpdateAllViews();
+}
 
 void CMainFrame::OnAnimationPause()
 {
@@ -348,7 +366,7 @@ void CMainFrame::OnAnimationStop()
 	g_Simulation_Time_Stamp = 0;
 	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
-	g_UpdateAllViews(0);
+	UpdateAllViews();
 }
 
 void CMainFrame::OnViewMoetoolbar()
@@ -364,3 +382,34 @@ void CMainFrame::OnUpdateViewMoetoolbar(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck (m_bShowMOEToolBar);
 }
+
+void CMainFrame::UpdateAllViews()
+{
+
+	CTLiteApp* pApp;
+	pApp = (CTLiteApp *) AfxGetApp(); 
+	pApp->UpdateAllViews();
+
+}
+void CMainFrame::OnWindowShowestimationview()
+{
+	CMDIChildWnd* pActiveChild = MDIGetActive();
+	CDocument* pDocument;
+	if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+		TRACE("Warning:  No active document for WindowNew command\n");
+		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+		return; // Command failed
+	}
+	// Otherwise, we have a new frame!
+	CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
+	ASSERT_VALID(pTemplate);
+
+	CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	if (pFrame == NULL)
+	{
+		TRACE("Warning:  failed to create new frame\n");
+		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+		return; // Command failed
+		// make it visisable
+	}
+	pTemplate->InitialUpdateFrame(pFrame, pDocument);}

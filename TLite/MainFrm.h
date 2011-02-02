@@ -53,6 +53,7 @@ public:
 #endif
 
 		char m_CurrentDirectory[MAX_PATH+1];
+	void UpdateAllViews();
 
 protected:  // control bar embedded members
 	CStatusBar  m_wndStatusBar;
@@ -82,6 +83,7 @@ public:
 	afx_msg void OnAnimationStop();
 	afx_msg void OnViewMoetoolbar();
 	afx_msg void OnUpdateViewMoetoolbar(CCmdUI *pCmdUI);
+	afx_msg void OnWindowShowestimationview();
 };
 
 

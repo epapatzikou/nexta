@@ -40,19 +40,40 @@ int g_Data_Time_Interval = 1;
 int g_Number_of_Weekdays = 23;
 
 
-extern void g_UpdateAllViews(int Flag);
 
 CString g_time_to_string(long timestamp)
 {
    CString str;
-   int hour, min, h_hour, h_min;
-   hour = timestamp/60;
-   min =  timestamp- hour*60;
+   int day, hour, min, h_day, h_hour, h_min;
+   int current_day, current_hour, current_min;
 
-   h_hour = g_Simulation_Time_Horizon/60;
-   h_min =  g_Simulation_Time_Horizon- h_hour*60;
+   day = timestamp /1440;
+   hour = (timestamp-day*1440)/60;
+   min =  timestamp- hour*60 - day*1440;
 
-   str.Format("%02d:%02d / %02d:%02d", hour, min, h_hour, h_min);
+   current_day = g_Simulation_Time_Stamp /1440;
+   current_hour = (g_Simulation_Time_Stamp-current_day*1440)/60;
+   current_min =  g_Simulation_Time_Stamp- current_hour*60 - current_day*1440;
+
+   h_day = g_Simulation_Time_Horizon/1440;
+   h_hour = (g_Simulation_Time_Horizon- day*1440)/60 ;
+   h_min =  g_Simulation_Time_Horizon - day*1440 - h_hour*60;
+
+   if(timestamp == g_Simulation_Time_Stamp)
+   {
+	if(day>=1)
+	   str.Format("d%d:%02d:%02d / d%d:%02d:%02d", day,hour, min, h_day, h_hour, h_min);
+	else
+	   str.Format("%02d:%02d / %02d:%02d", hour, min, h_hour, h_min);
+
+   }else
+   {
+
+	if(day>=1)
+	   str.Format("prediction: d%d:%02d:%02d (+%d)", current_day,current_hour, current_min, timestamp - g_Simulation_Time_Stamp);
+	else
+		str.Format("prediction: %02d:%02d (+%d)", current_hour, current_min, timestamp - g_Simulation_Time_Stamp);
+   }
 
    return str;
 }
@@ -342,8 +363,12 @@ void CPlayerSeekBar::OnMouseMove(UINT nFlags, CPoint point)
    if(m_prev_pos != current_pos )
    {
       g_Simulation_Time_Stamp = current_pos;
-      g_UpdateAllViews(0);
-      ShowSimulationTime();
+
+	CTLiteApp* pApp;
+	pApp = (CTLiteApp *) AfxGetApp(); 
+	pApp->UpdateAllViews();
+
+	ShowSimulationTime();
       m_prev_pos  = current_pos;
       CDialogBar::OnMouseMove(nFlags, point);
    }
