@@ -43,6 +43,8 @@ class CTLiteApp : public CWinApp
 public:
 	CTLiteApp();
 
+	void UpdateAllViews();
+
 	CMultiDocTemplate* m_pDocTemplate2DView;
 	CMultiDocTemplate* m_pTemplateGLView;
 	CMultiDocTemplate* m_pTemplateTimeTableView;

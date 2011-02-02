@@ -37,7 +37,6 @@
 extern float g_Simulation_Time_Stamp;
 extern CPen s_PenSimulationClock;
 
-extern 	void g_UpdateAllViews(int Flag);
 extern void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount);
 extern void g_SelectThickPenColor(CDC* pDC, int ColorCount);
 extern void g_SelectBrushColor(CDC* pDC, int ColorCount);

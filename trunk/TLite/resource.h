@@ -3,9 +3,9 @@
 // Used by TLite.rc
 //
 #define IDSAVEASDEFAULT                 2
+#define IDCANCLE                        2
 #define IDD_ABOUTBOX                    100
 #define IDR_MAINFRAME                   128
-#define IDR_StaticMAINFRAME             128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
 #define IDD_PLAYERSEEKBAR               131
@@ -24,7 +24,6 @@
 #define IDR_STA_TOOLBAR                 149
 #define IDR_MAINFRAME1                  150
 #define IDD_DIALOG_CARFOLLOWING         151
-#define IDR_TOOLBAR                     151
 #define IDR_MENU_CARFOLLOWING           152
 #define IDR_TLiteTYPE1                  153
 #define IDD_DIALOG_LinkProperties       154
@@ -33,6 +32,10 @@
 #define IDD_DIALOG_LINK_LIST            157
 #define IDD_ODGRID_DIALOG               158
 #define IDD_DIALOG_Image_Width          159
+#define IDD_DIALOGFindANode             161
+#define IDD_DIALOGSensorDataLoading     162
+#define IDD_DIALOG_IMPORT_ODTABLE       163
+#define IDD_DIALOG_Zone_To_Node_Mapping 164
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -57,6 +60,15 @@
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
 #define IDC_EDIT_WIDTH2                 1027
+#define IDC_LIST_SIMULATION_METHOD      1029
+#define IDC_EDIT1                       1030
+#define IDC_EDIT_Number_of_Days         1031
+#define IDC_EDIT_TimeInterval           1032
+#define IDC_EDIT_Occ_to_Density_Coef    1033
+#define IDC_EDIT_Number_of_Zones        1034
+#define IDC_BUTTON_CreateZones          1035
+#define IDC_BUTTON_Edit_Zone_Node_Mapping 1036
+#define IDC_LIST_Mapping                1037
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -192,9 +204,6 @@
 #define ID_FILE_DATALOADINGSTATUS       32920
 #define ID_MOE_NONE                     32921
 #define ID_BUTTON32943                  32943
-#define ID_BUTTON32944                  32944
-#define ID_BUTTON32945                  32945
-#define ID_BUTTON32946                  32946
 #define ID_VIEW_MOETOOLBAR              32948
 #define ID_TOOLS_SIMULATION             32949
 #define ID_SIMULATION_CARFOLLOWING      32950
@@ -236,14 +245,35 @@
 #define ID_TOOLS_EDITODDEMANDTABLE      33004
 #define ID_SEARCH_LINKLIST              33005
 #define ID_TOOLS_IMPORTODTABLE          33006
+#define ID_MOE_VEHICLE33008             33008
+#define ID_TOOLS_VIEWSIMULATIONSUMMARY  33009
+#define ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG 33010
+#define ID_HELP_VISITDEVELOPMENTWEBSITE 33011
+#define ID_MOETYPE1_TRAVELTIME          33012
+#define ID_ESTIMATION_PREDICTION        33013
+#define ID_MOETYPE3_NONE                33014
+#define ID_WINDOW_SHOWESTIMATIONVIEW    33015
+#define ID_EDIT_CREATENODE              33017
+#define ID_EDIT_DELETESELECTEDNODE      33018
+#define ID_VIEW_SELECT_NODE             33019
+#define ID_EDIT_SELECTNODE              33020
+#define ID_EDIT_SELECTLINK              33021
+#define ID_TOOLS_RUNTRAFFICASSIGNMENT   33022
+#define ID_TOOLS_RUNTRAFFICASSIGNMENT33023 33023
+#define ID_VIEW_SELECTNODEMODE          33024
+#define ID_VIEW_TEXTLABEL33026          33026
+#define ID_MOETYPE1_DENSITY             33029
+#define ID_FILE_IMPORTODTRIPFILE        33030
+#define ID_IMPORTODTRIPFILE_3COLUMNFORMAT 33031
+#define ID_IMPORTODTRIPFILE_TRIPMATRIXFORMAT 33032
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        160
-#define _APS_NEXT_COMMAND_VALUE         33007
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_RESOURCE_VALUE        165
+#define _APS_NEXT_COMMAND_VALUE         33033
+#define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

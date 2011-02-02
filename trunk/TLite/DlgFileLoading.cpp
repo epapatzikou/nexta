@@ -49,6 +49,11 @@ BOOL CDlgFileLoading::OnInitDialog()
 	if(m_pDoc->m_BackgroundBitmapLoaded)
 	m_ListBox_NetworkData.AddString (m_pDoc->m_BackgroundImageFileLoadingStatus);
 	
+	if(m_pDoc->m_SensorLocationLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_SensorLocationLoadingStatus);
+	}
+
 	if(m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus.GetLength () >0) // there are data being loaded
 	{
 		m_ListBox_OptimizationData.AddString (m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus);	

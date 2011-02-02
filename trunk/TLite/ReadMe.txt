@@ -1,9 +1,9 @@
 To Do List.
-1. ask about the appximate world coordiate width of the image
-2. unlock image moving mode
 3. add single node
 
-1. Add node, link and vehicle list, link information editing
+how to 
+
+1. Add node and vehicle list, link information editing
 2. Provide timetabling statistics
 3. Estimation and prediction view
 
@@ -11,11 +11,6 @@ Need detailed functional requirements from Jeff.
 For transportation planning courses
 1. define zones as centroids, use node number
 2. OD demand matrix
-	2.1 display, 
-	2.2 trip generation (export format for trip generation, import data from generation)
-	2.3 trip distribution (travel time distance matrix, 3 column form)
-	zone aggregation (in the future)
-	2.4 traffic assignment results 
 
 Hao: traffic OD estimation
 	Given link observation data, generate OD demand flow matrix

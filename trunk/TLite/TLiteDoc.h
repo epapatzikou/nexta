@@ -31,7 +31,7 @@
 #include "math.h"
 #include "Network.h"
 
-enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions};
+enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions, vehicle};
 enum OD_MOE {odnone,critical_volume};
 
 class CTLiteDoc : public CDocument
@@ -79,12 +79,21 @@ protected: // create from serialization only
 		m_ODSize = 0;
 		m_MaxODDemand = 1;
 		m_SelectedLinkID = -1;
+	    m_SelectedNodeID = -1;
+	
+		m_bSetView = false;
+
 	}
 
 	DECLARE_DYNCREATE(CTLiteDoc)
 
 	// Attributes
 public:
+
+	int m_CurrentViewID;
+	bool m_bSetView;
+ 	GDPoint m_Doc_Origin;
+	float m_Doc_Resolution;
 
 	int m_ODSize;
 	float** m_DemandMatrix;
@@ -116,6 +125,7 @@ public:
 	bool ReadIncidentFile(LPCTSTR lpszFileName);   // for road network
 
 	bool ReadTripTxtFile(LPCTSTR lpszFileName);  
+	bool Read3ColumnTripTxtFile(LPCTSTR lpszFileName);  
 	
 	// additional input
 	void LoadSimulationOutput();
@@ -125,7 +135,8 @@ public:
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
-	void ReadSensorLocationData(CString directory);
+	void ReadSensorData(CString directory);
+	bool ReadSensorLocationData(LPCTSTR lpszFileName);
 	void ReadHistoricalDataFormat2(CString directory);
 
 	CString m_NodeDataLoadingStatus;
@@ -141,13 +152,14 @@ public:
 
 	CString m_SimulationLinkMOEDataLoadingStatus;
 	CString m_SimulationVehicleDataLoadingStatus;
-	
+	CString m_SensorLocationLoadingStatus;
+
 	
 	int FindLinkFromSensorLocation(float x, float y, int direction);
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-float GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, float &value);
+float GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
 
 public:
 	std::list<DTANode*>		m_NodeSet;
@@ -185,6 +197,7 @@ public:
 	std::map<int, int> m_ZoneIDtoNodeIDMap;
 
 	int m_SelectedLinkID;
+	int m_SelectedNodeID;
 
 
 	std::vector<DTA_sensor> m_SensorVector;
@@ -270,7 +283,7 @@ public:
 		DTANode* pNode = new DTANode;
 		pNode->pt = newpt;
 		pNode->m_NodeNumber = GetUnusedNodeNumber();
-		pNode->m_NodeID = m_NodeSet.size();
+		pNode->m_NodeID = GetUnusedNodeID();;
 		pNode->m_ZoneID = 0;
 		m_NodeSet.push_back(pNode);
 		m_NodeIDMap[pNode->m_NodeID] = pNode;
@@ -278,6 +291,23 @@ public:
 		m_NodeNametoIDMap[pNode->m_NodeNumber] = pNode->m_NodeID;
 
 		return pNode;
+	}
+
+	bool DeleteNode(int NodeID)
+	{
+		std::list<DTANode*>::iterator iNode;
+
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == NodeID)
+			{
+				m_NodeSet.erase  (iNode);
+				break;
+				return true;
+			}
+		}
+	
+		return false;
 	}
 
 	bool DeleteLink(int LinkID)
@@ -313,25 +343,8 @@ public:
 
 
 		// remove isolated nodes
-		std::list<DTANode*>::iterator iNode;
-
-		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == FromNodeID)
-			{
-				m_NodeSet.erase  (iNode);
-				break;
-			}
-		}
-
-		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == FromNodeID)
-			{
-				m_NodeSet.erase  (iNode);
-				break;
-			}
-		}
+		DeleteNode (FromNodeID);
+		DeleteNode (ToNodeID);
 
 		return true;
 	}
@@ -351,6 +364,19 @@ public:
 
 	}
 
+	int GetUnusedNodeID()
+	{
+		int NewNodeID = 0;
+
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if(NewNodeID <= (*iNode)->m_NodeID)
+				NewNodeID = (*iNode)->m_NodeID +1;
+		}
+
+		return NewNodeID;
+
+	}
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
 	std::map<long, long> m_SensorIDtoLinkIDMap;
 
@@ -359,6 +385,16 @@ public:
 	{
 		unsigned long LinkKey = FromNodeID*MaxNodeKey+ToNodeID;
 		return LinkKey;
+	}
+
+	DTANode* FindNodeWithNodeNumber(int NodeNumber)
+	{
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if(NodeNumber == (*iNode)->m_NodeNumber )
+				return (*iNode);
+		}
+		return NULL;
 	}
 
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
@@ -483,6 +519,13 @@ public:
 		afx_msg void OnToolsEditassignmentsettings();
 		afx_msg void OnToolsEditoddemandtable();
 		afx_msg void OnSearchLinklist();
+		afx_msg void OnMoeVehicle();
+		afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
+		afx_msg void OnToolsViewsimulationsummary();
+		afx_msg void OnToolsViewassignmentsummarylog();
+		afx_msg void OnHelpVisitdevelopmentwebsite();
+		afx_msg void OnToolsRuntrafficassignment();
+		afx_msg void OnImportodtripfile3columnformat();
 };
 
 

@@ -95,6 +95,10 @@ struct GDRect
 	}
 
 };
+typedef struct{
+	float speed;
+	float traveltime;
+}struc_traffic_state;
 
 extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
 
@@ -155,6 +159,8 @@ public:
 	float ObsCumulativeFlow;   // flow volume
 	float ObsDensity;   // ObsDensity
 
+	float PredSpeed;
+
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
 	//   AvgTravel time can be derived from CumulativeArrivalCount and TotalTravelTime
@@ -164,9 +170,11 @@ public:
 		ObsQueuePerc = 0;
 		ObsTravelTime = 0;
 		ObsSpeed = 0;
+
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
+	    PredSpeed = 0;
 
 	};
 
@@ -178,6 +186,8 @@ public:
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
+	    PredSpeed = 0;
+
 	}
 
 } ;
@@ -224,6 +234,7 @@ public:
 		m_MergeOnrampLinkID = -1;
 		m_MergeMainlineLinkID = -1;
 		m_bSensorData = false;
+		m_SensorID = -1;
 		m_OverlappingCost = 0;
 		m_DisplayLinkID = -1;
 
@@ -260,7 +271,7 @@ public:
 
 	float ObtainHistTravelTime(int time)
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
+		if(m_HistLinkMOEAry!=NULL && time<1440)
 		{
 			return m_Length/m_HistLinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
 		}
@@ -270,9 +281,9 @@ public:
 
 	float ObtainHistFuelConsumption(int time)
 	{
-		if(m_HistLinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && time<m_SimulationHorizon)
+		if(m_HistLinkMOEAry!=NULL && time<1440)
 		{
-			return m_Length*0.1268f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
+			return m_Length*0.1268f*pow( max(1,m_HistLinkMOEAry[time].ObsSpeed),-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
 		else
 			return m_Length*0.1268f*pow(m_SpeedLimit,-0.459f);  // Length*fuel per mile(speed_limit), y= 0.1268x-0.459
@@ -280,7 +291,7 @@ public:
 
 	float ObtainHistCO2Emissions(int time)  // pounds
 	{
-		if(m_LinkMOEAry!=NULL && m_HistLinkMOEAry[time].ObsSpeed>0.001 && m_HistLinkMOEAry[time].ObsSpeed <=80 && time<m_SimulationHorizon)
+		if(m_HistLinkMOEAry!=NULL && time<1440)
 		{
 			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
@@ -310,8 +321,9 @@ public:
 
 		for(t=0; t< 1440; t++)
 		{
-			m_HistLinkMOEAry[t].ObsSpeed = 0;
+			m_HistLinkMOEAry[t].ObsSpeed = m_SpeedLimit;
 			m_HistLinkMOEAry[t].ObsFlow = 0;
+			m_HistLinkMOEAry[t].ObsTravelTime = m_FreeFlowTravelTime;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow = 0;
 			m_HistLinkMOEAry[t].ObsDensity = 0;
 
@@ -333,6 +345,7 @@ public:
 			m_HistLinkMOEAry[t].ObsFlow =0;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
 			m_HistLinkMOEAry[t].ObsDensity =0;
+			m_HistLinkMOEAry[t].ObsTravelTime = 0;
 
 		}	
 
@@ -347,7 +360,8 @@ public:
 				m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed/number_of_weekdays;
 				m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow/number_of_weekdays;
 				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow/number_of_weekdays;
-				m_HistLinkMOEAry[t].ObsDensity +=m_LinkMOEAry[day*1440+t].ObsDensity/number_of_weekdays;
+				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity/number_of_weekdays;
+				m_HistLinkMOEAry[t].ObsTravelTime += m_LinkMOEAry[day*1440+t].ObsTravelTime /number_of_weekdays;
 
 				if((t>=8*60 && t<9*60)) //8-9AM
 				{
@@ -372,6 +386,29 @@ public:
 		m_MeanSpeed = SpeedSum/max(1,count);
 
 	}
+
+
+
+struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
+	{
+
+	struc_traffic_state future_state;
+// step 1: calculate delta w
+		float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTime -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTime;
+
+		// step 2: propogate delta w to Furture time
+		//this is the most tricky part
+
+		float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
+		// step 3: add future delta w to historical time at future time
+
+		future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTime;
+		// step 4: produce speed
+
+		future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
+
+		return future_state;
+}
 
 
 
@@ -408,6 +445,7 @@ public:
 	SLinkMOE *m_HistLinkMOEAry;
 
 	bool m_bSensorData;
+	int  m_SensorID;
 
 	float m_ObsHourlyLinkVolume;
 	int *aryCFlowA;

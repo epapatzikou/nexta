@@ -86,6 +86,7 @@ protected:
 // Attributes
 public:
 
+	int m_PredictionHorizon;
 	CTLiteDoc* GetDocument() const;
 	float m_XYResolution;
 	float m_MinX;
@@ -132,6 +133,8 @@ public:
 	double m_BackgroundMapHeight_MedLayer;
 
 	bool m_bShowDualLayer;
+
+	bool m_bShowSecurityCube;
 
 
 	AUX_RGBImageRec *m_pGrassImg;

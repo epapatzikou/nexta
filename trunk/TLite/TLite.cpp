@@ -34,6 +34,8 @@
 #include "TLiteView.h"
 #include "GLView.h"
 #include "TSView.h"
+#include "DlgMOE.h"
+#include "DlgPathMOE.h"
 
 bool b_gStaticAssignmentFlag = true;
 
@@ -41,6 +43,8 @@ bool b_gStaticAssignmentFlag = true;
 #define new DEBUG_NEW
 #endif
 
+extern CDlgMOE *g_LinkMOEDlg;
+extern CDlgPathMOE	*g_pPathMOEDlg;
 
 // CTLiteApp
 
@@ -52,6 +56,8 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_FILE_OPEN, &CTLiteApp::OnFileOpen)
 	ON_COMMAND(ID_FILE_OPEN_NEW_DOC, &CTLiteApp::OnFileOpenNewDoc)
 END_MESSAGE_MAP()
+
+
 
 
 // CTLiteApp construction
@@ -225,4 +231,43 @@ int CTLiteApp::ExitInstance()
 	delete m_pTemplateTimeTableView;
 
 	return CWinApp::ExitInstance();
+}
+
+
+void CTLiteApp::UpdateAllViews()
+{
+	POSITION posTempl;
+	POSITION posDoc;
+
+	CMultiDocTemplate *pDocTempl;
+	CDocument *pDoc;
+
+
+	posTempl = GetFirstDocTemplatePosition(); 
+
+	while(posTempl != NULL)
+	{
+		pDocTempl = (CMultiDocTemplate *) GetNextDocTemplate(posTempl); // first TEMPLATE
+		posDoc = pDocTempl->GetFirstDocPosition();
+
+		while(posDoc != NULL)
+		{
+			pDoc = pDocTempl->GetNextDoc(posDoc); 
+			pDoc->UpdateAllViews (0);
+
+		}
+	} 
+
+
+	if(g_LinkMOEDlg  && g_LinkMOEDlg ->GetSafeHwnd ())
+	{
+		g_LinkMOEDlg->Invalidate (true);
+	}
+
+
+	if(g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
+	{
+		g_pPathMOEDlg->InsertPathMOEItem();
+		g_pPathMOEDlg->Invalidate (true);
+	}	
 }

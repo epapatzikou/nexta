@@ -4,6 +4,9 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "DlgGridCtrl.h"
+#include "DlgZoneToNodeMapping.h"
+#include "Dlg_ImportODDemand.h"
+
 
 #include <map>
 #include <iostream>
@@ -109,6 +112,8 @@ BEGIN_MESSAGE_MAP(CDlgGridCtrl, CDialog)
 	ON_NOTIFY(GVN_ENDLABELEDIT, IDC_GRID_CTRL, &CDlgGridCtrl::OnGridEndEdit)
 	ON_BN_CLICKED(ID_GRID_SAVEQUIT, &CDlgGridCtrl::OnBnClickedGridSavequit)
 	ON_BN_CLICKED(ID_GRID_QUIT, &CDlgGridCtrl::OnBnClickedGridQuit)
+	ON_BN_CLICKED(IDC_BUTTON_CreateZones, &CDlgGridCtrl::OnBnClickedButtonCreatezones)
+	ON_BN_CLICKED(IDC_BUTTON_Edit_Zone_Node_Mapping, &CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping)
 END_MESSAGE_MAP()
 
 
@@ -198,4 +203,25 @@ bool CDlgGridCtrl::SaveDemandCSVFile(LPCTSTR lpszFileName)
 void CDlgGridCtrl::OnBnClickedGridQuit()
 {
 	OnCancel();
+}
+void CDlgGridCtrl::OnBnClickedButtonCreatezones()
+{
+	CDlg_ImportODDemand dlg;
+	if(dlg.DoModal() == IDOK)
+	{
+	//int number_of_zones = dlg.
+    // write input_zone.csv
+	// zone number , node number
+    // make sure node number exists, if the node number does not exist, skip zone-node mapping pair
+    // fill zero value for OD table
+	// allow user to edit
+	}
+
+}
+
+void CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
+{
+	CDlgZoneToNodeMapping dlg;
+	dlg.DoModal();
+
 }

@@ -204,6 +204,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportODDemand.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgAssignmentSettings.cpp"
 				>
 			</File>
@@ -221,6 +225,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgFindANode.cpp"
 				>
 			</File>
 			<File
@@ -244,7 +252,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgSensorDataLoading.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgTrainInfo.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgZoneToNodeMapping.cpp"
 				>
 			</File>
 			<File
@@ -358,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportODDemand.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgAssignmentSettings.h"
 				>
 			</File>
@@ -375,6 +395,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgFindALink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgFindANode.h"
 				>
 			</File>
 			<File
@@ -398,7 +422,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgSensorDataLoading.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgTrainInfo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgZoneToNodeMapping.h"
 				>
 			</File>
 			<File

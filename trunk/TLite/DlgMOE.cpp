@@ -105,6 +105,11 @@ BEGIN_MESSAGE_MAP(CDlgMOE, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_ESTIMATION_HISTORICALAVGPATTERN, &CDlgMOE::OnUpdateEstimationHistoricalavgpattern)
 	ON_COMMAND(ID_VIEW_MOEVARIABILITYPLOT, &CDlgMOE::OnViewMoevariabilityplot)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_MOEVARIABILITYPLOT, &CDlgMOE::OnUpdateViewMoevariabilityplot)
+	ON_COMMAND(ID_MOETYPE1_TRAVELTIME, &CDlgMOE::OnMoetype1Traveltime)
+	ON_COMMAND(ID_ESTIMATION_PREDICTION, &CDlgMOE::OnEstimationPrediction)
+	ON_COMMAND(ID_MOETYPE3_NONE, &CDlgMOE::OnMoetype3None)
+	ON_COMMAND(ID_MOETYPE1_DENSITY, &CDlgMOE::OnMoetype1Density)
+	ON_UPDATE_COMMAND_UI(ID_MOETYPE1_DENSITY, &CDlgMOE::OnUpdateMoetype1Density)
 END_MESSAGE_MAP()
 
 
@@ -126,7 +131,7 @@ void CDlgMOE::DrawTimeSeriesPlot()
 		m_TmRight= m_TmLeft+30;
 
 
-	if(Cur_MOE_type2==-1)
+	if(Cur_MOE_type2== no_display)
 	{
 		PlotRect.top += 35;
 		PlotRect.bottom -= 35;
@@ -163,7 +168,7 @@ void CDlgMOE::DrawQKCurve()
 
 	PlotRect.bottom = PlotRect.bottom/3;  // reserve space for QK curve
 
-	if(Cur_MOE_type2==-1)
+	if(Cur_MOE_type2==no_display)
 	{
 		PlotRect.top += 35;
 		PlotRect.bottom = PlotRectOrg.bottom/2-35;
@@ -208,8 +213,6 @@ void CDlgMOE::DrawQKCurve()
 }
 void CDlgMOE::OnPaint()
 {
-
-
 	if(m_ViewMode == 0)
 		DrawTimeSeriesPlot();
 
@@ -525,7 +528,7 @@ void CDlgMOE::DrawSingleVQPlot(CPaintDC* pDC, CRect PlotRect)
 	}
 
 }
-void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextFlag)
+void CDlgMOE::DrawPlot(CPaintDC* pDC,eLinkMOEMode  MOEType, CRect PlotRect, bool LinkTextFlag)
 {
 	CPen NormalPen(PS_SOLID,2,RGB(0,0,0));
 	CPen TimePen(PS_DOT,1,RGB(0,0,0));
@@ -556,7 +559,6 @@ void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextF
 	m_UnitData = 1;
 	if((m_YUpperBound - m_YLowerBound)>0)
 		m_UnitData = (float)(PlotRect.bottom - PlotRect.top)/(m_YUpperBound - m_YLowerBound);
-
 
 	pDC->SelectObject(&TimePen);
 
@@ -615,6 +617,8 @@ void CDlgMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextF
 		TimeXPosition=(long)(PlotRect.left+(g_Simulation_Time_Stamp -m_TmLeft)*m_UnitTime);
 		pDC->MoveTo(TimeXPosition,PlotRect.bottom+2);
 		pDC->LineTo(TimeXPosition,PlotRect.top);
+
+
 	}
 	int i;
 
@@ -658,7 +662,7 @@ void CDlgMOE::OnSize(UINT nType, int cx, int cy)
 }
 
 
-int CDlgMOE::GetMaxYValue(int MOEType)
+int CDlgMOE::GetMaxYValue(eLinkMOEMode MOEType)
 {
 
 	float YMax = 0;
@@ -669,19 +673,21 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 			float value = 50;
 
 			int TimeRight = min( (*iLink)->m_SimulationHorizon,m_TmRight);
+			m_TmLeft  = max(0,m_TmLeft);
 
-		for(int i=m_TmLeft;i<TimeRight;i+=1) // for each timestamp
+		for(int i= m_TmLeft;i<TimeRight;i+=1) // for each timestamp
 		{
 
 			switch (MOEType)
 			{
 
-			case 0: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case 1: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case 2: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case 3: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case 4: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
-			case 5: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
+			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
+			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
+			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
 			default: 0;
 			}
 
@@ -696,7 +702,7 @@ int CDlgMOE::GetMaxYValue(int MOEType)
 	return max(10,int(YMax*10/9));
 }
 
-void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool LinkTextFlag)
+void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool LinkTextFlag)
 {
 	int i;
 
@@ -719,16 +725,17 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 		// PlotRect.right
 		long TimeYPosition;
 
+
 		CString str_MOE;
 		switch (MOEType)
 		{
-		case 0: str_MOE.Format ("Lane Volume: vphpl"); break;
-		case 1: str_MOE.Format ("Speed: km/h"); break;
-		case 2: str_MOE.Format ("Cumulative Volume"); break;
-		case 3: str_MOE.Format ("Link Volume: vph"); break;
-		case 4: str_MOE.Format ("Speed: mph"); break;
-		case 5: str_MOE.Format ("Density: vpmpl"); break;
-
+		case lane_volume: str_MOE.Format ("Lane Volume: vphpl"); break;
+		case speed_kmh: str_MOE.Format ("Speed: km/h"); break;
+		case cummulative_volume: str_MOE.Format ("Cumulative Volume"); break;
+		case link_volume: str_MOE.Format ("Link Volume: vph"); break;
+		case speed_mph: str_MOE.Format ("Speed: mph"); break;
+		case link_density: str_MOE.Format ("Density: vpmpl"); break;
+		case link_traveltime:  str_MOE.Format ("Travel Time: min"); break;
 		}
 		pDC->TextOut(PlotRect.right/2,PlotRect.top-20,str_MOE);
 
@@ -761,12 +768,13 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 			switch (MOEType)
 			{
-			case 0: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case 1: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case 2: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case 3: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case 4: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
-			case 5: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
+			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
+			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
+			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
 
 			default: value = 0;
 
@@ -786,6 +794,51 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 		}
 
+
+		if(m_bShowPrediction)
+		{
+		pDC->SelectObject(&s_PenRealTimePrediction);
+		b_ini_flag = false;
+
+		for(i=g_Simulation_Time_Stamp;i<min(g_Simulation_Time_Stamp + 120,m_TmRight);i+=1) // for each timestamp
+		{
+
+			TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
+
+
+			float value = 0;
+
+			if(i<(*iLink)->m_SimulationHorizon )
+			{
+
+			struc_traffic_state state  = (*iLink)->GetPredictedState(g_Simulation_Time_Stamp, i-g_Simulation_Time_Stamp);
+
+
+			switch (MOEType)
+			{
+			case speed_kmh: value= state.speed/0.621371192; break;
+			case speed_mph: value= state.speed; break;
+			case link_traveltime: value= state.traveltime;; break;
+
+			default: value = 0;
+
+			}
+			}
+
+			// show both probe data and sensor data
+			TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
+
+			if(!b_ini_flag)
+			{
+				pDC->MoveTo(TimeXPosition, TimeYPosition);
+				b_ini_flag = true;
+			}
+
+			pDC->LineTo(TimeXPosition, TimeYPosition);
+
+		}
+		}
+
 		////////////
 		// draw variability 
 
@@ -802,12 +855,13 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 			switch (MOEType)
 			{
-			case 0: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case 1: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case 2: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case 3: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case 4: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
-			case 5: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
+			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
+			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
+			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
 
 			default: value = 0;
 
@@ -826,7 +880,7 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 
 		}
 		// draw historical MOE result
-
+		}
 		if(m_bShowHistPattern)
 		{
 
@@ -847,12 +901,13 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 			{
 			switch (MOEType)
 			{
-			case 0: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsFlow; break;
-			case 1: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsSpeed/0.621371192; break;
-			case 2: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsCumulativeFlow; break;
-			case 3: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsFlow*(*iLink)->m_NumLanes; break;
-			case 4: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsSpeed; break;
-			case 5: value= (*iLink)->m_HistLinkMOEAry[time_of_day].ObsDensity; break;
+			case lane_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow; break;
+			case speed_kmh: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsCumulativeFlow; break;
+			case link_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed; break;
+			case link_density: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsDensity; break;
+			case link_traveltime: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsTravelTime; break;
 
 			default: value = 0;
 
@@ -871,7 +926,7 @@ void CDlgMOE::DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect,bool Li
 			pDC->LineTo(TimeXPosition, TimeYPosition);
 
 		}
-		}
+		
 
 
 		}
@@ -890,60 +945,60 @@ BOOL CDlgMOE::OnInitDialog()
 
 void CDlgMOE::OnMoetypeLinkvolume()
 {
-	Cur_MOE_type1 = 0;
+	Cur_MOE_type1 = lane_volume;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetypeSpeed()
 {
-	Cur_MOE_type1 = 1;
+	Cur_MOE_type1 = speed_kmh;
 	SetWindowText("Speed km/h");
 	Invalidate();}
 
 void CDlgMOE::OnMoetypeCumulativevolume()
 {
-	Cur_MOE_type1 = 2;
+	Cur_MOE_type1 = cummulative_volume;
 	SetWindowText("Cummulative Flow Count");
 	Invalidate();
 }
 
 void CDlgMOE::OnUpdateMoetypeLinkvolume(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(Cur_MOE_type1 == 0);
+	pCmdUI->SetCheck(Cur_MOE_type1 == lane_volume);
 
 }
 
 void CDlgMOE::OnUpdateMoetypeSpeed(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(Cur_MOE_type1 == 1);
+	pCmdUI->SetCheck(Cur_MOE_type1 == speed_kmh);
 }
 
 void CDlgMOE::OnUpdateMoetypeCumulativevolume(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(Cur_MOE_type1 == 2);
+	pCmdUI->SetCheck(Cur_MOE_type1 == cummulative_volume);
 }
 
 void CDlgMOE::OnMoetype2Linkvolume()
 {
-	Cur_MOE_type2 = 0;
+	Cur_MOE_type2 = lane_volume;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype2Speed()
 {
-	Cur_MOE_type2 = 1;
+	Cur_MOE_type2 = speed_kmh;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype2Cumulativevolume()
 {
-	Cur_MOE_type2 = 2;
+	Cur_MOE_type2 = cummulative_volume;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype2None()
 {
-	Cur_MOE_type2 = -1;
+	Cur_MOE_type2 = no_display;
 	Invalidate();
 }
 
@@ -1019,37 +1074,37 @@ bool CDlgMOE::ExportDataToCSVFile(char csv_file[_MAX_PATH])
 
 void CDlgMOE::OnMoetype1Linkvolume()
 {
-	Cur_MOE_type1 = 3;
+	Cur_MOE_type1 = link_volume;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype1Speed()
 {
-	Cur_MOE_type1 = 4;
+	Cur_MOE_type1 = speed_mph;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype2LinkvolumeVph()
 {
-	Cur_MOE_type2 = 3;
+	Cur_MOE_type2 = link_volume;
 	Invalidate();
 }
 
 void CDlgMOE::OnMoetype2SpeedMph()
 {
-	Cur_MOE_type2 = 4;
+	Cur_MOE_type2 = speed_mph;
 	Invalidate();
 }
 
 void CDlgMOE::OnViewMoetimeseries()
 {
-	m_ViewMode = 0;
+	m_ViewMode = no_display;
 	Invalidate();
 }
 
 void CDlgMOE::OnViewQ()
 {
-	m_ViewMode = 1;
+	m_ViewMode = lane_volume;
 	Invalidate();
 }
 
@@ -1061,7 +1116,7 @@ void CDlgMOE::OnMoetype3Q()
 
 void CDlgMOE::OnMoetype2Density()
 {
-	Cur_MOE_type2 = 5;
+	Cur_MOE_type2 = link_density;
 	Invalidate();
 }
 
@@ -1176,4 +1231,33 @@ void CDlgMOE::OnViewMoevariabilityplot()
 void CDlgMOE::OnUpdateViewMoevariabilityplot(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowVariability);
+}
+
+void CDlgMOE::OnMoetype1Traveltime()
+{
+	Cur_MOE_type1 = link_traveltime;
+	Invalidate();
+}
+
+void CDlgMOE::OnEstimationPrediction()
+{
+	m_bShowPrediction = !m_bShowPrediction;
+	Invalidate();
+}
+
+void CDlgMOE::OnMoetype3None()
+{
+	m_ViewMode = 0;
+	Invalidate();
+}
+
+void CDlgMOE::OnMoetype1Density()
+{
+	Cur_MOE_type1 = link_density;
+	Invalidate();
+}
+
+void CDlgMOE::OnUpdateMoetype1Density(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
 }

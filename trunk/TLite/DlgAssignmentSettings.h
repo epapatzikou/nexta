@@ -1,4 +1,5 @@
 #pragma once
+#include "afxwin.h"
 
 
 // CDlgAssignmentSettings dialog
@@ -22,4 +23,8 @@ public:
 	afx_msg void OnEnChangeEdit1();
 	int m_NumberOfIterations;
 	float m_DemandGlobalMultiplier;
+	int m_SimultionMethod;
+	virtual BOOL OnInitDialog();
+	CListBox m_SimulationMethodControl;
+	afx_msg void OnLbnSelchangeListSimulationMethod();
 };

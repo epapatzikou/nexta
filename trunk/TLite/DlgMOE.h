@@ -25,6 +25,7 @@
 
 #pragma once
 
+enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, link_volume,speed_mph,link_density,link_traveltime, link_travel_time_plus_prediction};
 
 // CDlgMOE dialog
 
@@ -42,13 +43,14 @@ public:
 	m_TmLeft = 0;
 	m_Range = g_Simulation_Time_Horizon;
 	m_TmRight = m_Range;  // use 5 days as starting show
-	Cur_MOE_type1 = 0;
-	Cur_MOE_type2 = -1;
+	Cur_MOE_type1 = lane_volume;
+	Cur_MOE_type2 = no_display;
 
 	m_bMoveDisplay = false;
 
 	m_bShowHistPattern = false;
 	m_bShowVariability = false;
+	m_bShowPrediction = false;
 
 	m_ViewMode = 0;
 
@@ -74,9 +76,10 @@ public:
    void DrawTimeSeriesPlot();
    void DrawQKCurve();
 
-   int Cur_MOE_type1;
-   int Cur_MOE_type2;
+   eLinkMOEMode Cur_MOE_type1;
+   eLinkMOEMode Cur_MOE_type2;
    bool m_bShowHistPattern;
+   bool m_bShowPrediction;
    bool m_bShowVariability;
    float m_UnitData, m_UnitTime;
    int m_Range;
@@ -86,10 +89,10 @@ public:
 
    COLORREF itsBackgroundColor;
 
-	void DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect, bool LinkTextFlag);
-	void DrawTimeSeries(int MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
+	void DrawPlot(CPaintDC* pDC,eLinkMOEMode MOEType, CRect PlotRect, bool LinkTextFlag);
+	void DrawTimeSeries(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
-   int GetMaxYValue(int MOEType);
+   int GetMaxYValue(eLinkMOEMode MOEType);
 // Dialog Data
 	enum { IDD = IDD_DIALOG_MOE };
 
@@ -130,4 +133,9 @@ public:
 	afx_msg void OnUpdateEstimationHistoricalavgpattern(CCmdUI *pCmdUI);
 	afx_msg void OnViewMoevariabilityplot();
 	afx_msg void OnUpdateViewMoevariabilityplot(CCmdUI *pCmdUI);
+	afx_msg void OnMoetype1Traveltime();
+	afx_msg void OnEstimationPrediction();
+	afx_msg void OnMoetype3None();
+	afx_msg void OnMoetype1Density();
+	afx_msg void OnUpdateMoetype1Density(CCmdUI *pCmdUI);
 };
