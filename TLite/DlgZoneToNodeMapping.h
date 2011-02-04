@@ -1,6 +1,7 @@
 #pragma once
 #include "afxwin.h"
 
+#include "DlgGridCtrl.h"
 
 // CDlgZoneToNodeMapping dialog
 
@@ -12,6 +13,7 @@ public:
 	CDlgZoneToNodeMapping(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgZoneToNodeMapping();
 
+	CDlgGridCtrl* m_pDlg;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Zone_To_Node_Mapping };
 

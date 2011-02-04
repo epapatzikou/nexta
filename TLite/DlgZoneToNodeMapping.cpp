@@ -6,6 +6,8 @@
 #include "DlgZoneToNodeMapping.h"
 
 
+
+
 // CDlgZoneToNodeMapping dialog
 
 IMPLEMENT_DYNAMIC(CDlgZoneToNodeMapping, CDialog)
@@ -38,7 +40,15 @@ BOOL CDlgZoneToNodeMapping::OnInitDialog()
 	CDialog::OnInitDialog();
 
 
-//	m_ListMapping.AddString ();
+	CString txt;
+	txt.Format(_T("%10s\t%10s"),"TAZ","ZoneID");
+	m_ListMapping.AddString(txt);
+
+	for (unsigned int i=0;i<m_pDlg->ZoneRecordSet.size();i++)
+	{
+		txt.Format(_T("%10d\t%10d"),m_pDlg->ZoneRecordSet[i].zone_num,m_pDlg->ZoneRecordSet[i].node_name);
+		m_ListMapping.AddString(txt);
+	}
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
