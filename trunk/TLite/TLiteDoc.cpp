@@ -1574,7 +1574,10 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 	m_NodeIDtoZoneNameMap.clear ();
 	if(m_DemandMatrix!=NULL)
+	{
 		DeallocateDynamicArray<float>(m_DemandMatrix,m_ODSize,m_ODSize);
+		m_DemandMatrix = NULL;
+	}
 
 
 	int lineno = 0 ;
@@ -1619,7 +1622,10 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 	if(st!=NULL)
 	{
 		if(m_DemandMatrix!=NULL)
+		{
 			DeallocateDynamicArray(m_DemandMatrix,m_ODSize,m_ODSize);
+			m_DemandMatrix = NULL;
+		}
 
 		m_DemandMatrix   =  AllocateDynamicArray<float>(m_ODSize,m_ODSize);
 
@@ -1671,7 +1677,10 @@ bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
 	if(st!=NULL)
 	{
 		if(m_DemandMatrix!=NULL)
+		{
 			DeallocateDynamicArray(m_DemandMatrix,m_ODSize,m_ODSize);
+			m_DemandMatrix = NULL;
+		}
 
 		m_DemandMatrix   =  AllocateDynamicArray<float>(m_ODSize,m_ODSize);
 
@@ -1737,7 +1746,10 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 	if(st!=NULL)
 	{
 		if(m_DemandMatrix!=NULL)
+		{
 			DeallocateDynamicArray(m_DemandMatrix,m_ODSize,m_ODSize);
+			m_DemandMatrix = NULL;
+		}
 
 		m_DemandMatrix   =  AllocateDynamicArray<float>(m_ODSize,m_ODSize);
 
