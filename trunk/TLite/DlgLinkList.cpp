@@ -112,15 +112,15 @@ int i;
 		sprintf_s(text, "%d",(*iLink)->m_link_type    );
 		m_LinkList.SetItemText(i,7,text);
 
-		if((*iLink)->StaticVOC >0)
+		if((*iLink)->m_StaticVOC >0)
 		{
-		sprintf_s(text, "%5.2f",(*iLink)->StaticVOC    );
+		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
 		m_LinkList.SetItemText(i,8,text);
 
-		sprintf_s(text, "%5.2f",(*iLink)->StaticSpeed    );
+		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
 		m_LinkList.SetItemText(i,9,text);
 
-		sprintf_s(text, "%5.0f",(*iLink)->StaticFlow     );
+		sprintf_s(text, "%5.0f",(*iLink)->m_StaticLaneVolume     );
 		m_LinkList.SetItemText(i,10,text);
 		}
 

@@ -603,7 +603,7 @@ void CGLView::DrawAllObjects()
 			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;
 
-			float link_volume = (*iLink)->StaticFlow ;
+			float link_volume = (*iLink)->m_StaticLaneVolume ;
 
 			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp + m_PredictionHorizon< (*iLink)->m_SimulationHorizon)
 			{

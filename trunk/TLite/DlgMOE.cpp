@@ -110,6 +110,7 @@ BEGIN_MESSAGE_MAP(CDlgMOE, CDialog)
 	ON_COMMAND(ID_MOETYPE3_NONE, &CDlgMOE::OnMoetype3None)
 	ON_COMMAND(ID_MOETYPE1_DENSITY, &CDlgMOE::OnMoetype1Density)
 	ON_UPDATE_COMMAND_UI(ID_MOETYPE1_DENSITY, &CDlgMOE::OnUpdateMoetype1Density)
+	ON_WM_INITMENUPOPUP()
 END_MESSAGE_MAP()
 
 
@@ -681,13 +682,13 @@ int CDlgMOE::GetMaxYValue(eLinkMOEMode MOEType)
 			switch (MOEType)
 			{
 
-			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
-			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
-			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
+			case lane_volume: value= (*iLink)->GetObsLaneVolume (i); break;
+			case speed_kmh: value= (*iLink)->GetObsSpeed (i)/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->GetObsCumulativeFlow(i); break;
+			case link_volume: value= (*iLink)->GetObsLaneVolume (i)*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
+			case link_density: value= (*iLink)->GetObsDensity(i); break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
 			default: 0;
 			}
 
@@ -763,22 +764,18 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 
 			float value = 0;
 
-			if(i<(*iLink)->m_SimulationHorizon )
-			{
-
 			switch (MOEType)
 			{
-			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
-			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
-			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
+			case lane_volume: value= (*iLink)->GetObsLaneVolume(i); break;
+			case speed_kmh: value= (*iLink)->GetObsSpeed(i)/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->GetObsCumulativeFlow(i); break;
+			case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->GetObsSpeed(i); break;
+			case link_density: value= (*iLink)->GetObsDensity(i); break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
 
 			default: value = 0;
 
-			}
 			}
 
 			// show both probe data and sensor data
@@ -855,13 +852,13 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 
 			switch (MOEType)
 			{
-			case lane_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow; break;
-			case speed_kmh: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed/0.621371192; break;
-			case cummulative_volume: value= (*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow; break;
-			case link_volume: value= (*iLink)->m_LinkMOEAry[i].ObsFlow*(*iLink)->m_NumLanes; break;
-			case speed_mph: value= (*iLink)->m_LinkMOEAry[i].ObsSpeed; break;
+			case lane_volume: value= (*iLink)->GetObsLaneVolume(i); break;
+			case speed_kmh: value= (*iLink)->GetObsSpeed (i)/0.621371192; break;
+			case cummulative_volume: value= (*iLink)->GetObsCumulativeFlow(i); break;
+			case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
+			case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
 			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
-			case link_traveltime: value= (*iLink)->m_LinkMOEAry[i].ObsTravelTime; break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
 
 			default: value = 0;
 
@@ -1136,13 +1133,16 @@ void CDlgMOE::OnMouseMove(UINT nFlags, CPoint point)
 	if(m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
-		int time_shift = max(1,OffSet.cx/m_UnitTime);
+		if(OffSet.cx!=0)   // not change, do not reflesh the screen
+		{
+		int time_shift = OffSet.cx/m_UnitTime;
 		m_TmLeft-= time_shift;
 		m_TmRight-= time_shift;
 
 		m_last_cpoint = point;
 
 		Invalidate();
+		}
 	}
 	CDialog::OnMouseMove(nFlags, point);
 
@@ -1222,7 +1222,10 @@ void CDlgMOE::OnViewMoevariabilityplot()
 	{
 		m_TmLeft = 0;
 		m_TmRight = 1440;
-		m_bShowHistPattern = true;
+	}else
+	{
+		m_TmLeft = 0;
+		m_TmRight = m_Range;
 	}
 	Invalidate();
 
@@ -1260,4 +1263,85 @@ void CDlgMOE::OnMoetype1Density()
 void CDlgMOE::OnUpdateMoetype1Density(CCmdUI *pCmdUI)
 {
 	// TODO: Add your command update UI handler code here
+}
+
+void CDlgMOE::OnInitMenuPopup(CMenu *pPopupMenu, UINT nIndex,BOOL bSysMenu)
+{
+    ASSERT(pPopupMenu != NULL);
+    // Check the enabled state of various menu items.
+
+    CCmdUI state;
+    state.m_pMenu = pPopupMenu;
+    ASSERT(state.m_pOther == NULL);
+    ASSERT(state.m_pParentMenu == NULL);
+
+    // Determine if menu is popup in top-level menu and set m_pOther to
+    // it if so (m_pParentMenu == NULL indicates that it is secondary popup).
+    HMENU hParentMenu;
+    if (AfxGetThreadState()->m_hTrackingMenu == pPopupMenu->m_hMenu)
+        state.m_pParentMenu = pPopupMenu;    // Parent == child for tracking popup.
+    else if ((hParentMenu = ::GetMenu(m_hWnd)) != NULL)
+    {
+        CWnd* pParent = this;
+           // Child windows don't have menus--need to go to the top!
+        if (pParent != NULL &&
+           (hParentMenu = ::GetMenu(pParent->m_hWnd)) != NULL)
+        {
+           int nIndexMax = ::GetMenuItemCount(hParentMenu);
+           for (int nIndex = 0; nIndex < nIndexMax; nIndex++)
+           {
+            if (::GetSubMenu(hParentMenu, nIndex) == pPopupMenu->m_hMenu)
+            {
+                // When popup is found, m_pParentMenu is containing menu.
+                state.m_pParentMenu = CMenu::FromHandle(hParentMenu);
+                break;
+            }
+           }
+        }
+    }
+
+    state.m_nIndexMax = pPopupMenu->GetMenuItemCount();
+    for (state.m_nIndex = 0; state.m_nIndex < state.m_nIndexMax;
+      state.m_nIndex++)
+    {
+        state.m_nID = pPopupMenu->GetMenuItemID(state.m_nIndex);
+        if (state.m_nID == 0)
+           continue; // Menu separator or invalid cmd - ignore it.
+
+        ASSERT(state.m_pOther == NULL);
+        ASSERT(state.m_pMenu != NULL);
+        if (state.m_nID == (UINT)-1)
+        {
+           // Possibly a popup menu, route to first item of that popup.
+           state.m_pSubMenu = pPopupMenu->GetSubMenu(state.m_nIndex);
+           if (state.m_pSubMenu == NULL ||
+            (state.m_nID = state.m_pSubMenu->GetMenuItemID(0)) == 0 ||
+            state.m_nID == (UINT)-1)
+           {
+            continue;       // First item of popup can't be routed to.
+           }
+           state.DoUpdate(this, TRUE);   // Popups are never auto disabled.
+        }
+        else
+        {
+           // Normal menu item.
+           // Auto enable/disable if frame window has m_bAutoMenuEnable
+           // set and command is _not_ a system command.
+           state.m_pSubMenu = NULL;
+           state.DoUpdate(this, FALSE);
+        }
+
+        // Adjust for menu deletions and additions.
+        UINT nCount = pPopupMenu->GetMenuItemCount();
+        if (nCount < state.m_nIndexMax)
+        {
+           state.m_nIndex -= (state.m_nIndexMax - nCount);
+           while (state.m_nIndex < nCount &&
+            pPopupMenu->GetMenuItemID(state.m_nIndex) == state.m_nID)
+           {
+            state.m_nIndex++;
+           }
+        }
+        state.m_nIndexMax = nCount;
+    }
 }
