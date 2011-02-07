@@ -240,10 +240,10 @@ public:
 
 		pLink->m_NumLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
-		pLink->StaticSpeed = m_DefaultSpeedLimit;
+		pLink->m_StaticSpeed = m_DefaultSpeedLimit;
 		pLink->m_Length= pLink->DefaultDistance();
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
-		pLink->StaticTravelTime = pLink->m_FreeFlowTravelTime;
+		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
 
 		pLink->m_MaximumServiceFlowRatePHPL= m_DefaultCapacity;
@@ -302,7 +302,6 @@ public:
 			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == NodeID)
 			{
 				m_NodeSet.erase  (iNode);
-				break;
 				return true;
 			}
 		}

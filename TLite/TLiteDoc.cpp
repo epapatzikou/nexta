@@ -350,11 +350,11 @@ void CTLiteDoc::ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName)
 				if(pLink!=NULL)
 				{
 					float Capacity =   g_read_float(st);
-					pLink->StaticFlow = g_read_float(st);
-					pLink->StaticVOC   = g_read_float(st);
+					pLink->m_StaticLaneVolume = g_read_float(st);
+					pLink->m_StaticVOC   = g_read_float(st);
 					float FreeflowTravelTime   = g_read_float(st);
-					pLink->StaticTravelTime = g_read_float(st);
-					pLink->StaticSpeed  = g_read_float(st);
+					pLink->m_StaticTravelTime = g_read_float(st);
+					pLink->m_StaticSpeed  = g_read_float(st);
 					i++;
 				}else
 				{
@@ -928,7 +928,8 @@ void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 
 	if(m_BackgroundBitmapLoaded)
 	{
-		TCHAR IniFilePath[_MAX_PATH] = _T("./in_opt_BackgroundImage.ini");
+		TCHAR IniFilePath[_MAX_PATH];
+		sprintf(IniFilePath,"%s//in_opt_BackgroundImage.ini", m_ProjectDirectory);
 
 		m_ImageX1 = g_GetPrivateProfileFloat("BackgroundImage", "x1", m_NetworkRect.left, IniFilePath);
 		m_ImageY1 = g_GetPrivateProfileFloat("BackgroundImage", "y1", m_NetworkRect.top, IniFilePath);
@@ -960,7 +961,8 @@ void CTLiteDoc::OnFileOpen()
 void CTLiteDoc::OnFileSaveimagelocation()
 {
 
-	TCHAR IniFilePath[_MAX_PATH] = _T("./in_opt_BackgroundImage.ini");
+	TCHAR IniFilePath[_MAX_PATH];
+	sprintf(IniFilePath,"%s//in_opt_BackgroundImage.ini", m_ProjectDirectory);
 
 	char lpbuffer[64];
 	sprintf_s(lpbuffer,"%f",m_ImageX1);
@@ -1523,7 +1525,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 			float length = g_read_float(st);
 			pLink->m_NumLanes= g_read_integer(st);
 			pLink->m_SpeedLimit= g_read_float(st);
-			pLink->StaticSpeed = pLink->m_SpeedLimit;
+			pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 
 			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
 			pLink->m_MaximumServiceFlowRatePHPL= g_read_float(st);
@@ -1872,9 +1874,31 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	CString prj_file = lpszPathName;
 	directory = prj_file.Left(prj_file.ReverseFind('\\') + 1);
 
+	////
+	CWaitCursor wc;
+
+	CString OldDirectory = m_ProjectDirectory;
+
+	if(OldDirectory!=directory)
+	{
+	CopyFile(OldDirectory+"input_zone.csv", directory+"input_zone.csv", FALSE);
+	CopyFile(OldDirectory+"input_demand.csv", directory+"input_demand.csv", FALSE);
+	CopyFile(OldDirectory+"DTASettings.ini", directory+"DTASettings.ini", FALSE);
+	CopyFile(OldDirectory+"LinkMOE.csv", directory+"LinkMOE.csv", FALSE);
+	CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
+	CopyFile(OldDirectory+"NetworkMOE.csv", directory+"NetworkMOE.csv", FALSE);
+	CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
+	CopyFile(OldDirectory+"assignment.log", directory+"assignment.log", FALSE);
+	CopyFile(OldDirectory+"Vehicle.csv", directory+"Vehicle.csv", FALSE);
+	CopyFile(OldDirectory+"error.log", directory+"error.log", FALSE);
+	CopyFile(OldDirectory+"warning.log", directory+"warning.log", FALSE);
+
+	}
+
+
+	// update m_ProjectDirectory
 	m_ProjectDirectory = directory;
 
-	CWaitCursor wc;
 
 	fopen_s(&st,lpszPathName,"w");
 	if(st!=NULL)
@@ -1919,18 +1943,6 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error: File link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
-/*
-	fopen_s(&st,directory+"input_zone.csv","w");
-	if(st!=NULL)
-	{
-
-		fclose(st);
-	}else
-	{
-		AfxMessageBox("Error: File input_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
-		return false;
-	}
-*/
 	// save in_demand here
 
 	if(m_BackgroundBitmapImportedButnotSaved)
@@ -1941,6 +1953,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	OnFileSaveimagelocation();
 
+
+	    // Copy demand_HOV.dat
 	return true;
 }
 void CTLiteDoc::OnFileSaveProject()
@@ -1965,6 +1979,12 @@ void CTLiteDoc::OnFileSaveProjectAs()
 			CString msg;
 			msg.Format ("Files node.csv and link.csv have been successfully saved with %d nodes, %d links.",m_NodeSet.size(), m_LinkSet.size());
 			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+
+			m_ProjectFile = fdlg.GetPathName();
+
+			m_ProjectTitle = GetWorkspaceTitleName(m_ProjectFile);
+			SetTitle(m_ProjectTitle);
+
 
 		}
 	}
@@ -2305,17 +2325,17 @@ float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int Curre
 
 	switch (LinkMOEMode)
 	{
-	case volume:  power = pLink->StaticFlow/max_link_volume; 
-		value = pLink->StaticFlow;
+	case volume:  power = pLink->m_StaticLaneVolume/max_link_volume; 
+		value = pLink->m_StaticLaneVolume;
 		break;
-	case speed:   power = pLink->m_SpeedLimit / max(1, pLink->StaticSpeed)/max_speed_ratio; 
-		value = pLink->StaticSpeed;
+	case speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_StaticSpeed)/max_speed_ratio; 
+		value = pLink->m_StaticSpeed;
 		break;
-	case vcratio: power = pLink->StaticVOC;
-		value = pLink->StaticVOC;
+	case vcratio: power = pLink->m_StaticVOC;
+		value = pLink->m_StaticVOC;
 		break;
-	case traveltime:  power = pLink->m_SpeedLimit / max(1, pLink->StaticSpeed)/max_speed_ratio; 
-		value = pLink->StaticTravelTime;
+	case traveltime:  power = pLink->m_SpeedLimit / max(1, pLink->m_StaticSpeed)/max_speed_ratio; 
+		value = pLink->m_StaticTravelTime;
 		break;
 
 	case capacity:  power = 1-pLink->m_LaneCapacity/4000; 
@@ -2471,8 +2491,21 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	CTimeSpan ts = ExeEndTime  - ExeStartTime;
 	CString str_running_time;
-	str_running_time.Format ("%s\nProgram execution time: %d hour(s) %d min(s) %d sec(s) \n%s", "Program execution has completed.",
-		ts.GetHours(), ts.GetMinutes(), ts.GetSeconds(), "Do you want to load the output now?");
+
+	FILE* st = NULL;
+
+	CString directory = m_ProjectDirectory;
+	char simulation_short_summary[200];
+
+	fopen_s(&st,directory+"short_summary.log","r");
+	if(st!=NULL)
+	{  
+		fgets (simulation_short_summary , 200 , st);
+		fclose(st);
+	}
+
+	str_running_time.Format ("Program execution has completed.\nSimulation Statistics: %s\nProgram execution time: %d hour(s) %d min(s) %d sec(s) \nDo you want to load the output now?",
+		simulation_short_summary, ts.GetHours(), ts.GetMinutes(), ts.GetSeconds());
 
 	if( AfxMessageBox(str_running_time, MB_YESNO| MB_ICONINFORMATION)==IDYES)
 	{
@@ -2488,16 +2521,10 @@ void CTLiteDoc::LoadSimulationOutput()
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, DTASettingsPath);	
 
 	if(TrafficFlowModelFlag==0)  //BPR function 
-		m_StaticAssignmentMode = true;
-	else
-		m_StaticAssignmentMode = false;
-
-	if(m_StaticAssignmentMode)
 		ReadSimulationLinkStaticMOEData(m_ProjectDirectory+"LinkStaticMOE.csv");
 	else
-	{
 		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
-	}
+
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
 }
 

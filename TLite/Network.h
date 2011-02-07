@@ -228,8 +228,6 @@ public:
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
 		m_HistLinkMOEAry = new SLinkMOE[min(m_SimulationHorizon+1,1441)];
 		m_StochaticCapcityFlag = 0;
-		m_BPRLinkVolume = 0;
-		m_BPRLinkTravelTime = 0;
 		m_bMergeFlag = 0;
 		m_MergeOnrampLinkID = -1;
 		m_MergeMainlineLinkID = -1;
@@ -242,15 +240,15 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
-		StaticSpeed = 0;
-		StaticFlow = 0;
-		StaticTravelTime = 0;
-		StaticVOC  = -1;
+		m_StaticSpeed = 0;
+		m_StaticLaneVolume = 0;
+		m_StaticTravelTime = 0;
+		m_StaticVOC  = 0;
 
 	};
 
-	float StaticSpeed, StaticFlow;
-	float StaticTravelTime, StaticVOC;
+	float m_StaticSpeed, m_StaticLaneVolume;
+	float m_StaticTravelTime, m_StaticVOC;
 
 	//for timetabling use
 	std::map<int, int> m_RuningTimeMap;  //indexed by train type
@@ -302,6 +300,11 @@ public:
 	void ResetMOEAry(int TimeHorizon)
 	{
 		m_SimulationHorizon	= TimeHorizon;
+
+		m_StaticSpeed = 0;
+		m_StaticLaneVolume = 0;
+		m_StaticTravelTime = 0;
+		m_StaticVOC  = 0;
 
 		if(m_LinkMOEAry !=NULL)
 			delete m_LinkMOEAry;
@@ -485,7 +488,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 	float GetFreeMovingTravelTime(int TrafficModelFlag=2, float Time = -1)
 	{
 		if(TrafficModelFlag ==0) // BRP model
-			return m_BPRLinkTravelTime;
+			return m_StaticTravelTime;
 		else 
 		{
 			for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
@@ -503,9 +506,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 	{
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
-		StaticTravelTime = m_FreeFlowTravelTime;
-		m_BPRLinkVolume = 0;
-		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
+		m_StaticTravelTime = m_FreeFlowTravelTime;
 
 		CFlowArrivalCount = 0;
 		CFlowDepartureCount = 0;
@@ -571,9 +572,6 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 	float m_FreeFlowTravelTime; // min
 	int m_BackwardWaveTimeInSimulationInterval; // simulation time interval
 
-	float m_BPRLinkVolume;
-	float m_BPRLinkTravelTime;
-
 	//  multi-day equilibirum: travel time for stochastic capacity
 	float m_LaneCapacity;
 
@@ -592,7 +590,46 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 
 	int VehicleCount;
 
-	float GetSpeed(int time)
+	float GetObsSpeed(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeed);  
+		else
+			return m_StaticSpeed;
+	}
+	float GetObsLaneVolume(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlow);  
+		else
+			return m_StaticLaneVolume;
+	}
+
+		float GetObsTravelTime(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTime);  
+		else
+			return m_StaticTravelTime;
+	}
+
+		float GetObsCumulativeFlow(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
+		else
+			return m_StaticLaneVolume;
+	}
+
+		float GetObsDensity(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(0, m_LinkMOEAry[t].ObsDensity);  
+		else
+			return 0;
+	}		
+
+				float GetSpeed(int time)
 	{
 		return m_Length/GetTravelTime(time,1)*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
@@ -604,7 +641,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 		if(GetImpactedFlag(120))
 			return 100;
 
-		float travel_time  = StaticTravelTime;
+		float travel_time  = m_StaticTravelTime;
 
 		if(starting_time + time_interval< m_SimulationHorizon)
 		{

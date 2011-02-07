@@ -138,4 +138,5 @@ public:
 	afx_msg void OnMoetype3None();
 	afx_msg void OnMoetype1Density();
 	afx_msg void OnUpdateMoetype1Density(CCmdUI *pCmdUI);
+	afx_msg void OnInitMenuPopup(CMenu *pPopupMenu, UINT nIndex,BOOL bSysMenu);
 };

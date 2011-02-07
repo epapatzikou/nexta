@@ -41,7 +41,7 @@ BOOL CDlgZoneToNodeMapping::OnInitDialog()
 
 
 	CString txt;
-	txt.Format(_T("%10s\t%10s"),"TAZ","ZoneID");
+	txt.Format(_T("%10s\t%10s"),"TAZ","Node ID");
 	m_ListMapping.AddString(txt);
 
 	for (unsigned int i=0;i<m_pDlg->ZoneRecordSet.size();i++)
