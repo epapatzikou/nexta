@@ -39,7 +39,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-		m_StaticAssignmentMode;
+		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = none;
 		m_ODMOEMode = odnone;
 
@@ -116,6 +116,8 @@ public:
 	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
 	BOOL OnOpenDocument(LPCTSTR lpszPathName);
+	BOOL OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName);
+	BOOL OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName);
 
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
@@ -136,6 +138,8 @@ public:
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
 	void ReadSensorData(CString directory);
+	void ReadEventData(CString directory);
+
 	bool ReadSensorLocationData(LPCTSTR lpszFileName);
 	void ReadHistoricalDataFormat2(CString directory);
 
@@ -154,12 +158,15 @@ public:
 	CString m_SimulationVehicleDataLoadingStatus;
 	CString m_SensorLocationLoadingStatus;
 
-	
+
+	CString m_SensorDataLoadingStatus;
+	CString m_EventDataLoadingStatus;
+
 	int FindLinkFromSensorLocation(float x, float y, int direction);
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-float GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
+float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
 
 public:
 	std::list<DTANode*>		m_NodeSet;
@@ -382,6 +389,7 @@ public:
 	int MaxNodeKey;
 	unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
 	{
+
 		unsigned long LinkKey = FromNodeID*MaxNodeKey+ToNodeID;
 		return LinkKey;
 	}
@@ -525,6 +533,8 @@ public:
 		afx_msg void OnHelpVisitdevelopmentwebsite();
 		afx_msg void OnToolsRuntrafficassignment();
 		afx_msg void OnImportodtripfile3columnformat();
+		afx_msg void OnSearchVehicle();
+		afx_msg void OnToolsPerformscheduling();
 };
 
 

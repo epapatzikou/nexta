@@ -29,11 +29,11 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "TLiteView.h"
+#define _MAX_OPTIMIZATION_HORIZON 1440
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
 void CTLiteDoc::ReadTrainProfileCSVFile(LPCTSTR lpszFileName)
 {
         FILE* st = NULL;
@@ -81,7 +81,6 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
 
-	bool b_Initialized = false;
 	if(st!=NULL)
 	{
 		int train_no = 1;
@@ -92,6 +91,9 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 
 			if(train_id == -1)
 				break;
+
+		
+
 			DTA_Train* pTrain = new DTA_Train();
 			pTrain->m_TrainID = train_id;
 
@@ -103,7 +105,6 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 
 			pTrain->m_DepartureTime=  g_read_integer(st);
 			pTrain->m_NodeSize	=  g_read_integer(st);
-			pTrain->m_PreferredArrivalTime =  g_read_integer(st);
 			pTrain->m_ActualTripTime =  g_read_integer(st);
 
 			if(pTrain->m_NodeSize>0)
@@ -112,11 +113,10 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 
 				for(int i =0; i< pTrain->m_NodeSize; i++)
 				{
-					pTrain->m_aryTN[i].TaskProcessingTime = g_read_integer(st);
-					pTrain->m_aryTN[i].TaskScheduleWaitingTime = g_read_integer(st);
-					pTrain->m_aryTN[i].NodeTimestamp = g_read_integer(st);
-
 					int NodeNumber = g_read_integer(st);
+					pTrain->m_aryTN[i].NodeTimestamp = g_read_integer(st);
+					g_read_float(st);
+
 					pTrain->m_aryTN[i].NodeID = m_NodeNametoIDMap[NodeNumber];
 
 					if(i>=1)
@@ -135,9 +135,6 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 
 					}
 				}
-			}else
-			{
-				b_Initialized = false;
 			}
 			m_TrainVector.push_back(pTrain);
 
@@ -146,12 +143,6 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 		m_TimetableDataLoadingStatus.Format ("%d trains are loaded from file %s.",m_TrainVector.size(),lpszFileName);
 
 		fclose(st);
-
-		if(b_Initialized == false)
-		{
-			// generate initial timetable
-			OnInitializetimetable();
-		}
 		return true;
 	}
 
@@ -189,7 +180,7 @@ bool CTLiteDoc::TimetableOptimization_Lagrangian_Method()
 	if(m_pNetwork !=NULL)     // m_pNetwork is used to calculate time-dependent generalized least cost path 
 		delete m_pNetwork;
 
-	int OptimizationHorizon = 100;  // we need to dynamically determine the optimization 
+	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;  // we need to dynamically determine the optimization 
 
 
 	std::list<DTALink*>::iterator iLink;
@@ -324,7 +315,7 @@ void CTLiteDoc::OnInitializetimetable()
 		delete m_pNetwork;
 
 	// we have to estimate the optimization horizion here, as it is used in the shortst path algorithm
-	int OptimizationHorizon = 100;
+	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;
 
 	std::list<DTALink*>::iterator iLink;
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -374,7 +365,7 @@ bool CTLiteDoc::TimetableOptimization_Priority_Rule()
 	if(m_pNetwork !=NULL)
 		delete m_pNetwork;
 
-	int OptimizationHorizon = 100;
+	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;
 
 	// step 1. Initialization
 

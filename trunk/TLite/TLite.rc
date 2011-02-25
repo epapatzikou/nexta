@@ -82,6 +82,7 @@ IDB_PATH_ICON           BITMAP                  "res\\smallico.bmp"
 IDB_PATH_CHECK          BITMAP                  "res\\stateico.bmp"
 IDR_STA_TOOLBAR         BITMAP                  "res\\toolbar1.bmp"
 IDR_MAINFRAME1          BITMAP                  "res\\mainfram.bmp"
+IDR_MAINFRAME2          BITMAP                  "res\\bmp00001.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -120,6 +121,45 @@ BEGIN
 END
 
 IDR_MAINFRAME1 TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_FILE_OPEN_NEW_DOC
+    BUTTON      ID_FILE_SAVE_PROJECT
+    SEPARATOR
+    BUTTON      ID_VIEW_SELECT
+    BUTTON      ID_VIEW_SELECT_NODE
+    BUTTON      ID_VIEW_MOVE
+    SEPARATOR
+    BUTTON      ID_VIEW_TEXTLABEL
+    BUTTON      ID_VIEW_BACKGROUNDIMAGE
+    BUTTON      ID_VIEW_IMAGE
+    BUTTON      ID_SHOW_GRID
+    SEPARATOR
+    BUTTON      ID_VIEW_ZOOMIN
+    BUTTON      ID_VIEW_ZOOMOUT
+    BUTTON      ID_VIEW_SHOWNETWORK
+    BUTTON      ID_VIEW_SHOWMOE
+    SEPARATOR
+    BUTTON      ID_3DZoom
+    BUTTON      ID_3DPam
+    BUTTON      ID_3DRotate
+    BUTTON      ID_3DReset
+    SEPARATOR
+    BUTTON      ID_WINDOW_NEW3DVIEW
+    BUTTON      ID_WINDOW_SHOW2DVIEW
+    BUTTON      ID_WINDOW_TILE_VERT
+    BUTTON      ID_WINDOW_TILE_HORZ
+    SEPARATOR
+    BUTTON      ID_Edit_Create1WayLink
+    BUTTON      ID_Edit_Create2WayLinks
+    BUTTON      ID_EDIT_CREATENODE
+    SEPARATOR
+    BUTTON      ID_ANIMATION_PLAY
+    BUTTON      ID_ANIMATION_REWIND
+    BUTTON      ID_ANIMATION_PAUSE
+    BUTTON      ID_ANIMATION_STOP
+END
+
+IDR_MAINFRAME2 TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_FILE_OPEN_NEW_DOC
     BUTTON      ID_FILE_SAVE_PROJECT
@@ -357,7 +397,7 @@ BEGIN
         MENUITEM "Speed (mph)",                 ID_MOETYPE1_SPEED
         MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
-        MENUITEM "TravelTime",                  ID_MOETYPE1_TRAVELTIME
+        MENUITEM "Travel Time Index (base =100)", ID_MOETYPE1_TRAVELTIME
     END
     POPUP "MOE Type 2"
     BEGIN
@@ -378,6 +418,7 @@ BEGIN
     BEGIN
         MENUITEM "Historical Avg Pattern",      ID_ESTIMATION_HISTORICALAVGPATTERN
         MENUITEM "MOE Variability Plot",        ID_VIEW_MOEVARIABILITYPLOT
+        MENUITEM "Show Event Label",            ID_ESTIMATION_SHOWEVENTLABEL
     END
     POPUP "View"
     BEGIN
@@ -385,9 +426,20 @@ BEGIN
         MENUITEM "Q-K Curve",                   ID_VIEW_Q
         MENUITEM "Reset Time Range",            ID_VIEW_RESETTIMERANGE
     END
+    POPUP "Event Data"
+    BEGIN
+        MENUITEM "Weather",                     ID_ESTIMATION_WEATHER
+        MENUITEM "Demand",                      ID_ESTIMATION_DEMAND
+        MENUITEM "Incident",                    ID_ESTIMATION_INCIDENT
+        MENUITEM "Special Event",               ID_ESTIMATION_SPECIALEVENT
+    END
     POPUP "Data"
     BEGIN
         MENUITEM "Export",                      ID_DATA_EXPORT
+        MENUITEM "Export Data under Weather Conditions", ID_DATA_EXPORT_WEATHER_DATA
+        MENUITEM "Export Data under High Demand Conditions", ID_DATA_EXPORT_HIGH_DEMAND_DATA
+        MENUITEM "Export Data under Incident Conditions", ID_DATA_EXPORT_INCIDENT_DATA
+        MENUITEM "Export Data under Special Event Conditions", ID_DATA_EXPORT_SPECICAL_EVENT_DATA
     END
 END
 
@@ -536,6 +588,119 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "View Simulation Summary Log", ID_TOOLS_VIEWSIMULATIONSUMMARY
         MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+    END
+    POPUP "&Window"
+    BEGIN
+        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
+        MENUITEM SEPARATOR
+        MENUITEM "&New Window",                 ID_WINDOW_NEW
+        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
+        MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
+    END
+END
+
+IDR_TLiteTYPE2 MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
+        POPUP "Image"
+        BEGIN
+            MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
+            MENUITEM "Unlock Background Image Position", ID_VIEW_IMAGE
+            MENUITEM "Lock Background Image Position", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
+            MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
+            MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+        END
+        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
+        MENUITEM "Data Loading Status",         ID_FILE_DATALOADINGSTATUS
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "Background Image",            ID_VIEW_BACKGROUNDIMAGE
+        MENUITEM "Network",                     ID_VIEW_SHOWNETWORK
+        MENUITEM "Grid",                        ID_SHOW_GRID
+        MENUITEM "Text Label",                  ID_VIEW_TEXTLABEL33026
+        MENUITEM SEPARATOR
+        MENUITEM "Node",                        ID_SHOW_SHOWNODE
+        MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
+        MENUITEM SEPARATOR
+        MENUITEM "Link Type",                   ID_VIEW_SHOWLINKTYPE
+        MENUITEM "Link MOE",                    ID_VIEW_SHOWMOE
+        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
+        MENUITEM "Path MOE Dialog",             ID_SHOW_SHOWPATHMOE
+        MENUITEM "Path Trajectory",             ID_SHOW_SHOWALLPATHS
+        MENUITEM SEPARATOR
+        MENUITEM "Zoom In",                     32773
+        MENUITEM "Zoom Out",                    32774
+        MENUITEM "Move Network",                32776
+        MENUITEM SEPARATOR
+        MENUITEM "Configure Background Color",  32778
+    END
+    POPUP "MOE"
+    BEGIN
+        MENUITEM "No Link MOE",                 ID_MOE_NONE
+        MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
+        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
+        MENUITEM "Capacity",                    ID_MOE_CAPACITY
+        MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
+        MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
+        MENUITEM "Length",                      ID_MOE_LENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "No OD MOE",                   ID_MOE_NOODMOE
+        MENUITEM "OD Demand ",                  ID_MOE_ODDEMAND
+        MENUITEM SEPARATOR
+        POPUP "Animation"
+        BEGIN
+            MENUITEM "Play",                        ID_ANIMATION_PLAY
+            MENUITEM "Rewind",                      ID_ANIMATION_REWIND
+            MENUITEM "Pause",                       ID_ANIMATION_PAUSE
+            MENUITEM "Stop",                        ID_ANIMATION_STOP
+        END
+        MENUITEM "Car Following Simulation",    ID_TOOLS_CARFOLLOWINGSIMULATION
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "Create Node",                 ID_EDIT_CREATENODE
+        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Selected Link",        ID_LINK_DELETE
+        MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
+        MENUITEM SEPARATOR
+        MENUITEM "Select Node",                 ID_EDIT_SELECTNODE
+        MENUITEM "Select Link",                 ID_EDIT_SELECTLINK
+        MENUITEM "Edit Link Properties",        ID_LINK_EDITLINK
+    END
+    POPUP "Search"
+    BEGIN
+        MENUITEM "Node (Ctrl+N)",               ID_SEARCH_NODE
+        MENUITEM "Link (Ctrl+F)",               ID_SEARCH_FINDLINK
+        MENUITEM SEPARATOR
+        MENUITEM "Link List",                   ID_SEARCH_LINKLIST
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Perform Train Scheduling",    ID_TOOLS_PERFORMSCHEDULING
+        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
+        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
     END
     POPUP "&Window"
     BEGIN
@@ -803,6 +968,24 @@ BEGIN
     LISTBOX         IDC_LIST_Mapping,7,7,170,136,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
 END
 
+IDD_DIALOG_VEHPATH DIALOGEX 0, 0, 316, 178
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,157,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,157,50,14
+END
+
+IDD_DIALOG_Visualization_Mode DIALOGEX 0, 0, 316, 83
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select A Visualization Template"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,61,50,14
+    LISTBOX         IDC_LIST1,7,7,280,68,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -990,6 +1173,22 @@ BEGIN
         RIGHTMARGIN, 190
         TOPMARGIN, 7
         BOTTOMMARGIN, 171
+    END
+
+    IDD_DIALOG_VEHPATH, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 171
+    END
+
+    IDD_DIALOG_Visualization_Mode, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 75
     END
 END
 #endif    // APSTUDIO_INVOKED

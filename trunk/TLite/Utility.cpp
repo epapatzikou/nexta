@@ -351,11 +351,39 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 
 double  g_FindClosestYResolution(double Value)
 {
-		double ResolutionVector[23] = {0.001,0.005,0.01,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000};
-		double min_distance  = 9999999;
+	 vector<double> ResolutionVector;
+
+		 ResolutionVector.push_back(0.001);
+		 ResolutionVector.push_back(0.005);
+		 ResolutionVector.push_back(0.01);
+		 ResolutionVector.push_back(0.05);
+		 ResolutionVector.push_back(0.1);
+		 ResolutionVector.push_back(0.2);
+		 ResolutionVector.push_back(0.5);
+		 ResolutionVector.push_back(1);
+		 ResolutionVector.push_back(2);
+		 ResolutionVector.push_back(5);
+		 ResolutionVector.push_back(10);
+		 ResolutionVector.push_back(20);
+		 ResolutionVector.push_back(50);
+		 ResolutionVector.push_back(100);
+		 ResolutionVector.push_back(200);
+		 ResolutionVector.push_back(500);
+		 ResolutionVector.push_back(1000);
+		 ResolutionVector.push_back(2000);
+		 ResolutionVector.push_back(5000);
+		 ResolutionVector.push_back(10000);
+		 ResolutionVector.push_back(20000);
+		 ResolutionVector.push_back(50000);
+		 ResolutionVector.push_back(100000);
+		 ResolutionVector.push_back(200000);
+		 ResolutionVector.push_back(500000);
+		 ResolutionVector.push_back(1000000);
+		 
+		double min_distance  = 99999999;
 
 		double ClosestResolution=1;
-		for(int i=0; i<23;i++)
+		for(unsigned int i=0; i<ResolutionVector.size();i++)
 		{
 			if(	fabs(Value-ResolutionVector[i]) < min_distance)
 			{
@@ -368,6 +396,7 @@ double  g_FindClosestYResolution(double Value)
 
 int  g_FindClosestTimeResolution(double Value)
 {
+
 		int ResolutionVector[9] = {1,10,30,60,120,240,480,720,1440};
 		double min_distance  = 9999999;
 

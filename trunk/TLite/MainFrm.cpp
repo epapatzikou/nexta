@@ -61,7 +61,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CMDIFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	if(b_gStaticAssignmentFlag)
+	if(g_VisulizationTemplate == e_traffic_assignment)
 	{
 		if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
@@ -140,15 +140,16 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		//	DockControlBar(&m_wndToolBar);
 
 	}
-	else  {
+	
+	if(g_VisulizationTemplate == e_train_scheduling)
+	{
 		if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_wndToolBar.LoadToolBar(IDR_MAINFRAME1))
+			!m_wndToolBar.LoadToolBar(IDR_MAINFRAME2))
 		{
 			TRACE0("Failed to create toolbar\n");
 			return -1;      // fail to create
 		}
-
 
 		if(!m_wndPlayerSeekBar.Create(this))
 		{
@@ -168,15 +169,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
-		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_MOEToolBar.LoadToolBar(IDR_STA_TOOLBAR))
-		{
-			TRACE0("Failed to create toolbar\n");
-			return -1;      // fail to create
-		}
-
-
+			
 		if (!m_wndStatusBar.Create(this) ||
 			!m_wndStatusBar.SetIndicators(indicators,
 			sizeof(indicators)/sizeof(UINT)))
@@ -191,24 +184,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		//	   m_wndPlayerSeekBar.SetRange(0,100);
 		m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
 
-		m_MOEToolBar.SetButtonText(0,"");
-		m_MOEToolBar.SetButtonText(1,"Volume");
-		m_MOEToolBar.SetButtonText(2,"Speed");
-		m_MOEToolBar.SetButtonText(4,"Emissions");
-		m_MOEToolBar.SetButtonText(5,"Fuel");
-		m_MOEToolBar.SetButtonText(7,"Density");
-		m_MOEToolBar.SetButtonText(8,"Queue");
-		m_MOEToolBar.SetButtonText(9,"Vehicle");
-		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
-
-
-		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
-		DockControlBar(&m_MOEToolBar);
-		//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
-		//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
-		//	EnableDocking(CBRS_ALIGN_ANY);
-		//	DockControlBar(&m_wndToolBar);
 
 	}
 
@@ -279,7 +255,8 @@ void CMainFrame::OnWindowNew3dview()
 
 void CMainFrame::OnShowTimetable()
 {
-
+    if(g_VisulizationTemplate  ==  e_train_scheduling)
+	{
 	CMDIChildWnd* pActiveChild = MDIGetActive();
 	CDocument* pDocument;
 	if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
@@ -300,6 +277,11 @@ void CMainFrame::OnShowTimetable()
 		return; // Command failed
 	}
 	pTemplate->InitialUpdateFrame(pFrame, pDocument);
+	}else
+	{
+	AfxMessageBox("Train timetable visualization is only available when the train scheduling template is selected.", MB_ICONINFORMATION);
+	}
+
 
 }
 

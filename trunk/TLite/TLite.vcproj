@@ -244,6 +244,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgMainTemplate.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgMOE.cpp"
 				>
 			</File>
@@ -257,6 +261,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgTrainInfo.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgVehiclePath.cpp"
 				>
 			</File>
 			<File
@@ -414,6 +422,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgMainTemplate.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgMOE.h"
 				>
 			</File>
@@ -427,6 +439,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgTrainInfo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgVehiclePath.h"
 				>
 			</File>
 			<File
@@ -532,6 +548,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\bmp00001.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\cur00001.cur"
 				>
 			</File>
@@ -549,6 +569,10 @@
 			</File>
 			<File
 				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\mainfram_1.bmp"
 				>
 			</File>
 			<File
@@ -588,11 +612,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar1.bmp"
+				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+				RelativePath=".\res\toolbar1.bmp"
 				>
 			</File>
 			<File
@@ -601,6 +625,10 @@
 			</File>
 			<File
 				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\TrainToolbar.bmp"
 				>
 			</File>
 		</Filter>

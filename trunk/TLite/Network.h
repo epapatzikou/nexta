@@ -40,16 +40,17 @@
 using namespace std;
 #define PI 3.1415926
 
-#define MAX_DAY_SIZE 30
+#define MAX_AdjLinkSize 15
 #define	MAX_SPLABEL 99999
 #define MAX_NODE_SIZE_IN_A_PATH 4000
 
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
+#define NUM_VEHPATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_PATHS   6
 
 #define MAX_TRAIN_TYPE_SIZE 2
 #define TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL 5
-
+#define MAX_DAY_SIZE 1 
 
 
 struct GDPoint
@@ -153,11 +154,14 @@ class SLinkMOE  // time-dependent link MOE
 {
 public:
 	float ObsQueuePerc;
-	float ObsTravelTime;
+	float ObsTravelTimeIndex;
 	float ObsSpeed;  // speed
 	float ObsFlow;   // flow volume
 	float ObsCumulativeFlow;   // flow volume
 	float ObsDensity;   // ObsDensity
+	int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
+	int EpisodeNo;
+	int EpisoDuration;
 
 	float PredSpeed;
 
@@ -167,26 +171,29 @@ public:
 
 	SLinkMOE()
 	{
+		EventCode = 0;
+		EpisoDuration = 0;
+		EpisodeNo = 0;
 		ObsQueuePerc = 0;
-		ObsTravelTime = 0;
+		ObsTravelTimeIndex = 0;
 		ObsSpeed = 0;
 
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
-	    PredSpeed = 0;
+		PredSpeed = 0;
 
 	};
 
-	void SetupMOE()
+	void SetupMOE(float FreeFlowTravelTime, float SpeedLimit)
 	{
 		ObsQueuePerc = 0;
-		ObsTravelTime = 0;
-		ObsSpeed = 0;
+		ObsTravelTimeIndex = FreeFlowTravelTime;
+		ObsSpeed = SpeedLimit;
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
-	    PredSpeed = 0;
+		PredSpeed = SpeedLimit;
 
 	}
 
@@ -314,7 +321,7 @@ public:
 		int t;
 		for(t=0; t<= TimeHorizon; t++)
 		{
-			m_LinkMOEAry[t].SetupMOE();
+			m_LinkMOEAry[t].SetupMOE(m_FreeFlowTravelTime,m_SpeedLimit);
 		}	
 
 		if(m_HistLinkMOEAry !=NULL)
@@ -326,7 +333,7 @@ public:
 		{
 			m_HistLinkMOEAry[t].ObsSpeed = m_SpeedLimit;
 			m_HistLinkMOEAry[t].ObsFlow = 0;
-			m_HistLinkMOEAry[t].ObsTravelTime = m_FreeFlowTravelTime;
+			m_HistLinkMOEAry[t].ObsTravelTimeIndex = m_FreeFlowTravelTime;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow = 0;
 			m_HistLinkMOEAry[t].ObsDensity = 0;
 
@@ -342,62 +349,77 @@ public:
 		m_MaxSpeed = 0;
 
 		int t;
-		for(t=0; t< 1440; t++)
+		float VolumeSum = 0;
+		float SpeedSum = 0;
+
+
+		for( t=0; t< 1440; t++)
 		{
+
+			// reset
 			m_HistLinkMOEAry[t].ObsSpeed =0;
 			m_HistLinkMOEAry[t].ObsFlow =0;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
 			m_HistLinkMOEAry[t].ObsDensity =0;
-			m_HistLinkMOEAry[t].ObsTravelTime = 0;
+			m_HistLinkMOEAry[t].ObsTravelTimeIndex = 0;
 
-		}	
+			// start counting
+			int count = 0;
 
-		float VolumeSum = 0;
-		float SpeedSum = 0;
-		int count = 0;
 
-		for(int day =0; day <number_of_weekdays; day ++)
-		{
-			for( t=0; t< 1440; t++)
+			for(int day =0; day <number_of_weekdays; day ++)
 			{
-				m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed/number_of_weekdays;
-				m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow/number_of_weekdays;
-				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow/number_of_weekdays;
-				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity/number_of_weekdays;
-				m_HistLinkMOEAry[t].ObsTravelTime += m_LinkMOEAry[day*1440+t].ObsTravelTime /number_of_weekdays;
-
-				if((t>=8*60 && t<9*60)) //8-9AM
+				if(m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
 				{
-					// update link-specific min and max speed
-					if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
-						m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
+					m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed;
+					m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow;
+					m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow;
+					m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity;
+					m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndex;
 
-					if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
-						m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
-
-
-					VolumeSum+=m_HistLinkMOEAry[t].ObsFlow;
-					SpeedSum+=m_HistLinkMOEAry[t].ObsSpeed ;
 					count++;
 
+					// update min and max speed
+
+					if((t>=8*60 && t<9*60)) //8-9AM
+					{
+						// update link-specific min and max speed
+						if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
+							m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
+
+						if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
+							m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
+
+
+					}
 				}
+
+
+			}
+
+			if(count>=1) 
+			{
+				// calculate final mean statistics
+				m_HistLinkMOEAry[t].ObsSpeed /=count;
+				m_HistLinkMOEAry[t].ObsFlow /=count;
+				m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
+				m_HistLinkMOEAry[t].ObsDensity /=count;
+				m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
 			}
 
 
 		}
-		m_MeanVolume = VolumeSum/max(1,count);
-		m_MeanSpeed = SpeedSum/max(1,count);
 
 	}
 
 
 
-struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
+	struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
 	{
 
-	struc_traffic_state future_state;
-// step 1: calculate delta w
-		float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTime -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTime;
+		struc_traffic_state future_state;
+		// step 1: calculate delta w
+		float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTimeIndex -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTimeIndex;
 
 		// step 2: propogate delta w to Furture time
 		//this is the most tricky part
@@ -405,13 +427,13 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 		float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
 		// step 3: add future delta w to historical time at future time
 
-		future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTime;
+		future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTimeIndex;
 		// step 4: produce speed
 
 		future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
 
 		return future_state;
-}
+	}
 
 
 
@@ -520,7 +542,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 
 		for(t=0; t<=m_SimulationHorizon; t++)
 		{
-			m_LinkMOEAry[t].SetupMOE();
+			m_LinkMOEAry[t].SetupMOE(m_FreeFlowTravelTime,m_SpeedLimit);
 		}
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
@@ -575,7 +597,6 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 	//  multi-day equilibirum: travel time for stochastic capacity
 	float m_LaneCapacity;
 
-	float m_DayDependentTravelTime[MAX_DAY_SIZE];
 	float m_AverageTravelTime;
 
 	float m_OverlappingCost;
@@ -605,15 +626,22 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 			return m_StaticLaneVolume;
 	}
 
-		float GetObsTravelTime(int t)
+	float GetObsTravelTimeIndex(int t)
 	{
 		if(t < m_SimulationHorizon)
-			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTime);  
+			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndex);  
 		else
 			return m_StaticTravelTime;
 	}
 
-		float GetObsCumulativeFlow(int t)
+	int GetEventCode(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return m_LinkMOEAry[t].EventCode;  
+		else
+			return 0;
+	}
+	float GetObsCumulativeFlow(int t)
 	{
 		if(t < m_SimulationHorizon)
 			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
@@ -621,7 +649,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 			return m_StaticLaneVolume;
 	}
 
-		float GetObsDensity(int t)
+	float GetObsDensity(int t)
 	{
 		if(t < m_SimulationHorizon)
 			return max(0, m_LinkMOEAry[t].ObsDensity);  
@@ -629,7 +657,7 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 			return 0;
 	}		
 
-				float GetSpeed(int time)
+	float GetSpeed(int time)
 	{
 		return m_Length/GetTravelTime(time,1)*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
@@ -641,14 +669,14 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 		if(GetImpactedFlag(120))
 			return 100;
 
-		float travel_time  = m_StaticTravelTime;
+		float travel_time  = max(m_StaticTravelTime,m_FreeFlowTravelTime);
 
 		if(starting_time + time_interval< m_SimulationHorizon)
 		{
 			float total_travel_time = 0;
 			for(int t=starting_time; t< starting_time + time_interval; t++)
 			{
-				total_travel_time += m_LinkMOEAry[t].ObsTravelTime;
+				total_travel_time += m_LinkMOEAry[t].ObsTravelTimeIndex;
 			}
 
 			travel_time =  total_travel_time/time_interval;
@@ -657,10 +685,10 @@ struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  /
 				travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
 
 		}
-		
+
 		ASSERT(travel_time>=0.09);
 
-		return travel_time*2;
+		return travel_time;
 
 	};
 
@@ -1276,11 +1304,11 @@ public:
 	//these two functions are for timetabling
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
 	// optimal version use a time-node-dimension of TD_LabelCostAry, TD_NodePredAry
-    int FindOptimalSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
+	int FindOptimalSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
 	// return node arrary from origin to destination, return travelling timestamp at each node
 	// return number_of_nodes in path
 
-    int FindInitiallSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
+	int FindInitiallSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
