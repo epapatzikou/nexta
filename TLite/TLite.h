@@ -32,7 +32,9 @@
 #include "resource.h"       // main symbols
 
 extern bool b_gStaticAssignmentFlag;
-
+enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
+extern eVisulizationTemplate g_VisulizationTemplate;
+extern float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) ;
 
 // CTLiteApp:
 // See TLite.cpp for the implementation of this class

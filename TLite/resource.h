@@ -24,9 +24,11 @@
 #define IDR_STA_TOOLBAR                 149
 #define IDR_MAINFRAME1                  150
 #define IDD_DIALOG_CARFOLLOWING         151
+#define IDR_MAINFRAME2                  151
 #define IDR_MENU_CARFOLLOWING           152
 #define IDR_TLiteTYPE1                  153
 #define IDD_DIALOG_LinkProperties       154
+#define IDR_TLiteTYPE2                  154
 #define IDD_DIALOG_Settings             155
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDD_DIALOG_LINK_LIST            157
@@ -36,6 +38,8 @@
 #define IDD_DIALOGSensorDataLoading     162
 #define IDD_DIALOG_IMPORT_ODTABLE       163
 #define IDD_DIALOG_Zone_To_Node_Mapping 164
+#define IDD_DIALOG_VEHPATH              165
+#define IDD_DIALOG_Visualization_Mode   166
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -69,6 +73,7 @@
 #define IDC_BUTTON_CreateZones          1035
 #define IDC_BUTTON_Edit_Zone_Node_Mapping 1036
 #define IDC_LIST_Mapping                1037
+#define IDC_LIST1                       1038
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -267,14 +272,27 @@
 #define ID_IMPORTODTRIPFILE_3COLUMNFORMAT 33031
 #define ID_IMPORTODTRIPFILE_TRIPMATRIXFORMAT 33032
 #define ID_ESTIMATION_HISTORICALAVGPATTERN33033 33033
+#define ID_TOOLS_PERFORMSCHEDULING      33034
+#define ID_ESTIMATION_SHOWEVENTLABEL    33035
+#define ID_ESTIMATION_WEATHER           33036
+#define ID_ESTIMATION_DEMAND            33037
+#define ID_ESTIMATION_INCIDENT          33038
+#define ID_ESTIMATION_SPECIALEVENT      33039
+#define ID_DATA_EXPORT_WITH_EVENT       33040
+#define ID_DATA_EXPORT_WEATHER_DATA     33041
+#define ID_DATA_EXPORTDATAWITH          33042
+#define ID_DATA_EXPORT_IN_DATA          33043
+#define ID_DATA_EXPORT_INCIDENT_DATA    33044
+#define ID_DATA_EXPORT_HIGH_DEMAND_DATA 33045
+#define ID_DATA_EXPORT_SPECICAL_EVENT_DATA 33046
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        165
-#define _APS_NEXT_COMMAND_VALUE         33034
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_RESOURCE_VALUE        167
+#define _APS_NEXT_COMMAND_VALUE         33047
+#define _APS_NEXT_CONTROL_VALUE         1039
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

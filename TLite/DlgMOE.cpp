@@ -111,6 +111,12 @@ BEGIN_MESSAGE_MAP(CDlgMOE, CDialog)
 	ON_COMMAND(ID_MOETYPE1_DENSITY, &CDlgMOE::OnMoetype1Density)
 	ON_UPDATE_COMMAND_UI(ID_MOETYPE1_DENSITY, &CDlgMOE::OnUpdateMoetype1Density)
 	ON_WM_INITMENUPOPUP()
+	ON_COMMAND(ID_ESTIMATION_SHOWEVENTLABEL, &CDlgMOE::OnEstimationShoweventlabel)
+	ON_UPDATE_COMMAND_UI(ID_ESTIMATION_SHOWEVENTLABEL, &CDlgMOE::OnUpdateEstimationShoweventlabel)
+	ON_COMMAND(ID_DATA_EXPORT_WEATHER_DATA, &CDlgMOE::OnDataExportWeatherData)
+	ON_COMMAND(ID_DATA_EXPORT_INCIDENT_DATA, &CDlgMOE::OnDataExportIncidentData)
+	ON_COMMAND(ID_DATA_EXPORT_HIGH_DEMAND_DATA, &CDlgMOE::OnDataExportHighDemandData)
+	ON_COMMAND(ID_DATA_EXPORT_SPECICAL_EVENT_DATA, &CDlgMOE::OnDataExportSpecicalEventData)
 END_MESSAGE_MAP()
 
 
@@ -140,6 +146,8 @@ void CDlgMOE::DrawTimeSeriesPlot()
 		PlotRect.right -= 100;
 
 		DrawPlot(&dc,Cur_MOE_type1, PlotRect,true);
+
+
 	}else
 	{
 		PlotRect.top += 20;
@@ -155,6 +163,7 @@ void CDlgMOE::DrawTimeSeriesPlot()
 		PlotRect.right = PlotRectOrg.right-100;
 
 		DrawPlot(&dc,Cur_MOE_type2, PlotRect,false);
+
 
 	}
 }
@@ -215,7 +224,10 @@ void CDlgMOE::DrawQKCurve()
 void CDlgMOE::OnPaint()
 {
 	if(m_ViewMode == 0)
+	{
 		DrawTimeSeriesPlot();
+
+	}
 
 	if(m_ViewMode == 1)
 	{
@@ -651,6 +663,9 @@ void CDlgMOE::DrawPlot(CPaintDC* pDC,eLinkMOEMode  MOEType, CRect PlotRect, bool
 	//Draw Time series
 	DrawTimeSeries(MOEType, pDC, PlotRect,LinkTextFlag);
 
+	if(m_bShowEventLabel)
+		DrawEventCode(MOEType, pDC, PlotRect,LinkTextFlag);
+
 }
 
 void CDlgMOE::OnSize(UINT nType, int cx, int cy)
@@ -671,10 +686,10 @@ int CDlgMOE::GetMaxYValue(eLinkMOEMode MOEType)
 
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 	{
-			float value = 50;
+		float value = 50;
 
-			int TimeRight = min( (*iLink)->m_SimulationHorizon,m_TmRight);
-			m_TmLeft  = max(0,m_TmLeft);
+		int TimeRight = min( (*iLink)->m_SimulationHorizon,m_TmRight);
+		m_TmLeft  = max(0,m_TmLeft);
 
 		for(int i= m_TmLeft;i<TimeRight;i+=1) // for each timestamp
 		{
@@ -688,7 +703,7 @@ int CDlgMOE::GetMaxYValue(eLinkMOEMode MOEType)
 			case link_volume: value= (*iLink)->GetObsLaneVolume (i)*(*iLink)->m_NumLanes; break;
 			case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
 			case link_density: value= (*iLink)->GetObsDensity(i); break;
-			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTimeIndex(i); break;
 			default: 0;
 			}
 
@@ -736,7 +751,7 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 		case link_volume: str_MOE.Format ("Link Volume: vph"); break;
 		case speed_mph: str_MOE.Format ("Speed: mph"); break;
 		case link_density: str_MOE.Format ("Density: vpmpl"); break;
-		case link_traveltime:  str_MOE.Format ("Travel Time: min"); break;
+		case link_traveltime:  str_MOE.Format ("Travel Time Index: (Base = 100)"); break;
 		}
 		pDC->TextOut(PlotRect.right/2,PlotRect.top-20,str_MOE);
 
@@ -772,7 +787,7 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 			case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
 			case speed_mph: value= (*iLink)->GetObsSpeed(i); break;
 			case link_density: value= (*iLink)->GetObsDensity(i); break;
-			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTimeIndex(i); break;
 
 			default: value = 0;
 
@@ -794,46 +809,46 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 
 		if(m_bShowPrediction)
 		{
-		pDC->SelectObject(&s_PenRealTimePrediction);
-		b_ini_flag = false;
+			pDC->SelectObject(&s_PenRealTimePrediction);
+			b_ini_flag = false;
 
-		for(i=g_Simulation_Time_Stamp;i<min(g_Simulation_Time_Stamp + 120,m_TmRight);i+=1) // for each timestamp
-		{
-
-			TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
-
-
-			float value = 0;
-
-			if(i<(*iLink)->m_SimulationHorizon )
+			for(i=g_Simulation_Time_Stamp;i<min(g_Simulation_Time_Stamp + 120,m_TmRight);i+=1) // for each timestamp
 			{
 
-			struc_traffic_state state  = (*iLink)->GetPredictedState(g_Simulation_Time_Stamp, i-g_Simulation_Time_Stamp);
+				TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
 
 
-			switch (MOEType)
-			{
-			case speed_kmh: value= state.speed/0.621371192; break;
-			case speed_mph: value= state.speed; break;
-			case link_traveltime: value= state.traveltime;; break;
+				float value = 0;
 
-			default: value = 0;
+				if(i<(*iLink)->m_SimulationHorizon )
+				{
+
+					struc_traffic_state state  = (*iLink)->GetPredictedState(g_Simulation_Time_Stamp, i-g_Simulation_Time_Stamp);
+
+
+					switch (MOEType)
+					{
+					case speed_kmh: value= state.speed/0.621371192; break;
+					case speed_mph: value= state.speed; break;
+					case link_traveltime: value= state.traveltime;; break;
+
+					default: value = 0;
+
+					}
+				}
+
+				// show both probe data and sensor data
+				TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
+
+				if(!b_ini_flag)
+				{
+					pDC->MoveTo(TimeXPosition, TimeYPosition);
+					b_ini_flag = true;
+				}
+
+				pDC->LineTo(TimeXPosition, TimeYPosition);
 
 			}
-			}
-
-			// show both probe data and sensor data
-			TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
-
-			if(!b_ini_flag)
-			{
-				pDC->MoveTo(TimeXPosition, TimeYPosition);
-				b_ini_flag = true;
-			}
-
-			pDC->LineTo(TimeXPosition, TimeYPosition);
-
-		}
 		}
 
 		////////////
@@ -841,14 +856,122 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 
 		if(m_bShowVariability)
 		{
-		for(i=0;i<g_Simulation_Time_Horizon;i+=1) // for each timestamp
+			for(i=0;i<g_Simulation_Time_Horizon;i+=1) // for each timestamp
+			{
+
+				TimeXPosition=(long)(PlotRect.left+(i%1440-m_TmLeft)*m_UnitTime);
+				float value = 0;
+
+				if(i<(*iLink)->m_SimulationHorizon)
+				{
+
+					switch (MOEType)
+					{
+					case lane_volume: value= (*iLink)->GetObsLaneVolume(i); break;
+					case speed_kmh: value= (*iLink)->GetObsSpeed (i)/0.621371192; break;
+					case cummulative_volume: value= (*iLink)->GetObsCumulativeFlow(i); break;
+					case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
+					case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
+					case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+					case link_traveltime: value= (*iLink)->GetObsTravelTimeIndex(i); break;
+
+					default: value = 0;
+
+					}
+				}
+
+				TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
+
+				if(i%1440==0)
+				{
+					pDC->MoveTo(TimeXPosition, TimeYPosition);
+					b_ini_flag = true;
+				}
+
+				pDC->LineTo(TimeXPosition, TimeYPosition);
+
+			}
+			// draw historical MOE result
+		}
+		if(m_bShowHistPattern)
 		{
 
-			TimeXPosition=(long)(PlotRect.left+(i%1440-m_TmLeft)*m_UnitTime);
-			float value = 0;
+			pDC->SelectObject (&s_PenHist);
 
-			if(i<(*iLink)->m_SimulationHorizon)
+			b_ini_flag = false;
+
+			for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
 			{
+
+				TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
+
+
+				float value = 0;
+				int time_of_day = i%1440;  
+
+				if(i<(*iLink)->m_SimulationHorizon)
+				{
+					switch (MOEType)
+					{
+					case lane_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow; break;
+					case speed_kmh: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed/0.621371192; break;
+					case cummulative_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsCumulativeFlow; break;
+					case link_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow*(*iLink)->m_NumLanes; break;
+					case speed_mph: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed; break;
+					case link_density: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsDensity; break;
+					case link_traveltime: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsTravelTimeIndex; break;
+
+					default: value = 0;
+
+					}
+				}
+
+				// show both probe data and sensor data
+				TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
+
+				if(!b_ini_flag)
+				{
+					pDC->MoveTo(TimeXPosition, TimeYPosition);
+					b_ini_flag = true;
+				}
+
+				pDC->LineTo(TimeXPosition, TimeYPosition);
+
+			}
+
+
+
+		}
+	}
+}
+
+void CDlgMOE::DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag)
+{
+	int i;
+
+	int LabelInterval = 5;
+	int Mod10 = 10;
+	CString str_project;
+
+	pDC->SetTextColor(RGB(255,0,0));
+	int LinkCount = 0;
+
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
+	{
+
+
+		long TimeYPosition;
+		long TimeXPosition;
+
+
+		for(i=m_TmLeft;i<m_TmRight;i+=LabelInterval) // for each timestamp
+		{
+
+			TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
+
+			float value = 0;
 
 			switch (MOEType)
 			{
@@ -858,78 +981,98 @@ void CDlgMOE::DrawTimeSeries(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRe
 			case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
 			case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
 			case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
-			case link_traveltime: value= (*iLink)->GetObsTravelTime(i); break;
+			case link_traveltime: value= (*iLink)->GetObsTravelTimeIndex(i); break;
 
 			default: value = 0;
 
-			}
-			}
-
-			TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
-
-			if(i%1440==0)
-			{
-				pDC->MoveTo(TimeXPosition, TimeYPosition);
-				b_ini_flag = true;
-			}
-
-			pDC->LineTo(TimeXPosition, TimeYPosition);
-
-		}
-		// draw historical MOE result
-		}
-		if(m_bShowHistPattern)
-		{
-
-		pDC->SelectObject (&s_PenHist);
-
-		b_ini_flag = false;
-
-		for(i=m_TmLeft;i<m_TmRight;i+=1) // for each timestamp
-		{
-
-			TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
-
-
-			float value = 0;
-			int time_of_day = i%1440;  
-
-			if(i<(*iLink)->m_SimulationHorizon)
-			{
-			switch (MOEType)
-			{
-			case lane_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow; break;
-			case speed_kmh: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed/0.621371192; break;
-			case cummulative_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsCumulativeFlow; break;
-			case link_volume: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsFlow*(*iLink)->m_NumLanes; break;
-			case speed_mph: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsSpeed; break;
-			case link_density: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsDensity; break;
-			case link_traveltime: value= (*iLink)->m_HistLinkMOEAry [time_of_day].ObsTravelTime; break;
-
-			default: value = 0;
-
-			}
 			}
 
 			// show both probe data and sensor data
 			TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
 
-			if(!b_ini_flag)
+			switch ((*iLink)->GetEventCode(i))
 			{
-				pDC->MoveTo(TimeXPosition, TimeYPosition);
-				b_ini_flag = true;
+			case 1:
+
+//				pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+				break;
+
+			case 2: 
+				pDC->TextOut(TimeXPosition,TimeYPosition-5,"D");
+				break;
+
+			case 3: 
+				pDC->TextOut(TimeXPosition,TimeYPosition-5,"I");
+				break;
+
+			case 4: 
+				pDC->TextOut(TimeXPosition,TimeYPosition-5,"S");
+				break;
 			}
 
-			pDC->LineTo(TimeXPosition, TimeYPosition);
-
-		}
-		
 
 
 		}
+
+
+		// draw variability 
+
+		if(m_bShowVariability)
+		{
+			for(i=0;i<g_Simulation_Time_Horizon;i+=LabelInterval) // for each timestamp
+			{
+
+				TimeXPosition=(long)(PlotRect.left+(i%1440-m_TmLeft)*m_UnitTime);
+
+				float value = 0;
+				int time_of_day = i%1440;  
+
+				if(i<(*iLink)->m_SimulationHorizon)
+				{
+					switch (MOEType)
+					{
+					case lane_volume: value= (*iLink)->GetObsLaneVolume(i); break;
+					case speed_kmh: value= (*iLink)->GetObsSpeed (i)/0.621371192; break;
+					case cummulative_volume: value= (*iLink)->GetObsCumulativeFlow(i); break;
+					case link_volume: value= (*iLink)->GetObsLaneVolume(i)*(*iLink)->m_NumLanes; break;
+					case speed_mph: value= (*iLink)->GetObsSpeed (i); break;
+					case link_density: value= (*iLink)->m_LinkMOEAry[i].ObsDensity; break;
+					case link_traveltime: value= (*iLink)->GetObsTravelTimeIndex(i); break;
+
+					default: value = 0;
+
+					}
+				}
+
+				// show both probe data and sensor data
+				TimeYPosition= PlotRect.bottom - (int)((value*m_UnitData));
+
+
+				switch ((*iLink)->GetEventCode(i))
+				{
+				case 1:
+
+//					pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+					break;
+
+				case 2: 
+					pDC->TextOut(TimeXPosition,TimeYPosition-5,"D");
+					break;
+
+				case 3: 
+					pDC->TextOut(TimeXPosition,TimeYPosition-5,"I");
+					break;
+
+				case 4: 
+					pDC->TextOut(TimeXPosition,TimeYPosition-5,"S");
+					break;
+				}
+
+			}
+
+		}	
 	}
 }
-
 BOOL CDlgMOE::OnInitDialog()
 {
 	CDialog::OnInitDialog();
@@ -1001,6 +1144,12 @@ void CDlgMOE::OnMoetype2None()
 
 void CDlgMOE::OnDataExport()
 {
+	ExportData(0);
+}
+
+void CDlgMOE::ExportData(int EventType)
+{
+
 	CString str;
 	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
 		"(*.csv)|*.csv||", NULL);
@@ -1010,7 +1159,7 @@ void CDlgMOE::OnDataExport()
 		wsprintf(fname,"%s", dlg.GetPathName());
 		CWaitCursor wait;
 
-		if(!ExportDataToCSVFile(fname))
+		if(!ExportDataToCSVFile(fname,EventType))
 		{
 			str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
 			AfxMessageBox(str);
@@ -1018,7 +1167,7 @@ void CDlgMOE::OnDataExport()
 	}
 }
 
-bool CDlgMOE::ExportDataToCSVFile(char csv_file[_MAX_PATH])
+bool CDlgMOE::ExportDataToCSVFile(char csv_file[_MAX_PATH], int EventDataFlag)
 {
 
 	FILE* st;
@@ -1031,34 +1180,42 @@ bool CDlgMOE::ExportDataToCSVFile(char csv_file[_MAX_PATH])
 		std::list<DTALink*>::iterator iLink;
 		for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 		{
-			fprintf(st, ",%d->%d, Lane Volumne(vphpl),Speed (mph),Density (vphpl), CumuFlow",
+			fprintf(st, ",%d->%d, Event, Episode No, Duration, Lane Volumne(vphpl),Speed (mph),Density (vphpl), CumuFlow, TTI,",
 				(*iLink)->m_FromNodeNumber ,(*iLink)->m_ToNodeNumber);
 
-			fprintf(st, ",hist, Lane Volumne(vphpl),Speed (mph),Density (vphpl), CumuFlow"	);
+			fprintf(st, ",hist, Lane Volumne(vphpl),Speed (mph),Density (vphpl), CumuFlow, TTI Diff, Flow Diff"	);
 		}
 		fprintf(st, "\n");
 		for(int i=m_TmLeft;i<m_TmRight;i+=5) // for each timestamp with real data
 		{
-			int day, hour, min;
-			day = i/1440;
-			hour = (i-day*1440)/60;
-			min =  i -day*1440- hour*60;
-			fprintf(st, "%d,%d,%d,%d", i,day,hour,min);
+
 
 			for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 			{
-				fprintf(st, ",,%f,%f,%f,%f", (*iLink)->m_LinkMOEAry[i].ObsFlow,(*iLink)->m_LinkMOEAry[i].ObsSpeed,
-					(*iLink)->m_LinkMOEAry[i].ObsDensity,(*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow);
+				if(EventDataFlag==0 || (EventDataFlag>=1 && EventDataFlag == (*iLink)->GetEventCode(i)))
+					// all data or specific data type
+				{
+					int day, hour, min;
+					day = i/1440;
+					hour = (i-day*1440)/60;
+					min =  i -day*1440- hour*60;
+					fprintf(st, "%d,%d,%d,%d", i,day,hour,min);
 
-				int time_of_day = i%1440;  
 
-				fprintf(st, ",,%f,%f,%f,%f", (*iLink)->m_HistLinkMOEAry[time_of_day].ObsFlow,(*iLink)->m_HistLinkMOEAry[time_of_day].ObsSpeed,
-					(*iLink)->m_HistLinkMOEAry[time_of_day].ObsDensity,(*iLink)->m_HistLinkMOEAry[time_of_day].ObsCumulativeFlow);
+					fprintf(st, ",,%d,%d,%d,%f,%f,%f,%f,%f", (*iLink)->GetEventCode(i), (*iLink)->m_LinkMOEAry[i].EpisodeNo , (*iLink)->m_LinkMOEAry[i].EpisoDuration ,
+						(*iLink)->m_LinkMOEAry[i].ObsFlow,(*iLink)->m_LinkMOEAry[i].ObsSpeed,
+						(*iLink)->m_LinkMOEAry[i].ObsDensity,(*iLink)->m_LinkMOEAry[i].ObsCumulativeFlow, (*iLink)->m_LinkMOEAry[i].ObsTravelTimeIndex );
+
+					int time_of_day = i%1440;  
+
+					fprintf(st, ",,%f,%f,%f,%f,%f,%f", (*iLink)->m_HistLinkMOEAry[time_of_day].ObsFlow,(*iLink)->m_HistLinkMOEAry[time_of_day].ObsSpeed,
+						(*iLink)->m_HistLinkMOEAry[time_of_day].ObsDensity,(*iLink)->m_HistLinkMOEAry[time_of_day].ObsCumulativeFlow, ((*iLink)->m_LinkMOEAry[i].ObsTravelTimeIndex - (*iLink)->m_HistLinkMOEAry[time_of_day].ObsTravelTimeIndex), ((*iLink)->m_LinkMOEAry[i].ObsFlow- (*iLink)->m_HistLinkMOEAry[time_of_day].ObsFlow));
+
+				}
+
+				fprintf(st, "\n");
 
 			}
-
-			fprintf(st, "\n");
-
 		}
 
 		fclose(st);
@@ -1135,13 +1292,13 @@ void CDlgMOE::OnMouseMove(UINT nFlags, CPoint point)
 		CSize OffSet = point - m_last_cpoint;
 		if(OffSet.cx!=0)   // not change, do not reflesh the screen
 		{
-		int time_shift = OffSet.cx/m_UnitTime;
-		m_TmLeft-= time_shift;
-		m_TmRight-= time_shift;
+			int time_shift = OffSet.cx/m_UnitTime;
+			m_TmLeft-= time_shift;
+			m_TmRight-= time_shift;
 
-		m_last_cpoint = point;
+			m_last_cpoint = point;
 
-		Invalidate();
+			Invalidate();
 		}
 	}
 	CDialog::OnMouseMove(nFlags, point);
@@ -1267,81 +1424,112 @@ void CDlgMOE::OnUpdateMoetype1Density(CCmdUI *pCmdUI)
 
 void CDlgMOE::OnInitMenuPopup(CMenu *pPopupMenu, UINT nIndex,BOOL bSysMenu)
 {
-    ASSERT(pPopupMenu != NULL);
-    // Check the enabled state of various menu items.
+	ASSERT(pPopupMenu != NULL);
+	// Check the enabled state of various menu items.
 
-    CCmdUI state;
-    state.m_pMenu = pPopupMenu;
-    ASSERT(state.m_pOther == NULL);
-    ASSERT(state.m_pParentMenu == NULL);
+	CCmdUI state;
+	state.m_pMenu = pPopupMenu;
+	ASSERT(state.m_pOther == NULL);
+	ASSERT(state.m_pParentMenu == NULL);
 
-    // Determine if menu is popup in top-level menu and set m_pOther to
-    // it if so (m_pParentMenu == NULL indicates that it is secondary popup).
-    HMENU hParentMenu;
-    if (AfxGetThreadState()->m_hTrackingMenu == pPopupMenu->m_hMenu)
-        state.m_pParentMenu = pPopupMenu;    // Parent == child for tracking popup.
-    else if ((hParentMenu = ::GetMenu(m_hWnd)) != NULL)
-    {
-        CWnd* pParent = this;
-           // Child windows don't have menus--need to go to the top!
-        if (pParent != NULL &&
-           (hParentMenu = ::GetMenu(pParent->m_hWnd)) != NULL)
-        {
-           int nIndexMax = ::GetMenuItemCount(hParentMenu);
-           for (int nIndex = 0; nIndex < nIndexMax; nIndex++)
-           {
-            if (::GetSubMenu(hParentMenu, nIndex) == pPopupMenu->m_hMenu)
-            {
-                // When popup is found, m_pParentMenu is containing menu.
-                state.m_pParentMenu = CMenu::FromHandle(hParentMenu);
-                break;
-            }
-           }
-        }
-    }
+	// Determine if menu is popup in top-level menu and set m_pOther to
+	// it if so (m_pParentMenu == NULL indicates that it is secondary popup).
+	HMENU hParentMenu;
+	if (AfxGetThreadState()->m_hTrackingMenu == pPopupMenu->m_hMenu)
+		state.m_pParentMenu = pPopupMenu;    // Parent == child for tracking popup.
+	else if ((hParentMenu = ::GetMenu(m_hWnd)) != NULL)
+	{
+		CWnd* pParent = this;
+		// Child windows don't have menus--need to go to the top!
+		if (pParent != NULL &&
+			(hParentMenu = ::GetMenu(pParent->m_hWnd)) != NULL)
+		{
+			int nIndexMax = ::GetMenuItemCount(hParentMenu);
+			for (int nIndex = 0; nIndex < nIndexMax; nIndex++)
+			{
+				if (::GetSubMenu(hParentMenu, nIndex) == pPopupMenu->m_hMenu)
+				{
+					// When popup is found, m_pParentMenu is containing menu.
+					state.m_pParentMenu = CMenu::FromHandle(hParentMenu);
+					break;
+				}
+			}
+		}
+	}
 
-    state.m_nIndexMax = pPopupMenu->GetMenuItemCount();
-    for (state.m_nIndex = 0; state.m_nIndex < state.m_nIndexMax;
-      state.m_nIndex++)
-    {
-        state.m_nID = pPopupMenu->GetMenuItemID(state.m_nIndex);
-        if (state.m_nID == 0)
-           continue; // Menu separator or invalid cmd - ignore it.
+	state.m_nIndexMax = pPopupMenu->GetMenuItemCount();
+	for (state.m_nIndex = 0; state.m_nIndex < state.m_nIndexMax;
+		state.m_nIndex++)
+	{
+		state.m_nID = pPopupMenu->GetMenuItemID(state.m_nIndex);
+		if (state.m_nID == 0)
+			continue; // Menu separator or invalid cmd - ignore it.
 
-        ASSERT(state.m_pOther == NULL);
-        ASSERT(state.m_pMenu != NULL);
-        if (state.m_nID == (UINT)-1)
-        {
-           // Possibly a popup menu, route to first item of that popup.
-           state.m_pSubMenu = pPopupMenu->GetSubMenu(state.m_nIndex);
-           if (state.m_pSubMenu == NULL ||
-            (state.m_nID = state.m_pSubMenu->GetMenuItemID(0)) == 0 ||
-            state.m_nID == (UINT)-1)
-           {
-            continue;       // First item of popup can't be routed to.
-           }
-           state.DoUpdate(this, TRUE);   // Popups are never auto disabled.
-        }
-        else
-        {
-           // Normal menu item.
-           // Auto enable/disable if frame window has m_bAutoMenuEnable
-           // set and command is _not_ a system command.
-           state.m_pSubMenu = NULL;
-           state.DoUpdate(this, FALSE);
-        }
+		ASSERT(state.m_pOther == NULL);
+		ASSERT(state.m_pMenu != NULL);
+		if (state.m_nID == (UINT)-1)
+		{
+			// Possibly a popup menu, route to first item of that popup.
+			state.m_pSubMenu = pPopupMenu->GetSubMenu(state.m_nIndex);
+			if (state.m_pSubMenu == NULL ||
+				(state.m_nID = state.m_pSubMenu->GetMenuItemID(0)) == 0 ||
+				state.m_nID == (UINT)-1)
+			{
+				continue;       // First item of popup can't be routed to.
+			}
+			state.DoUpdate(this, TRUE);   // Popups are never auto disabled.
+		}
+		else
+		{
+			// Normal menu item.
+			// Auto enable/disable if frame window has m_bAutoMenuEnable
+			// set and command is _not_ a system command.
+			state.m_pSubMenu = NULL;
+			state.DoUpdate(this, FALSE);
+		}
 
-        // Adjust for menu deletions and additions.
-        UINT nCount = pPopupMenu->GetMenuItemCount();
-        if (nCount < state.m_nIndexMax)
-        {
-           state.m_nIndex -= (state.m_nIndexMax - nCount);
-           while (state.m_nIndex < nCount &&
-            pPopupMenu->GetMenuItemID(state.m_nIndex) == state.m_nID)
-           {
-            state.m_nIndex++;
-           }
-        }
-        state.m_nIndexMax = nCount;
-    }
+		// Adjust for menu deletions and additions.
+		UINT nCount = pPopupMenu->GetMenuItemCount();
+		if (nCount < state.m_nIndexMax)
+		{
+			state.m_nIndex -= (state.m_nIndexMax - nCount);
+			while (state.m_nIndex < nCount &&
+				pPopupMenu->GetMenuItemID(state.m_nIndex) == state.m_nID)
+			{
+				state.m_nIndex++;
+			}
+		}
+		state.m_nIndexMax = nCount;
+	}
+}
+void CDlgMOE::OnEstimationShoweventlabel()
+{
+	m_bShowEventLabel = !m_bShowEventLabel;
+	Invalidate();
+
+}
+
+void CDlgMOE::OnUpdateEstimationShoweventlabel(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowEventLabel);
+}
+
+void CDlgMOE::OnDataExportWeatherData()
+{
+	ExportData(1);
+}
+
+void CDlgMOE::OnDataExportIncidentData()
+{
+	ExportData(3);
+}
+
+void CDlgMOE::OnDataExportHighDemandData()
+{
+	ExportData(2);
+}
+
+void CDlgMOE::OnDataExportSpecicalEventData()
+{
+	ExportData(4);
 }

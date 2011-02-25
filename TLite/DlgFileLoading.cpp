@@ -54,6 +54,18 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_NetworkData.AddString(m_pDoc->m_SensorLocationLoadingStatus);
 	}
 
+	if(m_pDoc->m_SensorDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_SensorDataLoadingStatus);
+	}
+
+	if(m_pDoc->m_EventDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_EventDataLoadingStatus);
+	}
+
+
+
 	if(m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus.GetLength () >0) // there are data being loaded
 	{
 		m_ListBox_OptimizationData.AddString (m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus);	

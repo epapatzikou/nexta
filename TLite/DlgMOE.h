@@ -50,6 +50,7 @@ public:
 
 	m_bShowHistPattern = false;
 	m_bShowVariability = false;
+	m_bShowEventLabel = false;
 	m_bShowPrediction = false;
 
 	m_ViewMode = 0;
@@ -75,12 +76,14 @@ public:
 
    void DrawTimeSeriesPlot();
    void DrawQKCurve();
+   void ExportData(int EventType);
 
    eLinkMOEMode Cur_MOE_type1;
    eLinkMOEMode Cur_MOE_type2;
    bool m_bShowHistPattern;
    bool m_bShowPrediction;
    bool m_bShowVariability;
+   bool m_bShowEventLabel;
    float m_UnitData, m_UnitTime;
    int m_Range;
    int m_TmLeft, m_TmRight;
@@ -91,7 +94,8 @@ public:
 
 	void DrawPlot(CPaintDC* pDC,eLinkMOEMode MOEType, CRect PlotRect, bool LinkTextFlag);
 	void DrawTimeSeries(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
-	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
+	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);
+	bool ExportDataToCSVFile(char csv_file[_MAX_PATH], int EventDataFlag);
    int GetMaxYValue(eLinkMOEMode MOEType);
 // Dialog Data
 	enum { IDD = IDD_DIALOG_MOE };
@@ -139,4 +143,10 @@ public:
 	afx_msg void OnMoetype1Density();
 	afx_msg void OnUpdateMoetype1Density(CCmdUI *pCmdUI);
 	afx_msg void OnInitMenuPopup(CMenu *pPopupMenu, UINT nIndex,BOOL bSysMenu);
+	afx_msg void OnEstimationShoweventlabel();
+	afx_msg void OnUpdateEstimationShoweventlabel(CCmdUI *pCmdUI);
+	afx_msg void OnDataExportWeatherData();
+	afx_msg void OnDataExportIncidentData();
+	afx_msg void OnDataExportHighDemandData();
+	afx_msg void OnDataExportSpecicalEventData();
 };

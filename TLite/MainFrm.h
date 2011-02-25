@@ -36,6 +36,7 @@ public:
 
 // Attributes
 public:
+		CSplitterWnd    m_wndSplitter;
 
 // Operations
 public:

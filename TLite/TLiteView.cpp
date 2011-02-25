@@ -173,8 +173,8 @@ void g_SelectColorCode(CDC* pDC, int ColorCount)
 	switch(ColorCount)
 	{
 
-	case 0: pDC->SelectObject(&g_PenSelectColor0); break;
-	case 1: pDC->SelectObject(&g_PenSelectColor1); break;
+	case 0: pDC->SelectObject(&g_PenSelectColor1); break;
+	case 1: pDC->SelectObject(&g_PenSelectColor0); break;
 	case 2: pDC->SelectObject(&g_PenSelectColor2); break;
 	case 3: pDC->SelectObject(&g_PenSelectColor3); break;
 	case 4: pDC->SelectObject(&g_PenSelectColor4); break;
@@ -509,16 +509,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			continue; 
 
 		if( 
-			pDoc->m_LinkMOEMode != none && 
+			pDoc->m_LinkMOEMode != none && (
 			(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
-			|| 	pDoc->m_StaticAssignmentMode) 
+			|| 	pDoc->m_StaticAssignmentMode)) 
 		{
 
 			//float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 			float power;
 
-				power= pDoc->GetStaticLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,value);
+				power= pDoc->GetTDLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,value);
 
 			float n= power*100;
 			int R=(int)((255*n)/100);
