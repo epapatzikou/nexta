@@ -117,6 +117,8 @@ BEGIN_MESSAGE_MAP(CDlgMOE, CDialog)
 	ON_COMMAND(ID_DATA_EXPORT_INCIDENT_DATA, &CDlgMOE::OnDataExportIncidentData)
 	ON_COMMAND(ID_DATA_EXPORT_HIGH_DEMAND_DATA, &CDlgMOE::OnDataExportHighDemandData)
 	ON_COMMAND(ID_DATA_EXPORT_SPECICAL_EVENT_DATA, &CDlgMOE::OnDataExportSpecicalEventData)
+	ON_COMMAND(ID_ESTIMATION_SHOWWEATHERDATA, &CDlgMOE::OnEstimationShowweatherdata)
+	ON_UPDATE_COMMAND_UI(ID_ESTIMATION_SHOWWEATHERDATA, &CDlgMOE::OnUpdateEstimationShowweatherdata)
 END_MESSAGE_MAP()
 
 
@@ -333,9 +335,52 @@ void CDlgMOE::DrawSingleQKPlot(CPaintDC* pDC, CRect PlotRect)
 				pDC->MoveTo(x,y-size);
 				pDC->LineTo(x,y+size);
 			}
+
+
 		}
 	}
 
+	if(m_bShowEventLabel)
+	{
+		pDC->SetTextColor(RGB(0,0,255));
+
+	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
+	{
+
+		g_SelectColorCode(pDC,(*iLink)->m_DisplayLinkID);
+
+		for(i=m_TmLeft;i<min((*iLink)->m_SimulationHorizon,m_TmRight);i+=1) // for each timestamp
+		{
+
+			int x=(long)(PlotRect.left+((*iLink)->m_LinkMOEAry[i].ObsDensity)*m_UnitDensity);
+
+			int y= PlotRect.bottom - (int)(((*iLink)->m_LinkMOEAry[i].ObsFlow*m_UnitData));
+
+				switch ((*iLink)->GetEventCode(i))
+			{
+			case 1:
+
+				if(m_bShowWeatherLabel)
+				{
+				pDC->TextOut(x,y-5,"W");
+				}
+				break;
+
+			case 2: 
+				pDC->TextOut(x,y-5,"D");
+				break;
+
+			case 3: 
+				pDC->TextOut(x,y-5,"I");
+				break;
+
+			case 4: 
+				pDC->TextOut(x,y-5,"S");
+				break;
+			}
+		}
+	}
+	}
 }
 
 void CDlgMOE::DrawSingleVKPlot(CPaintDC* pDC, CRect PlotRect)
@@ -953,14 +998,13 @@ void CDlgMOE::DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRec
 	int Mod10 = 10;
 	CString str_project;
 
-	pDC->SetTextColor(RGB(255,0,0));
+	pDC->SetTextColor(RGB(0,0,255));
 	int LinkCount = 0;
 
 	std::list<DTALink*>::iterator iLink;
 
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++,LinkCount++)
 	{
-
 
 		long TimeYPosition;
 		long TimeXPosition;
@@ -994,7 +1038,10 @@ void CDlgMOE::DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRec
 			{
 			case 1:
 
-//				pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+				if(m_bShowWeatherLabel)
+				{
+				pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+				}
 				break;
 
 			case 2: 
@@ -1052,7 +1099,10 @@ void CDlgMOE::DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRec
 				{
 				case 1:
 
-//					pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+				if(m_bShowWeatherLabel)
+				{
+					pDC->TextOut(TimeXPosition,TimeYPosition-5,"W");
+				}
 					break;
 
 				case 2: 
@@ -1072,6 +1122,7 @@ void CDlgMOE::DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRec
 
 		}	
 	}
+	pDC->SetTextColor(RGB(0,0,0));
 }
 BOOL CDlgMOE::OnInitDialog()
 {
@@ -1532,4 +1583,18 @@ void CDlgMOE::OnDataExportHighDemandData()
 void CDlgMOE::OnDataExportSpecicalEventData()
 {
 	ExportData(4);
+}
+
+void CDlgMOE::OnEstimationShowweatherdata()
+{
+	m_bShowWeatherLabel = !m_bShowWeatherLabel;
+	Invalidate();
+
+}
+
+void CDlgMOE::OnUpdateEstimationShowweatherdata(CCmdUI *pCmdUI)
+{
+
+	pCmdUI->SetCheck(m_bShowEventLabel);
+
 }

@@ -40,6 +40,7 @@
 #define IDD_DIALOG_Zone_To_Node_Mapping 164
 #define IDD_DIALOG_VEHPATH              165
 #define IDD_DIALOG_Visualization_Mode   166
+#define IDD_DIALOG_NETWORK_ALIGNMENT    167
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -74,6 +75,12 @@
 #define IDC_BUTTON_Edit_Zone_Node_Mapping 1036
 #define IDC_LIST_Mapping                1037
 #define IDC_LIST1                       1038
+#define IDC_EDIT_NODEA                  1039
+#define IDC_EDIT_NODEB                  1040
+#define IDC_EDIT_A_Lat                  1041
+#define IDC_EDIT_B_Lat                  1042
+#define IDC_EDIT_A_Long                 1043
+#define IDC_EDIT_B_Long                 1044
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -285,14 +292,17 @@
 #define ID_DATA_EXPORT_INCIDENT_DATA    33044
 #define ID_DATA_EXPORT_HIGH_DEMAND_DATA 33045
 #define ID_DATA_EXPORT_SPECICAL_EVENT_DATA 33046
+#define ID_FILE_CHANGECOORDINATESTOLONG 33047
+#define ID_FILE_GENERATESENSORMAPPINGTABLE 33048
+#define ID_ESTIMATION_SHOWWEATHERDATA   33049
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        167
-#define _APS_NEXT_COMMAND_VALUE         33047
-#define _APS_NEXT_CONTROL_VALUE         1039
+#define _APS_NEXT_RESOURCE_VALUE        168
+#define _APS_NEXT_COMMAND_VALUE         33050
+#define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

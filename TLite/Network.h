@@ -676,7 +676,7 @@ public:
 			float total_travel_time = 0;
 			for(int t=starting_time; t< starting_time + time_interval; t++)
 			{
-				total_travel_time += m_LinkMOEAry[t].ObsTravelTimeIndex;
+				total_travel_time += m_LinkMOEAry[t].ObsTravelTimeIndex/100;
 			}
 
 			travel_time =  total_travel_time/time_interval;
@@ -701,11 +701,14 @@ class DTAPath
 public:
 	DTAPath(int LinkSize, int TimeHorizon)
 	{
+		m_TimeHorizon = TimeHorizon;
 		m_LinkSize = LinkSize;
 		m_LinkVector = new int[LinkSize];
-		m_TimeDependentTravelTime = new float[TimeHorizon];
 		m_number_of_days = max(1,TimeHorizon/1440);
 
+		if(m_TimeHorizon>0)
+		{
+		m_TimeDependentTravelTime = new float[TimeHorizon];
 		for(int t=0; t<TimeHorizon; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
@@ -729,6 +732,7 @@ public:
 			m_WithinDayMeanGeneralizedCost[t] = 0;
 		}
 
+		}
 		m_Distance =0;
 		m_TravelTime = 0;
 		m_Reliability = 0;
@@ -736,6 +740,7 @@ public:
 		m_Safety = 0;
 		m_Fuel = 0;
 		m_MaxTravelTime = 0;
+
 
 	}
 
@@ -757,6 +762,9 @@ public:
 
 	float GetTravelTimeMOE(int time, int MOEType)
 	{
+		if(m_TimeHorizon==0)
+			return 0;
+
 		switch(MOEType)
 		{
 		case 0: return m_WithinDayMeanTimeDependentTravelTime[time];
@@ -804,6 +812,7 @@ public:
 	float *m_WithinDayMeanGeneralizedCost;  // unit: pounds
 
 	int m_number_of_days;
+	int m_TimeHorizon;
 
 
 	float m_Distance;

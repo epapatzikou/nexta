@@ -51,6 +51,7 @@ public:
 	m_bShowHistPattern = false;
 	m_bShowVariability = false;
 	m_bShowEventLabel = false;
+	m_bShowWeatherLabel = false;
 	m_bShowPrediction = false;
 
 	m_ViewMode = 0;
@@ -84,6 +85,7 @@ public:
    bool m_bShowPrediction;
    bool m_bShowVariability;
    bool m_bShowEventLabel;
+   bool m_bShowWeatherLabel;
    float m_UnitData, m_UnitTime;
    int m_Range;
    int m_TmLeft, m_TmRight;
@@ -149,4 +151,6 @@ public:
 	afx_msg void OnDataExportIncidentData();
 	afx_msg void OnDataExportHighDemandData();
 	afx_msg void OnDataExportSpecicalEventData();
+	afx_msg void OnEstimationShowweatherdata();
+	afx_msg void OnUpdateEstimationShowweatherdata(CCmdUI *pCmdUI);
 };
