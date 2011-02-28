@@ -580,25 +580,22 @@ void CGLView::DrawAllObjects()
 			float toX = NXtoSX_org((*iLink)->m_ToPoint.x);
 			float toY = NYtoSY_org((*iLink)->m_ToPoint.y);
 
-			/*
+			
 			float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
 
 			if(VariabilityRatio>=1) VariabilityRatio=1;
 			if(VariabilityRatio<=0) VariabilityRatio=0;
 
 			//		GetColorFromPower(VolumeRatio);
-			GetRGBColorFromPower(VariabilityRatio);
-
-
-			*/
+//			GetRGBColorFromPower(VariabilityRatio);
 
 			//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
 			int current_time  = g_Simulation_Time_Stamp;
 
-//			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
+			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 			float value = 0;
-			float color_power = pDoc->GetTDLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
+//			float color_power = pDoc->GetTDLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
 
 			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;
@@ -611,7 +608,7 @@ void CGLView::DrawAllObjects()
 			}
 //			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
 			
-			GetRGBColorFromPower(color_power);
+			GetRGBColorFromPower(VariabilityRatio);
 			
 			float ZBottom =  0;
 

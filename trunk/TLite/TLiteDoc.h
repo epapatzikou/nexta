@@ -45,6 +45,7 @@ protected: // create from serialization only
 
 		MaxNodeKey = 60000;  // max: unsigned short 65,535;
 		m_BackgroundBitmapLoaded  = false;
+		m_LongLatCoordinateFlag = false;
 		m_ColorFreeway = RGB(198,226,255);
 		m_ColorHighway = RGB(100,149,237);
 		m_ColorArterial = RGB(0,0,0);
@@ -429,6 +430,7 @@ public:
 	DTAZone* m_ZoneInfo;
 
 	bool m_BackgroundBitmapLoaded;
+	bool m_LongLatCoordinateFlag;
 	CImage m_BackgroundBitmap;  // background bitmap
 	float m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
 	float m_ImageXResolution, m_ImageYResolution;
@@ -535,6 +537,7 @@ public:
 		afx_msg void OnImportodtripfile3columnformat();
 		afx_msg void OnSearchVehicle();
 		afx_msg void OnToolsPerformscheduling();
+		afx_msg void OnFileChangecoordinatestolong();
 };
 
 

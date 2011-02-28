@@ -287,6 +287,8 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	CString str_MOE;
 	pDC->SetBkMode(TRANSPARENT);
 	pDC->SelectObject(&NormalPen);
+
+// draw title
 	switch (MOEType)
 	{
 	case 0: str_MOE.Format ("Mean Travel Time (min)"); break;
@@ -436,7 +438,6 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 	// draw Y axis
 
-	
 	for(float ii=m_YLowerBound; ii <= m_YUpperBound; ii+= YInterval)
 	{
 		if( ii > m_YUpperBound)

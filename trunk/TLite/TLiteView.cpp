@@ -173,8 +173,8 @@ void g_SelectColorCode(CDC* pDC, int ColorCount)
 	switch(ColorCount)
 	{
 
-	case 0: pDC->SelectObject(&g_PenSelectColor1); break;
-	case 1: pDC->SelectObject(&g_PenSelectColor0); break;
+	case 0: pDC->SelectObject(&g_PenSelectColor0); break;
+	case 1: pDC->SelectObject(&g_PenSelectColor1); break;
 	case 2: pDC->SelectObject(&g_PenSelectColor2); break;
 	case 3: pDC->SelectObject(&g_PenSelectColor3); break;
 	case 4: pDC->SelectObject(&g_PenSelectColor4); break;
@@ -699,7 +699,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	{
 		CPoint point = NPtoSP((*iNode)->pt);
 
-		int node_size = max(2,int(m_NodeSize*pDoc->m_UnitFeet*m_Resolution));
+		int node_size = min(4,max(2,int(m_NodeSize*pDoc->m_UnitFeet*m_Resolution)));
 
 		pDC->SelectObject(&g_BlackBrush);
 		if((*iNode)->m_NodeID == pDoc->m_SelectedNodeID)
