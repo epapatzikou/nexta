@@ -56,6 +56,7 @@ extern int g_NumberOfInnerIterations;
 extern int g_DepartureTimetIntervalSize;
 
 extern int g_DemandLoadingHorizon; // min
+extern std::vector<float> g_DemandTemporalShare_5_min_res;
 extern int g_SimulationHorizon; // min
 extern int g_Number_of_CompletedVehicles;
 extern int g_Number_of_GeneratedVehicles;
