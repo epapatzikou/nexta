@@ -425,7 +425,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 	if((iteration > 0) && (g_VehicleExperiencedTimeGap == 0)) // we do not need to update path assignments in iteration 0; only assign initial paths and perform network loading
 	{
 		// Jason : loop through the TDOVehicleArray to obtain the avg experienced path time for each OD pair and each departure time interval			 
-		ConstructPathArrayForEachODT(PathArray, zone, AssignmentInterval);
+//		ConstructPathArrayForEachODT(PathArray, zone, AssignmentInterval);
 
 		// Jason : loop through the TDOVehicleArray to obtain the least experienced trip time for each OD pair and each departure time interval
 		/*
@@ -1542,6 +1542,13 @@ void g_StaticTrafficAssisnment()
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0; 
 
+			DTANetworkForSP* pNetwork[MAX_CPU_SIZE];
+
+			int thread; 
+			for(thread = 0; thread < MAX_CPU_SIZE; thread++)
+			{
+				pNetwork[thread] = NULL;
+			}
 
 #pragma omp parallel for
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
@@ -1549,26 +1556,38 @@ void g_StaticTrafficAssisnment()
 				if(g_OVehicleSizeAry[CurZoneID]>0)  // only this origin zone has vehicles, then we build the network
 				{
 					// create network for shortest path calculation at this processor
-					DTANetworkForSP network_MP(node_size, link_size, g_SimulationHorizon,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 					int	id = omp_get_thread_num( );  // starting from 0
+
+					if(pNetwork[id] == NULL)
+					{
+						pNetwork[id] = new DTANetworkForSP(node_size, link_size, g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+					}
+
+
 
 					cout <<g_GetAppRunningTime()<<  "processor " << id << " is working on assignment at zone  "<<  CurZoneID << endl;
 
-					network_MP.BuildNetwork(CurZoneID);  // build network for this zone, because different zones have different connectors...
+					pNetwork[id]->BuildNetwork(CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 					// scan all possible departure times
 					for(int departure_time = 0; departure_time < g_DemandLoadingHorizon; departure_time += g_DepartureTimetInterval)
 					{
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_DepartureTimetInterval].Size > 0)
 						{
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),departure_time,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
-							network_MP.VehicleBasedPathAssignment(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);
+							pNetwork[id]->TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),departure_time,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+							pNetwork[id]->VehicleBasedPathAssignment(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);
 						}
 					}
 				}
 			}
 
 		// below should be single thread
+			for(thread = 0; thread < MAX_CPU_SIZE; thread++)
+			{
+				if(pNetwork[thread] != NULL)
+					delete pNetwork[thread];
+			}
+
 
 		cout << "---- Network Loading for Iteration " << iteration <<"----" << endl;
 

@@ -150,6 +150,9 @@ float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
 
 int g_DemandLoadingHorizon = 60; // min
+std::vector<float> g_DemandTemporalShare_5_min_res;
+std::vector<int> g_DemandTemporalCount_5_min_res;
+
 int g_VehicleLoadingMode = 0; // not load from vehicle file by default, 1: load vehicle file
 int g_SimulationHorizon = 120;
 int g_DemandHorizonForLoadedVehicles = 60; // min
@@ -172,7 +175,6 @@ int	  g_K_HistInfo_ShortestPath;
 int g_information_updating_interval_of_en_route_info_travelers_in_min;
 
 float g_VOT[MAX_VEHICLE_TYPE_SIZE];
-float g_VehicleTypePercentage[MAX_VEHICLE_TYPE_SIZE];
 
 int g_LearningPercentage = 15;
 int g_TravelTimeDifferenceForSwitching = 5;  // min
@@ -211,7 +213,7 @@ ofstream g_LogFile;
 ofstream g_AssignmentLogFile;
 ofstream g_WarningFile;
 
-int g_TrafficFlowModelFlag = 0;
+int g_TrafficFlowModelFlag = 1;
 int g_MergeNodeModelFlag=1;
 
 
@@ -787,6 +789,7 @@ void ReadInputFiles()
 
 void CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int vehicle_type, float starting_time_in_min, float ending_time_in_min)
 {
+
 	int number_of_vehicles_to_be_generated = g_GetRandomInteger_From_FloatingPointValue(number_of_vehicles);
 
 	for(int i=0; i< number_of_vehicles_to_be_generated; i++)
@@ -806,6 +809,11 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		}
 
 		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
+
+		//count vehicles 
+		int time_interval = (int)(vhc.m_DepartureTime/5.0f);
+		if(time_interval<g_DemandTemporalCount_5_min_res.size())
+		g_DemandTemporalCount_5_min_res[time_interval]+=1;
 		//		TRACE("vhc.m_DepartureTime %d = %f\n",i, vhc.m_DepartureTime);
 
 		float RandomPercentage= g_GetRandomRatio()*100.0f; 
@@ -823,20 +831,6 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 
 		vhc.m_VehicleType = vehicle_type;
 		RandomPercentage= g_GetRandomRatio()*100.0f; 
-
-		if(vehicle_type == 1) //base line demand
-		{
-		if(RandomPercentage > g_VehicleTypePercentage[1] && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]))
-		{
-		vhc.m_VehicleType = 2;  //HOV
-		}
-
-		if(RandomPercentage > (g_VehicleTypePercentage[2]+g_VehicleTypePercentage[1]) && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]+g_VehicleTypePercentage[3]))
-		{
-		vhc.m_VehicleType = 3;  // truck
-		}
-
-		}
 
 		int DepartureTimeInterval = int(vhc.m_DepartureTime / g_DepartureTimetInterval);
 
@@ -956,6 +950,42 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 	bool bFileReady = false;
 	int i,t,z;
 
+	fopen_s(&st,"input_demand_temporal_profile_5_min_res.csv","r");
+
+	// setup default value;
+	float equal_share = 5.0f/g_DemandLoadingHorizon;
+
+	for(t=0; t<g_DemandLoadingHorizon; t+=5)
+	{
+		g_DemandTemporalShare_5_min_res.push_back(equal_share);  // default value
+		g_DemandTemporalCount_5_min_res.push_back(0);
+
+	}
+
+	TRACE("Size of g_DemandTemporalShare_5_min_res = %d\n", g_DemandTemporalShare_5_min_res.size());
+	if(st!=NULL)
+	{
+		for(t=0; t<g_DemandLoadingHorizon; t+=5)
+		{
+				g_DemandTemporalShare_5_min_res[t/5] = 0.0f;
+		}
+
+		t = 0;
+		cout << "Reading file input_demand_temporal_profile_5_min_res.csv..."<< endl;
+		while(!feof(st) && t<g_DemandLoadingHorizon)
+		{
+			float trip_share = g_read_float(st);
+			if(trip_share < 0)  // reach end of file// return -1
+				break;
+
+			g_DemandTemporalShare_5_min_res[t/5] = trip_share;
+			t+=5; // 5 min;
+
+		}
+		fclose(st);
+	
+	}
+
 	fopen_s(&st,"input_demand.csv","r");
 	if(st!=NULL)
 	{
@@ -1024,10 +1054,23 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 	}
 
 	// 	alternatively, read demand.txt
-	fopen_s(&st,"input_demand.txt","r");
+	//1: SOV
+	//2: HOV2
+	//3: HOV3
+	//4: Light Truck
+	//5: Medium Truck
+	//6: Heavy Truck
+	for (int vehicle_type = 1; vehicle_type<= 6;vehicle_type++)
+	{
+	// string
+
+	CString demand_file;
+	demand_file.Format ("input_demand_type_%d.txt",vehicle_type);
+
+	fopen_s(&st,demand_file,"r");
 	if(st!=NULL)
 	{
-		cout << "Reading file demand.txt..."<< endl;
+		cout << "Reading file "<< demand_file << endl;
 		bFileReady = true;
 
 		int line_no = 1;
@@ -1041,23 +1084,28 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			int destination_zone	   = g_read_integer(st);
 
 			float number_of_vehicles = g_read_float(st);
-			number_of_vehicles*= g_DemandGlobalMultiplier;
-			int vehicle_type		   = 1;
-			float starting_time_in_min     = 0;
-			float ending_time_in_min     = float(g_DemandLoadingHorizon);
+			int starting_time_in_min     = 0;
+			int ending_time_in_min     = float(g_DemandLoadingHorizon);
 
 			// we generate vehicles here for each OD data line
 
-			CreateVehicles(originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
+			for(starting_time_in_min = 0; starting_time_in_min<g_DemandLoadingHorizon; starting_time_in_min+=5)
+			{
+				ending_time_in_min = starting_time_in_min + 5;
+				float number_of_vehicles_per_5_min = number_of_vehicles*g_DemandGlobalMultiplier*g_DemandTemporalShare_5_min_res[starting_time_in_min/5]; // 5 min
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_per_5_min,vehicle_type,starting_time_in_min,ending_time_in_min);
+			}
+
 			if(line_no %100000 ==0)
 			{
-				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines..."<< endl;
+				cout << g_GetAppRunningTime() <<  "Reading " <<  line_no/1000 << "K lines..."<< endl;
 			}
 
 			line_no++;
 		}
 
 		fclose(st);
+	}
 	}
 
 // 	alternatively, read demand.txt
@@ -1077,24 +1125,41 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 			int destination_zone	   = g_read_integer(st);
 
-			float number_of_vehicles = g_read_float(st);  // SOV
-			 g_read_float(st); //HOV2
-			 g_read_float(st); //HOV3
-			 g_read_float(st); //Light Truck
-			 g_read_float(st); //Medium Truck
-			 g_read_float(st); //Heavy Truck
+			float number_of_vehicles_1 = g_read_float(st);  // SOV
+			float number_of_vehicles_2 = g_read_float(st); //HOV2
+			float number_of_vehicles_3 = g_read_float(st); //HOV3
+			float number_of_vehicles_4 = g_read_float(st); //Light Truck
+			float number_of_vehicles_5 = g_read_float(st); //Medium Truck
+			float number_of_vehicles_6 = g_read_float(st); //Heavy Truck
 			 
-			number_of_vehicles*= g_DemandGlobalMultiplier;
 			int vehicle_type		   = 1;
 			float starting_time_in_min     = 0;
 			float ending_time_in_min     = float(g_DemandLoadingHorizon);
 
 			// we generate vehicles here for each OD data line
+	if(originput_zone>g_ODZoneSize || destination_zone >g_ODZoneSize)
+	{
+		cout << "Error:"<< "line No =  "  << line_no << " originput_zone>g_ODZoneSize || destination_zone >g_ODZoneSize; "<< "originput_zone="<< originput_zone<< "destination_zone="<< destination_zone<<endl;
+		g_ProgramStop();
 
-			CreateVehicles(originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
+	}
+
+				for(starting_time_in_min = 0; starting_time_in_min<g_DemandLoadingHorizon; starting_time_in_min+=5)
+			{
+				ending_time_in_min = starting_time_in_min + 5;
+				float trip_share = g_DemandTemporalShare_5_min_res[starting_time_in_min/5]*g_DemandGlobalMultiplier; // 5 min
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_1*trip_share,1,starting_time_in_min,ending_time_in_min);
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_2*trip_share,2,starting_time_in_min,ending_time_in_min);
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_3*trip_share,3,starting_time_in_min,ending_time_in_min);
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_4*trip_share,4,starting_time_in_min,ending_time_in_min);
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_5*trip_share,5,starting_time_in_min,ending_time_in_min);
+				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_6*trip_share,6,starting_time_in_min,ending_time_in_min);
+
+				}
+
 			if(line_no %100000 ==0)
 			{
-				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines..."<< endl;
+				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines...# of Vehicles = "<< g_vector_vehicles.size()<< endl;
 			}
 
 			line_no++;
@@ -1227,6 +1292,17 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 		i++;
 	}
 	g_vector_vehicles.clear ();
+
+		g_LogFile << "---time-dependent demand profile count---" << endl;
+
+		float vehicle_size =  g_VehicleVector.size();
+
+		for(t=0; t<g_DemandLoadingHorizon; t+=5)
+	{
+		g_LogFile << "Vehicle count at time interval [" << t << ", " << t+5 << "] min =" << g_DemandTemporalCount_5_min_res[t/5] << " ("<<  g_DemandTemporalCount_5_min_res[t/5]*100 / vehicle_size << "%)" <<endl;
+
+		cout << "Vehicle count at time interval [" << t << ", " << t+5 << "] min =" << g_DemandTemporalCount_5_min_res[t/5] << " ("<<  g_DemandTemporalCount_5_min_res[t/5] *100/ vehicle_size << "%)" <<endl;
+	}
 }
 void FreeMemory()
 {
@@ -1605,7 +1681,7 @@ int g_InitializeLogFiles()
 
 		g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
 		g_LogFile << "sourceforge.net/projects/dtalite/"<< endl;
-		g_LogFile << "Version 0.95, Release Date 01/15/2011."<< endl;
+		g_LogFile << "Version 0.10, Release Date 05/07/2011."<< endl;
 
 		fopen_s(&g_ErrorFile,"error.log","w");
 		if(g_ErrorFile==NULL)
@@ -1640,9 +1716,6 @@ void g_ReadDTALiteSettings()
 		else  //DTA parameters
 		{
 		g_DemandLoadingHorizon = g_GetPrivateProfileInt("demand", "demand_loading_horizon_in_min", 60, IniFilePath_DTA);	
-		g_VehicleTypePercentage[2] = g_GetPrivateProfileInt("demand", "percentage_HOV_from_baseline_demand", 0, IniFilePath_DTA);	
-		g_VehicleTypePercentage[3] = g_GetPrivateProfileInt("demand", "percentage_Truck_from_baseline_demand", 0, IniFilePath_DTA);	
-		g_VehicleTypePercentage[1] = 100.0- g_VehicleTypePercentage[2] - g_VehicleTypePercentage[3];
 
 		g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
 
