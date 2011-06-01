@@ -20,6 +20,8 @@ protected: // create from serialization only
 public:
 
 	// processing NGSim data
+	bool m_bShowSimulationDataFlag;
+
 	bool m_bColorBySpeedFlag; 
 	VehicleSnapshotData ** m_VehicleSnapshotAry;
 	int m_NumberOfVehicles;
@@ -36,7 +38,16 @@ public:
 	float StartLocalYLane[7];
 	float EndLocalYLane[7];
 
+	int VehicleSizeLane[7];
+
 	int m_SelectLaneID;
+
+	void UpdateVehicleStartANDEndTimes(std::vector<int> &StartPassingTimeStamp, std::vector<int> &EndPassingTimeStamp);
+
+	float m_KJam; // in veh/mile
+	float m_WaveSpeed; // in mph 
+	float m_FreeflowSpeed; // in mph 
+
 
 	// end of processing NGSim data
 
