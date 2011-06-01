@@ -472,3 +472,139 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 	return NodeSize;
 }
 
+
+
+bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_size)   // Pointer to previous node (node)
+// time -dependent label correcting algorithm with deque implementation
+{
+//  breadth-first search (BFS) is a graph search algorithm that begins at the root node and explores all the neighboring nodes
+
+// Then for each of those nearest nodes, it explores their unexplored neighbor nodes, and so on, until it finds the goal.
+
+// compared to BFS, we continue search even a node has been marked before
+
+// we allow a loop for simplicity
+
+// we can add a label cost constraint
+
+	int i;
+	int debug_flag = 0;
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	m_TreeListSize = 5000000;
+	m_SearchTreeList = new SearchTreeElement[m_TreeListSize];
+
+	for(i = 0; i < m_TreeListSize; i++)
+	{
+		m_SearchTreeList[i].CurrentNode = 0;
+		m_SearchTreeList[i].SearchLevel = 0;
+		m_SearchTreeList[i].PredecessorNode = -1;
+	}
+
+	m_SearchTreeList[0].CurrentNode  = origin;
+	m_SearchTreeList[0].SearchLevel = 0;
+
+	m_TreeListFront = 0;
+	m_TreeListTail = 1;
+
+	int FromID, LinkNo, ToID;
+
+	int PathNo = 0;
+
+	while(m_TreeListTail < m_TreeListSize-1 && m_TreeListFront <  m_TreeListTail)
+		// not exceed search tree size, or not search to the end of queue/list
+	{
+		FromID  = m_SearchTreeList[m_TreeListFront].CurrentNode ;
+
+		if(debug_flag)
+			TRACE("\nScan from node %d (%d)",FromID,m_TreeListFront);
+
+		if(FromID==destination || m_SearchTreeList[m_TreeListFront].SearchLevel  >= node_size)
+		{
+
+		m_TreeListFront ++; // move to the next front node for breadth first search
+		continue;
+
+		// when we finish all search, we should backtrace from a node at position i == destination)
+		}
+
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(j)
+		{
+			LinkNo = m_OutboundLinkAry[FromID][i];
+			ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)
+				continue;
+
+			// search if ToID in the path
+			bool bToID_inSubPathFlag = false;
+			{
+				int Pred = m_SearchTreeList[m_TreeListFront].PredecessorNode ;
+				while(Pred>0)
+				{
+						if(m_SearchTreeList[Pred].CurrentNode == ToID)  // in the subpath
+						{
+						bToID_inSubPathFlag = true;
+						break;
+						}
+
+				Pred = m_SearchTreeList[Pred].PredecessorNode ;
+
+				}
+			
+			}
+
+			if(bToID_inSubPathFlag)
+				continue;
+
+			m_SearchTreeList[m_TreeListTail].CurrentNode = ToID;
+			m_SearchTreeList[m_TreeListTail].PredecessorNode = m_TreeListFront;
+			m_SearchTreeList[m_TreeListTail].SearchLevel = m_SearchTreeList[m_TreeListFront].SearchLevel + 1;
+
+		if(debug_flag)
+			TRACE("\n   to node %d (%d)",ToID,m_TreeListTail);
+
+		m_TreeListTail++;
+
+			if(m_TreeListTail >= m_TreeListSize-1)
+				break;  // the size of list is exceeded
+
+			
+
+		}// end of for each link
+
+		m_TreeListFront ++; // move to the next front node for breadth first search
+
+	} // end of while
+
+		for(i = 0; i < m_TreeListTail; i++)
+	{
+		if(m_SearchTreeList[i].CurrentNode == destination)
+		{
+			TRACE("PathNo: %d ", PathNo);
+			TRACE(" %d <-", m_SearchTreeList[i].CurrentNode);
+			int Pred = m_SearchTreeList[i].PredecessorNode ;
+
+			while(Pred!=0)
+			{
+			TRACE(" %d <- ", m_SearchTreeList[Pred].CurrentNode);
+
+				Pred = m_SearchTreeList[Pred].PredecessorNode ;
+			}
+			TRACE(" %d",  m_SearchTreeList[Pred].CurrentNode);
+			TRACE("\n");
+			PathNo++;
+		}
+
+	}
+
+	if(m_TreeListFront ==  m_TreeListTail && m_TreeListTail < m_TreeListSize-1)
+		return true;
+	else 
+		return false;  // has not be enumerated. 
+}
+
+
+

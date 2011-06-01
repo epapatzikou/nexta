@@ -384,6 +384,7 @@ BEGIN
     POPUP "Link"
     BEGIN
         MENUITEM "Edit Link Properties",        ID_LINK_EDITLINK
+        MENUITEM "Track Car Following Trajectory", ID_TOOLS_CARFOLLOWINGSIMULATION
     END
 END
 
@@ -398,6 +399,10 @@ BEGIN
         MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
         MENUITEM "Travel Time Index (base =100)", ID_MOETYPE1_TRAVELTIME
+        MENUITEM "Vehicle Trajectory (every 1 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY
+        MENUITEM "Vehicle Trajectory (every 10 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_10
+        MENUITEM "Vehicle Trajectory (every 30 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_30
+        MENUITEM "Oblique Cumulative Lane Volume", ID_MOETYPE_CUMULATIVEVOLUME_Oblique
     END
     POPUP "MOE Type 2"
     BEGIN
@@ -429,7 +434,8 @@ BEGIN
     END
     POPUP "Data"
     BEGIN
-        MENUITEM "Export",                      ID_DATA_EXPORT
+        MENUITEM "Export Link MOE",             ID_DATA_EXPORT
+        MENUITEM "Export Vehicle Trajectory",   ID_DATA_EXPORTVEHICLETRAJECTORY
     END
 END
 
@@ -470,7 +476,8 @@ IDR_TLiteTYPE1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
+        MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
+        MENUITEM "Open Rail Network Project",   ID_FILE_OPENRAILNETWORKPROJECT
         POPUP "Image"
         BEGIN
             MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
@@ -488,7 +495,7 @@ BEGIN
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM "Data Loading Status",         ID_FILE_DATALOADINGSTATUS
         MENUITEM "Change Coordinates to Long/Lat", ID_FILE_CHANGECOORDINATESTOLONG
-        MENUITEM "Generate SensorMapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
+        MENUITEM "Generate Sensor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
         MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
@@ -568,6 +575,7 @@ BEGIN
         MENUITEM "Link (Ctrl+F)",               ID_SEARCH_FINDLINK
         MENUITEM SEPARATOR
         MENUITEM "Link List",                   ID_SEARCH_LINKLIST
+        MENUITEM "Train",                       ID_SEARCH_LISTTRAINS
     END
     POPUP "Tools"
     BEGIN
@@ -580,6 +588,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "View Simulation Summary Log", ID_TOOLS_VIEWSIMULATIONSUMMARY
         MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "Export OpMode Distribution",  ID_TOOLS_EXPORTOPMODEDISTRIBUTION
+        MENUITEM SEPARATOR
+        MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
     END
     POPUP "&Window"
     BEGIN
@@ -591,6 +602,21 @@ BEGIN
         MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
         MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
         MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+    END
+    POPUP "NGSim Data"
+    BEGIN
+        MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
+        MENUITEM SEPARATOR
+        MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
+        MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
+        MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
+        MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
+        MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
+        MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
+        MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
+        MENUITEM SEPARATOR
+        MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
+        MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
     END
     POPUP "&Help"
     BEGIN
@@ -750,7 +776,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software Version 3.0 Release Date: 02/06/2011",IDC_STATIC,42,26,114,24,0,WS_EX_STATICEDGE
+    LTEXT           "Open-Source Software Version 3.0 Release Date: 05/16/2011",IDC_STATIC,42,26,114,24,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,183,70,50,14,WS_GROUP
 END
 
@@ -997,6 +1023,30 @@ BEGIN
     EDITTEXT        IDC_EDIT_B_Long,221,38,78,14,ES_AUTOHSCROLL
 END
 
+IDD_DIALOG_VEHICLE_EMISSIONS DIALOGEX 0, 0, 316, 243
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Vehicle-based Emissions Analysis"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,222,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,222,50,14
+    LISTBOX         IDC_LIST_VEHICLE,7,50,223,40,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Vehicle List:",IDC_STATIC,7,39,51,8
+    COMBOBOX        IDC_COMBO_Origin,7,17,63,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Origin Zone:",IDC_STATIC,7,7,51,8
+    LTEXT           "Destination Zone:",IDC_STATIC,91,7,60,8
+    COMBOBOX        IDC_COMBO_Destination,87,17,63,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Departure Time:",IDC_STATIC,166,7,60,8
+    COMBOBOX        IDC_COMBO_DepartureTime,164,17,63,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Vehicle Type:",IDC_STATIC,249,7,60,8
+    COMBOBOX        IDC_COMBO_VehicleType,246,17,63,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Link List:",IDC_STATIC,7,99,51,8
+    LISTBOX         IDC_LIST_LINK,7,111,223,40,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Operating Mode Distributions:",IDC_STATIC,7,155,96,8
+    LISTBOX         IDC_OpMode_LINK,7,167,151,69,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "Export",ID_EXPORT,207,167,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1208,6 +1258,14 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 76
+    END
+
+    IDD_DIALOG_VEHICLE_EMISSIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 236
     END
 END
 #endif    // APSTUDIO_INVOKED

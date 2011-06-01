@@ -532,7 +532,7 @@ void CGLView::DrawAllObjects()
 
 			for(int n = 1; n< pTrain->m_NodeSize; n++)
 			{
-				DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
+				DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].RailLinkID];
 
 				ASSERT(pLink!=NULL);
 

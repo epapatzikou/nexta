@@ -25,21 +25,22 @@
 
 #pragma once
 #include "Network.h"
+#include "TLiteDoc.h"
 
 // CDlgCarFollowing dialog
 
 struct VehicleCarFollowingData
 {
 	float Distance;  // m
-	float FreeflowSpeed;   // m/s
 	float Acceration;// m/s^2
 };
 
 struct VehicleData
 {
-	int StartTime; // in time interval
-	int EndTime; // in time interval
+	float StartTime; // in time interval
+	float EndTime; // in time interval
 	float WaveSpeed;
+	float FreeflowSpeed;   // m/s
 
 };
 
@@ -49,6 +50,8 @@ class CDlgCarFollowing : public CDialog
 	DECLARE_DYNAMIC(CDlgCarFollowing)
 
 public:
+	int m_SelectedLinkID;
+	CTLiteDoc* pDoc;
 	CDlgCarFollowing(CWnd* pParent = NULL);   // standard constructor
 	~CDlgCarFollowing()
 	{
@@ -61,10 +64,12 @@ public:
 
 
 	int m_MOEType ;
+
 	int m_NumberOfVehicles;
 	int m_NumberOfTimeSteps;  // 0.1 second as resultion
+
 	VehicleCarFollowingData** m_VechileCFDataAry;
-	std::vector<VehicleData> m_VehicleDataVector;
+	std::vector<VehicleData> m_VehicleDataList;
 	
 	CPoint m_last_cpoint;
 	bool m_bMoveDisplay;
@@ -74,6 +79,7 @@ public:
    int m_TmLeft, m_TmRight;
    float m_YUpperBound;
    float m_YLowerBound;
+   int m_NumberOfLanes;
 
    float m_FreeflowSpeed; // m/s
    float m_SimulationTimeInterval;

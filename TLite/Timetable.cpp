@@ -61,6 +61,7 @@ void CTLiteDoc::ReadTrainProfileCSVFile(LPCTSTR lpszFileName)
                         {
                         int TrainType = g_read_integer(st);
                         int TrainRunningTime = g_read_integer(st);
+						int TrainMaxWaitingTime =  g_read_integer(st);
                         pLink->m_RuningTimeMap[TrainType] = TrainRunningTime;
 						i++;
                 
@@ -91,9 +92,6 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 
 			if(train_id == -1)
 				break;
-
-		
-
 			DTA_Train* pTrain = new DTA_Train();
 			pTrain->m_TrainID = train_id;
 
@@ -114,16 +112,15 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 				for(int i =0; i< pTrain->m_NodeSize; i++)
 				{
 					int NodeNumber = g_read_integer(st);
-					pTrain->m_aryTN[i].NodeTimestamp = g_read_integer(st);
-					g_read_float(st);
-
 					pTrain->m_aryTN[i].NodeID = m_NodeNametoIDMap[NodeNumber];
+					pTrain->m_aryTN[i].NodeTimestamp = g_read_integer(st);
+					g_read_float(st);  // read position number
 
 					if(i>=1)
 					{
 						DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
 
-						pTrain->m_aryTN[i].LinkID = pLink->m_LinkID;
+						pTrain->m_aryTN[i].RailLinkID = pLink->m_LinkID;
 						if(pLink==NULL)
 						{
 							CString msg;
@@ -167,260 +164,6 @@ void CTLiteDoc::OnTimetableImporttimetable()
 			AfxMessageBox(str);
 		}
 	}
-}
-
-
-
-bool CTLiteDoc::TimetableOptimization_Lagrangian_Method()
-{
-	CWaitCursor cw;
-
-	int NumberOfIterationsWithMemory = 200;  // this is much greater than -100 when  LR_Iteration = 0, because  LastUseIterationNo is initialized as -100;
-
-	if(m_pNetwork !=NULL)     // m_pNetwork is used to calculate time-dependent generalized least cost path 
-		delete m_pNetwork;
-
-	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;  // we need to dynamically determine the optimization 
-
-
-	std::list<DTALink*>::iterator iLink;
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-	// reset resource usage counter for each timestamp
-		(*iLink)->ResetResourceAry(OptimizationHorizon);
-	}
-
-	int max_number_of_LR_iterations = 100;
-	// first loop for each LR iteration
-	for(int LR_Iteration = 0; LR_Iteration< max_number_of_LR_iterations; LR_Iteration++)
-	{
-
-		CString str;
-		str.Format ("Lagrangian Iteration %d", LR_Iteration);
-		SendTexttoStatusBar(str);
-
-		// step 1. reset resource usage counter for each timestamp
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			for(int t=0; t< OptimizationHorizon; t++)
-			{
-				(*iLink)->m_ResourceAry[t].UsageCount =0;
-			}
-		}
-
-
-		// // step 2. for each train, record their resource usage on the corresponding link
-		unsigned int v;
-		for(v = 0; v<m_TrainVector.size(); v++)
-		{
-			DTA_Train* pTrain = m_TrainVector[v];
-
-			// start from n=1, as only elements from n=1 to m_NodeSize hold link information, the first node element has no link info
-			for(int n = 1; n< pTrain->m_NodeSize; n++)
-			{
-				DTALink* pLink = m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
-
-				// inside loop for each link traveled by each tran
-				for(int t = pTrain->m_aryTN[n-1].NodeTimestamp; t< pTrain->m_aryTN[n].NodeTimestamp; t++)
-				{
-
-					ASSERT(t>=0 && t<OptimizationHorizon);
-					pLink->m_ResourceAry[t].UsageCount+=1;
-					pLink->m_ResourceAry[t].LastUseIterationNo = LR_Iteration;
-
-				}
-
-			}
-		}
-
-		//step 3: subgradient algorithm
-		//MSA as step size, use subgradient
-		float StepSize = 1.0f/(LR_Iteration+1.0f);
-
-		if(StepSize< 0.05f)  //keep the minimum step size
-			StepSize = 0.05f;   
-
-
-		// step 4. resource pricing algorithm
-		// reset resource usage counter for each timestamp
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			for(int t=0; t< OptimizationHorizon; t++)
-			{
-				(*iLink)->m_ResourceAry[t].Price  += StepSize*((*iLink)->m_ResourceAry[t].UsageCount - (*iLink)->m_LaneCapacity);
-
-				//			if((*iLink)->m_ResourceAry[t].Price > 0)
-				//				TRACE("\n arc %d, time %d, price %f", (*iLink)->m_LinkID, t, (*iLink)->m_ResourceAry[t].Price );
-
-				// if the total usage (i.e. resource consumption > capacity constraint) 
-				// then the resource price increases, otherwise decrease
-
-				if((*iLink)->m_ResourceAry[t].Price < 0 || LR_Iteration - ((*iLink)->m_ResourceAry[t].LastUseIterationNo) > NumberOfIterationsWithMemory)
-					(*iLink)->m_ResourceAry[t].Price = 0;
-			}
-		}
-
-		// step 5. build time-dependent network with resource price
-
-		// here we allocate OptimizationHorizon time and cost labels for each node
-
-		if(LR_Iteration==0) //only allocate once
-			m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), OptimizationHorizon, 1, m_AdjLinkSize);  
-
-		// step 6. for each train (of the subproblem), find the subprogram solution (time-dependent path) so we know its path and timetable
-		for(v = 0; v<m_TrainVector.size(); v++)
-		{
-
-			DTA_Train* pTrain = m_TrainVector[v];
-
-			//step 6.1 find time-dependent shortest path with resource price label
-			m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
-			//step 6.2 perform shortest path algorithm
-			m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
-			//step 6.3 fetch the train path  solution
-			pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
-
-
-			//find the link no along the path
-
-			for (int i=1; i< pTrain->m_NodeSize ; i++)
-			{
-				DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
-				ASSERT(pLink!=NULL);
-				pTrain->m_aryTN[i].LinkID  = pLink->m_LinkID ;
-
-			}
-
-
-		}
-
-	}
-
-
-	UpdateAllViews(0);
-	SendTexttoStatusBar("");
-
-	return true;
-}
-
-
-
-void CTLiteDoc::OnInitializetimetable()
-{
-	// this function only find the intial path for each train, and layout the initial (but infeasible timetable)
-	// this is a simplifed version of Lagrangian method without actual resource price
-	CWaitCursor cw;
-
-	if(m_pNetwork !=NULL)
-		delete m_pNetwork;
-
-	// we have to estimate the optimization horizion here, as it is used in the shortst path algorithm
-	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;
-
-	std::list<DTALink*>::iterator iLink;
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-	// reset resource usage counter for each timestamp
-		(*iLink)->ResetResourceAry(OptimizationHorizon);
-	}
-
-	// build time-dependent network with resource price
-
-	// here we allocate OptimizationHorizon time and cost labels for each node
-
-	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), OptimizationHorizon, 1, m_AdjLinkSize);  
-
-	unsigned int v;
-	for(v = 0; v<m_TrainVector.size(); v++)
-	{
-
-		DTA_Train* pTrain = m_TrainVector[v];
-
-		//find time-dependent shortest path with time label
-		m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
-		m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
-		pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
-
-
-		for (int i=1; i< pTrain->m_NodeSize ; i++)
-		{
-			DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
-			ASSERT(pLink!=NULL);
-			pTrain->m_aryTN[i].LinkID  = pLink->m_LinkID ;
-
-		}
-
-	}
-
-	SendTexttoStatusBar("");
-	UpdateAllViews(0);
-}
-bool CTLiteDoc::TimetableOptimization_Priority_Rule()
-{
-	CWaitCursor cw;
-
-	// this algorithm schedules a train at a time, and record the use of resource so that the following trains cannot use the previously consumped resource, which leads to a feasible solution
-	// the priority of trains are assumed to be given from the train sequence of the input file timetabl.csv
-
-	if(m_pNetwork !=NULL)
-		delete m_pNetwork;
-
-	int OptimizationHorizon = _MAX_OPTIMIZATION_HORIZON;
-
-	// step 1. Initialization
-
-	std::list<DTALink*>::iterator iLink;
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-	// reset resource usage counter for each timestamp
-		(*iLink)->ResetResourceAry(OptimizationHorizon);
-	}
-	// step 2. for each train, record their resource usage on the corresponding link
-	// outer loop: for each train
-
-		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), OptimizationHorizon, 1, m_AdjLinkSize);  
-
-		unsigned int v;
-	for(v = 0; v<m_TrainVector.size(); v++)
-	{
-
-		DTA_Train* pTrain = m_TrainVector[v];
-
-		//find time-dependent shortest path with time label
-		m_pNetwork->BuildSpaceTimeNetworkForTimetabling(&m_NodeSet, &m_LinkSet, pTrain->m_TrainType );
-		m_pNetwork->OptimalTDLabelCorrecting_DoubleQueue(pTrain->m_OriginNodeID , pTrain->m_DepartureTime );
-		pTrain->m_NodeSize = m_pNetwork->FindOptimalSolution(pTrain->m_OriginNodeID , pTrain->m_DepartureTime, pTrain->m_DestinationNodeID,pTrain);
-
-
-		for (int i=1; i< pTrain->m_NodeSize ; i++)
-		{
-			DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
-			ASSERT(pLink!=NULL);
-			pTrain->m_aryTN[i].LinkID  = pLink->m_LinkID ;
-
-		}
-
-		for (int n=1; n< pTrain->m_NodeSize ; n++)
-		{		//for each used timestamp
-			DTALink* pLink = m_LinkIDMap[pTrain->m_aryTN[n].LinkID];
-
-		for(int t = pTrain->m_aryTN[n-1].NodeTimestamp; t< pTrain->m_aryTN[n].NodeTimestamp; t++)
-		{
-				ASSERT(t>=0 && t<OptimizationHorizon);
-				pLink->m_ResourceAry[t].UsageCount+=1;
-				// check resource usage counter for each timestamp,
-				if(pLink->m_ResourceAry[t].UsageCount >= pLink->m_LaneCapacity)  //over capacity
-				{
-					pLink->m_ResourceAry[t].Price  = MAX_SPLABEL;  // set the maximum price so the followers cannot use this time
-				}
-			}
-		}
-
-	}
-
-	UpdateAllViews(0);
-	return true;
-
 }
 
 
