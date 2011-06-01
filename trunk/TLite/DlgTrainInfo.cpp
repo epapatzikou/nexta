@@ -41,6 +41,7 @@ void CDlgTrainInfo::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CDlgTrainInfo, CDialog)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_TRAIN_LIST_CONTROL, &CDlgTrainInfo::OnLvnItemchangedTrainListControl)
 END_MESSAGE_MAP()
 
 
@@ -143,4 +144,27 @@ void CDlgTrainInfo::InsertTrainInfoItem()
 
 
 	}
+}
+void CDlgTrainInfo::OnLvnItemchangedTrainListControl(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	m_pDoc->m_SelectedTrainID = -1;
+		 
+	POSITION pos = m_TrainListControl.GetFirstSelectedItemPosition();
+	if (pos != NULL)
+	{
+		int SelectedNo = m_TrainListControl.GetNextSelectedItem(pos);
+		
+		DTA_Train* pTrain = m_pDoc->m_TrainVector[SelectedNo];
+
+		m_pDoc->m_SelectedTrainID 	= pTrain ->m_TrainID ;
+
+		Invalidate();
+
+		m_pDoc->UpdateAllViews(0);
+	}
+
 }

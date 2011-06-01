@@ -31,6 +31,7 @@
 
 #include "resource.h"       // main symbols
 
+
 extern bool b_gStaticAssignmentFlag;
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
 extern eVisulizationTemplate g_VisulizationTemplate;

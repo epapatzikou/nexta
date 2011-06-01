@@ -45,7 +45,7 @@ public:
 	CDlgTrainInfo(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgTrainInfo();
 	virtual BOOL OnInitDialog();
-
+    
 
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Train };
@@ -56,4 +56,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CListCtrl m_TrainListControl;
+	afx_msg void OnLvnItemchangedTrainListControl(NMHDR *pNMHDR, LRESULT *pResult);
 };

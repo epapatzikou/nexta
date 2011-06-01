@@ -4,6 +4,7 @@
 //
 #define IDSAVEASDEFAULT                 2
 #define IDCANCLE                        2
+#define ID_EXPORT                       3
 #define IDD_ABOUTBOX                    100
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
@@ -41,6 +42,8 @@
 #define IDD_DIALOG_VEHPATH              165
 #define IDD_DIALOG_Visualization_Mode   166
 #define IDD_DIALOG_NETWORK_ALIGNMENT    167
+#define IDR_MENU3                       168
+#define IDD_DIALOG_VEHICLE_EMISSIONS    169
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -81,6 +84,14 @@
 #define IDC_EDIT_B_Lat                  1042
 #define IDC_EDIT_A_Long                 1043
 #define IDC_EDIT_B_Long                 1044
+#define IDC_COMBO_Origin                1045
+#define IDC_COMBO_Destination           1046
+#define IDC_LIST_VEHICLE                1047
+#define IDC_COMBO_DepartureTime         1048
+#define IDC_COMBO_VehicleType           1049
+#define IDC_LIST_LINK                   1050
+#define IDC_LIST_LINK2                  1051
+#define IDC_OpMode_LINK                 1051
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -295,14 +306,34 @@
 #define ID_FILE_CHANGECOORDINATESTOLONG 33047
 #define ID_FILE_GENERATESENSORMAPPINGTABLE 33048
 #define ID_ESTIMATION_SHOWWEATHERDATA   33049
+#define ID_FILE_OPENRAILNETWORKPROJECT  33050
+#define ID_MOETYPE1_VEHICLETRAJECTORY   33051
+#define ID_MOETYPE1_VEHICLETRAJECTORY_10 33052
+#define ID_MOETYPE1_VEHICLETRAJECTORY_30 33053
+#define ID_MOETYPE_CUMULATIVEVOLUME_Oblique 33054
+#define ID_TOOLS_EXPORTOPMODEDISTRIBUTION 33055
+#define ID_FILE_OPEN_LONG_LAT           33056
+#define ID_TOOLS_ENUMERATEPATH          33057
+#define ID_DATA_EXPORTVEHICLETRAJECTORY 33058
+#define ID_TOOLS_LOADVEHICLETRAJACTORYFILE 33059
+#define ID_Menu                         33060
+#define ID_NGSIMDATA_LANE1              33061
+#define ID_NGSIMDATA_LANE2              33062
+#define ID_NGSIMDATA_LANE3              33063
+#define ID_NGSIMDATA_LANE4              33064
+#define ID_NGSIMDATA_LANE5              33065
+#define ID_NGSIMDATA_LANE6              33066
+#define ID_NGSIMDATA_LANE7              33067
+#define ID_NGSIMDATA_COLORSPEED         33068
+#define ID_NGSIMDATA_CARFOLLOWINGSIMULATION 33069
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        168
-#define _APS_NEXT_COMMAND_VALUE         33050
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_RESOURCE_VALUE        170
+#define _APS_NEXT_COMMAND_VALUE         33070
+#define _APS_NEXT_CONTROL_VALUE         1048
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

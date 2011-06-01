@@ -165,6 +165,11 @@ public:
 
 	float PredSpeed;
 
+	float FullCapacity;
+	float ReducedCapacity;
+	float EventStartTiming;
+	float PredTTI15; // predicted travel time for the future 15 min
+
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
 	//   AvgTravel time can be derived from CumulativeArrivalCount and TotalTravelTime
@@ -182,6 +187,10 @@ public:
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
 		PredSpeed = 0;
+		PredTTI15 = 0;
+		FullCapacity = 0;
+		ReducedCapacity = 0;
+		EventStartTiming = 0;
 
 	};
 
@@ -276,7 +285,7 @@ public:
 
 	float ObtainHistTravelTime(int time)
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440)
+		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
 		{
 			return m_Length/m_HistLinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
 		}
@@ -286,7 +295,7 @@ public:
 
 	float ObtainHistFuelConsumption(int time)
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440)
+		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
 		{
 			return m_Length*0.1268f*pow( max(1,m_HistLinkMOEAry[time].ObsSpeed),-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
@@ -296,7 +305,7 @@ public:
 
 	float ObtainHistCO2Emissions(int time)  // pounds
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440)
+		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
 		{
 			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
@@ -668,6 +677,9 @@ public:
 
 		if(GetImpactedFlag(120))
 			return 100;
+
+		if(this->m_bSensorData == false)
+			return m_FreeFlowTravelTime;
 
 		float travel_time  = max(m_StaticTravelTime,m_FreeFlowTravelTime);
 
@@ -1157,6 +1169,7 @@ public:
 	int* NodePredAry;
 	float* LabelCostAry;
 
+
 	//below are time-dependent cost label and predecessor arrays
 	float** TD_LabelCostAry;
 	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
@@ -1166,9 +1179,29 @@ public:
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
 
+	// search tree
+	struct SearchTreeElement
+	{
+		int CurrentNode;
+		int PredecessorNode;
+		int SearchLevel;
+	};
+
+	SearchTreeElement* m_SearchTreeList;  // predecessor
+
+	int  m_TreeListSize;
+	int  m_TreeListFront;
+	int  m_TreeListTail;
+
+
+
+	//
+
 	DTANetworkForSP(int NodeSize, int LinkSize, int TimeHorizon, int TimeInterval, int AdjLinkSize){
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
+
+		m_SearchTreeList = NULL;
 
 		m_OptimizationHorizon = TimeHorizon;
 		m_OptimizationTimeInveral = TimeInterval;
@@ -1266,6 +1299,8 @@ public:
 
 	~DTANetworkForSP()
 	{
+		if(m_SearchTreeList) delete m_SearchTreeList;
+
 		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry)  delete m_InboundSizeAry;
 
@@ -1314,6 +1349,8 @@ public:
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
 	// optimal version use a time-node-dimension of TD_LabelCostAry, TD_NodePredAry
 	int FindOptimalSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
+	bool GenerateSearchTree(int origin,  int destination, int node_size);
+
 	// return node arrary from origin to destination, return travelling timestamp at each node
 	// return number_of_nodes in path
 
@@ -1379,6 +1416,21 @@ public:
 
 	int  GetLinkNoByNodeIndex(int usn_index, int dsn_index);
 
+};
+
+struct VehicleCFData
+{
+	int VehicleID;
+	int VehicleType; // 1 - motorcycle, 2 - auto, 3 - truck
+	float StartTime; // in time interval, LinkStartTime, so it should be sorted
+	float EndTime; // in time interval
+};
+
+struct VehicleSnapshotData
+{
+	float LocalY;
+	float Speed_mph;
+	int LaneID;
 };
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"

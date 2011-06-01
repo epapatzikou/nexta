@@ -30,6 +30,8 @@
 #include "atlimage.h"
 #include "math.h"
 #include "Network.h"
+#include <iostream>
+#include <fstream>
 
 enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions, vehicle};
 enum OD_MOE {odnone,critical_volume};
@@ -81,6 +83,7 @@ protected: // create from serialization only
 		m_MaxODDemand = 1;
 		m_SelectedLinkID = -1;
 	    m_SelectedNodeID = -1;
+		m_SelectedTrainID = -1;
 	
 		m_bSetView = false;
 
@@ -118,8 +121,11 @@ public:
 
 	BOOL OnOpenDocument(LPCTSTR lpszPathName);
 	BOOL OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName);
-	BOOL OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName);
+	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
+	std::ofstream m_WarningFile;
+
+	void OpenWarningLogFile(CString directory);
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName);   // for road network
@@ -185,9 +191,6 @@ public:
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	
-	bool TimetableOptimization_Lagrangian_Method();  //Lagrangian based.
-	bool TimetableOptimization_Priority_Rule();  //Lagrangian based.
-
 	void ReadBackgroundImageFile(LPCTSTR lpszFileName);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
@@ -206,6 +209,7 @@ public:
 
 	int m_SelectedLinkID;
 	int m_SelectedNodeID;
+	int m_SelectedTrainID;
 
 
 	std::vector<DTA_sensor> m_SensorVector;
@@ -411,6 +415,14 @@ public:
 		int ToNodeID = m_NodeNametoIDMap[ToNodeNumber];
 
 		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
+
+		map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
+
+			if(m_Iter == m_NodeIDtoLinkMap.end( ))
+			{
+				AfxMessageBox("Link cannot be found.");
+				return NULL;
+			}
 		return m_NodeIDtoLinkMap[LinkKey];
 	}
 
@@ -477,11 +489,8 @@ public:
 	afx_msg void OnViewShowmoe();
 	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 	afx_msg void OnSearchListtrains();
-	afx_msg void OnToolsTimetablingoptimization();
 	afx_msg void OnTimetableImporttimetable();
-	afx_msg void OnInitializetimetable();
 	afx_msg void OnWindow2dview();
-	afx_msg void OnOptimizetimetable_PriorityRule();
 	afx_msg void OnFileSaveProject();
 	afx_msg void OnFileSaveProjectAs();
 	afx_msg void OnEstimationOdestimation();
@@ -538,6 +547,9 @@ public:
 		afx_msg void OnSearchVehicle();
 		afx_msg void OnToolsPerformscheduling();
 		afx_msg void OnFileChangecoordinatestolong();
+		afx_msg void OnFileOpenrailnetworkproject();
+		afx_msg void OnToolsExportopmodedistribution();
+		afx_msg void OnToolsEnumeratepath();
 };
 
 

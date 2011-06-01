@@ -46,7 +46,7 @@
 #include "Dlg_ImportODDemand.h"
 #include "DlgVehiclePath.h"
 #include "DlgNetworkAlignment.h"
-
+#include "Dlg_VehEmissions.h"
 
 
 #ifdef _DEBUG
@@ -73,10 +73,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnShowShowpathmoe)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnUpdateShowShowpathmoe)
 	ON_COMMAND(ID_SEARCH_LISTTRAINS, &CTLiteDoc::OnSearchListtrains)
-	ON_COMMAND(ID_TOOLS_TIMETABLINGOPTIMIZATION, &CTLiteDoc::OnToolsTimetablingoptimization)
 	ON_COMMAND(ID_TIMETABLE_IMPORTTIMETABLE, &CTLiteDoc::OnTimetableImporttimetable)
-	ON_COMMAND(ID_TIMETABLE_INITIALIZETIMETABLE, &CTLiteDoc::OnInitializetimetable)
-	ON_COMMAND(ID_TIMETABLE_OPTIMIZETIMETABLE, &CTLiteDoc::OnOptimizetimetable_PriorityRule)
 	ON_COMMAND(ID_FILE_SAVE_PROJECT, &CTLiteDoc::OnFileSaveProject)
 	ON_COMMAND(ID_FILE_SAVE_PROJECT_AS, &CTLiteDoc::OnFileSaveProjectAs)
 	ON_COMMAND(ID_ESTIMATION_ODESTIMATION, &CTLiteDoc::OnEstimationOdestimation)
@@ -132,6 +129,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_IMPORTODTRIPFILE_3COLUMNFORMAT, &CTLiteDoc::OnImportodtripfile3columnformat)
 	ON_COMMAND(ID_TOOLS_PERFORMSCHEDULING, &CTLiteDoc::OnToolsPerformscheduling)
 	ON_COMMAND(ID_FILE_CHANGECOORDINATESTOLONG, &CTLiteDoc::OnFileChangecoordinatestolong)
+	ON_COMMAND(ID_FILE_OPENRAILNETWORKPROJECT, &CTLiteDoc::OnFileOpenrailnetworkproject)
+	ON_COMMAND(ID_TOOLS_EXPORTOPMODEDISTRIBUTION, &CTLiteDoc::OnToolsExportopmodedistribution)
+	ON_COMMAND(ID_TOOLS_ENUMERATEPATH, &CTLiteDoc::OnToolsEnumeratepath)
 END_MESSAGE_MAP()
 
 
@@ -140,6 +140,8 @@ END_MESSAGE_MAP()
 
 CTLiteDoc::~CTLiteDoc()
 {
+	m_WarningFile.close();
+
 	if(m_pNetwork!=NULL)
 		delete m_pNetwork;
 
@@ -275,9 +277,8 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 
 	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon+1);  // +1 is for the last value
+		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
 	}
-
 	// reopen
 	fopen_s(&st,lpszFileName,"r");
 
@@ -436,7 +437,7 @@ void CTLiteDoc::ReadHistoricalDataFormat2(CString directory)
 
 						if(t>=1)
 						{
-							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-1].ObsCumulativeFlow + TotalFlow;
+							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-1].ObsCumulativeFlow + TotalFlow/12;
 						}
 
 					}
@@ -580,7 +581,7 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 
 						if(t-Interval>0)
 						{
-							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-Interval].ObsCumulativeFlow + Flow;
+							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-Interval].ObsCumulativeFlow + Flow/12;
 						}
 
 						// copy data to other intervals
@@ -709,7 +710,10 @@ void CTLiteDoc::ReadSensorData(CString directory)
 
 					for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 					{
-						(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
+						if((*iLink)->m_bSensorData == true)
+						{
+							(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
+						}
 					}
 
 					bResetMOEAryFlag = true;
@@ -794,26 +798,29 @@ void CTLiteDoc::ReadSensorData(CString directory)
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 
-				for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= TimeInterval)
+				if((*iLink)->m_bSensorData  == true)
 				{
-					if(t%1440 ==0)
-					{  // reset at the begining of day
-						(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
-					}else
+					for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= TimeInterval)
 					{
-						(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-TimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
+						if(t%1440 ==0)
+						{  // reset at the begining of day
+							(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
+						}else
+						{
+							(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-TimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
+
+						}
+
+						for(int tt= 1; tt<TimeInterval;tt++)
+						{
+							(*iLink)->m_LinkMOEAry[t+tt].ObsCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow;
+						}
 
 					}
 
-					for(int tt= 1; tt<TimeInterval;tt++)
-					{
-						(*iLink)->m_LinkMOEAry[t+tt].ObsCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow;
-					}
 
+					(*iLink)->ComputeHistoricalAvg(NumberOfDays); 
 				}
-
-
-				(*iLink)->ComputeHistoricalAvg(NumberOfDays); 
 			}
 		}
 	}
@@ -905,7 +912,9 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	m_ProjectTitle = GetWorkspaceTitleName(lpszPathName);
 	SetTitle(m_ProjectTitle);
 
+
 	CWaitCursor wc;
+	OpenWarningLogFile(directory);
 
 	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
 	if(!ReadLinkCSVFile(directory+"input_link.csv")) return false;
@@ -921,7 +930,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	//adjust XY coordinates if the corrdinate system is not consistenty
 	if(fabs(m_UnitMile-1.00)>0.10)  // ask users if we need to adjust the XY coordinates
 	{
-		if(AfxMessageBox("The link length information in link.csv is not consistent with the X/Y coordinates in node.csv./nDo you want to adjust the the X/Y coordinates in node.csv?", MB_YESNO) == IDYES)
+		if(AfxMessageBox("The link length information in link.csv is not consistent with the X/Y coordinates in node.csv.\n Do you want to adjust the the X/Y coordinates in node.csv?", MB_YESNO) == IDYES)
 
 			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 			{
@@ -939,8 +948,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 			m_UnitMile  = 1.0;
 			m_UnitFeet = 1/5280.0;
 
-		if(m_LongLatCoordinateFlag)
-			m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
+			if(m_LongLatCoordinateFlag)
+				m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
 
 			CalculateDrawingRectangle();
 
@@ -972,10 +981,12 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 
 	//: comment out now, it uses alternative format	ReadHistoricalDataFormat2(directory);
 
-	if(!ReadZoneCSVFile(directory+"input_zone.csv")) return false;
-	ReadDemandCSVFile(directory+"input_demand.csv");
+	if(ReadZoneCSVFile(directory+"input_zone.csv"))
+	{
+		ReadDemandCSVFile(directory+"input_demand.csv");
+		LoadSimulationOutput();
+	}
 
-	LoadSimulationOutput();
 
 	if(ReadSensorLocationData(directory+"input_sensor_location.csv") == true)
 	{
@@ -988,7 +999,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	ReadBackgroundImageFile(directory+"Background.bmp");
 	return true;
 }
-BOOL CTLiteDoc::OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName)
+BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
 {
 	FILE* st = NULL;
 	//	cout << "Reading file node.csv..."<< endl;
@@ -1004,6 +1015,7 @@ BOOL CTLiteDoc::OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName)
 
 	CWaitCursor wc;
 
+	OpenWarningLogFile(directory);
 
 	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
 	if(!ReadLinkCSVFile(directory+"input_link.csv")) return false;
@@ -1018,7 +1030,7 @@ BOOL CTLiteDoc::OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName)
 	//adjust XY coordinates if the corrdinate system is not consistenty
 	if(fabs(m_UnitMile-1.00)>0.10)  // ask users if we need to adjust the XY coordinates
 	{
-		if(AfxMessageBox("The link length information in link.csv is not consistent with the X/Y coordinates in node.csv./nDo you want to adjust the the X/Y coordinates in node.csv?", MB_YESNO) == IDYES)
+		if(AfxMessageBox("The link length information in link.csv is not consistent with the X/Y coordinates in node.csv.\nDo you want to adjust the the X/Y coordinates in node.csv?", MB_YESNO) == IDYES)
 
 			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 			{
@@ -1041,7 +1053,7 @@ BOOL CTLiteDoc::OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName)
 
 	}
 
-	bool m_bLinkShifted = true;
+	bool m_bLinkShifted = false;
 	if(m_bLinkShifted)
 	{
 		double link_offset = m_UnitFeet*80;  // 80 feet
@@ -1074,22 +1086,14 @@ BOOL CTLiteDoc::OnOpenTrainSchedulingDocument(LPCTSTR lpszPathName)
 
 BOOL CTLiteDoc::OnOpenDocument(LPCTSTR lpszPathName)
 {
-CWaitCursor wait;
-	if(g_VisulizationTemplate == e_traffic_assignment)
-	{
-		OnOpenTrafficNetworkDocument(lpszPathName);
-	}
+	CWaitCursor wait;
+	g_VisulizationTemplate = e_traffic_assignment;
 
-	if(g_VisulizationTemplate == e_train_scheduling)
-	{
-		OnOpenTrainSchedulingDocument(lpszPathName);
-	}
+	OnOpenTrafficNetworkDocument(lpszPathName);
 
 	CDlgFileLoading dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal ();
-
-
 
 	UpdateAllViews(0);
 	return true;
@@ -1188,73 +1192,73 @@ void CTLiteDoc::OnToolGeneratesenesormappingtable()
 
 	CString directory = m_ProjectDirectory;
 
-   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		   _T("Station location file (*.csv)|*.csv|"));
-   if(dlg.DoModal() == IDOK)
-   {
-	fopen_s(&st,dlg.GetPathName(),"r");
-	if(st!=NULL)
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("Station location file (*.csv)|*.csv|"));
+	if(dlg.DoModal() == IDOK)
 	{
-		int s = 1;
-		while(!feof(st))
+		fopen_s(&st,dlg.GetPathName(),"r");
+		if(st!=NULL)
 		{
-			DTA_sensor sensor;
-
-			sensor.OrgSensorID  =  g_read_integer(st);
-			if(sensor.OrgSensorID == -1)
-				break;
-
-			float y = g_read_float(st);  //lat
-			float x = g_read_float(st);  //long
-			int direction = g_read_integer(st);
-
-			int SensorLinkID = FindLinkFromSensorLocation(x,y,direction);
-
-			if(SensorLinkID>=0)
+			int s = 1;
+			while(!feof(st))
 			{
-				sensor.LinkID = SensorLinkID;
-				m_SensorVector.push_back(sensor);
+				DTA_sensor sensor;
 
-				m_LinkIDMap[SensorLinkID]->m_bSensorData  = true;
+				sensor.OrgSensorID  =  g_read_integer(st);
+				if(sensor.OrgSensorID == -1)
+					break;
+
+				float y = g_read_float(st);  //lat
+				float x = g_read_float(st);  //long
+				int direction = g_read_integer(st);
+
+				int SensorLinkID = FindLinkFromSensorLocation(x,y,direction);
+
+				if(SensorLinkID>=0)
+				{
+					sensor.LinkID = SensorLinkID;
+					m_SensorVector.push_back(sensor);
+
+					m_LinkIDMap[SensorLinkID]->m_bSensorData  = true;
 
 
-			}else
-			{
-				sensor.LinkID = -1;
-				sensor.pt.x = x;
-				sensor.pt.y  = y;
-				m_SensorVector.push_back(sensor);
+				}else
+				{
+					sensor.LinkID = -1;
+					sensor.pt.x = x;
+					sensor.pt.y  = y;
+					m_SensorVector.push_back(sensor);
 
+				}
+
+				s++;
 			}
 
-			s++;
+			fclose(st);
 		}
 
-		fclose(st);
-	}
-
-	// 	write sensor.csv
-	// 	From Node,To Node,Type,OrgSensorID
+		// 	write sensor.csv
+		// 	From Node,To Node,Type,OrgSensorID
 
 
-	fopen_s(&st,directory+"input_sensor_location.csv","w");
-	if(st!=NULL)
-	{
-		std::vector<DTA_sensor>::iterator iSensor;
-		fprintf(st,"From Node,To Node,Type,OrgSensorID\n");
-		for (iSensor = m_SensorVector.begin(); iSensor != m_SensorVector.end(); iSensor++)
+		fopen_s(&st,directory+"input_sensor_location.csv","w");
+		if(st!=NULL)
 		{
-			if((*iSensor).LinkID>=0)
+			std::vector<DTA_sensor>::iterator iSensor;
+			fprintf(st,"From Node,To Node,Type,OrgSensorID\n");
+			for (iSensor = m_SensorVector.begin(); iSensor != m_SensorVector.end(); iSensor++)
 			{
-				DTALink* pLink = m_LinkIDMap[(*iSensor).LinkID];
-				fprintf(st,"%d,%d,0,%d\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, (*iSensor).OrgSensorID);
+				if((*iSensor).LinkID>=0)
+				{
+					DTALink* pLink = m_LinkIDMap[(*iSensor).LinkID];
+					fprintf(st,"%d,%d,0,%d\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, (*iSensor).OrgSensorID);
+				}
 			}
+
+			fclose(st);
+
 		}
-
-		fclose(st);
-
 	}
-   }
 
 }
 
@@ -1476,7 +1480,7 @@ int CTLiteDoc::Routing()
 
 					pdp->m_TimeDependentTravelTime[t] += pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]);
 
-				    TRACE("\n path %d, time at %f, TT = %f",p, pdp->m_TimeDependentTravelTime[t], pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]) );
+					//			    TRACE("\n path %d, time at %f, TT = %f",p, pdp->m_TimeDependentTravelTime[t], pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]) );
 
 				}
 
@@ -1613,6 +1617,7 @@ void CTLiteDoc::OnViewShowmoe()
 		if(g_LinkMOEDlg==NULL)
 		{
 			g_LinkMOEDlg = new CDlgMOE();
+			g_LinkMOEDlg->m_pDoc = this;
 			g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 		}
 
@@ -1695,7 +1700,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		float default_distance_sum=0;
 		float length_sum = 0;
 
-
+		bool bNodeNonExistError = false;
 		while(!feof(st))
 		{
 			int FromNodeNumber =  g_read_integer(st);
@@ -1710,6 +1715,20 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 			pLink->m_LinkID = i;
 			pLink->m_FromNodeNumber = FromNodeNumber;
 			pLink->m_ToNodeNumber = ToNodeNumber;
+
+			if(m_NodeNametoIDMap.find(FromNodeNumber)== m_NodeNametoIDMap.end())
+			{
+				m_WarningFile<< "From Node Number "  << FromNodeNumber << " in input_link.csv has not be defined in input_node.csv"  << endl; 
+				bNodeNonExistError = true;
+			}
+
+			if(m_NodeNametoIDMap.find(ToNodeNumber)== m_NodeNametoIDMap.end())
+			{
+				m_WarningFile<< "To Node Number "  << ToNodeNumber << " in input_link.csv has not be defined in input_node.csv"  << endl; 
+				bNodeNonExistError = true;
+
+			}
+
 			pLink->m_FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
 			pLink->m_ToNodeID= m_NodeNametoIDMap[ToNodeNumber];
 
@@ -1739,11 +1758,17 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 			length_sum += pLink ->m_Length;
 
 			pLink->SetupMOE();
-			m_LinkSet.push_back (pLink);
-			m_LinkIDMap[i]  = pLink;
-			i++;
+			if(!bNodeNonExistError)
+			{
+				m_LinkSet.push_back (pLink);
+				m_LinkIDMap[i]  = pLink;
+				i++;
+			}
 
 		}
+
+		if(bNodeNonExistError)
+			AfxMessageBox("Some nodes in input_link.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
 
 		m_UnitMile  = 1.0f;
 
@@ -1752,15 +1777,17 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
-		TCHAR IniFilePath[_MAX_PATH];
-		sprintf_s(IniFilePath,"%s//in_opt_BackgroundImage.ini", m_ProjectDirectory);
 
-		 float value = g_GetPrivateProfileFloat("Coordinate", "long-lat system", 0, IniFilePath);
-		 if(abs(value-1.0f)<0.1)
-			m_LongLatCoordinateFlag = true;
+		if(m_UnitMile>10)  // long/lat must be very large and greater than 62!
+		{
+			if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
+			{
+				m_LongLatCoordinateFlag = true;
+				m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
+			}
+		}
 
-		if(m_LongLatCoordinateFlag)
-			m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
+
 
 
 		fclose(st);
@@ -1783,6 +1810,7 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
 
+	bool bNodeNonExistError = false;
 	m_NodeIDtoZoneNameMap.clear ();
 	if(m_DemandMatrix!=NULL)
 	{
@@ -1803,6 +1831,14 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 			int node_name=  g_read_integer(st);
 
+			map <int, int> :: const_iterator m_Iter = m_NodeNametoIDMap.find(node_name);
+
+			if(m_Iter == m_NodeNametoIDMap.end( ))
+			{
+				m_WarningFile<< "Node Number "  << node_name << " in input_zone.csv has not be defined in input_node.csv"  << endl; 
+				bNodeNonExistError = true;
+
+			}
 			m_NodeIDtoZoneNameMap[m_NodeNametoIDMap[node_name]] = zone_number;
 			// if there are multiple nodes for a zone, the last node id is recorded.
 			int zoneid  = zone_number-1;
@@ -1814,6 +1850,10 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 			lineno++;
 		}
 		fclose(st);
+
+		if(bNodeNonExistError)
+			AfxMessageBox("Some nodes in input_zone.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
+
 		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",lineno,lpszFileName);
 		return true;
 	}else
@@ -2056,16 +2096,7 @@ bool CTLiteDoc::ReadIncidentFile(LPCTSTR lpszFileName)
 	}
 	return true;
 }
-void CTLiteDoc::OnToolsTimetablingoptimization()
-{
-	TimetableOptimization_Lagrangian_Method();
-}
 
-void CTLiteDoc::OnOptimizetimetable_PriorityRule()
-{
-	TimetableOptimization_Priority_Rule();
-
-}
 
 void CTLiteDoc::SendTexttoStatusBar(CString str)
 {
@@ -2247,13 +2278,13 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 		int count = 0;
 		while(!feof(st))
 		{
-			int iteration= g_read_integer(st);
-			if(iteration == -1)
+			int m_VehicleID= g_read_integer(st);
+			if(m_VehicleID == -1)
 				break;
 
 			DTAVehicle* pVehicle = 0;
 			pVehicle = new DTAVehicle;
-			pVehicle->m_VehicleID		= g_read_integer(st);
+			pVehicle->m_VehicleID		= m_VehicleID;
 			pVehicle->m_OriginZoneID	= g_read_integer(st);
 			pVehicle->m_DestinationZoneID=g_read_integer(st);
 			pVehicle->m_DepartureTime	= g_read_float(st);
@@ -2606,8 +2637,23 @@ float CTLiteDoc::GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTi
 
 void CTLiteDoc::OnToolsCarfollowingsimulation()
 {
-	CDlgCarFollowing dlg;
-	dlg.DoModal ();
+	if(m_SelectedLinkID==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink= m_LinkIDMap [m_SelectedLinkID];
+	if(pLink!=NULL)
+	{
+		CDlgCarFollowing dlg;
+		dlg.pDoc = this;
+		dlg.m_SelectedLinkID = m_SelectedLinkID;
+		dlg.m_YUpperBound = pLink->m_Length * 1609.344f;  // mile to meters
+		dlg.m_FreeflowSpeed = pLink->m_SpeedLimit * 1609.344f / 3600; // mph to meter per second
+		dlg.m_NumberOfLanes = pLink->m_NumLanes;
+		dlg.DoModal ();
+	}
 }
 
 DWORD g_ProcessWait(DWORD PID) 
@@ -3265,42 +3311,147 @@ void CTLiteDoc::OnFileChangecoordinatestolong()
 			float m_YScale = 1;
 
 			if(m_Node1OrgPt.x - m_Node2OrgPt.x)
-		   {
-			  m_XScale = (dlg.m_NodeX1 - dlg.m_NodeX2)/(m_Node1OrgPt.x - m_Node2OrgPt.x);
-		   }
+			{
+				m_XScale = (dlg.m_NodeX1 - dlg.m_NodeX2)/(m_Node1OrgPt.x - m_Node2OrgPt.x);
+			}
 
 			if(m_Node1OrgPt.y - m_Node2OrgPt.y)
-		   {
-			  m_YScale = (dlg.m_NodeY1 - dlg.m_NodeY2)/(m_Node1OrgPt.y - m_Node2OrgPt.y);
-		   }
+			{
+				m_YScale = (dlg.m_NodeY1 - dlg.m_NodeY2)/(m_Node1OrgPt.y - m_Node2OrgPt.y);
+			}
 
-		   float m_XOrigin = m_Node1OrgPt.x - dlg.m_NodeX1 /m_XScale;
+			float m_XOrigin = m_Node1OrgPt.x - dlg.m_NodeX1 /m_XScale;
 
-		   float m_YOrigin = m_Node1OrgPt.y - dlg.m_NodeY1 /m_YScale;
+			float m_YOrigin = m_Node1OrgPt.y - dlg.m_NodeY1 /m_YScale;
 
-		// adjust node coordinates
+			// adjust node coordinates
 			std::list<DTANode*>::iterator iNode;
-		   for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			{
+
+				(*iNode)->pt .x  = ((*iNode)->pt .x - m_XOrigin)*m_XScale;
+				(*iNode)->pt .y  = ((*iNode)->pt .y - m_YOrigin)*m_YScale;
+			}
+			//adjust link cooridnates
+
+			std::list<DTALink*>::iterator iLink;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->m_FromPoint.x = ((*iLink)->m_FromPoint.x -m_XOrigin)*m_XScale;
+				(*iLink)->m_FromPoint.y = ((*iLink)->m_FromPoint.y -m_YOrigin)*m_YScale;
+
+				(*iLink)->m_ToPoint.x = ((*iLink)->m_ToPoint.x -m_XOrigin)*m_XScale;
+				(*iLink)->m_ToPoint.y = ((*iLink)->m_ToPoint.y -m_YOrigin)*m_YScale;
+			}
+
+		}
+
+		UpdateAllViews(0);
+	}
+}
+
+void CTLiteDoc::OnFileOpenrailnetworkproject()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("NeXTA Project (*.dlp)|*.dlp|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		g_VisulizationTemplate = e_train_scheduling;
+		OnOpenRailNetworkDocument(dlg.GetPathName());
+
+		CDlgFileLoading dlg;
+		dlg.m_pDoc = this;
+		dlg.DoModal ();
+
+		UpdateAllViews(0);
+	}
+
+
+}
+
+void CTLiteDoc::OpenWarningLogFile(CString directory)
+{
+	m_WarningFile.open (directory+"warning.log", ios::out);
+	if (m_WarningFile.is_open())
+	{
+		m_WarningFile.width(12);
+		m_WarningFile.precision(3) ;
+		m_WarningFile.setf(ios::fixed);
+	}else
+	{
+		AfxMessageBox("File warning.log cannot be opened, and it might be locked by another program!");
+	}
+}
+void CTLiteDoc::OnToolsExportopmodedistribution()
+{
+	CWaitCursor wc;
+	CDlg_VehEmissions dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+
+}
+
+void CTLiteDoc::OnToolsEnumeratepath()
+{
+	CWaitCursor cws;
+
+	m_OriginNodeID = m_NodeNametoIDMap[139476];
+	m_DestinationNodeID = m_NodeNametoIDMap[135960];
+
+	if(m_OriginNodeID>=0 && m_DestinationNodeID>=0)
+	{
+		if(m_pNetwork !=NULL)
+			delete m_pNetwork;
+
+		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+
+		m_pNetwork->GenerateSearchTree (m_OriginNodeID,m_DestinationNodeID,m_NodeSet.size());
+
+		FILE* st = NULL;
+
+		CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+			_T("Path file (*.csv)|*.csv|"));
+		if(dlg.DoModal() == IDOK)
 		{
+			fopen_s(&st,dlg.GetPathName(),"w");
 
-			(*iNode)->pt .x  = ((*iNode)->pt .x - m_XOrigin)*m_XScale;
-			(*iNode)->pt .y  = ((*iNode)->pt .y - m_YOrigin)*m_YScale;
+			int NodeList[1000];
+
+			int PathNo = 0;
+
+			int i;
+			for(i = 0; i < m_pNetwork->m_TreeListTail; i++)
+			{
+				if(m_pNetwork->m_SearchTreeList[i].CurrentNode == m_DestinationNodeID)
+				{
+					int nodeindex = 0;
+					NodeList[nodeindex++] = m_pNetwork->m_SearchTreeList[i].CurrentNode;
+					int Pred = m_pNetwork->m_SearchTreeList[i].PredecessorNode ;
+
+					while(Pred!=0)
+					{
+						NodeList[nodeindex++] = m_pNetwork->m_SearchTreeList[Pred].CurrentNode;
+
+						Pred = m_pNetwork->m_SearchTreeList[Pred].PredecessorNode ;
+					}
+					NodeList[nodeindex++] = m_pNetwork->m_SearchTreeList[Pred].CurrentNode;
+
+					fprintf(st,"%d,%d,", PathNo,nodeindex);
+
+					for(int n = nodeindex-1; n>=0; n--)
+					{
+						fprintf(st,"%d,", m_NodeIDtoNameMap[NodeList[n]]);
+					}
+
+					fprintf(st, "\n");
+					PathNo++;
+				}
+
+			}
+			fclose(st);
 		}
-	    //adjust link cooridnates
-
-		   	std::list<DTALink*>::iterator iLink;
-
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-		(*iLink)->m_FromPoint.x = ((*iLink)->m_FromPoint.x -m_XOrigin)*m_XScale;
-		(*iLink)->m_FromPoint.y = ((*iLink)->m_FromPoint.y -m_YOrigin)*m_YScale;
-
-		(*iLink)->m_ToPoint.x = ((*iLink)->m_ToPoint.x -m_XOrigin)*m_XScale;
-		(*iLink)->m_ToPoint.y = ((*iLink)->m_ToPoint.y -m_YOrigin)*m_YScale;
-		}
-
-		}
-
-				UpdateAllViews(0);
 	}
 }

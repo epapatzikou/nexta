@@ -3,7 +3,7 @@
 class STrainNode
 {  public:
 int  NodeID; 
-int  LinkID; // starting from the second element, [i-1,i]
+int  RailLinkID; // starting from the second element, [i-1,i]
 
 int TaskProcessingTime;  // the task is associated with the previous arc, // first node: origin node release time, other nodes: station entry or exit time, 1, 3, 5,: entry station, 2, 4, 6: exit station
 int TaskScheduleWaitingTime;  // to be scheduled by the program

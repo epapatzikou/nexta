@@ -18,6 +18,28 @@ protected: // create from serialization only
 
 // Attributes
 public:
+
+	// processing NGSim data
+	bool m_bColorBySpeedFlag; 
+	VehicleSnapshotData ** m_VehicleSnapshotAry;
+	int m_NumberOfVehicles;
+	int m_NumberOfTimeSteps;  // 0.1 second as resultion
+
+	std::map<int, int> m_VehicleIDtoNOMap;
+	std::vector<VehicleCFData> m_VehicleDataList;
+
+	float *** m_VehicleSnapshotAry_Lane; // simulation
+
+	int StartTimeLane[7];
+	int EndTimeLane[7];
+
+	float StartLocalYLane[7];
+	float EndLocalYLane[7];
+
+	int m_SelectLaneID;
+
+	// end of processing NGSim data
+
 	bool bRangeInitialized;
 
 	CTLiteDoc* GetTLDocument();
@@ -46,7 +68,6 @@ public:
 public:
 	void InitializeTimeRange();
 
-	bool ExportTimetableDataToCSVFile(char csv_file[_MAX_PATH]);
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -63,7 +84,29 @@ public:
 //	void DrawTrain(int TrainNo);
 
 	void DrawObjects(CDC* pDC,int MOEType,CRect PlotRect);
+	void DrawNGSIMObjects(CDC* pDC,int MOEType,CRect PlotRect);
 
+	int FindClosestTimeResolution(double Value)
+{
+
+		int ResolutionVector[6] = {100,300,600,1200,3000,15000};
+		double min_distance  = 9999999;
+
+		Value = max(1,Value/6);  //1/6 of time horizion as resolution
+
+		int ClosestResolution=1;
+		for(int i=0; i<6;i++)
+		{
+			if(	fabs(Value-ResolutionVector[i]) < min_distance)
+			{
+				min_distance = fabs(Value-ResolutionVector[i]);
+				ClosestResolution = ResolutionVector[i];
+			}
+		}
+		return ClosestResolution;
+};
+
+	
 	virtual ~CTimeSpaceView();
 #ifdef _DEBUG
 	virtual void AssertValid() const;
@@ -91,8 +134,18 @@ public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-	afx_msg void OnTimetableExporttimetable();
 	afx_msg void OnClose();
+	afx_msg void OnToolsLoadvehicletrajactoryfile();
+	afx_msg void OnNgsimdataLane1();
+	afx_msg void OnNgsimdataLane2();
+	afx_msg void OnNgsimdataLane3();
+	afx_msg void OnNgsimdataLane4();
+	afx_msg void OnNgsimdataLane5();
+	afx_msg void OnNgsimdataLane6();
+	afx_msg void OnNgsimdataLane7();
+	afx_msg void OnNgsimdataColorspeed();
+	afx_msg void OnUpdateNgsimdataColorspeed(CCmdUI *pCmdUI);
+	afx_msg void OnNgsimdataCarfollowingsimulation();
 };
 
 

@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_VehEmissions.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgAssignmentSettings.cpp"
 				>
 			</File>
@@ -387,6 +391,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_ImportODDemand.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_VehEmissions.h"
 				>
 			</File>
 			<File

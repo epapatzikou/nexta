@@ -1400,6 +1400,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	if(g_LinkMOEDlg==NULL)
 	{
 		g_LinkMOEDlg = new CDlgMOE();
+		g_LinkMOEDlg->m_pDoc = pDoc;
 		g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 
 	}
@@ -1795,7 +1796,7 @@ void CTLiteView::OnSearchNode()
 			pDoc->m_SelectedNodeID = pNode->m_NodeID ;
 
 			m_bShowNode = true;
-			m_bShowNodeNumber = true;
+			m_bShowNodeNumber = false;
 
 			Invalidate();
 
