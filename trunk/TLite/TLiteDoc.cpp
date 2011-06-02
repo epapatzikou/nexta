@@ -3396,10 +3396,18 @@ void CTLiteDoc::OnToolsEnumeratepath()
 {
 	CWaitCursor cws;
 
-	m_OriginNodeID = m_NodeNametoIDMap[139476];
-	m_DestinationNodeID = m_NodeNametoIDMap[135960];
+	int OD_index;
 
-	if(m_OriginNodeID>=0 && m_DestinationNodeID>=0)
+	int O_array[10]={52292,151094,136822,136054,143655,81422,140124,109800,52055,198841};
+
+	int D_array[10]={154600,15843,47948,148424,52057,201951,240663,136327,144041,154523};
+
+	for(OD_index = 0; OD_index<10; OD_index++)
+	{
+	m_OriginNodeID = m_NodeNametoIDMap[O_array[OD_index]];
+	m_DestinationNodeID = m_NodeNametoIDMap[D_array[OD_index]];
+
+	if(m_OriginNodeID>0 && m_DestinationNodeID>0)
 	{
 		if(m_pNetwork !=NULL)
 			delete m_pNetwork;
@@ -3412,11 +3420,13 @@ void CTLiteDoc::OnToolsEnumeratepath()
 
 		FILE* st = NULL;
 
-		CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-			_T("Path file (*.csv)|*.csv|"));
-		if(dlg.DoModal() == IDOK)
-		{
-			fopen_s(&st,dlg.GetPathName(),"w");
+//		CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+//			_T("Path file (*.csv)|*.csv|"));
+//		if(dlg.DoModal() == IDOK)
+//		{
+		  CString str;
+		  str.Format ("C:\\path_set_%d.csv",OD_index);
+			fopen_s(&st,str,"w");
 
 			int NodeList[1000];
 
@@ -3454,4 +3464,5 @@ void CTLiteDoc::OnToolsEnumeratepath()
 			fclose(st);
 		}
 	}
+	
 }
