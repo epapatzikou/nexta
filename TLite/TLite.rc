@@ -617,6 +617,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
         MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
+        MENUITEM SEPARATOR
+        MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
+        MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
     END
     POPUP "&Help"
     BEGIN
