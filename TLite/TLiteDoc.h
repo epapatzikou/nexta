@@ -550,6 +550,7 @@ public:
 		afx_msg void OnFileOpenrailnetworkproject();
 		afx_msg void OnToolsExportopmodedistribution();
 		afx_msg void OnToolsEnumeratepath();
+		afx_msg void OnToolsExporttotime();
 };
 
 

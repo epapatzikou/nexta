@@ -170,6 +170,7 @@ public:
 	afx_msg void OnUpdateNgsimdataShowsimulatedresults(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateNgsimdataShowbothobservedandsimulationresults(CCmdUI *pCmdUI);
 	afx_msg void OnNgsimdataShowbothobservedandsimulationresults();
+	afx_msg void OnNgsimdataChangesettingsofcarfollowingmodel();
 };
 
 
