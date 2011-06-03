@@ -132,6 +132,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_OPENRAILNETWORKPROJECT, &CTLiteDoc::OnFileOpenrailnetworkproject)
 	ON_COMMAND(ID_TOOLS_EXPORTOPMODEDISTRIBUTION, &CTLiteDoc::OnToolsExportopmodedistribution)
 	ON_COMMAND(ID_TOOLS_ENUMERATEPATH, &CTLiteDoc::OnToolsEnumeratepath)
+	ON_COMMAND(ID_TOOLS_EXPORTTOTIME, &CTLiteDoc::OnToolsExporttotime)
 END_MESSAGE_MAP()
 
 
@@ -3465,4 +3466,57 @@ void CTLiteDoc::OnToolsEnumeratepath()
 		}
 	}
 	
+}
+
+void CTLiteDoc::OnToolsExporttotime()
+{
+	CWaitCursor wc;
+		CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+			_T("Path file (*.csv)|*.csv|"));
+		if(dlg.DoModal() == IDOK)
+		{
+		FILE* st = NULL;
+		fopen_s(&st,dlg.GetPathName(),"w");
+		if(st!=NULL)
+		{
+			std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+
+			fprintf(st,"%d, %d\n", (*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber );
+
+			int max_day = 10;
+			
+			for(int day = 0; day < max_day; day++)
+			{
+
+			fprintf(st,"day, %d", day+1 );
+
+			for(int t= 60*7; t<60*8; t++)
+			{
+				float travel_time = (*iLink)->m_FreeFlowTravelTime ;
+
+				if((*iLink)->m_bSensorData )
+				{
+				travel_time = (*iLink)->m_FreeFlowTravelTime * (*iLink)->m_LinkMOEAry[1440*day+t].ObsTravelTimeIndex/100;
+				}
+
+				if(travel_time<0.5)
+					travel_time = 0.5; // 0.5 min as the resolution.
+
+			fprintf(st,",%4.1f,%4.1f", travel_time,travel_time);
+
+			}
+
+			fprintf(st,"\n");
+
+			}
+			}
+
+		fclose(st);
+	
+		}
+	
+	}
 }

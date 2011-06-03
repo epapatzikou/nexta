@@ -44,6 +44,7 @@
 #define IDD_DIALOG_NETWORK_ALIGNMENT    167
 #define IDR_MENU3                       168
 #define IDD_DIALOG_VEHICLE_EMISSIONS    169
+#define IDD_DIALOG_CarFollowingSettings 170
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -88,8 +89,11 @@
 #define IDC_COMBO_Destination           1046
 #define IDC_LIST_VEHICLE                1047
 #define IDC_COMBO_DepartureTime         1048
+#define IDC_EDIT_Kjam                   1048
 #define IDC_COMBO_VehicleType           1049
+#define IDC_EDIT_WaveSpeed              1049
 #define IDC_LIST_LINK                   1050
+#define IDC_EDIT_WaveSpeed2             1050
 #define IDC_LIST_LINK2                  1051
 #define IDC_OpMode_LINK                 1051
 #define ID_NODE_ORIGIN                  32771
@@ -329,14 +333,16 @@
 #define ID_Menu33070                    33070
 #define ID_NGSIMDATA_SHOWSIMULATEDRESULTS 33071
 #define ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS 33072
+#define ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL 33073
+#define ID_TOOLS_EXPORTTOTIME           33074
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        170
-#define _APS_NEXT_COMMAND_VALUE         33073
-#define _APS_NEXT_CONTROL_VALUE         1048
+#define _APS_NEXT_RESOURCE_VALUE        171
+#define _APS_NEXT_COMMAND_VALUE         33075
+#define _APS_NEXT_CONTROL_VALUE         1051
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

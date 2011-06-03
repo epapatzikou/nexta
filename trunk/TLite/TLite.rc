@@ -591,6 +591,7 @@ BEGIN
         MENUITEM "Export OpMode Distribution",  ID_TOOLS_EXPORTOPMODEDISTRIBUTION
         MENUITEM SEPARATOR
         MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
+        MENUITEM "Export to Time-dependent Travel Time Data Set", ID_TOOLS_EXPORTTOTIME
     END
     POPUP "&Window"
     BEGIN
@@ -620,6 +621,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
         MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
+        MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
     END
     POPUP "&Help"
     BEGIN
@@ -1050,6 +1052,24 @@ BEGIN
     DEFPUSHBUTTON   "Export",ID_EXPORT,207,167,50,14
 END
 
+IDD_DIALOG_CarFollowingSettings DIALOGEX 0, 0, 276, 95
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Settings of Car Following Model"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,165,74,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,219,74,50,14
+    EDITTEXT        IDC_EDIT_Kjam,102,16,57,14,ES_AUTOHSCROLL
+    LTEXT           "K Jam:",IDC_STATIC,7,16,26,8
+    LTEXT           "Backward wave speed W:",IDC_STATIC,7,38,88,8
+    LTEXT           "(vehicles/mile/lane)",IDC_STATIC,163,17,73,8
+    EDITTEXT        IDC_EDIT_WaveSpeed,101,35,57,14,ES_AUTOHSCROLL
+    LTEXT           "(miles/hour)",IDC_STATIC,165,36,73,8
+    LTEXT           "Free-flow speed:",IDC_STATIC,7,55,88,8
+    EDITTEXT        IDC_EDIT_WaveSpeed2,101,54,57,14,ES_AUTOHSCROLL
+    LTEXT           "(miles/hour)",IDC_STATIC,165,57,73,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1269,6 +1289,14 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 236
+    END
+
+    IDD_DIALOG_CarFollowingSettings, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 269
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
     END
 END
 #endif    // APSTUDIO_INVOKED
