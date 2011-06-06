@@ -61,6 +61,7 @@ public:
 	afx_msg void OnFileOpen();
 	afx_msg void OnFileOpenNewDoc();
 	virtual int ExitInstance();
+	afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6

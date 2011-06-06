@@ -59,6 +59,7 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_FILE_OPEN, &CWinApp::OnFileOpen)
 	ON_COMMAND(ID_FILE_OPEN, &CTLiteApp::OnFileOpen)
 	ON_COMMAND(ID_FILE_OPEN_NEW_DOC, &CTLiteApp::OnFileOpenNewDoc)
+	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat)
 END_MESSAGE_MAP()
 
 
@@ -255,4 +256,9 @@ void CTLiteApp::UpdateAllViews()
 		g_pPathMOEDlg->InsertPathMOEItem();
 		g_pPathMOEDlg->Invalidate (true);
 	}	
+}
+
+void CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat()
+{
+	// TODO: Add your command handler code here
 }

@@ -425,6 +425,7 @@ BEGIN
         MENUITEM "MOE Variability Plot",        ID_VIEW_MOEVARIABILITYPLOT
         MENUITEM "Show Event Label",            ID_ESTIMATION_SHOWEVENTLABEL
         MENUITEM "Highlight Weather Label",     ID_ESTIMATION_SHOWWEATHERDATA
+        MENUITEM "Prediction",                  ID_ESTIMATION_PREDICTION
     END
     POPUP "View"
     BEGIN
@@ -577,6 +578,23 @@ BEGIN
         MENUITEM "Link List",                   ID_SEARCH_LINKLIST
         MENUITEM "Train",                       ID_SEARCH_LISTTRAINS
     END
+    POPUP "Scenario"
+    BEGIN
+        MENUITEM "Incident",                    ID_SCENARIO_CAPACITY
+        MENUITEM "Work Zone",                   ID_SCENARIO_WORKZONE
+        MENUITEM "Road Pricing",                ID_SCENARIO_ROADPRICING
+        MENUITEM "Traveler Information Provision", ID_SCENARIO_TRAVELERINFORMATIONPROVISION
+        MENUITEM "Safety",                      ID_SCENARIO_SAFETY
+    END
+    POPUP "MOE"
+    BEGIN
+        MENUITEM "Vehicle Path Analaysis",      ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "Link MOE Sorting",            ID_MOE_LINKMOESORTING
+        MENUITEM SEPARATOR
+        MENUITEM "Congestion and Reliability",  ID_MOE_CONGESTIONANDRELIABILITY
+        MENUITEM "Emissions and Fuel Consumption", ID_MOE_EMISSIONSANDFUELCONSUMPTION
+        MENUITEM "Safety ",                     ID_MOE_SAFETY
+    END
     POPUP "Tools"
     BEGIN
         MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
@@ -588,21 +606,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "View Simulation Summary Log", ID_TOOLS_VIEWSIMULATIONSUMMARY
         MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM SEPARATOR
         MENUITEM "Export OpMode Distribution",  ID_TOOLS_EXPORTOPMODEDISTRIBUTION
-        MENUITEM SEPARATOR
-        MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
-        MENUITEM "Export to Time-dependent Travel Time Data Set", ID_TOOLS_EXPORTTOTIME
-    END
-    POPUP "&Window"
-    BEGIN
-        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
-        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
-        MENUITEM SEPARATOR
-        MENUITEM "&New Window",                 ID_WINDOW_NEW
-        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
-        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
-        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
-        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
     END
     POPUP "NGSim Data"
     BEGIN
@@ -622,6 +627,24 @@ BEGIN
         MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
         MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
         MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
+    END
+    POPUP "Research Tools"
+    BEGIN
+        MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
+        MENUITEM "Export to Time-dependent Travel Time Data Set", ID_TOOLS_EXPORTTOTIME
+        MENUITEM "OD demand estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
+        MENUITEM "Export to DTALite Sensor Data Format", ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT
+    END
+    POPUP "&Window"
+    BEGIN
+        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
+        MENUITEM SEPARATOR
+        MENUITEM "&New Window",                 ID_WINDOW_NEW
+        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
     END
     POPUP "&Help"
     BEGIN
@@ -1070,6 +1093,16 @@ BEGIN
     LTEXT           "(miles/hour)",IDC_STATIC,165,57,73,8
 END
 
+IDD_DIALOG_INCIDENT DIALOGEX 0, 0, 316, 228
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Incidents"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,207,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,207,50,14
+    LISTBOX         IDC_LIST_INCIDENT_LIST,7,30,255,92,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1297,6 +1330,14 @@ BEGIN
         RIGHTMARGIN, 269
         TOPMARGIN, 7
         BOTTOMMARGIN, 88
+    END
+
+    IDD_DIALOG_INCIDENT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 221
     END
 END
 #endif    // APSTUDIO_INVOKED

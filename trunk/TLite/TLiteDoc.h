@@ -41,6 +41,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = none;
 		m_ODMOEMode = odnone;
@@ -144,8 +145,12 @@ public:
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
+	
+	int m_TimeInterval;
+	int m_NumberOfDays;
 	void ReadSensorData(CString directory);
 	void ReadEventData(CString directory);
+	void BuildHistoricalDatabase();
 
 	bool ReadSensorLocationData(LPCTSTR lpszFileName);
 	void ReadHistoricalDataFormat2(CString directory);
@@ -550,7 +555,8 @@ public:
 		afx_msg void OnFileOpenrailnetworkproject();
 		afx_msg void OnToolsExportopmodedistribution();
 		afx_msg void OnToolsEnumeratepath();
-		afx_msg void OnToolsExporttotime();
+		afx_msg void OnToolsExporttoHistDatabase();
+		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 };
 
 

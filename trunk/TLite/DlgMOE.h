@@ -186,4 +186,5 @@ public:
 	afx_msg void OnMoetypeCumulativevolumeOblique();
 	afx_msg BOOL OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnDataExportvehicletrajectory();
+	afx_msg void OnUpdateEstimationPrediction(CCmdUI *pCmdUI);
 };
