@@ -838,3 +838,44 @@ int CTLiteDoc::Routing()
 	return 0;
 }
 
+
+int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, int direction)
+{
+
+	double Min_distance = m_NetworkRect.Width()/100;  // set the selection threshod
+
+	std::list<DTALink*>::iterator iLink;
+
+	int SelectedLinkID = -1;
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		GDPoint p0, pfrom, pto;
+		p0.x  = x; p0.y  = y;
+		pfrom.x  = (*iLink)->m_FromPoint.x; pfrom.y  = (*iLink)->m_FromPoint.y;
+		pto.x  = (*iLink)->m_ToPoint.x; pto.y  = (*iLink)->m_ToPoint.y;
+
+		if(direction == 1 && pfrom.x > pto.x)  // East, Xfrom should be < XTo
+			continue;  //skip
+
+		if(direction == 2 && pfrom.y < pto.y)  // South, Yfrom should be > YTo
+			continue;
+
+		if(direction == 3 && pfrom.x < pto.x)  // West, Xfrom should be > XTo
+			continue;
+
+		if(direction == 4 && pfrom.y > pto.y)  // North, Yfrom should be < YTo
+			continue;
+
+		float distance = g_DistancePointLine(p0, pfrom, pto);
+
+		if(distance >0 && distance < Min_distance)
+		{
+			SelectedLinkID = (*iLink)->m_LinkID ;
+
+			Min_distance = distance;
+		}
+	}
+
+	return SelectedLinkID;
+
+}
