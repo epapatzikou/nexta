@@ -351,98 +351,10 @@ public:
 
 	};
 
-	void ComputeHistoricalAvg(int number_of_weekdays)
-	{
-
-		m_MinSpeed = 200;
-		m_MaxSpeed = 0;
-
-		int t;
-		float VolumeSum = 0;
-		float SpeedSum = 0;
+	void ComputeHistoricalAvg(int number_of_weekdays);
 
 
-		for( t=0; t< 1440; t++)
-		{
-
-			// reset
-			m_HistLinkMOEAry[t].ObsSpeed =0;
-			m_HistLinkMOEAry[t].ObsFlow =0;
-			m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
-			m_HistLinkMOEAry[t].ObsDensity =0;
-			m_HistLinkMOEAry[t].ObsTravelTimeIndex = 0;
-
-			// start counting
-			int count = 0;
-
-
-			for(int day =0; day <number_of_weekdays; day ++)
-			{
-				if(m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
-				{
-					m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed;
-					m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow;
-					m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow;
-					m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity;
-					m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndex;
-
-					count++;
-
-					// update min and max speed
-
-					if((t>=8*60 && t<9*60)) //8-9AM
-					{
-						// update link-specific min and max speed
-						if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
-							m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
-
-						if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
-							m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
-
-
-					}
-				}
-
-
-			}
-
-			if(count>=1) 
-			{
-				// calculate final mean statistics
-				m_HistLinkMOEAry[t].ObsSpeed /=count;
-				m_HistLinkMOEAry[t].ObsFlow /=count;
-				m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
-				m_HistLinkMOEAry[t].ObsDensity /=count;
-				m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
-			}
-
-
-		}
-
-	}
-
-
-
-	struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
-	{
-
-		struc_traffic_state future_state;
-		// step 1: calculate delta w
-		float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTimeIndex -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTimeIndex;
-
-		// step 2: propogate delta w to Furture time
-		//this is the most tricky part
-
-		float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
-		// step 3: add future delta w to historical time at future time
-
-		future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTimeIndex;
-		// step 4: produce speed
-
-		future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
-
-		return future_state;
-	}
+		struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
 
 
 
@@ -756,21 +668,8 @@ public:
 
 	}
 
-	void UpdateWithinDayStatistics()
-	{
-		int t;
-		for(t=0; t<1440; t++)
-		{
-			m_WithinDayMeanTimeDependentTravelTime[t] = 0;
-			m_WithinDayMaxTimeDependentTravelTime[t] = 0;
-		}
-
-		for(t=0; t<1440*m_number_of_days; t++)
-		{
-			m_WithinDayMeanTimeDependentTravelTime[t%1440] += m_TimeDependentTravelTime[t]/m_number_of_days;
-			m_WithinDayMaxTimeDependentTravelTime[t%1440] = max(m_WithinDayMaxTimeDependentTravelTime[t%1440],m_TimeDependentTravelTime[t]);
-		}
-	}
+	void UpdateWithinDayStatistics();
+	
 
 	float GetTravelTimeMOE(int time, int MOEType)
 	{
