@@ -207,14 +207,6 @@ void ReadDSPNetworkData(char fname[_MAX_PATH])
 
       fclose(st);
       }
-   g_RTNodePredAry = Allocate3DDynamicArray<int>(g_InfoTypeSize,g_ODZoneSize+1,g_NodeSet.size()+g_ODZoneSize+1);
-   g_RTLabelCostAry = Allocate3DDynamicArray<unsigned char>(g_InfoTypeSize,g_ODZoneSize+1,g_NodeSet.size()+g_ODZoneSize+1);
-
-   if(g_RTNodePredAry==NULL || g_RTLabelCostAry ==NULL)
-      {
-      cout << "No sufficient memory..."<< endl;
-      exit(1);
-      }
    cout << "Number of Zones = "<< g_ODZoneSize  << endl;
    cout << "Number of Nodes = "<< g_NodeSet.size() << endl;
    cout << "Number of Links = "<< g_LinkSet.size() << endl;
@@ -354,3 +346,23 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 
 	   return value; 
 } 
+
+void g_FreeVehicleVector()
+{
+							cout << "Free vehicle set... " << endl;
+						std::vector<DTAVehicle*>::iterator iterVehicle;							
+							for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
+							{
+								delete *iterVehicle;
+							}
+
+							g_VehicleVector.clear();
+							g_VehicleMap.clear();
+}
+
+void g_FreeODTKPathVector()
+{
+	cout << "Free global path set... " << endl;
+
+	g_ODTKPathVector.clear(); 
+}

@@ -98,10 +98,10 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 	int LinkID = g_LinkSet.size();
 
 	// add outgoing connectors from origin zone to destination node
-	for(i = 0; i< g_ZoneCentroidSizeAry[CurZoneID]; i++)
+	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-		ToID = g_ZoneCentroidNodeAry[CurZoneID][i];
+		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry[i];
 		// add outcoming connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeIDtoNameMap[ToID]);
@@ -131,9 +131,9 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 	{
 		if(z != CurZoneID)
 		{
-			for(i = 0; i< g_ZoneCentroidSizeAry[z]; i++)
+			for(i = 0; i< g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
 			{
-				FromID = g_ZoneCentroidNodeAry[z][i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				FromID = g_ZoneVector[z].m_CentroidNodeAry[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
 				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  ->m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
@@ -418,10 +418,10 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 	int LinkID = g_LinkSet.size();
 
 		// add outgoing connector from the centriod corresponding to the current origin zone to physical nodes of the current zone
-	for(i = 0; i< g_ZoneCentroidSizeAry[CurZoneID]; i++)
+	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo // root node
-		ToID = g_ZoneCentroidNodeAry[CurZoneID][i];
+		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry [i];
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeIDtoNameMap[ToID]);
 
@@ -450,9 +450,9 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 	{
 		if(z != CurZoneID)
 		{
-			for(i = 0; i< g_ZoneCentroidSizeAry[z]; i++)
+			for(i = 0; i<  g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
 			{
-				FromID = g_ZoneCentroidNodeAry[z][i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				FromID = g_ZoneVector[z].m_CentroidNodeAry [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
 				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  ->m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;

@@ -28,16 +28,14 @@
 extern std::set<DTANode*>		g_NodeSet;
 extern std::map<int, DTANode*> g_NodeMap;
 extern std::map<int, int> g_NodeIDtoNameMap;
-
-
 extern std::set<DTALink*>		g_LinkSet;
 extern std::map<int, DTALink*> g_LinkMap;
+extern std::vector<DTAZone> g_ZoneVector;
 
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
 
-extern int ***g_RTNodePredAry;  // vehicle type, origin, node, available in real-time simulation, range 0 -65535
-extern unsigned char*** g_RTLabelCostAry; // vehicle type, origin, node, available in real-time simulation, to save memory, the unit is min, data range is 0 to 255.
+extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 
 // time inteval settings in assignment and simulation
 extern double g_DTASimulationInterval; // min
@@ -56,8 +54,8 @@ extern int g_NumberOfInnerIterations;
 extern int g_DepartureTimetIntervalSize;
 
 extern int g_DemandLoadingHorizon; // min
-extern std::vector<float> g_DemandTemporalShare_5_min_res;
 extern int g_SimulationHorizon; // min
+extern int g_ObservationTimeInterval; //min 
 extern int g_Number_of_CompletedVehicles;
 extern int g_Number_of_GeneratedVehicles;
 
@@ -85,27 +83,26 @@ extern int g_ConvergenceThreshold_in_Num_Switch; // the convergence threshold in
 extern int g_VehicleExperiencedTimeGap; // 1: Vehicle experienced time gap; 0: Avg experienced path time gap
 extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles switched to them
 
+// for OD estimation statistics
+
+extern float g_TotalDemandDeviation; 
+extern float g_TotalMeasurementDeviation; 
+
+
 // for fast data acessing
 extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation interval
 
-extern int* g_ZoneCentroidSizeAry;  //Number of centroids per zone
-extern int** g_ZoneCentroidNodeAry; //centroid node Id per zone
-
 extern FILE* g_ErrorFile;
 
-extern NetworkMOE* g_NetworkMOEAry;
+
 
 extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin;
 
-extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOPreTripVehicleArray; // TDO for pretrip time-dependent origin;
-
-
 extern ofstream g_LogFile;
-extern int* g_OVehicleSizeAry;
-extern int* g_OPreTripVehicleSizeAry;
 
-extern NetworkLoadingOutput* g_AssignmentMOEAry;
 extern ofstream g_AssignmentLogFile;
 
+extern std::vector<NetworkLoadingOutput>  g_AssignmentMOEAry;
+extern std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;
 
 
