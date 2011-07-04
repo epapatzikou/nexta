@@ -311,6 +311,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 								//							g_LogFile << "Queue spillback"<< CurrentTime <<  g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " -> " <<	g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID] << " " << (*iterLink)->LinkInCapacity << endl;
 
+								// update traffic state
+								(*iterLink)->m_LinkMOEAry[(int)(CurrentTime)].TrafficStateCode = 2;  // 2: fully congested
 
 								//							TRACE("Queue spillback at %d -> %d\n", g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID], g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID]);
 							}
@@ -659,6 +661,10 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			(*iterLink)->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength = (*iterLink)->ExitQueue.size(); 
 
+			if((*iterLink)->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength >=1 && (*iterLink)->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode != 2)   // not fully congested
+				(*iterLink)->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode  = 1;  // partially congested
+
+
 			// time_stamp_in_min+1 is because we take the stastistics to next time stamp
 			(*iterLink)->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  (*iterLink)->CFlowArrivalCount;
 
@@ -688,6 +694,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	{
 		(*iterLink)->SetupMOE();
 	}
+
+	cout << "Free global path set... " << endl;
+
+	g_ODTKPathVector.clear();   
+	// clear the global path set vector, will be regenerated in OD path flow adjustment module ConstructPathArrayForEachODT_ODEstimation()
 
 	if(TrafficFlowModelFlag == 0) // using BPR function
 	{
@@ -729,8 +740,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	double time;
 	int simulation_time_interval_no = 0;
 	bool bPrintOut = true;
-
-
 
 	// generate historical info based shortst path, based on constant link travel time
 
@@ -911,26 +920,33 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	//	TRACE("g_Number_of_CompletedVehicles= %d\n", Number_of_CompletedVehicles);
 
-	// generate EndTimeOfCongestion
+	// generate EndTimeOfPartialCongestion
 	for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
 	{
 
-		int LastEndTimeOfCongestion = g_SimulationHorizon+10;  // initial value, no queue
+		int LastEndTimeOfPartialCongestion = g_SimulationHorizon+10;  // initial value, no queue
 
 		if((*iterLink)->m_LinkMOEAry[g_SimulationHorizon-1].ExitQueueLength>=1)  // remaining queue at the end of simulation horizon
-			LastEndTimeOfCongestion = g_SimulationHorizon-1;
+			LastEndTimeOfPartialCongestion = g_SimulationHorizon-1;
 
 		int time_min;
-		for(time_min = g_SimulationHorizon-1; time_min>=0 ; time_min--)
+		for(time_min = g_SimulationHorizon-1; time_min>=0 ; time_min--)  // move backward
 		{
+			// condition 1: from partial congestion to free-flow
 			if(time_min>=1 && (*iterLink)->m_LinkMOEAry[time_min-1].ExitQueueLength>=1 && (*iterLink)->m_LinkMOEAry[time_min].ExitQueueLength==0)  // previous time_min interval has queue, current time_min interval has no queue --> end of congestion 
 			{
-				LastEndTimeOfCongestion = time_min;			
+				LastEndTimeOfPartialCongestion = time_min;			
+			}
+
+			//condition 2: from partial congestion to fully congesed.
+			if(time_min>=1 && (*iterLink)->m_LinkMOEAry[time_min-1].ExitQueueLength>=1 && (*iterLink)->m_LinkMOEAry[time_min].TrafficStateCode == 2 )
+			{
+				LastEndTimeOfPartialCongestion = time_min;			
 			}
 
 			if((*iterLink)->m_LinkMOEAry[time_min].ExitQueueLength > 0) // there is queue now
 			{
-				(*iterLink)->m_LinkMOEAry[time_min].EndTimeOfCongestion = LastEndTimeOfCongestion;
+				(*iterLink)->m_LinkMOEAry[time_min].EndTimeOfPartialCongestion = LastEndTimeOfPartialCongestion;
 			}
 
 		}
@@ -939,6 +955,8 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	// end of dynamic traffic flow model
 
 
+	if(g_ODEstimationFlag) 
+		g_UpdateLinkMOEDeviation_ODEstimation();
 
 	float TotalTripTime = 0;
 	float TotalDelay = 0;

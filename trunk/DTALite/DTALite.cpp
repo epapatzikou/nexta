@@ -121,16 +121,9 @@ std::map<int, int> g_NodeIDtoNameMap;
 std::set<DTALink*>		g_LinkSet;
 std::map<int, DTALink*> g_LinkMap;
 
-int* g_ZoneCentroidSizeAry;  //Number of centroids per zone
-int** g_ZoneCentroidNodeAry; //centroid node Id per zone
-
-DTAZone* g_ZoneInfo;
-
+std::vector<DTAZone> g_ZoneVector;
 std::vector<DTAVehicle*>		g_VehicleVector;
 std::map<int, DTAVehicle*> g_VehicleMap;
-
-int ***g_RTNodePredAry;  // vehicle type, origin, node, available in real-time simulation
-unsigned char *** g_RTLabelCostAry; // vehicle type, origin, node, available in real-time simulation, to save memory, the unit is min, data range is 0 to 255.
 
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
@@ -150,12 +143,11 @@ float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
 
 int g_DemandLoadingHorizon = 60; // min
-std::vector<float> g_DemandTemporalShare_5_min_res;
-std::vector<int> g_DemandTemporalCount_5_min_res;
-
 int g_VehicleLoadingMode = 0; // not load from vehicle file by default, 1: load vehicle file
 int g_SimulationHorizon = 120;
 int g_DemandHorizonForLoadedVehicles = 60; // min
+
+int g_ObservationTimeInterval = 1;  //min 
 
 // assignment
 int g_UEAssignmentMethod = 0; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
@@ -168,6 +160,9 @@ int g_ConvergenceThreshold_in_Num_Switch; // the convergence threshold in terms 
 int g_VehicleExperiencedTimeGap = 1; // 1: Vehicle experienced time gap; 0: Avg experienced path time gap
 int g_NewPathWithSwitchedVehicles = 0; // number of new paths with vehicles switched to them
 
+float g_TotalDemandDeviation = 0;
+float g_TotalMeasurementDeviation = 0; 
+
 float g_UserClassPercentage[MAX_SIZE_INFO_USERS] = {0};
 float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
 float g_VMSPerceptionErrorRatio;
@@ -175,6 +170,7 @@ int	  g_K_HistInfo_ShortestPath;
 int g_information_updating_interval_of_en_route_info_travelers_in_min;
 
 float g_VOT[MAX_VEHICLE_TYPE_SIZE];
+float g_VehicleTypePercentage[MAX_VEHICLE_TYPE_SIZE];
 
 int g_LearningPercentage = 15;
 int g_TravelTimeDifferenceForSwitching = 5;  // min
@@ -200,26 +196,19 @@ int g_start_iteration_for_MOEoutput = 0;
 int g_LastLoadedVehicleID = 0; // scan vehicles to be loaded in a simulation interval
 
 VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin
-VehicleArrayForOriginDepartrureTimeInterval** g_TDOPreTripVehicleArray; // TDO for time-dependent origin
 
-
-int* g_OVehicleSizeAry = NULL;
-int* g_OPreTripVehicleSizeAry = NULL;
-
-std::vector<DTA_vhc_simple>   g_vector_vehicles;	// vector of DSP_Vehicle, not pointer!;
+std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle, not pointer!;
 
 FILE* g_ErrorFile = NULL;
 ofstream g_LogFile;
 ofstream g_AssignmentLogFile;
 ofstream g_WarningFile;
 
-int g_TrafficFlowModelFlag = 1;
+int g_TrafficFlowModelFlag = 0;
 int g_MergeNodeModelFlag=1;
 
-
-NetworkMOE* g_NetworkMOEAry = NULL;
-NetworkLoadingOutput* g_AssignmentMOEAry  = NULL;
-
+std::vector<NetworkMOE>  g_NetworkMOEAry;
+std::vector<NetworkLoadingOutput>  g_AssignmentMOEAry;
 
 using namespace std;
 
@@ -444,7 +433,7 @@ void ReadInputFiles()
 		fclose(st);
 	}else
 	{
-		cout << "Error: File link.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_link.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	}
 
@@ -474,43 +463,9 @@ void ReadInputFiles()
 		cout << "Error: File zone.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	}
-	g_ZoneCentroidSizeAry = new int[g_ODZoneSize+1];  // +1 is because the zone numbers start from 1
-
-	g_ZoneInfo = new DTAZone[g_ODZoneSize+1];
-
-	// g_NodeSet.size()+g_ODZoneSize+1 includes all physical nodes, all origin zone centriods, and one outgoing destination zone centriod
-	g_RTNodePredAry = Allocate3DDynamicArray<int>(g_InfoTypeSize,g_ODZoneSize+1,g_NodeSet.size()+g_ODZoneSize+1);
-	g_RTLabelCostAry = Allocate3DDynamicArray<unsigned char>(g_InfoTypeSize,g_ODZoneSize+1,g_NodeSet.size()+g_ODZoneSize+1);
-
-	if(g_RTNodePredAry==NULL || g_RTLabelCostAry ==NULL)
-	{
-		cout << "No sufficient memory..."<< endl;
-		getchar();
-		exit(0);
-
-	}
-
+	g_ZoneVector.resize (g_ODZoneSize+1);
 
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_DepartureTimetIntervalSize);
-	g_TDOPreTripVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_DepartureTimetIntervalSize);
-
-
-	g_OVehicleSizeAry = new int[g_ODZoneSize+1];  // +1 is because the zone numbers start from 1
-	g_OPreTripVehicleSizeAry = new int[g_ODZoneSize+1];  // +1 is because the zone numbers start from 1
-
-	for(z = 0; z <=g_ODZoneSize; z++)
-	{
-		g_ZoneCentroidSizeAry[z]= 0;
-
-		g_OVehicleSizeAry[z] = 0;
-		g_OPreTripVehicleSizeAry[z] = 0;
-
-		for(t= 0; t< g_DepartureTimetIntervalSize; t++)
-		{
-			g_TDOVehicleArray[z][t].Size=0;
-			g_TDOPreTripVehicleArray[z][t].Size=0;
-		}
-	}
 
 	// step 2: check how many centroids
 
@@ -525,46 +480,14 @@ void ReadInputFiles()
 			if(zone_number == -1)  // reach end of file
 				break;
 			int node_number= g_read_integer(st);
-			g_ZoneCentroidSizeAry[zone_number]++;
 
-			g_ZoneInfo[zone_number].m_Capacity+= g_NodeMap[node_number]->m_TotalCapacity ;
+			g_ZoneVector[zone_number].m_CentroidNodeAry.push_back( g_NodeMap[node_number]->m_NodeID);
+			g_ZoneVector[zone_number].m_Capacity += g_NodeMap[node_number]->m_TotalCapacity ;
 
-			if(g_ZoneCentroidSizeAry[zone_number]> g_AdjLinkSize)
-				g_AdjLinkSize = g_ZoneCentroidSizeAry[zone_number];
+			if(g_ZoneVector[zone_number].m_CentroidNodeAry.size() > g_AdjLinkSize)
+				g_AdjLinkSize = g_ZoneVector[zone_number].m_CentroidNodeAry.size();
 		}
 		fclose(st);
-	}
-
-	// step 3: read centroid array finally
-	// re-read zone.csv
-
-	g_ZoneCentroidNodeAry = AllocateDynamicArray<int>(g_ODZoneSize+1,g_AdjLinkSize);
-
-	for(int z = 1; z <=g_ODZoneSize; z++)
-	{
-		g_ZoneCentroidSizeAry[z] = 0;
-	}
-
-	fopen_s(&st,"input_zone.csv","r");
-	if(st!=NULL)
-	{
-		while(!feof(st))
-		{
-			int zone_number	       = g_read_integer(st);
-			if(zone_number == -1)  // reach end of file
-				break;
-
-			int node_number= g_read_integer(st);
-
-			g_ZoneCentroidNodeAry[zone_number][g_ZoneCentroidSizeAry[zone_number]++] = g_NodeMap[node_number]->m_NodeID;
-
-			ASSERT(g_ZoneCentroidSizeAry[zone_number] < g_AdjLinkSize);
-		}
-		fclose(st);
-	}else
-	{
-
-		// error checking.
 	}
 
 	//	cout << "Done with zone.csv"<< endl;
@@ -751,13 +674,15 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
+		g_ReadLinkMeasurementFile(&PhysicalNetwork);
+
 		ConnectivityChecking(&PhysicalNetwork);
 
 
 	if(g_VehicleLoadingMode == 0)  // load from demand table
 	{
 		ReadDemandFile(&PhysicalNetwork);
-
+		
 	}else
 	{  // load from vehicle file
 		ReadDTALiteVehicleFile("Vehicle.csv",&PhysicalNetwork);
@@ -767,8 +692,8 @@ void ReadInputFiles()
 
 	for(z = 1; z <=g_ODZoneSize; z++)
 	{
-		if(g_ZoneInfo[z].m_Demand >= g_ZoneInfo[z].m_Capacity )
-			g_WarningFile << "Zone "<< z << " has demand " << g_ZoneInfo[z].m_Demand   << " and capacity " << g_ZoneInfo[z].m_Capacity<< endl;
+		if(g_ZoneVector[z].m_Demand >= g_ZoneVector[z].m_Capacity )
+			g_WarningFile << "Zone "<< z << " has demand " << g_ZoneVector[z].m_Demand  << " and capacity " << g_ZoneVector[z].m_Capacity<< endl;
 
 	}
 
@@ -787,16 +712,19 @@ void ReadInputFiles()
 
 
 
-void CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int vehicle_type, float starting_time_in_min, float ending_time_in_min)
+void CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int vehicle_type, float starting_time_in_min, float ending_time_in_min, long PathIndex)
 {
-
 	int number_of_vehicles_to_be_generated = g_GetRandomInteger_From_FloatingPointValue(number_of_vehicles);
 
 	for(int i=0; i< number_of_vehicles_to_be_generated; i++)
 	{
 		DTA_vhc_simple vhc;
 		vhc.m_OriginZoneID = originput_zone;
+
+		g_ZoneVector[originput_zone].m_OriginVehicleSize ++;
 		vhc.m_DestinationZoneID = destination_zone;
+
+		vhc.m_PathIndex = PathIndex;
 
 		float RandomRatio = 0;
 		if(number_of_vehicles_to_be_generated <10) // small demand volume
@@ -809,11 +737,6 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		}
 
 		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
-
-		//count vehicles 
-		int time_interval = (int)(vhc.m_DepartureTime/5.0f);
-		if(time_interval<g_DemandTemporalCount_5_min_res.size())
-		g_DemandTemporalCount_5_min_res[time_interval]+=1;
 		//		TRACE("vhc.m_DepartureTime %d = %f\n",i, vhc.m_DepartureTime);
 
 		float RandomPercentage= g_GetRandomRatio()*100.0f; 
@@ -832,22 +755,29 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		vhc.m_VehicleType = vehicle_type;
 		RandomPercentage= g_GetRandomRatio()*100.0f; 
 
+		if(vehicle_type == 1) //base line demand
+		{
+		if(RandomPercentage > g_VehicleTypePercentage[1] && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]))
+		{
+		vhc.m_VehicleType = 2;  //HOV
+		}
+
+		if(RandomPercentage > (g_VehicleTypePercentage[2]+g_VehicleTypePercentage[1]) && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]+g_VehicleTypePercentage[3]))
+		{
+		vhc.m_VehicleType = 3;  // truck
+		}
+
+		}
+
 		int DepartureTimeInterval = int(vhc.m_DepartureTime / g_DepartureTimetInterval);
 
 		if(DepartureTimeInterval >= g_DepartureTimetIntervalSize)
 			DepartureTimeInterval = g_DepartureTimetIntervalSize-1;
 
-		g_TDOVehicleArray[originput_zone][DepartureTimeInterval].Size +=1;
-		g_OVehicleSizeAry[originput_zone]+=1;
 
-		if(vhc.m_InformationClass ==5)
-		{
-			g_TDOPreTripVehicleArray[originput_zone][DepartureTimeInterval].Size +=1;
-			g_OPreTripVehicleSizeAry[originput_zone]+=1;
+		vhc.m_PathIndex  = PathIndex;
 
-		}
-
-		g_vector_vehicles.push_back(vhc);
+		g_simple_vector_vehicles.push_back(vhc);
 
 		if(g_DemandHorizonForLoadedVehicles < vhc.m_DepartureTime)
 			g_DemandHorizonForLoadedVehicles = (int)(vhc.m_DepartureTime+1);
@@ -950,42 +880,6 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 	bool bFileReady = false;
 	int i,t,z;
 
-	fopen_s(&st,"input_demand_temporal_profile_5_min_res.csv","r");
-
-	// setup default value;
-	float equal_share = 5.0f/g_DemandLoadingHorizon;
-
-	for(t=0; t<g_DemandLoadingHorizon; t+=5)
-	{
-		g_DemandTemporalShare_5_min_res.push_back(equal_share);  // default value
-		g_DemandTemporalCount_5_min_res.push_back(0);
-
-	}
-
-	TRACE("Size of g_DemandTemporalShare_5_min_res = %d\n", g_DemandTemporalShare_5_min_res.size());
-	if(st!=NULL)
-	{
-		for(t=0; t<g_DemandLoadingHorizon; t+=5)
-		{
-				g_DemandTemporalShare_5_min_res[t/5] = 0.0f;
-		}
-
-		t = 0;
-		cout << "Reading file input_demand_temporal_profile_5_min_res.csv..."<< endl;
-		while(!feof(st) && t<g_DemandLoadingHorizon)
-		{
-			float trip_share = g_read_float(st);
-			if(trip_share < 0)  // reach end of file// return -1
-				break;
-
-			g_DemandTemporalShare_5_min_res[t/5] = trip_share;
-			t+=5; // 5 min;
-
-		}
-		fclose(st);
-	
-	}
-
 	fopen_s(&st,"input_demand.csv","r");
 	if(st!=NULL)
 	{
@@ -1018,8 +912,7 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 //			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
 
-
-			g_ZoneInfo[originput_zone].m_Demand +=number_of_vehicles;
+			g_ZoneVector[originput_zone].m_Demand += number_of_vehicles;
 
 			float Interval= float(ending_time_in_min - starting_time_in_min);
 
@@ -1054,23 +947,10 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 	}
 
 	// 	alternatively, read demand.txt
-	//1: SOV
-	//2: HOV2
-	//3: HOV3
-	//4: Light Truck
-	//5: Medium Truck
-	//6: Heavy Truck
-	for (int vehicle_type = 1; vehicle_type<= 6;vehicle_type++)
-	{
-	// string
-
-	CString demand_file;
-	demand_file.Format ("input_demand_type_%d.txt",vehicle_type);
-
-	fopen_s(&st,demand_file,"r");
+	fopen_s(&st,"input_demand.txt","r");
 	if(st!=NULL)
 	{
-		cout << "Reading file "<< demand_file << endl;
+		cout << "Reading file demand.txt..."<< endl;
 		bFileReady = true;
 
 		int line_no = 1;
@@ -1084,28 +964,23 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			int destination_zone	   = g_read_integer(st);
 
 			float number_of_vehicles = g_read_float(st);
-			int starting_time_in_min     = 0;
-			int ending_time_in_min     = float(g_DemandLoadingHorizon);
+			number_of_vehicles*= g_DemandGlobalMultiplier;
+			int vehicle_type		   = 1;
+			float starting_time_in_min     = 0;
+			float ending_time_in_min     = float(g_DemandLoadingHorizon);
 
 			// we generate vehicles here for each OD data line
 
-			for(starting_time_in_min = 0; starting_time_in_min<g_DemandLoadingHorizon; starting_time_in_min+=5)
-			{
-				ending_time_in_min = starting_time_in_min + 5;
-				float number_of_vehicles_per_5_min = number_of_vehicles*g_DemandGlobalMultiplier*g_DemandTemporalShare_5_min_res[starting_time_in_min/5]; // 5 min
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_per_5_min,vehicle_type,starting_time_in_min,ending_time_in_min);
-			}
-
+			CreateVehicles(originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
 			if(line_no %100000 ==0)
 			{
-				cout << g_GetAppRunningTime() <<  "Reading " <<  line_no/1000 << "K lines..."<< endl;
+				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines..."<< endl;
 			}
 
 			line_no++;
 		}
 
 		fclose(st);
-	}
 	}
 
 // 	alternatively, read demand.txt
@@ -1125,41 +1000,24 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 			int destination_zone	   = g_read_integer(st);
 
-			float number_of_vehicles_1 = g_read_float(st);  // SOV
-			float number_of_vehicles_2 = g_read_float(st); //HOV2
-			float number_of_vehicles_3 = g_read_float(st); //HOV3
-			float number_of_vehicles_4 = g_read_float(st); //Light Truck
-			float number_of_vehicles_5 = g_read_float(st); //Medium Truck
-			float number_of_vehicles_6 = g_read_float(st); //Heavy Truck
+			float number_of_vehicles = g_read_float(st);  // SOV
+			 g_read_float(st); //HOV2
+			 g_read_float(st); //HOV3
+			 g_read_float(st); //Light Truck
+			 g_read_float(st); //Medium Truck
+			 g_read_float(st); //Heavy Truck
 			 
+			number_of_vehicles*= g_DemandGlobalMultiplier;
 			int vehicle_type		   = 1;
 			float starting_time_in_min     = 0;
 			float ending_time_in_min     = float(g_DemandLoadingHorizon);
 
 			// we generate vehicles here for each OD data line
-	if(originput_zone>g_ODZoneSize || destination_zone >g_ODZoneSize)
-	{
-		cout << "Error:"<< "line No =  "  << line_no << " originput_zone>g_ODZoneSize || destination_zone >g_ODZoneSize; "<< "originput_zone="<< originput_zone<< "destination_zone="<< destination_zone<<endl;
-		g_ProgramStop();
 
-	}
-
-				for(starting_time_in_min = 0; starting_time_in_min<g_DemandLoadingHorizon; starting_time_in_min+=5)
-			{
-				ending_time_in_min = starting_time_in_min + 5;
-				float trip_share = g_DemandTemporalShare_5_min_res[starting_time_in_min/5]*g_DemandGlobalMultiplier; // 5 min
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_1*trip_share,1,starting_time_in_min,ending_time_in_min);
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_2*trip_share,2,starting_time_in_min,ending_time_in_min);
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_3*trip_share,3,starting_time_in_min,ending_time_in_min);
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_4*trip_share,4,starting_time_in_min,ending_time_in_min);
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_5*trip_share,5,starting_time_in_min,ending_time_in_min);
-				CreateVehicles(originput_zone,destination_zone,number_of_vehicles_6*trip_share,6,starting_time_in_min,ending_time_in_min);
-
-				}
-
+			CreateVehicles(originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
 			if(line_no %100000 ==0)
 			{
-				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines...# of Vehicles = "<< g_vector_vehicles.size()<< endl;
+				cout << g_GetAppRunningTime() <<  "Reading " << line_no/1000 << "K lines..."<< endl;
 			}
 
 			line_no++;
@@ -1226,27 +1084,14 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 	// create vehicle heres...
 	cout << "Converting demand flow to vehicles..."<< endl;
 
-	std::sort(g_vector_vehicles.begin(), g_vector_vehicles.end());
+	std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
 
-	for(z = 1; z <=g_ODZoneSize; z++)
-	{
-		for(t= 0; t< g_DepartureTimetIntervalSize; t++)
-		{
-			g_TDOVehicleArray[z][t].CreateArray();
-			g_TDOVehicleArray[z][t].Size = 0;  // reset to be recounted 
-
-			g_TDOPreTripVehicleArray[z][t].CreateArray();
-			g_TDOPreTripVehicleArray[z][t].Size = 0;  // reset to be recounted 
-		}
-	}
-
-
-	std::vector<DTA_vhc_simple>::iterator kvhc =  g_vector_vehicles.begin();
+	std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
 
 	DTAVehicle* pVehicle = 0;
 
 	i = 0;
-	while(kvhc != g_vector_vehicles.end())
+	while(kvhc != g_simple_vector_vehicles.end())
 	{
 		if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
 		{
@@ -1284,25 +1129,14 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			{
 				AssignmentInterval = g_DepartureTimetIntervalSize - 1;
 			}
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray [g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].Size++] = i;
+			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(i);
 
 
 		}
 		kvhc++;
 		i++;
 	}
-	g_vector_vehicles.clear ();
-
-		g_LogFile << "---time-dependent demand profile count---" << endl;
-
-		float vehicle_size =  g_VehicleVector.size();
-
-		for(t=0; t<g_DemandLoadingHorizon; t+=5)
-	{
-		g_LogFile << "Vehicle count at time interval [" << t << ", " << t+5 << "] min =" << g_DemandTemporalCount_5_min_res[t/5] << " ("<<  g_DemandTemporalCount_5_min_res[t/5]*100 / vehicle_size << "%)" <<endl;
-
-		cout << "Vehicle count at time interval [" << t << ", " << t+5 << "] min =" << g_DemandTemporalCount_5_min_res[t/5] << " ("<<  g_DemandTemporalCount_5_min_res[t/5] *100/ vehicle_size << "%)" <<endl;
-	}
+	g_simple_vector_vehicles.clear ();
 }
 void FreeMemory()
 {
@@ -1312,12 +1146,6 @@ void FreeMemory()
 
 	// Free pointers
 
-	if(g_NetworkMOEAry)
-		delete g_NetworkMOEAry;
-
-	if(g_AssignmentMOEAry)
-		delete g_AssignmentMOEAry;
-
 	cout << "Free node set... " << endl;
 
 	for (iterNode = g_NodeSet.begin(); iterNode != g_NodeSet.end(); iterNode++)
@@ -1325,9 +1153,11 @@ void FreeMemory()
 		delete *iterNode;
 	}
 
-	Deallocate3DDynamicArray<int>(g_RTNodePredAry,g_InfoTypeSize,g_ODZoneSize+1);
-	Deallocate3DDynamicArray<unsigned char>(g_RTLabelCostAry,g_InfoTypeSize,g_ODZoneSize+1);
+	if(g_HistODDemand !=NULL)
+	Deallocate3DDynamicArray<float>(g_HistODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 
+	if(g_CurrentODDemand!=NULL)
+	Deallocate3DDynamicArray<float>(g_CurrentODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 
 	g_NodeSet.clear();
 	g_NodeMap.clear();
@@ -1339,29 +1169,16 @@ void FreeMemory()
 		delete *iterLink;
 	}
 
+	g_FreeODTKPathVector();
+
+
 	g_LinkSet.clear();
 	g_LinkMap.clear();
-	if(g_ZoneInfo)
-		delete g_ZoneInfo;
 
-	cout << "Free vehicle set... " << endl;
-	for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
-	{
-		delete *iterVehicle;
-	}
-
-	g_VehicleVector.clear();
-	g_VehicleMap.clear();
-
-	if(g_ZoneCentroidSizeAry)  delete g_ZoneCentroidSizeAry;
-
-	DeallocateDynamicArray<int>(g_ZoneCentroidNodeAry,g_ODZoneSize+1, g_AdjLinkSize);  // +1 is because the zone numbers start from 1 not from 0
+	g_ZoneVector.clear ();
+	g_FreeVehicleVector();
 
 	DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneSize+1, g_DepartureTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
-	DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOPreTripVehicleArray,g_ODZoneSize+1, g_DepartureTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
-
-	if(g_OVehicleSizeAry) delete g_OVehicleSizeAry;
-	if(g_OPreTripVehicleSizeAry) delete g_OPreTripVehicleSizeAry;
 
 }
 
@@ -1549,8 +1366,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				float m_gap = 0;
 				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%d,%4.2f,%4.2f,%d\n",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
-					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,
+					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
 					pVehicle->m_VehicleType ,pVehicle->m_Occupancy,pVehicle->m_InformationClass, pVehicle->GetVOT() , pVehicle->GetMinCost(),pVehicle->m_Distance, pVehicle->m_NodeSize);
+
+				
 
 				int j = 0;
 				if(g_LinkMap[pVehicle->m_aryVN [0].LinkID]==NULL)
@@ -1681,7 +1500,7 @@ int g_InitializeLogFiles()
 
 		g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
 		g_LogFile << "sourceforge.net/projects/dtalite/"<< endl;
-		g_LogFile << "Version 0.10, Release Date 05/07/2011."<< endl;
+		g_LogFile << "Version 0.95, Release Date 01/15/2011."<< endl;
 
 		fopen_s(&g_ErrorFile,"error.log","w");
 		if(g_ErrorFile==NULL)
@@ -1702,7 +1521,10 @@ void g_ReadDTALiteSettings()
 		//
 
 		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 0, IniFilePath_DTA);	
+		g_ODEstimationFlag = g_GetPrivateProfileInt("estimation", "od_demand_estimation", 0, IniFilePath_DTA);	
+		g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 2, IniFilePath_DTA);
 
+		g_ODEstimation_StartingIteration = 2;
 
 		if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 		{
@@ -1716,6 +1538,9 @@ void g_ReadDTALiteSettings()
 		else  //DTA parameters
 		{
 		g_DemandLoadingHorizon = g_GetPrivateProfileInt("demand", "demand_loading_horizon_in_min", 60, IniFilePath_DTA);	
+		g_VehicleTypePercentage[2] = g_GetPrivateProfileInt("demand", "percentage_HOV_from_baseline_demand", 0, IniFilePath_DTA);	
+		g_VehicleTypePercentage[3] = g_GetPrivateProfileInt("demand", "percentage_Truck_from_baseline_demand", 0, IniFilePath_DTA);	
+		g_VehicleTypePercentage[1] = 100.0- g_VehicleTypePercentage[2] - g_VehicleTypePercentage[3];
 
 		g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
 
@@ -1908,18 +1733,12 @@ void g_FreeMemory()
 
 void g_TrafficAssignmentSimulation()
 {
-	if(g_NetworkMOEAry!=NULL)
-		delete g_NetworkMOEAry;
-
-	if(g_AssignmentMOEAry!=NULL)
-		delete g_AssignmentMOEAry;
-
-		g_NetworkMOEAry = new NetworkMOE[g_SimulationHorizon+1];  // "+1" as simulation time starts as 0
-		g_AssignmentMOEAry = new NetworkLoadingOutput[g_SimulationHorizon+1];  // "+1" as assignment iteration starts as 0
+		g_NetworkMOEAry.resize (g_SimulationHorizon+1);  // "+1" as simulation time starts as 0
+		g_AssignmentMOEAry.resize ( g_SimulationHorizon+1);  // "+1" as assignment iteration starts as 0
 
 		ReadInputFiles();
 
-		if(g_TrafficFlowModelFlag ==0)
+			if(g_TrafficFlowModelFlag ==0)
 				g_StaticTrafficAssisnment();
 			else 
 			{ // dynamic traffic assignment
@@ -1943,6 +1762,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 		return 0;
 	}
+
 
 	if(g_InitializeLogFiles()==0) 
 		return 0;
