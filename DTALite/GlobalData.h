@@ -25,11 +25,9 @@
 // global data structure
 #include <iostream>
 #include <fstream>
-extern std::set<DTANode*>		g_NodeSet;
-extern std::map<int, DTANode*> g_NodeMap;
-extern std::map<int, int> g_NodeIDtoNameMap;
-extern std::set<DTALink*>		g_LinkSet;
-extern std::map<int, DTALink*> g_LinkMap;
+extern std::vector<DTANode> g_NodeVector;
+extern std::map<int, int> g_NodeNametoIDMap;
+extern std::vector<DTALink*> g_LinkVector;
 extern std::vector<DTAZone> g_ZoneVector;
 
 extern std::vector<DTAVehicle*>		g_VehicleVector;

@@ -42,7 +42,7 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
 
-	m_PhysicalNodeSize = g_NodeSet.size();
+	m_PhysicalNodeSize = g_NodeVector.size();
 
 	int IntervalLinkID=0;
 	int FromID, ToID;
@@ -57,20 +57,20 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 
 	// add physical links
 
-	for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		FromID = (*iterLink)->m_FromNodeID;
-		ToID   = (*iterLink)->m_ToNodeID;
+		FromID = g_LinkVector[li]->m_FromNodeID;
+		ToID   = g_LinkVector[li]->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
+		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID ;
 		m_InboundSizeAry[ToID] +=1;
 
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
@@ -83,19 +83,19 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 				link_entering_time_interval = m_AssignmentIntervalSize-1;
 
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
-			float AvgTravelTime = (*iterLink)->GetTravelTime (t,g_DepartureTimetInterval);
+			float AvgTravelTime = g_LinkVector[li]->GetTravelTime (t,g_DepartureTimetInterval);
 
-//			TRACE("%d -> %d, t %d, %f\n", g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID], g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID],t,AvgTravelTime);
+//			TRACE("%d -> %d, t %d, %f\n", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],t,AvgTravelTime);
 
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][link_entering_time_interval] = AvgTravelTime;
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][link_entering_time_interval]=  AvgTravelTime;
+			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval] = AvgTravelTime;
+			m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval]=  AvgTravelTime;
 			// use travel time now, should use cost later
 		}
 
 
 	}
 
-	int LinkID = g_LinkSet.size();
+	int LinkID = g_LinkVector.size();
 
 	// add outgoing connectors from origin zone to destination node
 	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
@@ -104,7 +104,7 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry[i];
 		// add outcoming connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
 
-		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeIDtoNameMap[ToID]);
+		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
 
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -134,7 +134,7 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 			for(i = 0; i< g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
 			{
 				FromID = g_ZoneVector[z].m_CentroidNodeAry[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  ->m_ZoneID start from 1
+				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 				m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -172,7 +172,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
 
-	m_NodeSize = g_NodeSet.size();
+	m_NodeSize = g_NodeVector.size();
 
 	int IntervalLinkID=0;
 	int FromID, ToID;
@@ -188,20 +188,20 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 
 	// add physical links
 
-	for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		FromID = (*iterLink)->m_FromNodeID;
-		ToID   = (*iterLink)->m_ToNodeID;
+		FromID = g_LinkVector[li]->m_FromNodeID;
+		ToID   = g_LinkVector[li]->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
+		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID  ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID  ;
 		m_InboundSizeAry[ToID] +=1;
 
 
@@ -214,9 +214,9 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 			if(link_entering_time_interval >= m_AssignmentIntervalSize)
 				link_entering_time_interval = m_AssignmentIntervalSize-1;
 
-			float AvgTravelTime = (*iterLink)->m_FreeFlowTravelTime ;
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][link_entering_time_interval] = AvgTravelTime;
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][link_entering_time_interval]=  AvgTravelTime;
+			float AvgTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime ;
+			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval] = AvgTravelTime;
+			m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval]=  AvgTravelTime;
 
 			// use travel time now, should use cost later
 		}
@@ -224,7 +224,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 
 	}
 
-	m_LinkSize = g_LinkSet.size();
+	m_LinkSize = g_LinkVector.size();
 
 
 }
@@ -268,7 +268,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 		if(debug_flag)
 		{
-			  TRACE("\nScan from node %d",g_NodeIDtoNameMap[FromID]);
+			  TRACE("\nScan from node %d",g_NodeVector[FromID]);
 		}
 
 		NodeStatusAry[FromID] = 2;        //scaned
@@ -284,7 +284,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			if(debug_flag)
 			{
-					  TRACE("\n   to node %d",g_NodeIDtoNameMap[ToID]);
+					  TRACE("\n   to node %d",g_NodeVector[ToID]);
 			}
 			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
@@ -298,10 +298,10 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
-			DTALink* pLink= g_LinkMap[LinkID];
 			float toll = 0;
-			if(pLink!=NULL) // physical link, which is always sort first.
+			if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 			{
+			DTALink* pLink= g_LinkVector[LinkID];
 			 toll = pLink->GetTollRateInMin(NewTime,vehicle_type);
 			 if(toll>0)
 				 TRACE("");
@@ -364,7 +364,7 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
 
-	m_PhysicalNodeSize = g_NodeSet.size();
+	m_PhysicalNodeSize = g_NodeVector.size();
 
 	int IntervalLinkID=0;
 	int FromID, ToID;
@@ -379,27 +379,27 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 
 	// add physical links
 
-	for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		FromID = (*iterLink)->m_FromNodeID;
-		ToID   = (*iterLink)->m_ToNodeID;
+		FromID = g_LinkVector[li]->m_FromNodeID;
+		ToID   = g_LinkVector[li]->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
+		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID ;
 		m_InboundSizeAry[ToID] +=1;
 
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
 
-			//TRACE("%d -> %d, time %d", g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID], g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID],CurrentTime);
-			float AvgTravelTime = (*iterLink)->GetHistoricalTravelTime(CurrentTime);
+			//TRACE("%d -> %d, time %d", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime);
+			float AvgTravelTime = g_LinkVector[li]->GetHistoricalTravelTime(CurrentTime);
 
 			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
 			
@@ -408,14 +408,14 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 				travel_time = 0.1f;
 			//TRACE(" %6.3f zone %d \n",AvgTravelTime, CurZoneID);
 
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][0] = travel_time;
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][0]=  travel_time;
+			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = travel_time;
+			m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][0]=  travel_time;
 
 
 
 	}
 
-	int LinkID = g_LinkSet.size();
+	int LinkID = g_LinkVector.size();
 
 		// add outgoing connector from the centriod corresponding to the current origin zone to physical nodes of the current zone
 	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
@@ -423,7 +423,7 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo // root node
 		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry [i];
 
-		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeIDtoNameMap[ToID]);
+		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
 
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -453,7 +453,7 @@ void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime,
 			for(i = 0; i<  g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
 			{
 				FromID = g_ZoneVector[z].m_CentroidNodeAry [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  ->m_ZoneID start from 1
+				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 				m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -495,7 +495,7 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception
 	int i;
 
 	// add physical links
-	m_PhysicalNodeSize = g_NodeSet.size();
+	m_PhysicalNodeSize = g_NodeVector.size();
 
 	for(i=0; i< m_PhysicalNodeSize; i++)
 	{
@@ -504,37 +504,37 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception
 	}
 
 
-	for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		FromID = (*iterLink)->m_FromNodeID;
-		ToID   = (*iterLink)->m_ToNodeID;
+		FromID = g_LinkVector[li]->m_FromNodeID;
+		ToID   = g_LinkVector[li]->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
+		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID ;
 		m_InboundSizeAry[ToID] +=1;
 
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
 
-			float AvgTravelTime = (*iterLink)->GetPrevailingTravelTime(CurrentTime);
-//			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID], g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID],CurrentTime,AvgTravelTime);
+			float AvgTravelTime = g_LinkVector[li]->GetPrevailingTravelTime(CurrentTime);
+//			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime,AvgTravelTime);
 
 			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
 			
 			float travel_time  = AvgTravelTime + Normal_random_value;
-			if(travel_time < (*iterLink)->m_FreeFlowTravelTime )
-				travel_time = (*iterLink)->m_FreeFlowTravelTime;
+			if(travel_time < g_LinkVector[li]->m_FreeFlowTravelTime )
+				travel_time = g_LinkVector[li]->m_FreeFlowTravelTime;
 
 
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][0] = travel_time;
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][0]=  travel_time;
+			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = travel_time;
+			m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][0]=  travel_time;
 
 	}
 

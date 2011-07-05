@@ -99,6 +99,7 @@ public:
 	};
 	~DTANode(){};
 	int m_NodeID;
+	int m_NodeName;
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;

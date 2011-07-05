@@ -225,9 +225,9 @@ void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork)
 
 			dsn =  g_read_integer(st);
 
-			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeMap[usn]->m_NodeID, g_NodeMap[dsn]->m_NodeID);
+			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkMap[LinkID];
+			DTALink* plink = g_LinkVector[LinkID];
 
 			if(plink!=NULL)
 			{
@@ -527,7 +527,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 				{
 					int LinkID = PathArray[DestZoneID].PathLinkSequences[p][l];
 
-					DTALink* plink = g_LinkMap[LinkID];
+					DTALink* plink = g_LinkVector[LinkID];
 
 					//static: always reset ArrivalTime to zero.
 					if(g_TrafficFlowModelFlag)
@@ -579,7 +579,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 								int LinkIDPrev = PathArray[DestZoneID].PathLinkSequences[p][l];
 
-								DTALink* plinkPrev = g_LinkMap[LinkIDPrev];
+								DTALink* plinkPrev = g_LinkVector[LinkIDPrev];
 
 								ArrivalTime -= plinkPrev->m_FreeFlowTravelTime ;
 
@@ -722,7 +722,7 @@ void g_GenerateVehicleData_ODEstimation()
 				for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
 				{
 					pVehicle->m_aryVN[j].LinkID = element.m_LinkNoArray[j];
-					pVehicle->m_Distance+= g_LinkMap[pVehicle->m_aryVN [j].LinkID] ->m_Length ;
+					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_aryVN [j].LinkID] ->m_Length ;
 				}
 
 			g_VehicleVector.push_back(pVehicle);
@@ -754,19 +754,19 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 
 	std::set<DTALink*>::iterator iterLink;
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{	
 			if(g_TrafficFlowModelFlag ==0)  // static traffic assignment
 			{
 
-				(*iterLink)->m_LinkMeasurementAry[0].SimuFlowCount = (*iterLink)->m_BPRLinkVolume;
-				(*iterLink)->m_LinkMeasurementAry[0].ErrorFlowCount = (*iterLink)->m_LinkMeasurementAry[0].SimuFlowCount - (*iterLink)->m_LinkMeasurementAry[0].ObsFlowCount ;
+				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount = g_LinkVector[li]->m_BPRLinkVolume;
+				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorFlowCount = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsFlowCount ;
 			
-				(*iterLink)->m_LinkMeasurementAry[0].SimuNumberOfVehicles = 0;  // not utilizing vehicle measurments in static assignment 
-				(*iterLink)->m_LinkMeasurementAry[0].ErrorNumberOfVehicles  = 0;
+				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuNumberOfVehicles = 0;  // not utilizing vehicle measurments in static assignment 
+				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorNumberOfVehicles  = 0;
 
-				(*iterLink)->m_LinkMeasurementAry[0].SimuTravelTime  = (*iterLink)->m_BPRLinkTravelTime;  // not utilizing vehicle measurments in static assignment 
-				(*iterLink)->m_LinkMeasurementAry[0].ErrorTravelTime = (*iterLink)->m_LinkMeasurementAry[0].SimuTravelTime   - (*iterLink)->m_LinkMeasurementAry[0].ObsTravelTime;
+				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime  = g_LinkVector[li]->m_BPRLinkTravelTime;  // not utilizing vehicle measurments in static assignment 
+				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorTravelTime = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime   - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsTravelTime;
 
 			}else  // dynamic network loading
 			{
@@ -776,24 +776,24 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 				{
 
 				int time_index = time/g_ObservationTimeInterval;
-				if(time_index >=1 && (*iterLink)->m_LinkMeasurementAry[time_index-1].ObsFlowCount >0)
+				if(time_index >=1 && g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount >0)
 				{
 					// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
-					int SimulatedFlowCount = (*iterLink)->m_LinkMOEAry[time].CumulativeArrivalCount - (*iterLink)->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount; 
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].SimuFlowCount = SimulatedFlowCount;
+					int SimulatedFlowCount = g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount - g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount; 
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuFlowCount = SimulatedFlowCount;
 
-					float ObsFlowCount  = (*iterLink)->m_LinkMeasurementAry[time_index-1].ObsFlowCount;
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].ErrorFlowCount = SimulatedFlowCount -  ObsFlowCount;
+					float ObsFlowCount  = g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount;
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorFlowCount = SimulatedFlowCount -  ObsFlowCount;
 						
 
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles  = 
-						(*iterLink)->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeDepartureCount  - (*iterLink)->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount;
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].ErrorNumberOfVehicles  = 
-						(*iterLink)->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles - (*iterLink)->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles  ;
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles  = 
+						g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeDepartureCount  - g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount;
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorNumberOfVehicles  = 
+						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles  ;
 
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = (*iterLink)->GetTravelTime(time-g_ObservationTimeInterval,1);
-					(*iterLink)->m_LinkMeasurementAry[time_index-1].ErrorTravelTime   = 
-						(*iterLink)->m_LinkMeasurementAry[time_index-1].SimuTravelTime - (*iterLink)->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = g_LinkVector[li]->GetTravelTime(time-g_ObservationTimeInterval,1);
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorTravelTime   = 
+						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
 
 				}
 				}
