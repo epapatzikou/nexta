@@ -52,8 +52,8 @@ void Assignment_MP(int id, int nthreads, int node_size, int link_size, int itera
 
 void g_DynamicTrafficAssisnment()
 {
-	int node_size  = g_NodeSet.size() +1 + g_ODZoneSize;
-	int link_size  = g_LinkSet.size() + g_NodeSet.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	// assign different zones to different processors
 	int nthreads = omp_get_max_threads ( );
@@ -103,7 +103,7 @@ void g_DynamicTrafficAssisnment()
 					{
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_DepartureTimetInterval].VehicleArray .size() > 0)
 						{
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),departure_time,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 							
 							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);
@@ -409,7 +409,7 @@ void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_e
 				for(int i = 0; i< NodeSize-1; i++)
 				{
 					pVeh->m_aryVN[i].LinkID = PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].BestPathIndex][i];					
-					pVeh->m_Distance+= g_LinkMap[pVeh->m_aryVN[i].LinkID]->m_Length;
+					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN[i].LinkID]->m_Length;
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 			}else
@@ -616,14 +616,14 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 					pVeh->m_aryVN[i].LinkID = GetLinkNoByNodeIndex(PathNodeList[NodeSize-i-1], PathNodeList[NodeSize-i-2]);
 					pVeh->m_NodeNumberSum += PathNodeList[NodeSize-i-2];
 
-					/*if(g_LinkMap[pVeh->m_aryVN [i].LinkID]==NULL)
+					/*if(g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL)
 					{
-					cout << "Error: g_LinkMap[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
+					cout << "Error: g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
 					getchar();
 					exit(0);
 					}
 					*/
-					pVeh->m_Distance+= g_LinkMap[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 
@@ -681,7 +681,7 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 				BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 											//using historical short-term travel time
-				TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),pVeh->m_DepartureTime ,pVeh->m_VehicleType );  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_VehicleType );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				int OriginCentriod = m_PhysicalNodeSize;  // as root node
 				int DestinationCentriod =  m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;  
@@ -738,18 +738,18 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 					for(int i = 0; i< NodeSize-1; i++)
 					{
-						//					TRACE("ID:%d, %d \n",i, g_NodeIDtoNameMap[PathNodeList[i]]);
+						//					TRACE("ID:%d, %d \n",i, g_NodeVector[PathNodeList[i]]);
 						pVeh->m_aryVN[i].LinkID = GetLinkNoByNodeIndex(PathNodeList[NodeSize-i-1], PathNodeList[NodeSize-i-2]);
 						pVeh->m_NodeNumberSum +=PathNodeList[NodeSize-i-2];
 
-						if(g_LinkMap[pVeh->m_aryVN [i].LinkID]==NULL)
+						if(g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL)
 						{
-							cout << "Error: g_LinkMap[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
+							cout << "Error: g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
 							getchar();
 							exit(0);
 						}
 
-						pVeh->m_Distance+= g_LinkMap[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+						pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
 					}
 					//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 				}	
@@ -762,8 +762,8 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 void g_ComputeFinalGapValue()
 {
-	int node_size  = g_NodeSet.size() + 1 + g_ODZoneSize;
-	int link_size  = g_LinkSet.size() + g_NodeSet.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int node_size  = g_NodeVector.size() + 1 + g_ODZoneSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	g_CurrentGapValue = 0.0;
 	g_CurrentNumOfVehiclesSwitched = 0;
@@ -806,7 +806,7 @@ void g_ComputeFinalGapValue()
 					}					
 					*/
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(), departure_time,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 					int AssignmentInterval = departure_time/g_DepartureTimetInterval;
 
@@ -822,8 +822,8 @@ void g_ComputeFinalGapValue()
 						DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 						ASSERT(pVeh!=NULL);
 
-						int OriginCentriod =  g_NodeSet.size();
-						int DestinationCentriod = g_NodeSet.size() + pVeh->m_DestinationZoneID;
+						int OriginCentriod =  g_NodeVector.size();
+						int DestinationCentriod = g_NodeVector.size() + pVeh->m_DestinationZoneID;
 
 						float TotalCost = network_MP.LabelCostAry[DestinationCentriod];
 						if(TotalCost > MAX_SPLABEL-10)
@@ -989,8 +989,8 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 
 void g_MultiDayTrafficAssisnment()
 {
-	int node_size  = g_NodeSet.size() +1 + g_ODZoneSize;
-	int link_size  = g_LinkSet.size() + g_NodeSet.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
 
@@ -998,11 +998,11 @@ void g_MultiDayTrafficAssisnment()
 	bool NotConverged = true;
 	int TotalNumOfVehiclesGenerated = 0;
 
-	std::set<DTALink*>::iterator iterLink;
+	
 
-	for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		(*iterLink)->InitializeDayDependentCapacity();
+		g_LinkVector[li]->InitializeDayDependentCapacity();
 	}
 
 	for (vector<DTAVehicle*>::iterator vIte = g_VehicleVector.begin();vIte != g_VehicleVector.end();vIte++)
@@ -1040,24 +1040,24 @@ void g_MultiDayTrafficAssisnment()
 
 					network_MP.BuildNetwork(CurZoneID);  // build network for this zone, because different zones have different connectors...
 
-					for(std::set<DTALink*>::iterator iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+					for(unsigned li = 0; li< g_LinkVector.size(); li++)
 					{
 						float TravelTime;
 						if(iteration == 0)
 						{
-							TravelTime = (*iterLink)->m_FreeFlowTravelTime ;
+							TravelTime = g_LinkVector[li]->m_FreeFlowTravelTime ;
 						}
 						else
 						{
-							TravelTime = (*iterLink)->m_DayDependentTravelTime[day];
+							TravelTime = g_LinkVector[li]->m_DayDependentTravelTime[day];
 						}
-						network_MP.m_LinkTDTimeAry[(*iterLink)->m_LinkID][0] = TravelTime;
-						network_MP.m_LinkTDCostAry[(*iterLink)->m_LinkID][0]=  TravelTime;
+						network_MP.m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = TravelTime;
+						network_MP.m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][0]=  TravelTime;
 						// use travel time now, should use cost later
 					}
 
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),0,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 					for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
 					{
@@ -1144,24 +1144,24 @@ void g_MultiDayTrafficAssisnment()
 				network_MP.BuildNetwork(CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 				// 4th loop for each link cost
-				for(std::set<DTALink*>::iterator iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+				for(unsigned li = 0; li< g_LinkVector.size(); li++)
 				{
 					float TravelTime;
 
 					if(iteration == 0)
 					{
-						TravelTime = (*iterLink)->m_FreeFlowTravelTime ;
+						TravelTime = g_LinkVector[li]->m_FreeFlowTravelTime ;
 					}
 					else
 					{
-						TravelTime = (*iterLink)->m_AverageTravelTime;
+						TravelTime = g_LinkVector[li]->m_AverageTravelTime;
 					}
-					network_MP.m_LinkTDTimeAry[(*iterLink)->m_LinkID][0] = TravelTime;
-					network_MP.m_LinkTDCostAry[(*iterLink)->m_LinkID][0]=  TravelTime;
+					network_MP.m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = TravelTime;
+					network_MP.m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][0]=  TravelTime;
 					// use travel time now, should use cost later
 				}
 
-				network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),0,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+				network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 				for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
@@ -1258,9 +1258,9 @@ void g_MultiDayTrafficAssisnment()
 		float TTSTDSumETT = 0;
 
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			(*iterLink)->m_AverageTravelTime = 0;
+			g_LinkVector[li]->m_AverageTravelTime = 0;
 		}
 
 		for (vector<DTAVehicle*>::iterator vIte = g_VehicleVector.begin();vIte != g_VehicleVector.end();vIte++)
@@ -1272,17 +1272,17 @@ void g_MultiDayTrafficAssisnment()
 		{
 			cout << "day:"<< day << "....."  << endl;
 
-			for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+			for(unsigned li = 0; li< g_LinkVector.size(); li++)
 			{
 
-				(*iterLink)->m_BPRLinkVolume = 0;
+				g_LinkVector[li]->m_BPRLinkVolume = 0;
 			}
 
 
 			// switch data for the following line
-			for ( iterLink= g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+			for(unsigned li = 0; li< g_LinkVector.size(); li++)
 			{
-				(*iterLink)->m_BPRLaneCapacity = (*iterLink)->m_DayDependentCapacity[day];
+				g_LinkVector[li]->m_BPRLaneCapacity = g_LinkVector[li]->m_DayDependentCapacity[day];
 			}
 
 			// fetch day-dependent vehicle path
@@ -1298,7 +1298,7 @@ void g_MultiDayTrafficAssisnment()
 					else
 						LinkID= (*vIte)->m_DayDependentAryLink[day*MAX_PATH_LINK_SIZE+i];
 
-					g_LinkMap[LinkID]->m_BPRLinkVolume++;
+					g_LinkVector[LinkID]->m_BPRLinkVolume++;
 				}
 
 
@@ -1306,13 +1306,13 @@ void g_MultiDayTrafficAssisnment()
 
 
 			// BPR based loading
-			for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+			for(unsigned li = 0; li< g_LinkVector.size(); li++)
 			{
-				(*iterLink)->m_BPRLinkTravelTime = (*iterLink)->m_FreeFlowTravelTime*(1.0f+0.15f*(powf((*iterLink)->m_BPRLinkVolume/((*iterLink)->m_BPRLaneCapacity*(*iterLink)->GetNumLanes()),4.0f)));
-				//				g_LogFile << "day:"<< day << ", BPR:"<< g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID]<<" Flow:" << (*iterLink)->m_BPRLinkVolume << "travel time:" << (*iterLink)->m_BPRLinkTravelTime  << endl;
-				//				cout << "day:"<< day << ", BPR:"<< g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID]<<" Flow:" << (*iterLink)->m_BPRLinkVolume << "travel time:" << (*iterLink)->m_BPRLinkTravelTime  << endl;
-				(*iterLink)->m_DayDependentTravelTime[day] = (*iterLink)->m_BPRLinkTravelTime;
-				(*iterLink)->m_AverageTravelTime+=  (*iterLink)->m_BPRLinkTravelTime/MAX_DAY_SIZE;
+				g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
+				//				g_LogFile << "day:"<< day << ", BPR:"<< g_NodeVector[g_LinkVector[li]->m_FromNodeID] << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID]<<" Flow:" << g_LinkVector[li]->m_BPRLinkVolume << "travel time:" << g_LinkVector[li]->m_BPRLinkTravelTime  << endl;
+				//				cout << "day:"<< day << ", BPR:"<< g_NodeVector[g_LinkVector[li]->m_FromNodeID] << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID]<<" Flow:" << g_LinkVector[li]->m_BPRLinkVolume << "travel time:" << g_LinkVector[li]->m_BPRLinkTravelTime  << endl;
+				g_LinkVector[li]->m_DayDependentTravelTime[day] = g_LinkVector[li]->m_BPRLinkTravelTime;
+				g_LinkVector[li]->m_AverageTravelTime+=  g_LinkVector[li]->m_BPRLinkTravelTime/MAX_DAY_SIZE;
 			}
 
 			VehicleCountETT = 0;
@@ -1331,7 +1331,7 @@ void g_MultiDayTrafficAssisnment()
 					for(int i = 0; i< (*vIte)->m_DayDependentLinkSize[0]; i++)
 					{
 						int LinkID = (*vIte)->m_DayDependentAryLink[0*MAX_PATH_LINK_SIZE+i];
-						(*vIte)->m_DayDependentTripTime[day] += g_LinkMap[LinkID]->m_BPRLinkTravelTime;
+						(*vIte)->m_DayDependentTripTime[day] += g_LinkVector[LinkID]->m_BPRLinkTravelTime;
 					}
 
 					(*vIte)->m_AvgDayTravelTime += ((*vIte)->m_DayDependentTripTime[day]/MAX_DAY_SIZE);
@@ -1345,7 +1345,7 @@ void g_MultiDayTrafficAssisnment()
 					for(int i = 0; i< (*vIte)->m_DayDependentLinkSize[day]; i++)
 					{
 						int LinkID = (*vIte)->m_DayDependentAryLink[day*MAX_PATH_LINK_SIZE+i];
-						(*vIte)->m_DayDependentTripTime[day] += g_LinkMap[LinkID]->m_BPRLinkTravelTime;
+						(*vIte)->m_DayDependentTripTime[day] += g_LinkVector[LinkID]->m_BPRLinkTravelTime;
 					}
 
 					(*vIte)->m_AvgDayTravelTime += ((*vIte)->m_DayDependentTripTime[day]/MAX_DAY_SIZE);
@@ -1457,8 +1457,8 @@ void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH])
 					{
 
 						int LinkID = (*vIte)->m_DayDependentAryLink[day*MAX_PATH_LINK_SIZE+i];
-						int NodeID = g_LinkMap[LinkID]->m_ToNodeID;
-						int NodeName = g_NodeIDtoNameMap[NodeID];
+						int NodeID = g_LinkVector[LinkID]->m_ToNodeID;
+						int NodeName = g_NodeVector[NodeID].m_NodeName;
 
 						fprintf(st, "%d",NodeName) ;
 					}
@@ -1476,8 +1476,8 @@ void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH])
 
 void g_OneShotNetworkLoading()
 {
-	int node_size  = g_NodeSet.size() +1 + g_ODZoneSize;
-	int link_size  = g_LinkSet.size() + g_NodeSet.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	// assign different zones to different processors
 	int nthreads = omp_get_max_threads ( );
@@ -1507,9 +1507,9 @@ void g_OneShotNetworkLoading()
 	std::set<DTALink*>::iterator iterLink;
 
 			// BPR based loading
-			for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+			for(unsigned li = 0; li< g_LinkVector.size(); li++)
 			{
-				(*iterLink)->m_BPRLinkTravelTime = (*iterLink)->m_FreeFlowTravelTime*(1.0f+0.15f*(powf((*iterLink)->m_BPRLinkVolume/((*iterLink)->m_BPRLaneCapacity*(*iterLink)->GetNumLanes()),4.0f)));
+				g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
 			}
 	NetworkLoadingOutput SimuOutput;
 	//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
@@ -1560,8 +1560,8 @@ int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& A
 
 void g_StaticTrafficAssisnment()
 {
-	int node_size  = g_NodeSet.size() +1 + g_ODZoneSize;
-	int link_size  = g_LinkSet.size() + g_NodeSet.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	// assign different zones to different processors
 	int nthreads = omp_get_max_threads ( );
@@ -1605,7 +1605,7 @@ void g_StaticTrafficAssisnment()
 					{
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_DepartureTimetInterval].VehicleArray.size() > 0)
 						{
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeSet.size(),departure_time,1);  // g_NodeSet.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 							
 							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);

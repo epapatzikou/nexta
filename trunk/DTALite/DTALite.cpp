@@ -113,13 +113,12 @@ menu -> project -> property -> configuraiton -> debugging -> setup working direc
 // The one and only application object
 
 CWinApp theApp;
-std::set<DTANode*>		g_NodeSet;
-std::map<int, DTANode*> g_NodeMap;
-std::map<int, int> g_NodeIDtoNameMap;
+std::vector<DTANode> g_NodeVector;
+std::map<int, int> g_NodeNametoIDMap;
 
 
-std::set<DTALink*>		g_LinkSet;
-std::map<int, DTALink*> g_LinkMap;
+std::vector<DTALink*> g_LinkVector;
+
 
 std::vector<DTAZone> g_ZoneVector;
 std::vector<DTAVehicle*>		g_VehicleVector;
@@ -265,7 +264,7 @@ int  DTANetworkForSP:: GetLinkNoByNodeIndex(int usn_index, int dsn_index)
 		}
 	}
 
-	cout << " Error in GetLinkNoByNodeIndex " << g_NodeIDtoNameMap[usn_index] << "-> " << g_NodeIDtoNameMap[dsn_index];
+	cout << " Error in GetLinkNoByNodeIndex " << g_NodeVector[usn_index].m_NodeName  << "-> " << g_NodeVector[dsn_index].m_NodeName ;
 
 	g_ProgramStop();
 
@@ -282,7 +281,7 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 
 	unsigned int i;
 	int OriginForTesting=0;
-	for(i=0; i< g_NodeSet.size(); i++)
+	for(i=0; i< g_NodeVector.size(); i++)
 	{
 		if(pPhysicalNetwork->m_OutboundSizeAry [i] >0)
 		{
@@ -298,20 +297,20 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 
 	int count = 0;
 	int centroid_count = 0;
-	for(i=0; i< g_NodeSet.size(); i++)
+	for(i=0; i< g_NodeVector.size(); i++)
 	{
 		if(pPhysicalNetwork->LabelCostAry[i] > MAX_SPLABEL-100)
 		{
 
-			if(g_NodeMap[g_NodeIDtoNameMap[i]]->m_ZoneID > 0)
+			if(g_NodeVector[i].m_ZoneID > 0)
 			{
-				cout << "Centroid "<<  g_NodeIDtoNameMap[i] << " of zone " << g_NodeMap[g_NodeIDtoNameMap[i]]->m_ZoneID << " is not connected to node " << g_NodeIDtoNameMap[OriginForTesting] << endl;
-				g_WarningFile << "Centroid "<<  g_NodeIDtoNameMap[i] << " of zone " << g_NodeMap[g_NodeIDtoNameMap[i]]->m_ZoneID << " is not connected to node " << g_NodeIDtoNameMap[OriginForTesting] << endl;
+				cout << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+				g_WarningFile << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
 				centroid_count ++;
 			}else
 			{
-				cout << "Node "<<  g_NodeIDtoNameMap[i] << " is not connected to node " << g_NodeIDtoNameMap[OriginForTesting] << endl;
-				g_WarningFile << "Node "<<  g_NodeIDtoNameMap[i] << " is not connected to node " << g_NodeIDtoNameMap[OriginForTesting] <<", Cost: "  << endl;
+				cout << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+				g_WarningFile << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  <<", Cost: "  << endl;
 			}
 			count++;
 
@@ -319,19 +318,19 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 
 	}
 
-//	for(i=0; i< g_NodeSet.size(); i++)
+//	for(i=0; i< g_NodeVector.size(); i++)
 //	{
-//		g_WarningFile << "Node "<<  g_NodeIDtoNameMap[i] << " Cost: " << pPhysicalNetwork->LabelCostAry[i] << endl;
+//		g_WarningFile << "Node "<<  g_NodeVector[i] << " Cost: " << pPhysicalNetwork->LabelCostAry[i] << endl;
 //	}
 	if(count > 0)
 	{
-		cout << count << " nodes are not connected to "<< g_NodeIDtoNameMap[OriginForTesting] << endl;
-		g_WarningFile << count << " nodes are not connected to "<< g_NodeIDtoNameMap[OriginForTesting] << endl;
+		cout << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+		g_WarningFile << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
 
 		if(centroid_count > 0 )
 		{
-			cout << centroid_count << " controids are not connected to "<< g_NodeIDtoNameMap[OriginForTesting] << endl;
-			g_WarningFile << centroid_count << " controids are not connected to "<< g_NodeIDtoNameMap[OriginForTesting] << endl;
+			cout << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+			g_WarningFile << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
 			//			cout << "Please check file warning.log later. Press any key to continue..."<< endl;
 			//getchar();
 		}
@@ -348,24 +347,23 @@ void ReadInputFiles()
 	if(st!=NULL)
 	{
 		int i=0;
-		DTANode* pNode = 0;
 		while(!feof(st))
 		{
-			int id			= g_read_integer(st);
-			TRACE("node %d\n ", id);
+			DTANode Node;
+			int name			= g_read_integer(st);
+			TRACE("node %d\n ", name);
 
-			if(id == -1)  // reach end of file
+			if(name == -1)  // reach end of file
 				break;
 
 			float x	= g_read_float(st);
 			float y	= g_read_float(st);
 			// Create and insert the node
-			pNode = new DTANode;
-			pNode->m_NodeID = i;
-			pNode->m_ZoneID = 0;
-			g_NodeSet.insert(pNode);
-			g_NodeMap[id] = pNode;
-			g_NodeIDtoNameMap[i] = id;
+			Node.m_NodeID = i;
+			Node.m_ZoneID = 0;
+			Node.m_NodeName = name;
+			g_NodeVector.push_back(Node);
+			g_NodeNametoIDMap[name] = i;
 			i++;
 		}
 		fclose(st);
@@ -394,8 +392,8 @@ void ReadInputFiles()
 			pLink->m_LinkID = i;
 			pLink->m_FromNodeNumber = FromID;
 			pLink->m_ToNodeNumber = ToID;
-			pLink->m_FromNodeID = g_NodeMap[pLink->m_FromNodeNumber ]->m_NodeID;
-			pLink->m_ToNodeID= g_NodeMap[pLink->m_ToNodeNumber]->m_NodeID;
+			pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
+			pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 			float length = g_read_float(st);
 			pLink->m_NumLanes= g_read_integer(st);
 			pLink->m_SpeedLimit= g_read_float(st);
@@ -414,11 +412,10 @@ void ReadInputFiles()
 			}
 
 
-			g_NodeMap[pLink->m_FromNodeNumber ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+			g_NodeVector[pLink->m_FromNodeID ].m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
 
 			pLink->SetupMOE();
-			g_LinkSet.insert(pLink);
-			g_LinkMap[i]  = pLink;
+			g_LinkVector.push_back(pLink);
 			i++;
 
 			if(i == MAX_LINK_NO)
@@ -455,7 +452,7 @@ void ReadInputFiles()
 				g_ODZoneSize = zone_number;
 
 			int node_number= g_read_integer(st);
-			g_NodeMap[node_number]->m_ZoneID = zone_number;
+			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 		}
 		fclose(st);
 	}else
@@ -481,8 +478,8 @@ void ReadInputFiles()
 				break;
 			int node_number= g_read_integer(st);
 
-			g_ZoneVector[zone_number].m_CentroidNodeAry.push_back( g_NodeMap[node_number]->m_NodeID);
-			g_ZoneVector[zone_number].m_Capacity += g_NodeMap[node_number]->m_TotalCapacity ;
+			g_ZoneVector[zone_number].m_CentroidNodeAry.push_back( g_NodeNametoIDMap[node_number]);
+			g_ZoneVector[zone_number].m_Capacity += g_NodeVector[g_NodeNametoIDMap[node_number]].m_TotalCapacity ;
 
 			if(g_ZoneVector[zone_number].m_CentroidNodeAry.size() > g_AdjLinkSize)
 				g_AdjLinkSize = g_ZoneVector[zone_number].m_CentroidNodeAry.size();
@@ -493,9 +490,11 @@ void ReadInputFiles()
 	//	cout << "Done with zone.csv"<< endl;
 
 	// done with zone.csv
-	DTANetworkForSP PhysicalNetwork(g_NodeSet.size(), g_LinkSet.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.BuildPhysicalNetwork();
 	//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+
+	cout << "Reading file incident.dat..."<< endl;
 
 	fopen_s(&st,"incident.dat","r");
 	if(st!=NULL)
@@ -513,9 +512,9 @@ void ReadInputFiles()
 			int usn  = g_read_integer(st);
 			int dsn =  g_read_integer(st);
 
-			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeMap[usn]->m_NodeID, g_NodeMap[dsn]->m_NodeID);
+			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkMap[LinkID];
+			DTALink* plink = g_LinkVector[LinkID];
 
 			if(plink!=NULL)
 			{
@@ -530,6 +529,8 @@ void ReadInputFiles()
 
 		fclose(st);
 	}
+
+	cout << "Reading file incident.dat..."<< endl;
 
 	fopen_s(&st,"VMS.dat","r");
 	if(st!=NULL)
@@ -555,9 +556,9 @@ void ReadInputFiles()
 			}
 			int usn  = g_read_integer(st);
 			int dsn =  g_read_integer(st);
-			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeMap[usn]->m_NodeID, g_NodeMap[dsn]->m_NodeID);
+			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkMap[LinkID];
+			DTALink* plink = g_LinkVector[LinkID];
 
 			if(plink!=NULL)
 			{
@@ -580,7 +581,7 @@ void ReadInputFiles()
 
 				for(n=0; n< is.DetourLinkSize; n++)
 				{
-				is.DetourLinkArray[n] =  PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeMap[NodeList[n]]->m_NodeID, g_NodeMap[NodeList[n+1]]->m_NodeID);
+				is.DetourLinkArray[n] =  PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[NodeList[n]], g_NodeNametoIDMap[NodeList[n+1]]);
 				ASSERT(is.DetourLinkArray[n] >=0);
 
 				}
@@ -601,6 +602,8 @@ void ReadInputFiles()
 
 		fclose(st);
 	}
+
+	cout << "Reading file toll.dat..."<< endl;
 
 	fopen_s(&st,"toll.dat","r");
 	if(st!=NULL)
@@ -624,9 +627,9 @@ void ReadInputFiles()
 		{
 			int usn  = g_read_integer(st);
 			int dsn =  g_read_integer(st);
-			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeMap[usn]->m_NodeID, g_NodeMap[dsn]->m_NodeID);
+			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkMap[LinkID];
+			DTALink* plink = g_LinkVector[LinkID];
 
 			if(plink!=NULL)
 			{
@@ -655,16 +658,16 @@ void ReadInputFiles()
 
 		std::set<DTALink*>::iterator iterLink;
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-					if((*iterLink)->TollVector .size() >0)
+					if(g_LinkVector[li]->TollVector .size() >0)
 					{
-					(*iterLink)->m_TollSize = (*iterLink)->TollVector .size();
-					(*iterLink)->pTollVector = new Toll[(*iterLink)->m_TollSize ];
+					g_LinkVector[li]->m_TollSize = g_LinkVector[li]->TollVector .size();
+					g_LinkVector[li]->pTollVector = new Toll[g_LinkVector[li]->m_TollSize ];
 
-					for(int s = 0; s<(*iterLink)->m_TollSize; s++)
+					for(int s = 0; s<g_LinkVector[li]->m_TollSize; s++)
 					{
-						(*iterLink)->pTollVector[s] = (*iterLink)->TollVector[s];
+						g_LinkVector[li]->pTollVector[s] = g_LinkVector[li]->TollVector[s];
 					}
 					
 					}
@@ -680,7 +683,7 @@ void ReadInputFiles()
 
 
 	if(g_VehicleLoadingMode == 0)  // load from demand table
-	{
+	{ 
 		ReadDemandFile(&PhysicalNetwork);
 		
 	}else
@@ -698,14 +701,14 @@ void ReadInputFiles()
 	}
 
 	cout << "Number of Zones = "<< g_ODZoneSize  << endl;
-	cout << "Number of Nodes = "<< g_NodeSet.size() << endl;
-	cout << "Number of Links = "<< g_LinkSet.size() << endl;
+	cout << "Number of Nodes = "<< g_NodeVector.size() << endl;
+	cout << "Number of Links = "<< g_LinkVector.size() << endl;
 	cout << "Number of Vehicles = "<< g_VehicleVector.size() << endl;
 	cout << "Running Time:" << g_GetAppRunningTime()  << endl;
 
 	g_LogFile << "Number of Zones = "<< g_ODZoneSize  << endl;
-	g_LogFile << "Number of Nodes = "<< g_NodeSet.size() << endl;
-	g_LogFile << "Number of Links = "<< g_LinkSet.size() << endl;
+	g_LogFile << "Number of Nodes = "<< g_NodeVector.size() << endl;
+	g_LogFile << "Number of Links = "<< g_LinkVector.size() << endl;
 	g_LogFile << "Number of Vehicles = "<< g_VehicleVector.size() << endl;
 
 }
@@ -850,8 +853,8 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 				// find out link id
 				for(i = 0; i< NodeSize-1; i++)
 				{
-					pVehicle->m_aryVN[i].LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeMap[PathNodeList[i]]->m_NodeID,g_NodeMap[PathNodeList[i+1]]->m_NodeID);
-					pVehicle->m_Distance+= g_LinkMap[pVehicle->m_aryVN [i].LinkID] ->m_Length ;
+					pVehicle->m_aryVN[i].LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[PathNodeList[i]],g_NodeNametoIDMap[PathNodeList[i+1]]);
+					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_aryVN [i].LinkID] ->m_Length ;
 
 				}
 
@@ -1140,18 +1143,11 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 }
 void FreeMemory()
 {
-	std::set<DTANode*>::iterator iterNode;
-	std::set<DTALink*>::iterator iterLink;
 	std::vector<DTAVehicle*>::iterator iterVehicle;
 
 	// Free pointers
 
 	cout << "Free node set... " << endl;
-
-	for (iterNode = g_NodeSet.begin(); iterNode != g_NodeSet.end(); iterNode++)
-	{
-		delete *iterNode;
-	}
 
 	if(g_HistODDemand !=NULL)
 	Deallocate3DDynamicArray<float>(g_HistODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
@@ -1159,21 +1155,20 @@ void FreeMemory()
 	if(g_CurrentODDemand!=NULL)
 	Deallocate3DDynamicArray<float>(g_CurrentODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 
-	g_NodeSet.clear();
-	g_NodeMap.clear();
-	g_NodeIDtoNameMap.clear();
+	g_NodeVector.clear();
 
 	cout << "Free link set... " << endl;
-	for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		delete *iterLink;
+		DTALink* pLink = g_LinkVector[li];
+		delete pLink;
 	}
 
 	g_FreeODTKPathVector();
 
 
-	g_LinkSet.clear();
-	g_LinkMap.clear();
+	g_LinkVector.clear();
+	g_LinkVector.clear();
 
 	g_ZoneVector.clear ();
 	g_FreeVehicleVector();
@@ -1203,21 +1198,21 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 			fprintf(st, "from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh_per_hour_per_lane, link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane, speed_in_mph, exit_queue_length, cumulative_arrival_count, cumulative_departure_count\n");
 		}
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{		for(int time = 0; time< g_SimulationHorizon;time++)
 		{
-			if(((*iterLink)->m_LinkMOEAry[time].CumulativeArrivalCount-(*iterLink)->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
+			if((g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
 			{
-				float LinkOutFlow = float((*iterLink)->GetDepartureFlow(time));
-				float travel_time = (*iterLink)->GetTravelTime(time,1);
+				float LinkOutFlow = float(g_LinkVector[li]->GetDepartureFlow(time));
+				float travel_time = g_LinkVector[li]->GetTravelTime(time,1);
 
 				fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f, %d, %d, %d\n",
-					g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID], g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID],time,
-					travel_time, travel_time - (*iterLink)->m_FreeFlowTravelTime ,
-					LinkOutFlow*60.0/(*iterLink)->m_NumLanes ,LinkOutFlow*60.0,
-					((*iterLink)->m_LinkMOEAry[time].CumulativeArrivalCount-(*iterLink)->m_LinkMOEAry[time].CumulativeDepartureCount)/(*iterLink)->m_Length /(*iterLink)->m_NumLanes,
-					(*iterLink)->GetSpeed(time), (*iterLink)->m_LinkMOEAry[time].ExitQueueLength, 
-					(*iterLink)->m_LinkMOEAry[time].CumulativeArrivalCount ,(*iterLink)->m_LinkMOEAry[time].CumulativeDepartureCount);
+					g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],time,
+					travel_time, travel_time - g_LinkVector[li]->m_FreeFlowTravelTime ,
+					LinkOutFlow*60.0/g_LinkVector[li]->m_NumLanes ,LinkOutFlow*60.0,
+					(g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount)/g_LinkVector[li]->m_Length /g_LinkVector[li]->m_NumLanes,
+					g_LinkVector[li]->GetSpeed(time), g_LinkVector[li]->m_LinkMOEAry[time].ExitQueueLength, 
+					g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount ,g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount);
 			}
 
 		}
@@ -1297,17 +1292,17 @@ void g_OutputVOCMOEData(char fname[_MAX_PATH])
 
 		std::set<DTALink*>::iterator iterLink;
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			float Capacity = (*iterLink)->m_MaximumServiceFlowRatePHPL * (*iterLink)->m_NumLanes;
-			fprintf(st, "%d,%d,%10.3f, %10.3f,%10.3f,%10.3f,%10.3f,%10.3f\n", g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID],
-				g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID],
-				(*iterLink)->m_BPRLaneCapacity,
-				(*iterLink)->m_BPRLinkVolume,
-				(*iterLink)->m_BPRLinkVolume /(*iterLink)->m_BPRLaneCapacity ,
-				(*iterLink)->m_FreeFlowTravelTime,
-				(*iterLink)->m_BPRLinkTravelTime, 
-				(*iterLink)->m_Length /((*iterLink)->m_BPRLinkTravelTime/60.0f));
+			float Capacity = g_LinkVector[li]->m_MaximumServiceFlowRatePHPL * g_LinkVector[li]->m_NumLanes;
+			fprintf(st, "%d,%d,%10.3f, %10.3f,%10.3f,%10.3f,%10.3f,%10.3f\n", g_NodeVector[g_LinkVector[li]->m_FromNodeID],
+				g_NodeVector[g_LinkVector[li]->m_ToNodeID],
+				g_LinkVector[li]->m_BPRLaneCapacity,
+				g_LinkVector[li]->m_BPRLinkVolume,
+				g_LinkVector[li]->m_BPRLinkVolume /g_LinkVector[li]->m_BPRLaneCapacity ,
+				g_LinkVector[li]->m_FreeFlowTravelTime,
+				g_LinkVector[li]->m_BPRLinkTravelTime, 
+				g_LinkVector[li]->m_Length /(g_LinkVector[li]->m_BPRLinkTravelTime/60.0f));
 		}
 
 		}
@@ -1355,8 +1350,8 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				int DownstreamNodeID = 0;
 
 				int LinkID_0 = pVehicle->m_aryVN [0].LinkID;
-				UpstreamNodeID= g_LinkMap[LinkID_0]->m_FromNodeID;
-				DownstreamNodeID = g_LinkMap[LinkID_0]->m_ToNodeID;
+				UpstreamNodeID= g_LinkVector[LinkID_0]->m_FromNodeID;
+				DownstreamNodeID = g_LinkVector[LinkID_0]->m_ToNodeID;
 
 				float TripTime = 0;
 
@@ -1372,7 +1367,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				
 
 				int j = 0;
-				if(g_LinkMap[pVehicle->m_aryVN [0].LinkID]==NULL)
+				if(g_LinkVector[pVehicle->m_aryVN [0].LinkID]==NULL)
 				{
 
 					cout << "Error: vehicle" << pVehicle->m_VehicleID << "at LinkID"<< pVehicle->m_aryVN [0].LinkID << endl;
@@ -1380,8 +1375,8 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 
 				}
 
-				int NodeID = g_LinkMap[pVehicle->m_aryVN [0].LinkID]->m_FromNodeID;  // first node
-				int NodeName = g_NodeIDtoNameMap[NodeID];
+				int NodeID = g_LinkVector[pVehicle->m_aryVN [0].LinkID]->m_FromNodeID;  // first node
+				int NodeName = g_NodeVector[NodeID].m_NodeName ;
 				int link_entering_time = int(pVehicle->m_DepartureTime);
 				fprintf(st, ",%d,%4.2f\n",
 					NodeName,pVehicle->m_DepartureTime) ;
@@ -1390,19 +1385,19 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				for(j = 0; j< pVehicle->m_NodeSize-1; j++)
 				{
 					int LinkID = pVehicle->m_aryVN [j].LinkID;
-					int NodeID = g_LinkMap[LinkID]->m_ToNodeID;
-					int NodeName = g_NodeIDtoNameMap[NodeID];
+					int NodeID = g_LinkVector[LinkID]->m_ToNodeID;
+					int NodeName = g_NodeVector[NodeID].m_NodeName ;
 
 					if(j>0)
 					{
 						link_entering_time = int(pVehicle->m_aryVN [j-1].AbsArrivalTimeOnDSN);
-						//						LinkWaitingTime = pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN - pVehicle->m_aryVN [j-1].AbsArrivalTimeOnDSN - g_LinkMap[LinkID]->m_FreeFlowTravelTime ;
+						//						LinkWaitingTime = pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN - pVehicle->m_aryVN [j-1].AbsArrivalTimeOnDSN - g_LinkVector[LinkID]->m_FreeFlowTravelTime ;
 						//						if(LinkWaitingTime <0)
 						//							LinkWaitingTime = 0;
 
 					}
 
-					//						fprintf(st, ",,,,,,,,,,,,,,%d,%d%,%6.2f,%6.2f,%6.2f\n", j+2,NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN,LinkWaitingTime, g_LinkMap[LinkID]->m_LinkMOEAry [link_entering_time].TravelTime ) ;
+					//						fprintf(st, ",,,,,,,,,,,,,,%d,%d%,%6.2f,%6.2f,%6.2f\n", j+2,NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN,LinkWaitingTime, g_LinkVector[LinkID]->m_LinkMOEAry [link_entering_time].TravelTime ) ;
 					fprintf(st, ",%d,%4.2f\n",NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN) ;
 				}
 
@@ -1431,11 +1426,11 @@ void 	RT_ShortestPath_Thread(int id, int nthreads, int node_size, int link_size,
 void g_RealTimeShortestPathCalculation(int Time)
 {
 	int nthreads = omp_get_max_threads ( );
-	int NodeSize = g_NodeSet.size();
+	int NodeSize = g_NodeVector.size();
 #pragma omp parallel for
 	for(int CurNodeID=0; CurNodeID < NodeSize; CurNodeID++)
 	{
-		DTANetworkForSP network_RT_MP(NodeSize, g_LinkSet.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+		DTANetworkForSP network_RT_MP(NodeSize, g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 		network_RT_MP.BuildPhysicalNetwork();
 
 		int	id = omp_get_thread_num ( );  // starting from 0
@@ -1705,14 +1700,14 @@ void g_OutputSimulationStatistics()
 		std::set<DTALink*>::iterator iterLink;
 		g_LogFile << "--- Link MOE ---" << endl;
 
-		for (iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			float Capacity = (*iterLink)->m_MaximumServiceFlowRatePHPL * (*iterLink)->m_NumLanes;
-			g_LogFile << "Link: " <<  g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " -> " << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID] << 
+			float Capacity = g_LinkVector[li]->m_MaximumServiceFlowRatePHPL * g_LinkVector[li]->m_NumLanes;
+			g_LogFile << "Link: " <<  g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " -> " << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName << 
 				", Link Capacity: " << Capacity <<
-				", Inflow: " << (*iterLink)->CFlowArrivalCount <<
-				//				" Outflow: " << (*iterLink)->CFlowDepartureCount <<
-				", VOC Ratio: " << (*iterLink)->CFlowDepartureCount /Capacity  << endl;
+				", Inflow: " << g_LinkVector[li]->CFlowArrivalCount <<
+				//				" Outflow: " << g_LinkVector[li]->CFlowDepartureCount <<
+				", VOC Ratio: " << g_LinkVector[li]->CFlowDepartureCount /Capacity  << endl;
 		}
 
 		g_OutputVOCMOEData("LinkStaticMOE.csv");  // output assignment results anyway
@@ -1806,22 +1801,21 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 		g_LogFile << "The following freeway/highway bottlenecks are identified."<< endl;
 
 		// ! there is an freeway or highway downstream with less number of lanes
-		std::set<DTALink*>::iterator iterLink;
-		for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			if((*iterLink)->m_link_type <=2 &&  m_OutboundSizeAry[(*iterLink)->m_ToNodeID] ==1)  // freeway or highway
+			if(g_LinkVector[li]->m_link_type <=2 &&  m_OutboundSizeAry[g_LinkVector[li]->m_ToNodeID] ==1)  // freeway or highway
 			{
-				int FromID = (*iterLink)->m_FromNodeID;
-				int ToID   = (*iterLink)->m_ToNodeID;
+				int FromID = g_LinkVector[li]->m_FromNodeID;
+				int ToID   = g_LinkVector[li]->m_ToNodeID;
 
 				for(int i=0; i< m_OutboundSizeAry[ToID]; i++)
 				{
-					DTALink* pNextLink =  g_LinkMap[m_OutboundLinkAry[ToID][i]];
-					if(pNextLink->m_link_type <=2 && pNextLink->m_NumLanes < (*iterLink)->m_NumLanes && pNextLink->m_ToNodeID != FromID)
+					DTALink* pNextLink =  g_LinkVector[m_OutboundLinkAry[ToID][i]];
+					if(pNextLink->m_link_type <=2 && pNextLink->m_NumLanes < g_LinkVector[li]->m_NumLanes && pNextLink->m_ToNodeID != FromID)
 					{
-						(*iterLink)->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
-						BottleneckFile << "lane drop (type 1):" << g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID]<< endl;
-						g_LogFile << "lane drop:" << g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID]<< endl;
+						g_LinkVector[li]->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
+						BottleneckFile << "lane drop (type 1):" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName<< endl;
+						g_LogFile << "lane drop:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName << endl;
 					}
 
 				}
@@ -1832,31 +1826,31 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 		// merge: one outgoing link, two more incoming links with at least freeway link
 
-		for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			if(((*iterLink)->m_link_type <=2 || (*iterLink)->m_link_type ==9) &&
-				(m_InboundSizeAry[(*iterLink)->m_ToNodeID]==1 && m_InboundSizeAry[(*iterLink)->m_FromNodeID]>=2 && m_OutboundSizeAry[(*iterLink)->m_FromNodeID]==1))
+			if((g_LinkVector[li]->m_link_type <=2 || g_LinkVector[li]->m_link_type ==9) &&
+				(m_InboundSizeAry[g_LinkVector[li]->m_ToNodeID]==1 && m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]>=2 && m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID]==1))
 			{
 				bool UTurnLink = false;
-				for(int il = 0; il<m_InboundSizeAry[(*iterLink)->m_FromNodeID]; il++)
+				for(int il = 0; il<m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]; il++)
 				{
-					if(g_LinkMap[m_InboundLinkAry[(*iterLink)->m_FromNodeID][il]]->m_FromNodeID == (*iterLink)->m_ToNodeID)  // one of incoming link has from node as the same as this link's to node
+					if(g_LinkVector[m_InboundLinkAry[g_LinkVector[li]->m_FromNodeID][il]]->m_FromNodeID == g_LinkVector[li]->m_ToNodeID)  // one of incoming link has from node as the same as this link's to node
 					{
 						UTurnLink = true;				
 					}
 
 				}
 				if(UTurnLink == false)
-					(*iterLink)->m_bMergeFlag = 1;
+					g_LinkVector[li]->m_bMergeFlag = 1;
 
 			}
 		}
 
 		// first count # of incoming freeway, highway or ramp links to each freeway/highway link
-		for(iterLink = g_LinkSet.begin(); iterLink != g_LinkSet.end(); iterLink++)
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			int FromID = (*iterLink)->m_FromNodeID;
-			if((*iterLink)->m_bMergeFlag ==1 && m_InboundSizeAry[FromID] == 2)  // is a merge bottlebeck link with two incoming links
+			int FromID = g_LinkVector[li]->m_FromNodeID;
+			if(g_LinkVector[li]->m_bMergeFlag ==1 && m_InboundSizeAry[FromID] == 2)  // is a merge bottlebeck link with two incoming links
 			{
 				int il;
 				bool bRampExistFlag = false;
@@ -1864,24 +1858,24 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 				for(il = 0; il<m_InboundSizeAry[FromID]; il++)
 				{
-					if(g_LinkMap[m_InboundLinkAry[FromID][il]]->m_link_type == 9)  // on ramp as incoming link
+					if(g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type == 9)  // on ramp as incoming link
 					{
 						bRampExistFlag = true;
-						(*iterLink)->m_MergeOnrampLinkID = m_InboundLinkAry[FromID][il];
+						g_LinkVector[li]->m_MergeOnrampLinkID = m_InboundLinkAry[FromID][il];
 					}
-					if(g_LinkMap[m_InboundLinkAry[FromID][il]]->m_link_type <= 2)  // freeway or highway
+					if(g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type <= 2)  // freeway or highway
 					{
 						bFreewayExistFlag = true;
-						(*iterLink)->m_MergeMainlineLinkID = m_InboundLinkAry[FromID][il];
+						g_LinkVector[li]->m_MergeMainlineLinkID = m_InboundLinkAry[FromID][il];
 					}
 					if(bRampExistFlag && bFreewayExistFlag)
 					{
-						(*iterLink)->m_bMergeFlag = 2; // merge with ramp and mainline street
-						g_LogFile << "merge with ramp:" << g_NodeIDtoNameMap[(*iterLink)->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[(*iterLink)->m_ToNodeID];
-						g_LogFile << " with onramp:" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeOnrampLinkID]->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeOnrampLinkID]->m_ToNodeID];
-						g_LogFile << " and freeway mainline:" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeMainlineLinkID]->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeMainlineLinkID]->m_ToNodeID]<< endl;
-						BottleneckFile << "freeway mainline (type 3):" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeMainlineLinkID]->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeMainlineLinkID]->m_ToNodeID]<< endl;
-						BottleneckFile << "onramp (type 2) :" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeOnrampLinkID]->m_FromNodeID] << " ->" << g_NodeIDtoNameMap[g_LinkMap[(*iterLink)->m_MergeOnrampLinkID]->m_ToNodeID];
+						g_LinkVector[li]->m_bMergeFlag = 2; // merge with ramp and mainline street
+						g_LogFile << "merge with ramp:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName ;
+						g_LogFile << " with onramp:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_ToNodeID].m_NodeName ;
+						g_LogFile << " and freeway mainline:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_FromNodeID ].m_NodeName << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_ToNodeID].m_NodeName << endl;
+						BottleneckFile << "freeway mainline (type 3):" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_ToNodeID].m_NodeName << endl;
+						BottleneckFile << "onramp (type 2) :" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_ToNodeID].m_NodeName ;
 						break;
 					}
 
@@ -1890,26 +1884,26 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 			}
 
-			if((*iterLink)->m_bMergeFlag ==1)
+			if(g_LinkVector[li]->m_bMergeFlag ==1)
 			{
 				// merge with several merging ramps
 				int ij;
 				int TotalNumberOfLanes = 0;
 				for( ij= 0; ij<m_InboundSizeAry[FromID]; ij++)
 				{
-					TotalNumberOfLanes += g_LinkMap[ m_InboundLinkAry[FromID][ij]]->m_NumLanes ;
+					TotalNumberOfLanes += g_LinkVector[ m_InboundLinkAry[FromID][ij]]->m_NumLanes ;
 				}
 
 				for( ij= 0; ij<m_InboundSizeAry[FromID]; ij++)
 				{
 					MergeIncomingLink mil;
 					mil.m_LinkID = m_InboundLinkAry[FromID][ij];
-					mil.m_link_type = g_LinkMap[mil.m_LinkID]->m_link_type ;
-					mil.m_NumLanes = g_LinkMap[mil.m_LinkID]->m_NumLanes ;
+					mil.m_link_type = g_LinkVector[mil.m_LinkID]->m_link_type ;
+					mil.m_NumLanes = g_LinkVector[mil.m_LinkID]->m_NumLanes ;
 					mil.m_LinkInCapacityRatio = (float)(mil.m_NumLanes)/TotalNumberOfLanes;
-					(*iterLink)->MergeIncomingLinkVector.push_back(mil);
-					g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeIDtoNameMap[g_LinkMap[mil.m_LinkID]->m_FromNodeID] << " -> " << g_NodeIDtoNameMap[g_LinkMap[mil.m_LinkID]->m_ToNodeID]<<  " with " << g_LinkMap[mil.m_LinkID]->m_NumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
-					BottleneckFile << "merge into freeway with multiple freeway/ramps: (type 3)" << g_NodeIDtoNameMap[g_LinkMap[mil.m_LinkID]->m_FromNodeID] << " -> " << g_NodeIDtoNameMap[g_LinkMap[mil.m_LinkID]->m_ToNodeID]<< endl;
+					g_LinkVector[li]->MergeIncomingLinkVector.push_back(mil);
+					g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[g_LinkVector[mil.m_LinkID]->m_FromNodeID].m_NodeName  << " -> " << g_NodeVector[g_LinkVector[mil.m_LinkID]->m_ToNodeID].m_NodeName <<  " with " << g_LinkVector[mil.m_LinkID]->m_NumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
+					BottleneckFile << "merge into freeway with multiple freeway/ramps: (type 3)" << g_NodeVector[g_LinkVector[mil.m_LinkID]->m_FromNodeID].m_NodeName << " -> " << g_NodeVector[g_LinkVector[mil.m_LinkID]->m_ToNodeID].m_NodeName<< endl;
 				}
 
 			}
