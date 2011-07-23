@@ -42,6 +42,7 @@ using namespace std;
 #define MAX_PATH_LINK_SIZE 1000
 #define MAX_MEASUREMENT_INTERVAL 15 
 #define MAX_VEHICLE_TYPE_SIZE 4
+#define MAX_SIZE_INFO_USERS 5 
 
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
@@ -111,7 +112,6 @@ typedef struct{
 	int veh_id;
 	float time_stamp;
 }struc_vehicle_item;
-
 
 
 class SLinkMOE  // time-dependent link MOE
@@ -251,11 +251,11 @@ public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
 		m_SimulationHorizon	= TimeSize;
-		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
-		m_LinkMeasurementAry = new SLinkMeasurement[m_SimulationHorizon/g_ObservationTimeInterval+1];
+		m_LinkMOEAry.resize(m_SimulationHorizon+1);
+		m_LinkMeasurementAry.resize(m_SimulationHorizon/g_ObservationTimeInterval+1);
 
-		aryCFlowA = new int[MAX_TIME_INTERVAL_ADCURVE+1];         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds
-		aryCFlowD = new int[MAX_TIME_INTERVAL_ADCURVE+1];
+		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds
+		m_CumuDeparturelFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);
 		m_StochaticCapcityFlag = 0;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = 0;
@@ -263,6 +263,7 @@ public:
 		m_MergeOnrampLinkID = -1;
 		m_MergeMainlineLinkID = -1;
 		m_TollSize = 0;
+		pTollVector = NULL;
 
 	};
 
@@ -329,11 +330,11 @@ public:
 
 	}
 
-	SLinkMOE *m_LinkMOEAry;
-	SLinkMeasurement* m_LinkMeasurementAry;
+	std::vector <SLinkMOE> m_LinkMOEAry;
+	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
-	int *aryCFlowA;
-	int *aryCFlowD;
+	std::vector <int> m_CumuArrivalFlow;
+	std::vector <int> m_CumuDeparturelFlow;
 
 	std::vector<CapacityReduction> CapacityReductionVector;
 	std::vector<InformationSign> InformationSignVector;
@@ -355,12 +356,9 @@ public:
 
 
 	~DTALink(){
-		if(m_LinkMOEAry) delete m_LinkMOEAry;
 
-		if(m_LinkMeasurementAry) delete m_LinkMeasurementAry;
-
-		if(aryCFlowA) delete aryCFlowA;
-		if(aryCFlowD) delete aryCFlowD;
+		if(pTollVector)
+			delete pTollVector;
 
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
@@ -411,8 +409,8 @@ public:
 
 		for(t=0; t<=MAX_TIME_INTERVAL_ADCURVE; t++)
 		{
-			aryCFlowA[t] = 0;
-			aryCFlowD[t] = 0;
+			m_CumuArrivalFlow[t] = 0;
+			m_CumuDeparturelFlow[t] = 0;
 
 		}
 
@@ -1073,6 +1071,7 @@ public:
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type);   // Pointer to previous node (node)
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
+	void AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void VehicleBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
 
@@ -1162,41 +1161,6 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
-
-
-void OutputLinkMOEData(char fname[_MAX_PATH], int Iterationbool,bool bStartWithEmpty);
-void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-
-float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename);
-int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
-
-float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity);
-
-float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float CycleLength_in_seconds,double CurrentTime);
-
-float g_GetRandomRatio();
-int g_GetRandomInteger_From_FloatingPointValue(float Value);
-
-void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork);
-void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork);
-
-void g_VehicleRerouting(int v, float CurrentTime, InformationSign is); // v for vehicle id
-void g_DynamicTrafficAssisnment();
-void g_StaticTrafficAssisnment();
-void g_OneShotNetworkLoading();
-void g_MultiDayTrafficAssisnment();
-void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
-int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,
-							  int InformationClass, int VehicleType,int DepartureTimeInterval);
-
-
-void g_OutputVOCMOEData(char fname[_MAX_PATH]);
-
-extern CString g_GetAppRunningTime();
-void g_ComputeFinalGapValue();
 
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
 {
@@ -1280,8 +1244,41 @@ public:
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
+void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
-#define MAX_SIZE_INFO_USERS 5 
+void OutputLinkMOEData(char fname[_MAX_PATH], int Iterationbool,bool bStartWithEmpty);
+void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
+float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename);
+int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
+
+float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity);
+
+float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float CycleLength_in_seconds,double CurrentTime);
+
+float g_GetRandomRatio();
+int g_GetRandomInteger_From_FloatingPointValue(float Value);
+
+void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork);
+void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork);
+
+void g_VehicleRerouting(int v, float CurrentTime, InformationSign is); // v for vehicle id
+void g_DynamicTrafficAssisnment();
+void g_AgentBasedAssisnment();
+void g_StaticTrafficAssisnment();
+void g_OneShotNetworkLoading();
+void g_MultiDayTrafficAssisnment();
+void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
+int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,
+							  int InformationClass, int VehicleType,int DepartureTimeInterval);
+
+
+void g_OutputVOCMOEData(char fname[_MAX_PATH]);
+
+extern CString g_GetAppRunningTime();
+void g_ComputeFinalGapValue();
 
 extern float g_UserClassPercentage[MAX_SIZE_INFO_USERS];
 extern float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS];
@@ -1294,7 +1291,6 @@ extern void g_GenerateVehicleData_ODEstimation();
 
 extern void g_FreeVehicleVector();
 extern void g_FreeODTKPathVector();
-extern int g_K_HistInfo_ShortestPath;
 
 extern void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork);
 
@@ -1307,7 +1303,16 @@ extern float    g_ODEstimation_Weight_TravelTime;
 extern float    g_ODEstimation_Weight_Gap;
 extern float    g_ODEstimation_StepSize;
 
-extern float*** g_CurrentODDemand;
 extern int g_ODEstimationFlag;
 extern int g_ODEstimation_StartingIteration;
 
+extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin;
+extern std::vector<NetworkLoadingOutput>  g_AssignmentMOEAry;
+extern std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;
+
+// for fast data acessing
+extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation interval
+
+extern FILE* g_ErrorFile;
+extern ofstream g_LogFile;
+extern ofstream g_AssignmentLogFile;

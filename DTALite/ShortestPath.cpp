@@ -36,7 +36,6 @@
 void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shortest path calculation and fetch travel time and cost data from simulator
 {
 
-
 	// build a network from the current zone centriod (1 centriod here) to all the other zones' centriods (all the zones)
 
 	std::set<DTANode*>::iterator iterNode;

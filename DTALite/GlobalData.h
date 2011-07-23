@@ -87,20 +87,9 @@ extern float g_TotalDemandDeviation;
 extern float g_TotalMeasurementDeviation; 
 
 
-// for fast data acessing
-extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation interval
-
-extern FILE* g_ErrorFile;
 
 
 
-extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin;
 
-extern ofstream g_LogFile;
-
-extern ofstream g_AssignmentLogFile;
-
-extern std::vector<NetworkLoadingOutput>  g_AssignmentMOEAry;
-extern std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;
 
 

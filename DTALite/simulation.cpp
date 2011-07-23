@@ -285,12 +285,12 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 						int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) % MAX_TIME_INTERVAL_ADCURVE;
 
 						float VehCountInJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(CurrentTime) *g_FreewayJamDensity_in_vehpmpl;
-						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->aryCFlowD[t_residual_minus_backwardwaveTime] + VehCountInJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
+						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountInJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
 						int t_residual_minus_1 = (simulation_time_interval_no - 1) % MAX_TIME_INTERVAL_ADCURVE;
 
-						int N_Now_minus_1 = (int)g_LinkVector[li]->aryCFlowA[t_residual_minus_1];
+						int N_Now_minus_1 = (int)g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_1];
 						int Flow_allowed = N_Arrival_Now_Constrainted - N_Now_minus_1;
-						//				TRACE("\ntime %d, D:%d,A%d",simulation_time_interval_no,g_LinkVector[li]->aryCFlowD[t_residual_minus_1],g_LinkVector[li]->aryCFlowA[t_residual_minus_1]);
+						//				TRACE("\ntime %d, D:%d,A%d",simulation_time_interval_no,g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_1],g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_1]);
 
 						if(Flow_allowed < 0)
 							Flow_allowed  = 0;
@@ -643,8 +643,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 		// cummulative flow counts
 
 		int t_residual = simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
-		g_LinkVector[li]->aryCFlowA[t_residual] = g_LinkVector[li]->CFlowArrivalCount;
-		g_LinkVector[li]->aryCFlowD[t_residual] = g_LinkVector[li]->CFlowDepartureCount;
+		g_LinkVector[li]->m_CumuArrivalFlow[t_residual] = g_LinkVector[li]->CFlowArrivalCount;
+		g_LinkVector[li]->m_CumuDeparturelFlow[t_residual] = g_LinkVector[li]->CFlowDepartureCount;
 
 
 		if(simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
@@ -670,105 +670,13 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	return true;
 }
 
-
-NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int SimulationMode = 0)  // default spatial queue // SimulationMode= default 0: UE;  1: simulation from demand; 2: simulation from vehicle file
+void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_no)
 {
-	NetworkLoadingOutput output;
-	std::set<DTANode*>::iterator iterNode;
-	std::set<DTALink*>::iterator iterLink;
-	g_Number_of_CompletedVehicles = 0;
-	g_Number_of_GeneratedVehicles = 0;
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
-	{
-		g_LinkVector[li]->SetupMOE();
-	}
-
-	cout << "Free global path set... " << endl;
-
-	g_ODTKPathVector.clear();   
-	// clear the global path set vector, will be regenerated in OD path flow adjustment module ConstructPathArrayForEachODT_ODEstimation()
-
-	if(TrafficFlowModelFlag == 0) // using BPR function
-	{
-		//Calculate BPRLinkVolume based on previous vehicle paths
-		for (vector<DTAVehicle*>::iterator vIte = g_VehicleVector.begin();vIte != g_VehicleVector.end();vIte++)
-		{
-			if((*vIte)->m_NodeSize >=2)
-			{
-				for(int i = 0; i< (*vIte)->m_NodeSize-1; i++)
-				{
-					g_LinkVector[(*vIte)->m_aryVN[i].LinkID]->m_BPRLinkVolume++;
-				}
-			}
-		}
-
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
-		{
-			g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
-			g_LogFile << "BPR:"<< g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName <<" Flow:" << g_LinkVector[li]->m_BPRLinkVolume << "travel time:" << g_LinkVector[li]->m_BPRLinkTravelTime  << endl;
-
-		}
-
-	}
-
-
-	g_Number_of_CompletedVehicles = 0;
-	g_Number_of_GeneratedVehicles = 0;
-
-	int Number_of_CompletedVehicles = 0;
-	g_LastLoadedVehicleID = 0;
-	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
-	{
-		(*iterVehicle)->PreTripReset();
-	}
-
-
-	cout << "start simulation process..."  << endl;
-
-	double time;
-	int simulation_time_interval_no = 0;
-	bool bPrintOut = true;
-
-	// generate historical info based shortst path, based on constant link travel time
-
+		// find the shortst path for pre-trip and real time information users
 	//percentage of hist info vehicles is given
 			int PathLinkList[MAX_CPU_SIZE][MAX_NODE_SIZE_IN_A_PATH];  // existing links
 			int PathNodeList[MAX_CPU_SIZE][MAX_NODE_SIZE_IN_A_PATH];  // new nodes
-
-	for(time = 0; time< g_SimulationHorizon; simulation_time_interval_no++)
-	{
-		time=simulation_time_interval_no*g_DTASimulationInterval;
-
-		// generating paths for historical travel information
-		if( SimulationMode == 1 /* one-shot simulation from demand */)
-		{
-			if(simulation_time_interval_no%(g_DepartureTimetInterval*10) == 0)
-			{
-				cout <<g_GetAppRunningTime()<<  "Calculating shortest paths..." << endl;
-
-#pragma omp parallel for
-				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
-				{
-					int DepartureTimeInterval = time/g_DepartureTimetInterval;
-					if(DepartureTimeInterval < g_DepartureTimetIntervalSize)
-					{
-
-						int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
-						int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-
-						// create network for shortest path calculation at this processor
-						DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
-						int	id = omp_get_thread_num( );  // starting from 0
-							// assign paths to historical information (for all vehicles)
-							network_MP.HistInfoVehicleBasedPathAssignment(CurZoneID,time,time+g_DepartureTimetInterval);
-
-					}
-
-				}
-			}
-
-				// find the shortst path for pre-trip and real time information users
 
 			vector<DTAVehicle*>::iterator vIte;
 			int VSize = g_VehicleVector.size();
@@ -876,7 +784,103 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 					delete pNetwork[thread];
 			}
 
+}
 
+NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int SimulationMode = 0)  // default spatial queue // SimulationMode= default 0: UE;  1: simulation from demand; 2: simulation from vehicle file
+{
+	NetworkLoadingOutput output;
+	std::set<DTANode*>::iterator iterNode;
+	std::set<DTALink*>::iterator iterLink;
+	g_Number_of_CompletedVehicles = 0;
+	g_Number_of_GeneratedVehicles = 0;
+
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	{
+		g_LinkVector[li]->SetupMOE();
+	}
+
+	cout << "Free global path set... " << endl;
+
+	g_ODTKPathVector.clear();   
+	// clear the global path set vector, will be regenerated in OD path flow adjustment module ConstructPathArrayForEachODT_ODEstimation()
+
+	if(TrafficFlowModelFlag == 0) // using BPR function
+	{
+		//Calculate BPRLinkVolume based on previous vehicle paths
+		for (vector<DTAVehicle*>::iterator vIte = g_VehicleVector.begin();vIte != g_VehicleVector.end();vIte++)
+		{
+			if((*vIte)->m_NodeSize >=2)
+			{
+				for(int i = 0; i< (*vIte)->m_NodeSize-1; i++)
+				{
+					g_LinkVector[(*vIte)->m_aryVN[i].LinkID]->m_BPRLinkVolume++;
+				}
+			}
+		}
+
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		{
+			g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
+			g_LogFile << "BPR:"<< g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName <<" Flow:" << g_LinkVector[li]->m_BPRLinkVolume << "travel time:" << g_LinkVector[li]->m_BPRLinkTravelTime  << endl;
+
+		}
+
+	}
+
+
+	g_Number_of_CompletedVehicles = 0;
+	g_Number_of_GeneratedVehicles = 0;
+
+	int Number_of_CompletedVehicles = 0;
+	g_LastLoadedVehicleID = 0;
+	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
+	{
+		(*iterVehicle)->PreTripReset();
+	}
+
+
+	cout << "start simulation process..."  << endl;
+
+	double time;
+	int simulation_time_interval_no = 0;
+	bool bPrintOut = true;
+
+	// generate historical info based shortst path, based on constant link travel time
+
+
+	for(time = 0; time< g_SimulationHorizon; simulation_time_interval_no++)
+	{
+		time=simulation_time_interval_no*g_DTASimulationInterval;
+
+		// generating paths for historical travel information
+		if( SimulationMode == 1 /* one-shot simulation from demand */)
+		{
+			if(simulation_time_interval_no%(g_DepartureTimetInterval*10) == 0)
+			{
+				cout <<g_GetAppRunningTime()<<  "Calculating shortest paths..." << endl;
+
+#pragma omp parallel for
+				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
+				{
+					int DepartureTimeInterval = time/g_DepartureTimetInterval;
+					if(DepartureTimeInterval < g_DepartureTimetIntervalSize)
+					{
+
+						int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+						int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
+
+						// create network for shortest path calculation at this processor
+						DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
+						int	id = omp_get_thread_num( );  // starting from 0
+							// assign paths to historical information (for all vehicles)
+							network_MP.HistInfoVehicleBasedPathAssignment(CurZoneID,time,time+g_DepartureTimetInterval);
+
+					}
+
+				}
+			}
+
+		g_AssignPathsForInformationUsers(time, simulation_time_interval_no);
 
 
 			if(simulation_time_interval_no%(g_DepartureTimetInterval*10) == 0)
@@ -903,7 +907,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 			cout << "simulation clock:" << simulation_time_interval_no/10 << ", # of vehicles -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 			g_LogFile << "simulation clock:" << simulation_time_interval_no/10 << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 		}
-
 
 	}
 
