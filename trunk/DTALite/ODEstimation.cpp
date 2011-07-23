@@ -49,65 +49,65 @@ calcuate each OD error term (target - simulated OD)
 
 3.3 for each vehicle
 
-	path flow marginal = OD error term () + sub-gradient multiplier * (current cost - shortest path cost)
+path flow marginal = OD error term () + sub-gradient multiplier * (current cost - shortest path cost)
 
-	starting time (ARR arrival time) assuming in FF
-	walk through each link l in the path 
-	
-	Find NTS for time ARR on link l
+starting time (ARR arrival time) assuming in FF
+walk through each link l in the path 
+
+Find NTS for time ARR on link l
 
 --- update vehicle marginal ---
-	
+
 --	FLOW MOE --
-	{
-	for the next timestamp (NTS) of the current phase
-	path flow marginal += link flow error(l,ARR)* +1
-	}
+{
+for the next timestamp (NTS) of the current phase
+path flow marginal += link flow error(l,ARR)* +1
+}
 
 --	DENSITY MOE -- 
-	from t = ARR to NTS
-	{
-	FF-FF, FF-PC-FF:
-	path flow marginal += link DENSITY error(l,t)
-	}
+from t = ARR to NTS
+{
+FF-FF, FF-PC-FF:
+path flow marginal += link DENSITY error(l,t)
+}
 -- Travel time MOE --
-	{
-	FF-FF, CC-CC: no change
-	FF--PC-FF or FF--PC-CC
-		path flow marginal += link travel time error(l,t)
+{
+FF-FF, CC-CC: no change
+FF--PC-FF or FF--PC-CC
+path flow marginal += link travel time error(l,t)
 
-	}
+}
 
-	FF: move to the next link. 
-	ARR = ARR+ FFTT(l)
-	l = l+1
-	
-	FF-PC-FF:
-	ARR = NTS+ FFTT(l)
-	l = l+1
+FF: move to the next link. 
+ARR = ARR+ FFTT(l)
+l = l+1
 
-	FF-PC-CC: 
-	move back to the previous link, l= l-1
-	ARR = NTS - FFTT(l) /// now l is "l-1" previous link of the current link"
+FF-PC-FF:
+ARR = NTS+ FFTT(l)
+l = l+1
 
-	CC-CC:
-	move back to the previous link, l= l-1
-	ARR = NTS - FFTT(l-1)
+FF-PC-CC: 
+move back to the previous link, l= l-1
+ARR = NTS - FFTT(l) /// now l is "l-1" previous link of the current link"
 
-	ensure (ARR is greater then the departure time and the end of simulation time interval)
-	
-	ensure (l >=0, l <= number of links)
-	
-	end of case
+CC-CC:
+move back to the previous link, l= l-1
+ARR = NTS - FFTT(l-1)
 
-	
-	path flow marginal > 0 should reduce flow
+ensure (ARR is greater then the departure time and the end of simulation time interval)
 
-	1 (current flow unit) - step size * path flow marginal
+ensure (l >=0, l <= number of links)
 
-	run (- step size * path flow marginal)
-	
-	endfor
+end of case
+
+
+path flow marginal > 0 should reduce flow
+
+1 (current flow unit) - step size * path flow marginal
+
+run (- step size * path flow marginal)
+
+endfor
 
 
 *////////
@@ -118,15 +118,12 @@ float    g_ODEstimation_Weight_NumberOfVehicles = 1.0f;
 float    g_ODEstimation_Weight_TravelTime = 1.0f;
 float	g_ODEstimation_Weight_Gap = 1.0f;
 float    g_ODEstimation_StepSize  = 0.1f;
+
 std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 int g_ODEstimationFlag = 0;
 int g_ODEstimation_StartingIteration = 2;
 
 float*** g_HistODDemand = NULL;
-
-float*** g_CurrentODDemand = NULL;
-float*** g_ODDemandProportion;
-float*** g_ODDemandAdjustment;
 
 int g_ODDemandIntervalSize = 1;
 
@@ -141,67 +138,65 @@ void g_ReadHistDemandFile()
 		for(int j = 0; j<=g_ODZoneSize; j++)
 			for(int t=0; t<g_ODDemandIntervalSize; t++)
 			{
-			g_HistODDemand[i][j][t] = 0;
-			}
-//g_CurrentODDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
-
-
-	FILE* st = NULL;
-
-	fopen_s(&st,"input_hist_demand.csv","r");
-	if(st!=NULL)
-	{
-		cout << "Reading file input_hist_demand.csv..."<< endl;
-
-		int line_no = 1;
-		int originput_zone, destination_zone;
-		float number_of_vehicles ;
-		int vehicle_type;
-		float starting_time_in_min;
-		float ending_time_in_min;
-
-		while(!feof(st))
-		{
-			originput_zone = g_read_integer(st);
-			if(originput_zone == -1)  // reach end of file
-				break;
-
-			destination_zone =  g_read_integer(st);
-			number_of_vehicles =  g_read_float(st);
-
-			vehicle_type =  g_read_integer(st);
-			starting_time_in_min = g_read_float(st);
-			ending_time_in_min = g_read_float(st);
-
-			int time_interval_no = starting_time_in_min/g_DepartureTimetInterval;
-
-			if(time_interval_no <g_ODDemandIntervalSize)
-			{
-			g_HistODDemand [originput_zone][destination_zone][time_interval_no]  = number_of_vehicles;
-			}else
-			{
-			//error message
+				g_HistODDemand[i][j][t] = 0;
 			}
 
-//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
+			FILE* st = NULL;
 
-			float Interval= float(ending_time_in_min - starting_time_in_min);
-
-			if(line_no %100000 ==0)
+			fopen_s(&st,"input_hist_demand.csv","r");
+			if(st!=NULL)
 			{
-				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
+				cout << "Reading file input_hist_demand.csv..."<< endl;
+
+				int line_no = 1;
+				int originput_zone, destination_zone;
+				float number_of_vehicles ;
+				int vehicle_type;
+				float starting_time_in_min;
+				float ending_time_in_min;
+
+				while(!feof(st))
+				{
+					originput_zone = g_read_integer(st);
+					if(originput_zone == -1)  // reach end of file
+						break;
+
+					destination_zone =  g_read_integer(st);
+					number_of_vehicles =  g_read_float(st);
+
+					vehicle_type =  g_read_integer(st);
+					starting_time_in_min = g_read_float(st);
+					ending_time_in_min = g_read_float(st);
+
+					int time_interval_no = starting_time_in_min/g_DepartureTimetInterval;
+
+					if(time_interval_no <g_ODDemandIntervalSize)
+					{
+						g_HistODDemand [originput_zone][destination_zone][time_interval_no]  = number_of_vehicles;
+					}else
+					{
+						//error message
+					}
+
+					//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
+
+					float Interval= float(ending_time_in_min - starting_time_in_min);
+
+					if(line_no %100000 ==0)
+					{
+						cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
+					}
+
+					line_no++;
+				}
+
+				fclose(st);
 			}
-
-			line_no++;
-		}
-
-		fclose(st);
-	}
 }
 
 void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork)
 {
-//from_node_id	 to_node_id	Start_ timestamp_in_min	end_timestamp_in_min	 link_volume_in_veh_per_interval_for_all_lanes	density_in_veh_per_mile_per_lane	 speed_in_mph
+	//from_node_id	 to_node_id	Start_ timestamp_in_min	end_timestamp_in_min	 link_volume_in_veh_per_interval_for_all_lanes	density_in_veh_per_mile_per_lane	 speed_in_mph
 	FILE* st = NULL;
 
 	fopen_s(&st,"input_measurement.csv","r");
@@ -215,8 +210,8 @@ void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork)
 
 		while(!feof(st))
 		{
-// from_node_id	 to_node_id	Start_timestamp_in_min	end_timestamp_in_min	 link_volume_in_veh_per_interval_for_all_lanes	density_in_veh_per_mile_per_lane	 speed_in_mph
-// 1	2	25	26	0	0.25	35
+			// from_node_id	 to_node_id	Start_timestamp_in_min	end_timestamp_in_min	 link_volume_in_veh_per_interval_for_all_lanes	density_in_veh_per_mile_per_lane	 speed_in_mph
+			// 1	2	25	26	0	0.25	35
 
 			usn  = g_read_integer(st);
 
@@ -231,144 +226,90 @@ void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork)
 
 			if(plink!=NULL)
 			{
-			start_time  = g_read_integer(st);
-			end_time =  g_read_integer(st);
+				start_time  = g_read_integer(st);
+				end_time =  g_read_integer(st);
 
 
-			if(line_no==1)
-			{
-			g_ObservationTimeInterval = end_time - start_time;   // initialize observation time interval
-			
-			}
-	
-			if(start_time < g_SimulationHorizon)
-			{
-			int time_index = start_time/g_ObservationTimeInterval;
+				if(line_no==1)
+				{
+					g_ObservationTimeInterval = end_time - start_time;   // initialize observation time interval
 
-			flow = g_read_float(st);
-			density = g_read_float(st);
-			speed = g_read_float(st);
+				}
 
-			plink->m_LinkMeasurementAry[time_index].StartTime = start_time;
-			plink->m_LinkMeasurementAry[time_index].EndTime  = end_time;
+				if(start_time < g_SimulationHorizon)
+				{
+					int time_index = start_time/g_ObservationTimeInterval;
 
-			plink->m_LinkMeasurementAry[time_index].ObsFlowCount = flow;
-			plink->m_LinkMeasurementAry[time_index].ObsNumberOfVehicles = density * plink->m_Length * plink->m_NumLanes ;  // converted from density
-			plink->m_LinkMeasurementAry[time_index].ObsTravelTime = plink->m_Length / max(1,speed)*60;   // converted from speed, 60, hour to min
+					flow = g_read_float(st);
+					density = g_read_float(st);
+					speed = g_read_float(st);
 
-			}
-		
-			}
+					plink->m_LinkMeasurementAry[time_index].StartTime = start_time;
+					plink->m_LinkMeasurementAry[time_index].EndTime  = end_time;
 
-			line_no++;
-		 }
+					plink->m_LinkMeasurementAry[time_index].ObsFlowCount = flow;
+					plink->m_LinkMeasurementAry[time_index].ObsNumberOfVehicles = density * plink->m_Length * plink->m_NumLanes ;  // converted from density
+					plink->m_LinkMeasurementAry[time_index].ObsTravelTime = plink->m_Length / max(1,speed)*60;   // converted from speed, 60, hour to min
 
-	fclose(st);
+				}
 
-	// second step: start reading historical demand
-	g_ReadHistDemandFile();
-
-	}
-}
-
-
-void g_ReadCurrentDemandFile()
-{
-	FILE* st = NULL;
-
-	fopen_s(&st,"input_demand.csv","r");
-	if(st!=NULL)
-	{
-		cout << "Reading file input_demand.csv..."<< endl;
-
-		int line_no = 1;
-		int originput_zone, destination_zone;
-		float number_of_vehicles ;
-		int vehicle_type;
-		float starting_time_in_min;
-		float ending_time_in_min;
-
-		while(!feof(st))
-		{
-			originput_zone = g_read_integer(st);
-			if(originput_zone == -1)  // reach end of file
-				break;
-
-			destination_zone =  g_read_integer(st);
-			number_of_vehicles =  g_read_float(st);
-
-			vehicle_type =  g_read_integer(st);
-			starting_time_in_min = g_read_float(st);
-			ending_time_in_min = g_read_float(st);
-
-			int time_interval_no = starting_time_in_min/g_DepartureTimetInterval;
-
-			if(time_interval_no <g_ODDemandIntervalSize)
-			{
-			g_CurrentODDemand [originput_zone][destination_zone][time_interval_no]  = number_of_vehicles;
-			}else
-			{
-			//error message
-			}
-
-//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
-
-			float Interval= float(ending_time_in_min - starting_time_in_min);
-
-			if(line_no %100000 ==0)
-			{
-				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
 			}
 
 			line_no++;
 		}
 
 		fclose(st);
+
+		// second step: start reading historical demand
+		g_ReadHistDemandFile();
+
 	}
 }
+
+
 void g_ODDemandEstimation()
 {
 
-//	g_ODDemandProportion = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
-//	g_ODDemandAdjustment = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
+	//	g_ODDemandProportion = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
+	//	g_ODDemandAdjustment = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
 	//+1 to make the OD zone index begin at 1
 
-//	g_ReadHistDemandFile();
- 
-/* optimization notes
+	//	g_ReadHistDemandFile();
+
+	/* optimization notes
 	given r as measurment error variance, P is path-tau-to-link proportion coefficient
 
 	close-form solution for OD/path demand adjustment
 	= P'/(P'*P+r) *error
-		 where P'*P is sum of (product of path-to-link proportion) over all OD pairs
-	
-*/
+	where P'*P is sum of (product of path-to-link proportion) over all OD pairs
 
-  // outer loop for each adjustment iteration
-  // for each outer loop
-  
-  // outer step 1: traffic simulation/assignment, call g_TrafficAssignmentSimulation()
-  // outer step 2: g_ReadCurrentDemandFile();
-  // outer step 3: initialize g_ODDemandAdjustment(O,D,tau) to zero
-  // outer step 4: adjust OD for each link count
+	*/
+
+	// outer loop for each adjustment iteration
+	// for each outer loop
+
+	// outer step 1: traffic simulation/assignment, call g_TrafficAssignmentSimulation()
+	// outer step 2: g_ReadCurrentDemandFile();
+	// outer step 3: initialize g_ODDemandAdjustment(O,D,tau) to zero
+	// outer step 4: adjust OD for each link count
 
 	/* below are inner steps for outer step 4
 	// read link observation
 	for each link count observation (a,t)
 	{
-		// below are  inner loop steps
-		// step 0: calculate link observation deviation as dev
-		// step 1: initialize g_ODDemandProportion(O,D,tau) = 0
+	// below are  inner loop steps
+	// step 0: calculate link observation deviation as dev
+	// step 1: initialize g_ODDemandProportion(O,D,tau) = 0
 
-		// steps below calculate link proportions
-		// step 2. scan all vehicles, if vehicle v passes through link (a,t) then  g_ODDemandProportion(O,D,tau)+=1
+	// steps below calculate link proportions
+	// step 2. scan all vehicles, if vehicle v passes through link (a,t) then  g_ODDemandProportion(O,D,tau)+=1
 
-		// step 3. g_ODDemandProportion(O,D,tau)  = g_ODDemandProportion(O,D,tau) /g_CurrentODDemand(O,D,tau)
+	// step 3. g_ODDemandProportion(O,D,tau)  = g_ODDemandProportion(O,D,tau) /g_CurrentODDemand(O,D,tau)
 
-		// step 4. calculate SumP=P'*P over all O, D, tau
+	// step 4. calculate SumP=P'*P over all O, D, tau
 
-		// step 5: for each time-dependent OD demand pair
-		g_ODDemandAdjustment(O,D,tau) = g_ODDemandProportion(O,D,tau)/(SumP + r) * dev
+	// step 5: for each time-dependent OD demand pair
+	g_ODDemandAdjustment(O,D,tau) = g_ODDemandProportion(O,D,tau)/(SumP + r) * dev
 
 	}
 	endfor
@@ -377,11 +318,9 @@ void g_ODDemandEstimation()
 	// if (g_ODDemandAdjustment+g_CurrentODDemand) is out of the bound of historical demand, reset to the bound
 
 	// outer step 6: output g_CurrentODDemand to new demand table  
-	
+
 	//end for outer loop
 	*/
-	Deallocate3DDynamicArray<float>(g_ODDemandProportion,g_ODZoneSize+1,g_ODZoneSize+1);
-	Deallocate3DDynamicArray<float>(g_ODDemandAdjustment,g_ODZoneSize+1,g_ODZoneSize+1);
 }
 
 void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], int zone, int AssignmentInterval)
@@ -488,19 +427,19 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			}
 			PathArray[DestZoneID].BestPathIndex = BestPath;
 			PathArray[DestZoneID].LeastTravelTime = BestTime;
-		
-		
+
+
 			for(p=1; p<=PathArray[DestZoneID].NumOfPaths; p++)
 			{
 
 				PathArray[DestZoneID].AvgPathGap[p] =  PathArray[DestZoneID].AvgPathTimes[p] -  BestTime;
 			}
-			
+
 		}
 	}
 
 	// step 4: update OD demand flow 
-		for(DestZoneID=1; DestZoneID <= g_ODZoneSize; DestZoneID++) // initialization...
+	for(DestZoneID=1; DestZoneID <= g_ODZoneSize; DestZoneID++) // initialization...
 	{
 		// step 4.1: calculate the vehicle size deviation for  each O D tau pair
 
@@ -516,94 +455,94 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 		for(int p=1; p<= PathArray[DestZoneID].NumOfPaths; p++)  // recall that path index start from 1 in this module
 		{
-		// step 4.2: assign the demand deviation as the initial value for path marginal 
+			// step 4.2: assign the demand deviation as the initial value for path marginal 
 			PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] = 0;
-		// step 4.3: walk through the link sequence to accumlate the link marginals
+			// step 4.3: walk through the link sequence to accumlate the link marginals
 
 
-					float ArrivalTime = AssignmentInterval * g_DepartureTimetInterval;
-					int l = 0;
-				while(l>=0 && l< PathArray[DestZoneID].PathSize[p]-1)
+			float ArrivalTime = AssignmentInterval * g_DepartureTimetInterval;
+			int l = 0;
+			while(l>=0 && l< PathArray[DestZoneID].PathSize[p]-1)
+			{
+				int LinkID = PathArray[DestZoneID].PathLinkSequences[p][l];
+
+				DTALink* plink = g_LinkVector[LinkID];
+
+				//static: always reset ArrivalTime to zero.
+				if(g_TrafficFlowModelFlag)
+					ArrivalTime = 0.0f;
+
+				if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) 					// if ArrivalTime is Free-flow,
 				{
-					int LinkID = PathArray[DestZoneID].PathLinkSequences[p][l];
 
-					DTALink* plink = g_LinkVector[LinkID];
-
-					//static: always reset ArrivalTime to zero.
-					if(g_TrafficFlowModelFlag)
-						ArrivalTime = 0.0f;
-
-					if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) 					// if ArrivalTime is Free-flow,
-					{
-					
 					int obs_time_index = ArrivalTime/g_ObservationTimeInterval;
 					if(plink->m_LinkMeasurementAry [obs_time_index].ObsFlowCount > 0) // with flow measurement
 					{
 						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorFlowCount;
 
-					if(plink->m_LinkMeasurementAry [obs_time_index].ObsNumberOfVehicles  > 0) // with density measurement
-						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorNumberOfVehicles;
+						if(plink->m_LinkMeasurementAry [obs_time_index].ObsNumberOfVehicles  > 0) // with density measurement
+							PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorNumberOfVehicles;
 
-					if(plink->m_LinkMeasurementAry [obs_time_index].ErrorTravelTime   > 0) // with travel time measurement
-						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= 0;   // not changing travel time [to be completed]
-				
-					}
-					
-						ArrivalTime+= plink->m_FreeFlowTravelTime ;
-							l+= 1;  // move forward to the next link
-					}
-					
-					if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode >0) 					// if ArrivalTime is partially congested or fully congested,
-					{
-					
-					int obs_time_index = ArrivalTime/g_ObservationTimeInterval;
-					if(plink->m_LinkMeasurementAry [obs_time_index].ObsFlowCount > 0) // with flow measurement
-					{
-						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorFlowCount;
-
-					if(plink->m_LinkMeasurementAry [obs_time_index].ObsNumberOfVehicles  > 0) // with density measurement
-						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorNumberOfVehicles;
-
-					if(plink->m_LinkMeasurementAry [obs_time_index].ObsTravelTime   > 0) // with travel time measurement
-						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= 1.0/plink->m_BPRLaneCapacity*60;   // 1/c as discharge rate, * 60 as min
-				
-					}
-					
-						ArrivalTime+= plink->m_LinkMOEAry [(int)(ArrivalTime)].EndTimeOfPartialCongestion ;  // move to the end of congestion
-
-						if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) // freeflow
-							l+= 1;  // move forward to the next link
-						else // fully congested
-						{
-								l-= 1;  // move backward to the previous link
-
-								int LinkIDPrev = PathArray[DestZoneID].PathLinkSequences[p][l];
-
-								DTALink* plinkPrev = g_LinkVector[LinkIDPrev];
-
-								ArrivalTime -= plinkPrev->m_FreeFlowTravelTime ;
-
-
-						}
+						if(plink->m_LinkMeasurementAry [obs_time_index].ErrorTravelTime   > 0) // with travel time measurement
+							PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= 0;   // not changing travel time [to be completed]
 
 					}
 
-
-					
+					ArrivalTime+= plink->m_FreeFlowTravelTime ;
+					l+= 1;  // move forward to the next link
 				}
 
-		// calculate the total demand deviation statistics only for the first path
-		if(p==1) 
-			g_TotalDemandDeviation += PathArray[DestZoneID].DeviationNumOfVehicles;
+				if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode >0) 					// if ArrivalTime is partially congested or fully congested,
+				{
 
-		g_TotalMeasurementDeviation += PathArray[DestZoneID].MeasurementDeviationPathMarginal[p];
+					int obs_time_index = ArrivalTime/g_ObservationTimeInterval;
+					if(plink->m_LinkMeasurementAry [obs_time_index].ObsFlowCount > 0) // with flow measurement
+					{
+						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorFlowCount;
 
-				PathArray[DestZoneID].NewVehicleSize[p] = max(0,
-					PathArray[DestZoneID].NumOfVehsOnEachPath[p] 
-				- g_ODEstimation_StepSize*(
-					g_ODEstimation_Weight_ODDemand * PathArray[DestZoneID].DeviationNumOfVehicles
+						if(plink->m_LinkMeasurementAry [obs_time_index].ObsNumberOfVehicles  > 0) // with density measurement
+							PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= plink->m_LinkMeasurementAry [obs_time_index].ErrorNumberOfVehicles;
+
+						if(plink->m_LinkMeasurementAry [obs_time_index].ObsTravelTime   > 0) // with travel time measurement
+							PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= 1.0/plink->m_BPRLaneCapacity*60;   // 1/c as discharge rate, * 60 as min
+
+					}
+
+					ArrivalTime+= plink->m_LinkMOEAry [(int)(ArrivalTime)].EndTimeOfPartialCongestion ;  // move to the end of congestion
+
+					if(plink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) // freeflow
+						l+= 1;  // move forward to the next link
+					else // fully congested
+					{
+						l-= 1;  // move backward to the previous link
+
+						int LinkIDPrev = PathArray[DestZoneID].PathLinkSequences[p][l];
+
+						DTALink* plinkPrev = g_LinkVector[LinkIDPrev];
+
+						ArrivalTime -= plinkPrev->m_FreeFlowTravelTime ;
+
+
+					}
+
+				}
+
+
+
+			}
+
+			// calculate the total demand deviation statistics only for the first path
+			if(p==1) 
+				g_TotalDemandDeviation += PathArray[DestZoneID].DeviationNumOfVehicles;
+
+			g_TotalMeasurementDeviation += PathArray[DestZoneID].MeasurementDeviationPathMarginal[p];
+
+			PathArray[DestZoneID].NewVehicleSize[p] = max(0,
+				PathArray[DestZoneID].NumOfVehsOnEachPath[p] 
+			- g_ODEstimation_StepSize*(
+				g_ODEstimation_Weight_ODDemand * PathArray[DestZoneID].DeviationNumOfVehicles
 				+ PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] 
-				+ g_ODEstimation_Weight_Gap*PathArray[DestZoneID].AvgPathGap[p]));
+			+ g_ODEstimation_Weight_Gap*PathArray[DestZoneID].AvgPathGap[p]));
 
 
 
@@ -649,25 +588,19 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int zone,int depar
 
 void g_GenerateVehicleData_ODEstimation()
 {
-	
 	g_FreeODTKPathVector();
+	PathArrayForEachODTK element;
 
-	FILE* st = NULL;
-	bool bFileReady = false;
-	int i,t,z;
+	for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
+	{
 
-			PathArrayForEachODTK element;
+		element = g_ODTKPathVector[vi];
+		if(element.m_starting_time_in_min < g_DemandLoadingHorizon && element.m_OriginZoneID != element.m_DestinationZoneID )
+		{
+			CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_VehicleType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
+		}
 
-			for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
-			{
-
-				element = g_ODTKPathVector[vi];
-			if(element.m_starting_time_in_min < g_DemandLoadingHorizon && element.m_OriginZoneID != element.m_DestinationZoneID )
-			{
-				CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_VehicleType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
-			}
-
-			}
+	}
 	// create vehicle heres...
 	cout << "Converting demand flow to vehicles..."<< endl;
 
@@ -677,7 +610,7 @@ void g_GenerateVehicleData_ODEstimation()
 
 	DTAVehicle* pVehicle = 0;
 
-	i = 0;
+	int i = 0;
 	while(kvhc != g_simple_vector_vehicles.end())
 	{
 		if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
@@ -706,24 +639,24 @@ void g_GenerateVehicleData_ODEstimation()
 
 			PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
 
-				int NodeSize = element.m_LinkSize+1;
-				pVehicle->m_NodeSize = NodeSize;
-				pVehicle->m_aryVN = new SVehicleLink[pVehicle->m_NodeSize];
+			int NodeSize = element.m_LinkSize+1;
+			pVehicle->m_NodeSize = NodeSize;
+			pVehicle->m_aryVN = new SVehicleLink[pVehicle->m_NodeSize];
 
-				if(pVehicle->m_aryVN==NULL)
-				{
-					cout << "Insufficient memory for allocating vehicle arrays!";
-					g_ProgramStop();
-				}
+			if(pVehicle->m_aryVN==NULL)
+			{
+				cout << "Insufficient memory for allocating vehicle arrays!";
+				g_ProgramStop();
+			}
 
-				pVehicle->m_NodeNumberSum =  element.m_NodeSum ;
-				pVehicle->m_Distance =0;
+			pVehicle->m_NodeNumberSum =  element.m_NodeSum ;
+			pVehicle->m_Distance =0;
 
-				for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
-				{
-					pVehicle->m_aryVN[j].LinkID = element.m_LinkNoArray[j];
-					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_aryVN [j].LinkID] ->m_Length ;
-				}
+			for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
+			{
+				pVehicle->m_aryVN[j].LinkID = element.m_LinkNoArray[j];
+				pVehicle->m_Distance+= g_LinkVector[pVehicle->m_aryVN [j].LinkID] ->m_Length ;
+			}
 
 			g_VehicleVector.push_back(pVehicle);
 			g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
@@ -754,26 +687,26 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 
 	std::set<DTALink*>::iterator iterLink;
 
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
-		{	
-			if(g_TrafficFlowModelFlag ==0)  // static traffic assignment
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	{	
+		if(g_TrafficFlowModelFlag ==0)  // static traffic assignment
+		{
+
+			g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount = g_LinkVector[li]->m_BPRLinkVolume;
+			g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorFlowCount = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsFlowCount ;
+
+			g_LinkVector[li]->m_LinkMeasurementAry[0].SimuNumberOfVehicles = 0;  // not utilizing vehicle measurments in static assignment 
+			g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorNumberOfVehicles  = 0;
+
+			g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime  = g_LinkVector[li]->m_BPRLinkTravelTime;  // not utilizing vehicle measurments in static assignment 
+			g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorTravelTime = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime   - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsTravelTime;
+
+		}else  // dynamic network loading
+		{
+
+			// compare the error statistics
+			for(int time = 0; time< g_SimulationHorizon;time+=g_ObservationTimeInterval)
 			{
-
-				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount = g_LinkVector[li]->m_BPRLinkVolume;
-				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorFlowCount = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuFlowCount - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsFlowCount ;
-			
-				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuNumberOfVehicles = 0;  // not utilizing vehicle measurments in static assignment 
-				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorNumberOfVehicles  = 0;
-
-				g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime  = g_LinkVector[li]->m_BPRLinkTravelTime;  // not utilizing vehicle measurments in static assignment 
-				g_LinkVector[li]->m_LinkMeasurementAry[0].ErrorTravelTime = g_LinkVector[li]->m_LinkMeasurementAry[0].SimuTravelTime   - g_LinkVector[li]->m_LinkMeasurementAry[0].ObsTravelTime;
-
-			}else  // dynamic network loading
-			{
-
-		// compare the error statistics
-				for(int time = 0; time< g_SimulationHorizon;time+=g_ObservationTimeInterval)
-				{
 
 				int time_index = time/g_ObservationTimeInterval;
 				if(time_index >=1 && g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount >0)
@@ -784,7 +717,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 
 					float ObsFlowCount  = g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount;
 					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorFlowCount = SimulatedFlowCount -  ObsFlowCount;
-						
+
 
 					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles  = 
 						g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeDepartureCount  - g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount;
@@ -796,9 +729,9 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
 
 				}
-				}
+			}
 
 
-				}	
-		}
+		}	
+	}
 }

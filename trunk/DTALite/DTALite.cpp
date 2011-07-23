@@ -138,6 +138,7 @@ int g_ODZoneSize = 0;
 
 // assignment and simulation settings
 int g_NumberOfIterations = 1;
+int g_AgentBasedAssignmentFlag = 0;
 float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
 
@@ -165,7 +166,7 @@ float g_TotalMeasurementDeviation = 0;
 float g_UserClassPercentage[MAX_SIZE_INFO_USERS] = {0};
 float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
 float g_VMSPerceptionErrorRatio;
-int	  g_K_HistInfo_ShortestPath;
+
 int g_information_updating_interval_of_en_route_info_travelers_in_min;
 
 float g_VOT[MAX_VEHICLE_TYPE_SIZE];
@@ -1152,9 +1153,6 @@ void FreeMemory()
 	if(g_HistODDemand !=NULL)
 	Deallocate3DDynamicArray<float>(g_HistODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 
-	if(g_CurrentODDemand!=NULL)
-	Deallocate3DDynamicArray<float>(g_CurrentODDemand,g_ODZoneSize+1,g_ODZoneSize+1);
-
 	g_NodeVector.clear();
 
 	cout << "Free link set... " << endl;
@@ -1528,6 +1526,7 @@ void g_ReadDTALiteSettings()
 			g_SimulationHorizon = 600;
 			g_NumberOfInnerIterations = 0;
 			g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
+			g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent-based-assignment", 0, IniFilePath_DTA);	
 			g_DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,IniFilePath_DTA);	
 		}
 		else  //DTA parameters
@@ -1573,7 +1572,6 @@ void g_ReadDTALiteSettings()
 		g_RandomSeed = g_GetPrivateProfileInt("simulation", "random_number_seed", 100, IniFilePath_DTA);
 
 		g_UserClassPercentage[2] = g_GetPrivateProfileFloat("traveler_information", "percentage_of_pretrip_info_travelers",0.0,IniFilePath_DTA);	
-//		g_K_HistInfo_ShortestPath = g_GetPrivateProfileInt("traveler_information", "K_shortest_path_value_for_historical_info",3,IniFilePath_DTA);	
 
 		g_UserClassPercentage[3] = g_GetPrivateProfileFloat("traveler_information", "percentage_of_en_route_info_travelers",0.0,IniFilePath_DTA);	
 
@@ -1740,7 +1738,10 @@ void g_TrafficAssignmentSimulation()
 				if(g_NumberOfIterations == 1)
 				g_OneShotNetworkLoading();  //dynamic network loading only
 			else
-				g_DynamicTrafficAssisnment(); // multi-iteration dynamic traffic assignment
+				if(g_AgentBasedAssignmentFlag==0)
+					g_DynamicTrafficAssisnment(); // multi-iteration dynamic traffic assignment
+				else
+					g_AgentBasedAssisnment();  // agent-based assignment
 			}
 }
 
