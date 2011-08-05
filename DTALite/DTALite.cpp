@@ -185,6 +185,8 @@ int g_CycleLength_in_seconds;
 float g_DefaultSaturationFlowRate_in_vehphpl;
 
 
+VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+
 int g_Number_of_CompletedVehicles = 0;
 int g_Number_of_CompletedVehiclesThatSwitch = 0;
 int g_Number_of_GeneratedVehicles = 0;
@@ -205,6 +207,10 @@ ofstream g_AssignmentLogFile;
 ofstream g_WarningFile;
 
 int g_TrafficFlowModelFlag = 0;
+
+int g_TollingMethodFlag = 0;
+float g_VMTTollingRate = 0;
+
 int g_MergeNodeModelFlag=1;
 
 std::vector<NetworkMOE>  g_NetworkMOEAry;
@@ -370,7 +376,7 @@ void ReadInputFiles()
 		fclose(st);
 	}else
 	{
-		cout << "Error: File node.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_node.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 
 	}
@@ -603,6 +609,58 @@ void ReadInputFiles()
 
 		fclose(st);
 	}
+
+	cout << "Reading file VOT.csv..."<< endl;
+	fopen_s(&st,"VOT.csv","r");
+	if(st!=NULL)
+	{
+		g_VOTStatVector[0].CumulativePercentage = 0;
+
+		int PrevVOT = 0;
+
+			while(!feof(st))
+		{
+			int VOT	= g_read_integer(st);
+			if(VOT == -1)  // reach end of file
+				break;
+
+			// handle skipping vot ranges, use the cumulative value from the previous vot index
+			for(int v = PrevVOT+1; v< VOT; v++)
+			{
+			g_VOTStatVector[v].CumulativePercentage = g_VOTStatVector[v-1].CumulativePercentage;
+			}
+			PrevVOT = VOT;
+
+			float cumulative_percentage = g_read_float(st);
+			g_VOTStatVector[VOT].CumulativePercentage = cumulative_percentage;
+		}
+
+			for(int v = PrevVOT+1; v< MAX_VOT_RANGE; v++)
+			{
+			g_VOTStatVector[v].CumulativePercentage = g_VOTStatVector[v-1].CumulativePercentage;
+			}
+		g_VOTStatVector[MAX_VOT_RANGE-1].CumulativePercentage = 1.0f;
+
+
+		fclose(st);
+	}else
+	{
+		int VOT;
+
+		for(VOT = 1; VOT<=12; VOT++)
+		{
+			g_VOTStatVector[VOT].CumulativePercentage = 0.0f; 
+		}
+
+		for(VOT = 13; VOT<=100; VOT++)
+		{
+			g_VOTStatVector[VOT].CumulativePercentage = 1.0f; 
+		}
+
+	}
+
+
+
 
 	cout << "Reading file toll.dat..."<< endl;
 
@@ -1205,7 +1263,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 				float travel_time = g_LinkVector[li]->GetTravelTime(time,1);
 
 				fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f, %d, %d, %d\n",
-					g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],time,
+					g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName, g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,time,
 					travel_time, travel_time - g_LinkVector[li]->m_FreeFlowTravelTime ,
 					LinkOutFlow*60.0/g_LinkVector[li]->m_NumLanes ,LinkOutFlow*60.0,
 					(g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount)/g_LinkVector[li]->m_Length /g_LinkVector[li]->m_NumLanes,
@@ -1357,7 +1415,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%d,%4.2f,%4.2f,%d\n",
+				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%4.2f,%4.2f,%4.2f,%d\n",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
 					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
 					pVehicle->m_VehicleType ,pVehicle->m_Occupancy,pVehicle->m_InformationClass, pVehicle->GetVOT() , pVehicle->GetMinCost(),pVehicle->m_Distance, pVehicle->m_NodeSize);
@@ -1514,6 +1572,9 @@ void g_ReadDTALiteSettings()
 		//
 
 		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 0, IniFilePath_DTA);	
+		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, IniFilePath_DTA);	
+		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
+
 		g_ODEstimationFlag = g_GetPrivateProfileInt("estimation", "od_demand_estimation", 0, IniFilePath_DTA);	
 		g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 2, IniFilePath_DTA);
 
@@ -1526,7 +1587,7 @@ void g_ReadDTALiteSettings()
 			g_SimulationHorizon = 600;
 			g_NumberOfInnerIterations = 0;
 			g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
-			g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent-based-assignment", 0, IniFilePath_DTA);	
+			g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 0, IniFilePath_DTA);
 			g_DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,IniFilePath_DTA);	
 		}
 		else  //DTA parameters
@@ -1553,6 +1614,7 @@ void g_ReadDTALiteSettings()
 
 
 		g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
+		g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 0, IniFilePath_DTA);
 		g_DepartureTimetInterval = g_GetPrivateProfileInt("assignment", "departure_time_interval_in_min", 60, IniFilePath_DTA);	
 		g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 1, IniFilePath_DTA);	
 		g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, IniFilePath_DTA);	
@@ -1562,7 +1624,6 @@ void g_ReadDTALiteSettings()
 		// parameters for day-to-day learning mode
 		g_LearningPercentage = g_GetPrivateProfileInt("assignment", "learning_percentage", 15, IniFilePath_DTA);
 		g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileInt("assignment", "travel_time_difference_for_switching_in_min", 5, IniFilePath_DTA);
-
 
 		g_DepartureTimetIntervalSize = max(1,g_DemandLoadingHorizon/g_DepartureTimetInterval);
 
@@ -1732,7 +1793,14 @@ void g_TrafficAssignmentSimulation()
 		ReadInputFiles();
 
 			if(g_TrafficFlowModelFlag ==0)
-				g_StaticTrafficAssisnment();
+			{
+				if(g_AgentBasedAssignmentFlag==0)
+					g_StaticTrafficAssisnment(); // multi-iteration static traffic assignment
+				else
+					g_AgentBasedAssisnment();  // agent-based assignment
+			
+			}
+				
 			else 
 			{ // dynamic traffic assignment
 				if(g_NumberOfIterations == 1)

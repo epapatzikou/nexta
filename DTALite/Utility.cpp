@@ -31,6 +31,21 @@ float g_RNNOF()
 	 return y1;  // we only use one random number
 }
 
+float g_get_random_VOT()
+{
+
+	float RandomPercentage= g_GetRandomRatio(); 
+
+	for(int i=0; i< 100; i++)
+	{
+		if(RandomPercentage < g_VOTStatVector[i].CumulativePercentage && RandomPercentage <= g_VOTStatVector[i+1].CumulativePercentage)
+		{
+			return i+1; // we return an integer value of VOT
+		}
+	}
+
+	return 100;
+}
 
 int g_read_integer_with_char_O(FILE* f)
    // read an integer from the current pointer of the file, skip all spaces, if read "O", return 0;

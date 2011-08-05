@@ -160,7 +160,6 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 
 	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneSize;
 
-
 }
 
 void DTANetworkForSP::BuildPhysicalNetwork()
@@ -297,6 +296,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
+//  road pricing module
 			float toll = 0;
 			if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 			{
@@ -305,6 +305,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			 if(toll>0)
 				 TRACE("");
 			}
+// end of road pricing module
 
 			NewCost    = LabelCostAry[FromID] + m_LinkTDCostAry[LinkID][link_entering_time_interval] + toll;       // costs come from time-dependent tolls, VMS, information provisions
 
@@ -349,7 +350,6 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 void DTANetworkForSP::BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
 {
-
 	// example 
 	// zones 1, 2, 3
 	// CurZone ID = 2
@@ -540,3 +540,333 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception
 
 	m_NodeSize = m_PhysicalNodeSize;
 }
+
+
+bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination)
+// time -dependent label correcting algorithm with deque implementation
+{
+
+	int i;
+	int debug_flag = 0;  // set 1 to debug the detail information
+	if(debug_flag)
+				TRACE("\nCompute shortest path from %d at time %d",origin, departure_time);
+
+    bool bFeasiblePathFlag  = false;
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
+	{
+		NodeStatusAry[i] = 0;
+
+		for(int t=departure_time; t <m_SimulationHorizon; t+=m_AssignmentIntervalSize)
+		{
+			TD_LabelCostAry[i][t] = MAX_SPLABEL;
+			TD_NodePredAry[i][t] = -1;  // pointer to previous NODE INDEX from the current label at current node and time
+			TD_TimePredAry[i][t] = -1;  // pointer to previous TIME INDEX from the current label at current node and time
+		}
+
+	}
+
+	//	TD_LabelCostAry[origin][departure_time] = 0;
+
+	// Initialization for origin node at the preferred departure time, at departure time, cost = 0, otherwise, the delay at origin node
+
+	TD_LabelCostAry[origin][departure_time]= 0;
+
+	SEList_clear();
+	SEList_push_front(origin);
+
+
+	while(!SEList_empty())
+	{
+		int FromID  = SEList_front();
+		SEList_pop_front();  // remove current node FromID from the SE list
+
+
+		NodeStatusAry[FromID] = 2;        //scaned
+
+		//scan all outbound nodes of the current node
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(i)
+		{
+			int LinkNo = m_OutboundLinkAry[FromID][i];
+			int ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)  // remove possible loop back to the origin
+				continue;
+
+
+			if(debug_flag)
+				TRACE("\nScan from node %d to node %d",g_NodeVector[FromID].m_NodeName,g_NodeVector[ToID].m_NodeName);
+
+			// for each time step, starting from the departure time
+			for(int t=departure_time; t <m_SimulationHorizon; t+=m_AssignmentIntervalSize)
+			{
+				if(TD_LabelCostAry[FromID][t]<MAX_SPLABEL-1)  // for feasible time-space point only
+				{   
+					int time_stopped = 0; 
+					
+						int NewToNodeArrivalTime	 = (int)(t + time_stopped + m_LinkTDTimeAry[LinkNo][t]);  // time-dependent travel times for different train type
+						float NewCost  =  TD_LabelCostAry[FromID][t] + m_LinkTDTimeAry[LinkNo][t] + m_LinkTDCostAry[LinkNo][t];
+						// costs come from time-dependent resource price or road toll
+
+						if(NewToNodeArrivalTime > (m_SimulationHorizon -1))  // prevent out of bound error
+							NewToNodeArrivalTime = (m_SimulationHorizon-1);
+
+						if(NewCost < TD_LabelCostAry[ToID][NewToNodeArrivalTime] ) // we only compare cost at the downstream node ToID at the new arrival time t
+						{
+
+							if(ToID == destination)
+							bFeasiblePathFlag = true; 
+
+
+							if(debug_flag)
+								TRACE("\n         UPDATE to %f, link cost %f at time %d", NewCost, m_LinkTDCostAry[LinkNo][t],NewToNodeArrivalTime);
+
+							// update cost label and node/time predecessor
+
+							TD_LabelCostAry[ToID][NewToNodeArrivalTime] = NewCost;
+							TD_NodePredAry[ToID][NewToNodeArrivalTime] = FromID;  // pointer to previous NODE INDEX from the current label at current node and time
+							TD_TimePredAry[ToID][NewToNodeArrivalTime] = t;  // pointer to previous TIME INDEX from the current label at current node and time
+
+							// Dequeue implementation
+							if(NodeStatusAry[ToID]==2) // in the SEList_TD before
+							{
+								SEList_push_front(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+							if(NodeStatusAry[ToID]==0)  // not be reached
+							{
+								SEList_push_back(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+
+					
+					}
+				}
+				//another condition: in the SELite now: there is no need to put this node to the SEList, since it is already there.
+			}
+
+		}      // end of for each link
+
+	}	// end of while
+
+
+	ASSERT(bFeasiblePathFlag);
+
+	return bFeasiblePathFlag;
+}
+
+
+int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH])  // the last pointer is used to get the node array
+{
+
+	// step 1: scan all the time label at destination node, consider time cost
+	// step 2: backtrace to the origin (based on node and time predecessors)
+	// step 3: reverse the backward path
+	// return final optimal solution
+
+	// step 1: scan all the time label at destination node, consider time cost
+	int tmp_AryTN[MAX_NODE_SIZE_IN_A_PATH]; //backward temporal solution
+
+	float min_cost = MAX_SPLABEL;
+	int min_cost_time_index = -1;
+
+	for(int t=departure_time; t <m_SimulationHorizon; t+=m_AssignmentIntervalSize)
+	{
+		if(TD_LabelCostAry[destination][t] < min_cost)
+		{
+			min_cost = TD_LabelCostAry[destination][t];
+			min_cost_time_index = t;
+		}
+
+	}
+		
+	ASSERT(min_cost_time_index>0); // if min_cost_time_index ==-1, then no feasible path if founded
+
+	// step 2: backtrace to the origin (based on node and time predecessors)
+
+	int	NodeSize = 0;
+
+	//record the first node backward, destination node
+	tmp_AryTN[NodeSize]= destination;
+
+	NodeSize++;
+
+	int PredTime = TD_TimePredAry[destination][min_cost_time_index];
+	int PredNode = TD_NodePredAry[destination][min_cost_time_index];
+
+	while(PredNode != origin && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+	{
+		ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
+
+		tmp_AryTN[NodeSize]= PredNode;
+		NodeSize++;
+
+		//record current values of node and time predecessors, and update PredNode and PredTime
+		int PredTime_cur = PredTime;
+		int PredNode_cur = PredNode;
+
+		PredNode = TD_NodePredAry[PredNode_cur][PredTime_cur];
+		PredTime = TD_TimePredAry[PredNode_cur][PredTime_cur];
+
+	}
+
+	tmp_AryTN[NodeSize] = origin;
+
+	NodeSize++;
+
+	// step 3: reverse the backward solution
+
+	int i;
+	for(i = 0; i< NodeSize; i++)
+	{
+		PathNodeList[i]		= tmp_AryTN[NodeSize-1-i];
+	}
+
+
+	return NodeSize;
+}
+
+
+int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int vehicle_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost)   // Pointer to previous node (node)
+// time -dependent label correcting algorithm with deque implementation
+{
+
+	int i;
+	int debug_flag = 0;
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
+	{
+		NodePredAry[i]  = -1;
+		NodeStatusAry[i] = 0;
+
+		LabelTimeAry[i] = MAX_SPLABEL;
+		LabelCostAry[i] = MAX_SPLABEL;
+
+	}
+
+	// Initialization for origin node
+	LabelTimeAry[origin] = float(departure_time);
+	LabelCostAry[origin] = 0;
+
+	SEList_clear();
+	SEList_push_front(origin);
+
+	int FromID, LinkID, ToID;
+
+	float NewTime, NewCost;
+	while(!SEList_empty())
+	{
+		FromID  = SEList_front();
+		SEList_pop_front();
+
+		if(debug_flag)
+		{
+			  TRACE("\nScan from node %d",g_NodeVector[FromID]);
+		}
+
+		NodeStatusAry[FromID] = 2;        //scaned
+
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(j)
+		{
+			LinkID = m_OutboundLinkAry[FromID][i];
+			ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)
+				continue;
+
+
+			int link_entering_time_interval = int(LabelTimeAry[FromID])/g_DepartureTimetInterval;
+			if(link_entering_time_interval >= m_AssignmentIntervalSize)  // limit the size
+				link_entering_time_interval = m_AssignmentIntervalSize-1;
+
+			if(link_entering_time_interval < 0)  // limit the size
+				link_entering_time_interval = 0;
+
+			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
+
+//  road pricing module
+			float toll = 0;
+
+			if(g_TollingMethodFlag == 1)  // time-dependent toll
+			{
+				if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
+				{
+				DTALink* pLink= g_LinkVector[LinkID];
+				 toll = pLink->GetTollRateInMinByVOT(NewTime,vehicle_type, VOT);
+				}
+			}
+
+			if(g_TollingMethodFlag == 2)  // VMT toll
+			{
+				if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
+				{
+				DTALink* pLink= g_LinkVector[LinkID];
+				 toll = pLink->m_Length * g_VMTTollingRate/max(1,VOT)*60;
+				}
+			}
+
+// end of road pricing module
+			
+
+			NewCost    = LabelCostAry[FromID] + m_LinkTDCostAry[LinkID][link_entering_time_interval] + toll;       // costs come from time-dependent tolls, VMS, information provisions
+
+			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
+			{
+			if(debug_flag)
+			{
+					       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkID][link_entering_time_interval]);
+			}
+
+				if(NewTime > g_SimulationHorizon -1)
+					NewTime = float(g_SimulationHorizon-1);
+
+				LabelTimeAry[ToID] = NewTime;
+				LabelCostAry[ToID] = NewCost;
+				NodePredAry[ToID]   = FromID;
+
+				// Dequeue implementation
+				//
+				if(NodeStatusAry[ToID]==2) // in the SEList_TD before
+				{
+					SEList_push_front(ToID);
+					NodeStatusAry[ToID] = 1;
+				}
+				if(NodeStatusAry[ToID]==0)  // not be reached
+				{
+					SEList_push_back(ToID);
+					NodeStatusAry[ToID] = 1;
+				}
+
+				//another condition: in the SELite now: there is no need to put this node to the SEList, since it is already there.
+			}
+
+		}      // end of for each link
+
+	} // end of while
+
+		int NodeSize = 0;
+		
+		int PredNode = NodePredAry[destination];		
+		while(PredNode != origin && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+			{
+				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
+				PathNodeList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+				PredNode = NodePredAry[PredNode];
+			}
+
+		TotalCost = LabelCostAry[destination];
+
+		if(TotalCost > MAX_SPLABEL-10)
+		{
+			ASSERT(false);
+		}
+
+		return NodeSize;
+}
+

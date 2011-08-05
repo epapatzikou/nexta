@@ -69,6 +69,8 @@ extern float g_FreewayJamDensity_in_vehpmpl;
 extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_TrafficFlowModelFlag;
+extern int g_TollingMethodFlag;
+extern float g_VMTTollingRate;
 
 // for traffic assignment 
 extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
@@ -85,6 +87,9 @@ extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles s
 
 extern float g_TotalDemandDeviation; 
 extern float g_TotalMeasurementDeviation; 
+
+extern VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+
 
 
 
