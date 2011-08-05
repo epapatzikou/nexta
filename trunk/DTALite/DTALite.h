@@ -43,8 +43,11 @@ using namespace std;
 #define MAX_MEASUREMENT_INTERVAL 15 
 #define MAX_VEHICLE_TYPE_SIZE 4
 #define MAX_SIZE_INFO_USERS 5 
+#define MAX_VOT_RANGE 101
 
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
+
+enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 
 extern float g_VOT[MAX_VEHICLE_TYPE_SIZE];  //1: LOV, 2: HOV, 3: trucks, starting from 1!
 
@@ -71,12 +74,12 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 
 void g_ProgramStop();
 float g_RNNOF();
-
+float g_get_random_VOT();
 
 class DTAZone
 { 
 public:
-	bool m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
+	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_CentroidNodeAry;
 
 	DTAZone()
@@ -329,6 +332,25 @@ public:
 
 
 	}
+
+		float GetTollRateInMinByVOT(float Time, int VehicleType, float VOT)  // from information signs
+	{
+		if(VOT < 0.01f)
+			return 100; // return infinity
+
+		for(int il = 0; il< m_TollSize; il++)
+		{
+			if(Time>=pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
+			{
+				return pTollVector[il].TollRate[VehicleType]/VOT*60; // VOT -> VOT in min
+			}
+		}
+
+		return 0;
+
+
+	}
+
 
 	std::vector <SLinkMOE> m_LinkMOEAry;
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
@@ -629,7 +651,7 @@ public:
 	DTAVehicleAdditionalData()
 	{
 		m_NumberOfSamples =0;
-		m_VOT = 10;
+		m_VOT = g_get_random_VOT();
 		m_MinCost = 0;
 	};
 
@@ -640,7 +662,6 @@ public:
 		m_MeanTravelTime = (1-GainFactor)*m_MeanTravelTime + GainFactor*TripTime;
 		m_NumberOfSamples +=1;
 	};
-
 
 };
 
@@ -677,7 +698,7 @@ public:
 	bool m_bLoaded; // be loaded into the physical network or not
 	bool m_bComplete;
 
-	DTAVehicleAdditionalData* pVehData;
+	DTAVehicleAdditionalData m_VehData;
 
 	// multi-day equilibrium
 	bool m_bETTFlag;
@@ -692,7 +713,6 @@ public:
 
 	DTAVehicle()
 	{
-		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
 		m_SimLinkSequenceNo = 0;
 
@@ -720,8 +740,6 @@ public:
 		if(m_aryVN != NULL)
 			delete m_aryVN;
 
-		if(pVehData!=NULL)
-			delete pVehData;
 	};
 
 	void PreTripReset()
@@ -747,27 +765,20 @@ public:
 
 
 public:  // fetch additional data
-	int GetVOT()
+	float GetVOT()
 	{
-		if(pVehData==NULL)
-			return 10;
-		else
-			return pVehData->m_VOT;
+			return m_VehData.m_VOT;
 
 	};
 
 	void SetMinCost(float MinCost)
 	{
-		if(pVehData!=NULL)
-			pVehData->m_MinCost = MinCost;
+			m_VehData.m_MinCost = MinCost;
 	};
 
 	float GetMinCost()
 	{
-		if(pVehData==NULL)
-			return 0.0f;
-		else
-			return pVehData->m_MinCost;
+		return m_VehData.m_MinCost;
 
 	};
 
@@ -946,6 +957,12 @@ public:
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
 
+	//below are time-dependent cost label and predecessor arrays
+	float** TD_LabelCostAry;
+	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
+	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+
 	DTANetworkForSP(int NodeSize, int LinkSize, int TimeSize,int AdjLinkSize){
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
@@ -968,6 +985,10 @@ public:
 		m_AssignmentIntervalSize = int(TimeSize/g_DepartureTimetInterval)+1;  // make sure it is not zero
 		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
 		m_LinkTDCostAry   =  AllocateDynamicArray<float>(m_LinkSize,m_AssignmentIntervalSize);
+
+		TD_LabelCostAry =  AllocateDynamicArray<float>(m_NodeSize,m_AssignmentIntervalSize);
+		TD_NodePredAry = AllocateDynamicArray<int>(m_NodeSize,m_AssignmentIntervalSize);
+		TD_TimePredAry = AllocateDynamicArray<int>(m_NodeSize,m_AssignmentIntervalSize);
 
 		m_FromIDAry = new int[m_LinkSize];
 
@@ -1047,6 +1068,10 @@ public:
 		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_AssignmentIntervalSize);
 		DeallocateDynamicArray<float>(m_LinkTDCostAry,m_LinkSize,m_AssignmentIntervalSize);
 
+		DeallocateDynamicArray<float>(TD_LabelCostAry,m_NodeSize,m_AssignmentIntervalSize);
+		DeallocateDynamicArray<int>(TD_NodePredAry,m_NodeSize,m_AssignmentIntervalSize);
+		DeallocateDynamicArray<int>(TD_TimePredAry,m_NodeSize,m_AssignmentIntervalSize);
+
 		if(m_FromIDAry)		delete m_FromIDAry;
 		if(m_ToIDAry)	delete m_ToIDAry;
 
@@ -1069,6 +1094,10 @@ public:
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type);   // Pointer to previous node (node)
+	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination);
+	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
+	int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int vehicle_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost);
+
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
@@ -1239,6 +1268,23 @@ public:
 	m_LinkNoArray.clear();
 
 	}
+};
+
+class VOTStatistics // Xuesong: VOT statistics
+{
+public: 
+	VOTStatistics()
+	{
+	TotalVehicleSize = 0;
+	TotalTravelTime = 0;
+	TotalDistance = 0;
+	CumulativePercentage = 0;
+	}
+
+	float CumulativePercentage;
+	float TotalTravelTime;
+	int   TotalVehicleSize;
+	float TotalDistance;
 };
 
 

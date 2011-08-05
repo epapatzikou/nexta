@@ -22,6 +22,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with DTALite.  If not, see <http://www.gnu.org/licenses/>.
 
+
+// prototype 1: heterogeneous traveler
+// prototype 2: departure time and mode options
+// prototype 3: extention
+
 // assignment module
 // obtain simulation results, fetch shortest paths, assign vehicles to the shortest path according to gap function or MSA
 #include "stdafx.h"
@@ -44,6 +49,43 @@ extern ofstream g_WarningFile;
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 
+void g_OutputVOTStatistics()
+{
+	int vot;
+	for( vot = 0; vot<MAX_VOT_RANGE; vot++)
+	{
+	g_VOTStatVector[vot].TotalVehicleSize = 0;
+	g_VOTStatVector[vot].TotalTravelTime = 0;
+	g_VOTStatVector[vot].TotalDistance  = 0;
+
+	}
+
+
+	for (vector<DTAVehicle*>::iterator v = g_VehicleVector.begin(); v != g_VehicleVector.end();v++)
+	{
+
+		if((*v)->m_bComplete )  // vehicle completes the trips
+		{
+
+			vot = (*v)->m_VehData .m_VOT;
+
+			g_VOTStatVector[vot].TotalVehicleSize +=1;
+			g_VOTStatVector[vot].TotalTravelTime += (*v)->m_TripTime;
+			g_VOTStatVector[vot].TotalDistance += (*v)->m_Distance;
+		
+		}
+	}
+
+	for(vot = 0; vot<MAX_VOT_RANGE; vot++)
+	{
+		if(g_VOTStatVector[vot].TotalVehicleSize > 0 )
+		{
+			g_AssignmentLogFile << "VOT= " << vot << ", # of vehicles = " << g_VOTStatVector[vot].TotalVehicleSize << ", Avg Travel Time = " << g_VOTStatVector[vot].TotalTravelTime/g_VOTStatVector[vot].TotalVehicleSize << ", Avg Distance = " << g_VOTStatVector[vot].TotalDistance /g_VOTStatVector[vot].TotalVehicleSize << endl;
+
+		}
+	}
+
+}
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration)
 {
 
@@ -1531,6 +1573,8 @@ int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& A
 	float DistanceSum = 0;
 	int VehicleCount = 0;
 
+
+
 	for (vector<DTAVehicle*>::iterator v = g_VehicleVector.begin(); v != g_VehicleVector.end();v++)
 	{
 
@@ -1680,6 +1724,8 @@ void g_StaticTrafficAssisnment()
 	g_ComputeFinalGapValue(); // Jason : compute and output final gap
 		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
 		g_AssignmentLogFile << "Final Iteration: " << iteration << ", Gap = " << g_CurrentGapValue << ", Avg Gap = " << avg_gap << ", Relative Gap = " << g_RelativeGap << "%" << endl;
+	g_OutputVOTStatistics();
+
 }
 
 
@@ -1815,27 +1861,21 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
 		g_AssignmentLogFile << "Final Iteration: " << iteration << ", Gap = " << g_CurrentGapValue << ", Avg Gap = " << avg_gap << ", Relative Gap = " << g_RelativeGap << "%" << endl;
 	}
+
+	g_OutputVOTStatistics();
+
 }
 
 
 void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration)
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
-
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
 	int NodeSize;
 	int PredNode;
 	int AssignmentInterval = int(departure_time_begin/g_DepartureTimetInterval);  // starting assignment interval
 
-	// g_VehcileIDPerAssignmentIntervalMap is more like a cursor to record the last scanned position
-
-	//PathArrayForEachODT PathArray[20]; // for test only
-	PathArrayForEachODT *PathArray;
-	PathArray = new PathArrayForEachODT[g_ODZoneSize + 1]; // remember to release memory
-
-	if((iteration > 0) && (g_VehicleExperiencedTimeGap == 0)) // we do not need to update path assignments in iteration 0; only assign initial paths and perform network loading
-	{
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
 	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
 	{
@@ -1843,23 +1883,15 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 
-
-////////////////////
-
-					float COV_perception_erorr = g_UserClassPerceptionErrorRatio[g_VehicleVector[v]->m_InformationClass];
-					///1 BuildTravelerInfoNetwork(time, COV_perception_erorr);
-					///2 TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_VehicleType );
-
-
-/////////////////////
 		int OriginCentriod = m_PhysicalNodeSize;
 		int DestinationCentriod = m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;
 
-		float TotalCost = LabelCostAry[DestinationCentriod];
-		if(TotalCost > MAX_SPLABEL-10)
-		{
-			ASSERT(false);
-		}
+		/// finding optimal path 
+
+		float TotalCost;
+		NodeSize = FindBestPathWithVOT(OriginCentriod, pVeh->m_DepartureTime ,DestinationCentriod, pVeh->m_VehicleType , pVeh->GetVOT(), PathNodeList, TotalCost );
+		// 
+		//OptimalTDLabelCorrecting_DoubleQueue(OriginCentriod, pVeh->m_DepartureTime , DestinationCentriod );
 
 		bool bSwitchFlag = false;
 		pVeh->m_bSwitched = false;
@@ -1869,30 +1901,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			float m_gap;
 			float ExperiencedTravelTime = pVeh->m_TripTime;
 
-			if(g_VehicleExperiencedTimeGap == 1) // m_gap = vehicle experienced time - shortest path time (i.e., TotalCost)
-			{
-				m_gap = ExperiencedTravelTime - TotalCost;
-			}
-			else{ // m_gap = avg experienced path time - shortest path time
-
-				int VehicleDest = pVeh->m_DestinationZoneID;
-				int NodeSum = pVeh->m_NodeNumberSum;
-
-				int PathIndex = 0;		
-				for(int p=1; p<=PathArray[VehicleDest].NumOfPaths; p++)
-				{
-					if(NodeSum == PathArray[VehicleDest].PathNodeSums[p])
-					{
-						PathIndex = p;
-						break;
-					}
-				}
-
-				float AvgPathTime = PathArray[VehicleDest].AvgPathTimes[PathIndex];
-				float MinTime = PathArray[VehicleDest].AvgPathTimes[PathArray[VehicleDest].BestPathIndex];
-				// m_gap = AvgPathTime - MinTime; 
-				m_gap = AvgPathTime - TotalCost; 
-			}
+			m_gap = ExperiencedTravelTime - TotalCost;
 
 			pVeh->SetMinCost(TotalCost);
 
@@ -1900,31 +1909,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
 
-			float switching_rate;
-			// switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
-
-			// Jason
-			switch (g_UEAssignmentMethod)
-			{
-			case 0: switching_rate = 1.0f/(iteration+1); // 0: MSA 
-				break;
-			case 1: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
-
-				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching)
-				{
-					switching_rate = 1.0f;
-				}
-
-				break;
-			case 2: switching_rate = m_gap / ExperiencedTravelTime; // 2: GAP-based switching rule for UE
-				//case 2: switching_rate = (1.0f/(iteration+1)) * (m_gap / ExperiencedTravelTime); // 2: GAP-based switching rule for UE + Mixed Step-Size Scheme
-				break;
-			case 3: switching_rate = (1.0f/(iteration+1)) * (m_gap / ExperiencedTravelTime); // 3: Gap-based switching rule + MSA step size for UE
-				break;
-			default: switching_rate = 1.0f/(iteration+1); // default is MSA 
-				break;
-			}
-
+			float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
+		
 			float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 
 			if((pVeh->m_bComplete==false && pVeh->m_NodeSize >=2)) //for incomplete vehicles with feasible paths, need to switch at the next iteration
@@ -1944,16 +1930,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 		if(bSwitchFlag)  
 		{
-			// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
-			NodeSize = 0;
-			PredNode = NodePredAry[DestinationCentriod];		
-			while(PredNode != OriginCentriod && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
-			{
-				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				PathNodeList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
-				PredNode = NodePredAry[PredNode];
-				LabelCostAry[PredNode];  // Jason : ??? we do not use intermediate node cost here.
-			}
+			/// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
 
 			// Jason : accumulate number of vehicles switching paths
 			g_CurrentNumOfVehiclesSwitched += 1; 
@@ -1966,7 +1943,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 				delete pVeh->m_aryVN;
 			}
 
-			if(pVeh->m_NodeSize>=2)
+			if(pVeh->m_NodeSize>=2)  // for feasible path
 			{
 				pVeh->m_bSwitched = true;
 
@@ -2003,19 +1980,6 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 
-				// check whether or not this is a new path
-				int PathIndex = 0;
-				for(int p=1; p<=PathArray[pVeh->m_DestinationZoneID].NumOfPaths; p++)
-				{
-					if(pVeh->m_NodeNumberSum == PathArray[pVeh->m_DestinationZoneID].PathNodeSums[p])
-					{
-						PathIndex = p;
-						break;
-					}
-				}
-				if(PathIndex == 0) // a new path found
-					g_NewPathWithSwitchedVehicles++;	
-
 			}else
 			{
 				pVeh->m_bLoaded  = false;
@@ -2026,11 +1990,11 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost  << endl;
 				}
 			}
-		} // if(bSwitchFlag)
-	}
 
-	// delete LeastExperiencedTimes; // Jason : release memory
-	delete PathArray;
+		}
+
+	} // for each vehicle on this OD pair
+	
 }
 
 
