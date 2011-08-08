@@ -499,7 +499,7 @@ void ReadInputFiles()
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.BuildPhysicalNetwork();
-	//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 
 	cout << "Reading file incident.dat..."<< endl;
 
@@ -1897,8 +1897,9 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			if((g_LinkVector[li]->m_link_type <=2 || g_LinkVector[li]->m_link_type ==9) &&
-				(m_InboundSizeAry[g_LinkVector[li]->m_ToNodeID]==1 && m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]>=2 && m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID]==1))
+			if( (g_LinkVector[li]->m_link_type <=2 || g_LinkVector[li]->m_link_type ==9)
+				 && m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]>=2 
+				 && m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID]==1)
 			{
 				bool UTurnLink = false;
 				for(int il = 0; il<m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]; il++)
