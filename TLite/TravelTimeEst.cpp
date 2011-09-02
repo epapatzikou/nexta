@@ -51,12 +51,12 @@
 extern CDlgPathMOE	*g_pPathMOEDlg;
 /******************************
 External calling functions
-	if(ReadSensorLocationData(directory+"input_sensor_location.csv") == true)
-	{
-		CWaitCursor wc;
-	ReadSensorData(directory);   // if there are sensor location data
-	ReadEventData(directory); 
-	}
+if(ReadSensorLocationData(directory+"input_sensor_location.csv") == true)
+{
+CWaitCursor wc;
+ReadSensorData(directory);   // if there are sensor location data
+ReadEventData(directory); 
+}
 
 **********************************************/
 
@@ -66,112 +66,112 @@ External calling functions
 
 
 void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
+{
+
+	m_MinSpeed = 200;
+	m_MaxSpeed = 0;
+
+	int t;
+	float VolumeSum = 0;
+	float SpeedSum = 0;
+
+
+	for( t=0; t< 1440; t++)
 	{
 
-		m_MinSpeed = 200;
-		m_MaxSpeed = 0;
+		// reset
+		m_HistLinkMOEAry[t].ObsSpeed =0;
+		m_HistLinkMOEAry[t].ObsFlow =0;
+		m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
+		m_HistLinkMOEAry[t].ObsDensity =0;
+		m_HistLinkMOEAry[t].ObsTravelTimeIndex = 0;
 
-		int t;
-		float VolumeSum = 0;
-		float SpeedSum = 0;
+		// start counting
+		int count = 0;
 
 
-		for( t=0; t< 1440; t++)
+		for(int day =0; day <number_of_weekdays; day ++)
 		{
-
-			// reset
-			m_HistLinkMOEAry[t].ObsSpeed =0;
-			m_HistLinkMOEAry[t].ObsFlow =0;
-			m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
-			m_HistLinkMOEAry[t].ObsDensity =0;
-			m_HistLinkMOEAry[t].ObsTravelTimeIndex = 0;
-
-			// start counting
-			int count = 0;
-
-
-			for(int day =0; day <number_of_weekdays; day ++)
+			if(m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
 			{
-				if(m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
+				m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed;
+				m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow;
+				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow;
+				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity;
+				m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndex;
+
+				count++;
+
+				// update min and max speed
+
+				if((t>=8*60 && t<9*60)) //8-9AM
 				{
-					m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeed;
-					m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlow;
-					m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlow;
-					m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensity;
-					m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndex;
+					// update link-specific min and max speed
+					if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
+						m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
 
-					count++;
-
-					// update min and max speed
-
-					if((t>=8*60 && t<9*60)) //8-9AM
-					{
-						// update link-specific min and max speed
-						if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
-							m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
-
-						if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
-							m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
+					if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
+						m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeed;
 
 
-					}
 				}
-
-
-			}
-
-			if(count>=1) 
-			{
-				// calculate final mean statistics
-				m_HistLinkMOEAry[t].ObsSpeed /=count;
-				m_HistLinkMOEAry[t].ObsFlow /=count;
-				m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
-				m_HistLinkMOEAry[t].ObsDensity /=count;
-				m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
 			}
 
 
 		}
 
+		if(count>=1) 
+		{
+			// calculate final mean statistics
+			m_HistLinkMOEAry[t].ObsSpeed /=count;
+			m_HistLinkMOEAry[t].ObsFlow /=count;
+			m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
+			m_HistLinkMOEAry[t].ObsDensity /=count;
+			m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
+		}
+
+
 	}
+
+}
 
 
 struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
-	{
+{
 
-		struc_traffic_state future_state;
-		// step 1: calculate delta w
-		float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTimeIndex -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTimeIndex;
+	struc_traffic_state future_state;
+	// step 1: calculate delta w
+	float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTimeIndex -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTimeIndex;
 
-		// step 2: propogate delta w to Furture time
-		//this is the most tricky part
+	// step 2: propogate delta w to Furture time
+	//this is the most tricky part
 
-		float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
-		// step 3: add future delta w to historical time at future time
+	float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
+	// step 3: add future delta w to historical time at future time
 
-		future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTimeIndex;
-		// step 4: produce speed
+	future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTimeIndex;
+	// step 4: produce speed
 
-		future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
+	future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
 
-		return future_state;
-	}
+	return future_state;
+}
 
 void DTAPath::UpdateWithinDayStatistics()
+{
+	int t;
+	for(t=0; t<1440; t++)
 	{
-		int t;
-		for(t=0; t<1440; t++)
-		{
-			m_WithinDayMeanTimeDependentTravelTime[t] = 0;
-			m_WithinDayMaxTimeDependentTravelTime[t] = 0;
-		}
-
-		for(t=0; t<1440*m_number_of_days; t++)
-		{
-			m_WithinDayMeanTimeDependentTravelTime[t%1440] += m_TimeDependentTravelTime[t]/m_number_of_days;
-			m_WithinDayMaxTimeDependentTravelTime[t%1440] = max(m_WithinDayMaxTimeDependentTravelTime[t%1440],m_TimeDependentTravelTime[t]);
-		}
+		m_WithinDayMeanTimeDependentTravelTime[t] = 0;
+		m_WithinDayMaxTimeDependentTravelTime[t] = 0;
 	}
+
+	for(t=0; t<1440*m_number_of_days; t++)
+	{
+		m_WithinDayMeanTimeDependentTravelTime[t%1440] += m_TimeDependentTravelTime[t]/m_number_of_days;
+		m_WithinDayMaxTimeDependentTravelTime[t%1440] = max(m_WithinDayMaxTimeDependentTravelTime[t%1440],m_TimeDependentTravelTime[t]);
+	}
+}
 
 bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 {
@@ -211,6 +211,7 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 				CString msg;
 				msg.Format ("Link %d -> %d in input_sensor_location.csv does not exit in input_link.csv.");
 				AfxMessageBox(msg);
+				break;
 
 
 			}
@@ -235,17 +236,22 @@ void CTLiteDoc::ReadSensorData(CString directory)
 	int TimeHorizon = 1440; // 1440
 
 	m_TimeInterval = 5;
+
 	m_NumberOfDays = 1;
+
 	float Occ_to_Density_Coef = 100.0f;
 
 
 	CDlgSensorDataLoading dlg;
+
+	if(m_SimulationLinkMOEDataLoadingStatus.GetLength ()>0)
+		dlg.m_NumberOfDays  = 1;
+
 	if(dlg.DoModal() ==IDOK)
 	{
 		m_TimeInterval = dlg.m_ObsTimeInterval;
 		m_NumberOfDays = dlg.m_NumberOfDays;
 		Occ_to_Density_Coef = dlg.m_Occ_to_Density_Coef;
-
 
 		bool bResetMOEAryFlag = false;
 		for(int day =1; day <= m_NumberOfDays; day++)
@@ -258,8 +264,9 @@ void CTLiteDoc::ReadSensorData(CString directory)
 			if(st!=NULL)
 			{
 
-				if(!bResetMOEAryFlag)
+				if(!bResetMOEAryFlag && m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0) // simulation data are not loaded. reset data array
 				{
+
 					g_Simulation_Time_Horizon = 1440*m_NumberOfDays;
 
 					for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -273,55 +280,59 @@ void CTLiteDoc::ReadSensorData(CString directory)
 					bResetMOEAryFlag = true;
 				}
 
+			
+			int number_of_samples = 0;
+			while(!feof(st))
+			{
 
-				int number_of_samples = 0;
-				while(!feof(st))
+				int Month = g_read_integer(st);
+				if(Month == -1)  // reach end of file
+					break;
+
+				int DayOfMonth   = g_read_integer(st);
+				int Year  = g_read_integer(st);
+				int Hour   = g_read_integer(st);
+				int Min   = g_read_integer(st);
+
+				int SensorID  =  g_read_integer(st);
+				float TotalFlow = g_read_float(st);
+				float Occupancy = g_read_float(st);
+				float AvgLinkSpeed = g_read_float(st);
+
+				int LinkID  = m_SensorIDtoLinkIDMap[SensorID];
+
+				DTALink* pLink = NULL;
+				if(LinkID>=0)
 				{
+					pLink = m_LinkIDMap[LinkID];
+				}else
+				{
+					CString error_message;
+					error_message.Format ("Reading error: Sensor ID %d has not been defined in file input_sensor_location.csv.");
+					AfxMessageBox(error_message);
+					fclose(st);
+					return;
+				}
 
-					int Month = g_read_integer(st);
-					if(Month == -1)  // reach end of file
-						break;
+				if(pLink!=NULL && pLink->m_bSensorData)
+				{
+					int t  = ((day - 1)*1440+ Hour*60+Min) ;
 
-					int DayOfMonth   = g_read_integer(st);
-					int Year  = g_read_integer(st);
-					int Hour   = g_read_integer(st);
-					int Min   = g_read_integer(st);
-
-					int SensorID  =  g_read_integer(st);
-					float TotalFlow = g_read_float(st);
-					float Occupancy = g_read_float(st);
-					float AvgLinkSpeed = g_read_float(st);
-
-					int LinkID  = m_SensorIDtoLinkIDMap[SensorID];
-
-					DTALink* pLink = NULL;
-					if(LinkID>=0)
+					if(t<pLink->m_SimulationHorizon)
 					{
-						pLink = m_LinkIDMap[LinkID];
-					}else
-					{
-						CString error_message;
-						error_message.Format ("Reading error: Sensor ID %d has not been defined in file input_sensor_location.csv.");
-						AfxMessageBox(error_message);
-						fclose(st);
-						return;
-					}
-
-					if(pLink!=NULL && pLink->m_bSensorData)
-					{
-						int t  = ((day - 1)*1440+ Hour*60+Min);
-
-						if(t<pLink->m_SimulationHorizon)
-						{
 
 						if(AvgLinkSpeed<=1)  // 0 or negative values means missing speed
-						AvgLinkSpeed = pLink->m_SpeedLimit ;
+							AvgLinkSpeed = pLink->m_SpeedLimit ;
 
 
-							ASSERT(pLink->m_NumLanes > 0);
+						ASSERT(pLink->m_NumLanes > 0);
+
+						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
+						{
 							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+
 
 							if(Occupancy <=0.001)
 								pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
@@ -337,23 +348,47 @@ void CTLiteDoc::ReadSensorData(CString directory)
 								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
 
 							}
+						}else // simulation data loaded
+						{
 
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
+							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+
+
+							if(Occupancy <=0.001)
+								pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
+							else
+								pLink->m_LinkMOEAry[t].ObsDensityCopy = Occupancy * Occ_to_Density_Coef;
+
+							// copy data to other intervals
+							for(int tt = 1; tt<m_TimeInterval; tt++)
+							{
+								pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
+								pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
+								pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
+								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+
+							}
 						}
 
-					}	
-					number_of_samples++;
-				}
 
-				m_SensorDataLoadingStatus.Format("%d sensor data records are loaded from file SensorDataDay***.csv.",number_of_samples);
+					}
 
-
-				fclose(st);
+				}	
+				number_of_samples++;
 			}
-		}
 
-	
+			m_SensorDataLoadingStatus.Format("%d sensor data records are loaded from file SensorDataDay***.csv.",number_of_samples);
+
+
+			fclose(st);
+		}
 	}
+
+	}	
 }
+
 void CTLiteDoc::ReadEventData(CString directory)
 {
 	CWaitCursor wc;
@@ -427,35 +462,35 @@ void CTLiteDoc::ReadEventData(CString directory)
 
 void CTLiteDoc::BuildHistoricalDatabase()
 {
-			std::list<DTALink*>::iterator iLink;
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	std::list<DTALink*>::iterator iLink;
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+
+		if((*iLink)->m_bSensorData  == true)
+		{
+			for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= m_TimeInterval)
 			{
-
-				if((*iLink)->m_bSensorData  == true)
+				if(t%1440 ==0)
+				{  // reset at the begining of day
+					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
+				}else
 				{
-					for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= m_TimeInterval)
-					{
-						if(t%1440 ==0)
-						{  // reset at the begining of day
-							(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
-						}else
-						{
-							(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_TimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
+					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_TimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
 
-						}
-
-						for(int tt= 1; tt<m_TimeInterval;tt++)
-						{
-							(*iLink)->m_LinkMOEAry[t+tt].ObsCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow;
-						}
-
-					}
-
-
-					(*iLink)->ComputeHistoricalAvg(m_NumberOfDays); 
 				}
+
+				for(int tt= 1; tt<m_TimeInterval;tt++)
+				{
+					(*iLink)->m_LinkMOEAry[t+tt].ObsCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow;
+				}
+
 			}
-		
+
+
+			(*iLink)->ComputeHistoricalAvg(m_NumberOfDays); 
+		}
+	}
+
 
 }
 
@@ -466,6 +501,7 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 		_T("Path file (*.csv)|*.csv|"));
 	if(dlg.DoModal() == IDOK)
 	{
+		bool bFormatFlag = true;
 		FILE* st = NULL;
 		fopen_s(&st,dlg.GetPathName(),"w");
 		if(st!=NULL)
@@ -482,7 +518,7 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 
 					fprintf(st,"day, %d", day+1 );
 
-					for(int t= 60*16; t<60*17; t++)
+					for(int t= 60*15.5; t<60*17; t++)
 					{
 						float travel_time = (*iLink)->m_FreeFlowTravelTime ;
 
@@ -495,24 +531,26 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 						if(travel_time<0.1)
 							travel_time = 0.1; // 0.1 min as the resolution.
 
-/*
+
 						for(int res = 0; res<10; res++)
 						{
 							fprintf(st,",%4.2f", travel_time);
+
 						}
-*/
+
+
 					}
 					fprintf(st,"\n");
 				}
 
-					fprintf(st,"\n");
+				fprintf(st,"\n");
 
 			}
-			}
-
-			fclose(st);
-
 		}
+
+		fclose(st);
+
+	}
 
 
 }

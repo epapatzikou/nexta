@@ -205,49 +205,24 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
 
-	g_Simulation_Time_Horizon = 1;
-	if(st!=NULL)
-	{
-		int line = 0;
-		while(!feof(st))
-		{
-			// from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh, link_volume_in_vehphpl,
-			//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
 
-			int from_node_number = g_read_integer(st);
-			if(from_node_number < 0)
-				break;
-			int to_node_number =  g_read_integer(st);
-			int timestamp_in_min = g_read_float(st);
-
-			if(g_Simulation_Time_Horizon < timestamp_in_min)
-				g_Simulation_Time_Horizon = timestamp_in_min;
-
-			float travel_time_in_min = g_read_float(st);
-			float delay_in_min = g_read_float(st);
-			float link_volume_in_veh = g_read_float(st);
-			float link_volume_in_vehphpl = g_read_float(st);
-			float density_in_veh_per_mile_per_lane = g_read_float(st);
-			float speed_in_mph = g_read_float(st);
-			float queue_length_perc = g_read_float(st);
-			float cumulative_arrival_count =  g_read_integer(st);
-			float cumulative_departure_count = g_read_integer(st);
-			line++;
-		}
-
-		fclose(st);
-	}
-
-	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
-	}
 	// reopen
 	fopen_s(&st,lpszFileName,"r");
 
 	if(st!=NULL)
 	{
-		int i = 0;
+	g_Simulation_Time_Horizon = 1440;
+
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
+	}
+
+	int i = 0;
+		// reset display window
+		m_DisplayWindow_StartTime = 1440;
+		m_DisplayWindow_EndTime = 0;
+
 		while(!feof(st))
 		{
 			// from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh, link_volume_in_vehphpl,
@@ -256,7 +231,13 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 			if(from_node_number < 0)
 				break;
 			int to_node_number =  g_read_integer(st);
-			int t = g_read_float(st);
+			int t = g_read_float(st) + m_SimulationStartTime_in_min;
+
+			if(t< m_DisplayWindow_StartTime)
+				m_DisplayWindow_StartTime = t;
+
+			if(t> m_DisplayWindow_EndTime)
+				m_DisplayWindow_EndTime = t;
 
 			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number );
 
@@ -275,10 +256,16 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 				i++;
 			}else
 			{
-				// error message
+				CString msg;
+				msg.Format ("Please check if line %d at file %s has a consistent link definition with input_link.csv.", i+2, lpszFileName);  // +2 for the first field name line
+				AfxMessageBox(msg);
+				break;
 			}
 
 		}
+
+		g_Simulation_Time_Stamp = m_DisplayWindow_StartTime; // reset starting time
+		g_SimulationStartTime_in_min = m_DisplayWindow_StartTime;
 
 		fclose(st);
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
@@ -691,7 +678,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	BuildHistoricalDatabase();
 	}
 	
-	ReadObservationLinkVolumeData(directory+"input_static_obs_link_volume.csv");
+	//ReadObservationLinkVolumeData(directory+"input_static_obs_link_volume.csv");
 
 	ReadBackgroundImageFile(directory+"Background.bmp");
 	return true;
@@ -998,6 +985,9 @@ void CTLiteDoc::OnViewShowmoe()
 		{
 			g_LinkMOEDlg = new CDlgMOE();
 			g_LinkMOEDlg->m_pDoc = this;
+			g_LinkMOEDlg->m_TmLeft = m_DisplayWindow_StartTime ;
+			g_LinkMOEDlg->m_TmRight = m_DisplayWindow_EndTime ;
+
 			g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 		}
 
@@ -1649,7 +1639,6 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
 	//	node id, node arrival time
 
-	g_Simulation_Time_Horizon = 1;
 
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
@@ -1667,8 +1656,8 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			pVehicle->m_VehicleID		= m_VehicleID;
 			pVehicle->m_OriginZoneID	= g_read_integer(st);
 			pVehicle->m_DestinationZoneID=g_read_integer(st);
-			pVehicle->m_DepartureTime	= g_read_float(st);
-			pVehicle->m_ArrivalTime = g_read_float(st);
+			pVehicle->m_DepartureTime	= m_SimulationStartTime_in_min + g_read_float(st);
+			pVehicle->m_ArrivalTime = m_SimulationStartTime_in_min + g_read_float(st);
 
 			if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
 				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
@@ -1707,7 +1696,7 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 				float random_value = g_RNNOF()*0.01; // 0.1 min = 6 seconds
 
 
-				pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = g_read_float(st);
+				pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = m_SimulationStartTime_in_min + g_read_float(st);
 			}
 
 			m_VehicleSet.push_back (pVehicle);
