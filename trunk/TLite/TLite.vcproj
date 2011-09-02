@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_Find_Vehicle.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_ImageSettings.cpp"
 				>
 			</File>
@@ -391,6 +395,10 @@
 			</File>
 			<File
 				RelativePath=".\ChildFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_Find_Vehicle.h"
 				>
 			</File>
 			<File
@@ -604,11 +612,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+				RelativePath=".\res\smallico.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\smallico.bmp"
+				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 				>
 			</File>
 			<File
@@ -648,11 +656,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				RelativePath=".\res\toolbar2.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar2.bmp"
+				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 				>
 			</File>
 			<File

@@ -273,7 +273,7 @@ void CMainFrame::OnAnimationPlay()
 void CMainFrame::OnAnimationRewind()
 {
 	g_Player_Status = 1;
-	g_Simulation_Time_Stamp = 0;
+	g_Simulation_Time_Stamp = g_SimulationStartTime_in_min;
 	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
 	UpdateAllViews();
@@ -287,7 +287,7 @@ void CMainFrame::OnAnimationPause()
 void CMainFrame::OnAnimationStop()
 {
 	g_Player_Status = 0;
-	g_Simulation_Time_Stamp = 0;
+	g_Simulation_Time_Stamp = g_SimulationStartTime_in_min;
 	m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
 
 	UpdateAllViews();

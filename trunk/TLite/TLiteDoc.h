@@ -33,7 +33,7 @@
 #include <iostream>
 #include <fstream>
 
-enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions, vehicle};
+enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions, vehicle, volume_copy, speed_copy, density_copy};
 enum OD_MOE {odnone,critical_volume};
 
 class CTLiteDoc : public CDocument
@@ -41,6 +41,10 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_SimulationStartTime_in_min = 360;  // 6 AM
+		m_DisplayWindow_StartTime = 0;
+		m_DisplayWindow_EndTime = 1440;
+
 		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = none;
@@ -148,6 +152,11 @@ public:
 	
 	int m_TimeInterval;
 	int m_NumberOfDays;
+	int m_SimulationStartTime_in_min;
+
+	int	m_DisplayWindow_StartTime;
+	int	m_DisplayWindow_EndTime;
+
 	void ReadSensorData(CString directory);
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
@@ -425,7 +434,9 @@ public:
 
 			if(m_Iter == m_NodeIDtoLinkMap.end( ))
 			{
-				AfxMessageBox("Link cannot be found.");
+				CString msg;
+				msg.Format ("Link %d-> %d cannot be found", FromNodeNumber, ToNodeNumber);
+				AfxMessageBox(msg);
 				return NULL;
 			}
 		return m_NodeIDtoLinkMap[LinkKey];

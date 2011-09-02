@@ -1401,6 +1401,9 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	{
 		g_LinkMOEDlg = new CDlgMOE();
 		g_LinkMOEDlg->m_pDoc = pDoc;
+		g_LinkMOEDlg->m_TmLeft = pDoc->m_DisplayWindow_StartTime ;
+		g_LinkMOEDlg->m_TmRight = pDoc->m_DisplayWindow_EndTime ;
+
 		g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 
 	}

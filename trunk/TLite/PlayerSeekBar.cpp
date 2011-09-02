@@ -34,6 +34,7 @@
 // CPlayerSeekBar
 
 float g_Simulation_Time_Stamp;
+int  g_SimulationStartTime_in_min;
 
 long g_Simulation_Time_Horizon=1440;  // 24 hours
 int g_Data_Time_Interval = 1;

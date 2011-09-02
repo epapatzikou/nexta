@@ -25,6 +25,8 @@ public:
 	int m_lane_size;
 	// processing NGSim data
 	bool m_bShowSimulationDataFlag;
+	bool m_bShowVehicleIDFlag;
+	bool m_bShowLeaderPositionFlag;
 
 	bool m_bShowBothResultsFlag;
 
@@ -35,6 +37,12 @@ public:
 
 	std::map<int, int> m_VehicleIDtoNOMap;
 	std::vector<VehicleCFData> m_VehicleDataList;
+	int m_SelectedVehicleID;
+
+	std::vector<int> m_VehicleNoVector_Lane;
+	int FindPreceedingVehicleNo(int LaneNo,float LocalY, int t);
+	int FindFollowingVehicleNo(int LaneNo,float LocalY, int t);
+
 
 	float *** m_VehicleSnapshotAry_Lane; // simulation
 
@@ -99,7 +107,8 @@ public:
 
 // Implementation
 public:
-	void RefreshWindow();
+	bool ExportDataToFile(char csv_file[_MAX_PATH], int DataFlag);
+void RefreshWindow();
 //	void DrawSchedule(int ScenarioNo);
 //	void DrawTrain(int TrainNo);
 
@@ -171,6 +180,12 @@ public:
 	afx_msg void OnUpdateNgsimdataShowbothobservedandsimulationresults(CCmdUI *pCmdUI);
 	afx_msg void OnNgsimdataShowbothobservedandsimulationresults();
 	afx_msg void OnNgsimdataChangesettingsofcarfollowingmodel();
+	afx_msg void OnNgsimdataCarfollowingdataextraction();
+	afx_msg void OnNgsimdataShowvehicleid();
+	afx_msg void OnUpdateNgsimdataShowvehicleid(CCmdUI *pCmdUI);
+	afx_msg void OnNgsimdataShowpreceedingvehicleposition();
+	afx_msg void OnUpdateNgsimdataShowpreceedingvehicleposition(CCmdUI *pCmdUI);
+	afx_msg void OnNgsimdataSearchByVehicleId();
 };
 
 

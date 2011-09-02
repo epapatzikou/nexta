@@ -78,6 +78,7 @@ public:
 	m_bShowEventLabel = false;
 	m_bShowWeatherLabel = false;
 	m_bShowPrediction = false;
+	m_bShowSimulationAndObservation  = false;
 
 	m_ViewMode = 0;
 
@@ -106,6 +107,8 @@ public:
 
    eLinkMOEMode Cur_MOE_type1;
    eLinkMOEMode Cur_MOE_type2;
+
+   bool m_bShowSimulationAndObservation;
    bool m_bShowHistPattern;
    bool m_bShowPrediction;
    bool m_bShowVariability;
@@ -187,4 +190,6 @@ public:
 	afx_msg BOOL OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnDataExportvehicletrajectory();
 	afx_msg void OnUpdateEstimationPrediction(CCmdUI *pCmdUI);
+	afx_msg void OnViewSimulationvs();
+	afx_msg void OnUpdateViewSimulationvs(CCmdUI *pCmdUI);
 };

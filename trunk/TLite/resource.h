@@ -46,6 +46,7 @@
 #define IDD_DIALOG_VEHICLE_EMISSIONS    169
 #define IDD_DIALOG_CarFollowingSettings 170
 #define IDD_DIALOG_INCIDENT             171
+#define IDD_DIALOG_Find_Vehicle         172
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -76,6 +77,7 @@
 #define IDC_EDIT_TimeInterval           1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
 #define IDC_EDIT_Number_of_Zones        1034
+#define IDC_EDIT_StartingTime_in_min    1034
 #define IDC_BUTTON_CreateZones          1035
 #define IDC_BUTTON_Edit_Zone_Node_Mapping 1036
 #define IDC_LIST_Mapping                1037
@@ -98,6 +100,7 @@
 #define IDC_LIST_LINK2                  1051
 #define IDC_OpMode_LINK                 1051
 #define IDC_LIST_INCIDENT_LIST          1051
+#define IDC_EDIT_Vehicle_ID             1052
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -351,14 +354,20 @@
 #define ID_RESEARCHTOOLS_ODDEMANDESTIMATION 33086
 #define ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT 33087
 #define ID_ESTIMATION_PREDICTION33088   33088
+#define ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION 33089
+#define ID_NGSIMDATA_SHOWVEHICLEID      33090
+#define ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION 33091
+#define ID_NGSIMDATA_SEARCHBYVEHICLEID  33092
+#define ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID 33093
+#define ID_VIEW_SIMULATIONVS            33094
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        172
-#define _APS_NEXT_COMMAND_VALUE         33089
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_RESOURCE_VALUE        173
+#define _APS_NEXT_COMMAND_VALUE         33095
+#define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

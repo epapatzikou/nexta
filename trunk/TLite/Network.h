@@ -155,10 +155,19 @@ class SLinkMOE  // time-dependent link MOE
 public:
 	float ObsQueuePerc;
 	float ObsTravelTimeIndex;
+
 	float ObsSpeed;  // speed
 	float ObsFlow;   // flow volume
-	float ObsCumulativeFlow;   // flow volume
 	float ObsDensity;   // ObsDensity
+
+	// these three copies are used to compare simulation results and observed results
+	float ObsSpeedCopy;  // speed
+	float ObsFlowCopy;   // flow volume
+	float ObsDensityCopy;   // ObsDensity
+	float ObsTravelTimeIndexCopy;
+
+	float ObsCumulativeFlow;   // flow volume
+
 	int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
 	int EpisodeNo;
 	int EpisoDuration;
@@ -182,15 +191,21 @@ public:
 		ObsQueuePerc = 0;
 		ObsTravelTimeIndex = 0;
 		ObsSpeed = 0;
-
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
+
 		PredSpeed = 0;
 		PredTTI15 = 0;
 		FullCapacity = 0;
 		ReducedCapacity = 0;
 		EventStartTiming = 0;
+
+	// these four copies are used to compare simulation results and observed results
+		ObsSpeedCopy = 0;
+		ObsFlowCopy = 0;
+		ObsDensityCopy = 0;
+		ObsTravelTimeIndexCopy = 0;
 
 	};
 
@@ -198,6 +213,8 @@ public:
 	{
 		ObsQueuePerc = 0;
 		ObsTravelTimeIndex = FreeFlowTravelTime;
+		ObsTravelTimeIndexCopy = FreeFlowTravelTime;
+
 		ObsSpeed = SpeedLimit;
 		ObsFlow = 0;
 		ObsCumulativeFlow = 0;
@@ -539,6 +556,15 @@ public:
 		else
 			return m_StaticSpeed;
 	}
+
+	float GetObsSpeedCopy(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeedCopy);  
+		else
+			return m_StaticSpeed;
+	}
+
 	float GetObsLaneVolume(int t)
 	{
 		if(t < m_SimulationHorizon)
@@ -547,10 +573,26 @@ public:
 			return m_StaticLaneVolume;
 	}
 
+		float GetObsLaneVolumeCopy(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlowCopy);  
+		else
+			return m_StaticLaneVolume;
+	}
+
 	float GetObsTravelTimeIndex(int t)
 	{
 		if(t < m_SimulationHorizon)
 			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndex);  
+		else
+			return m_StaticTravelTime;
+	}
+
+	float GetObsTravelTimeIndexCopy(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndexCopy);  
 		else
 			return m_StaticTravelTime;
 	}
@@ -574,6 +616,14 @@ public:
 	{
 		if(t < m_SimulationHorizon)
 			return max(0, m_LinkMOEAry[t].ObsDensity);  
+		else
+			return 0;
+	}		
+
+	float GetObsDensityCopy(int t)
+	{
+		if(t < m_SimulationHorizon)
+			return max(0, m_LinkMOEAry[t].ObsDensityCopy);  
 		else
 			return 0;
 	}		
@@ -1323,6 +1373,7 @@ struct VehicleCFData
 	int VehicleType; // 1 - motorcycle, 2 - auto, 3 - truck
 	float StartTime; // in time interval, LinkStartTime, so it should be sorted
 	float EndTime; // in time interval
+
 };
 
 struct VehicleSnapshotData
@@ -1330,6 +1381,8 @@ struct VehicleSnapshotData
 	float LocalY;
 	float Speed_mph;
 	int LaneID;
+	int PrecedingVehicleID;
+	int FollowingVehicleID;
 };
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
@@ -1341,3 +1394,5 @@ extern float g_RNNOF();
 extern std::vector<DTAPath*>	m_PathDisplayList;
 extern int m_SelectPathNo;
 extern float g_Simulation_Time_Stamp;
+
+extern int  g_SimulationStartTime_in_min;
