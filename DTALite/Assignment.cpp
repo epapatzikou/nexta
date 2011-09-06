@@ -127,7 +127,10 @@ void g_DynamicTrafficAssisnment()
 
 		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
-#pragma omp parallel for
+//#pragma omp parallel for
+
+			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl; 
+
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 			{
 				if(g_ZoneVector[CurZoneID].m_OriginVehicleSize >0)  // only this origin zone has vehicles, then we build the network
@@ -215,7 +218,7 @@ void g_DynamicTrafficAssisnment()
 					NotConverged = false; // converged!
 			}else // gap-based approaches
 			{	
-				if(g_RelativeGap < g_ConvergencyRelativeGapThreshold_in_perc)
+				if(g_RelativeGap < g_ConvergencyRelativeGapThreshold_in_perc && !g_ODEstimationFlag )
 					NotConverged = false; // converged! 
 			}			
 		}else // ----------* with inner loop *----------
