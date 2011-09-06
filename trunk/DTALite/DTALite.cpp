@@ -148,7 +148,8 @@ int g_SimulationHorizon = 120;
 int g_DemandHorizonForLoadedVehicles = 60; // min
 
 int g_ObservationTimeInterval = 1;  //min 
-
+int g_ObservationStartTime = 390; // min
+int g_ObservationEndTime = 570; // min
 // assignment
 int g_UEAssignmentMethod = 0; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
 float g_CurrentGapValue = 0.0; // total network gap value in the current iteration
@@ -204,6 +205,7 @@ std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle
 FILE* g_ErrorFile = NULL;
 ofstream g_LogFile;
 ofstream g_AssignmentLogFile;
+ofstream g_EstimationLogFile;
 ofstream g_WarningFile;
 
 int g_TrafficFlowModelFlag = 0;
@@ -537,11 +539,12 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-	cout << "Reading file incident.dat..."<< endl;
 
 	fopen_s(&st,"VMS.dat","r");
 	if(st!=NULL)
 	{
+	cout << "Reading file incident.dat..."<< endl;
+
 		int NumberofVMSs = g_read_integer(st);
 
 		if(NumberofVMSs >0)
@@ -610,10 +613,11 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-	cout << "Reading file VOT.csv..."<< endl;
 	fopen_s(&st,"VOT.csv","r");
 	if(st!=NULL)
 	{
+	cout << "Reading file VOT.csv..."<< endl;
+
 		g_VOTStatVector[0].CumulativePercentage = 0;
 
 		int PrevVOT = 0;
@@ -662,11 +666,11 @@ void ReadInputFiles()
 
 
 
-	cout << "Reading file toll.dat..."<< endl;
 
 	fopen_s(&st,"toll.dat","r");
 	if(st!=NULL)
 	{
+	cout << "Reading file toll.dat..."<< endl;
 
 		for(int vt = 1; vt<MAX_VEHICLE_TYPE_SIZE; vt++)
 		{
@@ -736,7 +740,19 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-		g_ReadLinkMeasurementFile(&PhysicalNetwork);
+		if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
+		{
+			g_ReadLinkMeasurementFile(&PhysicalNetwork);
+					// second step: start reading historical demand
+			g_ReadHistDemandFile();
+		}
+
+		if(g_ODEstimationFlag == 2) //  OD estimation mode 2: read simulated measurements
+		{
+		g_ReadObservedLinkMOEData(&PhysicalNetwork);
+		g_ReadHistDemandFile();
+
+		}
 
 		ConnectivityChecking(&PhysicalNetwork);
 
@@ -799,7 +815,6 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		}
 
 		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
-		//		TRACE("vhc.m_DepartureTime %d = %f\n",i, vhc.m_DepartureTime);
 
 		float RandomPercentage= g_GetRandomRatio()*100.0f; 
 		vhc.m_InformationClass = 1;
@@ -1182,6 +1197,7 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 			pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
 			g_VehicleVector.push_back(pVehicle);
+			
 			g_VehicleMap[i]  = pVehicle;
 
 
@@ -1221,8 +1237,6 @@ void FreeMemory()
 	}
 
 	g_FreeODTKPathVector();
-
-
 	g_LinkVector.clear();
 	g_LinkVector.clear();
 
@@ -1532,6 +1546,22 @@ int g_InitializeLogFiles()
 		cin.get();  // pause
 		return 0;
 	}
+
+		g_EstimationLogFile.open ("estimation.log", ios::out);
+	if (g_EstimationLogFile.is_open())
+	{
+		g_EstimationLogFile.width(12);
+		g_EstimationLogFile.precision(3) ;
+		g_EstimationLogFile.setf(ios::fixed);
+	}else
+	{
+		cout << "File estimation.log cannot be opened, and it might be locked by another program!" << endl;
+		cin.get();  // pause
+		return 0;
+	}
+
+
+
 	g_WarningFile.open ("warning.log", ios::out);
 	if (g_WarningFile.is_open())
 	{
@@ -1576,9 +1606,16 @@ void g_ReadDTALiteSettings()
 		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
 
 		g_ODEstimationFlag = g_GetPrivateProfileInt("estimation", "od_demand_estimation", 0, IniFilePath_DTA);	
-		g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 2, IniFilePath_DTA);
+		g_ODEstimationMeasurementType = g_GetPrivateProfileInt("estimation", "measurement_type", 1, IniFilePath_DTA);	
 
-		g_ODEstimation_StartingIteration = 2;
+		g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 2, IniFilePath_DTA);
+		g_ObservationTimeInterval = g_GetPrivateProfileInt("estimation", "observation_time_interval", 5, IniFilePath_DTA);
+		g_ObservationStartTime = g_GetPrivateProfileInt("estimation", "observation_start_time_in_min", 390, IniFilePath_DTA);
+		g_ObservationEndTime = g_GetPrivateProfileInt("estimation", "observation_end_time_in_min", 570, IniFilePath_DTA);
+
+		if(g_ObservationEndTime >= g_ObservationStartTime + g_SimulationHorizon)  // no later than the simulation end time
+			g_ObservationEndTime = g_ObservationStartTime + g_SimulationHorizon;
+
 
 		if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 		{
@@ -1838,10 +1875,12 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 	/**********************************************/
 	//below is the main traffic assignment-simulation code
 
-
 		g_TrafficAssignmentSimulation();
 
 		g_OutputSimulationStatistics();
+
+		g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
+
 		g_FreeMemory();
 	return nRetCode;
 }

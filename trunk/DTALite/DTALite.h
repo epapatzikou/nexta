@@ -61,6 +61,9 @@ extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
 extern int g_CycleLength_in_seconds;
 extern int g_ObservationTimeInterval;
+extern int g_ObservationStartTime;
+extern int g_ObservationEndTime;
+
 extern float g_DefaultSaturationFlowRate_in_vehphpl;
 #define MAX_LINK_NO 65530
 #define MAX_NODE_SIZE_IN_A_PATH 2000
@@ -1210,7 +1213,7 @@ struct PathArrayForEachODT // Jason : store the path set for each OD pair and ea
 	int   PathSize[100];				// number of nodes on each path
 	//	int   BestPath[100];				// the link sequence of the best path for each ODT
 	int   BestPathIndex;				// index of the best (i.e., least experienced time) path for each ODT
-	float AvgPathTimes[100]; 	
+	float AvgPathTimes[100]; 	       // average path travel time across different vehicles on the same path with the same departure time
 
 
 };
@@ -1339,6 +1342,9 @@ extern void g_FreeVehicleVector();
 extern void g_FreeODTKPathVector();
 
 extern void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork);
+extern void g_ReadHistDemandFile();
+extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
+extern void g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
 
 // for OD estimation
 extern float*** g_HistODDemand;
@@ -1350,6 +1356,7 @@ extern float    g_ODEstimation_Weight_Gap;
 extern float    g_ODEstimation_StepSize;
 
 extern int g_ODEstimationFlag;
+extern int g_ODEstimationMeasurementType;
 extern int g_ODEstimation_StartingIteration;
 
 extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin;
@@ -1362,3 +1369,5 @@ extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation 
 extern FILE* g_ErrorFile;
 extern ofstream g_LogFile;
 extern ofstream g_AssignmentLogFile;
+extern ofstream g_EstimationLogFile;
+

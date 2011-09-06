@@ -912,33 +912,36 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	//	TRACE("g_Number_of_CompletedVehicles= %d\n", Number_of_CompletedVehicles);
 
+
 	// generate EndTimeOfPartialCongestion
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	// before this step, we already generate the state of each time stamp, in terms of free-flow, congestion and queue spillk back case. 
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)  // for each link
 	{
 
-		int LastEndTimeOfPartialCongestion = g_SimulationHorizon+10;  // initial value, no queue
+		int NextCongestionTransitionTimeStamp = g_SimulationHorizon+10;  // // start with the initial value, no queue
 
 		if(g_LinkVector[li]->m_LinkMOEAry[g_SimulationHorizon-1].ExitQueueLength>=1)  // remaining queue at the end of simulation horizon
-			LastEndTimeOfPartialCongestion = g_SimulationHorizon-1;
+			NextCongestionTransitionTimeStamp = g_SimulationHorizon-1;
 
 		int time_min;
 		for(time_min = g_SimulationHorizon-1; time_min>=0 ; time_min--)  // move backward
 		{
-			// condition 1: from partial congestion to free-flow
+			// transition condition 1: from partial congestion to free-flow; action: move to the next lini
 			if(time_min>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min-1].ExitQueueLength>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min].ExitQueueLength==0)  // previous time_min interval has queue, current time_min interval has no queue --> end of congestion 
 			{
-				LastEndTimeOfPartialCongestion = time_min;			
+				NextCongestionTransitionTimeStamp = time_min;			
 			}
 
-			//condition 2: from partial congestion to fully congesed.
+			//transition condition 2: from partial congestion to fully congesed. action: --> move to the previous link
 			if(time_min>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min-1].ExitQueueLength>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min].TrafficStateCode == 2 )
 			{
-				LastEndTimeOfPartialCongestion = time_min;			
+				NextCongestionTransitionTimeStamp = time_min;			
 			}
 
-			if(g_LinkVector[li]->m_LinkMOEAry[time_min].ExitQueueLength > 0) // there is queue now
+
+			if(g_LinkVector[li]->m_LinkMOEAry[time_min].ExitQueueLength > 0 ) // there is queue at time time_min, but it is not end of queue
 			{
-				g_LinkVector[li]->m_LinkMOEAry[time_min].EndTimeOfPartialCongestion = LastEndTimeOfPartialCongestion;
+				g_LinkVector[li]->m_LinkMOEAry[time_min].EndTimeOfPartialCongestion = NextCongestionTransitionTimeStamp;
 			}
 
 		}
