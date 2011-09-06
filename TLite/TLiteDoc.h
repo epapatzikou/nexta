@@ -41,7 +41,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-		m_SimulationStartTime_in_min = 360;  // 6 AM
+		m_SimulationStartTime_in_min = 0;  // 6 AM
 		m_DisplayWindow_StartTime = 0;
 		m_DisplayWindow_EndTime = 1440;
 

@@ -329,7 +329,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
-							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+ 							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 

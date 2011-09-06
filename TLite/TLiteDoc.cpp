@@ -203,8 +203,6 @@ void CTLiteDoc::Dump(CDumpContext& dc) const
 void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 {
 	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"r");
-
 
 	// reopen
 	fopen_s(&st,lpszFileName,"r");
@@ -264,8 +262,8 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 
 		}
 
-		g_Simulation_Time_Stamp = m_DisplayWindow_StartTime; // reset starting time
-		g_SimulationStartTime_in_min = m_DisplayWindow_StartTime;
+		g_Simulation_Time_Stamp = 0; // reset starting time
+		g_SimulationStartTime_in_min = 0;
 
 		fclose(st);
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
@@ -2157,6 +2155,8 @@ void CTLiteDoc::LoadSimulationOutput()
 
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, DTASettingsPath);	
 
+	m_SimulationStartTime_in_min = (int) g_GetPrivateProfileFloat("estimation", "observation_start_time_in_min", 0, DTASettingsPath);
+
 	if(TrafficFlowModelFlag==0)  //BPR function 
 	{
 		m_StaticAssignmentMode = true;
@@ -2164,6 +2164,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	}
 	else {
 		m_StaticAssignmentMode = false;
+
 		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
 	}
 
