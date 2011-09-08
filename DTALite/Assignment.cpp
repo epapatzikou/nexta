@@ -310,12 +310,7 @@ void g_DynamicTrafficAssisnment()
 		iteration = g_NumberOfIterations -1;  //roll back to the last iteration if the ending condition is triggered by "iteration < g_NumberOfIterations"
 	}
 
-	bStartWithEmptyFile = true;
-	OutputVehicleTrajectoryData("Vehicle.csv", iteration,true);
-	//output vehicle trajectory data
-	OutputLinkMOEData("LinkMOE.csv", iteration,bStartWithEmptyFile);
-	OutputNetworkMOEData("NetworkMOE.csv", iteration,bStartWithEmptyFile);
-
+	g_OutputMOEData(iteration);
 
 	if(g_NumberOfInnerIterations == 0) // without inner loop
 	{
@@ -1560,12 +1555,7 @@ void g_OneShotNetworkLoading()
 	//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
 	int simulation_mode = 1; // simulation from demand
 	SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, simulation_mode);
-	bStartWithEmptyFile = true;
-	OutputVehicleTrajectoryData("Vehicle.csv", iteration,true);
-
-	//output vehicle trajectory data
- 	OutputLinkMOEData("LinkMOE.csv", iteration,bStartWithEmptyFile);
-	OutputNetworkMOEData("NetworkMOE.csv", iteration,bStartWithEmptyFile);
+	g_OutputMOEData(iteration);
 
 }
 
@@ -1722,7 +1712,7 @@ void g_StaticTrafficAssisnment()
 	}
 
 	bStartWithEmptyFile = true;
-	OutputVehicleTrajectoryData("Vehicle.csv", iteration,true);
+	g_OutputMOEData(iteration);
 
 	g_ComputeFinalGapValue(); // Jason : compute and output final gap
 		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
@@ -1851,11 +1841,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		iteration = g_NumberOfIterations -1;  //roll back to the last iteration if the ending condition is triggered by "iteration < g_NumberOfIterations"
 	}
 
-	bStartWithEmptyFile = true;
-	OutputVehicleTrajectoryData("Vehicle.csv", iteration,true);
-	//output vehicle trajectory data
-	OutputLinkMOEData("LinkMOE.csv", iteration,bStartWithEmptyFile);
-	OutputNetworkMOEData("NetworkMOE.csv", iteration,bStartWithEmptyFile);
+	g_OutputMOEData(iteration);
 
 
 	if(g_NumberOfInnerIterations == 0) // without inner loop

@@ -503,9 +503,10 @@ void ReadInputFiles()
 	PhysicalNetwork.BuildPhysicalNetwork();
 	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 
-	cout << "Reading file incident.dat..."<< endl;
+	/*
+	cout << "Reading file capacity_reduction.csv..."<< endl;
 
-	fopen_s(&st,"incident.dat","r");
+	fopen_s(&st,"capacity_reduction.csv","r"); /// 
 	if(st!=NULL)
 	{
 		int NumberofCapacityReductionLinks = g_read_integer(st);
@@ -532,6 +533,8 @@ void ReadInputFiles()
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 				cs.LaneClosureRatio= g_read_float(st);
+				g_read_float(st); // speed limit
+
 				plink->CapacityReductionVector.push_back(cs);
 			}
 		}
@@ -665,29 +668,12 @@ void ReadInputFiles()
 
 
 
-
-
-	fopen_s(&st,"toll.dat","r");
+	fopen_s(&st,"toll.csv","r");
 	if(st!=NULL)
 	{
 	cout << "Reading file toll.dat..."<< endl;
 
-		for(int vt = 1; vt<MAX_VEHICLE_TYPE_SIZE; vt++)
-		{
-			g_VOT[vt]= g_read_float(st); 
-		}
-
-		float high_way_bias = g_read_float(st); 
-		int NumberofTolls = g_read_integer(st);
-
-		if(NumberofTolls >0)
-		{
-			g_LogFile << "# of tolls = " << NumberofTolls << endl;
-		}
-
-
-		for(i = 0; i < NumberofTolls; i++)
-		{
+	{
 			int usn  = g_read_integer(st);
 			int dsn =  g_read_integer(st);
 			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
@@ -740,6 +726,7 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
+	*/
 		if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
 		{
 			g_ReadLinkMeasurementFile(&PhysicalNetwork);
@@ -1733,8 +1720,6 @@ void g_ReadDTALiteSettings()
 
 void g_OutputSimulationStatistics()
 {
-
-
 		int Count=0; 
 		float AvgTravelTime, AvgDistance, AvgSpeed;
 		g_LogFile << "--- MOE for vehicles completing trips ---" << endl;
