@@ -924,6 +924,7 @@ void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 
 }
 
+
 class DTANetworkForSP  // mainly for shortest path calculation, not just physical network
 	// for shortes path calculation between zone centroids, for origin zone, there are only outgoing connectors, for destination zone, only incoming connectors
 	// different shortest path calculations have different network structures, depending on their origions/destinations
@@ -1295,9 +1296,17 @@ extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
+void g_OutputMOEData(int iteration);
+
 void OutputLinkMOEData(char fname[_MAX_PATH], int Iterationbool,bool bStartWithEmpty);
 void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
 void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputTimeDependentODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
+void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 
 float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename);

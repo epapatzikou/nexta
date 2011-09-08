@@ -334,6 +334,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\StatisticsOutput.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
