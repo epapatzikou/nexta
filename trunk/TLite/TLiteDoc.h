@@ -568,6 +568,7 @@ public:
 		afx_msg void OnToolsEnumeratepath();
 		afx_msg void OnToolsExporttoHistDatabase();
 		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
+		afx_msg void OnScenarioConfiguration();
 };
 
 
