@@ -272,6 +272,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgScenario.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgScenarioTab.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgSensorDataLoading.cpp"
 				>
 			</File>
@@ -383,6 +391,118 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="CGridListCtrlEx"
+				>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTrait.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitCombo.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitCombo.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitDateTime.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitDateTime.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitEdit.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitEdit.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitImage.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitImage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitText.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitText.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridColumnTraitVisitor.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridListCtrlEx.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridListCtrlEx.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridListCtrlGroups.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridListCtrlGroups.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTrait.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTraitText.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTraitText.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTraitVisitor.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTraitXP.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\CGridRowTraitXP.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\ViewConfigSection.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CGridListCtrlEx\ViewConfigSection.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="CXMLFILE"
+				>
+				<File
+					RelativePath=".\CXMLFile_SRC\XMLFile.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CXMLFile_SRC\XMLFile.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -467,6 +587,14 @@
 			</File>
 			<File
 				RelativePath=".\DlgPathMOE.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgScenario.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgScenarioTab.h"
 				>
 			</File>
 			<File
@@ -612,11 +740,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\smallico.bmp"
+				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+				RelativePath=".\res\smallico.bmp"
 				>
 			</File>
 			<File
@@ -656,11 +784,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar2.bmp"
+				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				RelativePath=".\res\toolbar2.bmp"
 				>
 			</File>
 			<File
