@@ -47,6 +47,8 @@
 #define IDD_DIALOG_CarFollowingSettings 170
 #define IDD_DIALOG_INCIDENT             171
 #define IDD_DIALOG_Find_Vehicle         172
+#define IDD_DIALOG_SCENARIO             173
+#define IDD_DIALOG_SCENARIO_TAB         174
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -67,6 +69,7 @@
 #define IDC_LIST                        1022
 #define IDC_CUSTOM1                     1023
 #define IDC_GRID_CTRL                   1023
+#define IDC_GRIDLISTCTRLEX              1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
@@ -101,6 +104,11 @@
 #define IDC_OpMode_LINK                 1051
 #define IDC_LIST_INCIDENT_LIST          1051
 #define IDC_EDIT_Vehicle_ID             1052
+#define IDC_TAB1                        1053
+#define IDC_SCENARIO_TAB                1053
+#define IDC_BUTTON_ADD                  1055
+#define IDC_BUTTON2                     1056
+#define IDC_BUTTON_DELETE               1056
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -360,14 +368,15 @@
 #define ID_NGSIMDATA_SEARCHBYVEHICLEID  33092
 #define ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID 33093
 #define ID_VIEW_SIMULATIONVS            33094
+#define ID_SCENARIO_CONFIGURATION       33095
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        173
-#define _APS_NEXT_COMMAND_VALUE         33095
-#define _APS_NEXT_CONTROL_VALUE         1053
+#define _APS_NEXT_RESOURCE_VALUE        175
+#define _APS_NEXT_COMMAND_VALUE         33096
+#define _APS_NEXT_CONTROL_VALUE         1057
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

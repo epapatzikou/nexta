@@ -47,6 +47,7 @@
 #include "DlgVehiclePath.h"
 #include "DlgNetworkAlignment.h"
 #include "Dlg_VehEmissions.h"
+#include "DlgScenario.h"
 
 
 #ifdef _DEBUG
@@ -134,6 +135,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TOOLS_ENUMERATEPATH, &CTLiteDoc::OnToolsEnumeratepath)
 	ON_COMMAND(ID_TOOLS_EXPORTTOTIME, &CTLiteDoc::OnToolsExporttoHistDatabase)
 	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteDoc::OnResearchtoolsExporttodtalitesensordataformat)
+	ON_COMMAND(ID_SCENARIO_CONFIGURATION, &CTLiteDoc::OnScenarioConfiguration)
 END_MESSAGE_MAP()
 
 
@@ -2893,4 +2895,19 @@ void CTLiteDoc::OnResearchtoolsExporttodtalitesensordataformat()
 			}
 		}
 		fclose(st);
+}
+void CTLiteDoc::OnScenarioConfiguration()
+{
+	// TODO: Add your command handler code here
+
+	if (m_ProjectDirectory.GetLength() == 0 ) 
+	{
+		MessageBox(NULL,"No open project!",NULL,MB_ICONWARNING);
+		return;
+	}
+
+
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
 }
