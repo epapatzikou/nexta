@@ -264,6 +264,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgMOETabSubView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgMOETabView.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgNetworkAlignment.cpp"
 				>
 			</File>
@@ -579,6 +587,14 @@
 			</File>
 			<File
 				RelativePath=".\DlgMOE.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgMOETabSubView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgMOETabView.h"
 				>
 			</File>
 			<File

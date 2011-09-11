@@ -48,6 +48,7 @@
 #include "DlgNetworkAlignment.h"
 #include "Dlg_VehEmissions.h"
 #include "DlgScenario.h"
+#include "DlgMOETabView.h"
 
 
 #ifdef _DEBUG
@@ -136,6 +137,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TOOLS_EXPORTTOTIME, &CTLiteDoc::OnToolsExporttoHistDatabase)
 	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteDoc::OnResearchtoolsExporttodtalitesensordataformat)
 	ON_COMMAND(ID_SCENARIO_CONFIGURATION, &CTLiteDoc::OnScenarioConfiguration)
+	ON_COMMAND(ID_MOE_VIEWMOES, &CTLiteDoc::OnMoeViewmoes)
 END_MESSAGE_MAP()
 
 
@@ -2908,6 +2910,15 @@ void CTLiteDoc::OnScenarioConfiguration()
 
 
 	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnMoeViewmoes()
+{
+	// TODO: Add your command handler code here
+
+	CDlgMOETabView dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
 }

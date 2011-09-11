@@ -53,10 +53,8 @@ CDlgScenario::~CDlgScenario()
 {
 }
 
-
-std::vector<std::string> CDlgScenario::GetHeaderList(int i)
+void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, std::vector<CString>& DefaultList)
 {
-	std::vector<std::string> HeaderList;
 
 	switch (i)
 	{
@@ -65,6 +63,10 @@ std::vector<std::string> CDlgScenario::GetHeaderList(int i)
 		HeaderList.push_back("Start Time (min)");
 		HeaderList.push_back("End Time (min)");
 		HeaderList.push_back("Capacity Reduction Percentage (%)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("80");
 		break;
 	case 1:
 		HeaderList.push_back("Link");
@@ -73,6 +75,12 @@ std::vector<std::string> CDlgScenario::GetHeaderList(int i)
 		HeaderList.push_back("Charge for LOV ($)");
 		HeaderList.push_back("Charge for HOV ($)");
 		HeaderList.push_back("Charge for Truck ($)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("0");
+		DefaultList.push_back("1");
+		DefaultList.push_back("1.5");
 		break;
 	case 2:
 		HeaderList.push_back("Link");
@@ -81,18 +89,32 @@ std::vector<std::string> CDlgScenario::GetHeaderList(int i)
 		HeaderList.push_back("Charge for LOV ($/mile)");
 		HeaderList.push_back("Charge for HOV ($/mile)");
 		HeaderList.push_back("Charge for Truck ($/mile)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("0.5");
+		DefaultList.push_back("0");
+		DefaultList.push_back("1");
 		break;
 	case 3:
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Start Time (min)");
 		HeaderList.push_back("End Time (min)");
 		HeaderList.push_back("Responce Percentage (%)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("0.2");
 		break;
 	case 4:
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Start Time (min)");
 		HeaderList.push_back("End Time (min)");
 		HeaderList.push_back("Metering Rate");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("1500");
 		break;
 	case 5:
 		HeaderList.push_back("Link");
@@ -101,9 +123,14 @@ std::vector<std::string> CDlgScenario::GetHeaderList(int i)
 		HeaderList.push_back("End Time (min)");
 		HeaderList.push_back("Capacity Reduction Percentage (%)");
 		HeaderList.push_back("Speed Limit (mph)");
+
+		DefaultList.push_back("1");
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("40");
+		DefaultList.push_back("45");
 		break;
 	}
-	return HeaderList;
 }
 void CDlgScenario::DoDataExchange(CDataExchange* pDX)
 {
@@ -154,8 +181,12 @@ BOOL CDlgScenario::OnInitDialog()
 		m_TabCtrl.InsertItem(i, &tcItem);
 
 
+		std::vector<string> DefaultHeader;
+		std::vector<CString> DefaultValue;
+
+		GetDefaultInfo(i,DefaultHeader,DefaultValue);
 		//add individual tab dialog
-		p_SubTabs[i] = new CDlgScenarioTab(GetHeaderList(i),value_vector,LinkString);
+		p_SubTabs[i] = new CDlgScenarioTab(DefaultHeader, DefaultValue, value_vector,LinkString);
 		p_SubTabs[i]->SetTabText(ELEMENTS[i]);
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 
@@ -263,15 +294,25 @@ void CDlgScenario::OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	// TODO: Add your control notification handler code here
 
-	//Hao: can you add range checking function here?
-
-	if (m_PrevTab == m_TabCtrl.GetCurSel())
+	//Error Checking before leaving current tab
+	if (p_SubTabs[m_PrevTab]->ValidityCheck() != 0)
+	{
+		m_TabCtrl.SetCurSel(m_PrevTab);
 		return;
-	p_SubTabs[m_PrevTab]->EnableWindow(FALSE);
-	p_SubTabs[m_PrevTab]->ShowWindow(SW_HIDE);
-	m_PrevTab = m_TabCtrl.GetCurSel();
-	p_SubTabs[m_PrevTab]->EnableWindow(TRUE);
-	p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
+	}
+	else
+	{
+		if (m_PrevTab == m_TabCtrl.GetCurSel())	return;
+
+		//Disable and hide previous tab
+		p_SubTabs[m_PrevTab]->EnableWindow(FALSE);
+		p_SubTabs[m_PrevTab]->ShowWindow(SW_HIDE);
+
+		//Enable and show current tab
+		m_PrevTab = m_TabCtrl.GetCurSel();
+		p_SubTabs[m_PrevTab]->EnableWindow(TRUE);
+		p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
+	}
 
 	
 	*pResult = 0;

@@ -11,7 +11,7 @@ class CDlgScenarioTab : public CDialog
 
 public:
 	CDlgScenarioTab(CWnd* pParent = NULL);   // standard constructor
-	CDlgScenarioTab(std::vector<std::string> names, std::vector<std::vector<std::string>> values, std::vector<std::string> linkstring);
+	CDlgScenarioTab(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values, std::vector<std::string> linkstring);
 	BOOL AddRow();
 	BOOL DeleteRow();
 	CString GenerateRecordString();
@@ -26,6 +26,7 @@ private:
 	CGridListCtrlEx m_ListCtrl;
 	std::vector<std::string> names;
 	std::vector<std::vector<std::string>> values;
+	std::vector<CString> default_value;
 
 	int m_NumOfCols;
 	int m_NumOfRows;
