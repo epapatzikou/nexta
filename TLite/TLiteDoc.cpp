@@ -2157,7 +2157,7 @@ void CTLiteDoc::LoadSimulationOutput()
 
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, DTASettingsPath);	
 
-	m_SimulationStartTime_in_min = (int) g_GetPrivateProfileFloat("estimation", "observation_start_time_in_min", 0, DTASettingsPath);
+	m_SimulationStartTime_in_min = (int) g_GetPrivateProfileFloat("estimation", "observation_Start Time (min)", 0, DTASettingsPath);
 
 	if(TrafficFlowModelFlag==0)  //BPR function 
 	{

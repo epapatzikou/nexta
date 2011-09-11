@@ -1,5 +1,30 @@
 // DlgScenario.cpp : implementation file
-//
+//  Portions Copyright 2011 Hao Lei(haolei.sc@gmail.com), Xuesong Zhou (xzhou99@gmail.com)
+
+//   If you help write or modify the code, please also list your names here.
+//   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
+//   and further prevent a violation of the GPL.
+
+// More about "How to use GNU licenses for your own software"
+// http://www.gnu.org/licenses/gpl-howto.html
+
+
+//    This file is part of NeXTA Version 3 (Open-source).
+
+//    NEXTA is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    NEXTA is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
+
+
 
 #include "stdafx.h"
 #include "TLite.h"
@@ -10,18 +35,11 @@
 #include <string>
 #include <sstream>
 
+#define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
-static LPTSTR ELEMENTS[6] = {"Incident","Link_Based_Toll","Distance_Based_Toll",
-							"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone"};
+static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link Based Toll","Distance Based_Toll",
+							"Dynamic Message Sign","Ramp Metering", "Work Zone"};
 
-//static string DefaultNames[6][] = {
-//	{"Link","Type","Day_No","Start_Time_In_Min","End_Time_In_Min","Capacity_Reduction_Rate","Speed_Limit"},
-//	{"Link","Start_Time_In_Min","End_Time_In_Min","HOV_Dollar_Per_Link","LOV_Dollar_Per_Link","Truck_Dollar_Per_Link"},
-//	{"Link","Start_Time_In_Min","End_Time_In_Min","HOV_Dollar_Per_Mile","LOV_Dollar_Per_Mile","Truck_Dollar_Per_Mile"},
-//	{"Link","Type","Start_Time_In_Min","End_Time_In_Min"},
-//	{"Link","Start_Time_In_Min","End_Time_In_Min","Metering_Rate"},
-//	{"Link","Type","Day_No","Start_Time_In_Min","End_Time_In_Min","Capacity_Reduction_Rate","Speed_Limit"}
-//};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -44,49 +62,45 @@ std::vector<std::string> CDlgScenario::GetHeaderList(int i)
 	{
 	case 0:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Type");
-		HeaderList.push_back("Day_No");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
-		HeaderList.push_back("Capacity_Reduction_Rate");
-		HeaderList.push_back("Speed_Limit");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Capacity Reduction Percentage (%)");
 		break;
 	case 1:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
-		HeaderList.push_back("HOV_Dollar_Per_Link");
-		HeaderList.push_back("LOV_Dollar_Per_Link");
-		HeaderList.push_back("Truck_Dollar_Per_Link");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Charge for LOV ($)");
+		HeaderList.push_back("Charge for HOV ($)");
+		HeaderList.push_back("Charge for Truck ($)");
 		break;
 	case 2:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
-		HeaderList.push_back("HOV_Dollar_Per_Mile");
-		HeaderList.push_back("LOV_Dollar_Per_Mile");
-		HeaderList.push_back("Truck_Dollar_Per_Mile");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Charge for LOV ($/mile)");
+		HeaderList.push_back("Charge for HOV ($/mile)");
+		HeaderList.push_back("Charge for Truck ($/mile)");
 		break;
 	case 3:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Type");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Responce Percentage (%)");
 		break;
 	case 4:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
-		HeaderList.push_back("Metering_Rate");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Metering Rate");
 		break;
 	case 5:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Type");
-		HeaderList.push_back("Day_No");
-		HeaderList.push_back("Start_Time_In_Min");
-		HeaderList.push_back("End_Time_In_Min");
-		HeaderList.push_back("Capacity_Reduction_Rate");
-		HeaderList.push_back("Speed_Limit");
+		HeaderList.push_back("Day No");
+		HeaderList.push_back("Start Time (min)");
+		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Capacity Reduction Percentage (%)");
+		HeaderList.push_back("Speed Limit (mph)");
 		break;
 	}
 	return HeaderList;
@@ -101,7 +115,7 @@ BOOL IsValidElement(LPTSTR element)
 {
 	BOOL Found = FALSE;
 
-	for (int i=0;i<6;i++)
+	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
 		if (strcmp(ELEMENTS[i],element) == 0)
 		{
@@ -126,7 +140,7 @@ BOOL CDlgScenario::OnInitDialog()
 	//Construct link string 
 	std::vector<std::string> LinkString = GetLinkString();
 
-	for (int i=0;i < 6;i++)
+	for (int i=0;i < _MAX_SCENARIO_SIZE;i++)
 	{
 		name_vector.clear();
 		value_vector.clear();
@@ -149,7 +163,7 @@ BOOL CDlgScenario::OnInitDialog()
 
 	p_SubTabs[0]->ShowWindow(SW_SHOW);
 
-	for (int i=1;i<6;i++)
+	for (int i=1;i<_MAX_SCENARIO_SIZE;i++)
 	{
 		p_SubTabs[i]->ShowWindow(SW_HIDE);
 	}
@@ -175,7 +189,7 @@ void CDlgScenario::SetRectangle()
 	nYc=tabRect.bottom-nY-1;
 
 	p_SubTabs[0]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_SHOWWINDOW);
-	for(int nCount=1; nCount < 6; nCount++)
+	for(int nCount=1; nCount < _MAX_SCENARIO_SIZE; nCount++)
 	{
 		p_SubTabs[nCount]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_HIDEWINDOW);
 	}
@@ -198,7 +212,7 @@ void CDlgScenario::OnBnClickedOk()
 
 	std::string FirstLine = "<?xml version=\"1.0\"?>\n";
 		
-	for (int i=0;i<6;i++)
+	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
 		if (p_SubTabs[i]->ValidityCheck() != 0)
 		{
@@ -248,6 +262,9 @@ void CDlgScenario::OnBnClickedCancel()
 void CDlgScenario::OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	// TODO: Add your control notification handler code here
+
+	//Hao: can you add range checking function here?
+
 	if (m_PrevTab == m_TabCtrl.GetCurSel())
 		return;
 	p_SubTabs[m_PrevTab]->EnableWindow(FALSE);
@@ -256,6 +273,7 @@ void CDlgScenario::OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult)
 	p_SubTabs[m_PrevTab]->EnableWindow(TRUE);
 	p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
 
+	
 	*pResult = 0;
 }
 
@@ -263,6 +281,7 @@ void CDlgScenario::OnBnClickedButtonAdd()
 {
 	// TODO: Add your control notification handler code here
 	int cur_tab = m_TabCtrl.GetCurSel();
+
 	p_SubTabs[cur_tab]->AddRow();
 }
 
