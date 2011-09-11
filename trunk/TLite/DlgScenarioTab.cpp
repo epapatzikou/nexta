@@ -29,11 +29,10 @@
 #include "TLite.h"
 #include "DlgScenarioTab.h"
 
-#include "CGridListCtrlEx\CGridColumnTraitDateTime.h"
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
-#include "CGridListCtrlEx\ViewConfigSection.h"
+
 #include <string>
 #include <sstream>
 
@@ -47,10 +46,12 @@ CDlgScenarioTab::CDlgScenarioTab(CWnd* pParent /*=NULL*/)
 
 }
 
-CDlgScenarioTab::CDlgScenarioTab(std::vector<std::string> Names, std::vector<std::vector<std::string>> Values, std::vector<std::string> linkstring)
+CDlgScenarioTab::CDlgScenarioTab(std::vector<std::string> Names, std::vector<CString> default_value,
+								 std::vector<std::vector<std::string>> Values, std::vector<std::string> linkstring)
 {
 	names = Names;
 	values = Values;
+	this->default_value = default_value;
 	LinkString = linkstring;
 }
 
@@ -75,7 +76,7 @@ BOOL CDlgScenarioTab::OnInitDialog()
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
 	//Add Columns and set headers
-	for (int i=0;i<names.size();i++)
+	for (size_t i=0;i<names.size();i++)
 	{
 
 		CGridColumnTrait* pTrait = NULL;
@@ -95,8 +96,8 @@ BOOL CDlgScenarioTab::OnInitDialog()
 			pTrait = new CGridColumnTraitEdit();
 		}
 
-		m_ListCtrl.InsertColumnTrait(i,names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
-		m_ListCtrl.SetColumnWidth(i,LVSCW_AUTOSIZE_USEHEADER);
+		m_ListCtrl.InsertColumnTrait((int)i,names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
 
 		if (names.at(i)=="Start Time (min)")
 		{
@@ -108,7 +109,7 @@ BOOL CDlgScenarioTab::OnInitDialog()
 			m_EndTime_Idx = i;
 		}
 
-		if (names.at(i).find("%")!=string::npos) 
+		if (names.at(i).find("%")!=std::string::npos) 
 		{
 			m_Rate_Idx = i;
 		}
@@ -120,10 +121,10 @@ BOOL CDlgScenarioTab::OnInitDialog()
 
 
 	//Add Rows
-	for (int i=0;i<values.size();i++)
+	for (size_t i=0;i<values.size();i++)
 	{
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,values.at(i).at(0).c_str() , 0, 0, 0, NULL);
-		for (int j=1;j<values.at(i).size();j++)
+		for (size_t j=1;j<values.at(i).size();j++)
 		{
 			m_ListCtrl.SetItemText(Index, j,values.at(i).at(j).c_str());
 		}
@@ -147,14 +148,15 @@ CString CDlgScenarioTab::GetTabText()
 
 BOOL CDlgScenarioTab::AddRow()
 {
+	//static CString
 	int Index = m_ListCtrl.InsertItem(LVIF_TEXT,m_NumOfRows,NULL,0,0,0,NULL);
-	for (int i=0;i<m_NumOfCols;i++)
+	for (int i=1;i<m_NumOfCols;i++)
 	{
-		m_ListCtrl.SetItemText(Index,i,NULL);
+		m_ListCtrl.SetItemText(Index,i,default_value.at(i-1));
 	}
 
-	//Hao: please add function here for default values for different scenarios
 
+	
 	m_NumOfRows++;
 
 	m_ListCtrl.SetItemState(Index,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);

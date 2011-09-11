@@ -49,6 +49,8 @@
 #define IDD_DIALOG_Find_Vehicle         172
 #define IDD_DIALOG_SCENARIO             173
 #define IDD_DIALOG_SCENARIO_TAB         174
+#define IDD_DIALOG_MOETAB               175
+#define IDD_DIALOG_MOETABVIEW           177
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -106,9 +108,11 @@
 #define IDC_EDIT_Vehicle_ID             1052
 #define IDC_TAB1                        1053
 #define IDC_SCENARIO_TAB                1053
+#define IDC_MOETAB                      1053
 #define IDC_BUTTON_ADD                  1055
 #define IDC_BUTTON2                     1056
 #define IDC_BUTTON_DELETE               1056
+#define IDC_GRIDLIST_MOE                1058
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -369,14 +373,15 @@
 #define ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID 33093
 #define ID_VIEW_SIMULATIONVS            33094
 #define ID_SCENARIO_CONFIGURATION       33095
+#define ID_MOE_VIEWMOES                 33096
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         33096
-#define _APS_NEXT_CONTROL_VALUE         1057
+#define _APS_NEXT_RESOURCE_VALUE        178
+#define _APS_NEXT_COMMAND_VALUE         33097
+#define _APS_NEXT_CONTROL_VALUE         1059
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

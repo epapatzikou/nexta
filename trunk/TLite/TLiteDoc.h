@@ -569,6 +569,7 @@ public:
 		afx_msg void OnToolsExporttoHistDatabase();
 		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 		afx_msg void OnScenarioConfiguration();
+		afx_msg void OnMoeViewmoes();
 };
 
 
