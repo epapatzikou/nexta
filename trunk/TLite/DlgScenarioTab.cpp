@@ -188,7 +188,7 @@ int CDlgScenarioTab::ValidityCheck()
 			if (text.GetLength() == 0)
 			{
 				m_ListCtrl.SetItemState(i,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
-				ErrorMsg.Format("Empty input at row %d col %d",i+1, j+1);
+				ErrorMsg.Format("[%s] cannot be empty",names.at(j).c_str());
 				MessageBox(ErrorMsg,NULL,MB_ICONERROR);
 				ret = -1;
 				return ret;
@@ -212,7 +212,7 @@ int CDlgScenarioTab::ValidityCheck()
 				if (value < 0)
 				{
 					m_ListCtrl.SetItemState(i,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
-					ErrorMsg.Format("Negative value is not valid at row %d col %d",i+1, j+1);
+					ErrorMsg.Format("Negative value is not valid at [%s]",names.at(j).c_str());
 					MessageBox(ErrorMsg,NULL,MB_ICONERROR);
 					ret = -2;
 					return ret;
@@ -236,7 +236,7 @@ int CDlgScenarioTab::ValidityCheck()
 				if (value < 0 || value >100)
 				{
 					m_ListCtrl.SetItemState(i,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
-					ErrorMsg.Format("Percentage at row %d col %d must be between 0 and 100!",i+1, j+1);
+					ErrorMsg.Format("[%s] must be between 0 and 100!",names.at(j).c_str());
 					MessageBox(ErrorMsg,NULL,MB_ICONERROR);
 					ret = -3;
 					return ret;
