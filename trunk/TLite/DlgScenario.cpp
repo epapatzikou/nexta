@@ -353,6 +353,8 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 				string str = "[";
 
 				std::istringstream lineStringStream(line);
+				//link id for shape point
+				getline(lineStringStream,subStr,',');
 
 				//from_node
 				getline(lineStringStream,subStr,',');

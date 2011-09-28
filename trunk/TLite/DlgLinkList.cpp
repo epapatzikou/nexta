@@ -80,7 +80,7 @@ int i;
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
 		lvi.iSubItem = 0;
-		sprintf_s(text, "%d",(*iLink)->m_LinkID +1) ;
+		sprintf_s(text, "%d",(*iLink)->m_LinkNo +1) ;
 		lvi.pszText = text;
 		m_LinkList.InsertItem(&lvi);
 
@@ -141,7 +141,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	if (pos != NULL)
 	{
 		m_pDoc->m_SelectedLinkID = m_LinkList.GetNextSelectedItem(pos);
-		g_LinkDisplayList.push_back(m_pDoc->m_LinkIDMap[m_pDoc->m_SelectedLinkID]);
+		g_LinkDisplayList.push_back(m_pDoc->m_LinkNoMap[m_pDoc->m_SelectedLinkID]);
 
 		Invalidate();
 

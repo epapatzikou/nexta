@@ -201,9 +201,9 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 
 			if(pLink!=NULL)
 			{
-				sensor.LinkID = pLink->m_LinkID ;
+				sensor.LinkID = pLink->m_LinkNo ;
 				m_SensorVector.push_back(sensor);
-				m_SensorIDtoLinkIDMap[sensor.OrgSensorID] = pLink->m_LinkID;
+				m_SensorIDtoLinkIDMap[sensor.OrgSensorID] = pLink->m_LinkNo;
 				pLink->m_bSensorData  = true;
 			}else
 			{
@@ -237,7 +237,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 
 	m_TimeInterval = 5;
 
-	m_NumberOfDays = 1;
+	m_NumberOfDays = 30;
 
 	float Occ_to_Density_Coef = 100.0f;
 
@@ -304,7 +304,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 				DTALink* pLink = NULL;
 				if(LinkID>=0)
 				{
-					pLink = m_LinkIDMap[LinkID];
+					pLink = m_LinkNoMap[LinkID];
 				}else
 				{
 					CString error_message;
@@ -640,7 +640,7 @@ int CTLiteDoc::Routing()
 					TRACE("  %d-> %d",m_NodeIDtoNameMap[m_PathNodeVectorSP[i]], m_NodeIDtoNameMap[m_PathNodeVectorSP[i-1]]);
 					if(pLink!=NULL)
 					{
-						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkID ; //starting from m_NodeSizeSP-2, to 0
+						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ; //starting from m_NodeSizeSP-2, to 0
 
 						pdp->m_Distance += pLink->m_Length ;
 
@@ -732,7 +732,7 @@ int CTLiteDoc::Routing()
 					//                                      TRACE("  %d-> %d",m_NodeIDtoNameMap[m_PathNodeVectorSP[i]], m_NodeIDtoNameMap[m_PathNodeVectorSP[i-1]]);
 					if(pLink!=NULL)
 					{
-						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkID ;  //starting from m_NodeSizeSP-2, to 0
+						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ;  //starting from m_NodeSizeSP-2, to 0
 
 
 					}
@@ -770,7 +770,7 @@ int CTLiteDoc::Routing()
 
 				for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
 				{
-					DTALink* pLink = m_LinkIDMap[m_PathDisplayList[p]->m_LinkVector[i]];
+					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p]->m_LinkVector[i]];
 
 					pdp->m_TimeDependentTravelTime[t] += pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]);
 
@@ -815,7 +815,7 @@ int CTLiteDoc::Routing()
 
 					for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
 					{
-						DTALink* pLink = m_LinkIDMap[m_PathDisplayList[p]->m_LinkVector[i]];
+						DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p]->m_LinkVector[i]];
 
 						FuelSum += pLink->ObtainHistFuelConsumption(CurrentTime);
 						CO2= pLink->ObtainHistCO2Emissions(CurrentTime);
@@ -908,7 +908,7 @@ int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, int direction)
 
 		if(distance >0 && distance < Min_distance)
 		{
-			SelectedLinkID = (*iLink)->m_LinkID ;
+			SelectedLinkID = (*iLink)->m_LinkNo ;
 
 			Min_distance = distance;
 		}

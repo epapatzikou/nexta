@@ -144,7 +144,7 @@ void CDlg_VehEmissions::OnLbnSelchangeListVehicle()
 	
 	for(int i = 0; i< thisVehicle->m_NodeSize-1; i++)
 	{
-		DTALink* pLink = m_pDoc->m_LinkIDMap[thisVehicle->m_NodeAry[i].LinkID];
+		DTALink* pLink = m_pDoc->m_LinkNoMap[thisVehicle->m_NodeAry[i].LinkID];
 
 		str.Format ("%d: %5.1f (min)", thisVehicle->m_NodeAry[i].LinkID, thisVehicle->m_NodeAry[i].ArrivalTimeOnDSN );
 

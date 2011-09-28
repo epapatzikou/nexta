@@ -239,7 +239,7 @@ void ReadDSm_pNetworkData(char fname[_MAX_PATH])
       for(i = 0; i < num_links; i++)
          {
          pLink = new DTALink(g_SimulationHorizon);
-         pLink->m_LinkID = i;
+         pLink->m_LinkNo = i;
          pLink->m_FromNodeNumber = g_read_integer(st);
          pLink->m_ToNodeNumber = g_read_integer(st);
          pLink->m_FromNodeID = g_NodeMap[pLink->m_FromNodeNumber ]->m_NodeID;

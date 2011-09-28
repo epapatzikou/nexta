@@ -249,7 +249,7 @@ CTLiteView::CTLiteView()
 	m_bMoveDisplay = false;
 	m_bMoveImage = false;
 	m_bShowImage = true;
-	m_bShowGrid  = true;
+	m_bShowGrid  = false;
 	m_bShowLinkArrow = true;
 	m_bShowNode = false;
 	m_bShowNodeNumber = false;
@@ -495,11 +495,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		//		if(((*iLink)->m_LaneCapacity >3000))  // 
 		//			continue;
 
-		GDPoint P0 = (*iLink)->m_FromPoint;
-		GDPoint P1 = (*iLink)->m_FromPoint;
+		for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
+		{
 
-		CPoint FromPoint = NPtoSP((*iLink)->m_FromPoint);
-		CPoint ToPoint = NPtoSP((*iLink)->m_ToPoint);
+		CPoint FromPoint = NPtoSP((*iLink)->m_ShapePoints[si]);
+		CPoint ToPoint = NPtoSP((*iLink)->m_ShapePoints[si+1]);
 
 		CPen LinkTypePen;
 		CPen penmoe;
@@ -554,7 +554,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		{
 			g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
 			pDC->SetTextColor(RGB(255,0,0));
-		}else if  ((*iLink)->m_LinkID == pDoc->m_SelectedLinkID)
+		}else if  ((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
 		{
 			g_SelectThickPenColor(pDC,0);
 			pDC->SetTextColor(RGB(255,0,0));
@@ -620,7 +620,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if(m_bShowSensor && (*iLink)->m_bSensorData )
 		{
-			if((*iLink)->m_LinkID == pDoc->m_SelectedLinkID)
+			if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
 			{
 				pDC->SelectObject(&g_PenSelectColor);
 			}else
@@ -636,7 +636,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
 
 		}
-
+		}
 	}
 	// draw shortest path
 	int i;
@@ -651,7 +651,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			for (i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
 			{
-				DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+				DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
 				if(pLink!=NULL)
 				{
 					CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
@@ -675,7 +675,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkSize; i++)
 		{
-			DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkVector[i]];
+			DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[pDoc->m_SelectPathNo]->m_LinkVector[i]];
 			if(pLink!=NULL)
 			{
 				CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
@@ -803,7 +803,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				float ratio = 0;
 				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
 
-				DTALink* pLink = pDoc->m_LinkIDMap[LinkID];
+				DTALink* pLink = pDoc->m_LinkNoMap[LinkID];
 				if(pLink!=NULL)
 				{
 					CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
@@ -1345,7 +1345,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 
 		if(distance >0 && distance < Min_distance)
 		{
-			pDoc->m_SelectedLinkID = (*iLink)->m_LinkID ;
+			pDoc->m_SelectedLinkID = (*iLink)->m_LinkNo ;
 
 			Min_distance = distance;
 		}
@@ -1366,12 +1366,12 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 	int bFoundFlag = false;
 	for (iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 	{
-		if((*iLink)->m_LinkID  == pDoc->m_SelectedLinkID)
+		if((*iLink)->m_LinkNo  == pDoc->m_SelectedLinkID)
 		{ bFoundFlag = true; break;}
 
 	}
 		if(!bFoundFlag)
-		g_LinkDisplayList.push_back(pDoc->m_LinkIDMap[pDoc->m_SelectedLinkID]);
+		g_LinkDisplayList.push_back(pDoc->m_LinkNoMap[pDoc->m_SelectedLinkID]);
 	}
 
 	std::list<DTALink*>::iterator iLinkDisplay;
@@ -1401,8 +1401,8 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	{
 		g_LinkMOEDlg = new CDlgMOE();
 		g_LinkMOEDlg->m_pDoc = pDoc;
-		g_LinkMOEDlg->m_TmLeft = pDoc->m_DisplayWindow_StartTime ;
-		g_LinkMOEDlg->m_TmRight = pDoc->m_DisplayWindow_EndTime ;
+		g_LinkMOEDlg->m_TmLeft = 0 ;
+		g_LinkMOEDlg->m_TmRight = g_Simulation_Time_Horizon;
 
 		g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
 
@@ -1462,7 +1462,7 @@ void CTLiteView::OnSearchFindlink()
 
 		if(pLink !=NULL)
 		{
-			pDoc->m_SelectedLinkID = pLink->m_LinkID ;
+			pDoc->m_SelectedLinkID = pLink->m_LinkNo ;
 			pDoc->m_SelectedNodeID = -1;
 
 			m_SelectFromNodeNumber = dlg.m_FromNodeNumber;
@@ -1692,7 +1692,7 @@ void CTLiteView::OnLinkEditlink()
 	return;
 	}
 
-	DTALink* pLink= pDoc->m_LinkIDMap [pDoc->m_SelectedLinkID];
+	DTALink* pLink= pDoc->m_LinkNoMap [pDoc->m_SelectedLinkID];
 	if(pLink!=NULL)
 	{
 		CDlgLinkProperties dlg;

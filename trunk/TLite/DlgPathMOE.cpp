@@ -546,7 +546,7 @@ m_SegmentDistanceVector.resize(m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]
 
 for (i=0 ; i<m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkSize; i++)
 {
-DTALink* pLink = m_pDoc->m_LinkIDMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
+DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
 if(pLink!=NULL)
 {
 m_YUpperBound+=pLink->m_Length ;
@@ -566,7 +566,7 @@ DTALink* pLink;
 if(i == 0)
 {
 
-pLink = m_pDoc->m_LinkIDMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
+pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
 
 pDC->SelectObject(&NormalPen);
 TimeYPosition= PlotRect.bottom;
@@ -590,7 +590,7 @@ TimeYPosition= PlotRect.bottom - (int)((m_SegmentDistanceVector[i]*m_UnitDistanc
 pDC->MoveTo(PlotRect.left-2, TimeYPosition);
 pDC->LineTo(PlotRect.right,TimeYPosition);
 
-pLink = m_pDoc->m_LinkIDMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
+pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
 if(pLink!=NULL)
 {
 if(i== m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkSize-1)
@@ -629,7 +629,7 @@ int TimeYPosition;
 pDC->MoveTo(PlotRect.left-2, TimeYPosition);
 pDC->LineTo(PlotRect.right,TimeYPosition);
 
-pLink = m_pDoc->m_LinkIDMap[m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
+pLink = m_pDoc->m_LinkNoMap[m_PathDisplayList[m_pDoc->m_SelectPathNo]->m_LinkVector[i]];
 
 
 }

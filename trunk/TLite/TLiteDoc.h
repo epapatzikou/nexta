@@ -42,8 +42,6 @@ protected: // create from serialization only
 	CTLiteDoc()
 	{
 		m_SimulationStartTime_in_min = 0;  // 6 AM
-		m_DisplayWindow_StartTime = 0;
-		m_DisplayWindow_EndTime = 1440;
 
 		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
@@ -138,6 +136,14 @@ public:
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadIncidentFile(LPCTSTR lpszFileName);   // for road network
 
+	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
+	bool ReadLinkGeoFile(LPCTSTR lpszFileName); 
+	bool ReadZoneGeoFile(LPCTSTR lpszFileName); 
+
+	bool ReadNodeShapeCSVFile(LPCTSTR lpszFileName); 
+	bool ReadLinkShapeCSVFile(LPCTSTR lpszFileName); 
+	bool ReadZoneShapeCSVFile(LPCTSTR lpszFileName); 
+
 	bool ReadTripTxtFile(LPCTSTR lpszFileName);  
 	bool Read3ColumnTripTxtFile(LPCTSTR lpszFileName);  
 	
@@ -154,8 +160,6 @@ public:
 	int m_NumberOfDays;
 	int m_SimulationStartTime_in_min;
 
-	int	m_DisplayWindow_StartTime;
-	int	m_DisplayWindow_EndTime;
 
 	void ReadSensorData(CString directory);
 	void ReadEventData(CString directory);
@@ -192,6 +196,8 @@ float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float 
 public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
+	std::vector<DTAZone>		m_ZoneVector;
+
 	std::list<DTAVehicle*>	m_VehicleSet;
 	
 	int m_AdjLinkSize;
@@ -201,6 +207,9 @@ public:
 
 	CString GetWorkspaceTitleName(CString strFullPath);
 	CString m_ProjectTitle;
+
+	bool FillNetworkFromExcelFile(LPCTSTR lpszFileName);
+	void AdjustCoordinateUnitToMile();
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
@@ -212,7 +221,7 @@ public:
 
 	std::map<int, DTANode*> m_NodeIDMap;
 
-	std::map<long, DTALink*> m_LinkIDMap;
+	std::map<long, DTALink*> m_LinkNoMap;
 	std::map<long, DTAVehicle*> m_VehicleIDMap;
 	
 
@@ -249,7 +258,7 @@ public:
 			return false;  // a link with the same from and to node numbers exists!
 
 		pLink = new DTALink(1);
-		pLink->m_LinkID = m_LinkSet.size();
+		pLink->m_LinkNo = m_LinkSet.size();
 		pLink->m_FromNodeNumber = m_NodeIDtoNameMap[FromNodeID];
 		pLink->m_ToNodeNumber = m_NodeIDtoNameMap[ToNodeID];
 		pLink->m_FromNodeID = FromNodeID;
@@ -297,7 +306,7 @@ public:
 
 		pLink->SetupMOE();
 		m_LinkSet.push_back (pLink);
-		m_LinkIDMap[pLink->m_LinkID]  = pLink;
+		m_LinkNoMap[pLink->m_LinkNo]  = pLink;
 
 
 
@@ -338,7 +347,7 @@ public:
 	bool DeleteLink(int LinkID)
 	{
 		DTALink* pLink = 0;
-		pLink = m_LinkIDMap[LinkID];
+		pLink = m_LinkNoMap[LinkID];
 		if(pLink == NULL)
 			return false;  // a link with the same from and to node numbers exists!
 
@@ -347,12 +356,12 @@ public:
 
 		m_NodeIDMap[FromNodeID ]->m_Connections-=1;
 		m_NodeIDMap[ToNodeID ]->m_Connections-=1;
-		m_LinkIDMap[pLink->m_LinkID]  = NULL;
+		m_LinkNoMap[pLink->m_LinkNo]  = NULL;
 
 		std::list<DTALink*>::iterator iLink;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->m_LinkID == LinkID)
+			if((*iLink)->m_LinkNo == LinkID)
 			{
 				m_LinkSet.erase  (iLink);
 				break;
@@ -362,8 +371,8 @@ public:
 		int i= 0;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++, i++)
 		{
-		(*iLink)->m_LinkID = i;
-		m_LinkIDMap[i] = (*iLink);
+		(*iLink)->m_LinkNo = i;
+		m_LinkNoMap[i] = (*iLink);
 		}
 
 
@@ -403,6 +412,7 @@ public:
 
 	}
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
+	std::map<long, DTALink*> m_LinkIDtoLinkMap;
 	std::map<long, long> m_SensorIDtoLinkIDMap;
 
 	int MaxNodeKey;
@@ -450,7 +460,10 @@ public:
 	}
 
 
-
+	DTALink* FindLinkWithLinkID(int LinkID)
+	{
+		return m_LinkIDtoLinkMap[LinkID];
+	}
 
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
@@ -570,6 +583,8 @@ public:
 		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 		afx_msg void OnScenarioConfiguration();
 		afx_msg void OnMoeViewmoes();
+		afx_msg void OnImportdataImport();
+		afx_msg void OnImportShapefiles();
 };
 
 
