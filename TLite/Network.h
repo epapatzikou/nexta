@@ -111,6 +111,10 @@ extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 class DTAZone
 { 
 public:
+
+	std::vector<GDPoint> m_ShapePoints;
+	int m_ZoneTAZ;
+
 	DTAZone()
 	{
 		m_Capacity  =0;
@@ -233,7 +237,7 @@ public:
 	{
 		m_LinkInCapacityRatio = 0;
 	};
-	long m_LinkID;
+	long m_LinkNo;
 	int m_link_type;
 	int m_NumLanes;
 	float m_LinkInCapacityRatio;
@@ -256,6 +260,8 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_LinkID = 0;
+		m_OrgDir = 1;
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
@@ -283,6 +289,7 @@ public:
 	float m_StaticSpeed, m_StaticLaneVolume;
 	float m_StaticTravelTime, m_StaticVOC;
 
+	std::vector<GDPoint> m_ShapePoints;
 	//for timetabling use
 	std::map<int, int> m_RuningTimeMap;  //indexed by train type
 
@@ -488,6 +495,8 @@ public:
 
 
 	}
+	int m_LinkNo;
+	int m_OrgDir;
 	int m_LinkID;
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0

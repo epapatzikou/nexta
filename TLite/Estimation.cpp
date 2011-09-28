@@ -66,7 +66,7 @@ void  CTLiteDoc::ReadObservationLinkVolumeData(LPCTSTR lpszFileName)
 			{
 				int LinkID = it->second;
 
-				DTALink* pLink = m_LinkIDMap[LinkID];
+				DTALink* pLink = m_LinkNoMap[LinkID];
 
 				if(pLink!=NULL)
 				{

@@ -477,7 +477,7 @@ void CGLView::DrawAllObjects()
 
 				for (int i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
 				{
-					DTALink* pLink = pDoc->m_LinkIDMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+					DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
 					if(pLink!=NULL)
 					{
 
@@ -532,7 +532,7 @@ void CGLView::DrawAllObjects()
 
 			for(int n = 1; n< pTrain->m_NodeSize; n++)
 			{
-				DTALink* pLink = pDoc->m_LinkIDMap[pTrain->m_aryTN[n].RailLinkID];
+				DTALink* pLink = pDoc->m_LinkNoMap[pTrain->m_aryTN[n].RailLinkID];
 
 				ASSERT(pLink!=NULL);
 
@@ -697,7 +697,7 @@ void CGLView::DrawAllObjects()
 				float ratio = 0;
 				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
 
-				DTALink* pLink = pDoc->m_LinkIDMap[LinkID];
+				DTALink* pLink = pDoc->m_LinkNoMap[LinkID];
 				if(pLink!=NULL)
 				{
 					float fromX = NXtoSX_org(pLink->m_FromPoint.x);

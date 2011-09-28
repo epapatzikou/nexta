@@ -120,7 +120,7 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 					{
 						DTALink* pLink = FindLinkWithNodeIDs(pTrain->m_aryTN[i-1].NodeID , pTrain->m_aryTN[i].NodeID  );
 
-						pTrain->m_aryTN[i].RailLinkID = pLink->m_LinkID;
+						pTrain->m_aryTN[i].RailLinkID = pLink->m_LinkNo;
 						if(pLink==NULL)
 						{
 							CString msg;

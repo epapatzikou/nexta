@@ -67,15 +67,15 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[(*iterLink)->m_LinkNo] = FromID;
+		m_ToIDAry[(*iterLink)->m_LinkNo]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkNo ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID  ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
 
@@ -106,8 +106,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 			if(travel_time < (*iterLink)->m_FreeFlowTravelTime )
 				travel_time = (*iterLink)->m_FreeFlowTravelTime;
 
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][link_entering_time_interval] = travel_time;
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][link_entering_time_interval]=  travel_time;
+			m_LinkTDTimeAry[(*iterLink)->m_LinkNo][link_entering_time_interval] = travel_time;
+			m_LinkTDCostAry[(*iterLink)->m_LinkNo][link_entering_time_interval]=  travel_time;
 
 			// use travel time now, should use cost later
 		}
@@ -248,14 +248,14 @@ void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
-		m_FromIDAry[(*iterLink)->m_LinkID] = FromID;
-		m_ToIDAry[(*iterLink)->m_LinkID]   = ToID;
+		m_FromIDAry[(*iterLink)->m_LinkNo] = FromID;
+		m_ToIDAry[(*iterLink)->m_LinkNo]   = ToID;
 
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = (*iterLink)->m_LinkNo ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkID  ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
 
@@ -264,10 +264,10 @@ void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p
 
 		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
 		{
-			m_LinkTDTimeAry[(*iterLink)->m_LinkID][t] = (*iterLink)->GetTrainRunningTime(TrainType);  // in the future, we can extend it to time-dependent running time
-			m_LinkTDCostAry[(*iterLink)->m_LinkID][t]=  (*iterLink)->m_ResourceAry[t].Price;  // for all train types
+			m_LinkTDTimeAry[(*iterLink)->m_LinkNo][t] = (*iterLink)->GetTrainRunningTime(TrainType);  // in the future, we can extend it to time-dependent running time
+			m_LinkTDCostAry[(*iterLink)->m_LinkNo][t]=  (*iterLink)->m_ResourceAry[t].Price;  // for all train types
 
-//			TRACE("Time %d, Travel Time %f, Cost %f\n", t,m_LinkTDTimeAry[(*iterLink)->m_LinkID][t] ,m_LinkTDCostAry[(*iterLink)->m_LinkID][t]);
+//			TRACE("Time %d, Travel Time %f, Cost %f\n", t,m_LinkTDTimeAry[(*iterLink)->m_LinkNo][t] ,m_LinkTDCostAry[(*iterLink)->m_LinkNo][t]);
 
 			// use travel time now, should use cost later
 		}

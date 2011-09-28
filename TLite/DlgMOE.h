@@ -41,7 +41,7 @@ public:
 	int m_CarFollowingTimeResolutionPerMin;  // unit: x intervals per min
 	CTLiteDoc* m_pDoc;
 	float ** m_VehicleDistanceAry;
-	int m_LinkIDWithCFData;
+	int m_LinkNoWithCFData;
 
 	std::vector<VehicleCFData> m_VehicleDataList;
 
@@ -60,7 +60,7 @@ public:
 	m_MinDisplayInterval = 10;
 	m_DisplayVehicleResolution = 1;
 
-	m_LinkIDWithCFData = -1;
+	m_LinkNoWithCFData = -1;
 	m_CarFollowingTimeResolutionPerMin = 100;  // 10 intervals per min, 6 seconds
 
 	m_YUpperBound = 100;
