@@ -222,7 +222,7 @@ void OutputTimeDependentODMOEData(char fname[_MAX_PATH], int Iteration,bool bSta
 
 void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty)
 {
-/*
+
 	ODPathSet*** ODPathSetVector = NULL;
 
 	int StatisticsIntervalSize = g_DemandLoadingHorizon/30;
@@ -234,22 +234,45 @@ void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bS
 		{
 
 			DTAVehicle* pVehicle = iterVM->second;
+			
+			int VehicleInWhichInterval=pVehicle->m_DepartureTime/30;
+			
+			if(VehicleInWhichInterval >= StatisticsIntervalSize)  // avoid out of bound errors
+	          VehicleInWhichInterval = StatisticsIntervalSize-1;
 
-			if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete)  // with physical path in the network
+			std::vector<PathStatistics> Vehicle_ODTPathSet;
+
+			Vehicle_ODTPathSet=ODPathSetVector[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][VehicleInWhichInterval].PathSet;
+			
+			bool ExistPath_Flag=false;
+			int PathNo=0;
+			for (std::vector<PathStatistics>::iterator IterPS=Vehicle_ODTPathSet.begin();IterPS!=Vehicle_ODTPathSet.end();IterPS++)
 			{
-				// step 0: search if there is an existing path for a given NodeSum, # of links, 
-				// if new path, add
-				// if old path, add statistics
+				if (pVehicle->m_NodeNumberSum==IterPS->NodeSums) //existing path
+				{
+					ExistPath_Flag=true;
+					break;
+				}
+				else                                             //New Path;
+					ExistPath_Flag=false;
+				PathNo++;
+			}
 
+			if (ExistPath_Flag)				// if old path, add statistics
+			{
+				ODPathSetVector[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][VehicleInWhichInterval].PathSet[PathNo].TotalVehicleSize+=1;
+				ODPathSetVector[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][VehicleInWhichInterval].PathSet[PathNo].TotalDistance+=pVehicle->m_Distance;
+				ODPathSetVector[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][VehicleInWhichInterval].PathSet[PathNo].TotalTravelTime+=(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+			}
+			else				           // if new path, add
+			{
 
-				int StatisticsInterval = pVehicle->m_DepartureTime/30;
-
-				if(StatisticsInterval >= StatisticsIntervalSize)  // avoid out of bound errors
-					StatisticsInterval = StatisticsIntervalSize-1;
-
-				ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalVehicleSize+=1;
-				ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
-								ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalDistance += pVehicle->m_Distance;
+				PathStatistics vehicle_PathStatistics;
+				vehicle_PathStatistics.TotalVehicleSize=1;
+				vehicle_PathStatistics.TotalDistance=pVehicle->m_Distance;
+				vehicle_PathStatistics.TotalTravelTime=(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+				vehicle_PathStatistics.NodeSums=pVehicle->m_NodeNumberSum;
+				ODPathSetVector[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][VehicleInWhichInterval].PathSet.push_back(vehicle_PathStatistics);
 			}
 		}
 
@@ -266,23 +289,31 @@ void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bS
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "origin_zone_id, destination_zone_id, departure_time, vehicle_type, information_type, #_of_vehicles_completing_trips, trip_time_in_min, cost_in_dollar, emissions\n");
+			fprintf(st, "origin_zone_id, destination_zone_id, departure_time, path_No, NodeSum,vehicle_type, information_type, #_of_vehicles_completing_trips, trip_time_in_min, cost_in_dollar, emissions\n");
 		}
 
 		for(int i = 1; i<=g_ODZoneSize; i++)
 		for(int j = 1; j<=g_ODZoneSize; j++)
-			for(int t=0; t<StatisticsIntervalSize; t++)
+		for(int t=0; t<StatisticsIntervalSize; t++)
+		{
+			int PathNo=1;
+			for (std::vector<PathStatistics>::iterator IterPS=ODPathSetVector[i][j][t].PathSet.begin(); IterPS!=ODPathSetVector[i][j][t].PathSet.end();IterPS++)
 			{
-			if(ODMOEArray[i][j][t].TotalVehicleSize>=1)
-			{
-			fprintf(st, "%d,%d,%d,0,0,%d,%5.2f,0,0\n", i,j,t*15, ODMOEArray[i][j][t].TotalVehicleSize, ODMOEArray[i][j][t].TotalTravelTime/ ODMOEArray[i][j][t].TotalVehicleSize);
+				if (IterPS->TotalVehicleSize>0)
+				{
+					//int vehicles_completing_trips=ODPathSetVector[i][j][t].PathSet[PathNo].TotalVehicleSize;
+					//int Total_TravelTime=ODPathSetVector[i][j][t].PathSet[PathNo].TotalTravelTime;
+					//int NodeSums=ODPathSetVector[i][j][t].PathSet[PathNo].NodeSums;
+					int vehicles_completing_trips=IterPS->TotalVehicleSize;
+					int Total_TravelTime=IterPS->TotalTravelTime;
+					int NodeSums=IterPS->NodeSums;
+					fprintf(st, "%d,%d,%d,%d,%d,0,0,%d,%5.2f,0,0\n", i,j,t*30,PathNo,NodeSums,vehicles_completing_trips,(float)Total_TravelTime/vehicles_completing_trips);
+				}
+				PathNo++;
 			}
-			}
-
-
+		}
 		fclose(st);
 	}
-	if(ODPathSet !=NULL)
-	Deallocate3DDynamicArray<ODPathSet>(ODMOEArray,g_ODZoneSize+1,g_ODZoneSize+1);
-*/
+	if(ODPathSetVector!=NULL)
+	Deallocate3DDynamicArray<ODPathSet>(ODPathSetVector,g_ODZoneSize+1,g_ODZoneSize+1);
 }

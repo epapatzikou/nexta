@@ -503,10 +503,9 @@ void ReadInputFiles()
 	PhysicalNetwork.BuildPhysicalNetwork();
 	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 
-	/*
 	cout << "Reading file capacity_reduction.csv..."<< endl;
 
-	fopen_s(&st,"capacity_reduction.csv","r"); /// 
+	fopen_s(&st,"incident.dat","r"); /// 
 	if(st!=NULL)
 	{
 		int NumberofCapacityReductionLinks = g_read_integer(st);
@@ -533,7 +532,6 @@ void ReadInputFiles()
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 				cs.LaneClosureRatio= g_read_float(st);
-				g_read_float(st); // speed limit
 
 				plink->CapacityReductionVector.push_back(cs);
 			}
@@ -542,7 +540,7 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-
+/*
 	fopen_s(&st,"VMS.dat","r");
 	if(st!=NULL)
 	{
@@ -1416,12 +1414,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%4.2f,%4.2f,%4.2f,%d\n",
+				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%4.2f,%4.2f,%4.2f,%d,",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
 					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
 					pVehicle->m_VehicleType ,pVehicle->m_Occupancy,pVehicle->m_InformationClass, pVehicle->GetVOT() , pVehicle->GetMinCost(),pVehicle->m_Distance, pVehicle->m_NodeSize);
-
-				
 
 				int j = 0;
 				if(g_LinkVector[pVehicle->m_aryVN [0].LinkID]==NULL)
@@ -1435,7 +1431,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				int NodeID = g_LinkVector[pVehicle->m_aryVN [0].LinkID]->m_FromNodeID;  // first node
 				int NodeName = g_NodeVector[NodeID].m_NodeName ;
 				int link_entering_time = int(pVehicle->m_DepartureTime);
-				fprintf(st, ",%d,%4.2f\n",
+				fprintf(st, "<%d;%4.2f>",
 					NodeName,pVehicle->m_DepartureTime) ;
 
 				float LinkWaitingTime = 0;
@@ -1455,8 +1451,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					}
 
 					//						fprintf(st, ",,,,,,,,,,,,,,%d,%d%,%6.2f,%6.2f,%6.2f\n", j+2,NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN,LinkWaitingTime, g_LinkVector[LinkID]->m_LinkMOEAry [link_entering_time].TravelTime ) ;
-					fprintf(st, ",%d,%4.2f\n",NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN) ;
+					fprintf(st, "<%d;%4.2f>",NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN) ;
 				}
+
+				fprintf(st,"\n");
 
 			}else
 			{
