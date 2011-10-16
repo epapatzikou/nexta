@@ -259,7 +259,6 @@ void ReadDSm_pNetworkData(char fname[_MAX_PATH])
          pLink->m_link_type= g_read_integer(st);
          int m_grade= g_read_integer(st);
 
-         pLink->SetupMOE();
          g_LinkSet.insert(pLink);
          g_LinkMap[i]  = pLink;
          }
