@@ -337,6 +337,7 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 {
 	std::ifstream inFile;
 	std::vector<std::string> linkstring;
+
 	if (m_pDoc != NULL)
 	{
 		inFile.open(m_pDoc->m_ProjectDirectory + "input_link.csv");

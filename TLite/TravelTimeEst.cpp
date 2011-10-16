@@ -25,6 +25,7 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
+#include "CSVParser.h"
 #include "TLite.h"
 #include "Network.h"
 #include "TLiteDoc.h"
@@ -71,6 +72,7 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 	m_MinSpeed = 200;
 	m_MaxSpeed = 0;
 
+	m_HistLinkMOEAry.reserve(1440);
 	int t;
 	float VolumeSum = 0;
 	float SpeedSum = 0;
@@ -78,13 +80,9 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 
 	for( t=0; t< 1440; t++)
 	{
-
+		SLinkMOE element; 
 		// reset
-		m_HistLinkMOEAry[t].ObsSpeed =0;
-		m_HistLinkMOEAry[t].ObsFlow =0;
-		m_HistLinkMOEAry[t].ObsCumulativeFlow =0;
-		m_HistLinkMOEAry[t].ObsDensity =0;
-		m_HistLinkMOEAry[t].ObsTravelTimeIndex = 0;
+		m_HistLinkMOEAry.push_back(element);
 
 		// start counting
 		int count = 0;
@@ -178,24 +176,33 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 	CWaitCursor wc;
 	FILE* st = NULL;
 	bool bRectIni = false;
-	fopen_s(&st,lpszFileName, "r");
 
-	int sensor_count = 1;
-	if(st!=NULL)
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
 	{
-		int sensor_count = 1;
-		while(!feof(st))
+	int sensor_count = 1;
+		while(parser.ReadRecord())
 		{
+			int from_node_id;
+			int to_node_id;
+			int sensor_type;
+			int sensor_id;
+			float relative_location_ratio;
+
+			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) break;
+			if(!parser.GetValueByFieldName("to_node_id",to_node_id)) break;
+			if(!parser.GetValueByFieldName("sensor_type",sensor_type)) break;
+			if(!parser.GetValueByFieldName("sensor_id",sensor_id)) break;
+			parser.GetValueByFieldName("relative_location_ratio",relative_location_ratio);
+
 			DTA_sensor sensor;
 
-			sensor.FromNodeNumber =  g_read_integer(st);
-
-			if(sensor.FromNodeNumber == -1)
-				break;
-
-			sensor.ToNodeNumber =  g_read_integer(st);
-			sensor.SensorType  =  g_read_integer(st);
-			sensor.OrgSensorID  =  g_read_integer(st);
+			sensor.FromNodeNumber =  from_node_id;
+			sensor.ToNodeNumber =  to_node_id;
+			sensor.SensorType  =  sensor_type;
+			sensor.OrgSensorID  = sensor_id;
+			sensor.RelativeLocationRatio = relative_location_ratio;
 
 			DTALink* pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber );
 
@@ -221,8 +228,6 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 
 		m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",sensor_count,lpszFileName);
 
-		fclose(st);
-		return true;
 	}
 
 	return false;
@@ -386,7 +391,10 @@ void CTLiteDoc::ReadSensorData(CString directory)
 		}
 	}
 
-	}	
+	}else
+	{
+	m_NumberOfDays = 0;
+	}
 }
 
 void CTLiteDoc::ReadEventData(CString directory)

@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CSVParser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Find_Vehicle.cpp"
 				>
 			</File>
@@ -309,6 +313,10 @@
 			</File>
 			<File
 				RelativePath=".\Estimation.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Geometry.cpp"
 				>
 			</File>
 			<File
@@ -538,6 +546,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CSVParser.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Find_Vehicle.h"
 				>
 			</File>
@@ -643,6 +655,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgZoneToNodeMapping.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Geometry.h"
 				>
 			</File>
 			<File

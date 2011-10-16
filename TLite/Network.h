@@ -38,6 +38,7 @@
 #include "Timetable.h"
 
 using namespace std;
+using std::string;
 #define PI 3.1415926
 
 #define MAX_AdjLinkSize 15
@@ -136,6 +137,8 @@ public:
 		m_Connections = 0;
 	};
 	~DTANode(){};
+
+	string m_Name;
 	GDPoint pt;
 	int m_NodeNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
@@ -262,10 +265,10 @@ public:
 	{
 		m_LinkID = 0;
 		m_OrgDir = 1;
+		m_Direction = 1;
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
-		m_HistLinkMOEAry = new SLinkMOE[min(m_SimulationHorizon+1,1441)];
 		m_StochaticCapcityFlag = 0;
 		m_bMergeFlag = 0;
 		m_MergeOnrampLinkID = -1;
@@ -274,6 +277,10 @@ public:
 		m_SensorID = -1;
 		m_OverlappingCost = 0;
 		m_DisplayLinkID = -1;
+
+		m_Kjam = 180;
+		m_Wave_speed_in_mph = 12;
+
 
 		m_MinSpeed = 40;
 		m_MaxSpeed = 40;
@@ -285,6 +292,8 @@ public:
 		m_StaticVOC  = 0;
 
 	};
+
+	string m_Name;
 
 	float m_StaticSpeed, m_StaticLaneVolume;
 	float m_StaticTravelTime, m_StaticVOC;
@@ -307,9 +316,9 @@ public:
 	}
 
 
-	float ObtainHistTravelTime(int time)
+	float ObtainHistTravelTime(unsigned int time)
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
+		if(time < m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
 			return m_Length/m_HistLinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
 		}
@@ -317,9 +326,9 @@ public:
 			return m_FreeFlowTravelTime;
 	}
 
-	float ObtainHistFuelConsumption(int time)
+	float ObtainHistFuelConsumption(unsigned int time)
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
+		if(time<m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
 			return m_Length*0.1268f*pow( max(1,m_HistLinkMOEAry[time].ObsSpeed),-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
@@ -327,9 +336,9 @@ public:
 			return m_Length*0.1268f*pow(m_SpeedLimit,-0.459f);  // Length*fuel per mile(speed_limit), y= 0.1268x-0.459
 	}
 
-	float ObtainHistCO2Emissions(int time)  // pounds
+	float ObtainHistCO2Emissions(unsigned int time)  // pounds
 	{
-		if(m_HistLinkMOEAry!=NULL && time<1440 && m_bSensorData == true)
+		if(time<m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
 			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
@@ -351,28 +360,12 @@ public:
 
 		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
 
+
 		int t;
 		for(t=0; t<= TimeHorizon; t++)
 		{
 			m_LinkMOEAry[t].SetupMOE(m_FreeFlowTravelTime,m_SpeedLimit);
 		}	
-
-		if(m_HistLinkMOEAry !=NULL)
-			delete m_HistLinkMOEAry;
-
-		m_HistLinkMOEAry = new SLinkMOE[1441];
-
-		for(t=0; t< 1440; t++)
-		{
-			m_HistLinkMOEAry[t].ObsSpeed = m_SpeedLimit;
-			m_HistLinkMOEAry[t].ObsFlow = 0;
-			m_HistLinkMOEAry[t].ObsTravelTimeIndex = m_FreeFlowTravelTime;
-			m_HistLinkMOEAry[t].ObsCumulativeFlow = 0;
-			m_HistLinkMOEAry[t].ObsDensity = 0;
-
-		}	
-
-
 	};
 
 	void ComputeHistoricalAvg(int number_of_weekdays);
@@ -412,7 +405,7 @@ public:
 	}
 
 	SLinkMOE *m_LinkMOEAry;
-	SLinkMOE *m_HistLinkMOEAry;
+	std::vector<SLinkMOE> m_HistLinkMOEAry;
 
 	bool m_bSensorData;
 	int  m_SensorID;
@@ -437,14 +430,13 @@ public:
 
 
 	~DTALink(){
-		if(m_LinkMOEAry) delete m_LinkMOEAry;
-		if(m_HistLinkMOEAry) delete m_HistLinkMOEAry;
 		if(aryCFlowA) delete aryCFlowA;
 		if(aryCFlowD) delete aryCFlowD;
 
 		if(m_ResourceAry) delete m_ResourceAry;
 
-
+		if(m_LinkMOEAry !=NULL)
+			delete m_LinkMOEAry;
 
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
@@ -497,9 +489,15 @@ public:
 	}
 	int m_LinkNo;
 	int m_OrgDir;
+	int m_Direction;
 	int m_LinkID;
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
+
+	float m_Kjam;
+	float m_Wave_speed_in_mph;
+	string m_Mode_code;
+
 
 	int m_DisplayLinkID;
 
@@ -996,6 +994,7 @@ public:
 	int ToNodeNumber;
 	int LinkID;
 	int SensorType;
+	float RelativeLocationRatio;
 	long OrgSensorID;
 	GDPoint pt;
 

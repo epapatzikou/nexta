@@ -41,6 +41,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_bLinkShifted = true;
 		m_SimulationStartTime_in_min = 0;  // 6 AM
 
 		m_NumberOfDays = 0;
@@ -140,8 +141,6 @@ public:
 	bool ReadLinkGeoFile(LPCTSTR lpszFileName); 
 	bool ReadZoneGeoFile(LPCTSTR lpszFileName); 
 
-	bool ReadNodeShapeCSVFile(LPCTSTR lpszFileName); 
-	bool ReadLinkShapeCSVFile(LPCTSTR lpszFileName); 
 	bool ReadZoneShapeCSVFile(LPCTSTR lpszFileName); 
 
 	bool ReadTripTxtFile(LPCTSTR lpszFileName);  
@@ -248,6 +247,8 @@ public:
 	float m_DefaultCapacity;
 	float m_DefaultLinkType;
 
+	bool m_bLinkShifted;
+
 
 	bool AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false)
 	{
@@ -303,8 +304,6 @@ public:
 			pLink->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
 		}
 
-
-		pLink->SetupMOE();
 		m_LinkSet.push_back (pLink);
 		m_LinkNoMap[pLink->m_LinkNo]  = pLink;
 
@@ -584,7 +583,6 @@ public:
 		afx_msg void OnScenarioConfiguration();
 		afx_msg void OnMoeViewmoes();
 		afx_msg void OnImportdataImport();
-		afx_msg void OnImportShapefiles();
 };
 
 
