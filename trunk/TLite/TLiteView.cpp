@@ -882,8 +882,8 @@ void CTLiteView::FitNetworkToScreen()
 	if(pDoc==NULL)
 		return;
 
-	double res_wid = ScreenRect.Width()/(pDoc->m_NetworkRect.Width()+1);
-	double res_height = ScreenRect.Height()/(pDoc->m_NetworkRect.Height()+1);
+	double res_wid = ScreenRect.Width()/(pDoc->m_NetworkRect.Width()+0.000001);
+	double res_height = ScreenRect.Height()/(pDoc->m_NetworkRect.Height()+0.000001);
 
 	m_Resolution = min(res_wid, res_height);  
 

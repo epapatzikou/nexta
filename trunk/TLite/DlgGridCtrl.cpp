@@ -2,8 +2,11 @@
 //
 
 #include "stdafx.h"
+#include "Geometry.h"
+#include "CSVParser.h"
 #include "TLite.h"
 #include "DlgGridCtrl.h"
+
 #include "DlgZoneToNodeMapping.h"
 #include "Dlg_ImportODDemand.h"
 
@@ -222,12 +225,11 @@ inline void ResetStringStream(std::istringstream& sstream, std::string s)
 
 bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
 {
-	ifstream inFile(m_pDoc->m_ProjectDirectory + "input_zone.csv");
-	if (!inFile.is_open())
-	{
-		return false;
-	}
 
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
 	m_pDoc->m_NodeIDtoZoneNameMap.clear();
 	if(m_pDoc->m_DemandMatrix != NULL)
 	{
@@ -237,31 +239,16 @@ bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
 
 	m_pDoc->m_ODSize = 0;
 
-	string s;
-
-	while(getline(inFile,s))
-	{
-		istringstream lineStrStream(s);
-		istringstream fieldStrStream;
-		string tmpStr;
-
-		int zone_number,node_name;
-
-		//zone_number -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,zone_number))
+	while(parser.ReadRecord())
 		{
-			continue;
-		}
+			int zone_number;
+	
+			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
+				break;
 
-		//node_name -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,node_name))
-		{
-			continue;
-		}
+			int node_name;
+			if(parser.GetValueByFieldName("node_id",node_name) == false)
+				break;
 
 		ZoneRecordSet.push_back(ZoneRecord(zone_number,node_name));
 
@@ -277,11 +264,11 @@ bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
 
 	} // End while
 
-	inFile.close();
-
 	m_pDoc->m_DemandMatrix = AllocateDynamicArray<float>(m_pDoc->m_ODSize,m_pDoc->m_ODSize);
 
 	return true;
+	}
+	return false;
 }
 
 bool CDlgGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
@@ -307,12 +294,10 @@ bool CDlgGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
 
 bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 {
-	ifstream inFile(lpszFileName);
+	CCSVParser parser;
 
-	if (!inFile.is_open())
+	if (parser.OpenCSVFile(lpszFileName))
 	{
-		return false;
-	}
 
 	for(int i= 0; i<m_pDoc->m_ODSize; i++)
 	{
@@ -322,70 +307,26 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 		}
 	}
 
-	string s;
 
 	m_pDoc->m_MaxODDemand = 0;
 
-	while(getline(inFile,s))
-	{
-		istringstream lineStrStream(s);
-		istringstream fieldStrStream;
-		string tmpStr;
-
-		int from_zone_id,to_zone_id;
-		double number_of_vehicles;
-		int vehicle_type;
-		int starting_time,ending_time;
-
-		//from_zone_id -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,from_zone_id))
+		while(parser.ReadRecord())
 		{
-			continue;
-		}
+			int origin_zone_id, destination_zone_id;
+			float number_of_vehicles;
 
-		//to_zone_id -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,to_zone_id))
+			if(parser.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
+				break;
+			if(parser.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
+				break;
+
+			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
+				break;
+
+		if(origin_zone_id>-1 && destination_zone_id>=1)
 		{
-			continue;
+			m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 		}
-
-		//number_of_vehicles -- double
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToDouble(fieldStrStream,number_of_vehicles))
-		{
-			continue;
-		}
-
-		//vehicle_type -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,vehicle_type))
-		{
-			continue;
-		}
-
-		// starting_time -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,starting_time))
-		{
-			continue;
-		}
-
-		// ending_time -- int
-		getline(lineStrStream,tmpStr,',');
-		ResetStringStream(fieldStrStream,tmpStr);
-		if (!ConvertToInt(fieldStrStream,ending_time))
-		{
-			continue;
-		}
-
-		m_pDoc->m_DemandMatrix[from_zone_id-1][to_zone_id-1] = number_of_vehicles;
 		if(m_pDoc->m_MaxODDemand < number_of_vehicles)
 		{
 			m_pDoc->m_MaxODDemand =  number_of_vehicles ;
@@ -393,9 +334,10 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 
 	} // End while
 
-	inFile.close();
 
 	return true;
+}
+	return false;
 }
 
 bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
@@ -407,7 +349,7 @@ bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
 		return false;
 	}
 
-	outFile << "from_zone_id, to_zone_id, number_of_vehicles, vehicle_type, starting_time_in_min, ending_time_in_min\n";
+	outFile << "from_zone_id,to_zone_id,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min\n";
 
 	float maxFlow = -1;
 	for (int i=1;i<m_Grid.GetRowCount();i++)
@@ -469,7 +411,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 		if (outFile.is_open())
 		{
 			ZoneRecordSet.clear();
-			outFile << "TAZ,node_id\n";
+			outFile << "zone_id,node_id\n";
 
 			list<DTANode*>::iterator it = m_pDoc->m_NodeSet.begin();
 

@@ -44,6 +44,7 @@ void g_ProgramStop()
 	exit(0);
 };
 
+
 float g_P2P_Distance(GDPoint p1, GDPoint p2)
 {
 return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5f);
