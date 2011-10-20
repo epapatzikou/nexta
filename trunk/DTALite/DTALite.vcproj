@@ -318,7 +318,15 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\CSVParser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DTALite.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Geometry.cpp"
 				>
 			</File>
 			<File
@@ -368,7 +376,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\CSVParser.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DTALite.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Geometry.h"
 				>
 			</File>
 			<File

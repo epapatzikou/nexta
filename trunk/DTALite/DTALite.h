@@ -460,6 +460,8 @@ public:
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int	m_NumLanes;
 	int	m_SpeedLimit;
+	float m_KJam;
+	float m_BackwardWaveSpeed;
 	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
