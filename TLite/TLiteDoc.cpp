@@ -25,6 +25,7 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
+#include "Geometry.h"
 #include "CSVParser.h"
 #include "RecordSetExt.h"
 #include "TLite.h"
@@ -979,7 +980,6 @@ void CTLiteDoc::OnSearchListtrains()
 bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 {
 	CCSVParser parser;
-
 	if (parser.OpenCSVFile(lpszFileName))
 	{
 		int i=0;
@@ -1054,12 +1054,12 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 
 bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 {
-	CCSVParser parser;
 
 	long i = 0;
 	DTALink* pLink = 0;
 	float default_distance_sum=0;
 	float length_sum = 0;
+	CCSVParser parser;
 	if (parser.OpenCSVFile("input_link.csv"))
 	{
 		bool bNodeNonExistError = false;
@@ -1320,16 +1320,22 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 
 	int lineno = 0 ;
-	if(st!=NULL)
-	{
 
-		while(!feof(st))
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		int i=0;
+		while(parser.ReadRecord())
 		{
-			int zone_number = g_read_integer(st);
-			if(zone_number == -1)  // reach end of file
+			int zone_number;
+	
+			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
 				break;
 
-			int node_name=  g_read_integer(st);
+			int node_name;
+			if(parser.GetValueByFieldName("node_id",node_name) == false)
+				break;
 
 			map <int, int> :: const_iterator m_Iter = m_NodeNametoIDMap.find(node_name);
 
@@ -1349,7 +1355,6 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 			lineno++;
 		}
-		fclose(st);
 
 		if(bNodeNonExistError)
 			AfxMessageBox("Some nodes in input_zone.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
@@ -1368,11 +1373,11 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 {
-	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"r");
 
 	long lineno = 0;
-	if(st!=NULL)
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
 	{
 		if(m_DemandMatrix!=NULL)
 		{
@@ -1389,29 +1394,36 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 			}
 
 			m_MaxODDemand  = 1;
-			while(!feof(st))
-			{
-				int origin_zone = g_read_integer(st);
-				if(origin_zone == -1)  // reach end of file
-					break;
 
-				int destination_zone =  g_read_integer(st);
-				float number_of_vehicles =  g_read_float(st);
-				int vehicle_type =  g_read_integer(st);
-				float starting_time_in_min = g_read_float(st);
-				float ending_time_in_min = g_read_float(st);
 
-				int origin_zone_id  = origin_zone - 1;
-				int destination_zone_id  = destination_zone - 1;
+			int i=0;
+		while(parser.ReadRecord())
+		{
+			int origin_zone_id, destination_zone_id;
+			float number_of_vehicles, starting_time_in_min, ending_time_in_min;
 
-				m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
+			if(parser.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
+				break;
+			if(parser.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
+				break;
+
+			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
+				break;
+
+			if(parser.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
+				break;
+
+			if(parser.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
+				break;
+
+			m_DemandMatrix[origin_zone_id][destination_zone_id] += number_of_vehicles;
 
 				if(m_MaxODDemand < number_of_vehicles)
 					m_MaxODDemand =  number_of_vehicles ;
 
 				lineno++;
 			}
-			fclose(st);
+
 			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
 			return true;
 	}else
@@ -1662,7 +1674,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		fprintf(st, "name,node_id,control_type,geometry\n");
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			fprintf(st, "%s,%d,%d,\"<Point><coordinates>%10.6f,%10.6f</coordinates></Point>\"\n", (*iNode)->m_Name.c_str (), (*iNode)->m_NodeNumber , (*iNode)->pt .x, (*iNode)->pt .y,(*iNode)->m_ControlType );
+			fprintf(st, "%s,%d,%d,\"<Point><coordinates>%f,%f</coordinates></Point>\"\n", (*iNode)->m_Name.c_str (), (*iNode)->m_NodeNumber , (*iNode)->m_ControlType, (*iNode)->pt .x, (*iNode)->pt .y );
 		}
 
 		fclose(st);
@@ -2305,7 +2317,6 @@ void CTLiteDoc::LoadSimulationOutput()
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
 
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, DTASettingsPath);	
-
 	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 1, DTASettingsPath);
 
 	if(TrafficFlowModelFlag==0)  //BPR function 

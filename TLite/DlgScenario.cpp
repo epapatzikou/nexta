@@ -28,6 +28,8 @@
 
 #include "stdafx.h"
 #include "TLite.h"
+#include "Geometry.h"
+#include "CSVParser.h"
 #include "DlgScenario.h"
 
 #include <map>
@@ -35,10 +37,10 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 6
+#define _MAX_SCENARIO_SIZE 7
 // CDlgScenario dialog
 static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link Based Toll","Distance Based_Toll",
-							"Dynamic Message Sign","Ramp Metering", "Work Zone"};
+							"Dynamic Message Sign","Ramp Metering", "Work Zone", "Variable Speed Limit"};
 
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
@@ -60,8 +62,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 	{
 	case 0:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Capacity Reduction Percentage (%)");
 
 		DefaultList.push_back("0");
@@ -70,8 +72,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		break;
 	case 1:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Charge for LOV ($)");
 		HeaderList.push_back("Charge for HOV ($)");
 		HeaderList.push_back("Charge for Truck ($)");
@@ -84,8 +86,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		break;
 	case 2:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Charge for LOV ($/mile)");
 		HeaderList.push_back("Charge for HOV ($/mile)");
 		HeaderList.push_back("Charge for Truck ($/mile)");
@@ -98,8 +100,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		break;
 	case 3:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Responce Percentage (%)");
 
 		DefaultList.push_back("0");
@@ -108,8 +110,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		break;
 	case 4:
 		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Metering Rate");
 
 		DefaultList.push_back("0");
@@ -119,8 +121,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 	case 5:
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Day No");
-		HeaderList.push_back("Start Time (min)");
-		HeaderList.push_back("End Time (min)");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Capacity Reduction Percentage (%)");
 		HeaderList.push_back("Speed Limit (mph)");
 
@@ -129,6 +131,17 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("60");
 		DefaultList.push_back("40");
 		DefaultList.push_back("45");
+		break;
+	case 6:
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Variable Speed Limit in mph");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("60");
+		DefaultList.push_back("60");
+
 		break;
 	}
 }
@@ -335,37 +348,76 @@ void CDlgScenario::OnBnClickedButtonDelete()
 
 std::vector<std::string> CDlgScenario::GetLinkString()
 {
-	std::ifstream inFile;
 	std::vector<std::string> linkstring;
 
 	if (m_pDoc != NULL)
 	{
-		inFile.open(m_pDoc->m_ProjectDirectory + "input_link.csv");
-		if (inFile.is_open())
+	long i = 0;
+	DTALink* pLink = 0;
+	float default_distance_sum=0;
+	float length_sum = 0;
+	CCSVParser parser;
+
+	CString TempStr(m_pDoc->m_ProjectDirectory + "input_link.csv");
+	std::string std_string(TempStr, TempStr.GetLength());
+
+	if (parser.OpenCSVFile(std_string))
+	{
+		while(parser.ReadRecord())
 		{
-			std::string line;
+			int from_node_id;
+			int to_node_id;
+			int direction;
 
-			//skip header line
-			std::getline(inFile,line);
-
-			while(std::getline(inFile,line))
+			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
 			{
+				AfxMessageBox("Field from_node_id has not been defined in file input_link.csv. Please check.");
+				break;
+			}
+			if(!parser.GetValueByFieldName("to_node_id",to_node_id))
+			{
+				AfxMessageBox("Field to_node_id has not been defined in file input_link.csv. Please check.");
+				break;
+			}
+
+			if(!parser.GetValueByFieldName("direction",direction))
+					direction = 1;
+
+		int link_code_start = 1;
+			int link_code_end = 1;
+
+			if (direction == -1) // reversed
+			{
+				link_code_start = 2; link_code_end = 2;
+			}
+
+			if (direction == 0) // two-directional link
+			{
+				link_code_start = 1; link_code_end = 2;
+			}
+
+			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
+			{
+
+			std::stringstream from_node_id_out;
+			std::stringstream to_node_id_out;
+
+			if(link_code == 1)
+			{
+			from_node_id_out << from_node_id;
+			to_node_id_out << to_node_id;
+			}
+			if(link_code == 2)
+			{
+			from_node_id_out << to_node_id;
+			to_node_id_out << from_node_id;
+			}
+
 				string subStr;
-				string str = "[";
-
-				std::istringstream lineStringStream(line);
-				//link id for shape point
-				getline(lineStringStream,subStr,',');
-
-				//from_node
-				getline(lineStringStream,subStr,',');
-				str += subStr + ",";
-
-				//to_node
-				getline(lineStringStream,subStr,',');
-				str += subStr + "]";
+				string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
 				
 				linkstring.push_back(str);
+			}
 			}
 		}
 	}
