@@ -65,7 +65,6 @@ extern int g_LearningPercentage;
 extern int g_TravelTimeDifferenceForSwitching;  // min
 
 extern int g_StochasticCapacityMode ;
-extern float g_FreewayJamDensity_in_vehpmpl;
 extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_TrafficFlowModelFlag;

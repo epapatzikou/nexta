@@ -284,7 +284,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					{
 						int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) % MAX_TIME_INTERVAL_ADCURVE;
 
-						float VehCountInJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(CurrentTime) *g_FreewayJamDensity_in_vehpmpl;
+						float VehCountInJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(CurrentTime) *g_LinkVector[li]->m_KJam;
 						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountInJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
 						int t_residual_minus_1 = (simulation_time_interval_no - 1) % MAX_TIME_INTERVAL_ADCURVE;
 
