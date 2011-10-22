@@ -497,7 +497,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
 		{
-
 			CPoint FromPoint = NPtoSP((*iLink)->m_ShapePoints[si]);
 			CPoint ToPoint = NPtoSP((*iLink)->m_ShapePoints[si+1]);
 
@@ -513,8 +512,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
 				|| 	pDoc->m_StaticAssignmentMode)) 
 			{
-
-				//float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 				float power;
 
@@ -587,6 +584,26 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			pDC->MoveTo(FromPoint);
 			pDC->LineTo(ToPoint);
 
+			if(si = (*iLink) ->m_ShapePoints .size()/2)  // middle location
+			{
+				CPoint ScenarioPoint; 
+				ScenarioPoint.x = FromPoint.x + (ToPoint.x - FromPoint.x)*2.0/3.0;
+				ScenarioPoint.y = FromPoint.y + (ToPoint.y - FromPoint.y)*2.0/3.0;
+
+				if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
+
+				if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
+				
+				if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
+				
+
+			}
+
+				
+
 			if(m_bShowLinkArrow)
 			{
 				double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
@@ -613,8 +630,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			// draw link arrow
 
 			//************************************
-
-
 
 			// draw sensor flag
 
@@ -690,9 +705,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}
 		}
 	}
-
-
-
 
 
 	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)

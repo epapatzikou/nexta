@@ -133,9 +133,10 @@ public:
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName);   // for road network
+	void OffsetLink();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
-	bool ReadIncidentFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadScenarioData();   // for road network
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
 	bool ReadLinkGeoFile(LPCTSTR lpszFileName); 

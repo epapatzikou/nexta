@@ -83,6 +83,11 @@ IDB_PATH_CHECK          BITMAP                  "res\\stateico.bmp"
 IDR_STA_TOOLBAR         BITMAP                  "res\\toolbar1.bmp"
 IDR_MAINFRAME1          BITMAP                  "res\\mainfram.bmp"
 IDR_MAINFRAME2          BITMAP                  "res\\bmp00001.bmp"
+IDB_INCIDENT            BITMAP                  "res\\incident.bmp"
+IDB_VMS                 BITMAP                  "res\\VMS.bmp"
+IDB_WORKZONE            BITMAP                  "res\\workzone.bmp"
+IDB_RAMPMETER           BITMAP                  "res\\rampmeter.bmp"
+IDB_TOLL                BITMAP                  "res\\toll.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -479,6 +484,17 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
+        POPUP "Import Data"
+        BEGIN
+            MENUITEM "1. Import GIS Network from Excel File", ID_IMPORTDATA_IMPORT
+            MENUITEM "2. Import Shape CSV Files",   ID_Import_ShapeFiles
+            POPUP "3. Import Demand"
+            BEGIN
+                MENUITEM "Import Demand table from Matrix Format", ID_IMPORTODTRIPFILE_TRIPMATRIXFORMAT
+                MENUITEM "Import Demand Table from 3-column Format", ID_IMPORTODTRIPFILE_3COLUMNFORMAT
+            END
+            MENUITEM "4. Save Project As",          ID_FILE_SAVE_PROJECT_AS
+        END
         MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
         POPUP "Background Image"
         BEGIN
@@ -586,17 +602,6 @@ BEGIN
     END
     POPUP "Tasks"
     BEGIN
-        POPUP "0. Import Data"
-        BEGIN
-            MENUITEM "1. Import GIS Network from Excel File", ID_IMPORTDATA_IMPORT
-            MENUITEM "2. Import Shape Files",       ID_Import_ShapeFiles
-            POPUP "3. Import Demand"
-            BEGIN
-                MENUITEM "Import Demand table from Matrix Format", ID_IMPORTODTRIPFILE_TRIPMATRIXFORMAT
-                MENUITEM "Import Demand Table from 3-column Format", ID_IMPORTODTRIPFILE_3COLUMNFORMAT
-            END
-            MENUITEM "4. Save Project As",          ID_FILE_SAVE_PROJECT_AS
-        END
         POPUP "1. Create Baseline Data Set"
         BEGIN
             MENUITEM "1. Perform User Equilibrium Run", ID_CREATEBASELINEDATASET_PERFORMUERUN

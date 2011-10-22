@@ -48,6 +48,7 @@ using std::string;
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_VEHPATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_PATHS   6
+#define MAX_VEHICLE_TYPE_SIZE 3
 
 #define MAX_TRAIN_TYPE_SIZE 2
 #define TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL 5
@@ -257,6 +258,40 @@ public:
 	float ServiceFlowRate;
 };
 
+class MessageSign
+{
+public:
+	float StartTime;
+	float EndTime;
+	float ResponsePercentage;
+
+
+	/*
+	int   BestPathFlag;
+	int   DetourLinkSize;
+	int   DetourLinkArray[MAX_LINK_SIZE_IN_VMS];
+	*/
+
+	MessageSign()
+	{
+	
+	}
+
+	~MessageSign()
+	{
+	}
+
+};
+
+class Toll
+{
+public:
+	float StartTime;
+	float EndTime;
+	float TollRate[MAX_VEHICLE_TYPE_SIZE];
+	float TollRateInMin[MAX_VEHICLE_TYPE_SIZE];
+};
+
 class DTALink
 {
 public:
@@ -386,7 +421,7 @@ public:
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if(DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60)  // 60 impacted after capacity reduction
+			if(DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime )
 			{
 				return CapacityReductionVector[il].LaneClosureRatio;
 			}
@@ -394,6 +429,34 @@ public:
 
 		return 0;
 	}
+
+	float 	GetMessageSign(int DepartureTime)
+	{
+		for(unsigned int il = 0; il< MessageSignVector.size(); il++)
+		{
+			if(DepartureTime >= MessageSignVector[il].StartTime && DepartureTime<=MessageSignVector[il].EndTime) 
+			{
+				return MessageSignVector[il].ResponsePercentage;
+			}
+		}
+
+		return 0;
+	}
+
+		float 	GetTollValue(int DepartureTime)
+	{
+		for(unsigned int il = 0; il< TollVector.size(); il++)
+		{
+			if(DepartureTime >= TollVector[il].StartTime && DepartureTime<=TollVector[il].EndTime) 
+			{
+				return 1;
+			}
+		}
+
+		return 0;
+	}
+
+
 
 	SResource *m_ResourceAry;
 	void ResetResourceAry(int OptimizationHorizon)
@@ -415,6 +478,9 @@ public:
 	int *aryCFlowD;
 
 	std::vector<CapacityReduction> CapacityReductionVector;
+	std::vector<MessageSign> MessageSignVector;
+	std::vector<Toll> TollVector;
+	
 
 	int m_bMergeFlag;  // 1: freeway and freeway merge, 2: freeway and ramp merge
 	std::vector<MergeIncomingLink> MergeIncomingLinkVector;
