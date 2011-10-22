@@ -760,6 +760,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\res\bitmap1.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\temp\rowlist\res\bitmap2.bmp"
 				>
 			</File>
@@ -780,7 +784,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\mainfram.bmp"
+				RelativePath=".\res\incident.bmp"
 				>
 			</File>
 			<File
@@ -788,7 +792,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\mainfram.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\mainfram_1.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\rampmeter.bmp"
 				>
 			</File>
 			<File
@@ -824,6 +836,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\toll.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\Toolbar.bmp"
 				>
 			</File>
@@ -845,6 +861,14 @@
 			</File>
 			<File
 				RelativePath=".\res\TrainToolbar.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\VMS.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\workzone.bmp"
 				>
 			</File>
 		</Filter>

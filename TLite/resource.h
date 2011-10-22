@@ -52,6 +52,12 @@
 #define IDD_DIALOG_MOETAB               175
 #define IDD_DIALOG_MOETABVIEW           177
 #define IDD_DIALOG_SHAPEFILE            178
+#define IDB_INCIDENT                    180
+#define IDB_VMS                         181
+#define IDB_WORKZONE                    182
+#define IDB_RAMPMETER                   183
+#define IDB_BITMAP1                     184
+#define IDB_TOLL                        184
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -438,7 +444,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        179
+#define _APS_NEXT_RESOURCE_VALUE        185
 #define _APS_NEXT_COMMAND_VALUE         33149
 #define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101

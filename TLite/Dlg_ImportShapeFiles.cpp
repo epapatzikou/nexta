@@ -43,7 +43,7 @@ END_MESSAGE_MAP()
 
 void CDlg_ImportShapeFiles::OnBnClickedButtonFindNodeFile()
 {
-	static char BASED_CODE szFilter[] = "Node Shape CSV File (*.csv)|*.csv";
+	static char BASED_CODE szFilter[] = "Node Shape CSV File (*.csv)|*.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)
@@ -55,7 +55,7 @@ void CDlg_ImportShapeFiles::OnBnClickedButtonFindNodeFile()
 
 void CDlg_ImportShapeFiles::OnBnClickedButtonFindLinkFile()
 {
-	static char BASED_CODE szFilter[] = "Link Shape CSV File (*.csv)|*.csv";
+	static char BASED_CODE szFilter[] = "Link Shape CSV File (*.csv)|*.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)
@@ -67,7 +67,7 @@ void CDlg_ImportShapeFiles::OnBnClickedButtonFindLinkFile()
 
 void CDlg_ImportShapeFiles::OnBnClickedButtonFindZoneFile()
 {
-	static char BASED_CODE szFilter[] = "Zone Shape CSV File (*.csv)|*.csv";
+	static char BASED_CODE szFilter[] = "Zone Shape CSV File (*.csv)|*.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)

@@ -37,10 +37,10 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 7
+#define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
 static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link Based Toll","Distance Based_Toll",
-							"Dynamic Message Sign","Ramp Metering", "Work Zone", "Variable Speed Limit"};
+							"Dynamic Message Sign","Ramp Metering", "Work Zone"};
 
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
@@ -106,7 +106,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 		DefaultList.push_back("0");
 		DefaultList.push_back("60");
-		DefaultList.push_back("0.2");
+		DefaultList.push_back("20");
 		break;
 	case 4:
 		HeaderList.push_back("Link");
@@ -294,6 +294,10 @@ void CDlgScenario::OnBnClickedOk()
 	}
 
 	OnOK();
+
+	m_pDoc->ReadScenarioData();
+	m_pDoc->UpdateAllViews(0);
+
 }
 
 void CDlgScenario::OnBnClickedCancel()
