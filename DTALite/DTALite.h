@@ -220,7 +220,7 @@ public:
 	float SpeedLimit;
 };
 
-class InformationSign
+class MessageSign
 {
 public:
 	float StartTime;
@@ -231,11 +231,11 @@ public:
 	int   DetourLinkSize;
 	int   DetourLinkArray[MAX_LINK_SIZE_IN_VMS];
 
-	InformationSign()
+	MessageSign()
 	{
 	}
 
-	~InformationSign()
+	~MessageSign()
 	{
 	}
 
@@ -309,9 +309,9 @@ public:
 
 	int GetInformationResponseID(float Time)  // from information signs
 	{
-		for(unsigned int il = 0; il< InformationSignVector.size(); il++)
+		for(unsigned int il = 0; il< MessageSignVector.size(); il++)
 		{
-			if(InformationSignVector[il].Type != 1  /* congestion waringing or detour VMS */ && Time>=InformationSignVector[il].StartTime && Time<=InformationSignVector[il].EndTime)
+			if(MessageSignVector[il].Type != 1  /* congestion waringing or detour VMS */ && Time>=MessageSignVector[il].StartTime && Time<=MessageSignVector[il].EndTime)
 			{
 				return il;
 			}
@@ -362,7 +362,7 @@ public:
 	std::vector <int> m_CumuDeparturelFlow;
 
 	std::vector<CapacityReduction> CapacityReductionVector;
-	std::vector<InformationSign> InformationSignVector;
+	std::vector<MessageSign> MessageSignVector;
 	std::vector<Toll> TollVector;
 
 	int m_TollSize;
@@ -1324,7 +1324,7 @@ int g_GetRandomInteger_From_FloatingPointValue(float Value);
 void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork);
 void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork);
 
-void g_VehicleRerouting(int v, float CurrentTime, InformationSign is); // v for vehicle id
+void g_VehicleRerouting(int v, float CurrentTime, MessageSign is); // v for vehicle id
 void g_DynamicTrafficAssisnment();
 void g_AgentBasedAssisnment();
 void g_StaticTrafficAssisnment();
