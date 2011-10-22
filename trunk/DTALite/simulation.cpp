@@ -115,10 +115,10 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					if(IS_id >= 0)
 					{
 
-						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->InformationSignVector [IS_id].ResponsePercentage )
+						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
 
-							g_VehicleRerouting(vi.veh_id,CurrentTime, p_link->InformationSignVector [IS_id]);
+							g_VehicleRerouting(vi.veh_id,CurrentTime, p_link->MessageSignVector [IS_id]);
 
 							if(g_VehicleVector[vi.veh_id]->m_InformationClass  == 1) /* historical info */
 								g_VehicleVector[vi.veh_id]->m_InformationClass=5; /* historical info, resposive to VMS */
@@ -519,10 +519,10 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					int IS_id  = p_Nextlink->GetInformationResponseID(CurrentTime);
 					if(IS_id >= 0)
 					{
-						if( g_VehicleMap[vehicle_id]->GetRandomRatio()*100 < p_Nextlink->InformationSignVector [IS_id].ResponsePercentage )
+						if( g_VehicleMap[vehicle_id]->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
 
-							g_VehicleRerouting(vehicle_id,CurrentTime, p_Nextlink->InformationSignVector [IS_id]);
+							g_VehicleRerouting(vehicle_id,CurrentTime, p_Nextlink->MessageSignVector [IS_id]);
 
 							if(g_VehicleVector[vehicle_id]->m_InformationClass  == 1) /* historical info */
 								g_VehicleVector[vehicle_id]->m_InformationClass=5; /* historical info, resposive to VMS */
@@ -1089,7 +1089,7 @@ float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float Cyc
 }
 
 
-void g_VehicleRerouting(int v, float CurrentTime, InformationSign is) // v for vehicle id
+void g_VehicleRerouting(int v, float CurrentTime, MessageSign is) // v for vehicle id
 {
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // existing links
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH];  // new nodes

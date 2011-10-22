@@ -629,21 +629,17 @@ void ReadInputFiles()
 
 	FILE* st = NULL;
 
-	fopen_s(&st,"capacity_reduction.csv","r"); /// 
+	fopen_s(&st,"Incident.xml","r"); /// 
 	if(st!=NULL)
 	{
-		cout << "Reading file capacity_reduction.csv..."<< endl;
-		int NumberofCapacityReductionLinks = g_read_integer(st);
+		cout << "Reading file Incident.xml..."<< endl;
+		float version_number = g_read_float(st);
 
-		if(NumberofCapacityReductionLinks >0)
-		{
-			g_LogFile << "# of capacity reduction links = " << NumberofCapacityReductionLinks << endl;
-		}
-
-
-		for(i = 0; i < NumberofCapacityReductionLinks; i++)
+		while(true)
 		{
 			int usn  = g_read_integer(st);
+			if(usn == -1) 
+				break;
 			int dsn =  g_read_integer(st);
 
 			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
@@ -665,32 +661,18 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-/*
-	fopen_s(&st,"VMS.dat","r");
+	fopen_s(&st,"Dynamic Message Sign.xml","r");
 	if(st!=NULL)
 	{
-	cout << "Reading file incident.dat..."<< endl;
+	cout << "Reading file Dynamic Message Sign.xml..."<< endl;
 
-		int NumberofVMSs = g_read_integer(st);
-
-		if(NumberofVMSs >0)
+		float version_number = g_read_float(st);
+		while(true)
 		{
-			g_LogFile << "# of variable message signs = " << NumberofVMSs << endl;
-		}
-
-
-		for(i = 0; i < NumberofVMSs; i++)
-		{
-			int type  = g_read_integer(st);
-
-			if(!(type== 2 || type== 3))
-			{
-				cout << "Error: A VMS with type 1 or 4 is input, but DTALite currently only models congestion warning and detour VMSs."<< endl;
-				g_ProgramStop();
-
-				fclose(st);
-			}
 			int usn  = g_read_integer(st);
+			if(usn == -1)
+				break;
+
 			int dsn =  g_read_integer(st);
 			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
@@ -698,41 +680,14 @@ void ReadInputFiles()
 
 			if(plink!=NULL)
 			{
-				InformationSign is;
+				MessageSign is;
 
-				is.Type = type;
-				if(type == 2)
-				{
+				is.Type = 2;
+				is.StartTime = g_read_integer(st);
+				is.EndTime = g_read_integer(st);
 				is.ResponsePercentage =  g_read_float(st);
-				is.DetourLinkSize   =  g_read_integer(st) -1;
-				is.StartTime = g_read_integer(st);
-				is.EndTime = g_read_integer(st);
 				
-				int NodeList[100];
-				int n;
-				for(n=0; n<= is.DetourLinkSize; n++)
-				{
-				NodeList[n] =  g_read_integer(st);
-				}
-
-				for(n=0; n< is.DetourLinkSize; n++)
-				{
-				is.DetourLinkArray[n] =  PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[NodeList[n]], g_NodeNametoIDMap[NodeList[n+1]]);
-				ASSERT(is.DetourLinkArray[n] >=0);
-
-				}
-				}
-
-				if(type == 3)
-				{
-
-				is.ResponsePercentage  =  g_read_float(st);
-				is.BestPathFlag  =  g_read_integer(st);
-				is.StartTime = g_read_integer(st);
-				is.EndTime = g_read_integer(st);
-				}
-
-				plink->InformationSignVector.push_back(is);
+				plink->MessageSignVector.push_back(is);
 			}
 		}
 
@@ -790,14 +745,22 @@ void ReadInputFiles()
 	}
 
 
+	fopen_s(&st,"Link Based Toll.xml","r");
 
-	fopen_s(&st,"toll.csv","r");
+	bool link_based_flag = true;
 	if(st!=NULL)
 	{
-	cout << "Reading file toll.dat..."<< endl;
+	cout << "Reading file Link Based Toll.xml..."<< endl;
+		
+	link_based_flag = true;
 
+	while(true)
 	{
 			int usn  = g_read_integer(st);
+
+			if(usn == -1)
+				break;
+
 			int dsn =  g_read_integer(st);
 			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
@@ -809,13 +772,12 @@ void ReadInputFiles()
 
 				tc.StartTime = g_read_integer(st);
 				tc.EndTime = g_read_integer(st);
-				int link_based_flag = g_read_integer(st);
 
-				for(int vt = 1; vt<MAX_VEHICLE_TYPE_SIZE; vt++)
+				for(int vt = 1; vt<=MAX_VEHICLE_TYPE_SIZE; vt++)
 				{
 					tc.TollRate [vt]= g_read_float(st); 
 
-					if(link_based_flag ==0) // distance based
+					if(link_based_flag == false) // distance based
 					{
 						tc.TollRate [vt] = tc.TollRate [vt]*plink->m_Length;
 					}
@@ -849,8 +811,7 @@ void ReadInputFiles()
 		fclose(st);
 	}
 
-	*/
-		if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
+	if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
 		{
 			g_ReadLinkMeasurementFile(&PhysicalNetwork);
 					// second step: start reading historical demand
