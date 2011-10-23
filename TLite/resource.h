@@ -56,7 +56,6 @@
 #define IDB_VMS                         181
 #define IDB_WORKZONE                    182
 #define IDB_RAMPMETER                   183
-#define IDB_BITMAP1                     184
 #define IDB_TOLL                        184
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
@@ -85,6 +84,8 @@
 #define IDC_EDIT_WIDTH2                 1027
 #define IDC_LIST_SIMULATION_METHOD      1029
 #define IDC_EDIT1                       1030
+#define IDC_LIST_SIMULATION_METHOD2     1030
+#define IDC_LIST_DEMAND_LOADING_MODE    1030
 #define IDC_EDIT_Number_of_Days         1031
 #define IDC_EDIT_TimeInterval           1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033

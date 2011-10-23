@@ -13,6 +13,7 @@ public:
 	virtual ~CDlgMOETabView();
 	CTLiteDoc* m_pDoc;
 
+	int m_number_of_MOE_files;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_MOETAB };
 

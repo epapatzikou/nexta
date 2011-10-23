@@ -24,7 +24,10 @@ public:
 	int m_NumberOfIterations;
 	float m_DemandGlobalMultiplier;
 	int m_SimultionMethod;
+	int m_DemandLoadingMode;
 	virtual BOOL OnInitDialog();
 	CListBox m_SimulationMethodControl;
 	afx_msg void OnLbnSelchangeListSimulationMethod();
+	CListBox m_DemandLoadingModeList;
+	afx_msg void OnBnClickedOk();
 };
