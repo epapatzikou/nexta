@@ -1032,11 +1032,12 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 
 void CTLiteDoc::OffsetLink()
 {
+	std::list<DTALink*>::iterator iLink;
+
 	if(m_bLinkShifted)
 	{
 		double link_offset = m_UnitFeet*80;  // 80 feet
 
-		std::list<DTALink*>::iterator iLink;
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -1053,6 +1054,11 @@ void CTLiteDoc::OffsetLink()
 
 		}
 	}
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+		(*iLink)->CalculateShapePointRatios();
+		}
 
 }
 
@@ -1213,12 +1219,15 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 					pLink->m_ToNodeNumber = to_node_id;
 					pLink->m_Direction  = 1;
 
-					for(int si = 0; si < CoordinateVector.size(); si++)
+					int si;
+
+					for(si = 0; si < CoordinateVector.size(); si++)
 					{
 					GDPoint	pt;
 					pt.x = CoordinateVector[si].X;
 					pt.y = CoordinateVector[si].Y;
 					pLink->m_ShapePoints .push_back (pt);
+
 					}
 
 				}
@@ -2688,11 +2697,13 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 	int NumberOfIterations = (int)(g_GetPrivateProfileFloat("assignment", "number_of_iterations", 10, SettingsFile));	
 	float DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);	
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, SettingsFile);	
+	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
 
 	CDlgAssignmentSettings dlg;
 	dlg.m_NumberOfIterations = NumberOfIterations;
 	dlg.m_DemandGlobalMultiplier = DemandGlobalMultiplier;
 	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
+	dlg.m_DemandLoadingMode = DemandLoadingFlag;
 
 	if(dlg.DoModal() ==IDOK)
 	{
@@ -2701,14 +2712,17 @@ void CTLiteDoc::OnToolsEditassignmentsettings()
 		DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
 		TrafficFlowModelFlag = dlg.m_SimultionMethod;
 
-		sprintf_s(lpbuffer,"%4d",TrafficFlowModelFlag);
+		sprintf_s(lpbuffer,"%d",TrafficFlowModelFlag);
 		WritePrivateProfileString("simulation","traffic_flow_model",lpbuffer,SettingsFile);
 
-		sprintf_s(lpbuffer,"%4d",NumberOfIterations);
+		sprintf_s(lpbuffer,"%d",NumberOfIterations);
 		WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
 
 		sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
 		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
+
+		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
+		WritePrivateProfileString("demand","load_vehicle_file_mode",lpbuffer,SettingsFile);
 
 	}
 

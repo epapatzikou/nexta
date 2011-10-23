@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(CDlgMOETabView, CDialog)
 CDlgMOETabView::CDlgMOETabView(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlgMOETabView::IDD, pParent)
 {
+	m_number_of_MOE_files = 2;
 
 }
 
@@ -30,10 +31,11 @@ BOOL CDlgMOETabView::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	char* MOE_FileName_List[] = {"LinkMOE","NetworkMOE"};
+
+	char* MOE_FileName_List[] = {"summary","NetworkMOE"};
 	//m_pDoc->m_ProjectDirectory
 
-	for (int i=0;i < 2;i++)
+	for (int i=0;i < m_number_of_MOE_files;i++)
 	{
 
 		TCITEM tcItem;
@@ -53,7 +55,7 @@ BOOL CDlgMOETabView::OnInitDialog()
 
 	p_Tabs[0]->ShowWindow(SW_SHOW);
 
-	for (int i=1;i<2;i++)
+	for (int i=1;i<m_number_of_MOE_files;i++)
 	{
 		p_Tabs[i]->ShowWindow(SW_HIDE);
 	}
@@ -79,7 +81,7 @@ void CDlgMOETabView::SetRectangle()
 	nYc=tabRect.bottom-nY-1;
 
 	p_Tabs[0]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_SHOWWINDOW);
-	for(int nCount=1; nCount < 2; nCount++)
+	for(int nCount=1; nCount < m_number_of_MOE_files; nCount++)
 	{
 		p_Tabs[nCount]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_HIDEWINDOW);
 	}

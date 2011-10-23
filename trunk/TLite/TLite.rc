@@ -484,17 +484,7 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
-        POPUP "Import Data"
-        BEGIN
-            MENUITEM "1. Import GIS Network from Excel File", ID_IMPORTDATA_IMPORT
-            MENUITEM "2. Import Shape CSV Files",   ID_Import_ShapeFiles
-            POPUP "3. Import Demand"
-            BEGIN
-                MENUITEM "Import Demand table from Matrix Format", ID_IMPORTODTRIPFILE_TRIPMATRIXFORMAT
-                MENUITEM "Import Demand Table from 3-column Format", ID_IMPORTODTRIPFILE_3COLUMNFORMAT
-            END
-            MENUITEM "4. Save Project As",          ID_FILE_SAVE_PROJECT_AS
-        END
+        MENUITEM "Import Data from Excel",      ID_IMPORTDATA_IMPORT
         MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
         POPUP "Background Image"
         BEGIN
@@ -589,75 +579,16 @@ BEGIN
         MENUITEM "Perform Traffic Assignment",  ID_TOOLS_PERFORMTRAFFICASSIGNMENT
         MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
         MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
-        MENUITEM SEPARATOR
-        MENUITEM "View Simulation Summary Log", ID_TOOLS_VIEWSIMULATIONSUMMARY
-        MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
     END
     POPUP "MOE"
     BEGIN
+        MENUITEM "View Simulation Summary Log", ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM SEPARATOR
         MENUITEM "Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
         MENUITEM "MOE Tables",                  ID_MOE_VIEWMOES
         MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
         MENUITEM "Vehicle Path Analaysis",      ID_MOE_VEHICLEPATHANALAYSIS
-    END
-    POPUP "Tasks"
-    BEGIN
-        POPUP "1. Create Baseline Data Set"
-        BEGIN
-            MENUITEM "1. Perform User Equilibrium Run", ID_CREATEBASELINEDATASET_PERFORMUERUN
-            MENUITEM "2. Check Network Statistics", 0
-        END
-        POPUP "2. Create Do-nothing Scenario With Incidents/Work Zones"
-        BEGIN
-            MENUITEM "1. Create Scenario Folder from Baseline Data Set with Vehicle File", ID_2_COPYBASELINEDATASETWITHVEHICLEFILE
-            MENUITEM "2. Input Incident/Work Zone Data", ID_2_INPUTINCIDENT
-            MENUITEM "3. Perform Simulation Run",   ID_2_PERFORMSIMULATIONRUN
-            MENUITEM "4. Check Network Statistics", ID_2_4_CheckNetwork_Statistics
-            MENUITEM "5. Compare with Baseline MOEs", ID_2_COMPAREWITHBASELINEMOE
-        END
-        POPUP "3. Evaluate Traveler Information Scenarios"
-        BEGIN
-            MENUITEM "1. Create Scenario Folder from Baseline Data Set", ID_3_CREATESCENARIOFOLDERFROMBASELINEDATASET
-            POPUP "2. Input Traveler Information Strategy Data"
-            BEGIN
-                MENUITEM "Input Variable Message Sign Data", ID_INPUTTRAVELERINFORMATIONSTRATEGYDATA_INPUTVARIABLEMESSAGESIGNDATA
-                MENUITEM "Input Travel Information Distribution Data", ID_INPUTTRAVELERINFORMATIONSTRATEGYDATA_INPUTTRAVELINFORMATIONDISTRIBUTIONDATA
-            END
-            MENUITEM "3. Perform Simulation Run",   ID_3_PERFORMSIMULATIONRUN
-            MENUITEM "4. Check Network and Impacted Vehicle Statistics", ID_3_CHECKNETWORKSTATISTICS
-            MENUITEM "5. Compare With Baseline and Do-nothing MOEs", ID_3_COMPAREWITHBASELINEANDDO
-        END
-        POPUP "4. Evaluate Pricing Scenarios"
-        BEGIN
-            MENUITEM "1. Create Scenario Folder from Baseline Data Set", ID_3_CREATESCENARIOFOLDERFROMBASELINEDATASET
-            POPUP "2. Input Pricing Strategy Data"
-            BEGIN
-                MENUITEM "Input Link Based Pricing Data", ID_2_INPUTLINKBASEDPRICINGDATA
-                MENUITEM "Input Distance based Pricing Data", ID_2_INPUTDISTANCEBASEDPRICINGDATA
-                MENUITEM "Input Value of Time Distribution", ID_2_INPUTVALUEOFTIMEDISTRIBUTION
-                MENUITEM "Add HOV/HOT Lane(s)",         ID_2_ADDHOV
-            END
-            MENUITEM "3. Perform Simulation Run",   ID_3_PERFORMSIMULATIONRUN
-            MENUITEM "4. Check Network and Impacted Vehicle Statistics", ID_3_CHECKNETWORKSTATISTICS
-            MENUITEM "5. Compare With Baseline and Do-nothing MOEs", ID_3_COMPAREWITHBASELINEANDDO
-        END
-        POPUP "5. Evaluate Traffic Management Scenarios"
-        BEGIN
-            MENUITEM "1. Create Scenario Folder from Baseline Data Set", ID_3_CREATESCENARIOFOLDERFROMBASELINEDATASET
-            POPUP "2. Input Traffic Managment Strategy Data"
-            BEGIN
-                MENUITEM "Input Ramp Metering Data",    ID_2_INPUTRAMPMETERINGDATA
-                MENUITEM "Input Signal Coordination Data", ID_2_INPUTSIGNALCOORDINATIONDATA
-            END
-            MENUITEM "3. Perform Simulation Run",   ID_3_PERFORMSIMULATIONRUN
-            MENUITEM "4. Check Network and Impacted Vehicle Statistics", ID_3_CHECKNETWORKSTATISTICS
-            MENUITEM "5. Compare With Baseline and Do-nothing MOEs", ID_3_COMPAREWITHBASELINEANDDO
-        END
-        POPUP "6. Compare MOEs of All Scenarios"
-        BEGIN
-            MENUITEM "Compare Network MOEs",        ID_6_COMPARENETWORKMOES
-            MENUITEM "Compare Impacted Vehicle Statistics", ID_6_COMPAREIMPACTEDVEHICLESTATISTICS
-        END
     END
     POPUP "Tools"
     BEGIN
@@ -968,19 +899,21 @@ BEGIN
     COMBOBOX        IDC_COMBO1,102,130,114,129,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG_Settings DIALOGEX 0, 0, 316, 118
+IDD_DIALOG_Settings DIALOGEX 0, 0, 316, 161
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Assignment Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,31,97,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,161,97,50,14
+    DEFPUSHBUTTON   "OK",IDOK,31,140,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,161,140,50,14
     LTEXT           "# of Iteratations: ",IDC_STATIC,7,7,60,8
     LTEXT           "Global Demand Loading Multiplier:",IDC_STATIC,7,29,108,8
     EDITTEXT        IDC_EDIT_Number_Iterations,131,7,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_Multiplier,131,23,40,14,ES_AUTOHSCROLL
-    LTEXT           "Traffic Simulation Method:",IDC_STATIC,7,46,84,8
-    LISTBOX         IDC_LIST_SIMULATION_METHOD,131,42,132,46,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Traffic Simulation Method:",IDC_STATIC,7,84,84,8
+    LISTBOX         IDC_LIST_SIMULATION_METHOD,131,87,132,46,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Demand Loading Mode:",IDC_STATIC,7,49,76,8
+    LISTBOX         IDC_LIST_DEMAND_LOADING_MODE,131,50,132,28,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_DIALOG_DefaultLinkProperties DIALOGEX 0, 0, 238, 219
@@ -1358,7 +1291,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 309
         TOPMARGIN, 7
-        BOTTOMMARGIN, 111
+        BOTTOMMARGIN, 154
     END
 
     IDD_DIALOG_DefaultLinkProperties, DIALOG

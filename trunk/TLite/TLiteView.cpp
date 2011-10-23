@@ -494,20 +494,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	{
 		//		if(((*iLink)->m_LaneCapacity >3000))  // 
 		//			continue;
-
-		for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
-		{
-			CPoint FromPoint = NPtoSP((*iLink)->m_ShapePoints[si]);
-			CPoint ToPoint = NPtoSP((*iLink)->m_ShapePoints[si+1]);
-
 			CPen LinkTypePen;
 			CPen penmoe;
+
 			float value = -1.0f ;
-
-			if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
-				continue; 
-
-			if( 
+						if( 
 				pDoc->m_LinkMOEMode != none && (
 				(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
 				|| 	pDoc->m_StaticAssignmentMode)) 
@@ -558,53 +549,24 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}else
 				pDC->SetTextColor(RGB(255,228,181));
 
-			if( m_bShowText  && value>=0.01 )
-			{
-				CString str_text;
-
-				int value_int100 = int(value*100);
-				int value_int= (int)value;
-
-				if(value_int100%100 == 0)  // no decimal point
-					str_text.Format ("%d", value_int);
-				else
-					str_text.Format ("%4.1f", value);
-
-				CPoint TextPoint; 
-				TextPoint.x = FromPoint.x + (ToPoint.x - FromPoint.x)*2/3;
-				TextPoint.y = FromPoint.y + (ToPoint.y - FromPoint.y)*2/3;
-
-				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
-
-			}
-
 			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
 				pDC->SelectObject(&g_BlackPen);
+
+
+			for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
+		{
+			CPoint FromPoint = NPtoSP((*iLink)->m_ShapePoints[si]);
+			CPoint ToPoint = NPtoSP((*iLink)->m_ShapePoints[si+1]);
+
+			if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
+				continue; 
+	
 
 			pDC->MoveTo(FromPoint);
 			pDC->LineTo(ToPoint);
 
-			if(si = (*iLink) ->m_ShapePoints .size()/2)  // middle location
-			{
-				CPoint ScenarioPoint; 
-				ScenarioPoint.x = FromPoint.x + (ToPoint.x - FromPoint.x)*2.0/3.0;
-				ScenarioPoint.y = FromPoint.y + (ToPoint.y - FromPoint.y)*2.0/3.0;
 
-				if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
-
-				if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
-				
-				if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
-				
-
-			}
-
-				
-
-			if(m_bShowLinkArrow)
+			if(m_bShowLinkArrow && si ==0)
 			{
 				double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
 				double cosy = cos(slopy);
@@ -626,8 +588,36 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			}
 
+		}
+			if( m_bShowText  && value>=0.01 )
+			{
+				CString str_text;
 
-			// draw link arrow
+				int value_int100 = int(value*100);
+				int value_int= (int)value;
+
+				if(value_int100%100 == 0)  // no decimal point
+					str_text.Format ("%d", value_int);
+				else
+					str_text.Format ("%4.1f", value);
+
+				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
+
+				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
+
+			}
+
+				CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
+
+				if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
+
+				if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
+				
+				if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
+					DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
+				
 
 			//************************************
 
@@ -643,15 +633,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					pDC->SelectObject(&g_PenSensorColor);
 				}		
-				CPoint midpoint;
-				midpoint.x  = (FromPoint.x + ToPoint.x) / 2;
-				midpoint.y  = (FromPoint.y + ToPoint.y) / 2;
+				CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
 				int size = 4;
 				pDC->SelectStockObject(NULL_BRUSH);
 				pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
 
 			}
-		}
 	}
 	// draw shortest path
 	int i;
@@ -818,12 +805,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				DTALink* pLink = pDoc->m_LinkNoMap[LinkID];
 				if(pLink!=NULL)
 				{
-					CPoint FromPoint = NPtoSP(pLink->m_FromPoint);
-					CPoint ToPoint = NPtoSP(pLink->m_ToPoint);
-					CPoint VehPoint;
-					VehPoint.x= ratio*FromPoint.x + (1-ratio)*ToPoint.x;
-					VehPoint.y= ratio*FromPoint.y + (1-ratio)*ToPoint.y;
-
+					
+					CPoint VehPoint= NPtoSP(pLink->GetRelativePosition(ratio));
 
 					pDC->Ellipse (VehPoint.x - vehicle_size, VehPoint.y - vehicle_size,
 						VehPoint.x + vehicle_size, VehPoint.y + vehicle_size);

@@ -61,7 +61,6 @@ struct GDPoint
 	float y;
 };
 
-
 struct GDRect
 {
 	float left, right,top, bottom;
@@ -363,6 +362,55 @@ public:
 	float m_StaticTravelTime, m_StaticVOC;
 
 	std::vector<GDPoint> m_ShapePoints;
+	std::vector<float> m_ShapePointRatios;
+
+	void CalculateShapePointRatios()
+	{
+	
+		float total_distance = 0; 
+		int si;
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			total_distance += g_P2P_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
+		}
+
+		if(total_distance < 0.0000001)
+			total_distance = 0.0000001;
+
+		float distance_ratio = 0;
+		float P2Origin_distance = 0;
+		m_ShapePointRatios.push_back(0.0f);
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			P2Origin_distance += g_P2P_Distance(m_ShapePoints[si],m_ShapePoints[si+1]);
+			m_ShapePointRatios.push_back(P2Origin_distance/total_distance);
+		}
+	}
+
+	GDPoint GetRelativePosition(float ratio)
+	{
+		GDPoint Pt = m_ShapePoints[0];
+			int si;
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
+			{
+
+			 float SectionRatio = m_ShapePointRatios[si+1] - m_ShapePointRatios[si];
+
+			float RelateveRatio = 0;
+			if(SectionRatio >0)
+				RelateveRatio = (ratio - m_ShapePointRatios[si])/SectionRatio;
+
+			 Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si+1].x - m_ShapePoints[si].x);
+			 Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si+1].y - m_ShapePoints[si].y);
+
+			 return Pt;
+			}
+		}
+
+		return Pt;
+	}
 	//for timetabling use
 	std::map<int, int> m_RuningTimeMap;  //indexed by train type
 

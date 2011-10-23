@@ -37,9 +37,6 @@ void CDlgMOETabSubView::DoDataExchange(CDataExchange* pDX)
 BOOL CDlgMOETabSubView::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
-
-
 	m_ListCtrl.SetCellMargin(1.2);
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
