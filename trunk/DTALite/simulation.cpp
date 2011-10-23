@@ -1009,17 +1009,12 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		ShortSimulationLogFile.precision(3) ;
 		ShortSimulationLogFile.setf(ios::fixed);
 
-	ShortSimulationLogFile.open ("short_summary.log", ios::out);
-
-	ShortSimulationLogFile << "Ave Travel Time: " << output.AvgTravelTime << ", Avg Travel Time Index: " << output.AvgTTI  << ", Avg Distance: " << output.AvgDistance << endl;
-
+	ShortSimulationLogFile.open ("summary.csv", ios::out);
+	ShortSimulationLogFile << "# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
+	ShortSimulationLogFile << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
 	ShortSimulationLogFile.close();
-
-
 	return output;
 }
-
-
 
 
 float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity)  // per lane
