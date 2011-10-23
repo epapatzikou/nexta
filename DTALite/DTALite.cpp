@@ -649,11 +649,9 @@ void ReadInputFiles()
 			if(plink!=NULL)
 			{
 				CapacityReduction cs;
-
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 				cs.LaneClosureRatio= g_read_float(st);
-
 				plink->CapacityReductionVector.push_back(cs);
 			}
 		}
@@ -992,6 +990,8 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 				{
 					PathNodeList[i] = g_read_integer(st);
 					float timestamp = g_read_float(st);
+					float travel_time = g_read_float(st);
+					float emissions = g_read_float(st);
 					pVehicle->m_NodeNumberSum +=PathNodeList[i];
 				}
 
@@ -1051,7 +1051,8 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			if(parser.GetValueByFieldName("to_zone_id",destination_zone) == false)
 				break;
 
-			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
+
+			if(parser.GetValueByFieldName("number_of_vehicles",vehicle_type) == false)
 				break;
 
 			if(parser.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
@@ -1059,6 +1060,11 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 			if(parser.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
 				break;
+
+			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
+				break;
+
+			number_of_vehicles*= g_DemandGlobalMultiplier;
 
 			// we generate vehicles here for each OD data line
 
@@ -1482,7 +1488,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "vehicle_id,  originput_zone_id, destination_zone_id, departure_time, arrival_time, complete_flag, trip_time, vehicle_type, occupancy, information_type, value_of_time, path_min_cost,distance_in_mile, number_of_nodes,  node id, node arrival time\n");
+			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,vehicle_type,occupancy,information_type,value_of_time,path_min_cost,distance_in_mile,number_of_nodes,path_sequence\n");
 		}
 
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
@@ -1506,10 +1512,12 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,i%d,%4.2f,%4.2f,%4.2f,%d,",
+				fprintf(st,"%d,%d,%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%d,%4.2f,%4.2f,%4.2f,%d,",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
 					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
 					pVehicle->m_VehicleType ,pVehicle->m_Occupancy,pVehicle->m_InformationClass, pVehicle->GetVOT() , pVehicle->GetMinCost(),pVehicle->m_Distance, pVehicle->m_NodeSize);
+
+				fprintf(st, "\"");
 
 				int j = 0;
 				if(g_LinkVector[pVehicle->m_aryVN [0].LinkID]==NULL)
@@ -1523,7 +1531,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				int NodeID = g_LinkVector[pVehicle->m_aryVN [0].LinkID]->m_FromNodeID;  // first node
 				int NodeName = g_NodeVector[NodeID].m_NodeName ;
 				int link_entering_time = int(pVehicle->m_DepartureTime);
-				fprintf(st, "<%d;%4.2f>\n",
+				fprintf(st, "<%d;%4.2f;0;0>",
 					NodeName,pVehicle->m_DepartureTime) ;
 
 				float LinkWaitingTime = 0;
@@ -1533,6 +1541,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					int NodeID = g_LinkVector[LinkID]->m_ToNodeID;
 					int NodeName = g_NodeVector[NodeID].m_NodeName ;
 					float LinkTravelTime = 0;
+					float Emissions = 0;
 
 					if(j>0)
 					{
@@ -1545,10 +1554,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					}
 
 					//						fprintf(st, ",,,,,,,,,,,,,,%d,%d%,%6.2f,%6.2f,%6.2f\n", j+2,NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN,LinkWaitingTime, g_LinkVector[LinkID]->m_LinkMOEAry [link_entering_time].TravelTime ) ;
-					fprintf(st, "<%d; %4.2f; %4.2f>\n",NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN, LinkTravelTime) ;
+					fprintf(st, "<%d; %4.2f;%4.2f;%4.2f>",NodeName,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN, LinkTravelTime,Emissions) ;
 				}
 
-				fprintf(st,"\n");
+				fprintf(st,"\"\n");
 
 			}else
 			{
@@ -1656,11 +1665,11 @@ int g_InitializeLogFiles()
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
 		cout << "sourceforge.net/projects/dtalite/"<< endl;
-		cout << "Version 0.95, Release Date 01/15/2011."<< endl;
+		cout << "Version 0.95, Release Date 10/23/2011."<< endl;
 
 		g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
 		g_LogFile << "sourceforge.net/projects/dtalite/"<< endl;
-		g_LogFile << "Version 0.95, Release Date 01/15/2011."<< endl;
+		g_LogFile << "Version 0.96, Release Date 10/23/2011."<< endl;
 
 		fopen_s(&g_ErrorFile,"error.log","w");
 		if(g_ErrorFile==NULL)
