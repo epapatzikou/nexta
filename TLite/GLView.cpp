@@ -557,7 +557,7 @@ void CGLView::DrawAllObjects()
 	glEnd();
 
 	//show travel time variability
-	if(pDoc->m_LinkMOEMode == volume || pDoc->m_LinkMOEMode == speed)
+	if(pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed)
 	{
 		glBegin(GL_QUADS);
 
@@ -675,7 +675,7 @@ void CGLView::DrawAllObjects()
 	// draw vehicles
 
 
-	if(pDoc->m_LinkMOEMode == vehicle)
+	if(pDoc->m_LinkMOEMode == MOE_vehicle)
 	{
 	bool bSelectVehicle = false;
 	std::list<DTAVehicle*>::iterator iVehicle;

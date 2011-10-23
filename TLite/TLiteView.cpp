@@ -578,7 +578,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			}
 
-			if( pDoc->m_LinkMOEMode == vehicle)  // when showing vehicles, use black
+			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
 				pDC->SelectObject(&g_BlackPen);
 
 			pDC->MoveTo(FromPoint);
@@ -788,7 +788,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 
 
-	if( pDoc->m_LinkMOEMode == vehicle)
+	if( pDoc->m_LinkMOEMode == MOE_vehicle)
 	{
 
 		pDC->SelectObject(&g_PenVehicle);  //green
@@ -836,7 +836,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//////////////////////////////////////
 	// draw OD demand
 
-	if(pDoc->m_LinkMOEMode == oddemand && pDoc->m_DemandMatrix!=NULL)
+	if(pDoc->m_LinkMOEMode == MOE_oddemand && pDoc->m_DemandMatrix!=NULL)
 	{
 		int i,j;
 		for (i = 0; i< pDoc->m_ODSize ; i++)

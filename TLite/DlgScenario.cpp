@@ -143,6 +143,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("60");
 
 		break;
+
 	}
 }
 void CDlgScenario::DoDataExchange(CDataExchange* pDX)
