@@ -113,7 +113,6 @@ extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 class DTAZone
 { 
 public:
-
 	std::vector<GDPoint> m_ShapePoints;
 	int m_ZoneTAZ;
 
@@ -127,6 +126,36 @@ public:
 	float m_Demand;
 
 };
+
+class DTADemand
+{
+public:
+	int from_zone_id;
+	int to_zone_id;
+	int vehicle_type;
+	int starting_time_in_min;
+	int ending_time_in_min;
+	float number_of_vehicles;
+};
+
+
+class DTADemandProfile
+{
+public:
+	int starting_time_in_min;
+	int ending_time_in_min;
+	float percentage;
+};
+
+class VehicleType
+{
+public:
+	int vehicle_type;
+	float percentage;
+};
+
+
+
 class DTANode
 {
 public:

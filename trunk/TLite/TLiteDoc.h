@@ -33,7 +33,7 @@
 #include <iostream>
 #include <fstream>
 
-enum Link_MOE {none,volume, speed, vcratio,traveltime,capacity, speedlimit, fftt, length, oddemand, density, queuelength,fuel,emissions, vehicle, volume_copy, speed_copy, density_copy};
+enum Link_MOE {none,MOE_volume, MOE_speed, MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 enum OD_MOE {odnone,critical_volume};
 
 class CTLiteDoc : public CDocument
@@ -236,6 +236,11 @@ public:
 
 
 	std::vector<DTA_sensor> m_SensorVector;
+	std::vector<DTADemand> m_DemandVector;
+	std::vector<DTADemand> m_TempDemandVector;
+	std::vector<VehicleType> m_VehicleTypeVector;
+
+	std::vector<DTADemandProfile> m_DemandProfileVector;
 
 	std::vector<DTA_Train*> m_TrainVector;
 
