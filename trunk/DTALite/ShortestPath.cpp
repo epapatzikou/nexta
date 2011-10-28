@@ -46,7 +46,8 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 	int IntervalLinkID=0;
 	int FromID, ToID;
 
-	int i,t;
+	unsigned int i;
+	int t;
 
 	for(i=0; i< m_PhysicalNodeSize + g_ODZoneSize+1; i++)
 	{

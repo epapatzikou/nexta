@@ -91,8 +91,8 @@ void g_OutputMOEData(int iteration)
 {	bool bStartWithEmptyFile = true;
 	OutputVehicleTrajectoryData("Vehicle.csv", iteration,true);
 	OutputODMOEData("ODMOE.csv", iteration,true);
-	OutputTimeDependentODMOEData("TDODMOE.csv", iteration,true);
-	OutputTimeDependentPathMOEData("TDPathMOE.csv", iteration,bStartWithEmptyFile);
+//	OutputTimeDependentODMOEData("TDODMOE.csv", iteration,true);
+//	OutputTimeDependentPathMOEData("TDPathMOE.csv", iteration,bStartWithEmptyFile);
 
 	OutputLinkMOEData("LinkMOE.csv", iteration,bStartWithEmptyFile);
 	OutputNetworkMOEData("NetworkMOE.csv", iteration,bStartWithEmptyFile);
@@ -114,11 +114,10 @@ void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty)
 
 			if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete)  // with physical path in the network
 			{
-
 				int StatisticsInterval = 0;
 				ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalVehicleSize+=1;
 				ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
-								ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalDistance += pVehicle->m_Distance;
+				ODMOEArray[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID][StatisticsInterval].TotalDistance += pVehicle->m_Distance;
 			}
 		}
 
@@ -135,11 +134,12 @@ void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty)
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "origin_zone_id, destination_zone_id, vehicle_type, information_type, #_of_vehicles_completing_trips, trip_time_in_min, cost_in_dollar, emissions\n");
+			fprintf(st, "origin_zone_no,destination_zone_no,vehicle_type,information_type,number_of_vehicles_completing_trips,trip_time_in_min,cost_in_dollar,emissions\n");
 		}
 
 		for(int i = 1; i<=g_ODZoneSize; i++)
 		for(int j = 1; j<=g_ODZoneSize; j++)
+		{
 			for(int t=0; t<StatisticsIntervalSize; t++)
 			{
 			if(ODMOEArray[i][j][t].TotalVehicleSize>=1)
@@ -148,7 +148,7 @@ void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty)
 			}
 			}
 
-
+		}
 		fclose(st);
 	}
 	if(ODMOEArray !=NULL)

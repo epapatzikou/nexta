@@ -86,11 +86,6 @@ void g_OutputVOTStatistics()
 	}
 
 }
-void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration)
-{
-
-
-}
 
 void g_DynamicTrafficAssisnment()
 {
@@ -1614,7 +1609,7 @@ void g_StaticTrafficAssisnment()
 	int TotalNumOfVehiclesGenerated = 0;
 
 	// ----------* start of outer loop *----------
-	for(iteration=0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
+	for(iteration=0; NotConverged && iteration < g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
 	{
 		cout << "------- Iteration = "<<  iteration << "--------" << endl;
 
@@ -1862,7 +1857,6 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
 	int NodeSize;
-	int PredNode;
 	int AssignmentInterval = int(departure_time_begin/g_DepartureTimetInterval);  // starting assignment interval
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
