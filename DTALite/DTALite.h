@@ -401,7 +401,7 @@ public:
 			{
 				if(Time>=CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime)
 				{
-					return m_Length/CapacityReductionVector[il].SpeedLimit*60.0f;  // convert from hour to min;
+					return m_Length/max(1,CapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
 			}
 			return m_FreeFlowTravelTime;

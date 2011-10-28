@@ -500,13 +500,14 @@ void ReadInputFiles()
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
 			{
 
-				int FromID, ToID;
+				int FromID = from_node_id;
+				int ToID = to_node_id;
 				if(link_code == 1)  //AB link
 				{
 				FromID = from_node_id;
 				ToID = to_node_id;
 				}
-				if(link_code == 1)  //AB link
+				if(link_code == 2)  //BA link
 				{
 				FromID = to_node_id;
 				ToID = from_node_id;
@@ -651,7 +652,7 @@ void ReadInputFiles()
 				CapacityReduction cs;
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
-				cs.LaneClosureRatio= g_read_float(st);
+				cs.LaneClosureRatio= min(0.0,max(1.0,g_read_float(st)/100.0f)); // percentage -> to ratio
 				plink->CapacityReductionVector.push_back(cs);
 			}
 		}
@@ -832,7 +833,7 @@ void ReadInputFiles()
 		
 	}else
 	{  // load from vehicle file
-		ReadDTALiteVehicleFile("Vehicle.csv",&PhysicalNetwork);
+		ReadDTALiteVehicleFile("input_vehicle.csv",&PhysicalNetwork);
 
 	}
 
@@ -1344,9 +1345,12 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 	if(st!=NULL)
 	{
+		if(g_TrafficFlowModelFlag > 0)
+		{
+
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh_per_hour_per_lane, link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane, speed_in_mph, exit_queue_length, cumulative_arrival_count, cumulative_departure_count\n");
+			fprintf(st, "from_node_no,to_node_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count\n");
 		}
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -1366,6 +1370,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount ,g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount);
 			}
 
+		}
 		}
 		}
 		fclose(st);
@@ -1445,15 +1450,17 @@ void g_OutputVOCMOEData(char fname[_MAX_PATH])
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			float Capacity = g_LinkVector[li]->m_MaximumServiceFlowRatePHPL * g_LinkVector[li]->m_NumLanes;
-			fprintf(st, "%d,%d,%10.3f, %10.3f,%10.3f,%10.3f,%10.3f,%10.3f\n", g_NodeVector[g_LinkVector[li]->m_FromNodeID],
-				g_NodeVector[g_LinkVector[li]->m_ToNodeID],
-				g_LinkVector[li]->m_BPRLaneCapacity,
-				g_LinkVector[li]->m_BPRLinkVolume,
-				g_LinkVector[li]->m_BPRLinkVolume /g_LinkVector[li]->m_BPRLaneCapacity ,
-				g_LinkVector[li]->m_FreeFlowTravelTime,
-				g_LinkVector[li]->m_BPRLinkTravelTime, 
-				g_LinkVector[li]->m_Length /(g_LinkVector[li]->m_BPRLinkTravelTime/60.0f));
+			DTALink* pLink = g_LinkVector[li];
+			float Capacity = pLink->m_MaximumServiceFlowRatePHPL * pLink->m_NumLanes;
+			fprintf(st, "%d,%d,%f,%f,%f,%f,%f,%f\n", 
+				g_NodeVector[pLink->m_FromNodeID],
+				g_NodeVector[pLink->m_ToNodeID],
+				pLink->m_BPRLaneCapacity,
+				pLink->m_BPRLinkVolume,
+				pLink->m_BPRLinkVolume /max(1,pLink->m_BPRLaneCapacity) ,
+				pLink->m_FreeFlowTravelTime,
+				pLink->m_BPRLinkTravelTime, 
+				pLink->m_Length /(max(1,pLink->m_BPRLinkTravelTime)/60.0f));
 		}
 
 		}
@@ -1819,6 +1826,7 @@ void g_ReadDTALiteSettings()
 
 void g_OutputSimulationStatistics()
 {
+		g_OutputVOCMOEData("LinkStaticMOE.csv");  // output assignment results anyway
 		int Count=0; 
 		float AvgTravelTime, AvgDistance, AvgSpeed;
 		g_LogFile << "--- MOE for vehicles completing trips ---" << endl;
@@ -1887,10 +1895,9 @@ void g_OutputSimulationStatistics()
 				", Link Capacity: " << Capacity <<
 				", Inflow: " << g_LinkVector[li]->CFlowArrivalCount <<
 				//				" Outflow: " << g_LinkVector[li]->CFlowDepartureCount <<
-				", VOC Ratio: " << g_LinkVector[li]->CFlowDepartureCount /Capacity  << endl;
+				", VOC Ratio: " << g_LinkVector[li]->CFlowDepartureCount /max(1,Capacity)  << endl;
 		}
 
-		g_OutputVOCMOEData("LinkStaticMOE.csv");  // output assignment results anyway
 }
 
 void g_FreeMemory()
@@ -1953,7 +1960,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 		return 0;
 
 
-	g_ReadDTALiteSettings();
+		g_ReadDTALiteSettings();
 
 
 	/**********************************************/
@@ -1963,7 +1970,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 		g_OutputSimulationStatistics();
 
-		g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
+//		g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
 
 		g_FreeMemory();
 	return nRetCode;

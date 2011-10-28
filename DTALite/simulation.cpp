@@ -436,9 +436,19 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	{
 
 		// vehicle_out_count is the minimum of LinkOutCapacity and ExitQueue Size
+			
+			
 
 
 		int vehicle_out_count = g_LinkVector[li]->LinkOutCapacity;
+
+			if(g_LinkVector[li]->m_FromNodeNumber  == 10222 && g_LinkVector[li]->m_ToNodeNumber ==10238)
+			{
+			TRACE("LinkOutCapcity at %f, %d -> %d: %d, %d\n", CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],g_LinkVector[li]-> LinkOutCapacity, vehicle_out_count);
+			}
+
+
+		float temp = g_LinkVector[li]->GetNumLanes();
 
 
 		//			g_LogFile << "link out capaity:"<< CurrentTime << " "  << g_NodeVector[g_LinkVector[li]->m_FromNodeID] << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID]<<" Cap:" << vehicle_out_count<< "queue:" << g_LinkVector[li]->ExitQueue.size() << endl;
@@ -820,7 +830,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
+			g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(max(1,g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes())),4.0f)));
 			g_LogFile << "BPR:"<< g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName <<" Flow:" << g_LinkVector[li]->m_BPRLinkVolume << "travel time:" << g_LinkVector[li]->m_BPRLinkTravelTime  << endl;
 
 		}
@@ -992,6 +1002,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	if(AvgTravelTime > 0)
 	{
 		output.AvgTravelTime = AvgTravelTime;
+		output.AvgDelay = AvgDelay;
 		output.AvgTTI = AvgTravelTime/(AvgTravelTime - AvgDelay);  // (AvgTravelTime - AvgDelay) is the free flow travel time
 		output.AvgDistance = AvgDistance;
 		output.SwitchPercentage = SwitchPercentage;
