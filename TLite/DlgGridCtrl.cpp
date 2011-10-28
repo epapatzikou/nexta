@@ -323,7 +323,7 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
 				break;
 
-		if(origin_zone_id>-1 && destination_zone_id>=1)
+		if(origin_zone_id <=m_pDoc->m_ODSize && destination_zone_id<=m_pDoc->m_ODSize)
 		{
 			m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 		}
