@@ -1392,7 +1392,7 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 {
 
-	long lineno = 0;
+	long lineno = 1;
 	CCSVParser parser;
 
 	if (parser.OpenCSVFile(lpszFileName))
@@ -1448,8 +1448,15 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 			m_DemandVector.push_back (element);
 
 
-			m_DemandMatrix[origin_zone_id][destination_zone_id] += number_of_vehicles;
-
+			if(origin_zone_id <= m_ODSize && destination_zone_id <= m_ODSize)
+				m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
+			else
+			{
+			CString msg;
+			msg.Format ("Line %d ine file %s has a zone number greater than the size of zones (%d). ",lineno,lpszFileName, m_ODSize);
+			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+			return false;
+			}
 				if(m_MaxODDemand < number_of_vehicles)
 					m_MaxODDemand =  number_of_vehicles ;
 
@@ -1514,11 +1521,7 @@ bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
 
 				float number_of_vehicles = g_read_float(st);
 
-				int origin_zone_id  = origin_zone - 1;
-				int destination_zone_id  = destination_zone - 1;
-
-
-				m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
+				m_DemandMatrix[origin_zone - 1][destination_zone - 1] = number_of_vehicles;
 
 				if(m_MaxODDemand < number_of_vehicles)
 					m_MaxODDemand =  number_of_vehicles ;
@@ -1580,10 +1583,7 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 
 						float number_of_vehicles = g_read_float(st);
 
-						int origin_zone_id  = origin_zone - 1;
-						int destination_zone_id  = destination_zone - 1;
-
-						m_DemandMatrix[origin_zone_id][destination_zone_id] = number_of_vehicles;
+						m_DemandMatrix[origin_zone-1][destination_zone-1] = number_of_vehicles;
 
 						if(m_MaxODDemand < number_of_vehicles)
 							m_MaxODDemand =  number_of_vehicles ;
@@ -1769,7 +1769,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"DTASettings.ini", directory+"DTASettings.ini", FALSE);
 		CopyFile(OldDirectory+"LinkMOE.csv", directory+"LinkMOE.csv", FALSE);
 		CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
-		CopyFile(OldDirectory+"NetworkMOE.csv", directory+"NetworkMOE.csv", FALSE);
+		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
 		CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
 		CopyFile(OldDirectory+"assignment.log", directory+"assignment.log", FALSE);
 		CopyFile(OldDirectory+"Vehicle.csv", directory+"Vehicle.csv", FALSE);
@@ -2492,7 +2492,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	else {
 		m_StaticAssignmentMode = false;
 
-		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
+		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE_1min.csv");
 	}
 
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
@@ -2691,41 +2691,7 @@ void CTLiteDoc::OnOdtableImportOdTripFile()
 
 void CTLiteDoc::OnToolsEditassignmentsettings()
 {
-	CString SettingsFile;
-	SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
-
-	int NumberOfIterations = (int)(g_GetPrivateProfileFloat("assignment", "number_of_iterations", 10, SettingsFile));	
-	float DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);	
-	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, SettingsFile);	
-	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
-
-	CDlgAssignmentSettings dlg;
-	dlg.m_NumberOfIterations = NumberOfIterations;
-	dlg.m_DemandGlobalMultiplier = DemandGlobalMultiplier;
-	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
-	dlg.m_DemandLoadingMode = DemandLoadingFlag;
-
-	if(dlg.DoModal() ==IDOK)
-	{
-		char lpbuffer[64];
-		NumberOfIterations = dlg.m_NumberOfIterations;
-		DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
-		TrafficFlowModelFlag = dlg.m_SimultionMethod;
-
-		sprintf_s(lpbuffer,"%d",TrafficFlowModelFlag);
-		WritePrivateProfileString("simulation","traffic_flow_model",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",NumberOfIterations);
-		WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
-		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
-		WritePrivateProfileString("demand","load_vehicle_file_mode",lpbuffer,SettingsFile);
-
-	}
-
+	EditTrafficAssignmentOptions();
 }
 
 void CTLiteDoc::OnToolsEditoddemandtable()
@@ -2871,20 +2837,23 @@ void CTLiteDoc::OnHelpVisitdevelopmentwebsite()
 	g_OpenDocument("http://code.google.com/p/nexta/", SW_SHOW);
 }
 
-void CTLiteDoc::OnToolsRuntrafficassignment()
+bool CTLiteDoc::EditTrafficAssignmentOptions()
 {
-	bool bOKFlag = false;
+bool bOKFlag = false;
+
 	CString SettingsFile;
 	SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
 
 	int NumberOfIterations = (int)(g_GetPrivateProfileFloat("assignment", "number_of_iterations", 10, SettingsFile));	
 	float DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);	
-	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, SettingsFile);	
+	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, SettingsFile);	
+	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
 
 	CDlgAssignmentSettings dlg;
 	dlg.m_NumberOfIterations = NumberOfIterations;
 	dlg.m_DemandGlobalMultiplier = DemandGlobalMultiplier;
 	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
+	dlg.m_DemandLoadingMode = DemandLoadingFlag;
 
 	if(dlg.DoModal() ==IDOK)
 	{
@@ -2902,10 +2871,19 @@ void CTLiteDoc::OnToolsRuntrafficassignment()
 		sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
 		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
 
+		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
+		WritePrivateProfileString("demand","load_vehicle_file_mode",lpbuffer,SettingsFile);
+
+
 		bOKFlag = true;
 	}
+	return bOKFlag;
+}
 
-	if(bOKFlag)
+void CTLiteDoc::OnToolsRuntrafficassignment()
+{
+	
+	if(EditTrafficAssignmentOptions())
 		OnToolsPerformtrafficassignment();
 }
 
@@ -3801,7 +3779,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 				return false;
 			}
 
-			m_DemandMatrix[origin_zone_id][destination_zone_id] += number_of_vehicles;
+			m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 
 			DTADemand element;
 			element.from_zone_id = origin_zone_id;

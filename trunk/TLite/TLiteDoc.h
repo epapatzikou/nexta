@@ -487,7 +487,7 @@ public:
 	// Operations
 public:
 
-
+	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str);
 
 	// Overrides
