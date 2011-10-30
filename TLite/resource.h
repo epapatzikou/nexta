@@ -78,13 +78,13 @@
 #define IDC_CUSTOM1                     1023
 #define IDC_GRID_CTRL                   1023
 #define IDC_GRIDLISTCTRLEX              1023
+#define IDC_EDIT_Simulation_Horizon     1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
 #define IDC_EDIT_WIDTH2                 1027
 #define IDC_LIST_SIMULATION_METHOD      1029
 #define IDC_EDIT1                       1030
-#define IDC_LIST_SIMULATION_METHOD2     1030
 #define IDC_LIST_DEMAND_LOADING_MODE    1030
 #define IDC_EDIT_Number_of_Days         1031
 #define IDC_EDIT_TimeInterval           1032
@@ -110,14 +110,18 @@
 #define IDC_EDIT_WaveSpeed              1049
 #define IDC_LIST_LINK                   1050
 #define IDC_EDIT_WaveSpeed2             1050
+#define IDC_LIST_OD                     1050
 #define IDC_LIST_LINK2                  1051
 #define IDC_OpMode_LINK                 1051
 #define IDC_LIST_INCIDENT_LIST          1051
 #define IDC_EDIT_Vehicle_ID             1052
+#define IDC_LIST_PATH                   1052
 #define IDC_TAB1                        1053
 #define IDC_SCENARIO_TAB                1053
 #define IDC_MOETAB                      1053
+#define IDC_COMBO_InformationClass      1053
 #define IDC_BUTTON_ADD                  1055
+#define IDC_COMBO_TimeInterval          1055
 #define IDC_BUTTON2                     1056
 #define IDC_BUTTON_DELETE               1056
 #define IDC_GRIDLIST_MOE                1058
@@ -126,7 +130,12 @@
 #define IDC_EDIT_ZoneShapeFile          1061
 #define IDC_BUTTON_Find_Node_File       1062
 #define IDC_BUTTON_Find_Link_File       1063
+#define IDC_BUTTON_COPY_VEHICLE_FILE    1063
 #define IDC_BUTTON_Find_Zone_File       1064
+#define IDC_COMBO_Min_Number_of_vehicles 1065
+#define IDC_COMBO_Min_Travel_Time       1066
+#define IDC_COMBO_Min_TravelTimeIndex   1067
+#define IDC_COMBO_ImpactLink            1068
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -447,7 +456,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        185
 #define _APS_NEXT_COMMAND_VALUE         33149
-#define _APS_NEXT_CONTROL_VALUE         1063
+#define _APS_NEXT_CONTROL_VALUE         1069
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
