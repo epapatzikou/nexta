@@ -2012,11 +2012,17 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			if(pVehicle->m_VehicleID == 15)
 				TRACE("");
 
+			pVehicle->m_NodeNumberSum = 0;
 			for(int i=0; i< pVehicle->m_NodeSize; i++)
 			{
 				m_PathNodeVectorSP[i] = g_read_integer(st);
+				pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
 				if(i>=1)
 				{
+					if(m_PathNodeVectorSP[i-1]==10222 && m_PathNodeVectorSP[i]==10238)
+					{
+						TRACE("");
+					}
 					DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i]);
 					if(pLink==NULL)
 					{
@@ -2085,6 +2091,9 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 
 			if(ratio >1)
 				ratio = 1;
+
+			if(pVehicle->m_NodeAry [i].LinkID == 457)
+				TRACE("");
 
 			return pVehicle->m_NodeAry [i].LinkID;
 
@@ -2506,7 +2515,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	else {
 		m_StaticAssignmentMode = false;
 
-		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE_1min.csv");
+		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
 	}
 
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
