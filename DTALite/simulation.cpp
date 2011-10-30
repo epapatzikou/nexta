@@ -155,7 +155,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		while(g_LinkVector[li]->LoadingBuffer.size() >0)
+		while(g_LinkVector[li]->LoadingBuffer.size() >0 && g_LinkVector[li]->GetNumLanes(CurrentTime)>0.00001)  // no load vehicle into a blocked link
 		{
 			struc_vehicle_item vi = g_LinkVector[li]->LoadingBuffer.front();
 
@@ -1021,14 +1021,59 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		ShortSimulationLogFile.setf(ios::fixed);
 
 	ShortSimulationLogFile.open ("summary.csv", ios::out);
-	ShortSimulationLogFile << "# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
-	ShortSimulationLogFile << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
+	if(ShortSimulationLogFile.is_open())
+	{
+	ShortSimulationLogFile <<"short scenario summary,# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
+	ShortSimulationLogFile << g_scenario_short_description << "," << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
 	ShortSimulationLogFile.close();
+	}else
+	{
+		cout << "Error: File summary.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		g_ProgramStop();
+	}
+/*
+	ifstream is;
+	int file_length= 0;
+	is.open ("cumulative_scenario_summary.csv", ios::app);
+	if(is.is_open())
+	{
+	 // get length of file:
+	  is.seekg (0, ios::end);
+	  file_length = is.tellg();
+	  is.seekg (0, ios::beg);
+		is.close();
+	}
 
+	ShortSimulationLogFile.open ("cumulative_scenario_summary.csv", ios::app);
+	if(ShortSimulationLogFile.is_open())
+	{
+	  
+	  if(file_length == 0)
+	  {  // write field names
+		ShortSimulationLogFile << "short scenario summary,# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
+	  }
+
+	ShortSimulationLogFile << g_scenario_short_description  << "," << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
+	ShortSimulationLogFile.close();
+	}else
+	{
+		cout << "Error: File cumulative_scenario_summary.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		g_ProgramStop();
+	}
+
+*/
 	ShortSimulationLogFile.open ("short_summary.log", ios::out);
+	if(ShortSimulationLogFile.is_open())
+	{
 	ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << 
 		", Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Travel Time Index =" << output.AvgTTI  << ", Avg Disance = " << output.AvgDistance << " miles." << endl;
 	ShortSimulationLogFile.close();
+	}else
+	{
+		cout << "Error: File short_summary.log cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		g_ProgramStop();
+	
+	}
 	return output;
 }
 

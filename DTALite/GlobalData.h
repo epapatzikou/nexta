@@ -88,6 +88,7 @@ extern float g_TotalDemandDeviation;
 extern float g_TotalMeasurementDeviation; 
 
 extern VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+extern ofstream g_scenario_short_description;
 
 
 
