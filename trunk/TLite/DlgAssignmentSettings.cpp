@@ -14,6 +14,7 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlgAssignmentSettings::IDD, pParent)
 	, m_NumberOfIterations(10)
 	, m_DemandGlobalMultiplier(1.0f)
+	, m_SimulationHorizon(0)
 {
 
 }
@@ -31,12 +32,15 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, m_DemandGlobalMultiplier, 0.001f, 10.0f);
 	DDX_Control(pDX, IDC_LIST_SIMULATION_METHOD, m_SimulationMethodControl);
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE, m_DemandLoadingModeList);
+	DDX_Text(pDX, IDC_EDIT_Simulation_Horizon, m_SimulationHorizon);
+	DDV_MinMaxInt(pDX, m_SimulationHorizon, 0, 10000);
 }
 
 
 BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_LBN_SELCHANGE(IDC_LIST_SIMULATION_METHOD, &CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod)
 	ON_BN_CLICKED(IDOK, &CDlgAssignmentSettings::OnBnClickedOk)
+	ON_BN_CLICKED(IDC_BUTTON_COPY_VEHICLE_FILE, &CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile)
 END_MESSAGE_MAP()
 
 
@@ -72,6 +76,30 @@ void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
 
 void CDlgAssignmentSettings::OnBnClickedOk()
 {
-	// TODO: Add your control notification handler code here
-	OnOK();
+ OnOK();
+}
+
+void CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile()
+{
+   if(AfxMessageBox("Do you want to copy Vehicle.csv to input_vehicle.dat?", MB_YESNO|MB_ICONINFORMATION)== IDYES)
+   {
+      CWaitCursor wait;
+      char fname_old[_MAX_PATH];
+      char fname_new[_MAX_PATH];
+
+      sprintf(fname_old,"%s",(m_ProjectDirectory + "Vehicle.csv"));
+      sprintf(fname_new,"%s",(m_ProjectDirectory + "input_vehicle.dat"));
+
+      FILE* st=fopen(fname_old,"r");
+
+      if(st==NULL)
+      {
+	 AfxMessageBox("Source file Vehicle.dat cannot be found. Please submit a trial run to generate input_vehicle.dat.");
+	 return;
+      }
+      fclose(st);
+
+      if(CopyFile(fname_old, fname_new, false) == FALSE)
+	 AfxMessageBox("Failed at copying Vehicle.csv to input_vehicle.dat.");
+   }
 }

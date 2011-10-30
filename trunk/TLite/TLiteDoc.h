@@ -98,6 +98,7 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	void SelectPath(	std::vector<int>	m_LinkVector, int DisplayID);
 	int m_CurrentViewID;
 	bool m_bSetView;
  	GDPoint m_Doc_Origin;
@@ -417,7 +418,7 @@ public:
 
 	}
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
-	std::map<long, DTALink*> m_LinkIDtoLinkMap;
+	std::map<long, DTALink*> m_LinkNotoLinkMap;
 	std::map<long, long> m_SensorIDtoLinkIDMap;
 
 	int MaxNodeKey;
@@ -465,9 +466,9 @@ public:
 	}
 
 
-	DTALink* FindLinkWithLinkID(int LinkID)
+	DTALink* FindLinkWithLinkNo(int LinkID)
 	{
-		return m_LinkIDtoLinkMap[LinkID];
+		return m_LinkNotoLinkMap[LinkID];
 	}
 
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
@@ -589,6 +590,7 @@ public:
 		afx_msg void OnScenarioConfiguration();
 		afx_msg void OnMoeViewmoes();
 		afx_msg void OnImportdataImport();
+		afx_msg void OnMoeVehiclepathanalaysis();
 };
 
 

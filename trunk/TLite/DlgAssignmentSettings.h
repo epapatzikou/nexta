@@ -12,6 +12,7 @@ public:
 	CDlgAssignmentSettings(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgAssignmentSettings();
 
+	CString m_ProjectDirectory;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Settings };
 
@@ -30,4 +31,6 @@ public:
 	afx_msg void OnLbnSelchangeListSimulationMethod();
 	CListBox m_DemandLoadingModeList;
 	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedButtonCopyVehicleFile();
+	int m_SimulationHorizon;
 };

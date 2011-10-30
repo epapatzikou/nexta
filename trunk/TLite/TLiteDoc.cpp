@@ -143,6 +143,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SCENARIO_CONFIGURATION, &CTLiteDoc::OnScenarioConfiguration)
 	ON_COMMAND(ID_MOE_VIEWMOES, &CTLiteDoc::OnMoeViewmoes)
 	ON_COMMAND(ID_IMPORTDATA_IMPORT, &CTLiteDoc::OnImportdataImport)
+	ON_COMMAND(ID_MOE_VEHICLEPATHANALAYSIS, &CTLiteDoc::OnMoeVehiclepathanalaysis)
 END_MESSAGE_MAP()
 
 
@@ -897,7 +898,10 @@ void CTLiteDoc::OnShowShowpathmoe()
 	{
 		if(g_pPathMOEDlg==NULL)
 		{
-			g_pPathMOEDlg = new CDlgPathMOE();
+			g_pPathMOEDlg = new 
+			
+			CDlgPathMOE();
+
 			g_pPathMOEDlg->m_pDoc = this;
 			g_pPathMOEDlg->SetModelessFlag(TRUE);
 			g_pPathMOEDlg->Create(IDD_DIALOG_PATHMOE);
@@ -1256,13 +1260,18 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 
 				unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 				m_NodeIDtoLinkMap[LinkKey] = pLink;
-				m_NodeIDtoLinkMap[link_id] = pLink;
+
+
+				m_LinkNotoLinkMap[i] = pLink;
 
 				pLink->m_NumLanes= number_of_lanes;
 				pLink->m_SpeedLimit= speed_limit_in_mph;
 				pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 
 				pLink->m_Length= max(length_in_mile, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
+				pLink->m_FreeFlowTravelTime = pLink->m_Length/pLink->m_SpeedLimit*60.0f;  // convert from hour to min
+				pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+
 				pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
 				pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 				pLink->m_link_type= type;
@@ -1773,6 +1782,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
 		CopyFile(OldDirectory+"assignment.log", directory+"assignment.log", FALSE);
 		CopyFile(OldDirectory+"Vehicle.csv", directory+"Vehicle.csv", FALSE);
+		CopyFile(OldDirectory+"input_vehicle.csv", directory+"input_vehicle.csv", FALSE);
 		CopyFile(OldDirectory+"error.log", directory+"error.log", FALSE);
 		CopyFile(OldDirectory+"warning.log", directory+"warning.log", FALSE);
 
@@ -1995,8 +2005,12 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			float path_min_cost = g_read_float(st);
 			float distance_in_mile = g_read_float(st);
 
+			pVehicle->m_Distance = distance_in_mile;
 			pVehicle->m_NodeSize	= g_read_integer(st);
 			pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+			if(pVehicle->m_VehicleID == 15)
+				TRACE("");
 
 			for(int i=0; i< pVehicle->m_NodeSize; i++)
 			{
@@ -2847,13 +2861,16 @@ bool bOKFlag = false;
 	int NumberOfIterations = (int)(g_GetPrivateProfileFloat("assignment", "number_of_iterations", 10, SettingsFile));	
 	float DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);	
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, SettingsFile);	
+	int simulation_horizon_in_min = (int)g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, SettingsFile);	
 	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
 
 	CDlgAssignmentSettings dlg;
+	dlg.m_ProjectDirectory = m_ProjectDirectory;
 	dlg.m_NumberOfIterations = NumberOfIterations;
 	dlg.m_DemandGlobalMultiplier = DemandGlobalMultiplier;
 	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
 	dlg.m_DemandLoadingMode = DemandLoadingFlag;
+	dlg.m_SimulationHorizon = simulation_horizon_in_min;
 
 	if(dlg.DoModal() ==IDOK)
 	{
@@ -2861,14 +2878,18 @@ bool bOKFlag = false;
 		NumberOfIterations = dlg.m_NumberOfIterations;
 		DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
 		TrafficFlowModelFlag = dlg.m_SimultionMethod;
+		simulation_horizon_in_min = dlg.m_SimulationHorizon;
 
-		sprintf_s(lpbuffer,"%4d",TrafficFlowModelFlag);
+		sprintf_s(lpbuffer,"%d",TrafficFlowModelFlag);
 		WritePrivateProfileString("simulation","traffic_flow_model",lpbuffer,SettingsFile);
 
-		sprintf_s(lpbuffer,"%4d",NumberOfIterations);
+		sprintf_s(lpbuffer,"%d",simulation_horizon_in_min);
+		WritePrivateProfileString("simulation","simulation_horizon_in_min",lpbuffer,SettingsFile);
+
+		sprintf_s(lpbuffer,"%d",NumberOfIterations);
 		WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
 
-		sprintf_s(lpbuffer,"%5.3f",DemandGlobalMultiplier);
+		sprintf_s(lpbuffer,"%5.4f",DemandGlobalMultiplier);
 		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
 
 		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
@@ -3575,7 +3596,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 
 				unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 				m_NodeIDtoLinkMap[LinkKey] = pLink;
-				m_NodeIDtoLinkMap[link_id] = pLink;
 
 				pLink->m_NumLanes= number_of_lanes;
 				pLink->m_SpeedLimit= speed_limit_in_mph;
@@ -4074,7 +4094,7 @@ bool CTLiteDoc::ReadLinkGeoFile(LPCTSTR lpszFileName)
 
 			int number_of_feature_points			= g_read_integer(st);
 
-			DTALink* pLink = FindLinkWithLinkID (id);
+			DTALink* pLink = FindLinkWithLinkNo (id);
 			if(pLink!=NULL)
 			{
 				for(int i=0; i< number_of_feature_points; i++)
@@ -4118,4 +4138,32 @@ bool CTLiteDoc::ReadLinkGeoFile(LPCTSTR lpszFileName)
 
 
 	return true;
+}
+
+void CTLiteDoc::OnMoeVehiclepathanalaysis()
+{
+	CWaitCursor wc;
+	CDlg_VehEmissions dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::SelectPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
+{
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_DisplayLinkID = -1;
+	}
+
+	for (int l = 0; l < m_LinkVector.size(); l++)
+	{
+		DTALink* pLink = FindLinkWithLinkNo (m_LinkVector[l]);
+		if(pLink!=NULL)
+		{
+			pLink->m_DisplayLinkID = DisplayID;
+		}
+
+	}
+			UpdateAllViews(0);
+
 }
