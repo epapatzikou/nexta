@@ -187,6 +187,7 @@ float g_DefaultSaturationFlowRate_in_vehphpl;
 
 
 VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+ofstream g_scenario_short_description;
 
 int g_Number_of_CompletedVehicles = 0;
 int g_Number_of_CompletedVehiclesThatSwitch = 0;
@@ -636,6 +637,7 @@ void ReadInputFiles()
 		cout << "Reading file Incident.xml..."<< endl;
 		float version_number = g_read_float(st);
 
+		int count = 0;
 		while(true)
 		{
 			int usn  = g_read_integer(st);
@@ -658,9 +660,12 @@ void ReadInputFiles()
 				if(cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				plink->CapacityReductionVector.push_back(cs);
+				count++;
 
 			}
 		}
+
+		g_scenario_short_description << "with " << count << "incident records;";
 
 		fclose(st);
 	}
@@ -671,6 +676,7 @@ void ReadInputFiles()
 	cout << "Reading file Dynamic Message Sign.xml..."<< endl;
 
 		float version_number = g_read_float(st);
+		int count = 0;
 		while(true)
 		{
 			int usn  = g_read_integer(st);
@@ -692,9 +698,11 @@ void ReadInputFiles()
 				is.ResponsePercentage =  g_read_float(st);
 				
 				plink->MessageSignVector.push_back(is);
+				count++;
 			}
 		}
 
+		g_scenario_short_description << "with " << count << "DMS records;";
 		fclose(st);
 	}
 
@@ -757,6 +765,7 @@ void ReadInputFiles()
 	cout << "Reading file Link Based Toll.xml..."<< endl;
 		
 	link_based_flag = true;
+	int count = 0;
 
 	while(true)
 	{
@@ -789,7 +798,7 @@ void ReadInputFiles()
 					tc.TollRateInMin [vt]= tc.TollRate [vt]/g_VOT[vt]*60;  // VOT -> VOT in min
 				}
 
-			
+				count++;
 				plink->TollVector.push_back(tc);
 			}
 		}
@@ -811,7 +820,7 @@ void ReadInputFiles()
 					}
 
 		}
-
+		g_scenario_short_description << "with " << count << "link pricing records;";
 		fclose(st);
 	}
 
@@ -835,10 +844,12 @@ void ReadInputFiles()
 	if(g_VehicleLoadingMode == 0)  // load from demand table
 	{ 
 		ReadDemandFile(&PhysicalNetwork);
+		g_scenario_short_description << "load vehicles from input_vehicle.csv;";
 		
 	}else
 	{  // load from vehicle file
 		ReadDTALiteVehicleFile("input_vehicle.csv",&PhysicalNetwork);
+		g_scenario_short_description << "load vehicles from input_vehicle.csv;";
 
 	}
 

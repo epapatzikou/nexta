@@ -289,7 +289,6 @@ public:
 
 	float GetHourlyPerLaneCapacity(int Time=-1)
 	{
-	
 		return m_MaximumServiceFlowRatePHPL;
 	}
 
