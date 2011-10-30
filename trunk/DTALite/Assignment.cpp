@@ -714,6 +714,9 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 				DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 				ASSERT(pVeh!=NULL);
 
+				if(pVeh->m_NodeSize >0) // path assigned (from input_vehicle.csv)
+					continue;
+
 				BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 											//using historical short-term travel time
 				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_VehicleType );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo

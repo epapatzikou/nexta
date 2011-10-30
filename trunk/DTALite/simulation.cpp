@@ -1024,6 +1024,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	ShortSimulationLogFile << "# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
 	ShortSimulationLogFile << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
 	ShortSimulationLogFile.close();
+
+	ShortSimulationLogFile.open ("short_summary.log", ios::out);
+	ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << 
+		", Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Travel Time Index =" << output.AvgTTI  << ", Avg Disance = " << output.AvgDistance << " miles." << endl;
+	ShortSimulationLogFile.close();
 	return output;
 }
 

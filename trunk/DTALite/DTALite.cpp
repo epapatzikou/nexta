@@ -652,8 +652,13 @@ void ReadInputFiles()
 				CapacityReduction cs;
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
-				cs.LaneClosureRatio= min(0.0,max(1.0,g_read_float(st)/100.0f)); // percentage -> to ratio
+				cs.LaneClosureRatio= g_read_float(st)/100.0f; // percentage -> to ratio
+				if(cs.LaneClosureRatio > 1.0)
+					cs.LaneClosureRatio = 1.0;
+				if(cs.LaneClosureRatio < 0.0)
+					cs.LaneClosureRatio = 0.0;
 				plink->CapacityReductionVector.push_back(cs);
+
 			}
 		}
 
@@ -681,7 +686,7 @@ void ReadInputFiles()
 			{
 				MessageSign is;
 
-				is.Type = 2;
+				is.Type = 1;
 				is.StartTime = g_read_integer(st);
 				is.EndTime = g_read_integer(st);
 				is.ResponsePercentage =  g_read_float(st);
@@ -943,13 +948,13 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 	{
 		while(!feof(st))
 		{
-			int Iteration     = g_read_integer(st);
-			if(Iteration == -1)  // reach end of file
+			int vehicle_id     = g_read_integer(st);
+			if(vehicle_id == -1)  // reach end of file
 				break;
 
 			DTAVehicle* pVehicle = 0;
 			pVehicle = new DTAVehicle;
-			pVehicle->m_VehicleID = g_read_integer(st);
+			pVehicle->m_VehicleID = vehicle_id;
 			pVehicle->m_OriginZoneID = g_read_integer(st);
 			pVehicle->m_DestinationZoneID = g_read_integer(st);
 			pVehicle->m_DepartureTime = g_read_float(st);
@@ -1014,11 +1019,20 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 			if(g_DemandHorizonForLoadedVehicles < pVehicle->m_DepartureTime)
 				g_DemandHorizonForLoadedVehicles = (int)(pVehicle->m_DepartureTime+1);
 
+			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_DepartureTimetInterval);
+
+			if(AssignmentInterval >= g_DepartureTimetIntervalSize)
+			{
+				AssignmentInterval = g_DepartureTimetIntervalSize - 1;
+			}
+			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+
+
 		}
 		fclose(st);	
 	}else
 	{
-		cout << "Error: File vehicle.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_vehicle.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	}
 }
@@ -1270,7 +1284,6 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
 			pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
 			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
-
 
 			pVehicle->m_VehicleType	= kvhc->m_VehicleType;
 			pVehicle->m_Occupancy		= 1;

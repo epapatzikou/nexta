@@ -226,7 +226,7 @@ public:
 	float StartTime;
 	float EndTime;
 	float ResponsePercentage;
-	int	  Type;
+	int	  Type;  // Type 1: warning. Type 2: Detour
 	int   BestPathFlag;
 	int   DetourLinkSize;
 	int   DetourLinkArray[MAX_LINK_SIZE_IN_VMS];
@@ -311,7 +311,7 @@ public:
 	{
 		for(unsigned int il = 0; il< MessageSignVector.size(); il++)
 		{
-			if(MessageSignVector[il].Type != 1  /* congestion waringing or detour VMS */ && Time>=MessageSignVector[il].StartTime && Time<=MessageSignVector[il].EndTime)
+			if(Time>=MessageSignVector[il].StartTime && Time<=MessageSignVector[il].EndTime)
 			{
 				return il;
 			}
