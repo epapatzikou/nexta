@@ -240,6 +240,8 @@ public:
 	std::vector<DTADemand> m_DemandVector;
 	std::vector<DTADemand> m_TempDemandVector;
 	std::vector<VehicleType> m_VehicleTypeVector;
+	std::vector<VOTDistribution> m_VOTDistributionVector;
+
 
 	std::vector<DTADemandProfile> m_DemandProfileVector;
 
@@ -297,6 +299,8 @@ public:
 		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
 		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
 
+
+
 		if(bOffset)
 		{
 			double link_offset = m_UnitFeet*80;
@@ -310,6 +314,10 @@ public:
 			pLink->m_FromPoint.y += link_offset* sin(theta-PI/2.0f);
 			pLink->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
 		}
+		pLink->m_ShapePoints.push_back(pLink->m_FromPoint);
+		pLink->m_ShapePoints.push_back(pLink->m_ToPoint);
+		pLink->CalculateShapePointRatios();
+
 
 		m_LinkSet.push_back (pLink);
 		m_LinkNoMap[pLink->m_LinkNo]  = pLink;

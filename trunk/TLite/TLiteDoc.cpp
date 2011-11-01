@@ -1306,7 +1306,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		m_UnitMile  = 1.0f;
 
 		if(length_sum>0.000001f)
-			m_UnitMile= length_sum / default_distance_sum ;
+			m_UnitMile= default_distance_sum / length_sum ;
 
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
@@ -1881,6 +1881,21 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	}
 
+	// save VOT Distribution here
+	fopen_s(&st,directory+"input_VOT.csv","w");
+	if(st!=NULL)
+	{
+		fprintf(st,"vehicle_type,VOT,percentage\n");
+		for(std::vector<VOTDistribution>::iterator itr = m_VOTDistributionVector.begin(); itr != m_VOTDistributionVector.end(); ++itr){
+			{
+				fprintf(st, "%d,%d,%f\n", (*itr).vehicle_type , (*itr).VOT, (*itr).percentage);
+			}
+
+	}
+		fclose(st);
+
+	}
+
 	if(m_BackgroundBitmapImportedButnotSaved)
 	{
 		m_BackgroundBitmap.Save(directory+"background.bmp",Gdiplus::ImageFormatBMP);  // always use bmp format
@@ -2019,10 +2034,6 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 				pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
 				if(i>=1)
 				{
-					if(m_PathNodeVectorSP[i-1]==10222 && m_PathNodeVectorSP[i]==10238)
-					{
-						TRACE("");
-					}
 					DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i]);
 					if(pLink==NULL)
 					{
@@ -3269,7 +3280,7 @@ void CTLiteDoc::OnImportdataImport()
 		FillNetworkFromExcelFile(dlg.GetPathName());
 	}
 	CalculateDrawingRectangle();
-	OffsetLink();
+
 	UpdateAllViews(0);
 }
 
@@ -3642,20 +3653,21 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		m_UnitMile  = 1.0f;
 
 		if(length_sum>0.000001f)
-			m_UnitMile= length_sum / default_distance_sum ;
+			m_UnitMile=  default_distance_sum /length_sum;
 
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
 
 		if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
 		{
-			if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
+			if(AfxMessageBox("Is the long//lat coordinate system used in this data set?", MB_YESNO) == IDYES)
 			{
 				m_LongLatCoordinateFlag = true;
 				m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
 			}
 		}
-
+		
+		OffsetLink();
 
 	if(str_duplicated_link.GetLength() >0)
 	{
@@ -3916,11 +3928,9 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	
 ///// vehicle type distribution
 	m_Database.GetTableDefInfo(6, TableInfo);
-
 	CString tablename6=(TableInfo).m_strName;
-
 	if(tablename6.Find("4-2-vehicle-type",0)<=0){
-		AfxMessageBox("Please make sure the 5th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
+		AfxMessageBox("Please make sure the 6th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
 		return false;
 	}
 
@@ -3983,7 +3993,60 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	}
 	}
 	
+///// vehicle type distribution
+	m_Database.GetTableDefInfo(7, TableInfo);
+	CString tablename7=(TableInfo).m_strName;
+	if(tablename7.Find("4-3-VOT-distribution",0)<=0){
+		AfxMessageBox("Please make sure the 7th worksheet is a 4-3-VOT-distribution table.", MB_ICONINFORMATION);
+		return false;
+	}
 
+	strSQL = "select * from [";
+	strSQL += TableInfo.m_strName;
+	strSQL += "]";
+
+	// Read record
+	CRecordsetExt rsVOT(&m_Database);
+	rsVOT.Open(dbOpenDynaset, strSQL);
+
+	while(!rsVOT.IsEOF())
+	{
+
+			int type_no;
+			float percentage; int VOT;
+			type_no = rsVOT.GetLong(CString("vehicle_type_no"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field vehicle_type_no cannot be found in the 4-2-vehicle-type table.");
+				return false;
+			}
+			if(type_no <=0)
+				break;
+
+			VOT = rsVOT.GetDouble(CString("VOT"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field VOT cannot be found in the 4-2-vehicle-type table.");
+				return false;
+			}
+
+			percentage = rsVOT.GetDouble(CString("percentage"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field percentage cannot be found in the 4-2-vehicle-type table.");
+				return false;
+			}
+
+			VOTDistribution element;
+			element.vehicle_type = type_no;
+			element.percentage  = percentage;
+			element.VOT = VOT;
+
+			m_VOTDistributionVector.push_back(element);
+
+			rsVOT.MoveNext ();
+	}
+	rsVOT.Close();
 	return true;
 }
 
