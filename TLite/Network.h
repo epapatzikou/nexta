@@ -154,6 +154,13 @@ public:
 };
 
 
+class VOTDistribution
+{
+public:
+	int vehicle_type;
+	int VOT;
+	float percentage;
+};
 
 class DTANode
 {
@@ -368,14 +375,14 @@ public:
 	{
 	
 		float total_distance = 0; 
-		int si;
+		unsigned int si;
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
 		{
 			total_distance += g_P2P_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
 		}
 
-		if(total_distance < 0.0000001)
-			total_distance = 0.0000001;
+		if(total_distance < 0.0000001f)
+			total_distance = 0.0000001f;
 
 		float distance_ratio = 0;
 		float P2Origin_distance = 0;
@@ -390,9 +397,15 @@ public:
 	GDPoint GetRelativePosition(float ratio)
 	{
 		GDPoint Pt = m_ShapePoints[0];
-			int si;
+
+		unsigned	int si;
+
+		if(m_ShapePointRatios.size() == m_ShapePoints.size())
+		{
+
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
 		{
+
 			if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
 			{
 
@@ -409,6 +422,7 @@ public:
 			}
 		}
 
+		}
 		return Pt;
 	}
 	//for timetabling use

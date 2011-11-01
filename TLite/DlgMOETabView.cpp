@@ -13,7 +13,7 @@ IMPLEMENT_DYNAMIC(CDlgMOETabView, CDialog)
 CDlgMOETabView::CDlgMOETabView(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlgMOETabView::IDD, pParent)
 {
-	m_number_of_MOE_files = 2;
+	m_number_of_MOE_files = 3;
 
 }
 
@@ -32,7 +32,7 @@ BOOL CDlgMOETabView::OnInitDialog()
 	CDialog::OnInitDialog();
 
 
-	char* MOE_FileName_List[] = {"summary","NetworkMOE"};
+	char* MOE_FileName_List[] = {"summary","NetworkMOE","summary"};
 	//m_pDoc->m_ProjectDirectory
 
 	for (int i=0;i < m_number_of_MOE_files;i++)
