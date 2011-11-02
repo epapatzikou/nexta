@@ -155,9 +155,16 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		while(g_LinkVector[li]->LoadingBuffer.size() >0 && g_LinkVector[li]->GetNumLanes(CurrentTime)>0.00001)  // no load vehicle into a blocked link
+		while(g_LinkVector[li]->LoadingBuffer.size() >0 && g_LinkVector[li]->GetNumLanes(CurrentTime)>0.01)  // no load vehicle into a blocked link
 		{
+					if(g_LinkVector[li]->m_FromNodeNumber ==10222 && g_LinkVector[li]->m_ToNodeNumber ==10238)
+					{
+						TRACE("");
+					}
+
 			struc_vehicle_item vi = g_LinkVector[li]->LoadingBuffer.front();
+			// we change the time stamp here to reflect the actual loading time into the network, especially for blocked link
+			vi.time_stamp = CurrentTime;
 
 			int vehiclesize = (int)( g_LinkVector[li]->EntranceQueue.size() + g_LinkVector[li]->ExitQueue.size());
 
@@ -464,6 +471,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			int vehicle_id = vi.veh_id;
 
+
 			// record arrival time at the downstream node of current link
 			int link_sequence_no = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo;
 
@@ -501,7 +509,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					{  // delayed at previous time interval, discharge at CurrentTime 
 						ArrivalTimeOnDSN = CurrentTime; 
 					}
-
 
 
 					float TimeOnNextLink = 0;

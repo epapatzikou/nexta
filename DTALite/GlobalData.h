@@ -33,6 +33,8 @@ extern std::vector<DTAZone> g_ZoneVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
 
+extern std::map<int, VehicleType> g_VehicleTypeMap;
+
 extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 
 // time inteval settings in assignment and simulation
@@ -87,7 +89,7 @@ extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles s
 extern float g_TotalDemandDeviation; 
 extern float g_TotalMeasurementDeviation; 
 
-extern VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+extern	std::vector<VOTDistribution> m_VOTDistributionVector;
 extern ofstream g_scenario_short_description;
 
 

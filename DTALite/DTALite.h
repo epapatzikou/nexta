@@ -41,9 +41,11 @@ using namespace std;
 #define MAX_DAY_SIZE 1
 #define MAX_PATH_LINK_SIZE 1000
 #define MAX_MEASUREMENT_INTERVAL 15 
-#define MAX_VEHICLE_TYPE_SIZE 4
+#define MAX_VEHICLE_TYPE_SIZE 10
 #define MAX_SIZE_INFO_USERS 5 
 #define MAX_VOT_RANGE 101
+#define DEFAULT_VOT 12
+
 
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
@@ -77,7 +79,18 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 
 void g_ProgramStop();
 float g_RNNOF();
-float g_get_random_VOT();
+float g_get_random_VOT(int vehicle_type);
+
+class VOTDistribution
+{
+public:
+	int pricing_type;
+	int VOT;
+	float percentage;
+	float cumulative_percentage_LB;
+	float cumulative_percentage_UB;
+
+};
 
 class DTAZone
 { 
@@ -320,13 +333,13 @@ public:
 
 	}
 
-	float GetTollRateInMin(float Time, int VehicleType)  // from information signs
+	float GetTollRateInMin(float Time, int VehiclePricingType)  // from information signs
 	{
 		for(int il = 0; il< m_TollSize; il++)
 		{
 			if(Time>=pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
 			{
-				return pTollVector[il].TollRateInMin [VehicleType];
+				return pTollVector[il].TollRateInMin [VehiclePricingType];
 			}
 		}
 
@@ -335,7 +348,7 @@ public:
 
 	}
 
-		float GetTollRateInMinByVOT(float Time, int VehicleType, float VOT)  // from information signs
+		float GetTollRateInMinByVOT(float Time, int VehiclePricingType, float VOT)  // from information signs
 	{
 		if(VOT < 0.01f)
 			return 100; // return infinity
@@ -344,7 +357,7 @@ public:
 		{
 			if(Time>=pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
 			{
-				return pTollVector[il].TollRate[VehicleType]/VOT*60; // VOT -> VOT in min
+				return pTollVector[il].TollRate[VehiclePricingType]/VOT*60; // VOT -> VOT in min
 			}
 		}
 
@@ -555,7 +568,7 @@ public:
 
 	float GetPrevailingTravelTime(int CurrentTime)
 	{
-		if(GetNumLanes(CurrentTime)<0.1)   // road blockage
+		if(GetNumLanes(CurrentTime)<0.01)   // road blockage
 			return 120; // unit min
 
 		if(departure_count >= 1 && CurrentTime >0)
@@ -573,7 +586,7 @@ public:
 	{
 		float travel_time  = 0.0f;
 
-		if(GetNumLanes(starting_time)<0.1)   // road blockage
+		if(GetNumLanes(starting_time)<0.01)   // road blockage
 			return 120; // unit min
 
 		int total_flow = m_LinkMOEAry[min(starting_time+time_interval, m_SimulationHorizon)].CumulativeArrivalCount - m_LinkMOEAry[starting_time].CumulativeArrivalCount;
@@ -642,32 +655,6 @@ public:
 
 };
 
-class DTAVehicleAdditionalData   // this class contains non-essential information, we do not allocate memory for this additional info in the basic version
-{
-public:
-	unsigned char m_VOT;        // range 0 to 255
-	float m_TollDollar;
-	float m_MinCost;
-	float m_MeanTravelTime;
-	float m_TravelTimeVariance;
-	unsigned short m_NumberOfSamples;  // when switch a new path, the number of samples starts with 0
-
-	DTAVehicleAdditionalData()
-	{
-		m_NumberOfSamples =0;
-		m_VOT = g_get_random_VOT();
-		m_MinCost = 0;
-	};
-
-	void PostTripUpdate(float TripTime)   
-	{
-		float GainFactor = 0.2f;  // will use formula from Kalman Filtering, eventually
-
-		m_MeanTravelTime = (1-GainFactor)*m_MeanTravelTime + GainFactor*TripTime;
-		m_NumberOfSamples +=1;
-	};
-
-};
 
 class DTAVehicle
 {
@@ -702,8 +689,7 @@ public:
 	bool m_bLoaded; // be loaded into the physical network or not
 	bool m_bComplete;
 
-	DTAVehicleAdditionalData m_VehData;
-
+	
 	// multi-day equilibrium
 	bool m_bETTFlag;
 	int m_DayDependentLinkSize[MAX_DAY_SIZE];
@@ -714,12 +700,29 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
+	unsigned char m_VOT;        // range 0 to 255
+	float m_TollDollar;
+	float m_MinCost;
+	float m_MeanTravelTime;
+	float m_TravelTimeVariance;
+	unsigned short m_NumberOfSamples;  // when switch a new path, the number of samples starts with 0
+
+	void PostTripUpdate(float TripTime)   
+	{
+		float GainFactor = 0.2f;  // will use formula from Kalman Filtering, eventually
+
+		m_MeanTravelTime = (1-GainFactor)*m_MeanTravelTime + GainFactor*TripTime;
+		m_NumberOfSamples +=1;
+	};
 
 	DTAVehicle()
 	{
 		m_TimeToRetrieveInfo = -1;
 		m_SimLinkSequenceNo = 0;
 
+		m_NumberOfSamples =0;
+		m_VOT = DEFAULT_VOT;
+		m_MinCost = 0;
 
 		m_aryVN = NULL;
 		m_NodeSize	= 0;
@@ -771,18 +774,18 @@ public:
 public:  // fetch additional data
 	float GetVOT()
 	{
-			return m_VehData.m_VOT;
+			return m_VOT;
 
 	};
 
 	void SetMinCost(float MinCost)
 	{
-			m_VehData.m_MinCost = MinCost;
+			m_MinCost = MinCost;
 	};
 
 	float GetMinCost()
 	{
-		return m_VehData.m_MinCost;
+		return m_MinCost;
 
 	};
 
@@ -807,6 +810,16 @@ public:
 	}
 
 };
+
+class VehicleType
+{
+public:
+	int vehicle_type;
+	int pricing_type;
+	int VOT_type;
+	float average_VOT;
+};
+
 
 
 class VehicleArrayForOriginDepartrureTimeInterval
@@ -1089,7 +1102,7 @@ public:
 
 	};
 
-	float GetTollRateInMin(int LinkID, float Time, int VehicleType);  // built-in function for each network_SP to avoid conflicts with OpenMP parallel computing
+	float GetTollRateInMin(int LinkID, float Time, int VehiclePricingType);  // built-in function for each network_SP to avoid conflicts with OpenMP parallel computing
 	
 
 	void BuildNetwork(int ZoneID);
@@ -1274,24 +1287,6 @@ public:
 
 	}
 };
-
-class VOTStatistics // Xuesong: VOT statistics
-{
-public: 
-	VOTStatistics()
-	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	CumulativePercentage = 0;
-	}
-
-	float CumulativePercentage;
-	float TotalTravelTime;
-	int   TotalVehicleSize;
-	float TotalDistance;
-};
-
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 

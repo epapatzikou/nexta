@@ -302,7 +302,9 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 			{
 			DTALink* pLink= g_LinkVector[LinkID];
-			 toll = pLink->GetTollRateInMin(NewTime,vehicle_type);
+			int PricingType = g_VehicleTypeMap[vehicle_type].pricing_type ;
+
+			 toll = pLink->GetTollRateInMin(NewTime,PricingType);
 			 if(toll>0)
 				 TRACE("");
 			}
@@ -799,7 +801,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 				if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 				{
 				DTALink* pLink= g_LinkVector[LinkID];
-				 toll = pLink->GetTollRateInMinByVOT(NewTime,vehicle_type, VOT);
+
+				int PricingType = g_VehicleTypeMap[vehicle_type].pricing_type ;
+
+				 toll = pLink->GetTollRateInMinByVOT(NewTime,PricingType, VOT);
 				}
 			}
 
