@@ -151,14 +151,19 @@ class VehicleType
 public:
 	int vehicle_type;
 	float percentage;
+	int pricing_type;
+	float average_VOT;
+	CString vehicle_type_name;
+	CString pricing_type_name;
+
 };
 
 
 class VOTDistribution
 {
 public:
-	int vehicle_type;
-	int VOT;
+	int pricing_type;
+	float VOT;
 	float percentage;
 };
 

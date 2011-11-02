@@ -47,10 +47,10 @@ void CDlgGridCtrl::DoDataExchange(CDataExchange* pDX)
 BOOL CDlgGridCtrl::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
+	CWaitCursor wait;
 	bool bReadDemandSuccess = false;
 
-	if (ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_node.csv"))
+	if (ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone.csv"))
 	{
 		if (ReadDemandCSVFileExt(m_pDoc->m_ProjectDirectory + "input_demand.csv"))
 		{

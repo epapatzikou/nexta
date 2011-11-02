@@ -39,8 +39,8 @@
 
 #define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
-static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link Based Toll","Distance Based_Toll",
-							"Dynamic Message Sign","Ramp Metering", "Work Zone"};
+static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link_Based_Toll","Distance_Based_Toll",
+							"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone"};
 
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
