@@ -51,6 +51,7 @@ void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 
 void g_OutputVOTStatistics()
 {
+/*
 	int vot;
 	for( vot = 0; vot<MAX_VOT_RANGE; vot++)
 	{
@@ -84,7 +85,7 @@ void g_OutputVOTStatistics()
 
 		}
 	}
-
+*/
 }
 
 void g_DynamicTrafficAssisnment()

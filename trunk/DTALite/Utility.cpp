@@ -31,20 +31,29 @@ float g_RNNOF()
 	 return y1;  // we only use one random number
 }
 
-float g_get_random_VOT()
+float g_get_random_VOT(int pricing_type)
 {
 
 	float RandomPercentage= g_GetRandomRatio(); 
 
-	for(int i=0; i< 100; i++)
-	{
-		if(RandomPercentage < g_VOTStatVector[i].CumulativePercentage && RandomPercentage <= g_VOTStatVector[i+1].CumulativePercentage)
+		for(std::vector<VOTDistribution>::iterator itr = m_VOTDistributionVector.begin(); itr != m_VOTDistributionVector.end(); ++itr)
 		{
-			return i+1; // we return an integer value of VOT
+			if( (*itr).pricing_type == pricing_type
+				&& RandomPercentage >= (*itr).cumulative_percentage_LB 
+				&& RandomPercentage <= (*itr).cumulative_percentage_UB )
+					return (*itr).VOT;
 		}
-	}
+// default to vehicle type 1
+		for(std::vector<VOTDistribution>::iterator itr = m_VOTDistributionVector.begin(); itr != m_VOTDistributionVector.end(); ++itr)
+		{
+			if( (*itr).pricing_type == 1 
+				&& RandomPercentage >= (*itr).cumulative_percentage_LB 
+				&& RandomPercentage <= (*itr).cumulative_percentage_UB )
+					return (*itr).VOT;
+		}
 
-	return 100;
+// default to a single value
+	return DEFAULT_VOT;
 }
 
 int g_read_integer_with_char_O(FILE* f)

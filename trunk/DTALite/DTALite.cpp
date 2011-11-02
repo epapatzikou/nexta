@@ -125,6 +125,9 @@ std::vector<DTALink*> g_LinkVector;
 std::vector<DTAZone> g_ZoneVector;
 std::vector<DTAVehicle*>		g_VehicleVector;
 std::map<int, DTAVehicle*> g_VehicleMap;
+std::map<int, VehicleType> g_VehicleTypeMap;
+
+
 
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
@@ -186,7 +189,7 @@ int g_CycleLength_in_seconds;
 float g_DefaultSaturationFlowRate_in_vehphpl;
 
 
-VOTStatistics g_VOTStatVector[MAX_VOT_RANGE];
+std::vector<VOTDistribution> m_VOTDistributionVector;
 ofstream g_scenario_short_description;
 
 int g_Number_of_CompletedVehicles = 0;
@@ -582,7 +585,7 @@ void ReadInputFiles()
 
 	}else
 	{
-		cout << "Error: File zone.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_zone.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	}
 	g_ZoneVector.resize (g_ODZoneSize+1);
@@ -635,6 +638,7 @@ void ReadInputFiles()
 	if(st!=NULL)
 	{
 		cout << "Reading file Incident.xml..."<< endl;
+		g_LogFile << "Reading file Incident.xml, "<< endl;
 		float version_number = g_read_float(st);
 
 		int count = 0;
@@ -666,14 +670,16 @@ void ReadInputFiles()
 		}
 
 		g_scenario_short_description << "with " << count << "incident records;";
+		g_LogFile << "incident records = " << count << endl;
 
 		fclose(st);
 	}
 
-	fopen_s(&st,"Dynamic Message Sign.xml","r");
+	fopen_s(&st,"Dynamic_Message_Sign.xml","r");
 	if(st!=NULL)
 	{
-	cout << "Reading file Dynamic Message Sign.xml..."<< endl;
+	cout << "Reading file Dynamic_Message_Sign.xml..."<< endl;
+	g_LogFile << "Reading file Dynamic_Message_Sign.xml, "<< endl;
 
 		float version_number = g_read_float(st);
 		int count = 0;
@@ -703,67 +709,99 @@ void ReadInputFiles()
 		}
 
 		g_scenario_short_description << "with " << count << "DMS records;";
+		g_LogFile << "DMS records = " << count << endl;
 		fclose(st);
 	}
 
-	fopen_s(&st,"VOT.csv","r");
-	if(st!=NULL)
+
+	CCSVParser parser_VOT;
+
+	float cumulative_percentage = 0;
+
+	if (parser_VOT.OpenCSVFile("input_VOT.csv"))
 	{
-	cout << "Reading file VOT.csv..."<< endl;
+	g_LogFile << "Reading file input_VOT.csv, "<< endl;
+	cout << "Reading file input_VOT.csv, "<< endl;
 
-		g_VOTStatVector[0].CumulativePercentage = 0;
-
-		int PrevVOT = 0;
-
-			while(!feof(st))
+		int i=0;
+		int old_pricing_type = 0;
+		while(parser_VOT.ReadRecord())
 		{
-			int VOT	= g_read_integer(st);
-			if(VOT == -1)  // reach end of file
+			int pricing_type;
+	
+			if(parser_VOT.GetValueByFieldName("pricing_type",pricing_type) == false)
 				break;
 
-			// handle skipping vot ranges, use the cumulative value from the previous vot index
-			for(int v = PrevVOT+1; v< VOT; v++)
-			{
-			g_VOTStatVector[v].CumulativePercentage = g_VOTStatVector[v-1].CumulativePercentage;
-			}
-			PrevVOT = VOT;
-
-			float cumulative_percentage = g_read_float(st);
-			g_VOTStatVector[VOT].CumulativePercentage = cumulative_percentage;
-		}
-
-			for(int v = PrevVOT+1; v< MAX_VOT_RANGE; v++)
-			{
-			g_VOTStatVector[v].CumulativePercentage = g_VOTStatVector[v-1].CumulativePercentage;
-			}
-		g_VOTStatVector[MAX_VOT_RANGE-1].CumulativePercentage = 1.0f;
+			if(pricing_type!= old_pricing_type)
+				cumulative_percentage= 0;   //switch vehicle type, reset cumulative percentage
 
 
-		fclose(st);
-	}else
-	{
-		int VOT;
+			int VOT;
+			if(parser_VOT.GetValueByFieldName("VOT",VOT) == false)
+				break;
 
-		for(VOT = 1; VOT<=12; VOT++)
-		{
-			g_VOTStatVector[VOT].CumulativePercentage = 0.0f; 
-		}
+			float percentage;
+			if(parser_VOT.GetValueByFieldName("percentage",percentage) == false)
+				break;
 
-		for(VOT = 13; VOT<=100; VOT++)
-		{
-			g_VOTStatVector[VOT].CumulativePercentage = 1.0f; 
+			old_pricing_type = pricing_type;
+			VOTDistribution element;
+			element.pricing_type = pricing_type;
+			element.percentage  = percentage;
+			element.VOT = VOT;
+			element.cumulative_percentage_LB = cumulative_percentage;
+			cumulative_percentage+=percentage;
+			element.cumulative_percentage_UB = cumulative_percentage;
+			m_VOTDistributionVector.push_back(element);
+
 		}
 
 	}
 
+	CCSVParser parser_vehicle_type;
 
-	fopen_s(&st,"Link Based Toll.xml","r");
+	if (parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
+	{
+	g_LogFile << "Reading file input_vehicle_type.csv, "<< endl;
+	cout << "Reading file input_vehicle_type.csv, "<< endl;
+
+		while(parser_vehicle_type.ReadRecord())
+		{
+			int vehicle_type;
+			int pricing_type;
+			float average_VOT;
+
+	
+			if(parser_vehicle_type.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+				break;
+
+			if(parser_vehicle_type.GetValueByFieldName("pricing_type",pricing_type) == false)
+				break;
+
+			if(parser_vehicle_type.GetValueByFieldName("average_VOT",average_VOT) == false)
+				break;
+
+			VehicleType element;
+			element.vehicle_type = vehicle_type;
+			element.pricing_type = pricing_type;
+			element.average_VOT = average_VOT;
+
+			g_VehicleTypeMap[vehicle_type] = element;
+
+		}
+
+	}
+
+	fopen_s(&st,"Link_Based_Toll.xml","r");
 
 	bool link_based_flag = true;
 	if(st!=NULL)
 	{
-	cout << "Reading file Link Based Toll.xml..."<< endl;
+	cout << "Reading file Link_Based_Toll.xml..."<< endl;
+	g_LogFile << "Reading file Link_Based_Toll.xml, "<< endl;
 		
+		float version_number = g_read_float(st);
+
 	link_based_flag = true;
 	int count = 0;
 
@@ -821,6 +859,8 @@ void ReadInputFiles()
 
 		}
 		g_scenario_short_description << "with " << count << "link pricing records;";
+		g_LogFile << "link pricing records = "<< count << endl;
+
 		fclose(st);
 	}
 
@@ -1813,7 +1853,7 @@ void g_ReadDTALiteSettings()
 		}
 
 
-		g_LogFile << "Percentage of Pretrip Information Users = "<< g_UserClassPercentage[1] << "%"  << endl;
+		g_LogFile << "Percentage of pre-specified Information Users = "<< g_UserClassPercentage[1] << "%"  << endl;
 
 		if(g_VehicleLoadingMode == 1)
 		{
