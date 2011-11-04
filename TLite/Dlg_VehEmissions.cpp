@@ -23,6 +23,11 @@ CDlg_VehEmissions::~CDlg_VehEmissions()
 	if(m_ODMOEMatrix !=NULL)
 		DeallocateDynamicArray<ODStatistics>(m_ODMOEMatrix,m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
 
+	std::vector<int> LinkVector;
+	// empty vector
+	m_pDoc->SelectPath(LinkVector,1);
+
+
 }
 
 void CDlg_VehEmissions::DoDataExchange(CDataExchange* pDX)
@@ -42,6 +47,7 @@ void CDlg_VehEmissions::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_OD, m_ODList);
 	DDX_Control(pDX, IDC_LIST_PATH, m_PathList);
 	DDX_Control(pDX, IDC_COMBO_ImpactLink, m_ImpactLinkBox);
+	DDX_Control(pDX, IDC_SUMMARY_INFO, m_Summary_Info_Edit);
 }
 
 
@@ -256,6 +262,8 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize+=1;
 					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalDistance += pVehicle->m_Distance;
+					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalCost += pVehicle->m_TollDollarCost;
+					
 
 					if(ImpactLinkNo>=0)
 					{
@@ -277,6 +285,8 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 		count = 0;
 		m_ODList.ResetContent ();
 
+		ODStatistics total_summary;
+
 		for(i=1; i <= m_pDoc->m_ODSize ; i++)
 			for(j=1; j<= m_pDoc->m_ODSize ; j++)
 			{
@@ -284,25 +294,41 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 				{
 					float AvgDistance = m_ODMOEMatrix[i][j].TotalDistance /m_ODMOEMatrix[i][j].TotalVehicleSize;
 					float AvgTravelTime = m_ODMOEMatrix[i][j].TotalTravelTime /m_ODMOEMatrix[i][j].TotalVehicleSize;
+					float AvgCost = m_ODMOEMatrix[i][j].TotalCost  /m_ODMOEMatrix[i][j].TotalVehicleSize;
 
 					if(m_ODMOEMatrix[i][j].TotalVehicleSize >= MinVehicleSize && 
 						AvgDistance >= MinDistance && AvgTravelTime> AvgDistance*MinTTI)
 					{
 
 						CString ODInfoString;
-						ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance);
+						ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, $%4.3f ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgCost);
+
 
 						if(ImpactLinkNo<0)  // no impact link is selected
 						{
 						if(count<10000)
+						{
+							total_summary.TotalVehicleSize +=m_ODMOEMatrix[i][j].TotalVehicleSize;
+							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
+							total_summary.TotalDistance +=m_ODMOEMatrix[i][j].TotalDistance;
+							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
+
 							m_ODList.AddString (ODInfoString);
+						}
 
 						count ++;
 						}else
 						{ // ImpactLinkNo>0: impact link is selected
 						
 						if(count<10000 && m_ODMOEMatrix[i][j].bImpactFlag == true)
+						{
+							total_summary.TotalVehicleSize +=m_ODMOEMatrix[i][j].TotalVehicleSize;
+							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
+							total_summary.TotalDistance +=m_ODMOEMatrix[i][j].TotalDistance;
+							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
+
 							m_ODList.AddString (ODInfoString);
+						}
 
 						count ++;
 						
@@ -310,6 +336,13 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 					}
 				}
 			}
+
+				CString SummaryInfoString;
+				SummaryInfoString.Format ("%d vhc, %3.1f min, %3.1f mile,$%4.3f ",total_summary.TotalVehicleSize, 
+					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
+					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
+					total_summary.TotalCost/max(1,total_summary.TotalVehicleSize));
+				m_Summary_Info_Edit.SetWindowText (SummaryInfoString);
 
 			if(m_ODList.GetCount ()>0)
 				m_ODList.SetCurSel (0);
@@ -380,6 +413,9 @@ void CDlg_VehEmissions::FilterPaths()
 						m_PathVector[p].TotalVehicleSize+=1;
 						m_PathVector[p].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 						m_PathVector[p].TotalDistance   += pVehicle->m_Distance;
+						m_PathVector[p].TotalCost   += pVehicle->m_TollDollarCost;
+						m_PathVector[p].TotalEmissions   += pVehicle->m_Emissions;
+
 						m_PathVector[p].m_VehicleVector.push_back(pVehicle);
 						bFingFlag = true;
 						break;
@@ -394,6 +430,8 @@ void CDlg_VehEmissions::FilterPaths()
 					ps_element.TotalVehicleSize = 1;
 					ps_element.TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 					ps_element.TotalDistance   += pVehicle->m_Distance;
+					ps_element.TotalCost    += pVehicle->m_TollDollarCost ;
+					ps_element.TotalEmissions    += pVehicle->m_Emissions ;
 					ps_element.m_VehicleVector.push_back(pVehicle);
 
 
@@ -414,9 +452,15 @@ void CDlg_VehEmissions::FilterPaths()
 	{
 		float AvgDistance = m_PathVector[p].TotalDistance /m_PathVector[p].TotalVehicleSize;
 		float AvgTravelTime = m_PathVector[p].TotalTravelTime /m_PathVector[p].TotalVehicleSize;
+		float AvgTravelCost = m_PathVector[p].TotalCost /m_PathVector[p].TotalVehicleSize;
+
 
 		CString PathInfoString;
-		PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance);
+		if(AvgTravelCost>=0.001)
+			PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgTravelCost);
+		else
+			PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance);
+
 		m_PathList.AddString (PathInfoString);
 	}
 
@@ -435,7 +479,11 @@ void CDlg_VehEmissions::ShowVehicles()
 		{
 			DTAVehicle* pVehicle = m_PathVector[PathNo].m_VehicleVector[v];
 			CString VehicleInfoString;
-			VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime) );
+			if(pVehicle->m_TollDollarCost >=0.001)
+				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost  );
+			else
+				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime) );
+
 			m_VehicleList.AddString (VehicleInfoString);
 		}
 	}
@@ -677,16 +725,12 @@ bool CDlg_VehEmissions::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
      if(st!=NULL)
       {
 	 CWaitCursor wc;
-	 fprintf(st,"origin_zone_id,destination_zone_id,total_number_of_vehicles,average_travel_time_in_min,average_distance_in_min\n");
+	 fprintf(st,"origin_zone_id->destination_zone_id,total_number_of_vehicles,average_travel_time_in_min,average_distance_in_min,average_cost\n");
 		for(int i=0; i< m_ODList.GetCount (); i++)	// if one of "all" options is selected, we need to narrow down to OD pair
 		{
-			char m_Text[MAX_STRING_LENGTH];
-			int Origin, Destination,TotalVehicleSize;
-			float AvgTravelTime,AvgDistance;
-
+			char m_Text[200];
 			m_ODList.GetText (i, m_Text);
-			sscanf(m_Text, "%d->%d: %d vhc, %3.1f min, %3.1f mile", &Origin, &Destination,&TotalVehicleSize, &AvgTravelTime,&AvgDistance);
-			fprintf(st,"%d,%d,%d,%3.1f,%3.1f\n",Origin,Destination,TotalVehicleSize,AvgTravelTime,AvgDistance);
+			fprintf(st,"%s\n",m_Text);
 		}
 	 
 		fclose(st);
