@@ -1079,7 +1079,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 	float default_distance_sum=0;
 	float length_sum = 0;
 	CCSVParser parser;
-	if (parser.OpenCSVFile("input_link.csv"))
+	if (parser.OpenCSVFile(lpszFileName))
 	{
 		bool bNodeNonExistError = false;
 		while(parser.ReadRecord())
@@ -1434,9 +1434,6 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 				m_DemandMatrix[i][j]= 0.0f;
 			}
 
-			m_MaxODDemand  = 1;
-
-
 			int i=0;
 			while(parser.ReadRecord())
 			{
@@ -1480,8 +1477,6 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 					AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
 					return false;
 				}
-				if(m_MaxODDemand < number_of_vehicles)
-					m_MaxODDemand =  number_of_vehicles ;
 
 				lineno++;
 			}
@@ -1602,8 +1597,6 @@ bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
 				m_DemandMatrix[i][j]= 0.0f;
 			}
 
-			m_MaxODDemand  = 1;
-
 			while(!feof(st))
 			{
 				int origin_zone	       = g_read_integer(st);
@@ -1629,9 +1622,6 @@ bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
 				float number_of_vehicles = g_read_float(st);
 
 				m_DemandMatrix[origin_zone - 1][destination_zone - 1] = number_of_vehicles;
-
-				if(m_MaxODDemand < number_of_vehicles)
-					m_MaxODDemand =  number_of_vehicles ;
 
 				lineno++;
 			}
@@ -1667,8 +1657,6 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 				m_DemandMatrix[i][j]= 0.0f;
 			}
 
-			m_MaxODDemand  = 1;
-
 			while(!feof(st))
 			{
 				for(int i = 1; i <=m_ODSize; i++)
@@ -1691,9 +1679,6 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 						float number_of_vehicles = g_read_float(st);
 
 						m_DemandMatrix[origin_zone-1][destination_zone-1] = number_of_vehicles;
-
-						if(m_MaxODDemand < number_of_vehicles)
-							m_MaxODDemand =  number_of_vehicles ;
 
 						lineno++;
 					}
@@ -2136,7 +2121,7 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			pVehicle->m_VehicleType = (unsigned char)g_read_integer(st);
 			pVehicle->m_InformationClass = (unsigned char)g_read_integer(st);
 			pVehicle->m_VOT = g_read_float(st);
-			float path_min_cost = g_read_float(st);
+			pVehicle->m_TollDollarCost = g_read_float(st);
 			pVehicle->m_Emissions = g_read_float(st);
 			float distance_in_mile = g_read_float(st);
 
@@ -3897,8 +3882,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			m_DemandMatrix[i][j]= 0.0f;
 		}
 
-		m_MaxODDemand  = 1;
-
 		while(!rsDemand.IsEOF())
 		{
 			int origin_zone_id, destination_zone_id, vehicle_type;
@@ -3955,9 +3938,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			element.number_of_vehicles = number_of_vehicles;
 
 			m_DemandVector.push_back (element);
-
-			if(m_MaxODDemand < number_of_vehicles)
-				m_MaxODDemand =  number_of_vehicles ;
 
 			rsDemand.MoveNext ();
 		}

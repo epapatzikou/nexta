@@ -309,8 +309,6 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 	}
 
 
-	m_pDoc->m_MaxODDemand = 0;
-
 		while(parser.ReadRecord())
 		{
 			int origin_zone_id, destination_zone_id;
@@ -327,10 +325,6 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 		if(origin_zone_id <=m_pDoc->m_ODSize && destination_zone_id<=m_pDoc->m_ODSize)
 		{
 			m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
-		}
-		if(m_pDoc->m_MaxODDemand < number_of_vehicles)
-		{
-			m_pDoc->m_MaxODDemand =  number_of_vehicles ;
 		}
 
 	} // End while
@@ -378,8 +372,6 @@ bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
 	}
 
 	outFile.close();
-
-	m_pDoc->m_MaxODDemand = maxFlow;
 
 	return true;
 }

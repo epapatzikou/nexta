@@ -101,15 +101,15 @@ DTA_Turn g_RelativeAngle_to_Turn(int relative_angle)
 
 
    if(abs(relative_angle - ideal_through) <= min_through_diff)
-		  return Through;
+		  return DTA_Through;
 
    if(abs(relative_angle - ideal_left) <= min_through_diff)
-		  return LeftTurn;
+		  return DTA_LeftTurn;
 
    if(abs(relative_angle - ideal_right) <= min_through_diff)
-		  return RightTurn;
+		  return DTA_RightTurn;
 
-   return OtherTurn;
+   return DTA_OtherTurn;
 }
 
 DTA_Turn g_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3)
@@ -128,17 +128,17 @@ DTA_Approach g_Angle_to_Approach(int angle)
 {
       if(angle < 75) // North
       {
-	  return South;
+	  return DTA_South;
       }
       else if(angle < 165) 
       {
-	   return East;
+	   return DTA_East;
       }
       else if(angle < 300) 
       {
-	   return West;
+	   return DTA_West;
 	  }else
-	    return South;
+	    return DTA_South;
 }
 
 float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
@@ -278,7 +278,8 @@ float g_read_float(FILE *f)
 
       };
    if( ch == EOF ) return -1;
-   while( isdigit( ch ) || ch == '.' ) {
+   while( isdigit( ch ) || ch == '.' ) 
+   {
       buf[ i++ ] = ch;
       ch = fgetc( f );
 

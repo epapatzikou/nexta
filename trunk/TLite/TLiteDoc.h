@@ -85,7 +85,6 @@ protected: // create from serialization only
 		m_DefaultLinkType = 1;
 		m_DemandMatrix = NULL;
 		m_ODSize = 0;
-		m_MaxODDemand = 1;
 		m_SelectedLinkID = -1;
 	    m_SelectedNodeID = -1;
 		m_SelectedTrainID = -1;
@@ -107,7 +106,6 @@ public:
 
 	int m_ODSize;
 	float** m_DemandMatrix;
-	float m_MaxODDemand;
 
 
 	bool m_StaticAssignmentMode;
@@ -387,6 +385,8 @@ public:
 				break;
 			}
 		}
+
+		// 
 		//resort link id;
 		int i= 0;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++, i++)

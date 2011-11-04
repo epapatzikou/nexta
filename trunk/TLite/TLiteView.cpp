@@ -822,6 +822,20 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if(pDoc->m_LinkMOEMode == MOE_oddemand && pDoc->m_DemandMatrix!=NULL)
 	{
 		int i,j;
+
+		float MaxODDemand = 1;
+		for (i = 0; i< pDoc->m_ODSize ; i++)
+			for (j = 0; j< pDoc->m_ODSize ; j++)
+			{
+			
+				if(pDoc->m_DemandMatrix [i][j] > MaxODDemand)
+				{
+					MaxODDemand = pDoc->m_DemandMatrix [i][j];
+				
+				}
+			}
+
+
 		for (i = 0; i< pDoc->m_ODSize ; i++)
 			for (j = 0; j< pDoc->m_ODSize ; j++)
 			{
@@ -834,8 +848,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					// if default, return node id;
 					//else return the last node id for zone
-					DTANode* pNodeOrigin= pDoc->m_NodeIDMap[i];
-					DTANode* pNodeDestination= pDoc->m_NodeIDMap[j];
+					DTANode* pNodeOrigin= pDoc->m_NodeIDMap[nodeid_for_origin_zone];
+					DTANode* pNodeDestination= pDoc->m_NodeIDMap[nodeid_for_destination_zone];
 
 					if(pNodeOrigin!=NULL  && pNodeDestination!=NULL)
 					{
@@ -843,12 +857,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						CPoint ToPoint = NPtoSP(pNodeDestination->pt);
 
 						CPen penmoe;
-						int Width = volume/pDoc->m_MaxODDemand*10;
+						int Width = volume/MaxODDemand*100;
 
 						if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
 							continue; 
 
-						if(Width>=1)  //draw critical OD demand only
+						if(Width>=5)  //draw critical OD demand only
 						{
 							penmoe.CreatePen (PS_SOLID, Width, RGB(0,255,255));
 							pDC->SelectObject(&penmoe);

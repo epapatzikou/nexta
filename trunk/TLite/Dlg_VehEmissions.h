@@ -127,4 +127,5 @@ public:
 	afx_msg void OnCbnSelchangeComboImpactlink();
 	afx_msg void OnLbnDblclkListOd();
 	afx_msg void OnBnClickedExport();
+	CEdit m_Summary_Info_Edit;
 };

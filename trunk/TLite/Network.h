@@ -42,18 +42,18 @@ using std::string;
 #define PI 3.1415926
    enum DTA_Approach
    {
-      North,
-      East,
-      South,
-      West
+      DTA_North,
+      DTA_East,
+      DTA_South,
+      DTA_West
    };
 
       enum DTA_Turn
    {
-      LeftTurn,
-      Through,
-      RightTurn,
-      OtherTurn
+      DTA_LeftTurn,
+      DTA_Through,
+      DTA_RightTurn,
+      DTA_OtherTurn
    };
 
 #define MAX_AdjLinkSize 15
@@ -1071,12 +1071,15 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
+
+	float m_TollDollarCost;
 	float m_VOT;
 	float m_Emissions;
 	DTAVehicle()
 	{
 		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
+		m_TollDollarCost = 0;
 
 		m_NodeAry = NULL;
 		m_NodeSize	= 0;
