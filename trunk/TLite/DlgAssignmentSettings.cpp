@@ -34,6 +34,7 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE, m_DemandLoadingModeList);
 	DDX_Text(pDX, IDC_EDIT_Simulation_Horizon, m_SimulationHorizon);
 	DDV_MinMaxInt(pDX, m_SimulationHorizon, 0, 10000);
+	DDX_Control(pDX, IDC_LIST_Routing_METHOD, m_RoutingMethod);
 }
 
 
@@ -41,6 +42,8 @@ BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_LBN_SELCHANGE(IDC_LIST_SIMULATION_METHOD, &CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod)
 	ON_BN_CLICKED(IDOK, &CDlgAssignmentSettings::OnBnClickedOk)
 	ON_BN_CLICKED(IDC_BUTTON_COPY_VEHICLE_FILE, &CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile)
+	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_LOADING_MODE, &CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode)
+	ON_LBN_SELCHANGE(IDC_LIST_Routing_METHOD, &CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod)
 END_MESSAGE_MAP()
 
 
@@ -61,6 +64,10 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_DemandLoadingModeList.AddString ("Vehicle File");
 	m_DemandLoadingModeList.SetCurSel(m_DemandLoadingMode);
 
+	m_RoutingMethod.AddString ("OD-based routing");
+	m_RoutingMethod.AddString ("Agent-based routing");
+	m_RoutingMethod.SetCurSel(m_agent_based_assignment_flag);
+
 
 	// TODO:  Add extra initialization here
 
@@ -72,6 +79,15 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
 {
 	m_SimultionMethod = m_SimulationMethodControl.GetCurSel();
+}
+void CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode()
+{
+	m_DemandLoadingMode = m_DemandLoadingModeList.GetCurSel();
+}
+
+void CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod()
+{
+	m_agent_based_assignment_flag = m_RoutingMethod.GetCurSel();
 }
 
 void CDlgAssignmentSettings::OnBnClickedOk()
@@ -103,3 +119,4 @@ void CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile()
 	 AfxMessageBox("Failed at copying Vehicle.csv to input_vehicle.dat.");
    }
 }
+

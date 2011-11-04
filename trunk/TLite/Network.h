@@ -40,6 +40,21 @@
 using namespace std;
 using std::string;
 #define PI 3.1415926
+   enum DTA_Approach
+   {
+      North,
+      East,
+      South,
+      West
+   };
+
+      enum DTA_Turn
+   {
+      LeftTurn,
+      Through,
+      RightTurn,
+      OtherTurn
+   };
 
 #define MAX_AdjLinkSize 15
 #define	MAX_SPLABEL 99999
@@ -103,6 +118,13 @@ typedef struct{
 }struc_traffic_state;
 
 extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
+extern int g_P2P_Angle(GDPoint p1, GDPoint p2);
+
+extern DTA_Approach g_Angle_to_Approach(int Angle);
+
+extern int g_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
+extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
+extern DTA_Turn g_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
 extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 
@@ -981,7 +1003,6 @@ SVehicleLink()
 class DTAVehicleAdditionalData   // this class contains non-essential information, we do not allocate memory for this additional info in the basic version
 {
 public:
-	unsigned char m_VOT;        // range 0 to 255
 	float m_TollDollar;
 	float m_MinCost;
 	float m_MeanTravelTime;
@@ -991,7 +1012,6 @@ public:
 	DTAVehicleAdditionalData()
 	{
 		m_NumberOfSamples =0;
-		m_VOT = 10;
 		m_MinCost = 0;
 	};
 
@@ -1051,6 +1071,8 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
+	float m_VOT;
+	float m_Emissions;
 	DTAVehicle()
 	{
 		pVehData=NULL;
@@ -1099,14 +1121,6 @@ public:
 
 
 public:  // fetch additional data
-	int GetVOT()
-	{
-		if(pVehData==NULL)
-			return 10;
-		else
-			return pVehData->m_VOT;
-
-	};
 
 	void SetMinCost(float MinCost)
 	{
@@ -1133,6 +1147,7 @@ public:
 	int m_DestinationZoneID;
 	int m_VehicleType;
 	float    m_DepartureTime;
+	int m_VOT;
 
 
 	bool operator<(const DTA_vhc_simple &other) const

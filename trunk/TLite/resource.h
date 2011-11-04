@@ -87,6 +87,7 @@
 #define IDC_EDIT1                       1030
 #define IDC_LIST_DEMAND_LOADING_MODE    1030
 #define IDC_EDIT_Number_of_Days         1031
+#define IDC_LIST_Routing_METHOD         1031
 #define IDC_EDIT_TimeInterval           1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
 #define IDC_EDIT_Number_of_Zones        1034
@@ -449,13 +450,14 @@
 #define ID_6_COMPAREIMPACTEDVEHICLESTATISTICS 33146
 #define ID_0_2                          33147
 #define ID_Import_ShapeFiles            33148
+#define ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA 33149
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        185
-#define _APS_NEXT_COMMAND_VALUE         33149
+#define _APS_NEXT_COMMAND_VALUE         33150
 #define _APS_NEXT_CONTROL_VALUE         1069
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

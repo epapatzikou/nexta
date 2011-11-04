@@ -57,6 +57,7 @@ BOOL CDlgGridCtrl::OnInitDialog()
 			bReadDemandSuccess = true;
 		}
 
+
 		if (m_pDoc != NULL)
 		{
 			m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
