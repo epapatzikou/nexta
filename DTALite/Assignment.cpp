@@ -144,7 +144,7 @@ void g_DynamicTrafficAssisnment()
 					{
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_DepartureTimetInterval].VehicleArray .size() > 0)
 						{
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 							
 							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);
@@ -170,7 +170,7 @@ void g_DynamicTrafficAssisnment()
 		NetworkLoadingOutput SimuOutput;
 		//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
 
-		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0);
+		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 
 		TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
@@ -259,7 +259,7 @@ void g_DynamicTrafficAssisnment()
 						cout << "---- Network Loading for Inner Loop Iteration " << inner_iteration <<"----" << endl;
 
 						NetworkLoadingOutput SimuOutput;										
-						SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0);
+						SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 
 						TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
@@ -720,7 +720,7 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 				BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 											//using historical short-term travel time
-				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_VehicleType );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_VehicleType,pVeh->m_VOT );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				int OriginCentriod = m_PhysicalNodeSize;  // as root node
 				int DestinationCentriod =  m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;  
@@ -845,7 +845,7 @@ void g_ComputeFinalGapValue()
 					}					
 					*/
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 					int AssignmentInterval = departure_time/g_DepartureTimetInterval;
 
@@ -1096,7 +1096,7 @@ void g_MultiDayTrafficAssisnment()
 					}
 
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 					for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
 					{
@@ -1200,7 +1200,7 @@ void g_MultiDayTrafficAssisnment()
 					// use travel time now, should use cost later
 				}
 
-				network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 				for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
@@ -1463,7 +1463,7 @@ void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH])
 		std::map<int, DTAVehicle*>::iterator iterVM;
 		int VehicleCount_withPhysicalPath = 0;
 
-		fprintf(st, "vehicle_id,  originput_zone_id, destination_zone_id, departure_time, arrival_time, complete_flag, trip_time, vehicle_type, occupancy, information_type, value_of_time, path_min_cost,distance_in_mile, number_of_nodes,  node id, node arrival time\n");
+		fprintf(st, "vehicle_id,  originput_zone_id, destination_zone_id, departure_time, arrival_time, complete_flag, trip_time, vehicle_type, information_type, value_of_time, dollar_cost,emissions,distance_in_mile, number_of_nodes,  node id, node arrival time\n");
 
 
 		for (vector<DTAVehicle*>::iterator vIte = g_VehicleVector.begin();vIte != g_VehicleVector.end();vIte++)
@@ -1481,10 +1481,10 @@ void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH])
 					TripTime = (*vIte)->m_ArrivalTime-(*vIte)->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,e%d, o%d,d%d,%4.2f,%4.2f,c%d,%4.2f,%d,%d,%d,%d,%4.2f,%4.2f,%d",
+				fprintf(st,"%d,%d,%d,d%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%d,%4.1f,%4.2f,%4.2f,%d",
 					(*vIte)->m_VehicleID ,(*vIte)->m_bETTFlag, (*vIte)->m_OriginZoneID , (*vIte)->m_DestinationZoneID,
 					(*vIte)->m_DepartureTime, (*vIte)->m_ArrivalTime , (*vIte)->m_bComplete, TripTime,
-					(*vIte)->m_VehicleType ,(*vIte)->m_Occupancy,(*vIte)->m_InformationClass, (*vIte)->GetVOT() , (*vIte)->GetMinCost(),(*vIte)->m_Distance, (*vIte)->m_NodeSize);
+					(*vIte)->m_VehicleType ,(*vIte)->m_InformationClass, (*vIte)->m_VOT , (*vIte)->m_TollDollarCost, (*vIte)->m_Emissions,(*vIte)->m_Distance, (*vIte)->m_NodeSize);
 
 				fprintf(st, "\n AVG %5.3f, STD %5.3f,",(*vIte)->m_AvgDayTravelTime , (*vIte)->m_DayTravelTimeSTD) ;
 
@@ -1553,7 +1553,7 @@ void g_OneShotNetworkLoading()
 	NetworkLoadingOutput SimuOutput;
 	//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
 	int simulation_mode = 1; // simulation from demand
-	SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, simulation_mode);
+	SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, simulation_mode,iteration);
 	g_OutputMOEData(iteration);
 
 }
@@ -1641,7 +1641,7 @@ void g_StaticTrafficAssisnment()
 					{
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_DepartureTimetInterval].VehicleArray.size() > 0)
 						{
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 							
 							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_DepartureTimetInterval,iteration);
@@ -1666,7 +1666,7 @@ void g_StaticTrafficAssisnment()
 		NetworkLoadingOutput SimuOutput;
 		//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
 
-		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0);
+		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 
 		TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
@@ -1787,7 +1787,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		NetworkLoadingOutput SimuOutput;
 		//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
 
-		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0);
+		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 
 		TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
@@ -1876,7 +1876,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		/// finding optimal path 
 
 		float TotalCost;
-		NodeSize = FindBestPathWithVOT(OriginCentriod, pVeh->m_DepartureTime ,DestinationCentriod, pVeh->m_VehicleType , pVeh->GetVOT(), PathNodeList, TotalCost );
+		NodeSize = FindBestPathWithVOT(OriginCentriod, pVeh->m_DepartureTime ,DestinationCentriod, pVeh->m_VehicleType , pVeh->m_VOT, PathNodeList, TotalCost );
 		// 
 		//OptimalTDLabelCorrecting_DoubleQueue(OriginCentriod, pVeh->m_DepartureTime , DestinationCentriod );
 

@@ -82,6 +82,8 @@ void DTANetworkForSP::BuildNetwork(int CurZoneID)  // build the network for shor
 			if(link_entering_time_interval >= m_AssignmentIntervalSize)
 				link_entering_time_interval = m_AssignmentIntervalSize-1;
 
+			if(g_LinkVector[li]->m_FromNodeNumber == 48 && g_LinkVector[li]->m_ToNodeNumber == 201)
+				TRACE("");
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
 			float AvgTravelTime = g_LinkVector[li]->GetTravelTime (t,g_DepartureTimetInterval);
 
@@ -214,6 +216,10 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 				link_entering_time_interval = m_AssignmentIntervalSize-1;
 
 			float AvgTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime ;
+
+			if(g_LinkVector[li]->m_FromNodeNumber == 48 && g_LinkVector[li]->m_ToNodeNumber == 202)
+				TRACE("");
+
 			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval] = AvgTravelTime;
 			m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval]=  AvgTravelTime;
 
@@ -229,7 +235,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type=0)   // Pointer to previous node (node)
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type=0, float VOT = -1)   // Pointer to previous node (node)
 // time -dependent label correcting algorithm with deque implementation
 {
 
@@ -302,9 +308,18 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 			{
 			DTALink* pLink= g_LinkVector[LinkID];
-			int PricingType = g_VehicleTypeMap[vehicle_type].pricing_type ;
 
-			 toll = pLink->GetTollRateInMin(NewTime,PricingType);
+			if(pLink->m_FromNodeNumber == 48 && pLink->m_ToNodeNumber == 202)
+				TRACE("");
+
+			int PricingType = g_VehicleTypeMap[vehicle_type].pricing_type ;
+			
+			if(VOT<0)  // no input value, fetch default VOT 
+			{
+			VOT = g_VehicleTypeMap[vehicle_type].average_VOT ;
+			}
+
+			 toll = pLink->GetTollRateInMinByVOT(NewTime,PricingType,VOT);
 			 if(toll>0)
 				 TRACE("");
 			}
@@ -529,6 +544,8 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception
 //			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime,AvgTravelTime);
 
 			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
+
+
 			
 			float travel_time  = AvgTravelTime + Normal_random_value;
 			if(travel_time < g_LinkVector[li]->m_FreeFlowTravelTime )
@@ -795,9 +812,6 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 
 //  road pricing module
 			float toll = 0;
-
-			if(g_TollingMethodFlag == 1)  // time-dependent toll
-			{
 				if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 				{
 				DTALink* pLink= g_LinkVector[LinkID];
@@ -806,9 +820,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 
 				 toll = pLink->GetTollRateInMinByVOT(NewTime,PricingType, VOT);
 				}
-			}
 
-			if(g_TollingMethodFlag == 2)  // VMT toll
+/*			if(g_TollingMethodFlag == 2)  // VMT toll
 			{
 				if(LinkID < g_LinkVector.size()) // physical link, which is always sort first.
 				{
@@ -816,7 +829,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 				 toll = pLink->m_Length * g_VMTTollingRate/max(1,VOT)*60;
 				}
 			}
-
+*/
 // end of road pricing module
 			
 
