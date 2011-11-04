@@ -219,7 +219,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 
 		int Origin = m_OriginBox.GetCurSel();
 		int Destination = m_DestinationBox.GetCurSel();
-		int VehicleType = m_VehicleTypeBox.GetCurSel();
+		int VehiclePricingType = m_VehicleTypeBox.GetCurSel();
 		int InformationClass = m_InformationClassBox.GetCurSel();
 
 		char str[MAX_STRING_LENGTH];
@@ -249,7 +249,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 			{
 				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
-					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
+					(m_pDoc->m_VehicleType2PricingTypeMap[pVehicle->m_VehicleType]  == VehiclePricingType ||VehiclePricingType ==0)&&
 					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
@@ -335,7 +335,7 @@ void CDlg_VehEmissions::FilterPaths()
 
 	}
 
-	int VehicleType = m_VehicleTypeBox.GetCurSel();
+	int VehiclePricingType = m_VehicleTypeBox.GetCurSel();
 	int InformationClass = m_InformationClassBox.GetCurSel();
 
 	char str[50];
@@ -365,7 +365,7 @@ void CDlg_VehEmissions::FilterPaths()
 		{
 			if( (pVehicle->m_OriginZoneID == Origin)&&
 				(pVehicle->m_DestinationZoneID  == Destination)&&
-				(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
+				(m_pDoc->m_VehicleType2PricingTypeMap[pVehicle->m_VehicleType]  == VehiclePricingType ||VehiclePricingType ==0)&&
 				(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 				(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 			{

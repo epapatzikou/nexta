@@ -30,6 +30,7 @@
 #include "atlimage.h"
 #include "math.h"
 #include "Network.h"
+#include ".\\cross-resolution-model\\SignalNode.h"
 #include <iostream>
 #include <fstream>
 
@@ -137,6 +138,9 @@ public:
 	void OffsetLink();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
+	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);  
+	
 	bool ReadScenarioData();   // for road network
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
@@ -225,6 +229,8 @@ public:
 	std::map<long, DTALink*> m_LinkNoMap;
 	std::map<long, DTAVehicle*> m_VehicleIDMap;
 	
+	std::map<int, int> m_VehicleType2PricingTypeMap;
+
 
 	std::map<int, int> m_NodeIDtoNameMap;
 	std::map<int, int> m_NodeNametoIDMap;
@@ -286,7 +292,7 @@ public:
 		pLink->m_NumLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
 		pLink->m_StaticSpeed = m_DefaultSpeedLimit;
-		pLink->m_Length= pLink->DefaultDistance();
+		pLink->m_Length= pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
@@ -425,6 +431,11 @@ public:
 		return NewNodeID;
 
 	}
+
+	std::vector<DTAMovement> m_MovementVector;
+
+	void ConstructMovementVector();
+
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
 	std::map<long, long> m_SensorIDtoLinkIDMap;
@@ -599,6 +610,7 @@ public:
 		afx_msg void OnMoeViewmoes();
 		afx_msg void OnImportdataImport();
 		afx_msg void OnMoeVehiclepathanalaysis();
+		afx_msg void OnFileConstructandexportsignaldata();
 };
 
 

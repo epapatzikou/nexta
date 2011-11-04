@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cross-resolution-model\CrossResolutionModel.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CSVParser.cpp"
 				>
 			</File>
@@ -686,6 +690,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cross-resolution-model\SignalNode.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
@@ -788,11 +796,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\res\mainfram.bmp"
+				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+				RelativePath=".\res\mainfram.bmp"
 				>
 			</File>
 			<File
@@ -804,11 +812,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+				RelativePath=".\res\smallico.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\smallico.bmp"
+				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 				>
 			</File>
 			<File
@@ -852,11 +860,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+				RelativePath=".\res\toolbar2.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar2.bmp"
+				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 				>
 			</File>
 			<File

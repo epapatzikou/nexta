@@ -31,6 +31,8 @@
 #include "TLite.h"
 #include "Network.h"
 #include "TLiteDoc.h"
+
+
 #include "TLiteView.h"
 #include "DlgMOE.h"
 #include "DlgPathMOE.h"
@@ -144,6 +146,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_MOE_VIEWMOES, &CTLiteDoc::OnMoeViewmoes)
 	ON_COMMAND(ID_IMPORTDATA_IMPORT, &CTLiteDoc::OnImportdataImport)
 	ON_COMMAND(ID_MOE_VEHICLEPATHANALAYSIS, &CTLiteDoc::OnMoeVehiclepathanalaysis)
+	ON_COMMAND(ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA, &CTLiteDoc::OnFileConstructandexportsignaldata)
 END_MESSAGE_MAP()
 
 
@@ -610,6 +613,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	if(ReadZoneCSVFile(directory+"input_zone.csv"))
 	{
 		ReadDemandCSVFile(directory+"input_demand.csv");
+		ReadVehicleTypeCSVFile(directory+"input_vehicle_type.csv");
+		ReadVOTCSVFile(directory+"input_VOT.csv");
 		LoadSimulationOutput();
 	}
 
@@ -1311,28 +1316,25 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
 
-		if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
-		{
-
 			CString SettingsFile;
 			SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
-
 			int long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
 
-			if(long_lat_coordinate_flag == 1)  // ask user's input under the default or conflict setting
-			{
-				if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
-				{
+/*		if(m_UnitMile<1/50)  // long/lat must be very large and greater than 1/62!
+		{
+
 					m_LongLatCoordinateFlag = true;
 					m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
-				}else
-				{
-					WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
+			WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
 
-				}
-			}
 		}
-		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
+		else
+		{
+			WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
+
+		}
+*/
+			m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
 
 		return true;
 	}else
@@ -1492,6 +1494,90 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 		return false;
 		//		g_ProgramStop();
 	}
+
+}
+
+bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
+{
+
+	long lineno = 1;
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+			while(parser.ReadRecord())
+			{
+				int vehicle_type, pricing_type;
+				float averageVOT;
+
+				if(parser.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+					break;
+				if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
+					break;
+
+				m_VehicleType2PricingTypeMap[vehicle_type] = pricing_type;
+
+				parser.GetValueByFieldName("average_VOT",averageVOT);
+
+				string vehicle_type_name, pricing_type_name;
+				parser.GetValueByFieldName("type_name",vehicle_type_name);
+				parser.GetValueByFieldName("pricing_type_name",pricing_type_name);
+
+
+				VehicleType element;
+				element.vehicle_type = vehicle_type;
+				element.pricing_type = pricing_type;
+				element.vehicle_type_name  = vehicle_type_name.c_str ();
+				element.pricing_type_name = pricing_type_name.c_str();
+				element.average_VOT = averageVOT;
+
+				m_VehicleTypeVector.push_back(element);
+
+				lineno++;
+			}
+
+			return true;
+	}else
+	{
+		//		AfxMessageBox("Error: File input_demand.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
+		return false;
+		//		g_ProgramStop();
+	}
+
+}
+
+bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
+{
+
+	long lineno = 1;
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+			while(parser.ReadRecord())
+			{
+
+			int pricing_type;
+			float percentage; float VOT;
+
+				if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
+					break;
+				if(parser.GetValueByFieldName("percentage",percentage) == false)
+					break;
+				if(parser.GetValueByFieldName("VOT",VOT) == false)
+					break;
+
+			VOTDistribution element;
+			element.pricing_type = pricing_type;
+			element.percentage  = percentage;
+			element.VOT = VOT;
+
+			m_VOTDistributionVector.push_back(element);
+
+				lineno++;
+			}
+	}
+				return true;
 
 }
 bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
@@ -2049,19 +2135,14 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 
 			pVehicle->m_VehicleType = (unsigned char)g_read_integer(st);
 			pVehicle->m_InformationClass = (unsigned char)g_read_integer(st);
-			pVehicle->m_Occupancy = (unsigned char)g_read_integer(st);
-
-			//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
-			float value_of_time = g_read_float(st);
+			pVehicle->m_VOT = g_read_float(st);
 			float path_min_cost = g_read_float(st);
+			pVehicle->m_Emissions = g_read_float(st);
 			float distance_in_mile = g_read_float(st);
 
 			pVehicle->m_Distance = distance_in_mile;
 			pVehicle->m_NodeSize	= g_read_integer(st);
 			pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
-
-			if(pVehicle->m_VehicleID == 15)
-				TRACE("");
 
 			pVehicle->m_NodeNumberSum = 0;
 			for(int i=0; i< pVehicle->m_NodeSize; i++)
@@ -2551,7 +2632,7 @@ void CTLiteDoc::LoadSimulationOutput()
 {
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
 
-	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 0, DTASettingsPath);	
+	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
 	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 1, DTASettingsPath);
 
 	if(TrafficFlowModelFlag==0)  //BPR function 
@@ -2919,6 +3000,7 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, SettingsFile);	
 	int simulation_horizon_in_min = (int)g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, SettingsFile);	
 	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
+	int agent_based_assignment = (int)g_GetPrivateProfileFloat("assignment", "agent_based_assignment", 0, SettingsFile);	
 
 	CDlgAssignmentSettings dlg;
 	dlg.m_ProjectDirectory = m_ProjectDirectory;
@@ -2927,6 +3009,7 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
 	dlg.m_DemandLoadingMode = DemandLoadingFlag;
 	dlg.m_SimulationHorizon = simulation_horizon_in_min;
+	dlg.m_agent_based_assignment_flag = agent_based_assignment;
 
 	if(dlg.DoModal() ==IDOK)
 	{
@@ -2951,6 +3034,8 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
 		WritePrivateProfileString("demand","load_vehicle_file_mode",lpbuffer,SettingsFile);
 
+		sprintf_s(lpbuffer,"%d",dlg.m_agent_based_assignment_flag);
+		WritePrivateProfileString("assignment","agent_based_assignment",lpbuffer,SettingsFile);
 
 		bOKFlag = true;
 	}
@@ -3694,9 +3779,9 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	m_UnitFeet = m_UnitMile/5280.0f;  
 
 
+	/*
 	if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
 	{
-
 
 		if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
 		{
@@ -3704,6 +3789,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
 		}
 	}
+	*/
 
 	OffsetLink();
 
@@ -4306,3 +4392,4 @@ void CTLiteDoc::SelectPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
 	UpdateAllViews(0);
 
 }
+
