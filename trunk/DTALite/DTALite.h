@@ -42,6 +42,8 @@ using namespace std;
 #define MAX_PATH_LINK_SIZE 1000
 #define MAX_MEASUREMENT_INTERVAL 15 
 #define MAX_VEHICLE_TYPE_SIZE 10
+#define MAX_PRICING_TYPE_SIZE 3
+
 #define MAX_SIZE_INFO_USERS 5 
 #define MAX_VOT_RANGE 101
 #define DEFAULT_VOT 12
@@ -51,7 +53,6 @@ enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 
-extern float g_VOT[MAX_VEHICLE_TYPE_SIZE];  //1: LOV, 2: HOV, 3: trucks, starting from 1!
 
 extern float g_VehicleTypeRatio[MAX_VEHICLE_TYPE_SIZE];  //1: LOV, 2: HOV, 3: trucks, starting from 1!
 
@@ -260,7 +261,6 @@ public:
 	float StartTime;
 	float EndTime;
 	float TollRate[MAX_VEHICLE_TYPE_SIZE];
-	float TollRateInMin[MAX_VEHICLE_TYPE_SIZE];
 };
 
 
@@ -333,31 +333,28 @@ public:
 
 	}
 
-	float GetTollRateInMin(float Time, int VehiclePricingType)  // from information signs
+	float GetTollRateInDollar(float Time, int PricingType)  // from information signs
 	{
 		for(int il = 0; il< m_TollSize; il++)
 		{
-			if(Time>=pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
+			if(Time >= pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
 			{
-				return pTollVector[il].TollRateInMin [VehiclePricingType];
+				return pTollVector[il].TollRate[PricingType];
 			}
 		}
 
 		return 0;
 
-
 	}
 
-		float GetTollRateInMinByVOT(float Time, int VehiclePricingType, float VOT)  // from information signs
+		float GetTollRateInMinByVOT(float Time, int PricingType, float VOT)  // from information signs
 	{
-		if(VOT < 0.01f)
-			return 100; // return infinity
 
 		for(int il = 0; il< m_TollSize; il++)
 		{
-			if(Time>=pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
+			if(Time >= pTollVector[il].StartTime && Time <= pTollVector[il].EndTime)
 			{
-				return pTollVector[il].TollRate[VehiclePricingType]/VOT*60; // VOT -> VOT in min
+				return pTollVector[il].TollRate[PricingType]/max(0.01,VOT)*60; // VOT -> VOT in min
 			}
 		}
 
@@ -672,7 +669,6 @@ public:
 
 	unsigned char m_VehicleType;     // 1: passenger,  2, HOV, 2, truck, 3: bus
 	unsigned char m_InformationClass;  // 1: historical, 2: pre-trip, 3: en-route
-	unsigned char m_Occupancy;  // 1: LOV, 2: HOV
 	unsigned short m_SimLinkSequenceNo; //  range 0, 65535
 
 	bool  m_bImpacted;
@@ -700,8 +696,9 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
-	unsigned char m_VOT;        // range 0 to 255
-	float m_TollDollar;
+	float m_VOT;        // range 0 to 255
+	float m_TollDollarCost;
+	float m_Emissions;
 	float m_MinCost;
 	float m_MeanTravelTime;
 	float m_TravelTimeVariance;
@@ -722,6 +719,9 @@ public:
 
 		m_NumberOfSamples =0;
 		m_VOT = DEFAULT_VOT;
+		m_TollDollarCost = 0;
+		m_Emissions = 0;
+
 		m_MinCost = 0;
 
 		m_aryVN = NULL;
@@ -729,9 +729,7 @@ public:
 		m_bImpacted = false; 
 		m_InformationClass = 1;
 		m_VehicleType = 1;
-		m_Occupancy = 0;
-
-
+		m_Emissions = 0;
 		m_ArrivalTime = 0;
 		//      m_FinalArrivalTime = 0;
 		m_bLoaded = false;
@@ -772,12 +770,6 @@ public:
 
 
 public:  // fetch additional data
-	float GetVOT()
-	{
-			return m_VOT;
-
-	};
-
 	void SetMinCost(float MinCost)
 	{
 			m_MinCost = MinCost;
@@ -801,6 +793,7 @@ public:
 	int m_InformationClass;
 	float    m_DepartureTime;
 	int m_TimeToRetrieveInfo;
+	float m_VOT;
 	long m_PathIndex;  // for OD estimation
 
 
@@ -816,7 +809,6 @@ class VehicleType
 public:
 	int vehicle_type;
 	int pricing_type;
-	int VOT_type;
 	float average_VOT;
 };
 
@@ -1111,7 +1103,7 @@ public:
 	void BuildPhysicalNetwork();
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int vehicle_type, float VOT);   // Pointer to previous node (node)
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
 	int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int vehicle_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost);
@@ -1206,7 +1198,7 @@ public:
 	float SwitchPercentage;
 };
 
-NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
+NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
 
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval

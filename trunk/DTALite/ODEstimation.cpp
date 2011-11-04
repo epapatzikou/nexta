@@ -803,7 +803,6 @@ void g_GenerateVehicleData_ODEstimation()
 
 
 			pVehicle->m_VehicleType	= kvhc->m_VehicleType;
-			pVehicle->m_Occupancy		= 1;
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
 
 			PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];

@@ -175,8 +175,6 @@ float g_VMSPerceptionErrorRatio;
 
 int g_information_updating_interval_of_en_route_info_travelers_in_min;
 
-float g_VOT[MAX_VEHICLE_TYPE_SIZE];
-float g_VehicleTypePercentage[MAX_VEHICLE_TYPE_SIZE];
 
 int g_LearningPercentage = 15;
 int g_TravelTimeDifferenceForSwitching = 5;  // min
@@ -304,7 +302,9 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	}
 
 	// starting with first node with origin nodes;
-	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1);  // CurNodeID is the node ID
+	pPhysicalNetwork->BuildPhysicalNetwork();
+
+	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT);  // CurNodeID is the node ID
 	// assign shortest path calculation results to label array
 
 
@@ -626,6 +626,89 @@ void ReadInputFiles()
 
 	//	cout << "Done with input_zone.csv"<< endl;
 
+	CCSVParser parser_vehicle_type;
+
+	if (parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
+	{
+	g_LogFile << "Reading file input_vehicle_type.csv, "<< endl;
+	cout << "Reading file input_vehicle_type.csv, "<< endl;
+
+		while(parser_vehicle_type.ReadRecord())
+		{
+			int vehicle_type;
+			int pricing_type;
+			float average_VOT;
+
+	
+			if(parser_vehicle_type.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+				break;
+
+			if(parser_vehicle_type.GetValueByFieldName("pricing_type",pricing_type) == false)
+				break;
+
+			if(parser_vehicle_type.GetValueByFieldName("average_VOT",average_VOT) == false)
+				break;
+
+			VehicleType element;
+			element.vehicle_type = vehicle_type;
+			element.pricing_type = pricing_type;
+			element.average_VOT = average_VOT;
+
+			g_VehicleTypeMap[vehicle_type] = element;
+
+		}
+
+	}else
+	{
+		cout << "Error: File input_vehicle_type.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		g_ProgramStop();
+	}
+
+CCSVParser parser_VOT;
+
+	float cumulative_percentage = 0;
+
+	if (parser_VOT.OpenCSVFile("input_VOT.csv"))
+	{
+	g_LogFile << "Reading file input_VOT.csv, "<< endl;
+	cout << "Reading file input_VOT.csv, "<< endl;
+
+		int i=0;
+		int old_pricing_type = 0;
+		while(parser_VOT.ReadRecord())
+		{
+			int pricing_type;
+	
+			if(parser_VOT.GetValueByFieldName("pricing_type",pricing_type) == false)
+				break;
+
+			if(pricing_type!= old_pricing_type)
+				cumulative_percentage= 0;   //switch vehicle type, reset cumulative percentage
+
+
+			int VOT;
+			if(parser_VOT.GetValueByFieldName("VOT",VOT) == false)
+				break;
+
+			float percentage;
+			if(parser_VOT.GetValueByFieldName("percentage",percentage) == false)
+				break;
+
+			old_pricing_type = pricing_type;
+			VOTDistribution element;
+			element.pricing_type = pricing_type;
+			element.percentage  = percentage;
+			element.VOT = VOT;
+			element.cumulative_percentage_LB = cumulative_percentage;
+			cumulative_percentage+=percentage;
+			element.cumulative_percentage_UB = cumulative_percentage;
+//			TRACE("Pricing type = %d, [%f,%f]\n",pricing_type,element.cumulative_percentage_LB,element.cumulative_percentage_UB);
+ 			m_VOTDistributionVector.push_back(element);
+
+		}
+
+	}
+
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.BuildPhysicalNetwork();
@@ -714,87 +797,9 @@ void ReadInputFiles()
 	}
 
 
-	CCSVParser parser_VOT;
-
-	float cumulative_percentage = 0;
-
-	if (parser_VOT.OpenCSVFile("input_VOT.csv"))
-	{
-	g_LogFile << "Reading file input_VOT.csv, "<< endl;
-	cout << "Reading file input_VOT.csv, "<< endl;
-
-		int i=0;
-		int old_pricing_type = 0;
-		while(parser_VOT.ReadRecord())
-		{
-			int pricing_type;
 	
-			if(parser_VOT.GetValueByFieldName("pricing_type",pricing_type) == false)
-				break;
-
-			if(pricing_type!= old_pricing_type)
-				cumulative_percentage= 0;   //switch vehicle type, reset cumulative percentage
-
-
-			int VOT;
-			if(parser_VOT.GetValueByFieldName("VOT",VOT) == false)
-				break;
-
-			float percentage;
-			if(parser_VOT.GetValueByFieldName("percentage",percentage) == false)
-				break;
-
-			old_pricing_type = pricing_type;
-			VOTDistribution element;
-			element.pricing_type = pricing_type;
-			element.percentage  = percentage;
-			element.VOT = VOT;
-			element.cumulative_percentage_LB = cumulative_percentage;
-			cumulative_percentage+=percentage;
-			element.cumulative_percentage_UB = cumulative_percentage;
-			m_VOTDistributionVector.push_back(element);
-
-		}
-
-	}
-
-	CCSVParser parser_vehicle_type;
-
-	if (parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
-	{
-	g_LogFile << "Reading file input_vehicle_type.csv, "<< endl;
-	cout << "Reading file input_vehicle_type.csv, "<< endl;
-
-		while(parser_vehicle_type.ReadRecord())
-		{
-			int vehicle_type;
-			int pricing_type;
-			float average_VOT;
-
-	
-			if(parser_vehicle_type.GetValueByFieldName("vehicle_type",vehicle_type) == false)
-				break;
-
-			if(parser_vehicle_type.GetValueByFieldName("pricing_type",pricing_type) == false)
-				break;
-
-			if(parser_vehicle_type.GetValueByFieldName("average_VOT",average_VOT) == false)
-				break;
-
-			VehicleType element;
-			element.vehicle_type = vehicle_type;
-			element.pricing_type = pricing_type;
-			element.average_VOT = average_VOT;
-
-			g_VehicleTypeMap[vehicle_type] = element;
-
-		}
-
-	}
-
 	fopen_s(&st,"Link_Based_Toll.xml","r");
 
-	bool link_based_flag = true;
 	if(st!=NULL)
 	{
 	cout << "Reading file Link_Based_Toll.xml..."<< endl;
@@ -802,7 +807,6 @@ void ReadInputFiles()
 		
 		float version_number = g_read_float(st);
 
-	link_based_flag = true;
 	int count = 0;
 
 	while(true)
@@ -824,16 +828,55 @@ void ReadInputFiles()
 				tc.StartTime = g_read_integer(st);
 				tc.EndTime = g_read_integer(st);
 
-				for(int vt = 1; vt<=MAX_VEHICLE_TYPE_SIZE; vt++)
+				for(int vt = 1; vt<=MAX_PRICING_TYPE_SIZE; vt++)
 				{
 					tc.TollRate [vt]= g_read_float(st); 
 
-					if(link_based_flag == false) // distance based
-					{
-						tc.TollRate [vt] = tc.TollRate [vt]*plink->m_Length;
-					}
+				}
 
-					tc.TollRateInMin [vt]= tc.TollRate [vt]/g_VOT[vt]*60;  // VOT -> VOT in min
+				count++;
+				plink->TollVector.push_back(tc);
+			}
+		}
+		fclose(st);
+	}
+
+	fopen_s(&st,"Distance_Based_Toll.xml","r");
+
+	if(st!=NULL)
+	{
+	cout << "Reading file Distance_Based_Toll.xml..."<< endl;
+	g_LogFile << "Reading file Distance_Based_Toll.xml, "<< endl;
+		
+		float version_number = g_read_float(st);
+
+	int count = 0;
+
+	while(true)
+	{
+			int usn  = g_read_integer(st);
+
+			if(usn == -1)
+				break;
+
+			int dsn =  g_read_integer(st);
+			int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
+
+			DTALink* plink = g_LinkVector[LinkID];
+
+			if(plink!=NULL)
+			{
+				Toll tc;  // toll collectio
+
+				tc.StartTime = g_read_integer(st);
+				tc.EndTime = g_read_integer(st);
+
+				for(int vt = 1; vt<=MAX_PRICING_TYPE_SIZE; vt++)
+				{
+					float per_mile_rate = g_read_float(st); 
+
+						tc.TollRate [vt] = per_mile_rate*plink->m_Length;
+
 				}
 
 				count++;
@@ -841,12 +884,19 @@ void ReadInputFiles()
 			}
 		}
 
-		std::set<DTALink*>::iterator iterLink;
 
+		g_scenario_short_description << "with " << count << "link pricing records;";
+
+		fclose(st);
+	}
+
+	// transfer toll set to dynamic toll vector (needed for multi-core computation)
+		std::set<DTALink*>::iterator iterLink;
+		int count = 0;
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-					if(g_LinkVector[li]->TollVector .size() >0)
-					{
+			if(g_LinkVector[li]->TollVector .size() >0)
+			{
 					g_LinkVector[li]->m_TollSize = g_LinkVector[li]->TollVector .size();
 					g_LinkVector[li]->pTollVector = new Toll[g_LinkVector[li]->m_TollSize ];
 
@@ -855,14 +905,11 @@ void ReadInputFiles()
 						g_LinkVector[li]->pTollVector[s] = g_LinkVector[li]->TollVector[s];
 					}
 					
-					}
+			count++;		
+			}
 
-		}
-		g_scenario_short_description << "with " << count << "link pricing records;";
-		g_LogFile << "link pricing records = "<< count << endl;
-
-		fclose(st);
-	}
+		}	
+		g_LogFile << "pricing records = "<< count << endl;
 
 	if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
 		{
@@ -956,21 +1003,14 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 
 
 		vhc.m_VehicleType = vehicle_type;
+
+		if(g_VehicleTypeMap.find(vehicle_type) == g_VehicleTypeMap.end())
+		{
+		cout << "Error: The demand file has vehicle_type = " << vehicle_type << ", which has not been defined in input_vehicle_type.csv."<< endl;
+		g_ProgramStop();
+		}
+		vhc.m_VOT = g_get_random_VOT(vehicle_type);
 		RandomPercentage= g_GetRandomRatio()*100.0f; 
-
-		if(vehicle_type == 1) //base line demand
-		{
-		if(RandomPercentage > g_VehicleTypePercentage[1] && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]))
-		{
-		vhc.m_VehicleType = 2;  //HOV
-		}
-
-		if(RandomPercentage > (g_VehicleTypePercentage[2]+g_VehicleTypePercentage[1]) && RandomPercentage <= (g_VehicleTypePercentage[1]+g_VehicleTypePercentage[2]+g_VehicleTypePercentage[3]))
-		{
-		vhc.m_VehicleType = 3;  // truck
-		}
-
-		}
 
 		int DepartureTimeInterval = int(vhc.m_DepartureTime / g_DepartureTimetInterval);
 
@@ -1018,10 +1058,17 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 			pVehicle->m_bLoaded  = false;
 			float TripTime  = g_read_float(st);  // to be determined by simulation
 			pVehicle->m_VehicleType = g_read_integer(st);
-			pVehicle->m_Occupancy = g_read_integer(st);
+
+			if(g_VehicleTypeMap.find(pVehicle->m_VehicleType) == g_VehicleTypeMap.end())
+			{
+			cout << "Error: The input_vehicle file has vehicle_type = " << pVehicle->m_VehicleType << "for vehicle_id = " << vehicle_id << ", which has not been defined in input_vehicle_type.csv."<< endl;
+			g_ProgramStop();
+			}
+
 			pVehicle->m_InformationClass = g_read_integer(st);
-			float VOT = g_read_float(st);
-			float MinCost = g_read_float(st);
+			pVehicle->m_VOT = g_read_float(st);
+			pVehicle->m_TollDollarCost = g_read_float(st);
+			pVehicle->m_Emissions  = g_read_float(st);
 			pVehicle->m_Distance = g_read_float(st);
 
 			pVehicle->m_NodeSize = g_read_integer(st);
@@ -1117,8 +1164,7 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			if(parser.GetValueByFieldName("to_zone_id",destination_zone) == false)
 				break;
 
-
-			if(parser.GetValueByFieldName("number_of_vehicles",vehicle_type) == false)
+			if(parser.GetValueByFieldName("vehicle_type",vehicle_type) == false)
 				break;
 
 			if(parser.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
@@ -1138,9 +1184,9 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 
 			g_ZoneVector[originput_zone].m_Demand += number_of_vehicles;
 
-			float Interval= float(ending_time_in_min - starting_time_in_min);
+			float Interval= ending_time_in_min - starting_time_in_min;
 
-			float LoadingRatio = 1;
+			float LoadingRatio = 1.0f;
 			if(starting_time_in_min < g_DemandLoadingHorizon && g_DemandLoadingHorizon < ending_time_in_min)  // simulation shorter than demand ending time.xed
 			{
 				ending_time_in_min = (float)(g_DemandLoadingHorizon);
@@ -1337,9 +1383,8 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
 
 			pVehicle->m_VehicleType	= kvhc->m_VehicleType;
-			pVehicle->m_Occupancy		= 1;
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
-
+			pVehicle->m_VOT = kvhc->m_VOT;
 
 			pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
 			g_VehicleVector.push_back(pVehicle);
@@ -1544,8 +1589,6 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 {
 
 	FILE* st = NULL;
-	FILE* st_AVI_TravelTime = NULL;
-	fopen_s(&st_AVI_TravelTime,"AVI_TravelTime","w");
 
 	if(bStartWithEmpty)
 		fopen_s(&st,fname,"w");
@@ -1557,16 +1600,38 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 		std::map<int, DTAVehicle*>::iterator iterVM;
 		int VehicleCount_withPhysicalPath = 0;
 
+		//calculate the toll cost and emission cost
+		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+		{
+
+			DTAVehicle* pVehicle = iterVM->second;
+			if(pVehicle->m_NodeSize >= 2)  // with physical path in the network
+			{
+				pVehicle->m_TollDollarCost = 0;
+
+				for(int j = 1; j< pVehicle->m_NodeSize-1; j++)
+				{
+						int link_entering_time = int(pVehicle->m_aryVN [j-1].AbsArrivalTimeOnDSN);
+						int LinkID = pVehicle->m_aryVN [j].LinkID;
+						DTALink* pLink= g_LinkVector[LinkID];
+						int PricingType = g_VehicleTypeMap[pVehicle->m_VehicleType ].pricing_type ;
+
+						pVehicle->m_TollDollarCost += pLink->GetTollRateInDollar(link_entering_time,PricingType);
+
+				}
+			}
+		}
+
+		// output statistics
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,vehicle_type,occupancy,information_type,value_of_time,path_min_cost,distance_in_mile,number_of_nodes,path_sequence\n");
+			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,vehicle_type,information_type,value_of_time,toll_cost_in_dollar,emissions,distance_in_mile,number_of_nodes,path_sequence\n");
 		}
 
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 		{
 
 			DTAVehicle* pVehicle = iterVM->second;
-
 			if(pVehicle->m_NodeSize >= 2)  // with physical path in the network
 			{
 
@@ -1583,10 +1648,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,%d,%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%d,%4.2f,%4.2f,%4.2f,%d,",
+				fprintf(st,"%d,%d,%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%4.2f,%4.2f,%4.2f,%4.2f,%d,",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
 					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
-					pVehicle->m_VehicleType ,pVehicle->m_Occupancy,pVehicle->m_InformationClass, pVehicle->GetVOT() , pVehicle->GetMinCost(),pVehicle->m_Distance, pVehicle->m_NodeSize);
+					pVehicle->m_VehicleType ,pVehicle->m_InformationClass, pVehicle->m_VOT , pVehicle->m_TollDollarCost, pVehicle->m_Emissions ,pVehicle->m_Distance, pVehicle->m_NodeSize);
 
 				fprintf(st, "\"");
 
@@ -1652,30 +1717,6 @@ void 	RT_ShortestPath_Thread(int id, int nthreads, int node_size, int link_size,
 
 }
 
-void g_RealTimeShortestPathCalculation(int Time)
-{
-	int nthreads = omp_get_max_threads ( );
-	int NodeSize = g_NodeVector.size();
-#pragma omp parallel for
-	for(int CurNodeID=0; CurNodeID < NodeSize; CurNodeID++)
-	{
-		DTANetworkForSP network_RT_MP(NodeSize, g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-		network_RT_MP.BuildPhysicalNetwork();
-
-		int	id = omp_get_thread_num ( );  // starting from 0
-
-		if(CurNodeID%100 == 0)
-		{
-			cout <<g_GetAppRunningTime() << "processor " << id << " is working on assignment at node  "<<  CurNodeID << endl;
-		}
-		network_RT_MP.TDLabelCorrecting_DoubleQueue(CurNodeID,Time,1);  // CurNodeID is the node ID
-		// assign shortest path calculation results to label array
-
-
-
-	}
-
-}
 int g_InitializeLogFiles()
 {
 	g_AppStartTime = CTime::GetCurrentTime();
@@ -1761,8 +1802,8 @@ void g_ReadDTALiteSettings()
 		//
 
 		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 0, IniFilePath_DTA);	
-		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, IniFilePath_DTA);	
-		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
+//		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, IniFilePath_DTA);	
+//		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
 
 		g_ODEstimationFlag = g_GetPrivateProfileInt("estimation", "od_demand_estimation", 0, IniFilePath_DTA);	
 		g_ODEstimationMeasurementType = g_GetPrivateProfileInt("estimation", "measurement_type", 1, IniFilePath_DTA);	
@@ -1789,9 +1830,6 @@ void g_ReadDTALiteSettings()
 		else  //DTA parameters
 		{
 		g_DemandLoadingHorizon = g_GetPrivateProfileInt("demand", "demand_loading_horizon_in_min", 60, IniFilePath_DTA);	
-		g_VehicleTypePercentage[2] = g_GetPrivateProfileInt("demand", "percentage_HOV_from_baseline_demand", 0, IniFilePath_DTA);	
-		g_VehicleTypePercentage[3] = g_GetPrivateProfileInt("demand", "percentage_Truck_from_baseline_demand", 0, IniFilePath_DTA);	
-		g_VehicleTypePercentage[1] = 100.0- g_VehicleTypePercentage[2] - g_VehicleTypePercentage[3];
 
 		g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
 
@@ -1801,7 +1839,7 @@ void g_ReadDTALiteSettings()
 
 		g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, IniFilePath_DTA);	
 		g_BackwardWaveSpeed_in_mph = g_GetPrivateProfileFloat("simulation", "backward_wave_speed_in_vehphpl", 12, IniFilePath_DTA);
-		g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minput_link_in_flow_ratio", 0.02f, IniFilePath_DTA);
+		g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, IniFilePath_DTA);
 		g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, IniFilePath_DTA);
 		g_CycleLength_in_seconds = g_GetPrivateProfileFloat("simulation", "cycle_length_in_seconds", 120, IniFilePath_DTA);
 		g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, IniFilePath_DTA);
@@ -1810,7 +1848,7 @@ void g_ReadDTALiteSettings()
 		g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
 		g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 0, IniFilePath_DTA);
 		g_DepartureTimetInterval = g_GetPrivateProfileInt("assignment", "departure_time_interval_in_min", 60, IniFilePath_DTA);	
-		g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 1, IniFilePath_DTA);	
+		g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, IniFilePath_DTA);	
 		g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, IniFilePath_DTA);	
 
 		g_UEAssignmentMethod = g_GetPrivateProfileInt("assignment", "UE_assignment_method", 0, IniFilePath_DTA); // default is MSA
@@ -1857,7 +1895,7 @@ void g_ReadDTALiteSettings()
 
 		if(g_VehicleLoadingMode == 1)
 		{
-			g_LogFile << "Load vehicle trajectory file = " << endl;
+			g_LogFile << "Load vehicle from trajectory file input_vehicle.csv" << endl;
 		}
 
 		g_LogFile << "Traffic Flow Model =  ";

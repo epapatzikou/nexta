@@ -740,7 +740,7 @@ void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_
 
 					float COV_perception_erorr = g_UserClassPerceptionErrorRatio[g_VehicleVector[v]->m_InformationClass];
 					pNetwork[cid]->BuildTravelerInfoNetwork(time, COV_perception_erorr);
-					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_VehicleType );
+					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_VehicleType,g_VehicleVector[v]->m_VOT  );
 
 					// find shortest path
 					int SubPathNodeSize = 0;
@@ -803,7 +803,7 @@ void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_
 
 }
 
-NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int SimulationMode = 0)  // default spatial queue // SimulationMode= default 0: UE;  1: simulation from demand; 2: simulation from vehicle file
+NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int SimulationMode = 0, int Iteration = 1)  // default spatial queue // SimulationMode= default 0: UE;  1: simulation from demand; 2: simulation from vehicle file
 {
 	NetworkLoadingOutput output;
 	std::set<DTANode*>::iterator iterNode;
@@ -1030,8 +1030,9 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	ShortSimulationLogFile.open ("summary.csv", ios::out);
 	if(ShortSimulationLogFile.is_open())
 	{
-	ShortSimulationLogFile <<"short scenario summary,# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
-	ShortSimulationLogFile << g_scenario_short_description << "," << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
+	ShortSimulationLogFile <<"short scenario summary,# of Vehicles,# of Vehicles not completing trips,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
+	ShortSimulationLogFile << g_scenario_short_description << "," 
+		<< g_VehicleVector.size() << "," << output.NumberofVehiclesGenerated - output.NumberofVehiclesCompleteTrips << ","<< output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
 	ShortSimulationLogFile.close();
 	}else
 	{
@@ -1187,7 +1188,7 @@ void g_VehicleRerouting(int v, float CurrentTime, MessageSign is) // v for vehic
 
 	float COV_perception_erorr = g_VMSPerceptionErrorRatio;
 	network.BuildTravelerInfoNetwork(CurrentTime, COV_perception_erorr);
-	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_VehicleType );
+	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_VehicleType,g_VehicleVector[v]->m_VOT );
 
 	// find shortest path
 	int SubPathNodeSize = 0;
