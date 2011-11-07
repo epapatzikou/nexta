@@ -2170,6 +2170,42 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 	}
 }
 
+void CTLiteDoc::ReadVehicleEmissionFile(LPCTSTR lpszFileName)
+{
+
+	CCSVParser parser;
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+
+		while(parser.ReadRecord())
+		{
+			int vehicle_id;
+
+			if(parser.GetValueByFieldName("vehicle_id",vehicle_id) == false)
+				break;
+
+			DTAVehicle* pVehicle = m_VehicleIDMap[vehicle_id];
+
+			if(pVehicle!=NULL)
+			{
+			if(parser.GetValueByFieldName("TotalEnergy_(J)",pVehicle->m_EmissionData .Energy) == false)
+				break;
+
+			if(parser.GetValueByFieldName("CO2_(g)",pVehicle->m_EmissionData .CO2) == false)
+				break;
+			if(parser.GetValueByFieldName("NOX_(g)",pVehicle->m_EmissionData .NOX) == false)
+				break;
+			if(parser.GetValueByFieldName("CO_(g)",pVehicle->m_EmissionData .CO ) == false)
+				break;
+			if(parser.GetValueByFieldName("HC_(g)",pVehicle->m_EmissionData .HC) == false)
+				break;
+			}
+		}
+
+		m_EmissionDataFlag = true;
+	}
+}
+
 
 int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio)
 {
@@ -2632,6 +2668,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	}
 
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
+	ReadVehicleEmissionFile(m_ProjectDirectory+"output_vehicle_emission_MOE_summary.csv");
 }
 
 
@@ -2996,6 +3033,7 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 	dlg.m_SimulationHorizon = simulation_horizon_in_min;
 	dlg.m_agent_based_assignment_flag = agent_based_assignment;
 
+	dlg.m_EmissionDataOutput = (int)g_GetPrivateProfileFloat("emission", "emission_data_output", 0, SettingsFile);	
 	if(dlg.DoModal() ==IDOK)
 	{
 		char lpbuffer[64];
@@ -3021,6 +3059,9 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 
 		sprintf_s(lpbuffer,"%d",dlg.m_agent_based_assignment_flag);
 		WritePrivateProfileString("assignment","agent_based_assignment",lpbuffer,SettingsFile);
+
+		sprintf_s(lpbuffer,"%d",dlg.m_EmissionDataOutput);
+		WritePrivateProfileString("emission","emission_data_output",lpbuffer,SettingsFile);
 
 		bOKFlag = true;
 	}

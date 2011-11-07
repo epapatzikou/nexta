@@ -37,4 +37,5 @@ public:
 	CListBox m_RoutingMethod;
 	afx_msg void OnLbnSelchangeListDemandLoadingMode();
 	afx_msg void OnLbnSelchangeListRoutingMethod();
+	BOOL m_EmissionDataOutput;
 };

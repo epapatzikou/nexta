@@ -15,6 +15,7 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_NumberOfIterations(10)
 	, m_DemandGlobalMultiplier(1.0f)
 	, m_SimulationHorizon(0)
+	, m_EmissionDataOutput(FALSE)
 {
 
 }
@@ -35,6 +36,7 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_Simulation_Horizon, m_SimulationHorizon);
 	DDV_MinMaxInt(pDX, m_SimulationHorizon, 0, 10000);
 	DDX_Control(pDX, IDC_LIST_Routing_METHOD, m_RoutingMethod);
+	DDX_Check(pDX, IDC_CHECK_EMISSION_DATA, m_EmissionDataOutput);
 }
 
 
@@ -92,7 +94,9 @@ void CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod()
 
 void CDlgAssignmentSettings::OnBnClickedOk()
 {
- OnOK();
+	UpdateData(true);
+
+	OnOK();
 }
 
 void CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile()

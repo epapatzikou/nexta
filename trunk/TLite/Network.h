@@ -117,6 +117,25 @@ typedef struct{
 	float traveltime;
 }struc_traffic_state;
 
+class CVehicleEmission 
+{
+public:
+			float Energy;
+			float CO2;
+			float NOX;
+			float CO;
+			float HC;
+	CVehicleEmission()
+	{
+			Energy = 0;
+			CO2 = 0;
+			NOX = 0;
+			CO = 0;
+			HC = 0;
+	
+	}
+};
+
 extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
 extern int g_P2P_Angle(GDPoint p1, GDPoint p2);
 
@@ -1060,6 +1079,8 @@ public:
 	bool m_bComplete;
 
 	DTAVehicleAdditionalData* pVehData;
+
+	CVehicleEmission m_EmissionData;
 
 	// multi-day equilibrium
 	bool m_bETTFlag;

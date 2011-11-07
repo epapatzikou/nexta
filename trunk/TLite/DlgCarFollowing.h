@@ -41,7 +41,6 @@ struct VehicleData
 	float EndTime; // in time interval
 	float WaveSpeed;
 	float FreeflowSpeed;   // m/s
-
 };
 
 

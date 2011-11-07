@@ -138,7 +138,8 @@
 #define IDC_COMBO_Min_TravelTimeIndex   1067
 #define IDC_COMBO_ImpactLink            1068
 #define IDC_SUMMARY_INFO                1069
-#define IDC_EDIT2                       1070
+#define IDC_CHECK1                      1071
+#define IDC_CHECK_EMISSION_DATA         1071
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -460,7 +461,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        185
 #define _APS_NEXT_COMMAND_VALUE         33150
-#define _APS_NEXT_CONTROL_VALUE         1071
+#define _APS_NEXT_CONTROL_VALUE         1072
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
