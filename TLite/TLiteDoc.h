@@ -42,6 +42,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_EmissionDataFlag = false;
 		m_bLinkShifted = true;
 		m_SimulationStartTime_in_min = 0;  // 6 AM
 
@@ -203,6 +204,8 @@ public:
 
 	std::list<DTAVehicle*>	m_VehicleSet;
 	
+	bool m_EmissionDataFlag;
+	
 	int m_AdjLinkSize;
 
 	DTANetworkForSP* m_pNetwork;
@@ -216,6 +219,8 @@ public:
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
+	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
+
 	
 	void ReadBackgroundImageFile(LPCTSTR lpszFileName);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];

@@ -2,6 +2,7 @@
 #include "afxwin.h"
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
+#include "network.h"
 
 // CDlg_VehEmissions dialog
 
@@ -33,6 +34,7 @@ public:
 	float TotalDistance;
 	float TotalCost;
 	float TotalEmissions;
+	CVehicleEmission emissiondata;
 
 };
 
@@ -59,6 +61,8 @@ public:
 	float TotalDistance;
 	float TotalCost;
 	float TotalEmissions;
+	CVehicleEmission emissiondata;
+
 
 };
 
@@ -93,7 +97,6 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	int GetOpMode(float vsp, float s_mph);
 	CListBox m_VehicleList;
 	afx_msg void OnLbnSelchangeListLink();
 	CListBox m_LinkList;
