@@ -82,6 +82,8 @@ void g_ProgramStop();
 float g_RNNOF();
 float g_get_random_VOT(int vehicle_type);
 
+
+
 class VOTDistribution
 {
 public:
@@ -625,7 +627,7 @@ float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a 
 SVehicleLink()
 {
 	LinkID = MAX_LINK_NO;
-	AbsArrivalTimeOnDSN = 0;
+	AbsArrivalTimeOnDSN = 99999;
 	//		LinkWaitingTime = 0;
 
 }
@@ -652,6 +654,12 @@ public:
 
 };
 
+struct VehicleTimestampSpeed
+{
+ int timestamp_in_second;
+ float speed;
+
+};
 
 class DTAVehicle
 {
@@ -660,6 +668,11 @@ public:
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_aryVN; // link list arrary of a vehicle path
+
+	std::vector<VehicleTimestampSpeed> m_SpeedVector;
+
+	std::map<int, int> m_OperatingModeCount;
+
 
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
@@ -1292,8 +1305,10 @@ void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEm
 void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputTimeDependentODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-
+void OutputEmissionData();
 void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
+void ComputeVSPForSingleLink(int LinkNo);
 
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 

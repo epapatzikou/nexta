@@ -211,6 +211,8 @@ ofstream g_EstimationLogFile;
 ofstream g_WarningFile;
 
 int g_TrafficFlowModelFlag = 0;
+int g_EmissionDataOutputFlag = 0;
+
 
 int g_TollingMethodFlag = 0;
 float g_VMTTollingRate = 0;
@@ -1585,6 +1587,8 @@ void g_OutputVOCMOEData(char fname[_MAX_PATH])
 	}
 }
 
+
+
 void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStartWithEmpty)
 {
 
@@ -1802,6 +1806,7 @@ void g_ReadDTALiteSettings()
 		//
 
 		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 0, IniFilePath_DTA);	
+		g_EmissionDataOutputFlag = g_GetPrivateProfileInt("emission", "emission_data_output", 0, IniFilePath_DTA);	
 //		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, IniFilePath_DTA);	
 //		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
 

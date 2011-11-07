@@ -70,6 +70,7 @@ extern int g_StochasticCapacityMode ;
 extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_TrafficFlowModelFlag;
+extern int g_EmissionDataOutputFlag;
 extern int g_TollingMethodFlag;
 extern float g_VMTTollingRate;
 
