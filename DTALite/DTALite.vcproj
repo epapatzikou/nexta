@@ -326,6 +326,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EmissionsOutput.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Geometry.cpp"
 				>
 			</File>
