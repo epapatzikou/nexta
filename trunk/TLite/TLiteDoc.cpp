@@ -215,12 +215,9 @@ void CTLiteDoc::Dump(CDumpContext& dc) const
 
 void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 {
-	FILE* st = NULL;
-
-	// reopen
-	fopen_s(&st,lpszFileName,"r");
-
-	if(st!=NULL)
+	CCSVParser parser;
+	int i= 0;
+	if (parser.OpenCSVFile(lpszFileName))
 	{
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -228,38 +225,45 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
 		}
 
-		int i = 0;
-
-		while(!feof(st))
+		while(parser.ReadRecord())
 		{
-			// from_node_id, to_node_id, timestamp_in_min, travel_time_in_min, delay_in_min, link_volume_in_veh, link_volume_in_vehphpl,
-			//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
-			int from_node_number = g_read_integer(st);
-			if(from_node_number < 0)
-				break;
-			int to_node_number =  g_read_integer(st);
-			int t = g_read_float(st) + m_SimulationStartTime_in_min;
 
+			int from_node_number;
+			if(parser.GetValueByFieldName("from_node_id",from_node_number) == false)
+				break;
+			int to_node_number ;
+
+			if(parser.GetValueByFieldName("to_node_id",to_node_number) == false)
+				break;
+
+			int t;
+			
+			if(parser.GetValueByFieldName("timestamp_in_min",t) == false)
+				break;
 
 			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number );
 
-			ASSERT(t<=g_Simulation_Time_Horizon);
 			if(pLink!=NULL)
 			{
-				pLink->m_LinkMOEAry[t].ObsTravelTimeIndex = g_read_float(st);
-				float delay_in_min = g_read_float(st);
-				pLink->m_LinkMOEAry[t].ObsFlow  = g_read_float(st);
-				float volume_for_alllanes = g_read_float(st);
-				pLink->m_LinkMOEAry[t].ObsDensity = g_read_float(st);
-				pLink->m_LinkMOEAry[t].ObsSpeed = g_read_float(st);
-				pLink->m_LinkMOEAry[t].ObsQueuePerc = g_read_float(st);
-				pLink->m_LinkMOEAry[t].ObsCumulativeFlow =  g_read_integer(st);
-				float cumulative_departure_count = g_read_integer(st);
+				if(t < g_Simulation_Time_Horizon)
+				{
+				//travel_time_in_min, delay_in_min, link_volume_in_veh, link_volume_in_vehphpl,
+			//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
+				parser.GetValueByFieldName("travel_time_in_min",pLink->m_LinkMOEAry[t].ObsTravelTimeIndex);
+//				parser.GetValueByFieldName("delay_in_min",pLink->m_LinkMOEAry[t].ObsTravelTimeIndex);
+				//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].ObsFlow);
+				parser.GetValueByFieldName("link_volume_in_veh_per_hour_for_all_lanes",pLink->m_LinkMOEAry[t].ObsFlow);
+				parser.GetValueByFieldName("density_in_veh_per_mile_per_lane",pLink->m_LinkMOEAry[t].ObsDensity );
+				parser.GetValueByFieldName("speed_in_mph",pLink->m_LinkMOEAry[t].ObsSpeed);
+				parser.GetValueByFieldName("exit_queue_length",pLink->m_LinkMOEAry[t].ObsQueuePerc );
+				parser.GetValueByFieldName("cumulative_arrival_count",pLink->m_LinkMOEAry[t].ObsCumulativeFlow);
+//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].ObsTravelTimeIndex);
+				}
 				i++;
 			}else
 			{
 				CString msg;
-				msg.Format ("Please check if line %d at file %s has a consistent link definition with input_link.csv.", i+2, lpszFileName);  // +2 for the first field name line
+				msg.Format ("Please check if line %d at file %s has a consistent link definition with input_link.csv.", i+1, lpszFileName);  // +2 for the first field name line
 				AfxMessageBox(msg);
 				break;
 			}
@@ -269,7 +273,6 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 		g_Simulation_Time_Stamp = 0; // reset starting time
 		g_SimulationStartTime_in_min = 0;
 
-		fclose(st);
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
 	}
 }
@@ -302,20 +305,19 @@ void CTLiteDoc::ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName)
 			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number );
 
 			if(pLink!=NULL)
-
-				if(pLink!=NULL)
-				{
-					float Capacity =   g_read_float(st);
-					pLink->m_StaticLaneVolume = g_read_float(st);
-					pLink->m_StaticVOC   = g_read_float(st);
-					float FreeflowTravelTime   = g_read_float(st);
-					pLink->m_StaticTravelTime = g_read_float(st);
-					pLink->m_StaticSpeed  = g_read_float(st);
-					i++;
-				}else
-				{
-					// error message
-				}
+			{
+				float Capacity =   g_read_float(st);
+				pLink->m_StaticLaneVolume = g_read_float(st);
+				pLink->m_StaticVOC   = g_read_float(st);
+				float FreeflowTravelTime   = g_read_float(st);
+				pLink->m_StaticTravelTime = g_read_float(st);
+				pLink->m_StaticSpeed  = g_read_float(st);
+				i++;
+			}else
+			{
+				return; 			
+				fclose(st);
+			}
 
 		}
 
@@ -627,6 +629,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 		BuildHistoricalDatabase();
 	}
 
+	ReadInputEmissionRateFile(directory+"input_vehicle_emission_rate.csv");
+
 	//ReadObservationLinkVolumeData(directory+"input_static_obs_link_volume.csv");
 
 	ReadBackgroundImageFile(directory+"Background.bmp");
@@ -869,9 +873,8 @@ void CTLiteDoc::OnToolGeneratesenesormappingtable()
 			fclose(st);
 		}
 
-		// 	write sensor.csv
+		// 	write sensor_location.csv
 		// 	From Node,To Node,Type,OrgSensorID
-
 
 		fopen_s(&st,directory+"input_sensor_location.csv","w");
 		if(st!=NULL)
@@ -892,6 +895,27 @@ void CTLiteDoc::OnToolGeneratesenesormappingtable()
 		}
 	}
 
+		// 	write input_vehicle_emission_rate.csv
+		fopen_s(&st,directory+"input_vehicle_emission_rate.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st,"vehicle_type,opModeID,meanBaseRate_TotalEnergy_(J/hr),meanBaseRate_CO2_(g/hr),meanBaseRate_NOX_(g/hr),meanBaseRate_CO_(g/hr),meanBaseRate_HC_(g/hr)\n");
+			for (int vehicle_type  = 0; vehicle_type < MAX_VEHICLE_TYPE_SIZE; vehicle_type++)
+				for(int opModeID = 0;  opModeID < _MAXIMUM_OPERATING_MODE_SIZE; opModeID++)
+			{
+				if(EmissionRateData[vehicle_type][opModeID].meanBaseRate_TotalEnergy>0)
+				{
+
+					CEmissionRate element = EmissionRateData[vehicle_type][opModeID];
+
+					fprintf(st,"%d,%d,%f,%f,%f,%f,%f\n", vehicle_type, opModeID, element.meanBaseRate_TotalEnergy, element.meanBaseRate_CO2, element.meanBaseRate_NOX, element.meanBaseRate_CO, element.meanBaseRate_HC);
+				}
+			}
+
+			fclose(st);
+
+		}
+	
 }
 
 
@@ -1316,25 +1340,25 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
 
-			CString SettingsFile;
-			SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
-			int long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
+		CString SettingsFile;
+		SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
+		int long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
 
-/*		if(m_UnitMile<1/50)  // long/lat must be very large and greater than 1/62!
+		/*		if(m_UnitMile<1/50)  // long/lat must be very large and greater than 1/62!
 		{
 
-					m_LongLatCoordinateFlag = true;
-					m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
-			WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
+		m_LongLatCoordinateFlag = true;
+		m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
+		WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
 
 		}
 		else
 		{
-			WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
+		WritePrivateProfileString("GUI","long_lat_coordinate_flag","0",SettingsFile);
 
 		}
-*/
-			m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
+		*/
+		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
 
 		return true;
 	}else
@@ -1500,38 +1524,38 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 
 	if (parser.OpenCSVFile(lpszFileName))
 	{
-			while(parser.ReadRecord())
-			{
-				int vehicle_type, pricing_type;
-				float averageVOT;
+		while(parser.ReadRecord())
+		{
+			int vehicle_type, pricing_type;
+			float averageVOT;
 
-				if(parser.GetValueByFieldName("vehicle_type",vehicle_type) == false)
-					break;
-				if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
-					break;
+			if(parser.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+				break;
+			if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
+				break;
 
-				m_VehicleType2PricingTypeMap[vehicle_type] = pricing_type;
+			m_VehicleType2PricingTypeMap[vehicle_type] = pricing_type;
 
-				parser.GetValueByFieldName("average_VOT",averageVOT);
+			parser.GetValueByFieldName("average_VOT",averageVOT);
 
-				string vehicle_type_name, pricing_type_name;
-				parser.GetValueByFieldName("type_name",vehicle_type_name);
-				parser.GetValueByFieldName("pricing_type_name",pricing_type_name);
+			string vehicle_type_name, pricing_type_name;
+			parser.GetValueByFieldName("type_name",vehicle_type_name);
+			parser.GetValueByFieldName("pricing_type_name",pricing_type_name);
 
 
-				VehicleType element;
-				element.vehicle_type = vehicle_type;
-				element.pricing_type = pricing_type;
-				element.vehicle_type_name  = vehicle_type_name.c_str ();
-				element.pricing_type_name = pricing_type_name.c_str();
-				element.average_VOT = averageVOT;
+			VehicleType element;
+			element.vehicle_type = vehicle_type;
+			element.pricing_type = pricing_type;
+			element.vehicle_type_name  = vehicle_type_name.c_str ();
+			element.pricing_type_name = pricing_type_name.c_str();
+			element.average_VOT = averageVOT;
 
-				m_VehicleTypeVector.push_back(element);
+			m_VehicleTypeVector.push_back(element);
 
-				lineno++;
-			}
+			lineno++;
+		}
 
-			return true;
+		return true;
 	}else
 	{
 		//		AfxMessageBox("Error: File input_demand.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
@@ -1549,18 +1573,18 @@ bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 
 	if (parser.OpenCSVFile(lpszFileName))
 	{
-			while(parser.ReadRecord())
-			{
+		while(parser.ReadRecord())
+		{
 
 			int pricing_type;
 			float percentage; float VOT;
 
-				if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
-					break;
-				if(parser.GetValueByFieldName("percentage",percentage) == false)
-					break;
-				if(parser.GetValueByFieldName("VOT",VOT) == false)
-					break;
+			if(parser.GetValueByFieldName("pricing_type",pricing_type) == false)
+				break;
+			if(parser.GetValueByFieldName("percentage",percentage) == false)
+				break;
+			if(parser.GetValueByFieldName("VOT",VOT) == false)
+				break;
 
 			VOTDistribution element;
 			element.pricing_type = pricing_type;
@@ -1569,10 +1593,10 @@ bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 
 			m_VOTDistributionVector.push_back(element);
 
-				lineno++;
-			}
+			lineno++;
+		}
 	}
-				return true;
+	return true;
 
 }
 bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
@@ -2002,6 +2026,23 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		fclose(st);
 
 	}
+	fopen_s(&st,"input_sensor_location.csv","w");
+	if(st!=NULL)
+	{
+		fprintf(st,"from_node_id,to_node_id,sensor_type,sensor_id,relative_location_ratio\n");
+
+			std::vector<DTA_sensor>::iterator iSensor;
+			for (iSensor = m_SensorVector.begin(); iSensor != m_SensorVector.end(); iSensor++)
+			{
+				if((*iSensor).LinkID>=0)
+				{
+					fprintf(st,"%d,%d,%d,%d,%d\n", (*iSensor).FromNodeNumber , (*iSensor).ToNodeNumber ,
+						(*iSensor).SensorType,(*iSensor).OrgSensorID,(*iSensor).RelativeLocationRatio );
+				}
+			}
+
+	}
+	fclose(st);
 
 	if(m_BackgroundBitmapImportedButnotSaved)
 	{
@@ -2188,17 +2229,17 @@ void CTLiteDoc::ReadVehicleEmissionFile(LPCTSTR lpszFileName)
 
 			if(pVehicle!=NULL)
 			{
-			if(parser.GetValueByFieldName("TotalEnergy_(J)",pVehicle->m_EmissionData .Energy) == false)
-				break;
+				if(parser.GetValueByFieldName("TotalEnergy_(J)",pVehicle->m_EmissionData .Energy) == false)
+					break;
 
-			if(parser.GetValueByFieldName("CO2_(g)",pVehicle->m_EmissionData .CO2) == false)
-				break;
-			if(parser.GetValueByFieldName("NOX_(g)",pVehicle->m_EmissionData .NOX) == false)
-				break;
-			if(parser.GetValueByFieldName("CO_(g)",pVehicle->m_EmissionData .CO ) == false)
-				break;
-			if(parser.GetValueByFieldName("HC_(g)",pVehicle->m_EmissionData .HC) == false)
-				break;
+				if(parser.GetValueByFieldName("CO2_(g)",pVehicle->m_EmissionData .CO2) == false)
+					break;
+				if(parser.GetValueByFieldName("NOX_(g)",pVehicle->m_EmissionData .NOX) == false)
+					break;
+				if(parser.GetValueByFieldName("CO_(g)",pVehicle->m_EmissionData .CO ) == false)
+					break;
+				if(parser.GetValueByFieldName("HC_(g)",pVehicle->m_EmissionData .HC) == false)
+					break;
 			}
 		}
 
@@ -2654,7 +2695,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
 
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
-	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 1, DTASettingsPath);
+	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, DTASettingsPath);
 
 	if(TrafficFlowModelFlag==0)  //BPR function 
 	{
@@ -3375,22 +3416,7 @@ void CTLiteDoc::OnResearchtoolsExporttodtalitesensordataformat()
 
 	}
 
-	fopen_s(&st,"input_sensor_location.csv","w");
-	if(st!=NULL)
-	{
-		std::list<DTALink*>::iterator iLink;
 
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			if((*iLink)->m_bSensorData )
-			{
-				//From Node,To Node,Type,OrgSensorID
-				fprintf(st,"%d,%d,0,%d\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,  (*iLink)->m_LinkNo+1);
-			}
-
-		}
-	}
-	fclose(st);
 }
 void CTLiteDoc::OnScenarioConfiguration()
 {
@@ -3809,11 +3835,11 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
 	{
 
-		if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
-		{
-			m_LongLatCoordinateFlag = true;
-			m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
-		}
+	if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
+	{
+	m_LongLatCoordinateFlag = true;
+	m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
+	}
 	}
 	*/
 
@@ -4157,17 +4183,17 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 					if(m_VehicleTypeVector[t].percentage > 0.0001)
 					{
 
-					DTADemand element_type;
-					element_type = element_old;
-					element_type.vehicle_type  = m_VehicleTypeVector[t].vehicle_type ;
-					element_type.number_of_vehicles  = element_old.number_of_vehicles*m_VehicleTypeVector[t].percentage   ;
-					m_DemandVector.push_back (element_type);
+						DTADemand element_type;
+						element_type = element_old;
+						element_type.vehicle_type  = m_VehicleTypeVector[t].vehicle_type ;
+						element_type.number_of_vehicles  = element_old.number_of_vehicles*m_VehicleTypeVector[t].percentage   ;
+						m_DemandVector.push_back (element_type);
 					}
 				}
 			}
 		}
 
-		///// vehicle type distribution
+		///// VOT distribution
 		m_Database.GetTableDefInfo(7, TableInfo);
 		CString tablename7=(TableInfo).m_strName;
 		if(tablename7.Find("4-3-VOT-distribution",0)<=0){
@@ -4221,6 +4247,142 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			rsVOT.MoveNext ();
 		}
 		rsVOT.Close();
+
+		///// sensor location data
+		m_Database.GetTableDefInfo(8, TableInfo);
+		CString tablename8=(TableInfo).m_strName;
+		if(tablename8.Find("5-1-sensor-location",0)<=0){
+			AfxMessageBox("Please make sure the 8th worksheet is a 5-1-sensor-location table.", MB_ICONINFORMATION);
+			return false;
+		}
+
+		strSQL = "select * from [";
+		strSQL += TableInfo.m_strName;
+		strSQL += "]";
+
+		// Read record
+		CRecordsetExt rsSensorLocation(&m_Database);
+		rsSensorLocation.Open(dbOpenDynaset, strSQL);
+
+		while(!rsSensorLocation.IsEOF())
+		{
+			DTA_sensor sensor;
+			int SensorLinkID;
+
+			sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field sensor_id cannot be found in the 5-1-sensor-location table.");
+				return false;
+			}
+
+			sensor.SensorType =  rsSensorLocation.GetLong(CString("sensor_type"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field from_node_id cannot be found in the 5-1-sensor-location table.");
+				return false;
+			}
+
+			sensor.FromNodeNumber =  rsSensorLocation.GetLong(CString("from_node_id"),bExist,false);
+			if(bExist)
+			{
+
+				sensor.ToNodeNumber =  rsSensorLocation.GetLong(CString("to_node_id"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("Field from_node_id cannot be found in the 5-1-sensor-location table.");
+					return false;
+				}
+				sensor.RelativeLocationRatio = rsSensorLocation.GetLong(CString("relative_location_ratio"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("Field relative_location_ratio cannot be found in the 5-1-sensor-location table.");
+					return false;
+				}
+				DTALink* pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber );
+
+				if(pLink!=NULL)
+				{
+					sensor.LinkID = pLink->m_LinkNo ;
+					m_SensorVector.push_back(sensor);
+					m_SensorIDtoLinkIDMap[sensor.OrgSensorID] = pLink->m_LinkNo;
+					pLink->m_bSensorData  = true;
+				}else
+				{
+
+					CString msg;
+					msg.Format ("Link %d -> %d in 5-1-sensor-location does not exit in input link data.");
+					AfxMessageBox(msg);
+					break;
+
+				}
+
+			}else
+			{
+				float x = rsSensorLocation.GetDouble(CString("x"),bExist,false);
+				float y = rsSensorLocation.GetDouble(CString("y"),bExist,false);
+				int direction = rsSensorLocation.GetLong(CString("direction"),bExist,false);
+				
+				sensor.LinkID = FindLinkFromSensorLocation(x,y,direction);
+				
+				if(sensor.LinkID > 0)
+				{   
+					DTALink* pLink = FindLinkWithLinkNo(sensor.LinkID );
+					sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
+					sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
+					sensor.RelativeLocationRatio = 0.5;
+
+					m_SensorVector.push_back(sensor);
+				}
+
+			}
+
+
+			rsSensorLocation.MoveNext ();
+		}
+		rsSensorLocation.Close();
+
+		///// emissions data 
+		m_Database.GetTableDefInfo(12, TableInfo);
+		CString tablename12=(TableInfo).m_strName;
+		if(tablename12.Find("6-1-vehicle-emission-rate",0)<=0){
+			AfxMessageBox("Please make sure the no. 12 worksheet is a 6-1-vehicle-emission-rate table.", MB_ICONINFORMATION);
+			return false;
+		}
+
+		strSQL = "select * from [";
+		strSQL += TableInfo.m_strName;
+		strSQL += "]";
+
+		// Read record
+		CRecordsetExt rsEmissionRate(&m_Database);
+		rsEmissionRate.Open(dbOpenDynaset, strSQL);
+
+		while(!rsEmissionRate.IsEOF())
+		{
+			
+
+			int vehicle_type = rsEmissionRate.GetLong(CString("vehicle_type"),bExist,false);
+
+			if(bExist)
+			{
+			int opModeID = rsEmissionRate.GetLong(CString("opModeID"),bExist,false);
+			CEmissionRate element;
+			element.meanBaseRate_TotalEnergy = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
+			element.meanBaseRate_CO2 = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
+			element.meanBaseRate_NOX = rsEmissionRate.GetDouble(CString("meanBaseRate_CO2_(g/hr)"),bExist,false);
+			element.meanBaseRate_CO = rsEmissionRate.GetDouble(CString("meanBaseRate_NOX_(g/hr)"),bExist,false);
+			element.meanBaseRate_HC = rsEmissionRate.GetDouble(CString("meanBaseRate_HC_(g/hr)"),bExist,false);
+
+			ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
+			ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
+
+			EmissionRateData[vehicle_type][opModeID] = element;
+			}
+			rsEmissionRate.MoveNext ();
+		}
+		rsEmissionRate.Close();
+
 		return true;
 }
 
@@ -4414,3 +4576,47 @@ void CTLiteDoc::SelectPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
 
 }
 
+
+void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
+{
+	CCSVParser parser_emission;
+	if (parser_emission.OpenCSVFile(lpszFileName))
+	{
+		
+		while(parser_emission.ReadRecord())
+		{
+			int vehicle_type;
+			int opModeID;
+
+			if(parser_emission.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+				break;
+			if(parser_emission.GetValueByFieldName("opModeID",opModeID) == false)
+				break;
+
+			CEmissionRate element;
+			if(parser_emission.GetValueByFieldName("meanBaseRate_TotalEnergy_(J/hr)",element.meanBaseRate_TotalEnergy) == false)
+				break;
+			if(parser_emission.GetValueByFieldName("meanBaseRate_CO2_(g/hr)",element.meanBaseRate_CO2) == false)
+				break;
+			if(parser_emission.GetValueByFieldName("meanBaseRate_NOX_(g/hr)",element.meanBaseRate_NOX) == false)
+				break;
+			if(parser_emission.GetValueByFieldName("meanBaseRate_CO_(g/hr)",element.meanBaseRate_CO) == false)
+				break;
+			if(parser_emission.GetValueByFieldName("meanBaseRate_HC_(g/hr)",element.meanBaseRate_HC) == false)
+				break;
+
+
+			ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
+			ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
+			EmissionRateData[vehicle_type][opModeID] = element;
+		}
+	}else
+	{
+		AfxMessageBox("Error: File input_vehicle_emission_rate.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
+		return;
+
+	}
+
+	cout << "Reading file input_vehicle_emission_rate.csv..."<< endl;
+
+}

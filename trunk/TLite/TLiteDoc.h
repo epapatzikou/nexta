@@ -170,6 +170,8 @@ public:
 	void BuildHistoricalDatabase();
 
 	bool ReadSensorLocationData(LPCTSTR lpszFileName);
+	void ReadInputEmissionRateFile(LPCTSTR lpszFileName);
+	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 	void ReadHistoricalDataFormat2(CString directory);
 
 	CString m_NodeDataLoadingStatus;

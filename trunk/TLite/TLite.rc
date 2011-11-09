@@ -803,7 +803,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software Version 3.0 Release Date: 09/16/2011",IDC_STATIC,42,26,114,24,0,WS_EX_STATICEDGE
+    LTEXT           "Open-Source Software Version 3.0 Release Date: 11/08/2011",IDC_STATIC,42,26,114,24,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,183,70,50,14,WS_GROUP
 END
 
@@ -921,7 +921,8 @@ BEGIN
     LTEXT           "Traffic Routing Method:",IDC_STATIC,7,156,77,8
     LISTBOX         IDC_LIST_Routing_METHOD,132,149,106,30,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "",IDC_STATIC,7,193,8,8
-    CONTROL         "Emission Data Output",IDC_CHECK_EMISSION_DATA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,191,94,10
+    CONTROL         "Emission Data Output (computationally intensive post-processing)",IDC_CHECK_EMISSION_DATA,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,191,228,10
 END
 
 IDD_DIALOG_DefaultLinkProperties DIALOGEX 0, 0, 238, 219

@@ -63,11 +63,12 @@ using std::string;
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_VEHPATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_PATHS   6
-#define MAX_VEHICLE_TYPE_SIZE 3
-
+#define MAX_VEHICLE_TYPE_SIZE 10
+#define _MAXIMUM_OPERATING_MODE_SIZE 41
 #define MAX_TRAIN_TYPE_SIZE 2
 #define TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL 5
 #define MAX_DAY_SIZE 1 
+
 
 
 struct GDPoint
@@ -1593,6 +1594,29 @@ struct VehicleSnapshotData
 	int PrecedingVehicleID;
 	int FollowingVehicleID;
 };
+
+  class CEmissionRate 
+{
+public:
+			float meanBaseRate_TotalEnergy;
+			float meanBaseRate_CO2;
+			float meanBaseRate_NOX;
+			float meanBaseRate_CO;
+			float meanBaseRate_HC;
+
+			CEmissionRate()
+			{
+			meanBaseRate_TotalEnergy = 0;
+			meanBaseRate_CO2 = 0;
+			meanBaseRate_NOX = 0;
+			meanBaseRate_CO = 0;
+			meanBaseRate_HC = 0;
+
+			}
+
+};
+
+
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 // Stop bugging me about this, live isn't perfect
