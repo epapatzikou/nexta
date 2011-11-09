@@ -1461,7 +1461,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_no,to_node_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count\n");
+			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count\n");
 		}
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -1781,11 +1781,11 @@ int g_InitializeLogFiles()
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
 		cout << "sourceforge.net/projects/dtalite/"<< endl;
-		cout << "Version 0.95, Release Date 10/23/2011."<< endl;
+		cout << "Version 0.95, Release Date 11/08/2011."<< endl;
 
 		g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
 		g_LogFile << "sourceforge.net/projects/dtalite/"<< endl;
-		g_LogFile << "Version 0.96, Release Date 10/23/2011."<< endl;
+		g_LogFile << "Version 0.97, Release Date 11/08/2011."<< endl;
 
 		fopen_s(&g_ErrorFile,"error.log","w");
 		if(g_ErrorFile==NULL)
@@ -1802,10 +1802,10 @@ void g_ReadDTALiteSettings()
 {
 		TCHAR IniFilePath_DTA[_MAX_PATH] = _T("./DTASettings.ini");
 
-		// if  ./DTASettings.ini does not exit, then we should print out all the default settings for user to change
+		// if  ./DTASettings.ini does not exist, then we should print out all the default settings for user to change
 		//
 
-		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 0, IniFilePath_DTA);	
+		g_TrafficFlowModelFlag = g_GetPrivateProfileInt("simulation", "traffic_flow_model", 1, IniFilePath_DTA);	
 		g_EmissionDataOutputFlag = g_GetPrivateProfileInt("emission", "emission_data_output", 0, IniFilePath_DTA);	
 //		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, IniFilePath_DTA);	
 //		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, IniFilePath_DTA);
@@ -2023,7 +2023,7 @@ void g_FreeMemory()
 void g_TrafficAssignmentSimulation()
 {
 		g_NetworkMOEAry.resize (g_SimulationHorizon+1);  // "+1" as simulation time starts as 0
-		g_AssignmentMOEAry.resize ( g_SimulationHorizon+1);  // "+1" as assignment iteration starts as 0
+		g_AssignmentMOEAry.resize ( g_NumberOfIterations+1);  // "+1" as assignment iteration starts as 0
 
 		ReadInputFiles();
 
