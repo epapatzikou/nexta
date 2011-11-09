@@ -56,7 +56,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_SimulationMethodControl.AddString ("BPR Function");
+//	m_SimulationMethodControl.AddString ("BPR Function");
 	m_SimulationMethodControl.AddString ("Point Queue Model");
 	m_SimulationMethodControl.AddString ("Spatial Queue Model");
 	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
@@ -80,7 +80,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
 {
-	m_SimultionMethod = m_SimulationMethodControl.GetCurSel();
+	m_SimultionMethod = m_SimulationMethodControl.GetCurSel()+1;
 }
 void CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode()
 {
