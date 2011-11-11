@@ -47,6 +47,7 @@ bool CCSVParser::OpenCSVFile(string fileName)
 					name = tmp_str.substr(start);
 					TRACE("%s,",name.c_str ());
 				}
+				Headers.push_back(name);
 				FieldsIndices[name] = (int) i;
 			}
 		}
@@ -62,6 +63,16 @@ bool CCSVParser::OpenCSVFile(string fileName)
 void CCSVParser::CloseCSVFile(void)
 {
 	inFile.close();
+}
+
+vector<string> CCSVParser::GetLineRecord()
+{
+	return LineFieldsValue;
+}
+
+vector<string> CCSVParser::GetHeaderList()
+{
+	return Headers;
 }
 
 bool CCSVParser::ReadRecord()

@@ -262,18 +262,41 @@ int CDlgScenarioTab::ValidityCheck()
 CString CDlgScenarioTab::GenerateRecordString()
 {
 	std::string Str;
+
+	for (int i=0;i<names.size();i++)
+	{
+		Str += names.at(i);
+		if (i != names.size() - 1)
+		{
+			Str += ",";
+		}
+	}
+
+	Str += "\n";
+
 	for (int i=0;i<m_ListCtrl.GetItemCount();i++)
 	{
-		std::string subStr = "<" + m_TabText + " ";
+		std::string subStr;
 		for (int j=0;j<m_NumOfCols;j++)
 		{
-			subStr += names.at(j) + "=" + "\"" + std::string(m_ListCtrl.GetItemText(i,j)) + "\"";
+			if (j==0)
+			{
+				subStr += "\"";
+			}
+
+			subStr += std::string(m_ListCtrl.GetItemText(i,j));
+
+			if (j == 0)
+			{
+				subStr += "\"";
+			}
+
 			if (j != m_NumOfCols - 1)
 			{
-				subStr += " ";
+				subStr += ",";
 			}
 		}
-		subStr += "></" + m_TabText + ">\n";
+		subStr += "\n";
 
 		Str += subStr;
 	}

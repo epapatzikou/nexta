@@ -187,7 +187,9 @@ BOOL CDlgScenario::OnInitDialog()
 		value_vector.clear();
 
 		//Read individual xml file
-		ReadXMLFile(ELEMENTS[i],name_vector,value_vector);
+		//ReadXMLFile(ELEMENTS[i],name_vector,value_vector);
+
+		ReadCSVFile(ELEMENTS[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
@@ -255,7 +257,7 @@ void CDlgScenario::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
 
-	std::string FirstLine = "<?xml version=\"1.0\"?>\n";
+	//std::string FirstLine = "<?xml version=\"1.0\"?>\n";
 		
 	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
@@ -278,11 +280,11 @@ void CDlgScenario::OnBnClickedOk()
 
 		if (Str.length() > 0)
 		{
-			std::ofstream outFile(m_pDoc->m_ProjectDirectory + p_SubTabs[i]->GetTabText() + ".xml");
+			std::ofstream outFile(m_pDoc->m_ProjectDirectory + p_SubTabs[i]->GetTabText() + ".csv");
 
 			if (outFile.is_open())
 			{
-				outFile << FirstLine;
+				//outFile << FirstLine;
 				outFile << Str;
 			}
 
@@ -290,7 +292,7 @@ void CDlgScenario::OnBnClickedOk()
 		}
 		else
 		{
-			remove(m_pDoc->m_ProjectDirectory + p_SubTabs[i]->GetTabText() + ".xml");
+			remove(m_pDoc->m_ProjectDirectory + p_SubTabs[i]->GetTabText() + ".csv");
 		}
 	}
 
@@ -357,72 +359,72 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 
 	if (m_pDoc != NULL)
 	{
-	long i = 0;
-	DTALink* pLink = 0;
-	float default_distance_sum=0;
-	float length_sum = 0;
-	CCSVParser parser;
+		long i = 0;
+		DTALink* pLink = 0;
+		float default_distance_sum=0;
+		float length_sum = 0;
+		CCSVParser parser;
 
-	CString TempStr(m_pDoc->m_ProjectDirectory + "input_link.csv");
-	std::string std_string(TempStr, TempStr.GetLength());
+		CString TempStr(m_pDoc->m_ProjectDirectory + "input_link.csv");
+		std::string std_string(TempStr, TempStr.GetLength());
 
-	if (parser.OpenCSVFile(std_string))
-	{
-		while(parser.ReadRecord())
+		if (parser.OpenCSVFile(std_string))
 		{
-			int from_node_id;
-			int to_node_id;
-			int direction;
-
-			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
+			while(parser.ReadRecord())
 			{
-				AfxMessageBox("Field from_node_id has not been defined in file input_link.csv. Please check.");
-				break;
-			}
-			if(!parser.GetValueByFieldName("to_node_id",to_node_id))
-			{
-				AfxMessageBox("Field to_node_id has not been defined in file input_link.csv. Please check.");
-				break;
-			}
+				int from_node_id;
+				int to_node_id;
+				int direction;
 
-			if(!parser.GetValueByFieldName("direction",direction))
-					direction = 1;
+				if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
+				{
+					AfxMessageBox("Field from_node_id has not been defined in file input_link.csv. Please check.");
+					break;
+				}
+				if(!parser.GetValueByFieldName("to_node_id",to_node_id))
+				{
+					AfxMessageBox("Field to_node_id has not been defined in file input_link.csv. Please check.");
+					break;
+				}
 
-		int link_code_start = 1;
-			int link_code_end = 1;
+				if(!parser.GetValueByFieldName("direction",direction))
+						direction = 1;
 
-			if (direction == -1) // reversed
-			{
-				link_code_start = 2; link_code_end = 2;
-			}
+				int link_code_start = 1;
+				int link_code_end = 1;
 
-			if (direction == 0) // two-directional link
-			{
-				link_code_start = 1; link_code_end = 2;
-			}
+				if (direction == -1) // reversed
+				{
+					link_code_start = 2; link_code_end = 2;
+				}
 
-			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
-			{
+				if (direction == 0) // two-directional link
+				{
+					link_code_start = 1; link_code_end = 2;
+				}
 
-			std::stringstream from_node_id_out;
-			std::stringstream to_node_id_out;
+				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
+				{
 
-			if(link_code == 1)
-			{
-			from_node_id_out << from_node_id;
-			to_node_id_out << to_node_id;
-			}
-			if(link_code == 2)
-			{
-			from_node_id_out << to_node_id;
-			to_node_id_out << from_node_id;
-			}
+					std::stringstream from_node_id_out;
+					std::stringstream to_node_id_out;
 
-				string subStr;
-				string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
-				
-				linkstring.push_back(str);
-			}
+					if(link_code == 1)
+					{
+						from_node_id_out << from_node_id;
+						to_node_id_out << to_node_id;
+					}
+					if(link_code == 2)
+					{
+						from_node_id_out << to_node_id;
+						to_node_id_out << from_node_id;
+					}
+
+					string subStr;
+					string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
+					
+					linkstring.push_back(str);
+				}
 			}
 		}
 	}
@@ -430,6 +432,25 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 	return linkstring;
 }
 
+BOOL CDlgScenario::ReadCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
+{
+	std::string fileName = m_pDoc->m_ProjectDirectory + ElementType + ".csv";
+	std::vector<std::string> value;
+
+	CCSVParser csvParser;
+	csvParser.OpenCSVFile(fileName);
+
+	name_vector = csvParser.GetHeaderList();
+
+	while(csvParser.ReadRecord())
+	{
+		value_vector.push_back(csvParser.GetLineRecord());
+	}
+
+	csvParser.CloseCSVFile();
+
+	return TRUE;
+}
 
 BOOL CDlgScenario::ReadXMLFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
 {
