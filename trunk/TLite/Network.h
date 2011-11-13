@@ -200,6 +200,16 @@ public:
 
 };
 
+class LinkType
+{
+public:
+	int link_type;
+	CString link_type_name;
+	int freeway_flag;
+	int arterial_flag;
+	int ramp_flag;
+};
+
 
 class VOTDistribution
 {
