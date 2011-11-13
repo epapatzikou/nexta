@@ -33,6 +33,9 @@
 #include ".\\cross-resolution-model\\SignalNode.h"
 #include <iostream>
 #include <fstream>
+#include <afxdb.h>          // MFC database support
+#include <afxdao.h>
+
 
 enum Link_MOE {none,MOE_volume, MOE_speed, MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 enum OD_MOE {odnone,critical_volume};
@@ -138,12 +141,13 @@ public:
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
-	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);  
+	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);
+	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	
 	bool ReadScenarioData();   // for road network
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
-	bool ReadLinkGeoFile(LPCTSTR lpszFileName); 
+	bool ReadLinkGeoFile(LPCTSTR lpszFileName);
 	bool ReadZoneGeoFile(LPCTSTR lpszFileName); 
 
 	bool ReadZoneShapeCSVFile(LPCTSTR lpszFileName); 
@@ -235,6 +239,9 @@ public:
 	std::map<long, DTAVehicle*> m_VehicleIDMap;
 	
 	std::map<int, int> m_VehicleType2PricingTypeMap;
+	std::map<int, int> m_LinkTypeFreewayMap;
+	std::map<int, int> m_LinkTypeArterialMap;
+	std::map<int, int> m_LinkTypeRampMap;
 
 
 	std::map<int, int> m_NodeIDtoNameMap;
@@ -251,6 +258,7 @@ public:
 	std::vector<DTADemand> m_DemandVector;
 	std::vector<DTADemand> m_TempDemandVector;
 	std::vector<VehicleType> m_VehicleTypeVector;
+	std::vector<LinkType> m_LinkTypeVector;
 	std::vector<VOTDistribution> m_VOTDistributionVector;
 
 
@@ -513,6 +521,7 @@ public:
 
 	// Operations
 public:
+
 
 	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str);

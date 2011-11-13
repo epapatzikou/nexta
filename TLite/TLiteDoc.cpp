@@ -31,8 +31,6 @@
 #include "TLite.h"
 #include "Network.h"
 #include "TLiteDoc.h"
-
-
 #include "TLiteView.h"
 #include "DlgMOE.h"
 #include "DlgPathMOE.h"
@@ -1518,7 +1516,6 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 
 bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 {
-
 	long lineno = 1;
 	CCSVParser parser;
 
@@ -1565,6 +1562,47 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 
 }
 
+bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
+{
+	long lineno = 1;
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		while(parser.ReadRecord())
+		{
+			LinkType element;
+
+			if(parser.GetValueByFieldName("link_type",element.link_type ) == false)
+				break;
+
+			if(parser.GetValueByFieldName("link_type_name",element.link_type_name ) == false)
+				break;
+
+			if(parser.GetValueByFieldName("freeway_flag",element.freeway_flag  ) == false)
+				break;
+			if(parser.GetValueByFieldName("ramp_flag",element.ramp_flag  ) == false)
+				break;
+			if(parser.GetValueByFieldName("arterial_flag",element.arterial_flag  ) == false)
+				break;
+
+			m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
+			m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
+			m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
+
+			m_LinkTypeVector.push_back(element);
+
+			lineno++;
+		}
+
+		return true;
+	}else
+	{
+		return false;
+
+	}
+
+}
 bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 {
 
@@ -2026,6 +2064,20 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		fclose(st);
 
 	}
+	// save link type info here
+	fopen_s(&st,directory+"input_link_type.csv","w");
+	if(st!=NULL)
+	{
+		fprintf(st,"link_type,link_type_name,freeway_flag,ramp_flag,arterial_flag\n");
+		for(std::vector<LinkType>::iterator itr = m_LinkTypeVector.begin(); itr != m_LinkTypeVector.end(); ++itr){
+			{
+				fprintf(st, "%d,%s,%d,%d,%d\n", (*itr).link_type  , (*itr).link_type_name , (*itr).freeway_flag ,(*itr).ramp_flag ,(*itr).arterial_flag );
+			}
+
+		}
+		fclose(st);
+	}
+
 	fopen_s(&st,"input_sensor_location.csv","w");
 	if(st!=NULL)
 	{
@@ -3459,6 +3511,9 @@ void CTLiteDoc::OnImportdataImport()
 
 bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 {
+		// Open the EXCEL file
+	CDaoDatabase m_Database;
+
 	std::string itsErrorMessage;
 
 	// Make sure the network is empty
@@ -3468,8 +3523,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	char warning[200];
 	bool bExist=true;
 
-	// Open the EXCEL file
-	CDaoDatabase m_Database;
 	CString strSQL;
 
 	CString str_duplicated_link;
@@ -3560,8 +3613,8 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	}	// end of while
 	rsNode.Close();
 
+	// link table
 	m_Database.GetTableDefInfo(2, TableInfo);
-
 	CString tablename2=(TableInfo).m_strName;
 	tablename2.MakeUpper();
 
@@ -3852,8 +3905,73 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		AfxMessageBox(str_duplicated_link);
 	}
 
-	/////
+	///// link-type table
 	m_Database.GetTableDefInfo(3, TableInfo);
+
+	CString tablename21=(TableInfo).m_strName;
+	tablename21.MakeUpper();
+
+	if(tablename21.Find("2-1-link-type",0)<=0)
+	{
+		AfxMessageBox("Please make sure the 4th worksheet is a 2-1-link-type table.", MB_ICONINFORMATION);
+		return false;
+	}
+
+	strSQL = "select * from [";
+	strSQL += TableInfo.m_strName;
+	strSQL += "]";
+
+	// Read record
+	CRecordsetExt rsLinkType(&m_Database);
+	rsLinkType.Open(dbOpenDynaset, strSQL);
+
+	while(!rsLinkType.IsEOF())
+	{
+		LinkType element;
+		int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
+		if(!bExist) 
+		{
+			AfxMessageBox("Field link_type cannot be found in the 2-1-link-type table.");
+			return false;
+		}
+		if(link_type_number ==0)
+			break;
+
+		element.link_type = link_type_number;
+		element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
+		element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
+		if(!bExist) 
+		{
+			AfxMessageBox("Field freeway_flag cannot be found in the 2-1-link-type table.");
+			return false;
+		}
+
+		element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
+		if(!bExist) 
+		{
+			AfxMessageBox("Field ramp_flag cannot be found in the 2-1-link-type table.");
+			return false;
+		}
+
+		element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
+		if(!bExist)
+		{
+			AfxMessageBox("Field arterial_flag cannot be found in the 2-1-link-type table.");
+			return false;
+		}
+
+		m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
+		m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
+		m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
+
+		m_LinkTypeVector.push_back(element);
+
+		rsLinkType.MoveNext ();
+	}
+	rsLinkType.Close();
+
+	///// Zone table
+	m_Database.GetTableDefInfo(4, TableInfo);
 
 	CString tablename3=(TableInfo).m_strName;
 	tablename3.MakeUpper();
@@ -3917,7 +4035,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	rsZone.Close();
 
 	/////
-	m_Database.GetTableDefInfo(4, TableInfo);
+	m_Database.GetTableDefInfo(5, TableInfo);
 
 	CString tablename4=(TableInfo).m_strName;
 	tablename4.MakeUpper();
@@ -4011,7 +4129,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		rsDemand.Close();
 
 		///// temporal profile distribution
-		m_Database.GetTableDefInfo(5, TableInfo);
+		m_Database.GetTableDefInfo(6, TableInfo);
 
 		CString tablename5=(TableInfo).m_strName;
 
@@ -4098,7 +4216,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		}
 
 		///// vehicle type distribution
-		m_Database.GetTableDefInfo(6, TableInfo);
+		m_Database.GetTableDefInfo(7, TableInfo);
 		CString tablename6=(TableInfo).m_strName;
 		if(tablename6.Find("4-2-vehicle-type",0)<=0){
 			AfxMessageBox("Please make sure the 6th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
@@ -4194,7 +4312,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		}
 
 		///// VOT distribution
-		m_Database.GetTableDefInfo(7, TableInfo);
+		m_Database.GetTableDefInfo(8, TableInfo);
 		CString tablename7=(TableInfo).m_strName;
 		if(tablename7.Find("4-3-VOT-distribution",0)<=0){
 			AfxMessageBox("Please make sure the 7th worksheet is a 4-3-VOT-distribution table.", MB_ICONINFORMATION);
@@ -4249,7 +4367,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		rsVOT.Close();
 
 		///// sensor location data
-		m_Database.GetTableDefInfo(8, TableInfo);
+		m_Database.GetTableDefInfo(9, TableInfo);
 		CString tablename8=(TableInfo).m_strName;
 		if(tablename8.Find("5-1-sensor-location",0)<=0){
 			AfxMessageBox("Please make sure the 8th worksheet is a 5-1-sensor-location table.", MB_ICONINFORMATION);
@@ -4343,7 +4461,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		rsSensorLocation.Close();
 
 		///// emissions data 
-		m_Database.GetTableDefInfo(12, TableInfo);
+		m_Database.GetTableDefInfo(13, TableInfo);
 		CString tablename12=(TableInfo).m_strName;
 		if(tablename12.Find("6-1-vehicle-emission-rate",0)<=0){
 			AfxMessageBox("Please make sure the no. 12 worksheet is a 6-1-vehicle-emission-rate table.", MB_ICONINFORMATION);
