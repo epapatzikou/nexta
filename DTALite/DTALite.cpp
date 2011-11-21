@@ -127,6 +127,10 @@ std::vector<DTAVehicle*>		g_VehicleVector;
 std::map<int, DTAVehicle*> g_VehicleMap;
 std::map<int, VehicleType> g_VehicleTypeMap;
 
+std::map<int, int> g_LinkTypeFreewayMap;
+std::map<int, int> g_LinkTypeArterialMap;
+std::map<int, int> g_LinkTypeRampMap;
+std::vector<DTALinkType> g_LinkTypeVector;
 
 
 // time inteval settings in assignment and simulation
@@ -232,6 +236,7 @@ unsigned int g_RandomSeedForVehicleGeneration = 101;
 #define g_LCG_c 0
 #define g_LCG_M 65521  
 
+extern void g_RunStaticExcel();
 float g_GetRandomRatio()
 {
 	//		g_RandomSeed = (g_LCG_a * g_RandomSeed + g_LCG_c) % g_LCG_M;  //m_RandomSeed is automatically updated.
@@ -384,6 +389,41 @@ void ReadInputFiles()
 		g_ProgramStop();
 
 	}
+
+	CCSVParser parser_link_type;
+
+	if (parser_link_type.OpenCSVFile("input_link_type.csv"))
+	{
+		while(parser_link_type.ReadRecord())
+		{
+			DTALinkType element;
+
+			if(parser_link_type.GetValueByFieldName("link_type",element.link_type ) == false)
+				break;
+
+			if(parser_link_type.GetValueByFieldName("link_type_name",element.link_type_name ) == false)
+				break;
+		
+			if(parser_link_type.GetValueByFieldName("freeway_flag",element.freeway_flag  ) == false)
+				break;
+			if(parser_link_type.GetValueByFieldName("ramp_flag",element.ramp_flag  ) == false)
+				break;
+			if(parser_link_type.GetValueByFieldName("arterial_flag",element.arterial_flag  ) == false)
+				break;
+
+			g_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
+			g_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
+			g_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
+
+			g_LinkTypeVector.push_back(element);
+
+		}
+	}else
+	{
+		cout << "Error: File input_link_type.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		g_ProgramStop();
+	}
+
 	cout << "Reading file input_link.csv..."<< endl;
 
 
@@ -532,6 +572,13 @@ void ReadInputFiles()
 			pLink->m_MaximumServiceFlowRatePHPL= capacity;
 			pLink->m_BPRLaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 			pLink->m_link_type= type;
+
+			if(g_LinkTypeFreewayMap.find(type) == g_LinkTypeFreewayMap.end())
+			{
+				cout << "In file input_link.csv, line "<< i+1 << " has link type "<< type <<", which has not been defined in input_link_type.csv. Please correct the error" << endl;
+				getchar();
+				exit(0);			
+			}
 
 			pLink->m_KJam = K_jam;
 			pLink->m_BackwardWaveSpeed = wave_speed_in_mph;
@@ -710,6 +757,7 @@ CCSVParser parser_VOT;
 		}
 
 	}
+
 
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_SimulationHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
@@ -1795,6 +1843,7 @@ int g_InitializeLogFiles()
 			return 0;
 		}
 
+//		g_RunStaticExcel();
 		return 1;
 }
 
@@ -2109,7 +2158,7 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 		// ! there is an freeway or highway downstream with less number of lanes
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			if(g_LinkVector[li]->m_link_type <=2 &&  m_OutboundSizeAry[g_LinkVector[li]->m_ToNodeID] ==1)  // freeway or highway
+			if( g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type] == 1  &&  m_OutboundSizeAry[g_LinkVector[li]->m_ToNodeID] ==1)  // freeway or highway
 			{
 				int FromID = g_LinkVector[li]->m_FromNodeID;
 				int ToID   = g_LinkVector[li]->m_ToNodeID;
@@ -2117,7 +2166,7 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 				for(int i=0; i< m_OutboundSizeAry[ToID]; i++)
 				{
 					DTALink* pNextLink =  g_LinkVector[m_OutboundLinkAry[ToID][i]];
-					if(pNextLink->m_link_type <=2 && pNextLink->m_NumLanes < g_LinkVector[li]->m_NumLanes && pNextLink->m_ToNodeID != FromID)
+					if(g_LinkTypeFreewayMap[pNextLink->m_link_type ]==1 && pNextLink->m_NumLanes < g_LinkVector[li]->m_NumLanes && pNextLink->m_ToNodeID != FromID)
 					{
 						g_LinkVector[li]->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
 						BottleneckFile << "lane drop (type 1):" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName<< endl;
@@ -2134,7 +2183,7 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
-			if( (g_LinkVector[li]->m_link_type <=2 || g_LinkVector[li]->m_link_type ==9)
+			if( (g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type ]==1 || g_LinkVector[li]->m_link_type ==9)
 				 && m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]>=2 
 				 && m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID]==1)
 			{
@@ -2165,12 +2214,12 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 				for(il = 0; il<m_InboundSizeAry[FromID]; il++)
 				{
-					if(g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type == 9)  // on ramp as incoming link
+					if(g_LinkTypeRampMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type] == 1)  // on ramp as incoming link
 					{
 						bRampExistFlag = true;
 						g_LinkVector[li]->m_MergeOnrampLinkID = m_InboundLinkAry[FromID][il];
 					}
-					if(g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type <= 2)  // freeway or highway
+					if(g_LinkTypeFreewayMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type ]==1)  // freeway or highway
 					{
 						bFreewayExistFlag = true;
 						g_LinkVector[li]->m_MergeMainlineLinkID = m_InboundLinkAry[FromID][il];
