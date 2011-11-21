@@ -660,6 +660,15 @@ struct VehicleTimestampSpeed
  float speed;
 
 };
+class DTALinkType
+{
+public:
+	int link_type;
+	string link_type_name;
+	int freeway_flag;
+	int arterial_flag;
+	int ramp_flag;
+};
 
 class DTAVehicle
 {

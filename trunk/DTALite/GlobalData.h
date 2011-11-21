@@ -85,6 +85,11 @@ extern int g_ConvergenceThreshold_in_Num_Switch; // the convergence threshold in
 extern int g_VehicleExperiencedTimeGap; // 1: Vehicle experienced time gap; 0: Avg experienced path time gap
 extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles switched to them
 
+extern std::map<int, int> g_LinkTypeFreewayMap;
+extern std::map<int, int> g_LinkTypeArterialMap;
+extern std::map<int, int> g_LinkTypeRampMap;
+extern std::vector<DTALinkType> g_LinkTypeVector;
+
 // for OD estimation statistics
 
 extern float g_TotalDemandDeviation; 

@@ -239,7 +239,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			// freeway 
 
-			if(g_LinkVector[li]->m_link_type ==1)  
+			if(g_LinkTypeFreewayMap [g_LinkVector[li]->m_link_type] ==1)  
 			{
 				if(g_StochasticCapacityMode &&  g_LinkVector[li]->m_StochaticCapcityFlag >=1 && simulation_time_interval_no%150 ==0)  // update stochastic capacity every 15 min
 				{
@@ -257,7 +257,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			}
 
 			//Highway/Expressway,			 Principal arteria				Major arterial					 Frontage road
-			if(g_LinkVector[li]->m_link_type ==2 || g_LinkVector[li]->m_link_type ==3 || g_LinkVector[li]->m_link_type  == 4 || g_LinkVector[li]->m_link_type  == 8)
+			if(g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type ] !=1 && g_LinkTypeRampMap[g_LinkVector[li]->m_link_type ]!=1)
 			{
 				PerHourCapacityAtCurrentSimulatioInterval = GetDynamicCapacityAtSignalizedIntersection(PerHourCapacity, g_CycleLength_in_seconds,CurrentTime);
 
@@ -284,8 +284,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				// the inflow capcaity is the minimum of (1) incoming maximum flow rate (determined by the number of lanes) and (2) available space capacty  on the link.
 				// use integer number of vehicles as unit of capacity
 
-
-				if(TrafficFlowModelFlag ==3 && g_LinkVector[li]->m_link_type ==1)  // newell's model on freeway only
+				if(TrafficFlowModelFlag ==3 && g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type] ==1)  // newell's model on freeway only
 				{
 					if(simulation_time_interval_no >=g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval )
 					{
