@@ -188,7 +188,7 @@ public:
 	float percentage;
 };
 
-class VehicleType
+class DTAVehicleType
 {
 public:
 	int vehicle_type;
@@ -200,18 +200,18 @@ public:
 
 };
 
-class LinkType
+class DTALinkType
 {
 public:
 	int link_type;
-	CString link_type_name;
+	string link_type_name;
 	int freeway_flag;
 	int arterial_flag;
 	int ramp_flag;
 };
 
 
-class VOTDistribution
+class DTAVOTDistribution
 {
 public:
 	int pricing_type;

@@ -131,4 +131,8 @@ public:
 	afx_msg void OnLbnDblclkListOd();
 	afx_msg void OnBnClickedExport();
 	CEdit m_Summary_Info_Edit;
+	CComboBox m_ComboBox_VOT_LB;
+	CComboBox m_ComboBox_VOT_UB;
+	afx_msg void OnCbnSelchangeComboVotLb();
+	afx_msg void OnCbnSelchangeComboVotUb();
 };

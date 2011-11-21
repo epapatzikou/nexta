@@ -48,6 +48,8 @@ void CDlg_VehEmissions::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_PATH, m_PathList);
 	DDX_Control(pDX, IDC_COMBO_ImpactLink, m_ImpactLinkBox);
 	DDX_Control(pDX, IDC_SUMMARY_INFO, m_Summary_Info_Edit);
+	DDX_Control(pDX, IDC_COMBO_VOT_LB, m_ComboBox_VOT_LB);
+	DDX_Control(pDX, IDC_COMBO_VOT_UB, m_ComboBox_VOT_UB);
 }
 
 
@@ -69,6 +71,8 @@ BEGIN_MESSAGE_MAP(CDlg_VehEmissions, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_ImpactLink, &CDlg_VehEmissions::OnCbnSelchangeComboImpactlink)
 	ON_LBN_DBLCLK(IDC_LIST_OD, &CDlg_VehEmissions::OnLbnDblclkListOd)
 	ON_BN_CLICKED(ID_EXPORT, &CDlg_VehEmissions::OnBnClickedExport)
+	ON_CBN_SELCHANGE(IDC_COMBO_VOT_LB, &CDlg_VehEmissions::OnCbnSelchangeComboVotLb)
+	ON_CBN_SELCHANGE(IDC_COMBO_VOT_UB, &CDlg_VehEmissions::OnCbnSelchangeComboVotUb)
 END_MESSAGE_MAP()
 
 
@@ -194,6 +198,18 @@ BOOL CDlg_VehEmissions::OnInitDialog()
 	m_MinTTIBox.AddString("4.0"); 
 	m_MinTTIBox.SetCurSel (0);
 
+	for(int vot = 0; vot<=100; vot+=5)
+	{
+		str.Format ("%d", vot);
+		m_DepartureTimeBox.AddString(str);
+
+		m_ComboBox_VOT_LB.AddString (str);
+		m_ComboBox_VOT_UB.AddString (str);
+	}
+
+	m_ComboBox_VOT_LB.SetCurSel (0);
+	m_ComboBox_VOT_UB.SetCurSel (20);
+
 	FilterOriginDestinationPairs();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -244,6 +260,11 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 		m_MinTTIBox.GetLBText(m_MinTTIBox.GetCurSel(), str);
 		float MinTTI = atof(str);
 
+
+		int VOT_LB = m_ComboBox_VOT_LB.GetCurSel()*5;
+		int VOT_UB = m_ComboBox_VOT_UB.GetCurSel()*5;
+
+
 		int count = 0;
 		std::list<DTAVehicle*>::iterator iVehicle;
 
@@ -251,7 +272,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
 
-			if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete)  // with physical path in the network
+			if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT <= VOT_UB) )  // with physical path in the network
 			{
 				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
@@ -416,6 +437,9 @@ void CDlg_VehEmissions::FilterPaths()
 	m_MinTTIBox.GetLBText(m_MinTTIBox.GetCurSel(), str);
 	float MinTTI = atof(str);
 
+		int VOT_LB = m_ComboBox_VOT_LB.GetCurSel()*5;
+		int VOT_UB = m_ComboBox_VOT_UB.GetCurSel()*5;
+
 	int count = 0;
 	std::list<DTAVehicle*>::iterator iVehicle;
 
@@ -423,7 +447,7 @@ void CDlg_VehEmissions::FilterPaths()
 	{
 		DTAVehicle* pVehicle = (*iVehicle);
 
-		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete)  // with physical path in the network
+		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete &&(pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT <= VOT_UB))  // with physical path in the network
 		{
 			if( (pVehicle->m_OriginZoneID == Origin)&&
 				(pVehicle->m_DestinationZoneID  == Destination)&&
@@ -691,3 +715,13 @@ bool CDlg_VehEmissions::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
 	 return false;
 }
 
+
+void CDlg_VehEmissions::OnCbnSelchangeComboVotLb()
+{
+	FilterOriginDestinationPairs();
+}
+
+void CDlg_VehEmissions::OnCbnSelchangeComboVotUb()
+{
+	FilterOriginDestinationPairs();
+}
