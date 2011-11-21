@@ -125,6 +125,9 @@
 #define IDC_COMBO_TimeInterval          1055
 #define IDC_BUTTON2                     1056
 #define IDC_BUTTON_DELETE               1056
+#define IDC_COMBO_VOT_LB                1056
+#define IDC_COMBO_VOT_LB2               1057
+#define IDC_COMBO_VOT_UB                1057
 #define IDC_GRIDLIST_MOE                1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
@@ -138,7 +141,6 @@
 #define IDC_COMBO_Min_TravelTimeIndex   1067
 #define IDC_COMBO_ImpactLink            1068
 #define IDC_SUMMARY_INFO                1069
-#define IDC_CHECK1                      1071
 #define IDC_CHECK_EMISSION_DATA         1071
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772

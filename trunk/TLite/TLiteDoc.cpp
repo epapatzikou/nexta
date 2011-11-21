@@ -616,6 +616,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 		ReadVehicleTypeCSVFile(directory+"input_vehicle_type.csv");
 		ReadVOTCSVFile(directory+"input_VOT.csv");
 		LoadSimulationOutput();
+		ReadLinkTypeCSVFile("input_link_type.csv");
 	}
 
 
@@ -893,26 +894,7 @@ void CTLiteDoc::OnToolGeneratesenesormappingtable()
 		}
 	}
 
-		// 	write input_vehicle_emission_rate.csv
-		fopen_s(&st,directory+"input_vehicle_emission_rate.csv","w");
-		if(st!=NULL)
-		{
-			fprintf(st,"vehicle_type,opModeID,meanBaseRate_TotalEnergy_(J/hr),meanBaseRate_CO2_(g/hr),meanBaseRate_NOX_(g/hr),meanBaseRate_CO_(g/hr),meanBaseRate_HC_(g/hr)\n");
-			for (int vehicle_type  = 0; vehicle_type < MAX_VEHICLE_TYPE_SIZE; vehicle_type++)
-				for(int opModeID = 0;  opModeID < _MAXIMUM_OPERATING_MODE_SIZE; opModeID++)
-			{
-				if(EmissionRateData[vehicle_type][opModeID].meanBaseRate_TotalEnergy>0)
-				{
 
-					CEmissionRate element = EmissionRateData[vehicle_type][opModeID];
-
-					fprintf(st,"%d,%d,%f,%f,%f,%f,%f\n", vehicle_type, opModeID, element.meanBaseRate_TotalEnergy, element.meanBaseRate_CO2, element.meanBaseRate_NOX, element.meanBaseRate_CO, element.meanBaseRate_HC);
-				}
-			}
-
-			fclose(st);
-
-		}
 	
 }
 
@@ -1540,7 +1522,7 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 			parser.GetValueByFieldName("pricing_type_name",pricing_type_name);
 
 
-			VehicleType element;
+			DTAVehicleType element;
 			element.vehicle_type = vehicle_type;
 			element.pricing_type = pricing_type;
 			element.vehicle_type_name  = vehicle_type_name.c_str ();
@@ -1571,14 +1553,14 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 	{
 		while(parser.ReadRecord())
 		{
-			LinkType element;
+			DTALinkType element;
 
 			if(parser.GetValueByFieldName("link_type",element.link_type ) == false)
 				break;
 
 			if(parser.GetValueByFieldName("link_type_name",element.link_type_name ) == false)
 				break;
-
+		
 			if(parser.GetValueByFieldName("freeway_flag",element.freeway_flag  ) == false)
 				break;
 			if(parser.GetValueByFieldName("ramp_flag",element.ramp_flag  ) == false)
@@ -1624,7 +1606,7 @@ bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 			if(parser.GetValueByFieldName("VOT",VOT) == false)
 				break;
 
-			VOTDistribution element;
+			DTAVOTDistribution element;
 			element.pricing_type = pricing_type;
 			element.percentage  = percentage;
 			element.VOT = VOT;
@@ -2040,7 +2022,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	if(st!=NULL)
 	{
 		fprintf(st,"pricing_type,VOT,percentage\n");
-		for(std::vector<VOTDistribution>::iterator itr = m_VOTDistributionVector.begin(); itr != m_VOTDistributionVector.end(); ++itr){
+		for(std::vector<DTAVOTDistribution>::iterator itr = m_VOTDistributionVector.begin(); itr != m_VOTDistributionVector.end(); ++itr){
 			{
 				fprintf(st, "%d,%f,%f\n", (*itr).pricing_type , (*itr).VOT, (*itr).percentage);
 			}
@@ -2055,7 +2037,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	if(st!=NULL)
 	{
 		fprintf(st,"vehicle_type,type_name,pricing_type,pricing_type_name,average_VOT\n");
-		for(std::vector<VehicleType>::iterator itr = m_VehicleTypeVector.begin(); itr != m_VehicleTypeVector.end(); ++itr){
+		for(std::vector<DTAVehicleType>::iterator itr = m_VehicleTypeVector.begin(); itr != m_VehicleTypeVector.end(); ++itr){
 			{
 				fprintf(st, "%d,%s,%d,%s,%f\n", (*itr).vehicle_type , (*itr).vehicle_type_name, (*itr).pricing_type,(*itr).pricing_type_name,(*itr).average_VOT);
 			}
@@ -2069,9 +2051,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	if(st!=NULL)
 	{
 		fprintf(st,"link_type,link_type_name,freeway_flag,ramp_flag,arterial_flag\n");
-		for(std::vector<LinkType>::iterator itr = m_LinkTypeVector.begin(); itr != m_LinkTypeVector.end(); ++itr){
+		for(std::vector<DTALinkType>::iterator itr = m_LinkTypeVector.begin(); itr != m_LinkTypeVector.end(); ++itr){
 			{
-				fprintf(st, "%d,%s,%d,%d,%d\n", (*itr).link_type  , (*itr).link_type_name , (*itr).freeway_flag ,(*itr).ramp_flag ,(*itr).arterial_flag );
+				fprintf(st, "%d,%s,%d,%d,%d\n", (*itr).link_type  , (*itr).link_type_name.c_str () , (*itr).freeway_flag ,(*itr).ramp_flag ,(*itr).arterial_flag );
 			}
 
 		}
@@ -2095,6 +2077,27 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	}
 	fclose(st);
+
+		// 	write input_vehicle_emission_rate.csv
+		fopen_s(&st,directory+"input_vehicle_emission_rate.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st,"vehicle_type,opModeID,meanBaseRate_TotalEnergy_(J/hr),meanBaseRate_CO2_(g/hr),meanBaseRate_NOX_(g/hr),meanBaseRate_CO_(g/hr),meanBaseRate_HC_(g/hr)\n");
+			for (int vehicle_type  = 0; vehicle_type < MAX_VEHICLE_TYPE_SIZE; vehicle_type++)
+				for(int opModeID = 0;  opModeID < _MAXIMUM_OPERATING_MODE_SIZE; opModeID++)
+			{
+				if(EmissionRateData[vehicle_type][opModeID].meanBaseRate_TotalEnergy>0)
+				{
+
+					CEmissionRate element = EmissionRateData[vehicle_type][opModeID];
+
+					fprintf(st,"%d,%d,%f,%f,%f,%f,%f\n", vehicle_type, opModeID, element.meanBaseRate_TotalEnergy, element.meanBaseRate_CO2, element.meanBaseRate_NOX, element.meanBaseRate_CO, element.meanBaseRate_HC);
+				}
+			}
+
+			fclose(st);
+
+		}
 
 	if(m_BackgroundBitmapImportedButnotSaved)
 	{
@@ -3509,6 +3512,98 @@ void CTLiteDoc::OnImportdataImport()
 	UpdateAllViews(0);
 }
 
+bool CTLiteDoc::FillODMatrixFromMDBFile(int vehicle_type_size)
+{
+   static char BASED_CODE szFilter[] = "MS ACESS Files (*.mdb)|*.mdb||";
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		szFilter);
+	if(dlg.DoModal() == IDOK)
+	{
+    CDaoDatabase m_Database;
+    CString strSQL;
+    m_Database.Open(dlg.GetPathName()); 
+
+    strSQL = "SELECT * FROM [DEMAND]";
+
+	CString str_status_bar;
+
+	   // Read record
+	   CRecordsetExt rsDemand(&m_Database);
+	   rsDemand.Open(dbOpenDynaset, strSQL);
+
+	if(m_DemandMatrix!=NULL)
+	{
+		DeallocateDynamicArray(m_DemandMatrix,m_ODSize,m_ODSize);
+		m_DemandMatrix = NULL;
+	}
+	m_DemandMatrix   =  AllocateDynamicArray<float>(m_ODSize,m_ODSize);
+
+	for(int i= 0; i<m_ODSize; i++)
+		for(int j= 0; j<m_ODSize; j++)
+		{
+			m_DemandMatrix[i][j]= 0.0f;
+		}
+
+			bool bExist;
+   while(!rsDemand.IsEOF())
+   {
+
+			int origin_zone_id, destination_zone_id, vehicle_type;
+			float number_of_vehicles, starting_time_in_min, ending_time_in_min;
+
+			origin_zone_id = rsDemand.GetLong(CString("from_zone_id"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field from_zone_id cannot be found in the demand table.");
+				return false;
+			}
+
+			if( origin_zone_id ==0)
+				break;
+
+			destination_zone_id = rsDemand.GetLong(CString("to_zone_id"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field to_zone_id cannot be found in the demand table.");
+				return false;
+			}
+
+			for(int type = 1; type < vehicle_type_size; type++)
+			{
+
+				CString demand_string;
+
+				demand_string.Format("matrix_value_type%d", type);
+
+			number_of_vehicles = rsDemand.GetDouble(demand_string,bExist,false);
+
+			if(!bExist)
+			{
+				AfxMessageBox("Field demand_type1 cannot be found in the demand table.");
+				return false;
+			}
+
+			m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
+
+			DTADemand element;
+			element.from_zone_id = origin_zone_id;
+			element.to_zone_id = destination_zone_id;
+			element.vehicle_type = vehicle_type;
+			element.starting_time_in_min = 0;
+			element.ending_time_in_min = 60;
+			element.number_of_vehicles = number_of_vehicles;
+
+			m_DemandVector.push_back (element);
+
+			}
+
+		rsDemand.MoveNext();
+	}	// end of while
+	rsDemand.Close();
+
+	}
+
+}
 bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 {
 		// Open the EXCEL file
@@ -3883,7 +3978,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 
 	m_UnitFeet = m_UnitMile/5280.0f;  
 
-
 	/*
 	if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
 	{
@@ -3911,7 +4005,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	CString tablename21=(TableInfo).m_strName;
 	tablename21.MakeUpper();
 
-	if(tablename21.Find("2-1-link-type",0)<=0)
+	if(tablename21.Find("2-1-LINK-TYPE",0)<=0)
 	{
 		AfxMessageBox("Please make sure the 4th worksheet is a 2-1-link-type table.", MB_ICONINFORMATION);
 		return false;
@@ -3927,11 +4021,11 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 
 	while(!rsLinkType.IsEOF())
 	{
-		LinkType element;
+		DTALinkType element;
 		int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
 		if(!bExist) 
 		{
-			AfxMessageBox("Field link_type cannot be found in the 2-1-link-type table.");
+			AfxMessageBox("Field link_type cannot be found in input_link_type.csv.");
 			return false;
 		}
 		if(link_type_number ==0)
@@ -3942,21 +4036,21 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
 		if(!bExist) 
 		{
-			AfxMessageBox("Field freeway_flag cannot be found in the 2-1-link-type table.");
+			AfxMessageBox("Field freeway_flag cannot be found in the input_link_type.csv.");
 			return false;
 		}
 
 		element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
 		if(!bExist) 
 		{
-			AfxMessageBox("Field ramp_flag cannot be found in the 2-1-link-type table.");
+			AfxMessageBox("Field ramp_flag cannot be found in the input_link_type.csv.");
 			return false;
 		}
 
 		element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
 		if(!bExist)
 		{
-			AfxMessageBox("Field arterial_flag cannot be found in the 2-1-link-type table.");
+			AfxMessageBox("Field arterial_flag cannot be found in the input_link_type.csv.");
 			return false;
 		}
 
@@ -3977,7 +4071,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	tablename3.MakeUpper();
 
 	if(tablename3.Find("3-ZONE",0)<=0){
-		AfxMessageBox("Please make sure the 3rd worksheet is a zone table.", MB_ICONINFORMATION);
+		AfxMessageBox("Please make sure the 5th worksheet is a zone table.", MB_ICONINFORMATION);
 		return false;
 	}
 
@@ -4041,7 +4135,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	tablename4.MakeUpper();
 
 	if(tablename4.Find("4-DEMAND",0)<=0){
-		AfxMessageBox("Please make sure the 4th worksheet is a demand table.", MB_ICONINFORMATION);
+		AfxMessageBox("Please make sure the 6th worksheet is a demand table.", MB_ICONINFORMATION);
 		return false;
 	}
 
@@ -4135,7 +4229,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 
 		int value = tablename5.Find("4-1-temporal-profile",0);
 		if(tablename5.Find("4-1-temporal-profile",0)<=0){
-			AfxMessageBox("Please make sure the 5th worksheet is a 4-1-temporal-profile table.", MB_ICONINFORMATION);
+			AfxMessageBox("Please make sure the 7th worksheet is a 4-1-temporal-profile table.", MB_ICONINFORMATION);
 			return false;
 		}
 
@@ -4219,7 +4313,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		m_Database.GetTableDefInfo(7, TableInfo);
 		CString tablename6=(TableInfo).m_strName;
 		if(tablename6.Find("4-2-vehicle-type",0)<=0){
-			AfxMessageBox("Please make sure the 6th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
+			AfxMessageBox("Please make sure the 8th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
 			return false;
 		}
 
@@ -4273,7 +4367,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 
 			pricing_type_name = rsVehicleType.GetCString(CString("pricing_type_name"));
 
-			VehicleType element;
+			DTAVehicleType element;
 			element.vehicle_type = type_no;
 			element.percentage  = percentage;
 			element.pricing_type = pricing_type;
@@ -4286,6 +4380,17 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			rsVehicleType.MoveNext ();
 		}
 		rsVehicleType.Close();
+
+
+		if(m_VehicleTypeVector.size()>0 && m_DemandVector.size()==0)
+		{
+			// if no demand is input in t
+			if(AfxMessageBox("No demand has been input from the 4-demand worksheet. Do you want to provide an alternative Acesss MDB file?", MB_YESNO| MB_ICONINFORMATION)==IDYES)
+			{
+			FillODMatrixFromMDBFile(m_VehicleTypeVector.size());
+			}
+	
+		}
 
 		if(m_VehicleTypeVector.size()>0)
 		{
@@ -4315,7 +4420,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		m_Database.GetTableDefInfo(8, TableInfo);
 		CString tablename7=(TableInfo).m_strName;
 		if(tablename7.Find("4-3-VOT-distribution",0)<=0){
-			AfxMessageBox("Please make sure the 7th worksheet is a 4-3-VOT-distribution table.", MB_ICONINFORMATION);
+			AfxMessageBox("Please make sure the 9th worksheet is a 4-3-VOT-distribution table.", MB_ICONINFORMATION);
 			return false;
 		}
 
@@ -4355,7 +4460,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 				return false;
 			}
 
-			VOTDistribution element;
+			DTAVOTDistribution element;
 			element.pricing_type = pricing_type;
 			element.percentage  = percentage;
 			element.VOT = VOT;
@@ -4366,11 +4471,53 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		}
 		rsVOT.Close();
 
-		///// sensor location data
+		///// emissions data 
 		m_Database.GetTableDefInfo(9, TableInfo);
+		CString tablename12=(TableInfo).m_strName;
+		if(tablename12.Find("4-4-vehicle-emission-rate",0)<=0){
+			AfxMessageBox("Please make sure the 10th worksheet is a 4-4-vehicle-emission-rate table.", MB_ICONINFORMATION);
+			return false;
+		}
+
+		strSQL = "select * from [";
+		strSQL += TableInfo.m_strName;
+		strSQL += "]";
+
+		// Read record
+		CRecordsetExt rsEmissionRate(&m_Database);
+		rsEmissionRate.Open(dbOpenDynaset, strSQL);
+
+		while(!rsEmissionRate.IsEOF())
+		{
+			
+
+			int vehicle_type = rsEmissionRate.GetLong(CString("vehicle_type"),bExist,false);
+
+			if(bExist)
+			{
+			int opModeID = rsEmissionRate.GetLong(CString("opModeID"),bExist,false);
+			CEmissionRate element;
+			element.meanBaseRate_TotalEnergy = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
+			element.meanBaseRate_CO2 = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
+			element.meanBaseRate_NOX = rsEmissionRate.GetDouble(CString("meanBaseRate_CO2_(g/hr)"),bExist,false);
+			element.meanBaseRate_CO = rsEmissionRate.GetDouble(CString("meanBaseRate_NOX_(g/hr)"),bExist,false);
+			element.meanBaseRate_HC = rsEmissionRate.GetDouble(CString("meanBaseRate_HC_(g/hr)"),bExist,false);
+
+			ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
+			ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
+
+			EmissionRateData[vehicle_type][opModeID] = element;
+			}
+			rsEmissionRate.MoveNext ();
+		}
+		rsEmissionRate.Close();
+
+
+		///// sensor location data
+		m_Database.GetTableDefInfo(10, TableInfo);
 		CString tablename8=(TableInfo).m_strName;
 		if(tablename8.Find("5-1-sensor-location",0)<=0){
-			AfxMessageBox("Please make sure the 8th worksheet is a 5-1-sensor-location table.", MB_ICONINFORMATION);
+			AfxMessageBox("Please make sure the 11th worksheet is a 5-1-sensor-location table.", MB_ICONINFORMATION);
 			return false;
 		}
 
@@ -4432,6 +4579,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 					msg.Format ("Link %d -> %d in 5-1-sensor-location does not exit in input link data.");
 					AfxMessageBox(msg);
 					break;
+					return false;
 
 				}
 
@@ -4460,46 +4608,6 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		}
 		rsSensorLocation.Close();
 
-		///// emissions data 
-		m_Database.GetTableDefInfo(13, TableInfo);
-		CString tablename12=(TableInfo).m_strName;
-		if(tablename12.Find("6-1-vehicle-emission-rate",0)<=0){
-			AfxMessageBox("Please make sure the no. 12 worksheet is a 6-1-vehicle-emission-rate table.", MB_ICONINFORMATION);
-			return false;
-		}
-
-		strSQL = "select * from [";
-		strSQL += TableInfo.m_strName;
-		strSQL += "]";
-
-		// Read record
-		CRecordsetExt rsEmissionRate(&m_Database);
-		rsEmissionRate.Open(dbOpenDynaset, strSQL);
-
-		while(!rsEmissionRate.IsEOF())
-		{
-			
-
-			int vehicle_type = rsEmissionRate.GetLong(CString("vehicle_type"),bExist,false);
-
-			if(bExist)
-			{
-			int opModeID = rsEmissionRate.GetLong(CString("opModeID"),bExist,false);
-			CEmissionRate element;
-			element.meanBaseRate_TotalEnergy = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
-			element.meanBaseRate_CO2 = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
-			element.meanBaseRate_NOX = rsEmissionRate.GetDouble(CString("meanBaseRate_CO2_(g/hr)"),bExist,false);
-			element.meanBaseRate_CO = rsEmissionRate.GetDouble(CString("meanBaseRate_NOX_(g/hr)"),bExist,false);
-			element.meanBaseRate_HC = rsEmissionRate.GetDouble(CString("meanBaseRate_HC_(g/hr)"),bExist,false);
-
-			ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
-			ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
-
-			EmissionRateData[vehicle_type][opModeID] = element;
-			}
-			rsEmissionRate.MoveNext ();
-		}
-		rsEmissionRate.Close();
 
 		return true;
 }

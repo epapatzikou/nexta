@@ -221,6 +221,8 @@ public:
 	CString m_ProjectTitle;
 
 	bool FillNetworkFromExcelFile(LPCTSTR lpszFileName);
+	bool FillODMatrixFromMDBFile(int vehicle_type_size);
+
 	void AdjustCoordinateUnitToMile();
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
@@ -257,9 +259,9 @@ public:
 	std::vector<DTA_sensor> m_SensorVector;
 	std::vector<DTADemand> m_DemandVector;
 	std::vector<DTADemand> m_TempDemandVector;
-	std::vector<VehicleType> m_VehicleTypeVector;
-	std::vector<LinkType> m_LinkTypeVector;
-	std::vector<VOTDistribution> m_VOTDistributionVector;
+	std::vector<DTAVehicleType> m_VehicleTypeVector;
+	std::vector<DTALinkType> m_LinkTypeVector;
+	std::vector<DTAVOTDistribution> m_VOTDistributionVector;
 
 
 	std::vector<DTADemandProfile> m_DemandProfileVector;
