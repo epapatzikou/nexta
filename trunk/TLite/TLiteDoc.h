@@ -221,7 +221,7 @@ public:
 	CString m_ProjectTitle;
 
 	bool FillNetworkFromExcelFile(LPCTSTR lpszFileName);
-	bool FillODMatrixFromMDBFile(int vehicle_type_size);
+	bool FillODMatrixFromCSVFile(int vehicle_type_size);
 
 	void AdjustCoordinateUnitToMile();
 
@@ -629,6 +629,7 @@ public:
 		afx_msg void OnImportdataImport();
 		afx_msg void OnMoeVehiclepathanalaysis();
 		afx_msg void OnFileConstructandexportsignaldata();
+		afx_msg void OnFileDataexchangewithgooglefusiontables();
 };
 
 

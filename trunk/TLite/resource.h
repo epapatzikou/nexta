@@ -57,6 +57,7 @@
 #define IDB_WORKZONE                    182
 #define IDB_RAMPMETER                   183
 #define IDB_TOLL                        184
+#define IDD_DIALOG_Goolge_Fusion_Table  185
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -89,6 +90,7 @@
 #define IDC_EDIT_Number_of_Days         1031
 #define IDC_LIST_Routing_METHOD         1031
 #define IDC_EDIT_TimeInterval           1032
+#define IDC_EDIT3                       1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
 #define IDC_EDIT_Number_of_Zones        1034
 #define IDC_EDIT_StartingTime_in_min    1034
@@ -126,8 +128,8 @@
 #define IDC_BUTTON2                     1056
 #define IDC_BUTTON_DELETE               1056
 #define IDC_COMBO_VOT_LB                1056
-#define IDC_COMBO_VOT_LB2               1057
 #define IDC_COMBO_VOT_UB                1057
+#define IDC_BUTTON3                     1057
 #define IDC_GRIDLIST_MOE                1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
@@ -142,6 +144,10 @@
 #define IDC_COMBO_ImpactLink            1068
 #define IDC_SUMMARY_INFO                1069
 #define IDC_CHECK_EMISSION_DATA         1071
+#define IDC_BUTTON_Upload               1072
+#define IDC_BUTTON_Upload2              1073
+#define IDC_LIST2                       1074
+#define IDC_LIST3                       1075
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -456,14 +462,16 @@
 #define ID_0_2                          33147
 #define ID_Import_ShapeFiles            33148
 #define ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA 33149
+#define ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES 33150
+#define ID_BUTTON33152                  33152
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        185
-#define _APS_NEXT_COMMAND_VALUE         33150
-#define _APS_NEXT_CONTROL_VALUE         1072
+#define _APS_NEXT_RESOURCE_VALUE        186
+#define _APS_NEXT_COMMAND_VALUE         33153
+#define _APS_NEXT_CONTROL_VALUE         1076
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
