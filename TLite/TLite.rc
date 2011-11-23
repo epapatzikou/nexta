@@ -168,6 +168,7 @@ IDR_MAINFRAME2 TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_FILE_OPEN_NEW_DOC
     BUTTON      ID_FILE_SAVE_PROJECT
+    BUTTON      ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
     SEPARATOR
     BUTTON      ID_VIEW_SELECT
     BUTTON      ID_VIEW_SELECT_NODE
@@ -485,6 +486,7 @@ BEGIN
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
         MENUITEM "Import Data from Excel",      ID_IMPORTDATA_IMPORT
+        MENUITEM "Data Exchange with Google Fusion Tables", ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
         MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
         POPUP "Background Image"
         BEGIN
@@ -1202,6 +1204,29 @@ BEGIN
     PUSHBUTTON      "...",IDC_BUTTON_Find_Zone_File,322,90,20,14
 END
 
+IDD_DIALOG_Goolge_Fusion_Table DIALOGEX 0, 0, 316, 217
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Data Exchange with Google Fusion Tables"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,196,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,196,50,14
+    EDITTEXT        IDC_EDIT1,246,6,63,14,ES_AUTOHSCROLL
+    LTEXT           "User Name:",IDC_STATIC,200,6,38,8
+    LTEXT           "Password:",IDC_STATIC,200,26,34,8
+    PUSHBUTTON      "Upload >>",IDC_BUTTON_Upload,127,103,50,14
+    PUSHBUTTON      "<< Download",IDC_BUTTON_Upload2,127,82,50,14
+    LTEXT           "Uploading/Downloading Status:",IDC_STATIC,105,167,101,8
+    EDITTEXT        IDC_EDIT3,246,24,63,14,ES_AUTOHSCROLL
+    LTEXT           "Online Table List:",IDC_STATIC,199,57,56,8
+    LISTBOX         IDC_LIST2,184,72,125,63,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Log in:",IDC_BUTTON2,251,40,50,14
+    LTEXT           "Local Table List:",IDC_STATIC,7,60,52,8
+    LISTBOX         IDC_LIST3,7,74,104,61,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "",IDC_STATIC,83,177,147,18,0,WS_EX_CLIENTEDGE
+    PUSHBUTTON      "View Online Table in a Web Browser:",IDC_BUTTON3,183,135,126,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1485,6 +1510,14 @@ BEGIN
         RIGHTMARGIN, 361
         TOPMARGIN, 7
         BOTTOMMARGIN, 127
+    END
+
+    IDD_DIALOG_Goolge_Fusion_Table, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 6
+        BOTTOMMARGIN, 210
     END
 END
 #endif    // APSTUDIO_INVOKED
