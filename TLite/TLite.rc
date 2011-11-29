@@ -198,10 +198,12 @@ BEGIN
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
     BUTTON      ID_EDIT_CREATENODE
+    BUTTON      ID_EDIT_CREATESUBAREA
     SEPARATOR
     BUTTON      ID_ANIMATION_PLAY
     BUTTON      ID_ANIMATION_REWIND
     BUTTON      ID_ANIMATION_PAUSE
+    SEPARATOR
     BUTTON      ID_ANIMATION_STOP
 END
 
@@ -485,7 +487,7 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
-        MENUITEM "Import Data from Excel",      ID_IMPORTDATA_IMPORT
+        MENUITEM "Import Network Data from Excel File", ID_IMPORTDATA_IMPORT
         MENUITEM "Data Exchange with Google Fusion Tables", ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
         MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
         POPUP "Background Image"
@@ -505,6 +507,7 @@ BEGIN
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
+        MENUITEM "Import Demand Data from CSV File", ID_FILE_IMPORT_DEMAND_FROM_CSV
     END
     POPUP "View"
     BEGIN
@@ -556,6 +559,7 @@ BEGIN
         MENUITEM "Create Node",                 ID_EDIT_CREATENODE
         MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
         MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+        MENUITEM "Create Subarea",              ID_EDIT_CREATESUBAREA
         MENUITEM SEPARATOR
         MENUITEM "Delete Selected Link",        ID_LINK_DELETE
         MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
@@ -595,6 +599,7 @@ BEGIN
     END
     POPUP "Tools"
     BEGIN
+        MENUITEM "Remove Nodes and Links outside Subarea", ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA
         MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
         POPUP "NGSim Data"
         BEGIN
@@ -633,7 +638,7 @@ BEGIN
             MENUITEM "Generate Sensor Mapping Table", ID_TOOL_GENERATESENESORMAPPINGTABLE
         END
         MENUITEM "Car Following Simulation",    ID_TOOLS_CARFOLLOWINGSIMULATION
-        MENUITEM "Train",                       ID_SEARCH_LISTTRAINS
+        MENUITEM "Sub",                         ID_SEARCH_LISTTRAINS
     END
     POPUP "&Window"
     BEGIN
@@ -1003,8 +1008,6 @@ BEGIN
     LTEXT           "Coefficient for Converting Occupancy to Density:",IDC_STATIC,7,46,159,8
     EDITTEXT        IDC_EDIT_Occ_to_Density_Coef,133,56,40,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "Cancel",IDCANCLE,111,95,50,14
-    LTEXT           "Starting Time (min):",IDC_STATIC,7,73,64,8
-    EDITTEXT        IDC_EDIT_StartingTime_in_min,133,72,40,14,ES_AUTOHSCROLL
 END
 
 IDD_DIALOG_IMPORT_ODTABLE DIALOGEX 0, 0, 237, 51
@@ -1211,20 +1214,44 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,205,196,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,259,196,50,14
-    EDITTEXT        IDC_EDIT1,246,6,63,14,ES_AUTOHSCROLL
-    LTEXT           "User Name:",IDC_STATIC,200,6,38,8
-    LTEXT           "Password:",IDC_STATIC,200,26,34,8
-    PUSHBUTTON      "Upload >>",IDC_BUTTON_Upload,127,103,50,14
-    PUSHBUTTON      "<< Download",IDC_BUTTON_Upload2,127,82,50,14
-    LTEXT           "Uploading/Downloading Status:",IDC_STATIC,105,167,101,8
-    EDITTEXT        IDC_EDIT3,246,24,63,14,ES_AUTOHSCROLL
-    LTEXT           "Online Table List:",IDC_STATIC,199,57,56,8
-    LISTBOX         IDC_LIST2,184,72,125,63,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Log in:",IDC_BUTTON2,251,40,50,14
-    LTEXT           "Local Table List:",IDC_STATIC,7,60,52,8
-    LISTBOX         IDC_LIST3,7,74,104,61,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "",IDC_STATIC,83,177,147,18,0,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "View Online Table in a Web Browser:",IDC_BUTTON3,183,135,126,14
+    PUSHBUTTON      "<< Upload Nodes and Links in the Subarea ",IDC_BUTTON_Upload,104,115,145,14
+    PUSHBUTTON      "Download from Google Fusion Tables to Local Node and Link Files >>",IDC_BUTTON_Download,36,161,273,14
+    PUSHBUTTON      "Go Web!",IDC_BUTTON_NODE_WEB,119,39,41,14
+    LTEXT           "Node:",IDC_STATIC,7,6,20,8
+    EDITTEXT        IDC_EDIT_ExcelFile,47,20,61,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ExcelFile2,45,68,61,15,ES_AUTOHSCROLL
+    LTEXT           "Table ID:",IDC_STATIC,7,22,30,8
+    LTEXT           "Snap ID:",IDC_STATIC,7,39,29,8
+    EDITTEXT        IDC_EDIT_ExcelFile3,46,38,61,15,ES_AUTOHSCROLL
+    LTEXT           "Snap ID:",IDC_STATIC,7,87,29,8
+    PUSHBUTTON      "Go Web!",IDC_BUTTON_NODE_WEB2,119,88,41,14
+    EDITTEXT        IDC_EDIT_ExcelFile4,46,84,61,15,ES_AUTOHSCROLL
+    LTEXT           "Table ID:",IDC_STATIC,7,71,30,8
+    LTEXT           "Link:",IDC_STATIC,7,57,16,8
+    EDITTEXT        IDC_EDIT_ExcelFile5,7,137,302,15,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Local Project Folder:",IDC_STATIC,7,127,66,8
+END
+
+IDD_DIALOG_EXCEL_IMPORT DIALOGEX 0, 0, 354, 241
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Import Data Files"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Exit",IDOK,265,220,50,14
+    LTEXT           "Excel File to be Imported:",IDC_STATIC,7,7,83,8
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Exel_File,322,19,20,14
+    LISTBOX         IDC_LIST1,7,145,304,69,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "Import Network and Demand Data",ID_IMPORT,7,68,134,14
+    EDITTEXT        IDC_EDIT_Demand_CSV_File,7,47,306,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Demand_CSV_File,321,47,20,14
+    EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL
+    LTEXT           "Demand matrix CSV File to be Imported (optional):",IDC_STATIC,7,36,162,8
+    RTEXT           "Message List:",IDC_STATIC,7,132,44,8
+    DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,69,151,14
+    LTEXT           "Sensor Data Excel File to be Imported:",IDC_STATIC,7,88,124,8
+    EDITTEXT        IDC_EDIT_SENSOR_FILE,7,97,306,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,319,98,20,14
+    DEFPUSHBUTTON   "Import Sensor Data",ID_IMPORT_SENSOR_DATA,7,116,134,14
 END
 
 
@@ -1519,6 +1546,14 @@ BEGIN
         TOPMARGIN, 6
         BOTTOMMARGIN, 210
     END
+
+    IDD_DIALOG_EXCEL_IMPORT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 347
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 234
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1530,6 +1565,7 @@ END
 
 IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
 IDC_CREATE_LINK_CURSOR  CURSOR                  "res\\cur00001.cur"
+IDC_CURSOR_SUBAREA      CURSOR                  "res\\cur00002.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //

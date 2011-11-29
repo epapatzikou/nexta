@@ -59,14 +59,11 @@ void  CTLiteDoc::ReadObservationLinkVolumeData(LPCTSTR lpszFileName)
 				break;
 
 			float HourlyFlowVolume = g_read_float(st);
-			map<long,long>::iterator it;
+			map<long, DTALink*>::iterator it;
 
-			int LinkID = -1;
-			if ( (it = m_SensorIDtoLinkIDMap.find(SensorID)) != m_SensorIDtoLinkIDMap.end()) 
+			if ( (it = m_SensorIDtoLinkMap.find(SensorID)) != m_SensorIDtoLinkMap.end()) 
 			{
-				int LinkID = it->second;
-
-				DTALink* pLink = m_LinkNoMap[LinkID];
+				DTALink* pLink = it->second;
 
 				if(pLink!=NULL)
 				{

@@ -186,7 +186,7 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 		{
 			int from_node_id;
 			int to_node_id;
-			int sensor_type;
+			string sensor_type;
 			int sensor_id;
 			float relative_location_ratio;
 
@@ -210,7 +210,7 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 			{
 				sensor.LinkID = pLink->m_LinkNo ;
 				m_SensorVector.push_back(sensor);
-				m_SensorIDtoLinkIDMap[sensor.OrgSensorID] = pLink->m_LinkNo;
+				m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
 				pLink->m_bSensorData  = true;
 			}else
 			{
@@ -240,7 +240,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 	std::list<DTALink*>::iterator iLink;
 	int TimeHorizon = 1440; // 1440
 
-	m_TimeInterval = 5;
+	m_SamplingTimeInterval = 5;
 
 	m_NumberOfDays = 30;
 
@@ -254,7 +254,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 
 	if(dlg.DoModal() ==IDOK)
 	{
-		m_TimeInterval = dlg.m_ObsTimeInterval;
+		m_SamplingTimeInterval = dlg.m_ObsTimeInterval;
 		m_NumberOfDays = dlg.m_NumberOfDays;
 		Occ_to_Density_Coef = dlg.m_Occ_to_Density_Coef;
 
@@ -304,12 +304,13 @@ void CTLiteDoc::ReadSensorData(CString directory)
 				float Occupancy = g_read_float(st);
 				float AvgLinkSpeed = g_read_float(st);
 
-				int LinkID  = m_SensorIDtoLinkIDMap[SensorID];
+				map<long, DTALink*>::iterator it;
 
-				DTALink* pLink = NULL;
-				if(LinkID>=0)
+				DTALink* pLink ;
+				if ( (it = m_SensorIDtoLinkMap.find(SensorID)) != m_SensorIDtoLinkMap.end()) 
 				{
-					pLink = m_LinkNoMap[LinkID];
+					pLink = it->second ;
+
 				}else
 				{
 					CString error_message;
@@ -334,7 +335,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
- 							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+ 							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
@@ -345,7 +346,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 								pLink->m_LinkMOEAry[t].ObsDensity = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
-							for(int tt = 1; tt<m_TimeInterval; tt++)
+							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
 								pLink->m_LinkMOEAry[ t+tt].ObsFlow = pLink->m_LinkMOEAry[t].ObsFlow ;
 								pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
@@ -356,7 +357,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 						}else // simulation data loaded
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_TimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
@@ -367,7 +368,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 								pLink->m_LinkMOEAry[t].ObsDensityCopy = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
-							for(int tt = 1; tt<m_TimeInterval; tt++)
+							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
 								pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
 								pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
@@ -476,18 +477,18 @@ void CTLiteDoc::BuildHistoricalDatabase()
 
 		if((*iLink)->m_bSensorData  == true)
 		{
-			for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= m_TimeInterval)
+			for(int t = 0; t<(*iLink)->m_SimulationHorizon; t+= m_SamplingTimeInterval)
 			{
 				if(t%1440 ==0)
 				{  // reset at the begining of day
 					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
 				}else
 				{
-					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_TimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
+					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
 
 				}
 
-				for(int tt= 1; tt<m_TimeInterval;tt++)
+				for(int tt= 1; tt<m_SamplingTimeInterval;tt++)
 				{
 					(*iLink)->m_LinkMOEAry[t+tt].ObsCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow;
 				}
@@ -885,9 +886,8 @@ int CTLiteDoc::Routing()
 }
 
 
-int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, int direction)
+int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orientation)
 {
-
 	double Min_distance = m_NetworkRect.Width()/100;  // set the selection threshod
 
 	std::list<DTALink*>::iterator iLink;
@@ -900,21 +900,21 @@ int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, int direction)
 		pfrom.x  = (*iLink)->m_FromPoint.x; pfrom.y  = (*iLink)->m_FromPoint.y;
 		pto.x  = (*iLink)->m_ToPoint.x; pto.y  = (*iLink)->m_ToPoint.y;
 
-		if(direction == 1 && pfrom.x > pto.x)  // East, Xfrom should be < XTo
+		if(orientation.MakeUpper().Find('E')>0 && pfrom.x > pto.x)  // East, Xfrom should be < XTo
 			continue;  //skip
 
-		if(direction == 2 && pfrom.y < pto.y)  // South, Yfrom should be > YTo
+		if(orientation.MakeUpper().Find('S')>0 && pfrom.y < pto.y)  // South, Yfrom should be > YTo
 			continue;
 
-		if(direction == 3 && pfrom.x < pto.x)  // West, Xfrom should be > XTo
+		if(orientation.MakeUpper().Find('W')>0 && pfrom.x < pto.x)  // West, Xfrom should be > XTo
 			continue;
 
-		if(direction == 4 && pfrom.y > pto.y)  // North, Yfrom should be < YTo
+		if(orientation.MakeUpper().Find('N')>0 && pfrom.y > pto.y)  // North, Yfrom should be < YTo
 			continue;
 
 		float distance = g_DistancePointLine(p0, pfrom, pto);
 
-		if(distance >0 && distance < Min_distance)
+		if(distance >=0 && distance < Min_distance)
 		{
 			SelectedLinkID = (*iLink)->m_LinkNo ;
 

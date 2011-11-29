@@ -216,6 +216,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportNetwork.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_ImportODDemand.cpp"
 				>
 			</File>
@@ -578,6 +582,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportNetwork.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_ImportODDemand.h"
 				>
 			</File>
@@ -800,7 +808,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\cur00002.cur"
+				>
+			</File>
+			<File
 				RelativePath=".\res\cursor1.cur"
+				>
+			</File>
+			<File
+				RelativePath=".\res\cursor2.cur"
 				>
 			</File>
 			<File
@@ -836,11 +852,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+				RelativePath=".\res\stateico.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\stateico.bmp"
+				RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 				>
 			</File>
 			<File
@@ -868,11 +884,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+				RelativePath=".\res\toolbar1.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\res\toolbar1.bmp"
+				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 				>
 			</File>
 			<File

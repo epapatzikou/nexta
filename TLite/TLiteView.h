@@ -33,7 +33,7 @@
 
 
 enum tool
-   { move_tool, select_tool, select_node_tool, bkimage_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool
+   { move_tool, select_tool, select_node_tool, bkimage_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool, subarea_tool
    };
 
 
@@ -45,12 +45,19 @@ protected: // create from serialization only
 
 // Attributes
 public:
+
+	bool isCreatingSubarea, isFinishSubarea;
 	
 	int m_SelectFromNodeNumber; 
 	int m_SelectToNodeNumber;
 
 	bool m_bShowSensor;
 	bool m_bShowText;
+
+	LPPOINT m_subarea_points;
+	// Create a polygonal region
+    HRGN m_polygonal_region;
+
 	CTLiteDoc* GetDocument() const;
 	tool m_ToolMode; 
 	
@@ -77,6 +84,24 @@ public:
 	void DrawTemporalLink(CPoint start_point, CPoint end_point);
 
 	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;
+	CPoint m_TempZoneStartPoint, m_TempZoneEndPoint;
+
+	CPoint m_FirstSubareaPoints;
+
+	bool bFindCloseSubareaPoint(CPoint pt)
+	{
+		if(GetDocument()->m_SubareaShapePoints.size()>0)
+		{
+			double value = (pt.x - m_FirstSubareaPoints.x)*(pt.x - m_FirstSubareaPoints.x) + (pt.y - m_FirstSubareaPoints.y)*(pt.y -m_FirstSubareaPoints.y);
+		double distance = sqrt(value);
+			if(distance < 10) 
+				return true;
+
+		}
+
+		return false;
+	}
+
 	bool m_bMouseDownFlag;
 
 	CPoint m_ScreenOrigin;
@@ -214,6 +239,9 @@ public:
 	afx_msg void OnViewSelectNode();
 	afx_msg void OnUpdateViewSelectNode(CCmdUI *pCmdUI);
 	afx_msg void OnSearchNode();
+	afx_msg void OnEditCreatesubarea();
+	afx_msg void OnUpdateEditCreatesubarea(CCmdUI *pCmdUI);
+	afx_msg void OnToolsRemovenodesandlinksoutsidesubarea();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

@@ -5,6 +5,10 @@
 #define IDSAVEASDEFAULT                 2
 #define IDCANCLE                        2
 #define ID_EXPORT                       3
+#define ID_IMPORT                       3
+#define ID_IMPORT_Network_Only          4
+#define ID_IMPORT2                      5
+#define ID_IMPORT_SENSOR_DATA           5
 #define IDD_ABOUTBOX                    100
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
@@ -58,6 +62,8 @@
 #define IDB_RAMPMETER                   183
 #define IDB_TOLL                        184
 #define IDD_DIALOG_Goolge_Fusion_Table  185
+#define IDC_CURSOR_SUBAREA              186
+#define IDD_DIALOG_EXCEL_IMPORT         186
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_EDIT_LENGTH                 1002
@@ -130,14 +136,20 @@
 #define IDC_COMBO_VOT_LB                1056
 #define IDC_COMBO_VOT_UB                1057
 #define IDC_BUTTON3                     1057
+#define IDC_BUTTON_NODE_WEB             1057
 #define IDC_GRIDLIST_MOE                1058
+#define IDC_BUTTON_NODE_WEB2            1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
+#define IDC_EDIT_Demand_CSV_File        1060
 #define IDC_EDIT_ZoneShapeFile          1061
+#define IDC_EDIT_SENSOR_FILE            1061
 #define IDC_BUTTON_Find_Node_File       1062
 #define IDC_BUTTON_Find_Link_File       1063
 #define IDC_BUTTON_COPY_VEHICLE_FILE    1063
+#define IDC_BUTTON_Find_Demand_CSV_File 1063
 #define IDC_BUTTON_Find_Zone_File       1064
+#define IDC_BUTTON_Find_Sensor_File     1064
 #define IDC_COMBO_Min_Number_of_vehicles 1065
 #define IDC_COMBO_Min_Travel_Time       1066
 #define IDC_COMBO_Min_TravelTimeIndex   1067
@@ -146,8 +158,15 @@
 #define IDC_CHECK_EMISSION_DATA         1071
 #define IDC_BUTTON_Upload               1072
 #define IDC_BUTTON_Upload2              1073
+#define IDC_BUTTON_Download             1073
 #define IDC_LIST2                       1074
 #define IDC_LIST3                       1075
+#define IDC_BUTTON_Find_Exel_File       1076
+#define IDC_EDIT_ExcelFile              1077
+#define IDC_EDIT_ExcelFile2             1078
+#define IDC_EDIT_ExcelFile3             1079
+#define IDC_EDIT_ExcelFile4             1080
+#define IDC_EDIT_ExcelFile5             1081
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -464,14 +483,18 @@
 #define ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA 33149
 #define ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES 33150
 #define ID_BUTTON33152                  33152
+#define ID_FILE_IMPORTDEMANDDATAFROMEXCELFILE 33153
+#define ID_FILE_IMPORT_DEMAND_FROM_CSV  33154
+#define ID_EDIT_CREATESUBAREA           33157
+#define ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA 33158
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        186
-#define _APS_NEXT_COMMAND_VALUE         33153
-#define _APS_NEXT_CONTROL_VALUE         1076
+#define _APS_NEXT_RESOURCE_VALUE        187
+#define _APS_NEXT_COMMAND_VALUE         33159
+#define _APS_NEXT_CONTROL_VALUE         1078
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

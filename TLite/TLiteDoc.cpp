@@ -54,7 +54,7 @@
 #include "DlgMOETabView.h"
 #include "Dlg_ImportShapeFiles.h"
 #include "Dlg_GoogleFusionTable.h"
-
+#include "Dlg_ImportNetwork.h"
 
 
 #ifdef _DEBUG
@@ -64,7 +64,6 @@
 CDlgMOE *g_LinkMOEDlg = NULL;
 CDlgPathMOE	*g_pPathMOEDlg = NULL;
 
-extern 	  std::list<CView*>	g_ViewList;
 extern float g_Simulation_Time_Stamp;
 
 bool g_LinkMOEDlgShowFlag = false;
@@ -77,7 +76,6 @@ IMPLEMENT_DYNCREATE(CTLiteDoc, CDocument)
 
 BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_OPEN, &CTLiteDoc::OnFileOpen)
-	ON_COMMAND(ID_TOOL_GENERATESENESORMAPPINGTABLE, &CTLiteDoc::OnToolGeneratesenesormappingtable)
 	ON_COMMAND(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnShowShowpathmoe)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHOWPATHMOE, &CTLiteDoc::OnUpdateShowShowpathmoe)
 	ON_COMMAND(ID_SEARCH_LISTTRAINS, &CTLiteDoc::OnSearchListtrains)
@@ -148,6 +146,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_MOE_VEHICLEPATHANALAYSIS, &CTLiteDoc::OnMoeVehiclepathanalaysis)
 	ON_COMMAND(ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA, &CTLiteDoc::OnFileConstructandexportsignaldata)
 	ON_COMMAND(ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES, &CTLiteDoc::OnFileDataexchangewithgooglefusiontables)
+	ON_COMMAND(ID_FILE_IMPORT_DEMAND_FROM_CSV, &CTLiteDoc::OnFileImportDemandFromCsv)
 END_MESSAGE_MAP()
 
 
@@ -271,6 +270,8 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 
 		}
 
+		m_bSimulationDataLoaded = true;
+
 		g_Simulation_Time_Stamp = 0; // reset starting time
 		g_SimulationStartTime_in_min = 0;
 
@@ -321,94 +322,12 @@ void CTLiteDoc::ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName)
 			}
 
 		}
+		m_bSimulationDataLoaded = true;
 
 		fclose(st);
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
 	}
 
-}
-
-void CTLiteDoc::ReadHistoricalDataFormat2(CString directory)
-{
-
-	CWaitCursor wc;
-	g_Simulation_Time_Horizon = 1440*g_Number_of_Weekdays/g_Data_Time_Interval;
-	FILE* st = NULL;
-	fopen_s(&st,directory+"SensorData.csv","r");
-	int FirstDay = -1;
-
-	if(st!=NULL)
-	{
-
-		std::list<DTALink*>::iterator iLink;
-
-		while(!feof(st))
-		{
-			//			311831,60,2010-03-01 00:00:00,0,0,0,100
-			long SensorID =g_read_integer(st);
-			if(SensorID == -1)  // reach end of file
-				break;
-
-			int day_of_year = g_read_integer(st);
-
-			if(FirstDay ==-1)
-				FirstDay = day_of_year;
-
-			int year = g_read_integer(st);
-			int month = g_read_integer(st);
-			int day = g_read_integer(st);
-			int hour = g_read_integer(st);
-			int min  = g_read_integer(st);
-			int second = g_read_integer(st);
-			float AvgSpeed = g_read_float(st);
-			float AvgOcc = g_read_float(st);
-			float TotalFlow = g_read_float(st);
-			float PercentageObserved = g_read_float(st);
-
-
-			map<long,long>::iterator it;
-
-			int LinkID = -1;
-			if ( (it = m_SensorIDtoLinkIDMap.find(SensorID)) != m_SensorIDtoLinkIDMap.end()) 
-			{
-				int LinkID = it->second;
-
-				DTALink* pLink = m_LinkNoMap[LinkID];
-
-				if(pLink!=NULL)
-				{
-					pLink->ResetMOEAry(g_Simulation_Time_Horizon);
-
-					int Interval=5;
-
-					int t  = ((day_of_year-FirstDay)*1440+ hour*60+min)/g_Data_Time_Interval;
-
-					if(t<(*iLink)->m_SimulationHorizon)
-					{
-
-						if(AvgSpeed<=1)  // 0 or negative values means missing speed
-							AvgSpeed = pLink->m_SpeedLimit ;
-
-						ASSERT(pLink->m_NumLanes > 0);
-						pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*12/pLink->m_NumLanes;  // convert to per hour link flow
-						pLink->m_LinkMOEAry[ t].ObsSpeed = AvgSpeed; 
-						pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_Length/max(1,AvgSpeed);
-						pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
-
-
-						if(t>=1)
-						{
-							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-1].ObsCumulativeFlow + TotalFlow/12;
-						}
-
-					}
-
-				}	
-			}
-		}
-
-		fclose(st);
-	}
 }
 
 void CTLiteDoc::ReadHistoricalData(CString directory)
@@ -615,6 +534,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName)
 	if(ReadZoneCSVFile(directory+"input_zone.csv"))
 	{
 		ReadDemandCSVFile(directory+"input_demand.csv");
+		ReadSubareaCSVFile(directory+"input_subarea.csv");
 		ReadVehicleTypeCSVFile(directory+"input_vehicle_type.csv");
 		ReadVOTCSVFile(directory+"input_VOT.csv");
 		LoadSimulationOutput();
@@ -822,85 +742,6 @@ COLORREF CTLiteDoc::GetLinkTypeColor(int LinkType)
 	return color;
 }
 
-void CTLiteDoc::OnToolGeneratesenesormappingtable()
-{
-	CWaitCursor wc;
-	FILE* st = NULL;
-
-	CString directory = m_ProjectDirectory;
-
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Station location file (*.csv)|*.csv|"));
-	if(dlg.DoModal() == IDOK)
-	{
-		fopen_s(&st,dlg.GetPathName(),"r");
-		if(st!=NULL)
-		{
-			int s = 1;
-			while(!feof(st))
-			{
-				DTA_sensor sensor;
-
-				sensor.OrgSensorID  =  g_read_integer(st);
-				if(sensor.OrgSensorID == -1)
-					break;
-
-				float y = g_read_float(st);  //lat
-				float x = g_read_float(st);  //long
-				int direction = g_read_integer(st);
-
-				int SensorLinkID = FindLinkFromSensorLocation(x,y,direction);
-
-				if(SensorLinkID>=0)
-				{
-					sensor.LinkID = SensorLinkID;
-					m_SensorVector.push_back(sensor);
-
-					m_LinkNoMap[SensorLinkID]->m_bSensorData  = true;
-
-
-				}else
-				{
-					sensor.LinkID = -1;
-					sensor.pt.x = x;
-					sensor.pt.y  = y;
-					m_SensorVector.push_back(sensor);
-
-				}
-
-				s++;
-			}
-
-			fclose(st);
-		}
-
-		// 	write sensor_location.csv
-		// 	From Node,To Node,Type,OrgSensorID
-
-		fopen_s(&st,directory+"input_sensor_location.csv","w");
-		if(st!=NULL)
-		{
-			std::vector<DTA_sensor>::iterator iSensor;
-			fprintf(st,"from_node_id,to_node_id,sensor_type,sensor_id\n");
-			for (iSensor = m_SensorVector.begin(); iSensor != m_SensorVector.end(); iSensor++)
-			{
-				if((*iSensor).LinkID>=0)
-				{
-					DTALink* pLink = m_LinkNoMap[(*iSensor).LinkID];
-					fprintf(st,"%d,%d,0,%d\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, (*iSensor).OrgSensorID);
-				}
-			}
-
-			fclose(st);
-
-		}
-	}
-
-
-
-}
-
-
 void CTLiteDoc::OnShowShowpathmoe()
 {
 	m_PathMOEDlgShowFlag = !m_PathMOEDlgShowFlag;
@@ -1103,6 +944,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 			double k_jam,wave_speed_in_mph;
 			string mode_code;
 
+			float grade;
+
 
 			if(!parser.GetValueByFieldName("name",name))
 				name = "";
@@ -1170,6 +1013,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 
 			if(!parser.GetValueByFieldName("jam_density_in_vhc_pmpl",k_jam))
 				k_jam = 180;
+
+			if(!parser.GetValueByFieldName("grade",grade))
+				grade = 0;
 
 			if(!parser.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
 				wave_speed_in_mph = 12;
@@ -1286,6 +1132,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 				pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
 				pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 				pLink->m_link_type= type;
+				pLink->m_link_type= grade;
+
 
 				pLink->m_Kjam = k_jam;
 				pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
@@ -1352,6 +1200,37 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 
 }
 
+
+bool CTLiteDoc::ReadSubareaCSVFile(LPCTSTR lpszFileName)
+{
+	FILE* st = NULL;
+	fopen_s(&st,lpszFileName,"r");
+
+	int lineno = 0 ;
+	m_SubareaShapePoints.clear ();
+
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		int i=0;
+		while(parser.ReadRecord())
+		{
+			GDPoint point;
+
+			if(parser.GetValueByFieldName("x",point.x) == false)
+				break;
+
+			if(parser.GetValueByFieldName("y",point.y) == false)
+				break;
+
+			m_SubareaShapePoints.push_back(point);
+			lineno++;
+		}
+
+	}
+		return true;
+}
 bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 {
 	FILE* st = NULL;
@@ -1745,11 +1624,9 @@ bool CTLiteDoc::ReadScenarioData()
 {
 	FILE* st = NULL;
 	int i =0;
-	fopen_s(&st,m_ProjectDirectory+"Incident.xml","r");
+	fopen_s(&st,m_ProjectDirectory+"Incident.csv","r");
 	if(st!=NULL)
 	{
-		int XML_version = g_read_float(st);
-
 		while(true)
 		{
 			int usn  = g_read_integer(st);
@@ -1777,11 +1654,9 @@ bool CTLiteDoc::ReadScenarioData()
 	}
 
 	//  Dynamic Message Sign
-	fopen_s(&st,m_ProjectDirectory+"Dynamic_Message_Sign.xml","r");
+	fopen_s(&st,m_ProjectDirectory+"Dynamic_Message_Sign.csv","r");
 	if(st!=NULL)
 	{
-		int XML_version = g_read_float(st);
-
 		while(true)
 		{
 			int usn  = g_read_integer(st);
@@ -1807,11 +1682,9 @@ bool CTLiteDoc::ReadScenarioData()
 		fclose(st);
 	}
 	// toll
-	fopen_s(&st,m_ProjectDirectory+"Link_Based_Toll.xml","r");
+	fopen_s(&st,m_ProjectDirectory+"Link_Based_Toll.csv","r");
 	if(st!=NULL)
 	{
-		int XML_version = g_read_float(st);
-
 		while(true)
 		{
 			int usn  = g_read_integer(st);
@@ -1840,10 +1713,9 @@ bool CTLiteDoc::ReadScenarioData()
 	}
 
 	// toll
-	fopen_s(&st,m_ProjectDirectory+"Distance_Based_Toll.xml","r");
+	fopen_s(&st,m_ProjectDirectory+"Distance_Based_Toll.csv","r");
 	if(st!=NULL)
 	{
-		int XML_version = g_read_float(st);
 
 		while(true)
 		{
@@ -1907,12 +1779,12 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"input_vehicle.csv", directory+"input_vehicle.csv", FALSE);
 		CopyFile(OldDirectory+"input_VOT.csv", directory+"input_VOT.csv", FALSE);
 
-		CopyFile(OldDirectory+"Incident.xml", directory+"Incident.xml", FALSE);
-		CopyFile(OldDirectory+"Link_Based_Toll.xml", directory+"Link_Based_Toll.xml", FALSE);
-		CopyFile(OldDirectory+"Distance_Based_Toll.xml", directory+"Distance_Based_Toll.xml", FALSE);
-		CopyFile(OldDirectory+"Dynamic_Message_Sign.xml", directory+"Dynamic_Message_Sign.xml", FALSE);
-		CopyFile(OldDirectory+"Ramp_Metering.xml", directory+"Ramp_Metering.xml", FALSE);
-		CopyFile(OldDirectory+"Work_Zone.xml", directory+"Work_Zone.xml", FALSE);
+		CopyFile(OldDirectory+"Incident.csv", directory+"Incident.csv", FALSE);
+		CopyFile(OldDirectory+"Link_Based_Toll.csv", directory+"Link_Based_Toll.csv", FALSE);
+		CopyFile(OldDirectory+"Distance_Based_Toll.csv", directory+"Distance_Based_Toll.csv", FALSE);
+		CopyFile(OldDirectory+"Dynamic_Message_Sign.csv", directory+"Dynamic_Message_Sign.csv", FALSE);
+		CopyFile(OldDirectory+"Ramp_Metering.csv", directory+"Ramp_Metering.csv", FALSE);
+		CopyFile(OldDirectory+"Work_Zone.csv", directory+"Work_Zone.csv", FALSE);
 
 		CopyFile(OldDirectory+"DTASettings.ini", directory+"DTASettings.ini", FALSE);
 		CopyFile(OldDirectory+"LinkMOE.csv", directory+"LinkMOE.csv", FALSE);
@@ -1960,14 +1832,14 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,geometry\n");
+		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			fprintf(st,"%s,%d,%d,%d,%d,%f,%d,%f,%f,%d,%f,%f,%s,",
+			fprintf(st,"%s,%d,%d,%d,%d,%f,%d,%f,%f,%d,%f,%f,%s,%f,",
 				(*iLink)->m_Name.c_str (),
 				(*iLink)->m_LinkID, 
 				(*iLink)->m_FromNodeNumber, 
-				(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str ());
+				(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
 			fprintf(st,"\"<LineString><coordinates>");
 
 			for(int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
@@ -2015,6 +1887,20 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 			}
 
 		}
+		fclose(st);
+
+	}
+
+	// save demand here
+	fopen_s(&st,directory+"input_subarea.csv","w");
+	if(st!=NULL)
+	{
+		fprintf(st,"feature_id,x,y\n");
+		for (int sub_i= 0; sub_i < m_SubareaShapePoints.size(); sub_i++)
+		{
+			fprintf(st, "%d,%f,%f\n", sub_i, m_SubareaShapePoints[sub_i].x, m_SubareaShapePoints[sub_i].y);
+		}
+
 		fclose(st);
 
 	}
@@ -2072,8 +1958,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		{
 			if((*iSensor).LinkID>=0)
 			{
-				fprintf(st,"%d,%d,%d,%d,%d\n", (*iSensor).FromNodeNumber , (*iSensor).ToNodeNumber ,
-					(*iSensor).SensorType,(*iSensor).OrgSensorID,(*iSensor).RelativeLocationRatio );
+				fprintf(st,"%d,%d,%s,%d,%d\n", (*iSensor).FromNodeNumber , (*iSensor).ToNodeNumber ,
+					(*iSensor).SensorType.c_str(),(*iSensor).OrgSensorID,(*iSensor).RelativeLocationRatio );
 			}
 		}
 
@@ -2621,7 +2507,7 @@ void CTLiteDoc::OnToolsCarfollowingsimulation()
 	}
 }
 
-DWORD g_ProcessWait(DWORD PID) 
+DWORD CTLiteDoc::ProcessWait(DWORD PID) 
 {
 	DWORD dwRetVal = DWORD(-1);
 	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, PID);
@@ -2636,7 +2522,7 @@ DWORD g_ProcessWait(DWORD PID)
 	return dwRetVal;
 }
 
-DWORD g_ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait)
+DWORD CTLiteDoc::ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait)
 {
 
 	STARTUPINFO StartupInfo;
@@ -2674,7 +2560,7 @@ DWORD g_ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, B
 		if( bWait ) 
 		{
 			::WaitForInputIdle(ProcessInfo.hProcess, INFINITE);
-			dwRetVal = g_ProcessWait(ProcessInfo.dwProcessId);
+			dwRetVal = ProcessWait(ProcessInfo.dwProcessId);
 		} else {
 			// before we return to the caller, we wait for the currently
 			// started application until it is ready to work.
@@ -2718,7 +2604,7 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	sCommand.Format("%s\\DTALite.exe", pMainFrame->m_CurrentDirectory);
 
-	g_ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
+	ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
 
 	CTime ExeEndTime = CTime::GetCurrentTime();
 
@@ -3093,7 +2979,7 @@ void CTLiteDoc::OnToolsViewsimulationsummary()
 	CString strDir;
 	strDir.Format ("%s", WindowsDirectory);
 
-	g_ProcessExecute(sCommand, strParam, strDir, true);
+	ProcessExecute(sCommand, strParam, strDir, true);
 	*/
 }
 
@@ -3231,7 +3117,7 @@ void CTLiteDoc::OnToolsPerformscheduling()
 
 	sCommand.Format("%s\\FastTrain.exe", pMainFrame->m_CurrentDirectory);
 
-	g_ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
+	ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
 
 	CTime ExeEndTime = CTime::GetCurrentTime();
 
@@ -3502,26 +3388,19 @@ void CTLiteDoc::OnMoeViewmoes()
 
 void CTLiteDoc::OnImportdataImport()
 {
-	static char BASED_CODE szFilter[] = "EXCEL 2003 Workbook (*.xls)|*.xls||";
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		szFilter);
-	if(dlg.DoModal() == IDOK)
-	{
-		FillNetworkFromExcelFile(dlg.GetPathName());
-	}
-	CalculateDrawingRectangle();
+	CDlg_ImportNetwork dlg;
+	dlg.m_pDOC = this;
+	dlg.DoModal();
 
+	CalculateDrawingRectangle();
+	m_bFitNetworkInitialized  = false;
 	UpdateAllViews(0);
 }
 
-bool CTLiteDoc::FillODMatrixFromCSVFile(int vehicle_type_size)
+float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 {
-	static char BASED_CODE szFilter[] = "CSV Files (*.csv)|*.csv||";
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		szFilter);
-	if(dlg.DoModal() == IDOK)
-	{
 
+	float total_demand = 0;
 		for(int i= 0; i<m_ODSize; i++)
 			for(int j= 0; j<m_ODSize; j++)
 			{
@@ -3532,7 +3411,7 @@ bool CTLiteDoc::FillODMatrixFromCSVFile(int vehicle_type_size)
 
 			
 			  // Convert a TCHAR string to a LPCSTR
-			  CT2CA pszConvertedAnsiString (dlg.GetPathName ());
+			  CT2CA pszConvertedAnsiString (lpszFileName);
 
 			  // construct a std::string using the LPCSTR input
 			  std::string strStd (pszConvertedAnsiString);
@@ -3561,7 +3440,7 @@ bool CTLiteDoc::FillODMatrixFromCSVFile(int vehicle_type_size)
 						return false;
 					}
 
-					for(int type = 1; type < vehicle_type_size; type++)
+					for(int type = 1; type < m_VehicleTypeVector.size(); type++)
 					{
 
 						std::ostringstream  demand_string;
@@ -3580,10 +3459,11 @@ bool CTLiteDoc::FillODMatrixFromCSVFile(int vehicle_type_size)
 						DTADemand element;
 						element.from_zone_id = origin_zone_id;
 						element.to_zone_id = destination_zone_id;
-						element.vehicle_type = vehicle_type;
+						element.vehicle_type = type;
 						element.starting_time_in_min = 0;
 						element.ending_time_in_min = 60;
 						element.number_of_vehicles = number_of_vehicles;
+						total_demand+= number_of_vehicles;
 
 						m_DemandVector.push_back (element);
 
@@ -3592,17 +3472,61 @@ bool CTLiteDoc::FillODMatrixFromCSVFile(int vehicle_type_size)
 
 				}
 			}
-			return true;
-	}
-	return false;
+			return total_demand;
 }
-bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
+
+CString CTLiteDoc::GetTableName(CString Tablename)
+{
+	int nTables = m_Database.GetTableDefCount();
+
+	CString EmptyString;
+
+	for(int i = 0; i < 	nTables; i++)
+	{// this accesses first sheet regardless of name.
+		CDaoTableDefInfo TableInfo;
+
+		m_Database.GetTableDefInfo(i, TableInfo);
+
+		CString tablename=(TableInfo).m_strName;
+		tablename.MakeUpper();
+		if(tablename.Find(Tablename.MakeUpper(),0)>0)
+		{
+			return TableInfo.m_strName;
+		}
+
+	}
+
+	CString ErrorMessage;
+	ErrorMessage += "Table ";
+	ErrorMessage += Tablename;
+	ErrorMessage += " cannot be found in the given Excel file. Pleaes check.";
+
+	AfxMessageBox(ErrorMessage, MB_ICONINFORMATION);
+
+	return EmptyString;
+
+}
+
+CString CTLiteDoc::ConstructSQL(CString Tablename)
+{
+	CString strSQL;
+
+	CString table_name  = GetTableName(Tablename);
+	if(table_name.GetLength () > 0)
+	{
+	strSQL = "select * from [";
+	strSQL += table_name;
+	strSQL += "]";
+	return strSQL;
+	}
+	return strSQL;
+
+}
+
+bool CTLiteDoc::CreateNetworkFromExcelFile()
 {
 	// Open the EXCEL file
-	CDaoDatabase m_Database;
-
 	std::string itsErrorMessage;
-
 	// Make sure the network is empty
 	m_NodeSet.clear ();
 	m_LinkSet.clear ();
@@ -3611,45 +3535,21 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	bool bExist=true;
 
 	CString strSQL;
-
 	CString str_duplicated_link;
 
-	m_Database.Open(pFileName, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
-
-	// this provides number of sheets in .xls
-	int nTables = m_Database.GetTableDefCount();
-	if(nTables<3)
-	{
-		AfxMessageBox("Please make sure the Excel file has at least 4 worksheets: node, link, zone.", MB_ICONINFORMATION);
-		return false;
-	}
-
 	// this accesses first sheet regardless of name.
-	CDaoTableDefInfo TableInfo;
+	int i= 0;
 
-	m_Database.GetTableDefInfo(1, TableInfo);
-
-	CString tablename1=(TableInfo).m_strName;
-	tablename1.MakeUpper();
-
-	if(tablename1.Find("1-NODE",0)<=0)
-	{
-		AfxMessageBox("Please make sure the 1st worksheet is an 1-node table.", MB_ICONINFORMATION);
-		return false;
-	}
-
-
-	CWaitCursor wait;
-
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
 
 	// Read record
+
+	strSQL = ConstructSQL("1-NODE");
+
+	if(strSQL.GetLength() > 0)
+		{
 	CRecordsetExt rsNode(&m_Database);
 	rsNode.Open(dbOpenDynaset, strSQL);
 
-	int i= 0;
 	while(!rsNode.IsEOF())
 	{
 		int id = rsNode.GetLong(CString("node_id"),bExist,false);
@@ -3700,24 +3600,18 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	}	// end of while
 	rsNode.Close();
 
-	// link table
-	m_Database.GetTableDefInfo(2, TableInfo);
-	CString tablename2=(TableInfo).m_strName;
-	tablename2.MakeUpper();
-
-	if(tablename2.Find("2-LINK",0)<=0){
-		AfxMessageBox("Please make sure the 2nd worksheet is a link table.", MB_ICONINFORMATION);
-		return false;
 	}
+	// link table
 
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
-
+	if(m_NodeSet.size() > 0)
+	{
 	// Read record
+	strSQL = ConstructSQL("2-LINK");
+
+	if(strSQL.GetLength () > 0)
+	{
 	CRecordsetExt rsLink(&m_Database);
 	rsLink.Open(dbOpenDynaset, strSQL);
-
 	i = 0;
 	float default_distance_sum = 0;
 	float length_sum = 0;
@@ -3759,7 +3653,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			return false;
 		}
 
-		DTALink* pExistingLink =  FindLinkWithNodeIDs(from_node_id,to_node_id);
+		DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_NodeNametoIDMap[to_node_id]);
 
 		if(pExistingLink)
 		{
@@ -3792,6 +3686,8 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			AfxMessageBox("Field number_of_lanes cannot be found in the link table.");
 			return false;
 		}
+		
+		float grade= rsLink.GetDouble(CString("grade"),bExist,false);
 
 		float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit_in_mph"),bExist,false);
 		if(!bExist) 
@@ -3933,11 +3829,30 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			pLink->m_NumLanes= number_of_lanes;
 			pLink->m_SpeedLimit= speed_limit_in_mph;
 			pLink->m_StaticSpeed = pLink->m_SpeedLimit;
-
 			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
 			pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
 			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 			pLink->m_link_type= type;
+			pLink->m_Grade = grade;
+
+			if(link_code == 2)  //BA link
+			{
+		int R_number_of_lanes = rsLink.GetLong(CString("R_number_of_lanes"),bExist,false);
+		float R_speed_limit_in_mph= rsLink.GetLong(CString("R_speed_limit_in_mph"),bExist,false);
+		float R_lane_capacity_in_vhc_per_hour= rsLink.GetDouble(CString("R_lane_capacity_in_vhc_per_hour"),bExist,false);
+		float R_grade= rsLink.GetDouble(CString("R_grade"),bExist,false);
+
+			pLink->m_NumLanes= R_number_of_lanes;
+			pLink->m_SpeedLimit= R_speed_limit_in_mph;
+			pLink->m_StaticSpeed = pLink->m_SpeedLimit;
+			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
+			pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
+			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+			pLink->m_link_type= type;
+			pLink->m_Grade = R_grade;
+			
+			
+			}
 
 			pLink->m_Kjam = k_jam;
 			pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
@@ -3991,23 +3906,18 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		AfxMessageBox(str_duplicated_link);
 	}
 
-	///// link-type table
-	m_Database.GetTableDefInfo(3, TableInfo);
-
-	CString tablename21=(TableInfo).m_strName;
-	tablename21.MakeUpper();
-
-	if(tablename21.Find("2-1-LINK-TYPE",0)<=0)
-	{
-		AfxMessageBox("Please make sure the 4th worksheet is a 2-1-link-type table.", MB_ICONINFORMATION);
-		return false;
 	}
 
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
+	}
+
+
+	strSQL = ConstructSQL("2-1-LINK-TYPE");
 
 	// Read record
+
+	if(strSQL.GetLength () > 0)
+	{
+
 	CRecordsetExt rsLinkType(&m_Database);
 	rsLinkType.Open(dbOpenDynaset, strSQL);
 
@@ -4055,27 +3965,43 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		rsLinkType.MoveNext ();
 	}
 	rsLinkType.Close();
-
-	///// Zone table
-	m_Database.GetTableDefInfo(4, TableInfo);
-
-	CString tablename3=(TableInfo).m_strName;
-	tablename3.MakeUpper();
-
-	if(tablename3.Find("3-ZONE",0)<=0){
-		AfxMessageBox("Please make sure the 5th worksheet is a zone table.", MB_ICONINFORMATION);
-		return false;
 	}
+	return true;
 
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
+}
+bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
+{
+	// Open the EXCEL file
+	CWaitCursor wait;
 
+	std::string itsErrorMessage;
+
+	// Make sure the network is empty
+	m_NodeSet.clear ();
+	m_LinkSet.clear ();
+
+	char warning[200];
+	bool bExist=true;
+
+	CString strSQL;
+
+	CString str_duplicated_link;
+
+	m_Database.Open(pFileName, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
+	
+	if (CreateNetworkFromExcelFile() == false)
+		return false;
+
+	strSQL = ConstructSQL("3-ZONE");
 
 	bool bNodeNonExistError = false;
 	m_NodeIDtoZoneNameMap.clear ();
 
+	m_ODSize = 0;
+
 	// Read record
+	if(strSQL.GetLength () > 0)
+	{
 	CRecordsetExt rsZone(&m_Database);
 	rsZone.Open(dbOpenDynaset, strSQL);
 
@@ -4120,21 +4046,15 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	}
 	rsZone.Close();
 
-	/////
-
-	///// vehicle type distribution
-	m_Database.GetTableDefInfo(7, TableInfo);
-	CString tablename6=(TableInfo).m_strName;
-	if(tablename6.Find("4-2-vehicle-type",0)<=0){
-		AfxMessageBox("Please make sure the 8th worksheet is a 4-2-vehicle-type table.", MB_ICONINFORMATION);
-		return false;
 	}
 
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
+	/////
 
-	// Read record
+	strSQL = ConstructSQL("4-2-vehicle-type");
+	
+
+	if (strSQL.GetLength() > 0)
+	{
 	CRecordsetExt rsVehicleType(&m_Database);
 	rsVehicleType.Open(dbOpenDynaset, strSQL);
 
@@ -4194,21 +4114,12 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 	}
 	rsVehicleType.Close();
 
-
-	m_Database.GetTableDefInfo(5, TableInfo);
-
-	CString tablename4=(TableInfo).m_strName;
-	tablename4.MakeUpper();
-
-	if(tablename4.Find("4-PEAK-HOUR-DEMAND",0)<=0){
-		AfxMessageBox("Please make sure the 6th worksheet is a demand table.", MB_ICONINFORMATION);
-		return false;
 	}
 
-	strSQL = "select * from [";
-	strSQL += TableInfo.m_strName;
-	strSQL += "]";
+	strSQL = ConstructSQL("4-PEAK-HOUR-DEMAND");
 
+	if(strSQL.GetLength() > 0)
+	{
 	// Read record
 	CRecordsetExt rsDemand(&m_Database);
 	rsDemand.Open(dbOpenDynaset, strSQL);
@@ -4250,7 +4161,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			}
 
 
-			for(int	vehicle_type = 1; vehicle_type < m_VehicleTypeVector.size(); vehicle_type)
+			for(int	vehicle_type = 1; vehicle_type < m_VehicleTypeVector.size(); vehicle_type++)
 			{
 				starting_time_in_min = 0;
 				CString str_number_of_vehicles; 
@@ -4261,7 +4172,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 				{
 
 					CString str_number_of_vehicles_warning; 
-					str_number_of_vehicles_warning.Format("Field number_of_vehicles_type%d cannot be found in the demand table.", vehicle_type);
+					str_number_of_vehicles_warning.Format("Field %s cannot be found in the demand table.", str_number_of_vehicles);
 
 					AfxMessageBox(str_number_of_vehicles_warning);
 					return false;
@@ -4284,22 +4195,14 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			rsDemand.MoveNext ();
 		}
 		rsDemand.Close();
+	}
 
-		///// temporal profile distribution
-		m_Database.GetTableDefInfo(6, TableInfo);
+/////
+		strSQL = ConstructSQL("4-1-temporal-profile");
 
-		CString tablename5=(TableInfo).m_strName;
 
-		int value = tablename5.Find("4-1-temporal-profile",0);
-		if(tablename5.Find("4-1-temporal-profile",0)<=0){
-			AfxMessageBox("Please make sure the 7th worksheet is a 4-1-temporal-profile table.", MB_ICONINFORMATION);
-			return false;
-		}
-
-		strSQL = "select * from [";
-		strSQL += TableInfo.m_strName;
-		strSQL += "]";
-
+		if(strSQL.GetLength () > 0)
+		{
 		// Read record
 		CRecordsetExt rsDemandProfile(&m_Database);
 		rsDemandProfile.Open(dbOpenDynaset, strSQL);
@@ -4372,7 +4275,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			}
 		}
 
-
+/*
 		if(m_VehicleTypeVector.size()>0 && m_DemandVector.size()==0)
 		{
 			// if no demand is input in t
@@ -4382,7 +4285,7 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			}
 
 		}
-
+*/
 		if(m_VehicleTypeVector.size()>0)
 		{
 			m_TempDemandVector = m_DemandVector;  // copy to a tempory vector
@@ -4406,20 +4309,15 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 				}
 			}
 		}
-
-		///// VOT distribution
-		m_Database.GetTableDefInfo(8, TableInfo);
-		CString tablename7=(TableInfo).m_strName;
-		if(tablename7.Find("4-3-VOT-distribution",0)<=0){
-			AfxMessageBox("Please make sure the 9th worksheet is a 4-3-VOT-distribution table.", MB_ICONINFORMATION);
-			return false;
 		}
 
-		strSQL = "select * from [";
-		strSQL += TableInfo.m_strName;
-		strSQL += "]";
+		///// VOT distribution
+		strSQL = ConstructSQL("4-3-VOT-distribution");;
 
 		// Read record
+
+		if(strSQL.GetLength() > 0)
+		{
 		CRecordsetExt rsVOT(&m_Database);
 		rsVOT.Open(dbOpenDynaset, strSQL);
 
@@ -4462,19 +4360,12 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 		}
 		rsVOT.Close();
 
-		///// emissions data 
-		m_Database.GetTableDefInfo(9, TableInfo);
-		CString tablename12=(TableInfo).m_strName;
-		if(tablename12.Find("4-4-vehicle-emission-rate",0)<=0){
-			AfxMessageBox("Please make sure the 10th worksheet is a 4-4-vehicle-emission-rate table.", MB_ICONINFORMATION);
-			return false;
 		}
 
-		strSQL = "select * from [";
-		strSQL += TableInfo.m_strName;
-		strSQL += "]";
+		strSQL = ConstructSQL("4-4-vehicle-emission-rate");;
 
-		// Read record
+		if(strSQL.GetLength() > 0)
+		{		// Read record
 		CRecordsetExt rsEmissionRate(&m_Database);
 		rsEmissionRate.Open(dbOpenDynaset, strSQL);
 
@@ -4502,107 +4393,18 @@ bool CTLiteDoc::FillNetworkFromExcelFile(LPCTSTR pFileName)
 			rsEmissionRate.MoveNext ();
 		}
 		rsEmissionRate.Close();
-
-
-		///// sensor location data
-		m_Database.GetTableDefInfo(10, TableInfo);
-		CString tablename8=(TableInfo).m_strName;
-		if(tablename8.Find("5-1-sensor-location",0)<=0){
-			AfxMessageBox("Please make sure the 11th worksheet is a 5-1-sensor-location table.", MB_ICONINFORMATION);
-			return false;
 		}
 
-		strSQL = "select * from [";
-		strSQL += TableInfo.m_strName;
-		strSQL += "]";
-
-		// Read record
-		CRecordsetExt rsSensorLocation(&m_Database);
-		rsSensorLocation.Open(dbOpenDynaset, strSQL);
-
-		while(!rsSensorLocation.IsEOF())
-		{
-			DTA_sensor sensor;
-			int SensorLinkID;
-
-			sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field sensor_id cannot be found in the 5-1-sensor-location table.");
-				return false;
-			}
-
-			sensor.SensorType =  rsSensorLocation.GetLong(CString("sensor_type"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field from_node_id cannot be found in the 5-1-sensor-location table.");
-				return false;
-			}
-
-			sensor.FromNodeNumber =  rsSensorLocation.GetLong(CString("from_node_id"),bExist,false);
-			if(bExist)
-			{
-
-				sensor.ToNodeNumber =  rsSensorLocation.GetLong(CString("to_node_id"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field from_node_id cannot be found in the 5-1-sensor-location table.");
-					return false;
-				}
-				sensor.RelativeLocationRatio = rsSensorLocation.GetLong(CString("relative_location_ratio"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field relative_location_ratio cannot be found in the 5-1-sensor-location table.");
-					return false;
-				}
-				DTALink* pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber );
-
-				if(pLink!=NULL)
-				{
-					sensor.LinkID = pLink->m_LinkNo ;
-					m_SensorVector.push_back(sensor);
-					m_SensorIDtoLinkIDMap[sensor.OrgSensorID] = pLink->m_LinkNo;
-					pLink->m_bSensorData  = true;
-				}else
-				{
-
-					CString msg;
-					msg.Format ("Link %d -> %d in 5-1-sensor-location does not exit in input link data.");
-					AfxMessageBox(msg);
-					break;
-					return false;
-
-				}
-
-			}else
-			{
-				float x = rsSensorLocation.GetDouble(CString("x"),bExist,false);
-				float y = rsSensorLocation.GetDouble(CString("y"),bExist,false);
-				int direction = rsSensorLocation.GetLong(CString("direction"),bExist,false);
-
-				sensor.LinkID = FindLinkFromSensorLocation(x,y,direction);
-
-				if(sensor.LinkID > 0)
-				{   
-					DTALink* pLink = FindLinkWithLinkNo(sensor.LinkID );
-					sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
-					sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
-					sensor.RelativeLocationRatio = 0.5;
-
-					m_SensorVector.push_back(sensor);
-				}
-
-			}
-
-
-			rsSensorLocation.MoveNext ();
-		}
-		rsSensorLocation.Close();
-
-
-		return true;
+	return true;
 }
 
+
+bool CTLiteDoc::ImportSensorData()
+{
+
+		return true;
+
+}
 void CTLiteDoc::AdjustCoordinateUnitToMile()
 {
 
@@ -4653,7 +4455,7 @@ bool CTLiteDoc::ReadZoneShapeCSVFile(LPCTSTR lpszFileName)
 	{
 		while(!feof(st))
 		{
-			id			= g_read_integer(st);
+			id			= g_read_integer(st); 
 			if(id == -1)  // reach end of file
 				break;
 
@@ -4841,7 +4643,24 @@ void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
 void CTLiteDoc::OnFileDataexchangewithgooglefusiontables()
 {
 	CDlg_GoogleFusionTable dlg;
-	 // m_ProjectFile
+	dlg.m_pDOC= this;
 	dlg.DoModal ();
 
 }
+
+
+void CTLiteDoc::OnFileImportDemandFromCsv()
+{
+	static char BASED_CODE szFilter[] = "CSV (*.csv)|*.csv||";
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		szFilter);
+	if(dlg.DoModal() == IDOK)
+	{
+				FillODMatrixFromCSVFile(dlg.GetPathName ());
+	}
+
+	CalculateDrawingRectangle();
+	m_bFitNetworkInitialized  = false;
+	UpdateAllViews(0);
+}
+
