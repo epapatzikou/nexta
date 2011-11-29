@@ -22,5 +22,5 @@ public:
 	int m_ObsTimeInterval;
 	int m_NumberOfDays;
 	float m_Occ_to_Density_Coef;
-	int m_StartingTime_in_min;
+	afx_msg void OnBnClickedOk();
 };

@@ -117,6 +117,9 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_VIEW_SELECT_NODE, &CTLiteView::OnViewSelectNode)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SELECT_NODE, &CTLiteView::OnUpdateViewSelectNode)
 	ON_COMMAND(ID_SEARCH_NODE, &CTLiteView::OnSearchNode)
+	ON_COMMAND(ID_EDIT_CREATESUBAREA, &CTLiteView::OnEditCreatesubarea)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_CREATESUBAREA, &CTLiteView::OnUpdateEditCreatesubarea)
+	ON_COMMAND(ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA, &CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -163,6 +166,7 @@ CPen g_PenFreewayColor(PS_SOLID,1,RGB(255,211,155));
 CPen g_PenHighwayColor(PS_SOLID,1,RGB(100,149,237)); 
 CPen g_PenArterialColor(PS_SOLID,1,RGB(0,0,0)); 
 CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
+CPen g_SubareaPen(PS_DASH,2,RGB(255,0,0));
 CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 CPen g_PenVehicle(PS_SOLID,1,RGB(0,255,0));  // yellow
@@ -237,6 +241,8 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	isCreatingSubarea = false;
+	isFinishSubarea = false;
 	m_ViewID = g_ViewID++;
 	m_bShowText = true;
 	m_bMouseDownFlag = false;
@@ -494,73 +500,73 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	{
 		//		if(((*iLink)->m_LaneCapacity >3000))  // 
 		//			continue;
-			CPen LinkTypePen;
-			CPen penmoe;
+		CPen LinkTypePen;
+		CPen penmoe;
 
-			float value = -1.0f ;
-						if( 
-				pDoc->m_LinkMOEMode != none && (
-				(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
-				|| 	pDoc->m_StaticAssignmentMode)) 
+		float value = -1.0f ;
+		if( 
+			pDoc->m_LinkMOEMode != none && (
+			(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
+			|| 	pDoc->m_StaticAssignmentMode)) 
+		{
+
+			float power;
+
+			power= pDoc->GetTDLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,value);
+
+			float n= power*100;
+			int R=(int)((255*n)/100);
+			int G=(int)(255*(100-n)/100); 
+			int B=0;
+
+			penmoe.CreatePen (PS_SOLID, 1, RGB(R,G,B));
+			pDC->SelectObject(&penmoe);
+
+
+		}else if(m_bShowLinkType)
+		{
+			//		COLORREF link_color = pDoc->GetLinkTypeColor((*iLink)->m_link_type );
+			//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
+			//		pDC->SelectObject(&LinkTypePen);
+
+			switch ((*iLink)->m_link_type)
 			{
-
-				float power;
-
-				power= pDoc->GetTDLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,value);
-
-				float n= power*100;
-				int R=(int)((255*n)/100);
-				int G=(int)(255*(100-n)/100); 
-				int B=0;
-
-				penmoe.CreatePen (PS_SOLID, 1, RGB(R,G,B));
-				pDC->SelectObject(&penmoe);
-
-
-			}else if(m_bShowLinkType)
-			{
-				//		COLORREF link_color = pDoc->GetLinkTypeColor((*iLink)->m_link_type );
-				//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
-				//		pDC->SelectObject(&LinkTypePen);
-
-				switch ((*iLink)->m_link_type)
-				{
-				case 1:
-					pDC->SelectObject(&g_PenFreewayColor);
-					break;
-				case 2:
-					pDC->SelectObject(&g_PenHighwayColor);
-					break;
-				default:
-					pDC->SelectObject(&g_PenArterialColor);
-
-				}
-			}else
+			case 1:
+				pDC->SelectObject(&g_PenFreewayColor);
+				break;
+			case 2:
+				pDC->SelectObject(&g_PenHighwayColor);
+				break;
+			default:
 				pDC->SelectObject(&g_PenArterialColor);
 
-			if((*iLink)->m_DisplayLinkID>=0 )
-			{
-				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
-				pDC->SetTextColor(RGB(255,0,0));
-			}else if  ((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
-			{
-				g_SelectThickPenColor(pDC,0);
-				pDC->SetTextColor(RGB(255,0,0));
-			}else
-				pDC->SetTextColor(RGB(255,228,181));
+			}
+		}else
+			pDC->SelectObject(&g_PenArterialColor);
 
-			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
-				pDC->SelectObject(&g_BlackPen);
+		if((*iLink)->m_DisplayLinkID>=0 )
+		{
+			g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
+			pDC->SetTextColor(RGB(255,0,0));
+		}else if  ((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
+		{
+			g_SelectThickPenColor(pDC,0);
+			pDC->SetTextColor(RGB(255,0,0));
+		}else
+			pDC->SetTextColor(RGB(255,228,181));
+
+		if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
+			pDC->SelectObject(&g_BlackPen);
 
 
-			for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
+		for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
 		{
 			CPoint FromPoint = NPtoSP((*iLink)->m_ShapePoints[si]);
 			CPoint ToPoint = NPtoSP((*iLink)->m_ShapePoints[si+1]);
 
 			if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
 				continue; 
-	
+
 
 			pDC->MoveTo(FromPoint);
 			pDC->LineTo(ToPoint);
@@ -589,56 +595,56 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}
 
 		}
-			if( m_bShowText  && value>=0.01 )
+		if( m_bShowText  && value>=0.01 )
+		{
+			CString str_text;
+
+			int value_int100 = int(value*100);
+			int value_int= (int)value;
+
+			if(value_int100%100 == 0)  // no decimal point
+				str_text.Format ("%d", value_int);
+			else
+				str_text.Format ("%4.1f", value);
+
+			CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
+
+			pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
+
+		}
+
+		CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
+
+		if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
+			DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
+
+		if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
+			DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
+
+		if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
+			DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
+
+
+		//************************************
+
+		// draw sensor flag
+
+		if(m_bShowSensor && (*iLink)->m_bSensorData )
+		{
+			if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
 			{
-				CString str_text;
-
-				int value_int100 = int(value*100);
-				int value_int= (int)value;
-
-				if(value_int100%100 == 0)  // no decimal point
-					str_text.Format ("%d", value_int);
-				else
-					str_text.Format ("%4.1f", value);
-
-				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
-
-				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
-
-			}
-
-				CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
-
-				if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
-
-				if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
-				
-				if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
-					DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
-				
-
-			//************************************
-
-			// draw sensor flag
-
-			if(m_bShowSensor && (*iLink)->m_bSensorData )
+				pDC->SelectObject(&g_PenSelectColor);
+			}else
 			{
-				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
-				{
-					pDC->SelectObject(&g_PenSelectColor);
-				}else
-				{
 
-					pDC->SelectObject(&g_PenSensorColor);
-				}		
-				CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
-				int size = 4;
-				pDC->SelectStockObject(NULL_BRUSH);
-				pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
+				pDC->SelectObject(&g_PenSensorColor);
+			}		
+			CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
+			int size = 4;
+			pDC->SelectStockObject(NULL_BRUSH);
+			pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
 
-			}
+		}
 	}
 	// draw shortest path
 	int i;
@@ -752,6 +758,26 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		}
 	}
+	// draw subarea
+	pDC->SelectObject(&g_SubareaPen);
+
+	if(GetDocument()->m_SubareaShapePoints.size() > 0)
+	{
+
+		CPoint point_0  = NPtoSP(GetDocument()->m_SubareaShapePoints[0]);
+
+		pDC->MoveTo(point_0);
+
+		for (int sub_i= 0; sub_i < GetDocument()->m_SubareaShapePoints.size(); sub_i++)
+		{
+			CPoint point =  NPtoSP(GetDocument()->m_SubareaShapePoints[sub_i]);
+			pDC->LineTo(point);
+
+		}
+		if(isFinishSubarea)
+			pDC->LineTo(point_0);
+
+	}
 
 	// show not-matched sensors
 	if(m_bShowSensor)
@@ -805,7 +831,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				DTALink* pLink = pDoc->m_LinkNoMap[LinkID];
 				if(pLink!=NULL)
 				{
-					
+
 					CPoint VehPoint= NPtoSP(pLink->GetRelativePosition(ratio));
 
 					pDC->Ellipse (VehPoint.x - vehicle_size, VehPoint.y - vehicle_size,
@@ -827,53 +853,53 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		for (i = 0; i< pDoc->m_ODSize ; i++)
 			for (j = 0; j< pDoc->m_ODSize ; j++)
 			{
-			
+
 				if(pDoc->m_DemandMatrix [i][j] > MaxODDemand)
 				{
 					MaxODDemand = pDoc->m_DemandMatrix [i][j];
-				
+
 				}
 			}
 
 
-		for (i = 0; i< pDoc->m_ODSize ; i++)
-			for (j = 0; j< pDoc->m_ODSize ; j++)
-			{
-
-				float volume = pDoc->m_DemandMatrix [i][j] ;
-				if(volume>=1)
+			for (i = 0; i< pDoc->m_ODSize ; i++)
+				for (j = 0; j< pDoc->m_ODSize ; j++)
 				{
-					int nodeid_for_origin_zone = pDoc->m_ZoneIDtoNodeIDMap[i];
-					int nodeid_for_destination_zone = pDoc->m_ZoneIDtoNodeIDMap[j];
 
-					// if default, return node id;
-					//else return the last node id for zone
-					DTANode* pNodeOrigin= pDoc->m_NodeIDMap[nodeid_for_origin_zone];
-					DTANode* pNodeDestination= pDoc->m_NodeIDMap[nodeid_for_destination_zone];
-
-					if(pNodeOrigin!=NULL  && pNodeDestination!=NULL)
+					float volume = pDoc->m_DemandMatrix [i][j] ;
+					if(volume>=1)
 					{
-						CPoint FromPoint = NPtoSP(pNodeOrigin->pt);
-						CPoint ToPoint = NPtoSP(pNodeDestination->pt);
+						int nodeid_for_origin_zone = pDoc->m_ZoneIDtoNodeIDMap[i];
+						int nodeid_for_destination_zone = pDoc->m_ZoneIDtoNodeIDMap[j];
 
-						CPen penmoe;
-						int Width = volume/MaxODDemand*100;
+						// if default, return node id;
+						//else return the last node id for zone
+						DTANode* pNodeOrigin= pDoc->m_NodeIDMap[nodeid_for_origin_zone];
+						DTANode* pNodeDestination= pDoc->m_NodeIDMap[nodeid_for_destination_zone];
 
-						if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
-							continue; 
-
-						if(Width>=5)  //draw critical OD demand only
+						if(pNodeOrigin!=NULL  && pNodeDestination!=NULL)
 						{
-							penmoe.CreatePen (PS_SOLID, Width, RGB(0,255,255));
-							pDC->SelectObject(&penmoe);
-							pDC->MoveTo(FromPoint);
-							pDC->LineTo(ToPoint);
+							CPoint FromPoint = NPtoSP(pNodeOrigin->pt);
+							CPoint ToPoint = NPtoSP(pNodeDestination->pt);
+
+							CPen penmoe;
+							int Width = volume/MaxODDemand*100;
+
+							if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
+								continue; 
+
+							if(Width>=5)  //draw critical OD demand only
+							{
+								penmoe.CreatePen (PS_SOLID, Width, RGB(0,255,255));
+								pDC->SelectObject(&penmoe);
+								pDC->MoveTo(FromPoint);
+								pDC->LineTo(ToPoint);
+							}
+
 						}
 
 					}
-
 				}
-			}
 	}
 
 
@@ -1079,7 +1105,38 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
 
 	}
+	if(m_ToolMode == subarea_tool)
+	{
+		m_TempZoneStartPoint = point;
+		m_TempZoneEndPoint = point;
 
+		m_bMouseDownFlag = true;
+
+		if(!isCreatingSubarea && GetDocument()->m_SubareaShapePoints.size()==0)
+		{
+			// Record the start location and find the closest feature point
+			m_FirstSubareaPoints = point;
+			GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
+
+			isCreatingSubarea = true;
+			SetCapture();
+		}
+		else
+		{
+			if(bFindCloseSubareaPoint(point) && GetDocument()->m_SubareaShapePoints.size()>= 3)
+		 {
+			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
+			 GetDocument()->m_SubareaShapePoints.push_back(GetDocument()->m_SubareaShapePoints[0]);
+			 isCreatingSubarea = false;
+			 isFinishSubarea = true;
+			 m_ToolMode = select_tool;
+		 }
+			else
+		 {
+			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
+		 }
+		}
+	}
 
 	CView::OnLButtonDown(nFlags, point);
 }
@@ -1235,10 +1292,30 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 		}
 
 
+
 		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
 
 	}
+	if(m_ToolMode == subarea_tool)
+	{
+		if(isCreatingSubarea)
+		{
+			// if it is the first moving operation, erase the previous temporal link
+			if(m_TempZoneStartPoint!=m_TempZoneEndPoint)
+				DrawTemporalLink(m_TempZoneStartPoint,m_TempZoneEndPoint);
 
+			// update m_TempLinkEndPoint from the current mouse point
+			m_TempZoneEndPoint = point;
+
+			// draw a new temporal link
+			DrawTemporalLink(m_TempZoneStartPoint,m_TempZoneEndPoint);
+		}
+
+
+
+		AfxGetApp()->LoadCursor(IDC_CURSOR_SUBAREA);
+
+	}
 
 
 
@@ -1825,4 +1902,77 @@ void CTLiteView::OnSearchNode()
 			AfxMessageBox(str);
 		}
 	}
+}
+
+
+void CTLiteView::OnEditCreatesubarea()
+{
+	m_ToolMode = subarea_tool;
+	GetDocument()->m_SubareaShapePoints.clear();
+}
+
+void CTLiteView::OnUpdateEditCreatesubarea(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_ToolMode == subarea_tool ? 1 : 0);
+}
+
+void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
+	for (int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
+	{
+		CPoint point =  NPtoSP(pDoc->m_SubareaShapePoints[sub_i]);
+		m_subarea_points[sub_i].x = point.x;
+		m_subarea_points[sub_i].y = point.y;
+	}
+
+	// Create a polygonal region
+	m_polygonal_region = CreatePolygonRgn(m_subarea_points, pDoc->m_SubareaShapePoints.size(), WINDING);
+
+	pDoc->m_NodeIDMap.clear();
+
+	std::list<DTANode*>::iterator iNode = pDoc->m_NodeSet.begin ();
+	while (iNode != pDoc->m_NodeSet.end())
+	{
+		CPoint point = NPtoSP((*iNode)->pt);
+		if(PtInRegion(m_polygonal_region, point.x, point.y) == false)  //outside subarea
+		{
+			iNode = pDoc->m_NodeSet.erase (iNode);
+		}
+		else
+		{
+			pDoc->m_NodeIDMap[(*iNode)->m_NodeID ] = (*iNode);
+			++iNode;
+			//inside subarea
+		}
+	}
+
+	//remove links
+	pDoc->m_LinkNoMap.clear();
+
+	std::list<DTALink*>::iterator iLink;
+
+	iLink = pDoc->m_LinkSet.begin(); 
+	
+	while (iLink != pDoc->m_LinkSet.end())
+	{
+		if(pDoc->m_NodeIDMap.find((*iLink)->m_FromNodeID ) == pDoc->m_NodeIDMap.end() || pDoc->m_NodeIDMap.find((*iLink)->m_ToNodeID ) == pDoc->m_NodeIDMap.end()) 
+		{
+			iLink = pDoc->m_LinkSet.erase(iLink);  // remove when one of end points are covered by the subarea
+
+		}else
+		{
+			pDoc->m_LinkNoMap[(*iLink)->m_LinkNo] = (*iLink);
+			++iLink;
+		}
+	}
+
+
+	DeleteObject(m_polygonal_region);
+	delete [] m_subarea_points;
+
+	Invalidate();
+
 }

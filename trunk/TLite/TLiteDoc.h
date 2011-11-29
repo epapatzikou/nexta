@@ -26,6 +26,7 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
+#pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
 
 #include "atlimage.h"
 #include "math.h"
@@ -45,6 +46,9 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_SamplingTimeInterval = 5;
+
+		m_bSimulationDataLoaded  = false;
 		m_EmissionDataFlag = false;
 		m_bLinkShifted = true;
 		m_SimulationStartTime_in_min = 0;  // 6 AM
@@ -140,6 +144,7 @@ public:
 	void OffsetLink();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
 	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
@@ -164,7 +169,7 @@ public:
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
 	
-	int m_TimeInterval;
+	int m_SamplingTimeInterval;
 	int m_NumberOfDays;
 	int m_SimulationStartTime_in_min;
 
@@ -176,8 +181,6 @@ public:
 	bool ReadSensorLocationData(LPCTSTR lpszFileName);
 	void ReadInputEmissionRateFile(LPCTSTR lpszFileName);
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
-	void ReadHistoricalDataFormat2(CString directory);
-
 	CString m_NodeDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;
@@ -190,6 +193,7 @@ public:
 	CString m_BackgroundImageFileLoadingStatus;
 
 	CString m_SimulationLinkMOEDataLoadingStatus;
+	bool m_bSimulationDataLoaded;
 	CString m_SimulationVehicleDataLoadingStatus;
 	CString m_SensorLocationLoadingStatus;
 
@@ -197,7 +201,7 @@ public:
 	CString m_SensorDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
 
-	int FindLinkFromSensorLocation(float x, float y, int direction);
+	int FindLinkFromSensorLocation(float x, float y, CString orientation);
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
@@ -206,10 +210,14 @@ float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float 
 public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
-	std::vector<DTAZone>		m_ZoneVector;
-
+	std::vector<DTAZone>	m_ZoneVector;
 	std::list<DTAVehicle*>	m_VehicleSet;
 	
+	std::map<int, DTANode*> m_NodeIDMap;
+	std::map<long, DTALink*> m_LinkNoMap;
+	std::map<long, DTAVehicle*> m_VehicleIDMap;
+
+
 	bool m_EmissionDataFlag;
 	
 	int m_AdjLinkSize;
@@ -221,7 +229,7 @@ public:
 	CString m_ProjectTitle;
 
 	bool FillNetworkFromExcelFile(LPCTSTR lpszFileName);
-	bool FillODMatrixFromCSVFile(int vehicle_type_size);
+	float FillODMatrixFromCSVFile(LPCTSTR lpszFileName);
 
 	void AdjustCoordinateUnitToMile();
 
@@ -235,10 +243,6 @@ public:
 	long m_NodeSizeSP;
 
 
-	std::map<int, DTANode*> m_NodeIDMap;
-
-	std::map<long, DTALink*> m_LinkNoMap;
-	std::map<long, DTAVehicle*> m_VehicleIDMap;
 	
 	std::map<int, int> m_VehicleType2PricingTypeMap;
 	std::map<int, int> m_LinkTypeFreewayMap;
@@ -455,7 +459,9 @@ public:
 
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
-	std::map<long, long> m_SensorIDtoLinkIDMap;
+	std::map<long, DTALink*> m_SensorIDtoLinkMap;
+	std::map<long, int> m_AVISensorIDtoNodeIDMap;
+
 
 	int MaxNodeKey;
 	unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
@@ -510,7 +516,7 @@ public:
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
 
-	DTAZone* m_ZoneInfo;
+
 
 	bool m_BackgroundBitmapLoaded;
 	bool m_LongLatCoordinateFlag;
@@ -520,9 +526,19 @@ public:
 	float m_ImageMoveSize;
 	bool m_BackgroundBitmapImportedButnotSaved;
 
+	CDaoDatabase m_Database;
+
 
 	// Operations
 public:
+	CString CTLiteDoc::GetTableName(CString Tablename);
+	CString ConstructSQL(CString Tablename);
+		
+	bool CreateNetworkFromExcelFile();
+	bool ImportSensorData();
+public: // subarea
+	std::vector<GDPoint> m_SubareaShapePoints;
+
 
 
 	bool EditTrafficAssignmentOptions();
@@ -532,6 +548,11 @@ public:
 public:
 	bool m_bFitNetworkInitialized;
 	void CalculateDrawingRectangle();
+
+	DWORD ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait);
+	DWORD ProcessWait(DWORD PID);
+
+
 
 	CString m_ProjectFile;
 	virtual BOOL OnNewDocument();
@@ -555,7 +576,6 @@ public:
 	afx_msg void OnFileOpen();
 	afx_msg void OnFileSaveimagelocation();
 	COLORREF GetLinkTypeColor(int LinkType);
-	afx_msg void OnToolGeneratesenesormappingtable();
 	afx_msg void OnShowShowpathmoe();
 	afx_msg void OnUpdateShowShowpathmoe(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowmoe();
@@ -630,6 +650,7 @@ public:
 		afx_msg void OnMoeVehiclepathanalaysis();
 		afx_msg void OnFileConstructandexportsignaldata();
 		afx_msg void OnFileDataexchangewithgooglefusiontables();
+		afx_msg void OnFileImportDemandFromCsv();
 };
 
 

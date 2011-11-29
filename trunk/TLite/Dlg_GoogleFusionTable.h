@@ -1,5 +1,5 @@
 #pragma once
-
+#include "TLiteDoc.h"
 
 // CDlg_GoogleFusionTable dialog
 
@@ -8,6 +8,7 @@ class CDlg_GoogleFusionTable : public CDialog
 	DECLARE_DYNAMIC(CDlg_GoogleFusionTable)
 
 public:
+	CTLiteDoc* m_pDOC;
 	CDlg_GoogleFusionTable(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_GoogleFusionTable();
 
@@ -18,4 +19,12 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	DECLARE_MESSAGE_MAP()
+public:
+	virtual BOOL OnInitDialog();
+
+	afx_msg void OnBnClickedButtonDownload();
+	CString m_ProjectFolder;
+	afx_msg void OnBnClickedButtonUpload();
+	CString m_NodeTableID;
+	CString m_LinkTableID;
 };

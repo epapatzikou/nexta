@@ -395,7 +395,7 @@ public:
 		m_Direction = 1;
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
-		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
+		m_LinkMOEAry.reserve(m_SimulationHorizon+1);
 		m_StochaticCapcityFlag = 0;
 		m_bMergeFlag = 0;
 		m_MergeOnrampLinkID = -1;
@@ -417,11 +417,15 @@ public:
 		m_StaticLaneVolume = 0;
 		m_StaticTravelTime = 0;
 		m_StaticVOC  = 0;
+		m_Grade = 0;
 
+		input_line_no = 0;
 	};
 
+	float m_Grade;
 	string m_Name;
 
+	int input_line_no;
 	float m_StaticSpeed, m_StaticLaneVolume;
 	float m_StaticTravelTime, m_StaticVOC;
 
@@ -538,10 +542,7 @@ public:
 		m_StaticTravelTime = 0;
 		m_StaticVOC  = 0;
 
-		if(m_LinkMOEAry !=NULL)
-			delete m_LinkMOEAry;
-
-		m_LinkMOEAry = new SLinkMOE[m_SimulationHorizon+1];
+		m_LinkMOEAry.resize (m_SimulationHorizon+1);
 
 
 		int t;
@@ -615,7 +616,7 @@ public:
 		m_ResourceAry = new SResource[OptimizationHorizon];
 	}
 
-	SLinkMOE *m_LinkMOEAry;
+	std::vector<SLinkMOE> m_LinkMOEAry;
 	std::vector<SLinkMOE> m_HistLinkMOEAry;
 
 	bool m_bSensorData;
@@ -648,9 +649,6 @@ public:
 		if(aryCFlowD) delete aryCFlowD;
 
 		if(m_ResourceAry) delete m_ResourceAry;
-
-		if(m_LinkMOEAry !=NULL)
-			delete m_LinkMOEAry;
 
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
@@ -1205,7 +1203,7 @@ public:
 	int FromNodeNumber;
 	int ToNodeNumber;
 	int LinkID;
-	int SensorType;
+	string SensorType;
 	float RelativeLocationRatio;
 	long OrgSensorID;
 	GDPoint pt;
