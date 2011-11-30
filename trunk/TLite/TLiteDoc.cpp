@@ -1850,7 +1850,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 					fprintf(st," ");
 			}
 
-			fprintf(st,"<LineString><coordinates>\"\n");
+			fprintf(st,"</coordinates></LineString>\"\n");
 		}
 		fclose(st);
 	}else
