@@ -453,9 +453,19 @@ public:
 
 	}
 
-	std::vector<DTAMovement> m_MovementVector;
+	std::vector<DTA_NodeMovementSet> m_MovementVector;
+	std::vector<DTA_NodePhaseSet> m_PhaseVector;
 
-	void ConstructMovementVector();
+	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
+	void ConstructMovementVector(bool flag_Template);
+	bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
+	bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
+	void CTLiteDoc::EntireNetworkOutput();
+
+	int CTLiteDoc::g_P2P_Angle_New(GDPoint p1, GDPoint p2);
+	DTA_Turn CTLiteDoc::g_RelativeAngle_to_Turn_New(int relative_angle);
+	DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
