@@ -27,4 +27,6 @@ public:
 	afx_msg void OnBnClickedButtonUpload();
 	CString m_NodeTableID;
 	CString m_LinkTableID;
+	CString m_UploadNodeTableID;
+	CString m_UploadLinkTableID;
 };
