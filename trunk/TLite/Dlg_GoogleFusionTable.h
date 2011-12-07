@@ -29,4 +29,8 @@ public:
 	CString m_LinkTableID;
 	CString m_UploadNodeTableID;
 	CString m_UploadLinkTableID;
+	afx_msg void OnEnChangeEditExcelfile5();
+	afx_msg void OnBnClickedButtonLinkWeb();
+	afx_msg void OnBnClickedButtonLinkWebSubarea();
+	long m_SubareaLinkSize;
 };

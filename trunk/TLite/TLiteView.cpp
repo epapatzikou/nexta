@@ -120,6 +120,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_EDIT_CREATESUBAREA, &CTLiteView::OnEditCreatesubarea)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_CREATESUBAREA, &CTLiteView::OnUpdateEditCreatesubarea)
 	ON_COMMAND(ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA, &CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea)
+	ON_COMMAND(ID_VIEW_SHOW, &CTLiteView::OnViewShowAVISensor)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOW, &CTLiteView::OnUpdateViewShowAVISensor)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -241,6 +243,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bShowAVISensor = true;
 	isCreatingSubarea = false;
 	isFinishSubarea = false;
 	m_ViewID = g_ViewID++;
@@ -498,7 +501,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
-		//		if(((*iLink)->m_LaneCapacity >3000))  // 
+		
+		if((*iLink)->m_AVISensorFlag == false || ((*iLink)->m_AVISensorFlag == false && m_bShowAVISensor == true))
+		{
 		//			continue;
 		CPen LinkTypePen;
 		CPen penmoe;
@@ -519,7 +524,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			int G=(int)(255*(100-n)/100); 
 			int B=0;
 
-			penmoe.CreatePen (PS_SOLID, 1, RGB(R,G,B));
+			if((*iLink)->m_AVISensorFlag != true)
+				penmoe.CreatePen (PS_SOLID, 1, RGB(R,G,B));
+			else
+				penmoe.CreatePen (PS_DASH, 2, RGB(255,255,255));  // white dash for AVI sensors
+
 			pDC->SelectObject(&penmoe);
 
 
@@ -644,6 +653,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			pDC->SelectStockObject(NULL_BRUSH);
 			pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
 
+		}
 		}
 	}
 	// draw shortest path
@@ -1125,11 +1135,15 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 		{
 			if(bFindCloseSubareaPoint(point) && GetDocument()->m_SubareaShapePoints.size()>= 3)
 		 {
+			 CWaitCursor wait;
 			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
 			 GetDocument()->m_SubareaShapePoints.push_back(GetDocument()->m_SubareaShapePoints[0]);
 			 isCreatingSubarea = false;
+			 CopyLinkSetInSubarea();
 			 isFinishSubarea = true;
 			 m_ToolMode = select_tool;
+	         ReleaseCapture();
+
 		 }
 			else
 		 {
@@ -1916,6 +1930,58 @@ void CTLiteView::OnUpdateEditCreatesubarea(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(m_ToolMode == subarea_tool ? 1 : 0);
 }
 
+
+void CTLiteView::CopyLinkSetInSubarea()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
+	for (int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
+	{
+		CPoint point =  NPtoSP(pDoc->m_SubareaShapePoints[sub_i]);
+		m_subarea_points[sub_i].x = point.x;
+		m_subarea_points[sub_i].y = point.y;
+	}
+
+	// Create a polygonal region
+	m_polygonal_region = CreatePolygonRgn(m_subarea_points, pDoc->m_SubareaShapePoints.size(), WINDING);
+
+	pDoc->m_SubareaNodeSet.clear();
+	pDoc->m_SubareaLinkSet.clear();
+	pDoc->m_SubareaNodeIDMap.clear();
+
+	std::list<DTANode*>::iterator iNode = pDoc->m_NodeSet.begin ();
+	while (iNode != pDoc->m_NodeSet.end())
+	{
+		CPoint point = NPtoSP((*iNode)->pt);
+		if(PtInRegion(m_polygonal_region, point.x, point.y) == true)  //outside subarea
+		{
+			pDoc->m_SubareaNodeSet .push_back ((*iNode));
+			pDoc->m_SubareaNodeIDMap[(*iNode)->m_NodeID ]=  (*iNode);
+			//inside subarea
+		}
+			iNode++;
+	}
+
+	std::list<DTALink*>::iterator iLink;
+
+	iLink = pDoc->m_LinkSet.begin(); 
+	
+	while (iLink != pDoc->m_LinkSet.end())
+	{
+		if(pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_SubareaNodeIDMap.end() && pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_SubareaNodeIDMap.end()) 
+		{
+			pDoc->m_SubareaLinkSet.push_back (*iLink);
+		}
+			iLink++;
+	}
+
+
+	DeleteObject(m_polygonal_region);
+	delete [] m_subarea_points;
+
+}
+
 void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 {
 	CTLiteDoc* pDoc = GetDocument();
@@ -1975,4 +2041,15 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 
 	Invalidate();
 
+}
+
+void CTLiteView::OnViewShowAVISensor()
+{
+	m_bShowAVISensor = !m_bShowAVISensor;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateViewShowAVISensor(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowAVISensor ? 1 : 0);
 }

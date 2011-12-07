@@ -15,6 +15,7 @@ CDlgSensorDataLoading::CDlgSensorDataLoading(CWnd* pParent /*=NULL*/)
 	, m_ObsTimeInterval(5)
 	, m_NumberOfDays(5)
 	, m_Occ_to_Density_Coef(100)
+	, m_AVISamplingTimeInterval(1)
 {
 
 }
@@ -27,8 +28,12 @@ void CDlgSensorDataLoading::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_TimeInterval, m_ObsTimeInterval);
+	DDV_MinMaxInt(pDX, m_ObsTimeInterval, 0, 1000);
 	DDX_Text(pDX, IDC_EDIT_Number_of_Days, m_NumberOfDays);
+	DDV_MinMaxInt(pDX, m_NumberOfDays, 0, 1000);
 	DDX_Text(pDX, IDC_EDIT_Occ_to_Density_Coef, m_Occ_to_Density_Coef);
+	DDX_Text(pDX, IDC_EDIT_TimeInterval_AVI, m_AVISamplingTimeInterval);
+	DDV_MinMaxInt(pDX, m_AVISamplingTimeInterval, 0, 1000);
 }
 
 

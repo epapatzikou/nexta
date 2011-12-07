@@ -23,4 +23,5 @@ public:
 	int m_NumberOfDays;
 	float m_Occ_to_Density_Coef;
 	afx_msg void OnBnClickedOk();
+	int m_AVISamplingTimeInterval;
 };

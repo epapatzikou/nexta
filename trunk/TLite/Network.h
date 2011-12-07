@@ -37,6 +37,8 @@
 
 #include "Timetable.h"
 
+extern float g_GetRandomRatio();
+
 using namespace std;
 using std::string;
 #define PI 3.1415926
@@ -66,6 +68,7 @@ using std::string;
 #define MAX_VEHICLE_TYPE_SIZE 10
 #define _MAXIMUM_OPERATING_MODE_SIZE 41
 #define MAX_TRAIN_TYPE_SIZE 2
+#define MAX_VEHICLE_TYPE_SIZE 10
 #define TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL 5
 #define MAX_DAY_SIZE 1 
 
@@ -138,13 +141,8 @@ public:
 };
 
 extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
-extern int g_P2P_Angle(GDPoint p1, GDPoint p2);
 
-extern DTA_Approach g_Angle_to_Approach(int Angle);
-
-extern int g_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
-extern DTA_Turn g_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
 extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 
@@ -173,10 +171,18 @@ class DTADemand
 public:
 	int from_zone_id;
 	int to_zone_id;
-	int vehicle_type;
 	int starting_time_in_min;
 	int ending_time_in_min;
-	float number_of_vehicles;
+	float number_of_vehicles[MAX_VEHICLE_TYPE_SIZE];
+	DTADemand()
+	{
+
+	for(int type = 0; type < MAX_VEHICLE_TYPE_SIZE; type++)
+	{
+	number_of_vehicles[type] =0 ;
+	}
+	}	
+	
 };
 
 
@@ -390,6 +396,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_AVISensorFlag = false;
 		m_LinkID = 0;
 		m_OrgDir = 1;
 		m_Direction = 1;
@@ -408,6 +415,11 @@ public:
 		m_Kjam = 180;
 		m_Wave_speed_in_mph = 12;
 
+		m_ReliabilityIndex = 100;
+		m_SafetyIndex = 100;
+		m_EmissionsIndex = 100;
+		m_MobilityIndex = 100;
+
 
 		m_MinSpeed = 40;
 		m_MaxSpeed = 40;
@@ -422,6 +434,7 @@ public:
 		input_line_no = 0;
 	};
 
+	bool m_AVISensorFlag;
 	float m_Grade;
 	string m_Name;
 
@@ -618,6 +631,12 @@ public:
 
 	std::vector<SLinkMOE> m_LinkMOEAry;
 	std::vector<SLinkMOE> m_HistLinkMOEAry;
+
+	int m_ReliabilityIndex;
+	int m_SafetyIndex;
+	int m_EmissionsIndex;
+	int m_MobilityIndex;
+
 
 	bool m_bSensorData;
 	int  m_SensorID;
@@ -1594,14 +1613,6 @@ struct VehicleCFData
 
 };
 
-struct VehicleSnapshotData
-{
-	float LocalY;
-	float Speed_mph;
-	int LaneID;
-	int PrecedingVehicleID;
-	int FollowingVehicleID;
-};
 
   class CEmissionRate 
 {
@@ -1623,6 +1634,23 @@ public:
 			}
 
 };
+
+  class CAVISensorPair
+  {
+
+  public:
+	  CAVISensorPair()
+	  {
+		  pLink = NULL;
+		  number_of_samples = 0;
+	  }
+  int sensor_pair_id;
+  int number_of_samples;
+  CString sensor_type;
+  int from_node_id;
+  int to_node_id;
+  DTALink* pLink;
+  };
 
 
 

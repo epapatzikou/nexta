@@ -137,7 +137,7 @@ BOOL CDlgScenarioTab::OnInitDialog()
 
 void CDlgScenarioTab::SetTabText(CString s)
 {
-	m_TabText = s;
+	m_TabText = "Scenario_" + s;
 }
 
 CString CDlgScenarioTab::GetTabText()

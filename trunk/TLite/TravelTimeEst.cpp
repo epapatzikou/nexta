@@ -537,8 +537,8 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 							TRACE("%d,%4.1f\n", t,(*iLink)->m_LinkMOEAry[1440*day+t].ObsTravelTimeIndex);
 						}
 
-						if(travel_time<0.1)
-							travel_time = 0.1; // 0.1 min as the resolution.
+						if(travel_time<0.1f)
+							travel_time = 0.1f; // 0.1 min as the resolution.
 
 
 						for(int res = 0; res<10; res++)
@@ -572,7 +572,10 @@ int CTLiteDoc::Routing()
 	if(m_OriginNodeID>=0 && m_DestinationNodeID>=0)
 	{
 		if(m_pNetwork !=NULL)
+		{
 			delete m_pNetwork;
+			m_pNetwork = NULL;
+		}
 
 
 		unsigned int iPath;
