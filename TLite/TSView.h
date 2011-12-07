@@ -10,6 +10,24 @@
 #endif // _MSC_VER > 1000
 
 #define _MAX_LANE_SIZE 7
+class VehicleSnapshotData
+{
+public:
+	VehicleSnapshotData()
+	{
+	bDataAvailableFlag = false;
+	}
+
+	int Frame_ID;
+	int VehicleID;
+
+	float LocalY;
+	float Speed_mph;
+	int LaneID;
+	int PrecedingVehicleID;
+	int FollowingVehicleID;
+	bool bDataAvailableFlag;
+};
 
 class CTimeSpaceView : public CView
 {
@@ -19,6 +37,8 @@ protected: // create from serialization only
 
 // Attributes
 public:
+	
+	bool m_bLoadedDataFlag;
 
 	int m_NumberOfVehicles_lane;
 
@@ -31,6 +51,7 @@ public:
 	bool m_bShowBothResultsFlag;
 
 	bool m_bColorBySpeedFlag; 
+
 	VehicleSnapshotData ** m_VehicleSnapshotAry;
 	int m_NumberOfVehicles;
 	int m_NumberOfTimeSteps;  // 0.1 second as resultion

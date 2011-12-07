@@ -14,6 +14,7 @@ class CDlgLinkList : public CBaseDialog
 
 
 public:
+	bool m_AVISensorFlag;
 	CDlgLinkList(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgLinkList();
 
@@ -28,4 +29,5 @@ public:
 	CListCtrl m_LinkList;
 	virtual BOOL OnInitDialog();
 	afx_msg void OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedOk();
 };

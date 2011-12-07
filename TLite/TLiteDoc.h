@@ -46,7 +46,8 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-		m_SamplingTimeInterval = 5;
+		m_SamplingTimeInterval = 1;
+		m_AVISamplingTimeInterval = 5;
 
 		m_bSimulationDataLoaded  = false;
 		m_EmissionDataFlag = false;
@@ -132,7 +133,7 @@ public:
 	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
 	BOOL OnOpenDocument(LPCTSTR lpszPathName);
-	BOOL OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName);
+	BOOL OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName, bool bNetworkOnly = false);
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
 	std::ofstream m_WarningFile;
@@ -170,6 +171,7 @@ public:
 	void ReadHistoricalData(CString directory);
 	
 	int m_SamplingTimeInterval;
+	int m_AVISamplingTimeInterval;
 	int m_NumberOfDays;
 	int m_SimulationStartTime_in_min;
 
@@ -210,10 +212,20 @@ float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float 
 public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
+
+	std::list<DTANode*>		m_SubareaNodeSet;
+	std::list<DTALink*>		m_SubareaLinkSet;
+
 	std::vector<DTAZone>	m_ZoneVector;
 	std::list<DTAVehicle*>	m_VehicleSet;
+
+	std::map<long, CAVISensorPair> m_AVISensorMap;
 	
 	std::map<int, DTANode*> m_NodeIDMap;
+
+	std::map<int, DTANode*> m_SubareaNodeIDMap;
+	bool CTLiteDoc::WriteSubareaFiles();
+
 	std::map<long, DTALink*> m_LinkNoMap;
 	std::map<long, DTAVehicle*> m_VehicleIDMap;
 
@@ -284,15 +296,19 @@ public:
 	bool m_bLinkShifted;
 
 
-	bool AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false)
+	DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
 	{
 		DTALink* pLink = 0;
 
+		if(bAVIFlag == false) // not AVI sensor link, --> physical link
+		{
 		pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
 		if(pLink != NULL)
-			return false;  // a link with the same from and to node numbers exists!
+			return NULL;  // a link with the same from and to node numbers exists!
+		}
 
 		pLink = new DTALink(1);
+		pLink->m_AVISensorFlag = bAVIFlag;
 		pLink->m_LinkNo = m_LinkSet.size();
 		pLink->m_FromNodeNumber = m_NodeIDtoNameMap[FromNodeID];
 		pLink->m_ToNodeNumber = m_NodeIDtoNameMap[ToNodeID];
@@ -343,13 +359,10 @@ public:
 		pLink->m_ShapePoints.push_back(pLink->m_ToPoint);
 		pLink->CalculateShapePointRatios();
 
-
+ 
 		m_LinkSet.push_back (pLink);
 		m_LinkNoMap[pLink->m_LinkNo]  = pLink;
-
-
-
-		return true;
+		return pLink;
 	}
 
 	DTANode* AddNewNode(GDPoint newpt)
@@ -458,13 +471,14 @@ public:
 
 	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
 	void ConstructMovementVector(bool flag_Template);
-	bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
-	bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
-	void CTLiteDoc::EntireNetworkOutput();
+	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
+	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
+	void ExportSingleSynchroFile(CString SynchroProjectFile);
+	CString m_Synchro_ProjectDirectory;
 
-	int CTLiteDoc::g_P2P_Angle_New(GDPoint p1, GDPoint p2);
-	DTA_Turn CTLiteDoc::g_RelativeAngle_to_Turn_New(int relative_angle);
-	DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle);
+	int Find_P2P_Angle(GDPoint p1, GDPoint p2);
+	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
+	DTA_Approach g_Angle_to_Approach_New(int angle);
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
@@ -472,6 +486,9 @@ public:
 	std::map<long, DTALink*> m_SensorIDtoLinkMap;
 	std::map<long, int> m_AVISensorIDtoNodeIDMap;
 
+
+	int Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
+	DTA_Turn Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
 	int MaxNodeKey;
 	unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
@@ -541,7 +558,7 @@ public:
 
 	// Operations
 public:
-	CString CTLiteDoc::GetTableName(CString Tablename);
+	CString GetTableName(CString Tablename);
 	CString ConstructSQL(CString Tablename);
 		
 	bool CreateNetworkFromExcelFile();
@@ -556,13 +573,14 @@ public: // subarea
 
 	// Overrides
 public:
+
+	void OpenCSVFileInExcel(CString filename);
+	void Constructandexportsignaldata();
 	bool m_bFitNetworkInitialized;
 	void CalculateDrawingRectangle();
 
 	DWORD ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait);
 	DWORD ProcessWait(DWORD PID);
-
-
 
 	CString m_ProjectFile;
 	virtual BOOL OnNewDocument();
@@ -625,6 +643,9 @@ public:
 	afx_msg void OnMoeFreeflowtravletime();
 	afx_msg void OnUpdateMoeFreeflowtravletime(CCmdUI *pCmdUI);
 	afx_msg void OnEditDeleteselectedlink();
+	afx_msg void OnImportAgentFile();
+	afx_msg void OnImportNgsimFile();
+
 		afx_msg void OnMoeLength();
 		afx_msg void OnUpdateMoeLength(CCmdUI *pCmdUI);
 		afx_msg void OnEditSetdefaultlinkpropertiesfornewlinks();
@@ -661,6 +682,20 @@ public:
 		afx_msg void OnFileConstructandexportsignaldata();
 		afx_msg void OnFileDataexchangewithgooglefusiontables();
 		afx_msg void OnFileImportDemandFromCsv();
+		afx_msg void OnImportSensorData();
+		afx_msg void OnImportLinkmoe();
+		afx_msg void OnImportVehiclefile();
+		afx_msg void OnLinkmoeEmissions();
+		afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
+		afx_msg void OnLinkmoeReliability();
+		afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
+		afx_msg void OnLinkmoeSafety();
+		afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
+		afx_msg void OnExportAms();
+		afx_msg void OnImportAvi();
+		afx_msg void OnImportGps33185();
+		afx_msg void OnImportVii();
+		afx_msg void OnImportWeather33188();
 };
 
 

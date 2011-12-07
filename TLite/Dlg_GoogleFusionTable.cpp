@@ -2,6 +2,8 @@
 //
 
 #include "stdafx.h"
+#include <windows.h>
+
 #include "TLite.h"
 #include "MainFrm.h"
 
@@ -32,6 +34,7 @@ CDlg_GoogleFusionTable::CDlg_GoogleFusionTable(CWnd* pParent /*=NULL*/)
 
 	m_UploadNodeTableID = _T("2310833");
 	m_UploadLinkTableID = _T("2310373");
+	m_SubareaLinkSize = 0;
 
 }
 
@@ -45,6 +48,7 @@ void CDlg_GoogleFusionTable::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_ExcelFile5, m_ProjectFolder);
 	DDX_Text(pDX, IDC_EDIT_ExcelFile, m_NodeTableID);
 	DDX_Text(pDX, IDC_EDIT_ExcelFile2, m_LinkTableID);
+	DDX_Text(pDX, IDC_SUBAREA_LINK_SIZE, m_SubareaLinkSize);
 }
 
 
@@ -52,6 +56,9 @@ BEGIN_MESSAGE_MAP(CDlg_GoogleFusionTable, CDialog)
 
 	ON_BN_CLICKED(IDC_BUTTON_Download, &CDlg_GoogleFusionTable::OnBnClickedButtonDownload)
 	ON_BN_CLICKED(IDC_BUTTON_Upload, &CDlg_GoogleFusionTable::OnBnClickedButtonUpload)
+	ON_EN_CHANGE(IDC_EDIT_ExcelFile5, &CDlg_GoogleFusionTable::OnEnChangeEditExcelfile5)
+	ON_BN_CLICKED(IDC_BUTTON_LINK_WEB, &CDlg_GoogleFusionTable::OnBnClickedButtonLinkWeb)
+	ON_BN_CLICKED(IDC_BUTTON_LINK_WEB_Subarea, &CDlg_GoogleFusionTable::OnBnClickedButtonLinkWebSubarea)
 END_MESSAGE_MAP()
 
 
@@ -59,7 +66,16 @@ END_MESSAGE_MAP()
 
 BOOL CDlg_GoogleFusionTable::OnInitDialog()
 {
+	if(m_pDOC->m_ProjectDirectory.GetLength () == 0)
+	{
+			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+			m_pDOC->m_ProjectDirectory = pMainFrame->m_CurrentDirectory;
+	}
+	
 	m_ProjectFolder = m_pDOC->m_ProjectDirectory;
+	m_SubareaLinkSize = m_pDOC->m_SubareaLinkSet .size();
+
 	UpdateData(false);
 	return true;
 }
@@ -239,7 +255,6 @@ void CreateChildProcess(TCHAR* cmd)
 
 void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 {
-
 	UpdateData(true);
 
 	// m_NodeTableID //m_LinkTableID
@@ -271,6 +286,9 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	string query_result = RunQuery(cmd);
 
 	string tmp = query_result.substr(query_result.find("Auth="));
+	if(tmp.length ()  == 0)
+		return;
+
 	string AuthCode = tmp.substr(0,tmp.length()-1);
 	
 	//int ret = m_pDOC->ProcessExecute(sCommand, strParam, m_pDOC->m_ProjectDirectory, true);
@@ -310,14 +328,18 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	out2 << query_result << std::endl;
 	out2.close();
 
-	//m_pDOC->ProcessExecute(sCommand, strParam, m_pDOC->m_ProjectDirectory, true);
-	//CTime ExeEndTime = CTime::GetCurrentTime();
-	//CTimeSpan ts = ExeEndTime  - ExeStartTime;
+	CWaitCursor wait;
 
-	// message box here
+	if(m_pDOC->m_ProjectFile.GetLength () ==0)
+	{
+		m_pDOC->m_ProjectFile.Format ("%s\\temp.dlp",pMainFrame->m_CurrentDirectory );  // create temp project
+	}
+
+	m_pDOC->OnOpenTrafficNetworkDocument (m_pDOC->m_ProjectFile, true );
+	m_pDOC->UpdateAllViews (0);
 }
 
-BOOL GenerateInsertStrings(string fileName, std::vector<std::vector<std::string>>& value_vector)
+BOOL GenerateInsertStrings(string fileName, std::vector<std::vector<std::string>>& value_vector, int record_index)
 {
 	std::vector<std::string> header;
 
@@ -327,7 +349,7 @@ BOOL GenerateInsertStrings(string fileName, std::vector<std::vector<std::string>
 	csvParser.GetHeaderList();
 
 	int n=0;
-	while(csvParser.ReadRecord() && n < 100)
+	while(csvParser.ReadRecord() && n >= record_index && n< (record_index+100))
 	{
 		value_vector.push_back(csvParser.GetLineRecord());
 		n++;
@@ -346,6 +368,15 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 	// login with default gmail account
 	// insert into the specified table id
 
+	if(m_SubareaLinkSize == 0)
+	{
+	AfxMessageBox("Please first select a subarea to be uploaded to the cloud computing server.", MB_ICONINFORMATION);
+	
+	}
+
+	CWaitCursor wait;
+
+	m_pDOC->WriteSubareaFiles();
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	string s = (string(pMainFrame->m_CurrentDirectory)) + "\\curl.exe -s -d Email=fusiontabletestutah@gmail.com -d Passwd=utah123456 -d service=fusiontables -k \"https://www.google.com/accounts/ClientLogin\"";
@@ -374,8 +405,10 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 	value_vector.clear();
 
-	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\input_link.csv",value_vector);
-
+	int record;
+	for( record = 0; record< m_pDOC->m_LinkSet.size(); record+=100)
+	{
+	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\input_subarea_link.csv",value_vector,record);
 	size_t n = 0;
 	string sql_str = "";
 	while(n < value_vector.size())
@@ -429,6 +462,13 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 		strcpy(cmd,s.c_str());
 		query_result = RunQuery(cmd);
+		Sleep(5000);
+		
+	}
+	
+	if(record >=0)
+		break;
+
 	}
 
 
@@ -444,11 +484,11 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 	value_vector.clear();
 
-	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\" + "input_node.csv",value_vector);
-
-
-	n = 0;
-	sql_str="";
+	for( record = 0; record< m_pDOC->m_NodeSet  .size(); record+=100)
+	{
+	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\" + "input_subarea_node.csv",value_vector,record);
+	int n = 0;
+	string sql_str="";
 
 	while(n < value_vector.size())
 	{
@@ -493,7 +533,37 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 		strcpy(cmd,s.c_str());
 		query_result = RunQuery(cmd);
+		Sleep(5000);
 	}
 
+	if(record >=0)
+		break;
+	}
 	delete [] cmd;
+}
+
+void CDlg_GoogleFusionTable::OnEnChangeEditExcelfile5()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}
+
+void CDlg_GoogleFusionTable::OnBnClickedButtonLinkWeb()
+{
+	CString on_line_address;
+	on_line_address.Format ("http://www.google.com/fusiontables/DataSource?dsrcid=%s",m_LinkTableID);
+
+   HINSTANCE result = ShellExecute(NULL, _T("open"), on_line_address, NULL,NULL, SW_SHOW);;
+}
+
+void CDlg_GoogleFusionTable::OnBnClickedButtonLinkWebSubarea()
+{
+	CString on_line_address;
+	on_line_address.Format ("http://www.google.com/fusiontables/DataSource?dsrcid=%s",m_UploadLinkTableID);
+
+   HINSTANCE result = ShellExecute(NULL, _T("open"), on_line_address, NULL,NULL, SW_SHOW);;
 }

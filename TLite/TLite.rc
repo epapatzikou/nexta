@@ -88,6 +88,7 @@ IDB_VMS                 BITMAP                  "res\\VMS.bmp"
 IDB_WORKZONE            BITMAP                  "res\\workzone.bmp"
 IDB_RAMPMETER           BITMAP                  "res\\rampmeter.bmp"
 IDB_TOLL                BITMAP                  "res\\toll.bmp"
+IDR_DATA_TOOLBAR        BITMAP                  "res\\sta_tool.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -98,19 +99,17 @@ IDR_STA_TOOLBAR TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     BUTTON      ID_MOE_NONE
+    BUTTON      ID_MOE_SPEEDLIMIT
     BUTTON      ID_MOE_VOLUME
     BUTTON      ID_MOE_SPEED
-    SEPARATOR
     BUTTON      ID_MOE_VC_Ratio
-    BUTTON      ID_MOE_TRAVELTIME
-    SEPARATOR
-    BUTTON      ID_MOE_CAPACITY
-    BUTTON      ID_MOE_SPEEDLIMIT
-    BUTTON      ID_MOE_FREEFLOWTRAVLETIME
-    BUTTON      ID_MOE_LENGTH
+    BUTTON      ID_LINKMOE_EMISSIONS
+    BUTTON      ID_LINKMOE_RELIABILITY
+    BUTTON      ID_LINKMOE_SAFETY
     SEPARATOR
     BUTTON      ID_MOE_ODDEMAND
     BUTTON      ID_MOE_VEHICLE
+    SEPARATOR
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
@@ -205,6 +204,36 @@ BEGIN
     BUTTON      ID_ANIMATION_PAUSE
     SEPARATOR
     BUTTON      ID_ANIMATION_STOP
+END
+
+IDR_DATA_TOOLBAR TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_IMPORTDATA_IMPORT
+    SEPARATOR
+    BUTTON      ID_IMPORT_LINKMOE
+    BUTTON      ID_IMPORT_VEHICLEFILE
+    BUTTON      ID_IMPORT_AGENT_FILE
+    SEPARATOR
+    BUTTON      ID_IMPORT_SENSOR_DATA
+    BUTTON      ID_IMPORT_AVI_DATA
+    BUTTON      ID_IMPORT_GPS
+    BUTTON      ID_IMPORT_NGSIM_FILE
+    BUTTON      ID_BUTTON33179
+    SEPARATOR
+    BUTTON      ID_IMPORT_WEATHER
+    BUTTON      ID_IMPORT_INCIDENT
+    BUTTON      32976
+    SEPARATOR
+    BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+    BUTTON      ID_EXPORT_AMS
+    BUTTON      ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
+    SEPARATOR
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
 END
 
 
@@ -487,9 +516,57 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
-        MENUITEM "Import Network Data from Excel File", ID_IMPORTDATA_IMPORT
-        MENUITEM "Data Exchange with Google Fusion Tables", ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
         MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
+        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
+        MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
+        MENUITEM SEPARATOR
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "Import"
+    BEGIN
+        MENUITEM "Network/ Demand",             ID_IMPORTDATA_IMPORT
+        MENUITEM "Link MOE",                    ID_IMPORT_LINKMOE
+        MENUITEM "Vehicle File",                ID_IMPORT_VEHICLEFILE
+        MENUITEM "Agent",                       ID_IMPORT_AGENT_FILE
+        MENUITEM SEPARATOR
+        MENUITEM "Point Sensor",                ID_IMPORT_SENSOR_DATA
+        MENUITEM "AVI",                         ID_IMPORT_AVI
+        MENUITEM "GPS",                         ID_IMPORT_GPS33185
+        MENUITEM "NGSIM",                       ID_IMPORT_NGSIM_FILE
+        POPUP "NGSIM  Menu"
+        BEGIN
+            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
+            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
+            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
+            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
+            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
+            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
+            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
+            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
+            MENUITEM SEPARATOR
+            MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
+            MENUITEM SEPARATOR
+            MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
+            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
+            MENUITEM "Show Preceeding Vehicle Position", ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION
+            MENUITEM SEPARATOR
+            MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
+            MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
+            MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
+            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
+            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
+        END
+        MENUITEM "VII Probe",                   ID_IMPORT_VII
+        MENUITEM SEPARATOR
+        MENUITEM "Weather",                     ID_IMPORT_WEATHER33188
+        MENUITEM "Incident",                    ID_IMPORT_INCIDENT33189
+        MENUITEM "Bus",                         ID_IMPORT_BUS
+        MENUITEM SEPARATOR
         POPUP "Background Image"
         BEGIN
             MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
@@ -498,21 +575,28 @@ BEGIN
             MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
             MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
         END
-        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
-        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
-        MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
+    END
+    POPUP "Explore"
+    BEGIN
+        MENUITEM "Subarea",                     ID_EXPLORE_SUBAREA
+        MENUITEM "Path",                        ID_EXPLORE_PATH
+        MENUITEM "Link",                        ID_EXPLORE_LINK
+        MENUITEM "Remove Nodes and Links outside Subarea", ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA
+    END
+    POPUP "Export"
+    BEGIN
         MENUITEM "Construct and Export Signal Data...", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
-        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM "Data Exchange with Google Fusion Tables", ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
+        MENUITEM "Generate AMS Data Set",       ID_EXPORT_AMS
         MENUITEM SEPARATOR
-        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       ID_APP_EXIT
-        MENUITEM "Import Demand Data from CSV File", ID_FILE_IMPORT_DEMAND_FROM_CSV
+        MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
+        MENUITEM "Export to Time-dependent Travel Time Data Set", ID_TOOLS_EXPORTTOTIME
     END
     POPUP "View"
     BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
         MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
+        MENUITEM "Data Tool bar",               ID_VIEW_DATATOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         POPUP "Animation"
         BEGIN
@@ -535,6 +619,9 @@ BEGIN
             MENUITEM "Volume",                      ID_MOE_VOLUME
             MENUITEM "Speed",                       ID_MOE_SPEED
             MENUITEM "V/C Ratio",                   ID_MOE_VC_Ratio
+            MENUITEM "Emissions",                   ID_LINKMOE_EMISSIONS
+            MENUITEM "Reliability",                 ID_LINKMOE_RELIABILITY
+            MENUITEM "Safety",                      ID_LINKMOE_SAFETY
             MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
             MENUITEM "Capacity",                    ID_MOE_CAPACITY
             MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
@@ -553,6 +640,7 @@ BEGIN
         MENUITEM "Show/Hide Link MOE",          ID_MOE_NONE
         MENUITEM "Show/Hide Path Trajectory",   ID_SHOW_SHOWALLPATHS
         MENUITEM "Show/Hide OD MOE",            ID_MOE_NOODMOE
+        MENUITEM "Show/Hide AVI Sensors",       ID_VIEW_SHOW
     END
     POPUP "Edit"
     BEGIN
@@ -599,39 +687,7 @@ BEGIN
     END
     POPUP "Tools"
     BEGIN
-        MENUITEM "Remove Nodes and Links outside Subarea", ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA
         MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
-        POPUP "NGSim Data"
-        BEGIN
-            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
-            MENUITEM SEPARATOR
-            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
-            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
-            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
-            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
-            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
-            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
-            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
-            MENUITEM SEPARATOR
-            MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
-            MENUITEM SEPARATOR
-            MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
-            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
-            MENUITEM "Show Preceeding Vehicle Position", ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION
-            MENUITEM SEPARATOR
-            MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
-            MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
-            MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
-            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
-            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
-        END
-        POPUP "Export"
-        BEGIN
-            MENUITEM "Export to Time-dependent Travel Time Data Set", ID_TOOLS_EXPORTTOTIME
-            MENUITEM "Export to DTALite Sensor Data Format", ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT
-            MENUITEM "Export OpMode Distribution",  ID_TOOLS_EXPORTOPMODEDISTRIBUTION
-            MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
-        END
         POPUP "Coordinate Conversion"
         BEGIN
             MENUITEM "Change Coordinates to Long/Lat", ID_FILE_CHANGECOORDINATESTOLONG
@@ -995,19 +1051,21 @@ BEGIN
     LTEXT           "Node Number:",IDC_STATIC,7,7,50,8
 END
 
-IDD_DIALOGSensorDataLoading DIALOGEX 0, 0, 189, 116
+IDD_DIALOGSensorDataLoading DIALOGEX 0, 0, 211, 116
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Loading Sensor Data"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,7,95,50,14
-    EDITTEXT        IDC_EDIT_TimeInterval,133,7,40,14,ES_AUTOHSCROLL
-    LTEXT           "Observation Time Interval (min):",IDC_STATIC,7,7,105,8
-    LTEXT           "Number of Days:",IDC_STATIC,7,25,55,8
-    EDITTEXT        IDC_EDIT_Number_of_Days,133,24,40,14,ES_AUTOHSCROLL
-    LTEXT           "Coefficient for Converting Occupancy to Density:",IDC_STATIC,7,46,159,8
-    EDITTEXT        IDC_EDIT_Occ_to_Density_Coef,133,56,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_TimeInterval,147,7,40,14,ES_AUTOHSCROLL
+    LTEXT           "Point Sensor Sampling Time Interval (min):",IDC_STATIC,7,7,136,8
+    LTEXT           "Number of Days in Sensor Data Set:",IDC_STATIC,7,43,116,8
+    EDITTEXT        IDC_EDIT_Number_of_Days,147,43,40,14,ES_AUTOHSCROLL
+    LTEXT           "Coefficient for Converting Occupancy to Density:",IDC_STATIC,7,62,159,8
+    EDITTEXT        IDC_EDIT_Occ_to_Density_Coef,173,60,31,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "Cancel",IDCANCLE,111,95,50,14
+    LTEXT           "AVI Sensor Sampling Time Interval (min):",IDC_STATIC,7,27,131,8
+    EDITTEXT        IDC_EDIT_TimeInterval_AVI,147,24,40,14,ES_AUTOHSCROLL
 END
 
 IDD_DIALOG_IMPORT_ODTABLE DIALOGEX 0, 0, 237, 51
@@ -1207,51 +1265,69 @@ BEGIN
     PUSHBUTTON      "...",IDC_BUTTON_Find_Zone_File,322,90,20,14
 END
 
-IDD_DIALOG_Goolge_Fusion_Table DIALOGEX 0, 0, 316, 217
+IDD_DIALOG_Goolge_Fusion_Table DIALOGEX 0, 0, 316, 148
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Data Exchange with Google Fusion Tables"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,205,196,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,259,196,50,14
-    PUSHBUTTON      "<< Upload Nodes and Links in the Subarea ",IDC_BUTTON_Upload,104,115,145,14
-    PUSHBUTTON      "Download from Google Fusion Tables to Local Node and Link Files >>",IDC_BUTTON_Download,36,161,273,14
-    PUSHBUTTON      "Go Web!",IDC_BUTTON_NODE_WEB,119,39,41,14
-    LTEXT           "Node:",IDC_STATIC,7,6,20,8
-    EDITTEXT        IDC_EDIT_ExcelFile,47,20,61,15,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_ExcelFile2,45,68,61,15,ES_AUTOHSCROLL
-    LTEXT           "Table ID:",IDC_STATIC,7,22,30,8
-    LTEXT           "Snap ID:",IDC_STATIC,7,39,29,8
-    EDITTEXT        IDC_EDIT_ExcelFile3,46,38,61,15,ES_AUTOHSCROLL
-    LTEXT           "Snap ID:",IDC_STATIC,7,87,29,8
-    PUSHBUTTON      "Go Web!",IDC_BUTTON_NODE_WEB2,119,88,41,14
-    EDITTEXT        IDC_EDIT_ExcelFile4,46,84,61,15,ES_AUTOHSCROLL
-    LTEXT           "Table ID:",IDC_STATIC,7,71,30,8
-    LTEXT           "Link:",IDC_STATIC,7,57,16,8
-    EDITTEXT        IDC_EDIT_ExcelFile5,7,137,302,15,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "Local Project Folder:",IDC_STATIC,7,127,66,8
+    DEFPUSHBUTTON   "OK",IDOK,259,127,50,14
+    PUSHBUTTON      "Upload Node and Link Data in the Subarea to Google Fusion Table >>",IDC_BUTTON_Upload,6,99,231,14
+    PUSHBUTTON      ">> Download Node and Link Files from Google Fusion Tables",IDC_BUTTON_Download,7,58,202,14
+    PUSHBUTTON      "Check online map",IDC_BUTTON_LINK_WEB,239,6,70,14
+    LTEXT           "Node Table ID:",IDC_STATIC,7,6,49,8
+    EDITTEXT        IDC_EDIT_ExcelFile,60,6,61,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ExcelFile2,172,6,61,15,ES_AUTOHSCROLL
+    LTEXT           "Link Table ID:",IDC_STATIC,123,6,44,8
+    EDITTEXT        IDC_EDIT_ExcelFile5,7,37,302,15,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Local Project Folder:",IDC_STATIC,7,26,66,8
+    PUSHBUTTON      "Check online map",IDC_BUTTON_LINK_WEB_Subarea,239,99,70,14
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,1,87,314,1
+    EDITTEXT        IDC_SUBAREA_LINK_SIZE,93,118,46,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "# of links in the subarea:",IDC_STATIC,7,120,81,8
 END
 
 IDD_DIALOG_EXCEL_IMPORT DIALOGEX 0, 0, 354, 241
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Import Data Files"
+CAPTION "Import Network and Demand Data Files"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Exit",IDOK,265,220,50,14
     LTEXT           "Excel File to be Imported:",IDC_STATIC,7,7,83,8
     PUSHBUTTON      "...",IDC_BUTTON_Find_Exel_File,322,19,20,14
-    LISTBOX         IDC_LIST1,7,145,304,69,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_LIST1,7,108,304,106,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "Import Network and Demand Data",ID_IMPORT,7,68,134,14
     EDITTEXT        IDC_EDIT_Demand_CSV_File,7,47,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Demand_CSV_File,321,47,20,14
     EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL
     LTEXT           "Demand matrix CSV File to be Imported (optional):",IDC_STATIC,7,36,162,8
-    RTEXT           "Message List:",IDC_STATIC,7,132,44,8
+    RTEXT           "Message List:",IDC_STATIC,7,93,44,8
     DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,69,151,14
-    LTEXT           "Sensor Data Excel File to be Imported:",IDC_STATIC,7,88,124,8
-    EDITTEXT        IDC_EDIT_SENSOR_FILE,7,97,306,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,319,98,20,14
-    DEFPUSHBUTTON   "Import Sensor Data",ID_IMPORT_SENSOR_DATA,7,116,134,14
+END
+
+IDD_DIALOG_EXCEL_IMPORT_POINT_SENSOR DIALOGEX 0, 0, 354, 222
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Import Point Sensor Data File"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Exit",IDOK,265,201,50,14
+    LISTBOX         IDC_LIST1,7,80,304,102,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_Demand_CSV_File,7,19,306,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,320,20,20,14
+    LTEXT           "Point Sensor Excel File to be Imported:",-1,7,7,125,8
+    RTEXT           "Message List:",-1,7,65,44,8
+    DEFPUSHBUTTON   "Import Point Sensor Location Table and Sensor Data Table",ID_IMPORT_Point_Sensor_Location_and_Data,7,44,195,14
+END
+
+IDD_DIALOG_SIGNAL_DATA DIALOGEX 0, 0, 300, 139
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Signal Data Exchange"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,163,118,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,243,118,50,14
+    PUSHBUTTON      "Generate Synchro CSV file and UTDF files",IDC_BUTTON_GENERATE_DATA,14,23,157,14
+    PUSHBUTTON      "Obtain movement-specific capacity values through Quick Estimation Method (QEM)",IDC_BUTTON_QEM,17,70,276,14
+    PUSHBUTTON      "Read Signal timing data from UTDF files",IDC_BUTTON_READ_Signal_Timing,15,44,156,14
 END
 
 
@@ -1422,7 +1498,7 @@ BEGIN
     IDD_DIALOGSensorDataLoading, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 182
+        RIGHTMARGIN, 204
         TOPMARGIN, 7
         BOTTOMMARGIN, 109
     END
@@ -1544,7 +1620,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 309
         TOPMARGIN, 6
-        BOTTOMMARGIN, 210
+        BOTTOMMARGIN, 141
     END
 
     IDD_DIALOG_EXCEL_IMPORT, DIALOG
@@ -1553,6 +1629,22 @@ BEGIN
         RIGHTMARGIN, 347
         TOPMARGIN, 7
         BOTTOMMARGIN, 234
+    END
+
+    IDD_DIALOG_EXCEL_IMPORT_POINT_SENSOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 347
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 215
+    END
+
+    IDD_DIALOG_SIGNAL_DATA, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 293
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 132
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1734,6 +1826,34 @@ BEGIN
     ID_MOE_CAPACITY         "\n Unit: veh per link"
     ID_MOE_SPEEDLIMIT       "\nUnit: mph"
     ID_MOE_FREEFLOWTRAVLETIME "\nUnit: Min"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_IMPORT_SENSOR_DATA   "Import Point Sensor Data"
+    ID_IMPORT_LINKMOE       "Import Simulated Link MOE File"
+    ID_IMPORT_VEHICLEFILE   "Import Simulated Vehicle Trajectory File"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_IMPORTDATA_IMPORT    "Import Network Data"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_IMPORT_AVI_DATA      "Import AVI Sensor Data"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_IMPORT_GPS           "Import GPS Data"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_IMPORT_NGSIM_FILE    "Import NGSIM Data File"
+    ID_EXPORT_AMS           "Construct AMS data set"
 END
 
 #endif    // English (U.S.) resources

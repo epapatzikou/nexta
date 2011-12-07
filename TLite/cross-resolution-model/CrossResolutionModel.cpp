@@ -1,4 +1,4 @@
-// TLiteDoc.cpp : implementation of the CTLiteDoc class
+//  Portions Copyright 2010 Tao Xing (captainxingtao@gmail.com), Xuesong Zhou (xzhou99@gmail.com)
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -28,7 +28,12 @@
 #include "..//TLite.h"
 #include "..//Network.h"
 #include "..//TLiteDoc.h"
+#include "..//Data-Interface//XLEzAutomation.h"
+#include "..//Data-Interface//XLTestDataSource.h"
+
 #include "SignalNode.h"
+#include "..//Dlg_SignalDataExchange.h"
+
 
 
 DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
@@ -54,7 +59,7 @@ DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
 }
 
 
-DTA_Turn CTLiteDoc::g_RelativeAngle_to_Turn_New(int relative_angle)
+DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Turn(int relative_angle)
 {
    int min_through_diff = 45;
 
@@ -76,7 +81,7 @@ DTA_Turn CTLiteDoc::g_RelativeAngle_to_Turn_New(int relative_angle)
 }
 
 
-int CTLiteDoc::g_P2P_Angle_New(GDPoint p1, GDPoint p2)
+int CTLiteDoc::Find_P2P_Angle(GDPoint p1, GDPoint p2)
 {
    float delta_x  = p2.x - p1.x;
    float delta_y  = p2.y - p1.y;
@@ -99,7 +104,29 @@ int CTLiteDoc::g_P2P_Angle_New(GDPoint p1, GDPoint p2)
    return angle;
 
 }
+DTA_Turn CTLiteDoc::Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3)
+{
 
+	int relative_angle = Find_PPP_RelativeAngle(p1,p2,p3);
+	return Find_RelativeAngle_to_Turn(relative_angle);
+
+}
+int CTLiteDoc::Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3)
+{
+ int relative_angle;
+
+ int angle1 = Find_P2P_Angle(p1,p2);
+ int angle2 = Find_P2P_Angle(p2,p3);
+ relative_angle = angle2 - angle1;
+
+      while(relative_angle > 180) 
+		  relative_angle -= 360;
+
+      while(relative_angle < -180)
+		  relative_angle += 360;
+
+ return relative_angle;
+}
 void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 {
 	if(m_pNetwork!=NULL)
@@ -155,8 +182,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
 						p3  = m_NodeIDMap[element.DestNodeID]->pt;
 
-						element.movement_approach = g_Angle_to_Approach_New(g_P2P_Angle_New(p1,p2));
-						element.movement_turn = g_PPP_to_Turn(p1,p2,p3);
+						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 						// initialize movement here
 						switch (element.movement_approach)
@@ -202,7 +229,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						bool exist_node_flag = false;
 						if (!m_MovementVector.empty())
 						{
-							for (int m = 0; m < m_MovementVector.size(); m++)
+							for (unsigned int m = 0; m < m_MovementVector.size(); m++)
 							{
 								if (m_MovementVector[m].CurrentNodeID == element.CurrentNodeID)
 								{
@@ -238,29 +265,32 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 
 	if(m_pNetwork!=NULL)
+	{
 		delete m_pNetwork;
+		m_pNetwork = NULL;
+	}
 
 }
 
 bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate)
 {
-	const int LaneColumeSize = 12;
+	const int LaneColumnSize = 12;
 	const int LaneRowSize = 28;
-	string lane_colume_name_str[LaneColumeSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
 	string lane_row_name_str[LaneRowSize] = {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 	
 	TCHAR IniFilePath[_MAX_PATH];
-	sprintf_s(IniFilePath,"%sLaneSettings.ini", m_ProjectDirectory);
+	sprintf_s(IniFilePath,"%sLaneSettings.ini", m_Synchro_ProjectDirectory);
 
 	int i,j;
 	//DTA_NodeMovementSet movement;// = new DTA_NodeMovementSet();
 	MovementTemplate.CurrentNodeID = -1;
 
-	for(j=0; j<LaneColumeSize;j++)
+	for(j=0; j<LaneColumnSize;j++)
 	{
 		for(i=0; i<LaneRowSize; i++)
 		{
-			float value = g_GetPrivateProfileFloat(lane_colume_name_str[j].c_str(), lane_row_name_str[i].c_str(), 0, IniFilePath);
+			float value = g_GetPrivateProfileFloat(lane_Column_name_str[j].c_str(), lane_row_name_str[i].c_str(), 0, IniFilePath);
 			// assign value to DataMatrix[i][j].m_text;
 			MovementTemplate.DataMatrix[i+2][j].m_text = value;
 		}
@@ -269,18 +299,18 @@ bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, 
 		MovementTemplate.DataMatrix[1][j].m_text = -1;
 	}
 
-	const int PhaseColumeSize = 8;
+	const int PhaseColumnSize = 8;
 	const int PhaseRowSize = 23;
-	string phase_colume_name_str[PhaseColumeSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
+	string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
 	string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
 	
-	sprintf_s(IniFilePath,"%sPhaseSettings.ini", m_ProjectDirectory);
+	sprintf_s(IniFilePath,"%sPhaseSettings.ini", m_Synchro_ProjectDirectory);
 	PhaseTemplate.CurrentNodeID = -1;
-	for(j=0; j<PhaseColumeSize;j++)
+	for(j=0; j<PhaseColumnSize;j++)
 	{
 		for(i=0; i<PhaseRowSize; i++)
 		{
-			float value = g_GetPrivateProfileFloat(phase_colume_name_str[j].c_str(), phase_row_name_str[i].c_str(), 0, IniFilePath);
+			float value = g_GetPrivateProfileFloat(phase_Column_name_str[j].c_str(), phase_row_name_str[i].c_str(), 0, IniFilePath);
 			// assign value to DataMatrix[i][j].m_text;
 			PhaseTemplate.DataMatrix[i][j].m_text = value;
 		}
@@ -293,9 +323,9 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 {
 	// set default value to movements
 	const int LaneRowSize = 28;
-	const int LaneColumeSize = 12;
+	const int LaneColumnSize = 12;
 
-	float default_value_M[LaneRowSize][LaneColumeSize] = 
+	float default_value_M[LaneRowSize][LaneColumnSize] = 
 	{
 		{1,2,1,1,2,1,1,2,1,1,2,1},
 		{0,0,0,0,0,0,0,0,0,0,0,},
@@ -330,7 +360,7 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 	int i,j;
 	MovementTemplate.CurrentNodeID = -1;
 
-	for(j=0; j<LaneColumeSize;j++)
+	for(j=0; j<LaneColumnSize;j++)
 	{
 		for(i=0; i<LaneRowSize; i++)
 		{
@@ -343,10 +373,10 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 
 	
 	// set default values to Phases
-	const int PhaseColumeSize = 8;
+	const int PhaseColumnSize = 8;
 	const int PhaseRowSize = 23;
 
-	float default_value_P[PhaseRowSize][PhaseColumeSize] = 
+	float default_value_P[PhaseRowSize][PhaseColumnSize] = 
 	{
 		{111,112,211,212,121,122,221,222},
 		{4,15,4,15,4,15,4,15},
@@ -376,7 +406,7 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 	PhaseTemplate.CurrentNodeID = -1;
 	for(i=0; i<PhaseRowSize; i++)
 	{
-		for(j=0; j<PhaseColumeSize;j++)
+		for(j=0; j<PhaseColumnSize;j++)
 		{
 			PhaseTemplate.DataMatrix[i][j].m_text = default_value_P[i][j];
 		}
@@ -387,26 +417,44 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 
 void CTLiteDoc::OnFileConstructandexportsignaldata()
 {
+	CDlg_SignalDataExchange dlg;
+	dlg.m_pDOC = this;
+	dlg.DoModal();
 
+}
+void CTLiteDoc::Constructandexportsignaldata()
+{
+	CString str;
+	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"Synchro Data File (*.csv)|*.csv||", NULL);
+	if(dlg.DoModal() == IDOK)
+	{
+		CWaitCursor wait;
+		char fname[_MAX_PATH];
+		wsprintf(fname,"%s", dlg.GetPathName());
+	
+	CString SynchroProjectFile = dlg.GetPathName();
+	m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
+	
 	ConstructMovementVector(true);
 
 		FILE* st = NULL;
 
-	const int LaneColumeSize = 12;
+	const int LaneColumnSize = 12;
 	const int LaneRowSize = 30;
-	string lane_colume_name_str[LaneColumeSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
 	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 	
 	int i,j, m;
 	int movement_size = m_MovementVector.size();
 
 	// write lanes/movements file
-	fopen_s(&st,m_ProjectDirectory+"Lanes.csv","w");
+	fopen_s(&st,m_Synchro_ProjectDirectory+"Lanes.csv","w");
 	if(st!=NULL)
 	{
 		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<LaneColumeSize;j++)
-			fprintf(st, "%s,", lane_colume_name_str[j].c_str());
+		for(j=0; j<LaneColumnSize;j++)
+			fprintf(st, "%s,", lane_Column_name_str[j].c_str());
 		fprintf(st,"\n");
 
 		for (m=0; m<movement_size;m++)
@@ -417,7 +465,7 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<LaneColumeSize;j++)
+				for(j=0; j<LaneColumnSize;j++)
 				{
 					fprintf(st, "%i,",m_NodeIDMap[m_MovementVector[m].DataMatrix[i][j].m_text]->m_NodeNumber);
 				}
@@ -429,7 +477,7 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<LaneColumeSize;j++)
+				for(j=0; j<LaneColumnSize;j++)
 				{
 					fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
 				}
@@ -443,19 +491,19 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 	}
 
 	// write phase file
-	const int PhaseColumeSize = 8;
+	const int PhaseColumnSize = 8;
 	const int PhaseRowSize = 23;
-	string phase_colume_name_str[PhaseColumeSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
+	string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
 	string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
 
 	int p, phase_size = m_PhaseVector.size();
 
-	fopen_s(&st,m_ProjectDirectory+"Phases.csv","w");
+	fopen_s(&st,m_Synchro_ProjectDirectory+"Phases.csv","w");
 	if(st!=NULL)
 	{
 		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<PhaseColumeSize;j++)
-			fprintf(st, "%s,", phase_colume_name_str[j].c_str());
+		for(j=0; j<PhaseColumnSize;j++)
+			fprintf(st, "%s,", phase_Column_name_str[j].c_str());
 		fprintf(st,"\n");
 
 		for (p=0; p<phase_size;p++)
@@ -465,7 +513,7 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 				fprintf(st, "%s,", phase_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<PhaseColumeSize;j++)
+				for(j=0; j<PhaseColumnSize;j++)
 				{
 					fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
 				}
@@ -478,37 +526,41 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 	fclose(st);
 	}
 
-	EntireNetworkOutput();
+	ExportSingleSynchroFile(SynchroProjectFile);
+	}
 
 }
 
-void CTLiteDoc::EntireNetworkOutput()
+void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 {
 	// write entire network with signal file
-	//if(m_pNetwork!=NULL)
-	//	delete m_pNetwork;
+	if(m_pNetwork!=NULL)
+	{
+		delete m_pNetwork;
+		m_pNetwork = NULL;
+	}
 
 	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
 
 	FILE* st = NULL;
 
-	const int LaneColumeSize = 12;
+	const int LaneColumnSize = 12;
 	const int LaneRowSize = 30;
-	string lane_colume_name_str[LaneColumeSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
 	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 	
 	int i,j, m;
 	int movement_size = m_MovementVector.size();
 
-	const int PhaseColumeSize = 8;
+	const int PhaseColumnSize = 8;
 	const int PhaseRowSize = 23;
-	string phase_colume_name_str[PhaseColumeSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
+	string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
 	string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
 
 	int p, phase_size = m_PhaseVector.size();
 
-	fopen_s(&st,m_ProjectDirectory+"Synchro.csv","w");
+	fopen_s(&st,SynchroProjectFile,"w");
 	if(st!=NULL)
 	{
 		// write Network /////////////////////////////////////////////////////////////
@@ -561,7 +613,7 @@ void CTLiteDoc::EntireNetworkOutput()
 				up_node_id = m_pNetwork->m_FromIDAry[LinkID];
 				p1  = m_NodeIDMap[up_node_id]->pt;
 				p2  = m_NodeIDMap[current_node_id]->pt;
-				incoming_approach = g_Angle_to_Approach_New(g_P2P_Angle_New(p1,p2));
+				incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
 				Node_Link.LoadLink(m_LinkNoMap[LinkID], incoming_approach);
 			}
 			// write file
@@ -620,8 +672,8 @@ void CTLiteDoc::EntireNetworkOutput()
 		fprintf(st, "[Lanes]\n");
 		fprintf(st, "Lane Group Data\n");
 		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<LaneColumeSize;j++)
-			fprintf(st, "%s,", lane_colume_name_str[j].c_str());
+		for(j=0; j<LaneColumnSize;j++)
+			fprintf(st, "%s,", lane_Column_name_str[j].c_str());
 		fprintf(st,"\n");
 
 		for (m=0; m<movement_size;m++)
@@ -632,7 +684,7 @@ void CTLiteDoc::EntireNetworkOutput()
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<LaneColumeSize;j++)
+				for(j=0; j<LaneColumnSize;j++)
 				{
 					fprintf(st, "%i,",m_NodeIDMap[m_MovementVector[m].DataMatrix[i][j].m_text]->m_NodeNumber);
 				}
@@ -644,7 +696,7 @@ void CTLiteDoc::EntireNetworkOutput()
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<LaneColumeSize;j++)
+				for(j=0; j<LaneColumnSize;j++)
 				{
 					fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
 				}
@@ -678,8 +730,8 @@ void CTLiteDoc::EntireNetworkOutput()
 		fprintf(st, "[Phases]\n");
 		fprintf(st, "Phasing Data\n");
 		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<PhaseColumeSize;j++)
-			fprintf(st, "%s,", phase_colume_name_str[j].c_str());
+		for(j=0; j<PhaseColumnSize;j++)
+			fprintf(st, "%s,", phase_Column_name_str[j].c_str());
 		fprintf(st,"\n");
 
 		for (p=0; p<phase_size;p++)
@@ -689,7 +741,7 @@ void CTLiteDoc::EntireNetworkOutput()
 				fprintf(st, "%s,", phase_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
 
-				for(j=0; j<PhaseColumeSize;j++)
+				for(j=0; j<PhaseColumnSize;j++)
 				{
 					fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
 				}
@@ -704,6 +756,287 @@ void CTLiteDoc::EntireNetworkOutput()
 	}
 	
 	if(m_pNetwork!=NULL)
+	{
 		delete m_pNetwork;
+		m_pNetwork = NULL;
+	}
 
+	OpenCSVFileInExcel(SynchroProjectFile);
 }
+void CTLiteDoc::OnExportAms()
+{
+	const int NodeColumnSize = 92;
+	CString node_Column_name_str[NodeColumnSize] = 
+{
+	"	Node	",
+"	Geometry	",
+"	NodeType	",
+"	ControlType	",
+"	Zone	",
+"	Movement_USN1	",
+"	Movement_USN2	",
+"	Movement_USN3	",
+"	Movement_USN4	",
+"	Movement_USN5	",
+"	Movement_USN6	",
+"	TurnVol_USN1	",
+"	TurnVol_USN2	",
+"	TurnVol_USN3	",
+"	TurnVol_USN4	",
+"	TurnVol_USN5	",
+"	TurnVol_USN6	",
+"	RTOR_USN1	",
+"	RTOR_USN2	",
+"	RTOR_USN3	",
+"	RTOR_USN4	",
+"	RTOR_USN5	",
+"	RTOR_USN6	",
+"	Uturn_USN1	",
+"	Uturn_USN2	",
+"	Uturn_USN3	",
+"	Uturn_USN4	",
+"	Uturn_USN5	",
+"	Uturn_USN6	",
+"	Turn_multiplier_USN1	",
+"	Turn_multiplier_USN2	",
+"	Turn_multiplier_USN3	",
+"	Turn_multiplier_USN4	",
+"	Turn_multiplier_USN5	",
+"	Turn_multiplier_USN6	",
+"	Lane_Align_USN1	",
+"	Lane_Align_USN2	",
+"	Lane_Align_USN3	",
+"	Lane_Align_USN4	",
+"	Lane_Align_USN5	",
+"	Lane_Align_USN6	",
+"	Conditional_LT_USN1	",
+"	Conditional_TH_USN1	",
+"	Conditional_RT_USN1	",
+"	Conditional_Turn1_USN1	",
+"	Conditional_Turn2_USN1	",
+"	Conditional_LT_USN2	",
+"	Conditional_TH_USN2	",
+"	Conditional_RT_USN2	",
+"	Conditional_Turn1_USN2	",
+"	Conditional_Turn2_USN2	",
+"	Conditional_LT_USN3	",
+"	Conditional_TH_USN3	",
+"	Conditional_RT_USN3	",
+"	Conditional_Turn1_USN3	",
+"	Conditional_Turn2_USN3	",
+"	Conditional_LT_USN4	",
+"	Conditional_TH_USN4	",
+"	Conditional_RT_USN4	",
+"	Conditional_Turn1_USN4	",
+"	Conditional_Turn2_USN4	",
+"	Conditional_LT_USN5	",
+"	Conditional_TH_USN5	",
+"	Conditional_RT_USN5	",
+"	Conditional_Turn1_USN5	",
+"	Conditional_Turn2_USN5	",
+"	Conditional_LT_USN6	",
+"	Conditional_TH_USN6	",
+"	Conditional_RT_USN6	",
+"	Conditional_Turn1_USN6	",
+"	Conditional_Turn2_USN6	",
+"	Stopline_USN1	",
+"	Stopline_USN2	",
+"	Stopline_USN3	",
+"	Stopline_USN4	",
+"	Stopline_USN5	",
+"	Stopline_USN6	",
+"	Sight_Dist_USN1	",
+"	Sight_Dist_USN2	",
+"	Sight_Dist_USN3	",
+"	Sight_Dist_USN4	",
+"	Sight_Dist_USN5	",
+"	Sight_Dist_USN6	",
+"	Pedestrian_USN1	",
+"	Pedestrian_USN2	",
+"	Pedestrian_USN3	",
+"	Pedestrian_USN4	",
+"	Pedestrian_USN5	",
+"	Pedestrian_USN6	",
+"	Offramp_React	",
+"	Offramp_HOV_React	",
+"	Lane_Distribution	"};
+
+	const int LinkColumnSize = 70;
+	CString link_Column_name_str[LinkColumnSize] = 
+{
+
+	"	Link	",
+"	Geometry	",
+"	USN	",
+"	DSN	",
+"	Name	",
+"	Type	",
+"	Length	",
+"	Lanes	",
+"	PostSpeed	",
+"	FreeFlowSpeed	",
+"	Grade	",
+"	Graphic	",
+"	Curvature	",
+"	Feature_points	",
+"	Underpass	",
+"	Startup_Delay	",
+"	Superelevation	",
+"	Pavement	",
+"	Radius	",
+"	Car_Follow_Sens_Multiplier	",
+"	Auxiliary	",
+"	Aux_Length	",
+"	LC_Speed_Threshold	",
+"	LC_Reaction	",
+"	Left_Barrier	",
+"	AddDrop	",
+"	AddDrop_Type	",
+"	AddDrop_Dist_USN	",
+"	AddDrop_React	",
+"	HV_Restrict	",
+"	HV_Restrict_Lane	",
+"	HV_Only	",
+"	HV_React	",
+"	HOV_#Lanes	",
+"	HOV_Location	",
+"	HOV_Type	",
+"	HOV_USN	",
+"	HOV_Length	",
+"	HOV_React	",
+"	HOV_User_TP	",
+"	HOV_Pct_TP	",
+"	Queue_Code_TP	",
+"	Discharge_Hwy	",
+"	LT_#Lane	",
+"	LT_Length	",
+"	RT_#Lane	",
+"	RT_Length	",
+"	Align_Lane	",
+"	Align_DSN	",
+"	Lane_Width	",
+"	Lane_Conf	",
+"	Bus_Station	",
+"	MidBlock_ID	",
+"	MidBlock_Flow	",
+"	Parking	",
+"	Park_Duration	",
+"	Park_Freq	",
+"	Park_Lt_DSN	",
+"	Park_LT_Length	",
+"	Park_RT_DSN	",
+"	Park_RT_Length	",
+"	Flow_Model	",
+"	Saturation	",
+"	Service_Flow	",
+"	Speed_Adj	",
+"	Link_Generation	",
+"	Direction	",
+"	Functional	",
+"	Area_Type	",
+"	Modes	"};
+
+
+	CString AMS_Node_File, AMS_Link_File;
+	CFileDialog node_dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"AMS Node Data File (*.csv)|*.csv||", NULL);
+	if(node_dlg.DoModal() == IDOK)
+	{
+		AMS_Node_File = node_dlg.GetPathName();
+	}else
+	{
+	return;
+	}
+
+	CFileDialog link_dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"AMS Link Data File (*.csv)|*.csv||", NULL);
+	if(link_dlg.DoModal() == IDOK)
+	{
+		AMS_Link_File = link_dlg.GetPathName();
+
+	}else
+	{
+	return;
+	}
+
+
+
+	CWaitCursor wait;
+	FILE* st = NULL;
+	fopen_s(&st,AMS_Node_File,"w");
+	if(st!=NULL)
+	{
+	//CTestDataSource provide set of data for testing XY plot function
+	int i;
+	for(i = 0; i < NodeColumnSize; i++)
+	{
+	fprintf(st,"%s,",node_Column_name_str[i]);
+	}
+	fprintf(st,"\n");
+
+	// Node sheet
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			fprintf(st, "%d,\"<Point><coordinates>%f,%f</coordinates></Point>\",,%d\n", (*iNode)->m_NodeNumber , (*iNode)->pt .x, (*iNode)->pt .y,(*iNode)->m_ControlType );
+		}
+
+	fclose(st);
+
+
+	}
+	
+
+
+
+	fopen_s(&st,AMS_Link_File,"w");
+	if(st!=NULL)
+	{
+	//CTestDataSource provide set of data for testing XY plot function
+	int i;
+	for(i = 0; i < LinkColumnSize; i++)
+	{
+	fprintf(st,"%s,",link_Column_name_str[i]);
+	}
+	fprintf(st,"\n");
+
+		std::list<DTALink*>::iterator iLink;
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_AVISensorFlag == false)
+			{
+//		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
+			fprintf(st,"%d,",(*iLink)->m_LinkID);
+				
+			fprintf(st,"\"<LineString><coordinates>");
+
+			for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+			{
+				fprintf(st,"%f,%f,0.0",(*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
+				if(si!=(*iLink)->m_ShapePoints.size()-1)
+					fprintf(st," ");
+			}
+			fprintf(st,"</coordinates></LineString>\",");
+
+			fprintf(st,"%d,%d,%s,%d,%5.1f,%d,%3.1f,%3.1f,%3.1f",
+				(*iLink)->m_FromNodeNumber, 
+				(*iLink)->m_ToNodeNumber ,
+				(*iLink)->m_Name.c_str (),
+				(*iLink)->m_link_type ,
+				(*iLink)->m_Length*5280 ,  // mile -> feet
+				(*iLink)->m_NumLanes ,
+				(*iLink)->m_SpeedLimit,
+				(*iLink)->m_SpeedLimit,
+				(*iLink)->m_Grade);
+
+			fprintf(st,"\n");
+			}
+
+		}
+	fclose(st);
+
+	}
+	OpenCSVFileInExcel(AMS_Node_File);
+	OpenCSVFileInExcel(AMS_Link_File);
+}
+

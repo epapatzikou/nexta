@@ -25,7 +25,7 @@ private:
 	int m_PrevTab;
 
 	BOOL ReadXMLFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);
-	BOOL ReadCSVFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);
+	BOOL ReadScenarioCSVFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);
 	void GetDefaultInfo(int i, std::vector<std::string>& HeaderList, std::vector<CString>& DefaultList);
 	void SetRectangle();
 	std::vector<std::string> GetLinkString();

@@ -224,7 +224,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportPointSensor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_ImportShapeFiles.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_SignalDataExchange.cpp"
 				>
 			</File>
 			<File
@@ -376,6 +384,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GridCtrl_src\TitleTip.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\TLite.cpp"
 				>
 			</File>
@@ -420,10 +432,6 @@
 				</File>
 				<File
 					RelativePath=".\GridCtrl_src\InPlaceEdit.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\GridCtrl_src\TitleTip.cpp"
 					>
 				</File>
 			</Filter>
@@ -550,6 +558,18 @@
 					RelativePath=".\cross-resolution-model\CrossResolutionModel.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\Data-Interface\XLAutomation.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLEzAutomation.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLTestDataSource.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -590,7 +610,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_ImportPointSensor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_ImportShapeFiles.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_SignalDataExchange.h"
 				>
 			</File>
 			<File
@@ -749,6 +777,18 @@
 				RelativePath=".\Utility.h"
 				>
 			</File>
+			<File
+				RelativePath=".\Data-Interface\XLAutomation.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Data-Interface\XLEzAutomation.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Data-Interface\XLTestDataSource.h"
+				>
+			</File>
 			<Filter
 				Name="GridCtrl"
 				>
@@ -849,6 +889,10 @@
 			</File>
 			<File
 				RelativePath=".\res\smallico.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\sta_tool.bmp"
 				>
 			</File>
 			<File

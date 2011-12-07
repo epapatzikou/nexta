@@ -60,7 +60,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_SimulationMethodControl.AddString ("Point Queue Model");
 	m_SimulationMethodControl.AddString ("Spatial Queue Model");
 	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
-	m_SimulationMethodControl.SetCurSel(m_SimultionMethod);
+	m_SimulationMethodControl.SetCurSel(m_SimultionMethod-1);
 
 	m_DemandLoadingModeList.AddString ("Demand Table");
 	m_DemandLoadingModeList.AddString ("Vehicle File");

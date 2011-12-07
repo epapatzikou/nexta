@@ -32,6 +32,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_VIEW_MOETOOLBAR, &CMainFrame::OnViewMoetoolbar)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_MOETOOLBAR, &CMainFrame::OnUpdateViewMoetoolbar)
 	ON_COMMAND(ID_WINDOW_SHOWESTIMATIONVIEW, &CMainFrame::OnWindowShowestimationview)
+	ON_COMMAND(ID_VIEW_DATATOOLBAR, &CMainFrame::OnViewDatatoolbar)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_DATATOOLBAR, &CMainFrame::OnUpdateViewDatatoolbar)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -48,6 +50,8 @@ static UINT indicators[] =
 CMainFrame::CMainFrame()
 {
 	m_bShowMOEToolBar = true;
+	m_bShowDataToolBar = true;
+
 }
 
 CMainFrame::~CMainFrame()
@@ -94,7 +98,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			TRACE0("Failed to create toolbar\n");
 			return -1;      // fail to create
 		}
-
+		if (!m_DataToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_DataToolBar.LoadToolBar(IDR_DATA_TOOLBAR))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
 
 		if (!m_wndStatusBar.Create(this) ||
 			!m_wndStatusBar.SetIndicators(indicators,
@@ -106,18 +116,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		m_MOEToolBar.SetButtonText(0,"Assignment");
 		m_MOEToolBar.SetButtonText(1,"Edit");
-		m_MOEToolBar.SetButtonText(2,"Volume");
-		m_MOEToolBar.SetButtonText(3,"Speed");
-		m_MOEToolBar.SetButtonText(5,"V/C");
-		m_MOEToolBar.SetButtonText(6,"Travel Time");
-
-		m_MOEToolBar.SetButtonText(8,"Link Capacity");
-		m_MOEToolBar.SetButtonText(9,"Speed Limit");
-		m_MOEToolBar.SetButtonText(10,"FreeFlow TT");
-		m_MOEToolBar.SetButtonText(11,"Length");
-
-		m_MOEToolBar.SetButtonText(13,"Demand");
-		m_MOEToolBar.SetButtonText(14,"Vehicle");
+		m_MOEToolBar.SetButtonText(2,"Speed Limit");
+		m_MOEToolBar.SetButtonText(3,"Volume");
+		m_MOEToolBar.SetButtonText(4,"Speed");
+		m_MOEToolBar.SetButtonText(5,"V/C Ratio");
+		m_MOEToolBar.SetButtonText(6,"Emissions");
+		m_MOEToolBar.SetButtonText(7,"Reliability");
+		m_MOEToolBar.SetButtonText(8,"Safety");
+		m_MOEToolBar.SetButtonText(10,"Demand");
+		m_MOEToolBar.SetButtonText(11,"Vehicle");
+		m_MOEToolBar.SetButtonText(13,"Link");
+		m_MOEToolBar.SetButtonText(14,"Path");
+		m_MOEToolBar.SetButtonText(15,"OD");
+		m_MOEToolBar.SetButtonText(16,"Subarea");
 
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
@@ -126,6 +137,36 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_MOEToolBar);
+
+		///// DataToolBar
+
+		m_DataToolBar.SetButtonText(0,"Network");
+
+		m_DataToolBar.SetButtonText(2,"Link MOE");
+		m_DataToolBar.SetButtonText(3,"Vehicle");
+		m_DataToolBar.SetButtonText(4,"Agent");
+
+		m_DataToolBar.SetButtonText(6,"Detector");
+		m_DataToolBar.SetButtonText(7,"AVI");
+		m_DataToolBar.SetButtonText(8,"GPS");
+		m_DataToolBar.SetButtonText(9,"NGSIM");
+		m_DataToolBar.SetButtonText(10,"VII");
+
+		m_DataToolBar.SetButtonText(12,"Weather");
+		m_DataToolBar.SetButtonText(13,"Incident");
+		m_DataToolBar.SetButtonText(14,"Bus");
+
+		m_DataToolBar.SetButtonText(16,"Micro");
+		m_DataToolBar.SetButtonText(17,"AMS");
+		m_DataToolBar.SetButtonText(18,"Cloud");
+
+
+		m_DataToolBar.SetSizes(CSize(42,38),CSize(16,15));
+
+
+		m_DataToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		EnableDocking(CBRS_ALIGN_ANY);
+		DockControlBar(&m_DataToolBar);
 
 		SetTimer(0,1000, NULL); // simulation reflesh timer
 		m_wndPlayerSeekBar.Enable(true);
@@ -337,3 +378,17 @@ void CMainFrame::OnWindowShowestimationview()
 		// make it visisable
 	}
 	pTemplate->InitialUpdateFrame(pFrame, pDocument);}
+
+void CMainFrame::OnViewDatatoolbar()
+{
+	m_bShowDataToolBar= !m_bShowDataToolBar;
+	if(m_bShowDataToolBar)
+		m_DataToolBar.ShowWindow (true);
+	else
+		m_DataToolBar.ShowWindow (false);
+}
+
+void CMainFrame::OnUpdateViewDatatoolbar(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck (m_bShowDataToolBar);
+}

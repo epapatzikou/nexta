@@ -39,7 +39,7 @@
 
 #define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
-static LPTSTR ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link_Based_Toll","Distance_Based_Toll",
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Incident","Link_Based_Toll","Distance_Based_Toll",
 							"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone"};
 
 
@@ -158,7 +158,7 @@ BOOL IsValidElement(LPTSTR element)
 
 	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
-		if (strcmp(ELEMENTS[i],element) == 0)
+		if (strcmp(SCENARIO_ELEMENTS[i],element) == 0)
 		{
 			Found = TRUE;
 		}
@@ -189,11 +189,11 @@ BOOL CDlgScenario::OnInitDialog()
 		//Read individual xml file
 		//ReadXMLFile(ELEMENTS[i],name_vector,value_vector);
 
-		ReadCSVFile(ELEMENTS[i],name_vector,value_vector);
+		ReadScenarioCSVFile(SCENARIO_ELEMENTS[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
-		tcItem.pszText = _T(ELEMENTS[i]);
+		tcItem.pszText = _T(SCENARIO_ELEMENTS[i]);
 		m_TabCtrl.InsertItem(i, &tcItem);
 
 
@@ -203,7 +203,7 @@ BOOL CDlgScenario::OnInitDialog()
 		GetDefaultInfo(i,DefaultHeader,DefaultValue);
 		//add individual tab dialog
 		p_SubTabs[i] = new CDlgScenarioTab(DefaultHeader, DefaultValue, value_vector,LinkString);
-		p_SubTabs[i]->SetTabText(ELEMENTS[i]);
+		p_SubTabs[i]->SetTabText(SCENARIO_ELEMENTS[i]);
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 
 	}
@@ -432,9 +432,9 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 	return linkstring;
 }
 
-BOOL CDlgScenario::ReadCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
+BOOL CDlgScenario::ReadScenarioCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
 {
-	std::string fileName = m_pDoc->m_ProjectDirectory + ElementType + ".csv";
+	std::string fileName = m_pDoc->m_ProjectDirectory + "Scenario_"+ElementType + ".csv";
 	std::vector<std::string> value;
 
 	CCSVParser csvParser;

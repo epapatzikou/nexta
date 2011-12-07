@@ -53,6 +53,7 @@ public:
 
 	bool m_bShowSensor;
 	bool m_bShowText;
+	bool m_bShowAVISensor;
 
 	LPPOINT m_subarea_points;
 	// Create a polygonal region
@@ -159,6 +160,7 @@ public:
 
 	bool m_ShowAllPaths;
 
+	void CopyLinkSetInSubarea();
 
 
 // Overrides
@@ -242,6 +244,8 @@ public:
 	afx_msg void OnEditCreatesubarea();
 	afx_msg void OnUpdateEditCreatesubarea(CCmdUI *pCmdUI);
 	afx_msg void OnToolsRemovenodesandlinksoutsidesubarea();
+	afx_msg void OnViewShowAVISensor();
+	afx_msg void OnUpdateViewShowAVISensor(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

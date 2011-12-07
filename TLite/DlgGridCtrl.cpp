@@ -319,7 +319,7 @@ bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
 			if(parser.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
 				break;
 
-			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
+			if(parser.GetValueByFieldName("number_of_vehicles_type1",number_of_vehicles) == false)
 				break;
 
 		if(origin_zone_id <=m_pDoc->m_ODSize && destination_zone_id<=m_pDoc->m_ODSize)
@@ -344,7 +344,7 @@ bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
 		return false;
 	}
 
-	outFile << "from_zone_id,to_zone_id,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min\n";
+	outFile << "from_zone_id,to_zone_id,number_of_vehicles_type1,starting_time_in_min,ending_time_in_min\n";
 
 	float maxFlow = -1;
 	for (int i=1;i<m_Grid.GetRowCount();i++)
@@ -364,7 +364,7 @@ bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
 
 			if (flow > 0)
 			{
-				outFile << originStr << "," << destStr << "," << flowStr << ",1,0,60\n";
+				outFile << originStr << "," << destStr << "," << flowStr << ",0,60\n";
 			}
 
 			m_pDoc->m_DemandMatrix[i-1][j-1] = flow;

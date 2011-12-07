@@ -63,7 +63,9 @@ protected:  // control bar embedded members
    CPlayerSeekBar m_wndPlayerSeekBar;
 
    CToolBar m_MOEToolBar;
+   CToolBar m_DataToolBar;
    bool m_bShowMOEToolBar;
+   bool m_bShowDataToolBar;
 
 // Generated message map functions
 protected:
@@ -85,6 +87,8 @@ public:
 	afx_msg void OnViewMoetoolbar();
 	afx_msg void OnUpdateViewMoetoolbar(CCmdUI *pCmdUI);
 	afx_msg void OnWindowShowestimationview();
+	afx_msg void OnViewDatatoolbar();
+	afx_msg void OnUpdateViewDatatoolbar(CCmdUI *pCmdUI);
 };
 
 

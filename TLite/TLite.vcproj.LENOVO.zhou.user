@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\TLite"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_releaes_12_06"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\temp\HOT (Fix_Distribution)\HOT (Fix_Distribution)"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_releaes_12_06"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
