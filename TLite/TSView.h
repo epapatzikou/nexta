@@ -15,14 +15,17 @@ class VehicleSnapshotData
 public:
 	VehicleSnapshotData()
 	{
-	bDataAvailableFlag = false;
+		bDataAvailableFlag = false;
 	}
 
 	int Frame_ID;
 	int VehicleID;
 
-	float LocalY;
+	double LocalX;
+	double LocalY;
 	float Speed_mph;
+	int VehicleClass;
+	float Acceleration;
 	int LaneID;
 	int PrecedingVehicleID;
 	int FollowingVehicleID;
