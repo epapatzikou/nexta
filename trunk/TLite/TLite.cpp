@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_FILE_OPEN, &CTLiteApp::OnFileOpen)
 	ON_COMMAND(ID_FILE_OPEN_NEW_DOC, &CTLiteApp::OnFileOpenNewDoc)
 	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat)
+	ON_COMMAND(ID_FILE_OPENMULTIPLETRAFFICDATAPROJECTS, &CTLiteApp::OnFileOpenmultipletrafficdataprojects)
 END_MESSAGE_MAP()
 
 
@@ -221,7 +222,7 @@ int CTLiteApp::ExitInstance()
 
 
 void CTLiteApp::UpdateAllViews()
-{
+	{
 	POSITION posTempl;
 	POSITION posDoc;
 
@@ -261,4 +262,101 @@ void CTLiteApp::UpdateAllViews()
 void CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat()
 {
 	// TODO: Add your command handler code here
+}
+
+void CTLiteApp::OnFileOpenmultipletrafficdataprojects()
+{
+   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		   _T("Project Index File(*.pif)|*.pif|"));
+   if(dlg.DoModal() == IDOK)
+   {
+	  /* read project index
+	  // for each project
+		  // project type: resolution (macro, micro, micro-scopic)
+		  // with/without real-world data
+	      // with/without prediction
+
+	   different layers of data (data framework)
+	  { import data to a new project
+	     network
+		 traffic control file
+		 demand
+		 scenario file (VMS, incident, ramp metering )
+		 simulated data
+		 observed data
+			 detector sensor (multiple days)
+		 	 AVI sensor (node to node, AVI)
+			 corridor file (node to node file, )
+		 probe sensor (local X) including NGSIM data
+		 optional CSV files
+		 demand
+		 vehicle trajectory
+	   signal data
+	   }	
+
+	   multiple views
+
+	   1) spatial 2d network
+			MOE view (color coded)
+	   2) spatial 3d network
+			color coded + height (MOE (e.g. emissions)
+	   3) time series 
+			3.1 link MOE
+				(speed, travel time, density, flow, queue length)
+			3.2 network MOE
+			3.3 path 
+				(fuel efficiency)
+	   4) OD to path view
+	   5) time-space view 
+			data vs. simulated
+			point sensor, AVI, probe, estimated
+	   6) quick summary of scenaro
+			impacted vehicels by scenarios
+			selected OD, selected path
+
+		AMS Tools
+		   0) basic GIS viewing tools
+		      view, zoom-in, zoom-out, add and delete links, input scenaro and demand data
+
+		   1) exporting data for selected subarea
+			Synchro data
+			DYNASMART
+			DTALite
+			TRANSIMS
+			CORSIM
+			
+		   2) on-line GIS	google fusion tables -> KML
+
+		   3)
+			generate additional MOE
+				emissions
+				safety
+				reliability
+			4) dynamic OD demand estimation
+
+			5) generate capacity using quick analysis tables
+
+			6) communicate with data bus (upload and download dat from central data bus, communicate with simulation clock)
+			simulator warpper (call external excutable, exchange data with data bus)
+				{
+				DYNASMART
+				DTALite
+				TRANSIMS
+				}
+	
+			7) scenario comparison 
+				estimation vs. prediction
+				different resolutions
+				data vs. estimation results, faulty sensors, imcompartable 
+
+	   // end of each project
+
+	  */
+
+
+      POSITION p = m_pDocManager->GetFirstDocTemplatePosition();
+      CDocTemplate* pTemplate = m_pDocManager->GetNextDocTemplate(p);
+      CTLiteDoc* pDoc = (CTLiteDoc*)pTemplate->OpenDocumentFile(0);
+      pDoc->OnOpenDocument(dlg.GetPathName());
+   }
 }

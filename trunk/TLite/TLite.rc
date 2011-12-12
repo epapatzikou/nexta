@@ -80,7 +80,7 @@ IDR_TLiteTYPE           ICON                    "res\\TLiteDoc.ico"
 
 IDB_PATH_ICON           BITMAP                  "res\\smallico.bmp"
 IDB_PATH_CHECK          BITMAP                  "res\\stateico.bmp"
-IDR_STA_TOOLBAR         BITMAP                  "res\\toolbar1.bmp"
+IDR_VIEW_TOOLBAR        BITMAP                  "res\\toolbar1.bmp"
 IDR_MAINFRAME1          BITMAP                  "res\\mainfram.bmp"
 IDR_MAINFRAME2          BITMAP                  "res\\bmp00001.bmp"
 IDB_INCIDENT            BITMAP                  "res\\incident.bmp"
@@ -89,32 +89,35 @@ IDB_WORKZONE            BITMAP                  "res\\workzone.bmp"
 IDB_RAMPMETER           BITMAP                  "res\\rampmeter.bmp"
 IDB_TOLL                BITMAP                  "res\\toll.bmp"
 IDR_DATA_TOOLBAR        BITMAP                  "res\\sta_tool.bmp"
+IDR_AMS_TOOLBAR         BITMAP                  "res\\bmp00002.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Toolbar
 //
 
-IDR_STA_TOOLBAR TOOLBAR  16, 15
+IDR_VIEW_TOOLBAR TOOLBAR  16, 15
 BEGIN
-    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     BUTTON      ID_MOE_NONE
+    SEPARATOR
     BUTTON      ID_MOE_SPEEDLIMIT
+    BUTTON      ID_MOE_VEHICLE
+    BUTTON      ID_MOE_VC_Ratio
     BUTTON      ID_MOE_VOLUME
     BUTTON      ID_MOE_SPEED
-    BUTTON      ID_MOE_VC_Ratio
     BUTTON      ID_LINKMOE_EMISSIONS
     BUTTON      ID_LINKMOE_RELIABILITY
     BUTTON      ID_LINKMOE_SAFETY
     SEPARATOR
+    BUTTON      ID_VIEW_SHOWMOE
+    BUTTON      ID_SHOW_SHOWPATHMOE
     BUTTON      ID_MOE_ODDEMAND
-    BUTTON      ID_MOE_VEHICLE
+    BUTTON      ID_TOOLS_VIEWSIMULATIONSUMMARY
     SEPARATOR
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
+    BUTTON      ID_WINDOW_NEW3DVIEW
+    SEPARATOR
+    BUTTON      ID_SHOW_TIMETABLE
+    SEPARATOR
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
@@ -167,7 +170,7 @@ IDR_MAINFRAME2 TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_FILE_OPEN_NEW_DOC
     BUTTON      ID_FILE_SAVE_PROJECT
-    BUTTON      ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
+    BUTTON      ID_EXPORT_AMS
     SEPARATOR
     BUTTON      ID_VIEW_SELECT
     BUTTON      ID_VIEW_SELECT_NODE
@@ -188,16 +191,12 @@ BEGIN
     BUTTON      ID_3DRotate
     BUTTON      ID_3DReset
     SEPARATOR
-    BUTTON      ID_WINDOW_NEW3DVIEW
-    BUTTON      ID_SHOW_TIMETABLE
-    BUTTON      ID_WINDOW_SHOW2DVIEW
     BUTTON      ID_WINDOW_TILE_VERT
     BUTTON      ID_WINDOW_TILE_HORZ
     SEPARATOR
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
     BUTTON      ID_EDIT_CREATENODE
-    BUTTON      ID_EDIT_CREATESUBAREA
     SEPARATOR
     BUTTON      ID_ANIMATION_PLAY
     BUTTON      ID_ANIMATION_REWIND
@@ -209,31 +208,43 @@ END
 IDR_DATA_TOOLBAR TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_IMPORTDATA_IMPORT
-    SEPARATOR
+    BUTTON      ID_IMPORTDATA_IMPORT
     BUTTON      ID_IMPORT_LINKMOE
-    BUTTON      ID_IMPORT_VEHICLEFILE
-    BUTTON      ID_IMPORT_AGENT_FILE
     SEPARATOR
     BUTTON      ID_IMPORT_SENSOR_DATA
-    BUTTON      ID_IMPORT_AVI_DATA
+    BUTTON      ID_IMPORT_AVI
     BUTTON      ID_IMPORT_GPS
     BUTTON      ID_IMPORT_NGSIM_FILE
-    BUTTON      ID_BUTTON33179
+    BUTTON      ID_IMPORT_VII
     SEPARATOR
-    BUTTON      ID_IMPORT_WEATHER
     BUTTON      ID_IMPORT_INCIDENT
-    BUTTON      32976
+    BUTTON      ID_IMPORT_WORKZONE
+    BUTTON      ID_IMPORT_WEATHER
     SEPARATOR
-    BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
-    BUTTON      ID_EXPORT_AMS
+    BUTTON      ID_IMPORT_PRICING
+    BUTTON      ID_IMPORT_ATIS
+    BUTTON      ID_IMPORT_BUS
+    SEPARATOR
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+    BUTTON      ID_BUTTON33180
+END
+
+IDR_AMS_TOOLBAR TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_MOE_NONE
+    SEPARATOR
+    BUTTON      ID_Edit_Create2WayLinks
     BUTTON      ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES
     SEPARATOR
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
+    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
+    BUTTON      ID_EDIT_CREATESUBAREA
+    BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+    SEPARATOR
+    BUTTON      32976
+    BUTTON      32976
 END
 
 
@@ -516,7 +527,6 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
-        MENUITEM "Open Transportation Network Project", ID_FILE_OPENRAILNETWORKPROJECT
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
@@ -526,6 +536,7 @@ BEGIN
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
+        MENUITEM "Open Multiple Traffic Data Projects", ID_FILE_OPENMULTIPLETRAFFICDATAPROJECTS
     END
     POPUP "Import"
     BEGIN
@@ -536,7 +547,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Point Sensor",                ID_IMPORT_SENSOR_DATA
         MENUITEM "AVI",                         ID_IMPORT_AVI
-        MENUITEM "GPS",                         ID_IMPORT_GPS33185
+        MENUITEM "GPS",                         ID_IMPORT_GPS
         MENUITEM "NGSIM",                       ID_IMPORT_NGSIM_FILE
         POPUP "NGSIM  Menu"
         BEGIN
@@ -563,8 +574,11 @@ BEGIN
         END
         MENUITEM "VII Probe",                   ID_IMPORT_VII
         MENUITEM SEPARATOR
-        MENUITEM "Weather",                     ID_IMPORT_WEATHER33188
-        MENUITEM "Incident",                    ID_IMPORT_INCIDENT33189
+        MENUITEM "Work Zone",                   ID_IMPORT_WORKZONE
+        MENUITEM "Incident",                    ID_IMPORT_INCIDENT
+        MENUITEM "Weather",                     ID_IMPORT_WEATHER
+        MENUITEM "Pricing",                     ID_IMPORT_PRICING
+        MENUITEM "ATIS",                        ID_IMPORT_ATIS
         MENUITEM "Bus",                         ID_IMPORT_BUS
         MENUITEM SEPARATOR
         POPUP "Background Image"

@@ -36,11 +36,7 @@ public:
 
 // Attributes
 public:
-		CSplitterWnd    m_wndSplitter;
-
-// Operations
-public:
-
+		
 // Overrides
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
@@ -62,10 +58,13 @@ protected:  // control bar embedded members
 	CToolBar    m_wndToolBar;
    CPlayerSeekBar m_wndPlayerSeekBar;
 
-   CToolBar m_MOEToolBar;
    CToolBar m_DataToolBar;
+   CToolBar m_MOEToolBar;
+   CToolBar m_AMSToolBar;
+
    bool m_bShowMOEToolBar;
    bool m_bShowDataToolBar;
+   bool m_bShowAMSToolBar;
 
 // Generated message map functions
 protected:
