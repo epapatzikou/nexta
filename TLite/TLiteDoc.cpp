@@ -167,6 +167,13 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_IMPORT_GPS33185, &CTLiteDoc::OnImportGps33185)
 	ON_COMMAND(ID_IMPORT_VII, &CTLiteDoc::OnImportVii)
 	ON_COMMAND(ID_IMPORT_WEATHER33188, &CTLiteDoc::OnImportWeather33188)
+	ON_COMMAND(ID_IMPORT_GPS, &CTLiteDoc::OnImportGps)
+	ON_COMMAND(ID_IMPORT_WORKZONE, &CTLiteDoc::OnImportWorkzone)
+	ON_COMMAND(ID_IMPORT_INCIDENT, &CTLiteDoc::OnImportIncident)
+	ON_COMMAND(ID_IMPORT_WEATHER, &CTLiteDoc::OnImportWeather)
+	ON_COMMAND(ID_IMPORT_PRICING, &CTLiteDoc::OnImportPricing)
+	ON_COMMAND(ID_IMPORT_ATIS, &CTLiteDoc::OnImportAtis)
+	ON_COMMAND(ID_IMPORT_BUS, &CTLiteDoc::OnImportBus)
 END_MESSAGE_MAP()
 
 
@@ -4900,6 +4907,41 @@ void CTLiteDoc::OnImportVii()
 }
 
 void CTLiteDoc::OnImportWeather33188()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportGps()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportWorkzone()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportIncident()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportWeather()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportPricing()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportAtis()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnImportBus()
 {
 	// TODO: Add your command handler code here
 }

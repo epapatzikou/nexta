@@ -696,6 +696,13 @@ public:
 		afx_msg void OnImportGps33185();
 		afx_msg void OnImportVii();
 		afx_msg void OnImportWeather33188();
+		afx_msg void OnImportGps();
+		afx_msg void OnImportWorkzone();
+		afx_msg void OnImportIncident();
+		afx_msg void OnImportWeather();
+		afx_msg void OnImportPricing();
+		afx_msg void OnImportAtis();
+		afx_msg void OnImportBus();
 };
 
 
