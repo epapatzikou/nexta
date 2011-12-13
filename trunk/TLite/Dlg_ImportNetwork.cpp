@@ -394,6 +394,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_ToNodeNumber = to_node_id;
 						pLink->m_Direction  = 1;
 
+					pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[from_node_id];
+					pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[to_node_id];
+
+
 						for(unsigned si = 0; si < CoordinateVector.size(); si++)
 						{
 							GDPoint	pt;
@@ -409,6 +413,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_FromNodeNumber = to_node_id;
 						pLink->m_ToNodeNumber = from_node_id;
 						pLink->m_Direction  = 1;
+					pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[to_node_id];
+					pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[from_node_id];
+
 
 						for(unsigned si = CoordinateVector.size()-1; si >=0; si--)
 						{
@@ -420,8 +427,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 
 
-					pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[from_node_id];
-					pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[to_node_id];
 
 					m_pDOC->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_pDOC->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;

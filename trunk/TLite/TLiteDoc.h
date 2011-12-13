@@ -107,6 +107,18 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	GDPoint m_Origin;
+
+    int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+	{
+		return int((net_point.x-m_Origin.x)*Resolution+0.5);
+	}
+    int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+	{
+		return int((net_point.y-m_Origin.y)*Resolution+0.5);
+
+	}
+
 	void SelectPath(	std::vector<int>	m_LinkVector, int DisplayID);
 	int m_CurrentViewID;
 	bool m_bSetView;
@@ -680,7 +692,6 @@ public:
 		afx_msg void OnImportdataImport();
 		afx_msg void OnMoeVehiclepathanalaysis();
 		afx_msg void OnFileConstructandexportsignaldata();
-		afx_msg void OnFileDataexchangewithgooglefusiontables();
 		afx_msg void OnFileImportDemandFromCsv();
 		afx_msg void OnImportSensorData();
 		afx_msg void OnImportLinkmoe();

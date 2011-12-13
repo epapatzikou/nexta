@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_releaes_12_06"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_releaes_12_09"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

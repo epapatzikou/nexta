@@ -30,10 +30,10 @@ CDlg_GoogleFusionTable::CDlg_GoogleFusionTable(CWnd* pParent /*=NULL*/)
 	, m_LinkTableID(_T(""))
 {
 	m_NodeTableID = _T("2299886");
-	m_LinkTableID = _T("2299591");
+	m_LinkTableID = _T("2410212");
 
 	m_UploadNodeTableID = _T("2310833");
-	m_UploadLinkTableID = _T("2310373");
+	m_UploadLinkTableID = _T("2409893");
 	m_SubareaLinkSize = 0;
 
 }
@@ -417,7 +417,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 		for (;n<value_vector.size();n++)
 		{
 			sql_str += string("INSERT INTO ") + m_UploadLinkTableID.GetBuffer(0) 
-				+ " (name,link_id,from_node_id,to_node_id,direction,length_in_mile,"
+				+ " (congestion_index,link_id,from_node_id,to_node_id,direction,length_in_mile,"
 				+ "number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,"
 				+ "jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry)" 
 				+ "VALUES (";
