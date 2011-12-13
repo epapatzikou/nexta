@@ -269,6 +269,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			float Capacity = MaximumFlowRate;
 			// use integer number of vehicles as unit of capacity
 			g_LinkVector[li]-> LinkOutCapacity= g_GetRandomInteger_From_FloatingPointValue(Capacity);
+
 			int vehiclesize = (int)(g_LinkVector[li]->CFlowArrivalCount - g_LinkVector[li]->CFlowDepartureCount);
 
 			float fLinkInCapacity = 99999.0;
@@ -1021,23 +1022,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		output.SwitchPercentage = 0;
 	}
 
-	ofstream ShortSimulationLogFile;
-		ShortSimulationLogFile.width(12);
-		ShortSimulationLogFile.precision(3) ;
-		ShortSimulationLogFile.setf(ios::fixed);
-
-	ShortSimulationLogFile.open ("summary.csv", ios::out);
-	if(ShortSimulationLogFile.is_open())
-	{
-	ShortSimulationLogFile <<"short scenario summary,# of Vehicles,# of Vehicles not completing trips,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
-	ShortSimulationLogFile << g_scenario_short_description << "," 
-		<< g_VehicleVector.size() << "," << output.NumberofVehiclesGenerated - output.NumberofVehiclesCompleteTrips << ","<< output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
-	ShortSimulationLogFile.close();
-	}else
-	{
-		cout << "Error: File summary.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-		g_ProgramStop();
-	}
 /*
 	ifstream is;
 	int file_length= 0;
@@ -1069,12 +1053,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	}
 
 */
-	ShortSimulationLogFile.open ("short_summary.log", ios::out);
 	if(ShortSimulationLogFile.is_open())
 	{
-	ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << 
-		", Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Travel Time Index =" << output.AvgTTI  << ", Avg Disance = " << output.AvgDistance << " miles." << endl;
-	ShortSimulationLogFile.close();
+		ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << ", # of vehicles not completing trips = " << output.NumberofVehiclesGenerated - output.NumberofVehiclesCompleteTrips << endl;
+		ShortSimulationLogFile << "Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Travel Time Index =" << output.AvgTTI  << ", Avg Disance = " << output.AvgDistance << " miles." << endl;
+
 	}else
 	{
 		cout << "Error: File short_summary.log cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
