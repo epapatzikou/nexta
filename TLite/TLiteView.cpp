@@ -38,7 +38,7 @@
 #include "GLView.h"
 #include "DlgLinkProperties.h"
 #include "DlgFindANode.h"
-
+#include "Dlg_GoogleFusionTable.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -122,6 +122,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_TOOLS_REMOVENODESANDLINKSOUTSIDESUBAREA, &CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea)
 	ON_COMMAND(ID_VIEW_SHOW, &CTLiteView::OnViewShowAVISensor)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOW, &CTLiteView::OnUpdateViewShowAVISensor)
+	ON_COMMAND(ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES, &CTLiteView::OnFileDataexchangewithgooglefusiontables)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -1351,7 +1352,20 @@ void CTLiteView::OnRButtonDown(UINT nFlags, CPoint point)
 	// TODO: Add your message handler code here and/or call default
 
 	CView::OnRButtonDown(nFlags, point);
-	Invalidate();
+
+		if(m_ToolMode == subarea_tool && GetDocument()->m_SubareaShapePoints.size()>= 3)
+		 {
+			 CWaitCursor wait;
+			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
+			 GetDocument()->m_SubareaShapePoints.push_back(GetDocument()->m_SubareaShapePoints[0]);
+			 isCreatingSubarea = false;
+			 CopyLinkSetInSubarea();
+			 isFinishSubarea = true;
+			 m_ToolMode = select_tool;
+	         ReleaseCapture();
+
+			Invalidate();
+		}
 }
 
 void CTLiteView::OnNodeOrigin()
@@ -1548,6 +1562,20 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	}
 
 	*/
+
+		if(m_ToolMode == subarea_tool && GetDocument()->m_SubareaShapePoints.size()>= 3)
+		 {
+			 CWaitCursor wait;
+			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
+			 GetDocument()->m_SubareaShapePoints.push_back(GetDocument()->m_SubareaShapePoints[0]);
+			 isCreatingSubarea = false;
+			 CopyLinkSetInSubarea();
+			 isFinishSubarea = true;
+			 m_ToolMode = select_tool;
+	         ReleaseCapture();
+
+			Invalidate();
+		}
 
 	CView::OnLButtonDblClk(nFlags, point);
 }
@@ -2052,4 +2080,12 @@ void CTLiteView::OnViewShowAVISensor()
 void CTLiteView::OnUpdateViewShowAVISensor(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowAVISensor ? 1 : 0);
+}
+
+void CTLiteView::OnFileDataexchangewithgooglefusiontables()
+{
+	CopyLinkSetInSubarea();
+	CDlg_GoogleFusionTable dlg;
+	dlg.m_pDOC= GetDocument();
+	dlg.DoModal ();
 }

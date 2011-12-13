@@ -246,6 +246,7 @@ public:
 	afx_msg void OnToolsRemovenodesandlinksoutsidesubarea();
 	afx_msg void OnViewShowAVISensor();
 	afx_msg void OnUpdateViewShowAVISensor(CCmdUI *pCmdUI);
+	afx_msg void OnFileDataexchangewithgooglefusiontables();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

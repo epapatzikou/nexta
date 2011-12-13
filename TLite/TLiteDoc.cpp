@@ -53,7 +53,7 @@
 #include "DlgScenario.h"
 #include "DlgMOETabView.h"
 #include "Dlg_ImportShapeFiles.h"
-#include "Dlg_GoogleFusionTable.h"
+
 #include "Dlg_ImportNetwork.h"
 #include "Dlg_ImportPointSensor.h"
 #include "Dlg_SignalDataExchange.h"
@@ -149,7 +149,6 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_IMPORTDATA_IMPORT, &CTLiteDoc::OnImportdataImport)
 	ON_COMMAND(ID_MOE_VEHICLEPATHANALAYSIS, &CTLiteDoc::OnMoeVehiclepathanalaysis)
 	ON_COMMAND(ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA, &CTLiteDoc::OnFileConstructandexportsignaldata)
-	ON_COMMAND(ID_FILE_DATAEXCHANGEWITHGOOGLEFUSIONTABLES, &CTLiteDoc::OnFileDataexchangewithgooglefusiontables)
 	ON_COMMAND(ID_FILE_IMPORT_DEMAND_FROM_CSV, &CTLiteDoc::OnFileImportDemandFromCsv)
 	ON_COMMAND(ID_IMPORT_SENSOR_DATA, &CTLiteDoc::OnImportSensorData)
 	ON_COMMAND(ID_IMPORT_LINKMOE, &CTLiteDoc::OnImportLinkmoe)
@@ -956,6 +955,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 	DTALink* pLink = 0;
 	float default_distance_sum=0;
 	float length_sum = 0;
+
+	bool bTwoWayLinkFlag = false;
 	CCSVParser parser;
 	if (parser.OpenCSVFile(lpszFileName))
 	{
@@ -1091,6 +1092,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 			if (direction == 0) // two-directional link
 			{
 				link_code_start = 1; link_code_end = 2;
+				bTwoWayLinkFlag = true;
 			}
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
@@ -1111,7 +1113,10 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 					pLink->m_ToNodeNumber = to_node_id;
 					pLink->m_Direction  = 1;
 
-					int si;
+					pLink->m_FromNodeID = m_NodeNametoIDMap[from_node_id];
+					pLink->m_ToNodeID= m_NodeNametoIDMap[to_node_id];
+
+				int si;
 
 					for(si = 0; si < CoordinateVector.size(); si++)
 					{
@@ -1130,6 +1135,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 					pLink->m_ToNodeNumber = from_node_id;
 					pLink->m_Direction  = 1;
 
+				pLink->m_FromNodeID = m_NodeNametoIDMap[to_node_id];
+				pLink->m_ToNodeID= m_NodeNametoIDMap[from_node_id];
+
 					for(int si = CoordinateVector.size()-1; si >=0; si--)
 					{
 						GDPoint	pt;
@@ -1140,8 +1148,6 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 				}
 
 
-				pLink->m_FromNodeID = m_NodeNametoIDMap[from_node_id];
-				pLink->m_ToNodeID= m_NodeNametoIDMap[to_node_id];
 
 				m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 				m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
@@ -1179,13 +1185,16 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 				default_distance_sum+= pLink->DefaultDistance();
 				length_sum += pLink ->m_Length;
 				//			pLink->SetupMOE();
-			}
+
+
 
 			if(!bNodeNonExistError)
 			{
+				TRACE("\nAdd link %d -> %d",pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
 				m_LinkSet.push_back (pLink);
 				m_LinkNoMap[i]  = pLink;
 				i++;
+			}
 			}
 
 		}
@@ -1220,6 +1229,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName)
 		}
 		*/
 		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
+
+		if(bTwoWayLinkFlag == true)
+		m_bLinkShifted = true;
 
 		return true;
 	}else
@@ -1898,6 +1910,72 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
+
+
+/// 
+		fopen_s(&st,directory+"input_node_feet.csv","w");
+	if(st!=NULL)
+	{
+		std::list<DTANode*>::iterator iNode;
+		m_Origin.x  = 1000000;
+		m_Origin.y  = 1000000;
+
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
+			m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
+		}
+
+		fprintf(st, "name,node_id,control_type,geometry\n");
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			
+			int pt_x = NPtoSP_X((*iNode)->pt,1/m_UnitFeet);
+			int pt_y = NPtoSP_Y((*iNode)->pt,1/m_UnitFeet);
+			fprintf(st, "%s,%d,%d,\"<Point><coordinates>%d,%d</coordinates></Point>\"\n", (*iNode)->m_Name.c_str (), (*iNode)->m_NodeNumber , (*iNode)->m_ControlType, pt_x,pt_y );
+		}
+
+		fclose(st);
+	}
+
+	fopen_s(&st,directory+"input_link_feet.csv","w");
+	if(st!=NULL)
+	{
+		std::list<DTALink*>::iterator iLink;
+		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_AVISensorFlag == false)
+			{
+			fprintf(st,"%s,%d,%d,%d,%d,%f,%d,%f,%f,%d,%f,%f,%s,%f,",
+				(*iLink)->m_Name.c_str (),
+				(*iLink)->m_LinkID, 
+				(*iLink)->m_FromNodeNumber, 
+				(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
+			fprintf(st,"\"<LineString><coordinates>");
+
+			for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+			{
+			
+			int pt_x = NPtoSP_X((*iLink)->m_ShapePoints[si],1/m_UnitFeet);
+			int pt_y = NPtoSP_Y((*iLink)->m_ShapePoints[si],1/m_UnitFeet);
+
+				fprintf(st,"%d,%d,0.0", pt_x, pt_y);
+
+				if(si!=(*iLink)->m_ShapePoints.size()-1)
+					fprintf(st," ");
+			}
+
+
+			fprintf(st,"</coordinates></LineString>\"\n");
+			}
+		}
+		fclose(st);
+	}
+
+
+	///
+
 	// save zone here
 	fopen_s(&st,directory+"input_zone.csv","w");
 	if(st!=NULL)
@@ -4692,13 +4770,7 @@ void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
 
 }
 
-void CTLiteDoc::OnFileDataexchangewithgooglefusiontables()
-{
-	CDlg_GoogleFusionTable dlg;
-	dlg.m_pDOC= this;
-	dlg.DoModal ();
 
-}
 
 
 void CTLiteDoc::OnFileImportDemandFromCsv()
@@ -4850,7 +4922,6 @@ bool CTLiteDoc::WriteSubareaFiles()
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,mobility_index, link_type,reliability_index,safety_index,emission_index,predicted_speed, geometry\n");
 		for (iLink = m_SubareaLinkSet.begin(); iLink != m_SubareaLinkSet.end(); iLink++)
 		{
 			if((*iLink)->m_AVISensorFlag == false)
@@ -4858,15 +4929,23 @@ bool CTLiteDoc::WriteSubareaFiles()
 
 				(*iLink)->m_ReliabilityIndex  = (*iLink)->m_Length * (*iLink)->m_NumLanes;
 				(*iLink)->m_SafetyIndex   = (*iLink)->m_link_type * (*iLink)->m_NumLanes;
-				(*iLink)->m_MobilityIndex = (*iLink)->ObtainHistFuelConsumption(0);
+				(*iLink)->m_MobilityIndex = (*iLink)->m_SpeedLimit+10*g_GetRandomRatio();
 				(*iLink)->m_EmissionsIndex = (*iLink)->ObtainHistCO2Emissions(0);
-
 				float predicted_speed  = (*iLink)->m_SpeedLimit * g_GetRandomRatio();
-			fprintf(st,"%s,%d,%d,%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%f",
-				(*iLink)->m_Name.c_str (),
+			}
+
+		}
+
+		fprintf(st,"congestion_index,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
+		for (iLink = m_SubareaLinkSet.begin(); iLink != m_SubareaLinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_AVISensorFlag == false)
+			{
+			fprintf(st,"%d,%d,%d,%d,%d,%f,%d,%f,%f,%d,%f,%f,%s,%f,",
+				(*iLink)->m_MobilityIndex,
 				(*iLink)->m_LinkID, 
 				(*iLink)->m_FromNodeNumber, 
-				(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_MobilityIndex, (*iLink)->m_ReliabilityIndex ,(*iLink)->m_SafetyIndex , (*iLink)->m_EmissionsIndex,predicted_speed );
+				(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
 			fprintf(st,"\"<LineString><coordinates>");
 
 			for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
@@ -4881,6 +4960,7 @@ bool CTLiteDoc::WriteSubareaFiles()
 			fprintf(st,"</coordinates></LineString>\"\n");
 			}
 		}
+
 		fclose(st);
 	}else
 	{
@@ -4918,30 +4998,30 @@ void CTLiteDoc::OnImportGps()
 
 void CTLiteDoc::OnImportWorkzone()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
 
 void CTLiteDoc::OnImportIncident()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
 
 void CTLiteDoc::OnImportWeather()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
 
 void CTLiteDoc::OnImportPricing()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
 
 void CTLiteDoc::OnImportAtis()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
 
 void CTLiteDoc::OnImportBus()
 {
-	// TODO: Add your command handler code here
+	OnScenarioConfiguration();
 }
