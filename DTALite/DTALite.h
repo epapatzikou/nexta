@@ -59,7 +59,6 @@ extern float g_VehicleTypeRatio[MAX_VEHICLE_TYPE_SIZE];  //1: LOV, 2: HOV, 3: tr
 #define	MAX_SPLABEL 99999.0f
 #define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
 extern int g_DepartureTimetInterval;
-extern float g_BackwardWaveSpeed_in_mph;
 extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
 extern int g_CycleLength_in_seconds;
@@ -83,6 +82,23 @@ float g_RNNOF();
 float g_get_random_VOT(int vehicle_type);
 
 
+struct VehicleCFData
+{
+	int   VehicleID;
+	int   LaneNo;
+	float FreeflowDistance_per_SimulationInterval;  
+	float   CriticalSpacing_in_meter;
+
+	int StartTime_in_SimulationInterval; // in time interval, LinkStartTime, so it should be sorted
+	int EndTime_in_SimulationInterval; // in time interval
+	int   TimeLag_in_SimulationInterval;
+};
+
+class LaneVehicleCFData
+{
+	public:
+	std::vector<VehicleCFData> LaneData;
+};
 
 class VOTDistribution
 {
@@ -367,6 +383,10 @@ public:
 
 
 	std::vector <SLinkMOE> m_LinkMOEAry;
+	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
+
+
+	void ComputeVSP();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
 	std::vector <int> m_CumuArrivalFlow;
@@ -430,7 +450,7 @@ public:
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
-		m_BackwardWaveTimeInSimulationInterval = int(m_Length/g_BackwardWaveSpeed_in_mph*600); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
+		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*600); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
 		CFlowDepartureCount = 0;
@@ -678,8 +698,7 @@ public:
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_aryVN; // link list arrary of a vehicle path
 
-	std::vector<VehicleTimestampSpeed> m_SpeedVector;
-
+	float m_PrevSpeed;
 	std::map<int, int> m_OperatingModeCount;
 
 
@@ -736,6 +755,7 @@ public:
 
 	DTAVehicle()
 	{
+		m_PrevSpeed = 0;
 		m_TimeToRetrieveInfo = -1;
 		m_SimLinkSequenceNo = 0;
 
@@ -1316,8 +1336,6 @@ void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputTimeDependentODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputEmissionData();
 void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-
-void ComputeVSPForSingleLink(int LinkNo);
 
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 

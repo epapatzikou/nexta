@@ -38,7 +38,7 @@ void g_RunStaticExcel()
 	XL.ExportCString(szData);
 	
 	//Y values for this plot are in Column = 2
-//	XL.CreateXYChart(2);
+	XL.CreateXYChart(2);
 	
 //	XL.EnableAlert(false);
 	XL.ReleaseExcel();

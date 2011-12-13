@@ -97,7 +97,7 @@ extern float g_TotalMeasurementDeviation;
 
 extern	std::vector<VOTDistribution> m_VOTDistributionVector;
 extern ofstream g_scenario_short_description;
-
+extern ofstream ShortSimulationLogFile;
 
 
 

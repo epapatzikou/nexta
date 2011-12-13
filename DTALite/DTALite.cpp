@@ -27,6 +27,7 @@
 #include "stdafx.h"
 #include "DTALite.h"
 #include "Geometry.h"
+#include "GlobalData.h"
 #include "CSVParser.h"
 
 #include <iostream>
@@ -184,7 +185,6 @@ int g_LearningPercentage = 15;
 int g_TravelTimeDifferenceForSwitching = 5;  // min
 
 int g_StochasticCapacityMode = 0;
-float g_BackwardWaveSpeed_in_mph = 12;
 float g_MinimumInFlowRatio = 0.1f;
 float g_MaxDensityRatioForVehicleLoading = 0.8f;
 int g_CycleLength_in_seconds;
@@ -193,6 +193,7 @@ float g_DefaultSaturationFlowRate_in_vehphpl;
 
 std::vector<VOTDistribution> m_VOTDistributionVector;
 ofstream g_scenario_short_description;
+	ofstream ShortSimulationLogFile;
 
 int g_Number_of_CompletedVehicles = 0;
 int g_Number_of_CompletedVehiclesThatSwitch = 0;
@@ -567,9 +568,23 @@ void ReadInputFiles()
 			pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 			float length = length_in_mile;
 			pLink->m_NumLanes= number_of_lanes;
+
+			for(int LaneNo = 0; LaneNo < pLink->m_NumLanes; LaneNo++)
+			{
+			LaneVehicleCFData element; 
+			pLink->m_VehicleDataVector.push_back (element);
+			}
 			pLink->m_SpeedLimit= speed_limit_in_mph;
 			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
 			pLink->m_MaximumServiceFlowRatePHPL= capacity;
+			
+			if(capacity < 10)
+			{
+			cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error" << endl;
+				getchar();
+			exit(0);
+			}
+
 			pLink->m_BPRLaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 			pLink->m_link_type= type;
 
@@ -767,13 +782,11 @@ CCSVParser parser_VOT;
 
 	FILE* st = NULL;
 
-	fopen_s(&st,"Incident.xml","r"); /// 
+	fopen_s(&st,"Scenario_Incident.csv","r"); /// 
 	if(st!=NULL)
 	{
 		cout << "Reading file Incident.xml..."<< endl;
 		g_LogFile << "Reading file Incident.xml, "<< endl;
-		float version_number = g_read_float(st);
-
 		int count = 0;
 		while(true)
 		{
@@ -808,13 +821,12 @@ CCSVParser parser_VOT;
 		fclose(st);
 	}
 
-	fopen_s(&st,"Dynamic_Message_Sign.xml","r");
+	fopen_s(&st,"Scenario_Dynamic_Message_Sign.xml","r");
 	if(st!=NULL)
 	{
 	cout << "Reading file Dynamic_Message_Sign.xml..."<< endl;
 	g_LogFile << "Reading file Dynamic_Message_Sign.xml, "<< endl;
 
-		float version_number = g_read_float(st);
 		int count = 0;
 		while(true)
 		{
@@ -848,15 +860,13 @@ CCSVParser parser_VOT;
 
 
 	
-	fopen_s(&st,"Link_Based_Toll.xml","r");
+	fopen_s(&st,"Scenario_Link_Based_Toll.xml","r");
 
 	if(st!=NULL)
 	{
 	cout << "Reading file Link_Based_Toll.xml..."<< endl;
 	g_LogFile << "Reading file Link_Based_Toll.xml, "<< endl;
 		
-		float version_number = g_read_float(st);
-
 	int count = 0;
 
 	while(true)
@@ -891,15 +901,13 @@ CCSVParser parser_VOT;
 		fclose(st);
 	}
 
-	fopen_s(&st,"Distance_Based_Toll.xml","r");
+	fopen_s(&st,"Scenario_Distance_Based_Toll.xml","r");
 
 	if(st!=NULL)
 	{
 	cout << "Reading file Distance_Based_Toll.xml..."<< endl;
 	g_LogFile << "Reading file Distance_Based_Toll.xml, "<< endl;
 		
-		float version_number = g_read_float(st);
-
 	int count = 0;
 
 	while(true)
@@ -1214,17 +1222,23 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 			if(parser.GetValueByFieldName("to_zone_id",destination_zone) == false)
 				break;
 
-			if(parser.GetValueByFieldName("vehicle_type",vehicle_type) == false)
-				break;
-
 			if(parser.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
 				break;
 
 			if(parser.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
 				break;
 
-			if(parser.GetValueByFieldName("number_of_vehicles",number_of_vehicles) == false)
-				break;
+	
+		for(unsigned int vehicle_type = 1; vehicle_type <=g_VehicleTypeMap.size(); vehicle_type++)
+		{
+				std::ostringstream  str_number_of_vehicles; 
+				str_number_of_vehicles << "number_of_vehicles_type" << vehicle_type;
+			if(parser.GetValueByFieldName(str_number_of_vehicles.str(),number_of_vehicles) == false)
+			{
+			cout << "Error: Field " << str_number_of_vehicles.str() << " cannot be found in input_demand.csv."<< endl;
+			g_ProgramStop();
+			}
+			
 
 			number_of_vehicles*= g_DemandGlobalMultiplier;
 
@@ -1260,6 +1274,7 @@ void ReadDemandFile(DTANetworkForSP* pPhysicalNetwork)
 				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
 			}
 
+		}
 			line_no++;
 		}
 
@@ -1812,6 +1827,18 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
+	ShortSimulationLogFile.open ("short_summary.log", ios::out);
+	if (ShortSimulationLogFile.is_open())
+	{
+		ShortSimulationLogFile.width(12);
+		ShortSimulationLogFile.precision(3) ;
+		ShortSimulationLogFile.setf(ios::fixed);
+	}else
+	{
+		cout << "File short_summary.csv cannot be opened, and it might be locked by another program!" << endl;
+		cin.get();  // pause
+		return 0;	
+	}
 
 
 	g_WarningFile.open ("warning.log", ios::out);
@@ -1829,11 +1856,11 @@ int g_InitializeLogFiles()
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
 		cout << "sourceforge.net/projects/dtalite/"<< endl;
-		cout << "Version 0.95, Release Date 11/08/2011."<< endl;
+		cout << "Version 0.96, Release Date 12/04/2011."<< endl;
 
 		g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
 		g_LogFile << "sourceforge.net/projects/dtalite/"<< endl;
-		g_LogFile << "Version 0.97, Release Date 11/08/2011."<< endl;
+		g_LogFile << "Version 0.96, Release Date 12/04/2011."<< endl;
 
 		fopen_s(&g_ErrorFile,"error.log","w");
 		if(g_ErrorFile==NULL)
@@ -1892,7 +1919,6 @@ void g_ReadDTALiteSettings()
 
 
 		g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, IniFilePath_DTA);	
-		g_BackwardWaveSpeed_in_mph = g_GetPrivateProfileFloat("simulation", "backward_wave_speed_in_vehphpl", 12, IniFilePath_DTA);
 		g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, IniFilePath_DTA);
 		g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, IniFilePath_DTA);
 		g_CycleLength_in_seconds = g_GetPrivateProfileFloat("simulation", "cycle_length_in_seconds", 120, IniFilePath_DTA);
@@ -2129,6 +2155,12 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 //		g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
 
 		g_FreeMemory();
+
+	if(ShortSimulationLogFile.is_open())
+	{
+		ShortSimulationLogFile.close();
+	}
+
 	return nRetCode;
 }
 /************************

@@ -318,23 +318,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\CSVParser.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\DTALite.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\EmissionsOutput.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ExcelInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Geometry.cpp"
 				>
 			</File>
 			<File
@@ -423,8 +411,20 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Excel_Automation"
+			Name="Excel_Data_Interface"
 			>
+			<File
+				RelativePath=".\CSVParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ExcelInterface.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Geometry.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\XLAutomation.cpp"
 				>
