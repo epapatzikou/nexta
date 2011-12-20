@@ -41,4 +41,5 @@ public:
 	CString m_Sensor_File;
 	afx_msg void OnBnClickedButtonFindSensorFile();
 	afx_msg void OnBnClickedImportSensorData();
+	afx_msg void OnLbnSelchangeList1();
 };

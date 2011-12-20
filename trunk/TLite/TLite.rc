@@ -208,8 +208,6 @@ END
 IDR_DATA_TOOLBAR TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_IMPORTDATA_IMPORT
-    BUTTON      ID_IMPORTDATA_IMPORT
-    BUTTON      ID_IMPORT_LINKMOE
     SEPARATOR
     BUTTON      ID_IMPORT_SENSOR_DATA
     BUTTON      ID_IMPORT_AVI
@@ -218,15 +216,8 @@ BEGIN
     BUTTON      ID_IMPORT_VII
     SEPARATOR
     BUTTON      ID_IMPORT_INCIDENT
-    BUTTON      ID_IMPORT_WORKZONE
-    BUTTON      ID_IMPORT_WEATHER
-    SEPARATOR
     BUTTON      ID_IMPORT_PRICING
-    BUTTON      ID_IMPORT_ATIS
-    BUTTON      ID_IMPORT_BUS
     SEPARATOR
-    BUTTON      ID_BUTTON33180
-    BUTTON      ID_BUTTON33180
     BUTTON      ID_BUTTON33180
     BUTTON      ID_BUTTON33180
     BUTTON      ID_BUTTON33180
@@ -541,14 +532,11 @@ BEGIN
     POPUP "Import"
     BEGIN
         MENUITEM "Network/ Demand",             ID_IMPORTDATA_IMPORT
-        MENUITEM "Link MOE",                    ID_IMPORT_LINKMOE
-        MENUITEM "Vehicle File",                ID_IMPORT_VEHICLEFILE
-        MENUITEM "Agent",                       ID_IMPORT_AGENT_FILE
         MENUITEM SEPARATOR
-        MENUITEM "Point Sensor",                ID_IMPORT_SENSOR_DATA
-        MENUITEM "AVI",                         ID_IMPORT_AVI
-        MENUITEM "GPS",                         ID_IMPORT_GPS
-        MENUITEM "NGSIM",                       ID_IMPORT_NGSIM_FILE
+        MENUITEM "Point Sensor Data",           ID_IMPORT_SENSOR_DATA
+        MENUITEM "AVI Data",                    ID_IMPORT_AVI
+        MENUITEM "GPS Data",                    ID_IMPORT_GPS
+        MENUITEM "NGSIM Data",                  ID_IMPORT_NGSIM_FILE
         POPUP "NGSIM  Menu"
         BEGIN
             MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
@@ -572,13 +560,13 @@ BEGIN
             MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
             MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
         END
-        MENUITEM "VII Probe",                   ID_IMPORT_VII
+        MENUITEM "VII Probe Data",              ID_IMPORT_VII
         MENUITEM SEPARATOR
+        MENUITEM "VMS Locaton",                 ID_IMPORT_ATIS
+        MENUITEM "Pricing",                     ID_IMPORT_PRICING
         MENUITEM "Work Zone",                   ID_IMPORT_WORKZONE
         MENUITEM "Incident",                    ID_IMPORT_INCIDENT
         MENUITEM "Weather",                     ID_IMPORT_WEATHER
-        MENUITEM "Pricing",                     ID_IMPORT_PRICING
-        MENUITEM "ATIS",                        ID_IMPORT_ATIS
         MENUITEM "Bus",                         ID_IMPORT_BUS
         MENUITEM SEPARATOR
         POPUP "Background Image"
@@ -1308,8 +1296,8 @@ BEGIN
     DEFPUSHBUTTON   "Exit",IDOK,265,220,50,14
     LTEXT           "Excel File to be Imported:",IDC_STATIC,7,7,83,8
     PUSHBUTTON      "...",IDC_BUTTON_Find_Exel_File,322,19,20,14
-    LISTBOX         IDC_LIST1,7,108,304,106,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Import Network and Demand Data",ID_IMPORT,7,68,134,14
+    LISTBOX         IDC_LIST1,7,109,304,105,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "Import All Tables",ID_IMPORT,7,68,134,14
     EDITTEXT        IDC_EDIT_Demand_CSV_File,7,47,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Demand_CSV_File,321,47,20,14
     EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL

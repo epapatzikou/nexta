@@ -169,6 +169,7 @@ CPen g_PenFreewayColor(PS_SOLID,1,RGB(255,211,155));
 CPen g_PenHighwayColor(PS_SOLID,1,RGB(100,149,237)); 
 CPen g_PenArterialColor(PS_SOLID,1,RGB(0,0,0)); 
 CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
+CPen g_AVILinkPen(PS_DASH,0,RGB(0,255,0));
 CPen g_SubareaPen(PS_DASH,2,RGB(255,0,0));
 CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
@@ -503,7 +504,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 		
-		if((*iLink)->m_AVISensorFlag == false || ((*iLink)->m_AVISensorFlag == false && m_bShowAVISensor == true))
+		if((*iLink)->m_AVISensorFlag == false || ((*iLink)->m_AVISensorFlag == true && m_bShowAVISensor == true))
 		{
 		//			continue;
 		CPen LinkTypePen;
@@ -551,6 +552,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				pDC->SelectObject(&g_PenArterialColor);
 
 			}
+
+			if((*iLink)->m_AVISensorFlag == true)
+				pDC->SelectObject(&g_AVILinkPen);
+				
 		}else
 			pDC->SelectObject(&g_PenArterialColor);
 

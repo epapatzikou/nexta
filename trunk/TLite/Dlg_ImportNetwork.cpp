@@ -41,6 +41,7 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_Demand_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonFindDemandCsvFile)
 	ON_BN_CLICKED(ID_IMPORT, &CDlg_ImportNetwork::OnBnClickedImport)
 	ON_BN_CLICKED(ID_IMPORT_Network_Only, &CDlg_ImportNetwork::OnBnClickedImportNetworkOnly)
+	ON_LBN_SELCHANGE(IDC_LIST1, &CDlg_ImportNetwork::OnLbnSelchangeList1)
 END_MESSAGE_MAP()
 
 
@@ -984,6 +985,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	}
 
+	//// emission rate
 	strSQL = m_pDOC->ConstructSQL("4-4-vehicle-emission-rate");;
 
 	if(strSQL.GetLength() > 0)
@@ -1020,24 +1022,116 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		m_MessageList.AddString (str_msg);
 	}
 
-}
+	/// point sensor table
+	strSQL = m_pDOC->ConstructSQL("5-1-point-sensor-location");;
 
+	if(strSQL.GetLength() > 0)
+	{
+		// Read record
+		CRecordsetExt rsSensorLocation(&m_pDOC->m_Database);
+		rsSensorLocation.Open(dbOpenDynaset, strSQL);
 
+		while(!rsSensorLocation.IsEOF())
+		{
+			DTA_sensor sensor;
+			sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
+			if(!bExist)
+			{
+				AfxMessageBox("Field sensor_id cannot be found in the point-sensor-location table.");
+				return;
+			}
 
-void CDlg_ImportNetwork::OnBnClickedImportNetworkOnly()
-{
-	m_bImportNetworkOnly = true;
-	OnBnClickedImport();
-	m_bImportNetworkOnly = false;  //reset flag
-}
+			sensor.SensorType =  rsSensorLocation.GetCString("sensor_type");
 
+			bool b_find_link_flag = false;
 
-void CDlg_ImportNetwork::OnBnClickedImportSensorData()
-{
-/*
-	// Read record
+			sensor.FromNodeNumber =  rsSensorLocation.GetLong(CString("from_node_id"),bExist,false);
 
-	strSQL = m_pDOC->ConstructSQL("AVI-sensor-location");
+			if(bExist)
+			{
+
+				sensor.ToNodeNumber =  rsSensorLocation.GetLong(CString("to_node_id"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("Field from_node_id cannot be found in the point-sensor-location table.");
+					return;
+				}
+				sensor.RelativeLocationRatio = rsSensorLocation.GetLong(CString("relative_location_ratio"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("Field relative_location_ratio cannot be found in the point-sensor-location table.");
+					return;
+				}
+
+				if(sensor.FromNodeNumber!= 0 && sensor.ToNodeNumber!=0)
+				{
+					DTALink* pLink = m_pDOC->FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber );
+
+					if(pLink!=NULL)
+					{
+						sensor.LinkID = pLink->m_LinkNo ;
+						m_pDOC->m_SensorVector.push_back(sensor);
+						m_pDOC->m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
+						pLink->m_bSensorData  = true;
+						pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+
+						b_find_link_flag  = true;
+
+					}else
+					{
+
+						CString msg;
+						msg.Format ("Link %d -> %d in point-sensor-location does not exit in the existing link data.");
+						AfxMessageBox(msg);
+						break;
+						return;
+
+					}
+				}
+
+			}
+
+			if(b_find_link_flag  == false)  // no link from to nodes have been defined. 
+			{
+				float x = rsSensorLocation.GetDouble(CString("x"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("No link information is specified so field x is required in the point-sensor-location table.");
+					return;
+				}
+
+				float y = rsSensorLocation.GetDouble(CString("y"),bExist,false);
+				if(!bExist)
+				{
+					AfxMessageBox("No link information is specified so field y is required in the point-sensor-location table.");
+					return;
+				}
+				CString orientation = rsSensorLocation.GetCString("orientation");
+
+				sensor.LinkID = m_pDOC->FindLinkFromSensorLocation(x,y,orientation);
+
+				if(sensor.LinkID > 0)
+				{   
+					DTALink* pLink = m_pDOC->FindLinkWithLinkNo(sensor.LinkID );
+					sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
+					sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
+					sensor.RelativeLocationRatio = 0.5;		
+					pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+					m_pDOC->m_SensorVector.push_back(sensor);
+				}
+
+			}
+
+			rsSensorLocation.MoveNext ();
+		}
+		rsSensorLocation.Close();
+		str_msg.Format ( "%d sensors imported.", m_pDOC->m_SensorVector.size());
+		m_MessageList.AddString (str_msg);
+	}
+
+/// AVI sensor location
+
+	strSQL = m_pDOC->ConstructSQL("5-2-avi-sensor-location");
 
 	if(strSQL.GetLength() > 0)
 	{
@@ -1047,7 +1141,6 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 
 		while(!rsAVILink.IsEOF())
 		{
-
 			CAVISensorPair element; 
 
 			element.sensor_pair_id  = rsAVILink.GetLong(CString("sensor_pair_id"),bExist,false);
@@ -1109,6 +1202,24 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 		str_msg.Format("%d AVI sensor location records loaded.",m_pDOC->m_AVISensorMap.size());
 		m_MessageList.AddString (str_msg);
 	}
+
+}
+
+
+
+void CDlg_ImportNetwork::OnBnClickedImportNetworkOnly()
+{
+	m_bImportNetworkOnly = true;
+	OnBnClickedImport();
+	m_bImportNetworkOnly = false;  //reset flag
+}
+
+
+void CDlg_ImportNetwork::OnBnClickedImportSensorData()
+{
+/*
+	// Read record
+
 
 	strSQL = m_pDOC->ConstructSQL("AVI-sensor-data");
 
@@ -1240,4 +1351,9 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 		m_MessageList.AddString (str_msg);
 	}
 */
+}
+
+void CDlg_ImportNetwork::OnLbnSelchangeList1()
+{
+	// TODO: Add your control notification handler code here
 }
