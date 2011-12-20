@@ -126,7 +126,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		}
 
 		m_MOEToolBar.SetButtonText(0,"VIEW");
-		m_MOEToolBar.SetButtonText(2,"2D GIS");
+/*		m_MOEToolBar.SetButtonText(2,"2D GIS");
 		m_MOEToolBar.SetButtonText(3,"Animation");
 		m_MOEToolBar.SetButtonText(4,"Density");
 		m_MOEToolBar.SetButtonText(5,"Volume");
@@ -140,7 +140,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(14,"Network");
 		m_MOEToolBar.SetButtonText(16,"3D");
 		m_MOEToolBar.SetButtonText(18,"Space-time");
-
+*/
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
@@ -150,7 +150,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_DataToolBar.SetButtonText(0,"DATA");
 		m_DataToolBar.SetButtonText(1,"Network");
 		m_DataToolBar.SetButtonText(2,"Trajectory");
-		m_DataToolBar.SetButtonText(4,"Detector");
+/*		m_DataToolBar.SetButtonText(4,"Detector");
 		m_DataToolBar.SetButtonText(5,"AVI");
 		m_DataToolBar.SetButtonText(6,"GPS");
 		m_DataToolBar.SetButtonText(7,"NGSIM");
@@ -169,7 +169,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_AMSToolBar.SetButtonText(5,"Simulation");
 		m_AMSToolBar.SetButtonText(6,"Subarea");
 		m_AMSToolBar.SetButtonText(7,"Signal");
-
+*/
 		m_DataToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
 

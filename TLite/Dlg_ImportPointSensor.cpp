@@ -205,8 +205,6 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 		m_MessageList.AddString (str_msg);
 	}
 	// point sensor data
-
-
 	strSQL = m_pDOC->ConstructSQL("point-sensor-data");
 
 	int number_of_samples = 0;
