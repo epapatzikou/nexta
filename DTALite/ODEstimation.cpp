@@ -121,6 +121,7 @@ float    g_ODEstimation_StepSize  = 0.1f;
 
 std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 int g_ODEstimationFlag = 0;
+int g_Agent_shortest_path_generation_flag = 0;
 int g_ODEstimationMeasurementType = 0; // 0: flow, 1: density, 2, speed
 int g_ODEstimation_StartingIteration = 2;
 

@@ -38,6 +38,8 @@
 #include <algorithm>
 #include <stdlib.h>  // Jason
 #include <math.h>    // Jason
+
+#include "CSVParser.h"
 using namespace std;
 
 std::vector<DTAPathData>   g_global_path_vector;	// global vector of path data
@@ -1986,4 +1988,116 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 
 
+
+
+void g_Agent_based_shortest_path_generation()
+{
+    // find unique origin node
+	// find unique destination node
+	
+	int node_size  = g_NodeVector.size();
+	int link_size  = g_LinkVector.size();
+
+/*
+	CCSVParser parser;
+	if (parser.OpenCSVFile("input_origin.csv"))
+	{
+		bool bNodeNonExistError = false;
+		while(parser.ReadRecord())
+		{
+			int node_id;
+			if(!parser.GetValueByFieldName("node_id",node_id)) 
+			{
+				cout << "Field node_id has not been defined in file input_origin.csv. Please check.";
+				getchar();
+				exit(0);
+			}
+
+				if(g_NodeNametoIDMap.find(node_id)== g_NodeNametoIDMap.end())
+				{
+				cout<< "Node ID "  << node_id << " in input_origin.csv has not be defined in input_node.csv"  << endl; 
+				getchar();
+				exit(0);
+
+			}
+
+				int number_indx  = g_NodeNametoIDMap[node_id];
+				g_NodeVector[number_indx].m_bOriginFlag  = true;
+
+		}
+	}
+
+	if (parser.OpenCSVFile("input_destination.csv"))
+	{
+		bool bNodeNonExistError = false;
+		while(parser.ReadRecord())
+		{
+			int node_id;
+			if(!parser.GetValueByFieldName("node_id",node_id)) 
+			{
+				cout << "Field node_id has not been defined in file input_destination.csv. Please check.";
+				getchar();
+				exit(0);
+			}
+
+				if(g_NodeNametoIDMap.find(node_id)== g_NodeNametoIDMap.end())
+				{
+				cout<< "Node ID "  << node_id << " in input_destination.csv has not be defined in input_node.csv"  << endl; 
+				getchar();
+				exit(0);
+
+			}
+
+				int number_indx  = g_NodeNametoIDMap[node_id];
+				g_NodeVector[number_indx].m_bDestinationFlag  = true;
+
+		}
+	}
+
+*/
+	unsigned int i;
+	int UniqueOriginSize = 0;
+	int UniqueDestinationSize = 0;
+	int number_of_threads = omp_get_num_threads();
+/*
+	for(i=0; i< g_NodeVector.size(); i++)
+	{
+		if(g_NodeVector[i].m_bOriginFlag == true)
+		{
+			UniqueOriginSize +=1;
+		}
+
+
+
+		if(g_NodeVector[i].m_bDestinationFlag == true)
+			UniqueDestinationSize +=1;
+
+	}
+*/
+	cout<< "# of unique origins = "  << UniqueOriginSize << "; # of unique destination =" <<  UniqueDestinationSize << endl; 
+	cout<< "# of processors = "  << number_of_threads  << endl; 
+
+	//#pragma omp parallel for
+
+
+	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+	{
+				// create network for shortest path calculation at this processor
+			DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
+			int	id = omp_get_thread_num( );  // starting from 0
+			network_MP.BuildPhysicalNetwork();  // build network for this zone, because different zones have different connectors...
+			
+
+			for(int node_index  = 0; node_index < node_size; node_index++)
+			{
+				if(node_index %number_of_threads == id )
+				{
+				cout <<g_GetAppRunningTime()<<  "processor " << id << " is working on assignment at node  "<<  node_index << endl;
+				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				}
+			}
+				
+	}
+
+}
 
