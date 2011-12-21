@@ -67,7 +67,15 @@ extern int g_ObservationStartTime;
 extern int g_ObservationEndTime;
 
 extern float g_DefaultSaturationFlowRate_in_vehphpl;
+
+#ifdef _WIN64
+#define MAX_LINK_NO 99999999
+#endif 
+
+#ifndef _WIN64
 #define MAX_LINK_NO 65530
+#endif
+
 #define MAX_NODE_SIZE_IN_A_PATH 2000
 #define MAX_LINK_SIZE_IN_VMS 20
 
@@ -131,10 +139,15 @@ public:
 class DTANode
 {
 public:
-	DTANode(){
+	DTANode()
+	{
 		m_ControlType = 0;
 		m_ZoneID = 0;
 		m_TotalCapacity = 0;
+
+		m_bOriginFlag = false;
+	    m_bDestinationFlag = false;
+
 	};
 	~DTANode(){};
 	int m_NodeID;
@@ -142,6 +155,10 @@ public:
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
+
+	bool m_bOriginFlag;
+	bool m_bDestinationFlag;
+
 
 };
 
@@ -641,7 +658,13 @@ public:
 // link element of a vehicle path
 class SVehicleLink
 {  public:
+
+#ifdef _WIN64
+unsigned long  LinkID;  // range:
+#else
 unsigned short  LinkID;  // range:
+#endif
+
 float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
@@ -988,6 +1011,8 @@ public:
 
 	int* m_LinkList;  // dimension number of nodes
 
+	
+
 	int** m_OutboundNodeAry; //Outbound node array
 	int** m_OutboundLinkAry; //Outbound link array
 	int* m_OutboundSizeAry;  //Number of outbound links
@@ -1013,6 +1038,7 @@ public:
 	float** TD_LabelCostAry;
 	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
 	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
 
 
 	DTANetworkForSP(int NodeSize, int LinkSize, int TimeSize,int AdjLinkSize){
@@ -1107,6 +1133,7 @@ public:
 
 	~DTANetworkForSP()
 	{
+
 		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry)  delete m_InboundSizeAry;
 
@@ -1379,6 +1406,8 @@ extern void g_GenerateVehicleData_ODEstimation();
 
 extern void g_FreeVehicleVector();
 extern void g_FreeODTKPathVector();
+
+void g_Agent_based_shortest_path_generation();
 
 extern void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork);
 extern void g_ReadHistDemandFile();

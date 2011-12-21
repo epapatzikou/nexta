@@ -607,7 +607,7 @@ void ReadInputFiles()
 			g_LinkVector.push_back(pLink);
 			i++;
 
-			if(i == MAX_LINK_NO)
+			if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != 2) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
 			{
 				cout << "The network has more than "<< MAX_LINK_NO << " links."<< endl <<"Please contact the developers for a new 64 bit version for this large-scale network." << endl;
 				getchar();
@@ -623,6 +623,15 @@ void ReadInputFiles()
 		g_ProgramStop();
 	}
 
+
+	if(g_AgentBasedAssignmentFlag == 2)
+	{
+	
+		g_Agent_based_shortest_path_generation();
+	
+	return;
+	}
+	
 	cout << "Reading file input_zone.csv..."<< endl;
 
 	CCSVParser parser_zone;
@@ -1956,6 +1965,9 @@ void g_ReadDTALiteSettings()
 
 		g_UserClassPercentage[1] = 100.0f - (g_UserClassPercentage[2] + g_UserClassPercentage[3]);
 		}
+
+		if(g_AgentBasedAssignmentFlag == 2) 
+			g_SimulationHorizon = 1;
 
 		srand(g_RandomSeed);
 		g_LogFile << "Demand Loading Horizon (min) = " << g_DemandLoadingHorizon << endl;
