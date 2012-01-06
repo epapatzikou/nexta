@@ -61,6 +61,47 @@ enum LANES_ROW
 		LANES_TravelTime
    };
 
+enum PHASE_ROW
+{
+	PHASE_BRP,
+	PHASE_MinGreen,
+	PHASE_MaxGreen,
+	PHASE_VehExt,
+	PHASE_TimeBeforeReduce,
+	PHASE_TimeToReduce,
+	PHASE_MinGap,
+	PHASE_Yellow,
+	PHASE_AllRed,
+	PHASE_Recall,
+	PHASE_Walk,
+	PHASE_DontWalk,
+	PHASE_PedCalls,
+	PHASE_MinSplit,
+	PHASE_DualEntry,
+	PHASE_InhibitMax,
+	PHASE_Start,
+	PHASE_End,
+	PHASE_Yield,
+	PHASE_Yield170,
+	PHASE_LocalStart,
+	PHASE_LocalYield,
+	PHASE_LocalYield170
+};
+
+enum TIMING_ROW
+{
+	TIMING_Control_Type,
+	TIMING_Cycle_Length,
+	TIMING_Lock_Timings,
+	TIMING_Referenced_To,
+	TIMING_Reference_Phase,
+	TIMING_Offset,
+	TIMING_Master,
+	TIMING_Yield,
+	TIMING_Node_0,
+	TIMING_Node_1
+};
+
 class CDataElement
 {
 public:
@@ -215,6 +256,7 @@ public:
 class DTA_TimePlan
 {
 public:
+	int PlanID;
 	int DataAry[10];
 		//Control_Type, Cycle_Length, Lock_Timings, Referenced_To, Reference_Phase, Offset, Master, Yield, Node_0, Node_1;
 
@@ -224,8 +266,9 @@ public:
 
 	void initial()
 	{
+		PlanID = 1;
 		DataAry[0] = 3;
-		DataAry[1] = 100;
+		DataAry[1] = 120;
 		DataAry[2] = 0;
 		DataAry[3] = 0;
 		DataAry[4] = 206;
@@ -235,6 +278,34 @@ public:
 		DataAry[8] = 32;
 		DataAry[9] = 0;
 	}
+};
+
+class DTA_Timing
+{
+public:
+	int Node_id;
+	int DataAry[8];
+	int Cycle, OFF, LD, CLR;
+	string REF;
+
+	DTA_Timing()
+	{
+	}
+
+	void initial(DTA_NodePhaseSet Phase, int cl)
+	{
+		Cycle = cl;
+		for(int i=0; i<8; i++)
+		{
+			DataAry[i] = (int)(Phase.DataMatrix[PHASE_End][i].m_text) - (int)(Phase.DataMatrix[PHASE_Start][i].m_text);
+			if (DataAry[i] < 0)
+				DataAry[i] += Cycle;
+		}
+		LD = 1357;
+		OFF = 0;
+		REF = "26+";
+	}
+
 };
 
 enum NodeBasedLinkData
