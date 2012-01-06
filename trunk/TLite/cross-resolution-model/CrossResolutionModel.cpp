@@ -432,101 +432,254 @@ void CTLiteDoc::Constructandexportsignaldata()
 		CWaitCursor wait;
 		char fname[_MAX_PATH];
 		wsprintf(fname,"%s", dlg.GetPathName());
-	
-	CString SynchroProjectFile = dlg.GetPathName();
-	m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
-	
-	ConstructMovementVector(true);
+
+		CString SynchroProjectFile = dlg.GetPathName();
+		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
+
+		ConstructMovementVector(true);
+
+		if(m_pNetwork!=NULL)
+		{
+			delete m_pNetwork;
+			m_pNetwork = NULL;
+		}
+
+		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
 
 		FILE* st = NULL;
 
-	const int LaneColumnSize = 12;
-	const int LaneRowSize = 30;
-	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
-	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
-	
-	int i,j, m;
-	int movement_size = m_MovementVector.size();
 
-	// write lanes/movements file
-	fopen_s(&st,m_Synchro_ProjectDirectory+"Lanes.csv","w");
-	if(st!=NULL)
-	{
-		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<LaneColumnSize;j++)
-			fprintf(st, "%s,", lane_Column_name_str[j].c_str());
-		fprintf(st,"\n");
 
-		for (m=0; m<movement_size;m++)
-		{
-			// write UpNodeID and DestNodeID using original m_NodeNumber
-			for(i=0; i<2; i++)
+		// write lanes/movements file
+		const int LaneColumnSize = 12;
+		const int LaneRowSize = 30;
+		string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+		string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+
+		int i,j, m;
+		int movement_size = m_MovementVector.size();
+
+		fopen_s(&st,m_Synchro_ProjectDirectory+"Lanes.csv","w");
+		if(st!=NULL)
+		{		
+			fprintf(st, "Lane Group Data \n");
+			fprintf(st, "RECORDNAME,INTID,");
+			for(j=0; j<LaneColumnSize;j++)
+				fprintf(st, "%s,", lane_Column_name_str[j].c_str());
+			fprintf(st,"\n");
+
+			for (m=0; m<movement_size;m++)
 			{
-				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
-
-				for(j=0; j<LaneColumnSize;j++)
+				for(i=2; i<LaneRowSize; i++)
 				{
-					fprintf(st, "%i,",m_NodeIDMap[m_MovementVector[m].DataMatrix[i][j].m_text]->m_NodeNumber);
-				}
-				fprintf(st,"\n");
-			}
+					fprintf(st, "%s,", lane_row_name_str[i].c_str());
+					fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
-			for(i=2; i<LaneRowSize; i++)
-			{
-				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
-
-				for(j=0; j<LaneColumnSize;j++)
-				{
-					fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
+					for(j=0; j<LaneColumnSize;j++)
+					{
+						fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
+					}
+					fprintf(st,"\n");
 				}
-				fprintf(st,"\n");
 			}
-			// fprintf(st,"\n");
+			fprintf(st,"\n");
+
+			fclose(st);
 		}
-		fprintf(st,"\n");
-	
-	fclose(st);
+
+		// write phase file
+		const int PhaseColumnSize = 8;
+		const int PhaseRowSize = 23;
+		string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
+		string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
+
+		int p, phase_size = m_PhaseVector.size();
+
+		fopen_s(&st,m_Synchro_ProjectDirectory+"Phasing.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st, "Phasing Data \n");
+			fprintf(st, "RECORDNAME,INTID,");
+			for(j=0; j<PhaseColumnSize;j++)
+				fprintf(st, "%s,", phase_Column_name_str[j].c_str());
+			fprintf(st,"\n");
+
+			for (p=0; p<phase_size;p++)
+			{
+				for(i=0; i<PhaseRowSize; i++)
+				{
+					fprintf(st, "%s,", phase_row_name_str[i].c_str());
+					fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
+
+					for(j=0; j<PhaseColumnSize;j++)
+					{
+						fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
+					}
+					fprintf(st,"\n");
+				}
+			}
+			fprintf(st,"\n");
+
+			fclose(st);
+		}
+
+		// write layout file
+		DTA_Approach incoming_approach, out_approach;
+		GDPoint p1, p2;
+		int current_node_id, up_node_id, down_node_id;
+		long LinkID;
+		int i_n = 0;
+
+		fopen_s(&st,m_Synchro_ProjectDirectory+"Layout.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st, "Layout Data \n");
+			fprintf(st, "INTID,INTNAME,TYPE,X,Y,NID,SID,EID,WID,NNAME,SNAME,ENAME,WNAME");
+			fprintf(st,"\n");
+
+
+			for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i_n++)
+			{  // for current node	
+				fprintf(st, "%i,%s,%i,%f,%f,", m_NodeIDMap[i_n]->m_NodeNumber, m_NodeIDMap[i_n]->m_Name.c_str(), m_NodeIDMap[i_n]->m_ControlType, m_NodeIDMap[i_n]->pt.x, m_NodeIDMap[i_n]->pt.y);
+				// find connecting nodes and links at different directions
+				DTA_NodeBasedLinkSets Node_Link;
+				current_node_id = i_n;
+				Node_Link.initial(current_node_id);
+				for(int inbound_i= 0; inbound_i< m_pNetwork->m_InboundSizeAry[i_n]; inbound_i++)
+				{		
+					LinkID = m_pNetwork->m_InboundLinkAry[i_n][inbound_i];
+					up_node_id = m_pNetwork->m_FromIDAry[LinkID];
+					p1  = m_NodeIDMap[up_node_id]->pt;
+					p2  = m_NodeIDMap[current_node_id]->pt;
+					incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+					switch (incoming_approach)
+					{ 
+					case DTA_North:
+						Node_Link.link_flag[1] = true;
+						Node_Link.Up_ID[1] = up_node_id;
+						Node_Link.Name[1] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_South:
+						Node_Link.link_flag[0] = true;
+						Node_Link.Up_ID[0] = up_node_id;
+						Node_Link.Name[0] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_East:
+						Node_Link.link_flag[3] = true;
+						Node_Link.Up_ID[3] = up_node_id;
+						Node_Link.Name[3] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_West:
+						Node_Link.link_flag[2] = true;
+						Node_Link.Up_ID[2] = up_node_id;
+						Node_Link.Name[2] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					}
+				}
+				for(int outbound_i= 0; outbound_i< m_pNetwork->m_OutboundSizeAry[i_n]; outbound_i++)
+				{		
+					LinkID = m_pNetwork->m_OutboundLinkAry[i_n][outbound_i];
+					down_node_id = m_pNetwork->m_ToIDAry[LinkID];
+					p1  = m_NodeIDMap[current_node_id]->pt;
+					p2  = m_NodeIDMap[down_node_id]->pt;
+					out_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+					switch (out_approach)
+					{ 
+					case DTA_North:
+						Node_Link.link_flag[0] = true;
+						Node_Link.Up_ID[0] = down_node_id;
+						Node_Link.Name[0] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_South:
+						Node_Link.link_flag[1] = true;
+						Node_Link.Up_ID[1] = down_node_id;
+						Node_Link.Name[1] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_East:
+						Node_Link.link_flag[2] = true;
+						Node_Link.Up_ID[2] = down_node_id;
+						Node_Link.Name[2] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					case DTA_West:
+						Node_Link.link_flag[3] = true;
+						Node_Link.Up_ID[3] = down_node_id;
+						Node_Link.Name[3] = m_LinkNoMap[LinkID]->m_Name;
+						break;
+					}
+				}
+				// write into file
+				for(i=0; i<4; i++)
+				{
+					if (Node_Link.link_flag[i])
+						fprintf(st, "%i,", m_NodeIDMap[Node_Link.Up_ID[i]]->m_NodeNumber);
+					else
+						fprintf(st, ",");
+				}
+				for(i=0; i<4; i++)
+				{
+					if (Node_Link.link_flag[i] && !Node_Link.Name[i].empty() && Node_Link.Name[i] != "(null)")
+						fprintf(st, "%i,", Node_Link.Name[i].c_str());
+					else
+						fprintf(st, ",");
+				}
+				fprintf(st,"\n");	
+			}
+			fprintf(st,"\n");
+
+			fclose(st);
+		}
+		
+		// write timing file
+		fopen_s(&st,m_Synchro_ProjectDirectory+"Timing.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st, "Timing Plans \n");
+			fprintf(st, "PLANID,INTID,S1,S2,S3,S4,S5,S6,S7,S8,CL,OFF,LD,REF,CLR \n");
+			DTA_TimePlan plan;
+			plan.initial();
+
+			for (p=0; p<phase_size;p++)
+			{
+				fprintf(st, "%i,%i,", plan.PlanID, m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
+				DTA_Timing timing;
+				timing.initial(m_PhaseVector[p], plan.DataAry[TIMING_Cycle_Length]);
+				for(i=0; i<8; i++)
+				{
+					fprintf(st, "%i,", timing.DataAry[i]);
+				}
+				fprintf(st, "%i,%i,%i,%s,\n", timing.Cycle, timing.OFF, timing.LD, timing.REF.c_str());
+			}
+			fprintf(st,"\n");
+
+			fclose(st);
+		}
+
+		// write volume file
+		fopen_s(&st,m_Synchro_ProjectDirectory+"Volume.csv","w");
+		if(st!=NULL)
+		{
+			fprintf(st, "Turning Movement Count \n");
+			fprintf(st, "60 Minute Counts \n");
+			fprintf(st, "DATE,TIME,INTID,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR \n");
+			for (m=0; m<movement_size;m++)
+			{				
+				fprintf(st, "12/12/2011,1700,%i,0,0,0,0,0,0,0,0,0,0,0,0", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
+				fprintf(st,"\n");
+			}
+
+			fprintf(st,"\n");
+
+			fclose(st);
+		}
+
+		ExportSingleSynchroFile(SynchroProjectFile);
 	}
 
-	// write phase file
-	const int PhaseColumnSize = 8;
-	const int PhaseRowSize = 23;
-	string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
-	string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
-
-	int p, phase_size = m_PhaseVector.size();
-
-	fopen_s(&st,m_Synchro_ProjectDirectory+"Phases.csv","w");
-	if(st!=NULL)
+	if(m_pNetwork!=NULL)
 	{
-		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<PhaseColumnSize;j++)
-			fprintf(st, "%s,", phase_Column_name_str[j].c_str());
-		fprintf(st,"\n");
-
-		for (p=0; p<phase_size;p++)
-		{
-			for(i=0; i<PhaseRowSize; i++)
-			{
-				fprintf(st, "%s,", phase_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
-
-				for(j=0; j<PhaseColumnSize;j++)
-				{
-					fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
-				}
-				fprintf(st,"\n");
-			}
-			//fprintf(st,"\n");
-		}
-		fprintf(st,"\n");
-	
-	fclose(st);
-	}
-
-	ExportSingleSynchroFile(SynchroProjectFile);
+		delete m_pNetwork;
+		m_pNetwork = NULL;
 	}
 
 }
