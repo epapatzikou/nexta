@@ -99,7 +99,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				vi.veh_id = pVeh->m_VehicleID ;
 				g_LastLoadedVehicleID = pVeh->m_VehicleID ;
 
-
 				vi.time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);  // unit: min
 				pVeh->m_bLoaded = true;
 				pVeh->m_SimLinkSequenceNo = 0;
@@ -740,7 +739,7 @@ void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_
 
 					float COV_perception_erorr = g_UserClassPerceptionErrorRatio[g_VehicleVector[v]->m_InformationClass];
 					pNetwork[cid]->BuildTravelerInfoNetwork(time, COV_perception_erorr);
-					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_VehicleType,g_VehicleVector[v]->m_VOT  );
+					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT  );
 
 					// find shortest path
 					int SubPathNodeSize = 0;
@@ -864,10 +863,9 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	// generate historical info based shortst path, based on constant link travel time
 
-
-	for(time = 0; time< g_SimulationHorizon; simulation_time_interval_no++)
+	for(time = g_DemandLoadingStartTimeInMin ; time< g_PlanningHorizon; simulation_time_interval_no++)  // the simulation time clock is advanced by 0.1 seconds
 	{
-		time=simulation_time_interval_no*g_DTASimulationInterval;
+		time= g_DemandLoadingStartTimeInMin+ simulation_time_interval_no*g_DTASimulationInterval;
 
 		// generating paths for historical travel information
 		if( SimulationMode == 1 /* one-shot simulation from demand */)
@@ -919,12 +917,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 			cout << "--Simulation completes as all the vehicles are out of the network.--" << endl;
 			bPrintOut = false;
 		}
-		if(simulation_time_interval_no%50 == 0 && bPrintOut)
+		if(simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
 		{
-			cout << "simulation clock:" << simulation_time_interval_no/10 << ", # of vehicles -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
-			g_LogFile << "simulation clock:" << simulation_time_interval_no/10 << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			cout << "simulation clock:" << int(time) << " min, # of vehicles -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			g_LogFile << "simulation clock:" << int(time/10) << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 		}
-
 	}
 
 	//	TRACE("g_Number_of_CompletedVehicles= %d\n", Number_of_CompletedVehicles);
@@ -935,13 +932,13 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)  // for each link
 	{
 
-		int NextCongestionTransitionTimeStamp = g_SimulationHorizon+10;  // // start with the initial value, no queue
+		int NextCongestionTransitionTimeStamp = g_PlanningHorizon+10;  // // start with the initial value, no queue
 
-		if(g_LinkVector[li]->m_LinkMOEAry[g_SimulationHorizon-1].ExitQueueLength>=1)  // remaining queue at the end of simulation horizon
-			NextCongestionTransitionTimeStamp = g_SimulationHorizon-1;
+		if(g_LinkVector[li]->m_LinkMOEAry[g_PlanningHorizon-1].ExitQueueLength>=1)  // remaining queue at the end of simulation horizon
+			NextCongestionTransitionTimeStamp = g_PlanningHorizon-1;
 
 		int time_min;
-		for(time_min = g_SimulationHorizon-1; time_min>=0 ; time_min--)  // move backward
+		for(time_min = g_PlanningHorizon-1; time_min>= g_DemandLoadingStartTimeInMin ; time_min--)  // move backward
 		{
 			// transition condition 1: from partial congestion to free-flow; action: move to the next lini
 			if(time_min>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min-1].ExitQueueLength>=1 && g_LinkVector[li]->m_LinkMOEAry[time_min].ExitQueueLength==0)  // previous time_min interval has queue, current time_min interval has no queue --> end of congestion 
@@ -1170,7 +1167,7 @@ void g_VehicleRerouting(int v, float CurrentTime, MessageSign is) // v for vehic
 
 	float COV_perception_erorr = g_VMSPerceptionErrorRatio;
 	network.BuildTravelerInfoNetwork(CurrentTime, COV_perception_erorr);
-	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_VehicleType,g_VehicleVector[v]->m_VOT );
+	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT );
 
 	// find shortest path
 	int SubPathNodeSize = 0;

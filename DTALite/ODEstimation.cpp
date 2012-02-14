@@ -133,16 +133,14 @@ std::map<long, long> g_LinkIDtoSensorIDMap;
 
 void g_ReadHistDemandFile()
 {
-	g_ODDemandIntervalSize = g_DemandLoadingHorizon/g_DepartureTimetInterval;
-
-	g_HistODDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_ODDemandIntervalSize);
+	g_HistODDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,g_DemandTypeMap.size());
 
 
 	for(int i = 0; i<=g_ODZoneSize; i++)
 		for(int j = 0; j<=g_ODZoneSize; j++)
-			for(int t=0; t<g_ODDemandIntervalSize; t++)
+			for(int type=0; type<g_DemandTypeMap.size(); type++)
 			{
-				g_HistODDemand[i][j][t] = 0;
+				g_HistODDemand[i][j][type] = 0;
 			}
 
 			FILE* st = NULL;
@@ -154,7 +152,7 @@ void g_ReadHistDemandFile()
 				int line_no = 1;
 				int originput_zone, destination_zone;
 				float number_of_vehicles ;
-				int vehicle_type;
+				int demand_type;
 				float starting_time_in_min;
 				float ending_time_in_min;
 
@@ -167,7 +165,7 @@ void g_ReadHistDemandFile()
 					destination_zone =  g_read_integer(st);
 					number_of_vehicles =  g_read_float(st);
 
-					vehicle_type =  g_read_integer(st);
+					demand_type =  g_read_integer(st);
 					starting_time_in_min = g_read_float(st);
 					ending_time_in_min = g_read_float(st);
 
@@ -178,14 +176,15 @@ void g_ReadHistDemandFile()
 						float demand_interval_ratio = g_DepartureTimetInterval/max(1, ending_time_in_min-starting_time_in_min);
 						for(int demand_time_interval_no = starting_time_in_min/g_DepartureTimetInterval; demand_time_interval_no < ending_time_in_min/g_DepartureTimetInterval;  demand_time_interval_no++)
 						{
-							g_HistODDemand [originput_zone][destination_zone][time_interval_no]  = number_of_vehicles * demand_interval_ratio;
+// to be modified with temporal profile
+//							g_HistODDemand [originput_zone][destination_zone] = number_of_vehicles * demand_interval_ratio;
 						}
 					}else
 					{
 						//error message
 					}
 
-					//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,vehicle_type,starting_time_in_min,ending_time_in_min);
+					//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,demand_type,starting_time_in_min,ending_time_in_min);
 
 					float Interval= float(ending_time_in_min - starting_time_in_min);
 
@@ -551,6 +550,8 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 	{
 		// step 4.1: calculate the vehicle size deviation for  each O D tau pair
 
+// to by modified
+//		float hist_demand = g_HistODDemand[zone][DestZoneID][AssignmentInterval];
 		float hist_demand = g_HistODDemand[zone][DestZoneID][AssignmentInterval];
 
 		if(hist_demand < 0.001)  // only perform OD estimation when hist_demand  is positive
@@ -607,7 +608,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 					int ArrivalTime_int = (int)(ArrivalTime);
 
-					if (ArrivalTime_int >= g_SimulationHorizon)  // time of interest exceeds the simulation horizon
+					if (ArrivalTime_int >= g_PlanningHorizon)  // time of interest exceeds the simulation horizon
 						break;
 
 					TRACE("traffic state = %d \n",plink->m_LinkMOEAry [ArrivalTime_int].TrafficStateCode);
@@ -760,12 +761,8 @@ void g_GenerateVehicleData_ODEstimation()
 
 	for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
 	{
-
 		element = g_ODTKPathVector[vi];
-		if(element.m_starting_time_in_min < g_DemandLoadingHorizon && element.m_OriginZoneID != element.m_DestinationZoneID )
-		{
-			CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_VehicleType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
-		}
+		CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
 
 	}
 	// create vehicle heres...
@@ -803,7 +800,7 @@ void g_GenerateVehicleData_ODEstimation()
 			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
 
 
-			pVehicle->m_VehicleType	= kvhc->m_VehicleType;
+			pVehicle->m_DemandType	= kvhc->m_DemandType;
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
 
 			PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
@@ -885,7 +882,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 		{
 
 			// compare the error statistics
-			for(int time = 0; time< g_SimulationHorizon;time+=g_ObservationTimeInterval)
+			for(int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon;time+=g_ObservationTimeInterval)
 			{
 
 				int time_index = time/g_ObservationTimeInterval;
@@ -984,7 +981,7 @@ void g_ExportLinkMOEToGroundTruthSensorData_ODEstimation()
 			if ( mIter != g_LinkIDtoSensorIDMap.end( ) )  // this link is a sensor
 			{
 			// compare the error statistics
-			for(int time = 0; time< g_SimulationHorizon;time+=g_ObservationTimeInterval)
+			for(int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon;time+=g_ObservationTimeInterval)
 			{
 				int time_index = time/g_ObservationTimeInterval;
 				if(time_index >=1)

@@ -29,11 +29,15 @@ extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
 extern std::vector<DTAZone> g_ZoneVector;
+extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
 
-extern std::map<int, VehicleType> g_VehicleTypeMap;
+extern std::map<int, DemandType> g_DemandTypeMap;
+extern std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
+extern int g_DemandLoadingStartTimeInMin;
+extern int g_DemandLoadingEndTimeInMin;
 
 extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 
@@ -53,8 +57,7 @@ extern float g_ConvergencyRelativeGapThreshold_in_perc;
 extern int g_NumberOfInnerIterations;
 extern int g_DepartureTimetIntervalSize;
 
-extern int g_DemandLoadingHorizon; // min
-extern int g_SimulationHorizon; // min
+extern int g_PlanningHorizon; // min
 extern int g_ObservationTimeInterval; //min 
 extern int g_Number_of_CompletedVehicles;
 extern int g_Number_of_GeneratedVehicles;
@@ -89,13 +92,15 @@ extern std::map<int, int> g_LinkTypeFreewayMap;
 extern std::map<int, int> g_LinkTypeArterialMap;
 extern std::map<int, int> g_LinkTypeRampMap;
 extern std::vector<DTALinkType> g_LinkTypeVector;
+extern	std::vector<VOTDistribution> g_VOTDistributionVector;
+extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
 // for OD estimation statistics
 
 extern float g_TotalDemandDeviation; 
 extern float g_TotalMeasurementDeviation; 
 
-extern	std::vector<VOTDistribution> m_VOTDistributionVector;
+
 extern ofstream g_scenario_short_description;
 extern ofstream ShortSimulationLogFile;
 

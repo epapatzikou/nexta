@@ -330,6 +330,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ResearchCode.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ShortestPath.cpp"
 				>
 			</File>
