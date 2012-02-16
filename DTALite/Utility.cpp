@@ -31,51 +31,56 @@ float g_RNNOF()
 	return y1;  // we only use one random number
 }
 
-int g_get_random_VehicleType(int demand_type)
+
+bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT)
 {
+
+	if(g_DemandTypeMap.find(demand_type) == g_DemandTypeMap.end())
+	{
+	cout << "Error: The demand file has demand_type = " << demand_type << ", which has not been defined in input_demand_type.csv."<< endl;
+	g_ProgramStop();
+	}
+
 	float RandomPercentage= g_GetRandomRatio() * 100; 
 
-	for( int i= 1; i<= g_VehicleTypeVector.size(); i++)
+	// step 1. vehicle type
+	VehicleType = 1;
+	// default to a single value
+	int i;
+	for(i= 1; i<= g_VehicleTypeVector.size(); i++)
 	{
 		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
-			return i;
+			VehicleType = i;
 	}
-	// default to a single value
-	return 1;
 
-}
+	//step 2: pricing type
+	PricingType = g_DemandTypeMap[demand_type].pricing_type -1;  // -1 is to make the type starts from 0
 
-int g_get_random_InformationClass(int demand_type)
-{
-	float RandomPercentage= g_GetRandomRatio() * 100; 
-
-	for( int i= 1; i< MAX_INFO_CLASS_SIZE; i++)
+	//step 3: information type
+	// default to historical info as class 1
+	InformationClass = 1;
+	RandomPercentage= g_GetRandomRatio() * 100; 
+	for(i= 1; i< MAX_INFO_CLASS_SIZE; i++)
 	{
 		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i])
-			return i+1; // return pretrip as 2 or enoute as 3
+			InformationClass = i+1; // return pretrip as 2 or enoute as 3
 	}
-	// default to historical info as class 1
-	return 1;
 
-}
-
-float g_GetRandomVOT(int demand_type)
-{
-	int pricing_type = g_DemandTypeMap[demand_type].demand_type ;
-
-	float RandomPercentage= g_GetRandomRatio() * 100; 
+	VOT = g_DemandTypeMap[demand_type].average_VOT;
+	RandomPercentage= g_GetRandomRatio() * 100; 
 
 	for(std::vector<VOTDistribution>::iterator itr = g_VOTDistributionVector.begin(); itr != g_VOTDistributionVector.end(); ++itr)
 	{
-		if( (*itr).pricing_type == pricing_type
+		if( (*itr).demand_type == demand_type
 			&& RandomPercentage >= (*itr).cumulative_percentage_LB 
 			&& RandomPercentage <= (*itr).cumulative_percentage_UB )
 
-			return (*itr).VOT;
+			VOT = (*itr).VOT;
 	}
 
-	// default to a single value
-	return g_DemandTypeMap[demand_type].average_VOT;
+	if(VOT < 1)  // enforcing minimum travel time
+		VOT = 1;
+	return true;
 }
 
 
@@ -253,7 +258,7 @@ std::string g_GetTimeStampStrFromIntervalNo(int time_interval)
 	int min = (time_interval - hour*4)*15;
 
 	if(hour<10)
-		str.Format ("'%d:%02d",hour,min);
+		str.Format ("'0%d:%02d",hour,min);
 	else
 		str.Format ("'%2d:%02d",hour,min);
 
@@ -269,9 +274,7 @@ std::string g_GetTimeStampStrFromIntervalNo(int time_interval)
 
 CString g_GetAppRunningTime()
 {
-
 	CString str;
-
 	CTime EndTime = CTime::GetCurrentTime();
 	CTimeSpan ts = EndTime  - g_AppStartTime;
 

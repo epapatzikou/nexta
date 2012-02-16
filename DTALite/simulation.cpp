@@ -64,17 +64,20 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	std::map<int, DTAVehicle*>::iterator iterVM;
 	int   PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 
-	int time_stamp_in_min = simulation_time_interval_no / g_number_of_intervals_per_min;
+	int time_stamp_in_min = int(CurrentTime+0.0001);
 
 	std::list<struc_vehicle_item>::iterator vii;
 
+	int vehicle_id_trace = 0;
+	int link_id_trace = -1;
+	bool debug_flag = true;
+
 	//	TRACE("st=%d\n", simulation_time_interval_no);
 	//DTALite:
-	// virtical queue data structure
+	// vertical queue data structure
 	// each link  ExitQueue, EntranceQueue: (VehicleID, ReadyTime)
 
 	// load vehicle into network
-
 
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
 	// load this vehicle into the ready queue
@@ -84,9 +87,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 	for (iterVM = g_VehicleMap.find(g_LastLoadedVehicleID); iterVM != g_VehicleMap.end(); iterVM++)
 	{
-
 		DTAVehicle* pVeh = iterVM->second;
-
 		if(pVeh->m_bLoaded == false && g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime) && pVeh->m_NodeSize >=2)  // not being loaded
 		{
 			int FirstLink =pVeh->m_aryVN[0].LinkID;
@@ -102,7 +103,9 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				vi.time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);  // unit: min
 				pVeh->m_bLoaded = true;
 				pVeh->m_SimLinkSequenceNo = 0;
-				//				TRACE("Load veh %d to link %d with time %5.2f -> %5.2f\n",vi.veh_id,FirstLink,pVeh->m_DepartureTime,vi.time_stamp);
+
+				if(debug_flag && vi.veh_id == vehicle_id_trace )
+					TRACE("Step 1: Load vhc %d to link %d with departure time time %5.2f -> %5.2f\n",vi.veh_id,FirstLink,pVeh->m_DepartureTime,vi.time_stamp);
 
 				p_link->LoadingBuffer.push_back(vi);  // need to fine-tune
 				g_Number_of_GeneratedVehicles +=1;
@@ -113,7 +116,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					int IS_id  = p_link->GetInformationResponseID(CurrentTime);
 					if(IS_id >= 0)
 					{
-
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
 
@@ -156,19 +158,17 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	{
 		while(g_LinkVector[li]->LoadingBuffer.size() >0 && g_LinkVector[li]->GetNumLanes(CurrentTime)>0.01)  // no load vehicle into a blocked link
 		{
-					if(g_LinkVector[li]->m_FromNodeNumber ==10222 && g_LinkVector[li]->m_ToNodeNumber ==10238)
-					{
-						TRACE("");
-					}
-
 			struc_vehicle_item vi = g_LinkVector[li]->LoadingBuffer.front();
 			// we change the time stamp here to reflect the actual loading time into the network, especially for blocked link
 			vi.time_stamp = CurrentTime;
 
-			int vehiclesize = (int)( g_LinkVector[li]->EntranceQueue.size() + g_LinkVector[li]->ExitQueue.size());
+			if(debug_flag && vi.veh_id == vehicle_id_trace )
+				TRACE("Step 1: Time %f: Load vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
+
+			int VehicleSize = (int)( g_LinkVector[li]->EntranceQueue.size() + g_LinkVector[li]->ExitQueue.size());
 
 			// determine link in capacity 
-			float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - vehiclesize;
+			float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - VehicleSize;
 
 			// if we use BPR function, no density constraint is imposed --> TrafficFlowModelFlag == 0
 			if(TrafficFlowModelFlag==0 || AvailableSpaceCapacity >= max(2,g_LinkVector[li]->m_VehicleSpaceCapacity*(1-g_MaxDensityRatioForVehicleLoading)))  // at least 10% remaining capacity or 2 vehicle space is left
@@ -177,7 +177,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				g_LinkVector[li]->EntranceQueue.push_back(vi);
 				g_LinkVector[li]->CFlowArrivalCount +=1;
 
-
+			if(debug_flag && vi.veh_id == vehicle_id_trace )
+				TRACE("Step 1: Time %f: Capacity available, remove vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
 
 			}else
 			{
@@ -185,11 +186,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			}
 
 		}
-
-
 	}
-
-
 
 	// step 2: move vehicle from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
 
@@ -199,13 +196,17 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 		{
 
 			struc_vehicle_item vi = g_LinkVector[li]->EntranceQueue.front();
-
 			double PlannedArrivalTime = vi.time_stamp;
-
 			if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link arrival time within the simulation time interval
 			{
 				g_LinkVector[li]->EntranceQueue.pop_front ();
 				g_LinkVector[li]->ExitQueue.push_back(vi);
+
+				if(debug_flag && vi.veh_id == vehicle_id_trace )
+				{
+					TRACE("Step 2: Time %f: Vhc %d moves from entrance queue to exit queue on link %d->%d\n",PlannedArrivalTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
+					link_id_trace = li;
+				}
 
 			}else
 			{
@@ -213,8 +214,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			}
 
 		}
-
-
 	}
 
 	// step 3: determine link in and out capacity
@@ -248,18 +247,13 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 						QueueFlag = true;
 
 					PerHourCapacityAtCurrentSimulatioInterval = GetStochasticCapacity(QueueFlag,g_LinkVector[li]->GetHourlyPerLaneCapacity(CurrentTime));
-					//				TRACE("Cap = %f\n",PerHourCapacity);
-					// Xuesong: need to check the following line for stochastic capcaity
-					//					g_LinkVector[li]->m_MaximumServiceFlowRatePHPL = PerHourCapacity;  // also dynamically update m_MaximumServiceFlowRatePHPL
 				}
-
 			}
 
 			//Highway/Expressway,			 Principal arteria				Major arterial					 Frontage road
 			if(g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type ] !=1 && g_LinkTypeRampMap[g_LinkVector[li]->m_link_type ]!=1)
 			{
 				PerHourCapacityAtCurrentSimulatioInterval = GetDynamicCapacityAtSignalizedIntersection(PerHourCapacity, g_CycleLength_in_seconds,CurrentTime);
-
 			}
 
 			// determine link out capacity 
@@ -267,7 +261,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			float Capacity = MaximumFlowRate;
 			// use integer number of vehicles as unit of capacity
-			g_LinkVector[li]-> LinkOutCapacity= g_GetRandomInteger_From_FloatingPointValue(Capacity);
+			g_LinkVector[li]-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue(Capacity);
 
 			int vehiclesize = (int)(g_LinkVector[li]->CFlowArrivalCount - g_LinkVector[li]->CFlowDepartureCount);
 
@@ -333,15 +327,11 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			// finally we convert the floating-point capacity to integral capacity in terms of number of vehicles
 			g_LinkVector[li]-> LinkInCapacity= g_GetRandomInteger_From_FloatingPointValue(fLinkInCapacity);
-
-
-			/*
-			if(g_NodeVector[g_LinkVector[li]->m_FromNodeID] == 4 && g_NodeVector[g_LinkVector[li]->m_ToNodeID] ==5)
-			{
-			TRACE("LinkInCapcity at %f, %d -> %d: %d, %f\n", CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],g_LinkVector[li]-> LinkInCapacity, fLinkInCapacity);
-			}
-			*/
-
+				
+			if(debug_flag && link_id_trace == li )
+				{
+					TRACE("Step 3: Time %f, Link: %d -> %d: Incapacity %d, %f, OutCapacity: %d\n", CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName , g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName ,g_LinkVector[li]-> LinkInCapacity, fLinkInCapacity, g_LinkVector[li]-> LinkOutCapacity);
+				}
 		}
 
 
@@ -376,7 +366,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 							{
 								g_LinkVector[li]->MergeIncomingLinkVector[il].m_LinkInCapacityRatio = g_LinkVector [ g_LinkVector[li]->MergeIncomingLinkVector[il].m_LinkID]->ExitQueue.size()*1.0f/TotalInFlowCount ;
 							}
-
 						}
 
 						for( il = 0; il< g_LinkVector[li]->MergeIncomingLinkVector.size(); il++)
@@ -418,19 +407,13 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 							g_LinkVector [g_LinkVector[li]->m_MergeMainlineLinkID]->LinkOutCapacity = DownstreamLinkInCapacity - FlowonOnRamp;
 
 						}
-
 						//		g_LogFile << "merge: mainline capacity"<< CurrentTime << " "  << g_LinkVector [g_LinkVector[li]->m_MergeMainlineLinkID] ->LinkOutCapacity << endl;
 
 					}
-
 				}
 			}
 		}
-
-
 	}
-
-
 
 
 	// step 4: move vehicles from ExitQueue to next link's EntranceQueue, if there is available capacity
@@ -442,16 +425,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	{
 
 		// vehicle_out_count is the minimum of LinkOutCapacity and ExitQueue Size
-			
-			
-
-
+	
 		int vehicle_out_count = g_LinkVector[li]->LinkOutCapacity;
-
-			if(g_LinkVector[li]->m_FromNodeNumber  == 10222 && g_LinkVector[li]->m_ToNodeNumber ==10238)
-			{
-			TRACE("LinkOutCapcity at %f, %d -> %d: %d, %d\n", CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],g_LinkVector[li]-> LinkOutCapacity, vehicle_out_count);
-			}
 
 
 		float temp = g_LinkVector[li]->GetNumLanes();
@@ -470,7 +445,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			int vehicle_id = vi.veh_id;
 
-
 			// record arrival time at the downstream node of current link
 			int link_sequence_no = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo;
 
@@ -483,7 +457,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				t_link_arrival_time = int(g_VehicleMap[vehicle_id]->m_DepartureTime);
 			}
 
-
 			// not reach destination yet
 			int number_of_links = g_VehicleMap[vehicle_id]->m_NodeSize-1;
 			if(g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo < number_of_links-1)  // not reach destination yet
@@ -491,11 +464,17 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 				// advance to next link
 
+				if(vehicle_id == vehicle_id_trace)
+					TRACE("simulation link sequence no. %d",g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo);
+
 				NextLink = g_VehicleMap[vehicle_id]->m_aryVN[g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1].LinkID;
 				p_Nextlink = g_LinkVector[NextLink];
 
-				ASSERT(p_Nextlink!=NULL);
-
+				if(p_Nextlink==NULL)
+				{
+					TRACE("Error at vehicle %d,",vehicle_id);
+					ASSERT(p_Nextlink!=NULL);
+				}
 
 				if(p_Nextlink->LinkInCapacity > 0) // if there is available spatial capacity on next link, then move to next link, otherwise, stay on the current link
 				{
@@ -575,6 +554,11 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					g_LinkVector[li]-> departure_count +=1;
 					g_LinkVector[li]-> total_departure_based_travel_time += TravelTime;
 
+					if(debug_flag && vi.veh_id == vehicle_id_trace )
+					{
+						TRACE("Step 4: target vehicle: link arrival time %d, total travel time on current link %d->%d, %f\n",t_link_arrival_time, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName, g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName, g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime);
+					}
+
 					//										TRACE("time %d, total travel time %f\n",t_link_arrival_time, g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime);
 
 					p_Nextlink->LinkInCapacity -=1; // reduce available space capacity by 1
@@ -624,7 +608,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				// finally move to next link
 				g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1;
 
-
 				g_Number_of_CompletedVehicles +=1;
 
 				g_NetworkMOEAry[time_stamp_in_min].CumulativeOutFlow = g_Number_of_CompletedVehicles;
@@ -632,6 +615,16 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				g_VehicleMap[vehicle_id]->m_ArrivalTime = ArrivalTimeOnDSN;
 
 				g_VehicleMap[vehicle_id]->m_TripTime = g_VehicleMap[vehicle_id]->m_ArrivalTime - g_VehicleMap[vehicle_id]->m_DepartureTime;
+
+				if(debug_flag && vi.veh_id == vehicle_id_trace )
+				{
+					TRACE("Step 4: time %f, target vehicle reaches the destination, vehicle trip time: %f, # of links  = %d\n",
+						ArrivalTimeOnDSN, g_VehicleMap[vehicle_id]->m_TripTime , 
+						g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo);
+
+					vehicle_id_trace = -1; // not tracking anymore 
+				}
+
 				g_VehicleMap[vehicle_id]->m_bComplete = true;
 				int OriginDepartureTime = (int)(g_VehicleMap[vehicle_id]->m_DepartureTime );
 				g_NetworkMOEAry[OriginDepartureTime].AbsArrivalTimeOnDSN_in_a_min +=g_VehicleMap[vehicle_id]->m_TripTime;
@@ -643,18 +636,16 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			}
 
-
-
-
 			vehicle_out_count--;
 
 		}
 
 
 	}
+
+	//	step 5: statistics collection
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
-		//	statistics collection
 
 		// cummulative flow counts
 
@@ -667,7 +658,6 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 		{
 			g_LinkVector[li]->VehicleCount = g_LinkVector[li]->CFlowArrivalCount - g_LinkVector[li]->CFlowDepartureCount;
 
-
 			// queue is the number of vehicles at the end of simulation interval
 
 			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength = g_LinkVector[li]->ExitQueue.size(); 
@@ -675,11 +665,17 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			if(g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength >=1 && g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode != 2)   // not fully congested
 				g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode  = 1;  // partially congested
 
-
 			// time_stamp_in_min+1 is because we take the stastistics to next time stamp
 			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  g_LinkVector[li]->CFlowArrivalCount;
 
 			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeDepartureCount = g_LinkVector[li]->CFlowDepartureCount;
+
+			if(debug_flag && link_id_trace == li && vehicle_id_trace >= 0 )
+			{
+				TRACE("step 5: statistics collection: Time %d, link %d -> %d, Cumulative arrival count %d, cumulative departure count %d \n", time_stamp_in_min, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName, g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,
+					g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount, g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeDepartureCount);
+			}
+
 
 		}
 	}
@@ -739,7 +735,7 @@ void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_
 
 					float COV_perception_erorr = g_UserClassPerceptionErrorRatio[g_VehicleVector[v]->m_InformationClass];
 					pNetwork[cid]->BuildTravelerInfoNetwork(time, COV_perception_erorr);
-					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT  );
+					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false );
 
 					// find shortest path
 					int SubPathNodeSize = 0;
@@ -870,15 +866,15 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		// generating paths for historical travel information
 		if( SimulationMode == 1 /* one-shot simulation from demand */)
 		{
-			if(simulation_time_interval_no%(g_DepartureTimetInterval*10) == 0)
+			if(simulation_time_interval_no%(g_AggregationTimetInterval*10) == 0)
 			{
 				cout <<g_GetAppRunningTime()<<  "Calculating shortest paths..." << endl;
 
 #pragma omp parallel for
 				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 				{
-					int DepartureTimeInterval = time/g_DepartureTimetInterval;
-					if(DepartureTimeInterval < g_DepartureTimetIntervalSize)
+					int DepartureTimeInterval = time/g_AggregationTimetInterval;
+					if(DepartureTimeInterval < g_AggregationTimetIntervalSize)
 					{
 
 						int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
@@ -888,7 +884,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 						DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 						int	id = omp_get_thread_num( );  // starting from 0
 							// assign paths to historical information (for all vehicles)
-							network_MP.HistInfoVehicleBasedPathAssignment(CurZoneID,time,time+g_DepartureTimetInterval);
+							network_MP.HistInfoVehicleBasedPathAssignment(CurZoneID,time,time+g_AggregationTimetInterval);
 
 					}
 
@@ -898,7 +894,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		g_AssignPathsForInformationUsers(time, simulation_time_interval_no);
 
 
-			if(simulation_time_interval_no%(g_DepartureTimetInterval*10) == 0)
+			if(simulation_time_interval_no%(g_AggregationTimetInterval*10) == 0)
 			{
 
 				// reset statistics for departure-time-based travel time collection
@@ -912,6 +908,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		}
 
 		g_VehicularSimulation(time, simulation_time_interval_no, TrafficFlowModelFlag);
+
 		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_Number_of_GeneratedVehicles)
 		{		
 			cout << "--Simulation completes as all the vehicles are out of the network.--" << endl;
@@ -1050,16 +1047,18 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	}
 
 */
+	if( Iteration == g_NumberOfIterations)  // output results at the last iteration
+	{
 	if(ShortSimulationLogFile.is_open())
 	{
-		ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << ", # of vehicles not completing trips = " << output.NumberofVehiclesGenerated - output.NumberofVehiclesCompleteTrips << endl;
-		ShortSimulationLogFile << "Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Travel Time Index =" << output.AvgTTI  << ", Avg Disance = " << output.AvgDistance << " miles." << endl;
+		ShortSimulationLogFile << "# of Vehicles = "<< g_VehicleVector.size() << ", Avg Travel Time =" << output.AvgTravelTime << " (min), Avg Distance = " << output.AvgDistance << " miles." << endl;
 
 	}else
 	{
 		cout << "Error: File short_summary.log cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	
+	}
 	}
 	return output;
 }
@@ -1167,7 +1166,7 @@ void g_VehicleRerouting(int v, float CurrentTime, MessageSign is) // v for vehic
 
 	float COV_perception_erorr = g_VMSPerceptionErrorRatio;
 	network.BuildTravelerInfoNetwork(CurrentTime, COV_perception_erorr);
-	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT );
+	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false );
 
 	// find shortest path
 	int SubPathNodeSize = 0;
