@@ -339,6 +339,14 @@ public:
 
 	};
 
+		void ResizeData(int TimeSize)  // TimeSize's unit: per min
+	{
+		m_SimulationHorizon	= TimeSize;
+		m_LinkMOEAry.resize(m_SimulationHorizon+1);
+		m_LinkMeasurementAry.resize(m_SimulationHorizon/g_ObservationTimeInterval+1);
+
+	}
+
 	bool 	GetImpactedFlag(int DepartureTime)
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
@@ -644,7 +652,7 @@ public:
 		else
 			travel_time =  m_FreeFlowTravelTime;
 
-		ASSERT(travel_time>=0.09);
+		ASSERT(travel_time>=0.001);
 
 		return travel_time;
 
