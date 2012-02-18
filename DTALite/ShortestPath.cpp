@@ -261,7 +261,10 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
-			ASSERT(NewTime < 9999999 && NewTime >=-0.00001);
+			if(NewTime > 9999999 || NewTime <0.00001)
+			{
+			TRACE("ERROR!!!!!");
+			}
 
 			NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
 			

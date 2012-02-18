@@ -793,8 +793,12 @@ void ReadInputFiles()
 			pLink->m_VehicleDataVector.push_back (element);
 			}
 			pLink->m_SpeedLimit= speed_limit_in_mph;
-//			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
-			pLink->m_Length= length;
+			
+			if(g_AgentBasedAssignmentFlag != 2)
+				pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
+			else
+				pLink->m_Length= length;
+
 			pLink->m_MaximumServiceFlowRatePHPL= capacity;
 			
 			if(capacity < 10)
@@ -1210,6 +1214,23 @@ CCSVParser parser_VOT;
 	cout << "Number of Links = "<< g_LinkVector.size() << endl;
 	cout << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
 	cout <<	"Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
+
+	if(g_DemandLoadingEndTimeInMin+60 > g_PlanningHorizon)
+	{
+		//reset simulation horizon to make sure it is longer than the demand loading horizon
+	g_PlanningHorizon = g_DemandLoadingEndTimeInMin+60;
+
+	for(unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
+	{
+		DTALink* pLink = g_LinkVector[link_index];
+		pLink ->ResizeData (g_PlanningHorizon);
+	}
+
+	}
+		g_NetworkMOEAry.resize (g_PlanningHorizon+1);  // "+1" as simulation time starts as 0
+		g_AssignmentMOEVector.resize ( g_NumberOfIterations+1);  // "+1" as assignment iteration starts as 0
+
+
 	cout << "Number of Vehicle Types = "<< g_VehicleTypeVector.size() << endl;
 	cout << "Number of Demand Types = "<< g_DemandTypeMap.size() << endl;
 	cout << "Number of Temporal Profile Records = "<< g_TimeDependentDemandProfileVector.size() << endl;
@@ -2189,8 +2210,6 @@ void g_FreeMemory()
 
 void g_TrafficAssignmentSimulation()
 {
-		g_NetworkMOEAry.resize (g_PlanningHorizon+1);  // "+1" as simulation time starts as 0
-		g_AssignmentMOEVector.resize ( g_NumberOfIterations+1);  // "+1" as assignment iteration starts as 0
 
 		ReadInputFiles();
 
