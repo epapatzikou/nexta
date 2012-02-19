@@ -328,7 +328,7 @@ void g_ODBasedDynamicTrafficAssignment()
 
 		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
-			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl; 
+			g_InternalLogFile << "----- Iteration = " << iteration << " ------" << endl; 
 
 #pragma omp parallel for
 			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
@@ -367,7 +367,7 @@ void g_ODBasedDynamicTrafficAssignment()
 								debug_flag = true;
 							
 							}
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 										network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
@@ -657,7 +657,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 				BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 				//using historical short-term travel time
-				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_DemandType,pVeh->m_VOT,false );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_DemandType,pVeh->m_VOT,false, false );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				int OriginCentriod = m_PhysicalNodeSize;  // as root node
 				int DestinationCentriod =  m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;  
@@ -782,7 +782,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 						}					
 						*/
 
-						network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 						int AssignmentInterval = departure_time/g_AggregationTimetInterval;
 
@@ -1017,7 +1017,7 @@ void g_StaticTrafficAssisnment()
 								debug_flag = true;
 							
 							}
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
@@ -1187,33 +1187,33 @@ void g_AgentBasedShortestPathGeneration()
 
 
 
-//	#pragma omp parallel for
-	number_of_threads = 1;
+	#pragma omp parallel for
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
 	// create network for shortest path calculation at this processor
 			DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
-			int	id = omp_get_thread_num( );  // starting from 0
+			int	cpu_id = omp_get_thread_num( );  // starting from 0
 			network_MP.BuildPhysicalNetwork();  // build network for this zone, because different zones have different connectors...
 			
 			for(int node_index  = 0; node_index < node_size; node_index++)
 			{
-	//			if(node_index %number_of_threads == id && g_NodeVector[node_index].m_bOriginFlag)
-				if(g_NodeVector[node_index].m_bOriginFlag)
+			if(node_index %number_of_threads == cpu_id && g_NodeVector[node_index].m_bOriginFlag)
 				{
-				if(node_index%100 ==0)
+				if(node_index%100 ==cpu_id)
 					{
-						cout << g_GetAppRunningTime()<<  "processor " << id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
-						g_LogFile << g_GetAppRunningTime()<<  "processor " << id << " working on node  "<<  node_index <<  ", "<< node_index/node_size*100 << "%" <<  endl;
+						cout << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
+
+						if(node_index%100 == 0)  // only one CUP can output to log file
+							g_LogFile << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index/node_size*100 << "%" <<  endl;
 					}
 
-				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
 					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
 					 g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label = network_MP.LabelCostAry[dest_node_index];
-					 TRACE("Label: %f: \n",g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label);
+//					 TRACE("Label: %f: \n",g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label);
 
 				}
 
@@ -1226,7 +1226,7 @@ void g_AgentBasedShortestPathGeneration()
 	fopen_s(&st,"output_shortest_path.txt","w");
 	if(st!=NULL)
 	{
-	
+	fprintf(st, "record_id,from_node_id,to_node_id,distance\n");
 			for(int node_index  = 0; node_index < node_size; node_index++)
 			{
 				if(node_index %100000 ==0)
@@ -1236,8 +1236,8 @@ void g_AgentBasedShortestPathGeneration()
 					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
 					float label = g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label;
 
-					fprintf(st, "%d, %d, %d, %4.2f\n", g_NodeVector[node_index].m_NodeName,
-						g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
+					fprintf(st, "%d, %d, %d, %4.4f\n", g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
+						g_NodeVector[node_index].m_NodeName,
 						g_NodeVector[node_index].m_DestinationVector[dest_no].destination_number, label);
 
 				}

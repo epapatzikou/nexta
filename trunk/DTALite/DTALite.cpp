@@ -216,7 +216,7 @@ std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle
 FILE* g_ErrorFile = NULL;
 ofstream g_LogFile;
 ofstream g_AssignmentLogFile;
-ofstream g_EstimationLogFile;
+ofstream g_InternalLogFile;
 ofstream g_WarningFile;
 
 int g_TrafficFlowModelFlag = 0;
@@ -316,7 +316,7 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	// starting with first node with origin nodes;
 	pPhysicalNetwork->BuildPhysicalNetwork();
 
-	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false);  // CurNodeID is the node ID
+	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false);  // CurNodeID is the node ID
 	// assign shortest path calculation results to label array
 
 
@@ -655,25 +655,25 @@ void ReadInputFiles()
 		bool bNodeNonExistError = false;
 		while(parser_link.ReadRecord())
 		{
-			int from_node_id;
-			int to_node_id;
-			int direction;
-			double length_in_mile;
-			int number_of_lanes=0;
-			int speed_limit_in_mph=0;
-			double capacity=0;
+			int from_node_name = 0;
+			int to_node_name = 0;
+			int direction = 1;
+			double length_in_mile = 1;
+			int number_of_lanes = 1;
+			int speed_limit_in_mph = 0;
+			double capacity = 0;
 			int type;
 			string name, mode_code;
 			double K_jam,wave_speed_in_mph;
 			
 
-			if(!parser_link.GetValueByFieldName("from_node_id",from_node_id)) 
+			if(!parser_link.GetValueByFieldName("from_node_id",from_node_name)) 
 			{
 				cout << "Field from_node_id has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
 			}
-			if(!parser_link.GetValueByFieldName("to_node_id",to_node_id))
+			if(!parser_link.GetValueByFieldName("to_node_id",to_node_name))
 			{
 				cout << "Field to_node_id has not been defined in file input_link.csv. Please check.";
 				getchar();
@@ -681,17 +681,17 @@ void ReadInputFiles()
 
 			}
 
-				if(g_NodeNametoIDMap.find(from_node_id)== g_NodeNametoIDMap.end())
+				if(g_NodeNametoIDMap.find(from_node_name)== g_NodeNametoIDMap.end())
 				{
-				cout<< "From Node Number "  << from_node_id << " in input_link.csv has not be defined in input_node.csv"  << endl; 
+				cout<< "From Node ID "  << from_node_name << " in input_link.csv has not be defined in input_node.csv"  << endl; 
 				getchar();
 				exit(0);
 
 				}
 
-				if(g_NodeNametoIDMap.find(to_node_id)== g_NodeNametoIDMap.end())
+				if(g_NodeNametoIDMap.find(to_node_name)== g_NodeNametoIDMap.end())
 				{
-				cout<< "To Node Number "  << to_node_id << " in input_link.csv has not be defined in input_node.csv"  << endl; 
+				cout<< "To Node ID "  << to_node_name << " in input_link.csv has not be defined in input_node.csv"  << endl; 
 				getchar();
 				exit(0);
 				}
@@ -759,31 +759,47 @@ void ReadInputFiles()
 			}
 
 
-			if(number_of_lanes == 0 || capacity <1 || speed_limit_in_mph < 0.1)
+			if(number_of_lanes == 0 || capacity <1)  // skip this link 
+			{
+				g_WarningFile << "link with 0 lane or 0 capacity, skip:" << pLink->m_FromNodeNumber << " -> " << pLink->m_ToNodeNumber << 
+				" (" << 	pLink->m_FromNodeID << " -> "  << pLink->m_ToNodeID << ")" << endl;
+
 				continue;
+			}
+
+			if(speed_limit_in_mph <0.1)  //reset the speed limit
+				speed_limit_in_mph = 5;  // minium speed limit
+
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
 			{
 
-				int FromID = from_node_id;
-				int ToID = to_node_id;
+				int FromID = from_node_name;
+				int ToID = to_node_name;
 				if(link_code == 1)  //AB link
 				{
-				FromID = from_node_id;
-				ToID = to_node_id;
+				FromID = from_node_name;
+				ToID = to_node_name;
 				}
 				if(link_code == 2)  //BA link
 				{
-				FromID = to_node_id;
-				ToID = from_node_id;
+				FromID = to_node_name;
+				ToID = from_node_name;
 				}
-
+			
 			pLink = new DTALink(g_PlanningHorizon);
 			pLink->m_LinkID = i;
 			pLink->m_FromNodeNumber = FromID;
 			pLink->m_ToNodeNumber = ToID;
 			pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 			pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
+
+
+			if( pLink->m_FromNodeNumber == 321984)
+			{
+			TRACE("find link %d\n", i);
+			}
+
 			float length = max(0.00001,length_in_mile);  // minimum link length 0.0001
 			pLink->m_NumLanes= number_of_lanes;
 
@@ -1948,12 +1964,12 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
-		g_EstimationLogFile.open ("estimation.log", ios::out);
-	if (g_EstimationLogFile.is_open())
+		g_InternalLogFile.open ("estimation.log", ios::out);
+	if (g_InternalLogFile.is_open())
 	{
-		g_EstimationLogFile.width(12);
-		g_EstimationLogFile.precision(3) ;
-		g_EstimationLogFile.setf(ios::fixed);
+		g_InternalLogFile.width(12);
+		g_InternalLogFile.precision(3) ;
+		g_InternalLogFile.setf(ios::fixed);
 	}else
 	{
 		cout << "File estimation.log cannot be opened, and it might be locked by another program!" << endl;

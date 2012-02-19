@@ -663,8 +663,8 @@ public:
 		else
 			travel_time =  m_FreeFlowTravelTime;
 
-		if(travel_time< 0.000001)
-			travel_time= 0.000001;
+		if(travel_time< 0.000001f)
+			travel_time= 0.000001f;
 
 		return travel_time;
 
@@ -1238,8 +1238,8 @@ public:
 	void BuildPhysicalNetwork();
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int demand_type, float VOT, bool debug_flag);   // Pointer to previous node (node)
-	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination);
+	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
 	int  FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
 
@@ -1508,5 +1508,5 @@ extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation 
 extern FILE* g_ErrorFile;
 extern ofstream g_LogFile;
 extern ofstream g_AssignmentLogFile;
-extern ofstream g_EstimationLogFile;
+extern ofstream g_InternalLogFile;
 

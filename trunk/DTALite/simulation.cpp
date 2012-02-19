@@ -735,7 +735,7 @@ void g_AssignPathsForInformationUsers(double time, int simulation_time_interval_
 
 					float COV_perception_erorr = g_UserClassPerceptionErrorRatio[g_VehicleVector[v]->m_InformationClass];
 					pNetwork[cid]->BuildTravelerInfoNetwork(time, COV_perception_erorr);
-					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false );
+					pNetwork[cid]->TDLabelCorrecting_DoubleQueue(CurrentNodeID,time,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false, false );
 
 					// find shortest path
 					int SubPathNodeSize = 0;
@@ -1166,7 +1166,7 @@ void g_VehicleRerouting(int v, float CurrentTime, MessageSign is) // v for vehic
 
 	float COV_perception_erorr = g_VMSPerceptionErrorRatio;
 	network.BuildTravelerInfoNetwork(CurrentTime, COV_perception_erorr);
-	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false );
+	network.TDLabelCorrecting_DoubleQueue(CurrentNodeID,CurrentTime,g_VehicleVector[v]->m_DemandType,g_VehicleVector[v]->m_VOT,false, false );
 
 	// find shortest path
 	int SubPathNodeSize = 0;

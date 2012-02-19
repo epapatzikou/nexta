@@ -559,7 +559,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 		PathArray[DestZoneID].DeviationNumOfVehicles = PathArray[DestZoneID].NumOfVehicles - hist_demand;
 
-		g_EstimationLogFile << "OD demand " << zone << " -> " << DestZoneID <<  " @ "<< AssignmentInterval*g_AggregationTimetInterval << " with "<< PathArray[DestZoneID].NumOfPaths << " paths; Hist Demand =" << hist_demand << "; simu Demand = " << PathArray[DestZoneID].NumOfVehicles  << ";Dev = " << PathArray[DestZoneID].DeviationNumOfVehicles <<endl; 
+		g_InternalLogFile << "OD demand " << zone << " -> " << DestZoneID <<  " @ "<< AssignmentInterval*g_AggregationTimetInterval << " with "<< PathArray[DestZoneID].NumOfPaths << " paths; Hist Demand =" << hist_demand << "; simu Demand = " << PathArray[DestZoneID].NumOfVehicles  << ";Dev = " << PathArray[DestZoneID].DeviationNumOfVehicles <<endl; 
 
 		if(AssignmentInterval == 6) 
 			TRACE("");
@@ -694,7 +694,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			- g_ODEstimation_StepSize*FlowAdjustment); /*gradient wrt gap function*/
 
 			
-			g_EstimationLogFile << "OD " << zone << " -> " << DestZoneID << " path =" << p << " @ "<< AssignmentInterval*g_AggregationTimetInterval << ": Measurement Dev=" << PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << 
+			g_InternalLogFile << "OD " << zone << " -> " << DestZoneID << " path =" << p << " @ "<< AssignmentInterval*g_AggregationTimetInterval << ": Measurement Dev=" << PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << 
 				"; Demand Dev=" << PathArray[DestZoneID].DeviationNumOfVehicles <<
 				"; Gap Dev "<< g_ODEstimation_Weight_Gap*PathArray[DestZoneID].AvgPathGap[p]  <<endl; 
 
@@ -743,7 +743,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int zone,int depar
 void g_GenerateVehicleData_ODEstimation()
 {
 
-	 g_EstimationLogFile << " g_GenerateVehicleData_ODEstimation "  <<endl; 
+	 g_InternalLogFile << " g_GenerateVehicleData_ODEstimation "  <<endl; 
 
 	g_FreeVehicleVector();
 
@@ -766,12 +766,12 @@ void g_GenerateVehicleData_ODEstimation()
 
 	}
 	// create vehicle heres...
-	g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
+	g_InternalLogFile << " Converting demand flow to vehicles... "  <<endl; 
 
 	cout << "Converting demand flow to vehicles..."<< endl;
 
 	std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
-	g_EstimationLogFile << " std::sort... "  <<endl; 
+	g_InternalLogFile << " std::sort... "  <<endl; 
 
 	std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
 
@@ -901,7 +901,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 					{
 						float AbosolutePercentageError = fabs((SimulatedFlowCount -  ObsFlowCount)/ObsFlowCount*100);
 						float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/g_ObservationTimeInterval/g_LinkVector[li]->m_NumLanes;												
-						g_EstimationLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
+						g_InternalLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
 							<< " @ "<< time << " Obs link flow: "<< ObsFlowCount <<"; Error: " << SimulatedFlowCount -  ObsFlowCount << 
 							", " << AbosolutePercentageError << " %" << "Lane Flow Error /h= " << LaneFlowError << endl;
 
@@ -923,7 +923,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation()
 						float AbosolutePercentageError = fabs((g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorNumberOfVehicles)/g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles*100);
 						float ObsDensity = (g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles)/g_LinkVector[li]->m_NumLanes / g_LinkVector[li]->m_Length ;											
 						float DensityError = (g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ErrorNumberOfVehicles)/g_LinkVector[li]->m_NumLanes / g_LinkVector[li]->m_Length ;											
-						g_EstimationLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
+						g_InternalLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
 							<< " @ "<< time << " Obs link density: "<< ObsFlowCount <<"; Error: " << DensityError << 
 							", " << AbosolutePercentageError << " %" << "Density Error /h= " << DensityError << endl;
 

@@ -198,7 +198,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=0, float VOT = 10, bool debug_flag = false)
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=0, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
 // time -dependent label correcting algorithm with deque implementation
 {
 
@@ -263,15 +263,16 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			if(link_entering_time_interval < 0)  // limit the size
 				link_entering_time_interval = 0;
 
-			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
+			if(distance_cost_flag)
+				NewTime	= LabelTimeAry[FromID];
+			else // distance
+				NewTime	= LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
-			if(NewTime > 9999999 || NewTime <0.000001)
-			{
-			NewTime = 0.0001;
-			}
+			if(distance_cost_flag)
+				NewCost    = LabelCostAry[FromID] + m_LinkTDDistanceAry[LinkID];
+			else
+				NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
 
-			NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
-			
 			if(VOT > 0.01 && m_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTollExist) 
 			{ // with VOT and toll
 				AdditionalCostInMin = m_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
@@ -318,122 +319,6 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 
 
-
-bool DTANetworkForSP::OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination)
-// time -dependent label correcting algorithm with deque implementation
-{
-
-	int i;
-	int debug_flag = 0;  // set 1 to debug the detail information
-	if(debug_flag)
-				TRACE("\nCompute shortest path from %d at time %d",origin, departure_time);
-
-    bool bFeasiblePathFlag  = false;
-
-	if(m_OutboundSizeAry[origin]== 0)
-		return false;
-
-	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
-	{
-		NodeStatusAry[i] = 0;
-
-		for(int  t= m_StartIntervalForShortestPathCalculation; t <m_NumberOfSPCalculationIntervals; t++)
-		{
-			TD_LabelCostAry[i][t] = MAX_SPLABEL;
-			TD_NodePredAry[i][t] = -1;  // pointer to previous NODE INDEX from the current label at current node and time
-			TD_TimePredAry[i][t] = -1;  // pointer to previous TIME INDEX from the current label at current node and time
-		}
-
-	}
-
-	//	TD_LabelCostAry[origin][departure_time] = 0;
-
-	// Initialization for origin node at the preferred departure time, at departure time, cost = 0, otherwise, the delay at origin node
-
-	TD_LabelCostAry[origin][departure_time]= 0;
-
-	SEList_clear();
-	SEList_push_front(origin);
-
-
-	while(!SEList_empty())
-	{
-		int FromID  = SEList_front();
-		SEList_pop_front();  // remove current node FromID from the SE list
-
-
-		NodeStatusAry[FromID] = 2;        //scaned
-
-		//scan all outbound nodes of the current node
-		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(i)
-		{
-			int LinkNo = m_OutboundLinkAry[FromID][i];
-			int ToID = m_OutboundNodeAry[FromID][i];
-
-			if(ToID == origin)  // remove possible loop back to the origin
-				continue;
-
-
-			if(debug_flag)
-				TRACE("\nScan from node %d to node %d",g_NodeVector[FromID].m_NodeName,g_NodeVector[ToID].m_NodeName);
-
-			// for each time step, starting from the departure time
-		for(int t = m_StartTimeInMin; t < m_PlanningHorizonInMin; t +=g_AggregationTimetInterval)
-			{
-				if(TD_LabelCostAry[FromID][t]<MAX_SPLABEL-1)  // for feasible time-space point only
-				{   
-					int time_stopped = 0; 
-					
-						int NewToNodeArrivalTime	 = (int)(t + time_stopped + m_LinkTDTimeAry[LinkNo][t]);  // time-dependent travel times for different train type
-						float NewCost  =  TD_LabelCostAry[FromID][t] + m_LinkTDTimeAry[LinkNo][t] + m_LinkTDCostAry[LinkNo][t].TollValue [0];
-						// costs come from time-dependent resource price or road toll
-
-						if(NewToNodeArrivalTime > (m_NumberOfSPCalculationIntervals -1))  // prevent out of bound error
-							NewToNodeArrivalTime = (m_NumberOfSPCalculationIntervals-1);
-
-						if(NewCost < TD_LabelCostAry[ToID][NewToNodeArrivalTime] ) // we only compare cost at the downstream node ToID at the new arrival time t
-						{
-
-							if(ToID == destination)
-							bFeasiblePathFlag = true; 
-
-
-							if(debug_flag)
-								TRACE("\n         UPDATE to %f, link cost %f at time %d", NewCost, m_LinkTDCostAry[LinkNo][t],NewToNodeArrivalTime);
-
-							// update cost label and node/time predecessor
-
-							TD_LabelCostAry[ToID][NewToNodeArrivalTime] = NewCost;
-							TD_NodePredAry[ToID][NewToNodeArrivalTime] = FromID;  // pointer to previous NODE INDEX from the current label at current node and time
-							TD_TimePredAry[ToID][NewToNodeArrivalTime] = t;  // pointer to previous TIME INDEX from the current label at current node and time
-
-							// Dequeue implementation
-							if(NodeStatusAry[ToID]==2) // in the SEList_TD before
-							{
-								SEList_push_front(ToID);
-								NodeStatusAry[ToID] = 1;
-							}
-							if(NodeStatusAry[ToID]==0)  // not be reached
-							{
-								SEList_push_back(ToID);
-								NodeStatusAry[ToID] = 1;
-							}
-
-					
-					}
-				}
-				//another condition: in the SELite now: there is no need to put this node to the SEList, since it is already there.
-			}
-
-		}      // end of for each link
-
-	}	// end of while
-
-
-	ASSERT(bFeasiblePathFlag);
-
-	return bFeasiblePathFlag;
-}
 
 
 int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
@@ -489,7 +374,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 				link_entering_time_interval = 0;
 
 			if(distance_flag)
-				NewTime	= LabelTimeAry[FromID] + m_LinkTDDistanceAry[LinkID];
+				NewTime	= LabelTimeAry[FromID];
 			else // distance
 				NewTime	= LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
