@@ -1098,47 +1098,29 @@ void g_AgentBasedShortestPathGeneration()
     // find unique origin node
 	// find unique destination node
 	
-	 std::map<int,DTAODPair>  m_ODPairMap;
+
 
 	int node_size  = g_NodeVector.size();
 	int link_size  = g_LinkVector.size();
 
-	CCSVParser parser;
-	if (parser.OpenCSVFile("input_od_pairs.csv"))
+	int line = 0;
+
+	FILE* st_input = NULL;
+	fopen_s(&st_input,"input_od_pairs.csv","r");
+	if(st_input!=NULL)
 	{
+	char str[100];
 
-		int line = 0;
-		bool bNodeNonExistError = false;
-		while(parser.ReadRecord())
-		{
-			int origin_node_id, destination_node_id, record_id;
+	fscanf(st_input,"%[^\n]",str);  // read a line
 
-			if(line%1000==0)
-				cout<< "reading line "  << line/1000 << "k in input_od_pairs.csv."  << endl; 
+	int origin_node_id, destination_node_id, record_id;
 
-			if(!parser.GetValueByFieldName("record_id",record_id)) 
-			{
-				cout << "Field record_id has not been defined in file input_od_pairs.csv. Please check line =" << line;
+      while(!feof( st_input) )
+	  {
 
-				getchar();
-				exit(0);
-			}
+	fscanf(st_input,"%d,%d,%d\n", &record_id, &origin_node_id, &destination_node_id);
 
-			if(!parser.GetValueByFieldName("origin_node_id",origin_node_id)) 
-			{
-				cout << "Field origin_node_id has not been defined in file input_od_pairs.csv.  Please check line =" << line;
-				getchar();
-				exit(0);
-			}
-
-			if(!parser.GetValueByFieldName("destination_node_id",destination_node_id)) 
-			{
-				cout << "Field destination_node_ids has not been defined in file input_od_pairs.csv. Please check line =" << line;
-				getchar();
-				exit(0);
-			}
-
-				if(g_NodeNametoIDMap.find(origin_node_id)== g_NodeNametoIDMap.end())
+		if(g_NodeNametoIDMap.find(origin_node_id)== g_NodeNametoIDMap.end())
 				{
 //				cout<< "origin_node_id "  << origin_node_id << " in input_od_pairs.csv has not be defined in input_node.csv.  Please check line =" << line  << endl; 
 //				getchar();
@@ -1157,16 +1139,21 @@ void g_AgentBasedShortestPathGeneration()
 				int number_indx  = g_NodeNametoIDMap[origin_node_id];
 				int dest_node_index = g_NodeNametoIDMap[destination_node_id];
 
-				m_ODPairMap[number_indx].origin_node_number = origin_node_id;
-				m_ODPairMap[number_indx].destination_number_vector.push_back(destination_node_id);
-				m_ODPairMap[number_indx].record_id_vector.push_back(record_id);
-				m_ODPairMap[number_indx].destination_node_vector.push_back(dest_node_index);
+
+				DTADestination element;
+				element.destination_number = destination_node_id;
+				element.record_id = record_id;
+				element.destination_node_index = dest_node_index;
+				
+				g_NodeVector[number_indx].m_DestinationVector.push_back(element);
 				g_NodeVector[number_indx].m_bOriginFlag  = true;
 
+			if(line%10000==0)
+				cout<<g_GetAppRunningTime() << " reading line "  << line/1000 << "k in input_od_pairs.csv."  << endl; 
 				line++;
 		}
+	fclose(st_input);
 	}
-
 
 
 
@@ -1190,11 +1177,18 @@ void g_AgentBasedShortestPathGeneration()
 
 	}
 
-	cout<< "# of unique origins = "  << UniqueOriginSize << endl; 
+	cout<< "# of OD pairs = "  << line << endl; 
+	cout<< "# of unique origins = "  << UniqueOriginSize << " with " << line/UniqueOriginSize << " nodes per origin" << endl; 
 	cout<< "# of processors = "  << number_of_threads  << endl; 
 
+	g_LogFile<< "# of OD pairs = "  << line << endl; 
+	g_LogFile<< "# of unique origins = "  << UniqueOriginSize << " with " << line/UniqueOriginSize << " nodes per origin" << endl; 
+	g_LogFile <<  g_GetAppRunningTime() << "# of processors = "  << number_of_threads  << endl; 
 
-	#pragma omp parallel for
+
+
+//	#pragma omp parallel for
+	number_of_threads = 1;
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
 	// create network for shortest path calculation at this processor
@@ -1204,15 +1198,22 @@ void g_AgentBasedShortestPathGeneration()
 			
 			for(int node_index  = 0; node_index < node_size; node_index++)
 			{
-				if(node_index %number_of_threads == id )
+	//			if(node_index %number_of_threads == id && g_NodeVector[node_index].m_bOriginFlag)
+				if(g_NodeVector[node_index].m_bOriginFlag)
 				{
-				cout <<g_GetAppRunningTime()<<  "processor " << id << " is working on assignment at node  "<<  node_index << endl;
-				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				if(node_index%100 ==0)
+					{
+						cout << g_GetAppRunningTime()<<  "processor " << id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
+						g_LogFile << g_GetAppRunningTime()<<  "processor " << id << " working on node  "<<  node_index <<  ", "<< node_index/node_size*100 << "%" <<  endl;
+					}
 
-				for(int dest_no = 0; dest_no < m_ODPairMap[node_index].destination_node_vector.size(); dest_no++)
+				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+
+				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
-					int dest_node_index = m_ODPairMap[node_index].destination_node_vector[dest_no];
-					m_ODPairMap[node_index].destination_node_cost_label_vector[dest_no] = network_MP.LabelCostAry[dest_node_index];
+					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
+					 g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label = network_MP.LabelCostAry[dest_node_index];
+					 TRACE("Label: %f: \n",g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label);
 
 				}
 
@@ -1220,8 +1221,6 @@ void g_AgentBasedShortestPathGeneration()
 			}
 	}
 				
-
-
 
 	FILE* st = NULL;
 	fopen_s(&st,"output_shortest_path.txt","w");
@@ -1232,13 +1231,14 @@ void g_AgentBasedShortestPathGeneration()
 			{
 				if(node_index %100000 ==0)
 				cout <<g_GetAppRunningTime()<<  " Computation engine is outputing results for node sequence "<<  node_index << endl;
-
-				for(int dest_no = 0; dest_no < m_ODPairMap[node_index].destination_node_vector.size(); dest_no++)
+				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
-					int dest_node_index = m_ODPairMap[node_index].destination_node_vector[dest_no];
-					float label = m_ODPairMap[node_index].destination_node_cost_label_vector[dest_no];
-					fprintf(st, "%d, %d, %d, %4.2f\n", m_ODPairMap[node_index].record_id_vector[dest_no], m_ODPairMap[node_index].origin_node_number, m_ODPairMap[node_index].destination_number_vector[dest_no], label);
+					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
+					float label = g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label;
 
+					fprintf(st, "%d, %d, %d, %4.2f\n", g_NodeVector[node_index].m_NodeName,
+						g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
+						g_NodeVector[node_index].m_DestinationVector[dest_no].destination_number, label);
 
 				}
 

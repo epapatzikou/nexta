@@ -148,6 +148,15 @@ public:
 	float m_Demand;
 
 };
+
+	class DTADestination
+	{
+	public:
+	 int record_id;
+	 int destination_number;
+	 int destination_node_index;
+	 float destination_node_cost_label;
+	};
 class DTANode
 {
 public:
@@ -167,6 +176,8 @@ public:
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
+
+	std::vector<DTADestination> m_DestinationVector;
 
 	bool m_bOriginFlag;
 	bool m_bDestinationFlag;
@@ -652,7 +663,8 @@ public:
 		else
 			travel_time =  m_FreeFlowTravelTime;
 
-		ASSERT(travel_time>=0.001);
+		if(travel_time< 0.000001)
+			travel_time= 0.000001;
 
 		return travel_time;
 
@@ -1404,18 +1416,7 @@ public:
 
 
 
-	class DTAODPair 
-	{
 
-	public:
-	int origin_node_number;
-
-	 std::vector<int> record_id_vector;
-	 std::vector<int> destination_number_vector;
-	 std::vector<int> destination_node_vector;
-	 std::vector<float> destination_node_cost_label_vector;
-
-	};
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
