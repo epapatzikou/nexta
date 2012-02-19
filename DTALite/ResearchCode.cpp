@@ -230,7 +230,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 						}
 
 
-						network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 						for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
 						{
@@ -334,7 +334,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 						// use travel time now, should use cost later
 					}
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),0,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 					for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][0].VehicleArray.size(); vi++)
@@ -1148,5 +1148,121 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception
 
 	}
 	m_NodeSize = m_PhysicalNodeSize;
+}
+
+
+bool DTANetworkForSP::OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination)
+// time -dependent label correcting algorithm with deque implementation
+{
+
+	int i;
+	int debug_flag = 0;  // set 1 to debug the detail information
+	if(debug_flag)
+				TRACE("\nCompute shortest path from %d at time %d",origin, departure_time);
+
+    bool bFeasiblePathFlag  = false;
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
+	{
+		NodeStatusAry[i] = 0;
+
+		for(int  t= m_StartIntervalForShortestPathCalculation; t <m_NumberOfSPCalculationIntervals; t++)
+		{
+			TD_LabelCostAry[i][t] = MAX_SPLABEL;
+			TD_NodePredAry[i][t] = -1;  // pointer to previous NODE INDEX from the current label at current node and time
+			TD_TimePredAry[i][t] = -1;  // pointer to previous TIME INDEX from the current label at current node and time
+		}
+
+	}
+
+	//	TD_LabelCostAry[origin][departure_time] = 0;
+
+	// Initialization for origin node at the preferred departure time, at departure time, cost = 0, otherwise, the delay at origin node
+
+	TD_LabelCostAry[origin][departure_time]= 0;
+
+	SEList_clear();
+	SEList_push_front(origin);
+
+
+	while(!SEList_empty())
+	{
+		int FromID  = SEList_front();
+		SEList_pop_front();  // remove current node FromID from the SE list
+
+
+		NodeStatusAry[FromID] = 2;        //scaned
+
+		//scan all outbound nodes of the current node
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(i)
+		{
+			int LinkNo = m_OutboundLinkAry[FromID][i];
+			int ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)  // remove possible loop back to the origin
+				continue;
+
+
+			if(debug_flag)
+				TRACE("\nScan from node %d to node %d",g_NodeVector[FromID].m_NodeName,g_NodeVector[ToID].m_NodeName);
+
+			// for each time step, starting from the departure time
+		for(int t = m_StartTimeInMin; t < m_PlanningHorizonInMin; t +=g_AggregationTimetInterval)
+			{
+				if(TD_LabelCostAry[FromID][t]<MAX_SPLABEL-1)  // for feasible time-space point only
+				{   
+					int time_stopped = 0; 
+					
+						int NewToNodeArrivalTime	 = (int)(t + time_stopped + m_LinkTDTimeAry[LinkNo][t]);  // time-dependent travel times for different train type
+						float NewCost  =  TD_LabelCostAry[FromID][t] + m_LinkTDTimeAry[LinkNo][t] + m_LinkTDCostAry[LinkNo][t].TollValue [0];
+						// costs come from time-dependent resource price or road toll
+
+						if(NewToNodeArrivalTime > (m_NumberOfSPCalculationIntervals -1))  // prevent out of bound error
+							NewToNodeArrivalTime = (m_NumberOfSPCalculationIntervals-1);
+
+						if(NewCost < TD_LabelCostAry[ToID][NewToNodeArrivalTime] ) // we only compare cost at the downstream node ToID at the new arrival time t
+						{
+
+							if(ToID == destination)
+							bFeasiblePathFlag = true; 
+
+
+							if(debug_flag)
+								TRACE("\n         UPDATE to %f, link cost %f at time %d", NewCost, m_LinkTDCostAry[LinkNo][t],NewToNodeArrivalTime);
+
+							// update cost label and node/time predecessor
+
+							TD_LabelCostAry[ToID][NewToNodeArrivalTime] = NewCost;
+							TD_NodePredAry[ToID][NewToNodeArrivalTime] = FromID;  // pointer to previous NODE INDEX from the current label at current node and time
+							TD_TimePredAry[ToID][NewToNodeArrivalTime] = t;  // pointer to previous TIME INDEX from the current label at current node and time
+
+							// Dequeue implementation
+							if(NodeStatusAry[ToID]==2) // in the SEList_TD before
+							{
+								SEList_push_front(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+							if(NodeStatusAry[ToID]==0)  // not be reached
+							{
+								SEList_push_back(ToID);
+								NodeStatusAry[ToID] = 1;
+							}
+
+					
+					}
+				}
+				//another condition: in the SELite now: there is no need to put this node to the SEList, since it is already there.
+			}
+
+		}      // end of for each link
+
+	}	// end of while
+
+	ASSERT(bFeasiblePathFlag);
+
+	return bFeasiblePathFlag;
 }
 
