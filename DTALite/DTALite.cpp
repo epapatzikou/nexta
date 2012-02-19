@@ -759,7 +759,7 @@ void ReadInputFiles()
 			}
 
 
-			if(number_of_lanes == 0 || capacity <1 || speed_limit_in_mph == 0)
+			if(number_of_lanes == 0 || capacity <1 || speed_limit_in_mph < 0.1)
 				continue;
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
@@ -784,7 +784,7 @@ void ReadInputFiles()
 			pLink->m_ToNodeNumber = ToID;
 			pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 			pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
-			float length = length_in_mile;
+			float length = max(0.00001,length_in_mile);  // minimum link length 0.0001
 			pLink->m_NumLanes= number_of_lanes;
 
 			for(int LaneNo = 0; LaneNo < pLink->m_NumLanes; LaneNo++)

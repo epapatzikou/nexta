@@ -149,7 +149,11 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
 		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
-		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
+		if(g_NodeVector[FromID].m_NodeName  == 321984)
+		{
+		TRACE("FromID %d -> ToID %d \n", FromID, ToID);
+		}
+
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
@@ -232,7 +236,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 		if(debug_flag && FromID < m_PhysicalNodeSize)  // physical nodes
 		{
-			  TRACE("\nScan from node %d",g_NodeVector[FromID]);
+			  TRACE("\nScan from node %d",g_NodeVector[FromID].m_NodeName);
 		}
 
 		NodeStatusAry[FromID] = 2;        //scaned
@@ -261,9 +265,9 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
-			if(NewTime > 9999999 || NewTime <0.00001)
+			if(NewTime > 9999999 || NewTime <0.000001)
 			{
-			TRACE("ERROR!!!!!");
+			NewTime = 0.0001;
 			}
 
 			NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
