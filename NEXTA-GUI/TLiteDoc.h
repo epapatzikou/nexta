@@ -87,7 +87,7 @@ protected: // create from serialization only
 		m_UnitMile = 1;
 		m_UnitFeet = 1/5280.0;
 		m_bFitNetworkInitialized = false; 
-	    m_BackgroundBitmapImportedButnotSaved = false;
+		m_BackgroundBitmapImportedButnotSaved = false;
 
 		m_DefaultNumLanes = 3;
 		m_DefaultSpeedLimit = 65.0f;
@@ -96,9 +96,9 @@ protected: // create from serialization only
 		m_DemandMatrix = NULL;
 		m_ODSize = 0;
 		m_SelectedLinkID = -1;
-	    m_SelectedNodeID = -1;
+		m_SelectedNodeID = -1;
 		m_SelectedTrainID = -1;
-	
+
 		m_bSetView = false;
 
 	}
@@ -110,11 +110,11 @@ public:
 
 	GDPoint m_Origin;
 
-    int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+	int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.x-m_Origin.x)*Resolution+0.5);
 	}
-    int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+	int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.y-m_Origin.y)*Resolution+0.5);
 
@@ -125,7 +125,7 @@ public:
 	void SelectPath(	std::vector<int>	m_LinkVector, int DisplayID);
 	int m_CurrentViewID;
 	bool m_bSetView;
- 	GDPoint m_Doc_Origin;
+	GDPoint m_Doc_Origin;
 	float m_Doc_Resolution;
 
 	int m_ODSize;
@@ -168,7 +168,7 @@ public:
 	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);  
 	bool ReadDemandTypeCSVFile(LPCTSTR lpszFileName);
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
-	
+
 	bool ReadScenarioData();   // for road network
 
 	bool ReadVMSScenarioData();
@@ -185,7 +185,7 @@ public:
 
 	bool ReadTripTxtFile(LPCTSTR lpszFileName);  
 	bool Read3ColumnTripTxtFile(LPCTSTR lpszFileName);  
-	
+
 	// additional input
 	void LoadSimulationOutput();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
@@ -194,7 +194,7 @@ public:
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
-	
+
 	int m_SamplingTimeInterval;
 	int m_AVISamplingTimeInterval;
 	int m_NumberOfDays;
@@ -231,13 +231,13 @@ public:
 
 	int FindLinkFromSensorLocation(float x, float y, CString orientation);
 
-int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
-float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
+	int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
+	float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
+	float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
 
 public:
 
-void SetStatusText(CString StatusText);
+	void SetStatusText(CString StatusText);
 
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
@@ -249,7 +249,7 @@ void SetStatusText(CString StatusText);
 	std::list<DTAVehicle*>	m_VehicleSet;
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
-	
+
 	std::map<int, DTANode*> m_NodeIDMap;
 
 	std::map<int, DTANode*> m_SubareaNodeIDMap;
@@ -260,7 +260,7 @@ void SetStatusText(CString StatusText);
 
 
 	bool m_EmissionDataFlag;
-	
+
 	int m_AdjLinkSize;
 
 	DTANetworkForSP* m_pNetwork;
@@ -277,13 +277,13 @@ void SetStatusText(CString StatusText);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
 
-	
+
 	void ReadBackgroundImageFile(LPCTSTR lpszFileName);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
 
 
-	
+
 	std::map<int, int> m_VehicleType2PricingTypeMap;
 	std::map<int, int> m_LinkTypeFreewayMap;
 	std::map<int, int> m_LinkTypeArterialMap;
@@ -331,9 +331,9 @@ void SetStatusText(CString StatusText);
 
 		if(bAVIFlag == false) // not AVI sensor link, --> physical link
 		{
-		pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
-		if(pLink != NULL)
-			return NULL;  // a link with the same from and to node numbers exists!
+			pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
+			if(pLink != NULL)
+				return NULL;  // a link with the same from and to node numbers exists!
 		}
 
 		pLink = new DTALink(1);
@@ -388,7 +388,7 @@ void SetStatusText(CString StatusText);
 		pLink->m_ShapePoints.push_back(pLink->m_ToPoint);
 		pLink->CalculateShapePointRatios();
 
- 
+
 		m_LinkSet.push_back (pLink);
 		m_LinkNoMap[pLink->m_LinkNo]  = pLink;
 		return pLink;
@@ -433,7 +433,7 @@ void SetStatusText(CString StatusText);
 				return true;
 			}
 		}
-	
+
 		return false;
 	}
 
@@ -466,8 +466,8 @@ void SetStatusText(CString StatusText);
 		int i= 0;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++, i++)
 		{
-		(*iLink)->m_LinkNo = i;
-		m_LinkNoMap[i] = (*iLink);
+			(*iLink)->m_LinkNo = i;
+			m_LinkNoMap[i] = (*iLink);
 		}
 
 
@@ -558,20 +558,20 @@ void SetStatusText(CString StatusText);
 
 		map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
 
-			if(m_Iter == m_NodeIDtoLinkMap.end( ))
-			{
-				CString msg;
+		if(m_Iter == m_NodeIDtoLinkMap.end( ))
+		{
+			CString msg;
 
-				if(FileName.GetLength() == 0)
-				{
+			if(FileName.GetLength() == 0)
+			{
 				msg.Format ("Link %d-> %d cannot be found.", FromNodeNumber, ToNodeNumber);
-				}else
-				{
+			}else
+			{
 				msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
-				}
-				AfxMessageBox(msg);
-				return NULL;
 			}
+			AfxMessageBox(msg);
+			return NULL;
+		}
 		return m_NodeIDtoLinkMap[LinkKey];
 	}
 
@@ -610,7 +610,7 @@ void SetStatusText(CString StatusText);
 public:
 	CString GetTableName(CString Tablename);
 	CString ConstructSQL(CString Tablename);
-		
+
 	bool CreateNetworkFromExcelFile();
 	bool ImportSensorData();
 public: // subarea
@@ -694,73 +694,73 @@ public:
 	afx_msg void OnImportAgentFile();
 	afx_msg void OnImportNgsimFile();
 
-		afx_msg void OnMoeLength();
-		afx_msg void OnUpdateMoeLength(CCmdUI *pCmdUI);
-		afx_msg void OnEditSetdefaultlinkpropertiesfornewlinks();
-		afx_msg void OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI);
-		afx_msg void OnToolsProjectfolder();
-		afx_msg void OnToolsOpennextaprogramfolder();
-		afx_msg void OnMoeOddemand();
-		afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
-		afx_msg void OnMoeNoodmoe();
-		afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
-		afx_msg void OnOdtableImportOdTripFile();
-		afx_msg void OnToolsEditassignmentsettings();
-		afx_msg void OnToolsEditoddemandtable();
-		afx_msg void OnSearchLinklist();
-		afx_msg void OnMoeVehicle();
-		afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
-		afx_msg void OnToolsViewsimulationsummary();
-		afx_msg void OnToolsViewassignmentsummarylog();
-		afx_msg void OnHelpVisitdevelopmentwebsite();
-		afx_msg void OnToolsRuntrafficassignment();
-		afx_msg void OnImportodtripfile3columnformat();
-		afx_msg void OnSearchVehicle();
-		afx_msg void OnToolsPerformscheduling();
-		afx_msg void OnFileChangecoordinatestolong();
-		afx_msg void OnFileOpenrailnetworkproject();
-		afx_msg void OnToolsExportopmodedistribution();
-		afx_msg void OnToolsEnumeratepath();
-		afx_msg void OnToolsExporttoHistDatabase();
-		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
-		afx_msg void OnScenarioConfiguration();
-		afx_msg void OnMoeViewmoes();
-		afx_msg void OnImportdataImport();
-		afx_msg void OnMoeVehiclepathanalaysis();
-		afx_msg void OnFileConstructandexportsignaldata();
-		afx_msg void OnFileImportDemandFromCsv();
-		afx_msg void OnImportSensorData();
-		afx_msg void OnImportLinkmoe();
-		afx_msg void OnImportVehiclefile();
-		afx_msg void OnLinkmoeEmissions();
-		afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
-		afx_msg void OnLinkmoeReliability();
-		afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
-		afx_msg void OnLinkmoeSafety();
-		afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
-		afx_msg void OnExportAms();
-		afx_msg void OnImportAvi();
-		afx_msg void OnImportGps33185();
-		afx_msg void OnImportVii();
-		afx_msg void OnImportWeather33188();
-		afx_msg void OnImportGps();
-		afx_msg void OnImportWorkzone();
-		afx_msg void OnImportIncident();
-		afx_msg void OnImportWeather();
-		afx_msg void OnImportPricing();
-		afx_msg void OnImportAtis();
-		afx_msg void OnImportBus();
-		afx_msg void OnLinkAddWorkzone();
-		afx_msg void OnLinkAddvms();
-		afx_msg void OnImportLinklayerinkml();
-		afx_msg void OnEditOffsetlinks();
-		afx_msg void OnImportSubarealayerformapmatching();
-		afx_msg void OnFileOpenNetworkOnly();
-		afx_msg void OnLinkAddlink();
-		afx_msg void OnLinkAddhovtoll();
-		afx_msg void OnLinkAddhottoll();
-		afx_msg void OnLinkAddtolledexpresslane();
-		afx_msg void OnLinkConvertgeneralpurposelanetotolledlane();
+	afx_msg void OnMoeLength();
+	afx_msg void OnUpdateMoeLength(CCmdUI *pCmdUI);
+	afx_msg void OnEditSetdefaultlinkpropertiesfornewlinks();
+	afx_msg void OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI);
+	afx_msg void OnToolsProjectfolder();
+	afx_msg void OnToolsOpennextaprogramfolder();
+	afx_msg void OnMoeOddemand();
+	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
+	afx_msg void OnMoeNoodmoe();
+	afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
+	afx_msg void OnOdtableImportOdTripFile();
+	afx_msg void OnToolsEditassignmentsettings();
+	afx_msg void OnToolsEditoddemandtable();
+	afx_msg void OnSearchLinklist();
+	afx_msg void OnMoeVehicle();
+	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
+	afx_msg void OnToolsViewsimulationsummary();
+	afx_msg void OnToolsViewassignmentsummarylog();
+	afx_msg void OnHelpVisitdevelopmentwebsite();
+	afx_msg void OnToolsRuntrafficassignment();
+	afx_msg void OnImportodtripfile3columnformat();
+	afx_msg void OnSearchVehicle();
+	afx_msg void OnToolsPerformscheduling();
+	afx_msg void OnFileChangecoordinatestolong();
+	afx_msg void OnFileOpenrailnetworkproject();
+	afx_msg void OnToolsExportopmodedistribution();
+	afx_msg void OnToolsEnumeratepath();
+	afx_msg void OnToolsExporttoHistDatabase();
+	afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
+	afx_msg void OnScenarioConfiguration();
+	afx_msg void OnMoeViewmoes();
+	afx_msg void OnImportdataImport();
+	afx_msg void OnMoeVehiclepathanalaysis();
+	afx_msg void OnFileConstructandexportsignaldata();
+	afx_msg void OnFileImportDemandFromCsv();
+	afx_msg void OnImportSensorData();
+	afx_msg void OnImportLinkmoe();
+	afx_msg void OnImportVehiclefile();
+	afx_msg void OnLinkmoeEmissions();
+	afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
+	afx_msg void OnLinkmoeReliability();
+	afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
+	afx_msg void OnLinkmoeSafety();
+	afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
+	afx_msg void OnExportAms();
+	afx_msg void OnImportAvi();
+	afx_msg void OnImportGps33185();
+	afx_msg void OnImportVii();
+	afx_msg void OnImportWeather33188();
+	afx_msg void OnImportGps();
+	afx_msg void OnImportWorkzone();
+	afx_msg void OnImportIncident();
+	afx_msg void OnImportWeather();
+	afx_msg void OnImportPricing();
+	afx_msg void OnImportAtis();
+	afx_msg void OnImportBus();
+	afx_msg void OnLinkAddWorkzone();
+	afx_msg void OnLinkAddvms();
+	afx_msg void OnImportLinklayerinkml();
+	afx_msg void OnEditOffsetlinks();
+	afx_msg void OnImportSubarealayerformapmatching();
+	afx_msg void OnFileOpenNetworkOnly();
+	afx_msg void OnLinkAddlink();
+	afx_msg void OnLinkAddhovtoll();
+	afx_msg void OnLinkAddhottoll();
+	afx_msg void OnLinkAddtolledexpresslane();
+	afx_msg void OnLinkConvertgeneralpurposelanetotolledlane();
 };
 
 
