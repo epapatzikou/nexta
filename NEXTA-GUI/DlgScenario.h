@@ -14,6 +14,7 @@ class CDlgScenario : public CDialog
 
 public:
 	CDlgScenario(CWnd* pParent = NULL);   // standard constructor
+	CDlgScenario(CWnd* pParent, int idx);
 	virtual ~CDlgScenario();
 	CTLiteDoc* m_pDoc;
 	int m_SelectTab;
