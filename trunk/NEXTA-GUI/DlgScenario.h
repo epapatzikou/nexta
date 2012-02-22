@@ -5,7 +5,7 @@
 #include "CXMLFile_SRC\\XMLFile.h"
 #include "CSVParser.h"
 
-
+enum SCENARIO_TYPE {LINKBASEDTOLL=0,DISBASEDTOLL,DYNMSGSIGN,RAMPMETERING,WORKZONE,INCIDENT};
 // CDlgScenario dialog
 
 class CDlgScenario : public CDialog
@@ -13,11 +13,10 @@ class CDlgScenario : public CDialog
 	DECLARE_DYNAMIC(CDlgScenario)
 
 public:
-	CDlgScenario(CWnd* pParent = NULL);   // standard constructor
-	CDlgScenario(CWnd* pParent, int idx);
+	CDlgScenario(int idx=0,CWnd* pParent = NULL );
 	virtual ~CDlgScenario();
 	CTLiteDoc* m_pDoc;
-	int m_SelectTab;
+	
 
 // Dialog Data
 	enum { IDD = IDD_DIALOG_SCENARIO };
@@ -26,6 +25,7 @@ private:
 	CDlgScenarioTab* p_SubTabs[6];
 	CXMLFile m_XMLFile;
 	int m_PrevTab;
+	int m_SelectTab;
 
 	BOOL ReadXMLFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);
 	BOOL ReadScenarioCSVFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);

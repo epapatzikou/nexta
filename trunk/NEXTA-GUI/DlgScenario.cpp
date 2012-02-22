@@ -40,18 +40,12 @@
 #define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
 static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Link_Based_Toll","Distance_Based_Toll",
-							"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone","Incident"};
+"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone","Incident"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
-CDlgScenario::CDlgScenario(CWnd* pParent /*=NULL*/)
-	: CDialog(CDlgScenario::IDD, pParent)
-{
-	m_SelectTab = 0;
-}
-
-CDlgScenario::CDlgScenario(CWnd* pParent, int idx)
-	: CDialog(CDlgScenario::IDD, pParent)
+CDlgScenario::CDlgScenario(int idx,CWnd* pParent)
+: CDialog(CDlgScenario::IDD, pParent)
 {
 	if (idx >= 0 && idx < _MAX_SCENARIO_SIZE)
 	{
@@ -59,7 +53,7 @@ CDlgScenario::CDlgScenario(CWnd* pParent, int idx)
 	}
 	else
 	{
-		m_SelectTab = 0;
+		m_SelectTab = LINKBASEDTOLL;
 	}
 }
 
@@ -72,16 +66,6 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 	switch (i)
 	{
-	case 5:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Capacity Reduction Percentage (%)");
-
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("80");
-		break;
 	case 0:
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Start Time in Min");
@@ -143,6 +127,16 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1440");
 		DefaultList.push_back("40");
 		DefaultList.push_back("45");
+		break;
+	case 5:
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Capacity Reduction Percentage (%)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("80");
 		break;
 	case 6:
 		HeaderList.push_back("Link");
@@ -220,14 +214,14 @@ BOOL CDlgScenario::OnInitDialog()
 
 	}
 
-//
+	//
 	p_SubTabs[m_SelectTab]->ShowWindow(SW_SHOW);
 
 	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
 		if(i!= m_SelectTab)
 		{
-		p_SubTabs[i]->ShowWindow(SW_HIDE);
+			p_SubTabs[i]->ShowWindow(SW_HIDE);
 		}
 	}
 
@@ -282,7 +276,7 @@ void CDlgScenario::OnBnClickedOk()
 	// TODO: Add your control notification handler code here
 
 	//std::string FirstLine = "<?xml version=\"1.0\"?>\n";
-		
+
 	for (int i=0;i<_MAX_SCENARIO_SIZE;i++)
 	{
 		if (p_SubTabs[i]->ValidityCheck() != 0)
@@ -358,8 +352,8 @@ void CDlgScenario::OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult)
 		p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
 	}
 
-	
-	
+
+
 	*pResult = 0;
 }
 
@@ -413,7 +407,7 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 				}
 
 				if(!parser.GetValueByFieldName("direction",direction))
-						direction = 1;
+					direction = 1;
 
 				int link_code_start = 1;
 				int link_code_end = 1;
@@ -447,7 +441,7 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 
 					string subStr;
 					string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
-					
+
 					linkstring.push_back(str);
 				}
 			}
