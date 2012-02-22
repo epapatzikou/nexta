@@ -5055,10 +5055,10 @@ void CTLiteDoc::OnLinkAddvms()
 
 		WriteVMSScenarioData();
 
-		CDlgScenario dlg;
+		CDlgScenario dlg(NULL,2);
 		dlg.m_pDoc = this;
 
-		dlg.m_SelectTab = 2;
+		//dlg.m_SelectTab = 2;
 		dlg.DoModal();
 
 		UpdateAllViews(0);
@@ -5399,10 +5399,10 @@ void CTLiteDoc::OnLinkAddhovtoll()
 
 		WriteLink_basedTollScenarioData();
 
-		CDlgScenario dlg;
+		CDlgScenario dlg(NULL,0);
 		dlg.m_pDoc = this;
 
-		dlg.m_SelectTab = 0;
+		//dlg.m_SelectTab = 0;
 		dlg.DoModal();
 
 		UpdateAllViews(0);
@@ -5436,10 +5436,10 @@ void CTLiteDoc::OnLinkAddhottoll()
 
 		WriteLink_basedTollScenarioData();
 
-		CDlgScenario dlg;
+		CDlgScenario dlg(NULL,0);
 		dlg.m_pDoc = this;
 
-		dlg.m_SelectTab = 0;
+		//dlg.m_SelectTab = 0;
 		dlg.DoModal();
 
 		UpdateAllViews(0);

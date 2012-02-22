@@ -50,6 +50,19 @@ CDlgScenario::CDlgScenario(CWnd* pParent /*=NULL*/)
 	m_SelectTab = 0;
 }
 
+CDlgScenario::CDlgScenario(CWnd* pParent, int idx)
+	: CDialog(CDlgScenario::IDD, pParent)
+{
+	if (idx >= 0 && idx < _MAX_SCENARIO_SIZE)
+	{
+		m_SelectTab = idx;
+	}
+	else
+	{
+		m_SelectTab = 0;
+	}
+}
+
 CDlgScenario::~CDlgScenario()
 {
 }
@@ -218,7 +231,7 @@ BOOL CDlgScenario::OnInitDialog()
 		}
 	}
 
-	m_PrevTab=0;
+	m_PrevTab=m_SelectTab;
 
 	m_TabCtrl.SetCurSel(m_SelectTab);
 
@@ -240,10 +253,16 @@ void CDlgScenario::SetRectangle()
 	nXc=tabRect.right-itemRect.left-1;
 	nYc=tabRect.bottom-nY-1;
 
-	p_SubTabs[0]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_SHOWWINDOW);
-	for(int nCount=1; nCount < _MAX_SCENARIO_SIZE; nCount++)
+	for(int nCount=0; nCount < _MAX_SCENARIO_SIZE; nCount++)
 	{
-		p_SubTabs[nCount]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_HIDEWINDOW);
+		if (m_SelectTab != nCount)
+		{
+			p_SubTabs[nCount]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_HIDEWINDOW);
+		}
+		else
+		{
+			p_SubTabs[nCount]->SetWindowPos(&m_TabCtrl.wndTop, nX, nY, nXc, nYc, SWP_SHOWWINDOW);
+		}
 	}
 }
 
@@ -339,6 +358,7 @@ void CDlgScenario::OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult)
 		p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
 	}
 
+	
 	
 	*pResult = 0;
 }
