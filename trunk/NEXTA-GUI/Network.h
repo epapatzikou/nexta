@@ -269,10 +269,12 @@ public:
 		m_TotalCapacity = 0;
 		m_Connections = 0;
 		m_LayerNo = 0;
+		m_DistanceToRoot = 0;
 	};
 	~DTANode(){};
 
 
+	float m_DistanceToRoot;
 	string m_Name;
 	GDPoint pt;
 	int m_LayerNo;
@@ -434,6 +436,10 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_BandWidthValue = 1;
+
+		m_TotalVolume = 0;
+		m_NumberOfMarkedVehicles = 0;
 		m_AVISensorFlag = false;
 		m_LinkID = 0;
 		m_LayerNo = 0;
@@ -442,6 +448,8 @@ public:
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry.reserve(m_SimulationHorizon+1);
+
+
 		m_StochaticCapcityFlag = 0;
 		m_bMergeFlag = 0;
 		m_MergeOnrampLinkID = -1;
@@ -471,7 +479,15 @@ public:
 		m_Grade = 0;
 
 		input_line_no = 0;
+
+		m_bIncludedBySelectedPath = false;
+		m_bIncludedinSubarea = false;
 	};
+
+	int  m_NumberOfMarkedVehicles;
+	float m_BandWidthValue;
+	bool m_bIncludedBySelectedPath;
+	bool m_bIncludedinSubarea;
 
 	bool m_AVISensorFlag;
 	int m_LayerNo;
@@ -483,6 +499,10 @@ public:
 	float m_StaticTravelTime, m_StaticVOC;
 
 	std::vector<GDPoint> m_ShapePoints;
+	std::vector<GDPoint> m_BandLeftShapePoints;
+	std::vector<GDPoint> m_BandRightShapePoints;
+
+
 	std::vector<float> m_ShapePointRatios;
 
 	void CalculateShapePointRatios()
@@ -594,6 +614,9 @@ public:
 	{
 		m_SimulationHorizon	= TimeHorizon;
 
+		m_TotalVolume = 0;
+		m_NumberOfMarkedVehicles = 0;
+
 		m_StaticSpeed = 0;
 		m_StaticLaneVolume = 0;
 		m_StaticTravelTime = 0;
@@ -612,6 +635,7 @@ public:
 
 	void ComputeHistoricalAvg(int number_of_weekdays);
 
+	void Compute15MinAvg();
 
 		struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
 
@@ -675,6 +699,8 @@ public:
 	}
 
 	std::vector<SLinkMOE> m_LinkMOEAry;
+	std::vector<SLinkMOE> m_LinkMOEAry_15min;
+
 	std::vector<SLinkMOE> m_HistLinkMOEAry;
 
 	int m_ReliabilityIndex;
@@ -745,11 +771,6 @@ public:
 
 		CFlowArrivalCount = 0;
 		CFlowDepartureCount = 0;
-
-		LinkOutCapacity = 0;
-		LinkInCapacity = 0;
-
-		VehicleCount = 0;
 
 		int t;
 
@@ -827,10 +848,7 @@ public:
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
 
-	unsigned int LinkOutCapacity;  // unit: number of vehiles
-	int LinkInCapacity;   // unit: number of vehiles
-
-	int VehicleCount;
+	int m_TotalVolume;
 
 	float GetObsSpeed(int t)
 	{
@@ -956,29 +974,12 @@ public:
 class DTAPath
 {
 public:
-	DTAPath(int LinkSize, int TimeHorizon)
+	DTAPath()
 	{
-		m_TimeHorizon = TimeHorizon;
-		m_LinkSize = LinkSize;
-		m_LinkVector = new int[LinkSize];
-		m_number_of_days = max(1,TimeHorizon/1440);
-
-		if(m_TimeHorizon>0)
-		{
-		m_TimeDependentTravelTime = new float[TimeHorizon];
-		for(int t=0; t<TimeHorizon; t++)
+		for(int t=0; t<1440; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
 		}
-
-		m_WithinDayMeanTimeDependentTravelTime = new float[1440];
-		m_WithinDayMaxTimeDependentTravelTime  = new float[1440];
-
-		m_WithinDayMeanTimeDependentFuelConsumption = new float[1440];
-		m_WithinDayMeanTimeDependentEmissions= new float[1440];
-		m_WithinDayMeanGeneralizedCost = new float[1440];
-
-
 
 		for(int t=0; t<1440; t++)
 		{
@@ -989,7 +990,6 @@ public:
 			m_WithinDayMeanGeneralizedCost[t] = 0;
 		}
 
-		}
 		m_Distance =0;
 		m_TravelTime = 0;
 		m_Reliability = 0;
@@ -1001,6 +1001,12 @@ public:
 
 	}
 
+		void Init(int LinkSize, int TimeHorizon)
+	{
+		m_TimeHorizon = TimeHorizon;
+		m_LinkSize = LinkSize;
+		m_number_of_days = max(1,TimeHorizon/1440);
+	}
 	void UpdateWithinDayStatistics();
 	
 
@@ -1027,33 +1033,22 @@ public:
 
 	~DTAPath()
 	{
-		if(m_LinkVector) delete m_LinkVector;
-		if(m_TimeDependentTravelTime) delete m_TimeDependentTravelTime;
-
-		if(m_WithinDayMeanTimeDependentTravelTime) delete m_WithinDayMeanTimeDependentTravelTime;
-		if(m_WithinDayMaxTimeDependentTravelTime) delete m_WithinDayMaxTimeDependentTravelTime;
-
-		if(m_WithinDayMeanTimeDependentFuelConsumption) delete m_WithinDayMeanTimeDependentFuelConsumption;
-		if(m_WithinDayMeanTimeDependentEmissions) delete m_WithinDayMeanTimeDependentEmissions;
-
-		if(m_WithinDayMeanGeneralizedCost) delete m_WithinDayMeanGeneralizedCost;
-
 	}
 
 	int m_LinkSize;
-	int *m_LinkVector;
+	int m_LinkVector[MAX_NODE_SIZE_IN_A_PATH];
 	int m_NodeNodeSum;
 
-	float *m_TimeDependentTravelTime;
+	float m_TimeDependentTravelTime[1440];
 	float m_MaxTravelTime;
 
-	float *m_WithinDayMeanTimeDependentTravelTime;
-	float *m_WithinDayMaxTimeDependentTravelTime;
+	float m_WithinDayMeanTimeDependentTravelTime[1440];
+	float m_WithinDayMaxTimeDependentTravelTime[1440];
 
-	float *m_WithinDayMeanTimeDependentFuelConsumption;  // unit: gallon
-	float *m_WithinDayMeanTimeDependentEmissions;  // unit: pounds
+	float m_WithinDayMeanTimeDependentFuelConsumption[1440];  // unit: gallon
+	float m_WithinDayMeanTimeDependentEmissions[1440];  // unit: pounds
 
-	float *m_WithinDayMeanGeneralizedCost;  // unit: pounds
+	float m_WithinDayMeanGeneralizedCost[1440];  // unit: pounds
 
 	int m_number_of_days;
 	int m_TimeHorizon;
@@ -1078,12 +1073,12 @@ public:
 // link element of a vehicle path
 class SVehicleLink
 {  public:
-unsigned short  LinkID;  // range:
+unsigned short  LinkNo;  // range:
 float ArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
 {
-	LinkID = 0;
+	LinkNo = 0;
 	ArrivalTimeOnDSN = 0;
 	//		LinkWaitingTime = 0;
 
@@ -1133,6 +1128,7 @@ public:
 	unsigned short m_DestinationZoneID;  // range 0, 65535
 
 	unsigned char m_DemandType;     // 
+	unsigned char m_PricingType;     // 
 	unsigned char m_VehicleType;     //
 	unsigned char m_InformationClass;  // 0: historical, 1: pre-trip, 2: en-route
 	unsigned char m_Occupancy;  // 1: LOV, 2: HOV
@@ -1151,6 +1147,8 @@ public:
 	// used for simulation
 	bool m_bLoaded; // be loaded into the physical network or not
 	bool m_bComplete;
+
+	bool m_bMarked;
 
 	DTAVehicleAdditionalData* pVehData;
 
@@ -1172,6 +1170,7 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+		m_bMarked = false;
 		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
 		m_TollDollarCost = 0;
@@ -1192,6 +1191,8 @@ public:
 		m_Distance =0;
 		m_Delay = 0;
 
+		m_PricingType = -1;
+
 	};
 	~DTAVehicle()
 	{
@@ -1201,6 +1202,7 @@ public:
 		if(pVehData!=NULL)
 			delete pVehData;
 	};
+
 
 	void PreTripReset()
 	{
@@ -1216,6 +1218,8 @@ public:
 public:
 
 	void SetInformationClass();
+
+
 
 
 public:  // fetch additional data
@@ -1396,6 +1400,7 @@ public:
 	float** m_LinkTDCostAry;
 
 	int* NodeStatusAry;                // Node status array used in KSP;
+	int* LinkNoAry;                // Node status array used in KSP;
 
 	float* LabelTimeAry;               // label - time
 	int* NodePredAry;
@@ -1460,6 +1465,7 @@ public:
 		m_ToIDAry = new int[m_LinkSize];
 
 		NodeStatusAry = new int[m_NodeSize];                    // Node status array used in KSP;
+		LinkNoAry = new int[m_NodeSize];
 		NodePredAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
@@ -1509,6 +1515,7 @@ public:
 		m_ToIDAry = new int[m_LinkSize];
 
 		NodeStatusAry = new int[m_NodeSize];                    // Node status array used in KSP;
+		LinkNoAry = new int[m_NodeSize];                    // Node status array used in KSP;
 		NodePredAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
@@ -1554,6 +1561,7 @@ public:
 		if(m_ToIDAry)	delete m_ToIDAry;
 
 		if(NodeStatusAry) delete NodeStatusAry;                 // Node status array used in KSP;
+		if(LinkNoAry) delete LinkNoAry;                 // Node status array used in KSP;
 		if(NodePredAry) delete NodePredAry;
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
@@ -1574,8 +1582,9 @@ public:
 
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int demand_type);   // Pointer to previous node (node)
-	// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
+	int SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool check_connectivity_flag, bool debug_flag);   // Pointer to previous node (node)
+
+// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
 
 	//these two functions are for timetabling
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
@@ -1699,6 +1708,46 @@ public:
   };
 
 
+class VehicleStatistics
+{
+public: 
+	VehicleStatistics()
+	{
+	TotalVehicleSize = 0;
+	TotalTravelTime = 0;
+	TotalDistance = 0;
+	TotalCost = 0;
+	TotalEmissions = 0;
+	TotalGeneralizedCost = 0;
+	TotalGeneralizedTime = 0;
+	DisplayValue = 0;
+	}
+
+	void Reset()
+	{
+	TotalVehicleSize = 0;
+	TotalTravelTime = 0;
+	TotalDistance = 0;
+	TotalCost = 0;
+	TotalEmissions = 0;
+	TotalGeneralizedCost = 0;
+	TotalGeneralizedTime = 0;
+	bImpactFlag = false;
+	}
+
+    CString Label;
+	float DisplayValue;
+	bool bImpactFlag;
+	int   TotalVehicleSize;
+	float TotalTravelTime;
+	float TotalDistance;
+	float TotalGeneralizedCost;
+	float TotalGeneralizedTime;
+	float TotalCost;
+	float TotalEmissions;
+	CVehicleEmission emissiondata;
+
+};
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 // Stop bugging me about this, live isn't perfect
@@ -1706,7 +1755,7 @@ public:
 
 extern float g_RNNOF();
 
-extern std::vector<DTAPath*>	m_PathDisplayList;
+extern std::vector<DTAPath>	m_PathDisplayList;
 extern int m_SelectPathNo;
 extern float g_Simulation_Time_Stamp;
 

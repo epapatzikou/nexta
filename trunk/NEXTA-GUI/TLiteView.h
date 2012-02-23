@@ -33,9 +33,11 @@
 
 
 enum tool
-   { move_tool, select_tool, select_node_tool, backgroundimage_tool, network_coordinate_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool, subarea_tool
+   { move_tool, select_link_tool, select_node_tool, backgroundimage_tool, network_coordinate_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool, subarea_tool
    };
 
+enum link_display_mode
+   { link_display_mode_line, link_display_mode_band };
 
 class CTLiteView : public CView
 {
@@ -45,6 +47,9 @@ protected: // create from serialization only
 
 // Attributes
 public:
+
+	link_display_mode m_link_display_mode;
+
 void SetStatusText(CString text) const
 {
    GetParentFrame()->SetMessageText(text);
@@ -92,7 +97,6 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bShowImage;
 	bool m_bShowLinkType;
 
-	int m_NodeSize;
 	int m_VehicleSize;
 
 
@@ -152,6 +156,8 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	}
 
 
+	char* m_NodeTypeFaceName;
+
     CPoint NPtoSP(GDPoint net_point) // convert network coordinate to screen coordinate
 	{
 		CPoint pt;
@@ -179,7 +185,17 @@ public:
 	bool m_ShowAllPaths;
 
 	void CopyLinkSetInSubarea();
+		
+	
+	CPoint FromPoint, ToPoint; // avoid creating variables multiple times in drawing links
+	GDPoint fromp, top;
+	CPoint m_arrow_pts[3];
+	CPoint m_BandPoint[2000];  // maximum 1000 feature points
+	int m_LinkTextFontSize;
 
+	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
+
+	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC);
 
 // Overrides
 public:
@@ -268,6 +284,14 @@ public:
 	afx_msg void OnEditMovenetworkcoordinates();
 	afx_msg void OnUpdateEditMovenetworkcoordinates(CCmdUI *pCmdUI);
 	afx_msg void OnBnClickedFindNode();
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnViewIncreasenodesize();
+	afx_msg void OnViewDecreatenodesize();
+	afx_msg void OnViewDisplaylanewidth();
+	afx_msg void OnUpdateViewDisplaylanewidth(CCmdUI *pCmdUI);
+	afx_msg void OnNodeCheckconnectivityfromhere();
+	afx_msg void OnNodeDirectiontohereandvehicleanalaysis();
+	afx_msg void OnNodeDirectionfromhereandvehicleanalasis();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

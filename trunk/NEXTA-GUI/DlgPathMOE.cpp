@@ -181,25 +181,25 @@ void CDlgPathMOE::InsertPathMOEItem()
 	{
 
 		char text[100];
-		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i]->m_Distance);
+		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i].m_Distance);
 		m_PathListControl.SetItemText(i,1,text);
 
-		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i]->GetTravelTimeMOE(CurrentTime, 0));
+		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i].GetTravelTimeMOE(CurrentTime, 0));
 		m_PathListControl.SetItemText(i,2,text);
 
-		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i]->GetTravelTimeMOE(CurrentTime, 1));
+		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i].GetTravelTimeMOE(CurrentTime, 1));
 		m_PathListControl.SetItemText(i,3,text);
 
-		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i]->GetTravelTimeMOE(CurrentTime, 3));
+		sprintf_s(text, "%5.1f",m_pDoc->m_PathDisplayList[i].GetTravelTimeMOE(CurrentTime, 3));
 		m_PathListControl.SetItemText(i,4,text);
 
-		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i]->m_WithinDayMeanTimeDependentFuelConsumption[CurrentTime]);
+		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i].m_WithinDayMeanTimeDependentFuelConsumption[CurrentTime]);
 		m_PathListControl.SetItemText(i,5,text);
 
-		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i]->m_WithinDayMeanTimeDependentEmissions[CurrentTime]);
+		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i].m_WithinDayMeanTimeDependentEmissions[CurrentTime]);
 		m_PathListControl.SetItemText(i,6,text);
 
-		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i]->m_WithinDayMeanGeneralizedCost[CurrentTime]);
+		sprintf_s(text, "%5.2f",m_pDoc->m_PathDisplayList[i].m_WithinDayMeanGeneralizedCost[CurrentTime]);
 		m_PathListControl.SetItemText(i,7,text);
 
 	}
@@ -394,8 +394,8 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	{
 		for(int t=m_TmLeft;t<m_TmRight;t+=TimeInterval)
 		{
-			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p]->GetTravelTimeMOE(t, value_type) )
-				m_YUpperBound =  m_pDoc->m_PathDisplayList[p]->GetTravelTimeMOE(t, value_type);
+			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type) )
+				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type);
 
 		}
 
@@ -475,7 +475,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 		for(int t=m_TmLeft;t<m_TmRight;t+=TimeInterval)
 		{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p]->GetTravelTimeMOE(t, MOEType)*m_UnitData)+0.50);
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, MOEType)*m_UnitData)+0.50);
 			TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
 
 
@@ -509,7 +509,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		int t;
 		for(t=0;t<1440;t+=15)
 			{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p]->GetTravelTimeMOE(t, 1)*m_UnitData)+0.50);
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 1)*m_UnitData)+0.50);
 				TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
 
 			pt[pt_count].x =TimeXPosition;
@@ -521,7 +521,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 		for(t=1440-15;t>=0;t-=15)
 			{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p]->GetTravelTimeMOE(t, 0)*m_UnitData)+0.50);
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 0)*m_UnitData)+0.50);
 			TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
 
 			pt[pt_count].x =TimeXPosition;

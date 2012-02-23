@@ -18,6 +18,7 @@ CDlgFindALink::CDlgFindALink(CWnd* pParent /*=NULL*/)
 	, m_StrNode(_T(""))
 	, m_StrFromNode(_T(""))
 	, m_StrToNode(_T(""))
+	, m_StrVehicleID(_T(""))
 {
 
 }
@@ -32,6 +33,7 @@ void CDlgFindALink::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_NODE, m_StrNode);
 	DDX_Text(pDX, IDC_EDIT_FROM_NODE, m_StrFromNode);
 	DDX_Text(pDX, IDC_EDIT_To_NODE, m_StrToNode);
+	DDX_Text(pDX, IDC_EDIT_Vehicle_ID, m_StrVehicleID);
 }
 
 
@@ -39,6 +41,7 @@ BEGIN_MESSAGE_MAP(CDlgFindALink, CDialog)
 	ON_BN_CLICKED(IDOK, &CDlgFindALink::OnBnClickedOk)
 	ON_BN_CLICKED(IDOK_FIND_PATH, &CDlgFindALink::OnBnClickedFindPath)
 	ON_BN_CLICKED(IDOK_FIND_NODE, &CDlgFindALink::OnBnClickedFindNode)
+	ON_BN_CLICKED(IDOK_FIND_VEHICLE, &CDlgFindALink::OnBnClickedFindVehicle)
 END_MESSAGE_MAP()
 
 
@@ -87,4 +90,13 @@ BOOL CDlgFindALink::OnInitDialog()
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CDlgFindALink::OnBnClickedFindVehicle()
+{
+	UpdateData(true);
+	m_VehicleNumber = atoi(m_StrVehicleID);
+	m_SearchMode = efind_vehicle;
+	OnOK();
+	
 }

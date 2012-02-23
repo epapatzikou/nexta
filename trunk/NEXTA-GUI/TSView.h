@@ -16,6 +16,7 @@ public:
 	VehicleSnapshotData()
 	{
 		bDataAvailableFlag = false;
+		CalculatedSpeed_mph = 0;
 	}
 
 	int Frame_ID;
@@ -23,6 +24,7 @@ public:
 
 	double LocalX;
 	double LocalY;
+	float CalculatedSpeed_mph;
 	float Speed_mph;
 	int VehicleClass;
 	float Acceleration;

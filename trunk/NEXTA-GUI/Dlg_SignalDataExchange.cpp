@@ -28,6 +28,7 @@ void CDlg_SignalDataExchange::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CDlg_SignalDataExchange, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_GENERATE_DATA, &CDlg_SignalDataExchange::OnBnClickedButtonGenerateData)
+	ON_BN_CLICKED(IDC_BUTTON_QEM, &CDlg_SignalDataExchange::OnBnClickedButtonQem)
 END_MESSAGE_MAP()
 
 
@@ -36,4 +37,9 @@ END_MESSAGE_MAP()
 void CDlg_SignalDataExchange::OnBnClickedButtonGenerateData()
 {
    m_pDOC->Constructandexportsignaldata ();
+}
+
+void CDlg_SignalDataExchange::OnBnClickedButtonQem()
+{
+	m_pDOC->RunExcelAutomation();
 }

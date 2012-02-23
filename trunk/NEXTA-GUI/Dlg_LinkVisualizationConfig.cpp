@@ -1,0 +1,54 @@
+// Dlg_LinkVisualizationConfig.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "TLite.h"
+#include "Dlg_LinkVisualizationConfig.h"
+
+
+// CDlg_LinkVisualizationConfig dialog
+
+IMPLEMENT_DYNAMIC(CDlg_LinkVisualizationConfig, CDialog)
+
+CDlg_LinkVisualizationConfig::CDlg_LinkVisualizationConfig(CWnd* pParent /*=NULL*/)
+	: CDialog(CDlg_LinkVisualizationConfig::IDD, pParent)
+{
+
+}
+
+CDlg_LinkVisualizationConfig::~CDlg_LinkVisualizationConfig()
+{
+}
+
+void CDlg_LinkVisualizationConfig::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LINK_BAR_WIDTH_LIST, m_LinkBarWidthModeList);
+}
+
+
+BEGIN_MESSAGE_MAP(CDlg_LinkVisualizationConfig, CDialog)
+	ON_LBN_SELCHANGE(IDC_LINK_BAR_WIDTH_LIST, &CDlg_LinkVisualizationConfig::OnLbnSelchangeLinkBarWidthList)
+END_MESSAGE_MAP()
+
+
+// CDlg_LinkVisualizationConfig message handlers
+
+void CDlg_LinkVisualizationConfig::OnLbnSelchangeLinkBarWidthList()
+{
+	// TODO: Add your control notification handler code here
+}
+
+BOOL CDlg_LinkVisualizationConfig::OnInitDialog()
+{
+	m_LinkBarWidthModeList.AddString("Number of lanes");
+	m_LinkBarWidthModeList.AddString("Total link volume");
+	m_LinkBarWidthModeList.AddString("Total link volume");
+
+	CDialog::OnInitDialog();
+
+	// TODO:  Add extra initialization here
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
+}

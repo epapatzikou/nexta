@@ -475,9 +475,9 @@ void CGLView::DrawAllObjects()
 
 				SelectNumuericalColor(iPath);
 
-				for (int i=0 ; i<pDoc->m_PathDisplayList[iPath]->m_LinkSize; i++)
+				for (int i=0 ; i<pDoc->m_PathDisplayList[iPath].m_LinkSize; i++)
 				{
-					DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[iPath]->m_LinkVector[i]];
+					DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[iPath].m_LinkVector[i]];
 					if(pLink!=NULL)
 					{
 

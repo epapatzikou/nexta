@@ -401,11 +401,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_LinkVisualizationConfig.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_SignalDataExchange.cpp"
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_TDDemandProfile.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_VehEmissions.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_VehicleClassification.cpp"
 				>
 			</File>
 			<File
@@ -482,10 +494,6 @@
 			</File>
 			<File
 				RelativePath=".\DlgTrainInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\DlgVehiclePath.cpp"
 				>
 			</File>
 			<File
@@ -752,6 +760,152 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="ChartCtrl"
+				>
+				<File
+					RelativePath=".\Chart_Control\NSChartCtrl.cpp"
+					>
+				</File>
+				<Filter
+					Name="Resource Files"
+					Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+					UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+					>
+					<File
+						RelativePath=".\res\bitmap1.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\temp\rowlist\res\bitmap2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\bmp00001.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\bmp00002.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\bmp00003.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\cur00001.cur"
+						>
+					</File>
+					<File
+						RelativePath=".\res\cur00002.cur"
+						>
+					</File>
+					<File
+						RelativePath=".\res\cursor1.cur"
+						>
+					</File>
+					<File
+						RelativePath=".\res\cursor2.cur"
+						>
+					</File>
+					<File
+						RelativePath=".\res\icon1.ico"
+						>
+					</File>
+					<File
+						RelativePath=".\res\incident.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\mainfram.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\mainfram_1.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\rampmeter.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\smallico.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\sta_tool.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\stateico.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\TLite.ico"
+						>
+					</File>
+					<File
+						RelativePath=".\TLite.rc"
+						>
+					</File>
+					<File
+						RelativePath=".\res\TLite.rc2"
+						>
+					</File>
+					<File
+						RelativePath=".\res\TLiteDoc.ico"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toll.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\Toolbar.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toolbar1.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\TrainToolbar.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\VMS.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\workzone.bmp"
+						>
+					</File>
+				</Filter>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -799,11 +953,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_LinkVisualizationConfig.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_SignalDataExchange.h"
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_TDDemandProfile.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_VehEmissions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_VehicleClassification.h"
 				>
 			</File>
 			<File
@@ -883,10 +1049,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DlgVehiclePath.h"
-				>
-			</File>
-			<File
 				RelativePath=".\DlgZoneToNodeMapping.h"
 				>
 			</File>
@@ -904,6 +1066,14 @@
 			</File>
 			<File
 				RelativePath=".\Network.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Chart_Control\NSChartCtrl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Chart_Control\NSChartCtrl_Demand.h"
 				>
 			</File>
 			<File
@@ -1002,144 +1172,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-			<File
-				RelativePath=".\res\bitmap1.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\temp\rowlist\res\bitmap2.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\bmp00001.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\bmp00002.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\bmp00003.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\cur00001.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\res\cur00002.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\res\cursor1.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\res\cursor2.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\res\icon1.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\res\incident.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\mainfram.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\mainfram_1.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\rampmeter.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\smallico.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\sta_tool.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\stateico.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\TLite.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\TLite.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\res\TLite.rc2"
-				>
-			</File>
-			<File
-				RelativePath=".\res\TLiteDoc.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\res\toll.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\Toolbar.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\toolbar1.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\toolbar2.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\TrainToolbar.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\VMS.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\res\workzone.bmp"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram11.cd"

@@ -5,11 +5,15 @@
 #define IDSAVEASDEFAULT                 2
 #define IDCANCLE                        2
 #define IDOK_FIND_NODE                  2
+#define ID_EXPORT_DATA                  2
 #define ID_EXPORT                       3
 #define ID_IMPORT                       3
 #define IDOK_FIND_PATH                  3
+#define ID_HIGHLIGHT_VEHICLES           3
 #define ID_IMPORT_Network_Only          4
+#define IDOK_FIND_VEHICLE               4
 #define IDD_ABOUTBOX                    100
+#define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
@@ -45,11 +49,11 @@
 #define IDD_DIALOGSensorDataLoading     162
 #define IDD_DIALOG_IMPORT_ODTABLE       163
 #define IDD_DIALOG_Zone_To_Node_Mapping 164
-#define IDD_DIALOG_VEHPATH              165
 #define IDD_DIALOG_Visualization_Mode   166
 #define IDD_DIALOG_NETWORK_ALIGNMENT    167
 #define IDR_MENU3                       168
 #define IDD_DIALOG_VEHICLE_EMISSIONS    169
+#define IDD_DIALOG_VEHICLE_PATH         169
 #define IDD_DIALOG_CarFollowingSettings 170
 #define IDD_DIALOG_INCIDENT             171
 #define IDD_DIALOG_Find_Vehicle         172
@@ -70,22 +74,38 @@
 #define IDD_DIALOG_SIGNAL_DATA          188
 #define IDD_DIALOG_DemandPattern        189
 #define IDR_TOOLBAR1                    189
+#define IDD_TD_DEMAND_PROFILE_DIALOG    191
+#define IDD_NSCHART_VEHICLE_DIALOG      192
+#define VISUALIZATION                   193
+#define IDD_VISUALIZATION_CONFIG        193
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
+#define IDC_RADIO1                      1001
 #define IDC_EDIT_LENGTH                 1002
 #define IDC_EDIT_NODE                   1002
+#define IDC_RADIO2                      1002
 #define IDC_EDIT_SPEEDLIMIT             1003
+#define IDC_RADIO3                      1003
 #define IDC_EDIT_FFTT                   1004
+#define IDC_RADIO4                      1004
 #define IDC_EDIT_LANE_CAPACITY          1005
+#define IDC_RADIO5                      1005
 #define IDC_EDIT_NUMLANES               1006
+#define IDC_LABEL                       1007
+#define IDC_VALUE                       1008
+#define IDC_ADD                         1009
 #define IDC_PATH_LIST_CONTROL           1010
+#define IDC_DEL                         1010
+#define IDC_MODIFY                      1011
 #define IDC_TRAIN_LIST_CONTROL          1013
 #define IDC_LIST_NETEWORK_FILE          1014
 #define IDC_LIST_NETEWORK_FILE2         1015
 #define IDC_LIST_OUTPUTDTA              1016
 #define IDC_COMBO1                      1018
 #define ID_CANCEL                       1019
+#define IDC_COMBO_YAxis                 1019
 #define IDC_LinkTypeLIST                1020
+#define IDC_COMBO_VehicleSelection      1020
 #define IDC_EDIT_Number_Iterations      1021
 #define IDC_EDIT_Multiplier             1022
 #define IDC_LIST                        1022
@@ -112,6 +132,7 @@
 #define IDC_LIST_Mapping                1037
 #define IDC_LIST1                       1038
 #define IDC_EDIT_NODEA                  1039
+#define IDC_LIST4                       1039
 #define IDC_EDIT_NODEB                  1040
 #define IDC_EDIT_A_Lat                  1041
 #define IDC_EDIT_B_Lat                  1042
@@ -177,6 +198,13 @@
 #define IDC_EDIT_ExcelFile5             1081
 #define IDC_BUTTON_GENERATE_DATA        1081
 #define IDC_BUTTON_QEM                  1082
+#define IDC_BUTTON1                     1082
+#define IDC_BUTTON_UPDATE               1083
+#define IDC_DEMAND_PROFILE_LIST         1084
+#define IDC_VEHICLE_CHART1              1085
+#define IDC_COMBO_XAxis                 1086
+#define IDC_STATIC_ERROR_MESSAGE        1088
+#define IDC_LINK_BAR_WIDTH_LIST         1089
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -574,14 +602,32 @@
 #define ID_LINK_ADDTOLLEDEXPRESSLANE    33259
 #define ID_LINK_CONVERTGENERALPURPOSELANETOTOLLEDLANE 33260
 #define ID_BUTTON33262                  33262
+#define ID_VIEW_INCREASENODESIZE        33265
+#define ID_VIEW_DECREATENODESIZE        33266
+#define ID_VIEW_NODE                    33267
+#define ID_PROJECT_EDITTIME             33270
+#define ID_VIEW_DISPLAYLANEWIDTH        33271
+#define ID_NODE_CHECKCONNECTIVITYFROMHERE 33275
+#define ID_LINK_VEHICLESTATISTICSANALAYSIS 33276
+#define ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS 33277
+#define ID_NODE_DIRECTIONTOHEREANDVEHICLEANALYSIS 33278
+#define ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS 33279
+#define ID_SEARCH_VEHICEL               33280
+#define ID_SEARCH_VEHICLE               33281
+#define ID_SEARCH_SEARCHSINGLEVEHICLE   33282
+#define ID_SUBAREA_DELETESUBAREA        33288
+#define ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA 33289
+#define ID_MOE_ONTOOLSVIEWSIMULATIONSUMMARY 33290
+#define ID_MOE_VEHICLESTATISTICS        33291
+#define ID_LINK_LINKBAR                 33292
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        191
-#define _APS_NEXT_COMMAND_VALUE         33263
-#define _APS_NEXT_CONTROL_VALUE         1082
+#define _APS_NEXT_RESOURCE_VALUE        194
+#define _APS_NEXT_COMMAND_VALUE         33293
+#define _APS_NEXT_CONTROL_VALUE         1090
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

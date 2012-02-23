@@ -45,7 +45,6 @@
 #include "Shellapi.h"
 #include "DlgSensorDataLoading.h"
 #include "Dlg_ImportODDemand.h"
-#include "DlgVehiclePath.h"
 #include "DlgNetworkAlignment.h"
 #include "Dlg_VehEmissions.h"
 
@@ -137,6 +136,56 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 	}
 
 }
+
+
+void DTALink::Compute15MinAvg()
+{
+
+	m_MinSpeed = 200;
+	m_MaxSpeed = 0;
+
+	m_LinkMOEAry_15min.reserve(m_SimulationHorizon/15+1);
+
+	int t;
+	float VolumeSum = 0;
+	float SpeedSum = 0;
+
+	int count = 0;
+
+	for( t=0; t< m_SimulationHorizon; t++)
+	{
+		SLinkMOE element; 
+		if(t%15 == 0)
+		{
+		m_LinkMOEAry_15min.push_back(element);  // initialization 
+		count = 0;
+		}
+
+		// start counting
+
+
+		m_LinkMOEAry_15min[t/15].ObsSpeed +=m_LinkMOEAry[t].ObsSpeedCopy;
+		m_LinkMOEAry_15min[t/15].ObsFlow +=m_LinkMOEAry[t].ObsFlowCopy;
+		m_LinkMOEAry_15min[t/15].ObsCumulativeFlow +=m_LinkMOEAry[t].ObsCumulativeFlowCopy;
+		m_LinkMOEAry_15min[t/15].ObsDensity += m_LinkMOEAry[t].ObsDensityCopy;
+		m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex += m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+
+
+		if(t%15 == 0 && count>=1) // every 15 min
+		{
+			// calculate final mean statistics
+			m_LinkMOEAry_15min[t/15].ObsSpeed /=count;
+			m_LinkMOEAry_15min[t/15].ObsFlow /=count;
+			m_LinkMOEAry_15min[t/15].ObsCumulativeFlow /=count;
+			m_LinkMOEAry_15min[t/15].ObsDensity /=count;
+			m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex /=count;
+		}
+
+		count++;
+
+	}
+}
+
 
 
 struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHorizon)  // return value is speed
@@ -633,8 +682,9 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 }
 
 
-int CTLiteDoc::Routing(int NumberOfRoutes = 3)
+int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 {
+/*
 	CWaitCursor cws;
 	m_NodeSizeSP = 0;  // reset 
 	if(m_OriginNodeID>=0 && m_DestinationNodeID>=0)
@@ -854,7 +904,7 @@ int CTLiteDoc::Routing(int NumberOfRoutes = 3)
 
 				for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
 				{
-					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p]->m_LinkVector[i]];
+					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
 					if(pLink == NULL)
 						break;
 
@@ -901,7 +951,7 @@ int CTLiteDoc::Routing(int NumberOfRoutes = 3)
 
 					for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
 					{
-						DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p]->m_LinkVector[i]];
+						DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
 
 						FuelSum += pLink->ObtainHistFuelConsumption(CurrentTime);
 						CO2= pLink->ObtainHistCO2Emissions(CurrentTime);
@@ -960,7 +1010,229 @@ int CTLiteDoc::Routing(int NumberOfRoutes = 3)
 	}
 		return 1;
 	}
+*/
 	return 0;
+}
+
+
+int CTLiteDoc::Routing(bool bCheckConnectivity)
+{
+	CWaitCursor cws;
+	m_NodeSizeSP = 0;  // reset 
+		m_PathDisplayList.clear ();		
+
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_bIncludedBySelectedPath = false;  // reset all the links are not selected by the path
+		(*iLink)->m_OverlappingCost  = 0;  // randomize link cost to avoid overlapping
+	}
+
+
+	
+	if(bCheckConnectivity == false)
+	{
+		if(m_OriginNodeID < 0 || m_DestinationNodeID <0)
+	{
+		m_SelectPathNo = -1;
+		return 0;
+	}
+	}
+
+ // create network every time, because we might add nodes/links on the fly
+	
+	if(m_pNetwork ==NULL)  
+		{
+		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+
+		}
+		int NodeNodeSum = 0;
+
+		int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
+
+			float TotalCost;
+			bool distance_flag = true;
+
+			
+			int     NodeSize ;
+			
+			if(bCheckConnectivity==false)
+				NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false);   // Pointer to previous node (node)
+			else
+			{
+			
+				m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, true, false);   // Pointer to previous node (node)
+
+					for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+					{
+						(*iNode)->m_DistanceToRoot  = m_pNetwork->LabelCostAry[(*iNode)->m_NodeID ];
+					}
+		
+				return 0;
+			}
+
+			
+				// update m_PathDisplayList
+			if(NodeSize <= 1)
+			{
+				TRACE("error");
+				return 0;
+			}
+
+				DTAPath path_element;
+				path_element.Init (NodeSize-1,g_Simulation_Time_Horizon);
+
+				for (int i=0 ; i < NodeSize-1; i++)
+				{
+
+						path_element.m_LinkVector [i] = PathLinkList[i] ; //starting from m_NodeSizeSP-2, to 0
+
+						DTALink* pLink = m_LinkNotoLinkMap[PathLinkList[i]];
+
+					
+						if(pLink!=NULL)
+						{ 
+							path_element.m_Distance += m_LinkNotoLinkMap[PathLinkList[i]]->m_Length ;
+
+							pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
+
+						if(i==0) // first link
+						{
+							path_element.m_TravelTime = g_Simulation_Time_Stamp + pLink->GetTravelTime(g_Simulation_Time_Stamp);
+						}else
+						{
+							path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetTravelTime(path_element.m_TravelTime);
+
+						}
+						}
+				}
+				m_PathDisplayList.push_back  (path_element);
+
+				// calculate time-dependent travel time
+
+/*
+		for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_PathDisplayList[p];
+
+			for(int t=0; t< g_Simulation_Time_Horizon; t+= TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL)  // for each starting time
+			{
+				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
+
+				for (int i=0 ; i < path_element.m_LinkSize; i++)  // for each pass link
+				{
+					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
+					if(pLink == NULL)
+						break;
+
+					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
+
+					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
+
+
+					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
+
+				}
+
+				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
+
+				ASSERT(path_element.m_TimeDependentTravelTime[t]>=0);
+
+				if( path_element.m_MaxTravelTime < path_element.m_TimeDependentTravelTime[t])
+					path_element.m_MaxTravelTime = path_element.m_TimeDependentTravelTime[t];
+
+				for(int tt=1; tt<TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL; tt++)
+				{
+					path_element.m_TimeDependentTravelTime[t+tt] = path_element.m_TimeDependentTravelTime[t];
+				}
+
+
+				//                              TRACE("\n path %d, time at %d = %f",p, t,path_element.m_TimeDependentTravelTime[t]  );
+
+			}
+
+			path_element.UpdateWithinDayStatistics();
+
+			/// calculate fuel consumptions
+			for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
+			{
+				path_element = m_PathDisplayList[p];
+
+				for(int t=0; t< 1440; t+= TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL)  // for each starting time
+				{
+					float CurrentTime = t;
+					float FuelSum = 0;
+					float CO2EmissionsSum = 0;
+					float CO2;
+
+
+					for (int i=0 ; i < path_element.m_LinkSize; i++)  // for each pass link
+					{
+						DTALink* pLink = m_LinkNoMap[path_element.m_LinkVector[i]];
+
+						ASSERT(pLink!=NULL);
+						FuelSum += pLink->ObtainHistFuelConsumption(CurrentTime);
+						CO2= pLink->ObtainHistCO2Emissions(CurrentTime);
+						CO2EmissionsSum+=CO2;
+
+						CurrentTime += pLink->ObtainHistTravelTime(CurrentTime);
+
+						//                                      TRACE("\n path %d, time at %f, TT = %f, Fuel %f. FS %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]),Fuel, FuelSum );
+
+					}
+
+
+					path_element.m_WithinDayMeanTimeDependentFuelConsumption[t] = FuelSum;
+					path_element.m_WithinDayMeanTimeDependentEmissions[t]=CO2EmissionsSum;
+
+					float value_of_time = 6.5f/60.0f;   // per min
+					float value_of_fuel = 3.0f;  // per gallon
+					float value_of_emissions = 0.24f;  // per pounds
+
+					path_element.m_WithinDayMeanGeneralizedCost[t] = value_of_time* path_element.GetTravelTimeMOE(t,2)
+						+ value_of_fuel* path_element.m_WithinDayMeanTimeDependentFuelConsumption[t]
+					+ value_of_emissions*path_element.m_WithinDayMeanTimeDependentEmissions[t];
+
+					for(int tt=1; tt<TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL; tt++)
+					{
+						path_element.m_WithinDayMeanTimeDependentFuelConsumption[t+tt] = path_element.m_WithinDayMeanTimeDependentFuelConsumption[t];
+						path_element.m_WithinDayMeanTimeDependentEmissions[t+tt] = path_element.m_WithinDayMeanTimeDependentEmissions[t];
+						path_element.m_WithinDayMeanGeneralizedCost[t+tt] = path_element.m_WithinDayMeanGeneralizedCost[t];
+
+					}
+				}
+
+			}
+
+
+		}
+*/
+		m_SelectPathNo = 0;  // select the first path
+
+		UpdateAllViews(0);
+
+/*
+	if(g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
+	{
+		m_PathMOEDlgShowFlag = true;
+		if(m_PathDisplayList.size() > 0)
+		{
+			if(g_pPathMOEDlg==NULL)
+			{
+				g_pPathMOEDlg = new CDlgPathMOE();
+				g_pPathMOEDlg->m_pDoc  = this;
+
+				g_pPathMOEDlg->Create(IDD_DIALOG_PATHMOE);
+			}
+			g_pPathMOEDlg->InsertPathMOEItem();
+
+			g_pPathMOEDlg->ShowWindow(SW_SHOW);
+		}
+	}
+	*/
+		return 1;
 }
 
 

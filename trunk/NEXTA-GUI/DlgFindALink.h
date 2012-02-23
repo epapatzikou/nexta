@@ -26,7 +26,7 @@
 #pragma once
 #include "afxwin.h"
 
-enum eSEARCHMODE {efind_node,efind_link,efind_path};
+enum eSEARCHMODE {efind_node,efind_link,efind_path,efind_vehicle};
 // CDlgFindALink dialog
 
 class CDlgFindALink : public CDialog
@@ -49,6 +49,8 @@ public:
 	afx_msg void OnBnClickedOk();
 	int m_FromNodeNumber;
 	int m_ToNodeNumber;
+    int m_VehicleNumber;
+
 	afx_msg void OnBnClickedFindPath();
 	afx_msg void OnBnClickedFindNode();
 	int m_NodeNumber;
@@ -56,4 +58,6 @@ public:
 	CString m_StrFromNode;
 	CString m_StrToNode;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnBnClickedFindVehicle();
+	CString m_StrVehicleID;
 };

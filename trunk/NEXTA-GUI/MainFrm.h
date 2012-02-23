@@ -58,7 +58,6 @@ protected:  // control bar embedded members
 	CToolBar    m_wndToolBar;
    CPlayerSeekBar m_wndPlayerSeekBar;
 
-   CToolBar m_DataToolBar;
    CToolBar m_MOEToolBar;
    CToolBar m_AMSToolBar;
 
