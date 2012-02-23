@@ -177,6 +177,18 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				g_LinkVector[li]->EntranceQueue.push_back(vi);
 				g_LinkVector[li]->CFlowArrivalCount +=1;
 
+				int pricing_type = g_VehicleMap[vi.veh_id]->m_PricingType ;
+				g_LinkVector[li]->CFlowArrivalCount_PricingType[pricing_type] +=1;
+			    g_LinkVector[li]->CFlowArrivalRevenue_PricingType[pricing_type] += g_LinkVector[li]->GetTollRateInDollar(CurrentTime,pricing_type);
+
+				g_VehicleMap[vi.veh_id]->m_TollDollarCost += g_LinkVector[li]->GetTollRateInDollar(CurrentTime,pricing_type);
+
+				if(g_LinkVector[li]->CFlowArrivalCount !=  (g_LinkVector[li]->CFlowArrivalCount_PricingType[0]+ g_LinkVector[li]->CFlowArrivalCount_PricingType[1] + g_LinkVector[li]->CFlowArrivalCount_PricingType[2]))
+				{
+				TRACE("error!");
+				}
+
+
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
 				TRACE("Step 1: Time %f: Capacity available, remove vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
 
@@ -549,6 +561,18 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 					p_Nextlink->CFlowArrivalCount +=1;
 					g_LinkVector[li]->CFlowDepartureCount +=1;
 
+					int pricing_type = g_VehicleMap[vi.veh_id]->m_PricingType ;
+					p_Nextlink->CFlowArrivalCount_PricingType[pricing_type] +=1;
+					p_Nextlink->CFlowArrivalRevenue_PricingType[pricing_type] += p_Nextlink->GetTollRateInDollar(CurrentTime,pricing_type);
+
+					g_VehicleMap[vi.veh_id]->m_TollDollarCost += p_Nextlink->GetTollRateInDollar(CurrentTime,pricing_type);
+
+
+				if(p_Nextlink->CFlowArrivalCount !=  (p_Nextlink->CFlowArrivalCount_PricingType[0]+ p_Nextlink->CFlowArrivalCount_PricingType[1] + p_Nextlink->CFlowArrivalCount_PricingType[2]))
+				{
+				TRACE("error!");
+				}
+
 					g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime  += TravelTime;
 
 					g_LinkVector[li]-> departure_count +=1;
@@ -667,6 +691,14 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 			// time_stamp_in_min+1 is because we take the stastistics to next time stamp
 			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  g_LinkVector[li]->CFlowArrivalCount;
+
+			// toll collection 
+
+			for(int pt = 0; pt < MAX_PRICING_TYPE_SIZE; pt++)
+			{
+			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount_PricingType[pt] = g_LinkVector[li]->CFlowArrivalCount_PricingType[pt];
+			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeRevenue_PricingType[pt] = g_LinkVector[li]->CFlowArrivalRevenue_PricingType[pt];
+			}
 
 			g_LinkVector[li]->m_LinkMOEAry [time_stamp_in_min].CumulativeDepartureCount = g_LinkVector[li]->CFlowDepartureCount;
 
