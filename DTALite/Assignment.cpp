@@ -137,13 +137,12 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration)
 		// for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 	{
-		int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
+		int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 		std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
 		int NodeSize;
 		int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
 		int vehicle_id_trace  = 18;
-		bool bDebugFlag  = false;
 
 		// loop through the TDOVehicleArray to assign or update vehicle paths...
 for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
@@ -153,6 +152,8 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 			ASSERT(pVeh!=NULL);
 
 			/// finding optimal path 
+			bool bDebugFlag  = false;
+
 			float TotalCost;
 			bool bDistanceFlag = false;
 
@@ -162,7 +163,7 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 				bDebugFlag = true;
 			}
 
-			NodeSize = FindBestPathWithVOT(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathNodeList, TotalCost,bDistanceFlag, bDebugFlag);
+			NodeSize = FindBestPathWithVOT(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			bool bSwitchFlag = false;
 			pVeh->m_bSwitched = false;
@@ -180,13 +181,6 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 				if(pVeh->m_VehicleID  == vehicle_id_trace)
 			{
 				TRACE("gap= %f = exp %f - shortest path %f\n",m_gap, ExperiencedTravelTime,TotalCost);
-
-					for(int i = 0; i< pVeh->m_NodeSize -1; i++)
-					{
-							TRACE("Current Vehicle path: no. %d link: %d -> %d \n", i, 
-								g_NodeVector[g_LinkVector[pVeh->m_aryVN[i].LinkID]->m_FromNodeID].m_NodeName,
-								g_NodeVector[g_LinkVector[pVeh->m_aryVN[i].LinkID]->m_ToNodeID].m_NodeName);
-					}
 
 			}
 
@@ -253,8 +247,8 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 
 					for(int i = 0; i< NodeSize-1; i++)
 					{
-						pVeh->m_aryVN[i].LinkID = GetLinkNoByNodeIndex(PathNodeList[i], PathNodeList[i+1]);
-						pVeh->m_NodeNumberSum += PathNodeList[i];
+						pVeh->m_aryVN[i].LinkID = PathLinkList[i];
+						pVeh->m_NodeNumberSum += PathLinkList[i];
 
 						if(pVeh->m_VehicleID  == vehicle_id_trace)
 						{
@@ -538,7 +532,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 				while(PredNode != OriginCentriod && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
 				{
 					ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-					temp_reversed_PathNodeList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+					temp_reversed_PathLinkList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
 					PredNode = NodePredAry[PredNode];
 				}
 
@@ -548,7 +542,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 				int i;
 				for( i = NodeSize-1; i>=0; i--)
 				{
-				PathNodeList[j++] = temp_reversed_PathNodeList[i];
+				PathNodeList[j++] = temp_reversed_PathLinkList[i];
 				ASSERT(PathNodeList[j] < m_PhysicalNodeSize);
 				}
 
@@ -1201,10 +1195,12 @@ void g_AgentBasedShortestPathGeneration()
 				{
 				if(node_index%100 ==cpu_id)
 					{
-						cout << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
 
 						if(node_index%100 == 0)  // only one CUP can output to log file
-							g_LogFile << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index/node_size*100 << "%" <<  endl;
+						{
+							cout << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
+							g_LogFile << g_GetAppRunningTime()<<  "processor " << cpu_id << " working on node  "<<  node_index <<  ", "<< node_index*1.0f/node_size*100 << "%" <<  endl;
+						}
 					}
 
 				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
@@ -1247,11 +1243,10 @@ void g_AgentBasedShortestPathGeneration()
 	fclose(st);
 	}
 	
-			cout <<g_GetAppRunningTime()<<  " Done!" << endl;
+//			cout <<g_GetAppRunningTime()<<  " Done!" << endl;
 
-			g_ProgramStop();
+//			g_ProgramStop();
 	}
-
 
 
 	void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput)

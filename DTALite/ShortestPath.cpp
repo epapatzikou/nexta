@@ -321,7 +321,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 
 
-int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
+int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
 
@@ -400,7 +400,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{
 					if(debug_flag)
-						TRACE("\n         UPDATE to node %d, cost: %f, link travel time %f", g_NodeVector[ToID].m_NodeName, NewCost, m_LinkTDCostAry[LinkID][link_entering_time_interval]);
+						TRACE("\n         UPDATE to node %d, cost: %f, link travel time %f", g_NodeVector[ToID].m_NodeName, NewCost, m_LinkTDTimeAry[LinkID][link_entering_time_interval]);
 
 				if(NewTime > m_PlanningHorizonInMin -1)
 					NewTime = m_PlanningHorizonInMin-1;
@@ -408,6 +408,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
 				NodePredAry[ToID]   = FromID;
+				LinkNoAry[ToID] = LinkID;
 
 				// Dequeue implementation
 				//
@@ -429,34 +430,28 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 
 	} // end of while
 
-		int NodeSize = 0;
-		temp_reversed_PathNodeList[NodeSize++] = destination;  // we use physical network, so please count the destination as the first node!
-
+		int LinkSize = 0;
 		int PredNode = NodePredAry[destination];	
+		temp_reversed_PathLinkList[LinkSize++] = LinkNoAry[destination];
 
-		while(PredNode != origin && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+		while(PredNode != origin && PredNode!=-1 && LinkSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
 			{
-				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				temp_reversed_PathNodeList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+				ASSERT(LinkSize< MAX_NODE_SIZE_IN_A_PATH-1);
+				temp_reversed_PathLinkList[LinkSize++] = LinkNoAry[PredNode];
+
 				PredNode = NodePredAry[PredNode];
 			}
-
-		temp_reversed_PathNodeList[NodeSize++] = origin;
-
+	
 		int j = 0;
-		for(i = NodeSize-1; i>=0; i--)
+		for(i = LinkSize-1; i>=0; i--)
 		{
-		PathNodeList[j++] = temp_reversed_PathNodeList[i];
+		PathLinkList[j++] = temp_reversed_PathLinkList[i];
 		}
 
 		TotalCost = LabelCostAry[destination];
 
 		if(debug_flag)
 		{
-			for(i = 0; i < NodeSize; i++)
-			{
-			TRACE("\nPath sequence, no.%d, node %d\n",i, g_NodeVector[PathNodeList[i]].m_NodeName);
-			}
 			TRACE("\nPath sequence end, cost = ..%f\n",TotalCost);
 		}
 
@@ -466,6 +461,6 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin, int departure_time, int des
 			return 0;
 		}
 
-		return NodeSize;
+		return LinkSize+1; // as NodeSize
 }
 

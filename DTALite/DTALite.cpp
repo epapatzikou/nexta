@@ -121,7 +121,7 @@ std::map<int, int> g_NodeNametoIDMap;
 
 
 std::vector<DTALink*> g_LinkVector;
-
+std::vector<DTASafetyModel> g_SafetyModelVector;
 
 std::vector<DTAZone> g_ZoneVector;
 std::vector<DTAVehicleType> g_VehicleTypeVector;
@@ -535,8 +535,8 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 			}
 		}
 
-		g_LogFile << "Number of link-based toll records =  " << count << endl;
-		cout << "Number of link-based toll records =  " << count << endl;
+		g_LogFile << "Number of distance-based toll records =  " << count << endl;
+		cout << "Number of distance-based toll records =  " << count << endl;
 
 		g_scenario_short_description << "with " << count << "link pricing records;";
 
@@ -769,6 +769,24 @@ void ReadInputFiles()
 
 			if(speed_limit_in_mph <0.1)  //reset the speed limit
 				speed_limit_in_mph = 5;  // minium speed limit
+
+
+
+			DTASafetyLinkData element;
+			
+			parser_link.GetValueByFieldName("AADT",element.AADT);
+			parser_link.GetValueByFieldName("minor_leg_AADT",element.minor_leg_AADT);
+			parser_link.GetValueByFieldName("two_way_AADT",element.two_way_AADT);
+			parser_link.GetValueByFieldName("on_ramp_AADT",element.on_ramp_AADT);
+			parser_link.GetValueByFieldName("off_ramp_AADT",element.off_ramp_AADT);
+			parser_link.GetValueByFieldName("upstream_AADT",element.upstream_AADT);
+			parser_link.GetValueByFieldName("num_driveway",element.num_driveway);
+			parser_link.GetValueByFieldName("intersection_3sg",element.intersection_3sg);
+			parser_link.GetValueByFieldName("intersection_4sg",element.intersection_4sg);
+			parser_link.GetValueByFieldName("intersection_3st",element.intersection_3st);
+			parser_link.GetValueByFieldName("intersection_4st",element.intersection_4st);
+
+
 
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
@@ -1152,8 +1170,41 @@ CCSVParser parser_VOT;
 	cout << "Step 9: Reading file input_crash_prediction.csv..."<< endl;
 	g_LogFile << "Step 9: Reading file input_crash_prediction.csv..."<< endl;
 
-	// to be done here
+CCSVParser parser_safety;
 
+	if (parser_safety.OpenCSVFile("input_crash_prediction_model.csv"))
+	{
+		while(parser_safety.ReadRecord())
+		{
+			DTASafetyModel element;
+
+			parser_safety.GetValueByFieldName("safety_crash_model_id",element.safety_crash_model_id);
+			parser_safety.GetValueByFieldName("model_name",element.model_name);
+			parser_safety.GetValueByFieldName("alpha_constant",element.alpha_constant);
+			parser_safety.GetValueByFieldName("beta_AADT",element.beta_AADT);
+			parser_safety.GetValueByFieldName("gamma_AADT",element.gamma_AADT);
+			parser_safety.GetValueByFieldName("t_driveway",element.t_driveway);
+			parser_safety.GetValueByFieldName("n_driveway",element.n_driveway);
+			parser_safety.GetValueByFieldName("proportion_fatal",element.proportion_fatal);
+			parser_safety.GetValueByFieldName("length_coeff",element.length_coeff);
+			parser_safety.GetValueByFieldName("on_ramp_ADT_coeff",element.on_ramp_ADT_coeff);
+			parser_safety.GetValueByFieldName("off_ramp_ADT_coeff",element.off_ramp_ADT_coeff);
+			parser_safety.GetValueByFieldName("upstream_DADT_coeff",element.upstream_DADT_coeff);
+			parser_safety.GetValueByFieldName("freeway_constant",element.freeway_constant);
+			parser_safety.GetValueByFieldName("freeway_lanes_coeff",element.freeway_lanes_coeff);
+			parser_safety.GetValueByFieldName("inverse_spacing_coeff",element.inverse_spacing_coeff);
+			parser_safety.GetValueByFieldName("avg_capacity_reduction_percentage",element.avg_capacity_reduction_percentage);
+			parser_safety.GetValueByFieldName("avg_crash_duration_in_min",element.avg_crash_duration_in_min);
+			parser_safety.GetValueByFieldName("avg_additional_delay_per_vehicle_per_crash_in_min",element.avg_additional_delay_per_vehicle_per_crash_in_min);
+
+			g_SafetyModelVector.push_back(element);
+
+		}
+	}
+
+////////////////////////////
+
+	
 
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
@@ -1347,6 +1398,7 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 			cout << "Error: The input_vehicle file has demand_type = " << pVehicle->m_DemandType << "for vehicle_id = " << vehicle_id << ", which has not been defined in input_demand_type.csv."<< endl;
 			g_ProgramStop();
 			}
+			pVehicle->m_PricingType  = g_read_integer(st) -1;  // internal pricing type value starts from 0
 			pVehicle->m_VehicleType = g_read_integer(st);
 
 			pVehicle->m_InformationClass = g_read_integer(st);
@@ -1673,7 +1725,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count\n");
+			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_SOV_revenue,cumulative_HOV_revenue,cumulative_truck_revenue\n");
 		}
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -1684,13 +1736,26 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 				float LinkOutFlow = float(g_LinkVector[li]->GetDepartureFlow(time));
 				float travel_time = g_LinkVector[li]->GetTravelTimeByMin(time,1);
 
-				fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f, %d, %d, %d\n",
+				fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f, %d, %d, %d,",
 					g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName, g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,time,
 					travel_time, travel_time - g_LinkVector[li]->m_FreeFlowTravelTime ,
 					LinkOutFlow*60.0/g_LinkVector[li]->m_NumLanes ,LinkOutFlow*60.0,
 					(g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount)/g_LinkVector[li]->m_Length /g_LinkVector[li]->m_NumLanes,
 					g_LinkVector[li]->GetSpeed(time), g_LinkVector[li]->m_LinkMOEAry[time].ExitQueueLength, 
 					g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount ,g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount);
+
+				int pt;
+		for(pt = 0; pt < MAX_PRICING_TYPE_SIZE; pt++)
+			{
+			fprintf(st, "%d,",g_LinkVector[li]->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[pt]); 
+			}
+
+		for(pt = 0; pt < MAX_PRICING_TYPE_SIZE; pt++)
+			{
+			fprintf(st, "%6.2f,",g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[pt]); 
+			}
+					fprintf(st,"\n");
+
 			}
 
 		}
@@ -1814,30 +1879,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 	{
 		std::map<int, DTAVehicle*>::iterator iterVM;
 		int VehicleCount_withPhysicalPath = 0;
-
-		//calculate the toll cost and emission cost
-		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
-		{
-			DTAVehicle* pVehicle = iterVM->second;
-			if(pVehicle->m_NodeSize >= 2)  // with physical path in the network
-			{
-				pVehicle->m_TollDollarCost = 0;
-
-				for(int j = 1; j< pVehicle->m_NodeSize-1; j++)
-				{
-						int link_entering_time = int(pVehicle->m_aryVN [j-1].AbsArrivalTimeOnDSN);
-						int LinkID = pVehicle->m_aryVN [j].LinkID;
-						DTALink* pLink= g_LinkVector[LinkID];
-						pVehicle->m_TollDollarCost += pLink->GetTollRateInDollar(link_entering_time,pVehicle->m_PricingType );
-
-				}
-			}
-		}
-
 		// output statistics
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,demand_type,vehicle_type,information_type,value_of_time,toll_cost_in_dollar,emissions,distance_in_mile,number_of_nodes,path_sequence\n");
+			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,demand_type,pricing_type,vehicle_type,information_type,value_of_time,toll_cost_in_dollar,emissions,distance_in_mile,number_of_nodes,path_sequence\n");
 		}
 
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
@@ -1859,10 +1904,10 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
 
 				float m_gap = 0;
-				fprintf(st,"%d,%d,%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%d,%4.2f,%4.2f,%4.2f,%4.2f,%d,",
+				fprintf(st,"%d,%d,%d,%4.2f,%4.2f,%d,%4.2f,%d,%d,%d,%d,%4.2f,%4.2f,%4.2f,%4.2f,%d,",
 					pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID,
 					pVehicle->m_DepartureTime, pVehicle->m_ArrivalTime , pVehicle->m_bComplete, TripTime,			
-					pVehicle->m_DemandType, pVehicle->m_VehicleType,pVehicle->m_InformationClass, pVehicle->m_VOT , pVehicle->m_TollDollarCost, pVehicle->m_Emissions ,pVehicle->m_Distance, pVehicle->m_NodeSize);
+					pVehicle->m_DemandType, pVehicle->m_PricingType+1 ,pVehicle->m_VehicleType,pVehicle->m_InformationClass, pVehicle->m_VOT , pVehicle->m_TollDollarCost, pVehicle->m_Emissions ,pVehicle->m_Distance, pVehicle->m_NodeSize);
 
 				fprintf(st, "\"");
 

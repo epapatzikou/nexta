@@ -39,6 +39,10 @@
 #include <stdlib.h>  // Jason
 #include <math.h>    // Jason
 
+void DTASafetyLinkData::EstimateDelay ()
+{
+
+}
 void g_OutputVOTStatistics()
 {
 /*

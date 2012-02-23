@@ -192,10 +192,53 @@ typedef struct{
 }struc_vehicle_item;
 
 
+class DTASafetyLinkData
+{
+public:
+	int safety_crash_model_id;
+	float num_fi_crashes_per_year;
+	float num_pto_crashes_per_year;
+	float add_delay_per_period;
+	float AADT;
+	float minor_leg_AADT;
+	float two_way_AADT;
+	float on_ramp_AADT;
+	float off_ramp_AADT;
+	float upstream_AADT;
+	float num_driveway;
+	float intersection_3sg;
+	float intersection_4sg;
+	float intersection_3st;
+	float intersection_4st;
+
+	DTASafetyLinkData()
+	{
+	num_fi_crashes_per_year = 0;
+	num_pto_crashes_per_year = 0;
+	add_delay_per_period = 0;
+	AADT = 0;
+	minor_leg_AADT = 0;
+	two_way_AADT = 0;
+	on_ramp_AADT = 0; 
+	off_ramp_AADT = 0;
+	upstream_AADT = 0;
+	num_driveway = 0;
+	intersection_3sg = 0;
+	intersection_4sg = 0;
+	intersection_3st = 0;
+	intersection_4st = 0;
+	}
+
+	void EstimateDelay();
+};
 class SLinkMOE  // time-dependent link MOE
 {
 public:
+
 	float TotalTravelTime;   // cumulative travel time for vehicles departing at this time interval
+
+	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
+	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
 
 	int CumulativeArrivalCount; 
 	int CumulativeDepartureCount;
@@ -215,6 +258,13 @@ public:
 		ExitQueueLength = 0;
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
+
+		for(int i = 0; i < MAX_PRICING_TYPE_SIZE; i++)
+		{
+			CumulativeArrivalCount_PricingType[i] = 0;
+			CumulativeRevenue_PricingType[i] = 0;
+		}
+
 	};
 
 	void SetupMOE()
@@ -225,6 +275,11 @@ public:
 		ExitQueueLength = 0;
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
+		for(int i = 0; i < MAX_PRICING_TYPE_SIZE; i++)
+		{
+			CumulativeArrivalCount_PricingType[i] = 0;
+			CumulativeRevenue_PricingType[i] = 0;
+		}
 	}
 
 } ;
@@ -405,7 +460,7 @@ public:
 
 	}
 
-	float GetTollRateInDollar(float Time, int PricingType)  // from information signs
+	float GetTollRateInDollar(float Time, int PricingType)  
 	{
 		for(int il = 0; il< m_TollSize; il++)
 		{
@@ -417,9 +472,11 @@ public:
 		return 0;
 	}
 
+
 	std::vector <SLinkMOE> m_LinkMOEAry;
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
+    DTASafetyLinkData m_SafetyData;
 	void ComputeVSP();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
@@ -487,6 +544,14 @@ public:
 		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*600); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
+
+		for(int pt = 0; pt < MAX_PRICING_TYPE_SIZE; pt++)
+		{
+			CFlowArrivalCount_PricingType[pt] = 0;
+			CFlowArrivalRevenue_PricingType[pt] = 0;
+		}
+
+
 		CFlowDepartureCount = 0;
 
 		LinkOutCapacity = 0;
@@ -587,6 +652,10 @@ public:
 	float m_JamTimeStamp;
 
 	int CFlowArrivalCount;
+
+	int CFlowArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
+	float CFlowArrivalRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
+
 	int CFlowDepartureCount;
 
 	unsigned int LinkOutCapacity;  // unit: number of vehiles
@@ -874,6 +943,9 @@ public:
 		m_bComplete = false;
 		m_TripTime = 0;
 		m_Delay = 0;
+		m_TollDollarCost = 0;
+		m_Emissions = 0;
+
 
 	}
 
@@ -997,6 +1069,13 @@ T **AllocateDynamicArray(int nRows, int nCols)
 	T **dynamicArray;
 
 	dynamicArray = new T*[nRows];
+
+	if(dynamicArray == NULL)
+	{
+		cout << "Error: insufficent memory.";
+		g_ProgramStop();
+
+	}
 
 	for( int i = 0 ; i < nRows ; i++ )
 	{
@@ -1132,8 +1211,9 @@ public:
 
 	int* NodeStatusAry;                // Node status array used in KSP;
 	float* LabelTimeAry;               // label - time
-	int* NodePredAry;
+	int* NodePredAry;  
 	float* LabelCostAry;
+	int* LinkNoAry;  //record link no according to NodePredAry
 
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
@@ -1143,7 +1223,7 @@ public:
 	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
 	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
 
-	int temp_reversed_PathNodeList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
+	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
 
 	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
@@ -1182,6 +1262,7 @@ public:
 
 		NodeStatusAry = new int[m_NodeSize];                    // Node status array used in KSP;
 		NodePredAry = new int[m_NodeSize];
+		LinkNoAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
 
@@ -1222,6 +1303,7 @@ public:
 
 		if(NodeStatusAry) delete NodeStatusAry;                 // Node status array used in KSP;
 		if(NodePredAry) delete NodePredAry;
+		if(LinkNoAry) delete LinkNoAry;
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
 
@@ -1241,7 +1323,7 @@ public:
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
-	int  FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
+	int  FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
 
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
@@ -1415,6 +1497,53 @@ public:
 };
 
 
+class DTASafetyModel
+{ 
+public:
+int safety_crash_model_id;
+string model_name;
+float alpha_constant;
+float beta_AADT;
+float gamma_AADT;
+float t_driveway;
+float n_driveway;
+float proportion_fatal;
+float length_coeff;
+float on_ramp_ADT_coeff;
+float off_ramp_ADT_coeff;
+float upstream_DADT_coeff;
+float freeway_constant;
+float freeway_lanes_coeff;
+float aux_lane_coeff;
+float inverse_spacing_coeff;
+float avg_capacity_reduction_percentage;
+float avg_crash_duration_in_min;
+float avg_additional_delay_per_vehicle_per_crash_in_min;
+
+DTASafetyModel()
+{
+safety_crash_model_id = 0; 
+alpha_constant=0;
+beta_AADT=0;
+gamma_AADT=0;
+t_driveway=0;
+n_driveway=0;
+proportion_fatal=0;
+length_coeff=0;
+on_ramp_ADT_coeff=0;
+off_ramp_ADT_coeff=0;
+upstream_DADT_coeff=0;
+freeway_constant=0;
+freeway_lanes_coeff=0;
+aux_lane_coeff=0;
+inverse_spacing_coeff=0;
+avg_capacity_reduction_percentage=0;
+avg_crash_duration_in_min=0;
+avg_additional_delay_per_vehicle_per_crash_in_min = 0;
+}
+
+
+};
 
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
