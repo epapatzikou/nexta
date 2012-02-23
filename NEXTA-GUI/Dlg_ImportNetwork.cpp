@@ -433,6 +433,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
+					pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
+					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+
 					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
 					pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 					pLink->m_link_type= type;
@@ -474,6 +477,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_SpeedLimit= R_speed_limit_in_mph;
 						pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
+						pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
+						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 						pLink->m_link_type= type;
@@ -498,6 +503,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					i++;
 
 				}
+
+				m_pDOC->GenerateOffsetLinkBand();
 
 				rsLink.MoveNext();
 				//				TRACE("reading line %d\n", line_no);
@@ -1002,7 +1009,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			bool bWithDataFlag = false;
 			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
-				CString time_stamp_str = m_pDOC->GetTimeStampStrFromIntervalNo (t);
+				CString time_stamp_str = m_pDOC->GetTimeStampStrFromIntervalNo (t,true);
 			float ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
 
 			if(bExist && ratio > 0.0001)

@@ -50,4 +50,5 @@ public:
 	bool SaveZoneCSVFileExt(LPCTSTR lpszFileName);
 	afx_msg void OnBnClickedButtonCreatezones();
 	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
+	afx_msg void OnBnClickedButton1();
 };

@@ -6,37 +6,6 @@
 
 // CDlg_VehEmissions dialog
 
-class ODStatistics
-{
-public: 
-	ODStatistics()
-	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	TotalCost = 0;
-	TotalEmissions = 0;
-	}
-
-	void Reset()
-	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	TotalCost = 0;
-	TotalEmissions = 0;
-	bImpactFlag = false;
-	}
-
-	bool bImpactFlag;
-	int   TotalVehicleSize;
-	float TotalTravelTime;
-	float TotalDistance;
-	float TotalCost;
-	float TotalEmissions;
-	CVehicleEmission emissiondata;
-
-};
 
 class PathStatistics
 {
@@ -77,7 +46,7 @@ public:
 	virtual ~CDlg_VehEmissions();
 
 	CTLiteDoc* m_pDoc;
-	ODStatistics** m_ODMOEMatrix;
+	VehicleStatistics** m_ODMOEMatrix;
 
 	std::vector<PathStatistics> m_PathVector;
 
@@ -88,9 +57,10 @@ public:
 
 	bool ExportDataToCSVFileAllOD(char fname[_MAX_PATH]);
 
+	void ExportData(char fname[_MAX_PATH]);
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_VEHICLE_EMISSIONS };
+	enum { IDD = IDD_DIALOG_VEHICLE_PATH };
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -138,4 +108,6 @@ public:
 	afx_msg void OnCbnSelchangeComboVotUb();
 
 	afx_msg void OnCbnSelchangeComboDemandtype();
+	long m_SingleVehicleID;
+	afx_msg void OnBnClickedFindSingleVehicleId();
 };

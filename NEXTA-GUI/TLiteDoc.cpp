@@ -47,7 +47,6 @@
 #include "Shellapi.h"
 #include "DlgSensorDataLoading.h"
 #include "Dlg_ImportODDemand.h"
-#include "DlgVehiclePath.h"
 #include "DlgNetworkAlignment.h"
 #include "Dlg_VehEmissions.h"
 #include "DlgScenario.h"
@@ -58,8 +57,12 @@
 #include "Dlg_ImportPointSensor.h"
 #include "Dlg_SignalDataExchange.h"
 
+#include "Dlg_TDDemandProfile.h"
+
 #include "Data-Interface\\XLEzAutomation.h"
 #include "Data-Interface\\XLTestDataSource.h"
+#include "Dlg_VehicleClassification.h"
+#include "Dlg_Find_Vehicle.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -72,7 +75,6 @@ extern float g_Simulation_Time_Stamp;
 
 bool g_LinkMOEDlgShowFlag = false;
 std::list<DTALink*>	g_LinkDisplayList;
-
 
 // CTLiteDoc
 
@@ -184,6 +186,10 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_ADDHOTTOLL, &CTLiteDoc::OnLinkAddhottoll)
 	ON_COMMAND(ID_LINK_ADDTOLLEDEXPRESSLANE, &CTLiteDoc::OnLinkAddtolledexpresslane)
 	ON_COMMAND(ID_LINK_CONVERTGENERALPURPOSELANETOTOLLEDLANE, &CTLiteDoc::OnLinkConvertgeneralpurposelanetotolledlane)
+	ON_COMMAND(ID_PROJECT_EDITTIME, &CTLiteDoc::OnProjectEdittime)
+	ON_COMMAND(ID_LINK_VEHICLESTATISTICSANALAYSIS, &CTLiteDoc::OnLinkVehiclestatisticsanalaysis)
+	ON_COMMAND(ID_SUBAREA_DELETESUBAREA, &CTLiteDoc::OnSubareaDeletesubarea)
+	ON_COMMAND(ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA, &CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea)
 	END_MESSAGE_MAP()
 
 
@@ -275,6 +281,8 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
 		}
 
+
+
 		while(parser.ReadRecord())
 		{
 
@@ -324,6 +332,11 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 
 		g_Simulation_Time_Stamp = 0; // reset starting time
 		g_SimulationStartTime_in_min = 0;
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->Compute15MinAvg();  // calculate aggregation value
+		}
 
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
 	}
@@ -382,171 +395,6 @@ void CTLiteDoc::ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName)
 
 void CTLiteDoc::ReadHistoricalData(CString directory)
 {
-	CWaitCursor wc;
-	FILE* st = NULL;
-	std::list<DTALink*>::iterator iLink;
-	int TimeHorizon = 1440; // 1440
-
-
-	int Interval = 5;
-	int day_count = 0;
-
-	bool bResetMOEAryFlag = false;
-	for(int day_of_month =1; day_of_month <= 31; day_of_month++)
-	{
-		CString str_day;
-		str_day.Format ("%02d", day_of_month);
-
-		fopen_s(&st,directory+"RWS2LinkObsValues"+str_day +".dat","r");
-
-		if(st!=NULL)
-		{
-
-			if(!bResetMOEAryFlag)
-			{
-				g_Simulation_Time_Horizon = 1440*g_Number_of_Weekdays;
-
-				for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-				{
-					(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
-				}
-
-				bResetMOEAryFlag = true;
-			}
-
-			g_read_integer(st); // 1140
-			g_read_integer(st); // 5 
-
-			std::list<DTALink*>::iterator iLink;
-
-
-			while(!feof(st))
-			{
-				int SensorID  =  g_read_integer(st);
-				if(SensorID == -1)  // reach end of file
-					break;
-
-				int LinkNo  = g_read_integer(st)-1;
-
-				int Number_of_intervals = g_read_integer(st);
-
-				int LinkID  = m_SensorVector[SensorID-1].LinkID;
-				DTALink* pLink = m_LinkNoMap[LinkID];
-
-				if(pLink==NULL)
-				{
-					CString msg;
-					msg.Format("sensor %d does not exist",SensorID);
-					AfxMessageBox(msg);
-				}
-
-				for(int t= day_count*1440; t<day_count*1440+TimeHorizon; t+=Interval)
-				{
-					if(t== day_count*1440)
-					{
-						pLink->m_LinkMOEAry[t].ObsCumulativeFlow = 0;
-					}
-
-					float Flow = g_read_float(st);
-
-					//                      TRACE("reading: %d, %f\n", LinkNo, Flow);
-
-					if(pLink!=NULL)
-					{
-						pLink->m_LinkMOEAry[ t].ObsFlow = Flow*12/pLink->m_NumLanes;  // convert to per hour link flow
-
-
-						if(t-Interval>0)
-						{
-							pLink->m_LinkMOEAry[t].ObsCumulativeFlow = pLink->m_LinkMOEAry[t-Interval].ObsCumulativeFlow + Flow/12;
-						}
-
-						// copy data to other intervals
-						for(int tt = 1; tt<Interval; tt++)
-						{
-							pLink->m_LinkMOEAry[t+tt].ObsFlow = pLink->m_LinkMOEAry[t].ObsFlow;
-							pLink->m_LinkMOEAry[t+tt].ObsCumulativeFlow = pLink->m_LinkMOEAry[t].ObsCumulativeFlow;
-						}
-					}
-				}
-
-			}
-
-			fclose(st);
-		}
-
-		// speed
-		fopen_s(&st,directory+"RWS2LinkSpdValues"+str_day+".dat","r");
-
-		if(st!=NULL)
-		{
-			while(!feof(st))
-			{
-				int SensorID  =  g_read_integer(st);
-				if(SensorID == -1)  // reach end of file
-					break;
-				TRACE("sensor ID = %d\n",SensorID);
-
-
-				int LinkNo  = g_read_integer(st)-1;
-
-				int Number_of_intervals = g_read_integer(st);
-
-				int LinkID  = m_SensorVector[SensorID-1].LinkID;
-				DTALink* pLink = m_LinkNoMap[LinkID];
-
-				if(pLink==NULL)
-				{
-					CString msg;
-					msg.Format("sensor %d does not exist",SensorID);
-					AfxMessageBox(msg);
-				}
-
-				for(int t= day_count*1440; t<day_count*1440+TimeHorizon; t+=Interval)
-				{
-
-					float Speed = g_read_float(st);
-
-					ASSERT(Speed<=2000);  // no large speed data, creat issues as two numbers are linked together
-
-					// outlier checking:
-					if(Speed >1.5* pLink->m_SpeedLimit )
-						Speed = pLink->m_SpeedLimit;
-
-					//                      TRACE("reading: %d, %f\n", LinkNo, Speed);
-
-					if(pLink!=NULL)
-					{
-						pLink->m_LinkMOEAry[t].ObsSpeed  = Speed*0.621371192f;  // km/h -> mph
-						pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_Length/max(1,pLink->m_LinkMOEAry[t].ObsSpeed);
-						pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
-
-						// copy data to other intervals
-						for(int tt = 1; tt<Interval; tt++)
-						{
-							pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
-							pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex ;
-							pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
-
-						}
-					}
-				}
-
-			}
-
-			day_count++;  // increaes day counter if there are data
-			fclose(st);
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-				(*iLink)->ComputeHistoricalAvg(23);  // total 23: 8 days as test
-			}
-
-
-		}
-
-
-
-	}
 }
 
 
@@ -738,11 +586,12 @@ void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 	m_BackgroundBitmapLoaded = !(m_BackgroundBitmap.IsNull ());
 	//	m_BackgroundBitmapLoaded = true;
 
+		TCHAR IniFilePath[_MAX_PATH];
+		sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
+		m_NodeDisplaySize = g_GetPrivateProfileFloat("GUI", "node_display_size",180, IniFilePath);
 
 	if(m_BackgroundBitmapLoaded)
 	{
-		TCHAR IniFilePath[_MAX_PATH];
-		sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
 
 		m_ImageX1 = g_GetPrivateProfileFloat("BackgroundImage", "x1", m_NetworkRect.left, IniFilePath);
 
@@ -780,6 +629,7 @@ void CTLiteDoc::OnFileSaveimagelocation()
 	sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
 
 	char lpbuffer[64];
+
 	sprintf_s(lpbuffer,"%f",m_ImageX1);
 	WritePrivateProfileString("BackgroundImage","x1",lpbuffer,IniFilePath);
 	sprintf_s(lpbuffer,"%f",m_ImageY1);
@@ -925,6 +775,14 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 
 			}
 
+			if(m_NodeNametoIDMap.find(node_id) != m_NodeNametoIDMap.end())
+			{
+				CString error_message;
+						error_message.Format ("Node %d in input_node.csv %s has been defined twice. Please check.", node_id);
+						AfxMessageBox(error_message);
+						return 0;
+			}
+
 			pNode = new DTANode;
 			pNode->m_Name = name;
 			pNode->m_ControlType = control_type;
@@ -955,6 +813,85 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 
 }
 
+void CTLiteDoc::ReCalculateLinkBandWidth()
+{ //output: m_BandWidthValue for each link
+		std::list<DTALink*>::iterator iLink;
+
+		float m_MaxLinkVolume = 0;
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if(m_LinkBandWidthMode == LBW_link_volume)
+			{
+
+			if(m_MaxLinkVolume < (*iLink)->m_TotalVolume)
+				m_MaxLinkVolume = (*iLink)->m_TotalVolume;
+			}
+
+			if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
+			{
+			if(m_MaxLinkVolume < (*iLink)->m_NumberOfMarkedVehicles)
+				m_MaxLinkVolume = (*iLink)->m_NumberOfMarkedVehicles;
+			}
+		}
+
+
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+		
+			// default mode
+			if(m_LinkBandWidthMode == LBW_number_of_lanes)
+			{
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes+1;
+			}
+			// 
+			if(m_LinkBandWidthMode == LBW_link_volume)
+			{
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_TotalVolume*m_MaxLinkWidthAsNumberOfLanes/m_MaxLinkVolume;
+			}
+
+			if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
+			{
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *m_MaxLinkWidthAsNumberOfLanes/m_MaxLinkVolume;
+			}
+
+		}
+
+}
+void CTLiteDoc::GenerateOffsetLinkBand()
+{
+	ReCalculateLinkBandWidth();
+
+	std::list<DTALink*>::iterator iLink;
+
+	double lane_offset = m_UnitFeet*m_WideLaneInFeet;  // 20 feet per lane
+
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
+			double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
+			double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
+			double theta = atan2(DeltaY, DeltaX);
+
+
+			for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
+			{
+				GDPoint pt;
+
+				pt.x = (*iLink)->m_ShapePoints[si].x - lane_offset* cos(theta-PI/2.0f);
+				pt.y = (*iLink)->m_ShapePoints[si].y - lane_offset* sin(theta-PI/2.0f);
+
+				(*iLink)->m_BandLeftShapePoints.push_back (pt);
+
+				pt.x  = (*iLink)->m_ShapePoints[si].x + (*iLink)->m_BandWidthValue*lane_offset* cos(theta-PI/2.0f);
+				pt.y = (*iLink)->m_ShapePoints[si].y + (*iLink)->m_BandWidthValue*lane_offset* sin(theta-PI/2.0f);
+
+				(*iLink)->m_BandRightShapePoints.push_back (pt);
+			}
+		}
+}
+
 void CTLiteDoc::OffsetLink()
 {
 	std::list<DTALink*>::iterator iLink;
@@ -963,16 +900,18 @@ void CTLiteDoc::OffsetLink()
 	{
 		double link_offset = m_UnitFeet*80;  // 80 feet
 
+
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 //			if( (*iLink)->m_OrgDir == 0)// two way links
 			{
-			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
-			double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
-			double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
-			double theta = atan2(DeltaY, DeltaX);
 
-			for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
+			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
+		double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
+		double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
+		double theta = atan2(DeltaY, DeltaX);
+
+		for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
 			{
 				(*iLink)->m_ShapePoints[si].x += link_offset* cos(theta-PI/2.0f);
 				(*iLink)->m_ShapePoints[si].y += link_offset* sin(theta-PI/2.0f);
@@ -1295,7 +1234,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				m_LinkNotoLinkMap[i] = pLink;
 
 				pLink->m_NumLanes= number_of_lanes;
-				pLink->m_SpeedLimit= max(5,speed_limit_in_mph);  // minimum speed limit is 5 mph
+				pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
 				pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 
 //				pLink->m_Length= max(length_in_mile, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance, special note: we do not consider the minimum constraint here, but a vehicle cannot travel longer then 0.1 seconds
@@ -1327,7 +1266,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 			if(!bNodeNonExistError)
 			{
-				TRACE("\nAdd link %d -> %d",pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
+				TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
 				m_LinkSet.push_back (pLink);
 				m_LinkNoMap[i]  = pLink;
 				i++;
@@ -1370,6 +1309,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 		if(bTwoWayLinkFlag == true)
 		m_bLinkShifted = true;
 
+		GenerateOffsetLinkBand();
 		return true;
 	}else
 	{
@@ -1383,8 +1323,6 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 bool CTLiteDoc::ReadSubareaCSVFile(LPCTSTR lpszFileName)
 {
-	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"r");
 
 	int lineno = 0 ;
 	m_SubareaShapePoints.clear ();
@@ -1413,8 +1351,6 @@ bool CTLiteDoc::ReadSubareaCSVFile(LPCTSTR lpszFileName)
 }
 bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 {
-	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"r");
 
 	bool bNodeNonExistError = false;
 	m_NodeIDtoZoneNameMap.clear ();
@@ -1458,7 +1394,11 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 			}
 			m_NodeIDtoZoneNameMap[m_NodeNametoIDMap[node_name]] = zone_number;
+
+			m_NodeIDMap[m_NodeNametoIDMap[node_name]]->m_ZoneID = zone_number;
+
 			// if there are multiple nodes for a zone, the last node id is recorded.
+
 			int zoneid  = zone_number-1;
 			m_ZoneIDtoNodeIDMap[zoneid] = m_NodeNametoIDMap[node_name];
 
@@ -1763,7 +1703,7 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 
 			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
-				CString time_stamp_str = GetTimeStampStrFromIntervalNo (t);
+				CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,true);
 
 			  // Convert a TCHAR string to a LPCSTR
 			  CT2CA pszConvertedAnsiString (time_stamp_str);
@@ -1771,10 +1711,11 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 			  // construct a std::string using the LPCSTR input
 			  std::string strStd (pszConvertedAnsiString);
 
-			float percentage;
+			float percentage = 0.0f;
 			parser.GetValueByFieldName(strStd,percentage);
 
-				element.time_dependent_ratio[t] = percentage;
+				if( percentage>0.00001)
+					element.time_dependent_ratio[t] = percentage;
 
 			}
 
@@ -2061,7 +2002,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"Scenario_Work_Zone.csv", directory+"Scenario_Work_Zone.csv", FALSE);
 
 		CopyFile(OldDirectory+"DTASettings.ini", directory+"DTASettings.ini", FALSE);
-		CopyFile(OldDirectory+"LinkMOE.csv", directory+"LinkMOE.csv", FALSE);
+		CopyFile(OldDirectory+"output_LinkMOE.csv", directory+"output_LinkMOE.csv", FALSE);
 		CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
 		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
 		CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
@@ -2078,12 +2019,21 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fopen_s(&st,lpszPathName,"w");
 	if(st!=NULL)
 	{
-		fprintf(st,"This project include node.csv and link.csv.");
+		fprintf(st,"This project includes input_node.csv and input_link.csv.");
 		fclose(st);
 	}else
 	{
 		AfxMessageBox("Error in writing the project file. Please check if the file is opened by another project or the folder is read-only.");
 	}
+
+	TCHAR IniFilePath[_MAX_PATH];
+	sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
+
+	char lpbuffer[64];
+
+	sprintf_s(lpbuffer,"%d",m_NodeDisplaySize);
+	WritePrivateProfileString("GUI", "node_display_size",lpbuffer,IniFilePath);
+
 
 	fopen_s(&st,directory+"input_node.csv","w");
 	if(st!=NULL)
@@ -2104,6 +2054,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error: File input_node.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
+
+
 
 	fopen_s(&st,directory+"input_link.csv","w");
 	if(st!=NULL)
@@ -2322,8 +2274,6 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 				if(t > end_time)
 					end_time = t;
-
-				
 				}
 
 
@@ -2333,8 +2283,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		fprintf(st,"from_zone_id,to_zone_id,demand_type,time_series_name,");
 			for(int t = 20; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
-				CString time_stamp_str = GetTimeStampStrFromIntervalNo (t);
-				fprintf(st, "'%s,",time_stamp_str);
+				CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,true);
+				fprintf(st, "%s,",time_stamp_str);
 			}
 
 			fprintf(st,"\n");  // end of header
@@ -2651,6 +2601,8 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			pVehicle->m_TripTime  = g_read_float(st);
 
 			pVehicle->m_DemandType = (unsigned char)g_read_integer(st);
+			pVehicle->m_PricingType = (unsigned char)g_read_integer(st);
+
 			pVehicle->m_VehicleType = (unsigned char)g_read_integer(st);
 			pVehicle->m_InformationClass = (unsigned char)g_read_integer(st);
 			pVehicle->m_VOT = g_read_float(st);
@@ -2677,7 +2629,8 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 
 						return;
 					}
-					pVehicle->m_NodeAry[i].LinkID = pLink->m_LinkNo ;
+					pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+					pLink->m_TotalVolume +=1;
 				}
 
 				// random error beyond 6 seconds for better ainimation
@@ -2774,10 +2727,10 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 			if(ratio >1)
 				ratio = 1;
 
-			if(pVehicle->m_NodeAry [i].LinkID == 457)
+			if(pVehicle->m_NodeAry [i].LinkNo  == 457)
 				TRACE("");
 
-			return pVehicle->m_NodeAry [i].LinkID;
+			return pVehicle->m_NodeAry [i].LinkNo ;
 
 			//			pt.x =  ratio*pLink->m_FromPoint .x  +  (1-ratio)*ratio*pLink->m_ToPoint .x;
 			//			pt.y =  ratio*pLink->m_FromPoint .y  +  (1-ratio)*ratio*pLink->m_ToPoint .y;
@@ -2955,7 +2908,7 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTim
 	return power;
 }
 
-float CTLiteDoc::GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime,float &value)
+float CTLiteDoc::GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime, int AggregationIntervalInMin, float &value)
 {
 
 	float power = 0.0f;
@@ -3002,6 +2955,37 @@ float CTLiteDoc::GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTi
 	{
 		if(pLink->m_SimulationHorizon > CurrentTime && CurrentTime >=1 && CurrentTime < pLink->m_SimulationHorizon)  //DTAoutput
 		{
+		if(AggregationIntervalInMin == 15)
+		{
+			int CurrentTimeIntreval = CurrentTime/15;
+
+			switch (LinkMOEMode)
+			{
+			case MOE_volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsFlow* pLink->m_NumLanes/max_link_volume;
+				value = pLink->m_LinkMOEAry_15min [CurrentTimeIntreval].ObsFlow* pLink->m_NumLanes;
+				break;
+			case MOE_speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_LinkMOEAry[CurrentTime].ObsSpeed)/max_speed_ratio;
+				value = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsSpeed;
+				break;
+			case MOE_vcratio: power = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsFlow/pLink->m_LaneCapacity;
+				value = power;
+				break;
+			case MOE_traveltime:
+				if(pLink->m_LinkMOEAry_15min [CurrentTimeIntreval].ObsTravelTimeIndex <=0.1)  // no data
+					power = 0;
+				else 
+					power = pLink->m_SpeedLimit / pLink->m_LinkMOEAry [CurrentTimeIntreval].ObsSpeed/max_speed_ratio; 
+
+				value = pLink->m_LinkMOEAry_15min [CurrentTimeIntreval].ObsTravelTimeIndex;
+				break;
+			case MOE_density: power = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsDensity /max_density; 
+				value = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsDensity;
+				break;
+			}
+		}
+		}
+		else
+		{
 			switch (LinkMOEMode)
 			{
 			case MOE_volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsFlow* pLink->m_NumLanes/max_link_volume;
@@ -3024,9 +3008,9 @@ float CTLiteDoc::GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTi
 			case MOE_density: power = pLink->m_LinkMOEAry[CurrentTime].ObsDensity /max_density; 
 				value = pLink->m_LinkMOEAry[CurrentTime].ObsDensity;
 				break;
-
 			}
 		}
+		
 	}
 
 	if(power>=1.0f) power = 1.0f;
@@ -3199,7 +3183,7 @@ void CTLiteDoc::LoadSimulationOutput()
 	else {
 		m_StaticAssignmentMode = false;
 
-		ReadSimulationLinkMOEData(m_ProjectDirectory+"LinkMOE.csv");
+		ReadSimulationLinkMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
 	}
 
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
@@ -3516,8 +3500,12 @@ HINSTANCE g_GotoURL(LPCTSTR url, int showcmd)
 
 void CTLiteDoc::OnToolsViewsimulationsummary()
 {
+	CDlg_VehicleClassification dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal ();
 
-	g_OpenDocument(m_ProjectDirectory+"summary.log", SW_SHOW);
+
+//	g_OpenDocument(m_ProjectDirectory+"summary.log", SW_SHOW);
 	/*
 	CString sCommand;
 
@@ -3628,14 +3616,6 @@ void CTLiteDoc::OnImportodtripfile3columnformat()
 		UpdateAllViews(0);	
 
 	}
-
-}
-
-void CTLiteDoc::OnSearchVehicle()
-{
-	CDlgVehiclePath dlg;
-	dlg.pDoc = this;
-	dlg.DoModal ();
 
 }
 
@@ -3813,6 +3793,7 @@ void CTLiteDoc::OnToolsExportopmodedistribution()
 
 void CTLiteDoc::OnToolsEnumeratepath()
 {
+
 	CWaitCursor cws;
 
 	int OD_index;
@@ -4710,7 +4691,7 @@ void CTLiteDoc::OnMoeVehiclepathanalaysis()
 	dlg.DoModal();
 }
 
-void CTLiteDoc::SelectPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
+void CTLiteDoc::HighlightPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
 {
 	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
@@ -4727,9 +4708,41 @@ void CTLiteDoc::SelectPath(	std::vector<int>	m_LinkVector, int DisplayID = 1)
 
 	}
 	UpdateAllViews(0);
-
 }
 
+void CTLiteDoc::HighlightSelectedVehicles(bool bSelectionFlag)
+{
+	CWaitCursor wc;
+
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_DisplayLinkID = -1;
+		(*iLink)->m_NumberOfMarkedVehicles++;
+	}
+
+	if(bSelectionFlag) // selection
+	{
+	std::list<DTAVehicle*>::iterator iVehicle;
+
+	bool bTraceFlag = true;
+
+	for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
+	{
+		DTAVehicle* pVehicle = (*iVehicle);
+		if(pVehicle->m_bMarked)
+		{
+				for(int link= 1; link<pVehicle->m_NodeSize; link++)
+				{
+					m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo ]->m_DisplayLinkID = 1;
+
+					m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo ]->m_NumberOfMarkedVehicles++;
+				}
+				}		
+		}
+		} // de-selection: do nothing
+	UpdateAllViews(0);
+
+}
 
 void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
 {
@@ -5049,7 +5062,7 @@ void CTLiteDoc::OnLinkAddvms()
 		MessageSign ms;
 
 		ms.StartTime = 0;
-		ms.EndTime = 60;
+		ms.EndTime = 1440;
 		ms.ResponsePercentage= 20;
 		pLink->MessageSignVector.push_back(ms);
 
@@ -5454,17 +5467,458 @@ void CTLiteDoc::OnLinkConvertgeneralpurposelanetotolledlane()
 	// TODO: Add your command handler code here
 }
 
-CString CTLiteDoc::GetTimeStampStrFromIntervalNo(int time_interval)
+CString CTLiteDoc::GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote)
 	{
 	  CString str;
 	  int hour = time_interval/4;
 	  int min = (time_interval - hour*4)*15;
 
+	  if(with_single_quote)
+	  {
+	  if(hour<10)
+		  str.Format ("'0%d:%02d",hour,min);
+	  else
+		  str.Format ("'%2d:%02d",hour,min);
+	  }else  //without typewriter single quotes
+	  {
 	  if(hour<10)
 		  str.Format ("0%d:%02d",hour,min);
 	  else
 		  str.Format ("%2d:%02d",hour,min);
+	  }
+
 
 	  return str;
 
+}
+void CTLiteDoc::OnProjectEdittime()
+{
+		CDlg_TDDemandProfile dlg;
+		dlg.m_pDoc = this;
+	if(dlg.DoModal() ==IDOK)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with OK
+	}
+}
+
+int CTLiteDoc::FindClassificationNo(DTAVehicle* pVehicle, VEHICLE_X_CLASSIFICATION x_classfication)
+{
+
+	int index = -1;  // no classification
+
+	switch(x_classfication)
+	{
+	case CLS_pricing_type: index = pVehicle->m_PricingType ; break;
+	case CLS_VOT_10: index = pVehicle->m_VOT /10 ; break;
+	case CLS_VOT_15: index = pVehicle->m_VOT /15 ; break;
+	case CLS_VOT_10_SOV: 
+		if(pVehicle->m_PricingType != 1)
+			index =  -1;  // no considered.
+		else
+			index = pVehicle->m_VOT /10 ; 
+		break;
+	case CLS_VOT_10_HOV: 
+		if(pVehicle->m_PricingType != 2)
+			index =  -1;  // no considered.
+		else
+			index = pVehicle->m_VOT /10 ; 
+		break;
+	case CLS_VOT_10_truck: 
+		if(pVehicle->m_PricingType != 3)
+			index =  -1;  // no considered.
+		else
+			index = pVehicle->m_VOT /10 ; 
+		break;
+	case CLS_time_interval_15_min: index = pVehicle->m_DepartureTime /15; break;
+	case CLS_time_interval_30_min: index = pVehicle->m_DepartureTime /30; break;
+	case CLS_time_interval_60_min: index = pVehicle->m_DepartureTime /60; break;
+	case CLS_information_class: index = pVehicle->m_InformationClass ; break;
+	case CLS_vehicle_type: index = pVehicle->m_VehicleType  ; break;
+	default: 
+		TRACE("ERROR. No classification available!");
+	};
+
+	return index;
+}
+
+
+CString CTLiteDoc::FindClassificationLabel(VEHICLE_X_CLASSIFICATION x_classfication, int index)
+{
+
+	CString label;
+
+	switch(x_classfication)
+	{
+	case CLS_pricing_type: 
+		label = GetPricingTypeStr(index);
+		break;
+
+	case CLS_VOT_10: 
+	case CLS_VOT_10_SOV:
+	case CLS_VOT_10_HOV:
+	case CLS_VOT_10_truck:
+		label.Format ("$%d-$%d",index*10,(index+1)*10);
+		 break;
+
+	case CLS_VOT_15:
+		label.Format ("$%d-$%d",index*15,(index+1)*15);
+		 break;
+
+	case CLS_time_interval_15_min: 
+		label.Format ("%s-%s",GetTimeStampStrFromIntervalNo(index,false),GetTimeStampStrFromIntervalNo((index+1),false));
+		break;
+
+	case CLS_time_interval_30_min: 
+		label.Format ("%s-%s",GetTimeStampStrFromIntervalNo(index*2,false),GetTimeStampStrFromIntervalNo((index+1)*2,false));
+		break;
+
+	case CLS_time_interval_60_min: 
+		label.Format ("%s-%s",GetTimeStampStrFromIntervalNo(index*4,false),GetTimeStampStrFromIntervalNo((index+1)*4,false));
+		break;
+
+	case CLS_information_class: 
+		   label = "UE";
+		  if(index == 1) label = "Historical info";
+		  if(index == 2) label = "Pretrip info";
+		  if(index == 3) label = "En-route Info";
+		  break;
+
+	case CLS_vehicle_type: 
+		  label = m_VehicleTypeVector[index-1].vehicle_type_name;
+		  break;
+	default: 
+		TRACE("ERROR. No classification available!");
+	};
+
+	return label;
+}
+
+bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFICATION_SELECTION vehicle_selection)
+{
+	if(!pVehicle->m_bComplete)
+		return false;
+
+	if(vehicle_selection == CLS_network)
+		return  true;  // all the vehicles
+
+	if(vehicle_selection == CLS_OD)
+		return  pVehicle->m_bMarked;  // marked by vehicle path dialog
+
+	if(vehicle_selection == CLS_link)
+	{
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if ( pVehicle->m_NodeAry[link].LinkNo == m_SelectedLinkID)
+			{
+				return true;		
+			}
+		}
+		return false;
+	}
+
+	if(vehicle_selection == CLS_link_set)
+	{
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_DisplayLinkID>=0)  // in one of selected links
+			{
+				return true;		
+			}
+		}
+		return false;
+	}
+
+	if(vehicle_selection == CLS_path)
+	{
+		if(m_PathDisplayList.size() == 0)
+			return false;
+
+		int count_of_links_in_selected_path = 0;
+
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedBySelectedPath )
+			{
+				count_of_links_in_selected_path++;	
+			}
+		}
+
+		if(count_of_links_in_selected_path == m_PathDisplayList[0].m_LinkSize && m_PathDisplayList[0].m_LinkSize >0)
+			return true;
+		else
+			return false;
+	}
+
+	if(vehicle_selection == CLS_subarea_generated)
+	{
+		// if the first link of a vehicle is marked, then return true
+
+				if(pVehicle->m_NodeSize>2)
+				{
+					if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+						return true;
+				}
+				return false;
+	}
+
+	if(vehicle_selection == CLS_subarea_traversing_through)
+	{
+
+		if(pVehicle->m_NodeSize<3)
+			return false;
+		// now pVehicle->m_NodeSize>=3;
+
+		// condition 1: if the first link of a vehicle is marked (in the subarea), then return false
+		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+			return false;
+
+		// now the first link is not in subarea
+		// condition 2: a link is in subarea
+		bool bPassingSubareaFlag = false;
+		for(int link= 2; link<pVehicle->m_NodeSize-1; link++)
+		{
+			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea )
+			{
+				bPassingSubareaFlag = true;	
+				break;
+			}
+		}
+
+		if(bPassingSubareaFlag == false)
+			return false;
+		// now there is a link is in subarea
+        // condition 3: test if the last link is out of subarea
+		
+		int last_link  = pVehicle->m_NodeSize-1;
+		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea == false)
+			return true;  // last link is outside of the subarea area, yes!
+		else
+			return false;
+
+	}
+
+	if(vehicle_selection == CLS_subarea_internal_to_external)
+	{
+		if(pVehicle->m_NodeSize<2)
+			return false;
+		// now pVehicle->m_NodeSize>=2;
+
+		// condition 1: if the first link of a vehicle is not marked (not in the subarea), then return false
+		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == false)
+			return false;
+
+		// now the first link is in subarea
+        // condition 2: test if the last link is out of subarea
+		
+		int last_link  = pVehicle->m_NodeSize-1;
+		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == false)
+			return true;  // outside, yes,
+		else
+			return false;
+	}
+
+	if(vehicle_selection == CLS_subarea_external_to_internal)
+	{
+
+		if(pVehicle->m_NodeSize<2)
+			return false;
+		// now pVehicle->m_NodeSize>=2;
+
+		// condition 1: if the first link of a vehicle is marked (in the subarea), then return false
+		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+			return false;
+
+		// now the first link is not in the subarea
+        // condition 2: test if the last link is in subarea
+		
+		int last_link  = pVehicle->m_NodeSize-1;
+		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == true)
+			return true;  // inside, yes!
+		else
+			return false;
+	}
+	if(vehicle_selection == CLS_subarea_internal_to_internal)
+	{
+
+		if(pVehicle->m_NodeSize<2)  
+			return false;
+		// now pVehicle->m_NodeSize>=2;
+
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == false )
+				return false; // this is a link outside of the subarea
+		}
+
+		// pass all the tests
+		return true;
+	}
+
+	return false;
+}
+void CTLiteDoc::MarkLinksInSubarea()
+{
+		std::list<DTALink*>::iterator iLink;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->m_bIncludedinSubarea = false;  // reset all the links are not selected by the path
+		}
+
+			for (iLink = m_SubareaLinkSet.begin(); iLink != m_SubareaLinkSet.end(); iLink++)
+		{
+			(*iLink)->m_bIncludedinSubarea = true;
+		}
+}
+
+void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTION vehicle_selection, VEHICLE_X_CLASSIFICATION x_classfication)
+{
+	m_ClassificationTable.clear ();  //reset
+
+	std::list<DTAVehicle*>::iterator iVehicle;
+
+	bool bTraceFlag = true;
+
+	for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
+	{
+		DTAVehicle* pVehicle = (*iVehicle);
+
+		pVehicle->m_bMarked = false;
+
+		if(SelectVehicleForAnalysis(pVehicle, m_VehicleSelectionMode) == true) 
+		{
+			pVehicle->m_bMarked = true;
+
+			if(bTraceFlag)  // trace single vehicle id
+			{
+				TRACE("vehicle name: %d\n",pVehicle->m_VehicleID+1  );
+				bTraceFlag = false;
+			}
+					int index = FindClassificationNo(pVehicle,x_classfication);
+
+					if(index>=0)  // -1 will not be consideded
+					{
+						m_ClassificationTable[index].TotalVehicleSize+=1;
+						m_ClassificationTable[index].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+						m_ClassificationTable[index].TotalDistance   += pVehicle->m_Distance;
+						m_ClassificationTable[index].TotalCost   += pVehicle->m_TollDollarCost;
+						m_ClassificationTable[index].TotalGeneralizedCost += ( pVehicle->m_TollDollarCost + pVehicle->m_TripTime /60.0f* pVehicle->m_VOT );
+						m_ClassificationTable[index].TotalGeneralizedTime += pVehicle->m_TollDollarCost/max(1,pVehicle->m_VOT)*60.0f + pVehicle->m_TripTime ;
+						m_ClassificationTable[index].TotalEmissions   += pVehicle->m_Emissions;
+					
+						m_ClassificationTable[index].emissiondata.Energy += pVehicle->m_EmissionData .Energy;
+						m_ClassificationTable[index].emissiondata.CO2 += pVehicle->m_EmissionData .CO2;
+						m_ClassificationTable[index].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
+						m_ClassificationTable[index].emissiondata.CO += pVehicle->m_EmissionData .CO;
+						m_ClassificationTable[index].emissiondata.HC += pVehicle->m_EmissionData .HC;
+					}
+
+				}
+
+		}
+}
+
+
+void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_classfication, VEHICLE_Y_CLASSIFICATION y_classfication)
+{
+// input: 	m_ClassificationTable
+// output: label and display value
+	
+	std::map< int, VehicleStatistics >::iterator iter;
+
+	 for ( iter = m_ClassificationTable.begin(); iter != m_ClassificationTable.end(); iter++ )
+	 {
+	    int index = iter->first;
+		float value= 0;
+
+		m_ClassificationTable[index].Label = FindClassificationLabel(x_classfication,index);
+
+		// enum VEHICLE_Y_CLASSIFICATION {CLS_vehicle_count,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_CO2,CLS_avg_CO2};
+
+
+	switch(y_classfication)
+	{
+		case CLS_vehicle_count: 
+			value = m_ClassificationTable[index].TotalVehicleSize;
+		break;
+	case CLS_total_travel_time: 
+		    value = m_ClassificationTable[index].TotalTravelTime ;
+		 break;
+	case CLS_avg_travel_time: 
+		    value = m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize);
+		 break;
+
+	case CLS_total_toll_cost: 
+			value = m_ClassificationTable[index].TotalCost ;
+		break;
+	case CLS_avg_toll_cost: 
+			value = m_ClassificationTable[index].TotalCost /max(1,m_ClassificationTable[index].TotalVehicleSize)*100; // *100, $ - cents
+		break;
+
+	case CLS_total_generalized_cost: 
+			value = m_ClassificationTable[index].TotalGeneralizedCost  ;
+		break;
+	case CLS_total_generalized_travel_time: 
+			value = m_ClassificationTable[index].TotalGeneralizedTime  ;
+		break;
+	case CLS_avg_generalized_cost: 
+			value = m_ClassificationTable[index].TotalGeneralizedCost /max(1,m_ClassificationTable[index].TotalVehicleSize);
+		break;
+	case CLS_avg_generalized_travel_time:
+		value = m_ClassificationTable[index].TotalGeneralizedTime /max(1,m_ClassificationTable[index].TotalVehicleSize);
+		break;
+
+	case CLS_total_travel_distance: 
+			value = m_ClassificationTable[index].TotalDistance   ;
+		break;
+	case CLS_avg_travel_distance: 
+			value = m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize);
+		break;
+	case CLS_total_CO2: 
+			value = m_ClassificationTable[index].TotalEmissions   ;
+		break;
+	case CLS_avg_CO2: 
+			value = m_ClassificationTable[index].TotalEmissions /max(1,m_ClassificationTable[index].TotalVehicleSize);
+		break;
+
+	default: 
+		TRACE("ERROR. No classification available!");
+	};
+	 
+		m_ClassificationTable[index].DisplayValue = value;
+	 
+	 }
+}
+
+
+void CTLiteDoc::OnLinkVehiclestatisticsanalaysis()
+{
+	if(m_SelectedLinkID==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	m_VehicleSelectionMode = CLS_link;  // select link analysis
+
+	CDlg_VehicleClassification dlg;
+	
+	dlg.m_VehicleSelectionNo = CLS_link;
+	dlg.m_pDoc = this;
+	dlg.DoModal ();
+
+}
+	
+
+
+void CTLiteDoc::OnSubareaDeletesubarea()
+{
+	m_SubareaShapePoints.clear ();
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea()
+{
+	// TODO: Add your command handler code here
 }

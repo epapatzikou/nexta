@@ -48,7 +48,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 	int FromID, ToID;
 
-	int i,t;
+	int i;
 
 	for(i=0; i< m_NodeSize; i++)
 	{
@@ -61,8 +61,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
 	{
-		if((*iterLink) == NULL)
-			continue;
+//		if((*iterLink) == NULL)
+//			continue;
 
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
@@ -78,40 +78,10 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
-
-		ASSERT(m_AdjLinkSize > m_OutboundSizeAry[FromID]);
-
-		int link_entering_time_interval;
-		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
-		{
-			link_entering_time_interval= t/m_OptimizationTimeInveral;
-			if(link_entering_time_interval >= m_OptimizationIntervalSize)
-				link_entering_time_interval = m_OptimizationIntervalSize-1;
-
-			float AvgTravelTime = (*iterLink)->GetTravelTime (t,m_OptimizationTimeInveral);
-
-			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
-
-			if(bRandomCost==false)
-				Normal_random_value = 0;
-
-
-			float travel_time  = AvgTravelTime + Normal_random_value;
-
-			if(bOverlappingCost)
-			{
-				travel_time+=(*iterLink)->m_OverlappingCost ;
-			}
-
-			if(travel_time < (*iterLink)->m_FreeFlowTravelTime )
-				travel_time = (*iterLink)->m_FreeFlowTravelTime;
-
-			m_LinkTDTimeAry[(*iterLink)->m_LinkNo][link_entering_time_interval] = travel_time;
-			m_LinkTDCostAry[(*iterLink)->m_LinkNo][link_entering_time_interval]=  travel_time;
+		m_LinkTDTimeAry[(*iterLink)->m_LinkNo][0] = (*iterLink)->m_Length;
+		m_LinkTDCostAry[(*iterLink)->m_LinkNo][0]=  (*iterLink)->m_Length;
 
 			// use travel time now, should use cost later
-		}
-
 
 	}
 
@@ -121,15 +91,22 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 }
 
 
-bool DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int demand_type)   // Pointer to previous node (node)
+
+
+
+int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag,bool check_connectivity_flag, bool debug_flag)   // Pointer to previous node (node)
 // time -dependent label correcting algorithm with deque implementation
 {
 
+    int	temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
 	int i;
-	int debug_flag = 0;
+	debug_flag = 1;
 
 	if(m_OutboundSizeAry[origin]== 0)
-		return false;
+		return 0;
+
+	if(origin == destination)
+		return 0;
 
 	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
 	{
@@ -171,31 +148,21 @@ bool DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int de
 				continue;
 
 
-			//					  TRACE("\n   to node %d",ToID);
+								  TRACE("\n   to node %d",ToID);
 			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
-
-			int link_entering_time_interval = int(LabelTimeAry[FromID])/m_OptimizationTimeInveral;
-			if(link_entering_time_interval >= m_OptimizationIntervalSize)  // limit the size
-				link_entering_time_interval = m_OptimizationIntervalSize-1;
-
-			if(link_entering_time_interval < 0)  // limit the size
-				link_entering_time_interval = 0;
-
-			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkNo][link_entering_time_interval];  // time-dependent travel times come from simulator
-			NewCost    = LabelCostAry[FromID] + m_LinkTDCostAry[LinkNo][link_entering_time_interval];       // costs come from time-dependent tolls, VMS, information provisions
+			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkNo][0];  // time-dependent travel times come from simulator
+			NewCost    = LabelCostAry[FromID] + m_LinkTDCostAry[LinkNo][0];       // costs come from time-dependent tolls, VMS, information provisions
 
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{
 
-				//					       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][link_entering_time_interval]);
-
-				if(NewTime > m_OptimizationHorizon -1)
-					NewTime = float(m_OptimizationHorizon-1);
+								       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][0]);
 
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
 				NodePredAry[ToID]   = FromID;
+				LinkNoAry[ToID] = LinkNo;
 
 				// Dequeue implementation
 				//
@@ -216,11 +183,42 @@ bool DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int de
 		}      // end of for each link
 
 	} // end of while
-	return true;
+
+	if(check_connectivity_flag) 
+		return 0;
+
+
+		int LinkSize = 0;
+		int PredNode = NodePredAry[destination];	
+		temp_reversed_PathLinkList[LinkSize++] = LinkNoAry[destination];
+
+		while(PredNode != origin && PredNode!=-1 && LinkSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+			{
+				ASSERT(LinkSize< MAX_NODE_SIZE_IN_A_PATH-1);
+				temp_reversed_PathLinkList[LinkSize++] = LinkNoAry[PredNode];
+
+				PredNode = NodePredAry[PredNode];
+			}
+	
+		int j = 0;
+		for(i = LinkSize-1; i>=0; i--)
+		{
+		PathLinkList[j++] = temp_reversed_PathLinkList[i];
+		}
+
+		TotalCost = LabelCostAry[destination];
+
+
+		if(TotalCost > MAX_SPLABEL-10)
+		{
+			//ASSERT(false);
+			return 0;
+		}
+
+		return LinkSize+1; // as }
+
+
 }
-
-
-
 
 
 void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, int TrainType)

@@ -45,7 +45,7 @@ bool CCSVParser::OpenCSVFile(string fileName)
 				else
 				{
 					name = tmp_str.substr(start);
-					TRACE("%s,",name.c_str ());
+	//				TRACE("%s,",name.c_str ());
 				}
 				Headers.push_back(name);
 				FieldsIndices[name] = (int) i;

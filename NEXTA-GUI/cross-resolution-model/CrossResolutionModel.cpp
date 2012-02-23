@@ -1193,3 +1193,44 @@ void CTLiteDoc::OnExportAms()
 	OpenCSVFileInExcel(AMS_Link_File);
 }
 
+
+
+void CTLiteDoc::RunExcelAutomation() 
+{
+	//CXLEzAutomation class constructor starts Excel and creates empty worksheet  
+	CXLEzAutomation XL;
+			//Close Excel if failed to open file 
+			if(!XL.OpenExcelFile("C:\\NEXTA_OpenSource\\DTALite\\test_QEM.xlsx"))
+			{
+				XL.ReleaseExcel();
+//				MessageBox("Failed to Open Excel File", "Error", MB_OK);
+				return;
+			}
+
+			XL.SetActiveWorksheet(0);
+			//To access data use this:
+			XL.SetCellValue(2,4,"1");
+			CString szCellValue5 = XL.GetCellValue(2, 52);
+			//Itterate through all cells given by (Column, Row) to
+			//access all data
+
+			//CTestDataSource provide set of data for testing XY plot function
+	CTestDataSource DataSource;
+
+/*	//All data will be stored by szData
+	CString szData;
+	//Itterate to fill data buffer with 100 data points
+	for(int i = 0; i < 100; i++)
+		szData = szData + DataSource.GetNextXYPoint();
+	
+	//Use clipboard export function to move all data to Excel worksheet
+	XL.ExportCString(szData);
+	
+	//Y values for this plot are in Column = 2
+	XL.CreateXYChart(2);
+*/	
+//	XL.EnableAlert(false);
+	XL.ReleaseExcel();
+
+
+}

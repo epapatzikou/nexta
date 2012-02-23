@@ -146,6 +146,7 @@ BEGIN_MESSAGE_MAP(CDlgGridCtrl, CDialog)
 	ON_BN_CLICKED(ID_GRID_QUIT, &CDlgGridCtrl::OnBnClickedGridQuit)
 	ON_BN_CLICKED(IDC_BUTTON_CreateZones, &CDlgGridCtrl::OnBnClickedButtonCreatezones)
 	ON_BN_CLICKED(IDC_BUTTON_Edit_Zone_Node_Mapping, &CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping)
+	ON_BN_CLICKED(IDC_BUTTON1, &CDlgGridCtrl::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -498,4 +499,9 @@ void CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
 	dlg.m_pDlg = this;
 	dlg.DoModal();
 
+}
+
+void CDlgGridCtrl::OnBnClickedButton1()
+{
+	// TODO: Add your control notification handler code here
 }

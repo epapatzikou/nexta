@@ -41,11 +41,19 @@
 enum Link_MOE {none,MOE_volume, MOE_speed, MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 enum OD_MOE {odnone,critical_volume};
 
+enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_path,CLS_link,CLS_link_set,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
+enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
+enum VEHICLE_Y_CLASSIFICATION {CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,CLS_total_CO2,CLS_avg_CO2};
+enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
+
 class CTLiteDoc : public CDocument
 {
 protected: // create from serialization only
 	CTLiteDoc()
 	{
+		m_MaxLinkWidthAsNumberOfLanes = 5;
+		m_VehicleSelectionMode = CLS_network;
+		m_LinkBandWidthMode = LBW_number_of_lanes;
 		m_bLoadNetworkDataOnly = false;
 		m_SamplingTimeInterval = 1;
 		m_AVISamplingTimeInterval = 5;
@@ -68,8 +76,11 @@ protected: // create from serialization only
 		m_ColorArterial = RGB(0,0,0);
 		m_pNetwork = NULL;
 		m_OriginNodeID = -1;
+
 		m_DestinationNodeID = -1;
 		m_NodeSizeSP = 0;
+
+		m_WideLaneInFeet = 20;
 		m_PathMOEDlgShowFlag = false;
 		m_SelectPathNo = -1;
 
@@ -77,6 +88,7 @@ protected: // create from serialization only
 		m_ImageX2 = 1000;
 		m_ImageY1 = 0;
 		m_ImageY2 = 1000;
+		m_NodeDisplaySize = 200;
 
 		m_NetworkRect.top  = 50;
 		m_NetworkRect.bottom = 0;
@@ -87,7 +99,7 @@ protected: // create from serialization only
 		m_UnitMile = 1;
 		m_UnitFeet = 1/5280.0;
 		m_bFitNetworkInitialized = false; 
-		m_BackgroundBitmapImportedButnotSaved = false;
+	    m_BackgroundBitmapImportedButnotSaved = false;
 
 		m_DefaultNumLanes = 3;
 		m_DefaultSpeedLimit = 65.0f;
@@ -96,9 +108,9 @@ protected: // create from serialization only
 		m_DemandMatrix = NULL;
 		m_ODSize = 0;
 		m_SelectedLinkID = -1;
-		m_SelectedNodeID = -1;
+	    m_SelectedNodeID = -1;
 		m_SelectedTrainID = -1;
-
+	
 		m_bSetView = false;
 
 	}
@@ -108,13 +120,15 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	int m_NodeDisplaySize;
+
 	GDPoint m_Origin;
 
-	int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+    int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.x-m_Origin.x)*Resolution+0.5);
 	}
-	int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+    int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.y-m_Origin.y)*Resolution+0.5);
 
@@ -122,21 +136,21 @@ public:
 
 	void ChangeNetworkCoordinates(int LayerNo, float XScale, float YScale, float deltaX_ratio, float deltaY_ratio);
 
-	void SelectPath(	std::vector<int>	m_LinkVector, int DisplayID);
+	void HighlightPath(	std::vector<int>	m_LinkVector, int DisplayID);
+
+	void HighlightSelectedVehicles(bool bSelectionFlag);
 	int m_CurrentViewID;
 	bool m_bSetView;
-	GDPoint m_Doc_Origin;
+ 	GDPoint m_Doc_Origin;
 	float m_Doc_Resolution;
 
 	int m_ODSize;
 	float** m_DemandMatrix;
-
-
 	bool m_StaticAssignmentMode;
 	Link_MOE m_LinkMOEMode;
 	OD_MOE m_ODMOEMode;
 
-	std::vector<DTAPath*>	m_PathDisplayList;
+	std::vector<DTAPath>	m_PathDisplayList;
 	bool m_PathMOEDlgShowFlag;
 	int m_SelectPathNo;
 
@@ -160,6 +174,8 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 	void OffsetLink();
+	void GenerateOffsetLinkBand();
+	void ReCalculateLinkBandWidth();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
@@ -168,7 +184,7 @@ public:
 	bool ReadVehicleTypeCSVFile(LPCTSTR lpszFileName);  
 	bool ReadDemandTypeCSVFile(LPCTSTR lpszFileName);
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
-
+	
 	bool ReadScenarioData();   // for road network
 
 	bool ReadVMSScenarioData();
@@ -185,7 +201,7 @@ public:
 
 	bool ReadTripTxtFile(LPCTSTR lpszFileName);  
 	bool Read3ColumnTripTxtFile(LPCTSTR lpszFileName);  
-
+	
 	// additional input
 	void LoadSimulationOutput();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
@@ -194,7 +210,7 @@ public:
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
 	void ReadHistoricalData(CString directory);
-
+	
 	int m_SamplingTimeInterval;
 	int m_AVISamplingTimeInterval;
 	int m_NumberOfDays;
@@ -231,13 +247,13 @@ public:
 
 	int FindLinkFromSensorLocation(float x, float y, CString orientation);
 
-	int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
-	float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-	float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime, float &value);
+int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
+float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
+float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
 
 public:
 
-	void SetStatusText(CString StatusText);
+void SetStatusText(CString StatusText);
 
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
@@ -249,7 +265,7 @@ public:
 	std::list<DTAVehicle*>	m_VehicleSet;
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
-
+	
 	std::map<int, DTANode*> m_NodeIDMap;
 
 	std::map<int, DTANode*> m_SubareaNodeIDMap;
@@ -260,11 +276,12 @@ public:
 
 
 	bool m_EmissionDataFlag;
-
+	
 	int m_AdjLinkSize;
 
 	DTANetworkForSP* m_pNetwork;
-	int Routing(int NumberOfRoutes);
+	int Routing(bool bCheckConnectivity);
+	int AlternativeRouting(int NumberOfRoutes);
 
 	CString GetWorkspaceTitleName(CString strFullPath);
 	CString m_ProjectTitle;
@@ -277,13 +294,37 @@ public:
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
 
+	
+	CString GetPricingTypeStr(int PricingType)
+	{
+	
+		if(PricingType == 1) return "SOV";
+		if(PricingType == 2) return "HOV";
+		if(PricingType == 3) return "truck";
 
+		return "NULL";
+	}
+
+	VEHICLE_CLASSIFICATION_SELECTION m_VehicleSelectionMode;
+	LINK_BAND_WIDTH_MODE m_LinkBandWidthMode;
+	float m_MaxLinkWidthAsNumberOfLanes;
+
+	std::map<int, VehicleStatistics> m_ClassificationTable;
+
+	bool SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFICATION_SELECTION vehicle_selection);
+	void MarkLinksInSubarea();
+	void GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_classfication, VEHICLE_Y_CLASSIFICATION y_classfication);
+
+	CString FindClassificationLabel(VEHICLE_X_CLASSIFICATION x_classfication, int index);
+	int FindClassificationNo(DTAVehicle* pVehicle, VEHICLE_X_CLASSIFICATION x_classfication);
+	void GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTION vehicle_selection, VEHICLE_X_CLASSIFICATION x_classfication);
+	
 	void ReadBackgroundImageFile(LPCTSTR lpszFileName);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
 
 
-
+	
 	std::map<int, int> m_VehicleType2PricingTypeMap;
 	std::map<int, int> m_LinkTypeFreewayMap;
 	std::map<int, int> m_LinkTypeArterialMap;
@@ -324,6 +365,7 @@ public:
 
 	bool m_bLinkShifted;
 
+	int m_WideLaneInFeet;
 
 	DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
 	{
@@ -331,9 +373,9 @@ public:
 
 		if(bAVIFlag == false) // not AVI sensor link, --> physical link
 		{
-			pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
-			if(pLink != NULL)
-				return NULL;  // a link with the same from and to node numbers exists!
+		pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
+		if(pLink != NULL)
+			return NULL;  // a link with the same from and to node numbers exists!
 		}
 
 		pLink = new DTALink(1);
@@ -386,9 +428,32 @@ public:
 		}
 		pLink->m_ShapePoints.push_back(pLink->m_FromPoint);
 		pLink->m_ShapePoints.push_back(pLink->m_ToPoint);
+
 		pLink->CalculateShapePointRatios();
 
+		double lane_offset = m_UnitFeet*m_WideLaneInFeet;  // 20 feet per lane
 
+			int last_shape_point_id = pLink ->m_ShapePoints .size() -1;
+			double DeltaX = pLink->m_ShapePoints[last_shape_point_id].x - pLink->m_ShapePoints[0].x;
+			double DeltaY = pLink->m_ShapePoints[last_shape_point_id].y - pLink->m_ShapePoints[0].y;
+			double theta = atan2(DeltaY, DeltaX);
+
+			for(unsigned int si = 0; si < pLink ->m_ShapePoints .size(); si++)
+			{
+				GDPoint pt;
+
+				pt.x = pLink->m_ShapePoints[si].x - lane_offset* cos(theta-PI/2.0f);
+				pt.y = pLink->m_ShapePoints[si].y - lane_offset* sin(theta-PI/2.0f);
+
+				pLink->m_BandLeftShapePoints.push_back (pt);
+
+				pt.x  = pLink->m_ShapePoints[si].x + max(1,pLink->m_NumLanes - 1)*lane_offset* cos(theta-PI/2.0f);
+				pt.y = pLink->m_ShapePoints[si].y + max(1,pLink->m_NumLanes - 1)*lane_offset* sin(theta-PI/2.0f);
+
+				pLink->m_BandRightShapePoints.push_back (pt);
+			}
+
+ 
 		m_LinkSet.push_back (pLink);
 		m_LinkNoMap[pLink->m_LinkNo]  = pLink;
 		return pLink;
@@ -433,14 +498,14 @@ public:
 				return true;
 			}
 		}
-
+	
 		return false;
 	}
 
-	bool DeleteLink(int LinkID)
+	bool DeleteLink(int LinkNo)
 	{
 		DTALink* pLink = 0;
-		pLink = m_LinkNoMap[LinkID];
+		pLink = m_LinkNoMap[LinkNo];
 		if(pLink == NULL)
 			return false;  // a link with the same from and to node numbers exists!
 
@@ -454,7 +519,7 @@ public:
 		std::list<DTALink*>::iterator iLink;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->m_LinkNo == LinkID)
+			if((*iLink)->m_LinkNo == LinkNo)
 			{
 				m_LinkSet.erase  (iLink);
 				break;
@@ -466,8 +531,8 @@ public:
 		int i= 0;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++, i++)
 		{
-			(*iLink)->m_LinkNo = i;
-			m_LinkNoMap[i] = (*iLink);
+		(*iLink)->m_LinkNo = i;
+		m_LinkNoMap[i] = (*iLink);
 		}
 
 
@@ -558,20 +623,20 @@ public:
 
 		map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
 
-		if(m_Iter == m_NodeIDtoLinkMap.end( ))
-		{
-			CString msg;
+			if(m_Iter == m_NodeIDtoLinkMap.end( ))
+			{
+				CString msg;
 
-			if(FileName.GetLength() == 0)
-			{
+				if(FileName.GetLength() == 0)
+				{
 				msg.Format ("Link %d-> %d cannot be found.", FromNodeNumber, ToNodeNumber);
-			}else
-			{
+				}else
+				{
 				msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
+				}
+				AfxMessageBox(msg);
+				return NULL;
 			}
-			AfxMessageBox(msg);
-			return NULL;
-		}
 		return m_NodeIDtoLinkMap[LinkKey];
 	}
 
@@ -588,7 +653,7 @@ public:
 		return m_LinkNotoLinkMap[LinkID];
 	}
 
-	CString GetTimeStampStrFromIntervalNo(int time_interval);
+	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote);
 
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
@@ -610,7 +675,7 @@ public:
 public:
 	CString GetTableName(CString Tablename);
 	CString ConstructSQL(CString Tablename);
-
+		
 	bool CreateNetworkFromExcelFile();
 	bool ImportSensorData();
 public: // subarea
@@ -622,6 +687,7 @@ public: // subarea
 	// Overrides
 public:
 
+	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
 	bool m_bFitNetworkInitialized;
@@ -694,73 +760,76 @@ public:
 	afx_msg void OnImportAgentFile();
 	afx_msg void OnImportNgsimFile();
 
-	afx_msg void OnMoeLength();
-	afx_msg void OnUpdateMoeLength(CCmdUI *pCmdUI);
-	afx_msg void OnEditSetdefaultlinkpropertiesfornewlinks();
-	afx_msg void OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI);
-	afx_msg void OnToolsProjectfolder();
-	afx_msg void OnToolsOpennextaprogramfolder();
-	afx_msg void OnMoeOddemand();
-	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
-	afx_msg void OnMoeNoodmoe();
-	afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
-	afx_msg void OnOdtableImportOdTripFile();
-	afx_msg void OnToolsEditassignmentsettings();
-	afx_msg void OnToolsEditoddemandtable();
-	afx_msg void OnSearchLinklist();
-	afx_msg void OnMoeVehicle();
-	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
-	afx_msg void OnToolsViewsimulationsummary();
-	afx_msg void OnToolsViewassignmentsummarylog();
-	afx_msg void OnHelpVisitdevelopmentwebsite();
-	afx_msg void OnToolsRuntrafficassignment();
-	afx_msg void OnImportodtripfile3columnformat();
-	afx_msg void OnSearchVehicle();
-	afx_msg void OnToolsPerformscheduling();
-	afx_msg void OnFileChangecoordinatestolong();
-	afx_msg void OnFileOpenrailnetworkproject();
-	afx_msg void OnToolsExportopmodedistribution();
-	afx_msg void OnToolsEnumeratepath();
-	afx_msg void OnToolsExporttoHistDatabase();
-	afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
-	afx_msg void OnScenarioConfiguration();
-	afx_msg void OnMoeViewmoes();
-	afx_msg void OnImportdataImport();
-	afx_msg void OnMoeVehiclepathanalaysis();
-	afx_msg void OnFileConstructandexportsignaldata();
-	afx_msg void OnFileImportDemandFromCsv();
-	afx_msg void OnImportSensorData();
-	afx_msg void OnImportLinkmoe();
-	afx_msg void OnImportVehiclefile();
-	afx_msg void OnLinkmoeEmissions();
-	afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
-	afx_msg void OnLinkmoeReliability();
-	afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
-	afx_msg void OnLinkmoeSafety();
-	afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
-	afx_msg void OnExportAms();
-	afx_msg void OnImportAvi();
-	afx_msg void OnImportGps33185();
-	afx_msg void OnImportVii();
-	afx_msg void OnImportWeather33188();
-	afx_msg void OnImportGps();
-	afx_msg void OnImportWorkzone();
-	afx_msg void OnImportIncident();
-	afx_msg void OnImportWeather();
-	afx_msg void OnImportPricing();
-	afx_msg void OnImportAtis();
-	afx_msg void OnImportBus();
-	afx_msg void OnLinkAddWorkzone();
-	afx_msg void OnLinkAddvms();
-	afx_msg void OnImportLinklayerinkml();
-	afx_msg void OnEditOffsetlinks();
-	afx_msg void OnImportSubarealayerformapmatching();
-	afx_msg void OnFileOpenNetworkOnly();
-	afx_msg void OnLinkAddlink();
-	afx_msg void OnLinkAddhovtoll();
-	afx_msg void OnLinkAddhottoll();
-	afx_msg void OnLinkAddtolledexpresslane();
-	afx_msg void OnLinkConvertgeneralpurposelanetotolledlane();
+		afx_msg void OnMoeLength();
+		afx_msg void OnUpdateMoeLength(CCmdUI *pCmdUI);
+		afx_msg void OnEditSetdefaultlinkpropertiesfornewlinks();
+		afx_msg void OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI);
+		afx_msg void OnToolsProjectfolder();
+		afx_msg void OnToolsOpennextaprogramfolder();
+		afx_msg void OnMoeOddemand();
+		afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
+		afx_msg void OnMoeNoodmoe();
+		afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
+		afx_msg void OnOdtableImportOdTripFile();
+		afx_msg void OnToolsEditassignmentsettings();
+		afx_msg void OnToolsEditoddemandtable();
+		afx_msg void OnSearchLinklist();
+		afx_msg void OnMoeVehicle();
+		afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
+		afx_msg void OnToolsViewsimulationsummary();
+		afx_msg void OnToolsViewassignmentsummarylog();
+		afx_msg void OnHelpVisitdevelopmentwebsite();
+		afx_msg void OnToolsRuntrafficassignment();
+		afx_msg void OnImportodtripfile3columnformat();
+		afx_msg void OnToolsPerformscheduling();
+		afx_msg void OnFileChangecoordinatestolong();
+		afx_msg void OnFileOpenrailnetworkproject();
+		afx_msg void OnToolsExportopmodedistribution();
+		afx_msg void OnToolsEnumeratepath();
+		afx_msg void OnToolsExporttoHistDatabase();
+		afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
+		afx_msg void OnScenarioConfiguration();
+		afx_msg void OnMoeViewmoes();
+		afx_msg void OnImportdataImport();
+		afx_msg void OnMoeVehiclepathanalaysis();
+		afx_msg void OnFileConstructandexportsignaldata();
+		afx_msg void OnFileImportDemandFromCsv();
+		afx_msg void OnImportSensorData();
+		afx_msg void OnImportLinkmoe();
+		afx_msg void OnImportVehiclefile();
+		afx_msg void OnLinkmoeEmissions();
+		afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
+		afx_msg void OnLinkmoeReliability();
+		afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
+		afx_msg void OnLinkmoeSafety();
+		afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
+		afx_msg void OnExportAms();
+		afx_msg void OnImportAvi();
+		afx_msg void OnImportGps33185();
+		afx_msg void OnImportVii();
+		afx_msg void OnImportWeather33188();
+		afx_msg void OnImportGps();
+		afx_msg void OnImportWorkzone();
+		afx_msg void OnImportIncident();
+		afx_msg void OnImportWeather();
+		afx_msg void OnImportPricing();
+		afx_msg void OnImportAtis();
+		afx_msg void OnImportBus();
+		afx_msg void OnLinkAddWorkzone();
+		afx_msg void OnLinkAddvms();
+		afx_msg void OnImportLinklayerinkml();
+		afx_msg void OnEditOffsetlinks();
+		afx_msg void OnImportSubarealayerformapmatching();
+		afx_msg void OnFileOpenNetworkOnly();
+		afx_msg void OnLinkAddlink();
+		afx_msg void OnLinkAddhovtoll();
+		afx_msg void OnLinkAddhottoll();
+		afx_msg void OnLinkAddtolledexpresslane();
+		afx_msg void OnLinkConvertgeneralpurposelanetotolledlane();
+		afx_msg void OnProjectEdittime();
+		afx_msg void OnLinkVehiclestatisticsanalaysis();
+		afx_msg void OnSubareaDeletesubarea();
+		afx_msg void OnSubareaViewvehiclestatisticsassociatedwithsubarea();
 };
 
 

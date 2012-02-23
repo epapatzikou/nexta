@@ -13,19 +13,19 @@ IMPLEMENT_DYNAMIC(CDlg_VehEmissions, CBaseDialog)
 
 CDlg_VehEmissions::CDlg_VehEmissions(CWnd* pParent /*=NULL*/)
 : CBaseDialog(CDlg_VehEmissions::IDD, pParent)
+, m_SingleVehicleID(0)
 {
-
 }
 
 CDlg_VehEmissions::~CDlg_VehEmissions()
 {
 
 	if(m_ODMOEMatrix !=NULL)
-		DeallocateDynamicArray<ODStatistics>(m_ODMOEMatrix,m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
+		DeallocateDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
 
 	std::vector<int> LinkVector;
 	// empty vector
-	m_pDoc->SelectPath(LinkVector,1);
+	m_pDoc->HighlightPath(LinkVector,1);
 
 
 }
@@ -133,7 +133,7 @@ BOOL CDlg_VehEmissions::OnInitDialog()
 	m_OriginBox.SetCurSel (0);
 	m_DestinationBox.SetCurSel (0);
 
-	m_ODMOEMatrix = AllocateDynamicArray<ODStatistics>(m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
+	m_ODMOEMatrix = AllocateDynamicArray<VehicleStatistics>(m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
 
 	m_VehicleTypeBox.AddString ("All");
 	
@@ -306,7 +306,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 					{
 					for(int link= 1; link<pVehicle->m_NodeSize; link++)
 					{
-						if ( pVehicle->m_NodeAry[link].LinkID == ImpactLinkNo)
+						if ( pVehicle->m_NodeAry[link].LinkNo  == ImpactLinkNo)
 						{
 							m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].bImpactFlag = true;
 						}
@@ -320,7 +320,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 		count = 0;
 		m_ODList.ResetContent ();
 
-		ODStatistics total_summary;
+		VehicleStatistics total_summary;
 
 		for(i=1; i <= m_pDoc->m_ODSize ; i++)
 			for(j=1; j<= m_pDoc->m_ODSize ; j++)
@@ -514,7 +514,7 @@ void CDlg_VehEmissions::FilterPaths()
 
 					for(int link= 1; link<pVehicle->m_NodeSize; link++)
 					{
-						ps_element.m_LinkVector.push_back(pVehicle->m_NodeAry[link].LinkID);
+						ps_element.m_LinkVector.push_back(pVehicle->m_NodeAry[link].LinkNo);
 					}
 
 					m_PathVector.push_back (ps_element);
@@ -570,17 +570,17 @@ void CDlg_VehEmissions::ShowVehicles()
 			if(pVehicle->m_TollDollarCost >=0.001)
 			{
 			if(m_pDoc->m_EmissionDataFlag )
-				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min, $%3.2f,%5.1f(J), %4.1f(CO2_g)",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost, pVehicle->m_EmissionData .Energy , pVehicle->m_EmissionData.CO2  );
+				VehicleInfoString.Format ("No. %d, %s, @%3.1f min, %3.1f min, $%3.2f,%5.1f(J), %4.1f(CO2_g)",pVehicle->m_VehicleID , m_pDoc->GetPricingTypeStr(pVehicle->m_PricingType ), pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost, pVehicle->m_EmissionData .Energy , pVehicle->m_EmissionData.CO2  );
 			else
-				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost);
+				VehicleInfoString.Format ("No. %d, %s, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , m_pDoc->GetPricingTypeStr(pVehicle->m_PricingType ),pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost);
 
 			}
 			else
 			{
 			if(m_pDoc->m_EmissionDataFlag )
-				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min,%5.1f(J), %4.1f(CO2_g)",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_EmissionData .Energy , pVehicle->m_EmissionData.CO2  );
+				VehicleInfoString.Format ("No. %d, %s, @%3.1f min, %3.1f min,%5.1f(J), %4.1f(CO2_g)",pVehicle->m_VehicleID , m_pDoc->GetPricingTypeStr(pVehicle->m_PricingType ), pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_EmissionData .Energy , pVehicle->m_EmissionData.CO2  );
 			else
-				VehicleInfoString.Format ("No. %d, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost);
+				VehicleInfoString.Format ("No. %d, %s, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , m_pDoc->GetPricingTypeStr(pVehicle->m_PricingType ), pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost);
 			}
 
 			if(m_VehicleList.GetCount () < 5000)
@@ -671,7 +671,7 @@ void CDlg_VehEmissions::ShowSelectedPath()
 	int PathNo = m_PathList.GetCurSel();
 
 	if(PathNo >= 0)
-		m_pDoc->SelectPath(m_PathVector[PathNo].m_LinkVector,1);
+		m_pDoc->HighlightPath(m_PathVector[PathNo].m_LinkVector,1);
 
 }
 
@@ -742,4 +742,9 @@ void CDlg_VehEmissions::OnCbnSelchangeComboVotUb()
 void CDlg_VehEmissions::OnCbnSelchangeComboDemandtype()
 {
 	FilterOriginDestinationPairs();
+}
+
+void CDlg_VehEmissions::OnBnClickedFindSingleVehicleId()
+{
+	// TODO: Add your control notification handler code here
 }

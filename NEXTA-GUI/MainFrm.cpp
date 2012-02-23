@@ -94,20 +94,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
-		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_MOEToolBar.LoadToolBar(IDR_VIEW_TOOLBAR))
-		{
-			TRACE0("Failed to create toolbar\n");
-			return -1;      // fail to create
-		}
-		if (!m_DataToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_DataToolBar.LoadToolBar(IDR_DATA_TOOLBAR))
-		{
-			TRACE0("Failed to create toolbar\n");
-			return -1;      // fail to create
-		}
+
+	
 
 		if (!m_AMSToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
@@ -117,6 +105,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
+		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_MOEToolBar.LoadToolBar(IDR_VIEW_TOOLBAR))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
 		if (!m_wndStatusBar.Create(this) ||
 			!m_wndStatusBar.SetIndicators(indicators,
 			sizeof(indicators)/sizeof(UINT)))
@@ -126,60 +121,43 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		}
 
 		m_MOEToolBar.SetButtonText(0,"VIEW");
-		m_MOEToolBar.SetButtonText(2,"2D GIS");
-		m_MOEToolBar.SetButtonText(3,"Animation");
-		m_MOEToolBar.SetButtonText(4,"Density");
-		m_MOEToolBar.SetButtonText(5,"Volume");
-		m_MOEToolBar.SetButtonText(6,"Speed");
-		m_MOEToolBar.SetButtonText(7,"Emissions");
-		m_MOEToolBar.SetButtonText(8,"Reliability");
-		m_MOEToolBar.SetButtonText(9,"Safety");
-		m_MOEToolBar.SetButtonText(11,"Link");
-		m_MOEToolBar.SetButtonText(12,"Path");
-		m_MOEToolBar.SetButtonText(13,"OD");
-		m_MOEToolBar.SetButtonText(14,"Network");
-		m_MOEToolBar.SetButtonText(16,"3D");
-		m_MOEToolBar.SetButtonText(18,"Space-time");
-
+		m_MOEToolBar.SetButtonText(2,"Animation");
+		m_MOEToolBar.SetButtonText(3,"Density");
+		m_MOEToolBar.SetButtonText(4,"Volume");
+		m_MOEToolBar.SetButtonText(5,"Speed");
+		m_MOEToolBar.SetButtonText(6,"Emissions");
+		m_MOEToolBar.SetButtonText(7,"Reliability");
+		m_MOEToolBar.SetButtonText(8,"Safety");
+		m_MOEToolBar.SetButtonText(10,"Link");
+		m_MOEToolBar.SetButtonText(11,"Path");
+		m_MOEToolBar.SetButtonText(12,"Subarea");
+		m_MOEToolBar.SetButtonText(13,"System");
+		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
 
-		///// DataToolBar
-
-		m_DataToolBar.SetButtonText(0,"DATA");
-		m_DataToolBar.SetButtonText(2,"Detector");
-		m_DataToolBar.SetButtonText(3,"AVI");
-		m_DataToolBar.SetButtonText(4,"GPS");
-		m_DataToolBar.SetButtonText(5,"Video");
-		m_DataToolBar.SetButtonText(6,"VII");
-
-		m_DataToolBar.SetButtonText(8,"Incident");
-		m_DataToolBar.SetButtonText(9,"VMS");
-		m_DataToolBar.SetButtonText(10,"Pricing");
-
 		m_AMSToolBar.SetButtonText(0,"TOOL");
-		m_AMSToolBar.SetButtonText(2,"Edit");
-		m_AMSToolBar.SetButtonText(3,"Cloud");
-		m_AMSToolBar.SetButtonText(5,"Simulation");
-		m_AMSToolBar.SetButtonText(6,"Subarea");
-		m_AMSToolBar.SetButtonText(7,"Signal");
+		m_AMSToolBar.SetButtonText(2,"Import");
+		m_AMSToolBar.SetButtonText(3,"Sensor");
+		m_AMSToolBar.SetButtonText(4,"Signal");
+		m_AMSToolBar.SetButtonText(6,"Simulation");
+		m_AMSToolBar.SetButtonText(7,"Calibration");
+		m_AMSToolBar.SetButtonText(8,"Prediction");
+		m_AMSToolBar.SetButtonText(10,"Editing");
+		m_AMSToolBar.SetButtonText(12,"Capacity");
+		m_AMSToolBar.SetButtonText(13,"ATIS");
+		m_AMSToolBar.SetButtonText(14,"Pricing");
 
-		m_DataToolBar.SetSizes(CSize(42,38),CSize(16,15));
-
-
-		m_DataToolBar.EnableDocking(CBRS_ALIGN_ANY);
-		EnableDocking(CBRS_ALIGN_ANY);
-		DockControlBar(&m_DataToolBar);
-
-		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
-		EnableDocking(CBRS_ALIGN_ANY);
-		DockControlBar(&m_MOEToolBar);
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));
 		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_AMSToolBar);
+
+		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		EnableDocking(CBRS_ALIGN_ANY);
+		DockControlBar(&m_MOEToolBar);
 
 		SetTimer(0,1000, NULL); // simulation reflesh timer
 		m_wndPlayerSeekBar.Enable(true);
@@ -394,11 +372,6 @@ void CMainFrame::OnWindowShowestimationview()
 
 void CMainFrame::OnViewDatatoolbar()
 {
-	m_bShowDataToolBar= !m_bShowDataToolBar;
-	if(m_bShowDataToolBar)
-		m_DataToolBar.ShowWindow (true);
-	else
-		m_DataToolBar.ShowWindow (false);
 }
 
 void CMainFrame::OnUpdateViewDatatoolbar(CCmdUI *pCmdUI)
