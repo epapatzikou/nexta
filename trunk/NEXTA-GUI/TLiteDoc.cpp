@@ -5929,7 +5929,7 @@ void CTLiteDoc::OnToolsTraveltimereliabilityanalysis()
 {
 		CDlg_TravelTimeReliability dlg;
 		dlg.m_pDoc= this;
-		dlg.m_PathFreeFlowTravelTime == 20;  // for a predefined corridor
+		dlg.m_PathFreeFlowTravelTime = 20;  // for a predefined corridor
 		dlg.DoModal ();
 }
 

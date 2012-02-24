@@ -42,21 +42,21 @@ extern float g_GetRandomRatio();
 using namespace std;
 using std::string;
 #define PI 3.1415926
-   enum DTA_Approach
-   {
-      DTA_North,
-      DTA_East,
-      DTA_South,
-      DTA_West
-   };
+enum DTA_Approach
+{
+	DTA_North,
+	DTA_East,
+	DTA_South,
+	DTA_West
+};
 
-      enum DTA_Turn
-   {
-      DTA_LeftTurn,
-      DTA_Through,
-      DTA_RightTurn,
-      DTA_OtherTurn
-   };
+enum DTA_Turn
+{
+	DTA_LeftTurn,
+	DTA_Through,
+	DTA_RightTurn,
+	DTA_OtherTurn
+};
 
 #define MAX_RANDOM_SAMPLE_SIZE 100
 
@@ -128,19 +128,19 @@ typedef struct{
 class CVehicleEmission 
 {
 public:
-			float Energy;
-			float CO2;
-			float NOX;
-			float CO;
-			float HC;
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
 	CVehicleEmission()
 	{
-			Energy = 0;
-			CO2 = 0;
-			NOX = 0;
-			CO = 0;
-			HC = 0;
-	
+		Energy = 0;
+		CO2 = 0;
+		NOX = 0;
+		CO = 0;
+		HC = 0;
+
 	}
 };
 
@@ -181,12 +181,12 @@ public:
 	DTADemand()
 	{
 
-	for(int type = 0; type < MAX_DEMAND_TYPE_SIZE; type++)
-	{
-	number_of_vehicles[type] =0 ;
-	}
+		for(int type = 0; type < MAX_DEMAND_TYPE_SIZE; type++)
+		{
+			number_of_vehicles[type] =0 ;
+		}
 	}	
-	
+
 };
 
 
@@ -201,10 +201,10 @@ public:
 	DTADemandProfile()
 	{
 		for(int interval =0; interval < MAX_TIME_INTERVAL_SIZE; interval++)
-			{
-				time_dependent_ratio[interval] = 0;
-			}
-		
+		{
+			time_dependent_ratio[interval] = 0;
+		}
+
 	}
 
 };
@@ -229,13 +229,13 @@ public:
 	DTADemandType()
 	{
 		for(int vehicle_type = 0; vehicle_type < MAX_VEHICLE_TYPE_SIZE; vehicle_type++)
-			{
-				vehicle_type_percentage[vehicle_type] = 0;
-			}
+		{
+			vehicle_type_percentage[vehicle_type] = 0;
+		}
 		for(int info_class = 0; info_class < MAX_INFO_CLASS_SIZE; info_class++)
-			{
-				info_class_percentage[info_class] = 0;
-			}
+		{
+			info_class_percentage[info_class] = 0;
+		}
 		info_class_percentage[0] = 1.0;
 	}
 
@@ -349,7 +349,7 @@ public:
 		ReducedCapacity = 0;
 		EventStartTiming = 0;
 
-	// these four copies are used to compare simulation results and observed results
+		// these four copies are used to compare simulation results and observed results
 		ObsSpeedCopy = 0;
 		ObsFlowCopy = 0;
 		ObsDensityCopy = 0;
@@ -393,6 +393,14 @@ class CapacityReduction
 public:
 	CapacityReduction()
 	{
+		for (int i=0;i<MAX_RANDOM_SAMPLE_SIZE;i++)
+		{
+			CapacityReductionSamples[i] = 0.f;
+			AdditionalDelaySamples[i] = 0.f;
+		}
+
+		COVRegularCapacityReduction = 0.1f;
+
 	}
 
 
@@ -401,7 +409,7 @@ public:
 	float LaneClosureRatio;
 	float SpeedLimit;
 	float ServiceFlowRate;
-	
+
 	float MeanRegularCapacityReduction;  // from link data
 	float COVRegularCapacityReduction;
 
@@ -410,7 +418,7 @@ public:
 	float COVIncidentCapacityReduction;
 
 	float ProbabilityIncidentOccurance;
-	
+
 	float CapacityReductionSamples[MAX_RANDOM_SAMPLE_SIZE];
 	float AdditionalDelaySamples[MAX_RANDOM_SAMPLE_SIZE];
 
@@ -434,7 +442,7 @@ public:
 
 	MessageSign()
 	{
-	
+
 	}
 
 	~MessageSign()
@@ -529,7 +537,7 @@ public:
 
 	void CalculateShapePointRatios()
 	{
-	
+
 		float total_distance = 0; 
 		unsigned int si;
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
@@ -561,24 +569,24 @@ public:
 		if(m_ShapePointRatios.size() == m_ShapePoints.size())
 		{
 
-		for(si = 0; si < m_ShapePoints .size()-1; si++)
-		{
-
-			if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
+			for(si = 0; si < m_ShapePoints .size()-1; si++)
 			{
 
-			 float SectionRatio = m_ShapePointRatios[si+1] - m_ShapePointRatios[si];
+				if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
+				{
 
-			float RelateveRatio = 0;
-			if(SectionRatio >0)
-				RelateveRatio = (ratio - m_ShapePointRatios[si])/SectionRatio;
+					float SectionRatio = m_ShapePointRatios[si+1] - m_ShapePointRatios[si];
 
-			 Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si+1].x - m_ShapePoints[si].x);
-			 Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si+1].y - m_ShapePoints[si].y);
+					float RelateveRatio = 0;
+					if(SectionRatio >0)
+						RelateveRatio = (ratio - m_ShapePointRatios[si])/SectionRatio;
 
-			 return Pt;
+					Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si+1].x - m_ShapePoints[si].x);
+					Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si+1].y - m_ShapePoints[si].y);
+
+					return Pt;
+				}
 			}
-		}
 
 		}
 		return Pt;
@@ -659,7 +667,7 @@ public:
 
 	void Compute15MinAvg();
 
-		struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
+	struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
 
 
 
@@ -696,7 +704,7 @@ public:
 		return 0;
 	}
 
-		float 	GetTollValue(int DepartureTime)
+	float 	GetTollValue(int DepartureTime)
 	{
 		for(unsigned int il = 0; il< TollVector.size(); il++)
 		{
@@ -741,7 +749,7 @@ public:
 	std::vector<CapacityReduction> CapacityReductionVector;
 	std::vector<MessageSign> MessageSignVector;
 	std::vector<DTAToll> TollVector;
-	
+
 
 	int m_bMergeFlag;  // 1: freeway and freeway merge, 2: freeway and ramp merge
 	std::vector<MergeIncomingLink> MergeIncomingLinkVector;
@@ -896,7 +904,7 @@ public:
 			return m_StaticLaneVolume;
 	}
 
-		float GetObsLaneVolumeCopy(int t)
+	float GetObsLaneVolumeCopy(int t)
 	{
 		if(t < m_SimulationHorizon)
 			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlowCopy);  
@@ -1023,14 +1031,14 @@ public:
 
 	}
 
-		void Init(int LinkSize, int TimeHorizon)
+	void Init(int LinkSize, int TimeHorizon)
 	{
 		m_TimeHorizon = TimeHorizon;
 		m_LinkSize = LinkSize;
 		m_number_of_days = max(1,TimeHorizon/1440);
 	}
 	void UpdateWithinDayStatistics();
-	
+
 
 	float GetTravelTimeMOE(int time, int MOEType)
 	{
@@ -1606,7 +1614,7 @@ public:
 
 	int SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool check_connectivity_flag, bool debug_flag);   // Pointer to previous node (node)
 
-// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
+	// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
 
 	//these two functions are for timetabling
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
@@ -1691,43 +1699,43 @@ struct VehicleCFData
 };
 
 
-  class CEmissionRate 
+class CEmissionRate 
 {
 public:
-			float meanBaseRate_TotalEnergy;
-			float meanBaseRate_CO2;
-			float meanBaseRate_NOX;
-			float meanBaseRate_CO;
-			float meanBaseRate_HC;
+	float meanBaseRate_TotalEnergy;
+	float meanBaseRate_CO2;
+	float meanBaseRate_NOX;
+	float meanBaseRate_CO;
+	float meanBaseRate_HC;
 
-			CEmissionRate()
-			{
-			meanBaseRate_TotalEnergy = 0;
-			meanBaseRate_CO2 = 0;
-			meanBaseRate_NOX = 0;
-			meanBaseRate_CO = 0;
-			meanBaseRate_HC = 0;
+	CEmissionRate()
+	{
+		meanBaseRate_TotalEnergy = 0;
+		meanBaseRate_CO2 = 0;
+		meanBaseRate_NOX = 0;
+		meanBaseRate_CO = 0;
+		meanBaseRate_HC = 0;
 
-			}
+	}
 
 };
 
-  class CAVISensorPair
-  {
+class CAVISensorPair
+{
 
-  public:
-	  CAVISensorPair()
-	  {
-		  pLink = NULL;
-		  number_of_samples = 0;
-	  }
-  int sensor_pair_id;
-  int number_of_samples;
-  CString sensor_type;
-  int from_node_id;
-  int to_node_id;
-  DTALink* pLink;
-  };
+public:
+	CAVISensorPair()
+	{
+		pLink = NULL;
+		number_of_samples = 0;
+	}
+	int sensor_pair_id;
+	int number_of_samples;
+	CString sensor_type;
+	int from_node_id;
+	int to_node_id;
+	DTALink* pLink;
+};
 
 
 class VehicleStatistics
@@ -1735,29 +1743,29 @@ class VehicleStatistics
 public: 
 	VehicleStatistics()
 	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	TotalCost = 0;
-	TotalEmissions = 0;
-	TotalGeneralizedCost = 0;
-	TotalGeneralizedTime = 0;
-	DisplayValue = 0;
+		TotalVehicleSize = 0;
+		TotalTravelTime = 0;
+		TotalDistance = 0;
+		TotalCost = 0;
+		TotalEmissions = 0;
+		TotalGeneralizedCost = 0;
+		TotalGeneralizedTime = 0;
+		DisplayValue = 0;
 	}
 
 	void Reset()
 	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	TotalCost = 0;
-	TotalEmissions = 0;
-	TotalGeneralizedCost = 0;
-	TotalGeneralizedTime = 0;
-	bImpactFlag = false;
+		TotalVehicleSize = 0;
+		TotalTravelTime = 0;
+		TotalDistance = 0;
+		TotalCost = 0;
+		TotalEmissions = 0;
+		TotalGeneralizedCost = 0;
+		TotalGeneralizedTime = 0;
+		bImpactFlag = false;
 	}
 
-    CString Label;
+	CString Label;
 	float DisplayValue;
 	bool bImpactFlag;
 	int   TotalVehicleSize;
