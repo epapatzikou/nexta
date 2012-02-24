@@ -63,6 +63,7 @@
 #include "Data-Interface\\XLTestDataSource.h"
 #include "Dlg_VehicleClassification.h"
 #include "Dlg_Find_Vehicle.h"
+#include "Dlg_TravelTimeReliability.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -190,6 +191,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_VEHICLESTATISTICSANALAYSIS, &CTLiteDoc::OnLinkVehiclestatisticsanalaysis)
 	ON_COMMAND(ID_SUBAREA_DELETESUBAREA, &CTLiteDoc::OnSubareaDeletesubarea)
 	ON_COMMAND(ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA, &CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea)
+	ON_COMMAND(ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS, &CTLiteDoc::OnToolsTraveltimereliabilityanalysis)
 	END_MESSAGE_MAP()
 
 
@@ -5922,3 +5924,12 @@ void CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea()
 {
 	// TODO: Add your command handler code here
 }
+
+void CTLiteDoc::OnToolsTraveltimereliabilityanalysis()
+{
+		CDlg_TravelTimeReliability dlg;
+		dlg.m_pDoc= this;
+		dlg.m_PathFreeFlowTravelTime == 20;  // for a predefined corridor
+		dlg.DoModal ();
+}
+

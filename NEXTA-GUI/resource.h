@@ -10,6 +10,8 @@
 #define ID_IMPORT                       3
 #define IDOK_FIND_PATH                  3
 #define ID_HIGHLIGHT_VEHICLES           3
+#define ID_EXPORT_DATA2                 3
+#define ID_EDIT_SCENARIO                3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
 #define IDD_ABOUTBOX                    100
@@ -76,8 +78,8 @@
 #define IDR_TOOLBAR1                    189
 #define IDD_TD_DEMAND_PROFILE_DIALOG    191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
-#define VISUALIZATION                   193
 #define IDD_VISUALIZATION_CONFIG        193
+#define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -203,8 +205,11 @@
 #define IDC_DEMAND_PROFILE_LIST         1084
 #define IDC_VEHICLE_CHART1              1085
 #define IDC_COMBO_XAxis                 1086
+#define IDC_TravelTime_CHART            1086
 #define IDC_STATIC_ERROR_MESSAGE        1088
 #define IDC_LINK_BAR_WIDTH_LIST         1089
+#define IDC_LIST_1                      1090
+#define IDC_Factor_CHART                1091
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -620,14 +625,16 @@
 #define ID_MOE_ONTOOLSVIEWSIMULATIONSUMMARY 33290
 #define ID_MOE_VEHICLESTATISTICS        33291
 #define ID_LINK_LINKBAR                 33292
+#define ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS 33293
+#define ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS 33294
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        194
-#define _APS_NEXT_COMMAND_VALUE         33293
-#define _APS_NEXT_CONTROL_VALUE         1090
+#define _APS_NEXT_COMMAND_VALUE         33295
+#define _APS_NEXT_CONTROL_VALUE         1092
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

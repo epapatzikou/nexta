@@ -830,6 +830,7 @@ public:
 		afx_msg void OnLinkVehiclestatisticsanalaysis();
 		afx_msg void OnSubareaDeletesubarea();
 		afx_msg void OnSubareaViewvehiclestatisticsassociatedwithsubarea();
+		afx_msg void OnToolsTraveltimereliabilityanalysis();
 };
 
 
