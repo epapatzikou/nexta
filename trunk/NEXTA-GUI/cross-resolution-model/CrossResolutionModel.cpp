@@ -129,12 +129,6 @@ int CTLiteDoc::Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3)
 }
 void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 {
-	if(m_pNetwork!=NULL)
-		delete m_pNetwork;
-
-	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
-
 	DTA_NodeMovementSet MovementTemplate; // template with 12 movements
 	DTA_NodePhaseSet PhaseTemplate; // template with 8 phases
 
@@ -155,17 +149,32 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
 	{  // for current node
 		
-		if ((*iNode)->m_ControlType > 0)  //(m_pNetwork->m_InboundSizeAry[i] >= 3) // add node control types
+		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
-			for(int inbound_i= 0; inbound_i< m_pNetwork->m_InboundSizeAry[i]; inbound_i++)
+			// generate movement set and phase set
+				DTA_NodeMovementSet movement_set;
+				movement_set.copy_parameters(MovementTemplate);
+				movement_set.CurrentNodeID = i;
+				m_MovementVector.push_back(movement_set);
+				
+				// generate DTA_NodePhaseSet for this Node
+				DTA_NodePhaseSet PhaseSet;
+				PhaseSet.copy_parameters(PhaseTemplate);
+				PhaseSet.CurrentNodeID = i;
+				m_PhaseVector.push_back(PhaseSet);
+
+
+				// scan each inbound link and outbound link
+
+			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
 			{
 				// for each incoming link
-				for(int outbound_i= 0; outbound_i< m_pNetwork->m_OutboundSizeAry [i]; outbound_i++)
+				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
 				{
 					//for each outging link
-					int LinkID = m_pNetwork->m_InboundLinkAry[i][inbound_i];
+					int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
 
-					if (m_pNetwork->m_FromIDAry[LinkID] != m_pNetwork->m_OutboundNodeAry [i][outbound_i])
+					if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
 					{
 						// do not consider u-turn
 
@@ -174,8 +183,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						element.CurrentNodeID = i;						
 
 						element.InboundLinkID = LinkID;
-						element.UpNodeID = m_pNetwork->m_FromIDAry[LinkID];
-						element.DestNodeID = m_pNetwork->m_OutboundNodeAry [i][outbound_i];
+						element.UpNodeID = m_Network.m_FromIDAry[LinkID];
+						element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
 
 						GDPoint p1, p2, p3;
 						p1  = m_NodeIDMap[element.UpNodeID]->pt;
@@ -185,7 +194,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
-						// initialize movement here
+						// determine  movement type /direction here
 						switch (element.movement_approach)
 						{
 							case DTA_North:
@@ -226,50 +235,19 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						element.copy_from_MovementSet(MovementTemplate, element.dir);
 
 						// add Movement into m_MovementVector
-						bool exist_node_flag = false;
-						if (!m_MovementVector.empty())
-						{
-							for (unsigned int m = 0; m < m_MovementVector.size(); m++)
-							{
-								if (m_MovementVector[m].CurrentNodeID == element.CurrentNodeID)
-								{
-									element.copy_to_MovementSet(m_MovementVector[m], element.dir);
-									exist_node_flag = true;
-									break;
-								}
-							}
-						}
-						if (!exist_node_flag) // add new DTA_NodeMovementSet
-						{
-							DTA_NodeMovementSet movement_set;
-							movement_set.copy_parameters(MovementTemplate);
-							movement_set.CurrentNodeID = element.CurrentNodeID;
-							element.copy_to_MovementSet(movement_set, element.dir);
-							m_MovementVector.push_back(movement_set);
-							
-							// generate DTA_NodePhaseSet for this Node
-							DTA_NodePhaseSet PhaseSet;
-							PhaseSet.copy_parameters(PhaseTemplate);
-							PhaseSet.CurrentNodeID = element.CurrentNodeID;
-							m_PhaseVector.push_back(PhaseSet);
-						}
-					}
+						// we only create a movement set when there is a feasible movement for signalized intersection. 
+						// we does not create a movement set for each node, as some nodes do not need movement information 
+
+						TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.dir);
+						element.copy_to_MovementSet(movement_set, element.dir);
+
+					}  // for each feasible movement (without U-turn)
 					
-				}
+				} // for each outbound link
 
-			}
-		}
-			
-	
-	}
-
-
-	if(m_pNetwork!=NULL)
-	{
-		delete m_pNetwork;
-		m_pNetwork = NULL;
-	}
-
+			} // for each inbound likn
+		} // checking control type
+	}// for each node
 }
 
 bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate)
@@ -429,6 +407,7 @@ void CTLiteDoc::Constructandexportsignaldata()
 		"Synchro Data File (*.csv)|*.csv||", NULL);
 	if(dlg.DoModal() == IDOK)
 	{
+
 		CWaitCursor wait;
 		char fname[_MAX_PATH];
 		wsprintf(fname,"%s", dlg.GetPathName());
@@ -436,20 +415,21 @@ void CTLiteDoc::Constructandexportsignaldata()
 		CString SynchroProjectFile = dlg.GetPathName();
 		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
 
+		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
+		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+
 		ConstructMovementVector(true);
 
-		if(m_pNetwork!=NULL)
-		{
-			delete m_pNetwork;
-			m_pNetwork = NULL;
+		ExportSingleSynchroFile(SynchroProjectFile);
+
 		}
 
-		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
-
-		FILE* st = NULL;
+}
 
 
+void CTLiteDoc::ExportSynchroVersion6Files()
+{
+			FILE* st = NULL;
 
 		// write lanes/movements file
 		const int LaneColumnSize = 12;
@@ -546,10 +526,10 @@ void CTLiteDoc::Constructandexportsignaldata()
 				DTA_NodeBasedLinkSets Node_Link;
 				current_node_id = i_n;
 				Node_Link.initial(current_node_id);
-				for(int inbound_i= 0; inbound_i< m_pNetwork->m_InboundSizeAry[i_n]; inbound_i++)
+				for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i_n]; inbound_i++)
 				{		
-					LinkID = m_pNetwork->m_InboundLinkAry[i_n][inbound_i];
-					up_node_id = m_pNetwork->m_FromIDAry[LinkID];
+					LinkID = m_Network.m_InboundLinkAry[i_n][inbound_i];
+					up_node_id = m_Network.m_FromIDAry[LinkID];
 					p1  = m_NodeIDMap[up_node_id]->pt;
 					p2  = m_NodeIDMap[current_node_id]->pt;
 					incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
@@ -577,10 +557,10 @@ void CTLiteDoc::Constructandexportsignaldata()
 						break;
 					}
 				}
-				for(int outbound_i= 0; outbound_i< m_pNetwork->m_OutboundSizeAry[i_n]; outbound_i++)
+				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry[i_n]; outbound_i++)
 				{		
-					LinkID = m_pNetwork->m_OutboundLinkAry[i_n][outbound_i];
-					down_node_id = m_pNetwork->m_ToIDAry[LinkID];
+					LinkID = m_Network.m_OutboundLinkAry[i_n][outbound_i];
+					down_node_id = m_Network.m_ToIDAry[LinkID];
 					p1  = m_NodeIDMap[current_node_id]->pt;
 					p2  = m_NodeIDMap[down_node_id]->pt;
 					out_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
@@ -671,31 +651,12 @@ void CTLiteDoc::Constructandexportsignaldata()
 			fprintf(st,"\n");
 
 			fclose(st);
+
 		}
-
-		ExportSingleSynchroFile(SynchroProjectFile);
-	}
-
-	if(m_pNetwork!=NULL)
-	{
-		delete m_pNetwork;
-		m_pNetwork = NULL;
-	}
-
 }
 
 void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 {
-	// write entire network with signal file
-	if(m_pNetwork!=NULL)
-	{
-		delete m_pNetwork;
-		m_pNetwork = NULL;
-	}
-
-	m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
-
 	FILE* st = NULL;
 
 	const int LaneColumnSize = 12;
@@ -760,10 +721,10 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			DTA_NodeBasedLinkSets Node_Link;
 			current_node_id = i_n;
 			Node_Link.initial(current_node_id);
-			for(int inbound_i= 0; inbound_i< m_pNetwork->m_InboundSizeAry[i_n]; inbound_i++)
+			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i_n]; inbound_i++)
 			{		
-				LinkID = m_pNetwork->m_InboundLinkAry[i_n][inbound_i];
-				up_node_id = m_pNetwork->m_FromIDAry[LinkID];
+				LinkID = m_Network.m_InboundLinkAry[i_n][inbound_i];
+				up_node_id = m_Network.m_FromIDAry[LinkID];
 				p1  = m_NodeIDMap[up_node_id]->pt;
 				p2  = m_NodeIDMap[current_node_id]->pt;
 				incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
@@ -835,11 +796,26 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			for(i=0; i<2; i++)
 			{
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
+				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
 
 				for(j=0; j<LaneColumnSize;j++)
 				{
-					fprintf(st, "%i,",m_NodeIDMap[m_MovementVector[m].DataMatrix[i][j].m_text]->m_NodeNumber);
+					int NodeID = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
+					TRACE("Node Label: %d\n",NodeID);
+
+					if(NodeID>=0)  //this movement has been initialized
+					{
+						if(m_NodeIDMap.find(NodeID) == m_NodeIDMap.end())
+						{
+						AfxMessageBox("Error in node id!");
+						return;
+						}
+						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
+					}else  // this movement has not been initialized, so the default value is -1
+					{
+						fprintf(st, ",");  
+					
+					}
 				}
 				fprintf(st,"\n");
 			}
@@ -908,12 +884,6 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 	fclose(st);
 	}
 	
-	if(m_pNetwork!=NULL)
-	{
-		delete m_pNetwork;
-		m_pNetwork = NULL;
-	}
-
 	OpenCSVFileInExcel(SynchroProjectFile);
 }
 void CTLiteDoc::OnExportAms()

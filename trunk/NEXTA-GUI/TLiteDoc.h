@@ -280,6 +280,8 @@ void SetStatusText(CString StatusText);
 	int m_AdjLinkSize;
 
 	DTANetworkForSP* m_pNetwork;
+	DTANetworkForSP m_Network;
+
 	int Routing(bool bCheckConnectivity);
 	int AlternativeRouting(int NumberOfRoutes);
 
@@ -580,6 +582,7 @@ void SetStatusText(CString StatusText);
 	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	void ExportSingleSynchroFile(CString SynchroProjectFile);
+	void ExportSynchroVersion6Files();
 	CString m_Synchro_ProjectDirectory;
 
 	int Find_P2P_Angle(GDPoint p1, GDPoint p2);

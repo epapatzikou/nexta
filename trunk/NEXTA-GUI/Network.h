@@ -1514,10 +1514,18 @@ public:
 
 	};
 
-	DTANetworkForSP();
-
-	void Init(int NodeSize, int LinkSize, int TimeHorizon,int AdjLinkSize)
+	DTANetworkForSP()
 	{
+		m_OutboundNodeAry = NULL;
+	};
+
+	void Initialize(int NodeSize, int LinkSize, int TimeHorizon,int AdjLinkSize)
+	{
+		if(m_OutboundNodeAry!=NULL)
+		{
+			FreeMemory();
+		}
+
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
 
@@ -1566,7 +1574,7 @@ public:
 	};
 
 
-	~DTANetworkForSP()
+	void FreeMemory()
 	{
 		if(m_SearchTreeList) delete m_SearchTreeList;
 
@@ -1595,9 +1603,11 @@ public:
 		if(NodePredAry) delete NodePredAry;
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
+	}
+	~DTANetworkForSP()
+	{
 
-
-
+		FreeMemory();
 	};
 
 	float GetTollRateInMin(int LinkID, float Time, int VehicleType);  // built-in function for each network_SP to avoid conflicts with OpenMP parallel computing

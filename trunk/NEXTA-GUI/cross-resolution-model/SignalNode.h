@@ -13,7 +13,7 @@ using namespace std;
 
 enum LANES_COLUME
    {
-		DTA_NBL,
+		DTA_NBL =0,
 		DTA_NBT,
 		DTA_NBR,
 		DTA_SBL,
@@ -29,7 +29,7 @@ enum LANES_COLUME
 
 enum LANES_ROW
    {
-	   LANES_UpNode,
+	   LANES_UpNode = 0,
 	   LANES_DestNode,
 		LANES_Lanes,
 		LANES_Shared,
@@ -63,7 +63,7 @@ enum LANES_ROW
 
 enum PHASE_ROW
 {
-	PHASE_BRP,
+	PHASE_BRP =0,
 	PHASE_MinGreen,
 	PHASE_MaxGreen,
 	PHASE_VehExt,
@@ -90,7 +90,7 @@ enum PHASE_ROW
 
 enum TIMING_ROW
 {
-	TIMING_Control_Type,
+	TIMING_Control_Type =0,
 	TIMING_Cycle_Length,
 	TIMING_Lock_Timings,
 	TIMING_Referenced_To,
@@ -107,6 +107,15 @@ class CDataElement
 public:
 	int colume_index, row_index;
 	float m_text;
+
+	CDataElement()
+	{
+	m_text = -1;
+	colume_index = 0;
+	row_index = 0;
+
+	}
+
 };
 
 
