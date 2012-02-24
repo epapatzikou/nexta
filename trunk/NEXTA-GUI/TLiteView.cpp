@@ -129,8 +129,6 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_WM_KEYDOWN()
 	ON_COMMAND(ID_VIEW_INCREASENODESIZE, &CTLiteView::OnViewIncreasenodesize)
 	ON_COMMAND(ID_VIEW_DECREATENODESIZE, &CTLiteView::OnViewDecreatenodesize)
-	ON_COMMAND(ID_VIEW_DISPLAYLANEWIDTH, &CTLiteView::OnViewDisplaylanewidth)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_DISPLAYLANEWIDTH, &CTLiteView::OnUpdateViewDisplaylanewidth)
 	ON_COMMAND(ID_NODE_CHECKCONNECTIVITYFROMHERE, &CTLiteView::OnNodeCheckconnectivityfromhere)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS, &CTLiteView::OnNodeDirectiontohereandvehicleanalaysis)
 	ON_COMMAND(ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS, &CTLiteView::OnNodeDirectionfromhereandvehicleanalasis)
@@ -2560,10 +2558,6 @@ void CTLiteView::OnViewDisplaylanewidth()
   Invalidate();
 }
 
-void CTLiteView::OnUpdateViewDisplaylanewidth(CCmdUI *pCmdUI)
-{
-	pCmdUI->SetCheck( m_link_display_mode == link_display_mode_band ? 1 : 0);
-}
 
 void CTLiteView::OnNodeCheckconnectivityfromhere()
 {

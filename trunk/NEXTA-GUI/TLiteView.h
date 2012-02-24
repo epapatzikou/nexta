@@ -288,7 +288,6 @@ public:
 	afx_msg void OnViewIncreasenodesize();
 	afx_msg void OnViewDecreatenodesize();
 	afx_msg void OnViewDisplaylanewidth();
-	afx_msg void OnUpdateViewDisplaylanewidth(CCmdUI *pCmdUI);
 	afx_msg void OnNodeCheckconnectivityfromhere();
 	afx_msg void OnNodeDirectiontohereandvehicleanalaysis();
 	afx_msg void OnNodeDirectionfromhereandvehicleanalasis();

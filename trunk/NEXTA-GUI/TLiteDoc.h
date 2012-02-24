@@ -51,7 +51,7 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-		m_MaxLinkWidthAsNumberOfLanes = 5;
+		m_MaxLinkWidthAsNumberOfLanes = 20;
 		m_VehicleSelectionMode = CLS_network;
 		m_LinkBandWidthMode = LBW_number_of_lanes;
 		m_bLoadNetworkDataOnly = false;
@@ -831,6 +831,7 @@ public:
 		afx_msg void OnSubareaDeletesubarea();
 		afx_msg void OnSubareaViewvehiclestatisticsassociatedwithsubarea();
 		afx_msg void OnToolsTraveltimereliabilityanalysis();
+		afx_msg void OnLinkLinkbar();
 };
 
 

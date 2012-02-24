@@ -58,6 +58,7 @@
 #include "Dlg_SignalDataExchange.h"
 
 #include "Dlg_TDDemandProfile.h"
+#include "Dlg_LinkVisualizationConfig.h"
 
 #include "Data-Interface\\XLEzAutomation.h"
 #include "Data-Interface\\XLTestDataSource.h"
@@ -192,6 +193,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SUBAREA_DELETESUBAREA, &CTLiteDoc::OnSubareaDeletesubarea)
 	ON_COMMAND(ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA, &CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea)
 	ON_COMMAND(ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS, &CTLiteDoc::OnToolsTraveltimereliabilityanalysis)
+	ON_COMMAND(ID_LINK_LINKBAR, &CTLiteDoc::OnLinkLinkbar)
 	END_MESSAGE_MAP()
 
 
@@ -849,12 +851,12 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			// 
 			if(m_LinkBandWidthMode == LBW_link_volume)
 			{
-				(*iLink)->m_BandWidthValue =  (*iLink)->m_TotalVolume*m_MaxLinkWidthAsNumberOfLanes/m_MaxLinkVolume;
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_TotalVolume*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
 			}
 
 			if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
 			{
-				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *m_MaxLinkWidthAsNumberOfLanes/m_MaxLinkVolume;
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
 			}
 
 		}
@@ -868,14 +870,15 @@ void CTLiteDoc::GenerateOffsetLinkBand()
 
 	double lane_offset = m_UnitFeet*m_WideLaneInFeet;  // 20 feet per lane
 
-
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+			(*iLink)->m_BandLeftShapePoints.clear();
+			(*iLink)->m_BandRightShapePoints.clear();
+
 			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
 			double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
 			double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
 			double theta = atan2(DeltaY, DeltaX);
-
 
 			for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
 			{
@@ -5933,3 +5936,16 @@ void CTLiteDoc::OnToolsTraveltimereliabilityanalysis()
 		dlg.DoModal ();
 }
 
+
+void CTLiteDoc::OnLinkLinkbar()
+{
+	CDlg_LinkVisualizationConfig dlg;
+	dlg.m_pDoc= this;
+	dlg.m_link_band_width_mode = m_LinkBandWidthMode;
+	if(dlg.DoModal() == IDOK)
+	{
+		m_LinkBandWidthMode = dlg.m_link_band_width_mode;
+		GenerateOffsetLinkBand();
+		UpdateAllViews(0);
+	}
+}
