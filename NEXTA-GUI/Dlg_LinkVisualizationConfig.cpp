@@ -36,18 +36,22 @@ END_MESSAGE_MAP()
 
 void CDlg_LinkVisualizationConfig::OnLbnSelchangeLinkBarWidthList()
 {
-	// TODO: Add your control notification handler code here
+	m_link_band_width_mode = (LINK_BAND_WIDTH_MODE)m_LinkBarWidthModeList.GetCurSel();
+	m_pDoc->m_LinkBandWidthMode = m_link_band_width_mode;
+	m_pDoc->GenerateOffsetLinkBand();
+	m_pDoc->UpdateAllViews(0);
 }
 
 BOOL CDlg_LinkVisualizationConfig::OnInitDialog()
 {
-	m_LinkBarWidthModeList.AddString("Number of lanes");
-	m_LinkBarWidthModeList.AddString("Total link volume");
-	m_LinkBarWidthModeList.AddString("Total link volume");
 
 	CDialog::OnInitDialog();
 
-	// TODO:  Add extra initialization here
+	m_LinkBarWidthModeList.AddString("Number of lanes");
+	m_LinkBarWidthModeList.AddString("Total link volume");
+	m_LinkBarWidthModeList.AddString("Total impacted volume");
+
+	m_LinkBarWidthModeList.SetCurSel ((int)m_link_band_width_mode);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
