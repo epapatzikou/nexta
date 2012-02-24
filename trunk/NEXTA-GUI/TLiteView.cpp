@@ -39,6 +39,7 @@
 #include "DlgLinkProperties.h"
 #include "Dlg_GoogleFusionTable.h"
 #include "Dlg_VehicleClassification.h"
+#include "Dlg_TravelTimeReliability.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -133,6 +134,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_NODE_CHECKCONNECTIVITYFROMHERE, &CTLiteView::OnNodeCheckconnectivityfromhere)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS, &CTLiteView::OnNodeDirectiontohereandvehicleanalaysis)
 	ON_COMMAND(ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS, &CTLiteView::OnNodeDirectionfromhereandvehicleanalasis)
+	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS, &CTLiteView::OnNodeDirectiontohereandreliabilityanalysis)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -2605,4 +2607,18 @@ void CTLiteView::OnNodeDirectionfromhereandvehicleanalasis()
 	dlg.DoModal ();
 	}
 
+}
+
+void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
+{
+	OnNodeDestination();
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc->m_PathDisplayList .size()>0)
+	{
+		CDlg_TravelTimeReliability dlg;
+		dlg.m_pDoc= pDoc;
+		dlg.m_PathFreeFlowTravelTime = pDoc->m_PathDisplayList[0].m_TravelTime;
+		dlg.DoModal ();
+	}
 }

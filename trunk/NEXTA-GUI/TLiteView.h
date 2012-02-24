@@ -292,6 +292,7 @@ public:
 	afx_msg void OnNodeCheckconnectivityfromhere();
 	afx_msg void OnNodeDirectiontohereandvehicleanalaysis();
 	afx_msg void OnNodeDirectionfromhereandvehicleanalasis();
+	afx_msg void OnNodeDirectiontohereandreliabilityanalysis();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

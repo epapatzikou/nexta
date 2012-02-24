@@ -72,9 +72,9 @@ float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
 }
 float g_GetRandomRatio()
 {
-	//		g_RandomSeed = (g_LCG_a * g_RandomSeed + g_LCG_c) % g_LCG_M;  //m_RandomSeed is automatically updated.
+	/*		g_RandomSeed = (g_LCG_a * g_RandomSeed + g_LCG_c) % g_LCG_M;  //m_RandomSeed is automatically updated.
 
-	//		return float(g_RandomSeed)/g_LCG_M;
+			return float(g_RandomSeed)/g_LCG_M; */
 
 	return float(rand())/RAND_MAX;
 }

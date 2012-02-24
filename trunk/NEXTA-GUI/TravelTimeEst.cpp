@@ -1100,7 +1100,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 
 						if(i==0) // first link
 						{
-							path_element.m_TravelTime = g_Simulation_Time_Stamp + pLink->GetTravelTime(g_Simulation_Time_Stamp);
+							path_element.m_TravelTime = pLink->GetTravelTime(g_Simulation_Time_Stamp);
 						}else
 						{
 							path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetTravelTime(path_element.m_TravelTime);
@@ -1273,5 +1273,19 @@ int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orientation)
 	}
 
 	return SelectedLinkID;
+
+}
+
+void CapacityReduction::GenerateAdditionalDelayDistribution(float EntranceTime,int VehicleID)
+{
+// to do: 
+	// 1. from mean, COV -> lognormal 
+	// without incidents -> random capacity reduction due to ireggularity 
+	// with incidents, start with capacity reduction 
+	// 2. additional delay
+ //	g_RandomSeed = VehicleID;
+
+	// call g_GetRandomRatio() 100 times;
+	// for incidents, first percentage
 
 }

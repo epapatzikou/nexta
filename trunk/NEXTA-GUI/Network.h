@@ -58,6 +58,8 @@ using std::string;
       DTA_OtherTurn
    };
 
+#define MAX_RANDOM_SAMPLE_SIZE 100
+
 #define MAX_AdjLinkSize 15
 #define	MAX_SPLABEL 99999
 #define MAX_NODE_SIZE_IN_A_PATH 4000
@@ -389,11 +391,31 @@ public:
 class CapacityReduction
 {
 public:
+	CapacityReduction()
+	{
+	}
+
+
 	float StartTime;
 	float EndTime;
 	float LaneClosureRatio;
 	float SpeedLimit;
 	float ServiceFlowRate;
+	
+	float MeanRegularCapacityReduction;  // from link data
+	float COVRegularCapacityReduction;
+
+
+	float MeanIncidentCapacityReduction;
+	float COVIncidentCapacityReduction;
+
+	float ProbabilityIncidentOccurance;
+	
+	float CapacityReductionSamples[MAX_RANDOM_SAMPLE_SIZE];
+	float AdditionalDelaySamples[MAX_RANDOM_SAMPLE_SIZE];
+
+	void GenerateAdditionalDelayDistribution(float EntranceTime,int VehicleID);
+
 };
 
 class MessageSign
