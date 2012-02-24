@@ -31,6 +31,10 @@ public:
 	float	m_dValue;
 	CString	m_sLabel;
 
+	float Capacity[100];
+	float AdditionalDelay[100];
+	float TravelTime[100];
+
 // Dialog Data
 	enum { IDD = IDD_NSCHART_TRAVEL_TIME_RELIABILITY };
 
@@ -48,6 +52,8 @@ protected:
 public:
 	void DisplayTravelTimeChart();
 	void Display7FactorChart();
+
+	void UpdateCapacityAndDelay();
 
 	afx_msg void OnLbnSelchangeList1();
 	CListBox m_ReliabilityMOEList;

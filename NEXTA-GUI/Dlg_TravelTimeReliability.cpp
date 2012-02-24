@@ -4,9 +4,31 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "Dlg_TravelTimeReliability.h"
+#include "math.h"
+#include <vector>
+
+using std::vector;
 
 
 // CDlg_TravelTimeReliability dialog
+
+float proportion[4] = {0.6f,0.18f,0.12f,0.1f};
+int IntProportion[4];
+
+void g_RandomCapacity(float* ptr, int num, float mean, float COV,int seed)
+{
+	float mu, sigma;
+	float variance = pow(mean*COV,2);
+	mu = log(mean) - 1/2*log(1+variance/pow(mean,2));
+	sigma = sqrt(log(1+variance/pow(mean,2)));
+
+	srand(seed);
+
+	for (int i=0;i<num;i++,ptr++)
+	{
+		*ptr = exp(mu+sigma*g_RNNOF());
+	}
+}
 
 IMPLEMENT_DYNAMIC(CDlg_TravelTimeReliability, CDialog)
 
@@ -15,6 +37,37 @@ CDlg_TravelTimeReliability::CDlg_TravelTimeReliability(CWnd* pParent /*=NULL*/)
 {
 	m_dValue = 0;
 	m_PathFreeFlowTravelTime = 15;
+
+	for (int i=0;i<100;i++)
+	{
+		Capacity[i] = AdditionalDelay[i] = 0;
+		TravelTime[i] = m_PathFreeFlowTravelTime;
+	}
+}
+
+void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
+{
+	//int IntProportion[4];
+	int sum=0;
+
+	for (int i=1;i<4;i++)
+	{
+		IntProportion[i] = (int)(proportion[i]*100);
+		sum += IntProportion[i];
+	}
+
+	IntProportion[0] = 100 - sum;
+
+	g_RandomCapacity(&Capacity[0],IntProportion[0],1800,0.1,100);
+	g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],1200,0.2,100);
+	g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],900,0.2,100);
+	g_RandomCapacity(&Capacity[100-IntProportion[3]],IntProportion[3],1400,0.2,100);
+
+	for (int i=0;i<100;i++)
+	{
+		AdditionalDelay[i] = m_PathFreeFlowTravelTime*(1-Capacity[i]/1800);
+		TravelTime[i] = m_PathFreeFlowTravelTime + AdditionalDelay[i];
+	}
 }
 
 CDlg_TravelTimeReliability::~CDlg_TravelTimeReliability()
@@ -57,9 +110,12 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 	CDialog::OnInitDialog();
 
+	UpdateCapacityAndDelay();
+
+
 	m_FactorLabel[0]= "Capacity Variations";
 	m_FactorLabel[1]= "Incidents";
-	m_FactorLabel[2]= "Work zones";
+	m_FactorLabel[2]= "Work Zones";
 	m_FactorLabel[3]= "Severe Weather";
 
 	m_FactorSize= 4;
@@ -94,7 +150,7 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 
 	m_ReliabilityMOEList.AddString ("Probability Density Function");
-	m_ReliabilityMOEList.AddString ("Cumulative Probability Density Function");
+	m_ReliabilityMOEList.AddString ("Cumulative Distribution Function");
 	m_ReliabilityMOEList.SetCurSel (0);
 
 	DisplayTravelTimeChart();
@@ -206,7 +262,7 @@ void CDlg_TravelTimeReliability::ExportData(CString fname)
 	{
 		CWaitCursor wc;
 		fprintf(st,"Category,count\n");
-		int count;
+		int count=0;
 		CString travel_time_str;
 
 
@@ -232,6 +288,45 @@ void CDlg_TravelTimeReliability::ExportData(CString fname)
 void CDlg_TravelTimeReliability::OnBnClickedModify()
 {
 	UpdateData();
+
+	if (m_dValue >= 1.0f)
+	{
+		MessageBox("Value cannot be greater than 1.0!","Error",MB_OK | MB_ICONSTOP);
+		return;
+	}
+	int idx=0;
+	for (int i=0;i<4;i++)
+	{
+		if (m_FactorLabel[i].Compare(this->m_sLabel)==0) 
+		{
+			idx = i;
+			break;
+		}
+	}
+
+	float sum = 0.0f;
+	for (int i=0;i<4;i++)
+	{
+		if (idx == i) continue;
+		sum += proportion[i];
+	}
+
+	if ((sum + m_dValue - 1.0f) > 0.0001)
+	{
+		MessageBox("The sum of proportion is greater than 1.0!","Error",MB_OK | MB_ICONSTOP);
+		return;
+	}
+	proportion[idx] = m_dValue;
+
+
+
+	UpdateCapacityAndDelay();
+
+	Invalidate();
+	Display7FactorChart();
+	DisplayTravelTimeChart();
+
+
 }
 void CDlg_TravelTimeReliability::OnChartSelectedItem(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -241,13 +336,19 @@ void CDlg_TravelTimeReliability::OnChartSelectedItem(NMHDR* pNMHDR, LRESULT* pRe
 
 	if(m_iItem >= 0)
 	{
-		m_dValue = (float)(nmchart->dValue);  // convert to float to avoid many decimals
+		m_dValue = proportion[m_iItem];
 		m_sLabel = nmchart->sLabel;
-	}else
-	{
-		m_dValue = 0;
-		m_sLabel = "";
+
 	}
+	//{
+	//	m_dValue = (float)(nmchart->dValue);  // convert to float to avoid many decimals
+	//	m_sLabel = nmchart->sLabel;
+	//}
+	//else
+	//{
+	//	m_dValue = 0;
+	//	m_sLabel = "";
+	//}
 	UpdateData(FALSE);
 	UpdateDialogControls(this,FALSE);
 	*pResult = FALSE;
@@ -258,6 +359,60 @@ void CDlg_TravelTimeReliability::OnBnClickedEditScenario()
 	m_pDoc->OnScenarioConfiguration();
 }
 
+void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, int& step_size)
+{
+	float max=-1.0f;
+	float min= 999999.0f;
+	float* ptr = x_ptr;
+	for (int i=0;i<num;i++)
+	{
+		if (*ptr > max) max = *ptr;
+		if (*ptr < min) min = *ptr;
+		ptr++;
+	}
+
+	step_size = 5;
+
+	//if (max - min > 50) 
+	//{
+	//	step_size = 5;
+	//}
+	//else
+	//{
+	//	step_size = 2;
+	//}
+
+	int lowerbound = (int)(min / step_size)*step_size;
+	int upperbound = (int)(max / step_size) * step_size;
+
+	if (upperbound < max) upperbound += step_size;
+
+	for (int i=0;i<upperbound;i+=step_size)
+	{
+		CString str;
+		str.Format("%d",lowerbound+i);
+		X.push_back(str);
+		Y.push_back(0.0f);
+	}
+
+	ptr = x_ptr;
+	for (int i=0;i<num;i++)
+	{
+		float tmp = *(ptr+i);
+		int idx = (int)(tmp-lowerbound)/step_size;
+		if (idx < Y.size())
+		{
+			Y[idx]++;
+		}
+		else
+		{
+			Y[Y.size()-1]++;
+		}
+	}
+
+
+}
+
 void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 {
 	int CurSelectionNo = m_ReliabilityMOEList.GetCurSel ();
@@ -265,76 +420,141 @@ void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 	int count;
 	CString travel_time_str;
 
+
+	vector<CString> XLabel;
+	vector<float> YLabel;
+	int step_size;
+	GenerateXAndY(TravelTime,100,XLabel,YLabel,step_size);
+
 	int t;
 	m_chart_traveltime.ResetChart();		
 
-		int travel_time_count_array[100];
+	//int travel_time_count_array[100];
 
-		int total_count = 0;
-		for(t=10; t<30; t+=5)
-		{
-		travel_time_count_array[t]= 30*g_GetRandomRatio();
-		total_count+=travel_time_count_array[t];
-		}
 
-		// normalize 
-		for(t=10; t<30; t+=5)
-		{
-		travel_time_count_array[t] = travel_time_count_array[t]*100.f/max(1,total_count);
-		}
+	//// normalize 
+	//for(t=10; t<30; t+=5)
+	//{
+	//	travel_time_count_array[t] = travel_time_count_array[t]*100.f/max(1,total_count);
+	//}
 
 	if(CurSelectionNo == 0)
 	{
-		count = 0;
-		for(t=10; t<30; t+=5)
-		{
-			travel_time_str.Format("%d",t);
-			count = travel_time_count_array[t];
+		//count = 0;
+		//for(t=10; t<30; t+=5)
+		//{
+		//	travel_time_str.Format("%d",t);
+		//	count = travel_time_count_array[t];
 
-			m_chart_traveltime.AddValue(count,travel_time_str);
+		//	m_chart_traveltime.AddValue(count,travel_time_str);
+		//}
+
+		for (size_t i=0;i<XLabel.size();i++)
+		{
+			m_chart_traveltime.AddValue(YLabel[i],XLabel[i]);
 		}
 
-	}else
+	}
+	else
 	{
-		count = 0;
-		for(t=10; t<30; t+=5)
-		{
-			travel_time_str.Format("%d",t);
-			count += travel_time_count_array[t];
+		//count = 0;
+		//for(t=10; t<30; t+=5)
+		//{
+		//	travel_time_str.Format("%d",t);
+		//	count += travel_time_count_array[t];
 
-			m_chart_traveltime.AddValue(count,travel_time_str);
+		//	m_chart_traveltime.AddValue(count,travel_time_str);
+		//}
+
+
+		float total_count = 0.0f;
+		for(size_t i=0;i<YLabel.size();i++)
+		{
+			total_count+=YLabel[i];
 		}
 
+		float count = 0.0f;
+		for (size_t i=0;i<XLabel.size();i++)
+		{
+			count += YLabel[i];
+			m_chart_traveltime.AddValue(count/total_count*100.0f,XLabel[i]);
+		}
 	}
 	Invalidate();	
 
 }
 
+float GetMean(float* p,int num)
+{
+	float sum = 0.0f;
+	float* ptr = p;
+
+	for (int i=0;i<num;i++)
+	{
+		sum += *ptr++;
+	}
+
+	return sum/num;
+}
+float GetSTD(float* p, int num,float mean)
+{
+	float sum=0.0f;
+	float* ptr = p;
+	//for (int i=0;i<num;i++)
+	//{
+	//	sum += (*ptr++);
+	//}
+
+	//float mean = sum / num;
+
+	//ptr = p;
+
+	for (int i=0;i<num;i++)
+	{
+		sum += pow((mean-*ptr),2);
+	}
+
+	return sqrt(sum/(num-1));
+}
 void CDlg_TravelTimeReliability::Display7FactorChart()
 {
-	int CurSelectionNo = m_ReliabilityMOEList.GetCurSel ();
+	int CurSelectionNo = m_7FactorMOEList.GetCurSel ();
 
 	float percentage =0;
 
 	m_chart_7factors.ResetChart();		
 
-	if(CurSelectionNo == 0)
+	switch(CurSelectionNo)
 	{
-		
+	case 0:
+		for(int i =0; i< m_FactorSize; i++)
+		{
+			percentage = 1.65*GetSTD(TravelTime+IntProportion[i],IntProportion[i],m_PathFreeFlowTravelTime);
+			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+		}
+		break;
+	case 1:
+		for(int i =0; i< m_FactorSize; i++)
+		{
+			percentage = 1.65*GetSTD(AdditionalDelay+IntProportion[i],IntProportion[i],GetMean(AdditionalDelay,100));
+			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+		}
+		break;
+	case 2:
+		for(int i =0; i< m_FactorSize; i++)
+		{
+			percentage = 1.65*GetSTD(Capacity+IntProportion[i],IntProportion[i],1800);
+			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+		}
+		break;
+	case 3:
 		for(int i =0; i< m_FactorSize; i++)
 		{
 			percentage = 20*g_GetRandomRatio();
-		m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+			m_chart_7factors.AddValue(proportion[i],m_FactorLabel[i]);
 		}
-
-	}else
-	{
-		for(int i =0; i< m_FactorSize; i++)
-		{
-			percentage += 20*g_GetRandomRatio();
-		m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
-		}
-
+		break;
 	}
+
 	Invalidate();	
 }

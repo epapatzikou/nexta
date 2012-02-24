@@ -1280,10 +1280,16 @@ void CapacityReduction::GenerateAdditionalDelayDistribution(float EntranceTime,i
 {
 // to do: 
 	// 1. from mean, COV -> lognormal 
-	// without incidents -> random capacity reduction due to ireggularity 
+	// without incidents -> random capacity reduction due to irregularity 
 	// with incidents, start with capacity reduction 
 	// 2. additional delay
- //	g_RandomSeed = VehicleID;
+
+	int RandomSeed = VehicleID;
+
+	for (int i=0;i<100;i++)
+	{
+
+	}
 
 	// call g_GetRandomRatio() 100 times;
 	// for incidents, first percentage
