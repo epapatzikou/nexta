@@ -152,19 +152,17 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			// generate movement set and phase set
-				DTA_NodeMovementSet movement_set;
-				movement_set.copy_parameters(MovementTemplate);
-				movement_set.CurrentNodeID = i;
-				m_MovementVector.push_back(movement_set);
-				
-				// generate DTA_NodePhaseSet for this Node
-				DTA_NodePhaseSet PhaseSet;
-				PhaseSet.copy_parameters(PhaseTemplate);
-				PhaseSet.CurrentNodeID = i;
-				m_PhaseVector.push_back(PhaseSet);
+			DTA_NodeMovementSet movement_set;
+			//movement_set.copy_parameters(MovementTemplate);
+			
+			// generate DTA_NodePhaseSet for this Node
+			DTA_NodePhaseSet PhaseSet;
+			PhaseSet.copy_parameters(PhaseTemplate);
+			PhaseSet.CurrentNodeID = i;
+			m_PhaseVector.push_back(PhaseSet);
 
 
-				// scan each inbound link and outbound link
+			// scan each inbound link and outbound link
 
 			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
 			{
@@ -195,6 +193,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 						// determine  movement type /direction here
+						element.dir = DTA_LANES_COLUME_init;
 						switch (element.movement_approach)
 						{
 							case DTA_North:
@@ -231,21 +230,27 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 								break;
 						}
 
-						// copy from template
-						element.copy_from_MovementSet(MovementTemplate, element.dir);
+						if (element.dir > 0)
+						{
+							// copy from template
+							element.copy_from_MovementSet(MovementTemplate, element.dir);
+						}
 
 						// add Movement into m_MovementVector
-						// we only create a movement set when there is a feasible movement for signalized intersection. 
-						// we does not create a movement set for each node, as some nodes do not need movement information 
-
-						TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.dir);
+						//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.dir);
 						element.copy_to_MovementSet(movement_set, element.dir);
+						
 
 					}  // for each feasible movement (without U-turn)
 					
 				} // for each outbound link
 
-			} // for each inbound likn
+			} // for each inbound link
+
+			movement_set.CurrentNodeID = i;
+			m_MovementVector.push_back(movement_set);
+			TRACE("current node: %d\n", movement_set.CurrentNodeID);
+
 		} // checking control type
 	}// for each node
 }
@@ -422,6 +427,8 @@ void CTLiteDoc::Constructandexportsignaldata()
 
 		ExportSingleSynchroFile(SynchroProjectFile);
 
+		ExportSynchroVersion6Files();
+
 		}
 
 }
@@ -458,7 +465,11 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 
 					for(j=0; j<LaneColumnSize;j++)
 					{
-						fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
+						float text = m_MovementVector[m].DataMatrix[i][j].m_text;
+						if (text >= 0)
+							fprintf(st, "%f,",text);
+						else
+							fprintf(st, ",");
 					}
 					fprintf(st,"\n");
 				}
@@ -827,7 +838,11 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 
 				for(j=0; j<LaneColumnSize;j++)
 				{
-					fprintf(st, "%f,",m_MovementVector[m].DataMatrix[i][j].m_text);
+					float text = m_MovementVector[m].DataMatrix[i][j].m_text;
+					if (text >= 0)
+						fprintf(st, "%f,",text);
+					else
+						fprintf(st, ",");
 				}
 				fprintf(st,"\n");
 			}
