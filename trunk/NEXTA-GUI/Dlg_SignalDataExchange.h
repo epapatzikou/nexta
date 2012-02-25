@@ -25,4 +25,5 @@ protected:
 public:
 	afx_msg void OnBnClickedButtonGenerateData();
 	afx_msg void OnBnClickedButtonQem();
+	afx_msg void OnBnClickedButtonGenerateVissimData();
 };

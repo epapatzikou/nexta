@@ -1516,7 +1516,25 @@ public:
 
 	DTANetworkForSP()
 	{
+		m_OutboundSizeAry = NULL;
 		m_OutboundNodeAry = NULL;
+		m_SearchTreeList = NULL;
+		m_InboundSizeAry = NULL;
+
+		m_LinkList = NULL;
+
+		m_FromIDAry = NULL;
+		m_ToIDAry = NULL;
+
+		NodeStatusAry  = NULL;
+		LinkNoAry  = NULL;
+		NodePredAry  = NULL;
+		LabelTimeAry  = NULL;
+		LabelCostAry  = NULL;
+
+
+		m_NodeSize = 0;
+		m_LinkSize = 0;
 	};
 
 	void Initialize(int NodeSize, int LinkSize, int TimeHorizon,int AdjLinkSize)
@@ -1581,19 +1599,24 @@ public:
 		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry)  delete m_InboundSizeAry;
 
+		if(m_NodeSize > 0)
+		{
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize);
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize);
 		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize);
+		DeallocateDynamicArray<float>(TD_LabelCostAry,m_NodeSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_NodePredAry,m_NodeSize,m_OptimizationIntervalSize);
+		DeallocateDynamicArray<int>(TD_TimePredAry,m_NodeSize,m_OptimizationIntervalSize);
+		}
 
 
 		if(m_LinkList) delete m_LinkList;
 
+		if(m_LinkSize > 0)
+		{
 		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_OptimizationIntervalSize);
 		DeallocateDynamicArray<float>(m_LinkTDCostAry,m_LinkSize,m_OptimizationIntervalSize);
-
-		DeallocateDynamicArray<float>(TD_LabelCostAry,m_NodeSize,m_OptimizationIntervalSize);
-		DeallocateDynamicArray<int>(TD_NodePredAry,m_NodeSize,m_OptimizationIntervalSize);
-		DeallocateDynamicArray<int>(TD_TimePredAry,m_NodeSize,m_OptimizationIntervalSize);
+		}
 
 		if(m_FromIDAry)		delete m_FromIDAry;
 		if(m_ToIDAry)	delete m_ToIDAry;

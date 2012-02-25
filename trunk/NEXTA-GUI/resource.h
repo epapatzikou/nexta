@@ -202,6 +202,8 @@
 #define IDC_BUTTON_QEM                  1082
 #define IDC_BUTTON1                     1082
 #define IDC_BUTTON_UPDATE               1083
+#define IDC_BUTTON_GENERATE_DATA2       1083
+#define IDC_BUTTON_GENERATE_VISSIM_DATA 1083
 #define IDC_DEMAND_PROFILE_LIST         1084
 #define IDC_VEHICLE_CHART1              1085
 #define IDC_COMBO_XAxis                 1086

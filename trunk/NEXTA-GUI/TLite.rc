@@ -1380,14 +1380,15 @@ END
 
 IDD_DIALOG_SIGNAL_DATA DIALOGEX 0, 0, 300, 139
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Signal Data Exchange"
+CAPTION "Traffic Control and Microscopic Simulation Data Exchange"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,163,118,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,243,118,50,14
-    PUSHBUTTON      "Generate Synchro CSV file and UTDF files",IDC_BUTTON_GENERATE_DATA,14,23,157,14
-    PUSHBUTTON      "Obtain movement-specific capacity values through Quick Estimation Method (QEM)",IDC_BUTTON_QEM,17,49,276,14
-    PUSHBUTTON      "Read Signal timing data from UTDF files",IDC_BUTTON_READ_Signal_Timing,18,73,156,14
+    PUSHBUTTON      "Generate Synchro CSV file and UTDF files",IDC_BUTTON_GENERATE_DATA,17,38,157,14
+    PUSHBUTTON      "Obtain movement-specific capacity values through Quick Estimation Method (QEM)",IDC_BUTTON_QEM,17,65,276,14
+    PUSHBUTTON      "Read Signal timing data from UTDF files",IDC_BUTTON_READ_Signal_Timing,17,89,156,14
+    PUSHBUTTON      "Generate VISSIM inp file",IDC_BUTTON_GENERATE_VISSIM_DATA,15,14,157,14
 END
 
 IDD_DIALOG_DemandPattern DIALOGEX 0, 0, 534, 180

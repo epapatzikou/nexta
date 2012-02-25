@@ -752,6 +752,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\VISSIM_EXPORT\VISSIM_Export.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\VISSIM_EXPORT\VISSIM_Export.h"
+					>
+				</File>
+				<File
 					RelativePath=".\Data-Interface\XLAutomation.cpp"
 					>
 				</File>
