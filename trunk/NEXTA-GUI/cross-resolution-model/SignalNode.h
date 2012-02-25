@@ -13,6 +13,7 @@ using namespace std;
 
 enum LANES_COLUME
    {
+	    DTA_LANES_COLUME_init = -1,
 		DTA_NBL =0,
 		DTA_NBT,
 		DTA_NBR,
