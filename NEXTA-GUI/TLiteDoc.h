@@ -27,7 +27,7 @@
 
 #pragma once
 #pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
-
+#pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
 #include "atlimage.h"
 #include "math.h"
 #include "Network.h"
@@ -404,7 +404,6 @@ void SetStatusText(CString StatusText);
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
-
 		pLink->m_MaximumServiceFlowRatePHPL= m_DefaultCapacity;
 		pLink->m_LaneCapacity  = m_DefaultCapacity;
 		pLink->m_link_type= m_DefaultLinkType;
@@ -412,7 +411,6 @@ void SetStatusText(CString StatusText);
 		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
 		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
 		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
-
 
 
 		if(bOffset)
@@ -693,6 +691,7 @@ public:
 	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
+	void ConstructandexportVISSIMdata();
 	bool m_bFitNetworkInitialized;
 	void CalculateDrawingRectangle();
 
