@@ -4,7 +4,11 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "afxwin.h"
+#include <vector>
 
+using std::vector;
+
+#define MAX_SAMPLE_SIZE 200
 
 // CDlg_TravelTimeReliability dialog
 
@@ -27,13 +31,24 @@ public:
 	int m_FactorSize;
 
 	float m_PathFreeFlowTravelTime;
+	
+	vector<float> LinkCapacity;
+	vector<float> LinkTravelTime;
+
+	int m_BottleneckIdx;
+
+	int m_ImpactedLinkIdx;
+
+	bool m_bImpacted;
+	float m_ImpactDuration;
+	float m_LaneClosureRatio;
 
 	float	m_dValue;
 	CString	m_sLabel;
 
-	float Capacity[100];
-	float AdditionalDelay[100];
-	float TravelTime[100];
+	float Capacity[MAX_SAMPLE_SIZE];
+	float AdditionalDelay[MAX_SAMPLE_SIZE];
+	float TravelTime[MAX_SAMPLE_SIZE];
 
 // Dialog Data
 	enum { IDD = IDD_NSCHART_TRAVEL_TIME_RELIABILITY };
