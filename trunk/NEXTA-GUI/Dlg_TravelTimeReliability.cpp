@@ -38,10 +38,10 @@ CDlg_TravelTimeReliability::CDlg_TravelTimeReliability(CWnd* pParent /*=NULL*/)
 	m_dValue = 0;
 	m_PathFreeFlowTravelTime = 15;
 
-	for (int i=0;i<100;i++)
+	for (int i=0;i<MAX_SAMPLE_SIZE;i++)
 	{
-		Capacity[i] = AdditionalDelay[i] = 0;
-		TravelTime[i] = m_PathFreeFlowTravelTime;
+		Capacity[i] = AdditionalDelay[i] = 0.0f;
+		TravelTime[i] = 0.0f;
 	}
 }
 
@@ -52,21 +52,64 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 
 	for (int i=1;i<4;i++)
 	{
-		IntProportion[i] = (int)(proportion[i]*100);
+		IntProportion[i] = (int)(proportion[i]*MAX_SAMPLE_SIZE);
 		sum += IntProportion[i];
 	}
 
-	IntProportion[0] = 100 - sum;
+	//Normal
+	IntProportion[0] = MAX_SAMPLE_SIZE - sum;
 
-	g_RandomCapacity(&Capacity[0],IntProportion[0],1800,0.1,100);
-	g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],1200,0.2,100);
-	g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],900,0.2,100);
-	g_RandomCapacity(&Capacity[100-IntProportion[3]],IntProportion[3],1400,0.2,100);
 
-	for (int i=0;i<100;i++)
+	for (int i=0;i<LinkCapacity.size();i++)
 	{
-		AdditionalDelay[i] = m_PathFreeFlowTravelTime*(1-Capacity[i]/1800);
-		TravelTime[i] = m_PathFreeFlowTravelTime + AdditionalDelay[i];
+		if (i != m_BottleneckIdx && i != m_ImpactedLinkIdx) //Non-bottleneck Link 
+		{
+			for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+			{
+				TravelTime[i] += LinkTravelTime[i];
+			}
+		}
+		else
+		{
+
+			if (i == m_BottleneckIdx)
+			{
+				if (m_bImpacted == false) // No impacted link by incidents
+				{
+					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.2f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.2f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],900,0.2f,100);
+					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],1400,0.2f,100);
+
+					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+					{
+						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
+					}
+				}
+				else // Include impacted link by incidents
+				{
+					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+					{
+						TravelTime[i] += LinkTravelTime[i];
+					}
+				}
+			}
+			else //Impacted link by incidents
+			{
+				g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.1f,100);
+				g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosureRatio,0.3f,100);
+				g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i]*0.5f,0.2f,100);
+				g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i]*0.7f,0.2f,100);
+
+				for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+				{
+					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
+				}
+			}
+
+		}
 	}
 }
 
@@ -500,14 +543,6 @@ float GetSTD(float* p, int num,float mean)
 {
 	float sum=0.0f;
 	float* ptr = p;
-	//for (int i=0;i<num;i++)
-	//{
-	//	sum += (*ptr++);
-	//}
-
-	//float mean = sum / num;
-
-	//ptr = p;
 
 	for (int i=0;i<num;i++)
 	{
@@ -520,7 +555,7 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 {
 	int CurSelectionNo = m_7FactorMOEList.GetCurSel ();
 
-	float percentage =0;
+	float value =0;
 
 	m_chart_7factors.ResetChart();		
 
@@ -529,28 +564,33 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 	case 0:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			percentage = 1.65*GetSTD(TravelTime+IntProportion[i],IntProportion[i],m_PathFreeFlowTravelTime);
-			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+			value = 1.65*GetSTD(TravelTime+IntProportion[i],IntProportion[i],m_PathFreeFlowTravelTime);
+			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
 	case 1:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			percentage = 1.65*GetSTD(AdditionalDelay+IntProportion[i],IntProportion[i],GetMean(AdditionalDelay,100));
-			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+			value = 1.65*GetSTD(AdditionalDelay+IntProportion[i],IntProportion[i],GetMean(AdditionalDelay,MAX_SAMPLE_SIZE));
+			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
 	case 2:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			percentage = 1.65*GetSTD(Capacity+IntProportion[i],IntProportion[i],1800);
-			m_chart_7factors.AddValue(percentage,m_FactorLabel[i]);
+			int pos = 0;
+			for (int j=0;j<i;j++)
+			{
+				pos += IntProportion[j];
+			}
+
+			value = GetMean(Capacity+pos,IntProportion[i]);
+			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
 	case 3:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			percentage = 20*g_GetRandomRatio();
 			m_chart_7factors.AddValue(proportion[i],m_FactorLabel[i]);
 		}
 		break;
