@@ -301,6 +301,7 @@ CTLiteView::CTLiteView()
 	isCreatingSubarea = false;
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
+	m_Resolution = 1;
 	m_bShowText = true;
 	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
@@ -911,6 +912,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 
 				feet_size = pDoc->m_UnitFeet*m_Resolution;
+				
 				/// starting drawing nodes in normal mode
 
 				if((*iNode)->m_DistanceToRoot > MAX_SPLABEL-1)
@@ -921,7 +923,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 
-				if(feet_size > 0.01)
+				if(feet_size > 0.01 || pDoc->m_ShowNodeLayer) // add or condition to show all nodes
 				{
 					if((*iNode)->m_ZoneID >0)  // if destination node associated with zones
 					{
@@ -2638,7 +2640,8 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 			float linktraveltime = pLink->m_Length/pLink->GetObsSpeed(CurrentTime)*60;
 			float density = pLink->GetObsDensity(CurrentTime);
 
-			if (density > max_density) BottleneckIdx = i;
+			if (density > max_density) 
+				BottleneckIdx = i;
 
 			LinkCapacity.push_back(linkcapacity);
 			LinkTravelTime.push_back(linktraveltime);

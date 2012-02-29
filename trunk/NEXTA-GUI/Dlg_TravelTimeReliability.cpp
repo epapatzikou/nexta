@@ -59,6 +59,8 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 	//Normal
 	IntProportion[0] = MAX_SAMPLE_SIZE - sum;
 
+	float capacity_lower_bound  = 2000;  // to aoid extrem large travel time
+
 
 	for (int i=0;i<LinkCapacity.size();i++)
 	{
@@ -83,7 +85,7 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 
 					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 					{
-						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/max(capacity_lower_bound,LinkCapacity[i]));
 						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
 					}
 				}
@@ -104,7 +106,7 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 
 				for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 				{
-					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/max(capacity_lower_bound,LinkCapacity[i]));
 					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
 				}
 			}
@@ -198,7 +200,8 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 	DisplayTravelTimeChart();
 
-	m_chart_traveltime.SetChartStyle(NSCS_BAR);
+//	m_chart_traveltime.SetChartStyle(NSCS_BAR);
+	m_chart_traveltime.SetChartStyle(NSCS_LINE);
 
 
 	return TRUE;  // return TRUE unless you set the focus to a control

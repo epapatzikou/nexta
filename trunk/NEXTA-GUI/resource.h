@@ -80,6 +80,7 @@
 #define IDD_NSCHART_VEHICLE_DIALOG      192
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
+#define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -212,6 +213,12 @@
 #define IDC_LINK_BAR_WIDTH_LIST         1089
 #define IDC_LIST_1                      1090
 #define IDC_Factor_CHART                1091
+#define ID_IMPORT_GPS_SHAPE_FILE        1092
+#define IDC_EDIT_GIS_SHAPE_FILE         1093
+#define ID_EXPORT_CSV_FILE              1094
+#define ID_EXPORT_GPS_SHAPE_FILE        1095
+#define ID_EXPORT_GPS_SHAPE_FILE2       1096
+#define ID_EXPORT_KML_FILE              1096
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -629,14 +636,15 @@
 #define ID_LINK_LINKBAR                 33292
 #define ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS 33293
 #define ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS 33294
+#define ID_IMPORT_ARCGISSHAPEFILE       33295
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        194
-#define _APS_NEXT_COMMAND_VALUE         33295
-#define _APS_NEXT_CONTROL_VALUE         1092
+#define _APS_NEXT_COMMAND_VALUE         33297
+#define _APS_NEXT_CONTROL_VALUE         1094
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
