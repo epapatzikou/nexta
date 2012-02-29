@@ -2624,7 +2624,7 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 
 	float max_density = 0.0f;
 
-	int BottleneckIdx = -1;
+	int BottleneckIdx = 0;
 	int ImpactedLinkIdx = -1;
 
 
@@ -2640,8 +2640,7 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 			float linktraveltime = pLink->m_Length/pLink->GetObsSpeed(CurrentTime)*60;
 			float density = pLink->GetObsDensity(CurrentTime);
 
-			if (density > max_density) 
-				BottleneckIdx = i;
+			if (density > max_density) BottleneckIdx = i;
 
 			LinkCapacity.push_back(linkcapacity);
 			LinkTravelTime.push_back(linktraveltime);
@@ -2649,23 +2648,26 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 			// for the first link, i==0, use your current code to generate delay, 
 			//additional for user-specified incidents along the routes, add additional delay based on input
 
-			LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
+			if (!b_Impacted)
+			{
+				LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
 
-			if(LaneClosureRatio > 0.01) // This link is 
-			{  
-				// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
-				//
-				// CurrentTime +=additional delay...
+				if(LaneClosureRatio > 0.01) // This link is 
+				{  
+					// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
+					//
+					// CurrentTime +=additional delay...
 
-				if (pLink->CapacityReductionVector.size() != 0)
-				{
-					ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
+					if (pLink->CapacityReductionVector.size() != 0)
+					{
+						ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
+					}
+
+					ImpactedLinkIdx = i;
+
+					b_Impacted = true;
+
 				}
-
-				ImpactedLinkIdx = i;
-
-				b_Impacted = true;
-
 			}
 
 			CurrentTime += (pLink->m_Length/pLink->GetObsSpeed(CurrentTime))*60;
@@ -2683,7 +2685,7 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 	{
 		dlg.m_bImpacted = b_Impacted;
 		dlg.m_ImpactDuration = ImpactDuration;
-		dlg.m_LaneClosureRatio = LaneClosureRatio;
+		dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
 		dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
 	}
 

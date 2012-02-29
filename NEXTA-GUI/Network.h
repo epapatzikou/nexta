@@ -882,7 +882,7 @@ public:
 
 	float GetObsSpeed(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeed);  
 		else
 			return m_StaticSpeed;
@@ -890,7 +890,7 @@ public:
 
 	float GetObsSpeedCopy(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeedCopy);  
 		else
 			return m_StaticSpeed;
@@ -898,7 +898,7 @@ public:
 
 	float GetObsLaneVolume(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlow);  
 		else
 			return m_StaticLaneVolume;
@@ -906,7 +906,7 @@ public:
 
 	float GetObsLaneVolumeCopy(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlowCopy);  
 		else
 			return m_StaticLaneVolume;
@@ -914,7 +914,7 @@ public:
 
 	float GetObsTravelTimeIndex(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndex);  
 		else
 			return m_StaticTravelTime;
@@ -922,7 +922,7 @@ public:
 
 	float GetObsTravelTimeIndexCopy(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndexCopy);  
 		else
 			return m_StaticTravelTime;
@@ -930,14 +930,14 @@ public:
 
 	int GetEventCode(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return m_LinkMOEAry[t].EventCode;  
 		else
 			return 0;
 	}
 	float GetObsCumulativeFlow(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
 		else
 			return m_StaticLaneVolume;
@@ -945,7 +945,7 @@ public:
 
 	float GetObsDensity(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(0, m_LinkMOEAry[t].ObsDensity);  
 		else
 			return 0;
@@ -953,7 +953,7 @@ public:
 
 	float GetObsDensityCopy(int t)
 	{
-		if(t < m_LinkMOEAry.size())
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return max(0, m_LinkMOEAry[t].ObsDensityCopy);  
 		else
 			return 0;
@@ -979,7 +979,7 @@ public:
 		if(starting_time + time_interval< m_SimulationHorizon)
 		{
 			float total_travel_time = 0;
-			for(int t=starting_time; t< starting_time + time_interval; t++)
+			for(int t=starting_time; t< starting_time + time_interval && (unsigned int)t < m_LinkMOEAry.size(); t++)
 			{
 				total_travel_time += m_LinkMOEAry[t].ObsTravelTimeIndex/100;
 			}
