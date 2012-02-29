@@ -178,13 +178,15 @@ void CNSChartCtrl::OnPaint()
 //	rect.DeflateRect(0,5);
 
 	// Drawing the chart
-	if(m_dwStyle & NSCS_BAR ){
+	if(m_dwStyle == NSCS_BAR ){
 		DrawBarChart(&imageDC);
 	}
-	if(m_dwStyle & NSCS_PIE ){
+	if(m_dwStyle == NSCS_PIE ){
 		DrawPieChart(&imageDC);
 	}
-
+	if(m_dwStyle == NSCS_LINE ){
+		DrawLineChart(&imageDC);
+	}
 	// Drawing the Title
 
 	GetWindowText(str);
@@ -350,7 +352,7 @@ void CNSChartCtrl::DrawBarChart(CDC *pDC)
 	{
 		pTmp = m_ChartValues.GetAt(i);
 		rcBar.left  = rect.left + scale*i + 2;
-		rcBar.right = rcBar.left + scale - 4;
+		rcBar.right = rcBar.left + max(1,scale - 4);
 		rcBar.top = (rcBar.bottom - (long)(pTmp->m_dValue*height/t));
 		rcBar.bottom = rect.bottom+1;
 
@@ -402,6 +404,130 @@ void CNSChartCtrl::DrawBarChart(CDC *pDC)
 
 	pDC->SelectObject(oldFont);
 }
+
+void CNSChartCtrl::DrawLineChart(CDC *pDC)
+{
+	ASSERT(m_dTotal > 0.0L);
+
+	int iValues	= m_ChartValues.GetSize();
+	int iColors	= m_BrushArray.GetSize();
+	CString str;
+
+	CRect rect,rcBar;
+	GetClientRect(&rect);
+
+	CNSChartValue* pTmp;
+
+    double t = 1.0L;
+	if(m_dMax >= 1.0L){
+		str.Format("%.0f",m_dMax);
+		int d = 1;
+		for(int i = 0;i<str.GetLength()-1;i++) d*=10;
+		t = max((((double)str.GetAt(0)-48)+1)*d,m_dMax);
+	}
+	
+	rect.DeflateRect(40,30,20,20);
+	
+	rcBar.left   =  5; 
+	rcBar.right  = rcBar.left + 30; 
+	rcBar.top    = 25;
+	rcBar.bottom = rcBar.top + 15;
+	int i = rect.Height();
+
+	CFont *oldFont = pDC->SelectObject(&m_txtFont);
+
+	pDC->MoveTo(rect.left - 7,rect.top);
+	pDC->LineTo(rect.left + 7,rect.top);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t);
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+	
+	pDC->MoveTo(rect.left - 5,rect.top + i/4);
+	pDC->LineTo(rect.left + 5,rect.top + i/4);
+
+	pDC->MoveTo(rect.left - 7,rect.top + i/2);
+	pDC->LineTo(rect.left + 7,rect.top + i/2);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t/2);
+	rcBar.top    = rect.top + (int)(i/2);
+	rcBar.bottom = rcBar.top + 15;
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+
+	pDC->MoveTo(rect.left - 5,rect.top + i*3/4);
+	pDC->LineTo(rect.left + 5,rect.top + i*3/4);
+
+	rcBar = rect;
+	rcBar.DeflateRect(0,10,0,0);
+
+	pDC->MoveTo(rect.left  -15, rect.bottom);
+	pDC->LineTo(rect.right +15, rect.bottom);
+
+	pDC->MoveTo(rect.left , rect.top    -15);
+	pDC->LineTo(rect.left , rect.bottom +15);
+
+	int scale = rcBar.Width()/iValues;
+	int height = rcBar.Height();
+	CRect tmpRect;
+
+	pDC->MoveTo(rect.left, rect.bottom);  // start from origin of chart
+
+	int ValueStep = max(1,iValues/4);
+	for ( i = 0; i < iValues; i++ )
+	{
+		pTmp = m_ChartValues.GetAt(i);
+		rcBar.left  = rect.left + scale*i + 2;
+		rcBar.right = rcBar.left + max(1,scale - 4);
+		rcBar.top = (rcBar.bottom - (long)(pTmp->m_dValue*height/t));
+		rcBar.bottom = rect.bottom+1;
+
+		pDC->LineTo(rcBar.left, rcBar.top);
+
+		if(i%ValueStep ==0)    ////Drawing top text
+		{
+			//Drawing top text percents
+			tmpRect = rcBar;
+			tmpRect.bottom = tmpRect.top - 1;
+			tmpRect.top = tmpRect.bottom - 15;
+
+			if(m_bShowPercentage)
+				str.Format("%.1f%%",100*pTmp->m_dValue/m_dTotal);
+			else
+			{
+				if(m_bIntegerValue)
+					str.Format("%5d",(int)(pTmp->m_dValue));
+				else
+					str.Format("%.1f",pTmp->m_dValue);
+			}
+			if(m_iCurSel == i)
+			{
+				CFont *tmpFont = pDC->SelectObject(&m_boldFont);			
+				pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER|DT_NOCLIP);
+				pDC->SelectObject(tmpFont);
+			}else{
+				pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER|DT_NOCLIP);
+			} 
+
+			//Drawing bottom text labels
+			tmpRect.top		= rcBar.bottom + 2;
+			tmpRect.bottom  = tmpRect.top + 15;
+			pDC->DrawText(pTmp->m_sLabel,tmpRect,DT_CENTER|DT_NOCLIP);
+
+		}
+/*
+		//Drawing bar text values
+		tmpRect.top    = rcBar.top + 2;
+		tmpRect.bottom = tmpRect.top + 15;
+		str.Format((t<1.0)?("%.1f"):("%.0f"),pTmp->m_dValue);
+		pDC->Rectangle(tmpRect);
+		tmpRect.top += 1;
+		pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER);
+*/
+
+	}
+
+	pDC->SelectObject(oldFont);
+}
+
 
 void CNSChartCtrl::PrepareColors(DefaultColors defaultColor)
 {
@@ -459,7 +585,7 @@ BOOL CNSChartCtrl::AddSolidBrush(COLORREF cr)
 }
 
 
-void CNSChartCtrl::SetChartStyle(DWORD dStyle)
+void CNSChartCtrl::SetChartStyle(NSChart_STYLES dStyle)
 {
 	m_dwStyle = dStyle;	
 	Invalidate(TRUE);
@@ -568,7 +694,7 @@ int CNSChartCtrl::HitTest(CPoint &pt)
 	}
 
 
-	if(m_dwStyle & NSCS_BAR )
+	if(m_dwStyle == NSCS_BAR )
 	{
 
 		int iValues	= m_ChartValues.GetSize();
@@ -607,7 +733,7 @@ int CNSChartCtrl::HitTest(CPoint &pt)
 		}
 
 	}
-	if(m_dwStyle & NSCS_PIE )
+	if(m_dwStyle == NSCS_PIE )
 	{
 		CRect  rect;
 		GetClientRect(&rect);

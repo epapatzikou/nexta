@@ -27,8 +27,7 @@
 
 
 // NSChart styles
-#define NSCS_BAR	0x001 
-#define NSCS_PIE	0x002 
+enum  NSChart_STYLES {NSCS_BAR=0, NSCS_PIE, NSCS_LINE};
 
 #define MAXCHARLABEL	60
 //#define NSCS_LINE	0x003 
@@ -95,7 +94,7 @@ public:
 	BOOL AddValue(DOUBLE dValue,LPCTSTR strLabel,BOOL bRepaint = FALSE);
 	BOOL AddBrush(CBrush *br);
 	void ResetColors();
-	void SetChartStyle(DWORD dStyle);
+	void SetChartStyle(NSChart_STYLES dStyle);
 	BOOL AddSolidBrush(COLORREF cr);
 	void PrepareColors(DefaultColors defaultColor);
 	virtual ~CNSChartCtrl();
@@ -117,7 +116,8 @@ protected:
 	CFont m_txtFont;
 	DOUBLE m_dTotal;
 	void DrawPieChart(CDC* pDC);
-	DWORD m_dwStyle;
+	void DrawLineChart(CDC* pDC);
+	NSChart_STYLES m_dwStyle;
 	//{{AFX_MSG(CNSChartCtrl)
 	afx_msg void OnPaint();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);

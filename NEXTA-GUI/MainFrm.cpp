@@ -140,14 +140,15 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_AMSToolBar.SetButtonText(0,"TOOL");
 		m_AMSToolBar.SetButtonText(2,"Import");
 		m_AMSToolBar.SetButtonText(3,"Sensor");
-		m_AMSToolBar.SetButtonText(4,"Signal");
-		m_AMSToolBar.SetButtonText(6,"Simulation");
-		m_AMSToolBar.SetButtonText(7,"Calibration");
-		m_AMSToolBar.SetButtonText(8,"Prediction");
-		m_AMSToolBar.SetButtonText(10,"Editing");
-		m_AMSToolBar.SetButtonText(12,"Capacity");
-		m_AMSToolBar.SetButtonText(13,"ATIS");
-		m_AMSToolBar.SetButtonText(14,"Pricing");
+		m_AMSToolBar.SetButtonText(4,"GIS");
+		m_AMSToolBar.SetButtonText(5,"Signal");
+		m_AMSToolBar.SetButtonText(7,"Simulation");
+		m_AMSToolBar.SetButtonText(8,"Calibration");
+		m_AMSToolBar.SetButtonText(9,"Prediction");
+		m_AMSToolBar.SetButtonText(11,"Editing");
+		m_AMSToolBar.SetButtonText(13,"Capacity");
+		m_AMSToolBar.SetButtonText(14,"ATIS");
+		m_AMSToolBar.SetButtonText(15,"Pricing");
 
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));

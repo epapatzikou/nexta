@@ -377,6 +377,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_GISDataExchange.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_GoogleFusionTable.cpp"
 				>
 			</File>
@@ -743,6 +747,10 @@
 			<Filter
 				Name="Data-Interface"
 				>
+				<File
+					RelativePath=".\Data-Interface\ogr-interface.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="Cross_resolution"
@@ -829,11 +837,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -857,11 +865,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -889,19 +897,19 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar2.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toolbar2.bmp"
 						>
 					</File>
 					<File
@@ -938,6 +946,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_Find_Vehicle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_GISDataExchange.h"
 				>
 			</File>
 			<File

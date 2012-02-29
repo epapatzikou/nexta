@@ -65,6 +65,7 @@
 #include "Dlg_VehicleClassification.h"
 #include "Dlg_Find_Vehicle.h"
 #include "Dlg_TravelTimeReliability.h"
+#include "Dlg_GISDataExchange.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -194,6 +195,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA, &CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea)
 	ON_COMMAND(ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS, &CTLiteDoc::OnToolsTraveltimereliabilityanalysis)
 	ON_COMMAND(ID_LINK_LINKBAR, &CTLiteDoc::OnLinkLinkbar)
+	ON_COMMAND(ID_IMPORT_ARCGISSHAPEFILE, &CTLiteDoc::OnImportArcgisshapefile)
 	END_MESSAGE_MAP()
 
 
@@ -2543,7 +2545,7 @@ void CTLiteDoc::CalculateDrawingRectangle()
 
 	for (std::list<DTANode*>::iterator iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
-		if((*iNode)->m_Connections >0)
+//		if((*iNode)->m_Connections >0)  // we might try import node layer only from shape file, so all nodes have no connected links. 
 		{
 			if(!bRectIni)
 			{
@@ -5948,4 +5950,30 @@ void CTLiteDoc::OnLinkLinkbar()
 		GenerateOffsetLinkBand();
 		UpdateAllViews(0);
 	}
+}
+
+void CTLiteDoc::OnImportArcgisshapefile()
+{
+CDlg_GISDataExchange dlg;
+dlg.m_pDoc = this;
+dlg.DoModal();
+
+//m_UnitFeet = 1;  // default value
+//m_NodeDisplaySize = 50;
+m_ShowNodeLayer = true;
+	CalculateDrawingRectangle();
+	m_bFitNetworkInitialized  = false;
+	UpdateAllViews(0);
+
+
+/*	CString str;
+	CFileDialog dlg (FALSE, "*.shp", "*.shp",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"Shape File (*.shp)|*.shp||", NULL);
+	if(dlg.DoModal() == IDOK)
+	{
+
+		CWaitCursor wait;
+		ImportOGRShapeFile(dlg.GetPathName());
+	}
+	*/
 }

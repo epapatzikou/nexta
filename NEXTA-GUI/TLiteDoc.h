@@ -89,6 +89,8 @@ protected: // create from serialization only
 		m_ImageY1 = 0;
 		m_ImageY2 = 1000;
 		m_NodeDisplaySize = 200;
+		m_ShowNodeLayer = false;
+
 
 		m_NetworkRect.top  = 50;
 		m_NetworkRect.bottom = 0;
@@ -121,6 +123,7 @@ protected: // create from serialization only
 public:
 
 	int m_NodeDisplaySize;
+	bool m_ShowNodeLayer;
 
 	GDPoint m_Origin;
 
@@ -244,6 +247,7 @@ public:
 
 	CString m_SensorDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
+
 
 	int FindLinkFromSensorLocation(float x, float y, CString orientation);
 
@@ -580,9 +584,14 @@ void SetStatusText(CString StatusText);
 	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	void ExportSingleSynchroFile(CString SynchroProjectFile);
+
 	void ExportSynchroVersion6Files();
 	CString m_Synchro_ProjectDirectory;
 
+
+	void ExportOGRShapeFile();
+	void ImportOGRShapeFile(CString FileName);
+	
 	int Find_P2P_Angle(GDPoint p1, GDPoint p2);
 	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
 	DTA_Approach g_Angle_to_Approach_New(int angle);
@@ -834,6 +843,7 @@ public:
 		afx_msg void OnSubareaViewvehiclestatisticsassociatedwithsubarea();
 		afx_msg void OnToolsTraveltimereliabilityanalysis();
 		afx_msg void OnLinkLinkbar();
+		afx_msg void OnImportArcgisshapefile();
 };
 
 
