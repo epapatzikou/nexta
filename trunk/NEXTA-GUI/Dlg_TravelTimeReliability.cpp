@@ -40,9 +40,12 @@ CDlg_TravelTimeReliability::CDlg_TravelTimeReliability(CWnd* pParent /*=NULL*/)
 
 	for (int i=0;i<MAX_SAMPLE_SIZE;i++)
 	{
-		Capacity[i] = AdditionalDelay[i] = 0.0f;
-		TravelTime[i] = 0.0f;
+		TravelTime[i] = Capacity[i] = AdditionalDelay[i] = 0.0f;
 	}
+
+	this->m_bImpacted = false;
+	this->m_ImpactedLinkIdx = -1;
+	this->m_ImpactDuration = 0;
 }
 
 void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
@@ -62,7 +65,7 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 	float capacity_lower_bound  = 2000;  // to aoid extrem large travel time
 
 
-	for (int i=0;i<LinkCapacity.size();i++)
+	for (unsigned int i=0;i<LinkCapacity.size();i++)
 	{
 		if (i != m_BottleneckIdx && i != m_ImpactedLinkIdx) //Non-bottleneck Link 
 		{
@@ -80,20 +83,20 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 				{
 					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.2f,100);
 					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.2f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],900,0.2f,100);
-					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],1400,0.2f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i],0.2f,100);
+					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i],0.2f,100);
 
 					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 					{
-						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/max(capacity_lower_bound,LinkCapacity[i]));
-						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
+						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
 					}
 				}
 				else // Include impacted link by incidents
 				{
 					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 					{
-						TravelTime[i] += LinkTravelTime[i];
+						TravelTime[j] += LinkTravelTime[i];
 					}
 				}
 			}
@@ -106,8 +109,8 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 
 				for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 				{
-					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/max(capacity_lower_bound,LinkCapacity[i]));
-					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[i];
+					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
 				}
 			}
 
@@ -405,7 +408,7 @@ void CDlg_TravelTimeReliability::OnBnClickedEditScenario()
 	m_pDoc->OnScenarioConfiguration();
 }
 
-void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, int& step_size)
+void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, float& step_size)
 {
 	float max=-1.0f;
 	float min= 999999.0f;
@@ -417,7 +420,12 @@ void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, 
 		ptr++;
 	}
 
-	step_size = 5;
+	//step_size = 5;
+	float diff = max - min;
+
+	if (diff < 5) step_size = 0.5;
+	if (diff < 10) step_size = 1;
+	if (diff < 25) step_size = 5;
 
 	//if (max - min > 50) 
 	//{
@@ -428,7 +436,7 @@ void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, 
 	//	step_size = 2;
 	//}
 
-	int lowerbound = (int)(min / step_size)*step_size;
+	int lowerbound = (int)(min / step_size) * step_size;
 	int upperbound = (int)(max / step_size) * step_size;
 
 	if (upperbound < max) upperbound += step_size;
@@ -446,7 +454,7 @@ void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, 
 	{
 		float tmp = *(ptr+i);
 		int idx = (int)(tmp-lowerbound)/step_size;
-		if (idx < Y.size())
+		if ((unsigned int)idx < Y.size())
 		{
 			Y[idx]++;
 		}
@@ -463,16 +471,14 @@ void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 {
 	int CurSelectionNo = m_ReliabilityMOEList.GetCurSel ();
 
-	int count;
 	CString travel_time_str;
 
 
 	vector<CString> XLabel;
 	vector<float> YLabel;
-	int step_size;
-	GenerateXAndY(TravelTime,100,XLabel,YLabel,step_size);
+	float step_size;
+	GenerateXAndY(TravelTime,MAX_SAMPLE_SIZE,XLabel,YLabel,step_size);
 
-	int t;
 	m_chart_traveltime.ResetChart();		
 
 	//int travel_time_count_array[100];
@@ -567,14 +573,26 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 	case 0:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			value = 1.65*GetSTD(TravelTime+IntProportion[i],IntProportion[i],m_PathFreeFlowTravelTime);
+			int pos = 0;
+			for (int j=0;j<i;j++)
+			{
+				pos += IntProportion[j];
+			}
+
+			value = 1.65*GetSTD(TravelTime+pos,IntProportion[i],GetMean(TravelTime,MAX_SAMPLE_SIZE));
 			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
 	case 1:
 		for(int i =0; i< m_FactorSize; i++)
 		{
-			value = 1.65*GetSTD(AdditionalDelay+IntProportion[i],IntProportion[i],GetMean(AdditionalDelay,MAX_SAMPLE_SIZE));
+			int pos = 0;
+			for (int j=0;j<i;j++)
+			{
+				pos += IntProportion[j];
+			}
+
+			value = 1.65*GetSTD(AdditionalDelay+pos,IntProportion[i],GetMean(AdditionalDelay,MAX_SAMPLE_SIZE));
 			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
