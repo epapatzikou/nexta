@@ -2695,10 +2695,10 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 
         if (b_Impacted)
         {
-                dlg.m_bImpacted = b_Impacted;
-                dlg.m_ImpactDuration = ImpactDuration;
-                dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
-                dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
+            dlg.m_bImpacted = b_Impacted;
+            dlg.m_ImpactDuration = ImpactDuration;
+            dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
+            dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
         }
 
         dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
