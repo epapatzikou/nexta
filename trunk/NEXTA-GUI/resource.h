@@ -216,8 +216,8 @@
 #define ID_IMPORT_GPS_SHAPE_FILE        1092
 #define IDC_EDIT_GIS_SHAPE_FILE         1093
 #define ID_EXPORT_CSV_FILE              1094
+#define IDC_Back_GroundColorBUTTON      1094
 #define ID_EXPORT_GPS_SHAPE_FILE        1095
-#define ID_EXPORT_GPS_SHAPE_FILE2       1096
 #define ID_EXPORT_KML_FILE              1096
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
@@ -637,14 +637,16 @@
 #define ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS 33293
 #define ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS 33294
 #define ID_IMPORT_ARCGISSHAPEFILE       33295
+#define ID_LINK_INCREASEBANDWIDTH       33297
+#define ID_LINK_DECREASEBANDWIDTH       33298
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        194
-#define _APS_NEXT_COMMAND_VALUE         33297
-#define _APS_NEXT_CONTROL_VALUE         1094
+#define _APS_NEXT_COMMAND_VALUE         33302
+#define _APS_NEXT_CONTROL_VALUE         1095
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

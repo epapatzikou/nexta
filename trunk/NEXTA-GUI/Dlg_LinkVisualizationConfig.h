@@ -30,4 +30,5 @@ public:
 	afx_msg void OnLbnSelchangeLinkBarWidthList();
 	CListBox m_LinkBarWidthModeList;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnBnClickedBackGroundcolorbutton();
 };

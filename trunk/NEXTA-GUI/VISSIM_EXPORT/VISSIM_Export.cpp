@@ -141,41 +141,4 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 	}// for each node
 }
 
-/*
-void CTLiteDoc::GenerateOffsetLinkBand()
-$
 
-
-	ReCalculateLinkBandWidth();
-
-	std::list<DTALink*>::iterator iLink;
-
-	double lane_offset = m_UnitFeet*m_WideLaneInFeet;  // 20 feet per lane
-
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			(*iLink)->m_BandLeftShapePoints.clear();
-			(*iLink)->m_BandRightShapePoints.clear();
-
-			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
-			double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
-			double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
-			double theta = atan2(DeltaY, DeltaX);
-
-			for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
-			{
-				GDPoint pt;
-
-				pt.x = (*iLink)->m_ShapePoints[si].x - lane_offset* cos(theta-PI/2.0f);
-				pt.y = (*iLink)->m_ShapePoints[si].y - lane_offset* sin(theta-PI/2.0f);
-
-				(*iLink)->m_BandLeftShapePoints.push_back (pt);
-
-				pt.x  = (*iLink)->m_ShapePoints[si].x + (*iLink)->m_BandWidthValue*lane_offset* cos(theta-PI/2.0f);
-				pt.y = (*iLink)->m_ShapePoints[si].y + (*iLink)->m_BandWidthValue*lane_offset* sin(theta-PI/2.0f);
-
-				(*iLink)->m_BandRightShapePoints.push_back (pt);
-			}
-		}
-}
-*/

@@ -357,9 +357,10 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
 		return;
     }
 
+	///// export to node layer
     OGRLayer *poLayer;
 
-    poLayer = poDS->CreateLayer( "node_out", NULL, wkbPoint, NULL );
+    poLayer = poDS->CreateLayer( "export_node", NULL, wkbPoint, NULL );
     if( poLayer == NULL )
     {
 		m_MessageList.AddString ("Layer creation failed");
