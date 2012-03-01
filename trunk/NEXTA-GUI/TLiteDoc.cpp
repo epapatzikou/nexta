@@ -5947,10 +5947,20 @@ void CTLiteDoc::OnSubareaViewvehiclestatisticsassociatedwithsubarea()
 
 void CTLiteDoc::OnToolsTraveltimereliabilityanalysis()
 {
-		CDlg_TravelTimeReliability dlg;
-		dlg.m_pDoc= this;
-		dlg.m_PathFreeFlowTravelTime = 20;  // for a predefined corridor
-		dlg.DoModal ();
+	std::vector<float> LinkCapacity;
+	std::vector<float> LinkTravelTime;
+
+	LinkCapacity.push_back(1800.0f);
+	LinkTravelTime.push_back(20.0f);
+
+	CDlg_TravelTimeReliability dlg;
+	dlg.m_pDoc= this;
+	dlg.LinkCapacity = LinkCapacity;
+	dlg.LinkTravelTime = LinkTravelTime;
+
+	dlg.m_BottleneckIdx = 0;
+	dlg.m_PathFreeFlowTravelTime = 20.0f;  // for a predefined corridor
+	dlg.DoModal ();
 }
 
 
