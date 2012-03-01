@@ -6,6 +6,7 @@
 #include "Dlg_TravelTimeReliability.h"
 #include "math.h"
 #include <vector>
+#include "Utility.h"
 
 using std::vector;
 
@@ -47,6 +48,8 @@ CDlg_TravelTimeReliability::CDlg_TravelTimeReliability(CWnd* pParent /*=NULL*/)
 	this->m_ImpactedLinkIdx = -1;
 	this->m_ImpactDuration = 0;
 
+	CalculationMethod = 0;
+
 }
 
 void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
@@ -71,39 +74,25 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 	float capacity_lower_bound  = 2000;  // to aoid extrem large travel time
 
 
-	for (unsigned int i=0;i<LinkCapacity.size();i++)
+	if (CalculationMethod == 1)
 	{
-		if (i != m_BottleneckIdx && i != m_ImpactedLinkIdx) //Non-bottleneck Link 
+		for (unsigned int i=0;i<LinkCapacity.size();i++)
 		{
-			for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+			if (i != m_BottleneckIdx && i != m_ImpactedLinkIdx) //Non-bottleneck Link 
 			{
-				TravelTime[j] += LinkTravelTime[i];
-			}
-		}
-		else
-		{
-
-			if (m_bImpacted && i == m_ImpactedLinkIdx)
-			{
-				g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.1f,100);
-				g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosureRatio,0.3f,100);
-				g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i]*0.5f,0.2f,100);
-				g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i]*0.7f,0.2f,100);
-
 				for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 				{
-					AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
-					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
+					TravelTime[j] += LinkTravelTime[i];
 				}
 			}
 			else
 			{
-				if (m_bImpacted == false && i == m_BottleneckIdx)
+				if (m_bImpacted && i == m_ImpactedLinkIdx)
 				{
-					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.3f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.4f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i],0.25f,100);
-					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i],0.25f,100);
+					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.1f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosureRatio,0.3f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i]*0.5f,0.2f,100);
+					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i]*0.7f,0.2f,100);
 
 					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 					{
@@ -113,12 +102,52 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 				}
 				else
 				{
-					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+					if (m_bImpacted == false && i == m_BottleneckIdx)
 					{
-						TravelTime[j] += LinkTravelTime[i];
+						g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.3f,100);
+						g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.4f,100);
+						g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i],0.25f,100);
+						g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i],0.25f,100);
+
+						for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+						{
+							AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+							TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
+						}
+					}
+					else
+					{
+						for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+						{
+							TravelTime[j] += LinkTravelTime[i];
+						}
 					}
 				}
 			}
+		}
+	}
+	else
+	{
+		float baseCapacity = 1800.0f;
+
+		if (m_bImpacted)
+		{
+			baseCapacity = LinkCapacity[m_ImpactedLinkIdx];
+		}
+		else
+		{
+			baseCapacity = LinkCapacity[m_BottleneckIdx];
+		}
+
+		g_RandomCapacity(&Capacity[0],IntProportion[0],baseCapacity,0.2f,100);
+		g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],baseCapacity*0.5f,0.2f,100);
+		g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],baseCapacity*0.6f,0.2f,100);
+		g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],baseCapacity*0.7f,0.2f,100);
+
+		for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+		{
+			AdditionalDelay[j] = m_PathFreeFlowTravelTime *(1-Capacity[j]/baseCapacity);
+			TravelTime[j] += m_PathFreeFlowTravelTime + AdditionalDelay[j];
 		}
 	}
 }
@@ -159,21 +188,18 @@ END_MESSAGE_MAP()
 
 BOOL CDlg_TravelTimeReliability::OnInitDialog()
 {
-
-
 	CDialog::OnInitDialog();
 
 	CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
-
-	g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "normal", 3, DTASettingsPath);
 
 	proportion[0] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Normal", 0.6f, DTASettingsPath);
 	proportion[1] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Incident", 0.15f, DTASettingsPath);
 	proportion[2] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Workzone", 0.15f, DTASettingsPath);
 	proportion[3] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Weather", 0.1f, DTASettingsPath);
 
-	UpdateCapacityAndDelay();
+	CalculationMethod = g_GetPrivateProfileInt("TravelTimeReliabilityDemo", "CalculationMethod", 0, DTASettingsPath);
 
+	UpdateCapacityAndDelay();
 
 	m_FactorLabel[0]= "Capacity Variations";
 	m_FactorLabel[1]= "Incidents";
@@ -572,7 +598,7 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 				pos += IntProportion[j];
 			}
 
-			value = 1.65*GetSTD(AdditionalDelay+pos,IntProportion[i],GetMean(AdditionalDelay+pos,IntProportion[i]));
+			value = 1.65*GetSTD(AdditionalDelay+pos,IntProportion[i],GetMean(AdditionalDelay,MAX_SAMPLE_SIZE));
 			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;

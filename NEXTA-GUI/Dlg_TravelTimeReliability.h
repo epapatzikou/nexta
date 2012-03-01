@@ -35,6 +35,8 @@ public:
 	vector<float> LinkCapacity;
 	vector<float> LinkTravelTime;
 
+	int CalculationMethod;
+
 	int m_BottleneckIdx;
 
 	int m_ImpactedLinkIdx;
