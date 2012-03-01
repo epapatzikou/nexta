@@ -32,3 +32,5 @@ float g_read_float(FILE *f);
 double  g_FindClosestYResolution(double Value);
 
 int  g_FindClosestTimeResolution(double Value);
+
+int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
