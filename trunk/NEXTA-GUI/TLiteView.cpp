@@ -2627,6 +2627,8 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 	int BottleneckIdx = 0;
 	int ImpactedLinkIdx = -1;
 
+	float free_flow_travel_time = 0.0f;
+
 
 	if(pDoc->m_PathDisplayList.size()>0)
 	{
@@ -2644,6 +2646,7 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 
 			LinkCapacity.push_back(linkcapacity);
 			LinkTravelTime.push_back(linktraveltime);
+			free_flow_travel_time += linktraveltime;
 
 			// for the first link, i==0, use your current code to generate delay, 
 			//additional for user-specified incidents along the routes, add additional delay based on input
@@ -2689,6 +2692,6 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 		dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
 	}
 
-	dlg.m_PathFreeFlowTravelTime = pDoc->m_PathDisplayList[0].m_TravelTime;
+	dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
 	dlg.DoModal ();
 }

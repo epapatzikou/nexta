@@ -46,11 +46,17 @@ CDlg_TravelTimeReliability::CDlg_TravelTimeReliability(CWnd* pParent /*=NULL*/)
 	this->m_bImpacted = false;
 	this->m_ImpactedLinkIdx = -1;
 	this->m_ImpactDuration = 0;
+
 }
 
 void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 {
-	//int IntProportion[4];
+
+	for (int i=0;i<MAX_SAMPLE_SIZE;i++)
+	{
+		TravelTime[i] = Capacity[i] = AdditionalDelay[i] = 0.0f;
+	}
+
 	int sum=0;
 
 	for (int i=1;i<4;i++)
@@ -71,36 +77,13 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 		{
 			for (int j=0;j<MAX_SAMPLE_SIZE;j++)
 			{
-				TravelTime[i] += LinkTravelTime[i];
+				TravelTime[j] += LinkTravelTime[i];
 			}
 		}
 		else
 		{
 
-			if (i == m_BottleneckIdx)
-			{
-				if (m_bImpacted == false) // No impacted link by incidents
-				{
-					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.2f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.2f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i],0.2f,100);
-					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i],0.2f,100);
-
-					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
-					{
-						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
-						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
-					}
-				}
-				else // Include impacted link by incidents
-				{
-					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
-					{
-						TravelTime[j] += LinkTravelTime[i];
-					}
-				}
-			}
-			else //Impacted link by incidents
+			if (m_bImpacted && i == m_ImpactedLinkIdx)
 			{
 				g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.1f,100);
 				g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosureRatio,0.3f,100);
@@ -113,7 +96,29 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 					TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
 				}
 			}
+			else
+			{
+				if (m_bImpacted == false && i == m_BottleneckIdx)
+				{
+					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.3f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*0.4,0.4f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i],0.25f,100);
+					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i],0.25f,100);
 
+					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+					{
+						AdditionalDelay[j] = LinkTravelTime[i]*(1-Capacity[j]/LinkCapacity[i]);
+						TravelTime[j] += LinkTravelTime[i] + AdditionalDelay[j];
+					}
+				}
+				else
+				{
+					for (int j=0;j<MAX_SAMPLE_SIZE;j++)
+					{
+						TravelTime[j] += LinkTravelTime[i];
+					}
+				}
+			}
 		}
 	}
 }
@@ -157,6 +162,15 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 
 	CDialog::OnInitDialog();
+
+	CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
+
+	g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "normal", 3, DTASettingsPath);
+
+	proportion[0] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Normal", 0.6f, DTASettingsPath);
+	proportion[1] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Incident", 0.15f, DTASettingsPath);
+	proportion[2] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Workzone", 0.15f, DTASettingsPath);
+	proportion[3] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Weather", 0.1f, DTASettingsPath);
 
 	UpdateCapacityAndDelay();
 
@@ -203,7 +217,7 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 	DisplayTravelTimeChart();
 
-//	m_chart_traveltime.SetChartStyle(NSCS_BAR);
+	//m_chart_traveltime.SetChartStyle(NSCS_BAR);
 	m_chart_traveltime.SetChartStyle(NSCS_LINE);
 
 
@@ -353,6 +367,8 @@ void CDlg_TravelTimeReliability::OnBnClickedModify()
 		}
 	}
 
+	proportion[idx] = m_dValue;
+
 	float sum = 0.0f;
 	for (int i=0;i<4;i++)
 	{
@@ -360,14 +376,13 @@ void CDlg_TravelTimeReliability::OnBnClickedModify()
 		sum += proportion[i];
 	}
 
-	if ((sum + m_dValue - 1.0f) > 0.0001)
+	float rest_proportion = 1.0f - proportion[idx];
+
+	for (int i=0;i<4;i++)
 	{
-		MessageBox("The sum of proportion is greater than 1.0!","Error",MB_OK | MB_ICONSTOP);
-		return;
+		if (idx == i) continue;
+		proportion[i] = rest_proportion * (proportion[i] / sum);
 	}
-	proportion[idx] = m_dValue;
-
-
 
 	UpdateCapacityAndDelay();
 
@@ -389,15 +404,6 @@ void CDlg_TravelTimeReliability::OnChartSelectedItem(NMHDR* pNMHDR, LRESULT* pRe
 		m_sLabel = nmchart->sLabel;
 
 	}
-	//{
-	//	m_dValue = (float)(nmchart->dValue);  // convert to float to avoid many decimals
-	//	m_sLabel = nmchart->sLabel;
-	//}
-	//else
-	//{
-	//	m_dValue = 0;
-	//	m_sLabel = "";
-	//}
 	UpdateData(FALSE);
 	UpdateDialogControls(this,FALSE);
 	*pResult = FALSE;
@@ -408,7 +414,7 @@ void CDlg_TravelTimeReliability::OnBnClickedEditScenario()
 	m_pDoc->OnScenarioConfiguration();
 }
 
-void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, float& step_size)
+void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, int& step_size)
 {
 	float max=-1.0f;
 	float min= 999999.0f;
@@ -420,31 +426,32 @@ void GenerateXAndY(float* x_ptr, int num, vector<CString>& X, vector<float>& Y, 
 		ptr++;
 	}
 
-	//step_size = 5;
-	float diff = max - min;
+	int lowerbound = (min < (int)(min))?(int)min - 1:(int)min;
+	int upperbound = (max > (int)(max))?(int)max + 1:(int)max;
 
-	if (diff < 5) step_size = 0.5;
-	if (diff < 10) step_size = 1;
-	if (diff < 25) step_size = 5;
+	int diff = upperbound - lowerbound;
+	if (diff < 10)
+	{
+		step_size = 1;
+	}
+	else
+	{
+		if (diff >= 10 && diff < 50)
+		{
+			step_size = 5;
+		}
+		else
+		{
+			step_size = 10;
+		}
+	}
 
-	//if (max - min > 50) 
-	//{
-	//	step_size = 5;
-	//}
-	//else
-	//{
-	//	step_size = 2;
-	//}
+	//if (upperbound < max) upperbound += step_size;
 
-	int lowerbound = (int)(min / step_size) * step_size;
-	int upperbound = (int)(max / step_size) * step_size;
-
-	if (upperbound < max) upperbound += step_size;
-
-	for (int i=0;i<upperbound;i+=step_size)
+	for (int i=lowerbound;i<upperbound;i+=step_size)
 	{
 		CString str;
-		str.Format("%d",lowerbound+i);
+		str.Format("%d",i);
 		X.push_back(str);
 		Y.push_back(0.0f);
 	}
@@ -476,31 +483,14 @@ void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 
 	vector<CString> XLabel;
 	vector<float> YLabel;
-	float step_size;
+	int step_size = 5;
 	GenerateXAndY(TravelTime,MAX_SAMPLE_SIZE,XLabel,YLabel,step_size);
 
 	m_chart_traveltime.ResetChart();		
 
-	//int travel_time_count_array[100];
-
-
-	//// normalize 
-	//for(t=10; t<30; t+=5)
-	//{
-	//	travel_time_count_array[t] = travel_time_count_array[t]*100.f/max(1,total_count);
-	//}
 
 	if(CurSelectionNo == 0)
 	{
-		//count = 0;
-		//for(t=10; t<30; t+=5)
-		//{
-		//	travel_time_str.Format("%d",t);
-		//	count = travel_time_count_array[t];
-
-		//	m_chart_traveltime.AddValue(count,travel_time_str);
-		//}
-
 		for (size_t i=0;i<XLabel.size();i++)
 		{
 			m_chart_traveltime.AddValue(YLabel[i],XLabel[i]);
@@ -509,16 +499,6 @@ void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 	}
 	else
 	{
-		//count = 0;
-		//for(t=10; t<30; t+=5)
-		//{
-		//	travel_time_str.Format("%d",t);
-		//	count += travel_time_count_array[t];
-
-		//	m_chart_traveltime.AddValue(count,travel_time_str);
-		//}
-
-
 		float total_count = 0.0f;
 		for(size_t i=0;i<YLabel.size();i++)
 		{
@@ -579,7 +559,7 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 				pos += IntProportion[j];
 			}
 
-			value = 1.65*GetSTD(TravelTime+pos,IntProportion[i],GetMean(TravelTime,MAX_SAMPLE_SIZE));
+			value = 1.65*GetSTD(TravelTime+pos,IntProportion[i],this->m_PathFreeFlowTravelTime);
 			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
@@ -592,7 +572,7 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 				pos += IntProportion[j];
 			}
 
-			value = 1.65*GetSTD(AdditionalDelay+pos,IntProportion[i],GetMean(AdditionalDelay,MAX_SAMPLE_SIZE));
+			value = 1.65*GetSTD(AdditionalDelay+pos,IntProportion[i],GetMean(AdditionalDelay+pos,IntProportion[i]));
 			m_chart_7factors.AddValue(value,m_FactorLabel[i]);
 		}
 		break;
