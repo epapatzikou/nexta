@@ -60,7 +60,6 @@ IMPLEMENT_DYNCREATE(CTLiteView, CView)
 BEGIN_MESSAGE_MAP(CTLiteView, CView)
 
 	ON_WM_SIZE()
-	ON_COMMAND(ID_VIEW_BACKGROUNDCOLOR, &CTLiteView::OnViewBackgroundcolor)
 	ON_WM_HSCROLL()
 	ON_WM_VSCROLL()
 
@@ -133,6 +132,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS, &CTLiteView::OnNodeDirectiontohereandvehicleanalaysis)
 	ON_COMMAND(ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS, &CTLiteView::OnNodeDirectionfromhereandvehicleanalasis)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS, &CTLiteView::OnNodeDirectiontohereandreliabilityanalysis)
+	ON_COMMAND(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnLinkIncreasebandwidth)
+	ON_COMMAND(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnLinkDecreasebandwidth)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -179,7 +180,7 @@ CPen g_PenHighlightPath(PS_SOLID,3,RGB(255,255,0));  // yellow
 CBrush  g_BrushHighlightPath(RGB(255,255,0));  // yellow
 
 CBrush  g_BrushLinkBand(RGB(125,125,0)); // 
-
+CBrush  g_BrushLinkBandVolume(RGB(0,0,255)); // 
 
 CPen g_ThickPenSelectColor0(PS_SOLID,3,RGB(255,0,0));  // red
 CPen g_ThickPenSelectColor1(PS_SOLID,3,RGB(0,255,0));  // green
@@ -306,7 +307,7 @@ CTLiteView::CTLiteView()
 	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
 	m_OriginOnBottomFlag = -1;
-	m_BackgroundColor =  RGB(0,100,0);
+
 	//	RGB(102,204,204);
 
 	m_ToolMode = move_tool;
@@ -393,13 +394,14 @@ void CTLiteView::OnDraw(CDC* pDC)
 
 
 	// Custom draw on top of memDC
+	CTLiteDoc* pDoc = GetDocument();
 	CBrush brush;
-	if (!brush.CreateSolidBrush(m_BackgroundColor))
+	if (!brush.CreateSolidBrush(pDoc->m_BackgroundColor))
 		return;
 	brush.UnrealizeObject();
 	memDC.FillRect(rectClient, &brush);
 
-	CTLiteDoc* pDoc = GetDocument();
+
 	if(pDoc->m_BackgroundBitmapLoaded && m_bShowImage)
 	{
 		pDoc->m_ImageX2  = pDoc->m_ImageX1+ pDoc->m_ImageWidth * pDoc->m_ImageXResolution;
@@ -581,6 +583,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	CPoint FromPoint,ToPoint;
 	CRect link_rect;
 
+	pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then condition with volume
+
+
+	// recongenerate the lind band width offset only when chaning display mode or on volume mode
+	if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
+		pDoc->m_LinkMOEMode == MOE_volume || 
+		pDoc->m_LinkMOEMode == MOE_speed) 
+	{
+		pDoc->GenerateOffsetLinkBand();
+	}
+
+	if (pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed)   // under volume mode, dynamically generate volume band
+	{
+    pDoc->m_LinkBandWidthMode = LBW_link_volume;
+	}else
+	{
+    pDoc->m_LinkBandWidthMode = LBW_number_of_lanes;
+	}
+
+	pDoc -> m_PrevLinkMOEMode = pDoc -> m_LinkMOEMode;
+
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
@@ -591,8 +614,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
 			continue;
-
-		pDC->SelectObject(&g_BrushLinkBand);   //default brush
 
 		if((*iLink)->m_AVISensorFlag == false || ((*iLink)->m_AVISensorFlag == true && m_bShowAVISensor == true))
 		{
@@ -636,6 +657,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					pDC->SelectObject(&brush_moe);
 				}
 
+	if (pDoc->m_LinkMOEMode == MOE_volume)   // under volume mode, dynamically generate volume band
+		pDC->SelectObject(&g_BrushLinkBandVolume);   //default brush
 
 			}else if(m_bShowLinkType)
 			{
@@ -678,12 +701,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
 				pDC->SelectObject(&g_BlackPen);
 
-			//drarw link as lines
-			if(m_link_display_mode == link_display_mode_line)
+			//draw link as lines
+			if(m_link_display_mode == link_display_mode_line && pDoc->m_LinkMOEMode != MOE_volume )
 			{
 				DrawLinkAsLine((*iLink),pDC);
 			}
-			else  // band
+			else  // band and volume mode
 			{
 				if(DrawLinkAsBand((*iLink),pDC)==false)
 					return;
@@ -1146,19 +1169,6 @@ void CTLiteView::OnSize(UINT nType, int cx, int cy)
 	CView::OnSize(nType, cx, cy);
 	OnViewShownetwork();
 }
-
-
-
-void CTLiteView::OnViewBackgroundcolor()
-{
-	CColorDialog dlg(RGB(0, 0, 0), CC_FULLOPEN);
-	if (dlg.DoModal() == IDOK)
-	{
-		m_BackgroundColor= dlg.GetColor();
-		Invalidate();
-	}
-}
-
 
 
 BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
@@ -2608,90 +2618,105 @@ extern void g_RandomCapacity(float* ptr, int num, float mean, float COV,int seed
 #define MAX_SAMPLE_SIZE 200
 
 void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
+{    OnNodeDestination();
+        CTLiteDoc* pDoc = GetDocument();
+
+        bool b_Impacted = false;
+        float OriginalCapacity = 0.0f;
+        float ImpactDuration = 0.0f;
+        float LaneClosureRatio = 0.0f;
+
+        float CurrentTime = g_Simulation_Time_Stamp;
+
+        std::vector<float> LinkCapacity;
+        std::vector<float> LinkTravelTime;
+
+        float max_density = 0.0f;
+
+        int BottleneckIdx = 0;
+        int ImpactedLinkIdx = -1;
+
+        float free_flow_travel_time = 0.0f;
+
+
+        if(pDoc->m_PathDisplayList.size()>0)
+        {
+
+                DTAPath* pPath = &pDoc->m_PathDisplayList[0];  // 0 is the current selected path
+                for (int i=0;i<pPath->m_LinkSize;i++)  // for each pass link
+                {
+                        DTALink* pLink = pDoc->m_LinkNoMap[pPath->m_LinkVector[i]];
+
+                        float linkcapacity = pLink->m_LaneCapacity;
+                        float linktraveltime = pLink->m_Length/pLink->GetObsSpeed(CurrentTime)*60;
+                        float density = pLink->GetObsDensity(CurrentTime);
+
+                        if (density > max_density) BottleneckIdx = i;
+
+                        LinkCapacity.push_back(linkcapacity);
+                        LinkTravelTime.push_back(linktraveltime);
+                        free_flow_travel_time += linktraveltime;
+
+                        // for the first link, i==0, use your current code to generate delay, 
+                        //additional for user-specified incidents along the routes, add additional delay based on input
+
+                        if (!b_Impacted)
+                        {
+                                LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
+
+                                if(LaneClosureRatio > 0.01) // This link is 
+                                {  
+                                        // use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
+                                        //
+                                        // CurrentTime +=additional delay...
+
+                                        if (pLink->CapacityReductionVector.size() != 0)
+                                        {
+                                                ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
+                                        }
+
+                                        ImpactedLinkIdx = i;
+
+                                        b_Impacted = true;
+
+                                }
+                        }
+
+                        CurrentTime += (pLink->m_Length/pLink->GetObsSpeed(CurrentTime))*60;
+                }
+        }
+
+        CDlg_TravelTimeReliability dlg;
+        dlg.m_pDoc= pDoc;
+        dlg.LinkCapacity = LinkCapacity;
+        dlg.LinkTravelTime = LinkTravelTime;
+
+        dlg.m_BottleneckIdx = BottleneckIdx;
+
+        if (b_Impacted)
+        {
+                dlg.m_bImpacted = b_Impacted;
+                dlg.m_ImpactDuration = ImpactDuration;
+                dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
+                dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
+        }
+
+        dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
+        dlg.DoModal ();
+}
+void CTLiteView::OnLinkIncreasebandwidth()
 {
-	OnNodeDestination();
 	CTLiteDoc* pDoc = GetDocument();
+	pDoc->m_MaxLinkWidthAsNumberOfLanes  *=1.2;
+	pDoc->GenerateOffsetLinkBand();
+	Invalidate();
+}
 
-	bool b_Impacted = false;
-	float OriginalCapacity = 0.0f;
-	float ImpactDuration = 0.0f;
-	float LaneClosureRatio = 0.0f;
-
-	float CurrentTime = g_Simulation_Time_Stamp;
-
-	std::vector<float> LinkCapacity;
-	std::vector<float> LinkTravelTime;
-
-	float max_density = 0.0f;
-
-	int BottleneckIdx = 0;
-	int ImpactedLinkIdx = -1;
-
-	float free_flow_travel_time = 0.0f;
-
-
-	if(pDoc->m_PathDisplayList.size()>0)
-	{
-
-		DTAPath* pPath = &pDoc->m_PathDisplayList[0];  // 0 is the current selected path
-		for (int i=0;i<pPath->m_LinkSize;i++)  // for each pass link
-		{
-			DTALink* pLink = pDoc->m_LinkNoMap[pPath->m_LinkVector[i]];
-
-			float linkcapacity = pLink->m_LaneCapacity;
-			float linktraveltime = pLink->m_Length/pLink->GetObsSpeed(CurrentTime)*60;
-			float density = pLink->GetObsDensity(CurrentTime);
-
-			if (density > max_density) BottleneckIdx = i;
-
-			LinkCapacity.push_back(linkcapacity);
-			LinkTravelTime.push_back(linktraveltime);
-			free_flow_travel_time += linktraveltime;
-
-			// for the first link, i==0, use your current code to generate delay, 
-			//additional for user-specified incidents along the routes, add additional delay based on input
-
-			if (!b_Impacted)
-			{
-				LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
-
-				if(LaneClosureRatio > 0.01) // This link is 
-				{  
-					// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
-					//
-					// CurrentTime +=additional delay...
-
-					if (pLink->CapacityReductionVector.size() != 0)
-					{
-						ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
-					}
-
-					ImpactedLinkIdx = i;
-
-					b_Impacted = true;
-
-				}
-			}
-
-			CurrentTime += (pLink->m_Length/pLink->GetObsSpeed(CurrentTime))*60;
-		}
-	}
-
-	CDlg_TravelTimeReliability dlg;
-	dlg.m_pDoc= pDoc;
-	dlg.LinkCapacity = LinkCapacity;
-	dlg.LinkTravelTime = LinkTravelTime;
-
-	dlg.m_BottleneckIdx = BottleneckIdx;
-
-	if (b_Impacted)
-	{
-		dlg.m_bImpacted = b_Impacted;
-		dlg.m_ImpactDuration = ImpactDuration;
-		dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
-		dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
-	}
-
-	dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
-	dlg.DoModal ();
+void CTLiteView::OnLinkDecreasebandwidth()
+{
+	CTLiteDoc* pDoc = GetDocument();
+	pDoc->m_MaxLinkWidthAsNumberOfLanes  /=1.2;
+	pDoc->GenerateOffsetLinkBand();
+	Invalidate();
+	
 }

@@ -823,8 +823,9 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 { //output: m_BandWidthValue for each link
 		std::list<DTALink*>::iterator iLink;
 
-		float m_MaxLinkVolume = 0;
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		float m_MaxLinkVolume = 10000;   // 5 lanes, 2000 vehicles per hour per lane
+
+/*		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			if(m_LinkBandWidthMode == LBW_link_volume)
 			{
@@ -840,7 +841,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			}
 		}
 
-
+*/
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -848,12 +849,17 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			// default mode
 			if(m_LinkBandWidthMode == LBW_number_of_lanes)
 			{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes+1;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes+1 * m_MaxLinkWidthAsNumberOfLanes/50;
 			}
 			// 
 			if(m_LinkBandWidthMode == LBW_link_volume)
 			{
-				(*iLink)->m_BandWidthValue =  (*iLink)->m_TotalVolume*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
+				float LinkVolume = (*iLink)->m_TotalVolume;
+
+				if(g_Simulation_Time_Stamp>=1)
+					LinkVolume = (*iLink)->GetObsLaneVolume(g_Simulation_Time_Stamp);
+
+				(*iLink)->m_BandWidthValue =  LinkVolume*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
 			}
 
 			if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
@@ -2821,21 +2827,26 @@ void CTLiteDoc::OnFileDataloadingstatus()
 void CTLiteDoc::OnMoeVolume()
 {
 	m_LinkMOEMode = MOE_volume;
+	GenerateOffsetLinkBand();
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeSpeed()
 {
 	m_LinkMOEMode = MOE_speed;
+	GenerateOffsetLinkBand();
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeDensity()
 {
 	m_LinkMOEMode = MOE_density;
-	UpdateAllViews(0);}
+	GenerateOffsetLinkBand();
+	UpdateAllViews(0);
+}
 
 void CTLiteDoc::OnMoeQueuelength()
 {
 	m_LinkMOEMode = MOE_queuelength;
+	GenerateOffsetLinkBand();
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeFuelconsumption()
@@ -2882,6 +2893,9 @@ void CTLiteDoc::OnUpdateMoeEmissions(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeNone()
 {
 	m_LinkMOEMode = none;
+	// visualization configuration
+	OnLinkLinkbar();
+	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
 
@@ -3411,6 +3425,7 @@ void CTLiteDoc::OnSearchLinklist()
 void CTLiteDoc::OnMoeVehicle()
 {
 	m_LinkMOEMode = MOE_vehicle;
+	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
 

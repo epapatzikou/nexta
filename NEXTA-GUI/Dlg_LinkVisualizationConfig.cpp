@@ -29,6 +29,7 @@ void CDlg_LinkVisualizationConfig::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CDlg_LinkVisualizationConfig, CDialog)
 	ON_LBN_SELCHANGE(IDC_LINK_BAR_WIDTH_LIST, &CDlg_LinkVisualizationConfig::OnLbnSelchangeLinkBarWidthList)
+	ON_BN_CLICKED(IDC_Back_GroundColorBUTTON, &CDlg_LinkVisualizationConfig::OnBnClickedBackGroundcolorbutton)
 END_MESSAGE_MAP()
 
 
@@ -55,4 +56,14 @@ BOOL CDlg_LinkVisualizationConfig::OnInitDialog()
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CDlg_LinkVisualizationConfig::OnBnClickedBackGroundcolorbutton()
+{
+	CColorDialog dlg(RGB(0, 0, 0), CC_FULLOPEN);
+	if (dlg.DoModal() == IDOK)
+	{
+		m_pDoc->m_BackgroundColor= dlg.GetColor();
+		m_pDoc->UpdateAllViews(0);
+	}
 }

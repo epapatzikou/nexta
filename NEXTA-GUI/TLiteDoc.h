@@ -39,6 +39,7 @@
 
 
 enum Link_MOE {none,MOE_volume, MOE_speed, MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+
 enum OD_MOE {odnone,critical_volume};
 
 enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_path,CLS_link,CLS_link_set,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
@@ -51,7 +52,8 @@ class CTLiteDoc : public CDocument
 protected: // create from serialization only
 	CTLiteDoc()
 	{
-		m_MaxLinkWidthAsNumberOfLanes = 20;
+		m_BackgroundColor =  RGB(0,100,0);
+		m_MaxLinkWidthAsNumberOfLanes = 100;
 		m_VehicleSelectionMode = CLS_network;
 		m_LinkBandWidthMode = LBW_number_of_lanes;
 		m_bLoadNetworkDataOnly = false;
@@ -66,6 +68,7 @@ protected: // create from serialization only
 		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = none;
+		m_PrevLinkMOEMode = none;
 		m_ODMOEMode = odnone;
 
 		MaxNodeKey = 60000;  // max: unsigned short 65,535;
@@ -151,6 +154,8 @@ public:
 	float** m_DemandMatrix;
 	bool m_StaticAssignmentMode;
 	Link_MOE m_LinkMOEMode;
+	Link_MOE m_PrevLinkMOEMode;
+
 	OD_MOE m_ODMOEMode;
 
 	std::vector<DTAPath>	m_PathDisplayList;
@@ -177,7 +182,10 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 	void OffsetLink();
+
+
 	void GenerateOffsetLinkBand();
+
 	void ReCalculateLinkBandWidth();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
@@ -669,7 +677,7 @@ void SetStatusText(CString StatusText);
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
 
 
-
+	COLORREF m_BackgroundColor;
 	bool m_BackgroundBitmapLoaded;
 	bool m_LongLatCoordinateFlag;
 	CImage m_BackgroundBitmap;  // background bitmap

@@ -899,7 +899,7 @@ public:
 	float GetObsLaneVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlow);  
+			return m_LinkMOEAry[t].ObsFlow;
 		else
 			return m_StaticLaneVolume;
 	}

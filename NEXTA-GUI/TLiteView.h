@@ -100,7 +100,6 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_VehicleSize;
 
 
-		COLORREF m_BackgroundColor;
 	void FitNetworkToScreen();
 	void DrawObjects(CDC* pDC);
 	void DrawBitmap(CDC *pDC, CPoint point,UINT nIDResource );
@@ -218,7 +217,6 @@ protected:
 protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnViewBackgroundcolor();
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnViewZoomin();
@@ -292,6 +290,8 @@ public:
 	afx_msg void OnNodeDirectiontohereandvehicleanalaysis();
 	afx_msg void OnNodeDirectionfromhereandvehicleanalasis();
 	afx_msg void OnNodeDirectiontohereandreliabilityanalysis();
+	afx_msg void OnLinkIncreasebandwidth();
+	afx_msg void OnLinkDecreasebandwidth();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp
