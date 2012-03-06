@@ -39,10 +39,6 @@
 #include <stdlib.h>  // Jason
 #include <math.h>    // Jason
 
-void DTASafetyLinkData::EstimateDelay ()
-{
-
-}
 void g_OutputVOTStatistics()
 {
 /*
@@ -165,7 +161,8 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 
 	void g_MultiDayTrafficAssisnment()
-	{
+{
+/*
 		int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
 		int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
@@ -203,11 +200,17 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 			for(int day = 0; day < MAX_DAY_SIZE; day++)  // for VI users, we use iteration per day first then per vehicle, as vehicles share the same information per day
 			{
 
+		// output statistics
+		if(bStartWithEmpty)
+		{
+			fprintf(st, "vehicle_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,demand_type,pricing_type,vehicle_type,information_type,value_of_time,toll_cost_in_dollar,emissions,distance_in_mile,number_of_nodes,path_sequence\n");
+		}
 
 #pragma omp parallel for
-				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
+				for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 				{
-					if(g_ZoneVector[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
+					DTAZone *pZone = iterZone->second ;
+					if(pZone.m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
 					{
 						// create network for shortest path calculation at this processor
 						DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
@@ -308,9 +311,11 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 			}
 
 #pragma omp parallel for
-			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
-			{
-				if(g_ZoneVector[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
+			std::map<int, DTAZone>::iterator iterZone;
+				for (iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+				{
+					DTAZone *pZone = iterZone->second ;
+					if(pZone.m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
 				{
 					// create network for shortest path calculation at this processor
 					DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
@@ -648,6 +653,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 			}
 			fclose(st);
 		}
+	*/
 	}
 
 
@@ -661,6 +667,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 				}
 			}
 */
+
 
 		void g_OneShotNetworkLoading()
 	{
@@ -913,7 +920,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 				{
-					if(g_ZoneVector[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
+					if(g_ZoneMap[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
 					{								
 						// scan all possible departure times
 						for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
@@ -1036,10 +1043,10 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 	int LinkID = g_LinkVector.size();
 
 		// add outgoing connector from the centriod corresponding to the current origin zone to physical nodes of the current zone
-	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
+	for(i = 0; i< g_ZoneMap[CurZoneID].m_CentroidNodeAry.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo // root node
-		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry [i];
+		ToID = g_ZoneMap[CurZoneID].m_CentroidNodeAry [i];
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
 
@@ -1063,14 +1070,16 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 	}
 
 	// add incoming connectors from the physicla nodes corresponding to a zone to the non-current zone.
-	for(int z= 1; z<= g_ODZoneSize; z++)
-	{
-		if(z != CurZoneID)
+		std::map<int, DTAZone>::iterator iterZone;
+		for (iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 		{
-			for(i = 0; i<  g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
+		DTAZone zone = iterZone->second ;
+		if(zone.m_OriginVehicleSize>0 && iterZone->first !=CurZoneID)   // only this origin zone has vehicles, then we build the network
+		{
+			for(i = 0; i<  zone.m_CentroidNodeAry.size(); i++)
 			{
-				FromID = g_ZoneVector[z].m_CentroidNodeAry [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
+				FromID = zone.m_CentroidNodeAry [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				ToID =   m_PhysicalNodeSize + iterZone->first; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 				m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -1268,5 +1277,142 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DQ(int origin, int departure_time
 	ASSERT(bFeasiblePathFlag);
 
 	return bFeasiblePathFlag;
+}
+
+
+
+void g_StaticTrafficAssisnment()
+{
+		int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+	int connector_count = 0;
+
+	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+		connector_count += iterZone->second.m_CentroidNodeAry.size();  // only this origin zone has vehicles, then we build the network
+	}
+
+	int link_size  = g_LinkVector.size() + connector_count; // maximal number of links including connectors assuming all the nodes are destinations
+
+		// assign different zones to different processors
+		int nthreads = omp_get_max_threads ( );
+
+		bool bStartWithEmptyFile = true;
+		bool bStartWithEmptyFile_for_assignment = true;
+
+		g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
+
+
+		int iteration = 0;
+		bool NotConverged = true;
+		int TotalNumOfVehiclesGenerated = 0;
+
+		// ----------* start of outer loop *----------
+		for(iteration=0; NotConverged && iteration < g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
+		{
+			cout << "------- Iteration = "<<  iteration << "--------" << endl;
+
+			// initialize for each iteration
+			g_CurrentGapValue = 0.0;
+			g_CurrentNumOfVehiclesSwitched = 0;
+			g_NewPathWithSwitchedVehicles = 0; 
+
+
+//#pragma omp parallel for
+			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
+			{
+				if(g_ZoneMap[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
+				{
+					// create network for shortest path calculation at this processor
+					DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
+					int	id = omp_get_thread_num( );  // starting from 0
+
+					cout <<g_GetAppRunningTime()<<  "processor " << id << " is working on assignment at zone  "<<  CurZoneID << endl;
+
+					network_MP.BuildNetworkBasedOnZoneCentriod(CurZoneID);  // build network for this zone, because different zones have different connectors...
+
+					// scan all possible departure times
+					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
+					{
+						if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray.size() > 0)
+						{
+							bool debug_flag = false;
+							if(CurZoneID == 1 && departure_time == 375)
+							{
+								debug_flag = true;
+							
+							}
+							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+
+							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+								network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+							else
+								network_MP.VehicleBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
+
+						}
+					}
+				}
+			}
+
+			// below should be single thread
+
+
+			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // re-generate vehicles based on global path set
+			{
+				g_GenerateVehicleData_ODEstimation();
+			}
+
+			cout << "---- Network Loading for Iteration " << iteration <<"----" << endl;
+
+			NetworkLoadingOutput SimuOutput;
+			SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
+
+			TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
+
+			g_AssignmentMOEVector[iteration]  = SimuOutput;
+
+			float PercentageComplete = 0;
+
+			if(SimuOutput.NumberofVehiclesGenerated>0)
+				PercentageComplete =  SimuOutput.NumberofVehiclesCompleteTrips*100.0f/SimuOutput.NumberofVehiclesGenerated;
+
+			g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", TTI: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
+			cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
+
+			g_AssignmentLogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Ave Travel Time: " << SimuOutput.AvgTravelTime << ", TTI: " << SimuOutput.AvgTTI  << ", Avg Distance: " << SimuOutput.AvgDistance  << ", Switch %:" << SimuOutput.SwitchPercentage <<", Num of Vehicles Completing Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%";			
+
+
+			if(iteration <= 1) // compute relative gap after iteration 1
+			{
+				g_RelativeGap = 100; // 100%
+			}else
+			{
+				g_RelativeGap = (fabs(g_CurrentGapValue - g_PrevGapValue) / min(1,g_PrevGapValue))*100;
+			}
+			g_PrevGapValue = g_CurrentGapValue; // update g_PrevGapValue
+
+			if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
+			{
+				float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
+				g_AssignmentLogFile << ", Num of Vehicles Switching Paths = " << g_CurrentNumOfVehiclesSwitched << ", Gap at prev iteration = " << g_CurrentGapValue << ", Avg Gap = " << avg_gap << ", Relative Gap at prev iteration = " << g_RelativeGap << "%" 
+					<< ", total demand deviation for all paths: " << g_TotalDemandDeviation << ", total measurement deviation for all paths " << g_TotalMeasurementDeviation  << endl;				
+
+			}else
+				g_AssignmentLogFile << endl;		
+
+		}	// end of outer loop
+
+		cout << "Writing Vehicle Trajectory and MOE File... " << endl;
+
+		if( iteration == g_NumberOfIterations)
+		{ 
+			iteration = g_NumberOfIterations -1;  //roll back to the last iteration if the ending condition is triggered by "iteration < g_NumberOfIterations"
+		}
+
+		bStartWithEmptyFile = true;
+		g_OutputMOEData(iteration);
+
+		g_ComputeFinalGapValue(); // Jason : compute and output final gap
+		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
+		g_AssignmentLogFile << "Final Iteration: " << iteration << ", Gap = " << g_CurrentGapValue << ", Avg Gap = " << avg_gap << ", Relative Gap = " << g_RelativeGap << "%" << endl;
 }
 

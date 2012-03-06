@@ -396,6 +396,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SafetyPlanning.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>

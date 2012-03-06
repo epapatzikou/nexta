@@ -58,10 +58,10 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 	int LinkID = g_LinkVector.size();
 
 	// add outgoing connectors from origin zone center(m_PhysicalNodeSize) to zone centriods
-	for(i = 0; i< g_ZoneVector[CurZoneID].m_CentroidNodeAry.size(); i++)
+	for(i = 0; i< g_ZoneMap[CurZoneID].m_CentroidNodeAry.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-		ToID = g_ZoneVector[CurZoneID].m_CentroidNodeAry[i];
+		ToID = g_ZoneMap[CurZoneID].m_CentroidNodeAry[i];
 		// add outcoming connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
@@ -74,7 +74,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 		m_InboundSizeAry[ToID] +=1;
 
 
-		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
+		ASSERT(g_AdjLinkSize >= m_OutboundSizeAry[FromID]);
 
 		for(int t= m_StartIntervalForShortestPathCalculation; t < m_NumberOfSPCalculationIntervals; t+=1)
 		{
@@ -86,14 +86,17 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 	}
 
 	// add incoming connector to destination zone which is not CurZoneNo connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
-	for(int z= 1; z<= g_ODZoneSize; z++)
+			std::map<int, DTAZone>::iterator iterZone;
+				for (iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+				{
+					DTAZone zone = iterZone->second ;
+			
+if(zone.m_OriginVehicleSize>0 && iterZone->first != CurZoneID)  // only this origin zone has vehicles, then we build the network
 	{
-		if(z != CurZoneID)
-		{
-			for(i = 0; i< g_ZoneVector[z].m_CentroidNodeAry.size(); i++)
+			for(i = 0; i< zone.m_CentroidNodeAry.size(); i++)
 			{
-				FromID = g_ZoneVector[z].m_CentroidNodeAry[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-				ToID =   m_PhysicalNodeSize + z; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
+				FromID = zone.m_CentroidNodeAry[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				ToID =   m_PhysicalNodeSize + iterZone->first ; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 				m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
