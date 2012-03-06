@@ -52,6 +52,8 @@ using namespace std;
 #define DEFAULT_VOT 12
 
 
+
+
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
@@ -68,6 +70,7 @@ extern int g_ObservationEndTime;
 
 extern float g_DefaultSaturationFlowRate_in_vehphpl;
 
+#include "SafetyPlanning.h"
 #ifdef _WIN64
 #define MAX_LINK_NO 99999999
 #endif 
@@ -192,45 +195,6 @@ typedef struct{
 }struc_vehicle_item;
 
 
-class DTASafetyLinkData
-{
-public:
-	int safety_crash_model_id;
-	float num_fi_crashes_per_year;
-	float num_pto_crashes_per_year;
-	float add_delay_per_period;
-	float AADT;
-	float minor_leg_AADT;
-	float two_way_AADT;
-	float on_ramp_AADT;
-	float off_ramp_AADT;
-	float upstream_AADT;
-	float num_driveway;
-	float intersection_3sg;
-	float intersection_4sg;
-	float intersection_3st;
-	float intersection_4st;
-
-	DTASafetyLinkData()
-	{
-	num_fi_crashes_per_year = 0;
-	num_pto_crashes_per_year = 0;
-	add_delay_per_period = 0;
-	AADT = 0;
-	minor_leg_AADT = 0;
-	two_way_AADT = 0;
-	on_ramp_AADT = 0; 
-	off_ramp_AADT = 0;
-	upstream_AADT = 0;
-	num_driveway = 0;
-	intersection_3sg = 0;
-	intersection_4sg = 0;
-	intersection_3st = 0;
-	intersection_4st = 0;
-	}
-
-	void EstimateDelay();
-};
 class SLinkMOE  // time-dependent link MOE
 {
 public:
@@ -798,7 +762,7 @@ public:
 	int from_zone_id;
 	int to_zone_id;
 	int demand_type;
-	float time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
+	double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
 
 
 
@@ -1023,7 +987,7 @@ class DemandProfile
 {
 public:
 	int from_zone_id;
-	float time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
+	double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
 	int demand_type;
 	CString series_name;
 	DemandProfile()
@@ -1241,9 +1205,9 @@ public:
 		m_InboundSizeAry = new int[m_NodeSize];
 
 
-		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize);
-		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize);
-		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize);
+		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
 
 		m_LinkList = new int[m_NodeSize];
@@ -1283,9 +1247,9 @@ public:
 		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry)  delete m_InboundSizeAry;
 
-		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize);
-		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize);
-		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize);
+		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 
 
 		if(m_LinkList) delete m_LinkList;

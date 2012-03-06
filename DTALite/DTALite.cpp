@@ -123,7 +123,7 @@ std::map<int, int> g_NodeNametoIDMap;
 std::vector<DTALink*> g_LinkVector;
 std::vector<DTASafetyModel> g_SafetyModelVector;
 
-std::vector<DTAZone> g_ZoneVector;
+std::map<int, DTAZone> g_ZoneMap;
 std::vector<DTAVehicleType> g_VehicleTypeVector;
 
 std::vector<DTAVehicle*>		g_VehicleVector;
@@ -774,19 +774,24 @@ void ReadInputFiles()
 
 			DTASafetyLinkData element;
 			
-			parser_link.GetValueByFieldName("AADT",element.AADT);
-			parser_link.GetValueByFieldName("minor_leg_AADT",element.minor_leg_AADT);
-			parser_link.GetValueByFieldName("two_way_AADT",element.two_way_AADT);
-			parser_link.GetValueByFieldName("on_ramp_AADT",element.on_ramp_AADT);
-			parser_link.GetValueByFieldName("off_ramp_AADT",element.off_ramp_AADT);
-			parser_link.GetValueByFieldName("upstream_AADT",element.upstream_AADT);
+			if(g_LinkTypeFreewayMap[type]==1)  // freeway
+			{
+			parser_link.GetValueByFieldName("num_driveway",element.num_driveway);
+			parser_link.GetValueByFieldName("intersection_3sg",element.intersection_3sg);
+
+			element.EstimateFreewayCrashRate();
+			element.EstimateDelayPerPeakPeriod();
+
+			element.EstimateArterialCrashRate();
+
+
+			}
+
 			parser_link.GetValueByFieldName("num_driveway",element.num_driveway);
 			parser_link.GetValueByFieldName("intersection_3sg",element.intersection_3sg);
 			parser_link.GetValueByFieldName("intersection_4sg",element.intersection_4sg);
 			parser_link.GetValueByFieldName("intersection_3st",element.intersection_3st);
 			parser_link.GetValueByFieldName("intersection_4st",element.intersection_4st);
-
-
 
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
@@ -896,36 +901,8 @@ void ReadInputFiles()
 	g_LogFile << "Step 4: Reading file input_zone.csv..." << endl;
 
 
-	CCSVParser parser_zone;
 
-	if (parser_zone.OpenCSVFile("input_zone.csv"))
-	{
-		int i=0;
-		while(parser_zone.ReadRecord())
-		{
-			int zone_number;
-	
-			if(parser_zone.GetValueByFieldName("zone_id",zone_number) == false)
-				break;
-
-			int node_number;
-			if(parser_zone.GetValueByFieldName("node_id",node_number) == false)
-				break;
-
-			if(g_ODZoneSize < zone_number)
-				g_ODZoneSize = zone_number;
-
-			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
-		}
-
-	}else
-	{
-		cout << "Error: File input_zone.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-		g_ProgramStop();
-	}
-	g_ZoneVector.resize (g_ODZoneSize+1);
-
-	// step 2: check how many centroids
+	// check how many centroids
 
 	CCSVParser parser_zone2;
 
@@ -948,13 +925,21 @@ void ReadInputFiles()
 
 			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 
-			g_ZoneVector[zone_number].m_CentroidNodeAry.push_back( g_NodeNametoIDMap[node_number]);
-			g_ZoneVector[zone_number].m_Capacity += g_NodeVector[g_NodeNametoIDMap[node_number]].m_TotalCapacity ;
+			g_ZoneMap[zone_number].m_CentroidNodeAry.push_back( g_NodeNametoIDMap[node_number]);
+			g_ZoneMap[zone_number].m_Capacity += g_NodeVector[g_NodeNametoIDMap[node_number]].m_TotalCapacity ;
 
-			if(g_ZoneVector[zone_number].m_CentroidNodeAry.size() > g_AdjLinkSize)
-				g_AdjLinkSize = g_ZoneVector[zone_number].m_CentroidNodeAry.size();
+			if(g_ZoneMap[zone_number].m_CentroidNodeAry.size() > g_AdjLinkSize)
+				g_AdjLinkSize = g_ZoneMap[zone_number].m_CentroidNodeAry.size();
 		}
 
+	}
+
+	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+		if(iterZone->second.m_CentroidNodeAry.size() > 30)
+		{
+		g_LogFile << "Zone " << iterZone->first << ": # of connectors:" <<  iterZone->second.m_CentroidNodeAry.size()<< endl;
+		}
 	}
 
 	//*******************************
@@ -1098,7 +1083,7 @@ void ReadInputFiles()
 			for(int t = 20; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
 				std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo (t);
-				float ratio = 0.0f;
+				double ratio = 0;
 				parser_TDProfile.GetValueByFieldName(time_stamp_str,ratio);
 
 
@@ -1259,14 +1244,14 @@ CCSVParser parser_safety;
 		}
 
 
-
+/* to do: change this to the loop for map structure 
 	for(z = 1; z <=g_ODZoneSize; z++)
 	{
-		if(g_ZoneVector[z].m_Demand >= g_ZoneVector[z].m_Capacity )
-			g_WarningFile << "Zone "<< z << " has demand " << g_ZoneVector[z].m_Demand  << " and capacity " << g_ZoneVector[z].m_Capacity<< endl;
+		if(g_ZoneMap[z]->m_Demand >= g_ZoneMap[z].m_Capacity )
+			g_WarningFile << "Zone "<< z << " has demand " << g_ZoneMap[z]->m_Demand  << " and capacity " << g_ZoneMap[z].m_Capacity<< endl;
 
 	}
-
+*/
 	//*******************************
 	// step 9: Crash Prediction input
 
@@ -1317,7 +1302,7 @@ CCSVParser parser_safety;
 
 void CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, long PathIndex)
 {
-	if( originput_zone == destination_zone)
+	if( originput_zone == destination_zone)  // do not simulate intra-zone traffic
 		return; 
 
 	// reset the range of demand loading interval
@@ -1338,7 +1323,7 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		vhc.m_DestinationZoneID = destination_zone;
 		vhc.m_PathIndex = PathIndex;
 
-		g_ZoneVector[originput_zone].m_OriginVehicleSize ++;
+		g_ZoneMap[originput_zone].m_OriginVehicleSize ++;
 
 		// generate the random departure time during the interval
 		float RandomRatio = 0;
@@ -1500,8 +1485,8 @@ void g_ConvertDemandToVehicles()
 			pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
 			pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
 
-			pVehicle->m_OriginNodeID	= g_ZoneVector[kvhc->m_OriginZoneID].GetRandomNodeIDInZone((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
-			pVehicle->m_DestinationNodeID 	=  g_ZoneVector[kvhc->m_DestinationZoneID].GetRandomNodeIDInZone((pVehicle->m_VehicleID%100)/100.0f); 
+			pVehicle->m_OriginNodeID	= g_ZoneMap[kvhc->m_OriginZoneID].GetRandomNodeIDInZone((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+			pVehicle->m_DestinationNodeID 	=  g_ZoneMap[kvhc->m_DestinationZoneID].GetRandomNodeIDInZone((pVehicle->m_VehicleID%100)/100.0f); 
 
 			pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
 			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
@@ -1588,9 +1573,9 @@ void g_ReadDemandFile()
 			// we generate vehicles here for each OD data line
 //			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,demand_type,starting_time_in_min,ending_time_in_min);
 
-			if(originput_zone < g_ZoneVector.size())
+			if(g_ZoneMap.find(originput_zone)!= g_ZoneMap.end())
 			{
-			g_ZoneVector[originput_zone].m_Demand += number_of_vehicles;
+			g_ZoneMap[originput_zone].m_Demand += number_of_vehicles;
 
 			float Interval= ending_time_in_min - starting_time_in_min;
 
@@ -1608,7 +1593,7 @@ void g_ReadDemandFile()
 				for(int time_interval = 0; time_interval <= MAX_TIME_INTERVAL_SIZE; time_interval++)
 				{
 					// go through all applicable temproal elements
-					float time_dependent_ratio = 0;
+					double time_dependent_ratio = 0;
 					
 					for(int i = 0; i < g_TimeDependentDemandProfileVector.size(); i++)
 					{
@@ -1625,10 +1610,10 @@ void g_ReadDemandFile()
 					
 					}
 
-					if(time_dependent_ratio > 0.0001) // this is the last one applicable
+					if(time_dependent_ratio > 0.000001) // this is the last one applicable
 					{
 						// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
-					float number_of_vehicles_to_be_loaded = time_dependent_ratio* number_of_vehicles*LoadingRatio;
+					double number_of_vehicles_to_be_loaded = time_dependent_ratio* number_of_vehicles*LoadingRatio;
 							starting_time_in_min = time_interval*15;
 							ending_time_in_min = (time_interval+1)*15;
 
@@ -1697,7 +1682,7 @@ void FreeMemory()
 	g_LinkVector.clear();
 	g_LinkVector.clear();
 
-	g_ZoneVector.clear ();
+	g_ZoneMap.clear ();
 	g_FreeVehicleVector();
 
 	DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
@@ -2281,7 +2266,7 @@ void g_TrafficAssignmentSimulation()
 				if(g_AgentBasedAssignmentFlag==0)
 				{
 					cout << "Static Traffic Assignment.. " << endl;
-					g_StaticTrafficAssisnment(); // multi-iteration static traffic assignment
+					g_ODBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
 				}
 				else
 					g_AgentBasedAssisnment();  // agent-based assignment
