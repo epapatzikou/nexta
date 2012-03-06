@@ -557,7 +557,7 @@ void CGLView::DrawAllObjects()
 	glEnd();
 
 	//show travel time variability
-	if(pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed)
+	if(pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_emissions)
 	{
 		glBegin(GL_QUADS);
 
@@ -581,13 +581,13 @@ void CGLView::DrawAllObjects()
 			float toY = NYtoSY_org((*iLink)->m_ToPoint.y);
 
 			
-			float VariabilityRatio = ((*iLink)->m_MaxSpeed-(*iLink)->m_MinSpeed)/MaxVariability;
+			float VariabilityRatio = pDoc->GetLinkMOE((*iLink), MOE_volume , (int)g_Simulation_Time_Stamp);
 
 			if(VariabilityRatio>=1) VariabilityRatio=1;
 			if(VariabilityRatio<=0) VariabilityRatio=0;
 
-			//		GetColorFromPower(VolumeRatio);
-//			GetRGBColorFromPower(VariabilityRatio);
+//			GetColorFromPower(VolumeRatio);
+			GetRGBColorFromPower(0.3);
 
 			//		float ZTop =  (*iLink)->m_MeanVolume/10;  // assume maximum is 2000
 			int current_time  = g_Simulation_Time_Stamp;
@@ -595,7 +595,7 @@ void CGLView::DrawAllObjects()
 			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 			float value = 0;
-//			float color_power = pDoc->GetTDLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
+//			float color_power = pDoc->GetStaticLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
 
 			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;
@@ -614,7 +614,7 @@ void CGLView::DrawAllObjects()
 
 
 			//top use volume as default
-			float ZTop = link_volume/maximum_link_volume*100;  // convert to 100 scale
+			float ZTop = link_volume/maximum_link_volume*10;  // convert to 100 scale
 
 			if(ZTop<=0)
 				ZTop = 0;

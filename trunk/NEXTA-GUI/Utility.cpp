@@ -50,6 +50,21 @@ float g_P2P_Distance(GDPoint p1, GDPoint p2)
 return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5f);
 }
 
+double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2)
+{
+	       double Equatorial_Radius = 3963.19059; // unit: mile
+	       double toradians=3.1415926/180.0;
+	       double todeg = 180.0/PI;
+
+	       double p2lat= p2.x*toradians;
+	       double p2lng= p2.y*toradians;
+
+	       double p1lat= p1.x*toradians;
+	       double p1lng= p1.y*toradians;
+
+	       double distance=acos(sin(p1lat)*sin(p2lat)+cos(p1lat)*cos(p2lat)*cos(p2lng-p1lng))*Equatorial_Radius;  // unit: mile
+		   return distance;
+}
 
 
 float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)

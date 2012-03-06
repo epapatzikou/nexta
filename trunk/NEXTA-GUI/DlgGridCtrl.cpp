@@ -256,8 +256,7 @@ bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
 
 		m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNametoIDMap[node_name]] = zone_number;
 
-		int zoneid  = zone_number-1;
-		m_pDoc->m_ZoneIDtoNodeIDMap[zoneid] = m_pDoc->m_NodeNametoIDMap[node_name];
+		m_pDoc->m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (node_name);
 
 		if(m_pDoc->m_ODSize < zone_number)
 		{

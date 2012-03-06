@@ -37,7 +37,7 @@ enum tool
    };
 
 enum link_display_mode
-   { link_display_mode_line, link_display_mode_band };
+   { link_display_mode_line, link_display_mode_band, link_display_mode_lane_group };
 
 class CTLiteView : public CView
 {
@@ -195,6 +195,9 @@ public:
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
 	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC);
+
+	bool DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC);
+	
 
 // Overrides
 public:

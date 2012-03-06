@@ -1522,7 +1522,7 @@ BEGIN
     LISTBOX         IDC_LIST1,7,80,304,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,19,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,320,20,20,14
-    LTEXT           "Shape File of Node Layer:",-1,7,7,84,8
+    LTEXT           "Shape File of Crash Data Layer:",-1,7,6,103,8
     RTEXT           "Message List:",-1,7,65,44,8
     DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,48,96,14
     DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,122,49,96,14
@@ -1883,7 +1883,7 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 347
-        TOPMARGIN, 7
+        TOPMARGIN, 6
         BOTTOMMARGIN, 215
     END
 END

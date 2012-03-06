@@ -109,7 +109,7 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 
 			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
-				float ratio = element.time_dependent_ratio[t];
+				double ratio = element.time_dependent_ratio[t];
 				if(ratio>0.00001)
 				{
 				if(t < m_StartTimeInterval)
@@ -136,7 +136,7 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 			for(int t = m_StartTimeInterval; t< m_EndTimeInterval; t++)
 			{
 				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
-				float percentage = element.time_dependent_ratio[t];
+				double percentage = element.time_dependent_ratio[t];
 				m_chart.AddValue(percentage,time_stamp_str);
 			}
 
@@ -316,7 +316,7 @@ void CDlg_TDDemandProfile::OnLbnSelchangeDemandProfileList()
 			for(int t = m_StartTimeInterval; t< m_EndTimeInterval; t++)
 			{
 				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
-				float percentage = element.time_dependent_ratio[t];
+				double percentage = element.time_dependent_ratio[t];
 				m_chart.AddValue(percentage,time_stamp_str);
 			}
 
