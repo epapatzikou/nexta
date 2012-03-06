@@ -99,6 +99,8 @@ public:
 	void PrepareColors(DefaultColors defaultColor);
 	virtual ~CNSChartCtrl();
 
+	CString m_Caption;
+
 	// Generated message map functions
 protected:
 	CChartValueArray m_ChartValues;

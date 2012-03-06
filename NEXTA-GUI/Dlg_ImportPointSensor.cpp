@@ -98,7 +98,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 
 	CWaitCursor cursor_2;
 
-	strSQL = m_pDOC->ConstructSQL("5-1-sensor-location");
+	strSQL = m_pDOC->ConstructSQL("sensor-location");
 
 	if(strSQL.GetLength() > 0)
 	{
@@ -205,7 +205,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 		m_MessageList.AddString (str_msg);
 	}
 	// point sensor data
-	strSQL = m_pDOC->ConstructSQL("5-2-point-sensor-data");
+	strSQL = m_pDOC->ConstructSQL("point-sensor-data");
 
 	int number_of_samples = 0;
 

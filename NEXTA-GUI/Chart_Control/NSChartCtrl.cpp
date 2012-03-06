@@ -189,7 +189,14 @@ void CNSChartCtrl::OnPaint()
 	}
 	// Drawing the Title
 
-	GetWindowText(str);
+	if(m_Caption.GetLength() == 0 )
+		GetWindowText(str);
+	else
+	{
+		str = m_Caption;
+	}
+
+
 
 	CFont* oldFont = imageDC.SelectObject(&m_titleFont);
 	imageDC.DrawText(str,rect,DT_CENTER);
@@ -480,7 +487,7 @@ void CNSChartCtrl::DrawLineChart(CDC *pDC)
 		rcBar.top = (rcBar.bottom - (long)(pTmp->m_dValue*height/t));
 		rcBar.bottom = rect.bottom+1;
 
-		pDC->LineTo(rcBar.left, rcBar.top);
+		pDC->LineTo(rcBar.right, rcBar.top);
 
 		if(i%ValueStep ==0)    ////Drawing top text
 		{

@@ -509,6 +509,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Data-Interface\DYNASMART-interface.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Estimation.cpp"
 				>
 			</File>
@@ -1078,6 +1082,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgZoneToNodeMapping.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Data-Interface\DYNASMART-interface.h"
 				>
 			</File>
 			<File

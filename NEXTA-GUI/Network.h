@@ -149,6 +149,7 @@ extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
 extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
+extern double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2);
 
 
 /////
@@ -158,11 +159,15 @@ class DTAZone
 public:
 	std::vector<GDPoint> m_ShapePoints;
 	int m_ZoneTAZ;
+	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
+	std::vector<int> m_CentroidNodeAry;
+
 
 	DTAZone()
 	{
 		m_Capacity  =0;
 		m_Demand = 0;
+		m_OriginVehicleSize = 0;
 
 	}
 	float m_Capacity;
@@ -195,7 +200,7 @@ class DTADemandProfile
 public:
 	int from_zone_id;
 	int to_zone_id;
-	float time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
+	double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
 	int demand_type;
 	CString series_name;
 	DTADemandProfile()
@@ -274,6 +279,34 @@ public:
 		m_DistanceToRoot = 0;
 	};
 	~DTANode(){};
+
+
+	float m_DistanceToRoot;
+	string m_Name;
+	GDPoint pt;
+	int m_LayerNo;
+	int m_NodeNumber;  //  original node number
+	int m_NodeID;  ///id, starting from zero, continuous sequence
+	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
+	int m_ControlType; // Type: ....
+	float m_TotalCapacity;
+	int m_Connections;  // number of connections
+
+};
+
+class DTACrash
+{
+public:
+	DTACrash(){
+		m_NodeNumber = 0;
+		m_ControlType = 0;
+		m_ZoneID = 0;
+		m_TotalCapacity = 0;
+		m_Connections = 0;
+		m_LayerNo = 0;
+		m_DistanceToRoot = 0;
+	};
+	~DTACrash(){};
 
 
 	float m_DistanceToRoot;
@@ -466,7 +499,10 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_bOneWayLink = true;
 		m_BandWidthValue = 1;
+		m_SetBackStart = 0;
+		m_SetBackEnd = 0;
 
 		m_TotalVolume = 0;
 		m_NumberOfMarkedVehicles = 0;
@@ -672,12 +708,38 @@ public:
 
 
 	GDPoint m_FromPoint, m_ToPoint;
+	float m_SetBackStart, m_SetBackEnd;
+	GDPoint m_FromPointWithSetback, m_ToPointWithSetback;
+
 	double DefaultDistance()
 	{
 		return pow((m_FromPoint.x - m_ToPoint.x)*(m_FromPoint.x - m_ToPoint.x) + 
 			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5f);
 	}
 
+void AdjustLinkEndpointsWithSetBack()
+{
+   GDPoint Direction;
+
+   float SetBackRatio = m_SetBackStart  /max(0.00001, DefaultDistance());
+
+   Direction.x = (m_ToPoint.x - m_FromPoint.x)*SetBackRatio;
+   Direction.y = (m_ToPoint.y - m_FromPoint.y)*SetBackRatio;
+
+   // Adjust start location by this vector
+   m_FromPointWithSetback.x = m_ShapePoints[0].x + Direction.x;
+   m_FromPointWithSetback.y = m_ShapePoints[0].y + Direction.y;
+
+   SetBackRatio = m_SetBackEnd  /max(0.000001, DefaultDistance());
+
+   Direction.x = (m_FromPoint.x - m_ToPoint.x)*SetBackRatio;
+   Direction.y = (m_FromPoint.y - m_ToPoint.y)*SetBackRatio;
+
+   // Adjust start location by this vector
+   m_ToPointWithSetback.x = m_ShapePoints[m_ShapePoints.size()-1].x + Direction.x;
+   m_ToPointWithSetback.y = m_ShapePoints[m_ShapePoints.size()-1].y + Direction.y;
+
+}
 	float 	GetImpactedFlag(int DepartureTime)
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
@@ -816,7 +878,8 @@ public:
 	}
 	int m_LinkNo;
 	int m_OrgDir;
-	int m_Direction;
+	int m_Direction; 
+	bool m_bOneWayLink;
 	int m_LinkID;
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0

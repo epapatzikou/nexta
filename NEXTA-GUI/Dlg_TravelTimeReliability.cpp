@@ -237,14 +237,14 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 	m_chart_traveltime.PrepareColors(CNSChartCtrl::GrayScale);
 
 
-	m_ReliabilityMOEList.AddString ("Probability Density Function");
+	m_ReliabilityMOEList.AddString ("Travel Time Histogram");
 	m_ReliabilityMOEList.AddString ("Cumulative Distribution Function");
 	m_ReliabilityMOEList.SetCurSel (0);
 
 	DisplayTravelTimeChart();
 
-	//m_chart_traveltime.SetChartStyle(NSCS_BAR);
-	m_chart_traveltime.SetChartStyle(NSCS_LINE);
+	m_chart_traveltime.SetChartStyle(NSCS_BAR);
+//	m_chart_traveltime.SetChartStyle(NSCS_LINE);
 
 
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -324,6 +324,8 @@ void CDlg_TravelTimeReliability::OnRadioColors()
 void CDlg_TravelTimeReliability::OnLbnSelchangeList1()
 {
 	DisplayTravelTimeChart();
+
+
 }
 
 void CDlg_TravelTimeReliability::OnLbnSelchangeList2()
@@ -504,6 +506,21 @@ void CDlg_TravelTimeReliability::DisplayTravelTimeChart()
 {
 	int CurSelectionNo = m_ReliabilityMOEList.GetCurSel ();
 
+	if(CurSelectionNo == 0)  //PDF
+	{
+		m_chart_traveltime.m_Caption  = "Travel Time Histogram";
+		m_chart_traveltime.m_bShowPercentage = false;
+		m_chart_traveltime.m_bIntegerValue = true;
+		m_chart_traveltime.SetChartStyle(NSCS_BAR);
+	}
+	else  // CDF
+	{
+		m_chart_traveltime.m_Caption  = "Cumulative Distribution Function";
+		m_chart_traveltime.m_bShowPercentage = false;
+		m_chart_traveltime.m_bIntegerValue = false;
+		m_chart_traveltime.SetChartStyle(NSCS_LINE);
+	}
+
 	CString travel_time_str;
 
 
@@ -573,6 +590,26 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 	float value =0;
 
 	m_chart_7factors.ResetChart();		
+
+	if(CurSelectionNo == 0)
+	{
+	m_chart_7factors.m_Caption = "Sources of Unreliabilitiy";
+	}
+
+	if(CurSelectionNo == 1)
+	{
+	m_chart_7factors.m_Caption = "Sources of Unreliabilitiy";
+	}
+
+	if(CurSelectionNo == 2)
+	{
+	m_chart_7factors.m_Caption = "Capacity Distribution";
+	}
+
+	if(CurSelectionNo == 3)
+	{
+	m_chart_7factors.m_Caption = "Occurrence Probability of Impact Factors";
+	}
 
 	switch(CurSelectionNo)
 	{

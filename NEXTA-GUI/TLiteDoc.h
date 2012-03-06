@@ -38,7 +38,7 @@
 #include <afxdao.h>
 
 
-enum Link_MOE {none,MOE_volume, MOE_speed, MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {none,MOE_volume, MOE_speed, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -62,7 +62,7 @@ protected: // create from serialization only
 
 		m_bSimulationDataLoaded  = false;
 		m_EmissionDataFlag = false;
-		m_bLinkShifted = true;
+		m_bLinkToBeShifted = true;
 		m_SimulationStartTime_in_min = 0;  // 6 AM
 
 		m_NumberOfDays = 0;
@@ -83,7 +83,7 @@ protected: // create from serialization only
 		m_DestinationNodeID = -1;
 		m_NodeSizeSP = 0;
 
-		m_WideLaneInFeet = 20;
+		m_LaneWidthInFeet = 30;
 		m_PathMOEDlgShowFlag = false;
 		m_SelectPathNo = -1;
 
@@ -171,8 +171,9 @@ public:
 
 	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
-	BOOL OnOpenDocument(LPCTSTR lpszPathName);
-	BOOL OnOpenTrafficNetworkDocument(LPCTSTR lpszPathName, bool bNetworkOnly = false);
+	BOOL OnOpenDocument(CString FileName);
+	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
+	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
 	std::ofstream m_WarningFile;
@@ -261,7 +262,7 @@ public:
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-float GetTDLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
+float GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
 
 public:
 
@@ -270,10 +271,12 @@ void SetStatusText(CString StatusText);
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
 
+	std::list<DTACrash*>	m_CrashSet;
+
 	std::list<DTANode*>		m_SubareaNodeSet;
 	std::list<DTALink*>		m_SubareaLinkSet;
 
-	std::vector<DTAZone>	m_ZoneVector;
+	std::map<int, DTAZone>	m_ZoneMap;
 	std::list<DTAVehicle*>	m_VehicleSet;
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
@@ -348,7 +351,6 @@ void SetStatusText(CString StatusText);
 	std::map<int, int> m_NodeIDtoNameMap;
 	std::map<int, int> m_NodeNametoIDMap;
 	std::map<int, int> m_NodeIDtoZoneNameMap;
-	std::map<int, int> m_ZoneIDtoNodeIDMap;
 
 	int m_SelectedLinkID;
 	int m_SelectedNodeID;
@@ -377,9 +379,9 @@ void SetStatusText(CString StatusText);
 	float m_DefaultCapacity;
 	float m_DefaultLinkType;
 
-	bool m_bLinkShifted;
+	bool m_bLinkToBeShifted;
 
-	int m_WideLaneInFeet;
+	int m_LaneWidthInFeet;
 
 	DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
 	{
@@ -443,7 +445,7 @@ void SetStatusText(CString StatusText);
 
 		pLink->CalculateShapePointRatios();
 
-		double lane_offset = m_UnitFeet*m_WideLaneInFeet;  // 20 feet per lane
+		double lane_offset = m_UnitFeet*m_LaneWidthInFeet;  // 20 feet per lane
 
 			int last_shape_point_id = pLink ->m_ShapePoints .size() -1;
 			double DeltaX = pLink->m_ShapePoints[last_shape_point_id].x - pLink->m_ShapePoints[0].x;
@@ -672,6 +674,7 @@ void SetStatusText(CString StatusText);
 	}
 
 	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote);
+	CString GetTimeStampFloatingPointStrFromIntervalNo(int time_interval);
 
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone

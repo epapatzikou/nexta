@@ -220,7 +220,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 
-				if(from_node_id==0 ||to_node_id ==0)
+				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 					break;
 
 				long link_id =  rsLink.GetLong(CString("link_id"),bExist,false);
@@ -231,16 +231,18 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format("from_node_id %d at row %d cannot be found in the node table!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-					rsLink.Close();
-					return;
+//					rsLink.Close();
+					rsLink.MoveNext();
+					continue;
 				}
 
 				if(m_pDOC->m_NodeNametoIDMap.find(to_node_id)== m_pDOC->m_NodeNametoIDMap.end())
 				{
 					str_msg.Format("to_node_id %d at row %d cannot be found in the node table!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-					rsLink.Close();
-					return;
+//					rsLink.Close();
+					rsLink.MoveNext();
+					continue;
 				}
 
 				DTALink* pExistingLink =  m_pDOC->FindLinkWithNodeIDs(m_pDOC->m_NodeNametoIDMap[from_node_id],m_pDOC->m_NodeNametoIDMap[to_node_id]);
@@ -433,6 +435,13 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
+
+					if(length < 0.00001) // zero value in length field, we consider no length info.
+					{
+					float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
+					pLink->m_Length = distance_in_mile;
+					}
+
 					pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
@@ -504,14 +513,13 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				}
 
-				m_pDOC->GenerateOffsetLinkBand();
-
 				rsLink.MoveNext();
 				//				TRACE("reading line %d\n", line_no);
 				line_no ++;
 			}
 
 			rsLink.Close();
+			m_pDOC->GenerateOffsetLinkBand();
 
 			m_pDOC->m_UnitMile  = 1.0f;
 
@@ -625,6 +633,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		CRecordsetExt rsZone(&m_pDOC->m_Database);
 		rsZone.Open(dbOpenDynaset, strSQL);
 
+		int count = 0;
 		while(!rsZone.IsEOF())
 		{
 			int zone_number = rsZone.GetLong(CString("zone_id"),bExist,false);
@@ -656,17 +665,18 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			}
 			m_pDOC->m_NodeIDtoZoneNameMap[m_pDOC->m_NodeNametoIDMap[node_name]] = zone_number;
 			// if there are multiple nodes for a zone, the last node id is recorded.
-			int zoneid  = zone_number-1;
-			m_pDOC->m_ZoneIDtoNodeIDMap[zoneid] = m_pDOC->m_NodeNametoIDMap[node_name];
+
+			m_pDOC->m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (node_name);
 
 			if(m_pDOC->m_ODSize < zone_number)
 				m_pDOC->m_ODSize = zone_number;
 
 			rsZone.MoveNext ();
+			count++;
 		}
 		rsZone.Close();
 
-		str_msg.Format ( "%d node-to-zone records imported", m_pDOC->m_ZoneIDtoNodeIDMap.size());
+		str_msg.Format ( "%d node-to-zone records imported",count);
 		m_MessageList.AddString (str_msg);
 
 	}
@@ -1009,10 +1019,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			bool bWithDataFlag = false;
 			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
-				CString time_stamp_str = m_pDOC->GetTimeStampStrFromIntervalNo (t,true);
-			float ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
+				CString time_stamp_str = m_pDOC->GetTimeStampFloatingPointStrFromIntervalNo (t);
+			double ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
 
-			if(bExist && ratio > 0.0001)
+			if(bExist && ratio > 0.0000001)
 			{
 				element.time_dependent_ratio[t] = ratio;
 				bWithDataFlag = true;

@@ -50,6 +50,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 	return;
 	}
 
+	CWaitCursor wait;
 	CString message_str;
 	OGRRegisterAll();
 			OGRDataSource       *poDS;
@@ -61,7 +62,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				return;
 			}
 
-			int node_index = 0;
+			int crash_index = 0;
 	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
     for (int i=0; i < poLayers; i++) 
     {
@@ -82,14 +83,12 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 			int feature_count = 0;
 			poLayer->ResetReading();
 
-			m_MessageList.AddString (message_str);
-
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int iField;
 
-				int id = node_index+1;
+				int id = crash_index+1;
 
 				// find node id;
 				for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
@@ -118,20 +117,17 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 					OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
 								// Create and insert the node
-								DTANode* pNode = new DTANode;
-								pNode->pt.x = poPoint->getX();
-								pNode->pt.y = poPoint->getY();
+								DTACrash* pCrash = new DTACrash;
+								pCrash->pt.x = poPoint->getX();
+								pCrash->pt.y = poPoint->getY();
 
-								pNode->m_NodeNumber = id;
-								pNode->m_NodeID = node_index;
-								pNode->m_ZoneID = 0;
-								pNode->m_ControlType = 0;
+								pCrash->m_NodeNumber = id;
+								pCrash->m_NodeID = crash_index;
+								pCrash->m_ZoneID = 0;
+								pCrash->m_ControlType = 0;
 								
-								m_pDoc->m_NodeSet.push_back(pNode);
-								m_pDoc->m_NodeIDMap[node_index] = pNode;
-								m_pDoc->m_NodeIDtoNameMap[node_index] = id;
-								m_pDoc->m_NodeNametoIDMap[id] = node_index;
-								node_index++;
+								m_pDoc->m_CrashSet.push_back(pCrash);
+								crash_index++;
 				}
 				else
 				{
@@ -140,7 +136,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				OGRFeature::DestroyFeature( poFeature );
 				feature_count ++;
 			}
-				message_str.Format("Layer %d has %d features.", i+1, feature_count);
+				message_str.Format("Import %d crash records from layer %d.", feature_count,i+1);
 				m_MessageList.AddString(message_str);
 	}
 
@@ -298,6 +294,8 @@ void CDlg_GISDataExchange::OnBnClickedExportCsvFile()
 	if(dlg.DoModal() == IDOK)
 	{
 		ExportDataToCSV(dlg.GetPathName());
+		m_pDoc->OpenCSVFileInExcel (dlg.GetPathName());
+
 	}
 
 
@@ -311,6 +309,7 @@ void CDlg_GISDataExchange::OnBnClickedExportGpsShapeFile()
 	if(dlg.DoModal() == IDOK)
 	{
 		ExportLinkLayerToShapeFile(dlg.GetPathName());
+		m_pDoc->OpenCSVFileInExcel(dlg.GetPathName());
 	}
 }
 
@@ -378,20 +377,20 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
 		return;		
 	}
 
-	std::list<DTANode*>::iterator iNode;
+	std::list<DTACrash*>::iterator iCrash;
 		
-	for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+	for (iCrash = m_pDoc->m_CrashSet.begin(); iCrash != m_pDoc->m_CrashSet.end(); iCrash++)
 	{
 
         OGRFeature *poFeature;
 
         poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
-        poFeature->SetField( "Name", (*iNode)->m_NodeID );
+        poFeature->SetField( "Name", (*iCrash)->m_NodeID );
 
         OGRPoint pt;
         
-        pt.setX( (*iNode)->pt .x );
-        pt.setY( (*iNode)->pt .y );
+        pt.setX( (*iCrash)->pt .x );
+        pt.setY( (*iCrash)->pt .y );
  
         poFeature->SetGeometry( &pt ); 
 
@@ -400,6 +399,7 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
            printf( "Failed to create feature in shapefile.\n" );
            exit( 1 );
         }
+
 
          OGRFeature::DestroyFeature( poFeature );
     }

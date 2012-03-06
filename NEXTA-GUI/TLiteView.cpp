@@ -141,6 +141,9 @@ END_MESSAGE_MAP()
 
 CBrush g_BlackBrush(RGB(10,10,10));
 CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
+
+CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
+
 CPen g_PenSelectColor(PS_SOLID,2,RGB(255,0,0));
 CPen g_PenODColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenSelectPath(PS_SOLID,2,RGB(255,255,0));
@@ -149,6 +152,10 @@ CPen g_PenSignalColor(PS_SOLID,2,RGB(255,255,255));
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
+
+CPen g_PenCrashColor(PS_SOLID,1,RGB(255,0,0));
+CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //magenta
+
 CPen g_PenSensorColor(PS_DASH,0,RGB(255,255,0));
 CPen g_PenNotMatchedSensorColor(PS_SOLID,1,RGB(255,255,255));
 
@@ -295,7 +302,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
-	m_link_display_mode = link_display_mode_line;
+	m_link_display_mode = link_display_mode_line; // 
 	m_NodeTypeFaceName      = "Arial";
 
 	m_bShowAVISensor = true;
@@ -571,10 +578,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	//test the display width of a lane, if greather than 1, then band display mode
 
-	if(pDoc->m_WideLaneInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.75f) // 5 lanes
-		m_link_display_mode = link_display_mode_band;
-	else 
-		m_link_display_mode = link_display_mode_line;
+		if(pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.75f) // 5 lanes
+			m_link_display_mode = link_display_mode_band;
+		else 
+			m_link_display_mode = link_display_mode_line;
 
 	// draw links
 	std::list<DTALink*>::iterator iLink;
@@ -589,12 +596,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	// recongenerate the lind band width offset only when chaning display mode or on volume mode
 	if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
 		pDoc->m_LinkMOEMode == MOE_volume || 
-		pDoc->m_LinkMOEMode == MOE_speed) 
+		pDoc->m_LinkMOEMode == MOE_speed ||
+		pDoc->m_LinkMOEMode == MOE_emissions) 
 	{
 		pDoc->GenerateOffsetLinkBand();
 	}
 
-	if (pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed)   // under volume mode, dynamically generate volume band
+	if (pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_emissions)   // under volume mode, dynamically generate volume band
 	{
     pDoc->m_LinkBandWidthMode = LBW_link_volume;
 	}else
@@ -632,7 +640,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				float power;
 
-				power= pDoc->GetTDLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
+				power= pDoc->GetStaticLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
 
 				float n= power*100;
 				int R=(int)((255*n)/100);
@@ -650,9 +658,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 				//drarw link as lines
-				if(m_link_display_mode == link_display_mode_line)
+				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
 					pDC->SelectObject(&pen_moe);
-				else  {// display link as a band so use black pen
+				else {// display link as a band so use black pen
 					pDC->SelectObject(&g_BlackPen);
 					pDC->SelectObject(&brush_moe);
 				}
@@ -706,15 +714,19 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 				DrawLinkAsLine((*iLink),pDC);
 			}
-			else  // band and volume mode
+			else if (m_link_display_mode == link_display_mode_lane_group)
+			{
+				DrawLinkAsLaneGroup((*iLink),pDC);
+			}else  // as lane group
 			{
 				if(DrawLinkAsBand((*iLink),pDC)==false)
 					return;
+
 			}
 
 			//draw link as band 
 
-			if( m_bShowText  && value>=0.01 )
+			if( m_bShowText )
 			{
 
 				CFont link_text_font;
@@ -745,19 +757,22 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				pDC->SelectObject(&link_text_font);
 
-				CString str_text;
+				if((*iLink)->m_Name.length () > 0)
+				{
+				CString str_text = (*iLink)->m_Name.c_str ();
 
-				int value_int100 = int(value*100);
+/*				int value_int100 = int(value*100);
 				int value_int= (int)value;
 
 				if(value_int100%100 == 0)  // no decimal point
 					str_text.Format ("%d", value_int);
 				else
 					str_text.Format ("%4.1f", value);
-
+*/
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
 
 				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
+				}
 
 			}
 
@@ -988,6 +1003,30 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}
 		}
 	}
+
+	//draw crashes
+
+	if(pDoc->m_LinkMOEMode == MOE_safety)
+	{
+	std::list<DTACrash*>::iterator iCrash;
+
+	for (iCrash = pDoc->m_CrashSet.begin(); iCrash != pDoc->m_CrashSet.end(); iCrash++)
+	{
+		point = NPtoSP((*iCrash)->pt);
+
+//	CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //magenta
+		pDC->SelectObject(&g_BlackBrush);
+		pDC->SetTextColor(RGB(255,255,0));
+		pDC->SelectObject(&g_PenCrashColor);
+		pDC->SetBkColor(RGB(0,0,0));
+			node_size = 3;
+				
+		/// starting drawing nodes in normal mode
+			pDC->Ellipse(point.x - node_size, point.y + node_size,
+							point.x + node_size, point.y - node_size);
+				
+	}
+	}
 	// draw subarea
 	pDC->SelectObject(&g_SubareaPen);
 
@@ -1096,10 +1135,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 
 					float volume = pDoc->m_DemandMatrix [i][j] ;
-					if(volume>=1)
+					if(volume>=1 && pDoc->m_ZoneMap [i].m_CentroidNodeAry.size()>0 && pDoc->m_ZoneMap [j].m_CentroidNodeAry.size()>0)
 					{
-						int nodeid_for_origin_zone = pDoc->m_ZoneIDtoNodeIDMap[i];
-						int nodeid_for_destination_zone = pDoc->m_ZoneIDtoNodeIDMap[j];
+						int nodeid_for_origin_zone = pDoc->m_ZoneMap [i].m_CentroidNodeAry[0];
+						int nodeid_for_destination_zone = pDoc->m_ZoneMap [j].m_CentroidNodeAry[0];
 
 						// if default, return node id;
 						//else return the last node id for zone
@@ -1911,8 +1950,12 @@ void CTLiteView::OnSearchFindlink()
 			}else
 			{
 				CString str;
+
+				if(dlg.m_NodeNumber != 0)  // 0 is the default node number in this dialog
+				{
 				str.Format ("Node %d cannot be found.",dlg.m_NodeNumber);
 				AfxMessageBox(str);
+				}
 			}
 		}
 
@@ -2560,6 +2603,117 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC)
 
 	return true;
 }
+
+bool CTLiteView::DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC)
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+
+	pLink->m_SetBackStart = min (pDoc->m_NodeDisplaySize, pLink->m_Length*0.3);  // restrict set back to 30% of link length
+	pLink->m_SetBackEnd = min (pDoc->m_NodeDisplaySize, pLink->m_Length*0.3);
+
+	pLink->AdjustLinkEndpointsWithSetBack();
+
+	if(pLink ->m_ShapePoints.size() > 900)
+	{
+		AfxMessageBox("Two many shape points...");
+		return false;
+	}
+
+
+    // generate m_BandLeftShapePoints, m_BandRightShapePoints for the whole link with setback points
+			pLink->m_BandLeftShapePoints.clear();
+			pLink->m_BandRightShapePoints.clear();
+
+
+			double lane_offset = pDoc->m_UnitFeet*pDoc->m_LaneWidthInFeet;  // 20 feet per lane
+
+			int last_shape_point_id = pLink->m_ShapePoints .size() -1;
+			double DeltaX = pLink->m_ShapePoints[last_shape_point_id].x - pLink->m_ShapePoints[0].x;
+			double DeltaY = pLink->m_ShapePoints[last_shape_point_id].y - pLink->m_ShapePoints[0].y;
+			double theta = atan2(DeltaY, DeltaX);
+
+			int si;  // we cannot use unsigned int here as there is a conditoin below
+			// 	for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+			for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+			{
+				GDPoint pt;
+				
+				GDPoint OrgShapepoint = pLink->m_ShapePoints[si];
+
+				if(si == 0)
+					OrgShapepoint = pLink->m_FromPointWithSetback;
+
+				if(si == last_shape_point_id)
+					OrgShapepoint = pLink->m_ToPointWithSetback;
+
+				pt.x = OrgShapepoint.x - lane_offset* cos(theta-PI/2.0f);
+				pt.y = OrgShapepoint.y - lane_offset* sin(theta-PI/2.0f);
+
+				pLink->m_BandLeftShapePoints.push_back (pt);
+
+				pt.x  = OrgShapepoint.x + pLink->m_NumLanes *lane_offset* cos(theta-PI/2.0f);
+				pt.y = OrgShapepoint.y + pLink->m_NumLanes*lane_offset* sin(theta-PI/2.0f);
+
+				pLink->m_BandRightShapePoints.push_back (pt);
+		}
+		
+
+
+	int band_point_index = 0;
+	// close the loop to construct
+
+	for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+	{
+		m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
+	}
+
+	for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+	{
+		m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[si]);
+	}
+
+	m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
+
+
+	pDC->Polygon(m_BandPoint, band_point_index);
+
+	/*
+	// draw lane markings
+
+	CPen* OldPen = pDC->SelectObject(&g_LaneMarkingPen);
+
+	for(int lane = 1; lane < pLink->m_NumLanes ; lane++)
+	{
+		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+		{
+		GDPoint pt;
+		GDPoint OrgShapepoint = pLink->m_ShapePoints[si];
+
+		if(si == 0)
+		{
+			OrgShapepoint = pLink->m_FromPointWithSetback;
+		}
+
+		if(si == last_shape_point_id)
+		OrgShapepoint = pLink->m_ToPointWithSetback;
+
+				pt.x = OrgShapepoint.x + lane*lane_offset* cos(theta-PI/2.0f);
+				pt.y = OrgShapepoint.y + lane*lane_offset* sin(theta-PI/2.0f);
+
+		if(si == 0)
+			pDC->MoveTo(NPtoSP(pt));
+		else
+			pDC->LineTo(NPtoSP(pt));
+
+		}
+
+	}
+	pDC->SelectObject(OldPen);  // restore pen
+	*/
+	return true;
+}
+
 void CTLiteView::OnViewDisplaylanewidth()
 {
 	if(m_link_display_mode ==link_display_mode_line )
