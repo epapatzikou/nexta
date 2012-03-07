@@ -53,7 +53,7 @@ protected: // create from serialization only
 	CTLiteDoc()
 	{
 		m_BackgroundColor =  RGB(0,100,0);
-		m_MaxLinkWidthAsNumberOfLanes = 100;
+		m_MaxLinkWidthAsNumberOfLanes = 5;
 		m_VehicleSelectionMode = CLS_network;
 		m_LinkBandWidthMode = LBW_number_of_lanes;
 		m_bLoadNetworkDataOnly = false;
@@ -83,7 +83,7 @@ protected: // create from serialization only
 		m_DestinationNodeID = -1;
 		m_NodeSizeSP = 0;
 
-		m_LaneWidthInFeet = 30;
+
 		m_PathMOEDlgShowFlag = false;
 		m_SelectPathNo = -1;
 
@@ -91,7 +91,7 @@ protected: // create from serialization only
 		m_ImageX2 = 1000;
 		m_ImageY1 = 0;
 		m_ImageY2 = 1000;
-		m_NodeDisplaySize = 200;
+		m_NodeDisplaySize = 50;
 		m_ShowNodeLayer = false;
 
 
@@ -103,6 +103,8 @@ protected: // create from serialization only
 
 		m_UnitMile = 1;
 		m_UnitFeet = 1/5280.0;
+		m_OffsetInFeet = 20;
+		m_LaneWidthInFeet = 20;
 		m_bFitNetworkInitialized = false; 
 	    m_BackgroundBitmapImportedButnotSaved = false;
 
@@ -166,6 +168,7 @@ public:
 	int m_DestinationNodeID;
 
 	double m_UnitFeet, m_UnitMile;
+	double m_OffsetInFeet;
 
 	bool m_bLoadNetworkDataOnly;
 
@@ -429,7 +432,7 @@ void SetStatusText(CString StatusText);
 
 		if(bOffset)
 		{
-			double link_offset = m_UnitFeet*80;
+			double link_offset = m_UnitFeet*m_OffsetInFeet;
 			double DeltaX = pLink->m_ToPoint.x - pLink->m_FromPoint.x ;
 			double DeltaY = pLink->m_ToPoint.y - pLink->m_FromPoint.y ;
 			double theta = atan2(DeltaY, DeltaX);
@@ -855,6 +858,9 @@ public:
 		afx_msg void OnToolsTraveltimereliabilityanalysis();
 		afx_msg void OnLinkLinkbar();
 		afx_msg void OnImportArcgisshapefile();
+		afx_msg void OnLinkIncreaseoffsetfortwo();
+		afx_msg void OnLinkDecreaseoffsetfortwo();
+		afx_msg void OnLinkNooffsetandnobandwidth();
 };
 
 
