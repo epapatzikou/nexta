@@ -538,10 +538,13 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
+		m_NumberOfCrashes = 0;
+		m_LevelOfService = 'A';
+
 		m_StaticSpeed = 0;
-		m_StaticLaneVolume = 0;
-		m_StaticTravelTime = 0;
+		m_StaticLinkVolume = 0;
 		m_StaticVOC  = 0;
+		m_StaticTravelTime = 0;
 		m_Grade = 0;
 
 		input_line_no = 0;
@@ -554,6 +557,8 @@ public:
 	float m_BandWidthValue;
 	bool m_bIncludedBySelectedPath;
 	bool m_bIncludedinSubarea;
+	double m_NumberOfCrashes;
+	char m_LevelOfService;
 
 	bool m_AVISensorFlag;
 	int m_LayerNo;
@@ -561,10 +566,11 @@ public:
 	string m_Name;
 
 	int input_line_no;
-	float m_StaticSpeed, m_StaticLaneVolume;
+	float m_StaticSpeed, m_StaticLinkVolume;
 	float m_StaticTravelTime, m_StaticVOC;
 
 	std::vector<GDPoint> m_ShapePoints;
+
 	std::vector<GDPoint> m_BandLeftShapePoints;
 	std::vector<GDPoint> m_BandRightShapePoints;
 
@@ -682,11 +688,6 @@ public:
 
 		m_TotalVolume = 0;
 		m_NumberOfMarkedVehicles = 0;
-
-		m_StaticSpeed = 0;
-		m_StaticLaneVolume = 0;
-		m_StaticTravelTime = 0;
-		m_StaticVOC  = 0;
 
 		int OldSize = m_LinkMOEAry.size();
 		m_LinkMOEAry.resize (m_SimulationHorizon+1);
@@ -964,15 +965,15 @@ void AdjustLinkEndpointsWithSetBack()
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return m_LinkMOEAry[t].ObsFlow;
 		else
-			return m_StaticLaneVolume;
+			return m_StaticLinkVolume;
 	}
 
 	float GetObsLaneVolumeCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsFlowCopy);  
+			return max(m_StaticLinkVolume, m_LinkMOEAry[t].ObsFlowCopy);  
 		else
-			return m_StaticLaneVolume;
+			return m_StaticLinkVolume;
 	}
 
 	float GetObsTravelTimeIndex(int t)
@@ -1001,9 +1002,9 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetObsCumulativeFlow(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticLaneVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
+			return max(m_StaticLinkVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
 		else
-			return m_StaticLaneVolume;
+			return m_StaticLinkVolume;
 	}
 
 	float GetObsDensity(int t)

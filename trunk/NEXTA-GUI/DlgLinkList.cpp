@@ -145,7 +145,7 @@ int i;
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
 		m_LinkList.SetItemText(i,9,text);
 
-		sprintf_s(text, "%5.0f",(*iLink)->m_StaticLaneVolume     );
+		sprintf_s(text, "%5.0f",(*iLink)->m_StaticLinkVolume     );
 		m_LinkList.SetItemText(i,10,text);
 		}
 		}

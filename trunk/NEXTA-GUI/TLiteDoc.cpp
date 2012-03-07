@@ -196,7 +196,10 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS, &CTLiteDoc::OnToolsTraveltimereliabilityanalysis)
 	ON_COMMAND(ID_LINK_LINKBAR, &CTLiteDoc::OnLinkLinkbar)
 	ON_COMMAND(ID_IMPORT_ARCGISSHAPEFILE, &CTLiteDoc::OnImportArcgisshapefile)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_LINK_INCREASEOFFSETFORTWO, &CTLiteDoc::OnLinkIncreaseoffsetfortwo)
+	ON_COMMAND(ID_LINK_DECREASEOFFSETFORTWO, &CTLiteDoc::OnLinkDecreaseoffsetfortwo)
+	ON_COMMAND(ID_LINK_NOOFFSETANDNOBANDWIDTH, &CTLiteDoc::OnLinkNooffsetandnobandwidth)
+	END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
@@ -350,51 +353,49 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 
 void CTLiteDoc::ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName)
 {
-
-	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"r");
-
-	g_Simulation_Time_Horizon = 1;
-	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+   double total_number_of_crashes = 0;
+	
+	CCSVParser parser;
+	int i= 0;
+	if (parser.OpenCSVFile(lpszFileName))
 	{
-		(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
-	}
 
-	int t=0;
-	if(st!=NULL)
-	{
-		int i = 1;
-		while(!feof(st))
+		while(parser.ReadRecord())
 		{
-			int from_node_number = g_read_integer(st);
 
-			if(from_node_number == -1)
+			int from_node_number;
+			if(parser.GetValueByFieldName("from_node_id",from_node_number) == false)
+				break;
+			int to_node_number ;
+
+			if(parser.GetValueByFieldName("to_node_id",to_node_number) == false)
 				break;
 
-			int to_node_number =  g_read_integer(st);
+			double m_NumberOfCrashes;
+			if(parser.GetValueByFieldName("num_of_crashes_per_year",m_NumberOfCrashes) == false)
+				break;
 
-			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number,lpszFileName );
+			char los;
+			if(parser.GetValueByFieldName("level_of_service",los) == false)
+				break;
+
+			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number, lpszFileName );
 
 			if(pLink!=NULL)
 			{
-				float Capacity =   g_read_float(st);
-				pLink->m_StaticLaneVolume = g_read_float(st);
-				pLink->m_StaticVOC   = g_read_float(st);
-				float FreeflowTravelTime   = g_read_float(st);
-				pLink->m_StaticTravelTime = g_read_float(st);
-				pLink->m_StaticSpeed  = g_read_float(st);
+				pLink->m_NumberOfCrashes = m_NumberOfCrashes;
+				total_number_of_crashes += m_NumberOfCrashes;
+				pLink->m_LevelOfService = los;
+
+				parser.GetValueByFieldName("speed_in_mph",pLink->m_StaticSpeed );
+				parser.GetValueByFieldName("total_link_volume",pLink->m_StaticLinkVolume );
+				parser.GetValueByFieldName("volume_over_capacity_ratio",pLink->m_StaticVOC );
+
 				i++;
-			}else
-			{
-				return; 			
-				fclose(st);
 			}
 
 		}
-		m_bSimulationDataLoaded = true;
-
-		fclose(st);
-		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
+		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s. Total number of crashes = %f",i,lpszFileName,total_number_of_crashes);
 	}
 
 }
@@ -536,7 +537,7 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
 
 	if(m_bLinkToBeShifted)
 	{
-		double link_offset = m_UnitFeet*80;  // 80 feet
+		double link_offset = m_UnitFeet*m_OffsetInFeet;  // 80 feet
 
 		std::list<DTALink*>::iterator iLink;
 
@@ -860,22 +861,25 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 		// default mode
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*5/m_MaxLinkWidthAsNumberOfLanes;
 		}
 		// 
 		if(m_LinkBandWidthMode == LBW_link_volume)
 		{
 			float LinkVolume = (*iLink)->m_TotalVolume;
 
+			if(m_LinkMOEMode == MOE_safety)
+				LinkVolume = (*iLink)->m_NumberOfCrashes;
+
 			if(g_Simulation_Time_Stamp>=1)
 				LinkVolume = (*iLink)->GetObsLaneVolume(g_Simulation_Time_Stamp);
 
-			(*iLink)->m_BandWidthValue =  LinkVolume*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
+			(*iLink)->m_BandWidthValue =  LinkVolume*20*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
 		}
 
 		if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *20*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
 		}
 
 	}
@@ -922,7 +926,8 @@ void CTLiteDoc::OffsetLink()
 
 	if(m_bLinkToBeShifted)
 	{
-		double link_offset = m_UnitFeet*80;  // 80 feet
+		double link_offset = m_UnitFeet*m_OffsetInFeet;
+
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -2976,8 +2981,8 @@ float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int Curre
 
 	switch (LinkMOEMode)
 	{
-	case MOE_volume:  power = pLink->m_StaticLaneVolume/max_link_volume; 
-		value = pLink->m_StaticLaneVolume;
+	case MOE_volume:  power = pLink->m_StaticLinkVolume/max_link_volume; 
+		value = pLink->m_StaticLinkVolume;
 		break;
 	case MOE_speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_StaticSpeed)/max_speed_ratio; 
 		value = pLink->m_StaticSpeed;
@@ -3233,16 +3238,8 @@ void CTLiteDoc::LoadSimulationOutput()
 	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
 	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, DTASettingsPath);
 
-	if(TrafficFlowModelFlag==0)  //BPR function 
-	{
-		m_StaticAssignmentMode = true;
-		ReadSimulationLinkStaticMOEData(m_ProjectDirectory+"LinkStaticMOE.csv");
-	}
-	else {
-		m_StaticAssignmentMode = false;
-
 		ReadSimulationLinkMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
-	}
+		ReadSimulationLinkStaticMOEData(m_ProjectDirectory+"output_LinkMOE_summary.csv");
 
 	ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
 	ReadVehicleEmissionFile(m_ProjectDirectory+"output_vehicle_emission_MOE_summary.csv");
@@ -6060,3 +6057,42 @@ void CTLiteDoc::OnImportArcgisshapefile()
 }
 
 
+
+void CTLiteDoc::OnLinkIncreaseoffsetfortwo()
+{
+	m_OffsetInFeet=+5;// 5 feet
+	m_bLinkToBeShifted  = true;
+	OffsetLink();
+	GenerateOffsetLinkBand();
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnLinkDecreaseoffsetfortwo()
+{
+	m_OffsetInFeet = -5; //5feet
+	m_bLinkToBeShifted  = true;
+	OffsetLink();
+	GenerateOffsetLinkBand();
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnLinkNooffsetandnobandwidth()
+{
+		std::list<DTALink*>::iterator iLink;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+
+				(*iLink)->m_ShapePoints.clear();
+
+				(*iLink)->m_ShapePoints .push_back ((*iLink)->m_FromPoint);
+				(*iLink)->m_ShapePoints .push_back ((*iLink)->m_ToPoint);
+		}
+
+	m_OffsetInFeet=10;
+	m_bLinkToBeShifted  = true;
+	m_LaneWidthInFeet = 10;
+	OffsetLink();
+	GenerateOffsetLinkBand();
+	UpdateAllViews(0);
+}

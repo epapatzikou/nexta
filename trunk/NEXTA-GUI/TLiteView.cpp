@@ -612,13 +612,21 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	pDoc -> m_PrevLinkMOEMode = pDoc -> m_LinkMOEMode;
 
+	int min_x, min_y, max_x, max_y;
+
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
 		FromPoint = NPtoSP((*iLink)->m_FromPoint);
 		ToPoint = NPtoSP((*iLink)->m_ToPoint);
 
-		link_rect.SetRect(FromPoint.x-50,FromPoint.y-50,ToPoint.x+50,ToPoint.y+50);
+		min_x = min(FromPoint.x,ToPoint.x);
+		max_x = max(FromPoint.x,ToPoint.x);
+
+		min_y = min(FromPoint.y,ToPoint.y);
+		max_y = max(FromPoint.y,ToPoint.y);
+
+		link_rect.SetRect(min_x-50,min_y-50,max_x+50,max_y+50);
 
 		if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
 			continue;
@@ -634,8 +642,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			float value = -1.0f ;
 			if( 
 				pDoc->m_LinkMOEMode != none && (
-				(g_Simulation_Time_Stamp >=1 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) 
-				|| 	pDoc->m_StaticAssignmentMode)) 
+				(g_Simulation_Time_Stamp >=0 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) )) 
 			{
 
 				float power;
@@ -756,10 +763,32 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				link_text_font.CreateFontIndirect(&lf);
 
 				pDC->SelectObject(&link_text_font);
+				bool with_text = false;
+				CString str_text;
 
-				if((*iLink)->m_Name.length () > 0)
+				if((*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)")
 				{
-				CString str_text = (*iLink)->m_Name.c_str ();
+				str_text = (*iLink)->m_Name.c_str ();
+				with_text = true;
+				}
+
+				if(pDoc->m_LinkMOEMode == MOE_safety)
+				{
+				str_text.Format ("%6.4f",(*iLink)->m_NumberOfCrashes );
+				with_text = true;
+				}
+
+				if(pDoc->m_LinkMOEMode == MOE_speed)
+				{
+					if((*iLink)->m_LevelOfService > 'C')
+					{
+					str_text.Format ("%c",(*iLink)->m_LevelOfService );
+					with_text = true;
+					}
+					else
+					with_text = false;
+				}
+				
 
 /*				int value_int100 = int(value*100);
 				int value_int= (int)value;
@@ -769,8 +798,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				else
 					str_text.Format ("%4.1f", value);
 */
+				if(with_text)
+				{
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
-
 				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
 				}
 
@@ -2861,7 +2891,7 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 void CTLiteView::OnLinkIncreasebandwidth()
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->m_MaxLinkWidthAsNumberOfLanes  *=1.2;
+	pDoc->m_MaxLinkWidthAsNumberOfLanes  /=1.2;
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 }
@@ -2869,7 +2899,7 @@ void CTLiteView::OnLinkIncreasebandwidth()
 void CTLiteView::OnLinkDecreasebandwidth()
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->m_MaxLinkWidthAsNumberOfLanes  /=1.2;
+	pDoc->m_MaxLinkWidthAsNumberOfLanes  *=1.2;
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 	
