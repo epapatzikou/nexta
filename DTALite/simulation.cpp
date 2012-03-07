@@ -69,7 +69,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 	std::list<struc_vehicle_item>::iterator vii;
 
 	int vehicle_id_trace = 0;
-	int link_id_trace = -1;
+	int link_id_trace = 0;
 	bool debug_flag = true;
 
 	//	TRACE("st=%d\n", simulation_time_interval_no);
@@ -160,7 +160,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 		{
 			struc_vehicle_item vi = g_LinkVector[li]->LoadingBuffer.front();
 			// we change the time stamp here to reflect the actual loading time into the network, especially for blocked link
-			vi.time_stamp = CurrentTime;
+			if( vi.time_stamp < CurrentTime)
+				vi.time_stamp = CurrentTime;
 
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
 				TRACE("Step 1: Time %f: Load vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
@@ -1092,6 +1093,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	
 	}
 	}
+
+	// update crash prediction statistics
+	DTASafetyPredictionModel SafePredictionModel;
+	SafePredictionModel.UpdateCrashRateForAllLinks();
+
 	return output;
 }
 

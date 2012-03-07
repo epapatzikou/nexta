@@ -284,3 +284,20 @@ CString g_GetAppRunningTime()
 	str = ts.Format( "App Clock: %H:%M:%S --" );
 	return str;
 }
+
+
+char g_GetLevelOfService(int PercentageOfSpeedLimit)
+{
+   if(PercentageOfSpeedLimit >= 90)
+	   return 'A';
+   else if (PercentageOfSpeedLimit >= 70)
+	   return 'B';
+   else if (PercentageOfSpeedLimit >= 50)
+	   return 'C';
+   else if (PercentageOfSpeedLimit >= 40)
+	   return 'D';
+   else if (PercentageOfSpeedLimit >= 33)
+	   return 'E';
+   else 
+	   return 'F';
+}
