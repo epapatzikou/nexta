@@ -352,6 +352,9 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+		m_AADT = 0;
+		m_NumberOfCrashes = 0;
+
 		m_SimulationHorizon	= TimeSize;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 		m_LinkMeasurementAry.resize(m_SimulationHorizon/g_ObservationTimeInterval+1);
@@ -440,7 +443,6 @@ public:
 	std::vector <SLinkMOE> m_LinkMOEAry;
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
-    DTASafetyLinkData m_SafetyData;
 	void ComputeVSP();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
@@ -477,9 +479,9 @@ public:
 
 	};
 
-	float GetFreeMovingTravelTime(int TrafficModelFlag=2, float Time = -1)
+	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, float Time = -1)
 	{
-		if(TrafficModelFlag ==0) // BRP model
+		if(TrafficModelFlag == 0) // BRP model
 			return m_BPRLinkTravelTime;
 		else 
 		{
@@ -551,9 +553,9 @@ public:
 	int m_ToNodeNumber;
 
 	float	m_Length;  // in miles
-	float    m_VehicleSpaceCapacity; // in vehicles
+	float   m_VehicleSpaceCapacity; // in vehicles
 	int	m_NumLanes;
-	int	m_SpeedLimit;
+	float	m_SpeedLimit;
 	float m_KJam;
 	float m_BackwardWaveSpeed;
 	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
@@ -615,12 +617,16 @@ public:
 
 	float m_JamTimeStamp;
 
-	int CFlowArrivalCount;
 
 	int CFlowArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
 	float CFlowArrivalRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
 
+	int CFlowArrivalCount;
 	int CFlowDepartureCount;
+
+	double m_AADT;
+	double m_NumberOfCrashes;
+	double m_AdditionalDelayDueToCrashes;
 
 	unsigned int LinkOutCapacity;  // unit: number of vehiles
 	int LinkInCapacity;   // unit: number of vehiles
@@ -763,8 +769,6 @@ public:
 	int to_zone_id;
 	int demand_type;
 	double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE];
-
-
 
 	TimeDependentDemandProfile()
 	{
@@ -1461,54 +1465,6 @@ public:
 };
 
 
-class DTASafetyModel
-{ 
-public:
-int safety_crash_model_id;
-string model_name;
-float alpha_constant;
-float beta_AADT;
-float gamma_AADT;
-float t_driveway;
-float n_driveway;
-float proportion_fatal;
-float length_coeff;
-float on_ramp_ADT_coeff;
-float off_ramp_ADT_coeff;
-float upstream_DADT_coeff;
-float freeway_constant;
-float freeway_lanes_coeff;
-float aux_lane_coeff;
-float inverse_spacing_coeff;
-float avg_capacity_reduction_percentage;
-float avg_crash_duration_in_min;
-float avg_additional_delay_per_vehicle_per_crash_in_min;
-
-DTASafetyModel()
-{
-safety_crash_model_id = 0; 
-alpha_constant=0;
-beta_AADT=0;
-gamma_AADT=0;
-t_driveway=0;
-n_driveway=0;
-proportion_fatal=0;
-length_coeff=0;
-on_ramp_ADT_coeff=0;
-off_ramp_ADT_coeff=0;
-upstream_DADT_coeff=0;
-freeway_constant=0;
-freeway_lanes_coeff=0;
-aux_lane_coeff=0;
-inverse_spacing_coeff=0;
-avg_capacity_reduction_percentage=0;
-avg_crash_duration_in_min=0;
-avg_additional_delay_per_vehicle_per_crash_in_min = 0;
-}
-
-
-};
-
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
@@ -1542,7 +1498,6 @@ void g_ReadDemandFile();
 void g_VehicleRerouting(int v, float CurrentTime, MessageSign is); // v for vehicle id
 void g_ODBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
-void g_StaticTrafficAssisnment();
 void g_OneShotNetworkLoading();
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
@@ -1565,6 +1520,8 @@ extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // co
 extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void g_UpdateLinkMOEDeviation_ODEstimation();
 extern void g_GenerateVehicleData_ODEstimation();
+extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
+
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
 
