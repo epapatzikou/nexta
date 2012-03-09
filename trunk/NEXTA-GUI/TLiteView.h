@@ -146,8 +146,10 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	}
 	void SetGlobalViewParameters()
 	{
-/*		m_Origin = GetDocument()->m_Doc_Origin;
-		m_Resolution = GetDocument()->m_Doc_Resolution;
+
+		GetDocument()->m_Doc_Resolution = m_Resolution;
+
+		/*		m_Origin = GetDocument()->m_Doc_Origin;
 		GetDocument()->m_bSetView = true;
 		GetDocument()->m_CurrentViewID  = m_ViewID;
 		GetDocument()->UpdateAllViews(this);

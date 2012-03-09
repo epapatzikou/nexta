@@ -30,6 +30,7 @@ void CDlgLinkList::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlgLinkList, CDialog)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST, &CDlgLinkList::OnLvnItemchangedList)
 	ON_BN_CLICKED(IDOK, &CDlgLinkList::OnBnClickedOk)
+	ON_BN_CLICKED(IDCANCEL, &CDlgLinkList::OnBnClickedCancel)
 END_MESSAGE_MAP()
 
 
@@ -42,7 +43,6 @@ BOOL CDlgLinkList::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// insert columns
-
 
 _TCHAR *ColumnMOELabel[LINKCOLUMNSIZE] =
 {
@@ -69,13 +69,7 @@ int i;
 
 	int column_size;
 
-	if(!m_AVISensorFlag)
-	{
 	column_size = LINKCOLUMNSIZE;
-	}else
-	{
-	column_size = LINKCOLUMNSIZE_AVI;
-	}
 
 	for(i = 0; i< column_size; i++)
 	{
@@ -87,17 +81,21 @@ int i;
 	}
 	m_LinkList.SetExtendedStyle(LVS_EX_AUTOSIZECOLUMNS | LVS_EX_FULLROWSELECT |LVS_EX_HEADERDRAGDROP);
 
+	ReloadData();
+	return true;
+}
+void CDlgLinkList::ReloadData()
+{
+
+	m_LinkList.DeleteAllItems ();
 	LV_ITEM lvi;
 
 	std::list<DTALink*>::iterator iLink;
 
-	if(m_AVISensorFlag == false)
-	{
-	i = 0;
+	int i = 0;
 	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++, i++)
 	{
-		if((*iLink)->m_AVISensorFlag == false )
-		{
+
 		char text[100];
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
@@ -105,15 +103,13 @@ int i;
 		sprintf_s(text, "%d",(*iLink)->m_LinkNo +1) ;
 		lvi.pszText = text;
 		m_LinkList.InsertItem(&lvi);
-		}
 
 	}
 
 	i=0;
 	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++, i++)
 	{
-		if((*iLink)->m_AVISensorFlag == false )
-		{
+
 		char text[100];
 
 		sprintf_s(text, "%d",(*iLink)->m_FromNodeNumber);
@@ -148,49 +144,9 @@ int i;
 		sprintf_s(text, "%5.0f",(*iLink)->m_StaticLinkVolume     );
 		m_LinkList.SetItemText(i,10,text);
 		}
-		}
-
-	}
-	}else
-	{
-		i = 0;
-   std::map< long, CAVISensorPair >::const_iterator iter ;
-
-   for ( iter= m_pDoc->m_AVISensorMap.begin(); iter !=  m_pDoc->m_AVISensorMap.end(); iter++ )
-   {
-       
-		char text[100];
-		lvi.mask = LVIF_TEXT;
-		lvi.iItem = i;
-		lvi.iSubItem = 0;
-		sprintf_s(text, "%d",iter->second.sensor_pair_id ) ;
-		lvi.pszText = text;
-		m_LinkList.InsertItem(&lvi);
-
 	}
 
-	i=0;
-   for ( iter= m_pDoc->m_AVISensorMap.begin(); iter !=  m_pDoc->m_AVISensorMap.end(); iter++ )
-	{
-		char text[100];
 
-		sprintf_s(text, "%d",iter->second.from_node_id);
-		m_LinkList.SetItemText(i,1,text);
-
-		sprintf_s(text, "%d",iter->second.to_node_id );
-		m_LinkList.SetItemText(i,2,text);
-
-		m_LinkList.SetItemText(i,3,iter->second.sensor_type);
-
-		sprintf_s(text, "%d",iter->second.number_of_samples  );
-		m_LinkList.SetItemText(i,2,text);
-
-	}
-	
-	}
-
-	return TRUE;  // return TRUE unless you set the focus to a control
-	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
@@ -227,4 +183,9 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 void CDlgLinkList::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
+}
+
+void CDlgLinkList::OnBnClickedCancel()
+{
+	CDialog::OnOK();
 }

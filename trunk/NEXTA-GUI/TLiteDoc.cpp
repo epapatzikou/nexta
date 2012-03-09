@@ -75,6 +75,7 @@
 CDlgMOE *g_LinkMOEDlg = NULL;
 CDlgPathMOE	*g_pPathMOEDlg = NULL;
 CDlg_Legend* g_pLegendDlg = NULL;
+CDlgLinkList* g_pLinkListDlg = NULL;
 
 extern float g_Simulation_Time_Stamp;
 
@@ -864,7 +865,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 		// default mode
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*5/m_MaxLinkWidthAsNumberOfLanes;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*5/max(1,m_MaxLinkWidthAsNumberOfLanes);
 		}
 		// 
 		if(m_LinkBandWidthMode == LBW_link_volume)
@@ -874,10 +875,11 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			if(m_LinkMOEMode == MOE_safety)
 				LinkVolume = (*iLink)->m_NumberOfCrashes;
 
-			if(g_Simulation_Time_Stamp>=1)
+			if(g_Simulation_Time_Stamp>=1 && m_TrafficFlowModelFlag >0 ) // dynamic traffic assignment mode
 				LinkVolume = (*iLink)->GetObsLaneVolume(g_Simulation_Time_Stamp);
 
-			(*iLink)->m_BandWidthValue =  LinkVolume*20*m_MaxLinkWidthAsNumberOfLanes/max(1,m_MaxLinkVolume);
+			// 1000 as per lane traffic volume
+			(*iLink)->m_BandWidthValue =  LinkVolume*5/max(1,m_MaxLinkWidthAsLinkVolume);
 		}
 
 		if(m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
@@ -1532,7 +1534,7 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 
 					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
 
-					if(origin_zone_id < m_ODSize && destination_zone_id < m_ODSize)
+					if(origin_zone_id <= m_ODSize && destination_zone_id <= m_ODSize)
 						m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 					else
 					{
@@ -1717,7 +1719,7 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 
 			int from_zone_id, to_zone_id;
 			int demand_type;
-			double percentage; float VOT;
+			double percentage;
 
 			if(parser.GetValueByFieldName("from_zone_id",from_zone_id) == false)
 				break;
@@ -2031,7 +2033,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"input_demand_type.csv", directory+"input_demand_type.csv", FALSE);
 		CopyFile(OldDirectory+"input_vehicle.csv", directory+"input_vehicle.csv", FALSE);
 		CopyFile(OldDirectory+"input_VOT.csv", directory+"input_VOT.csv", FALSE);
-		CopyFile(OldDirectory+"input_temporal_demand_profile.csv", directory+"input_temporal_demand_profile.csv.csv", FALSE);
+		CopyFile(OldDirectory+"input_temporal_demand_profile.csv", directory+"input_temporal_demand_profile.csv", FALSE);
 
 		CopyFile(OldDirectory+"Scenario_Incident.csv", directory+"Scenario_Incident.csv", FALSE);
 		CopyFile(OldDirectory+"Scenario_Link_Based_Toll.csv", directory+"Scenario_Link_Based_Toll.csv", FALSE);
@@ -2874,12 +2876,15 @@ void CTLiteDoc::OnFileDataloadingstatus()
 void CTLiteDoc::OnMoeVolume()
 {
 	m_LinkMOEMode = MOE_volume;
+	ShowLegend(false);
+
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeSpeed()
 {
 	m_LinkMOEMode = MOE_speed;
+	ShowLegend(true);
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
@@ -2905,6 +2910,7 @@ void CTLiteDoc::OnMoeFuelconsumption()
 void CTLiteDoc::OnMoeEmissions()
 {
 	m_LinkMOEMode = MOE_emissions;
+	ShowLegend(false);
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnUpdateMoeVolume(CCmdUI *pCmdUI)
@@ -2940,16 +2946,16 @@ void CTLiteDoc::OnUpdateMoeEmissions(CCmdUI *pCmdUI)
 
 void CTLiteDoc::OnMoeNone()
 {
-	m_LinkMOEMode = none;
+	m_LinkMOEMode = MOE_none;
+	ShowLegend(false);
+
 	// visualization configuration
-	OnLinkLinkbar();
-	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
 
 void CTLiteDoc::OnUpdateMoeNone(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(m_LinkMOEMode == none);
+	pCmdUI->SetCheck(m_LinkMOEMode == MOE_none);
 }
 
 float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime)
@@ -3240,7 +3246,7 @@ void CTLiteDoc::LoadSimulationOutput()
 {
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
 
-	int TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
+	m_TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
 	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, DTASettingsPath);
 
 		ReadSimulationLinkMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
@@ -3254,6 +3260,7 @@ void CTLiteDoc::LoadSimulationOutput()
 void CTLiteDoc::OnMoeVcRatio()
 {
 	m_LinkMOEMode = MOE_vcratio;
+	ShowLegend(true);
 	UpdateAllViews(0);
 }
 
@@ -3421,7 +3428,7 @@ void CTLiteDoc::OnMoeNoodmoe()
 
 void CTLiteDoc::OnUpdateMoeNoodmoe(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(m_ODMOEMode == none);
+	pCmdUI->SetCheck(m_ODMOEMode == MOE_none);
 }
 
 
@@ -3455,10 +3462,9 @@ void CTLiteDoc::OnToolsEditoddemandtable()
 
 void CTLiteDoc::OnSearchLinklist()
 {
-	CDlgLinkList dlg;
-	dlg.m_pDoc = this;
-	dlg.DoModal ();
-
+CDlgLinkList dlg;
+dlg.m_pDoc = this;
+dlg.DoModal ();
 }
 
 void CTLiteDoc::OnMoeVehicle()
@@ -4034,7 +4040,7 @@ float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 			while(parser_ODMatrix.ReadRecord())
 			{
 
-				int origin_zone_id, destination_zone_id, demand_type;
+				int origin_zone_id, destination_zone_id;
 				float number_of_vehicles, starting_time_in_min, ending_time_in_min;
 
 				if(parser_ODMatrix.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
@@ -4909,6 +4915,8 @@ void CTLiteDoc::OnLinkmoeEmissions()
 {
 	m_LinkMOEMode = MOE_emissions;
 	GenerateOffsetLinkBand();
+	ShowLegend(false);
+
 	UpdateAllViews(0);
 }
 
@@ -4931,6 +4939,7 @@ void CTLiteDoc::OnUpdateLinkmoeReliability(CCmdUI *pCmdUI)
 void CTLiteDoc::OnLinkmoeSafety()
 {
 	m_LinkMOEMode = MOE_safety;
+	ShowLegend(false);
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
@@ -6106,6 +6115,12 @@ void CTLiteDoc::OnViewShowhideLegend()
 {
 	m_bShowLegend = !m_bShowLegend;
 
+	ShowLegend(m_bShowLegend);
+}
+
+void CTLiteDoc::ShowLegend(bool ShowLegendStatus)
+{
+	m_bShowLegend = ShowLegendStatus;
 	if(m_bShowLegend)
 	{
 		if(g_pLegendDlg==NULL)
@@ -6116,11 +6131,18 @@ void CTLiteDoc::OnViewShowhideLegend()
 		}
 
 		// update using pointer to the active document; 
-		g_pLegendDlg->m_pDoc = this;
 
+		if(g_pLegendDlg->GetSafeHwnd())
+		{
+		g_pLegendDlg->m_pDoc = this;
+		g_pLegendDlg->ShowWindow(SW_HIDE);
 		g_pLegendDlg->ShowWindow(SW_SHOW);
+		}
 	}else
 	{
+		if(g_pLegendDlg!=NULL && g_pLegendDlg->GetSafeHwnd())
+		{
 		g_pLegendDlg->ShowWindow(SW_HIDE);
+		}
 	}
 }

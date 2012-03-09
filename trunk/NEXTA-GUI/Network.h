@@ -711,7 +711,7 @@ public:
 	float m_SetBackStart, m_SetBackEnd;
 	GDPoint m_FromPointWithSetback, m_ToPointWithSetback;
 
-	double DefaultDistance()
+	float DefaultDistance()
 	{
 		return pow((m_FromPoint.x - m_ToPoint.x)*(m_FromPoint.x - m_ToPoint.x) + 
 			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5f);
@@ -721,7 +721,7 @@ void AdjustLinkEndpointsWithSetBack()
 {
    GDPoint Direction;
 
-   float SetBackRatio = m_SetBackStart  /max(0.00001, DefaultDistance());
+   float SetBackRatio = m_SetBackStart  /max(0.00001f, DefaultDistance());
 
    Direction.x = (m_ToPoint.x - m_FromPoint.x)*SetBackRatio;
    Direction.y = (m_ToPoint.y - m_FromPoint.y)*SetBackRatio;
@@ -730,7 +730,7 @@ void AdjustLinkEndpointsWithSetBack()
    m_FromPointWithSetback.x = m_ShapePoints[0].x + Direction.x;
    m_FromPointWithSetback.y = m_ShapePoints[0].y + Direction.y;
 
-   SetBackRatio = m_SetBackEnd  /max(0.000001, DefaultDistance());
+   SetBackRatio = m_SetBackEnd  /max(0.000001f, DefaultDistance());
 
    Direction.x = (m_FromPoint.x - m_ToPoint.x)*SetBackRatio;
    Direction.y = (m_FromPoint.y - m_ToPoint.y)*SetBackRatio;
