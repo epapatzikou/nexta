@@ -1210,7 +1210,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 		}
 */
 		m_SelectPathNo = 0;  // select the first path
-
 		UpdateAllViews(0);
 
 /*

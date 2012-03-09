@@ -38,7 +38,7 @@
 #include <afxdao.h>
 
 
-enum Link_MOE {none,MOE_volume, MOE_speed, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -64,6 +64,8 @@ protected: // create from serialization only
 
 		m_BackgroundColor =  RGB(0,100,0);
 		m_MaxLinkWidthAsNumberOfLanes = 5;
+		m_MaxLinkWidthAsLinkVolume = 10000;
+
 		m_VehicleSelectionMode = CLS_network;
 		m_LinkBandWidthMode = LBW_number_of_lanes;
 		m_bLoadNetworkDataOnly = false;
@@ -77,8 +79,8 @@ protected: // create from serialization only
 
 		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
-		m_LinkMOEMode = none;
-		m_PrevLinkMOEMode = none;
+		m_LinkMOEMode = MOE_none;
+		m_PrevLinkMOEMode = MOE_none;
 		m_ODMOEMode = odnone;
 
 		MaxNodeKey = 60000;  // max: unsigned short 65,535;
@@ -130,6 +132,7 @@ protected: // create from serialization only
 	
 		m_bSetView = false;
 		m_bShowLegend = false;
+		m_bShowLinkList  = false;
 
 		for(int i=0; i<40;i++)
 		{
@@ -149,12 +152,17 @@ protected: // create from serialization only
 		m_LOSBound[MOE_speed][7] = 0;
 
 		m_LOSBound[MOE_vcratio][1] = 0;
-		m_LOSBound[MOE_vcratio][2] = 0.65;
-		m_LOSBound[MOE_vcratio][3] = 0.75;
-		m_LOSBound[MOE_vcratio][4] = 0.85;
-		m_LOSBound[MOE_vcratio][5] = 0.95;
-		m_LOSBound[MOE_vcratio][6] = 1.00;
+		m_LOSBound[MOE_vcratio][2] = 0.65f;
+		m_LOSBound[MOE_vcratio][3] = 0.75f;
+		m_LOSBound[MOE_vcratio][4] = 0.85f;
+		m_LOSBound[MOE_vcratio][5] = 0.95f;
+		m_LOSBound[MOE_vcratio][6] = 1.00f;
 		m_LOSBound[MOE_vcratio][7] = 999;
+
+		m_TrafficFlowModelFlag = 0;  // static traffic assignment as default
+		m_Doc_Resolution = 1;
+
+
 	}
 
 	DECLARE_DYNCREATE(CTLiteDoc)
@@ -162,9 +170,11 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	int m_TrafficFlowModelFlag;
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
+	bool m_bShowLinkList;
 	int m_NodeDisplaySize;
 	bool m_ShowNodeLayer;
 
@@ -379,6 +389,7 @@ void SetStatusText(CString StatusText);
 	VEHICLE_CLASSIFICATION_SELECTION m_VehicleSelectionMode;
 	LINK_BAND_WIDTH_MODE m_LinkBandWidthMode;
 	float m_MaxLinkWidthAsNumberOfLanes;
+	float m_MaxLinkWidthAsLinkVolume;
 
 	std::map<int, VehicleStatistics> m_ClassificationTable;
 
@@ -437,6 +448,7 @@ void SetStatusText(CString StatusText);
 
 	int m_LaneWidthInFeet;
 
+	void ShowLegend(bool ShowLegendStatus);
 	DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
 	{
 		DTALink* pLink = 0;
@@ -585,6 +597,7 @@ void SetStatusText(CString StatusText);
 		m_LinkNoMap[pLink->m_LinkNo]  = NULL;
 
 		std::list<DTALink*>::iterator iLink;
+
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			if((*iLink)->m_LinkNo == LinkNo)

@@ -308,7 +308,7 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 	const int LaneRowSize = 28;
 	const int LaneColumnSize = 12;
 
-	float default_value_M[LaneRowSize][LaneColumnSize] = 
+	double default_value_M[LaneRowSize][LaneColumnSize] = 
 	{
 		{1,2,1,1,2,1,1,2,1,1,2,1},
 		{0,0,0,0,0,0,0,0,0,0,0,},
@@ -359,7 +359,7 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 	const int PhaseColumnSize = 8;
 	const int PhaseRowSize = 23;
 
-	float default_value_P[PhaseRowSize][PhaseColumnSize] = 
+	double default_value_P[PhaseRowSize][PhaseColumnSize] = 
 	{
 		{111,112,211,212,121,122,221,222},
 		{4,15,4,15,4,15,4,15},

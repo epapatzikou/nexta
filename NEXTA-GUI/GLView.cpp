@@ -602,7 +602,7 @@ void CGLView::DrawAllObjects()
 
 			float link_volume = (*iLink)->m_StaticLinkVolume ;
 
-			if( pDoc->m_LinkMOEMode != none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp + m_PredictionHorizon< (*iLink)->m_SimulationHorizon)
+			if( pDoc->m_LinkMOEMode != MOE_none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp + m_PredictionHorizon< (*iLink)->m_SimulationHorizon)
 			{
 				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time + m_PredictionHorizon].ObsFlow)* (*iLink)->m_NumLanes;
 			}

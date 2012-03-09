@@ -310,7 +310,7 @@ CTLiteView::CTLiteView()
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
 	m_Resolution = 1;
-	m_bShowText = true;
+	m_bShowText = false;
 	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
 	m_OriginOnBottomFlag = -1;
@@ -465,6 +465,7 @@ CTLiteDoc* CTLiteView::GetDocument() const // non-debug version is inline
 // CTLiteView message handlers
 void CTLiteView::DrawObjects(CDC* pDC)
 {
+
 	CTLiteDoc* pDoc = GetDocument();
 
 
@@ -578,7 +579,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	//test the display width of a lane, if greather than 1, then band display mode
 
-		if(pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.75f) // 5 lanes
+		if(pDoc->m_LinkMOEMode == MOE_none || pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.75f) // 5 lanes
 			m_link_display_mode = link_display_mode_band;
 		else 
 			m_link_display_mode = link_display_mode_line;
@@ -614,6 +615,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	int min_x, min_y, max_x, max_y;
 
+	// smart labeling 
+	
+
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
@@ -640,7 +644,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 
 			float value = -1.0f ;
-			if( pDoc->m_LinkMOEMode != none) 
+			if( pDoc->m_LinkMOEMode != MOE_none) 
 			{
 
 				float power;
@@ -730,6 +734,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( m_bShowText )
 			{
 
+				float sqr_value = (FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x) + (FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y);
+				float screen_distance = sqrt( sqr_value) ;
+				
+
 				CFont link_text_font;
 
 				LOGFONT lf;
@@ -760,44 +768,49 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				bool with_text = false;
 				CString str_text;
 
-				if((*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)")
+				if(pDoc->m_LinkMOEMode == MOE_none && (*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
 				{
 				str_text = (*iLink)->m_Name.c_str ();
 				with_text = true;
 				}
 
-				if(pDoc->m_LinkMOEMode == MOE_safety)
+				if(pDoc->m_LinkMOEMode == MOE_safety && screen_distance > 50 && (*iLink)->m_NumberOfCrashes >= 0.0001)
 				{
-				str_text.Format ("%6.4f",(*iLink)->m_NumberOfCrashes );
-				with_text = true;
+						str_text.Format ("%6.4f",(*iLink)->m_NumberOfCrashes );
+						with_text = true;
 				}
 
-				if(pDoc->m_LinkMOEMode == MOE_speed)
+				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio ))
 				{
-					if((*iLink)->m_LevelOfService > 'C')
+
+					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
+
+					if(value >0.001)  // with value
 					{
-					str_text.Format ("%c",(*iLink)->m_LevelOfService );
+
+						if( pDoc->m_LinkMOEMode == MOE_vcratio)
+							str_text.Format ("%.1f",value);
+						else
+							str_text.Format ("%.0f",value);
+
 					with_text = true;
 					}
 					else
-					with_text = false;
-				}
+					{
+						with_text = false;
+					}
 				
 
-/*				int value_int100 = int(value*100);
-				int value_int= (int)value;
+				}
+								
 
-				if(value_int100%100 == 0)  // no decimal point
-					str_text.Format ("%d", value_int);
-				else
-					str_text.Format ("%4.1f", value);
-*/
 				if(with_text)
 				{
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
 				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
 				}
 
+				
 			}
 
 			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
@@ -2369,6 +2382,9 @@ void CTLiteView::CopyLinkSetInSubarea()
 {
 	CTLiteDoc* pDoc = GetDocument();
 
+		if( pDoc->m_SubareaShapePoints.size() < 3)
+		return;
+
 	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
 	for (int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
 	{
@@ -2388,7 +2404,7 @@ void CTLiteView::CopyLinkSetInSubarea()
 	while (iNode != pDoc->m_NodeSet.end())
 	{
 		CPoint point = NPtoSP((*iNode)->pt);
-		if(PtInRegion(m_polygonal_region, point.x, point.y) == true)  //outside subarea
+		if(PtInRegion(m_polygonal_region, point.x, point.y))  //outside subarea
 		{
 			pDoc->m_SubareaNodeSet .push_back ((*iNode));
 			pDoc->m_SubareaNodeIDMap[(*iNode)->m_NodeID ]=  (*iNode);
@@ -2428,7 +2444,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	CTLiteDoc* pDoc = GetDocument();
 
 	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
-	for (int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
+	for (unsigned int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
 	{
 		CPoint point =  NPtoSP(pDoc->m_SubareaShapePoints[sub_i]);
 		m_subarea_points[sub_i].x = point.x;
@@ -2885,7 +2901,18 @@ void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
 void CTLiteView::OnLinkIncreasebandwidth()
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->m_MaxLinkWidthAsNumberOfLanes  /=1.2;
+
+		if(pDoc->m_LinkBandWidthMode == LBW_number_of_lanes)
+		{
+		pDoc->m_MaxLinkWidthAsNumberOfLanes  /=1.2;
+		}
+		// 
+		if(pDoc->m_LinkBandWidthMode == LBW_link_volume)
+		{
+		pDoc->m_MaxLinkWidthAsLinkVolume  /=1.2;
+		}
+
+
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 }
@@ -2893,7 +2920,16 @@ void CTLiteView::OnLinkIncreasebandwidth()
 void CTLiteView::OnLinkDecreasebandwidth()
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->m_MaxLinkWidthAsNumberOfLanes  *=1.2;
+	
+		if(pDoc->m_LinkBandWidthMode == LBW_number_of_lanes)
+		{
+		pDoc->m_MaxLinkWidthAsNumberOfLanes  *=1.2;
+		}
+		// 
+		if(pDoc->m_LinkBandWidthMode == LBW_link_volume)
+		{
+		pDoc->m_MaxLinkWidthAsLinkVolume  *=1.2;
+		}
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 	
