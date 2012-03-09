@@ -50,8 +50,18 @@ enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_o
 class CTLiteDoc : public CDocument
 {
 protected: // create from serialization only
+
 	CTLiteDoc()
 	{
+
+	   m_colorLOS[0] = RGB(190,190,190);
+	   m_colorLOS[1] = RGB(0,255,0);
+	   m_colorLOS[2] = RGB(255,250,117);
+	   m_colorLOS[3] = RGB(255,250,0);
+	   m_colorLOS[4] = RGB(255,216,0);
+	   m_colorLOS[5] = RGB(255,153,0);
+	   m_colorLOS[6] = RGB(255,0,0);
+
 		m_BackgroundColor =  RGB(0,100,0);
 		m_MaxLinkWidthAsNumberOfLanes = 5;
 		m_VehicleSelectionMode = CLS_network;
@@ -119,7 +129,32 @@ protected: // create from serialization only
 		m_SelectedTrainID = -1;
 	
 		m_bSetView = false;
+		m_bShowLegend = false;
 
+		for(int i=0; i<40;i++)
+		{
+			for(int los= 0; los < MAX_LOS_SIZE; los++)
+			{
+				m_LOSBound[i][los] = 0;
+			}
+		}
+
+		// speed LOS bound
+		m_LOSBound[MOE_speed][1] = 100;
+		m_LOSBound[MOE_speed][2] = 90;
+		m_LOSBound[MOE_speed][3] = 70;
+		m_LOSBound[MOE_speed][4] = 50;
+		m_LOSBound[MOE_speed][5] = 40;
+		m_LOSBound[MOE_speed][6] = 33;
+		m_LOSBound[MOE_speed][7] = 0;
+
+		m_LOSBound[MOE_vcratio][1] = 0;
+		m_LOSBound[MOE_vcratio][2] = 0.65;
+		m_LOSBound[MOE_vcratio][3] = 0.75;
+		m_LOSBound[MOE_vcratio][4] = 0.85;
+		m_LOSBound[MOE_vcratio][5] = 0.95;
+		m_LOSBound[MOE_vcratio][6] = 1.00;
+		m_LOSBound[MOE_vcratio][7] = 999;
 	}
 
 	DECLARE_DYNCREATE(CTLiteDoc)
@@ -127,6 +162,9 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	COLORREF m_colorLOS[MAX_LOS_SIZE];
+	float m_LOSBound[40][MAX_LOS_SIZE];
+	bool m_bShowLegend;
 	int m_NodeDisplaySize;
 	bool m_ShowNodeLayer;
 
@@ -265,7 +303,20 @@ public:
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
-float GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
+float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
+
+int GetLOSCode(float Power)
+{
+   
+	for(int los = 1; los < MAX_LOS_SIZE-1; los++)
+	{
+		if( (m_LOSBound[m_LinkMOEMode][los] <= Power && Power < m_LOSBound[m_LinkMOEMode][los+1]) ||
+			(m_LOSBound[m_LinkMOEMode][los] >= Power && Power > m_LOSBound[m_LinkMOEMode][los+1]))
+
+			return los;
+	}
+	return 0;
+}
 
 public:
 
@@ -861,6 +912,7 @@ public:
 		afx_msg void OnLinkIncreaseoffsetfortwo();
 		afx_msg void OnLinkDecreaseoffsetfortwo();
 		afx_msg void OnLinkNooffsetandnobandwidth();
+		afx_msg void OnViewShowhideLegend();
 };
 
 

@@ -640,24 +640,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 
 			float value = -1.0f ;
-			if( 
-				pDoc->m_LinkMOEMode != none && (
-				(g_Simulation_Time_Stamp >=0 &&	g_Simulation_Time_Stamp < (*iLink)->m_SimulationHorizon) )) 
+			if( pDoc->m_LinkMOEMode != none) 
 			{
 
 				float power;
 
-				power= pDoc->GetStaticLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
-
-				float n= power*100;
-				int R=(int)((255*n)/100);
-				int G=(int)(255*(100-n)/100); 
-				int B=0;
+				power= pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
+				int LOS = pDoc->GetLOSCode(power);
 
 				if((*iLink)->m_AVISensorFlag != true)
 				{
-					pen_moe.CreatePen (PS_SOLID, 1, RGB(R,G,B));
-					brush_moe.CreateSolidBrush (RGB(R,G,B));
+					pen_moe.CreatePen (PS_SOLID, 1, pDoc->m_colorLOS[LOS]);
+					brush_moe.CreateSolidBrush (pDoc->m_colorLOS[LOS]);
 				}
 				else
 				{

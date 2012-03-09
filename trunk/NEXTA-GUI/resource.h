@@ -81,6 +81,7 @@
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
+#define IDD_DIALOG_Legend               196
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -642,13 +643,16 @@
 #define ID_LINK_INCREASEOFFSETFORTWO    33302
 #define ID_LINK_DECREASEOFFSETFORTWO    33303
 #define ID_LINK_NOOFFSETANDNOBANDWIDTH  33308
+#define ID_BUTTON33309                  33309
+#define ID_VIEW_SHOW33310               33310
+#define ID_VIEW_SHOWHIDE_LEGEND         33311
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        194
-#define _APS_NEXT_COMMAND_VALUE         33309
+#define _APS_NEXT_RESOURCE_VALUE        197
+#define _APS_NEXT_COMMAND_VALUE         33312
 #define _APS_NEXT_CONTROL_VALUE         1095
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

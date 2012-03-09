@@ -42,6 +42,7 @@ extern float g_GetRandomRatio();
 using namespace std;
 using std::string;
 #define PI 3.1415926
+#define MAX_LOS_SIZE  8
 enum DTA_Approach
 {
 	DTA_North,
@@ -68,9 +69,9 @@ enum DTA_Turn
 #define NUM_VEHPATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_PATHS   6
 #define MAX_VEHICLE_TYPE_SIZE 10
-#define MAX_DEMAND_TYPE_SIZE 5
 #define MAX_TIME_INTERVAL_SIZE 96
 #define MAX_INFO_CLASS_SIZE 4
+#define MAX_PRICING_TYPE_SIZE  4
 
 
 #define _MAXIMUM_OPERATING_MODE_SIZE 41
@@ -182,14 +183,12 @@ public:
 	int to_zone_id;
 	int starting_time_in_min;
 	int ending_time_in_min;
-	float number_of_vehicles[MAX_DEMAND_TYPE_SIZE];
+	std::vector<float> number_of_vehicles_per_demand_type;
+
 	DTADemand()
 	{
 
-		for(int type = 0; type < MAX_DEMAND_TYPE_SIZE; type++)
-		{
-			number_of_vehicles[type] =0 ;
-		}
+
 	}	
 
 };
@@ -489,8 +488,8 @@ class DTAToll
 public:
 	float StartTime;
 	float EndTime;
-	float TollRate[MAX_DEMAND_TYPE_SIZE];
-	float TollRateInMin[MAX_DEMAND_TYPE_SIZE];
+	float TollRate[MAX_PRICING_TYPE_SIZE];
+	float TollRateInMin[MAX_PRICING_TYPE_SIZE];
 };
 
 class DTALink

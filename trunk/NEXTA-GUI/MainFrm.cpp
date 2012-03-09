@@ -122,7 +122,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 		m_MOEToolBar.SetButtonText(0,"VIEW");
 		m_MOEToolBar.SetButtonText(2,"Animation");
-		m_MOEToolBar.SetButtonText(3,"Density");
+		m_MOEToolBar.SetButtonText(3,"V/C");
 		m_MOEToolBar.SetButtonText(4,"Volume");
 		m_MOEToolBar.SetButtonText(5,"Speed");
 		m_MOEToolBar.SetButtonText(6,"Emissions");
