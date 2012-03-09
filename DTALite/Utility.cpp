@@ -281,7 +281,7 @@ CString g_GetAppRunningTime()
 	CTime EndTime = CTime::GetCurrentTime();
 	CTimeSpan ts = EndTime  - g_AppStartTime;
 
-	str = ts.Format( "App Clock: %H:%M:%S --" );
+	str = ts.Format( "CPU Clock: %H:%M:%S --" );
 	return str;
 }
 

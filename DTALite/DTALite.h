@@ -1167,6 +1167,10 @@ public:
 	int** m_OutboundLinkAry; //Outbound link array
 	int* m_OutboundSizeAry;  //Number of outbound links
 
+	int** m_OutboundMovementAry; //Outbound link movement array: for each link
+	int* m_OutboundMovementSizeAry;  //Number of outbound movement for each link
+	float** m_OutboundMovementCostAry; //Outbound link movement array: for each link
+
 	int** m_InboundLinkAry; //inbound link array
 	int* m_InboundSizeAry;  //Number of inbound links
 
@@ -1181,7 +1185,15 @@ public:
 	float* LabelTimeAry;               // label - time
 	int* NodePredAry;  
 	float* LabelCostAry;
+
 	int* LinkNoAry;  //record link no according to NodePredAry
+
+	// movement calculation
+	int* LinkStatusAry;                // Node status array used in KSP;
+	float* LinkLabelTimeAry;               // label - time
+	int* LinkPredAry;  
+	float* LinkLabelCostAry;
+
 
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
@@ -1190,6 +1202,8 @@ public:
 	float** TD_LabelCostAry;
 	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
 	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
 
 	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
@@ -1213,6 +1227,10 @@ public:
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
+		//movement-specific array
+		m_OutboundMovementAry = AllocateDynamicArray<int>(m_LinkSize,m_AdjLinkSize+1);
+		m_OutboundMovementCostAry = AllocateDynamicArray<float>(m_LinkSize,m_AdjLinkSize+1);
+		m_OutboundMovementSizeAry = new int[m_LinkSize];
 
 		m_LinkList = new int[m_NodeSize];
 
@@ -1234,8 +1252,15 @@ public:
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
 
+		LinkStatusAry = new int[m_LinkSize];                    // Node status array used in KSP;
+		LinkPredAry = new int[m_LinkSize];
+		LinkLabelTimeAry = new float[m_LinkSize];                     // label - time
+		LinkLabelCostAry = new float[m_LinkSize];                     // label - cost
+
+
 		if(m_OutboundSizeAry==NULL || m_LinkList==NULL || m_FromIDAry==NULL || m_ToIDAry==NULL  ||
-			NodeStatusAry ==NULL || NodePredAry==NULL || LabelTimeAry==NULL || LabelCostAry==NULL)
+			NodeStatusAry ==NULL || NodePredAry==NULL || LabelTimeAry==NULL || LabelCostAry==NULL
+			|| LinkStatusAry ==NULL || LinkPredAry==NULL || LinkLabelTimeAry==NULL || LinkLabelCostAry==NULL)
 		{
 			cout << "Error: insufficent memory.";
 			g_ProgramStop();
@@ -1254,6 +1279,11 @@ public:
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
+
+		// delete movement array
+		if(m_OutboundMovementSizeAry)  delete m_OutboundMovementSizeAry;
+		DeallocateDynamicArray<int>(m_OutboundMovementAry,m_LinkSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<float>(m_OutboundMovementCostAry,m_LinkSize, m_AdjLinkSize+1);
 
 
 		if(m_LinkList) delete m_LinkList;
@@ -1275,6 +1305,10 @@ public:
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
 
+		if(LinkStatusAry) delete LinkStatusAry;                 // Node status array used in KSP;
+		if(LinkPredAry) delete LinkPredAry;
+		if(LinkLabelTimeAry) delete LinkLabelTimeAry;
+		if(LinkLabelCostAry) delete LinkLabelCostAry;
 
 
 	};
@@ -1289,6 +1323,9 @@ public:
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	//movement based shortest path
+	int FindBestPathWithVOT_Movement(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag);
+
 	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
 	int  FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
