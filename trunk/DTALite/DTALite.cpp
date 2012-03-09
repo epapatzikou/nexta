@@ -1025,9 +1025,16 @@ void ReadInputFiles()
 
 	//*******************************
 	// step 7: time-dependent demand profile input
-	cout << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
-	g_LogFile << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
 
+	if(g_TrafficFlowModelFlag==0)
+	{
+		cout << "Step 7: Static Traffic Assignment Mode: Skip reading file input_temporal_demand_profile.csv..."<< endl;
+		g_LogFile << "Step 7: Static Traffic Assignment Mode: Skip reading file input_temporal_demand_profile.csv..."<< endl;
+	}else
+	{
+		cout << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
+		g_LogFile << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
+	
 	CCSVParser parser_TDProfile;
 
 	if (parser_TDProfile.OpenCSVFile("input_temporal_demand_profile.csv"))
@@ -1054,7 +1061,7 @@ void ReadInputFiles()
 			element.to_zone_id = to_zone_id;
 
 
-			for(int t = 20; t< MAX_TIME_INTERVAL_SIZE; t++)
+			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
 				std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo (t);
 				double ratio = 0;
@@ -1073,6 +1080,9 @@ void ReadInputFiles()
 
 
 	}
+	}
+
+
 
 	//*******************************
 	// step 8: VOT input
@@ -1101,7 +1111,7 @@ void ReadInputFiles()
 
 
 			int VOT;
-			if(parser_VOT.GetValueByFieldName("VOT",VOT) == false)
+			if(parser_VOT.GetValueByFieldName("VOT_dollar_per_hour",VOT) == false)
 				break;
 
 			float percentage;
@@ -1242,10 +1252,10 @@ void ReadInputFiles()
 	cout << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
 	cout <<	"Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
 
-	if(g_DemandLoadingEndTimeInMin+60 > g_PlanningHorizon)
+	if(g_DemandLoadingEndTimeInMin + 120 > g_PlanningHorizon)
 	{
 		//reset simulation horizon to make sure it is longer than the demand loading horizon
-		g_PlanningHorizon = g_DemandLoadingEndTimeInMin+60;
+		g_PlanningHorizon = g_DemandLoadingEndTimeInMin+ 120;
 
 		for(unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
 		{
@@ -1507,7 +1517,6 @@ void g_ReadDemandFile()
 		bFileReady = true;
 		int line_no = 1;
 
-
 		while(parser_demand.ReadRecord())
 		{
 			int originput_zone, destination_zone;
@@ -1531,6 +1540,12 @@ void g_ReadDemandFile()
 				ending_time_in_min = 60;
 			}
 
+			// static traffic assignment, set the demand loading horizon to [0, 60 min]
+			if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
+			{
+			starting_time_in_min  = 0;
+			ending_time_in_min = 60;
+			}
 
 			for(unsigned int demand_type = 1; demand_type <= g_DemandTypeMap.size(); demand_type++)
 			{
@@ -1575,7 +1590,7 @@ void g_ReadDemandFile()
 								TimeDependentDemandProfile element = g_TimeDependentDemandProfileVector[i];
 								if( (element.from_zone_id == originput_zone || element.from_zone_id == 0)
 									&&(element.to_zone_id == destination_zone || element.to_zone_id == 0)
-									&& (element.demand_type == demand_type || demand_type ==0) )
+									&& (element.demand_type == demand_type || element.demand_type ==0) )
 								{
 
 									time_dependent_ratio = element.time_dependent_ratio[time_interval];
@@ -1624,12 +1639,13 @@ void g_ReadDemandFile()
 	cout << "Step 11: Converting demand flow to vehicles..."<< endl;
 	g_scenario_short_description << "load vehicles from input_demand.csv;";
 
-
 	// for static traffic assignment, reset g_AggregationTimetInterval to the demand loading horizon
 	//
 	if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 	{
-	g_AggregationTimetInterval =  g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin;
+		g_DemandLoadingStartTimeInMin = 0;
+		g_DemandLoadingEndTimeInMin = 60;
+		g_AggregationTimetInterval =  60;
 	}
 
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
@@ -2073,8 +2089,8 @@ void g_ReadDTALiteSettings()
 
 	if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 	{
-		g_AggregationTimetInterval = 600;
-		g_PlanningHorizon = 600;
+		g_AggregationTimetInterval = 60;  // one hour
+		g_PlanningHorizon = 60; // one hour
 		g_NumberOfInnerIterations = 0;
 		g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
 		g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, IniFilePath_DTA);
