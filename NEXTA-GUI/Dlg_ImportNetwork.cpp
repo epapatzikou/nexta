@@ -167,7 +167,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			pNode->m_NodeID = i;
 			pNode->m_ZoneID = 0;
 			pNode->m_ControlType = control_type;
-			
+
 			m_pDOC->m_NodeSet.push_back(pNode);
 			m_pDOC->m_NodeIDMap[i] = pNode;
 			m_pDOC->m_NodeIDtoNameMap[i] = id;
@@ -231,7 +231,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format("from_node_id %d at row %d cannot be found in the node table!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-//					rsLink.Close();
+					//					rsLink.Close();
 					rsLink.MoveNext();
 					continue;
 				}
@@ -240,7 +240,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format("to_node_id %d at row %d cannot be found in the node table!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-//					rsLink.Close();
+					//					rsLink.Close();
 					rsLink.MoveNext();
 					continue;
 				}
@@ -391,8 +391,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_ToNodeNumber = to_node_id;
 						pLink->m_Direction  = 1;
 
-					pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[from_node_id];
-					pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[to_node_id];
+						pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[from_node_id];
+						pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[to_node_id];
 
 
 						for(unsigned si = 0; si < CoordinateVector.size(); si++)
@@ -410,8 +410,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_FromNodeNumber = to_node_id;
 						pLink->m_ToNodeNumber = from_node_id;
 						pLink->m_Direction  = 1;
-					pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[to_node_id];
-					pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[from_node_id];
+						pLink->m_FromNodeID = m_pDOC->m_NodeNametoIDMap[to_node_id];
+						pLink->m_ToNodeID= m_pDOC->m_NodeNametoIDMap[from_node_id];
 
 
 						for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
@@ -438,8 +438,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					if(length < 0.00001) // zero value in length field, we consider no length info.
 					{
-					float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
-					pLink->m_Length = distance_in_mile;
+						float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
+						pLink->m_Length = distance_in_mile;
 					}
 
 					pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
@@ -681,7 +681,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	}
 
-	
+
 	strSQL = m_pDOC->ConstructSQL("4-1-vehicle-type");
 
 
@@ -704,7 +704,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			{
 				AfxMessageBox("Field vehicle_type is too large. Please contact the program developer.");
 				return;
-			
+
 			}
 			if(type_no <=0)
 				break;
@@ -790,7 +790,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				AfxMessageBox("Sum of percentage_of_pretrip_info and percentage_of_enroute_info cannot be greater than 100% in the 4-2-demand-type table. Please check.");
 				ratio_pretrip = 0;
 				ratio_enroute = 0;
-		
+
 			}
 
 
@@ -811,22 +811,22 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 			for(unsigned int i=0; i< m_pDOC->m_VehicleTypeVector.size(); i++)
 			{
-					CString str_percentage_of_vehicle_type; 
-					str_percentage_of_vehicle_type.Format ("percentage_of_vehicle_type%d", i+1);
-					float percentage = rsDemandType.GetDouble(str_percentage_of_vehicle_type,bExist,false);
-					if(!bExist)
-					{
+				CString str_percentage_of_vehicle_type; 
+				str_percentage_of_vehicle_type.Format ("percentage_of_vehicle_type%d", i+1);
+				float percentage = rsDemandType.GetDouble(str_percentage_of_vehicle_type,bExist,false);
+				if(!bExist)
+				{
 
-						CString str_percentage_of_vehicle_type_warning; 
-						str_percentage_of_vehicle_type_warning.Format("Field %s cannot be found in the demand table.", str_percentage_of_vehicle_type);
+					CString str_percentage_of_vehicle_type_warning; 
+					str_percentage_of_vehicle_type_warning.Format("Field %s cannot be found in the demand table.", str_percentage_of_vehicle_type);
 
-						AfxMessageBox(str_percentage_of_vehicle_type_warning);
-						return;
-					}
+					AfxMessageBox(str_percentage_of_vehicle_type_warning);
+					return;
+				}
 
-					element.vehicle_type_percentage[i] = percentage*100;
+				element.vehicle_type_percentage[i] = percentage*100;
 
-			
+
 			}
 
 
@@ -910,28 +910,28 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-					DTADemand element;
-					element.from_zone_id = origin_zone_id;
-					element.to_zone_id = destination_zone_id;
+				DTADemand element;
+				element.from_zone_id = origin_zone_id;
+				element.to_zone_id = destination_zone_id;
 
-					if(origin_zone_id > m_pDOC->m_ODSize)
-					{
+				if(origin_zone_id > m_pDOC->m_ODSize)
+				{
 					CString str_error; 
 					str_error.Format ("Error: Value from_zone_id > numbers of zones at line no.%d in the demand table.",line_no);
 					AfxMessageBox(str_error);
 					return;
-					}
+				}
 
-					if(destination_zone_id > m_pDOC->m_ODSize)
-					{
+				if(destination_zone_id > m_pDOC->m_ODSize)
+				{
 					CString str_error; 
 					str_error.Format ("Error: Value to_zone_id > numbers of zones at line no.%d in the demand table.",line_no);
 					AfxMessageBox(str_error);
 					return;
-					}
+				}
 
-					element.starting_time_in_min = starting_time_in_min;
-					element.ending_time_in_min = ending_time_in_min;
+				element.starting_time_in_min = starting_time_in_min;
+				element.ending_time_in_min = ending_time_in_min;
 
 				for(unsigned int	demand_type = 0; demand_type < m_pDOC->m_DemandTypeVector.size(); demand_type++)
 				{
@@ -951,11 +951,11 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_pDOC->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 					total_demand+=number_of_vehicles;
 
-					element.number_of_vehicles[demand_type] = number_of_vehicles;
+					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
 
 
 				}
-					m_pDOC->m_DemandVector.push_back (element);
+				m_pDOC->m_DemandVector.push_back (element);
 
 				rsDemand.MoveNext ();
 				line_no++;
@@ -967,9 +967,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	}
 
-	
+
 	strSQL = m_pDOC->ConstructSQL("4-4-temporal-profile");
 
+	
 	if(strSQL.GetLength () > 0)
 	{
 		// Read record
@@ -1017,23 +1018,25 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			element.series_name = rsDemandProfile.GetCString(CString("time_series_label"));
 
 			bool bWithDataFlag = false;
+
 			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 			{
 				CString time_stamp_str = m_pDOC->GetTimeStampFloatingPointStrFromIntervalNo (t);
-			double ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
+				TRACE("demand type = %d, t = %d, %s\n",demand_type, t,time_stamp_str );
+				double ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
 
-			if(bExist && ratio > 0.0000001)
-			{
-				element.time_dependent_ratio[t] = ratio;
-				bWithDataFlag = true;
-			}
+				if(bExist && ratio > 0.0000001)
+				{
+					element.time_dependent_ratio[t] = ratio;
+					bWithDataFlag = true;
+				}
 
 			}
 
 			if(from_zone_id == 0 && demand_type ==0 && !bWithDataFlag)   // no valid data
 				break;
 
-				m_pDOC->m_DemandProfileVector.push_back (element);
+			m_pDOC->m_DemandProfileVector.push_back (element);
 
 			rsDemandProfile.MoveNext ();
 		}
@@ -1068,10 +1071,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			if(pricing_type <=0)
 				break;
 
-			VOT = rsVOT.GetDouble(CString("VOT"),bExist,false);
+			VOT = rsVOT.GetDouble(CString("VOT_dollar_per_hour"),bExist,false);
 			if(!bExist)
 			{
-				AfxMessageBox("Field VOT cannot be found in the 5-VOT-distribution table.");
+				AfxMessageBox("Field VOT_dollar_per_hour cannot be found in the 5-VOT-distribution table.");
 				return;
 			}
 
@@ -1141,182 +1144,182 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	if(strSQL.GetLength() > 0)
 	{
-		// Read record
-		CRecordsetExt rsSensorLocation(&m_pDOC->m_Database);
-		rsSensorLocation.Open(dbOpenDynaset, strSQL);
+	// Read record
+	CRecordsetExt rsSensorLocation(&m_pDOC->m_Database);
+	rsSensorLocation.Open(dbOpenDynaset, strSQL);
 
-		while(!rsSensorLocation.IsEOF())
-		{
-			DTA_sensor sensor;
-			sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field sensor_id cannot be found in the point-sensor-location table.");
-				return;
-			}
-
-			sensor.SensorType =  rsSensorLocation.GetCString("sensor_type");
-
-			bool b_find_link_flag = false;
-
-			sensor.FromNodeNumber =  rsSensorLocation.GetLong(CString("from_node_id"),bExist,false);
-
-			if(bExist)
-			{
-
-				sensor.ToNodeNumber =  rsSensorLocation.GetLong(CString("to_node_id"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field from_node_id cannot be found in the point-sensor-location table.");
-					return;
-				}
-				sensor.RelativeLocationRatio = rsSensorLocation.GetLong(CString("relative_location_ratio"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field relative_location_ratio cannot be found in the point-sensor-location table.");
-					return;
-				}
-
-				if(sensor.FromNodeNumber!= 0 && sensor.ToNodeNumber!=0)
-				{
-					DTALink* pLink = m_pDOC->FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,"5-1-point-sensor-location" );
-
-					if(pLink!=NULL)
-					{
-						sensor.LinkID = pLink->m_LinkNo ;
-						m_pDOC->m_SensorVector.push_back(sensor);
-						m_pDOC->m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
-						pLink->m_bSensorData  = true;
-						pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
-
-						b_find_link_flag  = true;
-
-					}else
-					{
-
-						CString msg;
-						msg.Format ("Link %d -> %d in point-sensor-location does not exit in the existing link data.");
-						AfxMessageBox(msg);
-						break;
-						return;
-
-					}
-				}
-
-			}
-
-			if(b_find_link_flag  == false)  // no link from to nodes have been defined. 
-			{
-				float x = rsSensorLocation.GetDouble(CString("x"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("No link information is specified so field x is required in the point-sensor-location table.");
-					return;
-				}
-
-				float y = rsSensorLocation.GetDouble(CString("y"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("No link information is specified so field y is required in the point-sensor-location table.");
-					return;
-				}
-				CString orientation = rsSensorLocation.GetCString("orientation");
-
-				sensor.LinkID = m_pDOC->FindLinkFromSensorLocation(x,y,orientation);
-
-				if(sensor.LinkID > 0)
-				{   
-					DTALink* pLink = m_pDOC->FindLinkWithLinkNo(sensor.LinkID );
-					sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
-					sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
-					sensor.RelativeLocationRatio = 0.5;		
-					pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
-					m_pDOC->m_SensorVector.push_back(sensor);
-				}
-
-			}
-
-			rsSensorLocation.MoveNext ();
-		}
-		rsSensorLocation.Close();
-		str_msg.Format ( "%d sensors imported.", m_pDOC->m_SensorVector.size());
-		m_MessageList.AddString (str_msg);
+	while(!rsSensorLocation.IsEOF())
+	{
+	DTA_sensor sensor;
+	sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field sensor_id cannot be found in the point-sensor-location table.");
+	return;
 	}
 
-/// AVI sensor location
+	sensor.SensorType =  rsSensorLocation.GetCString("sensor_type");
+
+	bool b_find_link_flag = false;
+
+	sensor.FromNodeNumber =  rsSensorLocation.GetLong(CString("from_node_id"),bExist,false);
+
+	if(bExist)
+	{
+
+	sensor.ToNodeNumber =  rsSensorLocation.GetLong(CString("to_node_id"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field from_node_id cannot be found in the point-sensor-location table.");
+	return;
+	}
+	sensor.RelativeLocationRatio = rsSensorLocation.GetLong(CString("relative_location_ratio"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field relative_location_ratio cannot be found in the point-sensor-location table.");
+	return;
+	}
+
+	if(sensor.FromNodeNumber!= 0 && sensor.ToNodeNumber!=0)
+	{
+	DTALink* pLink = m_pDOC->FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,"5-1-point-sensor-location" );
+
+	if(pLink!=NULL)
+	{
+	sensor.LinkID = pLink->m_LinkNo ;
+	m_pDOC->m_SensorVector.push_back(sensor);
+	m_pDOC->m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
+	pLink->m_bSensorData  = true;
+	pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+
+	b_find_link_flag  = true;
+
+	}else
+	{
+
+	CString msg;
+	msg.Format ("Link %d -> %d in point-sensor-location does not exit in the existing link data.");
+	AfxMessageBox(msg);
+	break;
+	return;
+
+	}
+	}
+
+	}
+
+	if(b_find_link_flag  == false)  // no link from to nodes have been defined. 
+	{
+	float x = rsSensorLocation.GetDouble(CString("x"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("No link information is specified so field x is required in the point-sensor-location table.");
+	return;
+	}
+
+	float y = rsSensorLocation.GetDouble(CString("y"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("No link information is specified so field y is required in the point-sensor-location table.");
+	return;
+	}
+	CString orientation = rsSensorLocation.GetCString("orientation");
+
+	sensor.LinkID = m_pDOC->FindLinkFromSensorLocation(x,y,orientation);
+
+	if(sensor.LinkID > 0)
+	{   
+	DTALink* pLink = m_pDOC->FindLinkWithLinkNo(sensor.LinkID );
+	sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
+	sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
+	sensor.RelativeLocationRatio = 0.5;		
+	pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+	m_pDOC->m_SensorVector.push_back(sensor);
+	}
+
+	}
+
+	rsSensorLocation.MoveNext ();
+	}
+	rsSensorLocation.Close();
+	str_msg.Format ( "%d sensors imported.", m_pDOC->m_SensorVector.size());
+	m_MessageList.AddString (str_msg);
+	}
+
+	/// AVI sensor location
 
 	strSQL = m_pDOC->ConstructSQL("5-2-avi-sensor-location");
 
 	if(strSQL.GetLength() > 0)
 	{
-		// Read record
-		CRecordsetExt rsAVILink(&m_pDOC->m_Database);
-		rsAVILink.Open(dbOpenDynaset, strSQL);
+	// Read record
+	CRecordsetExt rsAVILink(&m_pDOC->m_Database);
+	rsAVILink.Open(dbOpenDynaset, strSQL);
 
-		while(!rsAVILink.IsEOF())
-		{
-			CAVISensorPair element; 
+	while(!rsAVILink.IsEOF())
+	{
+	CAVISensorPair element; 
 
-			element.sensor_pair_id  = rsAVILink.GetLong(CString("sensor_pair_id"),bExist,false);
+	element.sensor_pair_id  = rsAVILink.GetLong(CString("sensor_pair_id"),bExist,false);
 
-			if(!bExist)
-			{
-				m_MessageList.AddString ("Field sensor_pair_id cannot be found in the AVI-sensor-location table.");
-				rsAVILink.Close();
-				return;
-			}
-
-			if(element.sensor_pair_id  == 0)
-				break;
-
-			element.from_node_id  = rsAVILink.GetLong(CString("from_node_id"),bExist,false);
-
-			if(!bExist)
-			{
-				m_MessageList.AddString ("Field from_node_id cannot be found in the AVI-sensor-location table.");
-				rsAVILink.Close();
-				return;
-			}
-
-			element.to_node_id  = rsAVILink.GetLong(CString("to_node_id"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString ("Field to_node_id cannot be found in the AVI-sensor-location table.");
-				rsAVILink.Close();
-				return;
-			}
-
-			if(m_pDOC->m_NodeNametoIDMap.find(element.from_node_id)== m_pDOC->m_NodeNametoIDMap.end())
-			{
-				str_msg.Format("from_node_id %d at pair %d cannot be found in the node table!",element.from_node_id, element.sensor_pair_id);
-				m_MessageList.AddString(str_msg);
-				rsAVILink.Close();
-				return;
-			}
-
-			if(m_pDOC->m_NodeNametoIDMap.find(element.to_node_id)== m_pDOC->m_NodeNametoIDMap.end())
-			{
-				str_msg.Format("to_node_id %d at pair %d cannot be found in the node table!",element.to_node_id, element.sensor_pair_id);
-				m_MessageList.AddString(str_msg);
-				rsAVILink.Close();
-				return;
-			}
-
-			DTALink* pLink = m_pDOC->AddNewLink(element.from_node_id, element.to_node_id, true, true);
-			if(pLink!=NULL)
-			{
-				pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
-				element.pLink = pLink;
-				m_pDOC->m_AVISensorMap[element.sensor_pair_id] = element;
-			}
-
-			rsAVILink.MoveNext ();
-		}
-		rsAVILink.Close  ();
-		str_msg.Format("%d AVI sensor location records loaded.",m_pDOC->m_AVISensorMap.size());
-		m_MessageList.AddString (str_msg);
+	if(!bExist)
+	{
+	m_MessageList.AddString ("Field sensor_pair_id cannot be found in the AVI-sensor-location table.");
+	rsAVILink.Close();
+	return;
 	}
-*/
+
+	if(element.sensor_pair_id  == 0)
+	break;
+
+	element.from_node_id  = rsAVILink.GetLong(CString("from_node_id"),bExist,false);
+
+	if(!bExist)
+	{
+	m_MessageList.AddString ("Field from_node_id cannot be found in the AVI-sensor-location table.");
+	rsAVILink.Close();
+	return;
+	}
+
+	element.to_node_id  = rsAVILink.GetLong(CString("to_node_id"),bExist,false);
+	if(!bExist)
+	{
+	m_MessageList.AddString ("Field to_node_id cannot be found in the AVI-sensor-location table.");
+	rsAVILink.Close();
+	return;
+	}
+
+	if(m_pDOC->m_NodeNametoIDMap.find(element.from_node_id)== m_pDOC->m_NodeNametoIDMap.end())
+	{
+	str_msg.Format("from_node_id %d at pair %d cannot be found in the node table!",element.from_node_id, element.sensor_pair_id);
+	m_MessageList.AddString(str_msg);
+	rsAVILink.Close();
+	return;
+	}
+
+	if(m_pDOC->m_NodeNametoIDMap.find(element.to_node_id)== m_pDOC->m_NodeNametoIDMap.end())
+	{
+	str_msg.Format("to_node_id %d at pair %d cannot be found in the node table!",element.to_node_id, element.sensor_pair_id);
+	m_MessageList.AddString(str_msg);
+	rsAVILink.Close();
+	return;
+	}
+
+	DTALink* pLink = m_pDOC->AddNewLink(element.from_node_id, element.to_node_id, true, true);
+	if(pLink!=NULL)
+	{
+	pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+	element.pLink = pLink;
+	m_pDOC->m_AVISensorMap[element.sensor_pair_id] = element;
+	}
+
+	rsAVILink.MoveNext ();
+	}
+	rsAVILink.Close  ();
+	str_msg.Format("%d AVI sensor location records loaded.",m_pDOC->m_AVISensorMap.size());
+	m_MessageList.AddString (str_msg);
+	}
+	*/
 }
 
 
@@ -1331,7 +1334,7 @@ void CDlg_ImportNetwork::OnBnClickedImportNetworkOnly()
 
 void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 {
-/*
+	/*
 	// Read record
 
 
@@ -1339,132 +1342,132 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 
 	if(strSQL.GetLength() > 0)
 	{
-		int number_of_samples = 0;
-		// Read record
-		CRecordsetExt rsSensorData(&m_pDOC->m_Database);
-		rsSensorData.Open(dbOpenDynaset, strSQL);
+	int number_of_samples = 0;
+	// Read record
+	CRecordsetExt rsSensorData(&m_pDOC->m_Database);
+	rsSensorData.Open(dbOpenDynaset, strSQL);
 
-		while(!rsSensorData.IsEOF())
-		{
-			int  sensor_pair_id =  rsSensorData.GetLong(CString("sensor_pair_id"),bExist,false);
-			TRACE("\nsensor_pair_id  = %d", sensor_pair_id);
-			if(!bExist)
-			{
-				AfxMessageBox("Field sensor_pair_id cannot be found in the AVI-sensor-data table.");
-				return;
-			}
-
-			if(sensor_pair_id == 0)
-				break;
-
-			int  modeling_timestamp_day =  rsSensorData.GetLong(CString("modeling_timestamp_day"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field modeling_timestamp_day cannot be found in the AVI-sensor-data table.");
-				return;
-			}
-
-			int  modeling_timestamp_min =  rsSensorData.GetLong(CString("modeling_timestamp_min"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field modeling_timestamp_min cannot be found in the AVI-sensor-data table.");
-				return;
-			}
-			float  total_link_flow_per_interval =  rsSensorData.GetDouble(CString("sample_count"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field sample_count cannot be found in the AVI-sensor-data table.");
-				return;
-			}
-
-			float  AvgTravelTime = rsSensorData.GetDouble(CString("travel_time_in_min"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field travel_time_in_min cannot be found in the AVI-sensor-data table.");
-				return;
-			}
-
-
-
-			if(m_pDOC->m_AVISensorMap.find(sensor_pair_id) == m_pDOC->m_AVISensorMap.end())
-			{
-				str_msg.Format("sensor_pair_id %d defined in row %d of the AVI-sensor-data table has not been defined in the AVI-sensor-location table!",sensor_pair_id,number_of_samples+2);
-				AfxMessageBox(str_msg);
-				rsSensorData.Close();
-				return;
-			}
-
-
-			DTALink* pLink = m_pDOC->m_AVISensorMap[sensor_pair_id].pLink;
-
-			m_pDOC->m_AVISensorMap[sensor_pair_id].number_of_samples +=1;
-			if(pLink!=NULL)
-			{
-				int t  = ((modeling_timestamp_day - 1)*1440+ modeling_timestamp_min) ;
-
-				if(t>=0  && t< (pLink->m_LinkMOEAry.size()-m_pDOC->m_AVISamplingTimeInterval))
-				{
-
-					float AvgLinkSpeed = pLink->m_SpeedLimit ;
-
-					if (AvgTravelTime>0)
-						AvgLinkSpeed = pLink->m_Length / (AvgTravelTime/60.0);  // per hour
-
-					if(m_pDOC->m_bSimulationDataLoaded == false)  // simulation data not loaded
-					{
-
-						pLink->m_LinkMOEAry[ t].ObsFlow = total_link_flow_per_interval*60/m_pDOC->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-						pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
-						pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
-
-						pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
-
-						// copy data to other intervals
-						for(int tt = 1; tt<m_pDOC->m_AVISamplingTimeInterval; tt++)
-						{
-							if(tt < pLink->m_LinkMOEAry.size())
-							{
-								pLink->m_LinkMOEAry[ t+tt].ObsFlow = pLink->m_LinkMOEAry[t].ObsFlow ;
-								pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
-								pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
-								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
-							}
-
-						}
-					}else // simulation data loaded
-					{
-
-						pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDOC->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-						pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
-						pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
-
-
-						pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
-
-						// copy data to other intervals
-						for(int tt = 1; tt<m_pDOC->m_AVISamplingTimeInterval; tt++)
-						{
-							if(tt < pLink->m_LinkMOEAry.size())
-							{
-								pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
-								pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
-								pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
-								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
-							}
-
-						}
-					}
-				}
-			}	
-
-			number_of_samples++;
-			rsSensorData.MoveNext ();
-		}
-		rsSensorData.Close  ();
-		str_msg.Format("%d AVI sensor data records loaded.",m_pDOC->m_AVISensorMap.size());
-		m_MessageList.AddString (str_msg);
+	while(!rsSensorData.IsEOF())
+	{
+	int  sensor_pair_id =  rsSensorData.GetLong(CString("sensor_pair_id"),bExist,false);
+	TRACE("\nsensor_pair_id  = %d", sensor_pair_id);
+	if(!bExist)
+	{
+	AfxMessageBox("Field sensor_pair_id cannot be found in the AVI-sensor-data table.");
+	return;
 	}
-*/
+
+	if(sensor_pair_id == 0)
+	break;
+
+	int  modeling_timestamp_day =  rsSensorData.GetLong(CString("modeling_timestamp_day"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field modeling_timestamp_day cannot be found in the AVI-sensor-data table.");
+	return;
+	}
+
+	int  modeling_timestamp_min =  rsSensorData.GetLong(CString("modeling_timestamp_min"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field modeling_timestamp_min cannot be found in the AVI-sensor-data table.");
+	return;
+	}
+	float  total_link_flow_per_interval =  rsSensorData.GetDouble(CString("sample_count"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field sample_count cannot be found in the AVI-sensor-data table.");
+	return;
+	}
+
+	float  AvgTravelTime = rsSensorData.GetDouble(CString("travel_time_in_min"),bExist,false);
+	if(!bExist)
+	{
+	AfxMessageBox("Field travel_time_in_min cannot be found in the AVI-sensor-data table.");
+	return;
+	}
+
+
+
+	if(m_pDOC->m_AVISensorMap.find(sensor_pair_id) == m_pDOC->m_AVISensorMap.end())
+	{
+	str_msg.Format("sensor_pair_id %d defined in row %d of the AVI-sensor-data table has not been defined in the AVI-sensor-location table!",sensor_pair_id,number_of_samples+2);
+	AfxMessageBox(str_msg);
+	rsSensorData.Close();
+	return;
+	}
+
+
+	DTALink* pLink = m_pDOC->m_AVISensorMap[sensor_pair_id].pLink;
+
+	m_pDOC->m_AVISensorMap[sensor_pair_id].number_of_samples +=1;
+	if(pLink!=NULL)
+	{
+	int t  = ((modeling_timestamp_day - 1)*1440+ modeling_timestamp_min) ;
+
+	if(t>=0  && t< (pLink->m_LinkMOEAry.size()-m_pDOC->m_AVISamplingTimeInterval))
+	{
+
+	float AvgLinkSpeed = pLink->m_SpeedLimit ;
+
+	if (AvgTravelTime>0)
+	AvgLinkSpeed = pLink->m_Length / (AvgTravelTime/60.0);  // per hour
+
+	if(m_pDOC->m_bSimulationDataLoaded == false)  // simulation data not loaded
+	{
+
+	pLink->m_LinkMOEAry[ t].ObsFlow = total_link_flow_per_interval*60/m_pDOC->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
+	pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+
+	pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
+
+	// copy data to other intervals
+	for(int tt = 1; tt<m_pDOC->m_AVISamplingTimeInterval; tt++)
+	{
+	if(tt < pLink->m_LinkMOEAry.size())
+	{
+	pLink->m_LinkMOEAry[ t+tt].ObsFlow = pLink->m_LinkMOEAry[t].ObsFlow ;
+	pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
+	pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
+	pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
+	}
+
+	}
+	}else // simulation data loaded
+	{
+
+	pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDOC->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
+	pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+
+
+	pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
+
+	// copy data to other intervals
+	for(int tt = 1; tt<m_pDOC->m_AVISamplingTimeInterval; tt++)
+	{
+	if(tt < pLink->m_LinkMOEAry.size())
+	{
+	pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
+	pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
+	pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
+	pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+	}
+
+	}
+	}
+	}
+	}	
+
+	number_of_samples++;
+	rsSensorData.MoveNext ();
+	}
+	rsSensorData.Close  ();
+	str_msg.Format("%d AVI sensor data records loaded.",m_pDOC->m_AVISensorMap.size());
+	m_MessageList.AddString (str_msg);
+	}
+	*/
 }
 
 void CDlg_ImportNetwork::OnLbnSelchangeList1()

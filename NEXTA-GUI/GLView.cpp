@@ -595,7 +595,7 @@ void CGLView::DrawAllObjects()
 			float color_power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode , (int)g_Simulation_Time_Stamp);
 
 			float value = 0;
-//			float color_power = pDoc->GetStaticLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
+//			float color_power = pDoc->GetLinkMOE((*iLink), speed, (int)g_Simulation_Time_Stamp+ m_PredictionHorizon,value);
 
 			float maximum_link_volume = 8000.0f;
 			float max_density = 200.0f;

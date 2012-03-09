@@ -66,6 +66,7 @@
 #include "Dlg_Find_Vehicle.h"
 #include "Dlg_TravelTimeReliability.h"
 #include "Dlg_GISDataExchange.h"
+#include "Dlg_Legend.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -73,6 +74,7 @@
 
 CDlgMOE *g_LinkMOEDlg = NULL;
 CDlgPathMOE	*g_pPathMOEDlg = NULL;
+CDlg_Legend* g_pLegendDlg = NULL;
 
 extern float g_Simulation_Time_Stamp;
 
@@ -199,6 +201,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_INCREASEOFFSETFORTWO, &CTLiteDoc::OnLinkIncreaseoffsetfortwo)
 	ON_COMMAND(ID_LINK_DECREASEOFFSETFORTWO, &CTLiteDoc::OnLinkDecreaseoffsetfortwo)
 	ON_COMMAND(ID_LINK_NOOFFSETANDNOBANDWIDTH, &CTLiteDoc::OnLinkNooffsetandnobandwidth)
+	ON_COMMAND(ID_VIEW_SHOWHIDE_LEGEND, &CTLiteDoc::OnViewShowhideLegend)
 	END_MESSAGE_MAP()
 
 
@@ -1519,14 +1522,17 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 					{
 
 						CString msg;
-						msg.Format ("Field %s in line %d of file %s cannot be found. ",str_number_of_vehicles.str().c_str (),lineno,lpszFileName);
+						msg.Format ("Field %s in line %d of file %s cannot be found. ",str_number_of_vehicles.str().c_str (),lineno+1,lpszFileName);
 						AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
 						return false;
 					}
 
-					element.number_of_vehicles[demand_type] = number_of_vehicles;
+					if(number_of_vehicles < -0.0001)
+						number_of_vehicles = 0;
 
-					if(origin_zone_id <= m_ODSize && destination_zone_id <= m_ODSize)
+					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
+
+					if(origin_zone_id < m_ODSize && destination_zone_id < m_ODSize)
 						m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 					else
 					{
@@ -1776,7 +1782,7 @@ bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 				break;
 			if(parser.GetValueByFieldName("percentage",percentage) == false)
 				break;
-			if(parser.GetValueByFieldName("VOT",VOT) == false)
+			if(parser.GetValueByFieldName("VOT_dollar_per_hour",VOT) == false)
 				break;
 
 			DTAVOTDistribution element;
@@ -2258,7 +2264,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 			for( type = 0; type < m_DemandTypeVector.size(); type++)
 			{
-				fprintf(st,"%6.4f,", (*itr).number_of_vehicles[type]);
+				fprintf(st,"%6.4f,", (*itr).number_of_vehicles_per_demand_type [type]);
 			}
 
 
@@ -2320,7 +2326,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		}
 
 		fprintf(st,"from_zone_id,to_zone_id,demand_type,time_series_name,");
-		for(int t = 20; t< MAX_TIME_INTERVAL_SIZE; t++)
+		for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 		{
 			CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,true);
 			fprintf(st, "%s,",time_stamp_str);
@@ -2971,7 +2977,7 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTim
 	return power;
 }
 
-float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime, int AggregationIntervalInMin, float &value)
+float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime, int AggregationIntervalInMin, float &value)
 {
 
 	float power = 0.0f;
@@ -2984,7 +2990,7 @@ float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int Curre
 	case MOE_volume:  power = pLink->m_StaticLinkVolume/max_link_volume; 
 		value = pLink->m_StaticLinkVolume;
 		break;
-	case MOE_speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_StaticSpeed)/max_speed_ratio; 
+	case MOE_speed:   power = pLink->m_StaticSpeed/max(1, pLink->m_SpeedLimit)*100; 
 		value = pLink->m_StaticSpeed;
 		break;
 	case MOE_vcratio: power = pLink->m_StaticVOC;
@@ -3027,7 +3033,7 @@ float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int Curre
 				case MOE_volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsFlow* pLink->m_NumLanes/max_link_volume;
 					value = pLink->m_LinkMOEAry_15min [CurrentTimeIntreval].ObsFlow* pLink->m_NumLanes;
 					break;
-				case MOE_speed:   power = pLink->m_SpeedLimit / max(1, pLink->m_LinkMOEAry[CurrentTime].ObsSpeed)/max_speed_ratio;
+				case MOE_speed:   power = pLink->m_LinkMOEAry[CurrentTime].ObsSpeed/max(1,pLink->m_SpeedLimit);
 					value = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsSpeed;
 					break;
 				case MOE_vcratio: power = pLink->m_LinkMOEAry_15min[CurrentTimeIntreval].ObsFlow/pLink->m_LaneCapacity;
@@ -3076,7 +3082,6 @@ float CTLiteDoc::GetStaticLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int Curre
 
 	}
 
-	if(power>=1.0f) power = 1.0f;
 	if(power<0.0f) power = 0.0f;
 
 	return power;
@@ -4064,7 +4069,7 @@ float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 					}
 					m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 
-					element.number_of_vehicles[type] = number_of_vehicles;
+					element.number_of_vehicles_per_demand_type .push_back (number_of_vehicles);
 					total_demand+= number_of_vehicles;
 
 					m_DemandVector.push_back (element);
@@ -6095,4 +6100,27 @@ void CTLiteDoc::OnLinkNooffsetandnobandwidth()
 	OffsetLink();
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnViewShowhideLegend()
+{
+	m_bShowLegend = !m_bShowLegend;
+
+	if(m_bShowLegend)
+	{
+		if(g_pLegendDlg==NULL)
+		{
+			g_pLegendDlg = new CDlg_Legend();
+			g_pLegendDlg->m_pDoc = this;
+			g_pLegendDlg->Create(IDD_DIALOG_Legend);
+		}
+
+		// update using pointer to the active document; 
+		g_pLegendDlg->m_pDoc = this;
+
+		g_pLegendDlg->ShowWindow(SW_SHOW);
+	}else
+	{
+		g_pLegendDlg->ShowWindow(SW_HIDE);
+	}
 }

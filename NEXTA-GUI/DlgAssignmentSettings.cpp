@@ -56,18 +56,18 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-//	m_SimulationMethodControl.AddString ("BPR Function");
+	m_SimulationMethodControl.AddString ("BPR Function");
 	m_SimulationMethodControl.AddString ("Point Queue Model");
 	m_SimulationMethodControl.AddString ("Spatial Queue Model");
 	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
-	m_SimulationMethodControl.SetCurSel(m_SimultionMethod-1);
+	m_SimulationMethodControl.SetCurSel(m_SimultionMethod);
 
 	m_DemandLoadingModeList.AddString ("Demand Table");
 	m_DemandLoadingModeList.AddString ("Vehicle File");
 	m_DemandLoadingModeList.SetCurSel(m_DemandLoadingMode);
 
-	m_RoutingMethod.AddString ("OD-based routing");
-	m_RoutingMethod.AddString ("Agent-based routing");
+	m_RoutingMethod.AddString ("OD-based routing: Zone centriod to zone centriod");
+	m_RoutingMethod.AddString ("Agent-based routing: activity location to activity location");
 	m_RoutingMethod.SetCurSel(m_agent_based_assignment_flag);
 
 
@@ -80,7 +80,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
 {
-	m_SimultionMethod = m_SimulationMethodControl.GetCurSel()+1;
+	m_SimultionMethod = m_SimulationMethodControl.GetCurSel();
 }
 void CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode()
 {
