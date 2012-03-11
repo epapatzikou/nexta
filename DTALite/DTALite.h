@@ -57,6 +57,7 @@ using namespace std;
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
+extern double g_DTASimulationInterval;
 
 #define	MAX_SPLABEL 99999.0f
 #define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
@@ -200,7 +201,7 @@ class SLinkMOE  // time-dependent link MOE
 public:
 
 	float TotalTravelTime;   // cumulative travel time for vehicles departing at this time interval
-
+	int TotalFlowCount;
 	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
 	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
 
@@ -217,6 +218,7 @@ public:
 	SLinkMOE()
 	{
 		TotalTravelTime = 0;
+		TotalFlowCount = 0;
 		CumulativeArrivalCount  = 0;
 		CumulativeDepartureCount = 0;
 		ExitQueueLength = 0;
@@ -234,6 +236,7 @@ public:
 	void SetupMOE()
 	{
 		TotalTravelTime = 0;
+		TotalFlowCount = 0;
 		CumulativeArrivalCount  = 0;
 		CumulativeDepartureCount = 0;
 		ExitQueueLength = 0;
@@ -264,10 +267,10 @@ public:
 	float SimuNumberOfVehicles;  // density
 	float SimuTravelTime;   // departure time based
 
-	// error
-	float ErrorFlowCount;
-	float ErrorNumberOfVehicles;  // density
-	float ErrorTravelTime;   // departure time based
+	// Deviation
+	float DeviationOfFlowCount;
+	float DeviationOfNumberOfVehicles;  // density
+	float DeviationOfTravelTime;   // departure time based
 
 	SLinkMeasurement()
 	{
@@ -280,9 +283,9 @@ public:
 		SimuTravelTime =0;
 
 	// error
-		ErrorFlowCount = 0;
-		ErrorNumberOfVehicles = 0;
-		ErrorTravelTime = 0;
+		DeviationOfFlowCount = 0;
+		DeviationOfNumberOfVehicles = 0;
+		DeviationOfTravelTime = 0;
 
 	}
 };
@@ -507,7 +510,7 @@ public:
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
-		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*600); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
+		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*60/g_DTASimulationInterval); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
 
@@ -638,7 +641,7 @@ public:
 
 	float GetSpeed(int time)
 	{
-		return m_Length/GetTravelTimeByMin(time,1)*60.0f;  // 60.0f converts min to hour, unit of speed: mph
+		return m_Length/max(0.1,GetTravelTimeByMin(time,1))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
 
 	int GetArrivalFlow(int time)
@@ -682,28 +685,38 @@ public:
 		if(GetNumLanes(starting_time)<0.01)   // road blockage
 			return 120; // unit min
 
-		int total_flow = m_LinkMOEAry[min(starting_time+time_interval, m_SimulationHorizon)].CumulativeArrivalCount - m_LinkMOEAry[starting_time].CumulativeArrivalCount;
+		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
 
-		if(total_flow >= 1)
-		{
+
+			int t;
 			float total_travel_time = 0;
+			int total_flow =0;
 			int time_end = min(starting_time+time_interval, m_SimulationHorizon);
-			for(int t=starting_time; t< time_end; t++)
+			for(t=starting_time; t< time_end; t++)
 			{
 				total_travel_time += m_LinkMOEAry[t].TotalTravelTime;
+				total_flow +=  m_LinkMOEAry[t].TotalFlowCount ;
 			}
 
-			travel_time =  total_travel_time/total_flow;
+			if(total_flow >= 1)
+			{
+				travel_time =  total_travel_time/total_flow;
+				if(travel_time < m_FreeFlowTravelTime)
+					travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
+			}
+			else
+				travel_time =  m_FreeFlowTravelTime;
 
-			if(travel_time < m_FreeFlowTravelTime)
-				travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
+			if(travel_time > 99999)
+			{
+			TRACE("Error, link %d", this ->m_LinkID );
+			for(t=starting_time; t< time_end; t++)
+			{
+				TRACE("t = %d,%f\n",t,m_LinkMOEAry[t].TotalTravelTime);
+			}
 
-		}
-		else
-			travel_time =  m_FreeFlowTravelTime;
+			}
 
-		if(travel_time< 0.000001f)
-			travel_time= 0.000001f;
 
 		return travel_time;
 
@@ -804,7 +817,7 @@ class DTAVehicle
 public:
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
-	SVehicleLink *m_aryVN; // link list arrary of a vehicle path
+	SVehicleLink *m_aryVN; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
 
 	float m_PrevSpeed;
 	std::map<int, int> m_OperatingModeCount;
@@ -812,8 +825,8 @@ public:
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
 
-	unsigned short m_OriginZoneID;  //range 0, 65535
-	unsigned short m_DestinationZoneID;  // range 0, 65535
+	int m_OriginZoneID;  
+	int m_DestinationZoneID; 
 
 	int m_OriginNodeID;
 	int m_DestinationNodeID;
@@ -1429,7 +1442,7 @@ struct PathArrayForEachODT // Jason : store the path set for each OD pair and ea
 	float   DeviationNumOfVehicles; 
 	int   MeasurementDeviationPathMarginal[100];
 	float AvgPathGap[100]; 
-	float NewVehicleSize[100]; 
+	float NewNumberOfVehicles[100]; 
 
 	int  LeastTravelTime;
 
@@ -1545,7 +1558,7 @@ void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_e
 
 
 
-void g_OutputVOCMOEData(char fname[_MAX_PATH]);
+void g_OutputLinkMOESummary(char fname[_MAX_PATH]);
 
 extern CString g_GetAppRunningTime();
 void g_ComputeFinalGapValue();

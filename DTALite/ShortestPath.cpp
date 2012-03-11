@@ -143,7 +143,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 void DTANetworkForSP::BuildPhysicalNetwork()
 {
 
-	bool bDebug = true;
+	bool bDebug = false;
 
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
@@ -161,7 +161,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 		m_InboundSizeAry[i] = 0;
 	}
 
-	for(i=0; i< m_NodeSize; i++)
+	for(i=0; i< m_LinkSize; i++)
 	{
 		m_OutboundMovementSizeAry[i] = 0;
 	}

@@ -397,6 +397,8 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 					cs.LaneClosureRatio = 1.0;
 				if(cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
+
+				cs.SpeedLimit = plink->m_SpeedLimit ; // use default speed limit for incidents
 				plink->CapacityReductionVector.push_back(cs);
 				count++;
 
@@ -1179,10 +1181,8 @@ void ReadInputFiles()
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.BuildPhysicalNetwork();
-	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
-
-
-	ConnectivityChecking(&PhysicalNetwork);
+//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+//	ConnectivityChecking(&PhysicalNetwork);
 
 	//*******************************
 	// step 10: demand trip file input
@@ -1739,6 +1739,8 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						fprintf(st, "%6.2f,",g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[pt]); 
 					}
 
+					fprintf(st,"\n");
+
 				}
 
 
@@ -1804,7 +1806,7 @@ void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithE
 }
 
 
-void g_OutputVOCMOEData(char fname[_MAX_PATH])
+void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 {
 
 	FILE* st = NULL;
@@ -1837,7 +1839,7 @@ void g_OutputVOCMOEData(char fname[_MAX_PATH])
 				g_NodeVector[pLink->m_ToNodeID].m_NodeName ,
 				g_DemandLoadingStartTimeInMin,
 				g_DemandLoadingEndTimeInMin,
-				pLink->CFlowArrivalCount,  // total arrival flow
+				pLink->CFlowArrivalCount / max(1,(g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/60),  // total hourly arrival flow 
 				pLink->m_MaximumServiceFlowRatePHPL,
 				voc_ratio, 
 				pLink->m_SpeedLimit,
@@ -1993,15 +1995,19 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
-	g_AssignmentLogFile.open ("assignment.log", ios::out);
+	g_AssignmentLogFile.open ("output_assignment_log.csv", ios::out);
 	if (g_AssignmentLogFile.is_open())
 	{
 		g_AssignmentLogFile.width(12);
 		g_AssignmentLogFile.precision(3) ;
 		g_AssignmentLogFile.setf(ios::fixed);
-	}else
+
+		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min)" << endl;
+	}
+	else
 	{
-		cout << "File assignment.log cannot be opened, and it might be locked by another program!" << endl;
+
+		cout << "File assignment_log.csv cannot be opened, and it might be locked by another program!" << endl;
 		cin.get();  // pause
 		return 0;
 	}
@@ -2047,10 +2053,10 @@ int g_InitializeLogFiles()
 	}
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
-	cout << "Version 0.98, Release Date 02/14/2012."<< endl;
+	cout << "Version 0.99, Release Date 03/08/2012."<< endl;
 
 	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
-	g_LogFile << "Version 0.98, Release Date 02/14/2012."<< endl;
+	g_LogFile << "Version 0.98, Release Date 03/08/2012."<< endl;
 
 	fopen_s(&g_ErrorFile,"error.log","w");
 	if(g_ErrorFile==NULL)
@@ -2181,7 +2187,7 @@ void g_ReadDTALiteSettings()
 
 void g_OutputSimulationStatistics(int NumberOfLinks = 9999999)
 {
-	g_OutputVOCMOEData("output_LinkMOE_summary.csv");  // output assignment results anyway
+	g_OutputLinkMOESummary("output_LinkMOE_summary.csv");  // output assignment results anyway
 	int Count=0; 
 	float AvgTravelTime, AvgDistance, AvgSpeed;
 	g_LogFile << "--- MOE for vehicles completing trips ---" << endl;
