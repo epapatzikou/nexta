@@ -182,8 +182,8 @@ public:
 			pow(input_upstream_ADT,coeff_upstream_ADT)*
 			pow(input_on_ramp_ADT,coeff_on_ramp_ADT)*
 			pow(input_off_ramp_ADT,coeff_off_ramp_ADT) /3.0f * 
-			exp( coeff_freeway_constant + coeff_inverse_spacing_in_feet/input_spacing_in_feet +
-			coeff_aux_lane * input_aux_lane / input_spacing_in_feet + 
+			exp( coeff_freeway_constant + coeff_inverse_spacing_in_feet/max(0.000001,input_spacing_in_feet) +
+			coeff_aux_lane * input_aux_lane / max(0.000001,input_spacing_in_feet) + 
 			coeff_num_lanes* input_num_lanes);
 
 		TRACE("crash %f\b",num_fi_crashes_per_year);
@@ -217,11 +217,11 @@ public:
 	{
 		Nmvnd_total = exp(-11.63 + 1.33*log(AADT) + log(Length));
 		Nmvnd_fatal_injury = Nmvnd_total*(exp(-12.08 + 1.25*log(AADT) 
-			+ log(Length))/(exp(-12.08 + 1.25*log(AADT) + log(Length)) + exp(-12.53 + 1.38*log(AADT) + log(Length))));
+			+ log(Length))/max(0.00000001,(exp(-12.08 + 1.25*log(AADT) + log(Length)) + exp(-12.53 + 1.38*log(AADT) + log(Length)))));
 		Nmvnd_PDO = Nmvnd_total - Nmvnd_fatal_injury;
 
 		Nsv_total = exp(-7.99 + 0.81*log(AADT) + log(Length));
-		Nsv_fatal_injury = Nsv_total*(exp(-7.37 + 0.61*log(AADT) + log(Length))/(exp(-7.37 + 0.61*log(AADT) + log(Length)) + exp(-8.5 + 0.84*log(AADT) + log(Length))));
+		Nsv_fatal_injury = Nsv_total*(exp(-7.37 + 0.61*log(AADT) + log(Length))/max(0.0000001,(exp(-7.37 + 0.61*log(AADT) + log(Length)) + exp(-8.5 + 0.84*log(AADT) + log(Length)))));
 		Nsv_PDO = Nsv_total - Nsv_fatal_injury;
 
 		Nmvd_total = pow(0.083*Num_Driveways_Per_Mile*Length*(AADT/15000),1);
@@ -231,58 +231,58 @@ public:
 		Nmv_total_3SG = Num_3SG_Intersections*exp(-12.13 + 1.11*log(AADT) + 0.26*log(volume_proportion_on_minor_leg*AADT));
 		Nmv_fatal_injury_3SG = Nmv_total_3SG*
 			exp(-11.58 + 1.02*log(AADT) + 0.17*log(volume_proportion_on_minor_leg*AADT))/
-			( exp(-11.58 + 1.02*log(AADT) + 0.17*log(volume_proportion_on_minor_leg*AADT))+ 
-			exp(-13.24 + 1.14*log(AADT) + 0.3*log(volume_proportion_on_minor_leg*AADT)));
+			max(0.00000001,( exp(-11.58 + 1.02*log(AADT) + 0.17*log(volume_proportion_on_minor_leg*AADT))+ 
+			exp(-13.24 + 1.14*log(AADT) + 0.3*log(volume_proportion_on_minor_leg*AADT))));
 		Nmv_PDO_3SG = Nmv_total_3SG - Nmv_fatal_injury_3SG;
 
 
 		Nmv_total_3ST = Num_3ST_Intersections*exp(-13.36 + 1.11*log(AADT) + 0.41*log(volume_proportion_on_minor_leg*AADT));
 		Nmv_fatal_injury_3ST = Nmv_total_3ST* exp(-14.01 + 1.16*log(AADT) + 0.3*log(volume_proportion_on_minor_leg*AADT))
-			/( exp(-14.01 + 1.16*log(AADT) + 0.3*log(volume_proportion_on_minor_leg*AADT))+ 
-			exp(-15.38 + 1.2*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT)) );
+			/max(0.00000001,( exp(-14.01 + 1.16*log(AADT) + 0.3*log(volume_proportion_on_minor_leg*AADT))+ 
+			exp(-15.38 + 1.2*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT)) ));
 		Nmv_PDO_3ST = Nmv_total_3ST - Nmv_fatal_injury_3ST ;
 
 
 		Nmv_total_4SG = Num_4SG_Intersections*exp(-10.99 + 1.07*log(AADT) + 0.23*log(volume_proportion_on_minor_leg*AADT));
 		Nmv_fatal_injury_4SG = Nmv_total_4SG
 			*(exp(-13.14 + 1.18*log(AADT) + 0.22*log(volume_proportion_on_minor_leg*AADT))
-			/(exp(-13.14 + 1.18*log(AADT) + 0.22*log(volume_proportion_on_minor_leg*AADT))
-			+exp(-11.02 + 1.02*log(AADT) + 0.24*log(volume_proportion_on_minor_leg*AADT))));
+			/max(0.00000001,(exp(-13.14 + 1.18*log(AADT) + 0.22*log(volume_proportion_on_minor_leg*AADT))
+			+exp(-11.02 + 1.02*log(AADT) + 0.24*log(volume_proportion_on_minor_leg*AADT)))));
 		Nmv_PDO_4SG = Nmv_total_4SG - Nmv_fatal_injury_4SG;
 
 		Nmv_total_4ST = Num_4ST_Intersections*exp(-8.9 + 0.82*log(AADT) + 0.25*log(volume_proportion_on_minor_leg*AADT));
 		Nmv_fatal_injury_4ST = Nmv_total_4ST
 			*(exp(-11.13 + 0.93*log(AADT) + 0.28*log(volume_proportion_on_minor_leg*AADT))
-			/( exp(-11.13 + 0.93*log(AADT) + 0.28*log(volume_proportion_on_minor_leg*AADT))
-			+exp(-8.74 + 0.77*log(AADT) + 0.23*log(volume_proportion_on_minor_leg*AADT))));
+			/max(0.00000001,(exp(-11.13 + 0.93*log(AADT) + 0.28*log(volume_proportion_on_minor_leg*AADT))
+			+exp(-8.74 + 0.77*log(AADT) + 0.23*log(volume_proportion_on_minor_leg*AADT)))));
 		Nmv_PDO_4ST = Nmv_total_4ST - Nmv_fatal_injury_4ST;
 
 		Nsv_total_3SG = Num_3SG_Intersections*exp(-9.02 + 0.42*log(AADT) + 0.4*log(volume_proportion_on_minor_leg*AADT));
 		Nsv_fatal_injury_3SG =Nsv_total_3SG
 			*(exp(-9.75 + 0.27*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT))
-			/( exp(-9.75 + 0.27*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT))
-			+exp(-9.08 + 0.45*log(AADT) + 0.33*log(volume_proportion_on_minor_leg*AADT))));
+			/max(0.000001,( exp(-9.75 + 0.27*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT))
+			+exp(-9.08 + 0.45*log(AADT) + 0.33*log(volume_proportion_on_minor_leg*AADT)))));
 		Nsv_PDO_3SG = Nsv_total_3SG - Nsv_fatal_injury_3SG;
 
 		Nsv_total_3ST = Num_3ST_Intersections*exp(-6.81 + 0.16*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT));
 		Nsv_fatal_injury_3ST = Nsv_total_3ST
 			*(0.31*exp(-6.81 + 0.16*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT)))
-			/((0.31*exp(-6.81 + 0.16*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT)))
-			+ exp(-8.36 + 0.25*log(AADT) + 0.55*log(volume_proportion_on_minor_leg*AADT) ) );
+			/max(0.0000001,((0.31*exp(-6.81 + 0.16*log(AADT) + 0.51*log(volume_proportion_on_minor_leg*AADT)))
+			+ exp(-8.36 + 0.25*log(AADT) + 0.55*log(volume_proportion_on_minor_leg*AADT) ) ));
 		NSv_PDO_3ST = Nsv_total_3ST - Nsv_fatal_injury_3ST;
 
 		Nsv_total_4SG = Num_4SG_Intersections*exp(-10.21 + 0.68*log(AADT) + 0.27*log(volume_proportion_on_minor_leg*AADT));
 		Nsv_fatal_injury_4SG = Nsv_total_4SG*
 			exp(-9.25 + 0.43*log(AADT) + 0.29*log(volume_proportion_on_minor_leg*AADT))
-			/ (exp(-9.25 + 0.43*log(AADT) + 0.29*log(volume_proportion_on_minor_leg*AADT))
-			+ exp(-11.34 + 0.78*log(AADT) + 0.25*log(volume_proportion_on_minor_leg*AADT)));
+			/ max(0.000001,(exp(-9.25 + 0.43*log(AADT) + 0.29*log(volume_proportion_on_minor_leg*AADT))
+			+ exp(-11.34 + 0.78*log(AADT) + 0.25*log(volume_proportion_on_minor_leg*AADT))));
 		Nsv_PDO_4SG = Nsv_total_4SG - Nsv_fatal_injury_4SG;
 
 		Nsv_total_4ST = Num_4ST_Intersections*exp(-5.33 + 0.33*log(AADT) + 0.12*log(volume_proportion_on_minor_leg*AADT));
 		Nsv_fatal_injury_4ST = Nsv_total_4ST*
 			(0.28*exp(-5.33 + 0.33*log(AADT) + 0.12*log(volume_proportion_on_minor_leg*AADT))
-			/(0.28*exp(-5.33 + 0.33*log(AADT) + 0.12*log(volume_proportion_on_minor_leg*AADT))
-			+exp(-7.04 + 0.36*log(AADT) + 0.25*log(volume_proportion_on_minor_leg*AADT))));
+			/max(0.000001,(0.28*exp(-5.33 + 0.33*log(AADT) + 0.12*log(volume_proportion_on_minor_leg*AADT))
+			+exp(-7.04 + 0.36*log(AADT) + 0.25*log(volume_proportion_on_minor_leg*AADT)))));
 		NSv_PDO_4ST = Nsv_total_4ST - Nsv_fatal_injury_4ST ;
 
 		TRACE("%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n",

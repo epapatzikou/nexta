@@ -68,9 +68,9 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 	std::list<struc_vehicle_item>::iterator vii;
 
-	int vehicle_id_trace = 0;
-	int link_id_trace = 0;
-	bool debug_flag = true;
+	int vehicle_id_trace = -1;
+	int link_id_trace = -1;
+	bool debug_flag = false;
 
 	//	TRACE("st=%d\n", simulation_time_interval_no);
 	//DTALite:
@@ -166,10 +166,10 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
 				TRACE("Step 1: Time %f: Load vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
 
-			int VehicleSize = (int)( g_LinkVector[li]->EntranceQueue.size() + g_LinkVector[li]->ExitQueue.size());
+			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)( g_LinkVector[li]->EntranceQueue.size() + g_LinkVector[li]->ExitQueue.size());
 
 			// determine link in capacity 
-			float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - VehicleSize;
+			float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 
 			// if we use BPR function, no density constraint is imposed --> TrafficFlowModelFlag == 0
 			if(TrafficFlowModelFlag==0 || AvailableSpaceCapacity >= max(2,g_LinkVector[li]->m_VehicleSpaceCapacity*(1-g_MaxDensityRatioForVehicleLoading)))  // at least 10% remaining capacity or 2 vehicle space is left
@@ -201,10 +201,17 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 		}
 	}
 
-	// step 2: move vehicle from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
+	// step 2: move vehicles from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
+			if(debug_flag && link_id_trace == li && CurrentTime >=480)
+				{
+					TRACE("Step 3: Time %f, Link: %d -> %d: entrance queue length: %d, exit queue length %d \n",
+						CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName , g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,
+						g_LinkVector[li]->EntranceQueue.size(), g_LinkVector[li]->ExitQueue.size());
+				}
+
 		while(g_LinkVector[li]->EntranceQueue.size() >0)
 		{
 
@@ -276,7 +283,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			// use integer number of vehicles as unit of capacity
 			g_LinkVector[li]-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue(Capacity);
 
-			int vehiclesize = (int)(g_LinkVector[li]->CFlowArrivalCount - g_LinkVector[li]->CFlowDepartureCount);
+			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)(g_LinkVector[li]->CFlowArrivalCount - g_LinkVector[li]->CFlowDepartureCount);
 
 			float fLinkInCapacity = 99999.0;
 
@@ -284,21 +291,34 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 			if(TrafficFlowModelFlag >=2)  // apply spatial link in capacity for spatial queue models( with spillback and shockwave) 
 			{
 				// determine link in capacity 
-				float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - vehiclesize;
+				float AvailableSpaceCapacity = g_LinkVector[li]->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 				fLinkInCapacity = min (AvailableSpaceCapacity, MaximumFlowRate); 
 				//			TRACE(" time %5.2f, SC: %5.2f, MFR %5.2f\n",CurrentTime, AvailableSpaceCapacity, MaximumFlowRate);
 
 				// the inflow capcaity is the minimum of (1) incoming maximum flow rate (determined by the number of lanes) and (2) available space capacty  on the link.
 				// use integer number of vehicles as unit of capacity
 
-				if(TrafficFlowModelFlag ==3 && g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type] ==1)  // newell's model on freeway only
+				if(TrafficFlowModelFlag ==3 && g_LinkTypeFreewayMap[g_LinkVector[li]->m_link_type] ==1)  // Newell's model on freeway only
 				{
-					if(simulation_time_interval_no >=g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval )
+					if(simulation_time_interval_no >=g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval ) /// we only apply backward wave checking after the simulation time is later than the backward wave speed interval
 					{
+						if(debug_flag && link_id_trace == li && CurrentTime >=480)
+							{
+								TRACE("Step 3: Time %f, Link: %d -> %d: tracing backward wave\n",
+									CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName , g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,
+									g_LinkVector[li]->EntranceQueue.size(), g_LinkVector[li]->ExitQueue.size());
+							}
+
 						int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) % MAX_TIME_INTERVAL_ADCURVE;
 
-						float VehCountInJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(CurrentTime) *g_LinkVector[li]->m_KJam;
-						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountInJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
+						float VehCountUnderJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(CurrentTime) *g_LinkVector[li]->m_KJam;
+						// when there is a capacity reduction, in the above model, we assume the space capacity is also reduced proportional to the out flow discharge capacity, 
+						// for example, if the out flow capacity is reduced from 5 lanes to 1 lanes, say 10K vehicles per hour to 2K vehicles per hour, 
+						// our model will also reduce the # of vehicles can be stored on the incident site by the equivalent 4 lanes. 
+						// this might cause the dramatic speed change on the incident site, while the upstream link (with the original space capacity) will take more time to propapate the speed change compared to the incident link. 
+						// to do list: we should add another parameter of space capacity reduction ratio to represent the fact that the space capacity reduction magnitude is different from the outflow capacity reduction level,
+						// particularly for road construction areas on long links, with smooth barrier on the merging section. 
+						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountUnderJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
 						int t_residual_minus_1 = (simulation_time_interval_no - 1) % MAX_TIME_INTERVAL_ADCURVE;
 
 						int N_Now_minus_1 = (int)g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_1];
@@ -436,6 +456,11 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
+
+			if(debug_flag && link_id_trace == li && CurrentTime >=480)
+				{
+					TRACE("Step 3: Time %f, Link: %d -> %d: tracing \n", CurrentTime, g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName , g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName);
+				}
 
 		// vehicle_out_count is the minimum of LinkOutCapacity and ExitQueue Size
 	
@@ -575,6 +600,8 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 				}
 
 					g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime  += TravelTime;
+					g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalFlowCount +=1;
+
 
 					g_LinkVector[li]-> departure_count +=1;
 					g_LinkVector[li]-> total_departure_based_travel_time += TravelTime;
@@ -656,6 +683,7 @@ bool g_VehicularSimulation(double CurrentTime, int simulation_time_interval_no, 
 
 				g_LinkVector[li]->CFlowDepartureCount +=1;
 				g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime  += TravelTime;
+				g_LinkVector[li]->m_LinkMOEAry[t_link_arrival_time].TotalFlowCount += 1;
 
 				g_LinkVector[li]->ExitQueue.pop_front();
 

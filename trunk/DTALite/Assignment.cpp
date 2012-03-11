@@ -163,8 +163,8 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 				bDebugFlag = true;
 			}
 
-//			NodeSize = FindBestPathWithVOT(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
-			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+			NodeSize = FindBestPathWithVOT(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+//			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			bool bSwitchFlag = false;
 			pVeh->m_bSwitched = false;
@@ -218,12 +218,14 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 				g_CurrentNumOfVehiclesSwitched += 1; 
 
 				pVeh->m_bSwitched = true;
-				pVeh->m_NodeSize = NodeSize;
 
 				if( pVeh->m_aryVN !=NULL)
 				{
 					delete pVeh->m_aryVN;
 				}
+
+				pVeh->m_NodeSize = NodeSize;
+
 
 				if(pVeh->m_NodeSize>=2)  // for feasible path
 				{
@@ -1139,7 +1141,7 @@ void g_AgentBasedShortestPathGeneration()
 	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
 	cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
 
-	g_AssignmentLogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Ave Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Avg Distance: " << SimuOutput.AvgDistance  << ", Switch %:" << SimuOutput.SwitchPercentage <<", Num of Vehicles Completing Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%";			
+	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%";
 
 
 	if(iteration <= 1) // compute relative gap after iteration 1
@@ -1156,7 +1158,7 @@ void g_AgentBasedShortestPathGeneration()
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
 		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
-		g_AssignmentLogFile << ", Num of Vehicles Switching Paths = " << g_CurrentNumOfVehiclesSwitched << ", Gap at prev iteration = " << g_CurrentGapValue << ", Avg Gap = " << avg_gap << endl;				
+			g_AssignmentLogFile << ","<< avg_gap << endl;				
 // for estimation only
 //		<< ", total demand deviation for all paths: " << g_TotalDemandDeviation << ", total measurement deviation for all paths " << g_TotalMeasurementDeviation  << endl;				
 	}else
