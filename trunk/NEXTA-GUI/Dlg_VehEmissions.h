@@ -4,7 +4,7 @@
 #include "BaseDialog.h"
 #include "network.h"
 
-// CDlg_VehEmissions dialog
+// CDlg_VehPathAnalysis dialog
 
 
 class PathStatistics
@@ -37,13 +37,13 @@ public:
 
 
 
-class CDlg_VehEmissions : public CBaseDialog
+class CDlg_VehPathAnalysis : public CBaseDialog
 {
-	DECLARE_DYNAMIC(CDlg_VehEmissions)
+	DECLARE_DYNAMIC(CDlg_VehPathAnalysis)
 
 public:
-	CDlg_VehEmissions(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CDlg_VehEmissions();
+	CDlg_VehPathAnalysis(CWnd* pParent = NULL);   // standard constructor
+	virtual ~CDlg_VehPathAnalysis();
 
 	CTLiteDoc* m_pDoc;
 	VehicleStatistics** m_ODMOEMatrix;
@@ -56,6 +56,8 @@ public:
 	void ShowVehicles();
 
 	bool ExportDataToCSVFileAllOD(char fname[_MAX_PATH]);
+	bool ExportPathDataToCSVFile(char fname[_MAX_PATH]);
+	bool ExportVehicleDataToCSVFile(char fname[_MAX_PATH]);
 
 	void ExportData(char fname[_MAX_PATH]);
 
@@ -110,4 +112,6 @@ public:
 	afx_msg void OnCbnSelchangeComboDemandtype();
 	long m_SingleVehicleID;
 	afx_msg void OnBnClickedFindSingleVehicleId();
+	afx_msg void OnBnClickedExportPathData();
+	afx_msg void OnBnClickedExportVehicleData();
 };

@@ -500,6 +500,7 @@ public:
 	{
 		m_bOneWayLink = true;
 		m_BandWidthValue = 1;
+		m_ReferenceBandWidthValue = 0;
 		m_SetBackStart = 0;
 		m_SetBackEnd = 0;
 
@@ -550,10 +551,19 @@ public:
 
 		m_bIncludedBySelectedPath = false;
 		m_bIncludedinSubarea = false;
+
+		m_AADT = 0;
+		m_ReferenceFlowVolume  = 0;
+		m_PeakHourFactor = 0.15f;
 	};
 
+	float m_AADT;
+	float m_ReferenceFlowVolume;
+	float m_PeakHourFactor;
 	int  m_NumberOfMarkedVehicles;
 	float m_BandWidthValue;
+	float m_ReferenceBandWidthValue;
+
 	bool m_bIncludedBySelectedPath;
 	bool m_bIncludedinSubarea;
 	double m_NumberOfCrashes;
@@ -573,6 +583,8 @@ public:
 	std::vector<GDPoint> m_BandLeftShapePoints;
 	std::vector<GDPoint> m_BandRightShapePoints;
 
+	std::vector<GDPoint> m_ReferenceBandLeftShapePoints;  // second band for observations
+	std::vector<GDPoint> m_ReferenceBandRightShapePoints;
 
 	std::vector<float> m_ShapePointRatios;
 
@@ -964,31 +976,52 @@ void AdjustLinkEndpointsWithSetBack()
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return m_LinkMOEAry[t].ObsFlow;
 		else
-			return m_StaticLinkVolume;
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticLinkVolume;
+			else
+				return 0;
+	
+		}
 	}
 
 	float GetObsLaneVolumeCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticLinkVolume, m_LinkMOEAry[t].ObsFlowCopy);  
+			return m_LinkMOEAry[t].ObsFlowCopy;
 		else
-			return m_StaticLinkVolume;
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticLinkVolume;
+			else
+				return 0;
+		}
 	}
 
 	float GetObsTravelTimeIndex(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndex);  
+			return m_LinkMOEAry[t].ObsTravelTimeIndex;
 		else
-			return m_StaticTravelTime;
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticTravelTime;
+			else
+				return 0;
+		}
 	}
 
 	float GetObsTravelTimeIndexCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticTravelTime, m_LinkMOEAry[t].ObsTravelTimeIndexCopy);  
+			return  m_LinkMOEAry[t].ObsTravelTimeIndexCopy;  
 		else
-			return m_StaticTravelTime;
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticTravelTime;
+			else
+				return 0;
+		}
 	}
 
 	int GetEventCode(int t)
@@ -1001,7 +1034,7 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetObsCumulativeFlow(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticLinkVolume, m_LinkMOEAry[t].ObsCumulativeFlow);  
+			return m_LinkMOEAry[t].ObsCumulativeFlow;  
 		else
 			return m_StaticLinkVolume;
 	}
@@ -1217,15 +1250,15 @@ public:
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
 
-	unsigned short m_OriginZoneID;  //range 0, 65535
-	unsigned short m_DestinationZoneID;  // range 0, 65535
+	int m_OriginZoneID;  //range 0, 65535
+	int m_DestinationZoneID;  // range 0, 65535
 
-	unsigned char m_DemandType;     // 
-	unsigned char m_PricingType;     // 
-	unsigned char m_VehicleType;     //
-	unsigned char m_InformationClass;  // 0: historical, 1: pre-trip, 2: en-route
-	unsigned char m_Occupancy;  // 1: LOV, 2: HOV
-	unsigned short m_SimLinkSequenceNo; //  range 0, 65535
+	short m_DemandType;     // 
+	short m_PricingType;     // 
+	short m_VehicleType;     //
+	short m_InformationClass;  // 0: historical, 1: pre-trip, 2: en-route
+	short m_Occupancy;  // 1: LOV, 2: HOV
+	short m_SimLinkSequenceNo; //  range 0, 65535
 
 	bool  m_bImpacted;
 
@@ -1361,15 +1394,23 @@ public:
 	DTA_sensor()
 	{
 		LinkID = -1;
+		AADT = 0;
+		peak_hour_factor = 0;
+
 	}
 	int FromNodeNumber;
 	int ToNodeNumber;
 	int LinkID;
-	string SensorType;
-	float RelativeLocationRatio;
-	long OrgSensorID;
-	GDPoint pt;
+	int SensorType;
 
+	float AADT;
+	float peak_hour_factor;
+	float Spd85Per;
+	float PerTrucks;
+
+	float RelativeLocationRatio;
+	int SensorID;
+	GDPoint pt;
 
 };
 template <typename T>

@@ -66,15 +66,15 @@ END_MESSAGE_MAP()
 
 BOOL CDlg_GoogleFusionTable::OnInitDialog()
 {
-	if(m_pDOC->m_ProjectDirectory.GetLength () == 0)
+	if(m_pDoc->m_ProjectDirectory.GetLength () == 0)
 	{
 			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-			m_pDOC->m_ProjectDirectory = pMainFrame->m_CurrentDirectory;
+			m_pDoc->m_ProjectDirectory = pMainFrame->m_CurrentDirectory;
 	}
 	
-	m_ProjectFolder = m_pDOC->m_ProjectDirectory;
-	m_SubareaLinkSize = m_pDOC->m_SubareaLinkSet .size();
+	m_ProjectFolder = m_pDoc->m_ProjectDirectory;
+	m_SubareaLinkSize = m_pDoc->m_SubareaLinkSet .size();
 
 	UpdateData(false);
 	return true;
@@ -265,7 +265,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	si.cb = sizeof(si); 
 
 	CWaitCursor curs;
-	if(m_pDOC->m_ProjectDirectory.GetLength()==0)
+	if(m_pDoc->m_ProjectDirectory.GetLength()==0)
 	{
 		AfxMessageBox("The project directory has not been specified.");
 		return;
@@ -277,7 +277,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	CString strParam;
 	CTime ExeStartTime = CTime::GetCurrentTime();
 
-//	sCommand.Format("%s\\curl.exe - transfer a URL",pMainFrame->m_CurrentDirectory, m_pDOC->m_ProjectDirectory);
+//	sCommand.Format("%s\\curl.exe - transfer a URL",pMainFrame->m_CurrentDirectory, m_pDoc->m_ProjectDirectory);
 
 
 	string s = (string(pMainFrame->m_CurrentDirectory)) + "\\curl.exe -s -d Email=fusiontabletestutah@gmail.com -d Passwd=utah123456 -d service=fusiontables -k \"https://www.google.com/accounts/ClientLogin\"";
@@ -291,7 +291,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 
 	string AuthCode = tmp.substr(0,tmp.length()-1);
 	
-	//int ret = m_pDOC->ProcessExecute(sCommand, strParam, m_pDOC->m_ProjectDirectory, true);
+	//int ret = m_pDoc->ProcessExecute(sCommand, strParam, m_pDoc->m_ProjectDirectory, true);
 
 	//sCommand.Format("curl.exe \"http://www.google.com/fusiontables/api/query?sql=SELECT+*+FROM+%s\" >input_link_1.csv",this->m_LinkTableID);
 	//sCommand.Format("curl.exe -L -k -s -H \"Authorization: GoogleLogin auth=%s\" --data-urlencode sql=\"SELECT * FROM %s\" https://www.google.com/fusiontables/api/query  > input_link_2.csv",AuthCode.c_str(),m_LinkTableID);
@@ -303,7 +303,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 		+ m_LinkTableID.GetBuffer(0) 
 		+ "\" \"https://www.google.com/fusiontables/api/query\"";
 
-	//ofstream out1((string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\out.txt").c_str());
+	//ofstream out1((string(m_pDoc->m_ProjectDirectory.GetBuffer(0)) + "\\out.txt").c_str());
 	//out1 << s << std::endl;
 	//out1.close();
 
@@ -311,7 +311,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	query_result = RunQuery(cmd);
 
 
-	ofstream out1((string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\input_link.csv").c_str());
+	ofstream out1((string(m_pDoc->m_ProjectDirectory.GetBuffer(0)) + "\\input_link.csv").c_str());
 	out1 << query_result << std::endl;
 	out1.close();
 
@@ -324,19 +324,19 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 	strcpy(cmd,s.c_str());
 	query_result = RunQuery(cmd);
 
-	ofstream out2((string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\input_node.csv").c_str());
+	ofstream out2((string(m_pDoc->m_ProjectDirectory.GetBuffer(0)) + "\\input_node.csv").c_str());
 	out2 << query_result << std::endl;
 	out2.close();
 
 	CWaitCursor wait;
 
-	if(m_pDOC->m_ProjectFile.GetLength () ==0)
+	if(m_pDoc->m_ProjectFile.GetLength () ==0)
 	{
-		m_pDOC->m_ProjectFile.Format ("%s\\temp.dlp",pMainFrame->m_CurrentDirectory );  // create temp project
+		m_pDoc->m_ProjectFile.Format ("%s\\temp.dlp",pMainFrame->m_CurrentDirectory );  // create temp project
 	}
 
-	m_pDOC->OnOpenTrafficNetworkDocument (m_pDOC->m_ProjectFile, true );
-	m_pDOC->UpdateAllViews (0);
+	m_pDoc->OnOpenTrafficNetworkDocument (m_pDoc->m_ProjectFile, true );
+	m_pDoc->UpdateAllViews (0);
 }
 
 BOOL GenerateInsertStrings(string fileName, std::vector<std::vector<std::string>>& value_vector, int record_index)
@@ -376,7 +376,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 	CWaitCursor wait;
 
-	m_pDOC->WriteSubareaFiles();
+	m_pDoc->WriteSubareaFiles();
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	string s = (string(pMainFrame->m_CurrentDirectory)) + "\\curl.exe -s -d Email=fusiontabletestutah@gmail.com -d Passwd=utah123456 -d service=fusiontables -k \"https://www.google.com/accounts/ClientLogin\"";
@@ -406,9 +406,9 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 	value_vector.clear();
 
 	int record;
-	for( record = 0; record< m_pDOC->m_LinkSet.size(); record+=100)
+	for( record = 0; record< m_pDoc->m_LinkSet.size(); record+=100)
 	{
-	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\input_subarea_link.csv",value_vector,record);
+	GenerateInsertStrings(string(m_pDoc->m_ProjectDirectory.GetBuffer(0)) + "\\input_subarea_link.csv",value_vector,record);
 	size_t n = 0;
 	string sql_str = "";
 	while(n < value_vector.size())
@@ -484,9 +484,9 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 
 	value_vector.clear();
 
-	for( record = 0; record< m_pDOC->m_NodeSet  .size(); record+=100)
+	for( record = 0; record< m_pDoc->m_NodeSet  .size(); record+=100)
 	{
-	GenerateInsertStrings(string(m_pDOC->m_ProjectDirectory.GetBuffer(0)) + "\\" + "input_subarea_node.csv",value_vector,record);
+	GenerateInsertStrings(string(m_pDoc->m_ProjectDirectory.GetBuffer(0)) + "\\" + "input_subarea_node.csv",value_vector,record);
 	int n = 0;
 	string sql_str="";
 

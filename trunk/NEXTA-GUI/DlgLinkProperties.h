@@ -20,7 +20,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	CTLiteDoc* m_pDOC;
+	CTLiteDoc* m_pDoc;
 
 	int FromNode;
 	int ToNode;

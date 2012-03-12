@@ -14,6 +14,8 @@
 #define ID_EDIT_SCENARIO                3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
+#define ID_EXPORT_PATH_DATA             5
+#define ID_EXPORT_VEHICLE_DATA          6
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_MAINFRAME                   128
@@ -643,16 +645,19 @@
 #define ID_LINK_INCREASEOFFSETFORTWO    33302
 #define ID_LINK_DECREASEOFFSETFORTWO    33303
 #define ID_LINK_NOOFFSETANDNOBANDWIDTH  33308
-#define ID_BUTTON33309                  33309
 #define ID_VIEW_SHOW33310               33310
 #define ID_VIEW_SHOWHIDE_LEGEND         33311
+#define ID_MOE_VIEWUSEREUILIBIRUMGAP    33312
+#define ID_MOE_VIEWLINKMOESUMMARYFILE   33313
+#define ID_VIEW_SHOW33314               33314
+#define ID_VIEW_CALIBRATIONVIEW         33316
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         33312
+#define _APS_NEXT_COMMAND_VALUE         33317
 #define _APS_NEXT_CONTROL_VALUE         1095
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

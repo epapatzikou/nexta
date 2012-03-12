@@ -14,7 +14,7 @@ public:
 	CDlg_SignalDataExchange(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_SignalDataExchange();
 
-	CTLiteDoc* m_pDOC;
+	CTLiteDoc* m_pDoc;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_SIGNAL_DATA };
 

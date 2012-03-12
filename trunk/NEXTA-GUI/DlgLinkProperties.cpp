@@ -62,15 +62,15 @@ BOOL CDlgLinkProperties::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	
-	for(unsigned i = 0; i< m_pDOC->m_LinkTypeVector.size(); i++)
+	for(unsigned i = 0; i< m_pDoc->m_LinkTypeVector.size(); i++)
 	{
 	
 		CString str;
-		str.Format("%d.%s",i+1,m_pDOC->m_LinkTypeVector[i].link_type_name.c_str ());
+		str.Format("%d.%s",i+1,m_pDoc->m_LinkTypeVector[i].link_type_name.c_str ());
 		m_LinkTypeComboBox.AddString (str);
 	}
 
-	if(LinkType < m_pDOC->m_LinkTypeVector.size())
+	if(LinkType < m_pDoc->m_LinkTypeVector.size())
 	{
 		m_LinkTypeComboBox.SetCurSel (LinkType-1);
 	}

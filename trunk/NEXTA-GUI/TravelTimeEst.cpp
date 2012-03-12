@@ -51,7 +51,7 @@
 extern CDlgPathMOE	*g_pPathMOEDlg;
 /******************************
 External calling functions
-if(ReadSensorLocationData(directory+"input_sensor_location.csv") == true)
+if(ReadSensorData(directory+"input_sensor.csv") == true)
 {
 CWaitCursor wc;
 ReadSensorData(directory);   // if there are sensor location data
@@ -225,43 +225,29 @@ void DTAPath::UpdateWithinDayStatistics()
 	}
 }
 
-bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 {
-	CWaitCursor wc;
-	FILE* st = NULL;
-	bool bRectIni = false;
-
 	CCSVParser parser;
 
 	if (parser.OpenCSVFile(lpszFileName))
 	{
-	int sensor_count = 1;
+	int sensor_count = 0;
 		while(parser.ReadRecord())
 		{
-			int from_node_id;
-			int to_node_id;
-			string sensor_type;
-			int sensor_id;
-			float relative_location_ratio = 0.5;
-
-			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
-				return false;
-			if(!parser.GetValueByFieldName("to_node_id",to_node_id)) 
-				return false;
-			if(!parser.GetValueByFieldName("sensor_type",sensor_type)) 
-				return false;
-			if(!parser.GetValueByFieldName("sensor_id",sensor_id)) 
-				return false;
-
-//			parser.GetValueByFieldName("relative_location_ratio",relative_location_ratio);
-
 			DTA_sensor sensor;
 
-			sensor.FromNodeNumber =  from_node_id;
-			sensor.ToNodeNumber =  to_node_id;
-			sensor.SensorType  =  sensor_type;
-			sensor.OrgSensorID  = sensor_id;
-			sensor.RelativeLocationRatio = relative_location_ratio;
+			if(!parser.GetValueByFieldName("from_node_id",sensor.FromNodeNumber )) 
+				return false;
+			if(!parser.GetValueByFieldName("to_node_id",sensor.ToNodeNumber )) 
+				return false;
+			if(!parser.GetValueByFieldName("sensor_type",sensor.SensorType)) 
+				return false;
+			if(!parser.GetValueByFieldName("sensor_id",sensor.SensorID )) 
+				return false;
+
+			parser.GetValueByFieldName("AADT",sensor.AADT  );
+			parser.GetValueByFieldName("peak_hour_factor",sensor.peak_hour_factor   );
+//			parser.GetValueByFieldName(elative_location_ratio",relative_location_ratio);
 
 			DTALink* pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
 
@@ -269,26 +255,30 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 			{
 				sensor.LinkID = pLink->m_LinkNo ;
 				m_SensorVector.push_back(sensor);
-				m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
+				m_SensorIDtoLinkMap[sensor.SensorID] = pLink;
+
 				pLink->m_bSensorData  = true;
+				pLink->m_ReferenceFlowVolume = sensor.AADT*sensor.peak_hour_factor;
+				pLink->m_AADT = sensor.AADT;
+				pLink->m_PeakHourFactor = sensor.peak_hour_factor;
+
 			}else
 			{
 
 				CString msg;
-				msg.Format ("Link %d -> %d in input_sensor_location.csv does not exit in input_link.csv.");
+				msg.Format ("Link %d -> %d in input_sensor.csv does not exit in input_link.csv.");
 				AfxMessageBox(msg);
 				break;
-
-
 			}
 
-			sensor_count++;
 		}
 
-		m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",sensor_count,lpszFileName);
 
 		if(m_SensorVector.size()>0)
+		{
+			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",m_SensorVector.size (),lpszFileName);
 			return true;
+		}
 		else
 			return false; // no sensors have been specified
 	}
@@ -296,8 +286,9 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 	return false;
 }
 
-void CTLiteDoc::ReadSensorData(CString directory)
+bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 {
+/*
 	CWaitCursor wc;
 	FILE* st = NULL;
 	std::list<DTALink*>::iterator iLink;
@@ -324,20 +315,19 @@ void CTLiteDoc::ReadSensorData(CString directory)
 		Occ_to_Density_Coef = dlg.m_Occ_to_Density_Coef;
 
 		bool bResetMOEAryFlag = false;
-		for(int day =1; day <= m_NumberOfDays; day++)
-		{
 			CString str_day;
-			str_day.Format ("%03d", day);
 
-			fopen_s(&st,directory+"SensorDataDay"+str_day +".csv","r");
+			fopen_s(&st,lpszFileName,"r");
 
 			if(st!=NULL)
 			{
-
+			for(int day =1; day <= m_NumberOfDays; day++)
+					{
 				if(!bResetMOEAryFlag && m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0) // simulation data are not loaded. reset data array
 				{
 
 					g_Simulation_Time_Horizon = 1440*m_NumberOfDays;
+
 
 					for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 					{
@@ -382,7 +372,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 					error_message.Format ("Reading error: Sensor ID %d has not been defined in file input_sensor_location.csv.");
 					AfxMessageBox(error_message);
 					fclose(st);
-					return;
+					return true;
 				}
 
 				if(pLink!=NULL && pLink->m_bSensorData)
@@ -422,7 +412,7 @@ void CTLiteDoc::ReadSensorData(CString directory)
 						}else // simulation data loaded
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
@@ -461,6 +451,8 @@ void CTLiteDoc::ReadSensorData(CString directory)
 	{
 	m_NumberOfDays = 0;
 	}
+*/
+	return false;
 }
 
 void CTLiteDoc::ReadEventData(CString directory)
@@ -636,7 +628,7 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 	}
 	}
 
-/*
+
 
 	CFileDialog dlg2(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("Multi-day file (*.csv)|*.csv|"));
@@ -678,7 +670,7 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 		fclose(st);
 
 	}
-*/
+
 }
 
 
@@ -1235,7 +1227,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 }
 
 
-int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orientation)
+DTALink* CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orientation)
 {
 	double Min_distance = m_NetworkRect.Width()/100;  // set the selection threshod
 
@@ -1265,13 +1257,12 @@ int CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orientation)
 
 		if(distance >=0 && distance < Min_distance)
 		{
-			SelectedLinkID = (*iLink)->m_LinkNo ;
+			return (*iLink);
 
-			Min_distance = distance;
 		}
 	}
 
-	return SelectedLinkID;
+	return NULL;
 
 }
 

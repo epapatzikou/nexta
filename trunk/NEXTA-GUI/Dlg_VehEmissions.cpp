@@ -7,17 +7,17 @@
 #define MAX_STRING_LENGTH  100
 
 
-// CDlg_VehEmissions dialog
+// CDlg_VehPathAnalysis dialog
 
-IMPLEMENT_DYNAMIC(CDlg_VehEmissions, CBaseDialog)
+IMPLEMENT_DYNAMIC(CDlg_VehPathAnalysis, CBaseDialog)
 
-CDlg_VehEmissions::CDlg_VehEmissions(CWnd* pParent /*=NULL*/)
-: CBaseDialog(CDlg_VehEmissions::IDD, pParent)
+CDlg_VehPathAnalysis::CDlg_VehPathAnalysis(CWnd* pParent /*=NULL*/)
+: CBaseDialog(CDlg_VehPathAnalysis::IDD, pParent)
 , m_SingleVehicleID(0)
 {
 }
 
-CDlg_VehEmissions::~CDlg_VehEmissions()
+CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
 {
 
 	if(m_ODMOEMatrix !=NULL)
@@ -30,7 +30,7 @@ CDlg_VehEmissions::~CDlg_VehEmissions()
 
 }
 
-void CDlg_VehEmissions::DoDataExchange(CDataExchange* pDX)
+void CDlg_VehPathAnalysis::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST_VEHICLE, m_VehicleList);
@@ -54,36 +54,37 @@ void CDlg_VehEmissions::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BEGIN_MESSAGE_MAP(CDlg_VehEmissions, CDialog)
-	ON_LBN_SELCHANGE(IDC_LIST_LINK, &CDlg_VehEmissions::OnLbnSelchangeListLink)
-	ON_LBN_SELCHANGE(IDC_LIST_VEHICLE, &CDlg_VehEmissions::OnLbnSelchangeListVehicle)
-	ON_LBN_SELCHANGE(IDC_LIST_LINK2, &CDlg_VehEmissions::OnLbnSelchangeListLink2)
-	ON_CBN_SELCHANGE(IDC_COMBO_Origin, &CDlg_VehEmissions::OnCbnSelchangeComboOrigin)
-	ON_CBN_SELCHANGE(IDC_COMBO_Destination, &CDlg_VehEmissions::OnCbnSelchangeComboDestination)
-	ON_CBN_SELCHANGE(IDC_COMBO_DepartureTime, &CDlg_VehEmissions::OnCbnSelchangeComboDeparturetime)
-	ON_CBN_SELCHANGE(IDC_COMBO_VehicleType, &CDlg_VehEmissions::OnCbnSelchangeComboVehicletype)
-	ON_CBN_SELCHANGE(IDC_COMBO_InformationClass, &CDlg_VehEmissions::OnCbnSelchangeComboInformationclass)
-	ON_CBN_SELCHANGE(IDC_COMBO_TimeInterval, &CDlg_VehEmissions::OnCbnSelchangeComboTimeinterval)
-	ON_CBN_SELCHANGE(IDC_COMBO_Min_Number_of_vehicles, &CDlg_VehEmissions::OnCbnSelchangeComboMinNumberofvehicles)
-	ON_CBN_SELCHANGE(IDC_COMBO_Min_Travel_Time, &CDlg_VehEmissions::OnCbnSelchangeComboMinTravelTime)
-	ON_CBN_SELCHANGE(IDC_COMBO_Min_TravelTimeIndex, &CDlg_VehEmissions::OnCbnSelchangeComboMinTraveltimeindex)
-	ON_LBN_SELCHANGE(IDC_LIST_OD, &CDlg_VehEmissions::OnLbnSelchangeListOd)
-	ON_LBN_SELCHANGE(IDC_LIST_PATH, &CDlg_VehEmissions::OnLbnSelchangeListPath)
-	ON_CBN_SELCHANGE(IDC_COMBO_ImpactLink, &CDlg_VehEmissions::OnCbnSelchangeComboImpactlink)
-	ON_LBN_DBLCLK(IDC_LIST_OD, &CDlg_VehEmissions::OnLbnDblclkListOd)
-	ON_BN_CLICKED(ID_EXPORT, &CDlg_VehEmissions::OnBnClickedExport)
-	ON_CBN_SELCHANGE(IDC_COMBO_VOT_LB, &CDlg_VehEmissions::OnCbnSelchangeComboVotLb)
-	ON_CBN_SELCHANGE(IDC_COMBO_VOT_UB, &CDlg_VehEmissions::OnCbnSelchangeComboVotUb)
-	ON_CBN_SELCHANGE(IDC_COMBO_DemandType, &CDlg_VehEmissions::OnCbnSelchangeComboDemandtype)
+BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
+	ON_LBN_SELCHANGE(IDC_LIST_LINK, &CDlg_VehPathAnalysis::OnLbnSelchangeListLink)
+	ON_LBN_SELCHANGE(IDC_LIST_VEHICLE, &CDlg_VehPathAnalysis::OnLbnSelchangeListVehicle)
+	ON_LBN_SELCHANGE(IDC_LIST_LINK2, &CDlg_VehPathAnalysis::OnLbnSelchangeListLink2)
+	ON_CBN_SELCHANGE(IDC_COMBO_Origin, &CDlg_VehPathAnalysis::OnCbnSelchangeComboOrigin)
+	ON_CBN_SELCHANGE(IDC_COMBO_Destination, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDestination)
+	ON_CBN_SELCHANGE(IDC_COMBO_DepartureTime, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDeparturetime)
+	ON_CBN_SELCHANGE(IDC_COMBO_VehicleType, &CDlg_VehPathAnalysis::OnCbnSelchangeComboVehicletype)
+	ON_CBN_SELCHANGE(IDC_COMBO_InformationClass, &CDlg_VehPathAnalysis::OnCbnSelchangeComboInformationclass)
+	ON_CBN_SELCHANGE(IDC_COMBO_TimeInterval, &CDlg_VehPathAnalysis::OnCbnSelchangeComboTimeinterval)
+	ON_CBN_SELCHANGE(IDC_COMBO_Min_Number_of_vehicles, &CDlg_VehPathAnalysis::OnCbnSelchangeComboMinNumberofvehicles)
+	ON_CBN_SELCHANGE(IDC_COMBO_Min_Travel_Time, &CDlg_VehPathAnalysis::OnCbnSelchangeComboMinTravelTime)
+	ON_CBN_SELCHANGE(IDC_COMBO_Min_TravelTimeIndex, &CDlg_VehPathAnalysis::OnCbnSelchangeComboMinTraveltimeindex)
+	ON_LBN_SELCHANGE(IDC_LIST_OD, &CDlg_VehPathAnalysis::OnLbnSelchangeListOd)
+	ON_LBN_SELCHANGE(IDC_LIST_PATH, &CDlg_VehPathAnalysis::OnLbnSelchangeListPath)
+	ON_CBN_SELCHANGE(IDC_COMBO_ImpactLink, &CDlg_VehPathAnalysis::OnCbnSelchangeComboImpactlink)
+	ON_LBN_DBLCLK(IDC_LIST_OD, &CDlg_VehPathAnalysis::OnLbnDblclkListOd)
+	ON_BN_CLICKED(ID_EXPORT, &CDlg_VehPathAnalysis::OnBnClickedExport)
+	ON_CBN_SELCHANGE(IDC_COMBO_VOT_LB, &CDlg_VehPathAnalysis::OnCbnSelchangeComboVotLb)
+	ON_CBN_SELCHANGE(IDC_COMBO_VOT_UB, &CDlg_VehPathAnalysis::OnCbnSelchangeComboVotUb)
+	ON_CBN_SELCHANGE(IDC_COMBO_DemandType, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDemandtype)
+	ON_BN_CLICKED(ID_EXPORT_PATH_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportPathData)
+	ON_BN_CLICKED(ID_EXPORT_VEHICLE_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportVehicleData)
 END_MESSAGE_MAP()
 
 
-// CDlg_VehEmissions message handlers
+// CDlg_VehPathAnalysis message handlers
 
 
-BOOL CDlg_VehEmissions::OnInitDialog()
+BOOL CDlg_VehPathAnalysis::OnInitDialog()
 {
-
 	CDialog::OnInitDialog();
 	CString str;
 
@@ -226,7 +227,7 @@ BOOL CDlg_VehEmissions::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CDlg_VehEmissions::FilterOriginDestinationPairs()
+void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 {
 
 	CWaitCursor wait;
@@ -410,7 +411,7 @@ void CDlg_VehEmissions::FilterOriginDestinationPairs()
 			ShowSelectedPath();
 			ShowVehicles();
 }
-void CDlg_VehEmissions::FilterPaths()
+void CDlg_VehPathAnalysis::FilterPaths()
 {
 	m_PathVector.clear();
 	m_PathList.ResetContent ();
@@ -557,7 +558,7 @@ void CDlg_VehEmissions::FilterPaths()
 	ShowVehicles();
 
 }
-void CDlg_VehEmissions::ShowVehicles()
+void CDlg_VehPathAnalysis::ShowVehicles()
 {
 	m_VehicleList.ResetContent ();
 	int PathNo = m_PathList.GetCurSel ();
@@ -583,49 +584,53 @@ void CDlg_VehEmissions::ShowVehicles()
 				VehicleInfoString.Format ("No. %d, %s, @%3.1f min, %3.1f min, $%3.2f",pVehicle->m_VehicleID , m_pDoc->GetPricingTypeStr(pVehicle->m_PricingType ), pVehicle->m_DepartureTime, (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime),pVehicle->m_TollDollarCost);
 			}
 
-			if(m_VehicleList.GetCount () < 5000)
+			if(m_VehicleList.GetCount () <= 20000)
 			{
+				if(m_VehicleList.GetCount () == 20000)
+				{
+					m_VehicleList.AddString ("Reaching maximum number of items in a list..");
+				}else
 				m_VehicleList.AddString (VehicleInfoString);
 			}
 		}
 	}
 }
-void CDlg_VehEmissions::OnLbnSelchangeListLink()
+void CDlg_VehPathAnalysis::OnLbnSelchangeListLink()
 {
 	// TODO: Add your control notification handler code here
 }
 
 
-void CDlg_VehEmissions::OnLbnSelchangeListVehicle()
+void CDlg_VehPathAnalysis::OnLbnSelchangeListVehicle()
 {
 }
 
-void CDlg_VehEmissions::OnLbnSelchangeListLink2()
+void CDlg_VehPathAnalysis::OnLbnSelchangeListLink2()
 {
 	// TODO: Add your control notification handler code here
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboOrigin()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboOrigin()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboDestination()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboDestination()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboDeparturetime()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboDeparturetime()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboVehicletype()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboVehicletype()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboInformationclass()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboInformationclass()
 {
 	FilterOriginDestinationPairs();
 
@@ -634,39 +639,39 @@ void CDlg_VehEmissions::OnCbnSelchangeComboInformationclass()
 
 
 
-void CDlg_VehEmissions::OnCbnSelchangeComboTimeinterval()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboTimeinterval()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboMinNumberofvehicles()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboMinNumberofvehicles()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboMinTravelTime()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboMinTravelTime()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboMinTraveltimeindex()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboMinTraveltimeindex()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnLbnSelchangeListOd()
+void CDlg_VehPathAnalysis::OnLbnSelchangeListOd()
 {
 	FilterPaths();
 }
 
-void CDlg_VehEmissions::OnLbnSelchangeListPath()
+void CDlg_VehPathAnalysis::OnLbnSelchangeListPath()
 {
 	ShowSelectedPath();
 	ShowVehicles();
 
 }
 
-void CDlg_VehEmissions::ShowSelectedPath()
+void CDlg_VehPathAnalysis::ShowSelectedPath()
 {
 	int PathNo = m_PathList.GetCurSel();
 
@@ -676,20 +681,20 @@ void CDlg_VehEmissions::ShowSelectedPath()
 }
 
 
-void CDlg_VehEmissions::OnCbnSelchangeComboImpactlink()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboImpactlink()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnLbnDblclkListOd()
+void CDlg_VehPathAnalysis::OnLbnDblclkListOd()
 {
 	FilterPaths();
 }
 
 
-void CDlg_VehEmissions::OnBnClickedExport()
+void CDlg_VehPathAnalysis::OnBnClickedExport()
 {
-CString str;
+   CString str;
    CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
 		    "(*.csv)|*.csv||", NULL);
    if(dlg.DoModal() == IDOK)
@@ -702,10 +707,13 @@ CString str;
       {
 		 str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
 		 AfxMessageBox(str);
-      }
+      }else
+	  {
+		m_pDoc->OpenCSVFileInExcel(fname);
+	  }
    }	
 }
-bool CDlg_VehEmissions::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
+bool CDlg_VehPathAnalysis::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
 {
      FILE* st;
       fopen_s(&st,csv_file,"w");
@@ -729,22 +737,101 @@ bool CDlg_VehEmissions::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
 }
 
 
-void CDlg_VehEmissions::OnCbnSelchangeComboVotLb()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboVotLb()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboVotUb()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboVotUb()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnCbnSelchangeComboDemandtype()
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboDemandtype()
 {
 	FilterOriginDestinationPairs();
 }
 
-void CDlg_VehEmissions::OnBnClickedFindSingleVehicleId()
+void CDlg_VehPathAnalysis::OnBnClickedFindSingleVehicleId()
 {
 	// TODO: Add your control notification handler code here
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedExportPathData()
+{
+   CString str;
+   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		    "(*.csv)|*.csv||", NULL);
+   if(dlg.DoModal() == IDOK)
+   {
+      char fname[_MAX_PATH];
+      wsprintf(fname,"%s", dlg.GetPathName());
+      CWaitCursor wait;
+
+      if(!ExportPathDataToCSVFile(fname))
+      {
+		 str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
+		 AfxMessageBox(str);
+      }else
+	  {
+	  m_pDoc->OpenCSVFileInExcel(fname);
+	  }
+   }	
+
+}
+
+
+bool CDlg_VehPathAnalysis::ExportPathDataToCSVFile(char csv_file[_MAX_PATH])
+{
+    FILE* st;
+      fopen_s(&st,csv_file,"w");
+
+     if(st!=NULL)
+      {
+	 CWaitCursor wc;
+	 fprintf(st,"path number,total_number_of_vehicles,average_travel_time_in_min,average_distance_in_min\n");
+		for(int i=0; i< m_PathList.GetCount (); i++)	// if one of "all" options is selected, we need to narrow down to OD pair
+		{
+			char m_Text[200];
+			m_PathList.GetText (i, m_Text);
+			fprintf(st,"%s\n",m_Text);
+		}
+	 
+		fclose(st);
+		return true;
+	 }
+
+	 return false;
+}
+
+bool CDlg_VehPathAnalysis::ExportVehicleDataToCSVFile(char csv_file[_MAX_PATH])
+{
+	int PathNo = m_PathList.GetCurSel ();
+	if(PathNo>=0)
+	{
+		return m_pDoc->WriteSelectVehicleDataToCSVFile(csv_file,m_PathVector[PathNo].m_VehicleVector);
+	}
+	return false;
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedExportVehicleData()
+{
+   CString str;
+   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		    "(*.csv)|*.csv||", NULL);
+   if(dlg.DoModal() == IDOK)
+   {
+      char fname[_MAX_PATH];
+      wsprintf(fname,"%s", dlg.GetPathName());
+      CWaitCursor wait;
+
+      if(!ExportVehicleDataToCSVFile(fname))
+      {
+		 str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
+		 AfxMessageBox(str);
+      }else
+	  {
+	  m_pDoc->OpenCSVFileInExcel(fname);
+	  }
+   }	
 }

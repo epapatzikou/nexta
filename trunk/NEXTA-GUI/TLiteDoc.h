@@ -62,9 +62,15 @@ protected: // create from serialization only
 	   m_colorLOS[5] = RGB(255,153,0);
 	   m_colorLOS[6] = RGB(255,0,0);
 
+	
+	   m_FreewayColor = RGB(255,211,155);
+	   m_HighwayColor = RGB(100,149,237); 
+       m_ArterialColor = RGB(0,0,0);
+	   m_ConnectorColor = RGB(255,255,0);
+
 		m_BackgroundColor =  RGB(0,100,0);
 		m_MaxLinkWidthAsNumberOfLanes = 5;
-		m_MaxLinkWidthAsLinkVolume = 10000;
+		m_MaxLinkWidthAsLinkVolume = 1000;
 
 		m_VehicleSelectionMode = CLS_network;
 		m_LinkBandWidthMode = LBW_number_of_lanes;
@@ -159,8 +165,12 @@ protected: // create from serialization only
 		m_LOSBound[MOE_vcratio][6] = 1.00f;
 		m_LOSBound[MOE_vcratio][7] = 999;
 
+
+
 		m_TrafficFlowModelFlag = 0;  // static traffic assignment as default
 		m_Doc_Resolution = 1;
+		m_bShowCalibrationResults = false;
+
 
 
 	}
@@ -170,8 +180,17 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	bool m_bShowCalibrationResults;
+
 	int m_TrafficFlowModelFlag;
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
+
+	COLORREF m_FreewayColor;
+	COLORREF m_HighwayColor;
+	COLORREF m_ArterialColor;
+	COLORREF m_ConnectorColor;
+
+
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
 	bool m_bShowLinkList;
@@ -280,11 +299,11 @@ public:
 	int m_SimulationStartTime_in_min;
 
 
-	void ReadSensorData(CString directory);
+	bool ReadSensorData(LPCTSTR lpszFileName);
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
 
-	bool ReadSensorLocationData(LPCTSTR lpszFileName);
+	bool ReadMultiDaySensorData(LPCTSTR lpszFileName);
 	void ReadInputEmissionRateFile(LPCTSTR lpszFileName);
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 	CString m_NodeDataLoadingStatus;
@@ -309,7 +328,7 @@ public:
 	CString m_EventDataLoadingStatus;
 
 
-	int FindLinkFromSensorLocation(float x, float y, CString orientation);
+	DTALink* FindLinkFromSensorLocation(float x, float y, CString orientation);
 
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
@@ -373,6 +392,7 @@ void SetStatusText(CString StatusText);
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
+	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
 
 	
@@ -701,7 +721,7 @@ void SetStatusText(CString StatusText);
 		return NULL;
 	}
 
-	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "")
+	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = true)
 	{
 		int FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
 		int ToNodeID = m_NodeNametoIDMap[ToNodeNumber];
@@ -710,7 +730,7 @@ void SetStatusText(CString StatusText);
 
 		map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
 
-			if(m_Iter == m_NodeIDtoLinkMap.end( ))
+			if(m_Iter == m_NodeIDtoLinkMap.end( ) && bWarmingFlag)
 			{
 				CString msg;
 
@@ -926,6 +946,9 @@ public:
 		afx_msg void OnLinkDecreaseoffsetfortwo();
 		afx_msg void OnLinkNooffsetandnobandwidth();
 		afx_msg void OnViewShowhideLegend();
+		afx_msg void OnMoeViewlinkmoesummaryfile();
+		afx_msg void OnViewCalibrationview();
+		afx_msg void OnUpdateViewCalibrationview(CCmdUI *pCmdUI);
 };
 
 
