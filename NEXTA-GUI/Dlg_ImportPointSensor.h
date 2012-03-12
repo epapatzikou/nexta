@@ -14,7 +14,7 @@ class CDlg_ImportPointSensor : public CDialog
 	DECLARE_DYNAMIC(CDlg_ImportPointSensor)
 
 public:
-	CTLiteDoc* m_pDOC;
+	CTLiteDoc* m_pDoc;
 	CString strSQL;
 	CDlg_ImportPointSensor(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_ImportPointSensor();

@@ -156,7 +156,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			length_sum += pLink ->m_Length;
 			//			pLink->SetupMOE();
 
-
 			std::vector<CCoordinate> CoordinateVector;
 			// no geometry information
 			CCoordinate cc_from, cc_to; 
@@ -325,7 +324,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		m_VehicleSet.push_back (pVehicle);
 		m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
 
-
 	}
 
 	fclose(pFile);
@@ -449,4 +447,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 	}
 	*/
+
+	return true;
 }

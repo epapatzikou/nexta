@@ -401,7 +401,7 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 void CTLiteDoc::OnFileConstructandexportsignaldata()
 {
 	CDlg_SignalDataExchange dlg;
-	dlg.m_pDOC = this;
+	dlg.m_pDoc = this;
 	dlg.DoModal();
 
 }
@@ -675,7 +675,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
 	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 	
-	int i,j, m;
+	unsigned int i,j, m;
 	int movement_size = m_MovementVector.size();
 
 	const int PhaseColumnSize = 8;
@@ -711,7 +711,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 		fprintf(st, "[Nodes]\n");
 		fprintf(st, "Node Data\n");
 		fprintf(st, "INTID,TYPE,X,Y,Z,DESCRIPTION,CBD,\n");
-		for (i=0; i<m_NodeSet.size(); i++)
+		for (i=0; i < m_NodeSet.size(); i++)
 		{
 			fprintf(st, "%i,%i,%f,%f,%f,%s,%i,\n", m_NodeIDMap[i]->m_NodeNumber, m_NodeIDMap[i]->m_ControlType, m_NodeIDMap[i]->pt.x, m_NodeIDMap[i]->pt.y, 0.0, m_NodeIDMap[i]->m_Name.c_str(), 0);
 		}

@@ -19,7 +19,7 @@ public:
 	CDlg_ImportNetwork(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_ImportNetwork();
 
-	CTLiteDoc* m_pDOC;
+	CTLiteDoc* m_pDoc;
 
 	bool m_bImportNetworkOnly;
 
@@ -42,4 +42,5 @@ public:
 	afx_msg void OnBnClickedButtonFindSensorFile();
 	afx_msg void OnBnClickedImportSensorData();
 	afx_msg void OnLbnSelchangeList1();
+	afx_msg void OnBnClickedExportData();
 };

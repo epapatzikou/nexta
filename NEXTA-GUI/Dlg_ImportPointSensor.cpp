@@ -57,7 +57,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 {
 	CWaitCursor cursor;
 	// Make sure the network is empty
-	if(m_pDOC->m_LinkSet.size()==0)
+	if(m_pDoc->m_LinkSet.size()==0)
 	{
 		AfxMessageBox("Please first load network data.");
 		return;
@@ -72,10 +72,10 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 
 	UpdateData(true);
 
-	if(m_pDOC->m_Database.IsOpen ())
-		m_pDOC->m_Database.Close ();
+	if(m_pDoc->m_Database.IsOpen ())
+		m_pDoc->m_Database.Close ();
 
-	m_pDOC->m_Database.Open(m_Sensor_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
+	m_pDoc->m_Database.Open(m_Sensor_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
 
 	// Open the EXCEL file
 	std::string itsErrorMessage;
@@ -88,36 +88,36 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 	CDlgSensorDataLoading dlg;
 	if(dlg.DoModal() ==IDOK)
 	{
-		m_pDOC->m_SamplingTimeInterval  = dlg.m_ObsTimeInterval;
-		m_pDOC->m_AVISamplingTimeInterval  = dlg.m_AVISamplingTimeInterval ;
-		m_pDOC->m_NumberOfDays = dlg.m_NumberOfDays;
+		m_pDoc->m_SamplingTimeInterval  = dlg.m_ObsTimeInterval;
+		m_pDoc->m_AVISamplingTimeInterval  = dlg.m_AVISamplingTimeInterval ;
+		m_pDoc->m_NumberOfDays = dlg.m_NumberOfDays;
 		Occ_to_Density_Coef = dlg.m_Occ_to_Density_Coef;
-		g_Simulation_Time_Horizon = 1440*m_pDOC->m_NumberOfDays;
+		g_Simulation_Time_Horizon = 1440*m_pDoc->m_NumberOfDays;
 	}
 	// Read record
 
 	CWaitCursor cursor_2;
 
-	strSQL = m_pDOC->ConstructSQL("sensor-location");
+	strSQL = m_pDoc->ConstructSQL("sensor-location");
 
 	if(strSQL.GetLength() > 0)
 	{
 		// Read record
-		CRecordsetExt rsSensorLocation(&m_pDOC->m_Database);
+		CRecordsetExt rsSensorLocation(&m_pDoc->m_Database);
 		rsSensorLocation.Open(dbOpenDynaset, strSQL);
 
 		while(!rsSensorLocation.IsEOF())
 		{
 			DTA_sensor sensor;
 
-			sensor.OrgSensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
+			sensor.SensorID =  rsSensorLocation.GetLong(CString("sensor_id"),bExist,false);
 			if(!bExist)
 			{
 				AfxMessageBox("Field sensor_id cannot be found in the point-sensor-location table.");
 				return;
 			}
 
-			sensor.SensorType =  rsSensorLocation.GetCString("sensor_type");
+			sensor.SensorType =  rsSensorLocation.GetLong(CString("sensor_type"),bExist,false);
 
 			bool b_find_link_flag = false;
 
@@ -141,15 +141,15 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 
 				if(sensor.FromNodeNumber!= 0 && sensor.ToNodeNumber!=0)
 				{
-					DTALink* pLink = m_pDOC->FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber, "point-sensor-location" );
+					DTALink* pLink = m_pDoc->FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber, "point-sensor-location" );
 
 					if(pLink!=NULL)
 					{
 						sensor.LinkID = pLink->m_LinkNo ;
-						m_pDOC->m_SensorVector.push_back(sensor);
-						m_pDOC->m_SensorIDtoLinkMap[sensor.OrgSensorID] = pLink;
+						m_pDoc->m_SensorVector.push_back(sensor);
+						m_pDoc->m_SensorIDtoLinkMap[sensor.SensorID] = pLink;
 						pLink->m_bSensorData  = true;
-						pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
+						pLink->ResetMOEAry (m_pDoc->m_NumberOfDays * 1440);
 
 						b_find_link_flag  = true;
 
@@ -184,16 +184,15 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 				}
 				CString orientation = rsSensorLocation.GetCString("orientation");
 
-				sensor.LinkID = m_pDOC->FindLinkFromSensorLocation(x,y,orientation);
+				DTALink* pLink  = m_pDoc->FindLinkFromSensorLocation(x,y,orientation);
 
-				if(sensor.LinkID > 0)
-				{   
-					DTALink* pLink = m_pDOC->FindLinkWithLinkNo(sensor.LinkID );
+				if(pLink!=NULL)
+				{
 					sensor.FromNodeNumber  = pLink ->m_FromNodeNumber ;
 					sensor.ToNodeNumber   = pLink ->m_ToNodeNumber  ;
 					sensor.RelativeLocationRatio = 0.5;		
-					pLink->ResetMOEAry (m_pDOC->m_NumberOfDays * 1440);
-					m_pDOC->m_SensorVector.push_back(sensor);
+					pLink->ResetMOEAry (m_pDoc->m_NumberOfDays * 1440);
+					m_pDoc->m_SensorVector.push_back(sensor);
 				}
 
 			}
@@ -201,11 +200,11 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 			rsSensorLocation.MoveNext ();
 		}
 		rsSensorLocation.Close();
-		str_msg.Format ( "%d sensors imported.", m_pDOC->m_SensorVector.size());
+		str_msg.Format ( "%d sensors imported.", m_pDoc->m_SensorVector.size());
 		m_MessageList.AddString (str_msg);
 	}
 	// point sensor data
-	strSQL = m_pDOC->ConstructSQL("point-sensor-data");
+	strSQL = m_pDoc->ConstructSQL("point-sensor-data");
 
 	int number_of_samples = 0;
 
@@ -213,7 +212,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 	{
 
 		// Read record
-		CRecordsetExt rsSensorData(&m_pDOC->m_Database);
+		CRecordsetExt rsSensorData(&m_pDoc->m_Database);
 		rsSensorData.Open(dbOpenDynaset, strSQL);
 
 		while(!rsSensorData.IsEOF())
@@ -269,7 +268,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 			map<long, DTALink*>::iterator it;
 
 
-			if ( (it = m_pDOC->m_SensorIDtoLinkMap.find(sensor_id)) != m_pDOC->m_SensorIDtoLinkMap.end()) 
+			if ( (it = m_pDoc->m_SensorIDtoLinkMap.find(sensor_id)) != m_pDoc->m_SensorIDtoLinkMap.end()) 
 			{
 				DTALink* pLink = it->second;
 
@@ -277,14 +276,14 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 				{
 					int t  = ((modeling_timestamp_day - 1)*1440+ modeling_timestamp_min) ;
 
-					if(t>=0  && t< (pLink->m_LinkMOEAry.size()-m_pDOC->m_SamplingTimeInterval))
+					if(t>=0  && t< (pLink->m_LinkMOEAry.size()-m_pDoc->m_SamplingTimeInterval))
 					{
 						if(AvgLinkSpeed<=1)  // 0 or negative values means missing speed
 							AvgLinkSpeed = pLink->m_SpeedLimit ;
 
 						ASSERT(pLink->m_NumLanes > 0);
 
-						pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDOC->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+						pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 						pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
 						pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
@@ -294,7 +293,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 							pLink->m_LinkMOEAry[t].ObsDensityCopy = occupancy * Occ_to_Density_Coef;
 
 						// copy data to other intervals
-						for(int tt = 1; tt<m_pDOC->m_SamplingTimeInterval; tt++)
+						for(int tt = 1; tt<m_pDoc->m_SamplingTimeInterval; tt++)
 						{
 							if(tt < pLink->m_LinkMOEAry.size())
 							{
@@ -318,9 +317,9 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 		// build historical travel time
 		std::list<DTALink*>::iterator iLink;
 
-		/*			for (iLink = m_pDOC->m_LinkSet.begin(); iLink != m_pDOC->m_LinkSet.end(); iLink++)
+		/*			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
 		{
-		(*iLink)->ComputeHistoricalAvg(m_pDOC->m_NumberOfDays); 
+		(*iLink)->ComputeHistoricalAvg(m_pDoc->m_NumberOfDays); 
 		}
 		*/
 		str_msg.Format("%d sensor data records loaded.",number_of_samples);

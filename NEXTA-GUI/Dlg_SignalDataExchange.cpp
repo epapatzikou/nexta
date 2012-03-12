@@ -37,15 +37,15 @@ END_MESSAGE_MAP()
 
 void CDlg_SignalDataExchange::OnBnClickedButtonGenerateData()
 {
-   m_pDOC->Constructandexportsignaldata ();
+   m_pDoc->Constructandexportsignaldata ();
 }
 
 void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 {
-	m_pDOC->RunExcelAutomation();
+	m_pDoc->RunExcelAutomation();
 }
 
 void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 {
-	m_pDOC->ConstructandexportVISSIMdata();
+	m_pDoc->ConstructandexportVISSIMdata();
 }

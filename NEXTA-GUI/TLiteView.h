@@ -196,7 +196,8 @@ public:
 
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
-	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC);
+	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag);
+
 
 	bool DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC);
 	
@@ -297,6 +298,7 @@ public:
 	afx_msg void OnNodeDirectiontohereandreliabilityanalysis();
 	afx_msg void OnLinkIncreasebandwidth();
 	afx_msg void OnLinkDecreasebandwidth();
+	afx_msg void OnUpdateViewSensor(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

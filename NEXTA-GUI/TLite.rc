@@ -118,6 +118,8 @@ BEGIN
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
 END
 
 IDR_MAINFRAME1 TOOLBAR  16, 15
@@ -174,6 +176,7 @@ BEGIN
     BUTTON      ID_VIEW_TEXTLABEL
     BUTTON      ID_SHOW_GRID
     BUTTON      ID_VIEW_BACKGROUNDIMAGE
+    BUTTON      ID_VIEW_SENSOR
     SEPARATOR
     BUTTON      ID_VIEW_IMAGE
     BUTTON      ID_EDIT_MOVENETWORKCOORDINATES
@@ -232,7 +235,7 @@ BEGIN
     BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
     SEPARATOR
     BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
-    BUTTON      ID_IMPORT_PRICING
+    BUTTON      ID_VIEW_CALIBRATIONVIEW
     BUTTON      ID_IMPORT_PRICING
     SEPARATOR
     BUTTON      ID_Edit_Create2WayLinks
@@ -241,6 +244,8 @@ BEGIN
     BUTTON      ID_IMPORT_SENSOR
     BUTTON      ID_IMPORT_SENSOR
     SEPARATOR
+    BUTTON      ID_IMPORT_PRICING
+    BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
@@ -677,6 +682,8 @@ BEGIN
         MENUITEM "Show/Hide AVI Sensors",       ID_VIEW_SHOW
         MENUITEM "Display Lane Width",          ID_VIEW_DISPLAYLANEWIDTH
         MENUITEM "Show/Hide Lengend",           ID_VIEW_SHOWHIDE_LEGEND
+        MENUITEM "Show/Hide Sensor",            ID_VIEW_SENSOR
+        MENUITEM "Calibration View",            ID_VIEW_CALIBRATIONVIEW
     END
     POPUP "Edit"
     BEGIN
@@ -711,6 +718,28 @@ BEGIN
         MENUITEM "Delete Subarea",              ID_SUBAREA_DELETESUBAREA
         MENUITEM "View Vehicle Statistics Associated with Subarea", ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA
     END
+    POPUP "Link"
+    BEGIN
+        POPUP "Link MOE Display"
+        BEGIN
+            MENUITEM "Volume",                      ID_MOE_VOLUME
+            MENUITEM "Speed",                       ID_MOE_SPEED
+            MENUITEM "V/C Ratio",                   ID_MOE_VC_Ratio
+            MENUITEM "Emissions",                   ID_LINKMOE_EMISSIONS
+            MENUITEM "Reliability",                 ID_LINKMOE_RELIABILITY
+            MENUITEM "Safety",                      ID_LINKMOE_SAFETY
+            MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
+            MENUITEM "Capacity",                    ID_MOE_CAPACITY
+            MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
+            MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
+            MENUITEM "Length",                      ID_MOE_LENGTH
+        END
+        MENUITEM "Increase Band Width (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
+        MENUITEM "Decrease Band Width  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+        MENUITEM "Increase Offset for Two-way Links  (Keyboard  Shortcut: Left Arrow)", ID_LINK_INCREASEOFFSETFORTWO
+        MENUITEM "Decrease Offset for Two-way Links  (Keyboard Shortcut: Right Arrow)", ID_LINK_DECREASEOFFSETFORTWO
+        MENUITEM "No Offset and No Band Width", ID_LINK_NOOFFSETANDNOBANDWIDTH
+    END
     POPUP "Search"
     BEGIN
         MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)", ID_SEARCH_FINDLINK
@@ -736,7 +765,8 @@ BEGIN
         MENUITEM "MOE Tables",                  ID_MOE_VIEWMOES
         MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
         MENUITEM SEPARATOR
-        MENUITEM "View Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "View Traffic Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "View Link MOE Summary File",  ID_MOE_VIEWLINKMOESUMMARYFILE
     END
     POPUP "Tools"
     BEGIN
@@ -759,29 +789,6 @@ BEGIN
     BEGIN
         MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
         MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
-    END
-    POPUP "Link"
-    BEGIN
-        POPUP "Link MOE Color"
-        BEGIN
-            MENUITEM "Volume",                      ID_MOE_VOLUME
-            MENUITEM "Speed",                       ID_MOE_SPEED
-            MENUITEM "V/C Ratio",                   ID_MOE_VC_Ratio
-            MENUITEM "Emissions",                   ID_LINKMOE_EMISSIONS
-            MENUITEM "Reliability",                 ID_LINKMOE_RELIABILITY
-            MENUITEM "Safety",                      ID_LINKMOE_SAFETY
-            MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
-            MENUITEM "Capacity",                    ID_MOE_CAPACITY
-            MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
-            MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
-            MENUITEM "Length",                      ID_MOE_LENGTH
-        END
-        MENUITEM "Bar Width Configuration",     ID_LINK_LINKBAR
-        MENUITEM "Increase Band Width",         ID_LINK_INCREASEBANDWIDTH
-        MENUITEM "Decrease Band Width",         ID_LINK_DECREASEBANDWIDTH
-        MENUITEM "Increase Offset for Two-way Links", ID_LINK_INCREASEOFFSETFORTWO
-        MENUITEM "Decrease Offset for Two-way Links", ID_LINK_DECREASEOFFSETFORTWO
-        MENUITEM "No Offset and No Band Width", ID_LINK_NOOFFSETANDNOBANDWIDTH
     END
 END
 
@@ -1049,14 +1056,14 @@ BEGIN
     COMBOBOX        IDC_COMBO1,102,130,114,129,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG_Settings DIALOGEX 0, 0, 378, 172
+IDD_DIALOG_Settings DIALOGEX 0, 0, 453, 172
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Assignment Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,215,152,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,321,152,50,14
-    LTEXT           "# of Iteratations: ",IDC_STATIC,7,7,60,8
+    PUSHBUTTON      "Cancel",IDCANCEL,396,152,50,14
+    LTEXT           "# of Iterations: ",IDC_STATIC,7,7,53,8
     LTEXT           "Global Demand Loading Multiplier:",IDC_STATIC,7,29,108,8
     EDITTEXT        IDC_EDIT_Number_Iterations,131,7,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_Multiplier,131,28,40,14,ES_AUTOHSCROLL
@@ -1069,9 +1076,9 @@ BEGIN
     EDITTEXT        IDC_EDIT_Simulation_Horizon,272,7,47,14,ES_AUTOHSCROLL
     LTEXT           "",IDC_STATIC,7,158,8,8
     CONTROL         "Emission Data Output (computationally intensive post-processing)",IDC_CHECK_EMISSION_DATA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,143,129,228,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,218,129,228,10
     LTEXT           "Traveler Routing Method:",IDC_STATIC,227,54,83,8
-    LISTBOX         IDC_LIST_Routing_METHOD,229,65,142,28,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_LIST_Routing_METHOD,232,65,214,28,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_DIALOG_DefaultLinkProperties DIALOGEX 0, 0, 238, 219
@@ -1215,7 +1222,7 @@ BEGIN
     LTEXT           "OD List:",IDC_STATIC,17,55,51,8
     LTEXT           "Operating Mode Distributions (Emissions Analysis):",IDC_STATIC,17,241,162,8
     LISTBOX         IDC_OpMode_LINK,15,254,247,29,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Export Data",ID_EXPORT,7,298,64,14,NOT WS_TABSTOP
+    DEFPUSHBUTTON   "Export",ID_EXPORT,209,132,29,14,NOT WS_TABSTOP
     GROUPBOX        "OD Pair Filter:",IDC_STATIC,7,7,476,126
     LTEXT           "Information\nClass:",IDC_STATIC,247,15,50,19
     COMBOBOX        IDC_COMBO_InformationClass,245,38,61,88,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -1235,7 +1242,6 @@ BEGIN
     LTEXT           "Vehicle ID, type, departure time, travel time, toll paid",IDC_STATIC,290,160,182,8
     COMBOBOX        IDC_COMBO_ImpactLink,316,118,105,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Passing Impact Links:",IDC_STATIC,243,123,68,8
-    EDITTEXT        IDC_SUMMARY_INFO,15,133,218,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
     LTEXT           "Lower bound:",IDC_STATIC,421,47,62,8
     COMBOBOX        IDC_COMBO_VOT_LB,441,57,42,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Upper bound:",IDC_STATIC,421,75,62,8
@@ -1243,6 +1249,9 @@ BEGIN
     GROUPBOX        "Value of Time Range",IDC_STATIC,416,34,67,67
     COMBOBOX        IDC_COMBO_DemandType,113,37,46,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Demand\nType:",IDC_STATIC,113,15,43,16
+    EDITTEXT        IDC_SUMMARY_INFO,15,133,191,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    DEFPUSHBUTTON   "Export",ID_EXPORT_PATH_DATA,232,230,29,14,NOT WS_TABSTOP
+    DEFPUSHBUTTON   "Export",ID_EXPORT_VEHICLE_DATA,454,243,29,14,NOT WS_TABSTOP
 END
 
 IDD_DIALOG_CarFollowingSettings DIALOGEX 0, 0, 276, 95
@@ -1374,6 +1383,7 @@ BEGIN
     LTEXT           "Demand matrix CSV File to be Imported (optional):",IDC_STATIC,7,36,162,8
     RTEXT           "Message List:",IDC_STATIC,7,93,44,8
     DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,69,151,14
+    DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,155,220,86,14
 END
 
 IDD_DIALOG_EXCEL_IMPORT_POINT_SENSOR DIALOGEX 0, 0, 354, 222
@@ -1528,7 +1538,7 @@ BEGIN
     LISTBOX         IDC_LIST1,7,80,304,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,19,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,320,20,20,14
-    LTEXT           "Shape File of Crash Data Layer:",-1,7,6,103,8
+    LTEXT           "Shape File of Point Data Layer:",-1,7,6,100,8
     RTEXT           "Message List:",-1,7,65,44,8
     DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,48,96,14
     DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,122,49,96,14
@@ -1663,7 +1673,7 @@ BEGIN
     IDD_DIALOG_Settings, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 371
+        RIGHTMARGIN, 446
         TOPMARGIN, 7
         BOTTOMMARGIN, 166
     END

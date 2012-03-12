@@ -134,6 +134,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS, &CTLiteView::OnNodeDirectiontohereandreliabilityanalysis)
 	ON_COMMAND(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnLinkIncreasebandwidth)
 	ON_COMMAND(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnLinkDecreasebandwidth)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SENSOR, &CTLiteView::OnUpdateViewSensor)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -154,9 +155,10 @@ CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
 
 CPen g_PenCrashColor(PS_SOLID,1,RGB(255,0,0));
-CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //magenta
+CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //green
 
-CPen g_PenSensorColor(PS_DASH,0,RGB(255,255,0));
+CPen g_PenSensorColor(PS_SOLID,0,RGB(0,255,0));
+CBrush g_BrushSensor(RGB(0,255,0));
 CPen g_PenNotMatchedSensorColor(PS_SOLID,1,RGB(255,255,255));
 
 CPen g_PenSelectColor0(PS_SOLID,1,RGB(255,0,0));  // red
@@ -168,12 +170,12 @@ CPen g_PenSelectColor5(PS_SOLID,1,RGB(255,255,0)); // yellow
 
 //observation
 
-CPen g_PenSelectColor0_obs(PS_SOLID,2,RGB(255,0,0));  // red
-CPen g_PenSelectColor1_obs(PS_SOLID,2,RGB(0,255,0));  // green
-CPen g_PenSelectColor2_obs(PS_SOLID,2,RGB(255,0,255)); //magenta
-CPen g_PenSelectColor3_obs(PS_SOLID,2,RGB(0,255,255));   // cyan
-CPen g_PenSelectColor4_obs(PS_SOLID,2,RGB(0,0,255));  // blue
-CPen g_PenSelectColor5_obs(PS_SOLID,2,RGB(255,255,0)); // yellow
+CPen g_PenSelectColor0_obs(PS_SOLID,4,RGB(255,0,0));  // red
+CPen g_PenSelectColor1_obs(PS_SOLID,4,RGB(0,255,0));  // green
+CPen g_PenSelectColor2_obs(PS_SOLID,4,RGB(255,0,255)); //magenta
+CPen g_PenSelectColor3_obs(PS_SOLID,4,RGB(0,255,255));   // cyan
+CPen g_PenSelectColor4_obs(PS_SOLID,4,RGB(0,0,255));  // blue
+CPen g_PenSelectColor5_obs(PS_SOLID,4,RGB(255,255,0)); // yellow
 
 CBrush  g_BrushColor0(HS_BDIAGONAL, RGB(255,0,0));  // red
 CBrush  g_BrushColor1(HS_FDIAGONAL,RGB(0,255,0));  // green
@@ -182,12 +184,14 @@ CBrush  g_BrushColor3(HS_HORIZONTAL,RGB(0,255,255));   // cyan
 CBrush  g_BrushColor4(HS_CROSS,RGB(0,0,255));  // blue
 CBrush  g_BrushColor5(HS_DIAGCROSS,RGB(255,255,0)); // yellow
 
-
 CPen g_PenHighlightPath(PS_SOLID,3,RGB(255,255,0));  // yellow
 CBrush  g_BrushHighlightPath(RGB(255,255,0));  // yellow
 
 CBrush  g_BrushLinkBand(RGB(125,125,0)); // 
 CBrush  g_BrushLinkBandVolume(RGB(0,0,255)); // 
+
+CBrush  g_BrushLinkReference(HS_CROSS, RGB(255,0,255)); //magenta
+CPen    g_PenLinkReference(PS_SOLID,2,RGB(255,0,255));  //magenta
 
 CPen g_ThickPenSelectColor0(PS_SOLID,3,RGB(255,0,0));  // red
 CPen g_ThickPenSelectColor1(PS_SOLID,3,RGB(0,255,0));  // green
@@ -203,9 +207,7 @@ CPen g_SuperThickPenSelectColor3(PS_SOLID,5,RGB(0,255,255));   // cyan
 CPen g_SuperThickPenSelectColor4(PS_SOLID,5,RGB(0,0,255));  // blue
 CPen g_SuperThickPenSelectColor5(PS_SOLID,5,RGB(255,255,0)); // yellow
 
-CPen g_PenFreewayColor(PS_SOLID,1,RGB(255,211,155));  
-CPen g_PenHighwayColor(PS_SOLID,1,RGB(100,149,237)); 
-CPen g_PenArterialColor(PS_SOLID,1,RGB(0,0,0)); 
+
 CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
 CPen g_AVILinkPen(PS_DASH,0,RGB(0,255,0));
 CPen g_SubareaLinkPen(PS_SOLID,0,RGB(255,255,0));
@@ -310,7 +312,7 @@ CTLiteView::CTLiteView()
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
 	m_Resolution = 1;
-	m_bShowText = false;
+	m_bShowText = true;
 	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
 	m_OriginOnBottomFlag = -1;
@@ -591,7 +593,30 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	CPoint FromPoint,ToPoint;
 	CRect link_rect;
 
-	pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then condition with volume
+
+	CPen pen_moe[MAX_LOS_SIZE];
+	CBrush brush_moe[MAX_LOS_SIZE];
+
+	for(int los = 0; los < MAX_LOS_SIZE-1; los++)
+	{
+	pen_moe[los].CreatePen (PS_SOLID, 1, pDoc->m_colorLOS[los]);
+	brush_moe[los].CreateSolidBrush (pDoc->m_colorLOS[los]);
+	}
+
+    CPen pen_freeway, pen_highway, pen_arterial, pen_connector;
+    CBrush brush_freeway, brush_highway, brush_arterial, brush_connector;
+
+	pen_freeway.CreatePen (PS_SOLID, 1, pDoc->m_FreewayColor);
+	brush_freeway.CreateSolidBrush (pDoc->m_FreewayColor);
+
+	pen_highway.CreatePen (PS_SOLID, 1, pDoc->m_HighwayColor);
+	brush_highway.CreateSolidBrush (pDoc->m_HighwayColor);
+
+	pen_arterial.CreatePen (PS_SOLID, 1, pDoc->m_ArterialColor);
+	brush_arterial.CreateSolidBrush (pDoc->m_ArterialColor);
+
+	pen_connector.CreatePen (PS_SOLID, 1, pDoc->m_ConnectorColor);
+	brush_connector.CreateSolidBrush (pDoc->m_ConnectorColor);
 
 
 	// recongenerate the lind band width offset only when chaning display mode or on volume mode
@@ -615,12 +640,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	int min_x, min_y, max_x, max_y;
 
-	// smart labeling 
-	
+
+	pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then apply speical conditions for volume and vehicle mode
 
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
+		// step 1: decide if a link is included in the screen region
 		FromPoint = NPtoSP((*iLink)->m_FromPoint);
 		ToPoint = NPtoSP((*iLink)->m_ToPoint);
 
@@ -635,71 +661,76 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
 			continue;
 
-		if((*iLink)->m_AVISensorFlag == false || ((*iLink)->m_AVISensorFlag == true && m_bShowAVISensor == true))
-		{
+
+		// step 2: select color and brush for MOE mode
+
 			//			continue;
 			CPen LinkTypePen;
-			CPen pen_moe;
-			CBrush brush_moe;
 
 
+			// step 3: select color and brush according to 
 			float value = -1.0f ;
+			
 			if( pDoc->m_LinkMOEMode != MOE_none) 
 			{
 
-				float power;
-
-				power= pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
+				// dynamically create LOE mean 
+				float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
 				int LOS = pDoc->GetLOSCode(power);
-
-				if((*iLink)->m_AVISensorFlag != true)
-				{
-					pen_moe.CreatePen (PS_SOLID, 1, pDoc->m_colorLOS[LOS]);
-					brush_moe.CreateSolidBrush (pDoc->m_colorLOS[LOS]);
-				}
-				else
-				{
-					pen_moe.CreatePen (PS_DASH, 2, RGB(255,255,255));  // white dash for AVI sensors
-				}
 
 				//drarw link as lines
 				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
-					pDC->SelectObject(&pen_moe);
-				else {// display link as a band so use black pen
+				{
+					pDC->SelectObject(&pen_moe[LOS]);
+					pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then condition with volume
+				}
+				else 
+				{// display link as a band so use black pen
 					pDC->SelectObject(&g_BlackPen);
-					pDC->SelectObject(&brush_moe);
+					pDC->SelectObject(&brush_moe[LOS]);
 				}
 
-	if (pDoc->m_LinkMOEMode == MOE_volume)   // under volume mode, dynamically generate volume band
-		pDC->SelectObject(&g_BrushLinkBandVolume);   //default brush
-
-			}else if(m_bShowLinkType)
+			}
+			else if(m_bShowLinkType)  // show link type
 			{
 				//		COLORREF link_color = pDoc->GetLinkTypeColor((*iLink)->m_link_type );
 				//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
 				//		pDC->SelectObject(&LinkTypePen);
 
-				switch ((*iLink)->m_link_type)
+				if ( pDoc->m_LinkTypeFreewayMap[(*iLink)->m_link_type] == 1)
 				{
-				case 1:
-					pDC->SelectObject(&g_PenFreewayColor);
-					break;
-				case 2:
-					pDC->SelectObject(&g_PenHighwayColor);
-					break;
-				default:
-					pDC->SelectObject(&g_PenArterialColor);
+					pDC->SelectObject(&pen_freeway);
+					pDC->SelectObject(&g_BrushLinkBand);
+				}else if ( pDoc->m_LinkTypeArterialMap[(*iLink)->m_link_type] == 1)
+				{
+					pDC->SelectObject(&pen_arterial);
+					pDC->SelectObject(&g_BrushLinkBand);
+				}else
+				{
+				pDC->SelectObject(&pen_arterial);
+				pDC->SelectObject(&g_BrushLinkBand);   //default brush
 				}
 
-				if((*iLink)->m_AVISensorFlag == true)
-					pDC->SelectObject(&g_AVILinkPen);
-
+				// special condition for subarea link
 				if((*iLink)->m_LayerNo > 0)
 					pDC->SelectObject(&g_SubareaLinkPen);
 
-			}else
-				pDC->SelectObject(&g_PenArterialColor);
+			}else  // default aterial model
+			{
+				pDC->SelectObject(&pen_arterial);
+				pDC->SelectObject(&g_BrushLinkBand);   //default brush
+			}
 
+			//special condition 1: vehicle mode
+
+			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
+				pDC->SelectObject(&g_BlackPen);
+
+			//special condition 2:  volume
+			if (pDoc->m_LinkMOEMode == MOE_volume)   // under volume mode, dynamically generate volume band
+				pDC->SelectObject(&g_BrushLinkBandVolume);   //default brush
+
+			// special condition 3: when a link is selected
 			if((*iLink)->m_DisplayLinkID>=0 )
 			{
 				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
@@ -711,12 +742,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}else
 				pDC->SetTextColor(RGB(255,228,181));
 
-			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
-				pDC->SelectObject(&g_BlackPen);
-
-			//draw link as lines
-			if(m_link_display_mode == link_display_mode_line && pDoc->m_LinkMOEMode != MOE_volume )
+			//step 4: draw link as line or band/bar
+			if(m_link_display_mode == link_display_mode_line && pDoc->m_LinkMOEMode != MOE_volume 
+				&& ((pDoc->m_bShowCalibrationResults)&& (*iLink)->m_bSensorData == false))  
 			{
+				 // calibration mode, do not show volume
 				DrawLinkAsLine((*iLink),pDC);
 			}
 			else if (m_link_display_mode == link_display_mode_lane_group)
@@ -724,20 +754,25 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				DrawLinkAsLaneGroup((*iLink),pDC);
 			}else  // as lane group
 			{
-				if(DrawLinkAsBand((*iLink),pDC)==false)
+				if(DrawLinkAsBand((*iLink),pDC,false)==false)
 					return;
-
 			}
 
-			//draw link as band 
+			if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->m_ReferenceFlowVolume > 1)   // draw provided AADT
+			{
+				pDC->SelectObject(&g_BrushLinkReference);   //reference brush
+				pDC->SelectObject(&g_PenLinkReference);   //reference pen
+				DrawLinkAsBand((*iLink),pDC,true);  // true: second band as observation
+			}
 
+			//step 5: show link labels
 			if( m_bShowText )
 			{
 
 				float sqr_value = (FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x) + (FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y);
 				float screen_distance = sqrt( sqr_value) ;
-				
 
+				// create rotation font
 				CFont link_text_font;
 
 				LOGFONT lf;
@@ -765,8 +800,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				link_text_font.CreateFontIndirect(&lf);
 
 				pDC->SelectObject(&link_text_font);
+
+				// select text string to be displayed
+
 				bool with_text = false;
-				CString str_text;
+				CString str_text, str_reference_text;
 
 				if(pDoc->m_LinkMOEMode == MOE_none && (*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
 				{
@@ -783,7 +821,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio ))
 				{
 
-					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,15, value);
+					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
 
 					if(value >0.001)  // with value
 					{
@@ -794,6 +832,25 @@ void CTLiteView::DrawObjects(CDC* pDC)
 							str_text.Format ("%.0f",value);
 
 					with_text = true;
+
+					if(pDoc->m_bShowCalibrationResults)  // special conditions with calibration mode
+						{
+								if((*iLink)->m_bSensorData )
+								{
+									str_text.Format ("%.0f",value);
+									float percentage_error = (value- (*iLink)->m_ReferenceFlowVolume) / max(1,(*iLink)->m_ReferenceFlowVolume)*100;
+//									str_reference_text.Format ("%.0f, %.0f%%",(*iLink)->m_ReferenceFlowVolume,percentage_error);
+									str_reference_text.Format ("%.0f",(*iLink)->m_ReferenceFlowVolume);
+
+									with_text = true;
+								
+								}else
+								{  // do not show data without sensors
+									with_text = false; 
+								}
+						
+						}
+
 					}
 					else
 					{
@@ -801,17 +858,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 				
 
-				}
-								
-
 				if(with_text)
 				{
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
+				pDC->SetBkColor(RGB(0, 0, 0));
+				pDC->SetTextColor(RGB(255,255,0));
 				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
+
+				if(str_reference_text.GetLength () > 0 )  // reference text with different color4
+				{
+				pDC->SetTextColor(RGB(128, 255, 255));
+				pDC->TextOut(TextPoint.x,TextPoint.y+m_LinkTextFontSize, str_reference_text);
+				}
+
+
 				}
 
 				
 			}
+
+			// step 6:  show location of scenario/incident /work zone/ toll
+				pDC->SetBkColor(RGB(0, 0, 0));
 
 			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
 
@@ -826,9 +893,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			//************************************
 
-			// draw sensor flag
+			// step 7: draw sensor 
 
-			if(m_bShowSensor && (*iLink)->m_bSensorData )
+			if(m_bShowSensor && (*iLink)->m_bSensorData && pDoc->m_LinkMOEMode != MOE_volume)  // only during non display mode
 			{
 				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
 				{
@@ -839,8 +906,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					pDC->SelectObject(&g_PenSensorColor);
 				}		
 				CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
-				int size = 4;
-				pDC->SelectStockObject(NULL_BRUSH);
+				int size = 6;
+				pDC->SelectObject(g_BrushSensor);
 				pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
 
 			}
@@ -1041,7 +1108,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	//draw crashes
+	//draw crash layer
 
 	if(pDoc->m_LinkMOEMode == MOE_safety)
 	{
@@ -1064,7 +1131,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				
 	}
 	}
-	// draw subarea
+	// draw subarea layer
 	pDC->SelectObject(&g_SubareaPen);
 
 	if(GetDocument()->m_SubareaShapePoints.size() > 0)
@@ -1105,6 +1172,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
+	// show vehicles
 
 	if( pDoc->m_LinkMOEMode == MOE_vehicle)
 	{
@@ -1206,9 +1274,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 				}
 	}
-
-
-
 }
 
 void CTLiteView::FitNetworkToScreen()
@@ -1602,7 +1667,7 @@ void CTLiteView::OnUpdateViewMove(CCmdUI *pCmdUI)
 
 void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 {
-	SetStatusText("");
+
 	if(m_ToolMode == move_tool && m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
@@ -1665,8 +1730,6 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			DrawTemporalLink(m_TempLinkStartPoint,m_TempLinkEndPoint);
 		}
 
-
-
 		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
 
 	}
@@ -1691,9 +1754,13 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 
 	}
 
+   
+   CString str;
+   GDPoint  gdpt  = SPtoNP(point);
+   str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
+   GetDocument()->SendTexttoStatusBar(str);
 
-
-	CView::OnMouseMove(nFlags, point);
+   CView::OnMouseMove(nFlags, point);
 }
 
 void CTLiteView::OnViewSelect()
@@ -2275,7 +2342,7 @@ void CTLiteView::OnLinkEditlink()
 	{
 		CDlgLinkProperties dlg;
 
-		dlg.m_pDOC = pDoc;
+		dlg.m_pDoc = pDoc;
 
 		dlg.FromNode = pLink->m_FromNodeNumber ;
 		dlg.ToNode = pLink->m_ToNodeNumber ;
@@ -2515,7 +2582,7 @@ void CTLiteView::OnFileDataexchangewithgooglefusiontables()
 {
 	CopyLinkSetInSubarea();
 	CDlg_GoogleFusionTable dlg;
-	dlg.m_pDOC= GetDocument();
+	dlg.m_pDoc= GetDocument();
 	dlg.DoModal ();
 }
 
@@ -2614,30 +2681,50 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 }
 
 
-bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC)
+bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag =false)
 {
 
-	int band_point_index = 0;
+	int band_point_index = 0;  
 
 	if(pLink ->m_ShapePoints.size() > 900)
 	{
 		AfxMessageBox("Two many shape points...");
 		return false;
 	}
+	int si; // we should not use unsigned integer here as si-- 
 
-	int si;
-	for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+	if(bObservationFlag == false)
 	{
-		m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
-	}
+		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+		{
+			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
+		}
 
-	for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+		for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+		{
+			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[si]);
+		}
+
+		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
+	}else
 	{
-		m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[si]);
+		if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
+		{
+
+		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+		{
+			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[si]);
+		}
+
+		for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+		{
+			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[si]);
+		}
+
+		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
+		}
+	
 	}
-
-	m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
-
 
 	pDC->Polygon(m_BandPoint, band_point_index);
 
@@ -2933,4 +3020,9 @@ void CTLiteView::OnLinkDecreasebandwidth()
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 	
+}
+
+void CTLiteView::OnUpdateViewSensor(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowSensor ? 1 : 0);
 }

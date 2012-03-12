@@ -8,7 +8,7 @@ class CDlg_GoogleFusionTable : public CDialog
 	DECLARE_DYNAMIC(CDlg_GoogleFusionTable)
 
 public:
-	CTLiteDoc* m_pDOC;
+	CTLiteDoc* m_pDoc;
 	CDlg_GoogleFusionTable(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_GoogleFusionTable();
 

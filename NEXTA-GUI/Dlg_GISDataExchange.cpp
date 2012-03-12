@@ -239,15 +239,28 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 				{
 
 					OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn( iField );
+					CString str;
 
 					if( poFieldDefn->GetType() == OFTInteger )
 						CSVFile <<  poFeature->GetFieldAsInteger( iField ) << ",";
 					else if( poFieldDefn->GetType() == OFTReal )
 						CSVFile <<  poFeature->GetFieldAsDouble(iField) << ",";
 					else if( poFieldDefn->GetType() == OFTString )
-						CSVFile <<   poFeature->GetFieldAsString(iField)  << ",";
+					{
+						str = poFeature->GetFieldAsString(iField);
+						if(str.Find(',') >=0) 
+							CSVFile << "\"" << poFeature->GetFieldAsString(iField)  << "\",";
+						else
+							CSVFile <<   poFeature->GetFieldAsString(iField)  << ",";
+					}
 					else
-						CSVFile <<   poFeature->GetFieldAsString(iField)  << ",";
+					{
+						str = poFeature->GetFieldAsString(iField);
+						if(str.Find(',') >=0) 
+							CSVFile << "\"" << poFeature->GetFieldAsString(iField)  << "\",";
+						else
+							CSVFile <<   poFeature->GetFieldAsString(iField)  << ",";
+					}
 
 				}
 
