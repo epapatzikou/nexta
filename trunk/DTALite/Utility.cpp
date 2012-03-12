@@ -230,7 +230,7 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 	return value; 
 } 
 
-void g_FreeVehicleVector()
+void g_FreeMemoryForVehicleVector()
 {
 	cout << "Free vehicle set... " << endl;
 	std::vector<DTAVehicle*>::iterator iterVehicle;		//this part of code needs to be carelfully reviewed, as it tries to delete pointers within STL					

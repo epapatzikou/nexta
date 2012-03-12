@@ -422,7 +422,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 		int PredNode;
 		int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
-		int vehicle_id_trace  = 0;
+		int vehicle_id_trace  = -1;
 
 
 		PathArrayForEachODT *PathArray;
@@ -1133,18 +1133,7 @@ void g_AgentBasedShortestPathGeneration()
 
 	g_AssignmentMOEVector[iteration]  = SimuOutput;
 
-	float PercentageComplete = 0;
-
-	if(SimuOutput.NumberofVehiclesGenerated>0)
-		PercentageComplete =  SimuOutput.NumberofVehiclesCompleteTrips*100.0f/SimuOutput.NumberofVehiclesGenerated;
-
-	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
-	cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
-
-	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%";
-
-
-	if(iteration <= 1) // compute relative gap after iteration 1
+		if(iteration <= 1) // compute relative gap after iteration 1
 	{
 		g_RelativeGap = 100; // 100%
 	}else
@@ -1157,12 +1146,23 @@ void g_AgentBasedShortestPathGeneration()
 
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
-		float avg_gap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
-			g_AssignmentLogFile << ","<< avg_gap << endl;				
-// for estimation only
-//		<< ", total demand deviation for all paths: " << g_TotalDemandDeviation << ", total measurement deviation for all paths " << g_TotalMeasurementDeviation  << endl;				
-	}else
-		g_AssignmentLogFile << endl;		
+		SimuOutput.AvgUEGap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
+
+	}
+
+	float PercentageComplete = 0;
+
+	if(SimuOutput.NumberofVehiclesGenerated>0)
+		PercentageComplete =  SimuOutput.NumberofVehiclesCompleteTrips*100.0f/SimuOutput.NumberofVehiclesGenerated;
+
+	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
+	cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
+
+	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%,"  << SimuOutput.AvgUEGap   << ",";				
+	g_AssignmentLogFile << SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeMeasurementAbsError ;
+
+	g_AssignmentLogFile << endl;
+	SimuOutput.ResetStatistics ();   
 
 	// with or without inner loop 
 	if(g_NumberOfInnerIterations == 0) // without inner loop

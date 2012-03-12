@@ -1023,7 +1023,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 
 	if(g_ODEstimationFlag) 
-		g_UpdateLinkMOEDeviation_ODEstimation();
+		g_UpdateLinkMOEDeviation_ODEstimation(output);
 
 	float TotalTripTime = 0;
 	float TotalDelay = 0;
