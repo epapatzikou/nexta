@@ -125,6 +125,9 @@ public:
 class DTAZone
 { 
 public:
+	std::map<int, float> m_HistDemand;  // key destination zone, value, demand value
+
+
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_CentroidNodeAry;
 
@@ -355,7 +358,10 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+		m_ReferenceFlowVolume = 0;
+		m_FlowMeasurementError = 0;
 		m_AADT = 0;
+		m_bSensorData = false;
 		m_NumberOfCrashes = 0;
 
 		m_SimulationHorizon	= TimeSize;
@@ -627,7 +633,11 @@ public:
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
 
-	double m_AADT;
+	float m_ReferenceFlowVolume;
+	float m_FlowMeasurementError ;
+	float m_AADT;
+	bool m_bSensorData;
+
 	double m_NumberOfCrashes;
 	double m_AdditionalDelayDueToCrashes;
 
@@ -1423,6 +1433,25 @@ void Assignment_MP(int id, int nthreads, int node_size, int link_size, int itera
 struct NetworkLoadingOutput
 {
 public:
+	NetworkLoadingOutput()
+	{
+	ResetStatistics();
+	}
+
+	void ResetStatistics ()
+	{
+	AvgUEGap = 0;
+	TotalDemandDeviation = 0;
+	LinkVolumeMeasurementAbsError  =0 ;
+
+	AvgTravelTime = 0;
+	AvgDelay = 0;
+	AvgTTI = 0;
+	AvgDistance = 0;
+	NumberofVehiclesCompleteTrips = 0;
+	NumberofVehiclesGenerated = 0;
+	SwitchPercentage = 0;
+	}
 	float AvgTravelTime;
 	float AvgDelay;
 	float AvgTTI;
@@ -1430,6 +1459,11 @@ public:
 	int   NumberofVehiclesCompleteTrips;
 	int   NumberofVehiclesGenerated;
 	float SwitchPercentage;
+	float AvgUEGap;
+	float TotalDemandDeviation;
+	float LinkVolumeMeasurementAbsError;
+
+
 };
 
 NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
@@ -1568,30 +1602,28 @@ extern float g_VMSPerceptionErrorRatio;
 extern int g_information_updating_interval_of_en_route_info_travelers_in_min;
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int, int); // construct path array for each ODT
-extern void g_UpdateLinkMOEDeviation_ODEstimation();
+extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output);
 extern void g_GenerateVehicleData_ODEstimation();
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
 
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
 
-extern void g_FreeVehicleVector();
+extern void g_FreeMemoryForVehicleVector();
 extern void g_FreeODTKPathVector();
 
 void g_AgentBasedShortestPathGeneration();
 
-extern void g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork);
-extern void g_ReadHistDemandFile();
-extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
-extern void g_ExportLinkMOEToGroundTruthSensorData_ODEstimation();
+extern bool g_ReadLinkMeasurementFile(DTANetworkForSP* pPhysicalNetwork);
+//extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
 
 // for OD estimation
 extern float*** g_HistODDemand;
-extern float    g_ODEstimation_Weight_ODDemand;
+extern float    g_ODEstimation_WeightOnHistODDemand;
 extern float    g_ODEstimation_Weight_Flow;
 extern float    g_ODEstimation_Weight_NumberOfVehicles;
 extern float    g_ODEstimation_Weight_TravelTime;
-extern float    g_ODEstimation_Weight_Gap;
+extern float    g_ODEstimation_WeightOnUEGap;
 extern float    g_ODEstimation_StepSize;
 
 extern int g_ODEstimationFlag;

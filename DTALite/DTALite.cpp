@@ -1213,18 +1213,13 @@ void ReadInputFiles()
 	if(g_ODEstimationFlag == 1)  //  OD estimation mode 1: read measurement data directly
 	{
 		//*******************************
-		// step 11: traffic measurement input
+		cout << "Step 12: Reading file input_sensor.csv for OD Demand Adjustment"<< endl;
+		g_LogFile << "Step 12: Reading file input_sensor.csv for OD Demand Adjustment"<< endl;
+
 		g_ReadLinkMeasurementFile(&PhysicalNetwork);
 		// second step: start reading historical demand
 		//*******************************
-		// step 12: historical demand input
-		g_ReadHistDemandFile();
-	}
-
-	if(g_ODEstimationFlag == 2) //  OD estimation mode 2: read simulated measurements
-	{
-		g_ReadObservedLinkMOEData(&PhysicalNetwork);
-		g_ReadHistDemandFile();
+		// step 12: historical demand input: in the current implementation, the starting demand is the historical OD demand matrix
 
 	}
 
@@ -1560,12 +1555,15 @@ void g_ReadDemandFile()
 				total_demand_in_demand_file += number_of_vehicles;
 				number_of_vehicles*= g_DemandGlobalMultiplier;
 
+
 				// we generate vehicles here for each OD data line
 				//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,demand_type,starting_time_in_min,ending_time_in_min);
 
 				if(g_ZoneMap.find(originput_zone)!= g_ZoneMap.end())
 				{
 					g_ZoneMap[originput_zone].m_Demand += number_of_vehicles;
+					// setup historical demand value for static OD estimation
+					g_ZoneMap[originput_zone].m_HistDemand[destination_zone] += number_of_vehicles;
 
 					float Interval= ending_time_in_min - starting_time_in_min;
 
@@ -1684,7 +1682,7 @@ void FreeMemory()
 	g_LinkVector.clear();
 
 	g_ZoneMap.clear ();
-	g_FreeVehicleVector();
+	g_FreeMemoryForVehicleVector();
 
 	DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
 
@@ -1809,13 +1807,17 @@ void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithE
 void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 {
 
-	FILE* st = NULL;
-	fopen_s(&st,fname,"w");
+	ofstream LinkMOESummaryFile;
 
-	if(st!=NULL)
+	LinkMOESummaryFile.open (fname, ios::out);
+	if (LinkMOESummaryFile.is_open())
 	{
+		LinkMOESummaryFile.width(12);
+		LinkMOESummaryFile.precision(3) ;
+		LinkMOESummaryFile.setf(ios::fixed);
 
-		fprintf(st, "from_node_id,to_node_id,start_time_in_min, end_time_in_min,total_link_volume,lane_capacity_in_vhc_per_hour, volume_over_capacity_ratio, speed_limit_in_mph, speed_in_mph, percentage_of_speed_limit, level_of_service, AADT,num_of_crashes_per_year\n");
+
+		LinkMOESummaryFile << "from_node_id,to_node_id,start_time_in_min, end_time_in_min,total_link_volume,lane_capacity_in_vhc_per_hour, volume_over_capacity_ratio, speed_limit_in_mph, speed_in_mph, percentage_of_speed_limit, level_of_service, sensor_data_flag, sensor_link_volume, measurement_error_percentage, abs_measurement_error_percentage,simulated_AADT,num_of_crashes_per_year" << endl;
 
 //		DTASafetyPredictionModel SafePredictionModel;
 //		SafePredictionModel.UpdateCrashRateForAllLinks();
@@ -1834,24 +1836,39 @@ void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 			int percentage_of_speed_limit = int(speed/max(0.1,pLink->m_SpeedLimit)*100+0.5);
 
 
-			fprintf(st, "%d,%d,%d,%d,%d,%f,%f,%f,%f,%d,%c,%f,%f\n", 
-				g_NodeVector[pLink->m_FromNodeID].m_NodeName ,
-				g_NodeVector[pLink->m_ToNodeID].m_NodeName ,
-				g_DemandLoadingStartTimeInMin,
-				g_DemandLoadingEndTimeInMin,
-				pLink->CFlowArrivalCount / max(1,(g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/60),  // total hourly arrival flow 
-				pLink->m_MaximumServiceFlowRatePHPL,
-				voc_ratio, 
-				pLink->m_SpeedLimit,
-				speed,
-				percentage_of_speed_limit,
-				g_GetLevelOfService(percentage_of_speed_limit),
-				pLink->m_AADT,
-				pLink->m_NumberOfCrashes);
+				LinkMOESummaryFile << g_NodeVector[pLink->m_FromNodeID].m_NodeName  << "," ;
+				LinkMOESummaryFile << g_NodeVector[pLink->m_ToNodeID].m_NodeName << "," ;
+				LinkMOESummaryFile << g_DemandLoadingStartTimeInMin << "," ;
+				LinkMOESummaryFile << g_DemandLoadingEndTimeInMin << "," ;
+				LinkMOESummaryFile << pLink->CFlowArrivalCount << "," ; // total hourly arrival flow 
+				LinkMOESummaryFile << pLink->m_MaximumServiceFlowRatePHPL << "," ;
+				LinkMOESummaryFile << voc_ratio << "," ;
+				LinkMOESummaryFile << pLink->m_SpeedLimit << "," ;
+				LinkMOESummaryFile << speed << "," ;
+				LinkMOESummaryFile << percentage_of_speed_limit << "," ;
+				LinkMOESummaryFile << g_GetLevelOfService(percentage_of_speed_limit) << "," ;
+				LinkMOESummaryFile << pLink->m_bSensorData << "," ;
+				LinkMOESummaryFile << pLink->m_ReferenceFlowVolume << "," ;
+
+				float error_percentage;
+				
+				if( pLink->m_bSensorData)
+				 error_percentage = (pLink->CFlowArrivalCount - pLink->m_ReferenceFlowVolume) / max(1,pLink->m_ReferenceFlowVolume) *100;
+				else
+					error_percentage  = 0;
+
+				LinkMOESummaryFile << error_percentage << "," ;
+				LinkMOESummaryFile << fabs(error_percentage) << "," ;
+
+				LinkMOESummaryFile << pLink->m_AADT << "," ;
+				LinkMOESummaryFile << pLink->m_NumberOfCrashes << "," ;
+
+				LinkMOESummaryFile << endl;	
+
 		}
 
-
-		fclose(st);
+		LinkMOESummaryFile.close ();
+		
 	}else
 	{
 		fprintf(g_ErrorFile, "File %s cannot be opened. It might be currently used and locked by EXCEL.", fname);
@@ -2002,7 +2019,7 @@ int g_InitializeLogFiles()
 		g_AssignmentLogFile.precision(3) ;
 		g_AssignmentLogFile.setf(ios::fixed);
 
-		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min)" << endl;
+		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min),Target Demand Deviation,Link Volume Measurement Abs Error" << endl;
 	}
 	else
 	{
@@ -2084,8 +2101,11 @@ void g_ReadDTALiteSettings()
 
 	g_ODEstimationFlag = g_GetPrivateProfileInt("estimation", "od_demand_estimation", 0, IniFilePath_DTA);	
 	g_ODEstimationMeasurementType = g_GetPrivateProfileInt("estimation", "measurement_type", 1, IniFilePath_DTA);	
+	g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, IniFilePath_DTA);
+	g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, IniFilePath_DTA);
 
-	g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 2, IniFilePath_DTA);
+
+	g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 10, IniFilePath_DTA);
 	g_ObservationTimeInterval = g_GetPrivateProfileInt("estimation", "observation_time_interval", 5, IniFilePath_DTA);
 	g_ObservationStartTime = g_GetPrivateProfileInt("estimation", "observation_start_time_in_min", 390, IniFilePath_DTA);
 	g_ObservationEndTime = g_GetPrivateProfileInt("estimation", "observation_end_time_in_min", 570, IniFilePath_DTA);
