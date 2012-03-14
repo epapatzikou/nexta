@@ -52,6 +52,7 @@ extern int g_AdjLinkSize; // initial value of adjacent links
 extern int g_ODZoneSize;
 
 // assignment and simulation settings
+extern int g_ParallelComputingMode;
 extern int g_NumberOfIterations;
 extern float g_ConvergencyRelativeGapThreshold_in_perc;
 extern int g_NumberOfInnerIterations;

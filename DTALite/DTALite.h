@@ -358,7 +358,7 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
-		m_ReferenceFlowVolume = 0;
+		m_ObservedFlowVolume = 0;
 		m_FlowMeasurementError = 0;
 		m_AADT = 0;
 		m_bSensorData = false;
@@ -633,7 +633,7 @@ public:
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
 
-	float m_ReferenceFlowVolume;
+	float m_ObservedFlowVolume;
 	float m_FlowMeasurementError ;
 	float m_AADT;
 	bool m_bSensorData;
@@ -1442,7 +1442,10 @@ public:
 	{
 	AvgUEGap = 0;
 	TotalDemandDeviation = 0;
-	LinkVolumeMeasurementAbsError  =0 ;
+	LinkVolumeAvgAbsError  =0 ;
+	LinkVolumeAvgAbsPercentageError  =0 ;
+	LinkVolumeRootMeanSquaredError = 0;
+	CorrelationBetweenObservedAndSimulatedLinkVolume = 0;
 
 	AvgTravelTime = 0;
 	AvgDelay = 0;
@@ -1461,9 +1464,10 @@ public:
 	float SwitchPercentage;
 	float AvgUEGap;
 	float TotalDemandDeviation;
-	float LinkVolumeMeasurementAbsError;
-
-
+	float LinkVolumeAvgAbsError;
+	float LinkVolumeAvgAbsPercentageError;
+	float LinkVolumeRootMeanSquaredError;
+	float CorrelationBetweenObservedAndSimulatedLinkVolume;
 };
 
 NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
@@ -1640,5 +1644,5 @@ extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation 
 extern FILE* g_ErrorFile;
 extern ofstream g_LogFile;
 extern ofstream g_AssignmentLogFile;
-extern ofstream g_InternalLogFile;
+extern ofstream g_EstimationLogFile;
 
