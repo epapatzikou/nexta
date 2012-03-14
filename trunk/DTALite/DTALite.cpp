@@ -135,7 +135,6 @@ std::map<int, int> g_LinkTypeArterialMap;
 std::map<int, int> g_LinkTypeRampMap;
 std::vector<DTALinkType> g_LinkTypeVector;
 
-
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
@@ -150,6 +149,7 @@ int g_ODZoneSize = 0;
 
 // assignment and simulation settings
 int g_NumberOfIterations = 1;
+int g_ParallelComputingMode = 1;
 int g_AgentBasedAssignmentFlag = 0;
 float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
@@ -215,7 +215,7 @@ std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle
 FILE* g_ErrorFile = NULL;
 ofstream g_LogFile;
 ofstream g_AssignmentLogFile;
-ofstream g_InternalLogFile;
+ofstream g_EstimationLogFile;
 ofstream g_WarningFile;
 
 int g_TrafficFlowModelFlag = 0;
@@ -385,9 +385,9 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 
 			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkVector[LinkID];
+			DTALink* pLink = g_LinkVector[LinkID];
 
-			if(plink!=NULL)
+			if(pLink!=NULL)
 			{
 				CapacityReduction cs;
 				cs.StartTime = g_read_integer(st);
@@ -398,8 +398,8 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 				if(cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 
-				cs.SpeedLimit = plink->m_SpeedLimit ; // use default speed limit for incidents
-				plink->CapacityReductionVector.push_back(cs);
+				cs.SpeedLimit = pLink->m_SpeedLimit ; // use default speed limit for incidents
+				pLink->CapacityReductionVector.push_back(cs);
 				count++;
 
 			}
@@ -427,9 +427,9 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 			int dsn =  g_read_integer(st);
 			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkVector[LinkID];
+			DTALink* pLink = g_LinkVector[LinkID];
 
-			if(plink!=NULL)
+			if(pLink!=NULL)
 			{
 				MessageSign is;
 
@@ -438,7 +438,7 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 				is.EndTime = g_read_integer(st);
 				is.ResponsePercentage =  g_read_float(st);
 
-				plink->MessageSignVector.push_back(is);
+				pLink->MessageSignVector.push_back(is);
 				count++;
 			}
 		}
@@ -469,9 +469,9 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 			int dsn =  g_read_integer(st);
 			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkVector[LinkID];
+			DTALink* pLink = g_LinkVector[LinkID];
 
-			if(plink!=NULL)
+			if(pLink!=NULL)
 			{
 				Toll tc;  // toll collectio
 
@@ -484,7 +484,7 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 				}
 
 				count++;
-				plink->TollVector.push_back(tc);
+				pLink->TollVector.push_back(tc);
 
 			}
 		}
@@ -514,9 +514,9 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 			int dsn =  g_read_integer(st);
 			int LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
-			DTALink* plink = g_LinkVector[LinkID];
+			DTALink* pLink = g_LinkVector[LinkID];
 
-			if(plink!=NULL)
+			if(pLink!=NULL)
 			{
 				Toll tc;  // toll collection
 
@@ -527,11 +527,11 @@ void ReadScenarioInputFiles(DTANetworkForSP* pPhysicalNetwork)
 				{
 					float per_mile_rate = g_read_float(st); 
 
-					tc.TollRate [vt] = per_mile_rate*plink->m_Length;
+					tc.TollRate [vt] = per_mile_rate*pLink->m_Length;
 				}
 
 				count++;
-				plink->TollVector.push_back(tc);
+				pLink->TollVector.push_back(tc);
 			}
 		}
 
@@ -1247,10 +1247,10 @@ void ReadInputFiles()
 	cout << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
 	cout <<	"Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
 
-	if(g_DemandLoadingEndTimeInMin + 120 > g_PlanningHorizon)
+	if(g_DemandLoadingEndTimeInMin + 300 > g_PlanningHorizon)
 	{
 		//reset simulation horizon to make sure it is longer than the demand loading horizon
-		g_PlanningHorizon = g_DemandLoadingEndTimeInMin+ 120;
+		g_PlanningHorizon = g_DemandLoadingEndTimeInMin+ 300;
 
 		for(unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
 		{
@@ -1328,6 +1328,24 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 }
 void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork)
 {
+
+
+	if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
+	{
+		g_DemandLoadingStartTimeInMin = 0;
+		g_DemandLoadingEndTimeInMin = 60;
+		g_AggregationTimetInterval =  60;
+	}else   // dynamic traffic assignment
+	{
+	g_DemandLoadingStartTimeInMin= 0;
+	g_DemandLoadingEndTimeInMin= int(g_PlanningHorizon*1.0f/g_AggregationTimetInterval+0.49f)*g_AggregationTimetInterval;  // round to the nearest large number
+	
+	}
+
+	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
+
+
 	int   PathNodeList[MAX_NODE_SIZE_IN_A_PATH];
 
 	cout << "Reading vehicle file as simulation input... "  << endl;
@@ -1848,12 +1866,12 @@ void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 				LinkMOESummaryFile << percentage_of_speed_limit << "," ;
 				LinkMOESummaryFile << g_GetLevelOfService(percentage_of_speed_limit) << "," ;
 				LinkMOESummaryFile << pLink->m_bSensorData << "," ;
-				LinkMOESummaryFile << pLink->m_ReferenceFlowVolume << "," ;
+				LinkMOESummaryFile << pLink->m_ObservedFlowVolume << "," ;
 
 				float error_percentage;
 				
 				if( pLink->m_bSensorData)
-				 error_percentage = (pLink->CFlowArrivalCount - pLink->m_ReferenceFlowVolume) / max(1,pLink->m_ReferenceFlowVolume) *100;
+				 error_percentage = (pLink->CFlowArrivalCount - pLink->m_ObservedFlowVolume) / max(1,pLink->m_ObservedFlowVolume) *100;
 				else
 					error_percentage  = 0;
 
@@ -2019,7 +2037,7 @@ int g_InitializeLogFiles()
 		g_AssignmentLogFile.precision(3) ;
 		g_AssignmentLogFile.setf(ios::fixed);
 
-		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min),Target Demand Deviation,Link Volume Measurement Abs Error" << endl;
+		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min),Target Demand Deviation,Abs Measurement  Error of Link Volume, RMSE of Link Volume, Avg Abs Percentage Error of Link Volume " << endl;
 	}
 	else
 	{
@@ -2029,12 +2047,12 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
-	g_InternalLogFile.open ("estimation.log", ios::out);
-	if (g_InternalLogFile.is_open())
+	g_EstimationLogFile.open ("estimation_log.csv", ios::out);
+	if (g_EstimationLogFile.is_open())
 	{
-		g_InternalLogFile.width(12);
-		g_InternalLogFile.precision(3) ;
-		g_InternalLogFile.setf(ios::fixed);
+		g_EstimationLogFile.width(12);
+		g_EstimationLogFile.precision(3) ;
+		g_EstimationLogFile.setf(ios::fixed);
 	}else
 	{
 		cout << "File estimation.log cannot be opened, and it might be locked by another program!" << endl;
@@ -2111,7 +2129,11 @@ void g_ReadDTALiteSettings()
 	g_ObservationEndTime = g_GetPrivateProfileInt("estimation", "observation_end_time_in_min", 570, IniFilePath_DTA);
 
 	if(g_ObservationEndTime >= g_ObservationStartTime + g_PlanningHorizon)  // no later than the simulation end time
-		g_ObservationEndTime = g_ObservationStartTime + g_PlanningHorizon;
+	g_ObservationEndTime = g_ObservationStartTime + g_PlanningHorizon;
+
+	g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
+	g_ParallelComputingMode = g_GetPrivateProfileInt("assignment", "parallel_computing", 1, IniFilePath_DTA);
+
 
 	if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 	{
@@ -2119,16 +2141,15 @@ void g_ReadDTALiteSettings()
 		g_PlanningHorizon = 60; // one hour
 		g_NumberOfInnerIterations = 0;
 		g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, IniFilePath_DTA);	
+
 		g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, IniFilePath_DTA);
 		g_DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,IniFilePath_DTA);	
 	}
 	else  //DTA parameters
 	{
-		g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
 
 		g_PlanningHorizon = g_GetPrivateProfileInt("simulation", "simulation_horizon_in_min", 600, IniFilePath_DTA);	
 		// research code:		g_StochasticCapacityMode = g_GetPrivateProfileInt("simulation", "stochatic_capacity_mode", 0, IniFilePath_DTA);
-
 
 		g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, IniFilePath_DTA);	
 		g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, IniFilePath_DTA);
@@ -2174,7 +2195,7 @@ void g_ReadDTALiteSettings()
 
 	if(g_VehicleLoadingMode == 1)
 	{
-		g_LogFile << "Load vehicle from trajectory file input_vehicle.csv" << endl;
+		g_LogFile << "Load vehicles from the trajectory file input_vehicle.csv" << endl;
 	}
 
 	g_LogFile << "Traffic Flow Model =  ";

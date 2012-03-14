@@ -45,7 +45,6 @@ using namespace std;
 std::vector<DTAPathData>   g_global_path_vector;	// global vector of path data
 std::map<CString, int> g_path_index_map; 
 
-
 extern ofstream g_WarningFile;
 
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
@@ -315,6 +314,10 @@ void g_ODBasedDynamicTrafficAssignment()
 	int TotalNumOfVehiclesGenerated = 0;
 	int number_of_threads = omp_get_num_threads();
 
+	if(g_ParallelComputingMode == 0)
+		number_of_threads = 1;
+
+
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
 	// ----------* start of outer loop *----------
@@ -333,9 +336,9 @@ void g_ODBasedDynamicTrafficAssignment()
 
 		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
-			g_InternalLogFile << "----- Iteration = " << iteration << " ------" << endl; 
+			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl; 
 
-	//#pragma omp parallel for
+#pragma omp parallel for
 			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 			{
 				// create network for shortest path calculation at this processor
@@ -1035,6 +1038,9 @@ void g_AgentBasedShortestPathGeneration()
 	int UniqueDestinationSize = 0;
 	int number_of_threads = omp_get_max_threads();
 
+	if(g_ParallelComputingMode == 0)
+		number_of_threads = 1;
+
 	for(i=0; i< g_NodeVector.size(); i++)
 	{
 		if(g_NodeVector[i].m_bOriginFlag == true)
@@ -1158,10 +1164,15 @@ void g_AgentBasedShortestPathGeneration()
 	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
 	cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
 
-	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%,"  << SimuOutput.AvgUEGap   << ",";				
-	g_AssignmentLogFile << SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeMeasurementAbsError ;
+	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
+		
+	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
 
-	g_AssignmentLogFile << endl;
+	if(g_ODEstimationFlag == 1)
+		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
+
+
+
 	SimuOutput.ResetStatistics ();   
 
 	// with or without inner loop 
