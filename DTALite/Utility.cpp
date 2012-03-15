@@ -234,12 +234,9 @@ void g_FreeMemoryForVehicleVector()
 {
 	cout << "Free vehicle set... " << endl;
 	std::vector<DTAVehicle*>::iterator iterVehicle;		//this part of code needs to be carelfully reviewed, as it tries to delete pointers within STL					
-	for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end();)
+	for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end();iterVehicle++)
 	{
 		delete *iterVehicle;
-
-		iterVehicle = g_VehicleVector.erase(iterVehicle);  // added by Xuesong, Feb, 2012
-		//reference: http://stackoverflow.com/questions/991335/how-to-erase-delete-pointers-to-objects-stored-in-a-vector
 	}
 
 	g_VehicleVector.clear();
