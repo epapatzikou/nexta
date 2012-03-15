@@ -1916,6 +1916,47 @@ public:
 
 };
 
+struct NetworkLoadingOutput
+{
+public:
+	NetworkLoadingOutput()
+	{
+	ResetStatistics();
+	}
+
+	void ResetStatistics ()
+	{
+	AvgUEGap = 0;
+	TotalDemandDeviation = 0;
+	LinkVolumeAvgAbsError  =0 ;
+	LinkVolumeAvgAbsPercentageError  =0 ;
+	LinkVolumeRootMeanSquaredError = 0;
+	CorrelationBetweenObservedAndSimulatedLinkVolume = 0;
+
+	AvgTravelTime = 0;
+	AvgDelay = 0;
+	AvgTTI = 0;
+	AvgDistance = 0;
+	NumberofVehiclesCompleteTrips = 0;
+	NumberofVehiclesGenerated = 0;
+	SwitchPercentage = 0;
+	}
+	float AvgTravelTime;
+	float AvgDelay;
+	float AvgTTI;
+	float AvgDistance;
+	int   NumberofVehiclesCompleteTrips;
+	int   NumberofVehiclesGenerated;
+	float SwitchPercentage;
+	float AvgUEGap;
+	float TotalDemandDeviation;
+	float LinkVolumeAvgAbsError;
+	float LinkVolumeAvgAbsPercentageError;
+	float LinkVolumeRootMeanSquaredError;
+	float CorrelationBetweenObservedAndSimulatedLinkVolume;
+};
+
+
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 // Stop bugging me about this, live isn't perfect
 

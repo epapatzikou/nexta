@@ -949,6 +949,9 @@ public:
 		afx_msg void OnMoeViewlinkmoesummaryfile();
 		afx_msg void OnViewCalibrationview();
 		afx_msg void OnUpdateViewCalibrationview(CCmdUI *pCmdUI);
+		afx_msg void OnMoeViewtrafficassignmentsummaryplot();
+		afx_msg void OnMoeViewoddemandestimationsummaryplot();
+		afx_msg void OnProjectEditpricingscenariodata();
 };
 
 

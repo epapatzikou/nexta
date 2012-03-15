@@ -6,6 +6,8 @@
 #define IDCANCLE                        2
 #define IDOK_FIND_NODE                  2
 #define ID_EXPORT_DATA                  2
+#define IDOK2                           2
+#define ID_VOT_Distribution             2
 #define ID_EXPORT                       3
 #define ID_IMPORT                       3
 #define IDOK_FIND_PATH                  3
@@ -84,24 +86,32 @@
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDD_DIALOG_Legend               196
+#define IDD_LINEPLOT_DIALOG             197
+#define IDD_NSCHART_TOLL_DIALOG         198
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
 #define IDC_EDIT_LENGTH                 1002
 #define IDC_EDIT_NODE                   1002
 #define IDC_RADIO2                      1002
+#define ID_BTN_CURR_COLOR               1002
 #define IDC_EDIT_SPEEDLIMIT             1003
 #define IDC_RADIO3                      1003
+#define ID_BTN_Resize_Plot              1003
 #define IDC_EDIT_FFTT                   1004
 #define IDC_RADIO4                      1004
+#define ID_BTN_CURR_REMOVE              1004
 #define IDC_EDIT_LANE_CAPACITY          1005
 #define IDC_RADIO5                      1005
 #define IDC_EDIT_NUMLANES               1006
+#define ID_CMB_STYLE                    1006
 #define IDC_LABEL                       1007
 #define IDC_VALUE                       1008
 #define IDC_ADD                         1009
+#define ID_BTN_PRINT                    1009
 #define IDC_PATH_LIST_CONTROL           1010
 #define IDC_DEL                         1010
+#define ID_BTN_SAVE_TO_FILE             1010
 #define IDC_MODIFY                      1011
 #define IDC_TRAIN_LIST_CONTROL          1013
 #define IDC_LIST_NETEWORK_FILE          1014
@@ -221,7 +231,14 @@
 #define ID_EXPORT_CSV_FILE              1094
 #define IDC_Back_GroundColorBUTTON      1094
 #define ID_EXPORT_GPS_SHAPE_FILE        1095
+#define IDC_DEMAND_TYPE_LIST            1095
 #define ID_EXPORT_KML_FILE              1096
+#define IDC_Toll_Link_LIST              1096
+#define IDC_DISTANCE_BASED_TOLL_CHECK   1097
+#define IDC_AREA_TOLL_CHECK             1098
+#define IDC_AREA_BUTTON                 1099
+#define IDC_ADD_BUTTON                  1100
+#define IDC_Delete_BUTTON               1101
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -651,14 +668,19 @@
 #define ID_MOE_VIEWLINKMOESUMMARYFILE   33313
 #define ID_VIEW_SHOW33314               33314
 #define ID_VIEW_CALIBRATIONVIEW         33316
+#define ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT 33317
+#define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT 33318
+#define ID_LINK_SWICHTOLINE             33319
+#define ID_LINK_SWICHTOLINE_BANDWIDTH_MODE 33320
+#define ID_PROJECT_EDITPRICINGSCENARIODATA 33321
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         33317
-#define _APS_NEXT_CONTROL_VALUE         1095
+#define _APS_NEXT_COMMAND_VALUE         33322
+#define _APS_NEXT_CONTROL_VALUE         1101
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

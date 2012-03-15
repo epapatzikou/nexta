@@ -135,6 +135,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnLinkIncreasebandwidth)
 	ON_COMMAND(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnLinkDecreasebandwidth)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SENSOR, &CTLiteView::OnUpdateViewSensor)
+	ON_COMMAND(ID_LINK_SWICHTOLINE_BANDWIDTH_MODE, &CTLiteView::OnLinkSwichtolineBandwidthMode)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -304,7 +305,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
-	m_link_display_mode = link_display_mode_line; // 
+	m_link_display_mode = link_display_mode_band; // 
 	m_NodeTypeFaceName      = "Arial";
 
 	m_bShowAVISensor = true;
@@ -623,7 +624,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
 		pDoc->m_LinkMOEMode == MOE_volume || 
 		pDoc->m_LinkMOEMode == MOE_speed ||
-		pDoc->m_LinkMOEMode == MOE_emissions) 
+		pDoc->m_LinkMOEMode == MOE_emissions ||
+		pDoc->m_LinkMOEMode == MOE_safety) 
 	{
 		pDoc->GenerateOffsetLinkBand();
 	}
@@ -743,8 +745,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				pDC->SetTextColor(RGB(255,228,181));
 
 			//step 4: draw link as line or band/bar
-			if(m_link_display_mode == link_display_mode_line && pDoc->m_LinkMOEMode != MOE_volume 
-				&& ((pDoc->m_bShowCalibrationResults)&& (*iLink)->m_bSensorData == false))  
+			if(m_link_display_mode == link_display_mode_line )  
 			{
 				 // calibration mode, do not show volume
 				DrawLinkAsLine((*iLink),pDC);
@@ -806,19 +807,22 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				bool with_text = false;
 				CString str_text, str_reference_text;
 
+				// show text condition 1: street name
 				if(pDoc->m_LinkMOEMode == MOE_none && (*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
 				{
 				str_text = (*iLink)->m_Name.c_str ();
 				with_text = true;
 				}
 
+				// show text condition 2: crash rates
 				if(pDoc->m_LinkMOEMode == MOE_safety && screen_distance > 50 && (*iLink)->m_NumberOfCrashes >= 0.0001)
 				{
 						str_text.Format ("%6.4f",(*iLink)->m_NumberOfCrashes );
 						with_text = true;
 				}
 
-				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio ))
+				// show text condition 3: other statistics
+				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio))
 				{
 
 					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
@@ -833,7 +837,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					with_text = true;
 
-					if(pDoc->m_bShowCalibrationResults)  // special conditions with calibration mode
+					if(pDoc->m_bShowCalibrationResults && pDoc->m_LinkMOEMode == MOE_volume)  // special conditions with calibration mode
 						{
 								if((*iLink)->m_bSensorData )
 								{
@@ -857,7 +861,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						with_text = false;
 					}
 				
+				}
 
+				// after all the above 3 conditions, show test now. 
 				if(with_text)
 				{
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
@@ -870,12 +876,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				pDC->SetTextColor(RGB(128, 255, 255));
 				pDC->TextOut(TextPoint.x,TextPoint.y+m_LinkTextFontSize, str_reference_text);
 				}
-
-
-				}
-
 				
-			}
+				}
 
 			// step 6:  show location of scenario/incident /work zone/ toll
 				pDC->SetBkColor(RGB(0, 0, 0));
@@ -3025,4 +3027,15 @@ void CTLiteView::OnLinkDecreasebandwidth()
 void CTLiteView::OnUpdateViewSensor(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowSensor ? 1 : 0);
+}
+
+void CTLiteView::OnLinkSwichtolineBandwidthMode()
+{
+	
+		m_link_display_mode = link_display_mode_band;
+		CTLiteDoc* pDoc = GetDocument();
+		pDoc->GenerateOffsetLinkBand();
+
+	
+	Invalidate();
 }

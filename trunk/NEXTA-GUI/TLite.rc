@@ -120,6 +120,7 @@ BEGIN
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
 END
 
 IDR_MAINFRAME1 TOOLBAR  16, 15
@@ -240,10 +241,12 @@ BEGIN
     SEPARATOR
     BUTTON      ID_Edit_Create2WayLinks
     SEPARATOR
+    BUTTON      ID_PROJECT_EDITPRICINGSCENARIODATA
     BUTTON      ID_IMPORT_INCIDENT
     BUTTON      ID_IMPORT_SENSOR
-    BUTTON      ID_IMPORT_SENSOR
     SEPARATOR
+    BUTTON      ID_IMPORT_PRICING
+    BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
     BUTTON      ID_IMPORT_PRICING
@@ -734,11 +737,12 @@ BEGIN
             MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
             MENUITEM "Length",                      ID_MOE_LENGTH
         END
-        MENUITEM "Increase Band Width (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
-        MENUITEM "Decrease Band Width  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+        MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
+        MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
         MENUITEM "Increase Offset for Two-way Links  (Keyboard  Shortcut: Left Arrow)", ID_LINK_INCREASEOFFSETFORTWO
         MENUITEM "Decrease Offset for Two-way Links  (Keyboard Shortcut: Right Arrow)", ID_LINK_DECREASEOFFSETFORTWO
         MENUITEM "No Offset and No Band Width", ID_LINK_NOOFFSETANDNOBANDWIDTH
+        MENUITEM "Swich to Line/Bandwidth Mode", ID_LINK_SWICHTOLINE_BANDWIDTH_MODE
     END
     POPUP "Search"
     BEGIN
@@ -751,6 +755,7 @@ BEGIN
     BEGIN
         MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
         MENUITEM "Edit OD Demand Table",        ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
         MENUITEM "Edit Time-Dependent Demand Profile", ID_PROJECT_EDITTIME
         MENUITEM "Edit Scenario Data",          ID_SCENARIO_CONFIGURATION
         MENUITEM SEPARATOR
@@ -765,8 +770,11 @@ BEGIN
         MENUITEM "MOE Tables",                  ID_MOE_VIEWMOES
         MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
         MENUITEM SEPARATOR
-        MENUITEM "View Traffic Assignment Summary Log", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
-        MENUITEM "View Link MOE Summary File",  ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM "View Traffic Assignment Summary In Excel", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "View Link MOE Summary In Excel", ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM SEPARATOR
+        MENUITEM "View Traffic Assignment Summary Plot", ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT
+        MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
     END
     POPUP "Tools"
     BEGIN
@@ -1553,6 +1561,62 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
 END
 
+IDD_LINEPLOT_DIALOG DIALOGEX 0, 0, 171, 230
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Line Plot"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Set Current Color",ID_BTN_CURR_COLOR,9,24,61,15
+    PUSHBUTTON      "Remove Current",ID_BTN_CURR_REMOVE,9,42,61,15
+    COMBOBOX        ID_CMB_STYLE,9,113,66,73,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Current Plot Style:",-1,"Static",SS_LEFTNOWORDWRAP | SS_CENTERIMAGE | WS_GROUP,9,98,71,9,WS_EX_TRANSPARENT
+    PUSHBUTTON      "Print",ID_BTN_PRINT,9,81,61,15
+    PUSHBUTTON      "Save to File",ID_BTN_SAVE_TO_FILE,9,62,61,15
+    PUSHBUTTON      "Restore Plot",ID_BTN_Resize_Plot,9,4,61,15
+    LISTBOX         IDC_LIST1,9,157,91,63,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Plot Information:",-1,"Static",SS_LEFTNOWORDWRAP | SS_CENTERIMAGE | WS_GROUP,9,143,71,9,WS_EX_TRANSPARENT
+END
+
+IDD_NSCHART_TOLL_DIALOG DIALOGEX 0, 0, 487, 297
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Pricing Strategies"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Close",IDOK,430,267,50,14
+    CONTROL         "Time-Dependent Toll Profile",IDC_CUSTOM1,
+                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,14,74,397,98
+    GROUPBOX        "Chart style",IDC_STATIC,417,54,54,25,WS_GROUP
+    CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,421,66,45,10
+    GROUPBOX        "Chart colors",IDC_STATIC,420,87,60,64,WS_GROUP
+    CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,424,100,49,10
+    CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,424,115,37,10
+    CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,424,131,39,10
+    EDITTEXT        IDC_LABEL,35,180,40,14,ES_AUTOHSCROLL
+    LTEXT           "Label:",IDC_STATIC,15,180,20,14,SS_CENTERIMAGE
+    EDITTEXT        IDC_VALUE,106,180,40,14,ES_AUTOHSCROLL
+    LTEXT           "Value:",IDC_STATIC,81,180,20,14,SS_CENTERIMAGE
+    PUSHBUTTON      "Add",IDC_ADD,150,180,25,14,0,WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Del",IDC_DEL,179,180,25,14,0,WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Modify",IDC_MODIFY,209,180,35,14,0,WS_EX_CLIENTEDGE
+    LISTBOX         IDC_DEMAND_TYPE_LIST,12,29,118,35,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Demand Type List:",IDC_STATIC,12,21,60,8
+    LTEXT           "Toll Link List:",IDC_STATIC,245,223,42,8
+    LISTBOX         IDC_Toll_Link_LIST,243,236,156,35,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Distance based Toll:",IDC_DISTANCE_BASED_TOLL_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,261,79,10
+    CONTROL         "Area Toll:",IDC_AREA_TOLL_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,226,66,10
+    PUSHBUTTON      "Create Subarea First, Define it as Toll Subarea (Cordon)",IDC_AREA_BUTTON,26,239,180,14
+    LTEXT           "Toll Rate:",IDC_STATIC,113,262,32,8
+    LTEXT           "$/Mile",IDC_STATIC,147,263,21,8
+    GROUPBOX        "1: Time Of Day Toll Pattern:",IDC_STATIC,7,7,473,191,0,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
+    GROUPBOX        "2: Spatial Coverage:",IDC_STATIC,7,209,402,71,0,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
+    PUSHBUTTON      "Add",IDC_ADD_BUTTON,333,218,27,14
+    PUSHBUTTON      "Delete",IDC_Delete_BUTTON,363,218,27,14
+    DEFPUSHBUTTON   "VOT Distribution",ID_VOT_Distribution,417,213,63,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1917,6 +1981,22 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 117
     END
+
+    IDD_LINEPLOT_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 1
+        RIGHTMARGIN, 164
+        TOPMARGIN, 4
+        BOTTOMMARGIN, 227
+    END
+
+    IDD_NSCHART_TOLL_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 480
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 290
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1929,6 +2009,23 @@ END
 IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
 IDC_CREATE_LINK_CURSOR  CURSOR                  "res\\cur00001.cur"
 IDC_CURSOR_SUBAREA      CURSOR                  "res\\cur00002.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_LINEPLOT_DIALOG DLGINIT
+BEGIN
+    ID_CMB_STYLE, 0x403, 11, 0
+0x694c, 0x656e, 0x5320, 0x7974, 0x656c, "\000" 
+    ID_CMB_STYLE, 0x403, 10, 0
+0x6142, 0x2072, 0x7453, 0x6c79, 0x0065, 
+    ID_CMB_STYLE, 0x403, 15, 0
+0x5320, 0x6163, 0x7474, 0x7265, 0x5320, 0x7974, 0x656c, "\000" 
+    0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

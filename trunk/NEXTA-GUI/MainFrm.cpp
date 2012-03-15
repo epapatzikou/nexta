@@ -146,9 +146,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_AMSToolBar.SetButtonText(8,"Calibration");
 		m_AMSToolBar.SetButtonText(9,"Prediction");
 		m_AMSToolBar.SetButtonText(11,"Editing");
-		m_AMSToolBar.SetButtonText(13,"Capacity");
-		m_AMSToolBar.SetButtonText(14,"ATIS");
-		m_AMSToolBar.SetButtonText(15,"Pricing");
+		m_AMSToolBar.SetButtonText(13,"Pricing");
+		m_AMSToolBar.SetButtonText(14,"Capacity");
+		m_AMSToolBar.SetButtonText(15,"ATIS");
 
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));

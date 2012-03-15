@@ -299,6 +299,7 @@ public:
 	afx_msg void OnLinkIncreasebandwidth();
 	afx_msg void OnLinkDecreasebandwidth();
 	afx_msg void OnUpdateViewSensor(CCmdUI *pCmdUI);
+	afx_msg void OnLinkSwichtolineBandwidthMode();
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp
