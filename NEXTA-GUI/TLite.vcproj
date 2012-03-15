@@ -413,6 +413,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_PricingConfiguration.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_SignalDataExchange.cpp"
 				>
 			</File>
@@ -993,6 +997,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_PricingConfiguration.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_SignalDataExchange.h"
 				>
 			</File>
@@ -1161,6 +1169,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Transit.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Transit.h"
+				>
+			</File>
+			<File
 				RelativePath=".\TSView.h"
 				>
 			</File>
@@ -1216,6 +1232,30 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="LinePlotLib"
+			>
+			<File
+				RelativePath=".\LinePlot\LinePlot.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\LinePlot\LinePlot.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LinePlot\LinePlotTestDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\LinePlot\LinePlotTestDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LinePlot\memdc.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram11.cd"

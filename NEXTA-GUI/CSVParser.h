@@ -18,7 +18,6 @@ private:
 	bool IsFirstLineHeader;
 	ifstream inFile;
 	vector<string> LineFieldsValue;
-	vector<string> Headers;
 	map<string,int> FieldsIndices;
 
 	vector<string> ParseLine(string line);
@@ -28,8 +27,6 @@ public:
 	bool OpenCSVFile(string fileName);
 	void CloseCSVFile(void);
 	bool ReadRecord();
-	vector<string> GetLineRecord(void);
-	vector<string> GetHeaderList();
 
 	template <class T> bool GetValueByFieldName(string field_name, T& value)
 	{

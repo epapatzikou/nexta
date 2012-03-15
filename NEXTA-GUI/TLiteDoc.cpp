@@ -58,6 +58,7 @@
 #include "Dlg_SignalDataExchange.h"
 
 #include "Dlg_TDDemandProfile.h"
+#include "Dlg_PricingConfiguration.h"
 #include "Dlg_LinkVisualizationConfig.h"
 
 #include "Data-Interface\\XLEzAutomation.h"
@@ -67,6 +68,10 @@
 #include "Dlg_TravelTimeReliability.h"
 #include "Dlg_GISDataExchange.h"
 #include "Dlg_Legend.h"
+
+#include "LinePlot\\LinePlotTest.h"
+#include "LinePlot\\LinePlotTestDlg.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -206,6 +211,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_MOE_VIEWLINKMOESUMMARYFILE, &CTLiteDoc::OnMoeViewlinkmoesummaryfile)
 	ON_COMMAND(ID_VIEW_CALIBRATIONVIEW, &CTLiteDoc::OnViewCalibrationview)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_CALIBRATIONVIEW, &CTLiteDoc::OnUpdateViewCalibrationview)
+	ON_COMMAND(ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT, &CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot)
+	ON_COMMAND(ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT, &CTLiteDoc::OnMoeViewoddemandestimationsummaryplot)
+	ON_COMMAND(ID_PROJECT_EDITPRICINGSCENARIODATA, &CTLiteDoc::OnProjectEditpricingscenariodata)
 	END_MESSAGE_MAP()
 
 
@@ -296,8 +304,6 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 		{
 			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
 		}
-
-
 
 		while(parser.ReadRecord())
 		{
@@ -843,43 +849,46 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 	std::list<DTALink*>::iterator iLink;
 
 
-	float VolumeRaito = 5/max(1,m_MaxLinkWidthAsLinkVolume);  // 1000 vehicles flow rate as 5 lanes
+	float VolumeRatio = 5/max(1,m_MaxLinkWidthAsLinkVolume);  // 1000 vehicles flow rate as 5 lanes
+	float TotalVolumeRatio = VolumeRatio/2;
+	float LaneVolumeEquivalent = 500;
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
 		// default mode
+		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*VolumeRaito;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
 		}else if(m_LinkBandWidthMode == LBW_link_volume)
 		{
 			if(m_LinkMOEMode == MOE_safety)  // safety
 			{
-				(*iLink)->m_BandWidthValue = (*iLink)->m_NumberOfCrashes *100*VolumeRaito;   // 10 crashes as 5 lanes. 
+				(*iLink)->m_BandWidthValue = (*iLink)->m_NumberOfCrashes *10*VolumeRatio;   // 10 crashes as 5 lanes. 
 			}else
 			{
 				if(g_Simulation_Time_Stamp>=1 && m_TrafficFlowModelFlag >0 ) // dynamic traffic assignment mode
 				{
-					(*iLink)->m_BandWidthValue = (*iLink)->GetObsLaneVolume(g_Simulation_Time_Stamp)*VolumeRaito; 
+					(*iLink)->m_BandWidthValue = (*iLink)->GetObsLaneVolume(g_Simulation_Time_Stamp)*VolumeRatio; 
 				}else  // default volume
 				{
-					(*iLink)->m_BandWidthValue = (*iLink)->m_StaticLinkVolume/2 *VolumeRaito; 
+					(*iLink)->m_BandWidthValue = (*iLink)->m_StaticLinkVolume*TotalVolumeRatio; 
 				}
 			}
 
 			if(m_LinkMOEMode == MOE_volume && (*iLink)->m_bSensorData)  // reference volume
 			{
-				(*iLink)->m_ReferenceBandWidthValue = (*iLink)->m_ReferenceFlowVolume *VolumeRaito; 
+				(*iLink)->m_ReferenceBandWidthValue = (*iLink)->m_ReferenceFlowVolume * TotalVolumeRatio; 
 			}
 
 		}else if (m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *VolumeRaito;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *VolumeRatio;
 		}else
 			// default value
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfCrashes *VolumeRaito; 
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
 		}
 
 	}
@@ -2965,6 +2974,7 @@ void CTLiteDoc::OnFileDataloadingstatus()
 void CTLiteDoc::OnMoeVolume()
 {
 	m_LinkMOEMode = MOE_volume;
+	m_LinkBandWidthMode = LBW_link_volume;
 	ShowLegend(false);
 
 	GenerateOffsetLinkBand();
@@ -2973,6 +2983,8 @@ void CTLiteDoc::OnMoeVolume()
 void CTLiteDoc::OnMoeSpeed()
 {
 	m_LinkMOEMode = MOE_speed;
+	m_LinkBandWidthMode = LBW_link_volume;
+
 	ShowLegend(true);
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
@@ -2981,6 +2993,8 @@ void CTLiteDoc::OnMoeSpeed()
 void CTLiteDoc::OnMoeDensity()
 {
 	m_LinkMOEMode = MOE_density;
+	m_LinkBandWidthMode = LBW_link_volume;
+
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
@@ -2988,17 +3002,22 @@ void CTLiteDoc::OnMoeDensity()
 void CTLiteDoc::OnMoeQueuelength()
 {
 	m_LinkMOEMode = MOE_queuelength;
+	m_LinkBandWidthMode = LBW_link_volume;
+
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeFuelconsumption()
 {
 	m_LinkMOEMode = MOE_fuel;
+	m_LinkBandWidthMode = LBW_link_volume;
+
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnMoeEmissions()
 {
 	m_LinkMOEMode = MOE_emissions;
+	m_LinkBandWidthMode = LBW_link_volume;
 	ShowLegend(false);
 	UpdateAllViews(0);}
 
@@ -3036,6 +3055,7 @@ void CTLiteDoc::OnUpdateMoeEmissions(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeNone()
 {
 	m_LinkMOEMode = MOE_none;
+
 	ShowLegend(false);
 
 	// visualization configuration
@@ -6218,4 +6238,162 @@ void CTLiteDoc::OnViewCalibrationview()
 void CTLiteDoc::OnUpdateViewCalibrationview(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowCalibrationResults);
+}
+
+void CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot()
+{
+	NetworkLoadingOutput element;
+	CCSVParser parser;
+
+	CString str = m_ProjectDirectory +"output_assignment_log.csv";
+	CT2CA pszConvertedAnsiString (str);
+
+	// construct a std::string using the LPCSTR input
+	std::string  strStd (pszConvertedAnsiString);
+
+	if (parser.OpenCSVFile(strStd))
+	{
+		COLORREF crColor1 = RGB (255, 0, 0);
+		COLORREF crColor2 = RGB (0, 0, 255);
+		COLORREF crColor3 = RGB (0, 128, 0);
+
+		CLinePlotData element_avg_travel_time_in_min;
+		element_avg_travel_time_in_min.crPlot = crColor1;
+		element_avg_travel_time_in_min.szName  = "Avg Travel Time (min)";
+
+		CLinePlotData element_avg_travel_distance_in_mile;
+		element_avg_travel_distance_in_mile.crPlot = crColor2;
+		element_avg_travel_distance_in_mile.szName  = "Avg Distance (mile)";
+
+		CLinePlotData element_avg_travel_time_gap_per_vehicle_in_min;
+		element_avg_travel_distance_in_mile.crPlot = crColor3;
+		element_avg_travel_time_gap_per_vehicle_in_min.szName  = "Avg TT Gap (min)";
+
+		int iteration =0;
+		while(parser.ReadRecord())
+		{
+			FLOATPOINT data;
+			data.x = iteration;
+
+			if(parser.GetValueByFieldName("avg_travel_time_in_min",data.y) == false)
+				break;
+			element_avg_travel_time_in_min.vecData.push_back(data);
+
+			if(parser.GetValueByFieldName("avg_travel_distance_in_mile",data.y) == false)
+				break;
+			element_avg_travel_distance_in_mile.vecData.push_back(data);
+
+			if(iteration!=0)
+			{
+				if(parser.GetValueByFieldName("avg_travel_time_gap_per_vehicle_in_min",data.y) == false)
+					break;
+				element_avg_travel_time_gap_per_vehicle_in_min.vecData.push_back(data);
+			}
+
+			iteration++;
+
+		}
+
+		if(iteration > 1)
+		{
+
+		CLinePlotTestDlg dlg;
+
+		dlg.m_XCaption = "Iteration";
+		dlg.m_YCaption = "Traffic Assignment MOE";
+		dlg.m_PlotDataVector.push_back(element_avg_travel_time_in_min);
+		dlg.m_PlotDataVector.push_back(element_avg_travel_distance_in_mile);
+		dlg.m_PlotDataVector.push_back(element_avg_travel_time_gap_per_vehicle_in_min);
+
+		dlg.DoModal();
+		}else
+		{
+		AfxMessageBox("File output_assignment_log.csv does not have assignment results. Please first run traffic assignment.");
+	
+		}
+	}else
+	{
+		AfxMessageBox("File output_assignment_log.csv does not exist. Please first run traffic assignment.");
+	}
+}
+
+void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
+{
+
+	CString str = m_ProjectDirectory +"output_LinkMOE_summary.csv";
+	CT2CA pszConvertedAnsiString (str);
+	// construct a std::string using the LPCSTR input
+	std::string  strStd (pszConvertedAnsiString);
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile(strStd))
+	{
+		COLORREF crColor1 = RGB (255, 0, 0);
+
+		CLinePlotData element_link_volume;
+		element_link_volume.crPlot = crColor1;
+		element_link_volume.szName  = "link volume";
+		element_link_volume.lineType = enum_LpScatter;
+
+		int count =0;
+		while(parser.ReadRecord())
+		{
+			FLOATPOINT data;
+
+			if(parser.GetValueByFieldName("sensor_link_volume",data.x) == false)
+				break;
+
+			if(data.x >0.1f)   // with sensor data
+			{
+
+				if(parser.GetValueByFieldName("total_link_volume",data.y) == false)  // estimated data
+					break;
+				element_link_volume.vecData.push_back(data);
+
+				count++;
+
+			}
+
+
+		}
+
+		if(count >=1)
+		{
+
+			CLinePlotTestDlg dlg;
+
+			dlg.m_XCaption = "Observed Link Volume";
+			dlg.m_YCaption = "Simulated Link Volume";
+			CString msg;
+			msg.Format ("%d data points",count);
+			dlg.m_MessageVector.push_back(msg);
+
+			float r2 = 0.91f;
+			msg.Format ("R2 = %.3f",r2);
+			dlg.m_MessageVector.push_back(msg);
+
+
+
+			dlg.m_PlotDataVector.push_back(element_link_volume);
+
+			dlg.DoModal();
+		}else
+		{
+			AfxMessageBox("No sensor data are available. Please first input link volume data in file input_sensor.csv.");
+		}
+	}else
+	{
+		AfxMessageBox("File output_LinkMOE_summary.csv does not exist. Please first run traffic assignment.");
+	}
+}
+
+void CTLiteDoc::OnProjectEditpricingscenariodata()
+{
+	CDlg_PricingConfiguration dlg;
+	dlg.m_pDoc = this;
+	if(dlg.DoModal() ==IDOK)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with OK
+	}
 }
