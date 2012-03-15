@@ -32,6 +32,18 @@ enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique
 
 // CDlgMOE dialog
 
+class CTimeSeriesLine 
+{
+	public:
+		CTimeSeriesLine()
+		{
+		bReferenceMode = 0;
+		}
+		std::map<int, float> value_map;
+		CString time_series_label;
+		bool bReferenceMode;
+};
+
 class CDlgMOE : public CDialog
 {
 	DECLARE_DYNAMIC(CDlgMOE)
@@ -42,6 +54,8 @@ public:
 	CTLiteDoc* m_pDoc;
 	float ** m_VehicleDistanceAry;
 	int m_LinkNoWithCFData;
+
+	std::vector<CTimeSeriesLine> m_DataVector;
 
 	std::vector<VehicleCFData> m_VehicleDataList;
 
@@ -128,7 +142,9 @@ public:
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);
 	bool ExportDataToCSVFile(char csv_file[_MAX_PATH], int EventDataFlag);
-   int GetMaxYValue(eLinkMOEMode MOEType);
+    int GetMaxYValue(eLinkMOEMode MOEType);
+
+
 // Dialog Data
 	enum { IDD = IDD_DIALOG_MOE };
 
