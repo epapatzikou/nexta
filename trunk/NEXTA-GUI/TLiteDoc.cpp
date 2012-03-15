@@ -337,7 +337,12 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 					parser.GetValueByFieldName("speed_in_mph",pLink->m_LinkMOEAry[t].ObsSpeed);
 					parser.GetValueByFieldName("exit_queue_length",pLink->m_LinkMOEAry[t].ObsQueuePerc );
 					parser.GetValueByFieldName("cumulative_arrival_count",pLink->m_LinkMOEAry[t].ObsCumulativeFlow);
-					//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].ObsTravelTimeIndex);
+
+					parser.GetValueByFieldName("cumulative_SOV_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[0]);
+					parser.GetValueByFieldName("cumulative_HOV_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[0]);
+					parser.GetValueByFieldName("cumulative_truck_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[0]);
+
+				//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].ObsTravelTimeIndex);
 				}
 				i++;
 			}else
@@ -1660,7 +1665,6 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 		while(parser.ReadRecord())
 		{
 			int demand_type;
-			float averageVOT;
 
 			if(parser.GetValueByFieldName("vehicle_type",demand_type) == false)
 				break;
@@ -1740,7 +1744,6 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 
 			int from_zone_id, to_zone_id;
 			int demand_type;
-			double percentage;
 
 			if(parser.GetValueByFieldName("from_zone_id",from_zone_id) == false)
 				break;
@@ -2124,6 +2127,10 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	{
 		std::list<DTALink*>::iterator iLink;
 		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry,");
+
+		// ANM output
+		fprintf(st,"number_of_left_turn_bays,length_of_layer_in_feet");
+
 		// safety prediction attributes
 		//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
 		fprintf(st,"\n");	
@@ -2152,6 +2159,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 				fprintf(st,"</coordinates></LineString>\",");
 			}
+
+		// ANM output
+		fprintf(st,"0,0,");
 
 			//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
 			//		fprintf(st,"%10.6f, %10.6f,%10.6f,%10.1f,0,0,0,0,0,0,%5.1f,%5.1f,%5.1f,%5.1f\n", 0.000005*(*iLink)->m_Length, 0.000105*(*iLink)->m_Length,0.005*(*iLink)->m_LaneCapacity,(*iLink)->m_LaneCapacity*1.3*5*(g_GetRandomRatio()),0.2*(*iLink)->m_Length,0.5*(*iLink)->m_Length,0.6*(*iLink)->m_Length,1.1*(*iLink)->m_Length);
@@ -3301,8 +3311,6 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	CString directory = m_ProjectDirectory;
 	char simulation_short_summary1[200];
-	char simulation_short_summary2[200];
-	char simulation_short_summary3[200];
 
 	fopen_s(&st,directory+"short_summary.log","r");
 	if(st!=NULL)
@@ -4120,7 +4128,9 @@ float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 			{
 
 				int origin_zone_id, destination_zone_id;
-				float number_of_vehicles, starting_time_in_min, ending_time_in_min;
+				float number_of_vehicles;
+				float starting_time_in_min = 0;
+				float ending_time_in_min = 1440;
 
 				if(parser_ODMatrix.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
 				{
