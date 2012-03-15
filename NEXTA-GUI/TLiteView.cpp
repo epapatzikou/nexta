@@ -920,9 +920,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	// draw shortest path
 	int i;
-
-	unsigned int iPath;
 	/*
+	unsigned int iPath;
+
 	if(m_ShowAllPaths)
 	{
 	for (iPath = 0; iPath < pDoc->m_PathDisplayList.size(); iPath++)

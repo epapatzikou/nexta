@@ -92,7 +92,7 @@ public:
 	m_bShowEventLabel = true;
 	m_bShowWeatherLabel = false;
 	m_bShowPrediction = false;
-	m_bShowSimulationAndObservation  = true;
+	m_bShowSimulationAndObservation  = false;
 
 	m_ViewMode = 0;
 

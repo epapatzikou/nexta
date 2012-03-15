@@ -23,6 +23,9 @@
 //    You should have received a copy of the GNU General Public License
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
+#pragma	warning(disable: 4018) // signed/unsigned mismatch
+#pragma	warning(disable: 4305) //  truncation from 'double' to 'float'
+#pragma	warning(disable: 4995) //  'CDaoRecordset': name was marked as #pragma deprecated
 
 #include "resource.h"
 #include "Utility.h"
@@ -347,6 +350,10 @@ public:
 
 	float ObsCumulativeFlow;   // flow volume
 	float ObsCumulativeFlowCopy;   // flow volume
+
+	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
+	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
+
 
 	int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
 	int EpisodeNo;
