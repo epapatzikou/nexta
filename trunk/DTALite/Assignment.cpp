@@ -303,16 +303,13 @@ void g_ODBasedDynamicTrafficAssignment()
 
 	int link_size  = g_LinkVector.size() + connector_count; // maximal number of links including connectors assuming all the nodes are destinations
 
-	// assign different zones to different processors
-	int nthreads = omp_get_max_threads ( );
-
 	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
 
 	// Jason
 	int iteration = 0;
 	bool NotConverged = true;
 	int TotalNumOfVehiclesGenerated = 0;
-	int number_of_threads = omp_get_num_threads();
+	int number_of_threads = omp_get_max_threads();
 
 	if(g_ParallelComputingMode == 0)
 		number_of_threads = 1;
