@@ -32,6 +32,7 @@
 #include "math.h"
 #include "Network.h"
 #include ".\\cross-resolution-model\\SignalNode.h"
+#include "Transit.h"
 #include <iostream>
 #include <fstream>
 #include <afxdb.h>          // MFC database support
@@ -86,7 +87,7 @@ protected: // create from serialization only
 		m_NumberOfDays = 0;
 		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = MOE_none;
-		m_PrevLinkMOEMode = MOE_none;
+		m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
 		m_ODMOEMode = odnone;
 
 		MaxNodeKey = 60000;  // max: unsigned short 65,535;
@@ -171,6 +172,9 @@ protected: // create from serialization only
 		m_Doc_Resolution = 1;
 		m_bShowCalibrationResults = false;
 
+		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\sample_Portland_subarea_network.xls";
+		m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
+		m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
 
 
 	}
@@ -180,6 +184,7 @@ protected: // create from serialization only
 	// Attributes
 public:
 
+	PT_Network m_PT_network;  // public transit network class by Shuguang Li
 	bool m_bShowCalibrationResults;
 
 	int m_TrafficFlowModelFlag;
@@ -252,6 +257,9 @@ public:
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
+
+	bool ReadTransitFiles(CString ProjectFolder);   // for road network
+
 	void OffsetLink();
 
 
@@ -810,6 +818,12 @@ public:
 	virtual void Serialize(CArchive& ar);
 	BOOL SaveProject(LPCTSTR lpszPathName);
 
+	// For demonstration
+    CString m_SampleExcelNetworkFile;
+    CString m_SampleOutputProjectFile;
+    CString m_SampleExcelSensorFile;
+	CString m_SampleNGSIMDataFile;
+
 	// Implementation
 public:
 	virtual ~CTLiteDoc();
@@ -952,6 +966,8 @@ public:
 		afx_msg void OnMoeViewtrafficassignmentsummaryplot();
 		afx_msg void OnMoeViewoddemandestimationsummaryplot();
 		afx_msg void OnProjectEditpricingscenariodata();
+		afx_msg void OnLinkViewlink();
+		afx_msg void OnDeleteSelectedLink();
 };
 
 

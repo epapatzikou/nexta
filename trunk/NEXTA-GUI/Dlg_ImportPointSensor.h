@@ -31,6 +31,11 @@ public:
 	afx_msg void OnBnClickedButtonFindSensorFile();
 	afx_msg void OnBnClickedImportPointSensorLocationandData();
 	CListBox m_MessageList;
+	afx_msg void OnBnClickedButtonViewSampleFile2();
+	afx_msg void OnBnClickedButtonViewSampleFile3();
+	afx_msg void OnBnClickedButtonSelectSampleFile();
+	afx_msg void OnBnClickedButtonImportSampleFile();
+	afx_msg void OnBnClickedButtonViewSensordata();
 };
 #pragma once
 

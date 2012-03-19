@@ -214,6 +214,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT, &CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot)
 	ON_COMMAND(ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT, &CTLiteDoc::OnMoeViewoddemandestimationsummaryplot)
 	ON_COMMAND(ID_PROJECT_EDITPRICINGSCENARIODATA, &CTLiteDoc::OnProjectEditpricingscenariodata)
+	ON_COMMAND(ID_LINK_VIEWLINK, &CTLiteDoc::OnLinkViewlink)
+	ON_COMMAND(ID_DELETE_SELECTED_LINK, &CTLiteDoc::OnDeleteSelectedLink)
 	END_MESSAGE_MAP()
 
 
@@ -446,6 +448,9 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
 	if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
+
+	ReadTransitFiles(directory+"transit_data\\");  // read transit data
+
 	CalculateDrawingRectangle();
 
 	m_bFitNetworkInitialized  = false;
@@ -2727,7 +2732,6 @@ bool CTLiteDoc::WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vecto
 void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 {
 
-
 	//   cout << "Read vehicle file... "  << endl;
 	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
 	//	arrival_time, complete_flag, trip_time, demand_type, occupancy, information_type,
@@ -2739,6 +2743,7 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 	fopen_s(&st,lpszFileName,"r");
 	if(st!=NULL)
 	{
+		m_VehicleSet.clear();
 		int count = 0;
 		while(!feof(st))
 		{
@@ -6138,6 +6143,7 @@ void CTLiteDoc::OnImportArcgisshapefile()
 	CDlg_GISDataExchange dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
+	m_LinkMOEMode = MOE_safety;
 
 	//m_UnitFeet = 1;  // default value
 	//m_NodeDisplaySize = 50;
@@ -6243,6 +6249,13 @@ void CTLiteDoc::OnMoeViewlinkmoesummaryfile()
 void CTLiteDoc::OnViewCalibrationview()
 {
 	m_bShowCalibrationResults = !m_bShowCalibrationResults;
+
+	if(m_bShowCalibrationResults == true)
+	{
+		m_LinkMOEMode = MOE_volume;
+		OnMoeViewoddemandestimationsummaryplot();
+		UpdateAllViews(0);
+	}
 }
 
 void CTLiteDoc::OnUpdateViewCalibrationview(CCmdUI *pCmdUI)
@@ -6363,8 +6376,6 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 				count++;
 
 			}
-
-
 		}
 
 		if(count >=1)
@@ -6407,3 +6418,26 @@ void CTLiteDoc::OnProjectEditpricingscenariodata()
 		//  dismissed with OK
 	}
 }
+
+void CTLiteDoc::OnLinkViewlink()
+{
+		CDlgScenario dlg(0);
+		dlg.m_pDoc = this;
+
+		//dlg.m_SelectTab = 0;
+		dlg.DoModal();
+}
+
+void CTLiteDoc::OnDeleteSelectedLink()
+{
+	if(m_SelectedLinkID == -1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+	DeleteLink(m_SelectedLinkID);
+	m_SelectedLinkID = -1;
+	UpdateAllViews(0);
+	
+}
+

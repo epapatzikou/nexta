@@ -44,6 +44,8 @@ protected: // create from serialization only
 public:
 	
 	bool m_bLoadedDataFlag;
+	bool m_bAutoLoadDataFlag;
+	void LoadVehicleTrajectoryFile(CString file_name);
 
 	int m_NumberOfVehicles_lane;
 

@@ -6,7 +6,6 @@
 #define IDCANCLE                        2
 #define IDOK_FIND_NODE                  2
 #define ID_EXPORT_DATA                  2
-#define IDOK2                           2
 #define ID_VOT_Distribution             2
 #define ID_EXPORT                       3
 #define ID_IMPORT                       3
@@ -14,9 +13,13 @@
 #define ID_HIGHLIGHT_VEHICLES           3
 #define ID_EXPORT_DATA2                 3
 #define ID_EDIT_SCENARIO                3
+#define IDOK2                           3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
+#define IDCANCEL2                       4
+#define ID_FindCriticalOD               4
 #define ID_EXPORT_PATH_DATA             5
+#define ID_IMPORT2                      5
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
@@ -209,15 +212,22 @@
 #define IDC_EDIT_ExcelFile              1077
 #define IDC_EDIT_ExcelFile2             1078
 #define ID_IMPORT_Point_Sensor_Location_and_Data 1078
+#define IDC_BUTTON_View_Sample_File     1078
 #define IDC_BUTTON_Find_Sensor_File     1079
+#define IDC_BUTTON_Load_Sample_File     1079
 #define IDC_SUBAREA_LINK_SIZE           1080
+#define IDC_BUTTON_View_Sample_CSV_File 1080
+#define IDC_BUTTON_View_Sample_File2    1080
 #define IDC_EDIT_ExcelFile5             1081
 #define IDC_BUTTON_GENERATE_DATA        1081
+#define IDC_BUTTON_Select_Sample_File   1081
 #define IDC_BUTTON_QEM                  1082
 #define IDC_BUTTON1                     1082
+#define IDC_BUTTON_View_SensorData      1082
 #define IDC_BUTTON_UPDATE               1083
 #define IDC_BUTTON_GENERATE_DATA2       1083
 #define IDC_BUTTON_GENERATE_VISSIM_DATA 1083
+#define IDC_BUTTON_Import_Sample_File   1083
 #define IDC_DEMAND_PROFILE_LIST         1084
 #define IDC_VEHICLE_CHART1              1085
 #define IDC_COMBO_XAxis                 1086
@@ -239,6 +249,10 @@
 #define IDC_AREA_BUTTON                 1099
 #define IDC_ADD_BUTTON                  1100
 #define IDC_Delete_BUTTON               1101
+#define IDC_BUTTON_Load_Sample_Shape_File 1101
+#define IDC_BUTTON_Import_GIS_Shape_File 1102
+#define IDC_BUTTON_Export_to_CSV_File   1103
+#define IDC_BUTTON_View_EXPORTED_KML_FILE 1104
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -673,14 +687,18 @@
 #define ID_LINK_SWICHTOLINE             33319
 #define ID_LINK_SWICHTOLINE_BANDWIDTH_MODE 33320
 #define ID_PROJECT_EDITPRICINGSCENARIODATA 33321
+#define ID_NGSIMMENU_TRAFFICFLOWMODELESTIMATION 33322
+#define ID_LINK_VIEWLINK                33323
+#define ID_DELETE_LINK33324             33324
+#define ID_DELETE_SELECTED_LINK         33325
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         33322
-#define _APS_NEXT_CONTROL_VALUE         1101
+#define _APS_NEXT_COMMAND_VALUE         33326
+#define _APS_NEXT_CONTROL_VALUE         1102
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

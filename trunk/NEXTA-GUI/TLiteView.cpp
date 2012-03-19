@@ -143,6 +143,7 @@ END_MESSAGE_MAP()
 
 CBrush g_BlackBrush(RGB(10,10,10));
 CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
+CPen g_TransitPen(PS_SOLID,1,RGB(0,255,0));
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
@@ -471,6 +472,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	CTLiteDoc* pDoc = GetDocument();
 
+	// step 1: set the objects in the network to the screen 
 
 	std::list<DTANode*>::iterator iNode;
 
@@ -486,7 +488,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	CRect ScreenRect;
 	GetClientRect(ScreenRect);
 
-	// draw grids
+	// step 2: draw grids
 	if(m_bShowGrid)
 	{
 		pDC->SelectObject(&g_GridPen);
@@ -558,8 +560,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	// Font and color for node drawing
-	CFont node_font;
+	// step 2: select font and color for node drawing, and compute the bandwidth for links
+	CFont node_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 	int node_size = min(20,max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution)));
 
 	int NodeTypeSize = 8;
@@ -638,10 +640,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
     pDoc->m_LinkBandWidthMode = LBW_number_of_lanes;
 	}
 
+	if(pDoc->m_LinkSet.size() > 0)  // update for a network with links
+	{
 	pDoc -> m_PrevLinkMOEMode = pDoc -> m_LinkMOEMode;
+	}
 
+	// step 3: draw all links
 	int min_x, min_y, max_x, max_y;
-
 
 	pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then apply speical conditions for volume and vehicle mode
 
@@ -664,13 +669,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			continue;
 
 
-		// step 2: select color and brush for MOE mode
+		// step 4: select color and brush for MOE mode
 
 			//			continue;
 			CPen LinkTypePen;
 
 
-			// step 3: select color and brush according to 
+			// step 5: select color and brush according to link MOE
 			float value = -1.0f ;
 			
 			if( pDoc->m_LinkMOEMode != MOE_none) 
@@ -728,7 +733,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( pDoc->m_LinkMOEMode == MOE_vehicle)  // when showing vehicles, use black
 				pDC->SelectObject(&g_BlackPen);
 
-			//special condition 2:  volume
+			//special condition 2:  volume mode
 			if (pDoc->m_LinkMOEMode == MOE_volume)   // under volume mode, dynamically generate volume band
 				pDC->SelectObject(&g_BrushLinkBandVolume);   //default brush
 
@@ -744,7 +749,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}else
 				pDC->SetTextColor(RGB(255,228,181));
 
-			//step 4: draw link as line or band/bar
+			//step 6: draw link as line or band/bar
 			if(m_link_display_mode == link_display_mode_line )  
 			{
 				 // calibration mode, do not show volume
@@ -766,7 +771,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				DrawLinkAsBand((*iLink),pDC,true);  // true: second band as observation
 			}
 
-			//step 5: show link labels
+			//step 7: show link labels
 			if( m_bShowText )
 			{
 
@@ -879,10 +884,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				
 				}
 
-			// step 6:  show location of scenario/incident /work zone/ toll
+			// step 8:  show location of scenario/incident /work zone/ toll: link-based objects
 				pDC->SetBkColor(RGB(0, 0, 0));
 
-			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));
+			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 
 			if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
 				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
@@ -895,7 +900,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			//************************************
 
-			// step 7: draw sensor 
+			// step 9: draw sensor (based on a link)
 
 			if(m_bShowSensor && (*iLink)->m_bSensorData && pDoc->m_LinkMOEMode != MOE_volume)  // only during non display mode
 			{
@@ -918,7 +923,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	pDC->SelectObject(&node_font);
 
-	// draw shortest path
+	// step 10: draw shortest path
 	int i;
 	/*
 	unsigned int iPath;
@@ -968,7 +973,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	// font for origin and destination 
+	// step 11: select font for origin and destination  of the shortest path
+
+	// step 11: all all nodes
 
 	CPoint point;
 	float feet_size;
@@ -988,7 +995,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if(RectIsInsideScreen(node_rect,ScreenRect) == false)  // not inside the screen boundary
 			continue;
-
 
 		pDC->SelectObject(&g_BlackBrush);
 		pDC->SetTextColor(RGB(255,255,0));
@@ -1030,7 +1036,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		}else if((*iNode)->m_NodeID == pDoc->m_DestinationNodeID)
 		{
-			CFont* oldFont = pDC->SelectObject(&od_font);
+			CFont* oldFont = pDC->SelectObject(&od_font);// these are local font, created inside the function, we do not want to create them in another sub functions to speed up the display efficiency.
 
 			TEXTMETRIC tmOD;
 			memset(&tmOD, 0, sizeof TEXTMETRIC);
@@ -1110,7 +1116,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	//draw crash layer
+	//step 12: draw crash layer
 
 	if(pDoc->m_LinkMOEMode == MOE_safety)
 	{
@@ -1133,7 +1139,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				
 	}
 	}
-	// draw subarea layer
+	// step 13: draw subarea layer
 	pDC->SelectObject(&g_SubareaPen);
 
 	if(GetDocument()->m_SubareaShapePoints.size() > 0)
@@ -1153,7 +1159,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	}
 
-	// show not-matched sensors
+	// step 14: show not-matched sensors
 	if(m_bShowSensor)
 	{
 
@@ -1174,7 +1180,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	// show vehicles
+	// step 15: show vehicles
 
 	if( pDoc->m_LinkMOEMode == MOE_vehicle)
 	{
@@ -1218,7 +1224,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 	//////////////////////////////////////
-	// draw OD demand
+	// step 16: draw OD demand
 
 	if(pDoc->m_LinkMOEMode == MOE_oddemand && pDoc->m_DemandMatrix!=NULL)
 	{
@@ -1276,6 +1282,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 				}
 	}
+
+	// step 17: draw Public Transit Layer
+	pDC->SelectObject(&g_BlackBrush);
+	pDC->SetTextColor(RGB(255,255,0));
+	pDC->SelectObject(&g_TransitPen);
+
+	DrawPublicTransitLayer(pDC);
+
 }
 
 void CTLiteView::FitNetworkToScreen()

@@ -114,4 +114,5 @@ public:
 	afx_msg void OnBnClickedFindSingleVehicleId();
 	afx_msg void OnBnClickedExportPathData();
 	afx_msg void OnBnClickedExportVehicleData();
+	afx_msg void OnBnClickedFindcriticalod();
 };

@@ -43,4 +43,10 @@ public:
 	afx_msg void OnBnClickedImportSensorData();
 	afx_msg void OnLbnSelchangeList1();
 	afx_msg void OnBnClickedExportData();
+	afx_msg void OnBnClickedButtonViewSampleFile();
+	afx_msg void OnBnClickedButtonLoadSampleFile();
+	afx_msg void OnBnClickedButtonViewSampleCsvFile();
+	afx_msg void OnBnClickedButtonLoadSampleCsvFile();
+	afx_msg void OnBnClickedButtonViewSampleProjectFolder();
+	afx_msg void OnBnClickedImport2();
 };
