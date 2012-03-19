@@ -103,6 +103,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	void FitNetworkToScreen();
 	void DrawObjects(CDC* pDC);
 	void DrawBitmap(CDC *pDC, CPoint point,UINT nIDResource );
+	void DrawPublicTransitLayer(CDC *pDC);
 	void DrawTemporalLink(CPoint start_point, CPoint end_point);
 
 	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;

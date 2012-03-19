@@ -5,6 +5,9 @@
 #include "TLite.h"
 #include "Dlg_ImportPointSensor.h"
 #include "DlgSensorDataLoading.h"
+#include "MainFrm.h"
+#include "Shellapi.h"
+
 
 // CDlg_ImportPointSensor dialog
 
@@ -32,6 +35,10 @@ void CDlg_ImportPointSensor::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlg_ImportPointSensor, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_Sensor_File, &CDlg_ImportPointSensor::OnBnClickedButtonFindSensorFile)
 	ON_BN_CLICKED(ID_IMPORT_Point_Sensor_Location_and_Data, &CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData)
+	ON_BN_CLICKED(IDC_BUTTON_View_Sample_File2, &CDlg_ImportPointSensor::OnBnClickedButtonViewSampleFile2)
+	ON_BN_CLICKED(IDC_BUTTON_Select_Sample_File, &CDlg_ImportPointSensor::OnBnClickedButtonSelectSampleFile)
+	ON_BN_CLICKED(IDC_BUTTON_Import_Sample_File, &CDlg_ImportPointSensor::OnBnClickedButtonImportSampleFile)
+	ON_BN_CLICKED(IDC_BUTTON_View_SensorData, &CDlg_ImportPointSensor::OnBnClickedButtonViewSensordata)
 END_MESSAGE_MAP()
 
 
@@ -325,4 +332,36 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 		str_msg.Format("%d sensor data records loaded.",number_of_samples);
 		m_MessageList.AddString (str_msg);
 	}
+}
+
+void CDlg_ImportPointSensor::OnBnClickedButtonViewSampleFile2()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+	SampleExcelSensorFile = pMainFrame->m_CurrentDirectory + SampleExcelSensorFile;
+	m_pDoc->OpenCSVFileInExcel (SampleExcelSensorFile);
+}
+
+void CDlg_ImportPointSensor::OnBnClickedButtonViewSampleFile3()
+{
+	OnBnClickedImportPointSensorLocationandData();
+}
+
+void CDlg_ImportPointSensor::OnBnClickedButtonSelectSampleFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+	SampleExcelSensorFile = pMainFrame->m_CurrentDirectory + SampleExcelSensorFile;
+	m_Sensor_File = SampleExcelSensorFile;
+	UpdateData(false);
+}
+
+void CDlg_ImportPointSensor::OnBnClickedButtonImportSampleFile()
+{
+	OnBnClickedImportPointSensorLocationandData();
+}
+
+void CDlg_ImportPointSensor::OnBnClickedButtonViewSensordata()
+{
+	// TODO: Add your control notification handler code here
 }

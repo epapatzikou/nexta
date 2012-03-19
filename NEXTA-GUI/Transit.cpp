@@ -33,6 +33,8 @@
 #include "CSVParser.h"
 #include <vector>
 #include <algorithm>
+#include "TLiteDoc.h"
+#include "TLiteView.h"
 
 bool PT_Network::ReadGTFFiles()  // Google Transit files
 {
@@ -104,10 +106,10 @@ bool PT_Network::ReadGTFFiles()  // Google Transit files
 			if(parser.GetValueByFieldName("stop_id",stop.stop_id ) == false)
 				break;
 
-			if(parser.GetValueByFieldName("stop_lat",stop.m_ShapePoint.x   ) == false)
+			if(parser.GetValueByFieldName("stop_lat",stop.m_ShapePoint.y   ) == false)
 				break;
 
-			if(parser.GetValueByFieldName("stop_lon",stop.m_ShapePoint.y   ) == false)
+			if(parser.GetValueByFieldName("stop_lon",stop.m_ShapePoint.x   ) == false)
 				break;
 						
 			if(parser.GetValueByFieldName("direction",stop.direction  ) == false)
@@ -334,8 +336,8 @@ string str6 = m_ProjectDirectory +"transfers.txt";
 		   {
 		       if ((*iPT_shapes).shape_id == (*iPT_TripMap).second.shape_id ) 
 			   {  //find shape_id in the shape===route_id in the route
-			      m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[(*iPT_shapes).shape_pt_sequence].x =(*iPT_shapes).shape_pt_lat;
-			      m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[(*iPT_shapes).shape_pt_sequence].y =(*iPT_shapes).shape_pt_lon;
+			      m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[(*iPT_shapes).shape_pt_sequence].y =(*iPT_shapes).shape_pt_lat;
+			      m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[(*iPT_shapes).shape_pt_sequence].x =(*iPT_shapes).shape_pt_lon;
 			   }
 		   
 		   }
@@ -367,4 +369,55 @@ string str6 = m_ProjectDirectory +"transfers.txt";
 
 
  return true;
+}
+
+bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
+{
+
+	CString str = TransitDataProjectFolder;
+	CT2CA pszConvertedAnsiString (str);
+	// construct a std::string using the LPCSTR input
+	std::string  strStd (pszConvertedAnsiString);
+
+	m_PT_network.m_ProjectDirectory = strStd;
+	m_PT_network.ReadGTFFiles();
+
+	return true;
+}
+
+
+void CTLiteView::DrawPublicTransitLayer(CDC *pDC)
+{
+
+		CTLiteDoc* pDoc = GetDocument();
+
+		CPoint ScreenPoint;
+
+		std::map<int, PT_Route>::iterator iPT_RouteMap;
+		std::map<int, PT_Stop>::iterator iPT_StopMap;
+
+		std::map<int, GDPoint>::iterator i_RouteShapePoints;         //route line shape point 
+
+		for(iPT_RouteMap = pDoc->m_PT_network.m_PT_RouteMap.begin (); iPT_RouteMap != pDoc->m_PT_network.m_PT_RouteMap.end(); iPT_RouteMap++)
+		{
+	
+			bool bStartPointFlag  = true;
+
+			PT_Route route = iPT_RouteMap->second ;
+		
+			for(i_RouteShapePoints = route.m_RouteShapePoints.begin (); i_RouteShapePoints != route.m_RouteShapePoints.end (); i_RouteShapePoints++)
+			{
+				GDPoint shape_point = i_RouteShapePoints->second;
+				ScreenPoint = NPtoSP(shape_point);
+
+				if(bStartPointFlag)
+				{
+				pDC->MoveTo (ScreenPoint);
+				bStartPointFlag = false;
+				}else
+				{
+				pDC->LineTo  (ScreenPoint);
+				}
+			}
+		}
 }

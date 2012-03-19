@@ -70,7 +70,9 @@ BOOL CDlg_GoogleFusionTable::OnInitDialog()
 	{
 			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-			m_pDoc->m_ProjectDirectory = pMainFrame->m_CurrentDirectory;
+			CString Sample_Google_Fusion_Tables_Project = "\\Sample_Google_Fusion_Tables_Project\\";
+
+			m_pDoc->m_ProjectDirectory = pMainFrame->m_CurrentDirectory + Sample_Google_Fusion_Tables_Project;
 	}
 	
 	m_ProjectFolder = m_pDoc->m_ProjectDirectory;
@@ -255,6 +257,8 @@ void CreateChildProcess(TCHAR* cmd)
 
 void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 {
+
+
 	UpdateData(true);
 
 	// m_NodeTableID //m_LinkTableID
@@ -270,6 +274,11 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 		AfxMessageBox("The project directory has not been specified.");
 		return;
 	}
+
+	// clean the exiting data
+	m_pDoc->m_NodeSet .clear();
+	m_pDoc->m_LinkSet .clear();
+
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 

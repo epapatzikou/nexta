@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "Dlg_GISDataExchange.h"
+#include "MainFrm.h"
+#include "Shellapi.h"
 
 
 // CDlg_GISDataExchange dialog
@@ -36,6 +38,11 @@ BEGIN_MESSAGE_MAP(CDlg_GISDataExchange, CDialog)
 	ON_BN_CLICKED(ID_EXPORT_CSV_FILE, &CDlg_GISDataExchange::OnBnClickedExportCsvFile)
 	ON_BN_CLICKED(ID_EXPORT_GPS_SHAPE_FILE, &CDlg_GISDataExchange::OnBnClickedExportGpsShapeFile)
 	ON_BN_CLICKED(ID_EXPORT_KML_FILE, &CDlg_GISDataExchange::OnBnClickedExportKmlFile)
+	ON_BN_CLICKED(IDC_BUTTON_View_Sample_File, &CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile)
+	ON_BN_CLICKED(IDC_BUTTON_Load_Sample_Shape_File, &CDlg_GISDataExchange::OnBnClickedButtonLoadSampleShapeFile)
+	ON_BN_CLICKED(IDC_BUTTON_Import_GIS_Shape_File, &CDlg_GISDataExchange::OnBnClickedButtonImportGisShapeFile)
+	ON_BN_CLICKED(IDC_BUTTON_Export_to_CSV_File, &CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile)
+	ON_BN_CLICKED(IDC_BUTTON_View_EXPORTED_KML_FILE, &CDlg_GISDataExchange::OnBnClickedButtonViewExportedKmlFile)
 END_MESSAGE_MAP()
 
 
@@ -419,4 +426,42 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
 
     OGRDataSource::DestroyDataSource( poDS );
 
+}
+void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeFileFolder = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\";
+	SampleShapeFileFolder = pMainFrame->m_CurrentDirectory + SampleShapeFileFolder;
+	ShellExecute( NULL,  "explore", SampleShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonLoadSampleShapeFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\Subarea_Highway_Crashes.shp";
+	SampleShapeFile = pMainFrame->m_CurrentDirectory + SampleShapeFile;
+	m_GIS_ShapeFile = SampleShapeFile;
+	UpdateData(false);
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonImportGisShapeFile()
+{
+	OnBnClickedImportGpsShapeFile();
+
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeCSVFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\crash.csv";
+	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
+	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
+
+}
+void CDlg_GISDataExchange::OnBnClickedButtonViewExportedKmlFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeCSVFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\crash.kml";
+	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
+	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
 }

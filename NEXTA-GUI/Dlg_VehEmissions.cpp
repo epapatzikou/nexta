@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_DemandType, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDemandtype)
 	ON_BN_CLICKED(ID_EXPORT_PATH_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportPathData)
 	ON_BN_CLICKED(ID_EXPORT_VEHICLE_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportVehicleData)
+	ON_BN_CLICKED(ID_FindCriticalOD, &CDlg_VehPathAnalysis::OnBnClickedFindcriticalod)
 END_MESSAGE_MAP()
 
 
@@ -335,6 +336,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					float AvgEnergy = m_ODMOEMatrix[i][j].emissiondata .Energy / m_ODMOEMatrix[i][j].TotalVehicleSize;
 					float AvgCO2 = m_ODMOEMatrix[i][j].emissiondata.CO2  / m_ODMOEMatrix[i][j].TotalVehicleSize;
 
+					float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
 					if(m_ODMOEMatrix[i][j].TotalVehicleSize >= MinVehicleSize && 
 						AvgDistance >= MinDistance && AvgTravelTime> AvgDistance*MinTTI)
 					{
@@ -342,9 +344,9 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 						CString ODInfoString;
 
 						if(m_pDoc->m_EmissionDataFlag )
-							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, $%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgCost,AvgEnergy, AvgCO2);
+							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed, AvgCost,AvgEnergy, AvgCO2);
 						else
-							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, $%4.3f",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgCost);
+							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph, $%4.3f",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgCost);
 
 
 						if(ImpactLinkNo<0)  // no impact link is selected
@@ -385,19 +387,23 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			}
 
 				CString SummaryInfoString;
+				float AvgSpeed = total_summary.TotalDistance * 60 / max(0.1,total_summary.TotalTravelTime);  // mph
+
 				if(m_pDoc->m_EmissionDataFlag )
 				{
-				SummaryInfoString.Format ("%d vhc, %3.1f min, %3.1f mile,$%4.3f, %5.1f(J), %4.1f(CO2_g)  ",total_summary.TotalVehicleSize, 
+				SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g)  ",total_summary.TotalVehicleSize, 
 					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
 					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
+					AvgSpeed,
 					total_summary.TotalCost/max(1,total_summary.TotalVehicleSize),
 					total_summary.emissiondata .Energy/max(1,total_summary.TotalVehicleSize),
 					total_summary.emissiondata .CO2/max(1,total_summary.TotalVehicleSize));
 				}else
 				{
-				SummaryInfoString.Format ("%d vhc, %3.1f min, %3.1f mile,$%4.3f",total_summary.TotalVehicleSize, 
+				SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile,%.0f mph,$%4.3f",total_summary.TotalVehicleSize, 
 					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
 					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
+					AvgSpeed,
 					total_summary.TotalCost/max(1,total_summary.TotalVehicleSize));
 				}
 
@@ -533,21 +539,23 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		float AvgCO2 = m_PathVector[p].emissiondata.CO2  / m_PathVector[p].TotalVehicleSize;
 
 
+		float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
+
 		CString PathInfoString;
 		if(AvgTravelCost>=0.001)
 		{
 			if(m_pDoc->m_EmissionDataFlag )
-				PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile, $%3.2f, %5.1f(J), %4.1f(CO2_g) ",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgTravelCost,AvgEnergy, AvgCO2);
+				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f, %5.1f(J), %4.1f(CO2_g) ",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost,AvgEnergy, AvgCO2);
 			else
-				PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgTravelCost);
+				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost);
 
 		}
 		else
 		{
 			if(m_pDoc->m_EmissionDataFlag )
-				PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile, %5.1f(J), %4.1f(CO2_g)",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgEnergy, AvgCO2);
+				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, %5.1f(J), %4.1f(CO2_g)",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgEnergy, AvgCO2);
 			else
-				PathInfoString.Format ("%d: %d vehicles, %3.1f min, %3.1f mile, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgTravelCost);
+				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost);
 		}
 
 		m_PathList.AddString (PathInfoString);
@@ -834,4 +842,12 @@ void CDlg_VehPathAnalysis::OnBnClickedExportVehicleData()
 	  m_pDoc->OpenCSVFileInExcel(fname);
 	  }
    }	
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedFindcriticalod()
+{
+	m_MinVehicleSizeBox.SetCurSel(9);
+	m_MinDistanceBox.SetCurSel(2);
+	FilterOriginDestinationPairs();
+
 }

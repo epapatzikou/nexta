@@ -9,9 +9,11 @@ class CDlgAssignmentSettings : public CDialog
 	DECLARE_DYNAMIC(CDlgAssignmentSettings)
 
 public:
+
 	CDlgAssignmentSettings(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgAssignmentSettings();
 
+	bool m_bLoadSampleProject;
 	CString m_ProjectDirectory;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Settings };
@@ -38,4 +40,5 @@ public:
 	afx_msg void OnLbnSelchangeListDemandLoadingMode();
 	afx_msg void OnLbnSelchangeListRoutingMethod();
 	BOOL m_EmissionDataOutput;
+	afx_msg void OnBnClickedOk2();
 };

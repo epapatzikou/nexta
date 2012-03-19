@@ -17,7 +17,7 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_SimulationHorizon(0)
 	, m_EmissionDataOutput(FALSE)
 {
-
+	m_bLoadSampleProject = false;
 }
 
 CDlgAssignmentSettings::~CDlgAssignmentSettings()
@@ -46,6 +46,7 @@ BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_COPY_VEHICLE_FILE, &CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_LOADING_MODE, &CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode)
 	ON_LBN_SELCHANGE(IDC_LIST_Routing_METHOD, &CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod)
+	ON_BN_CLICKED(IDOK2, &CDlgAssignmentSettings::OnBnClickedOk2)
 END_MESSAGE_MAP()
 
 
@@ -124,3 +125,9 @@ void CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile()
    }
 }
 
+
+void CDlgAssignmentSettings::OnBnClickedOk2()
+{
+	m_bLoadSampleProject = true;
+	OnOK();
+}

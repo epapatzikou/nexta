@@ -39,4 +39,9 @@ public:
 	afx_msg void OnBnClickedExportCsvFile();
 	afx_msg void OnBnClickedExportGpsShapeFile();
 	afx_msg void OnBnClickedExportKmlFile();
+	afx_msg void OnBnClickedButtonViewSampleFile();
+	afx_msg void OnBnClickedButtonLoadSampleShapeFile();
+	afx_msg void OnBnClickedButtonImportGisShapeFile();
+	afx_msg void OnBnClickedButtonExporttoCsvFile();
+	afx_msg void OnBnClickedButtonViewExportedKmlFile();
 };

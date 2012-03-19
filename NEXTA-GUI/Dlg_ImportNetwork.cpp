@@ -5,6 +5,8 @@
 #include "TLite.h"
 #include "Dlg_ImportNetwork.h"
 #include "DlgSensorDataLoading.h"
+#include "MainFrm.h"
+#include "Shellapi.h"
 
 
 // CDlg_ImportNetwork dialog
@@ -43,6 +45,10 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(ID_IMPORT_Network_Only, &CDlg_ImportNetwork::OnBnClickedImportNetworkOnly)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlg_ImportNetwork::OnLbnSelchangeList1)
 	ON_BN_CLICKED(ID_EXPORT_DATA, &CDlg_ImportNetwork::OnBnClickedExportData)
+	ON_BN_CLICKED(IDC_BUTTON_View_Sample_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleFile)
+	ON_BN_CLICKED(IDC_BUTTON_Load_Sample_File, &CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile)
+	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
+	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
 END_MESSAGE_MAP()
 
 
@@ -951,10 +957,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
 					total_demand+=number_of_vehicles;
-
 					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
-
-
 				}
 				m_pDoc->m_DemandVector.push_back (element);
 
@@ -1138,6 +1141,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		str_msg.Format ( "%d emissions records imported.", m_pDoc->m_VOTDistributionVector.size());
 		m_MessageList.AddString (str_msg);
 	}
+
+	return;  // not reading sensor data for now.
 
 	/// point sensor table
 	strSQL = m_pDoc->ConstructSQL("9-sensor");;
@@ -1547,4 +1552,43 @@ void CDlg_ImportNetwork::OnBnClickedExportData()
 	m_pDoc->OpenCSVFileInExcel (dlg.GetPathName());
 
 	}
+}
+
+void CDlg_ImportNetwork::OnBnClickedButtonViewSampleFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleExcelNetworkFile = pMainFrame->m_CurrentDirectory + m_pDoc->m_SampleExcelNetworkFile;
+	m_pDoc->OpenCSVFileInExcel (SampleExcelNetworkFile);
+
+}
+
+void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleExcelNetworkFile = pMainFrame->m_CurrentDirectory + m_pDoc->m_SampleExcelNetworkFile;
+	m_Edit_Excel_File = SampleExcelNetworkFile;
+	UpdateData(false);
+}
+
+void CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleCsvFile()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CDlg_ImportNetwork::OnBnClickedButtonViewSampleProjectFolder()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleProjectFolder = "\\Sample-Portland-SHRP2-C05-subarea";
+	SampleProjectFolder = pMainFrame->m_CurrentDirectory + SampleProjectFolder;
+	ShellExecute( NULL,  "explore", SampleProjectFolder, NULL,  NULL, SW_SHOWNORMAL );
+}
+
+void CDlg_ImportNetwork::OnBnClickedImport2()
+{
+	OnBnClickedImport();
 }

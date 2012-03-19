@@ -138,18 +138,24 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 
 		m_AMSToolBar.SetButtonText(0,"TOOL");
-		m_AMSToolBar.SetButtonText(2,"Import");
-		m_AMSToolBar.SetButtonText(3,"Sensor");
-		m_AMSToolBar.SetButtonText(4,"GIS");
-		m_AMSToolBar.SetButtonText(5,"Signal");
-		m_AMSToolBar.SetButtonText(7,"Simulation");
-		m_AMSToolBar.SetButtonText(8,"Calibration");
-		m_AMSToolBar.SetButtonText(9,"Prediction");
-		m_AMSToolBar.SetButtonText(11,"Editing");
-		m_AMSToolBar.SetButtonText(13,"Pricing");
-		m_AMSToolBar.SetButtonText(14,"Capacity");
-		m_AMSToolBar.SetButtonText(15,"ATIS");
+		m_AMSToolBar.SetButtonText(2,"Network");
+		m_AMSToolBar.SetButtonText(3,"Import");
+		m_AMSToolBar.SetButtonText(4,"Sensor");
+		m_AMSToolBar.SetButtonText(5,"GIS");
+		m_AMSToolBar.SetButtonText(6,"Signal");
+		m_AMSToolBar.SetButtonText(7,"Transit");
+		m_AMSToolBar.SetButtonText(8,"Cloud");
+		m_AMSToolBar.SetButtonText(9,"Background");
 
+		m_AMSToolBar.SetButtonText(11,"Simulation");
+		m_AMSToolBar.SetButtonText(12,"ODME");
+		m_AMSToolBar.SetButtonText(13,"TFME");
+		m_AMSToolBar.SetButtonText(14,"Prediction");
+		m_AMSToolBar.SetButtonText(16,"Editing");
+		m_AMSToolBar.SetButtonText(18,"Pricing");
+		m_AMSToolBar.SetButtonText(19,"Capacity");
+		m_AMSToolBar.SetButtonText(20,"ATIS");
+		m_AMSToolBar.SetButtonText(22,"Website");
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));
 		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);

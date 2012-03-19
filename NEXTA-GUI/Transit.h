@@ -117,9 +117,7 @@ class PT_Network
 {
 private:
 
-	
-
-	void BuildTransitNetwork();  //Build new transit network for short transit path calculation
+		void BuildTransitNetwork();  //Build new transit network for short transit path calculation
 
 
     //short transit path algorithm, node time label: node cost label

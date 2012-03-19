@@ -91,8 +91,6 @@ BOOL CTLiteApp::InitInstance()
         SetRegistryKey(_T("NeXTA"));
         LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
 
-
-
         m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE1,
                 RUNTIME_CLASS(CTLiteDoc),
                 RUNTIME_CLASS(CChildFrame), // custom MDI child frame
