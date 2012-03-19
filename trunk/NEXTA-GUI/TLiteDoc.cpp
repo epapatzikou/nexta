@@ -449,9 +449,9 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
 	if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
 
-	ReadTransitFiles(directory+"transit_data\\");  // read transit data
-
 	CalculateDrawingRectangle();
+
+	ReadTransitFiles(directory+"transit_data\\");  // read transit data
 
 	m_bFitNetworkInitialized  = false;
 

@@ -78,14 +78,20 @@ public:
 	//std::vector<GDPoint> m_ShapePoints;
 
 };
-class PT_shapes
+class PT_shape_feature_point
 {
  public:
    int shape_id;
    float shape_pt_lat;
    float shape_pt_lon;
    int  shape_pt_sequence;
-   float shape_dist_traveled;
+
+};
+class PT_shapes
+{
+ public:
+   int shape_id;
+   std::vector<PT_shape_feature_point> feature_point_vector;
 };
 
 class PT_transfers
@@ -99,15 +105,20 @@ class PT_transfers
 class PT_Route 
 {
  public: 
+	 PT_Route()
+	 {
+	 bInsideFreewayNetwork = false;
+	 }
 	int route_id;
 	string route_short_name;
 	string route_long_name;
 	string route_type;
 	string route_url;
+	bool bInsideFreewayNetwork;
 
 	//std::vector<PT_Trip> m_PT_TripVector;
 	std::map<int, GDPoint> m_RouteBusStopShapePoints;  //bus stop list on one route
-	std::map<int, GDPoint> m_RouteShapePoints;         //route line shape point 
+	std::map<int, GDPoint> m_RouteShapePoints;         //route line shape point, according to the sequence
 
 };
 
@@ -132,8 +143,7 @@ public:
     int TransitOrigin;
 	int TRansitDestination;
 
-
-    
+ 
 
 	std::map<int, PT_Route> m_PT_RouteMap;
 	std::map<int, PT_Trip> m_PT_TripMap;
@@ -142,11 +152,11 @@ public:
   	//bus stop schedule
 	std::vector<PT_StopTime> m_PT_StopTimeVector;
     std::vector<PT_transfers> m_PT_transfers;
-    std::vector<PT_shapes>  m_PT_shapes;   
+    std::map<int,PT_shapes>  m_PT_shapes_map;   
    
     //display route line, bus stop and short bus route
     //output bus data
-    bool ReadGTFFiles();  // Google Transit files
+    bool ReadGTFFiles(GDRect network_rect);  // Google Transit files
 
 };
 
