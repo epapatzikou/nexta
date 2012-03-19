@@ -2036,8 +2036,7 @@ int g_InitializeLogFiles()
 		g_AssignmentLogFile.width(12);
 		g_AssignmentLogFile.precision(3) ;
 		g_AssignmentLogFile.setf(ios::fixed);
-
-		g_AssignmentLogFile << "CPU Time, Iteration No, Average Travel Time (min), Travel Time Index (1.0 as base), Average Travel Distance (mile), Vehicle Route Switching Rate (%), # of Vehicles Completing Trips, % of  Vehicles Completing Trips, Average Travel Time Gap Per Vehicle (min),Target Demand Deviation,Abs Measurement  Error of Link Volume, RMSE of Link Volume, Avg Abs Percentage Error of Link Volume " << endl;
+		g_AssignmentLogFile << "CPU_time,iteration_no,avg_travel_time_in_min,travel_time_index,avg_travel_distance_in_mile,vehicle_route_switching_rate,number_of_vehicles_completing_trips,perc_of_vehicles_completing_trips,avg_travel_time_gap_per_vehicle_in_min,target_demand_deviation,abs_estimation_error_of_link_volume,RMSE_of_est_link_volume,avg_abs_perc_error_of_est_link_volume " << endl;
 	}
 	else
 	{
@@ -2528,14 +2527,21 @@ void DTASafetyPredictionModel::UpdateAADTConversionFactor()
 
 void DTASafetyPredictionModel::UpdateCrashRateForAllLinks()
 {
-	UpdateAADTConversionFactor();
+	UpdateAADTConversionFactor();  // for dynamic traffic assignment only
 	std::set<DTALink*>::iterator iterLink;
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 
 		DTALink* pLink = g_LinkVector[li];
+
+		if(g_TrafficFlowModelFlag == 0) // static traffic assignment 
+		{
+		pLink->m_AADT = pLink->CFlowArrivalCount/0.15;
+		}else  //dynamic traffic assignment 
+		{
 		pLink->m_AADT = pLink->CFlowArrivalCount/m_AADTConversionFactorForStudyHorizion;
+		}
 
 		double CrashRate= 0;
 		if( g_LinkTypeFreewayMap[pLink->m_link_type] == 1)  // freeway

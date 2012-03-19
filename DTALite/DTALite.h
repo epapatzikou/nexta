@@ -1564,7 +1564,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iterationbool,bool bStartWithE
 void OutputNetworkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
-void OutputTimeDependentODMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputTimeDependentODMOEData(int department_time_intreval = 60);
 void OutputEmissionData();
 void OutputTimeDependentPathMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
