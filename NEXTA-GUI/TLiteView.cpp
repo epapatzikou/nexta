@@ -136,6 +136,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnLinkDecreasebandwidth)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SENSOR, &CTLiteView::OnUpdateViewSensor)
 	ON_COMMAND(ID_LINK_SWICHTOLINE_BANDWIDTH_MODE, &CTLiteView::OnLinkSwichtolineBandwidthMode)
+	ON_COMMAND(ID_VIEW_TRANSITLAYER, &CTLiteView::OnViewTransitlayer)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_TRANSITLAYER, &CTLiteView::OnUpdateViewTransitlayer)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -338,6 +340,7 @@ CTLiteView::CTLiteView()
 
 	m_VehicleSize = 1;
 	m_bShowSensor = true;
+	m_bShowTransit = false;
 
 	m_SelectFromNodeNumber = 0;
 	m_SelectToNodeNumber = 0;
@@ -1284,11 +1287,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 
 	// step 17: draw Public Transit Layer
+	
+	if(m_bShowTransit)
+	{
 	pDC->SelectObject(&g_BlackBrush);
 	pDC->SetTextColor(RGB(255,255,0));
 	pDC->SelectObject(&g_TransitPen);
-
 	DrawPublicTransitLayer(pDC);
+	}
 
 }
 
@@ -3052,4 +3058,15 @@ void CTLiteView::OnLinkSwichtolineBandwidthMode()
 
 	
 	Invalidate();
+}
+
+void CTLiteView::OnViewTransitlayer()
+{
+	m_bShowTransit = !m_bShowTransit;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateViewTransitlayer(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowTransit);
 }

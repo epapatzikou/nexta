@@ -74,6 +74,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_SelectToNodeNumber;
 
 	bool m_bShowSensor;
+	bool m_bShowTransit;
 	bool m_bShowText;
 	bool m_bShowAVISensor;
 
@@ -301,6 +302,8 @@ public:
 	afx_msg void OnLinkDecreasebandwidth();
 	afx_msg void OnUpdateViewSensor(CCmdUI *pCmdUI);
 	afx_msg void OnLinkSwichtolineBandwidthMode();
+	afx_msg void OnViewTransitlayer();
+	afx_msg void OnUpdateViewTransitlayer(CCmdUI *pCmdUI);
 };
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

@@ -16,7 +16,6 @@
 #define IDOK2                           3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
-#define IDCANCEL2                       4
 #define ID_FindCriticalOD               4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
@@ -691,13 +690,14 @@
 #define ID_LINK_VIEWLINK                33323
 #define ID_DELETE_LINK33324             33324
 #define ID_DELETE_SELECTED_LINK         33325
+#define ID_VIEW_TRANSITLAYER            33326
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         33326
+#define _APS_NEXT_COMMAND_VALUE         33327
 #define _APS_NEXT_CONTROL_VALUE         1102
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
