@@ -30,94 +30,125 @@
 #include <vector>
 #include <algorithm>
 
-
+// data field << =   https://developers.google.com/transit/gtfs/reference#stop_times_fields
 class PT_Stop
 {
 public:
-
-int stop_id;
-int stop_code;
-CString stop_name;
-CString stop_desc;
-float stop_lat;
-float stop_lon;
-int zone_id;
-int location_type;
-CString direction;
-CString position;
-
+	int stop_id;
+	int stop_code;
+	string stop_name;
+	string stop_desc;
+	int zone_id;
+	int location_type;
+	string direction;
+	string position;
+    GDPoint m_ShapePoint;
 
 };
 
 class PT_StopTime
 {
 public:
-int trip_id;
-int arrival_time;  // unit: min;
-int departure_time;
-int stop_id;
-int stop_sequence;
-int stop_headsign;
-int pickup_type;
-int drop_off_type;
-float shape_dist_traveled;
-int timepoint;
+	int trip_id;
+	int arrival_time;  // unit: min;
+	int departure_time;
+	int stop_id;
+	int stop_sequence;
+	int stop_headsign;
+	int pickup_type;
+	int drop_off_type;
+	float shape_dist_traveled;
+	int timepoint;
 
 };
 
 class PT_Trip
 {
 public:
-
-	int route_id;
-	CString service_id;
 	int trip_id;
+	int route_id;
+	int shape_id;	
+	string service_id;
 	int direction_id;
 	int block_id;
-	int shape_id;
+
 	int trip_type;
 
-	std::vector<PT_StopTime> m_PT_StopTimeVector;
-	
+	//std::vector<PT_StopTime> m_PT_StopTimeVector;
+	//std::vector<GDPoint> m_ShapePoints;
 
 };
+class PT_shapes
+{
+ public:
+   int shape_id;
+   float shape_pt_lat;
+   float shape_pt_lon;
+   int  shape_pt_sequence;
+   float shape_dist_traveled;
+};
 
-
-
+class PT_transfers
+{
+ public:
+   int from_stop_id;
+   int to_stop_id;
+   int transfer_type;
+};
 
 class PT_Route 
 {
-public: 
-int route_id;
-CString route_short_name;
-CString route_long_name;
-CString route_type;
-CString route_url;
+ public: 
+	int route_id;
+	string route_short_name;
+	string route_long_name;
+	string route_type;
+	string route_url;
 
-std::vector<PT_Trip> m_PT_TripVector;
-
+	//std::vector<PT_Trip> m_PT_TripVector;
+	std::map<int, GDPoint> m_RouteBusStopShapePoints;  //bus stop list on one route
+	std::map<int, GDPoint> m_RouteShapePoints;         //route line shape point 
 
 };
+
+
+
 class PT_Network
 {
+private:
+
+	
+
+	void BuildTransitNetwork();  //Build new transit network for short transit path calculation
+
+
+    //short transit path algorithm, node time label: node cost label
+	bool OptimalTDLabelCorrecting_transit(int origin, int departure_time, int destination); 
+
+	//find optimal transit path ,stop list,and time according to short path tree.
+	bool FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);
+
 public:
 
-CString m_ProjectDirectory;
+	string m_ProjectDirectory;
+    int TransitOrigin;
+	int TRansitDestination;
 
 
-std::map<int, PT_Route> m_PT_RouteMap;
-std::map<int, PT_Trip> m_PT_TripMap;
-std::map<int, PT_Stop> m_PT_StopMap;
+    
 
-bool ReadGTFFiles();  // Google Transit files
+	std::map<int, PT_Route> m_PT_RouteMap;
+	std::map<int, PT_Trip> m_PT_TripMap;
+	std::map<int, PT_Stop> m_PT_StopMap;
 
-void BuildTransitNetwork();
-
-// node time label: node cost label
-
-bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
-bool FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);
-
+  	//bus stop schedule
+	std::vector<PT_StopTime> m_PT_StopTimeVector;
+    std::vector<PT_transfers> m_PT_transfers;
+    std::vector<PT_shapes>  m_PT_shapes;   
+   
+    //display route line, bus stop and short bus route
+    //output bus data
+    bool ReadGTFFiles();  // Google Transit files
 
 };
 

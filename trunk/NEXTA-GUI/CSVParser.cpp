@@ -22,6 +22,7 @@ CCSVParser::~CCSVParser(void)
 
 bool CCSVParser::OpenCSVFile(string fileName)
 {
+    	inFile.clear();
         inFile.open(fileName.c_str());
         
         if (inFile.is_open())
@@ -113,6 +114,11 @@ vector<string> CCSVParser::ParseLine(string line)
                 {
                         SeperatedStrings.push_back(subStr);
                 }
+
+				if (line.at(line.length()-1) == ',')
+				{
+					SeperatedStrings.push_back("");
+				}
         }
         else
         {
