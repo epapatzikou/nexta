@@ -32,6 +32,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <omp.h>
 #include <algorithm>
 using namespace std;
@@ -1036,52 +1037,52 @@ void ReadInputFiles()
 	{
 		cout << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
 		g_LogFile << "Step 7: Reading file input_temporal_demand_profile.csv..."<< endl;
-	
-	CCSVParser parser_TDProfile;
 
-	if (parser_TDProfile.OpenCSVFile("input_temporal_demand_profile.csv"))
-	{
+		CCSVParser parser_TDProfile;
 
-		while(parser_TDProfile.ReadRecord())
+		if (parser_TDProfile.OpenCSVFile("input_temporal_demand_profile.csv"))
 		{
-			int from_zone_id = 0;
-			int to_zone_id = 0;
-			int demand_type = 0;
 
-			if(parser_TDProfile.GetValueByFieldName("from_zone_id",from_zone_id) == false)
-				break;
-
-			if(parser_TDProfile.GetValueByFieldName("to_zone_id",to_zone_id) == false)
-				break;
-
-			if(parser_TDProfile.GetValueByFieldName("demand_type",demand_type) == false)
-				break;
-
-			TimeDependentDemandProfile element; 
-			element.demand_type = demand_type;
-			element.from_zone_id = from_zone_id;
-			element.to_zone_id = to_zone_id;
-
-
-			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
+			while(parser_TDProfile.ReadRecord())
 			{
-				std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo (t);
-				double ratio = 0;
-				parser_TDProfile.GetValueByFieldName(time_stamp_str,ratio);
+				int from_zone_id = 0;
+				int to_zone_id = 0;
+				int demand_type = 0;
+
+				if(parser_TDProfile.GetValueByFieldName("from_zone_id",from_zone_id) == false)
+					break;
+
+				if(parser_TDProfile.GetValueByFieldName("to_zone_id",to_zone_id) == false)
+					break;
+
+				if(parser_TDProfile.GetValueByFieldName("demand_type",demand_type) == false)
+					break;
+
+				TimeDependentDemandProfile element; 
+				element.demand_type = demand_type;
+				element.from_zone_id = from_zone_id;
+				element.to_zone_id = to_zone_id;
 
 
-				if(ratio > 0.0001)
+				for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
 				{
-					element.time_dependent_ratio[t] = ratio;
+					std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo (t);
+					double ratio = 0;
+					parser_TDProfile.GetValueByFieldName(time_stamp_str,ratio);
+
+
+					if(ratio > 0.0001)
+					{
+						element.time_dependent_ratio[t] = ratio;
+					}
 				}
+
+				g_TimeDependentDemandProfileVector.push_back (element);
+
 			}
 
-			g_TimeDependentDemandProfileVector.push_back (element);
 
 		}
-
-
-	}
 	}
 
 
@@ -1181,8 +1182,8 @@ void ReadInputFiles()
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.BuildPhysicalNetwork();
-//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
-//	ConnectivityChecking(&PhysicalNetwork);
+	//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+	//	ConnectivityChecking(&PhysicalNetwork);
 
 	//*******************************
 	// step 10: demand trip file input
@@ -1337,9 +1338,9 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 		g_AggregationTimetInterval =  60;
 	}else   // dynamic traffic assignment
 	{
-	g_DemandLoadingStartTimeInMin= 0;
-	g_DemandLoadingEndTimeInMin= int(g_PlanningHorizon*1.0f/g_AggregationTimetInterval+0.49f)*g_AggregationTimetInterval;  // round to the nearest large number
-	
+		g_DemandLoadingStartTimeInMin= 0;
+		g_DemandLoadingEndTimeInMin= int(g_PlanningHorizon*1.0f/g_AggregationTimetInterval+0.49f)*g_AggregationTimetInterval;  // round to the nearest large number
+
 	}
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
@@ -1520,68 +1521,55 @@ void g_ReadDemandFile()
 	bool bFileReady = false;
 	int i;
 
+	int numOfDemandType = g_DemandTypeMap.size();
+	FILE* pFile;
+
 	CCSVParser parser_demand;
+
 
 	float total_demand_in_demand_file = 0;
 	float total_number_of_vehicles_to_be_generated = 0;
 
-	if (parser_demand.OpenCSVFile("input_demand.csv"))
+	if (pFile = fopen("input_demand.csv","r"))
 	{
-		bFileReady = true;
+
+		cout << g_GetAppRunningTime() << "Start reading demand file"<< endl;
+
+		int origin_zone, destination_zone;
+		float number_of_vehicles ;
+		float starting_time_in_min;
+		float ending_time_in_min;
+
+		char tmp[1024];
+		fgets(tmp,1023,pFile);
+
 		int line_no = 1;
 
-		while(parser_demand.ReadRecord())
+		while(!feof(pFile))
 		{
-			int originput_zone, destination_zone;
-			float number_of_vehicles ;
-			int demand_type;
-			float starting_time_in_min;
-			float ending_time_in_min;
+			fscanf(pFile,"%d,%d,%f,%f,",&origin_zone,&destination_zone,&starting_time_in_min,&ending_time_in_min);
 
-			if(parser_demand.GetValueByFieldName("from_zone_id",originput_zone) == false)
-				break;
-			if(parser_demand.GetValueByFieldName("to_zone_id",destination_zone) == false)
-				break;
-
-			if(parser_demand.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
+			for(unsigned int demand_type = 1; demand_type <= numOfDemandType; demand_type++)
 			{
-				starting_time_in_min = 0;
-			}
-
-			if(parser_demand.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
-			{
-				ending_time_in_min = 60;
-			}
-
-			// static traffic assignment, set the demand loading horizon to [0, 60 min]
-			if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
-			{
-			starting_time_in_min  = 0;
-			ending_time_in_min = 60;
-			}
-
-			for(unsigned int demand_type = 1; demand_type <= g_DemandTypeMap.size(); demand_type++)
-			{
-				std::ostringstream  str_number_of_vehicles; 
-				str_number_of_vehicles << "number_of_vehicle_trips_type" << demand_type;
-				if(parser_demand.GetValueByFieldName(str_number_of_vehicles.str(),number_of_vehicles) == false)
+				if (demand_type == numOfDemandType)
 				{
-					cout << "Error: Field " << str_number_of_vehicles.str() << " cannot be found in input_demand.csv."<< endl;
-					g_ProgramStop();
+					fscanf(pFile,"%f\n",&number_of_vehicles);
+				}
+				else
+				{
+					fscanf(pFile,"%f,",&number_of_vehicles);
 				}
 
+
 				total_demand_in_demand_file += number_of_vehicles;
-				number_of_vehicles*= g_DemandGlobalMultiplier;
+				number_of_vehicles *= g_DemandGlobalMultiplier;
 
 
-				// we generate vehicles here for each OD data line
-				//			TRACE("o:%d d: %d, %f,%d,%f,%f\n", originput_zone,destination_zone,number_of_vehicles,demand_type,starting_time_in_min,ending_time_in_min);
-
-				if(g_ZoneMap.find(originput_zone)!= g_ZoneMap.end())
+				if(g_ZoneMap.find(origin_zone)!= g_ZoneMap.end())
 				{
-					g_ZoneMap[originput_zone].m_Demand += number_of_vehicles;
+					g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 					// setup historical demand value for static OD estimation
-					g_ZoneMap[originput_zone].m_HistDemand[destination_zone] += number_of_vehicles;
+					g_ZoneMap[origin_zone].m_HistDemand[destination_zone] += number_of_vehicles;
 
 					float Interval= ending_time_in_min - starting_time_in_min;
 
@@ -1591,8 +1579,9 @@ void g_ReadDemandFile()
 
 					if(g_TimeDependentDemandProfileVector.size() == 0) // no time-dependent profile
 					{
-						CreateVehicles(originput_zone,destination_zone,number_of_vehicles*LoadingRatio,demand_type,starting_time_in_min,ending_time_in_min);
-					}else
+						CreateVehicles(origin_zone,destination_zone,number_of_vehicles*LoadingRatio,demand_type,starting_time_in_min,ending_time_in_min);
+					}
+					else
 					{
 						// condition 2: with time-dependent profile 
 						// for each time interval
@@ -1604,7 +1593,7 @@ void g_ReadDemandFile()
 							for(int i = 0; i < g_TimeDependentDemandProfileVector.size(); i++)
 							{
 								TimeDependentDemandProfile element = g_TimeDependentDemandProfileVector[i];
-								if( (element.from_zone_id == originput_zone || element.from_zone_id == 0)
+								if( (element.from_zone_id == origin_zone || element.from_zone_id == 0)
 									&&(element.to_zone_id == destination_zone || element.to_zone_id == 0)
 									&& (element.demand_type == demand_type || element.demand_type ==0) )
 								{
@@ -1612,8 +1601,6 @@ void g_ReadDemandFile()
 									time_dependent_ratio = element.time_dependent_ratio[time_interval];
 
 								}
-
-
 							}
 
 							if(time_dependent_ratio > 0.000001) // this is the last one applicable
@@ -1623,27 +1610,30 @@ void g_ReadDemandFile()
 								starting_time_in_min = time_interval*15;
 								ending_time_in_min = (time_interval+1)*15;
 
-								CreateVehicles(originput_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type,starting_time_in_min,ending_time_in_min);
+								CreateVehicles(origin_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type,starting_time_in_min,ending_time_in_min);
 							}
 						}
-
-					}
-					//  given the number of OD demand voluem to be created. we need to apply time-dependent profile for each data block , 
-					if(line_no %100000 ==0)
-					{
-						cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
 					}
 				}
 
 			}
-			line_no++;
-		}
 
-	}else
+
+			line_no++;
+			if(line_no % 1000000 == 0)
+			{
+				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
+			}
+
+		}				
+	}
+	else
 	{
 		cout << "Error: File input_demand.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		g_ProgramStop();
 	}
+
+	cout << g_GetAppRunningTime() << "End reading demand file"<< endl;
 
 	g_LogFile << "Total demand volume in input_demand.csv = "<< total_demand_in_demand_file << endl;
 	g_LogFile << "Demand Global Multiplier = "<< g_DemandGlobalMultiplier << endl;
@@ -1673,7 +1663,7 @@ void g_ReadDemandFile()
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
 
-	g_ConvertDemandToVehicles();
+	g_ConvertDemandToVehicles();	
 }
 void FreeMemory()
 {
@@ -1837,8 +1827,8 @@ void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 
 		LinkMOESummaryFile << "from_node_id,to_node_id,start_time_in_min, end_time_in_min,total_link_volume,lane_capacity_in_vhc_per_hour, volume_over_capacity_ratio, speed_limit_in_mph, speed_in_mph, percentage_of_speed_limit, level_of_service, sensor_data_flag, sensor_link_volume, measurement_error_percentage, abs_measurement_error_percentage,simulated_AADT,num_of_crashes_per_year" << endl;
 
-//		DTASafetyPredictionModel SafePredictionModel;
-//		SafePredictionModel.UpdateCrashRateForAllLinks();
+		//		DTASafetyPredictionModel SafePredictionModel;
+		//		SafePredictionModel.UpdateCrashRateForAllLinks();
 
 		std::set<DTALink*>::iterator iterLink;
 
@@ -1854,39 +1844,39 @@ void g_OutputLinkMOESummary(char fname[_MAX_PATH])
 			int percentage_of_speed_limit = int(speed/max(0.1,pLink->m_SpeedLimit)*100+0.5);
 
 
-				LinkMOESummaryFile << g_NodeVector[pLink->m_FromNodeID].m_NodeName  << "," ;
-				LinkMOESummaryFile << g_NodeVector[pLink->m_ToNodeID].m_NodeName << "," ;
-				LinkMOESummaryFile << g_DemandLoadingStartTimeInMin << "," ;
-				LinkMOESummaryFile << g_DemandLoadingEndTimeInMin << "," ;
-				LinkMOESummaryFile << pLink->CFlowArrivalCount << "," ; // total hourly arrival flow 
-				LinkMOESummaryFile << pLink->m_MaximumServiceFlowRatePHPL << "," ;
-				LinkMOESummaryFile << voc_ratio << "," ;
-				LinkMOESummaryFile << pLink->m_SpeedLimit << "," ;
-				LinkMOESummaryFile << speed << "," ;
-				LinkMOESummaryFile << percentage_of_speed_limit << "," ;
-				LinkMOESummaryFile << g_GetLevelOfService(percentage_of_speed_limit) << "," ;
-				LinkMOESummaryFile << pLink->m_bSensorData << "," ;
-				LinkMOESummaryFile << pLink->m_ObservedFlowVolume << "," ;
+			LinkMOESummaryFile << g_NodeVector[pLink->m_FromNodeID].m_NodeName  << "," ;
+			LinkMOESummaryFile << g_NodeVector[pLink->m_ToNodeID].m_NodeName << "," ;
+			LinkMOESummaryFile << g_DemandLoadingStartTimeInMin << "," ;
+			LinkMOESummaryFile << g_DemandLoadingEndTimeInMin << "," ;
+			LinkMOESummaryFile << pLink->CFlowArrivalCount << "," ; // total hourly arrival flow 
+			LinkMOESummaryFile << pLink->m_MaximumServiceFlowRatePHPL << "," ;
+			LinkMOESummaryFile << voc_ratio << "," ;
+			LinkMOESummaryFile << pLink->m_SpeedLimit << "," ;
+			LinkMOESummaryFile << speed << "," ;
+			LinkMOESummaryFile << percentage_of_speed_limit << "," ;
+			LinkMOESummaryFile << g_GetLevelOfService(percentage_of_speed_limit) << "," ;
+			LinkMOESummaryFile << pLink->m_bSensorData << "," ;
+			LinkMOESummaryFile << pLink->m_ObservedFlowVolume << "," ;
 
-				float error_percentage;
-				
-				if( pLink->m_bSensorData)
-				 error_percentage = (pLink->CFlowArrivalCount - pLink->m_ObservedFlowVolume) / max(1,pLink->m_ObservedFlowVolume) *100;
-				else
-					error_percentage  = 0;
+			float error_percentage;
 
-				LinkMOESummaryFile << error_percentage << "," ;
-				LinkMOESummaryFile << fabs(error_percentage) << "," ;
+			if( pLink->m_bSensorData)
+				error_percentage = (pLink->CFlowArrivalCount - pLink->m_ObservedFlowVolume) / max(1,pLink->m_ObservedFlowVolume) *100;
+			else
+				error_percentage  = 0;
 
-				LinkMOESummaryFile << pLink->m_AADT << "," ;
-				LinkMOESummaryFile << pLink->m_NumberOfCrashes << "," ;
+			LinkMOESummaryFile << error_percentage << "," ;
+			LinkMOESummaryFile << fabs(error_percentage) << "," ;
 
-				LinkMOESummaryFile << endl;	
+			LinkMOESummaryFile << pLink->m_AADT << "," ;
+			LinkMOESummaryFile << pLink->m_NumberOfCrashes << "," ;
+
+			LinkMOESummaryFile << endl;	
 
 		}
 
 		LinkMOESummaryFile.close ();
-		
+
 	}else
 	{
 		fprintf(g_ErrorFile, "File %s cannot be opened. It might be currently used and locked by EXCEL.", fname);
@@ -2128,7 +2118,7 @@ void g_ReadDTALiteSettings()
 	g_ObservationEndTime = g_GetPrivateProfileInt("estimation", "observation_end_time_in_min", 570, IniFilePath_DTA);
 
 	if(g_ObservationEndTime >= g_ObservationStartTime + g_PlanningHorizon)  // no later than the simulation end time
-	g_ObservationEndTime = g_ObservationStartTime + g_PlanningHorizon;
+		g_ObservationEndTime = g_ObservationStartTime + g_PlanningHorizon;
 
 	g_VehicleLoadingMode = g_GetPrivateProfileInt("demand", "load_vehicle_file_mode", 0, IniFilePath_DTA);	
 	g_ParallelComputingMode = g_GetPrivateProfileInt("assignment", "parallel_computing", 1, IniFilePath_DTA);
@@ -2537,10 +2527,10 @@ void DTASafetyPredictionModel::UpdateCrashRateForAllLinks()
 
 		if(g_TrafficFlowModelFlag == 0) // static traffic assignment 
 		{
-		pLink->m_AADT = pLink->CFlowArrivalCount/0.15;
+			pLink->m_AADT = pLink->CFlowArrivalCount/0.15;
 		}else  //dynamic traffic assignment 
 		{
-		pLink->m_AADT = pLink->CFlowArrivalCount/m_AADTConversionFactorForStudyHorizion;
+			pLink->m_AADT = pLink->CFlowArrivalCount/m_AADTConversionFactorForStudyHorizion;
 		}
 
 		double CrashRate= 0;
