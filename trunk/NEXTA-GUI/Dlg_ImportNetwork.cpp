@@ -139,6 +139,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				rsNode.Close();
 				return;
 			}
+			if(id == 0)  // reading empty line
+				break;
 
 
 			int control_type = rsNode.GetLong(CString("control_type"),bExist,false);
@@ -715,6 +717,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			}
 			if(type_no <=0)
 				break;
+
 			CString vehicle_type_name;
 
 			vehicle_type_name = rsVehicleType.GetCString(CString("vehicle_type_name"));
@@ -886,7 +889,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				if( origin_zone_id ==0)
+			if( origin_zone_id ==0)
 					break;
 
 				destination_zone_id = rsDemand.GetLong(CString("to_zone_id"),bExist,false);
@@ -1118,6 +1121,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 			int vehicle_type = rsEmissionRate.GetLong(CString("vehicle_type"),bExist,false);
+
+			if(vehicle_type <= 0)  //reading empty line
+				break;
 
 			if(bExist)
 			{

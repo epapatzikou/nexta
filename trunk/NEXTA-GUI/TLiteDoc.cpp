@@ -819,7 +819,7 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
 			if(m_NodeNametoIDMap.find(node_id) != m_NodeNametoIDMap.end())
 			{
 				CString error_message;
-				error_message.Format ("Node %d in input_node.csv %s has been defined twice. Please check.", node_id);
+				error_message.Format ("Node %d in input_node.csv has been defined twice. Please check.", node_id);
 				AfxMessageBox(error_message);
 				return 0;
 			}
@@ -4273,7 +4273,11 @@ bool CTLiteDoc::CreateNetworkFromExcelFile()
 				AfxMessageBox(warning);
 				return false;
 			}
-
+			if(id == 0)
+			{ // reading this possible empty line
+		
+				break; 
+			}
 
 			float x = rsNode.GetDouble(CString("x"),bExist,false);
 			if(!bExist) 
