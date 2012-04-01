@@ -97,7 +97,7 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 			if( m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
 			{
 				m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeedCopy;
-				m_HistLinkMOEAry[t].ObsFlow +=m_LinkMOEAry[day*1440+t].ObsFlowCopy;
+				m_HistLinkMOEAry[t].ObsLinkFlow +=m_LinkMOEAry[day*1440+t].ObsFlowCopy;
 				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlowCopy;
 				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensityCopy;
 				m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndexCopy;
@@ -126,7 +126,7 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 		{
 			// calculate final mean statistics
 			m_HistLinkMOEAry[t].ObsSpeed /=count;
-			m_HistLinkMOEAry[t].ObsFlow /=count;
+			m_HistLinkMOEAry[t].ObsLinkFlow /=count;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
 			m_HistLinkMOEAry[t].ObsDensity /=count;
 			m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
@@ -165,7 +165,7 @@ void DTALink::Compute15MinAvg()
 
 
 		m_LinkMOEAry_15min[t/15].ObsSpeed +=m_LinkMOEAry[t].ObsSpeedCopy;
-		m_LinkMOEAry_15min[t/15].ObsFlow +=m_LinkMOEAry[t].ObsFlowCopy;
+		m_LinkMOEAry_15min[t/15].ObsLinkFlow +=m_LinkMOEAry[t].ObsFlowCopy;
 		m_LinkMOEAry_15min[t/15].ObsCumulativeFlow +=m_LinkMOEAry[t].ObsCumulativeFlowCopy;
 		m_LinkMOEAry_15min[t/15].ObsDensity += m_LinkMOEAry[t].ObsDensityCopy;
 		m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex += m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
@@ -175,7 +175,7 @@ void DTALink::Compute15MinAvg()
 		{
 			// calculate final mean statistics
 			m_LinkMOEAry_15min[t/15].ObsSpeed /=count;
-			m_LinkMOEAry_15min[t/15].ObsFlow /=count;
+			m_LinkMOEAry_15min[t/15].ObsLinkFlow /=count;
 			m_LinkMOEAry_15min[t/15].ObsCumulativeFlow /=count;
 			m_LinkMOEAry_15min[t/15].ObsDensity /=count;
 			m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex /=count;
@@ -390,20 +390,20 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
- 							pLink->m_LinkMOEAry[ t].ObsFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+ 							pLink->m_LinkMOEAry[ t].ObsLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
-								pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
+								pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
 							else
 								pLink->m_LinkMOEAry[t].ObsDensity = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
 							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
-								pLink->m_LinkMOEAry[ t+tt].ObsFlow = pLink->m_LinkMOEAry[t].ObsFlow ;
+								pLink->m_LinkMOEAry[ t+tt].ObsLinkFlow = pLink->m_LinkMOEAry[t].ObsLinkFlow ;
 								pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
 								pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
 								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
@@ -538,10 +538,10 @@ void CTLiteDoc::BuildHistoricalDatabase()
 			{
 				if(t%1440 ==0)
 				{  // reset at the begining of day
-					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsFlow;
+					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
 				}else
 				{
-					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsFlow ;
+					(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].ObsCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsLinkFlow ;
 
 				}
 
@@ -720,15 +720,15 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0);
 			int     NodeSize = 0;
 			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
-			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 			while(PredNode != m_OriginNodeID && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
 			{
 				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 				NodeNodeSum+= PredNode;
 				PredNode = m_pNetwork->NodePredAry[PredNode];
 			}
-			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 
 			m_NodeSizeSP = NodeSize;
 
@@ -804,16 +804,16 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0);
 			int     NodeSize = 0;
 			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
-			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 			while(PredNode != m_OriginNodeID && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
 			{
 				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 				NodeNodeSum+= PredNode;
 
 				PredNode = m_pNetwork->NodePredAry[PredNode];
 			}
-			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
 
 			m_NodeSizeSP = NodeSize;
 

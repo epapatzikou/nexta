@@ -93,39 +93,39 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 						// determine  movement type /direction here
-						element.dir = DTA_LANES_COLUME_init;
+						element.movement_dir = DTA_LANES_COLUME_init;
 						switch (element.movement_approach)
 						{
 							case DTA_North:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_NBL; break;
-									case DTA_Through: element.dir = DTA_NBT; break;
-									case DTA_RightTurn: element.dir = DTA_NBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
+									case DTA_Through: element.movement_dir = DTA_NBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
 								}
 								break;
 							case DTA_East:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_EBL; break;
-									case DTA_Through: element.dir = DTA_EBT; break;
-									case DTA_RightTurn: element.dir = DTA_EBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
+									case DTA_Through: element.movement_dir = DTA_EBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
 								}
 								break;
 							case DTA_South:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_SBL; break;
-									case DTA_Through: element.dir = DTA_SBT; break;
-									case DTA_RightTurn: element.dir = DTA_SBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
+									case DTA_Through: element.movement_dir = DTA_SBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
 								}
 								break;
 							case DTA_West:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_WBL; break;
-									case DTA_Through: element.dir = DTA_WBT; break;
-									case DTA_RightTurn: element.dir = DTA_WBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
+									case DTA_Through: element.movement_dir = DTA_WBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
 								}
 								break;
 						}

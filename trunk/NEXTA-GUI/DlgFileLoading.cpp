@@ -99,6 +99,8 @@ BOOL CDlgFileLoading::OnInitDialog()
 	m_ListBox_OutputData.AddString(m_pDoc->m_SimulationVehicleDataLoadingStatus);
 	}
 
+	m_ListBox_OutputData.AddString(m_pDoc->m_StrLoadingTime);
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }

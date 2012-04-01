@@ -38,6 +38,27 @@
 #endif
 
 using namespace std;
+
+bool g_read_a_line(FILE* f, char* aline, int & size)
+   /* read a line from the current line from the file */
+{
+
+   char ch;
+   size = 0;
+
+   while( 1 ) {
+      ch = getc( f );
+      if( ch != 13 && ch != 10 && ch != EOF )
+	 aline[ size++ ] = ch;
+      else { /* terminate if it's end of line or end of file */
+	 aline[ size ] = 0;
+	 if( ch == EOF )
+	    return false;
+
+	 return true;
+      }
+   }
+}
 void g_ProgramStop()
 {
 	getchar();
@@ -66,6 +87,66 @@ double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2)
 		   return distance;
 }
 
+
+//  public domain function by Darel Rex Finley, 2006
+//  Determines the intersection point of the line defined by points A and B with the
+//  line defined by points C and D.
+//
+//  Returns YES if the intersection point was found, and stores that point in X,Y.
+//  Returns NO if there is no determinable intersection point, in which case X,Y will
+//  be unmodified.
+
+bool g_get_line_intersection(
+float Ax, float Ay,
+float Bx, float By,
+float Cx, float Cy,
+float Dx, float Dy,
+float *X, float *Y) 
+{
+
+ double  distAB, theCos, theSin, newX, ABpos ;
+
+  //  Fail if either line segment is zero-length.
+//  if (Ax==Bx && Ay==By || Cx==Dx && Cy==Dy) return false;
+  if (Ax==Bx && Ay==By ) return false;  // comment: C and D can be the same point from a vehile with the same timestamp
+
+  //  Fail if the segments share an end-point.
+  if (Ax==Cx && Ay==Cy || Bx==Cx && By==Cy
+  ||  Ax==Dx && Ay==Dy || Bx==Dx && By==Dy) {
+    return false; }
+
+  //  (1) Translate the system so that point A is on the origin.
+  Bx-=Ax; By-=Ay;
+  Cx-=Ax; Cy-=Ay;
+  Dx-=Ax; Dy-=Ay;
+
+  //  Discover the length of segment A-B.
+  distAB=sqrt(Bx*Bx+By*By);
+
+  //  (2) Rotate the system so that point B is on the positive X axis.
+  theCos=Bx/distAB;
+  theSin=By/distAB;
+  newX=Cx*theCos+Cy*theSin;
+  Cy  =Cy*theCos-Cx*theSin; Cx=newX;
+  newX=Dx*theCos+Dy*theSin;
+  Dy  =Dy*theCos-Dx*theSin; Dx=newX;
+
+  //  Fail if segment C-D doesn't cross line A-B.
+  if (Cy<0. && Dy<0. || Cy>=0. && Dy>=0.) return false;
+
+  //  (3) Discover the position of the intersection point along line A-B.
+  ABpos=Dx+(Cx-Dx)*Dy/(Dy-Cy);
+
+  //  Fail if segment C-D crosses line A-B outside of segment A-B.
+  if (ABpos<0. || ABpos>distAB) return false;
+
+  //  (4) Apply the discovered position to line A-B in the original coordinate system.
+  *X=Ax+ABpos*theCos;
+  *Y=Ay+ABpos*theSin;
+
+  //  Success.
+  return true; 
+}
 
 float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
 {

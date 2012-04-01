@@ -67,7 +67,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_DemandLoadingModeList.AddString ("Vehicle File");
 	m_DemandLoadingModeList.SetCurSel(m_DemandLoadingMode);
 
-	m_RoutingMethod.AddString ("OD-based routing: Zone centriod to zone centriod");
+	m_RoutingMethod.AddString ("OD-based routing: Zone centroid to zone centroid");
 	m_RoutingMethod.AddString ("Agent-based routing: activity location to activity location");
 	m_RoutingMethod.SetCurSel(m_agent_based_assignment_flag);
 

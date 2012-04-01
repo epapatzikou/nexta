@@ -604,7 +604,7 @@ void CGLView::DrawAllObjects()
 
 			if( pDoc->m_LinkMOEMode != MOE_none && g_Simulation_Time_Stamp >=1 && g_Simulation_Time_Stamp + m_PredictionHorizon< (*iLink)->m_SimulationHorizon)
 			{
-				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time + m_PredictionHorizon].ObsFlow)* (*iLink)->m_NumLanes;
+				link_volume = max(0,(*iLink)->m_LinkMOEAry[current_time + m_PredictionHorizon].ObsLinkFlow)* (*iLink)->m_NumLanes;
 			}
 //			float ZTop =  (*iLink)->m_SpeedLimit/(*iLink)->m_MeanSpeed*5;  // convert it to travel time index
 			

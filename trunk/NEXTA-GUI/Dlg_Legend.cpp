@@ -35,6 +35,7 @@ END_MESSAGE_MAP()
 
 void CDlg_Legend::OnPaint()
 {
+
    CPaintDC dc(this); 
    CPen penLOS[MAX_LOS_SIZE];
    CBrush brushLOS[MAX_LOS_SIZE];
@@ -70,6 +71,8 @@ void CDlg_Legend::OnPaint()
       lr.left = 10;
       lr.right = lr.left + width;
 
+	  if(m_pDoc->m_LinkMOEMode < 0)
+		  return;
 	  for(i = 1; i< MAX_LOS_SIZE-1; i++)
    {
       dc.SelectObject(penLOS[i]);

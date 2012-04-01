@@ -10,6 +10,12 @@
 #endif // _MSC_VER > 1000
 
 #define _MAX_LANE_SIZE 7
+
+class SectionSensorData
+{
+public: 
+};
+
 class VehicleSnapshotData
 {
 public:
@@ -42,6 +48,10 @@ protected: // create from serialization only
 
 // Attributes
 public:
+	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;
+	int m_SelectedVehicleCount; 
+	bool m_bMouseDownFlag;
+
 	
 	bool m_bLoadedDataFlag;
 	bool m_bAutoLoadDataFlag;
@@ -120,9 +130,41 @@ public:
 
    double m_TotalDistance;
 
-// Operations
+   CRect m_PlotRectNGSIM;
+   CRect m_PlotRectSimulated;
+
+   int m_SelectedStartTime,m_SelectedEndTime;
+   float m_SelectedStartLocalY,m_SelectedEndLocalY;
+
+   // Operations
 public:
 	void InitializeTimeRange();
+	void DrawTemporalLink(CPoint start_point, CPoint end_point);
+
+	int GetTimestampFromPointX (int TimeXPosition, CRect PlotRect)
+	{
+		int timestamp = 0;
+		timestamp = (TimeXPosition - PlotRect.left) /m_UnitTime + m_TmLeft;
+		
+		if( timestamp < m_TmLeft) timestamp = m_TmLeft;
+		if( timestamp > m_TmRight) timestamp = m_TmRight;
+
+		return max(0,timestamp);
+	}
+
+	int GetLocalYFromPointY (int YPosition, CRect PlotRect)
+	{
+		float local_y = 0;
+
+		local_y = (PlotRect.bottom - YPosition  )/m_UnitDistance + m_YLowerBound;
+
+		if(local_y < m_YLowerBound) local_y = m_YLowerBound;
+		if(local_y > m_YUpperBound) local_y = m_YUpperBound;
+
+		return max(0,local_y);;
+	}
+
+	int CountVehicles(int StartTime, int EndTime, float StartLocalY,float EndlocalY);
 
 
 // Overrides
@@ -130,6 +172,8 @@ public:
 	//{{AFX_VIRTUAL(CTimeSpaceView)
 	public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
+	virtual afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	//}}AFX_VIRTUAL
 

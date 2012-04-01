@@ -127,8 +127,118 @@ int CTLiteDoc::Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3)
 
  return relative_angle;
 }
+
+void  CTLiteDoc::ConstructMovementVectorForEachNode()
+{
+
+	m_AdjLinkSize = 0;
+
+	for (std::list<DTANode*>::iterator iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+		if((*iNode)->m_Connections >0)  // we might try import node layer only from shape file, so all nodes have no connected links. 
+		{
+			if((*iNode)->m_Connections > m_AdjLinkSize)
+				m_AdjLinkSize = (*iNode)->m_Connections;
+
+		}
+
+	}
+
+		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
+		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+
+	// generate all movements
+	int i = 0;
+	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
+	{  // for current node
+		
+			// scan each inbound link and outbound link
+
+			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
+			{
+				// for each incoming link
+				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
+				{
+					//for each outging link
+					int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
+
+					if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
+					{
+						// do not consider u-turn
+
+						DTANodeMovement element;
+
+						element.in_link_to_node_id = i;						
+
+						element.IncomingLinkID = m_Network.m_InboundLinkAry[i][inbound_i];;
+						element.OutgoingLinkID = m_Network.m_OutboundLinkAry [i][outbound_i];
+
+						element.in_link_from_node_id = m_Network.m_FromIDAry[LinkID];
+						element.out_link_to_node_id = m_Network.m_OutboundNodeAry [i][outbound_i];
+
+						GDPoint p1, p2, p3;
+						p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
+						p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
+						p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
+
+						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
+
+						// determine  movement type /direction here
+						element.movement_dir = DTA_LANES_COLUME_init;
+						switch (element.movement_approach)
+						{
+							case DTA_North:
+								switch (element.movement_turn)
+								{
+									case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
+									case DTA_Through: element.movement_dir = DTA_NBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
+								}
+								break;
+							case DTA_East:
+								switch (element.movement_turn)
+								{
+									case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
+									case DTA_Through: element.movement_dir = DTA_EBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
+								}
+								break;
+							case DTA_South:
+								switch (element.movement_turn)
+								{
+									case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
+									case DTA_Through: element.movement_dir = DTA_SBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
+								}
+								break;
+							case DTA_West:
+								switch (element.movement_turn)
+								{
+									case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
+									case DTA_Through: element.movement_dir = DTA_WBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
+								}
+								break;
+						}
+
+						(*iNode)->m_MovementVector.push_back(element);
+						
+
+					}  // for each feasible movement (without U-turn)
+					
+				} // for each outbound link
+
+			} // for each inbound link
+	}// for each node
+
+}
+
 void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 {
+
+	m_MovementVector.clear();
+
 	DTA_NodeMovementSet MovementTemplate; // template with 12 movements
 	DTA_NodePhaseSet PhaseTemplate; // template with 8 phases
 
@@ -152,7 +262,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			// generate movement set and phase set
-			DTA_NodeMovementSet movement_set;
+			DTA_NodeMovementSet movement_set;  // for each node
 			//movement_set.copy_parameters(MovementTemplate);
 			
 			// generate DTA_NodePhaseSet for this Node
@@ -193,52 +303,55 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 						// determine  movement type /direction here
-						element.dir = DTA_LANES_COLUME_init;
+						element.movement_dir = DTA_LANES_COLUME_init;
 						switch (element.movement_approach)
 						{
 							case DTA_North:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_NBL; break;
-									case DTA_Through: element.dir = DTA_NBT; break;
-									case DTA_RightTurn: element.dir = DTA_NBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
+									case DTA_Through: element.movement_dir = DTA_NBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
 								}
 								break;
 							case DTA_East:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_EBL; break;
-									case DTA_Through: element.dir = DTA_EBT; break;
-									case DTA_RightTurn: element.dir = DTA_EBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
+									case DTA_Through: element.movement_dir = DTA_EBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
 								}
 								break;
 							case DTA_South:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_SBL; break;
-									case DTA_Through: element.dir = DTA_SBT; break;
-									case DTA_RightTurn: element.dir = DTA_SBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
+									case DTA_Through: element.movement_dir = DTA_SBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
 								}
 								break;
 							case DTA_West:
 								switch (element.movement_turn)
 								{
-									case DTA_LeftTurn: element.dir = DTA_WBL; break;
-									case DTA_Through: element.dir = DTA_WBT; break;
-									case DTA_RightTurn: element.dir = DTA_WBR; break;
+									case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
+									case DTA_Through: element.movement_dir = DTA_WBT; break;
+									case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
 								}
 								break;
 						}
 
-						if (element.dir > 0)
+						if (element.movement_dir > 0)
 						{
 							// copy from template
-							element.copy_from_MovementSet(MovementTemplate, element.dir);
+							MovementTemplate.copy_to_Movement(element, element.movement_dir);
 						}
 
 						// add Movement into m_MovementVector
-						//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.dir);
-						element.copy_to_MovementSet(movement_set, element.dir);
+						//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_dir);
+						movement_set.copy_from_Movement(element, element.movement_dir);
+//						movement_set.MovementMatrix[element.movement_dir] = element;
+
+					//	(*iNode)->m_MovementSet.MovementMatrix[element.movement_dir] = element;
 						
 
 					}  // for each feasible movement (without U-turn)
@@ -248,7 +361,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 			} // for each inbound link
 
 			movement_set.CurrentNodeID = i;
-			m_MovementVector.push_back(movement_set);
+			m_MovementVector.push_back(movement_set);  // m_MovementVector for all nodes in the network
 			TRACE("current node: %d\n", movement_set.CurrentNodeID);
 
 		} // checking control type

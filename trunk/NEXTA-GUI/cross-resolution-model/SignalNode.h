@@ -11,97 +11,6 @@
 #include <list>
 using namespace std;
 
-enum LANES_COLUME
-   {
-	    DTA_LANES_COLUME_init = -1,
-		DTA_NBL =0,
-		DTA_NBT,
-		DTA_NBR,
-		DTA_SBL,
-		DTA_SBT,
-		DTA_SBR,
-		DTA_EBL,
-		DTA_EBT,
-		DTA_EBR,
-		DTA_WBL,
-		DTA_WBT,
-		DTA_WBR
-   };
-
-enum LANES_ROW
-   {
-	   LANES_UpNode = 0,
-	   LANES_DestNode,
-		LANES_Lanes,
-		LANES_Shared,
-		LANES_Width,
-		LANES_Storage,
-		LANES_StLanes,
-		LANES_Grade,
-		LANES_Speed,
-		LANES_FirstDetect,
-		LANES_LastDetect,
-		LANES_Phase1,
-		LANES_PermPhase1,
-		LANES_DetectPhase1,
-		LANES_IdealFlow,
-		LANES_LostTime,
-		LANES_SatFlow,
-		LANES_SatFlowPerm,
-		LANES_SatFlowRTOR,
-		LANES_HeadwayFact,
-		LANES_Volume,
-		LANES_Peds,
-		LANES_Bicycles,
-		LANES_PHF,
-		LANES_Growth,
-		LANES_HeavyVehicles,
-		LANES_BusStops,
-		LANES_Midblock,
-		LANES_Distance,
-		LANES_TravelTime
-   };
-
-enum PHASE_ROW
-{
-	PHASE_BRP =0,
-	PHASE_MinGreen,
-	PHASE_MaxGreen,
-	PHASE_VehExt,
-	PHASE_TimeBeforeReduce,
-	PHASE_TimeToReduce,
-	PHASE_MinGap,
-	PHASE_Yellow,
-	PHASE_AllRed,
-	PHASE_Recall,
-	PHASE_Walk,
-	PHASE_DontWalk,
-	PHASE_PedCalls,
-	PHASE_MinSplit,
-	PHASE_DualEntry,
-	PHASE_InhibitMax,
-	PHASE_Start,
-	PHASE_End,
-	PHASE_Yield,
-	PHASE_Yield170,
-	PHASE_LocalStart,
-	PHASE_LocalYield,
-	PHASE_LocalYield170
-};
-
-enum TIMING_ROW
-{
-	TIMING_Control_Type =0,
-	TIMING_Cycle_Length,
-	TIMING_Lock_Timings,
-	TIMING_Referenced_To,
-	TIMING_Reference_Phase,
-	TIMING_Offset,
-	TIMING_Master,
-	TIMING_Yield,
-	TIMING_Node_0,
-	TIMING_Node_1
-};
 
 class CDataElement
 {
@@ -117,119 +26,6 @@ public:
 
 	}
 
-};
-
-
-class DTA_NodeMovementSet
-{
-public:
-	int CurrentNodeID; 
-	CDataElement DataMatrix[30][12];
-//	DTA_NodeMovementSet &operator=( DTA_NodeMovementSet & );
-
-	DTA_NodeMovementSet()
-	{
-		//Default values here
-	}
-
-
-	void copy_parameters(DTA_NodeMovementSet M)
-	{
-		int i,j;
-		CurrentNodeID = M.CurrentNodeID;
-		for(j=0; j<12;j++)
-		{
-			for(i=0; i<30; i++)
-			{
-				DataMatrix[i][j] = M.DataMatrix[i][j];
-			}
-		}
-	}
-};
-
-class DTA_Movement
-{
-public:
-	int CurrentNodeID; int InboundLinkID;
-    LANES_COLUME dir;
-	DTA_Approach movement_approach;
-	DTA_Turn movement_turn;
-	int UpNodeID,  DestNodeID;
-	int Lanes, Shared, Width, Storage, StLanes, Grade, Speed, FirstDetect, LastDetect, Phase1, PermPhase1, DetectPhase1, IdealFlow, LostTime; 
-	int	SatFlow, SatFlowPerm, SatFlowRTOR, HeadwayFact, Volume, Peds, Bicycles, Growth, HeavyVehicles, BusStops, Midblock, Distance; 
-	float PHF, TravelTime;
-
-	DTA_Movement()
-	{
-	}
-
-	void copy_to_MovementSet(DTA_NodeMovementSet& movement_set, LANES_COLUME c)
-	{
-		int i = 0;
-		movement_set.DataMatrix[i][c].m_text = UpNodeID; i++; 
-		movement_set.DataMatrix[i][c].m_text = DestNodeID; i++; 
-		movement_set.DataMatrix[i][c].m_text = Lanes; i++; 
-		movement_set.DataMatrix[i][c].m_text = Shared; i++; 
-		movement_set.DataMatrix[i][c].m_text = Width; i++; 
-		movement_set.DataMatrix[i][c].m_text = Storage; i++; 
-		movement_set.DataMatrix[i][c].m_text = StLanes; i++; 
-		movement_set.DataMatrix[i][c].m_text = Grade; i++; 
-		movement_set.DataMatrix[i][c].m_text = Speed; i++; 
-		movement_set.DataMatrix[i][c].m_text = FirstDetect; i++; 
-		movement_set.DataMatrix[i][c].m_text = LastDetect; i++; 
-		movement_set.DataMatrix[i][c].m_text = Phase1; i++; 
-		movement_set.DataMatrix[i][c].m_text = PermPhase1; i++; 
-		movement_set.DataMatrix[i][c].m_text = DetectPhase1; i++; 
-		movement_set.DataMatrix[i][c].m_text = IdealFlow; i++; 
-		movement_set.DataMatrix[i][c].m_text = LostTime; i++; 
-		movement_set.DataMatrix[i][c].m_text = SatFlow; i++; 
-		movement_set.DataMatrix[i][c].m_text = SatFlowPerm; i++; 
-		movement_set.DataMatrix[i][c].m_text = SatFlowRTOR; i++; 
-		movement_set.DataMatrix[i][c].m_text = HeadwayFact; i++; 
-		movement_set.DataMatrix[i][c].m_text = Volume; i++; 
-		movement_set.DataMatrix[i][c].m_text = Peds; i++; 
-		movement_set.DataMatrix[i][c].m_text = Bicycles; i++; 
-		movement_set.DataMatrix[i][c].m_text = PHF; i++; 
-		movement_set.DataMatrix[i][c].m_text = Growth; i++; 
-		movement_set.DataMatrix[i][c].m_text = HeavyVehicles; i++; 
-		movement_set.DataMatrix[i][c].m_text = BusStops; i++; 
-		movement_set.DataMatrix[i][c].m_text = Midblock; i++; 
-		movement_set.DataMatrix[i][c].m_text = Distance; i++; 
-		movement_set.DataMatrix[i][c].m_text = TravelTime; i++; 
-	}
-
-	void copy_from_MovementSet(DTA_NodeMovementSet movement_set, LANES_COLUME c)
-	{
-		int i = 2;
-		Lanes = movement_set.DataMatrix[i][c].m_text; i++; 
-		Shared = movement_set.DataMatrix[i][c].m_text; i++; 
-		Width = movement_set.DataMatrix[i][c].m_text; i++; 
-		Storage = movement_set.DataMatrix[i][c].m_text; i++; 
-		StLanes = movement_set.DataMatrix[i][c].m_text; i++; 
-		Grade = movement_set.DataMatrix[i][c].m_text; i++; 
-		Speed = movement_set.DataMatrix[i][c].m_text; i++; 
-		FirstDetect = movement_set.DataMatrix[i][c].m_text; i++; 
-		LastDetect = movement_set.DataMatrix[i][c].m_text; i++; 
-		Phase1 = movement_set.DataMatrix[i][c].m_text; i++; 
-		PermPhase1 = movement_set.DataMatrix[i][c].m_text; i++; 
-		DetectPhase1 = movement_set.DataMatrix[i][c].m_text; i++; 
-		IdealFlow = movement_set.DataMatrix[i][c].m_text; i++; 
-		LostTime = movement_set.DataMatrix[i][c].m_text; i++; 
-		SatFlow = movement_set.DataMatrix[i][c].m_text; i++; 
-		SatFlowPerm = movement_set.DataMatrix[i][c].m_text; i++; 
-		SatFlowRTOR = movement_set.DataMatrix[i][c].m_text; i++; 
-		HeadwayFact = movement_set.DataMatrix[i][c].m_text; i++; 
-		Volume = movement_set.DataMatrix[i][c].m_text; i++; 
-		Peds = movement_set.DataMatrix[i][c].m_text; i++; 
-		Bicycles = movement_set.DataMatrix[i][c].m_text; i++; 
-		PHF = movement_set.DataMatrix[i][c].m_text; i++; 
-		Growth = movement_set.DataMatrix[i][c].m_text; i++; 
-		HeavyVehicles = movement_set.DataMatrix[i][c].m_text; i++; 
-		BusStops = movement_set.DataMatrix[i][c].m_text; i++; 
-		Midblock = movement_set.DataMatrix[i][c].m_text; i++; 
-		Distance = movement_set.DataMatrix[i][c].m_text; i++; 
-		TravelTime = movement_set.DataMatrix[i][c].m_text; i++; 
-	}
 };
 
 
@@ -354,6 +150,7 @@ public:
 	{		
 		for (int i=0; i<4; i++)
 			link_flag[i] = false;
+
 		nodeID = node_id;
 	}
 
@@ -382,3 +179,121 @@ public:
 	}
 
 };
+
+class DTA_Movement
+{
+public:
+	int CurrentNodeID; int InboundLinkID;
+    DTA_APPROACH_TURN movement_dir;
+	DTA_Approach movement_approach;
+	DTA_Turn movement_turn;
+	int UpNodeID,  DestNodeID;
+	int Lanes, Shared, Width, Storage, StLanes, Grade, Speed, FirstDetect, LastDetect, Phase1, PermPhase1, DetectPhase1, IdealFlow, LostTime; 
+	int	SatFlow, SatFlowPerm, SatFlowRTOR, HeadwayFact, Volume, Peds, Bicycles, Growth, HeavyVehicles, BusStops, Midblock, Distance; 
+	float PHF, TravelTime;
+
+	DTA_Movement()
+	{
+	}
+
+
+};
+
+class DTA_NodeMovementSet
+{
+public:
+	int CurrentNodeID; 
+	CDataElement DataMatrix[30][12];
+	DTA_Movement MovementMatrix[12];   //12 possible movements
+//	DTA_NodeMovementSet &operator=( DTA_NodeMovementSet & );
+
+	DTA_NodeMovementSet()
+	{
+		//Default values here
+	}
+
+	void copy_from_Movement(DTA_Movement movement, DTA_APPROACH_TURN c)
+	{
+
+		int i = 0;  // i is row index 
+		DataMatrix[i][c].m_text = movement.UpNodeID; i++; 
+		DataMatrix[i][c].m_text = movement.DestNodeID; i++; 
+		DataMatrix[i][c].m_text = movement.Lanes; i++; 
+		DataMatrix[i][c].m_text = movement.Shared; i++; 
+		DataMatrix[i][c].m_text = movement.Width; i++; 
+		DataMatrix[i][c].m_text = movement.Storage; i++; 
+		DataMatrix[i][c].m_text = movement.StLanes; i++; 
+		DataMatrix[i][c].m_text = movement.Grade; i++; 
+		DataMatrix[i][c].m_text = movement.Speed; i++; 
+		DataMatrix[i][c].m_text = movement.FirstDetect; i++; 
+		DataMatrix[i][c].m_text = movement.LastDetect; i++; 
+		DataMatrix[i][c].m_text = movement.Phase1; i++; 
+		DataMatrix[i][c].m_text = movement.PermPhase1; i++; 
+		DataMatrix[i][c].m_text = movement.DetectPhase1; i++; 
+		DataMatrix[i][c].m_text = movement.IdealFlow; i++; 
+		DataMatrix[i][c].m_text = movement.LostTime; i++; 
+		DataMatrix[i][c].m_text = movement.SatFlow; i++; 
+		DataMatrix[i][c].m_text = movement.SatFlowPerm; i++; 
+		DataMatrix[i][c].m_text = movement.SatFlowRTOR; i++; 
+		DataMatrix[i][c].m_text = movement.HeadwayFact; i++; 
+		DataMatrix[i][c].m_text = movement.Volume; i++; 
+		DataMatrix[i][c].m_text = movement.Peds; i++; 
+		DataMatrix[i][c].m_text = movement.Bicycles; i++; 
+		DataMatrix[i][c].m_text = movement.PHF; i++; 
+		DataMatrix[i][c].m_text = movement.Growth; i++; 
+		DataMatrix[i][c].m_text = movement.HeavyVehicles; i++; 
+		DataMatrix[i][c].m_text = movement.BusStops; i++; 
+		DataMatrix[i][c].m_text = movement.Midblock; i++; 
+		DataMatrix[i][c].m_text = movement.Distance; i++; 
+		DataMatrix[i][c].m_text = movement.TravelTime; i++; 
+	}
+
+	void copy_to_Movement(DTA_Movement &movement, DTA_APPROACH_TURN c)
+	{
+		int i = 2;
+		movement.Lanes = DataMatrix[i][c].m_text; i++; 
+		movement.Shared = DataMatrix[i][c].m_text; i++; 
+		movement.Width = DataMatrix[i][c].m_text; i++; 
+		movement.Storage = DataMatrix[i][c].m_text; i++; 
+		movement.StLanes = DataMatrix[i][c].m_text; i++; 
+		movement.Grade = DataMatrix[i][c].m_text; i++; 
+		movement.Speed = DataMatrix[i][c].m_text; i++; 
+		movement.FirstDetect = DataMatrix[i][c].m_text; i++; 
+		movement.LastDetect = DataMatrix[i][c].m_text; i++; 
+		movement.Phase1 = DataMatrix[i][c].m_text; i++; 
+		movement.PermPhase1 = DataMatrix[i][c].m_text; i++; 
+		movement.DetectPhase1 = DataMatrix[i][c].m_text; i++; 
+		movement.IdealFlow = DataMatrix[i][c].m_text; i++; 
+		movement.LostTime = DataMatrix[i][c].m_text; i++; 
+		movement.SatFlow = DataMatrix[i][c].m_text; i++; 
+		movement.SatFlowPerm = DataMatrix[i][c].m_text; i++; 
+		movement.SatFlowRTOR = DataMatrix[i][c].m_text; i++; 
+		movement.HeadwayFact = DataMatrix[i][c].m_text; i++; 
+		movement.Volume = DataMatrix[i][c].m_text; i++; 
+		movement.Peds = DataMatrix[i][c].m_text; i++; 
+		movement.Bicycles = DataMatrix[i][c].m_text; i++; 
+		movement.PHF = DataMatrix[i][c].m_text; i++; 
+		movement.Growth = DataMatrix[i][c].m_text; i++; 
+		movement.HeavyVehicles = DataMatrix[i][c].m_text; i++; 
+		movement.BusStops = DataMatrix[i][c].m_text; i++; 
+		movement.Midblock = DataMatrix[i][c].m_text; i++; 
+		movement.Distance = DataMatrix[i][c].m_text; i++; 
+		movement.TravelTime = DataMatrix[i][c].m_text; i++; 
+	}
+	void copy_parameters(DTA_NodeMovementSet M)
+	{
+		int i,j;
+		CurrentNodeID = M.CurrentNodeID;
+		for(j=0; j<12;j++)
+		{
+			for(i=0; i<30; i++)
+			{
+				DataMatrix[i][j] = M.DataMatrix[i][j];
+			}
+		}
+	}
+};
+
+
+
+

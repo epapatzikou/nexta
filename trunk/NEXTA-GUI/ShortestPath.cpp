@@ -37,7 +37,7 @@ extern long g_Simulation_Time_Horizon;
 void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, bool bRandomCost,bool bOverlappingCost)
 {
 
-	// build a network from the current zone centriod (1 centriod here) to all the other zones' centriods (all the zones)
+	// build a network from the current zone centroid (1 centroid here) to all the other zones' centroids (all the zones)
 
 	float Perception_error_ratio = 0.7f;
 
@@ -603,6 +603,4 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 	else 
 		return false;  // has not be enumerated. 
 }
-
-
 
