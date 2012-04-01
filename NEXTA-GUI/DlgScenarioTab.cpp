@@ -69,10 +69,9 @@ BOOL CDlgScenarioTab::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-
 	// Give better margin to editors
 	m_ListCtrl.SetCellMargin(1.2);
-	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;
+	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
 	//Add Columns and set headers

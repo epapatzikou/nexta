@@ -24,7 +24,7 @@ public:
 	bool m_bImportNetworkOnly;
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_EXCEL_IMPORT };
+	enum { IDD = IDD_DIALOG_EXCEL_DATA_IMPORT };
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

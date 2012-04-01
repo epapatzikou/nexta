@@ -38,14 +38,7 @@
 #include <vector>
 #include <list>
 
-#include "Timetable.h"
 
-extern float g_GetRandomRatio();
-
-using namespace std;
-using std::string;
-#define PI 3.1415926
-#define MAX_LOS_SIZE  8
 enum DTA_Approach
 {
 	DTA_North,
@@ -61,6 +54,108 @@ enum DTA_Turn
 	DTA_RightTurn,
 	DTA_OtherTurn
 };
+
+
+enum DTA_APPROACH_TURN
+   {
+	    DTA_LANES_COLUME_init = -1,
+		DTA_NBL =0,
+		DTA_NBT,
+		DTA_NBR,
+		DTA_SBL,
+		DTA_SBT,
+		DTA_SBR,
+		DTA_EBL,
+		DTA_EBT,
+		DTA_EBR,
+		DTA_WBL,
+		DTA_WBT,
+		DTA_WBR
+   };
+
+enum LANES_ROW
+   {
+	   LANES_UpNode = 0,
+	   LANES_DestNode,
+		LANES_Lanes,
+		LANES_Shared,
+		LANES_Width,
+		LANES_Storage,
+		LANES_StLanes,
+		LANES_Grade,
+		LANES_Speed,
+		LANES_FirstDetect,
+		LANES_LastDetect,
+		LANES_Phase1,
+		LANES_PermPhase1,
+		LANES_DetectPhase1,
+		LANES_IdealFlow,
+		LANES_LostTime,
+		LANES_SatFlow,
+		LANES_SatFlowPerm,
+		LANES_SatFlowRTOR,
+		LANES_HeadwayFact,
+		LANES_Volume,
+		LANES_Peds,
+		LANES_Bicycles,
+		LANES_PHF,
+		LANES_Growth,
+		LANES_HeavyVehicles,
+		LANES_BusStops,
+		LANES_Midblock,
+		LANES_Distance,
+		LANES_TravelTime
+   };
+
+enum PHASE_ROW
+{
+	PHASE_BRP =0,
+	PHASE_MinGreen,
+	PHASE_MaxGreen,
+	PHASE_VehExt,
+	PHASE_TimeBeforeReduce,
+	PHASE_TimeToReduce,
+	PHASE_MinGap,
+	PHASE_Yellow,
+	PHASE_AllRed,
+	PHASE_Recall,
+	PHASE_Walk,
+	PHASE_DontWalk,
+	PHASE_PedCalls,
+	PHASE_MinSplit,
+	PHASE_DualEntry,
+	PHASE_InhibitMax,
+	PHASE_Start,
+	PHASE_End,
+	PHASE_Yield,
+	PHASE_Yield170,
+	PHASE_LocalStart,
+	PHASE_LocalYield,
+	PHASE_LocalYield170
+};
+
+enum TIMING_ROW
+{
+	TIMING_Control_Type =0,
+	TIMING_Cycle_Length,
+	TIMING_Lock_Timings,
+	TIMING_Referenced_To,
+	TIMING_Reference_Phase,
+	TIMING_Offset,
+	TIMING_Master,
+	TIMING_Yield,
+	TIMING_Node_0,
+	TIMING_Node_1
+};
+
+#include "Timetable.h"
+
+extern float g_GetRandomRatio();
+
+using namespace std;
+using std::string;
+#define PI 3.1415926
+#define MAX_LOS_SIZE  8
 
 #define MAX_RANDOM_SAMPLE_SIZE 100
 
@@ -154,6 +249,7 @@ extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
 extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 extern double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2);
+extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y) ;
 
 
 /////
@@ -165,6 +261,7 @@ public:
 	int m_ZoneTAZ;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_CentroidNodeAry;
+	std::map<int,bool> m_CentroidNodeMap;
 
 
 	DTAZone()
@@ -267,6 +364,52 @@ public:
 	float VOT;
 	float percentage;
 };
+class DTANodeMovement
+{
+public:
+	DTANodeMovement()
+	{
+	starting_time_in_min = 0;
+	ending_time_in_min = 1440;
+	turnning_percentage = 0;
+	turning_prohibition_flag = 1;
+	signal_control_no = 0;
+	signal_group_no = 0;
+
+	}
+
+int IncomingLinkID;
+int OutgoingLinkID;
+DTA_Turn movement_turn;
+DTA_Approach movement_approach;
+DTA_APPROACH_TURN movement_dir;
+
+int in_link_from_node_id;
+int in_link_to_node_id;  // this equals to the current node number
+int out_link_to_node_id;
+
+
+int starting_time_in_min;
+int ending_time_in_min;
+float turnning_percentage;
+int turning_prohibition_flag;
+int signal_control_no;  // for meso-scopic, link -based
+int signal_group_no;  // for meso-scopic, link -based
+
+};
+
+class DTANodeLaneTurn
+{
+public:
+	DTANodeMovement movement_info;
+
+int in_lane_index;
+int out_lane_index;
+
+int signal_control_no; // micro-scopic, lane-based
+int signal_group_no; // micro-scopic, lane-based
+};
+
 
 class DTANode
 {
@@ -282,6 +425,9 @@ public:
 	};
 	~DTANode(){};
 
+	std::vector <DTANodeMovement> m_MovementVector;
+	std::vector <DTANodeLaneTurn> m_LaneTurnVector;
+	
 
 	float m_DistanceToRoot;
 	string m_Name;
@@ -289,10 +435,12 @@ public:
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
-	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
+	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
 	int m_Connections;  // number of connections
+
+	// DTA_NodeMovementSet m_MovementSet;
 
 };
 
@@ -317,7 +465,7 @@ public:
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
-	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
+	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
 	int m_Connections;  // number of connections
@@ -335,11 +483,11 @@ typedef struct{
 class SLinkMOE  // time-dependent link MOE
 {
 public:
-	float ObsQueuePerc;
+	float ObsQueueLength;
 	float ObsTravelTimeIndex;
 
 	float ObsSpeed;  // speed
-	float ObsFlow;   // flow volume
+	float ObsLinkFlow;   // flow volume
 	float ObsDensity;   // ObsDensity
 
 	// these three copies are used to compare simulation results and observed results
@@ -375,10 +523,10 @@ public:
 		EventCode = 0;
 		EpisoDuration = 0;
 		EpisodeNo = 0;
-		ObsQueuePerc = 0;
+		ObsQueueLength = 0;
 		ObsTravelTimeIndex = 0;
 		ObsSpeed = 0;
-		ObsFlow = 0;
+		ObsLinkFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
 
@@ -398,12 +546,12 @@ public:
 
 	void SetupMOE(float FreeFlowTravelTime, float SpeedLimit)
 	{
-		ObsQueuePerc = 0;
+		ObsQueueLength = 0;
 		ObsTravelTimeIndex = FreeFlowTravelTime;
 		ObsTravelTimeIndexCopy = FreeFlowTravelTime;
 
 		ObsSpeed = SpeedLimit;
-		ObsFlow = 0;
+		ObsLinkFlow = 0;
 		ObsCumulativeFlow = 0;
 		ObsDensity = 0;
 		PredSpeed = SpeedLimit;
@@ -498,6 +646,23 @@ public:
 	float TollRate[MAX_PRICING_TYPE_SIZE];
 	float TollRateInMin[MAX_PRICING_TYPE_SIZE];
 };
+class DTALane
+{
+	// related to link
+public: 
+
+int from_node_id;
+int to_node_id;
+int lane_index; // from left starting from 1
+
+int pocket_length; // 0 as normal, > 0 left turn with value
+int channel_length; // 0 as normal  > 0 rightturn channel with value
+int left_turn; //1 permitted, 0 not allowed 
+int through; //1 permitted, 0 not allowed 
+int right_turn; //1 permitted, 0 not allowed 
+int signal_control_no; // signal control number 
+int signal_group_no; // group number 
+};
 
 class DTALink
 {
@@ -563,6 +728,14 @@ public:
 		m_ReferenceFlowVolume  = 0;
 		m_PeakHourFactor = 0.15f;
 	};
+
+	// for micro simulation 
+	DTA_Approach m_from_approach;
+	DTA_Approach m_to_approach;
+	int m_reverse_link_id;
+
+	std::vector<DTALane> m_LaneVector;
+	// end: for micro simulation 
 
 	float m_AADT;
 	float m_ReferenceFlowVolume;
@@ -981,7 +1154,34 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetObsLaneVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsFlow;
+			return m_LinkMOEAry[t].ObsLinkFlow/m_NumLanes;
+		else
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticLinkVolume/m_NumLanes;
+			else
+				return 0;
+	
+		}
+	}
+
+	float GetObsLaneVolumeCopy(int t)
+	{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			return m_LinkMOEAry[t].ObsFlowCopy/m_NumLanes;
+		else
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticLinkVolume/m_NumLanes;
+			else
+				return 0;
+		}
+	}
+
+	float GetObsLinkVolume(int t)
+	{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			return m_LinkMOEAry[t].ObsLinkFlow;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -992,7 +1192,7 @@ void AdjustLinkEndpointsWithSetBack()
 		}
 	}
 
-	float GetObsLaneVolumeCopy(int t)
+	float GetObsLinkVolumeCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return m_LinkMOEAry[t].ObsFlowCopy;
@@ -1510,6 +1710,7 @@ void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 
 }
 extern void g_ProgramStop();
+extern bool g_read_a_line(FILE* f, char* aline, int & size);
 
 class DTANetworkForSP  // mainly for shortest path calculation, not just physical network
 	// for shortes path calculation between zone centroids, for origin zone, there are only outgoing connectors, for destination zone, only incoming connectors

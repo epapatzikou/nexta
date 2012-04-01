@@ -55,6 +55,7 @@ protected: // create from serialization only
 	CTLiteDoc()
 	{
 
+	   m_AdjLinkSize = 20;  // initial value
 	   m_colorLOS[0] = RGB(190,190,190);
 	   m_colorLOS[1] = RGB(0,255,0);
 	   m_colorLOS[2] = RGB(255,250,117);
@@ -85,7 +86,6 @@ protected: // create from serialization only
 		m_SimulationStartTime_in_min = 0;  // 6 AM
 
 		m_NumberOfDays = 0;
-		m_StaticAssignmentMode = true;
 		m_LinkMOEMode = MOE_none;
 		m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
 		m_ODMOEMode = odnone;
@@ -168,7 +168,7 @@ protected: // create from serialization only
 
 
 
-		m_TrafficFlowModelFlag = 0;  // static traffic assignment as default
+		m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
 		m_Doc_Resolution = 1;
 		m_bShowCalibrationResults = false;
 
@@ -226,7 +226,6 @@ public:
 
 	int m_ODSize;
 	float** m_DemandMatrix;
-	bool m_StaticAssignmentMode;
 	Link_MOE m_LinkMOEMode;
 	Link_MOE m_PrevLinkMOEMode;
 
@@ -268,6 +267,7 @@ public:
 	void ReCalculateLinkBandWidth();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadDemandCSVFile_Parser(LPCTSTR lpszFileName);   // for road network
 	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
 	bool ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName);  
@@ -295,6 +295,7 @@ public:
 	// additional input
 	void LoadSimulationOutput();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
+	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	void ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
@@ -334,6 +335,7 @@ public:
 
 	CString m_SensorDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
+	CString m_StrLoadingTime;
 
 
 	DTALink* FindLinkFromSensorLocation(float x, float y, CString orientation);
@@ -341,6 +343,20 @@ public:
 int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
 float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
+
+CString GetTurnString(DTA_Turn turn)
+{
+   CString str;
+   switch (turn)
+   {
+   case DTA_LeftTurn:  str.Format("Left"); break;
+   case DTA_Through:  str.Format("Through"); break;
+   case DTA_RightTurn:  str.Format("Right"); break;
+   default :  str.Format("Other"); break;
+   }
+  
+   return str;
+}
 
 int GetLOSCode(float Power)
 {
@@ -399,6 +415,7 @@ void SetStatusText(CString StatusText);
 	void AdjustCoordinateUnitToMile();
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
+	void ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
@@ -504,6 +521,9 @@ void SetStatusText(CString StatusText);
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 		m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 		pLink->m_NumLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
@@ -684,6 +704,9 @@ void SetStatusText(CString StatusText);
 	std::vector<DTA_NodeMovementSet> m_MovementVector;
 	std::vector<DTA_NodePhaseSet> m_PhaseVector;
 
+	// 	void ConstructMovementVector(bool flag_Template);
+	void ConstructMovementVectorForEachNode();
+
 	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
 	void ConstructMovementVector(bool flag_Template);
 	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
@@ -692,7 +715,6 @@ void SetStatusText(CString StatusText);
 
 	void ExportSynchroVersion6Files();
 	CString m_Synchro_ProjectDirectory;
-
 
 	void ExportOGRShapeFile();
 	void ImportOGRShapeFile(CString FileName);
@@ -703,6 +725,8 @@ void SetStatusText(CString StatusText);
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
+	std::map<__int64, DTALink*> m_NodeNumbertoLinkMap;
+
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
 	std::map<long, DTALink*> m_SensorIDtoLinkMap;
 	std::map<long, int> m_AVISensorIDtoNodeIDMap;
@@ -760,6 +784,13 @@ void SetStatusText(CString StatusText);
 
 		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
 		return m_NodeIDtoLinkMap[LinkKey];
+	}
+
+	DTALink* FindLinkWithNodeNumbers_64bitKey(int FromNodeNumber, int ToNodeNumber)
+	{
+		__int64  LinkKey = FromNodeNumber* ToNodeNumber;
+
+	return m_NodeNumbertoLinkMap[LinkKey];
 	}
 
 
@@ -968,6 +999,8 @@ public:
 		afx_msg void OnProjectEditpricingscenariodata();
 		afx_msg void OnLinkViewlink();
 		afx_msg void OnDeleteSelectedLink();
+		afx_msg void OnImportRegionalplanninganddtamodels();
+		afx_msg void OnExportGeneratezone();
 };
 
 

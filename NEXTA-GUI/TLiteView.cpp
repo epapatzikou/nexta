@@ -40,7 +40,7 @@
 #include "Dlg_GoogleFusionTable.h"
 #include "Dlg_VehicleClassification.h"
 #include "Dlg_TravelTimeReliability.h"
-
+#include "Page_Node_Movement.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -138,6 +138,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_LINK_SWICHTOLINE_BANDWIDTH_MODE, &CTLiteView::OnLinkSwichtolineBandwidthMode)
 	ON_COMMAND(ID_VIEW_TRANSITLAYER, &CTLiteView::OnViewTransitlayer)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_TRANSITLAYER, &CTLiteView::OnUpdateViewTransitlayer)
+	ON_COMMAND(ID_NODE_MOVEMENTPROPERTIES, &CTLiteView::OnNodeMovementproperties)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -145,7 +146,7 @@ END_MESSAGE_MAP()
 
 CBrush g_BlackBrush(RGB(10,10,10));
 CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
-CPen g_TransitPen(PS_SOLID,1,RGB(0,255,0));
+CPen g_TransitPen(PS_SOLID,1,RGB(0,255,255));
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
@@ -688,7 +689,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
 				int LOS = pDoc->GetLOSCode(power);
 
-				//drarw link as lines
+				//draw link as lines
 				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
 				{
 					pDC->SelectObject(&pen_moe[LOS]);
@@ -725,7 +726,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				if((*iLink)->m_LayerNo > 0)
 					pDC->SelectObject(&g_SubareaLinkPen);
 
-			}else  // default aterial model
+			}else  // default arterial model
 			{
 				pDC->SelectObject(&pen_arterial);
 				pDC->SelectObject(&g_BrushLinkBand);   //default brush
@@ -1078,40 +1079,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				if(feet_size > 0.01 || pDoc->m_ShowNodeLayer) // add or condition to show all nodes
 				{
-					if((*iNode)->m_ZoneID >0)  // if destination node associated with zones
-					{
-						pDC->Ellipse(point.x - node_size, point.y + node_size,
-							point.x + node_size, point.y - node_size);
-					}
-
-					if((*iNode)->m_ControlType >1)  // traffic signal control
-					{
-						pDC->Ellipse(point.x - node_size, point.y + node_size,
-							point.x + node_size, point.y - node_size);
-					}
-					else
-					{
-						pDC->Rectangle(point.x - node_size, point.y + node_size,
-							point.x + node_size, point.y - node_size);
-					}
-
-					if(m_bShowNodeNumber)
-					{
-
-						CString str_nodenumber;
-						str_nodenumber.Format ("%d",(*iNode)->m_NodeNumber );
-
-						if((*iNode)->m_DistanceToRoot > 0.00001 && (*iNode)->m_DistanceToRoot < MAX_SPLABEL-1)  // check connectivity, overwrite with distance to the root
-							str_nodenumber.Format ("%4.1f",(*iNode)->m_DistanceToRoot );
-
-						point.y -= tm.tmHeight / 2;
-
-						pDC->TextOut(point.x , point.y,str_nodenumber);
-					}
-
-					if((*iNode)->m_DistanceToRoot > MAX_SPLABEL-1)  //restore pen
-						pDC->SelectObject(&g_PenNodeColor);
-
+					DrawNode(pDC, (*iNode),point, node_size,tm);
 
 				}
 
@@ -1966,7 +1934,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	if(!pDoc->m_StaticAssignmentMode || m_ToolMode == select_link_tool)
+	if( pDoc->m_TrafficFlowModelFlag > 0 || m_ToolMode == select_link_tool)
 	{
 		// create MOE Dlg when double clicking
 		if(g_LinkMOEDlg==NULL)
@@ -3069,4 +3037,124 @@ void CTLiteView::OnViewTransitlayer()
 void CTLiteView::OnUpdateViewTransitlayer(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowTransit);
+}
+
+void CTLiteView::DrawPublicTransitLayer(CDC *pDC)
+{
+
+	CTLiteDoc* pDoc = GetDocument();
+
+	CPoint ScreenPoint;
+	CPoint ScreenPoint_Prev;  //previous screen point
+	CSize size;
+	double screen_distance;
+
+	std::map<int, PT_Route>::iterator iPT_RouteMap;
+	std::map<int, PT_Stop>::iterator iPT_StopMap;
+
+	std::map<int, GDPoint>::iterator i_RouteShapePoints;         //route line shape point 
+
+	for(iPT_RouteMap = pDoc->m_PT_network.m_PT_RouteMap.begin (); iPT_RouteMap != pDoc->m_PT_network.m_PT_RouteMap.end(); iPT_RouteMap++)
+	{
+
+		bool bStartPointFlag  = true;
+
+		PT_Route route = iPT_RouteMap->second ;
+
+		if(route.bInsideFreewayNetwork == true)
+		{
+
+		for(i_RouteShapePoints = route.m_RouteShapePoints.begin (); i_RouteShapePoints != route.m_RouteShapePoints.end (); i_RouteShapePoints++)
+		{
+
+			GDPoint shape_point = i_RouteShapePoints->second;
+			double min_display_interval = 10;
+
+			if( pDoc->m_NetworkRect.PtInRect(shape_point) == false)
+			{
+			min_display_interval = 40;
+			}
+
+			ScreenPoint = NPtoSP(shape_point);
+
+			if(bStartPointFlag)
+			{
+				pDC->MoveTo (ScreenPoint);
+				bStartPointFlag = false;
+				ScreenPoint_Prev = ScreenPoint;
+			}else
+			{
+				 size = ScreenPoint - ScreenPoint_Prev;
+				 screen_distance = pow((size.cx*size.cx + size.cy*size.cy),0.5);
+
+				if(screen_distance >=min_display_interval)  // 30 points
+				{  // draw for different screen points only
+				pDC->LineTo  (ScreenPoint);
+				ScreenPoint_Prev = ScreenPoint;
+				}
+			}
+			}
+		}
+	}
+}
+
+void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm)
+{
+
+					if(pNode->m_ZoneID >0)  // if destination node associated with zones
+					{
+						pDC->Ellipse(point.x - node_size, point.y + node_size,
+							point.x + node_size, point.y - node_size);
+					}
+
+					if(pNode->m_ControlType >1)  // traffic signal control
+					{
+						pDC->Ellipse(point.x - node_size, point.y + node_size,
+							point.x + node_size, point.y - node_size);
+					}
+					else
+					{
+						pDC->Rectangle(point.x - node_size, point.y + node_size,
+							point.x + node_size, point.y - node_size);
+					}
+
+					if(m_bShowNodeNumber)
+					{
+
+						CString str_nodenumber;
+						str_nodenumber.Format ("%d",pNode->m_NodeNumber );
+
+						if(pNode->m_DistanceToRoot > 0.00001 && pNode->m_DistanceToRoot < MAX_SPLABEL-1)  // check connectivity, overwrite with distance to the root
+							str_nodenumber.Format ("%4.1f",pNode->m_DistanceToRoot );
+
+						point.y -= tm.tmHeight / 2;
+
+						pDC->TextOut(point.x , point.y,str_nodenumber);
+					}
+
+					if(pNode->m_DistanceToRoot > MAX_SPLABEL-1)  //restore pen
+						pDC->SelectObject(&g_PenNodeColor);
+
+}
+void CTLiteView::OnNodeMovementproperties()
+{
+
+	CTLiteDoc* pDoc = GetDocument();
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+	
+	if(pDoc->m_SelectedNodeID >=0)
+	{
+	CPropertySheet sheet("Node Data");
+
+	CPage_Node_Movement MovementPage;
+	MovementPage.m_pDoc = pDoc;
+	sheet.AddPage(&MovementPage);  // 0
+	sheet.SetActivePage (0);
+   
+	if(sheet.DoModal() == IDOK)
+	{
+	
+	}
+
+	}
 }

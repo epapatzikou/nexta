@@ -19,6 +19,7 @@
 #define ID_FindCriticalOD               4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
+#define ID_EXPORT_DATA3                 5
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
@@ -78,6 +79,7 @@
 #define IDD_DIALOG_Goolge_Fusion_Table  185
 #define IDC_CURSOR_SUBAREA              186
 #define IDD_DIALOG_EXCEL_IMPORT         186
+#define IDD_DIALOG_PLANNING_IMPORT      186
 #define IDD_DIALOG_EXCEL_IMPORT_POINT_SENSOR 187
 #define IDD_DIALOG_SIGNAL_DATA          188
 #define IDD_DIALOG_DemandPattern        189
@@ -90,6 +92,8 @@
 #define IDD_DIALOG_Legend               196
 #define IDD_LINEPLOT_DIALOG             197
 #define IDD_NSCHART_TOLL_DIALOG         198
+#define IDD_DIALOG_EXCEL_DATA_IMPORT    199
+#define IDD_DIALOG_NODE_MOVEMENT        200
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -250,8 +254,19 @@
 #define IDC_Delete_BUTTON               1101
 #define IDC_BUTTON_Load_Sample_Shape_File 1101
 #define IDC_BUTTON_Import_GIS_Shape_File 1102
+#define IDC_BUTTON_View_DSP_File        1102
 #define IDC_BUTTON_Export_to_CSV_File   1103
+#define IDC_BUTTON_Import_DSP_FIle      1103
 #define IDC_BUTTON_View_EXPORTED_KML_FILE 1104
+#define ID_View_Sample_TRANSIMS_File    1104
+#define IDC_BUTTON_IMPORT_TRANSIMS      1105
+#define IDC_BUTTON_View_TRANSCADA_File  1106
+#define IDC_EDIT1                       1106
+#define IDC_EDIT_CURRENT_NODEID         1106
+#define IDC_BUTTON_View_CUBE_File       1108
+#define IDC_BUTTON_View_CUBE_File2      1109
+#define IDC_BUTTON_View_CUBE_File3      1110
+#define IDC_BUTTON_View_CUBE_File4      1111
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -691,14 +706,17 @@
 #define ID_DELETE_LINK33324             33324
 #define ID_DELETE_SELECTED_LINK         33325
 #define ID_VIEW_TRANSITLAYER            33326
+#define ID_IMPORT_REGIONALPLANNINGANDDTAMODELS 33327
+#define ID_EXPORT_GENERATEZONE          33328
+#define ID_NODE_MOVEMENTPROPERTIES      33329
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         33327
-#define _APS_NEXT_CONTROL_VALUE         1102
+#define _APS_NEXT_RESOURCE_VALUE        202
+#define _APS_NEXT_COMMAND_VALUE         33330
+#define _APS_NEXT_CONTROL_VALUE         1107
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -39,6 +39,21 @@ enum tool
 enum link_display_mode
    { link_display_mode_line, link_display_mode_band, link_display_mode_lane_group };
 
+// ARROWSTRUCT
+//
+// Defines the attributes of an arrow.
+// source: http://www.codeproject.com/Articles/3274/Drawing-Arrows
+typedef struct tARROWSTRUCT 
+{
+	int nWidth;		// width (in pixels) of the full base of the arrowhead
+	float fTheta;	// angle (in radians) at the arrow tip between the two
+					//  sides of the arrowhead
+	bool bFill;		// flag indicating whether or not the arrowhead should be
+					//  filled
+} ARROWSTRUCT;
+
+/////////////////
+
 class CTLiteView : public CView
 {
 protected: // create from serialization only
@@ -106,6 +121,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	void DrawBitmap(CDC *pDC, CPoint point,UINT nIDResource );
 	void DrawPublicTransitLayer(CDC *pDC);
 	void DrawTemporalLink(CPoint start_point, CPoint end_point);
+
 
 	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;
 	CPoint m_TempZoneStartPoint, m_TempZoneEndPoint;
@@ -196,6 +212,7 @@ public:
 	CPoint m_BandPoint[2000];  // maximum 1000 feature points
 	int m_LinkTextFontSize;
 
+	void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
 	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag);
@@ -203,6 +220,78 @@ public:
 
 	bool DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC);
 	
+// ArrowTo()
+//
+void ArrowTo(HDC hDC, int x, int y, ARROWSTRUCT *pA) 
+{
+
+	POINT ptTo = {x, y};
+
+	ArrowTo(hDC, &ptTo, pA);
+}
+
+// ArrowTo()
+//
+void ArrowTo(HDC hDC, const POINT *lpTo, ARROWSTRUCT *pA) 
+{
+
+	POINT pFrom;
+	POINT pBase;
+	POINT aptPoly[3];
+	float vecLine[2];
+	float vecLeft[2];
+	float fLength;
+	float th;
+	float ta;
+
+	// get from point
+	MoveToEx(hDC, 0, 0, &pFrom);
+
+	// set to point
+	aptPoly[0].x = lpTo->x;
+	aptPoly[0].y = lpTo->y;
+
+	// build the line vector
+	vecLine[0] = (float) aptPoly[0].x - pFrom.x;
+	vecLine[1] = (float) aptPoly[0].y - pFrom.y;
+
+	// build the arrow base vector - normal to the line
+	vecLeft[0] = -vecLine[1];
+	vecLeft[1] = vecLine[0];
+
+	// setup length parameters
+	fLength = (float) sqrt(vecLine[0] * vecLine[0] + vecLine[1] * vecLine[1]);
+	th = pA->nWidth / (2.0f * fLength);
+	ta = pA->nWidth / (2.0f * (tanf(pA->fTheta) / 2.0f) * fLength);
+
+	// find the base of the arrow
+	pBase.x = (int) (aptPoly[0].x + -ta * vecLine[0]);
+	pBase.y = (int) (aptPoly[0].y + -ta * vecLine[1]);
+
+	// build the points on the sides of the arrow
+	aptPoly[1].x = (int) (pBase.x + th * vecLeft[0]);
+	aptPoly[1].y = (int) (pBase.y + th * vecLeft[1]);
+	aptPoly[2].x = (int) (pBase.x + -th * vecLeft[0]);
+	aptPoly[2].y = (int) (pBase.y + -th * vecLeft[1]);
+
+	MoveToEx(hDC, pFrom.x, pFrom.y, NULL);
+
+	// draw we're fillin'...
+	if(pA->bFill) {
+		LineTo(hDC, aptPoly[0].x, aptPoly[0].y);
+		Polygon(hDC, aptPoly, 3);
+	}
+
+	// ... or even jes chillin'...
+	else {
+		LineTo(hDC, pBase.x, pBase.y);
+		LineTo(hDC, aptPoly[1].x, aptPoly[1].y);
+		LineTo(hDC, aptPoly[0].x, aptPoly[0].y);
+		LineTo(hDC, aptPoly[2].x, aptPoly[2].y);
+		LineTo(hDC, pBase.x, pBase.y);
+		MoveToEx(hDC, aptPoly[0].x, aptPoly[0].y, NULL);
+	}
+}
 
 // Overrides
 public:
@@ -304,7 +393,10 @@ public:
 	afx_msg void OnLinkSwichtolineBandwidthMode();
 	afx_msg void OnViewTransitlayer();
 	afx_msg void OnUpdateViewTransitlayer(CCmdUI *pCmdUI);
+	afx_msg void OnNodeMovementproperties();
 };
+
+
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp
 inline CTLiteDoc* CTLiteView::GetDocument() const
