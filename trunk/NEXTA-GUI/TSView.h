@@ -87,8 +87,8 @@ public:
 	float DetectorLocalY_Downstream;
 	float DetectorSpacing_in_miles;
 
-	std::vector<int> SpaceCountVector;  // space count between two sensors
-	std::vector<int> SpaceScanCountVector;  // space-based scan count using image
+	std::vector<int> SpaceCountVector;  // space count between cumulative flow counts of two sensors
+	std::vector<int> SpaceScanCountVector;  // space-based scan count using image scanning
 	std::vector<float> DensityVector;  // space mean speed
 	std::vector<float> SpeedVector;  // space mean density
 	std::vector<float> FlowVector;  // average flow rates
