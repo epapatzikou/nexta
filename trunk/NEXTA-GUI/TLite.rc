@@ -630,6 +630,8 @@ BEGIN
             MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
             MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
             MENUITEM "Show Preceeding Vehicle Position", ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION
+            MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
+            MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
             MENUITEM SEPARATOR
             MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
             MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
@@ -637,6 +639,7 @@ BEGIN
             MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
             MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
             MENUITEM "Traffic Flow Model Estimation (TFME)", ID_NGSIMMENU_TRAFFICFLOWMODELESTIMATION
+            MENUITEM "Export Cumulative Flow Count Data", ID_NGSIMMENU_EXPORTCUMULATIVEFLOWCOUNTDATA
         END
         MENUITEM "VII Probe Data",              ID_IMPORT_VII
         MENUITEM SEPARATOR

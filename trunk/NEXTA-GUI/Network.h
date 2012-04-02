@@ -2164,7 +2164,6 @@ public:
 	float CorrelationBetweenObservedAndSimulatedLinkVolume;
 };
 
-
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 // Stop bugging me about this, live isn't perfect
 

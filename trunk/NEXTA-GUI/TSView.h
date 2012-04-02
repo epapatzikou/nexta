@@ -11,10 +11,210 @@
 
 #define _MAX_LANE_SIZE 7
 
-class SectionSensorData
+class PointSensorData
 {
 public: 
+	float DetectorLocalY;
+//input
+	std::vector<int> PassingTimeStampVector;  // has been sorted
+//output
+	std::vector<int> CumulativeFlowVector;
+
+
+	float GetFlowCount(int beginning_time_interval)
+	{
+	
+		int flow_count = 0;
+		
+		if(beginning_time_interval < CumulativeFlowVector.size()-1)
+		{
+		flow_count =  CumulativeFlowVector[beginning_time_interval+1] - CumulativeFlowVector[beginning_time_interval] ;
+		}else
+		{
+		 flow_count = 0;
+		}
+		 
+		return flow_count;
+
+	}
+
+
+	void ConstructCumulativeFlowVector(int data_collection_time_interval_in_sec, int number_of_time_intervals)
+	{
+		CumulativeFlowVector.clear();
+
+		int last_timestamp = PassingTimeStampVector[PassingTimeStampVector.size()-1];
+
+		CumulativeFlowVector.reserve (number_of_time_intervals+1);
+
+		int t; 
+		for(t= 0; t <  number_of_time_intervals; t++)
+		{
+			CumulativeFlowVector.push_back(0);  // setup vector first
+		}
+
+		int data_collection_time_interval = 0;
+		int time_interval_index = data_collection_time_interval_in_sec*10;  // unit: 0.1 seconds
+		int  v = 0;
+
+		// Xuesong: even there are two loops for cumulative flow count there, let us make the logic simple first without worring about the complexity of the algorithm
+		for(t= 0; t <  number_of_time_intervals; t++)
+		{
+			for(v = 0; v< PassingTimeStampVector.size(); v++)
+			{
+				if(PassingTimeStampVector[v] > t * data_collection_time_interval_in_sec*10)  // greater than the end of data collection time interval
+				{
+				break;
+				}
+
+			}
+				CumulativeFlowVector[t] = v;
+
+		}
+
+	}
+	
 };
+
+class LinkSensorData 
+{
+public:
+	LinkSensorData()
+	{
+	DataCollectionTimeInterval_in_sec = 30;
+	}
+	float DetectorLocalY_Upstream;
+	float DetectorLocalY_Downstream;
+	float DetectorSpacing_in_miles;
+
+	std::vector<int> SpaceCountVector;  // space count between two sensors
+	std::vector<int> SpaceScanCountVector;  // space-based scan count using image
+	std::vector<float> DensityVector;  // space mean speed
+	std::vector<float> SpeedVector;  // space mean density
+	std::vector<float> FlowVector;  // average flow rates
+	std::vector<int> UpstreamCumulativeFlowVector;  // average flow rates
+
+	float GetDensity(int time_in_sec)
+	{
+		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
+		if( time_interval < DensityVector.size())
+			return DensityVector[time_interval];
+		else
+			return 0;
+	}
+
+	float GetSpaceCount(int time_in_sec)
+	{
+		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
+		if( time_interval < SpaceCountVector.size())
+			return SpaceCountVector[time_interval];
+		else
+			return 0;
+	}
+
+	float GetSpaceScanCount(int time_in_sec)
+	{
+		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
+		if( time_interval < SpaceScanCountVector.size())
+			return SpaceScanCountVector[time_interval];
+		else
+			return 0;
+	}
+
+	int GetCumulativeFlowCount(int time_in_sec)
+	{
+		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
+		if( time_interval < UpstreamCumulativeFlowVector.size())
+			return UpstreamCumulativeFlowVector[time_interval];
+		else
+			return 0;
+	}
+
+	int GetFlowCount(int time_in_sec)
+	{
+		return GetCumulativeFlowCount(time_in_sec) - GetCumulativeFlowCount(time_in_sec-DataCollectionTimeInterval_in_sec);
+	}
+
+	int DataCollectionTimeInterval_in_sec;
+	int TimeHorizon_in_sec;
+
+	void SetupLinkMOEVector(int TimeHorizon_in_sec)
+	{
+		DensityVector.clear();
+		SpeedVector.clear();
+		FlowVector.clear();
+		SpaceCountVector.clear();
+		SpaceScanCountVector.clear();
+
+		TimeHorizon_in_sec = TimeHorizon_in_sec;
+		for(int t = 0; t < TimeHorizon_in_sec/DataCollectionTimeInterval_in_sec; t++)
+		{
+		DensityVector.push_back (0);
+		SpeedVector.push_back(0);
+		FlowVector.push_back(0);
+		SpaceCountVector.push_back(0);
+		SpaceScanCountVector.push_back(0);
+		}
+	
+	}
+
+	void ConstructDensityFromTwoDetectors(PointSensorData detector1, PointSensorData detector2, int data_collection_interval_in_sec, float detector_spacing_in_feet)
+	{
+		UpstreamCumulativeFlowVector = detector1.CumulativeFlowVector;
+
+		DataCollectionTimeInterval_in_sec = data_collection_interval_in_sec;
+		DetectorSpacing_in_miles = detector_spacing_in_feet/5280;
+	
+		int TimeInterval = min(detector1.CumulativeFlowVector.size(), detector2.CumulativeFlowVector.size());
+		{
+		SetupLinkMOEVector(TimeInterval*DataCollectionTimeInterval_in_sec);
+		}
+
+		for(int t = 0; t < DensityVector.size(); t++)
+		{
+
+		SpaceCountVector[t] = abs(detector1.CumulativeFlowVector [t] - detector2.CumulativeFlowVector [t]);
+		DensityVector[t] = abs(detector1.CumulativeFlowVector [t] - detector2.CumulativeFlowVector [t])/DetectorSpacing_in_miles;
+		// approximation using mean
+		FlowVector[t] = (detector1.GetFlowCount(t) + detector2.GetFlowCount(t))/2 * (3600/DataCollectionTimeInterval_in_sec);  // per hour volume
+
+		//q= kv --> v = q/k
+		SpeedVector[t] = 	FlowVector[t] / max(1,DensityVector[t]);
+		}
+
+	
+	}
+
+};
+class CorridorSensorData
+{
+public: 
+	std::vector <PointSensorData> PointSensorDataVector;
+	std::vector <LinkSensorData> LinkSensorDataVector;
+	int DataCollectionTimeInterval_in_sec;
+
+	void CreateLinkSensorDataFromPointSensorVector()
+	{
+		if(PointSensorDataVector.size () <2)
+			return;
+	
+		for(int d = 1; d < PointSensorDataVector.size(); d++)
+		{
+			LinkSensorData element;
+			element.DetectorLocalY_Upstream = PointSensorDataVector[d-1].DetectorLocalY;
+			element.DetectorLocalY_Downstream = PointSensorDataVector[d].DetectorLocalY;
+			element.ConstructDensityFromTwoDetectors(PointSensorDataVector[d-1],
+			PointSensorDataVector[d], 
+			DataCollectionTimeInterval_in_sec,
+			PointSensorDataVector[d].DetectorLocalY - PointSensorDataVector[d-1].DetectorLocalY);
+		
+			LinkSensorDataVector.push_back (element);
+		}
+	
+	}
+
+};
+
 
 class VehicleSnapshotData
 {
@@ -39,7 +239,6 @@ public:
 	int FollowingVehicleID;
 	bool bDataAvailableFlag;
 };
-
 class CTimeSpaceView : public CView
 {
 protected: // create from serialization only
@@ -48,6 +247,10 @@ protected: // create from serialization only
 
 // Attributes
 public:
+
+	int m_DataCollectionTimeInternval_in_sec;
+
+	CorridorSensorData m_CorridorSensorData;
 	CPoint m_TempLinkStartPoint, m_TempLinkEndPoint;
 	int m_SelectedVehicleCount; 
 	bool m_bMouseDownFlag;
@@ -116,6 +319,10 @@ public:
 	bool m_bShowTimetable; 
 	bool m_bShowSlackTime;
 
+	bool m_bShowCumulativeFlowCount; 
+	bool m_bShowDensityContour; 
+
+
 	int Cur_MOE_type1; // 0: mean travel time
 	int Cur_MOE_type2; // 
 
@@ -125,8 +332,8 @@ public:
    float m_UnitDistance, m_UnitTime;
    int m_Range;
    int m_TmLeft, m_TmRight;
-   float m_YUpperBound;
-   float m_YLowerBound;
+   float m_LocalYUpperBound;
+   float m_LocalYLowerBound;
 
    double m_TotalDistance;
 
@@ -156,15 +363,73 @@ public:
 	{
 		float local_y = 0;
 
-		local_y = (PlotRect.bottom - YPosition  )/m_UnitDistance + m_YLowerBound;
+		local_y = (PlotRect.bottom - YPosition  )/m_UnitDistance + m_LocalYLowerBound;
 
-		if(local_y < m_YLowerBound) local_y = m_YLowerBound;
-		if(local_y > m_YUpperBound) local_y = m_YUpperBound;
+		if(local_y < m_LocalYLowerBound) local_y = m_LocalYLowerBound;
+		if(local_y > m_LocalYUpperBound) local_y = m_LocalYUpperBound;
 
 		return max(0,local_y);;
 	}
 
 	int CountVehicles(int StartTime, int EndTime, float StartLocalY,float EndlocalY);
+
+	void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v )
+{
+	int i;
+	float f, p, q, t;
+	if( s == 0 ) {
+		// achromatic (grey)
+		*r = *g = *b = v;
+		return;
+	}
+	h /= 60;			// sector 0 to 5
+	i = floor( h );
+	f = h - i;			// factorial part of h
+	p = v * ( 1 - s );
+	q = v * ( 1 - s * f );
+	t = v * ( 1 - s * ( 1 - f ) );
+	switch( i ) {
+		case 0:
+			*r = v;
+			*g = t;
+			*b = p;
+			break;
+		case 1:
+			*r = q;
+			*g = v;
+			*b = p;
+			break;
+		case 2:
+			*r = p;
+			*g = v;
+			*b = t;
+			break;
+		case 3:
+			*r = p;
+			*g = q;
+			*b = v;
+			break;
+		case 4:
+			*r = t;
+			*g = p;
+			*b = v;
+			break;
+		default:		// case 5:
+			*r = v;
+			*g = p;
+			*b = q;
+			break;
+	}
+}
+	void GetColorFromPower(float power)
+{
+			float n= power*100;
+			int R=(int)((255*n)/100);
+			int G=(int)(255*(100-n)/100); 
+			int B=0;
+
+
+}
 
 
 // Overrides
@@ -184,8 +449,9 @@ void RefreshWindow();
 //	void DrawSchedule(int ScenarioNo);
 //	void DrawTrain(int TrainNo);
 
-	void DrawObjects(CDC* pDC,int MOEType,CRect PlotRect);
-	void DrawNGSIMObjects(CDC* pDC,int MOEType,CRect PlotRect);
+	void DrawSpaceTimeContour(CDC* pDC,int MOEType,CRect PlotRect);
+	void DrawNGSIMVehicleTrajectory(CDC* pDC,int MOEType,CRect PlotRect);
+	void DrawFramework(CDC* pDC,int MOEType,CRect PlotRect);
 
 	int FindClosestTimeResolution(double Value)
 {
@@ -261,6 +527,11 @@ public:
 	afx_msg void OnNgsimdataShowpreceedingvehicleposition();
 	afx_msg void OnUpdateNgsimdataShowpreceedingvehicleposition(CCmdUI *pCmdUI);
 	afx_msg void OnNgsimdataSearchByVehicleId();
+	afx_msg void OnNgsimmenuExportcumulativeflowcountdata();
+	afx_msg void OnNgsimmenuShowcalculatedcumulativeflowcountanddensity();
+	afx_msg void OnUpdateNgsimmenuShowcalculatedcumulativeflowcountanddensity(CCmdUI *pCmdUI);
+	afx_msg void OnNgsimmenuShowspacetimeContour();
+	afx_msg void OnUpdateNgsimmenuShowspacetimeContour(CCmdUI *pCmdUI);
 };
 
 
