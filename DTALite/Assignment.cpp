@@ -446,7 +446,10 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			float TotalCost = LabelCostAry[DestinationCentriod];
 			if(TotalCost > MAX_SPLABEL-10)
 			{
-				ASSERT(false);
+			cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
+			g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. " << endl;
+			continue;
+
 			}
 
 			bool bSwitchFlag = false;
