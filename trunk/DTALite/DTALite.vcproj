@@ -50,7 +50,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				OpenMP="false"
+				OpenMP="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="2"
 				DebugInformationFormat="4"

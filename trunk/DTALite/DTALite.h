@@ -841,12 +841,12 @@ public:
 	int m_OriginNodeID;
 	int m_DestinationNodeID;
 
-	unsigned char m_DemandType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
-	unsigned char m_PricingType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
-	unsigned char m_VehicleType;    // for emissions analysis
-	unsigned char m_InformationClass;  // 1: historical, 2: pre-trip, 3: en-route
+	int m_DemandType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
+	int m_PricingType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
+	int m_VehicleType;    // for emissions analysis
+	int m_InformationClass;  // 1: historical, 2: pre-trip, 3: en-route
 
-	unsigned short m_SimLinkSequenceNo; //  range 0, 65535
+	int m_SimLinkSequenceNo; //  range 0, 65535
 
 	bool  m_bImpacted;
 
@@ -1609,7 +1609,7 @@ extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output);
 extern void g_GenerateVehicleData_ODEstimation();
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
-
+extern bool g_read_a_line(FILE* f, char* aline, int & size);
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
 

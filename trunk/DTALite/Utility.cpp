@@ -298,3 +298,24 @@ char g_GetLevelOfService(int PercentageOfSpeedLimit)
    else 
 	   return 'F';
 }
+
+bool g_read_a_line(FILE* f, char* aline, int & size)
+   /* read a line from the current line from the file */
+{
+
+   char ch;
+   size = 0;
+
+   while( 1 ) {
+      ch = getc( f );
+      if( ch != 13 && ch != 10 && ch != EOF )
+	 aline[ size++ ] = ch;
+      else { /* terminate if it's end of line or end of file */
+	 aline[ size ] = 0;
+	 if( ch == EOF )
+	    return false;
+
+	 return true;
+      }
+   }
+}
