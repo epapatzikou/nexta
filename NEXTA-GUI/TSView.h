@@ -11,15 +11,37 @@
 
 #define _MAX_LANE_SIZE 7
 
+enum eNGSIMDisplayMode {NGSIM_trajectory = 0,NGSIM_density_profile, NGSIM_simulated_trajectory, NGSIM_simulated_density_profile};
+
+
+
 class PointSensorData
 {
 public: 
 	float DetectorLocalY;
+	int sampling_time_interval_in_sec;
 //input
 	std::vector<int> PassingTimeStampVector;  // has been sorted
+
+// for reliability analysis
+	std::vector<int> PassingHeadwayVector;  // unit: second
+
+	std::vector<float> PassingTravelTimeVector;  // unit: second: from upstream to here (DetectorLocalY)
+
+	std::vector<float> EstimatedPassingTravelTimeVector;  // unit: second: from upstream to here (DetectorLocalY)
+	// based sampling ratio
+
+	void ConstructEsimatedTravelTimeVector()
+	{
+	 // input: true PassingTravelTimeVector
+	 // input: sampling_time_interval_in_sec
+	
+	 // output: EstimatedPassingTravelTimeVector
+	}
+
+
 //output
 	std::vector<int> CumulativeFlowVector;
-
 
 	float GetFlowCount(int beginning_time_interval)
 	{
@@ -44,6 +66,14 @@ public:
 		CumulativeFlowVector.clear();
 
 		int last_timestamp = PassingTimeStampVector[PassingTimeStampVector.size()-1];
+
+		for(unsigned int i = 1 ; i < PassingTimeStampVector.size(); i++)
+		{
+		    int headway = PassingTimeStampVector[i] - PassingTimeStampVector[i-1];
+		
+			PassingHeadwayVector.push_back(headway);
+
+		}
 
 		CumulativeFlowVector.reserve (number_of_time_intervals+1);
 
@@ -94,6 +124,11 @@ public:
 	std::vector<float> FlowVector;  // average flow rates
 	std::vector<int> UpstreamCumulativeFlowVector;  // average flow rates
 
+
+	std::vector<int> EstimatedSpaceScanCountVector;  // space-based scan count using image scanning
+
+
+
 	float GetDensity(int time_in_sec)
 	{
 		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
@@ -117,6 +152,15 @@ public:
 		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
 		if( time_interval < SpaceScanCountVector.size())
 			return SpaceScanCountVector[time_interval];
+		else
+			return 0;
+	}
+
+	float GetEstimatedSpaceScanCount(int time_in_sec)
+	{
+		int time_interval = time_in_sec/DataCollectionTimeInterval_in_sec;
+		if( time_interval < EstimatedSpaceScanCountVector.size())
+			return EstimatedSpaceScanCountVector[time_interval];
 		else
 			return 0;
 	}
@@ -189,9 +233,100 @@ public:
 class CorridorSensorData
 {
 public: 
+
+	CorridorSensorData()
+	{
+	Jam_density_veh_per_mile_per_lane = 200;
+	backward_wave_speed_in_mile_per_hour = 15;
+	}
+
 	std::vector <PointSensorData> PointSensorDataVector;
 	std::vector <LinkSensorData> LinkSensorDataVector;
+
+	std::vector<int> UpstreamCumulativeFlowVector;
+	std::vector<int> DownstreamCumulativeFlowVector;
+
+	float LocalY_Upstream;
+	float LocalY_Downstream;
+
 	int DataCollectionTimeInterval_in_sec;
+
+	float Jam_density_veh_per_mile_per_lane;
+	float backward_wave_speed_in_mile_per_hour;
+
+	void EstimateSpaceScanCountVectorForAllLinks()
+	{
+		for(int link_index = 0; link_index < LinkSensorDataVector.size(); link_index++)
+		{
+		for(int t = 0; t < LinkSensorDataVector[link_index].DensityVector.size(); t+= 1)
+		{
+			// estimate cell based upstream count
+
+			int link_based_cumulative_upstream_count = 0;
+			int link_based_cumulative_downstream_count = 0;
+			float distance_to_downstream_in_mile = (LocalY_Downstream - LinkSensorDataVector[link_index].DetectorLocalY_Upstream)/5280;  // convert from feet to mile
+
+			int time_in_sec = t*DataCollectionTimeInterval_in_sec;
+
+			int CellUpstreamCount, CellDownstreamCount;
+
+			if(t == 27)
+			{
+			TRACE("nnn");
+			}
+			int time_stamp_backward = time_in_sec - distance_to_downstream_in_mile/backward_wave_speed_in_mile_per_hour*3600; // 3600 converts hour to seconds
+
+
+			if(time_stamp_backward >= 0 && time_stamp_backward < DownstreamCumulativeFlowVector.size())
+			{
+			link_based_cumulative_upstream_count = DownstreamCumulativeFlowVector[time_stamp_backward] + distance_to_downstream_in_mile*Jam_density_veh_per_mile_per_lane;
+
+			CellUpstreamCount = DownstreamCumulativeFlowVector[time_stamp_backward];
+
+			}
+
+			// estimate cell based downstream count
+
+			distance_to_downstream_in_mile = (LocalY_Downstream - LinkSensorDataVector[link_index].DetectorLocalY_Downstream)/5280;
+			time_stamp_backward = time_in_sec - distance_to_downstream_in_mile/backward_wave_speed_in_mile_per_hour*3600; // 3600 converts hour to seconds
+
+			if(time_stamp_backward >= 0 && time_stamp_backward < DownstreamCumulativeFlowVector.size())
+			{
+			link_based_cumulative_downstream_count = DownstreamCumulativeFlowVector[time_stamp_backward] + distance_to_downstream_in_mile*Jam_density_veh_per_mile_per_lane;
+			CellDownstreamCount = DownstreamCumulativeFlowVector[time_stamp_backward];
+			}
+			// take the difference
+			int count  = max(0,link_based_cumulative_upstream_count - link_based_cumulative_downstream_count);
+			LinkSensorDataVector[link_index].EstimatedSpaceScanCountVector.push_back(count);
+
+		}
+		}
+	
+	}
+
+	void ConstructCumulativeFlowCount(std::vector<int> PassingTimeStampVector, int time_horizon_in_sec)
+	{
+
+		// Xuesong: even there are two loops for cumulative flow count there, let us make the logic simple first without worring about the complexity of the algorithm
+		for(int t= 0; t < time_horizon_in_sec ; t++)
+		{
+			if(t >= 120)
+				TRACE("");
+			
+			int v;
+			for(v = 0; v< PassingTimeStampVector.size(); v++)
+			{
+				if(PassingTimeStampVector[v] > t * 10)  // greater than the end of data collection time interval
+				{
+				break;
+				}
+
+			}
+				DownstreamCumulativeFlowVector.push_back(v);
+
+		}
+		TRACE("");
+	}
 
 	void CreateLinkSensorDataFromPointSensorVector()
 	{
@@ -321,10 +456,11 @@ public:
 
 	bool m_bShowCumulativeFlowCount; 
 	bool m_bShowDensityContour; 
+	bool m_bShowPDFPlot;
 
 
-	int Cur_MOE_type1; // 0: mean travel time
-	int Cur_MOE_type2; // 
+	eNGSIMDisplayMode Cur_MOE_type1; // 1: upper window
+	eNGSIMDisplayMode Cur_MOE_type2; // 2: lower window
 
 	bool m_bMoveDisplay;
 	CPoint m_last_cpoint;
@@ -449,8 +585,17 @@ void RefreshWindow();
 //	void DrawSchedule(int ScenarioNo);
 //	void DrawTrain(int TrainNo);
 
-	void DrawSpaceTimeContour(CDC* pDC,int MOEType,CRect PlotRect);
-	void DrawNGSIMVehicleTrajectory(CDC* pDC,int MOEType,CRect PlotRect);
+	int m_MaxBinValue;  // 20 seconds
+	int m_BinSize;
+	int m_MaxFrequency;
+
+
+	void SetupMaxFrequencyAndBinValue();
+	void DrawPDFPlot(CDC* pDC,CRect PlotRect, std::vector<int> ValueVector1, std::vector<int> ValueVector2, int MaxBinValue, int BinSize,int MaxFrequency);
+
+	void DrawSpaceTimeContour(CDC* pDC,eNGSIMDisplayMode MOEType,CRect PlotRect);
+	void DrawPDFPlotsForAllLinks(CDC* pDC,eNGSIMDisplayMode MOEType,CRect PlotRect);
+	void DrawNGSIMVehicleTrajectory(CDC* pDC,eNGSIMDisplayMode MOEType,CRect PlotRect);
 	void DrawFramework(CDC* pDC,int MOEType,CRect PlotRect);
 
 	int FindClosestTimeResolution(double Value)
@@ -481,6 +626,8 @@ void RefreshWindow();
 #endif
 
 protected:
+
+	void ConstructCellBasedDensityProfile();
 
 // Generated message map functions
 protected:
@@ -532,6 +679,8 @@ public:
 	afx_msg void OnUpdateNgsimmenuShowcalculatedcumulativeflowcountanddensity(CCmdUI *pCmdUI);
 	afx_msg void OnNgsimmenuShowspacetimeContour();
 	afx_msg void OnUpdateNgsimmenuShowspacetimeContour(CCmdUI *pCmdUI);
+	afx_msg void OnNgsimmenuShowcdfplot();
+	afx_msg void OnUpdateNgsimmenuShowcdfplot(CCmdUI *pCmdUI);
 };
 
 
