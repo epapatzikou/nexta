@@ -94,6 +94,7 @@
 #define IDD_NSCHART_TOLL_DIALOG         198
 #define IDD_DIALOG_EXCEL_DATA_IMPORT    199
 #define IDD_DIALOG_NODE_MOVEMENT        200
+#define IDD_NGSIM_DIALOG                202
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -712,13 +713,15 @@
 #define ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY 33331
 #define ID_NGSIMMENU_SHOWSPACE          33332
 #define ID_NGSIMMENU_SHOWSPACETIME_CONTOUR 33333
+#define ID_NGSIMMENU_SHOWCDF            33334
+#define ID_NGSIMMENU_SHOWCDFPLOT        33335
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        202
-#define _APS_NEXT_COMMAND_VALUE         33334
+#define _APS_NEXT_RESOURCE_VALUE        203
+#define _APS_NEXT_COMMAND_VALUE         33336
 #define _APS_NEXT_CONTROL_VALUE         1107
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
