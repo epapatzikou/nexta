@@ -53,6 +53,153 @@ typedef struct tARROWSTRUCT
 } ARROWSTRUCT;
 
 /////////////////
+/// reference: http://www.codeproject.com/Articles/25237/Bezier-Curves-Made-Simple
+///
+/// 
+
+   class BezierCurve
+    {
+		private :
+		double FactorialLookup[33];
+
+	public:	
+        BezierCurve()
+        {
+            FactorialLookup[0] = 1.0;
+            FactorialLookup[1] = 1.0;
+            FactorialLookup[2] = 2.0;
+            FactorialLookup[3] = 6.0;
+            FactorialLookup[4] = 24.0;
+            FactorialLookup[5] = 120.0;
+            FactorialLookup[6] = 720.0;
+            FactorialLookup[7] = 5040.0;
+            FactorialLookup[8] = 40320.0;
+            FactorialLookup[9] = 362880.0;
+            FactorialLookup[10] = 3628800.0;
+            FactorialLookup[11] = 39916800.0;
+            FactorialLookup[12] = 479001600.0;
+            FactorialLookup[13] = 6227020800.0;
+            FactorialLookup[14] = 87178291200.0;
+            FactorialLookup[15] = 1307674368000.0;
+            FactorialLookup[16] = 20922789888000.0;
+            FactorialLookup[17] = 355687428096000.0;
+            FactorialLookup[18] = 6402373705728000.0;
+            FactorialLookup[19] = 121645100408832000.0;
+            FactorialLookup[20] = 2432902008176640000.0;
+            FactorialLookup[21] = 51090942171709440000.0;
+            FactorialLookup[22] = 1124000727777607680000.0;
+            FactorialLookup[23] = 25852016738884976640000.0;
+            FactorialLookup[24] = 620448401733239439360000.0;
+            FactorialLookup[25] = 15511210043330985984000000.0;
+            FactorialLookup[26] = 403291461126605635584000000.0;
+            FactorialLookup[27] = 10888869450418352160768000000.0;
+            FactorialLookup[28] = 304888344611713860501504000000.0;
+            FactorialLookup[29] = 8841761993739701954543616000000.0;
+            FactorialLookup[30] = 265252859812191058636308480000000.0;
+            FactorialLookup[31] = 8222838654177922817725562880000000.0;
+            FactorialLookup[32] = 263130836933693530167218012160000000.0;
+        }
+
+        // just check if n is appropriate, then return the result
+        double factorial(int n)
+        {
+            if ( n >=0 && n < 32)
+	            return FactorialLookup[n]; /* returns the value n! as a SUMORealing point number */
+			else return 1;
+        }
+
+
+        double Ni(int n, int i)
+        {
+            double ni;
+            double a1 = factorial(n);
+            double a2 = factorial(i);
+            double a3 = factorial(n - i);
+            ni =  a1/ (a2 * a3);
+            return ni;
+        }
+
+        // Calculate Bernstein basis
+        double Bernstein(int n, int i, double t)
+        {
+            double basis;
+            double ti; /* t^i */
+            double tni; /* (1 - t)^i */
+
+            /* Prevent problems with pow */
+
+            if (t == 0.0 && i == 0) 
+                ti = 1.0; 
+            else 
+                ti = pow(t, i);
+
+            if (n == i && t == 1.0) 
+                tni = 1.0; 
+            else 
+                tni = pow((1 - t), (n - i));
+
+            //Bernstein basis
+            basis = Ni(n, i) * ti * tni; 
+            return basis;
+        }
+
+		void Bezier2D(std::vector<GDPoint> ShapePoints, std::vector<GDPoint> &NewShapePoints)
+        {
+			std::vector<double> b;
+			int cpts = 100;
+			double p[200]; // 400 is approximating points
+
+			int i;
+			for(i =0; i< ShapePoints.size(); i++)
+			{
+				b.push_back(ShapePoints[i].x);
+				b.push_back(ShapePoints[i].y);
+			}
+            int npts = b.size() / 2;
+            int icount, jcount;
+            double step, t;
+
+            // Calculate points on curve
+
+            icount = 0;
+            t = 0;
+            step = (double)1.0 / (cpts - 1);
+
+            for (int i1 = 0; i1 != cpts; i1++)
+            { 
+                if ((1.0 - t) < 5e-6) 
+                    t = 1.0;
+
+                jcount = 0;
+                p[icount] = 0.0;
+                p[icount + 1] = 0.0;
+                for (int i = 0; i != npts; i++)
+                {
+                    double basis = Bernstein(npts - 1, i, t);
+                    p[icount] += basis * b[jcount];
+                    p[icount + 1] += basis * b[jcount + 1];
+                    jcount = jcount +2;
+                }
+
+                icount += 2;
+                t += step;
+            }
+
+			// send approimating point back
+			for(i= 0 ; i< cpts; i++)
+			{
+				GDPoint pt;
+				pt.x = p[2*i];
+				pt.y = p[2*i+1];
+				NewShapePoints.push_back(pt);
+			}
+			
+
+		}
+
+    };
+
+
 
 class CTLiteView : public CView
 {
@@ -63,6 +210,9 @@ protected: // create from serialization only
 // Attributes
 public:
 
+	BezierCurve m_BezierCurve;
+
+	bool m_bLineDisplayConditionalMode;
 	link_display_mode m_link_display_mode;
 
 void SetStatusText(CString text) const
@@ -394,6 +544,8 @@ public:
 	afx_msg void OnViewTransitlayer();
 	afx_msg void OnUpdateViewTransitlayer(CCmdUI *pCmdUI);
 	afx_msg void OnNodeMovementproperties();
+	afx_msg void OnLinkLinedisplaymode();
+	afx_msg void OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI);
 };
 
 

@@ -37,6 +37,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_WINDOW_SHOWESTIMATIONVIEW, &CMainFrame::OnWindowShowestimationview)
 	ON_COMMAND(ID_VIEW_DATATOOLBAR, &CMainFrame::OnViewDatatoolbar)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_DATATOOLBAR, &CMainFrame::OnUpdateViewDatatoolbar)
+	ON_COMMAND(ID_ANIMATION_FORWARD, &CMainFrame::OnAnimationForward)
+	ON_COMMAND(ID_ANIMATION_BACKWARD, &CMainFrame::OnAnimationBackward)
+	ON_COMMAND(ID_ANIMATION_SKIPFORWARD, &CMainFrame::OnAnimationSkipforward)
+	ON_COMMAND(ID_ANIMATION_SKIPBACKWARD, &CMainFrame::OnAnimationSkipbackward)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -120,24 +124,28 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
-		m_MOEToolBar.SetButtonText(0,"VIEW");
-		m_MOEToolBar.SetButtonText(2,"Animation");
-		m_MOEToolBar.SetButtonText(3,"V/C");
-		m_MOEToolBar.SetButtonText(4,"Volume");
-		m_MOEToolBar.SetButtonText(5,"Speed");
-		m_MOEToolBar.SetButtonText(6,"Emissions");
-		m_MOEToolBar.SetButtonText(7,"Reliability");
-		m_MOEToolBar.SetButtonText(8,"Safety");
-		m_MOEToolBar.SetButtonText(10,"Link");
-		m_MOEToolBar.SetButtonText(11,"Path");
-		m_MOEToolBar.SetButtonText(12,"Subarea");
-		m_MOEToolBar.SetButtonText(13,"System");
+		m_MOEToolBar.SetButtonText(0,"Data");
+		m_MOEToolBar.SetButtonText(1,"Simulation");
+		m_MOEToolBar.SetButtonText(2,"Scenario");
+		m_MOEToolBar.SetButtonText(3,"Network");
+		m_MOEToolBar.SetButtonText(4,"Animation");
+		m_MOEToolBar.SetButtonText(5,"V/C");
+		m_MOEToolBar.SetButtonText(6,"Volume");
+		m_MOEToolBar.SetButtonText(7,"Speed");
+		m_MOEToolBar.SetButtonText(8,"Queue");
+		m_MOEToolBar.SetButtonText(10,"Emissions");
+		m_MOEToolBar.SetButtonText(11,"Reliability");
+		m_MOEToolBar.SetButtonText(12,"Safety");
+		m_MOEToolBar.SetButtonText(14,"Link");
+		m_MOEToolBar.SetButtonText(15,"Path");
+		m_MOEToolBar.SetButtonText(16,"Subarea");
+		m_MOEToolBar.SetButtonText(17,"System");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
 
-		m_AMSToolBar.SetButtonText(0,"TOOL");
+/*		m_AMSToolBar.SetButtonText(0,"TOOL");
 		m_AMSToolBar.SetButtonText(2,"Network");
 		m_AMSToolBar.SetButtonText(3,"Import");
 		m_AMSToolBar.SetButtonText(4,"Sensor");
@@ -158,7 +166,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_AMSToolBar.SetButtonText(22,"Website");
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));
-		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
+*/		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_AMSToolBar);
 
@@ -288,7 +296,7 @@ void CMainFrame::OnTimer(UINT nIDEvent)
 	{
 		if(g_Simulation_Time_Stamp < g_Simulation_Time_Horizon)
 		{
-			g_Simulation_Time_Stamp += 1.0f;  // second
+			g_Simulation_Time_Stamp += 1.0f;  // min
 		}else
 		{
 			g_Simulation_Time_Stamp = g_Simulation_Time_Horizon;
@@ -384,4 +392,29 @@ void CMainFrame::OnViewDatatoolbar()
 void CMainFrame::OnUpdateViewDatatoolbar(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck (m_bShowDataToolBar);
+}
+
+void CMainFrame::OnAnimationForward()
+{
+	m_wndPlayerSeekBar.SetPos(min(g_Simulation_Time_Stamp+1,g_Simulation_Time_Horizon));
+	UpdateAllViews();
+
+}
+
+void CMainFrame::OnAnimationBackward()
+{
+	m_wndPlayerSeekBar.SetPos(max(g_Simulation_Time_Stamp-1,0));
+	UpdateAllViews();
+}
+
+void CMainFrame::OnAnimationSkipforward()
+{
+	m_wndPlayerSeekBar.SetPos(min(g_Simulation_Time_Stamp+5,g_Simulation_Time_Horizon));
+	UpdateAllViews();
+}
+
+void CMainFrame::OnAnimationSkipbackward()
+{
+	m_wndPlayerSeekBar.SetPos(max(g_Simulation_Time_Stamp-5,0));
+	UpdateAllViews();
 }

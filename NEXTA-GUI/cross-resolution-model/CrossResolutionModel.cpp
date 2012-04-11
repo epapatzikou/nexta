@@ -30,10 +30,9 @@
 #include "..//TLiteDoc.h"
 #include "..//Data-Interface//XLEzAutomation.h"
 #include "..//Data-Interface//XLTestDataSource.h"
-
+#include "..//Data-Interface//include//ogrsf_frmts.h"
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"
-
 
 
 DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
@@ -128,6 +127,72 @@ int CTLiteDoc::Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3)
  return relative_angle;
 }
 
+int CTLiteDoc::FindUniqueLinkID()
+{
+	int i;
+	for( i= 1; i < m_LinkIDRecordVector.size(); i++) 
+	{
+		if( m_LinkIDRecordVector[i] == 0)
+		{
+			m_LinkIDRecordVector[i] = 1;
+			return i;
+		}
+	}
+
+	// all link ids have been used;
+	m_LinkIDRecordVector.push_back(i);
+	m_LinkIDRecordVector[i] = 1;
+	return i;
+}
+void CTLiteDoc::AssignUniqueLinkIDForEachLink()
+{
+	m_LinkIDRecordVector.clear();
+
+	std::list<DTALink*>::iterator iLink;
+
+	int max_link_id = 1;
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				if((*iLink)->m_LinkID >  max_link_id)
+				{
+					max_link_id = (*iLink)->m_LinkID ;
+				}
+			 
+			}
+
+			//allocate unique id arrary
+		m_LinkIDRecordVector.resize (max(max_link_id, m_LinkSet.size())+1);  // allocate all necessary spaces
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_LinkID != 0)  // with possible real id
+			{
+				if(m_LinkIDRecordVector[(*iLink)->m_LinkID] == 0)  // not been used before
+				{
+				// mark link id
+					m_LinkIDRecordVector[(*iLink)->m_LinkID] =1;
+				}else
+				{  // link id has been used
+				(*iLink)->m_LinkID = 0; // need to reset link id;
+				}
+
+			}
+
+		}
+
+		// last step: find unique id 
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_LinkID == 0)
+			{
+					// need a new unique link id
+				(*iLink)->m_LinkID = FindUniqueLinkID();
+			
+			}
+		}
+
+}
+
 void  CTLiteDoc::ConstructMovementVectorForEachNode()
 {
 
@@ -154,9 +219,15 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 		
 			// scan each inbound link and outbound link
 
-			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
+			// generate two default phases;
+			(*iNode)->m_PhaseVector.resize (2);
+
+
+			int inbound_i;
+
+			for(inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
 			{
-				// for each incoming link
+				// for each incoming link 
 				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
 				{
 					//for each outging link
@@ -182,13 +253,26 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 						p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
 
 						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+						// movement_approach is for in_bound link
+						DTALink* pLink = m_LinkNoMap[LinkID];
+						if(pLink!=NULL)
+						{
+							// we have not considered different directions/approach with respect to from and to nodes (e.g. with a curve)
+							pLink ->m_FromApproach = element.movement_approach;
+							pLink ->m_ToApproach = g_Angle_to_Approach_New(Find_P2P_Angle(p2,p1));
+						}
+
+
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 						// determine  movement type /direction here
 						element.movement_dir = DTA_LANES_COLUME_init;
+
+						int PhaseIndex  = 0;
 						switch (element.movement_approach)
 						{
 							case DTA_North:
+								PhaseIndex = 0;
 								switch (element.movement_turn)
 								{
 									case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
@@ -197,6 +281,7 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 								}
 								break;
 							case DTA_East:
+								PhaseIndex = 1;
 								switch (element.movement_turn)
 								{
 									case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
@@ -205,6 +290,7 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 								}
 								break;
 							case DTA_South:
+								PhaseIndex = 0;
 								switch (element.movement_turn)
 								{
 									case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
@@ -213,6 +299,7 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 								}
 								break;
 							case DTA_West:
+								PhaseIndex = 1;
 								switch (element.movement_turn)
 								{
 									case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
@@ -222,7 +309,12 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 								break;
 						}
 
+						int movement_index = (*iNode)->m_MovementVector.size();
+						element.phase_index = PhaseIndex;
 						(*iNode)->m_MovementVector.push_back(element);
+
+						//record the movement index into the right phase index
+						(*iNode)->m_PhaseVector[PhaseIndex].movement_index_vector .push_back(movement_index);
 						
 
 					}  // for each feasible movement (without U-turn)
@@ -262,14 +354,9 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			// generate movement set and phase set
-			DTA_NodeMovementSet movement_set;  // for each node
-			//movement_set.copy_parameters(MovementTemplate);
-			
-			// generate DTA_NodePhaseSet for this Node
-			DTA_NodePhaseSet PhaseSet;
-			PhaseSet.copy_parameters(PhaseTemplate);
-			PhaseSet.CurrentNodeID = i;
-			m_PhaseVector.push_back(PhaseSet);
+
+			DTA_NodeMovementSet movement_set;	
+
 
 
 			// scan each inbound link and outbound link
@@ -348,7 +435,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 						// add Movement into m_MovementVector
 						//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_dir);
-						movement_set.copy_from_Movement(element, element.movement_dir);
+
 //						movement_set.MovementMatrix[element.movement_dir] = element;
 
 					//	(*iNode)->m_MovementSet.MovementMatrix[element.movement_dir] = element;
@@ -1332,3 +1419,265 @@ void CTLiteDoc::RunExcelAutomation()
 
 
 }
+
+void AddGISField(std::vector<OGRFieldDefn> &OGRFieldVector, CString field_name,  OGRFieldType type)
+{
+    OGRFieldDefn oField(field_name, type );
+	OGRFieldVector.push_back(oField);
+}
+
+bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer)
+{
+	for(int i = 0; i < OGRFieldVector.size(); i++)
+	{
+		OGRFieldDefn oField = OGRFieldVector[i];
+		if( poLayer->CreateField( &oField ) != OGRERR_NONE )
+		{
+			
+			CString str;
+			str.Format("Creating field %s failed", oField.GetNameRef());
+			AfxMessageBox(str);
+			return false;		
+		}
+	}
+
+}
+
+void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeString)
+{
+	CString message_str;
+
+	// 
+    OGRSFDriver *poDriver;
+
+    OGRRegisterAll();
+
+    poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(GISTypeString );
+    if( poDriver == NULL )
+    {
+        m_GISMessage.Format ( "%s driver not available.", GISTypeString );
+		AfxMessageBox(m_GISMessage);
+        return;
+    }
+
+    OGRDataSource *poDS;
+	
+    poDS = poDriver->CreateDataSource(file_name, NULL );
+    if( poDS == NULL )
+    {
+        m_GISMessage.Format ( "Creation of GIS output file %s failed.  Please make sure the file is not opened by another program.", file_name );
+		AfxMessageBox(m_GISMessage);
+		return;
+    }
+
+	///// export to node layer
+
+	// node layer 
+	{
+    OGRLayer *poLayer;
+    poLayer = poDS->CreateLayer( "node", NULL, wkbPoint, NULL );
+    if( poLayer == NULL )
+    {
+		m_GISMessage = "Node layer creation failed";
+		AfxMessageBox(m_GISMessage);
+		return;
+    }
+
+
+	OGRFieldDefn oField1 ("Name", OFTString); 
+	OGRFieldDefn oField2 ("NodeId", OFTInteger); 
+	OGRFieldDefn oField3 ("NodeType", OFTInteger); 
+	OGRFieldDefn oField4 ("x", OFTReal); 
+	OGRFieldDefn oField5 ("y", OFTReal); 
+
+	CString str;  
+	if( poLayer->CreateField( &oField1 ) != OGRERR_NONE ) { str.Format("Creating field %s failed", oField1.GetNameRef()); AfxMessageBox(str); return; }
+	if( poLayer->CreateField( &oField2 ) != OGRERR_NONE ) {	str.Format("Creating field %s failed", oField2.GetNameRef()); AfxMessageBox(str); return; }
+	if( poLayer->CreateField( &oField3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField3.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField4.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField5.GetNameRef()); AfxMessageBox(str); return ;	}
+
+	std::list<DTANode*>::iterator iNode;
+
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if((*iNode)->m_LayerNo ==0) 
+			{
+				OGRFeature *poFeature;
+
+				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+				poFeature->SetField("Name",(*iNode)->m_Name.c_str () );
+				poFeature->SetField("NodeId", (*iNode)->m_NodeNumber );
+				poFeature->SetField("NodeType", (*iNode)->m_ControlType );
+				poFeature->SetField("x", (*iNode)->pt .x );
+				poFeature->SetField("y", (*iNode)->pt .y );
+
+				OGRPoint pt;
+				pt.setX( (*iNode)->pt .x );
+				pt.setY( (*iNode)->pt .y );
+				poFeature->SetGeometry( &pt ); 
+
+				if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+				{
+					AfxMessageBox("Failed to create feature in shapefile.\n");
+					return;
+
+				}
+
+	        OGRFeature::DestroyFeature( poFeature );
+		 }
+    }
+		
+	} // end of node layer
+
+   OGRDataSource::DestroyDataSource( poDS );
+
+}
+
+void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeString)
+{
+	CString message_str;
+
+	// 
+    OGRSFDriver *poDriver;
+
+    OGRRegisterAll();
+
+    poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(GISTypeString );
+    if( poDriver == NULL )
+    {
+        m_GISMessage.Format ( "%s driver not available.", GISTypeString );
+		AfxMessageBox(m_GISMessage);
+        return;
+    }
+
+    OGRDataSource *poDS;
+	
+    poDS = poDriver->CreateDataSource(file_name, NULL );
+    if( poDS == NULL )
+    {
+        m_GISMessage.Format ( "Creation of GIS output file %s failed. Please make sure the file is not opened by another program.", file_name );
+		AfxMessageBox(m_GISMessage);
+		return;
+    }
+
+	///// export to node layer
+
+	// link layer 
+	{
+       OGRLayer *poLayer;
+	 poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
+    if( poLayer == NULL )
+    {
+		AfxMessageBox("link Layer creation failed");
+		return;
+    }
+
+	OGRFieldDefn oField1 ("LinkID", OFTInteger); 
+	OGRFieldDefn oField2 ("Name", OFTString); 
+	OGRFieldDefn oField3 ("A_Node", OFTInteger); 
+	OGRFieldDefn oField4 ("B_Node", OFTInteger); 
+	OGRFieldDefn oField5 ("IsOneWay", OFTInteger); 
+	OGRFieldDefn oField6 ("nLanes", OFTInteger); 
+	OGRFieldDefn oField7 ("SpeedLimit", OFTInteger); 
+	OGRFieldDefn oField8 ("LaneCap", OFTInteger); 
+	OGRFieldDefn oField9 ("FunctClass", OFTInteger); 
+	OGRFieldDefn oField10 ("Grade", OFTReal); 
+	OGRFieldDefn oField11 ("iSpeed", OFTReal); 
+	OGRFieldDefn oField12 ("iReliable", OFTReal); 
+
+
+
+
+
+	CString str;  
+	if( poLayer->CreateField( &oField1 ) != OGRERR_NONE ) { str.Format("Creating field %s failed", oField1.GetNameRef()); AfxMessageBox(str); return; }
+	if( poLayer->CreateField( &oField2 ) != OGRERR_NONE ) {	str.Format("Creating field %s failed", oField2.GetNameRef()); AfxMessageBox(str); return; }
+	if( poLayer->CreateField( &oField3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField3.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField4.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField5.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField6 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField6.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField7 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField7.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField8.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField9.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField10.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField11.GetNameRef()); AfxMessageBox(str); return ;	}
+	if( poLayer->CreateField( &oField12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField12.GetNameRef()); AfxMessageBox(str); return ;	}
+
+	std::list<DTALink*>::iterator iLink;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_AVISensorFlag == false && (*iLink)->m_LayerNo ==0)
+			{
+
+				OGRFeature *poFeature;
+
+				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+				poFeature->SetField("LinkID",(*iLink)->m_LinkID );
+				poFeature->SetField("Name", (*iLink)->m_Name.c_str () );
+				poFeature->SetField("A_Node", (*iLink)->m_FromNodeNumber );
+				poFeature->SetField("B_Node", (*iLink)->m_ToNodeNumber );
+				poFeature->SetField("IsOneWay", (*iLink)->m_Direction );
+				poFeature->SetField("NumberOfLanes", (*iLink)->m_NumLanes );
+				poFeature->SetField("SpeedLimit", (*iLink)->m_SpeedLimit );
+				poFeature->SetField("LaneCapacity", (*iLink)->m_LaneCapacity );
+				poFeature->SetField("FunctionalClass", (*iLink)->m_link_type );
+				poFeature->SetField("Grade", (*iLink)->m_Grade );
+
+			float value;
+			float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
+			float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
+				poFeature->SetField("iSpeed", mobility_index);
+				poFeature->SetField("iReliable", reliability_index );
+
+				OGRLineString line;
+				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+				{
+				line.addPoint ((*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
+				}
+
+				poFeature->SetGeometry( &line ); 
+
+
+				if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+				{
+					AfxMessageBox("Failed to create line feature in shapefile.\n");
+					return;
+
+				}  
+
+	        OGRFeature::DestroyFeature( poFeature );
+			}
+		}
+
+		} // end of link layer
+    OGRDataSource::DestroyDataSource( poDS );
+
+}
+
+/*
+
+bool CTLiteDoc::SignalPlanGeneration(int MaxGreen, int MinGreen, int Amber)
+{
+
+   // for each node
+
+	// all links have not marked
+
+	// generate a new phase
+
+
+		// for each unassigned incoming link
+		// find out paired link(s)  //opposite direction
+
+		//for each movement
+
+	// add movement into a phase
+		
+	// assign phase timing data data
+
+
+}
+
+*/

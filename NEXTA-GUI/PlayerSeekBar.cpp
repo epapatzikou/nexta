@@ -288,6 +288,7 @@ void CPlayerSeekBar::OnPaint()
 	 dc.SetPixel(r.CenterPoint().x, r.bottom, 0);
       }
 
+
       dc.SetPixel(r.CenterPoint().x+5, r.top-4, bkg);
 
       {
@@ -297,9 +298,11 @@ void CPlayerSeekBar::OnPaint()
 	 ExtSelectClipRgn(dc, rgn1, RGN_DIFF);
 	 ExtSelectClipRgn(dc, rgn2, RGN_OR);
       }
+
    }
 
    // channel
+   
    {
       CRect r = GetChannelRect();
 
@@ -307,7 +310,8 @@ void CPlayerSeekBar::OnPaint()
       r.InflateRect(1, 1);
       dc.Draw3dRect(&r, shadow, light);
       dc.ExcludeClipRect(&r);
-   }
+
+  }
 
    // background
    {
@@ -315,6 +319,28 @@ void CPlayerSeekBar::OnPaint()
       GetClientRect(&r);
       CBrush b(bkg);
       dc.FillRect(&r, &b);
+   }
+
+        // draw hour mark
+   {
+	CFont text_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
+
+	int  nFontSize = 80;
+	text_font.CreatePointFont(nFontSize, _T("Arial"));
+
+	dc.SelectObject(&text_font);
+	dc.SetTextColor(RGB(190,190,190));
+
+	CRect r = GetChannelRect();
+	  for(int time = m_start; time < m_stop; time +=60)
+	  {
+		int x = r.left + float(time)/(m_stop-m_start)*(r.right - r.left);
+		int y = r.top;
+		CString str;
+		str.Format("%dh",time/60);
+		dc.SetBkMode(TRANSPARENT);
+		dc.TextOutA (x,y,str);
+	  }
    }
 
    // Do not call CDialogBar::OnPaint() for painting messages

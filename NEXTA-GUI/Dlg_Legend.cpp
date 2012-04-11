@@ -56,6 +56,7 @@ void CDlg_Legend::OnPaint()
  {
  case MOE_speed: SetWindowText("% of Speed Limit"); break;
  case MOE_vcratio: SetWindowText("VOC Ratio"); break;
+ case MOE_reliability: SetWindowText("Variability Ratio"); break;
  default:  SetWindowText("Default Legend");
 
  }

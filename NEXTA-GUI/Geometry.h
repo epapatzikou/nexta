@@ -4,6 +4,8 @@
 
 using std::string;
 
+struct GDPoint;
+
 typedef struct
 {
 	double X,Y,Z;
@@ -32,3 +34,8 @@ public:
 	std::vector<CCoordinate> GetCoordinateList(void);
 	int GetNumberOfCoordinates(void);
 };
+
+
+
+
+ 

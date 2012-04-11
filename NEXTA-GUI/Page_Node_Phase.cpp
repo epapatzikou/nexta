@@ -1,5 +1,4 @@
-// Page_Node_Movement.cpp : implementation file
-//
+// Page_Node_Phase.cpp : implementation file
 //  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
 
 //   If you help write or modify the code, please also list your names here.
@@ -27,7 +26,7 @@
 
 #include "stdafx.h"
 #include "TLite.h"
-#include "Page_Node_Movement.h"
+#include "Page_Node_Phase.h"
 
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
@@ -35,24 +34,26 @@
 
 #include <string>
 #include <sstream>
-// CPage_Node_Movement dialog
+// CPage_Node_Phase dialog
 
 
-IMPLEMENT_DYNAMIC(CPage_Node_Movement, CPropertyPage)
+IMPLEMENT_DYNAMIC(CPage_Node_Phase, CPropertyPage)
 
-CPage_Node_Movement::CPage_Node_Movement()
-	: CPropertyPage(CPage_Node_Movement::IDD)
+CPage_Node_Phase::CPage_Node_Phase()
+	: CPropertyPage(CPage_Node_Phase::IDD)
 	, m_CurrentNodeName(0)
 {
 	m_SelectedMovementIndex = -1;
-	
+	m_SelectedPhaseIndex = -1;
+	m_NumberOfPhases = 0;
+
 }
 
-CPage_Node_Movement::~CPage_Node_Movement()
+CPage_Node_Phase::~CPage_Node_Phase()
 {
 }
 
-void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
+void CPage_Node_Phase::DoDataExchange(CDataExchange* pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
@@ -60,19 +61,18 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
+BEGIN_MESSAGE_MAP(CPage_Node_Phase, CPropertyPage)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_PAINT()
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Movement::OnLvnItemchangedGridlistctrlex)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Phase::OnLvnItemchangedGridlistctrlex)
 END_MESSAGE_MAP()
 
 
 
-BOOL CPage_Node_Movement::OnInitDialog()
+BOOL CPage_Node_Phase::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
 	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
-
 	m_CurrentNodeName = m_pDoc->m_NodeIDtoNameMap [m_CurrentNodeID];
 	// Give better margin to editors
 	m_ListCtrl.SetCellMargin(1.2);
@@ -82,19 +82,30 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	std::vector<std::string> m_Column_names;
 
 	m_Column_names.push_back ("Movement Index");
+
+	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	m_NumberOfPhases = pNode->m_PhaseVector .size();
+
+	unsigned int p;
+	for(p = 1; p <= m_NumberOfPhases; p++)
+	{
+		char str[100];
+		sprintf(str,"Phase %d",p);
+		m_Column_names.push_back (str);
+	}
 	m_Column_names.push_back ("Incoming Node");
 	m_Column_names.push_back ("Outgoing Node");
 	m_Column_names.push_back ("Turn Type");
-	m_Column_names.push_back ("Prohibition");
-	m_Column_names.push_back ("Turnning %");
-	m_Column_names.push_back ("Signal Group No");
+
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
 	{
-
 		CGridColumnTrait* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
+		if(i>=1 && i <= m_NumberOfPhases) // Phase index
+		{
+		pTrait = new CGridColumnTraitEdit();
+		}
 		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
 		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
 
@@ -102,8 +113,6 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	m_ListCtrl.SetColumnWidth(0, 80);
 
 	//Add Rows
-
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
 
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
@@ -113,14 +122,23 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
+	for(p = 1; p <= m_NumberOfPhases; p++)
+	{ 
+		if(pNode->m_PhaseVector [p-1].MovementIncluded(i))  // this movement included in this phase
+		{
+			m_ListCtrl.SetItemState (Index, p, LVIS_SELECTED|LVIS_FOCUSED);
+		}
+	}
+
 		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.in_link_from_node_id] );
-		m_ListCtrl.SetItemText(Index, 1,str);
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+1,str);
 
 		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.out_link_to_node_id ] );
-		m_ListCtrl.SetItemText(Index, 2,str);
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+2,str);
 		
-		m_ListCtrl.SetItemText(Index, 3,m_pDoc->GetTurnString(movement.movement_turn));
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+3,m_pDoc->GetTurnString(movement.movement_turn));
 		m_SelectedRowVector.push_back(false);
+
 	}
 
 	UpdateData(0);
@@ -128,7 +146,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CPage_Node_Movement::OnPaint()
+void CPage_Node_Phase::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
 	CRect PlotRect;
@@ -140,10 +158,37 @@ void CPage_Node_Movement::OnPaint()
 		m_PlotRect.left += 450;
 		m_PlotRect.right -= 50;
 
-	DrawMovements(&dc,m_PlotRect);
+	DrawMovements(&dc,m_PlotRect,-1);
+
+	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+
+
+	int left = PlotRect.left + 100;
+	int right = PlotRect.right - 100;
+
+	int width = 100;
+	int height  = 100;
+	int bottom  = PlotRect.bottom - 20;
+	int top  = bottom - height;
+	int spacing = 20;
+
+	for (unsigned int i=0;i< pNode->m_PhaseVector .size();i++)
+	{
+		CRect PlotPhaseRect;
+		PlotPhaseRect.left = left + i* (width + spacing);
+		PlotPhaseRect.right = PlotPhaseRect.left + width;
+
+		PlotPhaseRect.top = top;
+		PlotPhaseRect.bottom  = bottom;
+		m_PlotRect= PlotPhaseRect;
+
+		DrawPhaseMovements(&dc,PlotPhaseRect, i);
+
+	}
+
 }
 
-void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
+void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentPhaseIndex = -1)
 {
 
 	m_MovementBezierVector.clear();
@@ -286,6 +331,8 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 
 		if(i == m_SelectedMovementIndex)
 			pDC->SelectObject(&SelectedPen);
+		else if(movement.phase_index  == CurrentPhaseIndex)
+			pDC->SelectObject(&SelectedPhasePen);
 		else
 			pDC->SelectObject(&NormalPen);
 
@@ -316,7 +363,185 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 	}
 }
 
-void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,int NumberOfLanes, double theta, int lane_width)
+void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentPhaseIndex = -1)
+{
+
+	m_MovementBezierVector.clear();
+
+	CPen NormalPen(PS_SOLID,1,RGB(0,0,0));
+	CPen TimePen(PS_DOT,1,RGB(0,0,0));
+	CPen DataPen(PS_SOLID,0,RGB(0,0,0));
+	CPen SelectedPen(PS_SOLID,1,RGB(255,0,0));
+	CPen SelectedPhasePen(PS_SOLID,1,RGB(0,0,255));
+
+	CBrush  WhiteBrush(RGB(255,255,255)); 
+
+	pDC->SetBkMode(TRANSPARENT);
+	pDC->SelectObject(&DataPen);
+	pDC->SelectObject(&WhiteBrush);
+
+	pDC->Rectangle (PlotRect);
+
+	CBrush  BrushLinkBand(RGB(152,245,255)); 
+	pDC->SelectObject(&BrushLinkBand);
+
+		DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+
+		int node_size = 20;
+		int node_set_back = 25;
+
+		int link_length = 10;
+		int lane_width = 2;
+		int text_length = link_length+ 2;
+
+		CString str;
+		str.Format("%d",m_CurrentNodeName);
+
+//		pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
+
+
+	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	{
+		DTANodeMovement movement = pNode->m_MovementVector[i];
+
+		if(CurrentPhaseIndex >=0 && movement.phase_index  == CurrentPhaseIndex)
+				continue;  // draw movements in a phase only
+
+		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkID];
+		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
+
+		GDPoint p1, p2, p3;
+		// 1: fetch all data
+		p1  = m_pDoc->m_NodeIDMap[movement.in_link_from_node_id ]->pt;
+		p2  = m_pDoc->m_NodeIDMap[movement.in_link_to_node_id ]->pt;
+		p3  = m_pDoc->m_NodeIDMap[movement.out_link_to_node_id]->pt;
+		
+		double DeltaX = p2.x - p1.x ;
+		double DeltaY = p2.y - p1.y ;
+		double theta = atan2(DeltaY, DeltaX);
+
+		GDPoint p1_new, p2_new, p3_new;
+		GDPoint p1_text, p3_text;
+		GDPoint pt_movement[3];
+
+
+		// 2. set new origin
+		p2_new.x = (-1)*node_set_back*cos(theta);  
+		p2_new.y = (-1)*node_set_back*sin(theta);
+
+
+		int link_mid_offset  = (pInLink->m_NumLanes/2 +1)*lane_width;  // mid
+		
+		pt_movement[0].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
+		pt_movement[0].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
+
+		// 3 determine the control point for  PolyBezier
+		float control_point_ratio = 0;
+		if(movement.movement_turn == DTA_Through ) 
+		{
+		control_point_ratio = 0;
+		}else if(movement.movement_turn == DTA_LeftTurn ) 
+		{
+			control_point_ratio = 1.2;
+		}else
+		{
+			control_point_ratio = 0.5;
+		}
+		pt_movement[1].x = pt_movement[0].x + node_set_back*control_point_ratio*cos(theta);
+		pt_movement[1].y = pt_movement[0].y + node_set_back*control_point_ratio*sin(theta);
+		p1_new.x = (-1)*link_length*cos(theta);
+		p1_new.y = (-1)*link_length*sin(theta);
+
+
+		p1_text.x= (-1)*(text_length)*cos(theta);
+		p1_text.y= (-1)*(text_length)*sin(theta);
+
+		// 4: draw from node name
+		str.Format("%d",m_pDoc->m_NodeIDtoNameMap [movement.in_link_from_node_id]);
+		if(p1_text.y < -50)
+			p1_text.y +=10;
+
+		CPoint pt_text = NPtoSP(p1_text);
+
+//		pDC->TextOutA(pt_text.x-10,pt_text.y,str);
+
+		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumLanes,theta,lane_width);
+
+////////////////////////////////////////////
+		//5: outgoing link
+		DeltaX = p3.x - p2.x ;
+		DeltaY = p3.y - p2.y ;
+		theta = atan2(DeltaY, DeltaX);
+
+		// set new origin
+		p2_new.x = node_set_back*cos(theta);  
+		p2_new.y = node_set_back*sin(theta);
+
+		link_mid_offset  = (pOutLink->m_NumLanes/2+1)*lane_width;
+		pt_movement[2].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
+		pt_movement[2].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
+
+
+		p3_new.x = link_length*cos(theta);
+		p3_new.y = link_length*sin(theta);
+
+		p3_text.x= text_length*cos(theta);
+		p3_text.y= text_length*sin(theta);
+
+
+		//draw to node name
+		str.Format("%d",m_pDoc->m_NodeIDtoNameMap [movement.out_link_to_node_id]);
+
+		if(p3_text.y < -100)
+			p3_text.y +=10;
+
+		pt_text = NPtoSP(p3_text);
+
+
+//		pDC->TextOutA(pt_text.x-10 ,pt_text.y,str);
+
+		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumLanes,theta,lane_width);
+
+
+		// draw movement 
+
+		CPoint Point_Movement[4];
+
+
+		if(i == m_SelectedMovementIndex)
+			pDC->SelectObject(&SelectedPen);
+		else if(movement.phase_index  == CurrentPhaseIndex)
+			pDC->SelectObject(&SelectedPhasePen);
+		else
+			pDC->SelectObject(&NormalPen);
+
+
+
+		Point_Movement[0]= NPtoSP(pt_movement[0]);
+		Point_Movement[1]= NPtoSP(pt_movement[1]);
+		Point_Movement[2]= NPtoSP(pt_movement[1]);
+		Point_Movement[3]= NPtoSP(pt_movement[2]);
+
+
+
+		Point_Movement[0]= NPtoSP(pt_movement[0]);
+		Point_Movement[1]= NPtoSP(pt_movement[1]);
+		Point_Movement[2]= NPtoSP(pt_movement[1]);
+		Point_Movement[3]= NPtoSP(pt_movement[2]);
+
+		MovementBezier element(Point_Movement[0], Point_Movement[1],Point_Movement[3]);
+		
+		m_MovementBezierVector.push_back (element);
+
+
+		pDC->PolyBezier(Point_Movement,4);
+
+		//restore pen
+		pDC->SelectObject(&DataPen);
+
+	}
+}
+void CPage_Node_Phase::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,int NumberOfLanes, double theta, int lane_width)
 {
 		CPoint DrawPoint[4];
 
@@ -345,9 +570,9 @@ void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,
 		pDC->Polygon(DrawPoint, 4);
 
 }
-// CPage_Node_Movement message handlers
+// CPage_Node_Phase message handlers
 
-void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
+void CPage_Node_Phase::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
 		unsigned int i;
@@ -380,7 +605,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 
 }
 
-void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
+void CPage_Node_Phase::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here
@@ -398,8 +623,14 @@ void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT 
 	m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 	m_SelectedMovementIndex = atoi(str)-1;
 
-
+/*
+	m_ListCtrl.GetItemText (nSelectedRow,1,str,20);
+	m_SelectedPhaseIndex = atoi(str)-1;
+*/
+	if(m_SelectedMovementIndex>=0 && m_SelectedMovementIndex < m_SelectedRowVector.size())
+	{
 	m_SelectedRowVector[m_SelectedMovementIndex] = true;
+	}
 
 
 	}

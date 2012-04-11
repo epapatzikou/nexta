@@ -4,6 +4,7 @@
 #include <sstream>
 using std::istringstream;
 
+
 CGeometry::CGeometry(string s)
 {
 	m_NumOfCoordinates = 0;

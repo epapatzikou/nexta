@@ -87,6 +87,10 @@ public:
 	afx_msg void OnWindowShowestimationview();
 	afx_msg void OnViewDatatoolbar();
 	afx_msg void OnUpdateViewDatatoolbar(CCmdUI *pCmdUI);
+	afx_msg void OnAnimationForward();
+	afx_msg void OnAnimationBackward();
+	afx_msg void OnAnimationSkipforward();
+	afx_msg void OnAnimationSkipbackward();
 };
 
 

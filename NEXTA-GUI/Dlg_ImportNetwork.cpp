@@ -1583,7 +1583,14 @@ void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile()
 
 void CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile()
 {
-	// TODO: Add your control notification handler code here
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	m_pDoc->m_ProjectFile.Format("%s%s", pMainFrame->m_CurrentDirectory, _T("\\Sample-Portland-SHRP2-C05-subarea\\Portland_subarea.dlp"));
+
+	CString str;
+		str.Format("The current project file is saved as %s", MB_ICONINFORMATION);
+	AfxMessageBox(str);
+
 }
 
 void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleCsvFile()

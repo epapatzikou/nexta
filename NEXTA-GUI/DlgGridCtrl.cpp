@@ -50,7 +50,7 @@ BOOL CDlgGridCtrl::OnInitDialog()
 	CWaitCursor wait;
 	bool bReadDemandSuccess = false;
 
-	if (ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone.csv"))
+	if (ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv"))
 	{
 		if (ReadDemandCSVFileExt(m_pDoc->m_ProjectDirectory + "input_demand.csv"))
 		{
@@ -275,7 +275,7 @@ bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
 bool CDlgGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
 {
 	/*
-	ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone.csv");
+	ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
 
 	if (!outFile.is_open())
 	{
@@ -401,7 +401,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 			return;
 		}
 
-		ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone.csv");
+		ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
 
 		if (outFile.is_open())
 		{
@@ -418,7 +418,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 			outFile.close();
 		}
 
-		ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone.csv");
+		ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
 
 		//m_pDoc->m_DemandMatrix = AllocateDynamicArray<float>(m_pDoc->m_ODSize,m_pDoc->m_ODSize);
 
@@ -483,7 +483,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 
 		SaveDemandCSVFileExt(m_pDoc->m_ProjectDirectory + "input_demand.csv");
 
-		// write input_zone.csv
+		// write input_zone_centroid.csv
 		// zone number , node number
 		// make sure node number exists, if the node number does not exist, skip zone-node mapping pair
 		// fill zero value for OD table

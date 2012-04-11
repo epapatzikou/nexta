@@ -129,5 +129,5 @@ void CDlgAssignmentSettings::OnBnClickedButtonCopyVehicleFile()
 void CDlgAssignmentSettings::OnBnClickedOk2()
 {
 	m_bLoadSampleProject = true;
-	OnOK();
+	OnCancel( );
 }

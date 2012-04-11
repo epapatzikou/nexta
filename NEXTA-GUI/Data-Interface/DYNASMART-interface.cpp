@@ -70,6 +70,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	int num_zones = 0;
 
 	fopen_s(&pFile,directory+"network.dat","r");
+
 	if(pFile!=NULL)
 	{
 		num_zones = g_read_integer(pFile);
@@ -91,7 +92,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			// Create and insert the node
 			pNode = new DTANode;
 			std::stringstream streams;
-			 streams << node_id;
+			streams << node_id;
 
 			pNode->m_Name = streams.str();
 			pNode->m_ControlType = 0;
@@ -150,7 +151,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			int m_SaturationFlowRate= g_read_integer(pFile);
 			int DSP_link_type = g_read_integer(pFile);
-				pLink->m_link_type = DSP_link_type;
+			pLink->m_link_type = DSP_link_type;
 
 			if(DSP_link_type == 3 || DSP_link_type == 4) 
 				pLink->m_LaneCapacity  = 1400;
@@ -175,6 +176,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			length_sum += pLink ->m_Length;
 			//			pLink->SetupMOE();
 
+
 			std::vector<CCoordinate> CoordinateVector;
 			// no geometry information
 			CCoordinate cc_from, cc_to; 
@@ -197,7 +199,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				pLink->m_ShapePoints .push_back (pt);
 
 			}
-
 			TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
 			m_LinkSet.push_back (pLink);
 			m_LinkNoMap[i]  = pLink;
@@ -221,6 +222,83 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		AfxMessageBox("Error: File network.dat cannot be opened.");
 		return false;
 		//		g_ProgramStop();
+	}
+	// read link xy data
+
+	FILE* pFileLinkXY = NULL;
+	fopen_s(&pFileLinkXY,directory+"linkxy.dat","r");
+	if(pFileLinkXY!=NULL)
+	{
+		while (!feof(pFileLinkXY))
+		{
+			int from_node = g_read_integer(pFileLinkXY);
+
+			if(from_node == -1)
+				break; // ne
+			int to_node = g_read_integer(pFileLinkXY);
+			int number_of_shape_points = g_read_integer(pFileLinkXY);
+
+			DTALink* pLink = FindLinkWithNodeNumbers(from_node, to_node,directory+"linkxy.dat");
+
+			if(pLink != NULL)
+			{
+				pLink->m_ShapePoints.clear();  // clear up first
+
+				for(int i = 0; i < number_of_shape_points; i++)
+				{
+					GDPoint	pt;
+					pt.x =  g_read_float(pFileLinkXY);
+					pt.y = g_read_float(pFileLinkXY);
+					pLink->m_ShapePoints .push_back (pt);
+				}
+
+			}else
+			{
+				break;
+			}
+		}
+		fclose(pFileLinkXY);
+	}
+
+	//read zone.dat
+	FILE* pZoneXY = NULL;
+	fopen_s(&pZoneXY,directory+"zone.dat","r");
+	if(pZoneXY!=NULL)
+	{
+		int number_of_feature_points = g_read_integer(pZoneXY);
+		int number_of_zones = g_read_integer(pZoneXY);
+
+		std::map<int, GDPoint> FeaturePointMap;
+
+		for(int f = 0; f< number_of_feature_points; f++)
+		{
+			int feature_point_id = g_read_integer(pZoneXY);
+
+			FeaturePointMap[feature_point_id].x = g_read_float(pZoneXY);
+			FeaturePointMap[feature_point_id].y = g_read_float(pZoneXY);
+		}
+
+		for(int z = 0; z< number_of_zones; z++)
+		{
+			int zone_id = g_read_integer(pZoneXY);
+			m_ZoneMap [zone_id].m_ZoneTAZ = zone_id;
+
+			int number_of_feature_points = g_read_integer(pZoneXY);
+
+			for(int f = 0; f < number_of_feature_points; f++)
+			{
+			int feature_point_id = g_read_integer(pZoneXY);
+			
+			if(FeaturePointMap.find(feature_point_id)!= FeaturePointMap.end())
+			{
+				GDPoint pt = FeaturePointMap[feature_point_id];
+				m_ZoneMap [zone_id].m_ShapePoints.push_back (pt);
+			}
+			}
+
+		}
+
+		fclose(pZoneXY);
 	}
 
 	// read destination.dat
@@ -275,6 +353,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			int num_of_origins= g_read_integer(pFile);
 
+			int number= g_read_float(pFile);
+
 			for(int origin = 0;  origin < num_of_origins; origin++)
 			{
 				int from_node = g_read_integer(pFile);
@@ -299,7 +379,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				if(m_ZoneMap [zone_number].m_CentroidNodeMap.find(to_node) == m_ZoneMap [zone_number].m_CentroidNodeMap.end())
 				{
-				m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (to_node);
+					m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (to_node);
 				}
 
 			}
@@ -357,6 +437,22 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
+	// set link type
+
+
+	m_LinkTypeFreewayMap[1] = 1;
+	m_LinkTypeFreewayMap[2] = 1;
+	m_LinkTypeRampMap [3] = 1;
+	m_LinkTypeRampMap [4] = 1;
+	m_LinkTypeArterialMap[5] = 1;
+	m_LinkTypeFreewayMap[6] = 1;
+	m_LinkTypeFreewayMap[7] = 1;
+	m_LinkTypeFreewayMap[8] = 1;
+	m_LinkTypeFreewayMap[9] = 1;
+
+
+	// read zone.dat
+
 	OffsetLink();
 
 	CalculateDrawingRectangle();
@@ -379,32 +475,30 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
-   float LengthinMB;
-   fopen_s(&pFile,directory+"VehTrajectory.dat","rb");
-   if(pFile!=NULL)
-   {
-      fseek(pFile, 0, SEEK_END );
-      int Length = ftell(pFile);
-      fclose(pFile);
-      LengthinMB= Length*1.0/1024/1024;
-      if(LengthinMB>50)
-      {
-		 CString msg;
-		 msg.Format("The vehtrajectory.dat file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle trajector files?",LengthinMB);
-		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
-			return true;
-    }
-   }
-
-	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
-
-	if(pFile == NULL)
+	float LengthinMB;
+	bool bLoadVehicleData = true;
+	fopen_s(&pFile,directory+"VehTrajectory.dat","rb");
+	if(pFile!=NULL)
 	{
-		//   AfxMessageBox("VehTrajectory.dat cannot be opened.");
-		return false;
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB>50)
+		{
+			CString msg;
+			msg.Format("The vehtrajectory.dat file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle trajector files?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				bLoadVehicleData = false;
+		}
 	}
 
+	if(bLoadVehicleData)
+	{
+	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
+	if(pFile != NULL)
+	{
 	int good_vehicle_id = 1;
 	while(!feof(pFile) )
 	{
@@ -512,7 +606,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 	fclose(pFile);
+
 	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded.",m_VehicleSet.size());
+	}
+	}
 
 	// read system.dat
 	fopen_s(&pFile,directory+"system.dat","r");
@@ -529,7 +626,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 	// read speed data
-
 	fopen_s(&pFile,directory+"fort.900","r");
 	std::list<DTALink*>::iterator iLink;
 
@@ -551,11 +647,43 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-				(*iLink)->m_LinkMOEAry[t].ObsSpeed = g_read_float(pFile);  // speed;
+				(*iLink)->m_LinkMOEAry[t+1].ObsSpeed = g_read_float(pFile);  // speed;
 			}
 
 		}
+	fclose(pFile);
+	}else
+	{
+	return false; // no simulation data, return 
 	}
+
+	// read queue length data
+	fopen_s(&pFile,directory+"fort.600","r");
+	if(pFile!=NULL)
+	{
+		// read data every min
+
+		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		{
+			float timestamp = g_read_float(pFile);  // read timestamp in min
+
+			if(timestamp < 0)  // end of file
+				break;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				float value  = g_read_float(pFile);  // queue length;
+
+				if(value < -0.5f)
+					break;
+				else
+				(*iLink)->m_LinkMOEAry[t+1].ObsQueueLength = value;
+			}
+
+		}
+	fclose(pFile);
+	}
+
 
 	// read flow rate
 	fopen_s(&pFile,directory+"OutAccuVol.dat","r");
@@ -582,6 +710,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		}
 		fclose(pFile);
 	}
+
+		m_SimulationLinkMOEDataLoadingStatus.Format("DYNASMART-P simulation data have been loaded. Simulation horizon = %d min", g_Simulation_Time_Horizon );
 
 	// density_in_veh_per_mile_per_lane
 
