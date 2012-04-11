@@ -41,6 +41,9 @@
 #include "Dlg_VehicleClassification.h"
 #include "Dlg_TravelTimeReliability.h"
 #include "Page_Node_Movement.h"
+#include "Page_Node_Phase.h"
+#include "Page_Node_LaneTurn.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -139,6 +142,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_VIEW_TRANSITLAYER, &CTLiteView::OnViewTransitlayer)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_TRANSITLAYER, &CTLiteView::OnUpdateViewTransitlayer)
 	ON_COMMAND(ID_NODE_MOVEMENTPROPERTIES, &CTLiteView::OnNodeMovementproperties)
+	ON_COMMAND(ID_LINK_LINEDISPLAYMODE, &CTLiteView::OnLinkLinedisplaymode)
+	ON_UPDATE_COMMAND_UI(ID_LINK_LINEDISPLAYMODE, &CTLiteView::OnUpdateLinkLinedisplaymode)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -158,6 +163,10 @@ CPen g_PenSignalColor(PS_SOLID,2,RGB(255,255,255));
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
+CPen g_PenQueueColor(PS_SOLID,3,RGB(255,0,0));
+
+CPen g_PenQueueBandColor(PS_SOLID,1,RGB(255,0,0));
+CBrush g_BrushQueueBandColor(RGB(255,0,0));
 
 CPen g_PenCrashColor(PS_SOLID,1,RGB(255,0,0));
 CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //green
@@ -217,6 +226,7 @@ CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
 CPen g_AVILinkPen(PS_DASH,0,RGB(0,255,0));
 CPen g_SubareaLinkPen(PS_SOLID,0,RGB(255,255,0));
 CPen g_SubareaPen(PS_DASH,2,RGB(255,0,0));
+CPen g_ZonePen(PS_DASH,1,RGB(211,211,211));
 CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 CPen g_PenVehicle(PS_SOLID,1,RGB(0,255,0));  // yellow
@@ -309,6 +319,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bLineDisplayConditionalMode = false;
 	m_link_display_mode = link_display_mode_band; // 
 	m_NodeTypeFaceName      = "Arial";
 
@@ -588,10 +599,17 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	//test the display width of a lane, if greather than 1, then band display mode
 
-		if(pDoc->m_LinkMOEMode == MOE_none || pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.75f) // 5 lanes
+	if(m_bLineDisplayConditionalMode)  // special condition
+	{
+			m_link_display_mode = link_display_mode_line;
+
+	}else
+	{
+		if(pDoc->m_LinkMOEMode == MOE_none || pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet*m_Resolution * 5 > 0.1f) // 5 lanes
 			m_link_display_mode = link_display_mode_band;
 		else 
 			m_link_display_mode = link_display_mode_line;
+	}
 
 	// draw links
 	std::list<DTALink*>::iterator iLink;
@@ -826,12 +844,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				// show text condition 2: crash rates
 				if(pDoc->m_LinkMOEMode == MOE_safety && screen_distance > 50 && (*iLink)->m_NumberOfCrashes >= 0.0001)
 				{
-						str_text.Format ("%6.4f",(*iLink)->m_NumberOfCrashes );
+						str_text.Format ("%6.2f",(*iLink)->m_NumberOfCrashes );
 						with_text = true;
 				}
 
 				// show text condition 3: other statistics
-				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio))
+				if(screen_distance > 20 && (pDoc->m_LinkMOEMode == MOE_queue_length || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_vcratio || pDoc->m_LinkMOEMode == MOE_reliability))
 				{
 
 					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
@@ -841,6 +859,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 						if( pDoc->m_LinkMOEMode == MOE_vcratio)
 							str_text.Format ("%.1f",value);
+						else if(pDoc->m_LinkMOEMode == MOE_queue_length || pDoc->m_LinkMOEMode == MOE_reliability)
+							str_text.Format ("%.0f%%",value*100);
 						else
 							str_text.Format ("%.0f",value);
 
@@ -1110,9 +1130,37 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				
 	}
 	}
-	// step 13: draw subarea layer
-	pDC->SelectObject(&g_SubareaPen);
+	// step 13: draw zone layer
+	pDC->SelectObject(&g_ZonePen);
+	{
+		std::map<int, DTAZone>	:: const_iterator itr;
 
+		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); itr++)
+		{
+			if(itr->second.m_ShapePoints .size() > 0)
+			{
+			for(int i = 0; i< itr->second.m_ShapePoints .size(); i++)
+			{
+
+			CPoint point =  NPtoSP(itr->second.m_ShapePoints[i]);
+			if(i == 0)
+				pDC->MoveTo(point);
+			else
+				pDC->LineTo(point);
+			
+			}
+			CPoint point_0 =  NPtoSP(itr->second.m_ShapePoints[0]);
+
+			pDC->LineTo(point_0);
+
+			}
+
+		}
+
+	}	
+
+	    
+	// step 13: draw subarea layer
 	if(GetDocument()->m_SubareaShapePoints.size() > 0)
 	{
 		CPoint point_0  = NPtoSP(GetDocument()->m_SubareaShapePoints[0]);
@@ -2633,14 +2681,20 @@ void CTLiteView::OnViewDecreatenodesize()
 
 void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 {
+	// 
 
-	for(int si = 0; si < pLink ->m_ShapePoints .size()-1; si++)
+	// normal line
+	CTLiteDoc* pDoc = GetDocument();
+
+
+	for(int si = 0; si < pLink->m_ShapePoints.size()-1; si++)
 	{
 		FromPoint = NPtoSP(pLink->m_ShapePoints[si]);
 		ToPoint = NPtoSP(pLink->m_ShapePoints[si+1]);
 
 		if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
 			continue; 
+
 
 		pDC->MoveTo(FromPoint);
 		pDC->LineTo(ToPoint);
@@ -2668,6 +2722,56 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 		}
 
 	}
+
+	if(pDoc->m_LinkMOEMode == MOE_queue_length)   // queue length mode
+	{
+	CPen * pOldPen  = pDC->SelectObject(&g_PenQueueColor);
+	float value;
+	float percentage = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
+
+
+	for(int si = 0; si < pLink->m_ShapePoints.size()-1; si++)
+	{
+	bool bDrawQueueCell = false;
+
+	FromPoint = NPtoSP(pLink->m_ShapePoints[si]);
+		ToPoint = NPtoSP(pLink->m_ShapePoints[si+1]);
+
+		if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
+			continue; 
+
+			if(pLink->m_ShapePoints.size() == 2)
+			{  // simple straight line
+
+
+				if(percentage < 0.01f)
+				break;
+
+				GDPoint pt;
+				pt.x =  pLink->m_ShapePoints[0].x + (1-percentage) * (pLink->m_ShapePoints[1].x - pLink->m_ShapePoints[0].x);
+				pt.y =  pLink->m_ShapePoints[0].y + (1-percentage) * (pLink->m_ShapePoints[1].y - pLink->m_ShapePoints[0].y);
+
+				FromPoint = NPtoSP(pt);  // new to point as the end of queue line
+				bDrawQueueCell = true;
+			
+			}else  // 100 feature points
+			{
+				if( si > (1-percentage)*100)
+					bDrawQueueCell = true;
+			
+			}
+
+
+			if(bDrawQueueCell)
+			{
+			pDC->MoveTo(FromPoint);
+			pDC->LineTo(ToPoint);
+			}
+
+	}
+	
+	pDC->SelectObject(pOldPen);
+	}
 }
 
 
@@ -2684,7 +2788,7 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 	int si; // we should not use unsigned integer here as si-- 
 
 	if(bObservationFlag == false)
-	{
+	{  // simulated data
 		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
 		{
 			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
@@ -2696,8 +2800,9 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 		}
 
 		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
+
 	}else
-	{
+	{  //observed data
 		if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
 		{
 
@@ -2717,6 +2822,80 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 	}
 
 	pDC->Polygon(m_BandPoint, band_point_index);
+
+	// ****************************************/
+	// draw queue length
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc->m_LinkMOEMode == MOE_queue_length)   // queue length mode
+	{
+	CPen * pOldPen  = pDC->SelectObject(&g_PenQueueBandColor);
+	CBrush * pOldBrush  = pDC->SelectObject(&g_BrushQueueBandColor);
+
+	band_point_index = 0;
+
+	float value;
+	float percentage = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,1, value);
+
+	if(percentage < 0.01f)  // no queue length
+		return true; 
+// simulated data
+			if(pLink->m_ShapePoints.size() == 2)
+			{  // simple straight line
+
+
+				// point 0
+				GDPoint pt0;
+				pt0.x =  pLink->m_BandLeftShapePoints[0].x + (1-percentage) * (pLink->m_BandLeftShapePoints[1].x - pLink->m_BandLeftShapePoints[0].x);
+				pt0.y =  pLink->m_BandLeftShapePoints[0].y + (1-percentage) * (pLink->m_BandLeftShapePoints[1].y - pLink->m_BandLeftShapePoints[0].y);
+
+				m_BandPoint[band_point_index++] = NPtoSP(pt0);
+
+				// point 1
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[1]);
+
+				// point 2
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[1]);
+
+				// point 3
+				GDPoint pt3;
+				pt3.x =  pLink->m_BandRightShapePoints[0].x + (1-percentage) * (pLink->m_BandRightShapePoints[1].x - pLink->m_BandRightShapePoints[0].x);
+				pt3.y =  pLink->m_BandRightShapePoints[0].y + (1-percentage) * (pLink->m_BandRightShapePoints[1].y - pLink->m_BandRightShapePoints[0].y);
+				m_BandPoint[band_point_index++] = NPtoSP(pt3);
+
+				// point 3
+				m_BandPoint[band_point_index++]= NPtoSP(pt0);
+
+			}else  // multiple feature point segment
+			{
+			for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+			{
+				if( si > (1-percentage)*100)
+				{
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
+				}
+			}
+
+			for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+			{
+				if( si > (1-percentage)*100)
+				{					
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[si]);
+				}
+			}
+
+			m_BandPoint[band_point_index++]= m_BandPoint [0];
+
+		
+			}
+
+			pDC->Polygon(m_BandPoint, band_point_index);
+	
+	pDC->SelectObject(pOldPen);
+	pDC->SelectObject(pOldBrush);
+
+	}
+
 
 	return true;
 }
@@ -3007,6 +3186,8 @@ void CTLiteView::OnLinkDecreasebandwidth()
 		{
 		pDoc->m_MaxLinkWidthAsLinkVolume  *=1.2;
 		}
+
+	
 	pDoc->GenerateOffsetLinkBand();
 	Invalidate();
 	
@@ -3149,12 +3330,38 @@ void CTLiteView::OnNodeMovementproperties()
 	CPage_Node_Movement MovementPage;
 	MovementPage.m_pDoc = pDoc;
 	sheet.AddPage(&MovementPage);  // 0
+
+	CPage_Node_Phase PhasePage;
+	PhasePage.m_pDoc = pDoc;
+	sheet.AddPage(&PhasePage);  // 1
+
+	CPage_Node_LaneTurn LaneTurnPage;
+	LaneTurnPage.m_pDoc = pDoc;
+	sheet.AddPage(&LaneTurnPage);  // 2
+// Change the caption of the CPropertySheet object 
+// from "Simple PropertySheet" to "Simple Properties".
 	sheet.SetActivePage (0);
    
 	if(sheet.DoModal() == IDOK)
 	{
-	
+	 // do something
 	}
 
 	}
+}
+
+void CTLiteView::OnLinkLinedisplaymode()
+{
+	m_bLineDisplayConditionalMode = !m_bLineDisplayConditionalMode;
+
+	CTLiteDoc* pDoc = GetDocument();
+	if(!m_bLineDisplayConditionalMode)
+		pDoc->GenerateOffsetLinkBand();
+
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bLineDisplayConditionalMode);
 }

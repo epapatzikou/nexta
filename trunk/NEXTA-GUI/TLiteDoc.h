@@ -32,6 +32,7 @@
 #include "math.h"
 #include "Network.h"
 #include ".\\cross-resolution-model\\SignalNode.h"
+
 #include "Transit.h"
 #include <iostream>
 #include <fstream>
@@ -39,7 +40,7 @@
 #include <afxdao.h>
 
 
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -47,6 +48,46 @@ enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_path,CLS_link,C
 enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,CLS_total_CO2,CLS_avg_CO2};
 enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
+
+class MovementBezier
+{
+public: 
+	CPoint P0,P1,P2;
+
+	MovementBezier(CPoint p0, CPoint p1, CPoint p2)
+	{
+		P0 = p0;
+		P1 = p1;
+		P2 = p2;
+
+	}
+
+
+float GetMinDistance(CPoint pt)
+{
+	int x1 = P0.x;
+	int y1 = P0.y;
+	int x2 = P1.x;
+	int y2 = P1.y;
+	int x3 = P2.x;
+	int y3 = P2.y;
+
+    int i;
+	float min_distance  = 99999;
+    for (i=0; i < 100; ++i)
+    {
+        double t = (double)i /100.0;
+        double a = pow((1.0 - t), 2.0);
+        double b = 2.0 * t * (1.0 - t);
+        double c = pow(t, 2.0);
+        double x = a * x1 + b * x2 + c * x3;
+        double y = a * y1 + b * y2 + c * y3;
+        min_distance = min(sqrt( (x-pt.x)*(x-pt.x) + (y-pt.y)*(y-pt.y)),min_distance);
+    }
+	return min_distance;
+}
+
+};
 
 class CTLiteDoc : public CDocument
 {
@@ -158,6 +199,14 @@ protected: // create from serialization only
 		m_LOSBound[MOE_speed][6] = 33;
 		m_LOSBound[MOE_speed][7] = 0;
 
+		m_LOSBound[MOE_reliability][1] = 0;
+		m_LOSBound[MOE_reliability][2] = 0.1f;
+		m_LOSBound[MOE_reliability][3] = 0.2f;
+		m_LOSBound[MOE_reliability][4] = 0.3f;
+		m_LOSBound[MOE_reliability][5] = 0.5f;
+		m_LOSBound[MOE_reliability][6] = 0.7f;
+		m_LOSBound[MOE_reliability][7] = 999;
+
 		m_LOSBound[MOE_vcratio][1] = 0;
 		m_LOSBound[MOE_vcratio][2] = 0.65f;
 		m_LOSBound[MOE_vcratio][3] = 0.75f;
@@ -165,6 +214,8 @@ protected: // create from serialization only
 		m_LOSBound[MOE_vcratio][5] = 0.95f;
 		m_LOSBound[MOE_vcratio][6] = 1.00f;
 		m_LOSBound[MOE_vcratio][7] = 999;
+
+
 
 
 
@@ -257,6 +308,9 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
+	std::vector <int> m_LinkIDRecordVector;  // used to record if a unique link id has been used;
+	int FindUniqueLinkID();
+
 	bool ReadTransitFiles(CString ProjectFolder);   // for road network
 
 	void OffsetLink();
@@ -332,7 +386,6 @@ public:
 	CString m_SimulationVehicleDataLoadingStatus;
 	CString m_SensorLocationLoadingStatus;
 
-
 	CString m_SensorDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
 	CString m_StrLoadingTime;
@@ -360,6 +413,9 @@ CString GetTurnString(DTA_Turn turn)
 
 int GetLOSCode(float Power)
 {
+
+	if(m_LinkMOEMode == MOE_speed)
+		Power *=100;
    
 	for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 	{
@@ -701,17 +757,38 @@ void SetStatusText(CString StatusText);
 
 	}
 
+	char GetApproachChar(DTA_Approach approach)
+	{
+		char c;
+		switch (approach) 
+		{
+		case DTA_North: c = 'N'; break;
+		case DTA_East: c = 'E'; break;
+		case DTA_South: c = 'S'; break;
+		case DTA_West: c = 'W'; break;
+		default: c = '0'; break;
+	
+		}
+		return c;
+	};
+
 	std::vector<DTA_NodeMovementSet> m_MovementVector;
 	std::vector<DTA_NodePhaseSet> m_PhaseVector;
 
 	// 	void ConstructMovementVector(bool flag_Template);
 	void ConstructMovementVectorForEachNode();
+	void AssignUniqueLinkIDForEachLink();
 
 	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
 	void ConstructMovementVector(bool flag_Template);
 	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	void ExportSingleSynchroFile(CString SynchroProjectFile);
+
+	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string);
+	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
+
+	CString m_GISMessage;
 
 	void ExportSynchroVersion6Files();
 	CString m_Synchro_ProjectDirectory;
@@ -1001,6 +1078,12 @@ public:
 		afx_msg void OnDeleteSelectedLink();
 		afx_msg void OnImportRegionalplanninganddtamodels();
 		afx_msg void OnExportGeneratezone();
+		afx_msg void OnExportGenerateshapefiles();
+		afx_msg void OnLinkmoedisplayQueuelength();
+		afx_msg void OnUpdateLinkmoedisplayQueuelength(CCmdUI *pCmdUI);
+		afx_msg void OnUpdateLinkmoeTraveltimereliability(CCmdUI *pCmdUI);
+
+		
 };
 
 

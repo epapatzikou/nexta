@@ -1,6 +1,5 @@
-// Page_Node_Movement.cpp : implementation file
-//
-//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
+// Page_Node_LaneTurn.cpp : implementation file
+//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com); Peng Du ()
 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
@@ -27,7 +26,7 @@
 
 #include "stdafx.h"
 #include "TLite.h"
-#include "Page_Node_Movement.h"
+#include "Page_Node_LaneTurn.h"
 
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
@@ -35,24 +34,24 @@
 
 #include <string>
 #include <sstream>
-// CPage_Node_Movement dialog
+// CPage_Node_LaneTurn dialog
 
 
-IMPLEMENT_DYNAMIC(CPage_Node_Movement, CPropertyPage)
+IMPLEMENT_DYNAMIC(CPage_Node_LaneTurn, CPropertyPage)
 
-CPage_Node_Movement::CPage_Node_Movement()
-	: CPropertyPage(CPage_Node_Movement::IDD)
+CPage_Node_LaneTurn::CPage_Node_LaneTurn()
+	: CPropertyPage(CPage_Node_LaneTurn::IDD)
 	, m_CurrentNodeName(0)
 {
 	m_SelectedMovementIndex = -1;
 	
 }
 
-CPage_Node_Movement::~CPage_Node_Movement()
+CPage_Node_LaneTurn::~CPage_Node_LaneTurn()
 {
 }
 
-void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
+void CPage_Node_LaneTurn::DoDataExchange(CDataExchange* pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
@@ -60,15 +59,15 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
+BEGIN_MESSAGE_MAP(CPage_Node_LaneTurn, CPropertyPage)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_PAINT()
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Movement::OnLvnItemchangedGridlistctrlex)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_LaneTurn::OnLvnItemchangedGridlistctrlex)
 END_MESSAGE_MAP()
 
 
 
-BOOL CPage_Node_Movement::OnInitDialog()
+BOOL CPage_Node_LaneTurn::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
 	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
@@ -128,7 +127,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CPage_Node_Movement::OnPaint()
+void CPage_Node_LaneTurn::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
 	CRect PlotRect;
@@ -143,7 +142,7 @@ void CPage_Node_Movement::OnPaint()
 	DrawMovements(&dc,m_PlotRect);
 }
 
-void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
+void CPage_Node_LaneTurn::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 {
 
 	m_MovementBezierVector.clear();
@@ -316,7 +315,7 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 	}
 }
 
-void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,int NumberOfLanes, double theta, int lane_width)
+void CPage_Node_LaneTurn::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,int NumberOfLanes, double theta, int lane_width)
 {
 		CPoint DrawPoint[4];
 
@@ -345,9 +344,9 @@ void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,
 		pDC->Polygon(DrawPoint, 4);
 
 }
-// CPage_Node_Movement message handlers
+// CPage_Node_LaneTurn message handlers
 
-void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
+void CPage_Node_LaneTurn::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
 		unsigned int i;
@@ -380,7 +379,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 
 }
 
-void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
+void CPage_Node_LaneTurn::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here

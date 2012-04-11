@@ -41,9 +41,9 @@
 
 enum DTA_Approach
 {
-	DTA_North,
-	DTA_East,
+	DTA_North = 0,
 	DTA_South,
+	DTA_East,
 	DTA_West
 };
 
@@ -147,6 +147,7 @@ enum TIMING_ROW
 	TIMING_Node_0,
 	TIMING_Node_1
 };
+
 
 #include "Timetable.h"
 
@@ -375,6 +376,7 @@ public:
 	turning_prohibition_flag = 1;
 	signal_control_no = 0;
 	signal_group_no = 0;
+	phase_index = 0;
 
 	}
 
@@ -393,6 +395,7 @@ int starting_time_in_min;
 int ending_time_in_min;
 float turnning_percentage;
 int turning_prohibition_flag;
+int phase_index;
 int signal_control_no;  // for meso-scopic, link -based
 int signal_group_no;  // for meso-scopic, link -based
 
@@ -411,6 +414,51 @@ int signal_group_no; // micro-scopic, lane-based
 };
 
 
+  class DTANodePhase
+   {
+   public:
+      DTANodePhase()
+	  {
+      min_green = 5;
+	  max_green = 60;
+	  amber = 2;
+	  }
+
+      int phase_number;
+      int min_green;
+	  int max_green;
+	  int amber;
+
+      std::vector<int> movement_index_vector;
+
+	  // if a link is added or deleted from a link, the corresponding movement array should be adjusted. 
+
+	  bool MovementIncluded(int MovementIndex)
+	  {
+		  
+		  for(unsigned int m = 0; m < movement_index_vector.size(); m++)
+		  {
+			  if ( movement_index_vector[m] == MovementIndex)
+				  return true;
+		  
+		  }
+	  
+		  return false;
+	  
+	  }
+	};
+
+class DTANodeSignal
+{
+public:
+   DTANodeSignal();
+   ~DTANodeSignal();
+
+  int cycle_length;
+   std::vector<DTANodePhase> phase_vector;
+
+};
+
 class DTANode
 {
 public:
@@ -427,6 +475,9 @@ public:
 
 	std::vector <DTANodeMovement> m_MovementVector;
 	std::vector <DTANodeLaneTurn> m_LaneTurnVector;
+
+	std::vector <DTANodePhase> m_PhaseVector;
+	 
 	
 
 	float m_DistanceToRoot;
@@ -670,6 +721,9 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_NumberOfLeftTurnBay = 0;
+		m_LeftTurnBayLengthInFeet = 0;	
+
 		m_bOneWayLink = true;
 		m_BandWidthValue = 1;
 		m_ReferenceBandWidthValue = 0;
@@ -729,10 +783,6 @@ public:
 		m_PeakHourFactor = 0.15f;
 	};
 
-	// for micro simulation 
-	DTA_Approach m_from_approach;
-	DTA_Approach m_to_approach;
-	int m_reverse_link_id;
 
 	std::vector<DTALane> m_LaneVector;
 	// end: for micro simulation 
@@ -1085,6 +1135,13 @@ void AdjustLinkEndpointsWithSetBack()
 
 	int m_FromNodeNumber;
 	int m_ToNodeNumber;
+
+	int m_NumberOfLeftTurnBay;
+	int m_LeftTurnBayLengthInFeet;	
+
+	DTA_Approach m_FromApproach;
+	DTA_Approach m_ToApproach;
+	int m_ReverseLinkId;
 
 	float	m_Length;  // in miles
 	float    m_VehicleSpaceCapacity; // in vehicles

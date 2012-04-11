@@ -1,45 +1,20 @@
-//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
-
-//   If you help write or modify the code, please also list your names here.
-//   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
-//   and further prevent a violation of the GPL.
-
-// More about "How to use GNU licenses for your own software"
-// http://www.gnu.org/licenses/gpl-howto.html
-
-
-//    This file is part of NeXTA Version 3 (Open-source).
-
-//    NEXTA is free software: you can redistribute it and/or modify
-//    it under the terms of the GNU General Public License as published by
-//    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
-
-//    NEXTA is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU General Public License for more details.
-
-//    You should have received a copy of the GNU General Public License
-//    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
-
 #pragma once
 
 #include <vector>
 #include "TLiteDoc.h"
-// CPage_Node_Movement dialog
+// CPage_Node_LaneTurn dialog
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
 
-class CPage_Node_Movement : public CPropertyPage
+class CPage_Node_LaneTurn : public CPropertyPage
 {
-	DECLARE_DYNAMIC(CPage_Node_Movement)
+	DECLARE_DYNAMIC(CPage_Node_LaneTurn)
 
 public:
-	CPage_Node_Movement();
-	virtual ~CPage_Node_Movement();
+	CPage_Node_LaneTurn();
+	virtual ~CPage_Node_LaneTurn();
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_NODE_MOVEMENT };
+	enum { IDD = IDD_DIALOG_NODE_LANETURN };
 
 	CGridListCtrlEx m_ListCtrl;
 	int m_SelectedMovementIndex;
