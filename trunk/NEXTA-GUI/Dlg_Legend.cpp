@@ -42,6 +42,8 @@ void CDlg_Legend::OnPaint()
 
    int i;
 
+   if(m_pDoc==NULL)
+	   return;
    for(i = 1; i<MAX_LOS_SIZE-1; i++)
    {
       penLOS[i].CreatePen(PS_SOLID, 1, m_pDoc->m_colorLOS[i]);

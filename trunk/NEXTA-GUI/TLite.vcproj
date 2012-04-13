@@ -821,6 +821,10 @@
 					UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 					>
 					<File
+						RelativePath=".\res\ams_tool.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\bitmap1.bmp"
 						>
 					</File>
@@ -881,11 +885,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\smallico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+						RelativePath=".\res\smallico.bmp"
 						>
 					</File>
 					<File
@@ -893,11 +897,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -925,19 +929,19 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 						>
 					</File>
 					<File

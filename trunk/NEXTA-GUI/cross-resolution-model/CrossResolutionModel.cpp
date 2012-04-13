@@ -146,8 +146,8 @@ int CTLiteDoc::FindUniqueLinkID()
 }
 void CTLiteDoc::AssignUniqueLinkIDForEachLink()
 {
-	m_LinkIDRecordVector.clear();
 
+	
 	std::list<DTALink*>::iterator iLink;
 
 	int max_link_id = 1;
@@ -161,7 +161,15 @@ void CTLiteDoc::AssignUniqueLinkIDForEachLink()
 			}
 
 			//allocate unique id arrary
-		m_LinkIDRecordVector.resize (max(max_link_id, m_LinkSet.size())+1);  // allocate all necessary spaces
+
+			m_LinkIDRecordVector.clear();
+
+			max_link_id = max(max_link_id, m_LinkSet.size());
+			for(int i = 0; i <= max_link_id; i++)
+			{
+			m_LinkIDRecordVector.push_back(0);
+			}
+
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -220,7 +228,11 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 			// scan each inbound link and outbound link
 
 			// generate two default phases;
-			(*iNode)->m_PhaseVector.resize (2);
+			(*iNode)->m_PhaseVector.clear();
+
+			DTANodePhase node_phase;
+			(*iNode)->m_PhaseVector.push_back(node_phase); // phase 1;
+			(*iNode)->m_PhaseVector.push_back(node_phase); // phase 2;
 
 
 			int inbound_i;

@@ -95,7 +95,7 @@ protected: // create from serialization only
 
 	CTLiteDoc()
 	{
-
+       m_bDYNASMARTDataSet = false;
 	   m_AdjLinkSize = 20;  // initial value
 	   m_colorLOS[0] = RGB(190,190,190);
 	   m_colorLOS[1] = RGB(0,255,0);
@@ -299,6 +299,8 @@ public:
 	BOOL OnOpenDocument(CString FileName);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
+	bool m_bDYNASMARTDataSet;
+
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
 	std::ofstream m_WarningFile;
@@ -384,6 +386,7 @@ public:
 	CString m_SimulationLinkMOEDataLoadingStatus;
 	bool m_bSimulationDataLoaded;
 	CString m_SimulationVehicleDataLoadingStatus;
+	CString m_SignalDataLoadingStatus;
 	CString m_SensorLocationLoadingStatus;
 
 	CString m_SensorDataLoadingStatus;

@@ -180,16 +180,16 @@ using std::string;
 
 struct GDPoint
 {
-	float x;
-	float y;
+	double x;
+	double y;
 };
 
 struct GDRect
 {
-	float left, right,top, bottom;
+	double left, right,top, bottom;
 
-	float Height() { return top - bottom; }
-	float Width()  { return right - left; }
+	double Height() { return top - bottom; }
+	double Width()  { return right - left; }
 
 	bool PtInRect(GDPoint& pt)
 	{
@@ -470,19 +470,44 @@ public:
 		m_Connections = 0;
 		m_LayerNo = 0;
 		m_DistanceToRoot = 0;
+		m_CycleLength =0;
+		m_NumberofPhases = 0;
+		m_bSignalData = false;
+
 	};
 	~DTANode(){};
 
 	std::vector <DTANodeMovement> m_MovementVector;
+
+	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
+	{
+
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+
+		if( m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
+		&& m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
+		&& m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
+		return i;
+		}
+
+		return -1;  //not found
+
+	}
+
 	std::vector <DTANodeLaneTurn> m_LaneTurnVector;
 
 	std::vector <DTANodePhase> m_PhaseVector;
 	 
+	int m_CycleLength;
+	int m_NumberofPhases;
+
 	
 
 	float m_DistanceToRoot;
 	string m_Name;
 	GDPoint pt;
+	bool m_bSignalData;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
@@ -781,6 +806,7 @@ public:
 		m_AADT = 0;
 		m_ReferenceFlowVolume  = 0;
 		m_PeakHourFactor = 0.15f;
+		m_bToBeShifted = true;
 	};
 
 
@@ -809,6 +835,7 @@ public:
 	float m_StaticTravelTime, m_StaticVOC;
 
 	std::vector<GDPoint> m_ShapePoints;
+	bool m_bToBeShifted;
 
 	std::vector<GDPoint> m_BandLeftShapePoints;
 	std::vector<GDPoint> m_BandRightShapePoints;
@@ -950,20 +977,20 @@ public:
 
 
 	GDPoint m_FromPoint, m_ToPoint;
-	float m_SetBackStart, m_SetBackEnd;
+	double m_SetBackStart, m_SetBackEnd;
 	GDPoint m_FromPointWithSetback, m_ToPointWithSetback;
 
-	float DefaultDistance()
+	double DefaultDistance()
 	{
 		return pow((m_FromPoint.x - m_ToPoint.x)*(m_FromPoint.x - m_ToPoint.x) + 
-			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5f);
+			(m_FromPoint.y - m_ToPoint.y)*(m_FromPoint.y - m_ToPoint.y),0.5);
 	}
 
 void AdjustLinkEndpointsWithSetBack()
 {
    GDPoint Direction;
 
-   float SetBackRatio = m_SetBackStart  /max(0.00001f, DefaultDistance());
+   double SetBackRatio = m_SetBackStart  /max(0.00001, DefaultDistance());
 
    Direction.x = (m_ToPoint.x - m_FromPoint.x)*SetBackRatio;
    Direction.y = (m_ToPoint.y - m_FromPoint.y)*SetBackRatio;
@@ -972,7 +999,7 @@ void AdjustLinkEndpointsWithSetBack()
    m_FromPointWithSetback.x = m_ShapePoints[0].x + Direction.x;
    m_FromPointWithSetback.y = m_ShapePoints[0].y + Direction.y;
 
-   SetBackRatio = m_SetBackEnd  /max(0.000001f, DefaultDistance());
+   SetBackRatio = m_SetBackEnd  /max(0.000001, DefaultDistance());
 
    Direction.x = (m_FromPoint.x - m_ToPoint.x)*SetBackRatio;
    Direction.y = (m_FromPoint.y - m_ToPoint.y)*SetBackRatio;
@@ -1908,6 +1935,14 @@ public:
 
 	void Initialize(int NodeSize, int LinkSize, int TimeHorizon,int AdjLinkSize)
 	{
+
+		if(TimeHorizon <1)
+		{
+				AfxMessageBox("TimeHorizon <1!");
+				TimeHorizon = 1;
+				return;
+
+		}
 		if(m_OutboundNodeAry!=NULL)
 		{
 			FreeMemory();
@@ -1917,6 +1952,7 @@ public:
 		m_LinkSize = LinkSize;
 
 		m_OptimizationHorizon = TimeHorizon;
+		m_OptimizationTimeInveral = 1;
 		m_AdjLinkSize = AdjLinkSize;
 
 

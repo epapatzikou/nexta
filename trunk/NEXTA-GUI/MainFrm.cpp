@@ -100,7 +100,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 
 	
-
+/*
 		if (!m_AMSToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
 			!m_AMSToolBar.LoadToolBar(IDR_AMS_TOOLBAR))
@@ -108,6 +108,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			TRACE0("Failed to create toolbar\n");
 			return -1;      // fail to create
 		}
+
+*/
 
 		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
@@ -166,11 +168,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_AMSToolBar.SetButtonText(22,"Website");
 
 		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));
-*/		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_AMSToolBar);
 
-		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+*/		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_MOEToolBar);
 

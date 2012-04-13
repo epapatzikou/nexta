@@ -51,6 +51,7 @@
 #define IDD_DIALOG_LinkProperties       154
 #define IDR_TLiteTYPE2                  154
 #define IDD_DIALOG_Settings             155
+#define IDR_TLiteTYPE3                  155
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDD_DIALOG_LINK_LIST            157
 #define IDD_ODGRID_DIALOG               158
@@ -84,6 +85,7 @@
 #define IDD_DIALOG_SIGNAL_DATA          188
 #define IDD_DIALOG_DemandPattern        189
 #define IDR_TOOLBAR1                    189
+#define IDR_AMS_TOOLBAR1                190
 #define IDD_TD_DEMAND_PROFILE_DIALOG    191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
 #define IDD_VISUALIZATION_CONFIG        193
@@ -97,7 +99,6 @@
 #define IDD_NGSIM_DIALOG                202
 #define IDD_DIALOG_NODE_PHASE           203
 #define IDD_DIALOG1                     204
-#define IDD_DIALOG_NODE_PHASE1          205
 #define IDD_DIALOG_NODE_LANETURN        205
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
@@ -726,13 +727,18 @@
 #define ID_ANIMATION_SKIPBACKWARD       33342
 #define ID_ANIMATION_FORWARD            33343
 #define ID_ANIMATION_BACKWARD           33344
+#define ID_FILE_IMPORT                  33349
+#define ID_FILE_EXPORT                  33350
+#define ID_VIEW_DYNASMART               33354
+#define ID_VIEW_ZONEBOUNDARY            33355
+#define ID_FILE_UPLOADLINKDATATOGOOGLEFUSIONTABLE 33357
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        205
-#define _APS_NEXT_COMMAND_VALUE         33349
+#define _APS_NEXT_COMMAND_VALUE         33358
 #define _APS_NEXT_CONTROL_VALUE         1107
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
