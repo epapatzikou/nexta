@@ -144,6 +144,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_NODE_MOVEMENTPROPERTIES, &CTLiteView::OnNodeMovementproperties)
 	ON_COMMAND(ID_LINK_LINEDISPLAYMODE, &CTLiteView::OnLinkLinedisplaymode)
 	ON_UPDATE_COMMAND_UI(ID_LINK_LINEDISPLAYMODE, &CTLiteView::OnUpdateLinkLinedisplaymode)
+	ON_COMMAND(ID_VIEW_ZONEBOUNDARY, &CTLiteView::OnViewZoneboundary)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_ZONEBOUNDARY, &CTLiteView::OnUpdateViewZoneboundary)
 END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -163,6 +165,7 @@ CPen g_PenSignalColor(PS_SOLID,2,RGB(255,255,255));
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
+CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,255,0));
 CPen g_PenQueueColor(PS_SOLID,3,RGB(255,0,0));
 
 CPen g_PenQueueBandColor(PS_SOLID,1,RGB(255,0,0));
@@ -324,6 +327,7 @@ CTLiteView::CTLiteView()
 	m_NodeTypeFaceName      = "Arial";
 
 	m_bShowAVISensor = true;
+	m_bShowZoneBoundary = true;
 	isCreatingSubarea = false;
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
@@ -1131,29 +1135,57 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 	}
 	// step 13: draw zone layer
-	pDC->SelectObject(&g_ZonePen);
-	{
+
+	if(m_bShowZoneBoundary)
+	{	
+		pDC->SelectObject(&g_ZonePen);
+
+	CFont zone_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
+	zone_font.CreatePointFont(nFontSize*4, m_NodeTypeFaceName);
+
+	pDC->SelectObject(&zone_font);
+
 		std::map<int, DTAZone>	:: const_iterator itr;
+
+
+		pDC->SetTextColor(RGB(255,255,255));
+
 
 		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); itr++)
 		{
+		int center_x = 0;
+		int center_y = 0;
+
 			if(itr->second.m_ShapePoints .size() > 0)
 			{
+
 			for(int i = 0; i< itr->second.m_ShapePoints .size(); i++)
 			{
 
 			CPoint point =  NPtoSP(itr->second.m_ShapePoints[i]);
+
+			center_x += point.x;
+			center_y += point.y;
+
 			if(i == 0)
 				pDC->MoveTo(point);
 			else
 				pDC->LineTo(point);
 			
 			}
-			CPoint point_0 =  NPtoSP(itr->second.m_ShapePoints[0]);
+
+			CPoint point_0 =  NPtoSP(itr->second.m_ShapePoints[0]);  // back to the starting point
 
 			pDC->LineTo(point_0);
 
 			}
+			center_x  = center_x/max(1,itr->second.m_ShapePoints .size());
+			center_y  = center_y/max(1,itr->second.m_ShapePoints .size()) - tm.tmHeight;
+
+			CString zone_id_str;
+			zone_id_str.Format("%d", itr->second.m_ZoneTAZ) ;
+
+			pDC->TextOut(center_x , center_y , zone_id_str);
 
 		}
 
@@ -3288,8 +3320,10 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 							point.x + node_size, point.y - node_size);
 					}
 
-					if(pNode->m_ControlType >1)  // traffic signal control
+					if(pNode->m_bSignalData)  // traffic signal control
 					{
+						pDC->SelectObject(&g_PenSignalNodeColor);
+
 						pDC->Ellipse(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);
 					}
@@ -3319,25 +3353,39 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 }
 void CTLiteView::OnNodeMovementproperties()
 {
+	CPropertySheet sheet;
 
 	CTLiteDoc* pDoc = GetDocument();
+
+
+	if(pDoc == NULL)
+		return;
+
 	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
 	
 	if(pDoc->m_SelectedNodeID >=0)
 	{
-	CPropertySheet sheet("Node Data");
-
 	CPage_Node_Movement MovementPage;
 	MovementPage.m_pDoc = pDoc;
 	sheet.AddPage(&MovementPage);  // 0
 
-	CPage_Node_Phase PhasePage;
-	PhasePage.m_pDoc = pDoc;
-	sheet.AddPage(&PhasePage);  // 1
+	if(pDoc->m_NodeIDMap.find(pDoc->m_SelectedNodeID) ==pDoc->m_NodeIDMap.end())
+		return;
 
+	DTANode*  pNode = pDoc->m_NodeIDMap[pDoc->m_SelectedNodeID];
+
+	if(pNode ->m_bSignalData)
+	{
+		CPage_Node_Phase PhasePage;
+		PhasePage.m_pDoc = pDoc;
+		sheet.AddPage(&PhasePage);  // 1
+	}
+
+/*
 	CPage_Node_LaneTurn LaneTurnPage;
 	LaneTurnPage.m_pDoc = pDoc;
 	sheet.AddPage(&LaneTurnPage);  // 2
+*/
 // Change the caption of the CPropertySheet object 
 // from "Simple PropertySheet" to "Simple Properties".
 	sheet.SetActivePage (0);
@@ -3364,4 +3412,15 @@ void CTLiteView::OnLinkLinedisplaymode()
 void CTLiteView::OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bLineDisplayConditionalMode);
+}
+
+void CTLiteView::OnViewZoneboundary()
+{
+	m_bShowZoneBoundary = !m_bShowZoneBoundary;
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateViewZoneboundary(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowZoneBoundary);
 }

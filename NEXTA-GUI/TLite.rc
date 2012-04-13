@@ -91,6 +91,7 @@ IDB_TOLL                BITMAP                  "res\\toll.bmp"
 IDR_DATA_TOOLBAR        BITMAP                  "res\\sta_tool.bmp"
 IDR_AMS_TOOLBAR         BITMAP                  "res\\bmp00002.bmp"
 IDR_TOOLBAR1            BITMAP                  "res\\bmp00003.bmp"
+IDR_AMS_TOOLBAR1        BITMAP                  "res\\ams_tool.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -181,11 +182,11 @@ BEGIN
     BUTTON      ID_VIEW_SHOWHIDE_LEGEND
     BUTTON      ID_VIEW_TEXTLABEL
     BUTTON      ID_SHOW_GRID
-    BUTTON      ID_VIEW_BACKGROUNDIMAGE
+    BUTTON      ID_VIEW_ZONEBOUNDARY
     BUTTON      ID_VIEW_SENSOR
     SEPARATOR
+    BUTTON      ID_VIEW_BACKGROUNDIMAGE
     BUTTON      ID_VIEW_IMAGE
-    BUTTON      ID_EDIT_MOVENETWORKCOORDINATES
     SEPARATOR
     BUTTON      ID_VIEW_ZOOMIN
     BUTTON      ID_VIEW_ZOOMOUT
@@ -197,13 +198,11 @@ BEGIN
     BUTTON      ID_3DRotate
     BUTTON      ID_3DReset
     SEPARATOR
-    BUTTON      ID_WINDOW_TILE_VERT
-    BUTTON      ID_WINDOW_TILE_HORZ
-    SEPARATOR
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
     BUTTON      ID_EDIT_CREATENODE
     BUTTON      ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
+    BUTTON      ID_EDIT_CREATESUBAREA
     SEPARATOR
     BUTTON      ID_ANIMATION_PLAY
     BUTTON      ID_ANIMATION_REWIND
@@ -214,6 +213,8 @@ BEGIN
     BUTTON      ID_ANIMATION_SKIPFORWARD
     BUTTON      ID_ANIMATION_BACKWARD
     BUTTON      ID_ANIMATION_SKIPBACKWARD
+    SEPARATOR
+    BUTTON      ID_HELP_VISITDEVELOPMENTWEBSITE
 END
 
 IDR_DATA_TOOLBAR TOOLBAR  16, 15
@@ -237,6 +238,19 @@ END
 
 IDR_AMS_TOOLBAR TOOLBAR  16, 15
 BEGIN
+    BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+    BUTTON      ID_NGSIMMENU_TRAFFICFLOWMODELESTIMATION
+    BUTTON      ID_VIEW_CALIBRATIONVIEW
+    BUTTON      ID_HELP_VISITDEVELOPMENTWEBSITE
+END
+
+IDR_TOOLBAR1 TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_SHOW_TIMETABLE
+END
+
+IDR_AMS_TOOLBAR1 TOOLBAR  16, 15
+BEGIN
     BUTTON      ID_IMPORT_SENSOR_DATA
     BUTTON      ID_IMPORT_ARCGISSHAPEFILE
     BUTTON      ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
@@ -251,11 +265,6 @@ BEGIN
     BUTTON      ID_Edit_Create2WayLinks
     SEPARATOR
     BUTTON      ID_HELP_VISITDEVELOPMENTWEBSITE
-END
-
-IDR_TOOLBAR1 TOOLBAR  16, 15
-BEGIN
-    BUTTON      ID_SHOW_TIMETABLE
 END
 
 
@@ -577,6 +586,293 @@ BEGIN
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
         MENUITEM "&Open Traffic Network Only...", ID_FILE_OPEN_NETWORK_ONLY
+        MENUITEM SEPARATOR
+        POPUP "Import"
+        BEGIN
+            MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
+            MENUITEM "GIS Shape File",              ID_IMPORT_ARCGISSHAPEFILE
+            MENUITEM "Point Sensor Data",           ID_IMPORT_SENSOR_DATA
+            POPUP "Background Image"
+            BEGIN
+                MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
+                MENUITEM "Unlock Background Image Position", ID_VIEW_IMAGE
+                MENUITEM "Lock Background Image Position", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
+                MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
+                MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+            END
+        END
+        POPUP "Export"
+        BEGIN
+            MENUITEM "Construct and Export Signal Data...", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+            MENUITEM "Save Network as Shape Files", ID_EXPORT_GENERATESHAPEFILES
+            MENUITEM "Upload Link Data to Google Fusion Table", ID_FILE_UPLOADLINKDATATOGOOGLEFUSIONTABLE
+            MENUITEM "Generate Zone-to-zone Travel Time Matrix", ID_EXPORT_GENERATEZONE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
+        MENUITEM SEPARATOR
+        MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
+        MENUITEM SEPARATOR
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
+        MENUITEM "Data Tool bar",               ID_VIEW_DATATOOLBAR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        POPUP "Node"
+        BEGIN
+            MENUITEM "Shown/Hide Node",             ID_SHOW_SHOWNODE
+            MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
+            MENUITEM "Increase Node Size (Page Up Key)", ID_VIEW_INCREASENODESIZE
+            MENUITEM "Decrease Node Size (Page Down Key)", ID_VIEW_DECREATENODESIZE
+        END
+        POPUP "Link"
+        BEGIN
+            POPUP "Link MOE Display"
+            BEGIN
+                MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
+                MENUITEM "Capacity",                    ID_MOE_CAPACITY
+                MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
+                MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
+                MENUITEM "Length",                      ID_MOE_LENGTH
+            END
+            MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
+            MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+        END
+        MENUITEM "Zone Boundary",               ID_VIEW_ZONEBOUNDARY
+        MENUITEM "View Vehicle Statistics Associated with Subarea", ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "OD Demand ",                  ID_MOE_ODDEMAND
+        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
+        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
+        MENUITEM SEPARATOR
+        MENUITEM "Configure Background Color",  32778
+        MENUITEM "Show/Hide Link MOE",          ID_MOE_NONE
+        MENUITEM "Show/Hide Path Trajectory",   ID_SHOW_SHOWALLPATHS
+        MENUITEM "Show/Hide OD MOE",            ID_MOE_NOODMOE
+        MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "Create Node",                 ID_EDIT_CREATENODE
+        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+        MENUITEM "Set Default Link Properties for New Links", ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
+        MENUITEM "Create Subarea",              ID_EDIT_CREATESUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Selected Link",        ID_LINK_DELETE
+        MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
+        MENUITEM "Delete Links outside Subarea", ID_EDIT_DELETELINKSOUTSIDESUBAREA
+        MENUITEM "Delete Subarea",              ID_SUBAREA_DELETESUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)", ID_SEARCH_FINDLINK
+        MENUITEM SEPARATOR
+        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
+        MENUITEM SEPARATOR
+    END
+    POPUP "Project"
+    BEGIN
+        MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
+        MENUITEM "Edit OD Demand Table",        ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM "Edit Scenario Data",          ID_SCENARIO_CONFIGURATION
+        MENUITEM SEPARATOR
+        MENUITEM "Perform Traffic Assignment",  ID_TOOLS_PERFORMTRAFFICASSIGNMENT
+        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
+        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
+    END
+    POPUP "MOE"
+    BEGIN
+        MENUITEM "Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
+        MENUITEM "Vehicle Path Analysis (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "Link List",                   ID_SEARCH_LINKLIST
+        MENUITEM "Selected Vehicle Statistics ", ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM "MOE Tables",                  ID_MOE_VIEWMOES
+        MENUITEM SEPARATOR
+        MENUITEM "View Traffic Assignment Summary in Excel", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "View Link MOE Summary in Excel", ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM SEPARATOR
+        MENUITEM "View Traffic Assignment Summary Plot", ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
+        MENUITEM "NGSIM Data",                  ID_IMPORT_NGSIM_FILE
+        POPUP "NGSIM  Menu"
+        BEGIN
+            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
+            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
+            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
+            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
+            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
+            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
+            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
+            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
+            MENUITEM SEPARATOR
+            MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
+            MENUITEM SEPARATOR
+            MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
+            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
+            MENUITEM "Show Preceeding Vehicle Position", ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION
+            MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
+            MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
+            MENUITEM SEPARATOR
+            MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
+            MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
+            MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
+            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
+            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
+            MENUITEM "Traffic Flow Model Estimation (TFME)", ID_NGSIMMENU_TRAFFICFLOWMODELESTIMATION
+            MENUITEM "Export Cumulative Flow Count Data", ID_NGSIMMENU_EXPORTCUMULATIVEFLOWCOUNTDATA
+            MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
+        END
+        MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+        MENUITEM "Edit Time-Dependent Demand Profile", ID_PROJECT_EDITTIME
+        MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
+    END
+    POPUP "&Window"
+    BEGIN
+        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
+        MENUITEM SEPARATOR
+        MENUITEM "&New Window",                 ID_WINDOW_NEW
+        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
+        MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
+    END
+END
+
+IDR_TLiteTYPE2 MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
+        POPUP "Image"
+        BEGIN
+            MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
+            MENUITEM "Unlock Background Image Position", ID_VIEW_IMAGE
+            MENUITEM "Lock Background Image Position", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
+            MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
+            MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
+        END
+        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
+        MENUITEM "Data Loading Status",         ID_FILE_DATALOADINGSTATUS
+        MENUITEM "&Close",                      ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+        MENUITEM "Background Image",            ID_VIEW_BACKGROUNDIMAGE
+        MENUITEM "Network",                     ID_VIEW_SHOWNETWORK
+        MENUITEM "Grid",                        ID_SHOW_GRID
+        MENUITEM "Text Label",                  ID_VIEW_TEXTLABEL33026
+        MENUITEM SEPARATOR
+        MENUITEM "Node",                        ID_SHOW_SHOWNODE
+        MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
+        MENUITEM SEPARATOR
+        MENUITEM "Link Type",                   ID_VIEW_SHOWLINKTYPE
+        MENUITEM "Link MOE",                    ID_VIEW_SHOWMOE
+        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
+        MENUITEM "Path MOE Dialog",             ID_SHOW_SHOWPATHMOE
+        MENUITEM "Path Trajectory",             ID_SHOW_SHOWALLPATHS
+        MENUITEM SEPARATOR
+        MENUITEM "Zoom In",                     32773
+        MENUITEM "Zoom Out",                    32774
+        MENUITEM "Move Network",                32776
+        MENUITEM SEPARATOR
+        MENUITEM "Configure Background Color",  32778
+    END
+    POPUP "MOE"
+    BEGIN
+        MENUITEM "No Link MOE",                 ID_MOE_NONE
+        MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
+        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
+        MENUITEM "Capacity",                    ID_MOE_CAPACITY
+        MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
+        MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
+        MENUITEM "Length",                      ID_MOE_LENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "No OD MOE",                   ID_MOE_NOODMOE
+        MENUITEM "OD Demand ",                  ID_MOE_ODDEMAND
+        MENUITEM SEPARATOR
+        POPUP "Animation"
+        BEGIN
+            MENUITEM "Play",                        ID_ANIMATION_PLAY
+            MENUITEM "Rewind",                      ID_ANIMATION_REWIND
+            MENUITEM "Pause",                       ID_ANIMATION_PAUSE
+            MENUITEM "Stop",                        ID_ANIMATION_STOP
+        END
+        MENUITEM "Car Following Simulation",    ID_TOOLS_CARFOLLOWINGSIMULATION
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "Create Node",                 ID_EDIT_CREATENODE
+        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Selected Link",        ID_LINK_DELETE
+        MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
+        MENUITEM SEPARATOR
+        MENUITEM "Select Node",                 ID_EDIT_SELECTNODE
+        MENUITEM "Select Link",                 ID_EDIT_SELECTLINK
+        MENUITEM "Edit Link Properties",        ID_LINK_EDITLINK
+    END
+    POPUP "Search"
+    BEGIN
+        MENUITEM "Node (Ctrl+N)",               ID_SEARCH_NODE
+        MENUITEM "Link (Ctrl+F)",               ID_SEARCH_FINDLINK
+        MENUITEM SEPARATOR
+        MENUITEM "Link List",                   ID_SEARCH_LINKLIST
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Perform Train Scheduling",    ID_TOOLS_PERFORMSCHEDULING
+        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
+        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
+    END
+    POPUP "&Window"
+    BEGIN
+        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
+        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
+        MENUITEM SEPARATOR
+        MENUITEM "&New Window",                 ID_WINDOW_NEW
+        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
+        MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
+    END
+END
+
+IDR_TLiteTYPE3 MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
+        MENUITEM "&Open Traffic Network Only...", ID_FILE_OPEN_NETWORK_ONLY
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM "Save Network as Shape Files", ID_EXPORT_GENERATESHAPEFILES
@@ -815,119 +1111,6 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE2 MENU 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open Project...\tCtrl+O",    ID_FILE_OPEN
-        POPUP "Image"
-        BEGIN
-            MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
-            MENUITEM "Unlock Background Image Position", ID_VIEW_IMAGE
-            MENUITEM "Lock Background Image Position", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
-            MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
-            MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
-        END
-        MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
-        MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
-        MENUITEM "Data Loading Status",         ID_FILE_DATALOADINGSTATUS
-        MENUITEM "&Close",                      ID_FILE_CLOSE
-        MENUITEM SEPARATOR
-        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       ID_APP_EXIT
-    END
-    POPUP "View"
-    BEGIN
-        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
-        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
-        MENUITEM SEPARATOR
-        MENUITEM "Background Image",            ID_VIEW_BACKGROUNDIMAGE
-        MENUITEM "Network",                     ID_VIEW_SHOWNETWORK
-        MENUITEM "Grid",                        ID_SHOW_GRID
-        MENUITEM "Text Label",                  ID_VIEW_TEXTLABEL33026
-        MENUITEM SEPARATOR
-        MENUITEM "Node",                        ID_SHOW_SHOWNODE
-        MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
-        MENUITEM SEPARATOR
-        MENUITEM "Link Type",                   ID_VIEW_SHOWLINKTYPE
-        MENUITEM "Link MOE",                    ID_VIEW_SHOWMOE
-        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
-        MENUITEM "Path MOE Dialog",             ID_SHOW_SHOWPATHMOE
-        MENUITEM "Path Trajectory",             ID_SHOW_SHOWALLPATHS
-        MENUITEM SEPARATOR
-        MENUITEM "Zoom In",                     32773
-        MENUITEM "Zoom Out",                    32774
-        MENUITEM "Move Network",                32776
-        MENUITEM SEPARATOR
-        MENUITEM "Configure Background Color",  32778
-    END
-    POPUP "MOE"
-    BEGIN
-        MENUITEM "No Link MOE",                 ID_MOE_NONE
-        MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
-        MENUITEM "Vehicle",                     ID_MOE_VEHICLE
-        MENUITEM "Capacity",                    ID_MOE_CAPACITY
-        MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
-        MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
-        MENUITEM "Length",                      ID_MOE_LENGTH
-        MENUITEM SEPARATOR
-        MENUITEM "No OD MOE",                   ID_MOE_NOODMOE
-        MENUITEM "OD Demand ",                  ID_MOE_ODDEMAND
-        MENUITEM SEPARATOR
-        POPUP "Animation"
-        BEGIN
-            MENUITEM "Play",                        ID_ANIMATION_PLAY
-            MENUITEM "Rewind",                      ID_ANIMATION_REWIND
-            MENUITEM "Pause",                       ID_ANIMATION_PAUSE
-            MENUITEM "Stop",                        ID_ANIMATION_STOP
-        END
-        MENUITEM "Car Following Simulation",    ID_TOOLS_CARFOLLOWINGSIMULATION
-    END
-    POPUP "Edit"
-    BEGIN
-        MENUITEM "Create Node",                 ID_EDIT_CREATENODE
-        MENUITEM "Create One-Way Link",         ID_Edit_Create1WayLink
-        MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
-        MENUITEM SEPARATOR
-        MENUITEM "Delete Selected Link",        ID_LINK_DELETE
-        MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
-        MENUITEM SEPARATOR
-        MENUITEM "Select Node",                 ID_EDIT_SELECTNODE
-        MENUITEM "Select Link",                 ID_EDIT_SELECTLINK
-        MENUITEM "Edit Link Properties",        ID_LINK_EDITLINK
-    END
-    POPUP "Search"
-    BEGIN
-        MENUITEM "Node (Ctrl+N)",               ID_SEARCH_NODE
-        MENUITEM "Link (Ctrl+F)",               ID_SEARCH_FINDLINK
-        MENUITEM SEPARATOR
-        MENUITEM "Link List",                   ID_SEARCH_LINKLIST
-    END
-    POPUP "Tools"
-    BEGIN
-        MENUITEM "Perform Train Scheduling",    ID_TOOLS_PERFORMSCHEDULING
-        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
-        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
-    END
-    POPUP "&Window"
-    BEGIN
-        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
-        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
-        MENUITEM SEPARATOR
-        MENUITEM "&New Window",                 ID_WINDOW_NEW
-        MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
-        MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
-        MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
-        MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
-        MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
-    END
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -964,16 +1147,17 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 240, 91
+IDD_ABOUTBOX DIALOGEX 0, 0, 240, 163
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 CAPTION "About NeXTA Version 3"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
     LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software Version 3.0 Release Date: 11/08/2011",IDC_STATIC,42,26,114,24,0,WS_EX_STATICEDGE
-    DEFPUSHBUTTON   "OK",IDOK,183,70,50,14,WS_GROUP
+    LTEXT           "Open-Source Software Version 3.0 Beta Release Date: 04/13/2012",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,183,142,50,14,WS_GROUP
+    LTEXT           "This package reads DYNASMARAT-P, DTALite, AMS data sets.",IDC_STATIC,41,48,171,20,0,WS_EX_STATICEDGE
 END
 
 IDD_DIALOG_MOE DIALOGEX 0, 0, 534, 180
@@ -1777,7 +1961,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 233
         TOPMARGIN, 7
-        BOTTOMMARGIN, 84
+        BOTTOMMARGIN, 156
     END
 
     IDD_DIALOG_MOE, DIALOG

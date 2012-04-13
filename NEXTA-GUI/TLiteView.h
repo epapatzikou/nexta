@@ -238,6 +238,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_SelectFromNodeNumber; 
 	int m_SelectToNodeNumber;
 
+	bool m_bShowZoneBoundary;
 	bool m_bShowSensor;
 	bool m_bShowTransit;
 	bool m_bShowText;
@@ -546,6 +547,8 @@ public:
 	afx_msg void OnNodeMovementproperties();
 	afx_msg void OnLinkLinedisplaymode();
 	afx_msg void OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI);
+	afx_msg void OnViewZoneboundary();
+	afx_msg void OnUpdateViewZoneboundary(CCmdUI *pCmdUI);
 };
 
 

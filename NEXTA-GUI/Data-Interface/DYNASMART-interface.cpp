@@ -48,6 +48,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;
 
+	m_bDYNASMARTDataSet = true;
+
 	CString directory;
 	m_ProjectFile = ProjectFileName;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
@@ -252,6 +254,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					pLink->m_ShapePoints .push_back (pt);
 				}
 
+				if(number_of_shape_points>=4)
+					pLink->m_bToBeShifted  = false;
+
 			}else
 			{
 				break;
@@ -389,6 +394,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
+	/*
 	// read demand.dat
 	fopen_s(&pFile,directory+"demand.dat","r");
 	if(pFile!=NULL)
@@ -437,11 +443,21 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
+	*/
 	// set link type
 
 
+	for(int type = 0; type <=9; type++)
+	{
+	m_LinkTypeFreewayMap[type] = 0;	
+	m_LinkTypeRampMap [type] = 1;
+	m_LinkTypeArterialMap[type] = 1;
+	}
+
 	m_LinkTypeFreewayMap[1] = 1;
 	m_LinkTypeFreewayMap[2] = 1;
+
+
 	m_LinkTypeRampMap [3] = 1;
 	m_LinkTypeRampMap [4] = 1;
 	m_LinkTypeArterialMap[5] = 1;
@@ -451,13 +467,130 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeFreewayMap[9] = 1;
 
 
-	// read zone.dat
-
 	OffsetLink();
 
 	CalculateDrawingRectangle();
 
+
 	m_bFitNetworkInitialized  = false;
+
+	//read control.dat
+
+		
+	// read control.dat
+	FILE* st;
+	fopen_s(&st,directory+"control.dat","r");
+	if(st != NULL)
+	{
+		int num_timing_plan = g_read_integer(st);
+
+		if(num_timing_plan > 1)
+		{
+			AfxMessageBox("Number of signal timing plan is greater than 1.  Only one signal timing plan is allowed to generate the actuated control data in the current version.", MB_ICONINFORMATION);
+			fclose(st);
+		}
+
+		double start_time = g_read_float(st);
+
+		// read the first block: Node - Control Type
+		std::list<DTANode*>::iterator iNode;
+
+		int last_good_node_number = 0;
+	for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			int node_name = g_read_integer(st);
+			if(node_name == -1)
+			{
+				CString str;
+				str.Format("Error in reading the node block of control.dat. Last valid node number = %d ", last_good_node_number);
+				AfxMessageBox(str, MB_ICONINFORMATION);
+				fclose(st);
+			}
+
+			last_good_node_number = node_name;
+
+				DTANode*  pNode = m_NodeIDMap[m_NodeNametoIDMap[node_name]];
+				pNode->m_ControlType  = g_read_integer(st);
+				pNode->m_NumberofPhases = g_read_integer(st);
+				pNode->m_CycleLength = g_read_integer(st);
+
+		}
+
+		// read the second block: Phase time and movement
+		// read node by node
+
+	int number_of_signals = 0;
+	for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+
+		if((*iNode)->m_ControlType == 4 || (*iNode)->m_ControlType ==5)
+		{
+			(*iNode)-> m_bSignalData = true;
+			number_of_signals++;
+
+			for(int p  = 0; p < (*iNode)->m_NumberofPhases; p++)
+			{
+			int node_name = g_read_integer(st);
+			if(m_NodeNametoIDMap.find(node_name) == m_NodeNametoIDMap.end())
+			{
+				CString str;
+				str.Format("Error in reading the signal data block of control.dat. Last valid node number = %d ", last_good_node_number);
+				AfxMessageBox(str, MB_ICONINFORMATION);
+				fclose(st);
+			}
+			last_good_node_number = node_name;
+
+			
+			DTANode*  pNode = m_NodeIDMap[m_NodeNametoIDMap[node_name]];
+
+			int phase_ID = g_read_integer(st);
+
+			DTANodePhase phase;
+				phase.max_green  = g_read_integer(st);
+				phase.min_green   = g_read_integer(st);
+				phase.amber  = g_read_integer(st);
+				int approach = g_read_integer(st);
+						
+
+				// approach node numbers (reserved 4 nodes)
+						g_read_integer(st);
+						g_read_integer(st);
+						g_read_integer(st);
+						g_read_integer(st);
+
+						//
+				// read all possible approaches
+					for(int i=0; i< approach; i++)
+					{
+
+						int in_link_from_node_id = m_NodeNametoIDMap[g_read_integer(st)];
+						int in_link_to_node_id = m_NodeNametoIDMap[g_read_integer(st)];
+						int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
+
+						int movement_size  = g_read_integer(st);
+						
+						for(int k=0; k<movement_size; k++)
+						{
+							int out_link_to_node_id = m_NodeNametoIDMap[g_read_integer(st)];
+
+							int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
+							if(movement_index>=0)
+							{
+								phase.movement_index_vector .push_back(movement_index);
+							
+							}
+						}  // movement
+					} // approach 
+			pNode->m_PhaseVector.push_back(phase);
+
+			} // phase
+
+		}   // control data
+	}  // for each node
+		fclose(st);
+
+	m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
+	}
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -499,6 +632,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	if(pFile != NULL)
 	{
+		m_ODSize  = 0;
 	int good_vehicle_id = 1;
 	while(!feof(pFile) )
 	{
@@ -526,6 +660,12 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		pVehicle->m_OriginZoneID	= g_read_integer(pFile);
 		pVehicle->m_DestinationZoneID = g_read_integer(pFile);
+
+		if( pVehicle->m_OriginZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_OriginZoneID ;
+
+		if( pVehicle->m_DestinationZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_DestinationZoneID ;
 
 		pVehicle->m_InformationClass = (unsigned char)g_read_integer(pFile);
 
@@ -577,6 +717,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				return false;
 			}
 			pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+			pVehicle->m_Distance +=pLink->m_Length ;
 			pLink->m_TotalVolume +=1;
 		}
 

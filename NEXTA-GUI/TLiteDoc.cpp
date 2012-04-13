@@ -685,6 +685,8 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+			if((*iLink) -> m_bToBeShifted)
+			{
 			double DeltaX = (*iLink)->m_ToPoint.x - (*iLink)->m_FromPoint.x ;
 			double DeltaY = (*iLink)->m_ToPoint.y - (*iLink)->m_FromPoint.y ;
 			double theta = atan2(DeltaY, DeltaX);
@@ -694,6 +696,7 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
 
 			(*iLink)->m_FromPoint.y += link_offset* sin(theta-PI/2.0f);
 			(*iLink)->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
+			}
 		}
 	}
 
@@ -1056,13 +1059,13 @@ void CTLiteDoc::GenerateOffsetLinkBand()
 
 			// calculate theta for each feature point segment
 			
-			if(si>= 1)
+			if(si>= 1 && ((*iLink) ->m_ShapePoints .size() >4 || m_LinkTypeRampMap[(*iLink)->m_link_type]==1))  // ramp or >4 feature points
 			{
 			last_shape_point_id = si;
 			DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[si-1].x;
 			DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[si-1].y;
 			theta = atan2(DeltaY, DeltaX);
-			
+	
 			}
 
 			GDPoint pt;
@@ -1105,6 +1108,9 @@ void CTLiteDoc::OffsetLink()
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+			if((*iLink) -> m_bToBeShifted)
+			{
+
 			//Test if an opposite link exits
 			unsigned long OppositeLinkKey = GetLinkKey((*iLink)->m_ToNodeID,(*iLink)->m_FromNodeID);
 			if ( m_NodeIDtoLinkMap.find(OppositeLinkKey) != m_NodeIDtoLinkMap.end())
@@ -1114,7 +1120,9 @@ void CTLiteDoc::OffsetLink()
 				m_NodeIDtoLinkMap[OppositeLinkKey]->m_bOneWayLink = false;
 
 			}
+			}
 		}
+
 
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -1123,6 +1131,7 @@ void CTLiteDoc::OffsetLink()
 			{
 
 				int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
+
 				double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
 				double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
 				double theta = atan2(DeltaY, DeltaX);
@@ -1368,6 +1377,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			}
 			string geo_string;
 
+			bool bToBeShifted = true;
 			std::vector<CCoordinate> CoordinateVector;
 			if(parser.GetValueByFieldName("geometry",geo_string))
 			{
@@ -1375,6 +1385,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
 				m_bLinkToBeShifted = false;
+				bToBeShifted = false;
 			}else
 			{
 				// no geometry information
@@ -1456,6 +1467,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 						pt.y = CoordinateVector[si].Y;
 						pLink->m_ShapePoints .push_back (pt);
 					}
+				
+					pLink->m_bToBeShifted = bToBeShifted; 
 				}
 
 				pLink->m_NumLanes= number_of_lanes;
@@ -3960,7 +3973,10 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-	sCommand.Format("%s\\DTALite.exe", pMainFrame->m_CurrentDirectory);
+	if(m_bDYNASMARTDataSet)
+		sCommand.Format("%s\\planning.exe", pMainFrame->m_CurrentDirectory);
+	else
+		sCommand.Format("%s\\DTALite.exe", pMainFrame->m_CurrentDirectory);
 
 	ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
 
@@ -4412,8 +4428,14 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 
 void CTLiteDoc::OnToolsRuntrafficassignment()
 {
+	if(m_bDYNASMARTDataSet)
+		OnToolsPerformtrafficassignment();
+	else
+	{ //DTALite Settings
 	if(EditTrafficAssignmentOptions())
 		OnToolsPerformtrafficassignment();
+	}
+
 }
 
 void CTLiteDoc::OnImportodtripfile3columnformat()
@@ -7197,6 +7219,16 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	DeleteFile(directory+"AMS_link.dbf");
 	DeleteFile(directory+"AMS_link.shx");
 	ExportLinkLayerToGISFiles(directory+"AMS_link.shp","ESRI Shapefile");
+
+
+	CString str;
+
+	str.Format("Node and Link Layer are saved in shape file format at folder: %s \nPlease use open-source Q-GIS or other GIS packages to open them.\nDo you want to open the folder with the shape files now?",directory);
+	 if(AfxMessageBox(str,MB_YESNO|MB_ICONINFORMATION)==IDYES)
+	 {
+	 OnToolsProjectfolder();
+	 }
+
 }
 
 void CTLiteDoc::OnLinkmoedisplayQueuelength()

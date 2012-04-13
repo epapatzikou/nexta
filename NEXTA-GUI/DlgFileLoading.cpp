@@ -69,6 +69,12 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_NetworkData.AddString(m_pDoc->m_ScenarioDataLoadingStatus);
 	}
 	
+	if(m_pDoc->m_SignalDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_SignalDataLoadingStatus);
+	}
+
+
 
 
 
