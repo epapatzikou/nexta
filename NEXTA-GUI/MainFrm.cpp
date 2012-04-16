@@ -140,8 +140,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(12,"Safety");
 		m_MOEToolBar.SetButtonText(14,"Link");
 		m_MOEToolBar.SetButtonText(15,"Path");
-		m_MOEToolBar.SetButtonText(16,"Subarea");
-		m_MOEToolBar.SetButtonText(17,"System");
+		m_MOEToolBar.SetButtonText(16,"Vehicle");
+		m_MOEToolBar.SetButtonText(17,"Subarea");
+		m_MOEToolBar.SetButtonText(18,"System");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));

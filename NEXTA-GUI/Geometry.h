@@ -17,6 +17,7 @@ public:
 	enum GeometryType {
 		POINT, 
 		LINE,
+		POLYGON,
 		UNKNOWN
 	};
 private:
@@ -25,6 +26,7 @@ private:
 	std::vector<CCoordinate> v_Coordinates;
 	bool ReadPointCoordinate(string s);
 	bool ReadLineStringCoordinates(string s);
+	bool ReadPolygonCoordinates(string s);
 
 public:
 	CGeometry(string s);

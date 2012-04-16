@@ -50,6 +50,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	m_bDYNASMARTDataSet = true;
 
+	int YCorridonateFlag = -1;
+
 	CString directory;
 	m_ProjectFile = ProjectFileName;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
@@ -102,7 +104,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			// read xy.dat	
 			int node_number = g_read_integer(pFileNodeXY);  //skip node number in xy.dta
 			pNode->pt.x = g_read_float(pFileNodeXY);
-			pNode->pt.y = g_read_float(pFileNodeXY);
+			pNode->pt.y = g_read_float(pFileNodeXY)*YCorridonateFlag;
 
 			pNode->m_NodeNumber = node_id;
 			pNode->m_NodeID = i;
@@ -164,6 +166,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int m_grade= g_read_integer(pFile);
 
 			m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
+			m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+
 			m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 			unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
@@ -250,7 +254,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				{
 					GDPoint	pt;
 					pt.x =  g_read_float(pFileLinkXY);
-					pt.y = g_read_float(pFileLinkXY);
+					pt.y = g_read_float(pFileLinkXY)*YCorridonateFlag;
 					pLink->m_ShapePoints .push_back (pt);
 				}
 
@@ -280,7 +284,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int feature_point_id = g_read_integer(pZoneXY);
 
 			FeaturePointMap[feature_point_id].x = g_read_float(pZoneXY);
-			FeaturePointMap[feature_point_id].y = g_read_float(pZoneXY);
+			FeaturePointMap[feature_point_id].y = g_read_float(pZoneXY)*YCorridonateFlag;
 		}
 
 		for(int z = 0; z< number_of_zones; z++)
@@ -332,12 +336,16 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				int node_id  = m_NodeNametoIDMap[destination_node];
 				m_NodeIDtoZoneNameMap[node_id] = zone_number;
+				m_NodeIDMap [node_id ] -> m_ZoneID = zone_number;
 
 				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
+				DTAActivityLocation element;
+				element.ZoneID  = zone_number;
+				element.NodeNumber = destination_node;
 
-				m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (destination_node);
+				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 
 			}
 
@@ -382,9 +390,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
 
-				if(m_ZoneMap [zone_number].m_CentroidNodeMap.find(to_node) == m_ZoneMap [zone_number].m_CentroidNodeMap.end())
+				if(m_ZoneMap [zone_number].FindANode(to_node) == false)
 				{
-					m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (to_node);
+				DTAActivityLocation element;
+				element.ZoneID  = zone_number;
+				element.NodeNumber = to_node;
+
+				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 				}
 
 			}

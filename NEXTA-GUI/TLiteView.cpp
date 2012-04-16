@@ -146,7 +146,23 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LINK_LINEDISPLAYMODE, &CTLiteView::OnUpdateLinkLinedisplaymode)
 	ON_COMMAND(ID_VIEW_ZONEBOUNDARY, &CTLiteView::OnViewZoneboundary)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_ZONEBOUNDARY, &CTLiteView::OnUpdateViewZoneboundary)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_VIEW_SHOW_CONNECTOR, &CTLiteView::OnViewShowConnector)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOW_CONNECTOR, &CTLiteView::OnUpdateViewShowConnector)
+	ON_COMMAND(ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK, &CTLiteView::OnToolsGeneratephysicalzonecentroidsonroadnetwork)
+	ON_COMMAND(ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS, &CTLiteView::OnViewHighlightcentroidsandactivitylocations)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS, &CTLiteView::OnUpdateViewHighlightcentroidsandactivitylocations)
+	ON_COMMAND(ID_VIEW_BACKGROUNDCOLOR, &CTLiteView::OnViewBackgroundcolor)
+	ON_COMMAND(ID_ACTIVITYLOCATIONMODE_NOLANDUSEACTIVITY, &CTLiteView::OnActivitylocationmodeNolanduseactivity)
+	ON_UPDATE_COMMAND_UI(ID_ACTIVITYLOCATIONMODE_NOLANDUSEACTIVITY, &CTLiteView::OnUpdateActivitylocationmodeNolanduseactivity)
+	ON_COMMAND(ID_ACTIVITYLOCATIONMODE_LANDUSEACTIVITY, &CTLiteView::OnActivitylocationmodeLanduseactivity)
+	ON_UPDATE_COMMAND_UI(ID_ACTIVITYLOCATIONMODE_LANDUSEACTIVITY, &CTLiteView::OnUpdateActivitylocationmodeLanduseactivity)
+	ON_COMMAND(ID_ACTIVITYLOCATIONMODE_EXTERNALORIGIN, &CTLiteView::OnActivitylocationmodeExternalorigin)
+	ON_UPDATE_COMMAND_UI(ID_ACTIVITYLOCATIONMODE_EXTERNALORIGIN, &CTLiteView::OnUpdateActivitylocationmodeExternalorigin)
+	ON_COMMAND(ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION, &CTLiteView::OnActivitylocationmodeExternaldestination)
+	ON_UPDATE_COMMAND_UI(ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION, &CTLiteView::OnUpdateActivitylocationmodeExternaldestination)
+	ON_COMMAND(ID_MOE_ODDEMAND, &CTLiteView::OnMoeOddemand)
+	ON_UPDATE_COMMAND_UI(ID_MOE_ODDEMAND, &CTLiteView::OnUpdateMoeOddemand)
+	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
@@ -158,6 +174,10 @@ CPen g_TransitPen(PS_SOLID,1,RGB(0,255,255));
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
 CPen g_PenSelectColor(PS_SOLID,2,RGB(255,0,0));
+
+CPen g_PenExternalDColor(PS_SOLID,2,RGB(173,255,047)); 
+CPen g_PenExternalOColor(PS_SOLID,2,RGB(255,165,0));
+
 CPen g_PenODColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenSelectPath(PS_SOLID,2,RGB(255,255,0));
 
@@ -165,6 +185,10 @@ CPen g_PenSignalColor(PS_SOLID,2,RGB(255,255,255));
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
+
+CPen g_PenConnectorColor(PS_DASH,1,RGB(0,0,255));
+CPen g_PenCentroidColor(PS_SOLID,1,RGB(0,255,255));
+
 CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,255,0));
 CPen g_PenQueueColor(PS_SOLID,3,RGB(255,0,0));
 
@@ -328,6 +352,9 @@ CTLiteView::CTLiteView()
 
 	m_bShowAVISensor = true;
 	m_bShowZoneBoundary = true;
+	m_bShowODDemandVolume = false;
+	m_bShowConnector = false;
+	m_bHighlightActivityLocation = false;
 	isCreatingSubarea = false;
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
@@ -679,6 +706,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
+		if(!m_bShowConnector &&  pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  //hide connectors
+			continue; 
+
 		// step 1: decide if a link is included in the screen region
 		FromPoint = NPtoSP((*iLink)->m_FromPoint);
 		ToPoint = NPtoSP((*iLink)->m_ToPoint);
@@ -1016,6 +1046,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
 	{
+
 		point = NPtoSP((*iNode)->pt);
 
 		CRect node_rect;
@@ -1032,6 +1063,30 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		if((*iNode)->m_NodeID == pDoc->m_SelectedNodeID)
 		{
 			pDC->SelectObject(&g_PenSelectColor);
+		}else if((*iNode)->m_ZoneID > 0 && m_bHighlightActivityLocation)
+		{
+			pDC->SelectObject(&g_PenCentroidColor);
+
+			if((*iNode)->m_External_OD_flag == 1)  // external origin 
+			{
+
+			pDC->SelectObject(&g_PenExternalOColor);
+			pDC->SelectObject(&g_BlackBrush);
+			pDC->SetTextColor(RGB(255,0,0));
+			pDC->SetBkColor(RGB(0,0,0));
+
+			}
+
+			if((*iNode)->m_External_OD_flag == -1)  // external destination
+			{
+			pDC->SelectObject(&g_PenExternalDColor);
+			pDC->SelectObject(&g_BlackBrush);
+			pDC->SetTextColor(RGB(255,0,0));
+			pDC->SetBkColor(RGB(0,0,0));
+
+
+			}
+
 		}else
 		{
 			pDC->SelectObject(&g_PenNodeColor);
@@ -1041,12 +1096,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		{
 
 			CFont* oldFont = pDC->SelectObject(&od_font);
-
 			pDC->SelectObject(&g_PenSelectColor);
 			pDC->SelectObject(&g_BlackBrush);
 			pDC->SetTextColor(RGB(255,0,0));
 			pDC->SetBkColor(RGB(0,0,0));
-
 
 			TEXTMETRIC tmOD;
 			memset(&tmOD, 0, sizeof TEXTMETRIC);
@@ -1111,21 +1164,20 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	//step 12: draw crash layer
+	//step 12: draw generic point layer , e.g. crashes
 
 	if(pDoc->m_LinkMOEMode == MOE_safety)
 	{
-	std::list<DTACrash*>::iterator iCrash;
+		pDC->SelectObject(&g_BlackBrush);
+		pDC->SetTextColor(RGB(255,255,0));
+		pDC->SelectObject(&g_PenSelectColor5);
+		pDC->SetBkColor(RGB(0,0,0));
 
-	for (iCrash = pDoc->m_CrashSet.begin(); iCrash != pDoc->m_CrashSet.end(); iCrash++)
+	std::list<DTAPoint*>::iterator iCrash;
+	for (iCrash = pDoc->m_DTAPointSet.begin(); iCrash != pDoc->m_DTAPointSet.end(); iCrash++)
 	{
 		point = NPtoSP((*iCrash)->pt);
 
-//	CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //magenta
-		pDC->SelectObject(&g_BlackBrush);
-		pDC->SetTextColor(RGB(255,255,0));
-		pDC->SelectObject(&g_PenCrashColor);
-		pDC->SetBkColor(RGB(0,0,0));
 			node_size = 3;
 				
 		/// starting drawing nodes in normal mode
@@ -1134,6 +1186,35 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				
 	}
 	}
+
+	
+	// draw generic link layer
+	std::list<DTALine*>::iterator iLine;
+
+	if(pDoc->m_DTALineSet.size() > 0)
+	{
+			pDC->SelectObject(&g_BlackBrush);
+			pDC->SetTextColor(RGB(255,255,0));
+			pDC->SelectObject(&g_PenCrashColor);
+			pDC->SetBkColor(RGB(0,0,0));
+
+		for (iLine = pDoc->m_DTALineSet.begin(); iLine != pDoc->m_DTALineSet.end(); iLine++)
+		{
+
+				for(unsigned int i = 0; i< (*iLine)->m_ShapePoints .size(); i++)
+				{
+					point = NPtoSP((*iLine)->m_ShapePoints[i]);
+					if(i==0)
+						pDC->MoveTo(point);
+					else
+						pDC->LineTo(point);
+
+				}
+					
+		}
+
+	}
+
 	// step 13: draw zone layer
 
 	if(m_bShowZoneBoundary)
@@ -1277,42 +1358,32 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//////////////////////////////////////
 	// step 16: draw OD demand
 
-	if(pDoc->m_LinkMOEMode == MOE_oddemand && pDoc->m_DemandMatrix!=NULL)
+	if(m_bShowODDemandVolume)
 	{
 		int i,j;
 
 		float MaxODDemand = 1;
-		for (i = 0; i< pDoc->m_ODSize ; i++)
-			for (j = 0; j< pDoc->m_ODSize ; j++)
+		std::map<int, DTAZone>	:: const_iterator itr_o;
+		std::map<int, DTAZone>	:: const_iterator itr_d;
+
+		for(itr_o = pDoc->m_ZoneMap.begin(); itr_o != pDoc->m_ZoneMap.end(); itr_o++)
+			for(itr_d = pDoc->m_ZoneMap.begin(); itr_d != pDoc->m_ZoneMap.end(); itr_d++)
 			{
-
-				if(pDoc->m_DemandMatrix [i][j] > MaxODDemand)
-				{
-					MaxODDemand = pDoc->m_DemandMatrix [i][j];
-
-				}
+				float volume = pDoc->m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
+				if(volume > MaxODDemand & (itr_o->first !=itr_d->first))
+					MaxODDemand = volume;
+				
 			}
 
 
-			for (i = 0; i< pDoc->m_ODSize ; i++)
-				for (j = 0; j< pDoc->m_ODSize ; j++)
-				{
-
-					float volume = pDoc->m_DemandMatrix [i][j] ;
-					if(volume>=1 && pDoc->m_ZoneMap [i].m_CentroidNodeAry.size()>0 && pDoc->m_ZoneMap [j].m_CentroidNodeAry.size()>0)
+		for(itr_o = pDoc->m_ZoneMap.begin(); itr_o != pDoc->m_ZoneMap.end(); itr_o++)
+			for(itr_d = pDoc->m_ZoneMap.begin(); itr_d != pDoc->m_ZoneMap.end(); itr_d++)
+			{
+					float volume = pDoc->m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
+					if(volume>=1 && (itr_o->first !=itr_d->first))
 					{
-						int nodeid_for_origin_zone = pDoc->m_ZoneMap [i].m_CentroidNodeAry[0];
-						int nodeid_for_destination_zone = pDoc->m_ZoneMap [j].m_CentroidNodeAry[0];
-
-						// if default, return node id;
-						//else return the last node id for zone
-						DTANode* pNodeOrigin= pDoc->m_NodeIDMap[nodeid_for_origin_zone];
-						DTANode* pNodeDestination= pDoc->m_NodeIDMap[nodeid_for_destination_zone];
-
-						if(pNodeOrigin!=NULL  && pNodeDestination!=NULL)
-						{
-							CPoint FromPoint = NPtoSP(pNodeOrigin->pt);
-							CPoint ToPoint = NPtoSP(pNodeDestination->pt);
+							CPoint FromPoint = NPtoSP(pDoc->m_ZoneMap[itr_o->first].GetCenter());
+							CPoint ToPoint = NPtoSP(pDoc->m_ZoneMap[itr_d->first].GetCenter());
 
 							CPen penmoe;
 							float Width = volume/MaxODDemand*10;
@@ -1331,7 +1402,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						}
 
 					}
-				}
 	}
 
 	// step 17: draw Public Transit Layer
@@ -1537,6 +1607,20 @@ int CTLiteView::FindClosestNode(CPoint point, float Min_distance)
 	return SelectedNodeID;
 }
 
+int CTLiteView::FindClosestZone(CPoint point, float Min_distance)
+{
+	CTLiteDoc* pDoc = GetDocument();
+	if(pDoc !=NULL)
+	{
+		GDPoint pt = SPtoNP (point);
+	int ZoneID = pDoc->GetZoneID(pt);
+
+	if(ZoneID > 0)
+		return ZoneID;
+
+	}
+	return -1;
+}
 void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	CTLiteDoc* pDoc = GetDocument();
@@ -1874,6 +1958,10 @@ void CTLiteView::OnNodeOrigin()
 	if(pDoc->m_SelectedNodeID>=0)
 		TRACE("ONode %s selected.\n", pDoc->m_NodeIDMap [pDoc->m_OriginNodeID]->m_Name );
 	pDoc->Routing(false);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
 	m_ShowAllPaths = true;
 	Invalidate();
 
@@ -1881,8 +1969,6 @@ void CTLiteView::OnNodeOrigin()
 
 void CTLiteView::OnNodeDestination()
 {
-
-
 	CTLiteDoc* pDoc = GetDocument();
 	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
 
@@ -1892,6 +1978,11 @@ void CTLiteView::OnNodeDestination()
 
 	m_ShowAllPaths = true;
 	pDoc->Routing(false);
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	Invalidate();
+
 }
 
 void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
@@ -2562,10 +2653,7 @@ void CTLiteView::CopyLinkSetInSubarea()
 
 			(*iLink)->m_DisplayLinkID = 1;
 
-			if( (*iLink)->m_LinkNo ==256)
-			{
-				TRACE("");
-			}
+	
 		}
 		iLink++;
 	}
@@ -3316,18 +3404,16 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 
 					if(pNode->m_ZoneID >0)  // if destination node associated with zones
 					{
-						pDC->Ellipse(point.x - node_size, point.y + node_size,
-							point.x + node_size, point.y - node_size);
-					}
-
-					if(pNode->m_bSignalData)  // traffic signal control
+						float zone_multipler = 2;
+						pDC->Ellipse(point.x - node_size*zone_multipler, point.y + node_size*zone_multipler,
+							point.x + node_size*zone_multipler, point.y - node_size*zone_multipler);
+					}else if(pNode->m_bSignalData)  // traffic signal control
 					{
 						pDC->SelectObject(&g_PenSignalNodeColor);
 
 						pDC->Ellipse(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);
-					}
-					else
+					} else
 					{
 						pDC->Rectangle(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);
@@ -3338,6 +3424,15 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 
 						CString str_nodenumber;
 						str_nodenumber.Format ("%d",pNode->m_NodeNumber );
+
+						if(m_bHighlightActivityLocation)
+						{
+						
+							if(pNode->m_ZoneID > 0 && pNode->m_External_OD_flag == 1)  // external origin
+								str_nodenumber.Format ("EO:%d",pNode->m_NodeNumber );
+							if(pNode->m_ZoneID > 0 && pNode->m_External_OD_flag == -1)  // external destination
+								str_nodenumber.Format ("ED:%d",pNode->m_NodeNumber );
+						}
 
 						if(pNode->m_DistanceToRoot > 0.00001 && pNode->m_DistanceToRoot < MAX_SPLABEL-1)  // check connectivity, overwrite with distance to the root
 							str_nodenumber.Format ("%4.1f",pNode->m_DistanceToRoot );
@@ -3356,7 +3451,6 @@ void CTLiteView::OnNodeMovementproperties()
 	CPropertySheet sheet;
 
 	CTLiteDoc* pDoc = GetDocument();
-
 
 	if(pDoc == NULL)
 		return;
@@ -3423,4 +3517,170 @@ void CTLiteView::OnViewZoneboundary()
 void CTLiteView::OnUpdateViewZoneboundary(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowZoneBoundary);
+
+}
+
+void CTLiteView::OnViewShowConnector()
+{
+	m_bShowConnector = ! m_bShowConnector;
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateViewShowConnector(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowConnector);
+}
+
+void CTLiteView::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
+{
+}
+
+void CTLiteView::OnViewHighlightcentroidsandactivitylocations()
+{
+	m_bHighlightActivityLocation = !m_bHighlightActivityLocation;
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateViewHighlightcentroidsandactivitylocations(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bHighlightActivityLocation);
+}
+
+void CTLiteView::OnViewBackgroundcolor()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	CColorDialog dlg(RGB(0, 0, 0), CC_FULLOPEN);
+	if (dlg.DoModal() == IDOK)
+	{
+		pDoc->m_BackgroundColor= dlg.GetColor();
+		pDoc->UpdateAllViews(0);
+	}
+		Invalidate();
+}
+
+void CTLiteView::OnActivitylocationmodeNolanduseactivity()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc != NULL)
+	{
+		int ZoneID = FindClosestZone(m_CurrentMousePoint,0);
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(pDoc->m_SelectedNodeID >=0 && ZoneID>0)
+		{
+			pDoc->m_ZoneMap [ZoneID].RemoveNodeActivityMode(pDoc->m_NodeIDtoNameMap [pDoc->m_SelectedNodeID]);
+
+			// remove zone attributes
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_ZoneID = 0;
+
+		}
+	}
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateActivitylocationmodeNolanduseactivity(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+}
+
+void CTLiteView::OnActivitylocationmodeLanduseactivity()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc != NULL)
+	{
+		int ZoneID = FindClosestZone(m_CurrentMousePoint,0);
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(pDoc->m_SelectedNodeID >=0 && ZoneID>0)
+		{
+			pDoc->m_ZoneMap [ZoneID].SetNodeActivityMode (pDoc->m_NodeIDtoNameMap [pDoc->m_SelectedNodeID],0);  // 0 for land use activity
+			// set zone attributes
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_ZoneID = ZoneID;
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_External_OD_flag = 0;
+
+	pDoc->m_SelectedNodeID = -1;
+
+	}
+	}
+	m_bHighlightActivityLocation  = true;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateActivitylocationmodeLanduseactivity(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+}
+
+void CTLiteView::OnActivitylocationmodeExternalorigin()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc != NULL)
+	{
+		int ZoneID = FindClosestZone(m_CurrentMousePoint,0);
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(pDoc->m_SelectedNodeID >=0 && ZoneID>0)
+		{
+			pDoc->m_ZoneMap [ZoneID].SetNodeActivityMode (pDoc->m_NodeIDtoNameMap [pDoc->m_SelectedNodeID],1);  // 1 for external origin
+			// set zone attributes
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_ZoneID = ZoneID;
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_External_OD_flag = 1;
+	pDoc->m_SelectedNodeID = -1;
+		}
+	}
+	m_bHighlightActivityLocation  = true;
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateActivitylocationmodeExternalorigin(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+}
+
+void CTLiteView::OnActivitylocationmodeExternaldestination()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc != NULL)
+	{
+		int ZoneID = FindClosestZone(m_CurrentMousePoint,0);
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(pDoc->m_SelectedNodeID >=0 && ZoneID>0)
+		{
+			pDoc->m_ZoneMap [ZoneID].SetNodeActivityMode (pDoc->m_NodeIDtoNameMap [pDoc->m_SelectedNodeID],-1);  // -1 for external destination
+			// set zone attributes
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_ZoneID = ZoneID;
+			pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID]->m_External_OD_flag = -1;
+			pDoc->m_SelectedNodeID = -1;
+
+		}
+	}
+		m_bHighlightActivityLocation  = true;
+		Invalidate();
+}
+
+void CTLiteView::OnUpdateActivitylocationmodeExternaldestination(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+}
+
+void CTLiteView::OnMoeOddemand()
+{
+	m_bShowODDemandVolume = !m_bShowODDemandVolume;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateMoeOddemand(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowODDemandVolume);
 }

@@ -28,16 +28,15 @@ CGeometry::CGeometry(string s)
 	{
 		m_Type = POINT;
 	}
-	else
+	else if (type_str.compare("LineString") == 0)
 	{
-		if (type_str.compare("LineString") == 0)
-		{
 			m_Type = LINE;
-		}
-		else
-		{
+	}else if ( type_str.compare("Polygon") == 0)
+	{
+		m_Type = POLYGON;
+	}else
+	{
 			m_Type = UNKNOWN;
-		}
 	}
 
 	switch (m_Type)
@@ -46,6 +45,9 @@ CGeometry::CGeometry(string s)
 			ReadPointCoordinate(tmp);
 			break;
 		case LINE:
+			ReadLineStringCoordinates(tmp);
+			break;
+		case POLYGON:
 			ReadLineStringCoordinates(tmp);
 			break;
 		default:
@@ -102,6 +104,34 @@ bool CGeometry::ReadLineStringCoordinates(string s)
 	return true;
 }
 
+bool CGeometry::ReadPolygonCoordinates(string s)
+{
+	istringstream ss(s);
+	string sub_str;
+
+	while(std::getline(ss,sub_str, ' '))
+	{
+		CCoordinate coordinate;
+		istringstream sub_ss(sub_str);
+		string tmp;
+
+		std::getline(sub_ss,tmp,',');
+		istringstream x_ss(tmp);
+		x_ss >> coordinate.X;
+		
+		std::getline(sub_ss,tmp,',');
+		istringstream y_ss(tmp);
+		y_ss >> coordinate.Y;
+
+		std::getline(sub_ss,tmp,',');
+		istringstream z_ss(tmp);
+		z_ss >> coordinate.Z;
+
+		v_Coordinates.push_back(coordinate);
+		m_NumOfCoordinates += 1;
+	}
+	return true;
+}
 bool CGeometry::ReadPointCoordinate(string s)
 {
 	CCoordinate coordinate;

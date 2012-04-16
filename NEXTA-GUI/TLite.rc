@@ -115,11 +115,11 @@ BEGIN
     BUTTON      ID_LINKMOE_SAFETY
     SEPARATOR
     BUTTON      ID_SEARCH_LINKLIST
+    BUTTON      ID_MOE_PATHLIST
     BUTTON      ID_MOE_VEHICLEPATHANALAYSIS
     BUTTON      ID_EDIT_CREATESUBAREA
     BUTTON      ID_TOOLS_VIEWSIMULATIONSUMMARY
     SEPARATOR
-    BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
@@ -453,6 +453,14 @@ BEGIN
     BEGIN
         MENUITEM "Properties",                  ID_NODE_MOVEMENTPROPERTIES
         MENUITEM SEPARATOR
+        POPUP "Activity Location Mode"
+        BEGIN
+            MENUITEM "No Land Use Activity",        ID_ACTIVITYLOCATIONMODE_NOLANDUSEACTIVITY
+            MENUITEM "Land Use Activity",           ID_ACTIVITYLOCATIONMODE_LANDUSEACTIVITY
+            MENUITEM "External Origin",             ID_ACTIVITYLOCATIONMODE_EXTERNALORIGIN
+            MENUITEM "External Destination",        ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION
+        END
+        MENUITEM SEPARATOR
         MENUITEM "Direction from here",         ID_NODE_ORIGIN
         MENUITEM "Direction to here ",          ID_NODE_DESTINATION
         MENUITEM SEPARATOR
@@ -603,8 +611,8 @@ BEGIN
         END
         POPUP "Export"
         BEGIN
+            MENUITEM "Save Network as KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Construct and Export Signal Data...", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
-            MENUITEM "Save Network as Shape Files", ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Upload Link Data to Google Fusion Table", ID_FILE_UPLOADLINKDATATOGOOGLEFUSIONTABLE
             MENUITEM "Generate Zone-to-zone Travel Time Matrix", ID_EXPORT_GENERATEZONE
         END
@@ -614,6 +622,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
         MENUITEM SEPARATOR
+        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
+        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
         MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
@@ -623,7 +633,6 @@ BEGIN
     BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
         MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
-        MENUITEM "Data Tool bar",               ID_VIEW_DATATOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         MENUITEM SEPARATOR
         POPUP "Node"
@@ -645,19 +654,32 @@ BEGIN
             END
             MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
             MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+            MENUITEM "Show/Hide Link MOE",          ID_MOE_NONE
+            MENUITEM "Show/Hide Link Arrow",        ID_SHOW_LINKARROW
+            MENUITEM "Hide Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
         END
-        MENUITEM "Zone Boundary",               ID_VIEW_ZONEBOUNDARY
-        MENUITEM "View Vehicle Statistics Associated with Subarea", ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA
-        MENUITEM SEPARATOR
-        MENUITEM "OD Demand ",                  ID_MOE_ODDEMAND
+        POPUP "Zone"
+        BEGIN
+            MENUITEM "Show/Hide Connectors",        ID_VIEW_SHOW_CONNECTOR
+            MENUITEM "Highlight Centroids and Activity Locations", ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS
+            MENUITEM "Zone Boundary",               ID_VIEW_ZONEBOUNDARY
+        END
+        POPUP "OD Demand Matrix"
+        BEGIN
+            MENUITEM "Show/Hide OD Demand Volume",  ID_MOE_ODDEMAND
+            MENUITEM "Show/Hide OD MOE",            ID_MOE_NOODMOE
+        END
+        POPUP "Subarea "
+        BEGIN
+            MENUITEM "View Vehicle Statistics Associated with Subarea", ID_SUBAREA_VIEWVEHICLESTATISTICSASSOCIATEDWITHSUBAREA
+        END
+        POPUP "Path"
+        BEGIN
+            MENUITEM "Show/Hide Path Trajectory",   ID_SHOW_SHOWALLPATHS
+            MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
+        END
         MENUITEM "Vehicle",                     ID_MOE_VEHICLE
-        MENUITEM "Link Arrow",                  ID_SHOW_LINKARROW
-        MENUITEM SEPARATOR
-        MENUITEM "Configure Background Color",  32778
-        MENUITEM "Show/Hide Link MOE",          ID_MOE_NONE
-        MENUITEM "Show/Hide Path Trajectory",   ID_SHOW_SHOWALLPATHS
-        MENUITEM "Show/Hide OD MOE",            ID_MOE_NOODMOE
-        MENUITEM "Show/Hide Path MOE Dialog",   ID_SHOW_SHOWPATHMOE
+        MENUITEM "Background Color",            ID_VIEW_BACKGROUNDCOLOR
     END
     POPUP "Edit"
     BEGIN
@@ -675,33 +697,31 @@ BEGIN
         MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)", ID_SEARCH_FINDLINK
         MENUITEM SEPARATOR
         MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
-        MENUITEM SEPARATOR
     END
     POPUP "Project"
     BEGIN
-        MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
         MENUITEM "Edit OD Demand Table",        ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM "Edit Time-Dependent Demand Profile", ID_PROJECT_EDITTIME
+        MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
         MENUITEM "Edit Scenario Data",          ID_SCENARIO_CONFIGURATION
         MENUITEM SEPARATOR
         MENUITEM "Perform Traffic Assignment",  ID_TOOLS_PERFORMTRAFFICASSIGNMENT
-        MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
-        MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
     END
     POPUP "MOE"
     BEGIN
-        MENUITEM "Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
-        MENUITEM "Vehicle Path Analysis (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
         MENUITEM "Link List",                   ID_SEARCH_LINKLIST
-        MENUITEM "Selected Vehicle Statistics ", ID_TOOLS_VIEWSIMULATIONSUMMARY
-        MENUITEM "MOE Tables",                  ID_MOE_VIEWMOES
+        MENUITEM "Path List",                   ID_MOE_PATHLIST
+        MENUITEM SEPARATOR
+        MENUITEM "Vehicle Path Analysis (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "Vehicle Statistics ",         ID_TOOLS_VIEWSIMULATIONSUMMARY
         MENUITEM SEPARATOR
         MENUITEM "View Traffic Assignment Summary in Excel", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
         MENUITEM "View Link MOE Summary in Excel", ID_MOE_VIEWLINKMOESUMMARYFILE
-        MENUITEM SEPARATOR
         MENUITEM "View Traffic Assignment Summary Plot", ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT
     END
     POPUP "Tools"
     BEGIN
+        MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
         MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
         MENUITEM "NGSIM Data",                  ID_IMPORT_NGSIM_FILE
         POPUP "NGSIM  Menu"
@@ -733,7 +753,6 @@ BEGIN
             MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
-        MENUITEM "Edit Time-Dependent Demand Profile", ID_PROJECT_EDITTIME
         MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
     END
     POPUP "&Window"
@@ -1111,6 +1130,18 @@ BEGIN
     END
 END
 
+IDR_MENU4 MENU 
+BEGIN
+    POPUP "Link Selection"
+    BEGIN
+        MENUITEM "Show All Links",              ID_LINKSELECTION_SHOWALLLINKS
+        MENUITEM "Show Highway Links Only",     ID_LINKSELECTION_SHOWHIGHWAYLINKSONLY
+        MENUITEM "Show Ramp Links Only",        ID_LINKSELECTION_SHOWRAMPLINKSONLY
+        MENUITEM "Show Arterial Links Only",    ID_LINKSELECTION_SHOWARTERIALLINKSONLY
+        MENUITEM "Show All Links Except Connectors", ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS
+    END
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1310,10 +1341,13 @@ END
 IDD_DIALOG_LINK_LIST DIALOGEX 0, 0, 552, 178
 STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Link Information"
+MENU IDR_MENU4
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,538,139
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,538,138
     PUSHBUTTON      "Exit",IDCANCEL,495,157,50,14
+    CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,151,87,10
 END
 
 IDD_ODGRID_DIALOG DIALOGEX 0, 0, 615, 270
@@ -1321,16 +1355,16 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "OD Demand Table"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Save and Exit",ID_GRID_SAVEQUIT,336,249,64,14
-    PUSHBUTTON      "Exit without Saving",ID_GRID_QUIT,425,249,78,14
+    PUSHBUTTON      "Exit without Saving",ID_GRID_QUIT,519,249,78,14
     CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,7,71,589,166
-    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,30,249,64,14
-    PUSHBUTTON      "View Zone-to-Node Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,118,249,117,14
-    LISTBOX         IDC_LIST1,7,18,116,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,30,249,64,14,WS_DISABLED
+    PUSHBUTTON      "Activity Location Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,118,249,117,14,WS_DISABLED
+    LISTBOX         IDC_LIST1,7,18,116,40,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Demand Type List:",IDC_STATIC,7,7,79,8
     LTEXT           "Time Intervanl List:",IDC_STATIC,151,7,79,8
     LISTBOX         IDC_LIST4,149,18,116,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Edit Time-dependent Profile",IDC_BUTTON1,295,27,99,14
+    DEFPUSHBUTTON   "Update Demand Matrix for Selected Demand Type",ID_GRID_SAVEQUIT2,271,249,199,14
 END
 
 IDD_DIALOG_Image_Width DIALOGEX 0, 0, 316, 141
@@ -1376,7 +1410,7 @@ END
 
 IDD_DIALOG_Zone_To_Node_Mapping DIALOGEX 0, 0, 197, 178
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Zone to Node Mapping"
+CAPTION "Activity Location Mapping"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,67,157,50,14
@@ -1537,22 +1571,24 @@ BEGIN
     CONTROL         "",IDC_GRIDLIST_MOE,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,684,299
 END
 
-IDD_DIALOG_SHAPEFILE DIALOGEX 0, 0, 368, 134
+IDD_DIALOG_SHAPEFILE DIALOGEX 0, 0, 562, 286
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Import Shape Files"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,216,113,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,285,113,50,14
+    DEFPUSHBUTTON   "OK",IDOK,216,265,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,285,265,50,14
     EDITTEXT        IDC_EDIT_NodeShapeFile,7,19,306,15,ES_AUTOHSCROLL
     LTEXT           "Node Layer:",IDC_STATIC,7,7,40,8
-    LTEXT           "Link Layer:",IDC_STATIC,7,42,36,8
-    LTEXT           "Zone Layer:",IDC_STATIC,7,79,40,8
-    EDITTEXT        IDC_EDIT_LinkShapeFile,7,56,306,15,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_ZoneShapeFile,7,89,306,15,ES_AUTOHSCROLL
+    LTEXT           "Link Layer:",IDC_STATIC,7,36,36,8
+    LTEXT           "Zone Layer:",IDC_STATIC,7,65,40,8
+    EDITTEXT        IDC_EDIT_LinkShapeFile,7,48,306,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ZoneShapeFile,7,78,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Node_File,322,19,20,14
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Link_File,322,57,20,14
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Zone_File,322,90,20,14
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Link_File,322,50,20,14
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Zone_File,321,78,20,14
+    DEFPUSHBUTTON   "Import Link",IDIMPORT_LINK,357,49,50,14
+    CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,106,231,173
 END
 
 IDD_DIALOG_Goolge_Fusion_Table DIALOGEX 0, 0, 316, 148
@@ -1763,12 +1799,12 @@ BEGIN
     LISTBOX         IDC_LIST1,7,80,304,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,19,306,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,317,20,20,14
-    LTEXT           "Shape File of Point Data Layer:",IDC_STATIC,7,6,100,8
+    LTEXT           "Shape File of Point/Line Data Layer:",IDC_STATIC,7,6,116,8
     RTEXT           "Message List:",IDC_STATIC,7,65,44,8
     DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,48,96,14
-    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,122,49,96,14
+    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,7,170,96,14
     DEFPUSHBUTTON   "Export to GIS Shape File",ID_EXPORT_GPS_SHAPE_FILE,7,149,95,14
-    DEFPUSHBUTTON   "Export to KML File",ID_EXPORT_KML_FILE,7,168,95,14
+    DEFPUSHBUTTON   "Export to KML File",ID_EXPORT_KML_FILE,7,191,95,14
     GROUPBOX        "Demo:",IDC_STATIC,345,7,127,118,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
     PUSHBUTTON      "1. View Sample Shape File",IDC_BUTTON_View_Sample_File,354,22,109,14
     PUSHBUTTON      "2. Select Sample Shape File",IDC_BUTTON_Load_Sample_Shape_File,354,39,109,14
@@ -1854,14 +1890,16 @@ BEGIN
     PUSHBUTTON      "...",IDC_BUTTON_Find_Demand_CSV_File,321,47,20,14
     EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL
     LTEXT           "Demand Matrix CSV File to be Imported (optional):",IDC_STATIC,7,36,162,8
-    RTEXT           "Message List:",IDC_STATIC,7,93,44,8
-    DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,69,151,14
+    RTEXT           "Message List:",IDC_STATIC,7,100,44,8
+    DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,68,151,14
     DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,155,220,86,14
     PUSHBUTTON      "1. View Sample Spreadsheet",IDC_BUTTON_View_Sample_File,355,12,109,14
     PUSHBUTTON      "2. Select Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,355,33,109,14
     PUSHBUTTON      "4: Save Project...",IDC_BUTTON_View_Sample_CSV_File,354,75,109,14
     GROUPBOX        "Demo:",IDC_STATIC,345,0,125,101,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
     DEFPUSHBUTTON   "3: Import All Tables",ID_IMPORT2,355,54,104,14
+    CONTROL         "Remove Connectors and Centroids",IDC_CHECK_REMOVE_CONNECTOR,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,89,136,10
 END
 
 IDD_DIALOG_NODE_MOVEMENT DIALOGEX 0, 0, 598, 262
@@ -1908,6 +1946,21 @@ BEGIN
     CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,28,266,197
     LTEXT           "Current Node ID:",IDC_STATIC,6,9,56,8
     EDITTEXT        IDC_EDIT_CURRENT_NODEID,73,7,54,14,ES_AUTOHSCROLL | ES_READONLY
+END
+
+IDD_DIALOG_PATH_LIST DIALOGEX 0, 0, 347, 214
+STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Path Information"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,333,138
+    PUSHBUTTON      "Exit",IDCANCEL,290,193,50,14
+    CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,151,87,10
+    LTEXT           "",IDC_PATHMOE,105,147,158,17,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Find Alternative Route through Random Routing",ID_FIND_RANDOM_ROUTE,103,186,165,14
+    LTEXT           "Random Cost Coefficient:",IDC_STATIC,7,172,83,8
+    COMBOBOX        IDC_COMBO1,7,186,78,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 
@@ -2174,9 +2227,9 @@ BEGIN
     IDD_DIALOG_SHAPEFILE, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 361
+        RIGHTMARGIN, 555
         TOPMARGIN, 7
-        BOTTOMMARGIN, 127
+        BOTTOMMARGIN, 279
     END
 
     IDD_DIALOG_Goolge_Fusion_Table, DIALOG
@@ -2335,6 +2388,14 @@ BEGIN
         RIGHTMARGIN, 591
         TOPMARGIN, 7
         BOTTOMMARGIN, 316
+    END
+
+    IDD_DIALOG_PATH_LIST, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 340
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 207
     END
 END
 #endif    // APSTUDIO_INVOKED
