@@ -6,7 +6,9 @@
 #include "Dlg_GISDataExchange.h"
 #include "MainFrm.h"
 #include "Shellapi.h"
-
+#include "CGridListCtrlEx\CGridColumnTraitEdit.h"
+#include "CGridListCtrlEx\CGridColumnTraitCombo.h"
+#include "CGridListCtrlEx\CGridRowTraitXP.h"
 
 // CDlg_GISDataExchange dialog
 
@@ -69,7 +71,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				return;
 			}
 
-			int crash_index = 0;
+			int point_index = 0;
 	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
     for (int i=0; i < poLayers; i++) 
     {
@@ -95,25 +97,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int iField;
 
-				int id = crash_index+1;
-
-				// find node id;
-				for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
-				{
-
-					OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn( iField );
-
-					if( poFieldDefn->GetType() == OFTInteger )  // search for node id
-					{
-						CString field_name;
-						field_name.Format("%s",poFieldDefn->GetNameRef());
-
-						if(field_name.Find("id"))
-						{
-						id = poFeature->GetFieldAsInteger( iField );
-						}
-					}
-				}
+				int id = feature_count;
 
 				OGRGeometry *poGeometry;
 
@@ -124,26 +108,42 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 					OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
 								// Create and insert the node
-								DTACrash* pCrash = new DTACrash;
-								pCrash->pt.x = poPoint->getX();
-								pCrash->pt.y = poPoint->getY();
+								DTAPoint* pDTAPoint = new DTAPoint;
+								pDTAPoint->pt.x = poPoint->getX();
+								pDTAPoint->pt.y = poPoint->getY();
 
-								pCrash->m_NodeNumber = id;
-								pCrash->m_NodeID = crash_index;
-								pCrash->m_ZoneID = 0;
-								pCrash->m_ControlType = 0;
+								pDTAPoint->m_NodeNumber = id;
+								pDTAPoint->m_NodeID = point_index;
+								pDTAPoint->m_ZoneID = 0;
+								pDTAPoint->m_ControlType = 0;
 								
-								m_pDoc->m_CrashSet.push_back(pCrash);
-								crash_index++;
+								m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+								point_index++;
 				}
-				else
+				else if (wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)
 				{
-					TRACE( "no point geometry\n" );
-				}       
+								// Create and insert the node
+						DTALine* pDTALine = new DTALine;
+
+					    OGRLineString *poLine = (OGRLineString *) poGeometry;
+
+						for(unsigned int si = 0; si< poLine->getNumPoints(); si++)
+						{
+							GDPoint pt;
+							pt.x  =  poLine->getX(si);
+							pt.y  =  poLine->getY(si);
+							pDTALine->m_ShapePoints .push_back(pt);
+
+						}
+						m_pDoc->m_DTALineSet.push_back(pDTALine);
+				
+
+				}
+   
 				OGRFeature::DestroyFeature( poFeature );
 				feature_count ++;
 			}
-				message_str.Format("Import %d crash records from layer %d.", feature_count,i+1);
+				message_str.Format("Import %d point records from layer %d.", feature_count,i+1);
 				m_MessageList.AddString(message_str);
 	}
 
@@ -222,13 +222,10 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 
 			poLayer->ResetReading();
 
-
-
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int iField;
-
 
 				if(feature_count == 0)    // first feature point, output field name;
 				{
@@ -236,10 +233,14 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 					{
 
 						OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn( iField );
-								CSVFile <<  poFieldDefn->GetNameRef() << "," ;
+						CString str = poFieldDefn->GetNameRef();
+						str.Replace(" ", NULL);  // remove space
+						CSVFile <<  str << "," ;
 					
 					}
-					CSVFile << "x,y" << endl;
+
+						CSVFile << "geometry" << endl;
+
 				}
 
 				for( iField = 0; iField < poFDefn->GetFieldCount(); iField++ )
@@ -274,27 +275,63 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 				OGRGeometry *poGeometry;
 
 				poGeometry = poFeature->GetGeometryRef();
-				if( poGeometry != NULL 
-					&& wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
+				if( poGeometry != NULL )
+				{
+				if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
 				{
 					OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
-					CSVFile <<  poPoint->getX() << ","  << poPoint->getY() << ",";
-					TRACE( "x = %f ,y = %f\n", poPoint->getX(), poPoint->getY() );
+					CSVFile << "\"<Point><coordinates>" <<  poPoint->getX() << ","  << poPoint->getY() << ",0.0" << "</coordinates></Point>\"" ;
 				}
-				else
+				else if (wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)
 				{
-					TRACE( "no point geometry\n" );
-				}       
-				OGRFeature::DestroyFeature( poFeature );
+			        OGRLineString *poLine = (OGRLineString *) poGeometry;
 
-				CSVFile << endl;
+						CSVFile << "\"<LineString><coordinates>";
+
+						for(unsigned int si = 0; si< poLine->getNumPoints(); si++)
+						{
+							CSVFile	 <<  poLine->getX(si) << ","  << poLine->getY(si) << ",0.0";
+
+								if(si!=poLine->getNumPoints()-1)
+									CSVFile << " ";
+						}
+
+						CSVFile << "</coordinates></LineString>\",";
+
+				} if (wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon )
+				{
+
+					OGRPolygon* polygon = (OGRPolygon*)(poGeometry);
+
+					OGRLinearRing *ring = polygon->getExteriorRing();
+						OGRPoint point;
+
+						CSVFile << "\"<Polygon><outerBoundaryIs><LinearRing><coordinates>";
+
+						for(int i = 0; i < ring->getNumPoints(); i++)
+						{
+							ring->getPoint(i, &point);
+							CSVFile	 <<  point.getX() << ","  << point.getY() << ",0.0";
+
+							if(i!=ring->getNumPoints()-1)
+									CSVFile << " ";
+						}
+
+						CSVFile << "</coordinates></LinearRing></outerBoundaryIs></Polygon>\"";
+				}
+						CSVFile << endl;
+	
+				}
 				feature_count ++;
 			}
+				OGRFeature::DestroyFeature( poFeature );
 				message_str.Format("Layer %d has %d features.", i+1, feature_count);
 				m_MessageList.AddString(message_str);
-	}
+				
 
+	}
+	
 			OGRDataSource::DestroyDataSource( poDS );
 
 			CSVFile.close();
@@ -397,20 +434,20 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
 		return;		
 	}
 
-	std::list<DTACrash*>::iterator iCrash;
+	std::list<DTAPoint*>::iterator iPoint;
 		
-	for (iCrash = m_pDoc->m_CrashSet.begin(); iCrash != m_pDoc->m_CrashSet.end(); iCrash++)
+	for (iPoint = m_pDoc->m_DTAPointSet.begin(); iPoint != m_pDoc->m_DTAPointSet.end(); iPoint++)
 	{
 
         OGRFeature *poFeature;
 
         poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
-        poFeature->SetField( "Name", (*iCrash)->m_NodeID );
+        poFeature->SetField( "Name", (*iPoint)->m_NodeID );
 
         OGRPoint pt;
         
-        pt.setX( (*iCrash)->pt .x );
-        pt.setY( (*iCrash)->pt .y );
+        pt.setX( (*iPoint)->pt .x );
+        pt.setY( (*iPoint)->pt .y );
  
         poFeature->SetGeometry( &pt ); 
 

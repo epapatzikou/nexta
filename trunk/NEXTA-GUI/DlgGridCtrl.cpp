@@ -42,24 +42,16 @@ void CDlgGridCtrl::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 
 	DDX_Control(pDX,IDC_GRID_CTRL,m_Grid);
+	DDX_Control(pDX, IDC_LIST1, m_DemandTypeList);
 }
 
-BOOL CDlgGridCtrl::OnInitDialog()
+void CDlgGridCtrl::DisplayDemandMatrix()
 {
-	CDialog::OnInitDialog();
-	CWaitCursor wait;
-	bool bReadDemandSuccess = false;
+	if(m_pDoc==NULL)
+	return;
 
-	if (ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv"))
-	{
-		if (ReadDemandCSVFileExt(m_pDoc->m_ProjectDirectory + "input_demand.csv"))
-		{
-			bReadDemandSuccess = true;
-		}
-
-
-		if (m_pDoc != NULL)
-		{
+	bool bReadDemandSuccess = true;
+	int demand_type = m_DemandTypeList.GetCurSel()+1;
 			m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
 			m_Grid.SetColumnCount(m_pDoc->m_ODSize + 1);
 
@@ -110,7 +102,7 @@ BOOL CDlgGridCtrl::OnInitDialog()
 
 								if (bReadDemandSuccess)
 								{
-									str.Format(_T("%.2f"),m_pDoc->m_DemandMatrix[i-1][j-1]);
+									str.Format(_T("%.2f"),m_pDoc->GetDemandVolume(i,j,demand_type));
 								}
 								else
 								{
@@ -124,7 +116,32 @@ BOOL CDlgGridCtrl::OnInitDialog()
 					} // Either i or j is not zero
 				} // End for j
 			} //End for i
-		} // End if ()
+
+	Invalidate();
+}
+
+BOOL CDlgGridCtrl::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+	CWaitCursor wait;
+	bool bReadDemandSuccess = true;
+
+	if (m_pDoc != NULL)
+		{
+
+		for(std::vector<DTADemandType>::iterator itr = m_pDoc->m_DemandTypeVector.begin(); itr != m_pDoc->m_DemandTypeVector.end(); itr++)
+		{
+			// can be also enhanced to edit the real time information percentage
+			CString str;
+			str.Format(" No.%d: %s, VOT= %5.3f", (*itr).demand_type , (*itr).demand_type_name, (*itr).average_VOT);
+			m_DemandTypeList.AddString(str);
+		}
+
+		m_DemandTypeList.SetCurSel (0);
+
+		DisplayDemandMatrix();
+		
+			} // End if ()
 		else
 		{
 			m_Grid.SetRowCount(1);
@@ -133,8 +150,7 @@ BOOL CDlgGridCtrl::OnInitDialog()
 			m_Grid.SetFixedColumnCount(1);
 			m_Grid.SetFixedRowCount(1);
 		}
-	} // End if Read Zone File
-
+	
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -147,6 +163,8 @@ BEGIN_MESSAGE_MAP(CDlgGridCtrl, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_CreateZones, &CDlgGridCtrl::OnBnClickedButtonCreatezones)
 	ON_BN_CLICKED(IDC_BUTTON_Edit_Zone_Node_Mapping, &CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping)
 	ON_BN_CLICKED(IDC_BUTTON1, &CDlgGridCtrl::OnBnClickedButton1)
+	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgGridCtrl::OnLbnSelchangeList1)
+	ON_BN_CLICKED(ID_GRID_SAVEQUIT2, &CDlgGridCtrl::OnBnClickedGridSavequit2)
 END_MESSAGE_MAP()
 
 
@@ -183,13 +201,6 @@ void CDlgGridCtrl::OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult)
 
 void CDlgGridCtrl::OnBnClickedGridSavequit()
 {
-	CWaitCursor wait;
-	bool ret = SaveDemandCSVFileExt(m_pDoc->m_ProjectDirectory+"input_demand.csv");
-
-	if (!ret)
-	{
-		AfxMessageBox("Save Demand file failed!");
-	}
 
 	OnOK();
 }
@@ -225,130 +236,25 @@ inline void ResetStringStream(std::istringstream& sstream, std::string s)
 	sstream.clear();
 }
 
-bool CDlgGridCtrl::ReadZoneCSVFileExt(LPCTSTR lpszFileName)
-{
-
-	CCSVParser parser;
-
-	if (parser.OpenCSVFile(lpszFileName))
-	{
-	m_pDoc->m_NodeIDtoZoneNameMap.clear();
-	if(m_pDoc->m_DemandMatrix != NULL)
-	{
-		DeallocateDynamicArray<float>(m_pDoc->m_DemandMatrix,m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-		m_pDoc->m_DemandMatrix = NULL;
-	}
-
-	m_pDoc->m_ODSize = 0;
-
-	while(parser.ReadRecord())
-		{
-			int zone_number;
-	
-			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
-				break;
-
-			int node_name;
-			if(parser.GetValueByFieldName("node_id",node_name) == false)
-				break;
-
-		ZoneRecordSet.push_back(ZoneRecord(zone_number,node_name));
-
-		m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNametoIDMap[node_name]] = zone_number;
-
-		m_pDoc->m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (node_name);
-
-		if(m_pDoc->m_ODSize < zone_number)
-		{
-			m_pDoc->m_ODSize = zone_number;
-		}
-
-	} // End while
-
-	m_pDoc->m_DemandMatrix = AllocateDynamicArray<float>(m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-
-	return true;
-	}
-	return false;
-}
 
 bool CDlgGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
 {
-	/*
-	ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
 
-	if (!outFile.is_open())
-	{
-		outFile << "zone_id,node_id\n";
-
-		list<DTANode*>::iterator it = m_pDoc->m_NodeSet.begin();
-
-		//for ( unsigned int i=0;i<number_of_zones;i++,it++)
-		//{
-		//	outFile << (*it)->m_NodeNumber << "," << (*it)->m_NodeNumber << "\n";
-		//}
-
-		outFile.close();
-	}
-*/
 	return true;
 }
 
-bool CDlgGridCtrl::ReadDemandCSVFileExt(LPCTSTR lpszFileName)
+
+bool CDlgGridCtrl::SaveDemandMatrix()
 {
-	CCSVParser parser;
 
-	if (parser.OpenCSVFile(lpszFileName))
-	{
-
-	for(int i= 0; i<m_pDoc->m_ODSize; i++)
-	{
-		for(int j= 0; j<m_pDoc->m_ODSize; j++)
-		{
-			m_pDoc->m_DemandMatrix[i][j]= 0.0f;
-		}
-	}
-
-
-		while(parser.ReadRecord())
-		{
-			int origin_zone_id, destination_zone_id;
-			float number_of_vehicles;
-
-			if(parser.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
-				break;
-			if(parser.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
-				break;
-			if(parser.GetValueByFieldName("number_of_vehicle_trips_type1",number_of_vehicles) == false)
-				break;
-
-		if(origin_zone_id <=m_pDoc->m_ODSize && destination_zone_id<=m_pDoc->m_ODSize)
-		{
-			m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
-		}
-
-	} // End while
-
-
-	return true;
-	}
-
-
+	if(m_pDoc==NULL)
 	return false;
-}
 
-bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
-{
-	ofstream outFile(lpszFileName);
+	int demand_type = m_DemandTypeList.GetCurSel() +1;
 
-	if (!outFile.is_open())
-	{
-		return false;
-	}
+	// step 1:
+	 // clear all demand element
 
-	outFile << "from_zone_id,to_zone_id,number_of_vehicle_trips_type1,number_of_vehicle_trips_type2,number_of_vehicle_trips_type3,number_of_vehicle_trips_type4,starting_time_in_min,ending_time_in_min\n";
-
-	float maxFlow = -1;
 	for (int i=1;i<m_Grid.GetRowCount();i++)
 	{
 		CString originStr = m_Grid.GetItemText(i,0);
@@ -357,23 +263,13 @@ bool CDlgGridCtrl::SaveDemandCSVFileExt(LPCTSTR lpszFileName)
 			CString destStr = m_Grid.GetItemText(0,j);
 			CString flowStr = m_Grid.GetItemText(i,j);
 
-			float flow = atoi(flowStr);
-
-			if (flow > maxFlow)
-			{
-				maxFlow = flow;
-			}
-
-			if (flow > 0)
-			{
-				outFile << originStr << "," << destStr << "," << flowStr << ",0,0,0,0,60\n";
-			}
-
-			m_pDoc->m_DemandMatrix[i-1][j-1] = flow;
+			int origin_zone_id = atoi(originStr);
+			int destination_zone_id = atoi(destStr);
+			float number_of_vehicles = atoi(flowStr);
+			m_pDoc->m_ZoneMap[origin_zone_id].m_ODDemandMatrix [destination_zone_id].SetValue (demand_type, number_of_vehicles);
 		}
 	}
 
-	outFile.close();
 
 	return true;
 }
@@ -387,11 +283,6 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 	CDlg_ImportODDemand dlg;
 	if(dlg.DoModal() == IDOK)
 	{
-		if(m_pDoc->m_DemandMatrix != NULL)
-		{
-			DeallocateDynamicArray(m_pDoc->m_DemandMatrix,m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-			m_pDoc->m_DemandMatrix = NULL;
-		}
 
 		unsigned int number_of_zones = dlg.m_NumberOfZones;
 		if (number_of_zones > m_pDoc->m_NodeSet.size())
@@ -401,29 +292,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 			return;
 		}
 
-		ofstream outFile(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
-
-		if (outFile.is_open())
-		{
-			ZoneRecordSet.clear();
-			outFile << "zone_id,node_id\n";
-
-			list<DTANode*>::iterator it = m_pDoc->m_NodeSet.begin();
-
-			for ( unsigned int i=0;i<number_of_zones;i++,it++)
-			{
-				outFile << (*it)->m_NodeNumber << "," << (*it)->m_NodeNumber << "\n";
-			}
-
-			outFile.close();
-		}
-
-		ReadZoneCSVFileExt(m_pDoc->m_ProjectDirectory + "input_zone_centroid.csv");
-
-		//m_pDoc->m_DemandMatrix = AllocateDynamicArray<float>(m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-
-
-		m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
+			m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
 		m_Grid.SetColumnCount(m_pDoc->m_ODSize + 1);
 
 		m_Grid.SetFixedColumnCount(1);
@@ -481,9 +350,9 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 			} // End for j
 		} //End for i
 
-		SaveDemandCSVFileExt(m_pDoc->m_ProjectDirectory + "input_demand.csv");
+		SaveDemandMatrix();
 
-		// write input_zone_centroid.csv
+		// write input_activity_location.csv
 		// zone number , node number
 		// make sure node number exists, if the node number does not exist, skip zone-node mapping pair
 		// fill zero value for OD table
@@ -503,4 +372,20 @@ void CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
 void CDlgGridCtrl::OnBnClickedButton1()
 {
 	// TODO: Add your control notification handler code here
+}
+
+void CDlgGridCtrl::OnLbnSelchangeList1()
+{
+	DisplayDemandMatrix();
+}
+
+void CDlgGridCtrl::OnBnClickedGridSavequit2()
+{
+	CWaitCursor wait;
+	bool ret = SaveDemandMatrix();
+
+	if (!ret)
+	{
+		AfxMessageBox("Save Demand file failed!");
+	}
 }

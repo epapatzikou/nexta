@@ -255,14 +255,160 @@ extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1
 
 /////
 
+class DTAActivityLocation
+{ public: 
+	DTAActivityLocation()
+	{
+		External_OD_flag = 0;
+	}
+
+  int ZoneID;
+  int NodeNumber;
+  int External_OD_flag;  // 0: land use activity, 1: external origin, -1: external destination
+  
+};
+
+class DTATimeDependentemand
+{
+public: 
+	int starting_time_in_min;
+	int ending_time_in_min;
+	float time_dependent_value;
+	DTATimeDependentemand()
+	{
+	starting_time_in_min = 0;
+	ending_time_in_min = 1440;
+	time_dependent_value = 0;
+	}
+
+};
+class DTADemandVolume
+{
+public:
+	std::map<int, float> TypeValue;
+
+	std::vector<DTATimeDependentemand> TimeDependentVector;
+
+	float total_demand;
+
+	int starting_time_in_min;
+	int ending_time_in_min;
+
+	DTADemandVolume()
+	{
+	total_demand = 0;
+
+	starting_time_in_min = 0;
+	ending_time_in_min = 60;
+
+	}
+
+	void SetValue(int demand_type, float value)
+	{
+	TypeValue[demand_type]= value;
+	total_demand += value;
+	}
+
+	void AddTimeDependentValue(int demand_type, float value, int starting_time, int ending_time)
+	{
+	TypeValue[demand_type]= value;
+	total_demand += value;
+
+	DTATimeDependentemand element;
+	element.starting_time_in_min = starting_time;
+	element.ending_time_in_min = ending_time;
+
+	}
+
+
+	float GetValue(int demand_type)
+	{
+	if( TypeValue.find(demand_type) != TypeValue.end())
+		return TypeValue[demand_type];
+	else
+		return 0;
+	}
+
+	float GetSubTotalValue()
+	{
+	return total_demand;
+	}
+
+
+};
 class DTAZone
 { 
 public:
+
 	std::vector<GDPoint> m_ShapePoints;
+	std::map<int, DTADemandVolume> m_ODDemandMatrix;
 	int m_ZoneTAZ;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
-	std::vector<int> m_CentroidNodeAry;
-	std::map<int,bool> m_CentroidNodeMap;
+	std::vector<DTAActivityLocation> m_ActivityLocationVector;
+
+	bool bInitialized;
+	GDPoint m_Center;
+
+	GDPoint GetCenter()
+	{
+		if(bInitialized)
+			return m_Center;
+		else
+		{  // not initialized yet
+			m_Center.x = 0;
+			m_Center.y = 0;
+	
+		for(unsigned int i = 0; i< m_ShapePoints.size(); i++)
+		{
+			m_Center.x += m_ShapePoints[i].x;
+			m_Center.y += m_ShapePoints[i].y;
+
+		}
+
+		m_Center.x /= max(1,m_ShapePoints.size());
+		m_Center.y /= max(1,m_ShapePoints.size());
+
+		bInitialized = true;
+				return m_Center;
+		}
+
+	}
+
+	void RemoveNodeActivityMode(int NodeNumber)
+	{
+		for(unsigned int i = 0; i< m_ActivityLocationVector.size(); i++)
+		{
+		 if(m_ActivityLocationVector[i].NodeNumber ==NodeNumber)
+		 {
+		 m_ActivityLocationVector.erase(m_ActivityLocationVector.begin() + i);
+		 return;
+		 }
+		}
+	}
+
+	void SetNodeActivityMode(int NodeNumber, int External_OD_flag)
+	{
+		RemoveNodeActivityMode(NodeNumber);  // remove existing record first
+		DTAActivityLocation element;
+		element.ZoneID = m_ZoneTAZ;
+		element.NodeNumber = NodeNumber;
+		element.External_OD_flag = External_OD_flag;
+		m_ActivityLocationVector.push_back (element);
+	}
+
+
+
+	bool FindANode(int NodeNumber)
+	{
+
+		for(unsigned int i = 0; i< m_ActivityLocationVector.size(); i++)
+		{
+		 if(m_ActivityLocationVector[i].NodeNumber ==NodeNumber)
+			 return true;
+		}
+	
+		return false;
+	}
 
 
 	DTAZone()
@@ -270,8 +416,58 @@ public:
 		m_Capacity  =0;
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
+		bInitialized = false;
 
 	}
+
+	BOOL IsInside(GDPoint pt)
+	{
+
+	double MinX  = pt.x ; 
+	double MinY  = pt.y;
+
+	double MaxX  = pt.x ; 
+	double MaxY  = pt.y;
+
+   int num_points = m_ShapePoints.size();
+  for(unsigned i = 0; i < num_points; i++)
+   {
+     MinX = min(m_ShapePoints[i].x, MinX);
+     MinY = min(m_ShapePoints[i].y, MinY);
+
+     MaxX = max(m_ShapePoints[i].x, MaxX);
+     MaxY = max(m_ShapePoints[i].y, MaxY);
+
+  }
+
+  double resolution_x = 1000/max(0.0000001,(MaxX - MinX));
+  double resolution_y = 1000/max(0.0000001,(MaxY - MinY));
+
+   LPPOINT zpts = new POINT[num_points];
+
+   for(unsigned i = 0; i < num_points; i++)
+   {
+      zpts[i].x =  (int)((m_ShapePoints[i].x - MinX)*resolution_x+0.5);
+      zpts[i].y =  (int)((m_ShapePoints[i].y - MinY)*resolution_y+0.5);
+   }
+
+   // Create a polygonal region
+   HRGN hrgn = CreatePolygonRgn(zpts, num_points, WINDING);
+
+   POINT current_point;
+     current_point.x =  (int)((pt.x - MinX)*resolution_x+0.5);
+      current_point.y =  (int)((pt.y - MinY)*resolution_y+0.5);
+
+
+    BOOL bInside =  PtInRegion(hrgn, current_point.x , current_point.y );
+
+	if(zpts!=NULL)
+		delete zpts;
+
+	return bInside;
+	}
+
+	
 	float m_Capacity;
 	float m_Demand;
 
@@ -354,6 +550,7 @@ public:
 	string link_type_name;
 	int freeway_flag;
 	int arterial_flag;
+	int connector_flag;
 	int ramp_flag;
 };
 
@@ -462,7 +659,9 @@ public:
 class DTANode
 {
 public:
-	DTANode(){
+	DTANode()
+	{
+		m_bZoneActivityLocationFlag = false;
 		m_NodeNumber = 0;
 		m_ControlType = 0;
 		m_ZoneID = 0;
@@ -473,10 +672,15 @@ public:
 		m_CycleLength =0;
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
-
+		m_External_OD_flag = 0;
 	};
 	~DTANode(){};
 
+	bool m_bZoneActivityLocationFlag; 
+
+	int m_External_OD_flag;
+
+	std::vector<int> m_OutgoingLinkVector;
 	std::vector <DTANodeMovement> m_MovementVector;
 
 	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
@@ -501,9 +705,6 @@ public:
 	 
 	int m_CycleLength;
 	int m_NumberofPhases;
-
-	
-
 	float m_DistanceToRoot;
 	string m_Name;
 	GDPoint pt;
@@ -520,10 +721,10 @@ public:
 
 };
 
-class DTACrash
+class DTAPoint
 {
 public:
-	DTACrash(){
+	DTAPoint(){
 		m_NodeNumber = 0;
 		m_ControlType = 0;
 		m_ZoneID = 0;
@@ -532,7 +733,7 @@ public:
 		m_LayerNo = 0;
 		m_DistanceToRoot = 0;
 	};
-	~DTACrash(){};
+	~DTAPoint(){};
 
 
 	float m_DistanceToRoot;
@@ -548,6 +749,12 @@ public:
 
 };
 
+class DTALine
+{
+public:
+	int LineID;
+	std::vector<GDPoint> m_ShapePoints;
+};
 // event structure in this "event-basd" traffic simulation
 typedef struct{
 	int veh_id;
@@ -746,6 +953,8 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_bConnector = false;
+		m_ConnectorZoneID = 0;
 		m_NumberOfLeftTurnBay = 0;
 		m_LeftTurnBayLengthInFeet = 0;	
 
@@ -1197,6 +1406,8 @@ void AdjustLinkEndpointsWithSetBack()
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
 	int	m_link_type;
+	bool m_bConnector;
+	int m_ConnectorZoneID;
 
 	// for MOE data array
 	int m_SimulationHorizon;
@@ -2045,12 +2256,12 @@ public:
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
 	void BuildTravelerInfoNetwork(int CurrentTime, float Perception_error_ratio);
 
-	void BuildPhysicalNetwork(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, bool bRandomCost, bool bOverlappingCost);
+	void BuildPhysicalNetwork(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, float RandomCostCoef, bool bOverlappingCost);
 	void BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, int TrainType);
 
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	int SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool check_connectivity_flag, bool debug_flag);   // Pointer to previous node (node)
+	int SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool check_connectivity_flag, bool debug_flag, float RandomCostCoef);   // Pointer to previous node (node)
 
 	// simplifed version use a single node-dimension of LabelCostAry, NodePredAry
 

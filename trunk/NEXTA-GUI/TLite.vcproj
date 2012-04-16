@@ -497,6 +497,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DlgPathList.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DlgPathMOE.cpp"
 				>
 			</File>
@@ -1110,6 +1114,10 @@
 			</File>
 			<File
 				RelativePath=".\DlgNetworkAlignment.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgPathList.h"
 				>
 			</File>
 			<File

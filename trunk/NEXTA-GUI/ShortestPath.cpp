@@ -34,7 +34,7 @@
 extern long g_Simulation_Time_Horizon;
 
 
-void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, bool bRandomCost,bool bOverlappingCost)
+void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, float RandomCostCoef,bool bOverlappingCost)
 {
 
 	// build a network from the current zone centroid (1 centroid here) to all the other zones' centroids (all the zones)
@@ -61,8 +61,9 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
 	{
-//		if((*iterLink) == NULL)
-//			continue;
+
+		if((*iterLink)->m_bConnector )  // no connectors
+			continue; 
 
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
@@ -80,7 +81,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 		m_LinkTDTimeAry[(*iterLink)->m_LinkNo][0] = (*iterLink)->m_Length;
 		m_LinkTDCostAry[(*iterLink)->m_LinkNo][0]=  (*iterLink)->m_Length;
-
 			// use travel time now, should use cost later
 
 	}
@@ -94,7 +94,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 
 
-int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag,bool check_connectivity_flag, bool debug_flag)   // Pointer to previous node (node)
+int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag,bool check_connectivity_flag, bool debug_flag, float RandomCostCoef)   // Pointer to previous node (node)
 // time -dependent label correcting algorithm with deque implementation
 {
 
@@ -151,8 +151,17 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 								  TRACE("\n   to node %d",ToID);
 			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
-			NewTime	 = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkNo][0];  // time-dependent travel times come from simulator
-			NewCost    = LabelCostAry[FromID] + m_LinkTDCostAry[LinkNo][0];       // costs come from time-dependent tolls, VMS, information provisions
+			float random_value = g_RNNOF();
+			if(random_value >5)
+				random_value = 5;
+
+			float random_cost = max(0.1f,m_LinkTDTimeAry[LinkNo][0]*(1+RandomCostCoef*random_value));
+
+
+
+
+			NewTime	 = LabelTimeAry[FromID] + random_cost;  // time-dependent travel times come from simulator
+			NewCost    = LabelCostAry[FromID] +random_cost;       // costs come from time-dependent tolls, VMS, information provisions
 
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{

@@ -17,6 +17,7 @@
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
 #define ID_FindCriticalOD               4
+#define ID_FIND_RANDOM_ROUTE            4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
 #define ID_EXPORT_DATA3                 5
@@ -100,6 +101,8 @@
 #define IDD_DIALOG_NODE_PHASE           203
 #define IDD_DIALOG1                     204
 #define IDD_DIALOG_NODE_LANETURN        205
+#define IDR_MENU4                       205
+#define IDD_DIALOG_PATH_LIST            206
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -144,6 +147,7 @@
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
+#define ID_GRID_SAVEQUIT2               1026
 #define IDC_EDIT_WIDTH2                 1027
 #define IDC_LIST_SIMULATION_METHOD      1029
 #define IDC_LIST_DEMAND_LOADING_MODE    1030
@@ -268,10 +272,14 @@
 #define IDC_BUTTON_IMPORT_TRANSIMS      1105
 #define IDC_BUTTON_View_TRANSCADA_File  1106
 #define IDC_EDIT_CURRENT_NODEID         1106
+#define IDIMPORT_LINK                   1107
 #define IDC_BUTTON_View_CUBE_File       1108
+#define IDC_CHECK_REMOVE_CONNECTOR      1108
 #define IDC_BUTTON_View_CUBE_File2      1109
 #define IDC_BUTTON_View_CUBE_File3      1110
+#define IDC_CHECK_ZOOM_TO_SELECTED_LINK 1110
 #define IDC_BUTTON_View_CUBE_File4      1111
+#define IDC_PATHMOE                     1111
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -732,14 +740,37 @@
 #define ID_VIEW_DYNASMART               33354
 #define ID_VIEW_ZONEBOUNDARY            33355
 #define ID_FILE_UPLOADLINKDATATOGOOGLEFUSIONTABLE 33357
+#define ID_VIEW_SHOW33358               33358
+#define ID_VIEW_SHOW_CONECTOR           33359
+#define ID_VIEW_SHOW_CONNECTOR          33360
+#define ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK 33361
+#define ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS 33362
+#define ID_VIEW_ZONE                    33363
+#define ID_VIEW_SUBAREA                 33364
+#define ID_VIEW_ODDEMAND                33365
+#define ID_VIEW_PATH                    33366
+#define ID_VIEW_BACKGROUNDCOLOR33367    33367
+#define ID_NODE_ACTIVITYLOCATIONMODE    33368
+#define ID_ACTIVITYLOCATIONMODE_NOLANDUSEACTIVITY 33369
+#define ID_ACTIVITYLOCATIONMODE_LANDUSEACTIVITY 33370
+#define ID_ACTIVITYLOCATIONMODE_EXTERNALORIGIN 33371
+#define ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION 33372
+#define ID_LINKSELECTION_LOAD           33373
+#define ID_LINKSELECTION_SHOWHIGHWAYLINKSONLY 33374
+#define ID_LINKSELECTION_SHOWRAMPLINKSONLY 33375
+#define ID_LINKSELECTION_SHOWARTERIALLINKSONLY 33376
+#define ID_LINKSELECTION_SHOWALLLINKS   33377
+#define ID_LINKSELECTION_DONOTSHOWCONNECTORS 33378
+#define ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS 33379
+#define ID_MOE_PATHLIST                 33380
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        205
-#define _APS_NEXT_COMMAND_VALUE         33358
-#define _APS_NEXT_CONTROL_VALUE         1107
+#define _APS_NEXT_RESOURCE_VALUE        207
+#define _APS_NEXT_COMMAND_VALUE         33381
+#define _APS_NEXT_CONTROL_VALUE         1113
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

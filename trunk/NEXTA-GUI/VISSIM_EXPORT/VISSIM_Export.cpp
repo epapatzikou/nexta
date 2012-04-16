@@ -48,7 +48,7 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
 
 		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
-		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 		}
 

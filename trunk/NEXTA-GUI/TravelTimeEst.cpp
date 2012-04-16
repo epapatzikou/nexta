@@ -716,8 +716,8 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 			NodeNodeSum = 0;
 			TRACE("Path %d\n",p);
 
-			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
-			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0);
+			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
+			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0,0);
 			int     NodeSize = 0;
 			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
 			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
@@ -800,8 +800,8 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 			TRACE("Path %d\n",p);
 			NodeNodeSum=0;
 
-			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, false, true);
-			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0);
+			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, true);
+			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0,0);
 			int     NodeSize = 0;
 			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
 			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
@@ -1019,6 +1019,14 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 	{
 		(*iLink)->m_bIncludedBySelectedPath = false;  // reset all the links are not selected by the path
 		(*iLink)->m_OverlappingCost  = 0;  // randomize link cost to avoid overlapping
+
+		if(m_LinkTypeConnectorMap.find((*iLink)->m_link_type)!= m_LinkTypeConnectorMap.end())
+		{
+		
+			if(m_LinkTypeConnectorMap[(*iLink)->m_link_type]== 1)
+				(*iLink)->m_bConnector = true;
+		}
+
 	}
 
 
@@ -1037,7 +1045,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 	if(m_pNetwork ==NULL)  
 		{
 		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 		}
 		int NodeNodeSum = 0;
@@ -1051,11 +1059,11 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 			int     NodeSize ;
 			
 			if(bCheckConnectivity==false)
-				NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false);   // Pointer to previous node (node)
+				NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)
 			else
 			{
 			
-				m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, true, false);   // Pointer to previous node (node)
+				m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, true, false,0);   // Pointer to previous node (node)
 
 					for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 					{

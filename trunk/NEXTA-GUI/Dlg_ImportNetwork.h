@@ -49,4 +49,5 @@ public:
 	afx_msg void OnBnClickedButtonLoadSampleCsvFile();
 	afx_msg void OnBnClickedButtonViewSampleProjectFolder();
 	afx_msg void OnBnClickedImport2();
+	BOOL m_bRemoveConnectors;
 };

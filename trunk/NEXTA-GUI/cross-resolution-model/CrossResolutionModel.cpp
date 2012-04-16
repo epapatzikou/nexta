@@ -218,7 +218,7 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 	}
 
 		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
-		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 	// generate all movements
 	int i = 0;
@@ -633,7 +633,7 @@ void CTLiteDoc::Constructandexportsignaldata()
 		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
 
 		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
-		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 		ConstructMovementVector(true);
 
@@ -1445,7 +1445,6 @@ bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer
 		OGRFieldDefn oField = OGRFieldVector[i];
 		if( poLayer->CreateField( &oField ) != OGRERR_NONE )
 		{
-			
 			CString str;
 			str.Format("Creating field %s failed", oField.GetNameRef());
 			AfxMessageBox(str);
@@ -1453,6 +1452,7 @@ bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer
 		}
 	}
 
+	return true;
 }
 
 void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeString)
@@ -1597,10 +1597,6 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 	OGRFieldDefn oField10 ("Grade", OFTReal); 
 	OGRFieldDefn oField11 ("iSpeed", OFTReal); 
 	OGRFieldDefn oField12 ("iReliable", OFTReal); 
-
-
-
-
 
 	CString str;  
 	if( poLayer->CreateField( &oField1 ) != OGRERR_NONE ) { str.Format("Creating field %s failed", oField1.GetNameRef()); AfxMessageBox(str); return; }

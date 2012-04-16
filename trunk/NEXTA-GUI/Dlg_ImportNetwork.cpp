@@ -18,6 +18,7 @@ CDlg_ImportNetwork::CDlg_ImportNetwork(CWnd* pParent /*=NULL*/)
 , m_Edit_Excel_File(_T(""))
 , m_Edit_Demand_CSV_File(_T(""))
 , m_Sensor_File(_T(""))
+, m_bRemoveConnectors(FALSE)
 {
 	m_bImportNetworkOnly = false;
 }
@@ -35,6 +36,7 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_ExcelFile, m_Edit_Excel_File);
 	DDX_Text(pDX, IDC_EDIT_Demand_CSV_File, m_Edit_Demand_CSV_File);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
+	DDX_Check(pDX, IDC_CHECK_REMOVE_CONNECTOR, m_bRemoveConnectors);
 }
 
 
@@ -93,6 +95,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	m_pDoc->m_LinkSet.clear ();
 	m_MessageList.ResetContent ();
 
+	UpdateData(true);
 	bool bExist=true;
 
 	CString strSQL;
@@ -186,8 +189,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			rsNode.MoveNext();
 		}	// end of while
 		rsNode.Close();
-		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
-		m_MessageList.AddString (str_msg);
 
 	}else
 	{
@@ -196,8 +197,91 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		return;
 	}
 
-	if(m_pDoc->m_NodeSet.size() > 0)
+	// Read record
+	strSQL = m_pDoc->ConstructSQL("2-1-LINK-TYPE");
+	if(strSQL.GetLength () > 0)
 	{
+
+		CRecordsetExt rsLinkType(&m_pDoc->m_Database);
+		rsLinkType.Open(dbOpenDynaset, strSQL);
+
+		while(!rsLinkType.IsEOF())
+		{
+			DTALinkType element;
+			int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
+			if(!bExist) 
+			{
+				m_MessageList.AddString ("Field link_type cannot be found in input_link_type.csv.");
+				return;
+			}
+			if(link_type_number ==0)
+				break;
+
+			element.link_type = link_type_number;
+			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
+			element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
+			if(!bExist) 
+			{
+				m_MessageList.AddString ("Field freeway_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
+			element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
+			if(!bExist) 
+			{
+				m_MessageList.AddString("Field ramp_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
+			element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
+			if(!bExist)
+			{
+				m_MessageList.AddString("Field arterial_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
+			element.connector_flag    = rsLinkType.GetLong (CString("connector_flag"),bExist,false);
+			if(!bExist)
+			{
+				m_MessageList.AddString("Field connector_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
+			m_pDoc->m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
+			m_pDoc->m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
+			m_pDoc->m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
+			m_pDoc->m_LinkTypeConnectorMap[element.link_type] = element.connector_flag  ;
+			
+
+			m_pDoc->m_LinkTypeVector.push_back(element);
+
+			rsLinkType.MoveNext ();
+		}
+		rsLinkType.Close();
+		str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeVector.size());
+		m_MessageList.AddString(str_msg);
+	}else
+	{
+		str_msg.Format ( "Worksheet 2-1-link-type cannot be found in the given Excel file");
+		m_MessageList.AddString (str_msg);
+		return;
+	}
+
+	bool bAutogenerateNodeFlag = false;
+	if(m_pDoc->m_NodeSet.size() == 0)
+	{
+
+		bAutogenerateNodeFlag = true;
+
+		str_msg.Format ( "Worksheet 1-node contain 0 node. Upstream and downstream nodes in the link table is used to generate node info.");
+		m_MessageList.AddString (str_msg);
+
+	}else
+	{
+		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
+		m_MessageList.AddString (str_msg);
+	}
+	
 		// Read record
 		strSQL = m_pDoc->ConstructSQL("2-LINK");
 
@@ -213,11 +297,20 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			{
 
 				int from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
-				if(!bExist)
+				if(!bExist  ) 
 				{
+					if(m_pDoc->m_LinkSet.size() ==0)
+					{
+					// no link has been loaded
 					m_MessageList.AddString ("Field from_node_id cannot be found in the link table.");
 					rsLink.Close();
 					return;
+					}else
+					{
+					rsLink.MoveNext();
+					break;
+					// moveon					
+					}
 				}
 
 				int to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
@@ -232,12 +325,24 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 					break;
 
+
 				long link_id =  rsLink.GetLong(CString("link_id"),bExist,false);
 				if(!bExist)
 					link_id = 0;
 
-				if(m_pDoc->m_NodeNametoIDMap.find(from_node_id)== m_pDoc->m_NodeNametoIDMap.end())
+				int type = rsLink.GetLong(CString("link_type"),bExist,false);
+				if(!bExist) 
 				{
+					m_MessageList.AddString("Field link_type cannot be found in the link table.");
+					rsLink.Close();
+					return;
+				}
+
+
+				if(bAutogenerateNodeFlag == false && m_pDoc->m_NodeNametoIDMap.find(from_node_id)== m_pDoc->m_NodeNametoIDMap.end())
+				{
+
+
 					str_msg.Format("from_node_id %d at row %d cannot be found in the node table!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
 					//					rsLink.Close();
@@ -245,14 +350,79 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					continue;
 				}
 
-				if(m_pDoc->m_NodeNametoIDMap.find(to_node_id)== m_pDoc->m_NodeNametoIDMap.end())
+				if(bAutogenerateNodeFlag == false && m_pDoc->m_NodeNametoIDMap.find(to_node_id)== m_pDoc->m_NodeNametoIDMap.end())
 				{
 					str_msg.Format("to_node_id %d at row %d cannot be found in the node table!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-					//					rsLink.Close();
 					rsLink.MoveNext();
 					continue;
 				}
+
+				std::vector<CCoordinate> CoordinateVector;
+
+				CString geometry_str = rsLink.GetCString(CString("geometry"));
+
+				if(bAutogenerateNodeFlag && geometry_str.GetLength () ==0)
+				{
+				
+					m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
+					rsLink.Close();
+					return;
+				}
+
+				if(geometry_str.GetLength () > 0)
+				{
+
+					CT2CA pszConvertedAnsiString (geometry_str);
+
+				// construct a std::string using the LPCSTR input
+				std::string geo_string (pszConvertedAnsiString);
+
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+
+				if(bAutogenerateNodeFlag)  // add nodes
+				{
+
+					// from node
+					if(m_pDoc->m_NodeNametoIDMap.find(from_node_id)== m_pDoc->m_NodeNametoIDMap.end())
+					{
+							GDPoint	pt;
+							pt.x = CoordinateVector[0].X;
+							pt.y = CoordinateVector[0].Y;
+							
+							bool ActivityLocationFlag = false;
+							if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+								ActivityLocationFlag = true;
+
+							m_pDoc->AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
+
+					}
+
+					// to node
+					if(m_pDoc->m_NodeNametoIDMap.find(to_node_id)== m_pDoc->m_NodeNametoIDMap.end())
+					{
+							GDPoint	pt;
+							pt.x = CoordinateVector[CoordinateVector.size()-1].X;
+							pt.y = CoordinateVector[CoordinateVector.size()-1].Y;
+
+							bool ActivityLocationFlag = false;
+							if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+								ActivityLocationFlag = true;
+
+							m_pDoc->AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
+					}
+
+				}
+
+				}
+
+				if(m_bRemoveConnectors && m_pDoc->m_LinkTypeConnectorMap[type ]==1) 
+				{  // skip connectors
+					rsLink.MoveNext();
+					continue;
+				}
+
 
 				DTALink* pExistingLink =  m_pDoc->FindLinkWithNodeIDs(m_pDoc->m_NodeNametoIDMap[from_node_id],m_pDoc->m_NodeNametoIDMap[to_node_id]);
 
@@ -290,6 +460,16 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
+				if(number_of_lanes ==0)
+				{
+					str_msg.Format ("Link %d -> %d has 0 lane. Skip.",from_node_id,to_node_id);
+					m_MessageList.AddString(str_msg);
+					rsLink.MoveNext();
+					continue; 
+				}
+
+
+
 				float grade= rsLink.GetDouble(CString("grade"),bExist,false);
 
 				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit_in_mph"),bExist,false);
@@ -300,13 +480,15 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				if(speed_limit_in_mph==0)
+				if(speed_limit_in_mph ==0)
 				{
-					str_msg.Format ("Link %d -> %d has a speed limit of 0, please sort the link table by speed_limit_in_mph and re-check it!",from_node_id,to_node_id);
-					AfxMessageBox(str_msg);
+					str_msg.Format ("Link %d -> %d has a speed limit of 0. Skip.",from_node_id,to_node_id);
+					m_MessageList.AddString(str_msg);
+					rsLink.MoveNext();
+					continue; 
 				}
 
-				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
+				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_veh_per_hour"),bExist,false);
 				if(!bExist)
 				{
 					m_MessageList.AddString ("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
@@ -322,18 +504,11 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				int type = rsLink.GetLong(CString("link_type"),bExist,false);
-				if(!bExist) 
-				{
-					m_MessageList.AddString("Field link_type cannot be found in the link table.");
-					rsLink.Close();
-					return;
-				}
 
-				int direction = rsLink.GetLong(CString("direction"),bExist,false);
+				int direction = rsLink.GetLong(CString("two_way_flag"),bExist,false);
 				if(!bExist) 
 				{
-					m_MessageList.AddString("Field direction cannot be found in the link table.");
+					m_MessageList.AddString("Field two_way_flag cannot be found in the link table.");
 					rsLink.Close();
 					return;
 				}
@@ -363,11 +538,14 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					link_code_start = 2; link_code_end = 2;
 				}
 
-				if (direction == 0) // two-directional link
+
+				if (direction == 0 || direction ==2) // two-directional link
 				{
 					link_code_start = 1; link_code_end = 2;
 				}
 
+				if(bAutogenerateNodeFlag == false)
+				{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
 				cc_from.X = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNametoIDMap[from_node_id]]->pt.x;
@@ -376,11 +554,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				cc_to.X = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNametoIDMap[to_node_id]]->pt.x;
 				cc_to.Y = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNametoIDMap[to_node_id]]->pt.y;
 
-				std::vector<CCoordinate> CoordinateVector;
-
 				CoordinateVector.push_back(cc_from);
 				CoordinateVector.push_back(cc_to);
-
+				}
 
 				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
 				{
@@ -434,17 +610,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
-
-					unsigned long LinkKey = m_pDoc->GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
-
-
-		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
-		m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
-
-
 					pLink->m_NumLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
@@ -468,44 +633,24 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					if(link_code == 2)  //BA link
 					{
 
-						int R_number_of_lanes = rsLink.GetLong(CString("R_number_of_lanes"),bExist,false);
-						if(!bExist) 
-						{
-							m_MessageList.AddString("Field R_number_of_lanes cannot be found in the link table.");
-							rsLink.Close();
-							return;
-						}
-						float R_speed_limit_in_mph= rsLink.GetLong(CString("R_speed_limit_in_mph"),bExist,false);
-						if(!bExist) 
-						{
-							m_MessageList.AddString("Field R_speed_limit_in_mph cannot be found in the link table.");
-							rsLink.Close();
-							return;
-						}
-						float R_lane_capacity_in_vhc_per_hour= rsLink.GetDouble(CString("R_lane_capacity_in_vhc_per_hour"),bExist,false);
-						if(!bExist) 
-						{
-							m_MessageList.AddString("Field R_lane_capacity_in_vhc_per_hour cannot be found in the link table.");
-							rsLink.Close();
-							return;
-						}
-						float R_grade= rsLink.GetDouble(CString("R_grade"),bExist,false);
-						if(!bExist) 
-						{
-							m_MessageList.AddString("Field R_grade cannot be found in the link table.");
-							rsLink.Close();
-							return;
-						}
+						int R_number_of_lanes = number_of_lanes;
+
+						float R_speed_limit_in_mph= speed_limit_in_mph;
+
+						float R_lane_capacity_in_vhc_per_hour= capacity_in_pcphpl;
+						float R_grade= grade;
 						pLink->m_NumLanes= R_number_of_lanes;
 						pLink->m_SpeedLimit= R_speed_limit_in_mph;
+						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
+						pLink->m_Grade = R_grade;
+
 						pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
-						pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
+						pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
 						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
-						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 						pLink->m_link_type= type;
-						pLink->m_Grade = R_grade;
+
 
 
 					}
@@ -517,12 +662,40 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					pLink->m_FromPoint = m_pDoc->m_NodeIDMap[pLink->m_FromNodeID]->pt;
 					pLink->m_ToPoint = m_pDoc->m_NodeIDMap[pLink->m_ToNodeID]->pt;
+
+
 					default_distance_sum+= pLink->DefaultDistance();
 					length_sum += pLink ->m_Length;
 					//			pLink->SetupMOE();
 					pLink->input_line_no  = line_no;
+					
+					
+
 					m_pDoc->m_LinkSet.push_back (pLink);
 					m_pDoc->m_LinkNoMap[i]  = pLink;
+					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
+					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+
+					if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+					{ 
+						// mark them as activity location 
+					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
+					}
+
+
+
+					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+
+
+					unsigned long LinkKey = m_pDoc->GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+
+		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+		m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+
+
 					i++;
 
 				}
@@ -564,90 +737,40 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		}
 
 
+		if(bAutogenerateNodeFlag)  // generated when read shape files
+		{
+		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
+		m_MessageList.AddString (str_msg);
+		}
+
 		str_msg.Format ("%d links have been sucessfully imported.",m_pDoc->m_LinkSet.size());
 		m_MessageList.AddString(str_msg);
-	}
+	
 
 
-	// Read record
-	strSQL = m_pDoc->ConstructSQL("2-1-LINK-TYPE");
-	if(strSQL.GetLength () > 0)
-	{
-
-		CRecordsetExt rsLinkType(&m_pDoc->m_Database);
-		rsLinkType.Open(dbOpenDynaset, strSQL);
-
-		while(!rsLinkType.IsEOF())
-		{
-			DTALinkType element;
-			int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field link_type cannot be found in input_link_type.csv.");
-				return;
-			}
-			if(link_type_number ==0)
-				break;
-
-			element.link_type = link_type_number;
-			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
-			element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field freeway_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString("Field ramp_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString("Field arterial_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			m_pDoc->m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
-			m_pDoc->m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
-			m_pDoc->m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
-
-			m_pDoc->m_LinkTypeVector.push_back(element);
-
-			rsLinkType.MoveNext ();
-		}
-		rsLinkType.Close();
-		str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeVector.size());
-		m_MessageList.AddString(str_msg);
-	}else
-	{
-		str_msg.Format ( "Worksheet 2-1-link-type cannot be found in the given Excel file");
-		m_MessageList.AddString (str_msg);
-		return;
-	}
 
 	if(m_bImportNetworkOnly == true)
 		return;
 
 	// ZONE table
-	strSQL = m_pDoc->ConstructSQL("3-ZONE");
+	strSQL = m_pDoc->ConstructSQL("3-2-ZONE-ACTIVITY-LOCATION");
+
+	//bool bNodeNonExistError = false;
+	m_pDoc->m_NodeIDtoZoneNameMap.clear ();
 
 	bool bNodeNonExistError = false;
 	m_pDoc->m_NodeIDtoZoneNameMap.clear ();
-
 	m_pDoc->m_ODSize = 0;
 
 	// Read record
+	int activity_location_count = 0;
+
 	if(strSQL.GetLength () > 0)
 	{
 		CRecordsetExt rsZone(&m_pDoc->m_Database);
 		rsZone.Open(dbOpenDynaset, strSQL);
 
-		int count = 0;
+
 		while(!rsZone.IsEOF())
 		{
 			int zone_number = rsZone.GetLong(CString("zone_id"),bExist,false);
@@ -678,22 +801,182 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				return;
 			}
 			m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNametoIDMap[node_name]] = zone_number;
+
+			m_pDoc->m_NodeIDMap [ m_pDoc->m_NodeNametoIDMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
+			m_pDoc->m_NodeIDMap [ m_pDoc->m_NodeNametoIDMap[node_name] ] -> m_ZoneID = zone_number;
 			// if there are multiple nodes for a zone, the last node id is recorded.
 
-			m_pDoc->m_ZoneMap [zone_number].m_CentroidNodeAry .push_back (node_name);
+
+			DTAActivityLocation element;
+			element.ZoneID  = zone_number;
+			element.NodeNumber = node_name;
+
+
+			m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 
 			if(m_pDoc->m_ODSize < zone_number)
 				m_pDoc->m_ODSize = zone_number;
+
+			rsZone.MoveNext ();
+			activity_location_count++;
+		}
+		rsZone.Close();
+
+		str_msg.Format ( "%d activity location records imported",activity_location_count);
+		m_MessageList.AddString (str_msg);
+	}
+
+	// ZONE table
+	strSQL = m_pDoc->ConstructSQL("3-1-ZONE");
+
+	// Read record
+	if(strSQL.GetLength () > 0)
+	{
+		CRecordsetExt rsZone(&m_pDoc->m_Database);
+		rsZone.Open(dbOpenDynaset, strSQL);
+
+		int count = 0;
+		while(!rsZone.IsEOF())
+		{
+			int zone_number = rsZone.GetLong(CString("zone_id"),bExist,false);
+			if(!bExist) 
+			{
+				AfxMessageBox("Field zone_id cannot be found in the zone table.");
+				return;
+			}
+
+			if(zone_number ==0)
+				break;
+
+			// if there are multiple nodes for a zone, the last node id is recorded.
+				std::vector<CCoordinate> CoordinateVector;
+
+				CString geometry_str = rsZone.GetCString(CString("geometry"));
+
+				if(geometry_str.GetLength () > 0)
+				{
+
+				CT2CA pszConvertedAnsiString (geometry_str);
+
+				// construct a std::string using the LPCSTR input
+				std::string geo_string (pszConvertedAnsiString);
+
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+
+				m_pDoc->m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
+
+			for(unsigned int f = 0; f < CoordinateVector.size(); f++)
+			{
+				GDPoint pt;
+				pt.x = CoordinateVector[f].X;
+				pt.y = CoordinateVector[f].Y;
+				m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
+			}
+
+				}
+			if(m_pDoc->m_ODSize < zone_number)
+				m_pDoc->m_ODSize = zone_number;
+				
 
 			rsZone.MoveNext ();
 			count++;
 		}
 		rsZone.Close();
 
-		str_msg.Format ( "%d node-to-zone records imported",count);
+		str_msg.Format ( "%d zone boundary records are imported.",count);
 		m_MessageList.AddString (str_msg);
+	
+		// assign zone numbers to connectors
 
-	}
+		if(count>=1)  // with boundary
+		{
+		std::list<DTALink*>::iterator iLink;
+
+			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+			{
+				if(m_pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  // connectors
+				{
+					
+					GDPoint pt_from = (*iLink)->m_FromPoint ;
+					int ZoneID_from = m_pDoc->GetZoneID(pt_from);
+
+					// assign id according to upstream node zone number first
+					int ZoneID_to = 0;
+					if(ZoneID_from <=0)
+					{
+					GDPoint pt_to = (*iLink)->m_ToPoint ;
+					 ZoneID_to = m_pDoc->GetZoneID(pt_to);
+					}
+
+					// assign id according to downstream node zone number second
+
+					int ZoneID = max(ZoneID_from, ZoneID_to);  // get large zone id under two different zone numbers
+					if(ZoneID > 0)
+						(*iLink)->m_ConnectorZoneID = ZoneID;
+
+				}
+			}
+		}
+		}
+
+		// determine activity locations if no activity locations have been provided
+
+		if(activity_location_count == 0)
+		{
+		std::list<DTANode*>::iterator iNode;
+
+		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+		{
+
+			if((*iNode )->m_NodeNumber == 908)
+			{
+			TRACE("");
+			}
+			if((*iNode )->m_bZoneActivityLocationFlag)
+			{
+					int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
+					if(ZoneID>0)
+					{
+						(*iNode )->m_ZoneID = ZoneID;
+						DTAActivityLocation element;
+						element.ZoneID  = ZoneID;
+						element.NodeNumber = (*iNode )->m_NodeNumber;
+
+
+						m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
+
+					}
+			
+				}
+		
+		}
+		str_msg.Format ( "%d activity locations identified",activity_location_count);
+		m_MessageList.AddString (str_msg);
+			
+		}
+
+		if(m_bRemoveConnectors)
+		{
+		std::list<DTANode*>::iterator iNode;
+
+		std::vector <int> CentroidVector;
+		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+		{
+			if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
+				CentroidVector.push_back((*iNode )->m_NodeID );
+
+		}
+
+		for(unsigned int i = 0; i < CentroidVector.size(); i++)
+		{
+			m_pDoc->DeleteNode (CentroidVector[i]);
+		}
+		
+		str_msg.Format ( "%d centroids deleted",CentroidVector.size());
+		m_MessageList.AddString (str_msg);
+		
+		}
 
 
 	strSQL = m_pDoc->ConstructSQL("4-1-vehicle-type");
@@ -867,20 +1150,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		CRecordsetExt rsDemand(&m_pDoc->m_Database);
 		rsDemand.Open(dbOpenDynaset, strSQL);
 
-		if(m_pDoc->m_DemandMatrix!=NULL)
-		{
-			DeallocateDynamicArray(m_pDoc->m_DemandMatrix,m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-			m_pDoc->m_DemandMatrix = NULL;
-		}
-
-		m_pDoc->m_DemandMatrix   =  AllocateDynamicArray<float>(m_pDoc->m_ODSize,m_pDoc->m_ODSize);
-
-		for(int i= 0; i<m_pDoc->m_ODSize; i++)
-			for(int j= 0; j<m_pDoc->m_ODSize; j++)
-			{
-				m_pDoc->m_DemandMatrix[i][j]= 0.0f;
-			}
-
 			int line_no = 2;
 			while(!rsDemand.IsEOF())
 			{
@@ -963,11 +1232,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						return;
 					}
 
-					m_pDoc->m_DemandMatrix[origin_zone_id-1][destination_zone_id-1] += number_of_vehicles;
+					m_pDoc->m_ZoneMap[origin_zone_id].m_ODDemandMatrix [destination_zone_id].SetValue (demand_type,number_of_vehicles);
 					total_demand+=number_of_vehicles;
 					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
 				}
-				m_pDoc->m_DemandVector.push_back (element);
 
 				rsDemand.MoveNext ();
 				line_no++;

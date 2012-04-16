@@ -239,6 +239,10 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_SelectToNodeNumber;
 
 	bool m_bShowZoneBoundary;
+	bool m_bShowODDemandVolume;
+	bool m_bShowConnector;
+	bool m_bHighlightActivityLocation;
+
 	bool m_bShowSensor;
 	bool m_bShowTransit;
 	bool m_bShowText;
@@ -346,6 +350,8 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	}
 
 	int FindClosestNode(CPoint point, float Min_distance);
+	int FindClosestZone(CPoint point, float Min_distance);
+
 	CPoint m_CurrentMousePoint;
 	
 
@@ -549,6 +555,22 @@ public:
 	afx_msg void OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI);
 	afx_msg void OnViewZoneboundary();
 	afx_msg void OnUpdateViewZoneboundary(CCmdUI *pCmdUI);
+	afx_msg void OnViewShowConnector();
+	afx_msg void OnUpdateViewShowConnector(CCmdUI *pCmdUI);
+	afx_msg void OnToolsGeneratephysicalzonecentroidsonroadnetwork();
+	afx_msg void OnViewHighlightcentroidsandactivitylocations();
+	afx_msg void OnUpdateViewHighlightcentroidsandactivitylocations(CCmdUI *pCmdUI);
+	afx_msg void OnViewBackgroundcolor();
+	afx_msg void OnActivitylocationmodeNolanduseactivity();
+	afx_msg void OnUpdateActivitylocationmodeNolanduseactivity(CCmdUI *pCmdUI);
+	afx_msg void OnActivitylocationmodeLanduseactivity();
+	afx_msg void OnUpdateActivitylocationmodeLanduseactivity(CCmdUI *pCmdUI);
+	afx_msg void OnActivitylocationmodeExternalorigin();
+	afx_msg void OnUpdateActivitylocationmodeExternalorigin(CCmdUI *pCmdUI);
+	afx_msg void OnActivitylocationmodeExternaldestination();
+	afx_msg void OnUpdateActivitylocationmodeExternaldestination(CCmdUI *pCmdUI);
+	afx_msg void OnMoeOddemand();
+	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
 };
 
 

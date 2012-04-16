@@ -4,6 +4,7 @@
 #include "GridCtrl_src\\GridCtrl.h"
 
 #include <vector>
+#include "afxwin.h"
 
 class ZoneRecord
 {
@@ -28,6 +29,7 @@ public:
 
 	std::vector<ZoneRecord> ZoneRecordSet;
 	CTLiteDoc* m_pDoc;
+	void DisplayDemandMatrix();
 
 private:
 	CGridCtrl m_Grid;
@@ -44,11 +46,13 @@ public:
 	afx_msg void OnBnClickedGridQuit();
 
 	void OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult);
-	bool SaveDemandCSVFileExt(LPCTSTR lpszFileName);
-	bool ReadDemandCSVFileExt(LPCTSTR lpszFileName);
-	bool ReadZoneCSVFileExt(LPCTSTR lpszFileName);
+	bool SaveDemandMatrix();
+
 	bool SaveZoneCSVFileExt(LPCTSTR lpszFileName);
 	afx_msg void OnBnClickedButtonCreatezones();
 	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
 	afx_msg void OnBnClickedButton1();
+	afx_msg void OnLbnSelchangeList1();
+	CListBox m_DemandTypeList;
+	afx_msg void OnBnClickedGridSavequit2();
 };

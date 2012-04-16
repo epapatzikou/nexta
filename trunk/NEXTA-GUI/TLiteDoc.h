@@ -40,7 +40,7 @@
 #include <afxdao.h>
 
 
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_oddemand, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -95,6 +95,7 @@ protected: // create from serialization only
 
 	CTLiteDoc()
 	{
+	   m_RandomRoutingCoefficient = 0.0f;
        m_bDYNASMARTDataSet = false;
 	   m_AdjLinkSize = 20;  // initial value
 	   m_colorLOS[0] = RGB(190,190,190);
@@ -172,7 +173,7 @@ protected: // create from serialization only
 		m_DefaultSpeedLimit = 65.0f;
 		m_DefaultCapacity = 1900.0f;
 		m_DefaultLinkType = 1;
-		m_DemandMatrix = NULL;
+		
 		m_ODSize = 0;
 		m_SelectedLinkID = -1;
 	    m_SelectedNodeID = -1;
@@ -181,6 +182,7 @@ protected: // create from serialization only
 		m_bSetView = false;
 		m_bShowLegend = false;
 		m_bShowLinkList  = false;
+		m_bShowPathList = false;
 
 		for(int i=0; i<40;i++)
 		{
@@ -223,7 +225,7 @@ protected: // create from serialization only
 		m_Doc_Resolution = 1;
 		m_bShowCalibrationResults = false;
 
-		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\sample_Portland_subarea_network.xls";
+		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
 		m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
 		m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
 
@@ -234,6 +236,20 @@ protected: // create from serialization only
 
 	// Attributes
 public:
+
+	float GetDemandVolume(int origin,int destination,int demand_type)
+	{
+	
+		if(m_ZoneMap.find(origin) != m_ZoneMap.end())
+		{
+			if(m_ZoneMap[origin].m_ODDemandMatrix .find(destination) != m_ZoneMap[origin].m_ODDemandMatrix.end())
+			{
+				return  m_ZoneMap[origin].m_ODDemandMatrix[destination].GetValue (demand_type);
+			}
+
+		}
+		return 0;
+	}
 
 	PT_Network m_PT_network;  // public transit network class by Shuguang Li
 	bool m_bShowCalibrationResults;
@@ -250,6 +266,7 @@ public:
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
 	bool m_bShowLinkList;
+	bool m_bShowPathList;
 	int m_NodeDisplaySize;
 	bool m_ShowNodeLayer;
 
@@ -276,7 +293,6 @@ public:
 	float m_Doc_Resolution;
 
 	int m_ODSize;
-	float** m_DemandMatrix;
 	Link_MOE m_LinkMOEMode;
 	Link_MOE m_PrevLinkMOEMode;
 
@@ -322,8 +338,8 @@ public:
 
 	void ReCalculateLinkBandWidth();
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadActivityLocationCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
-	bool ReadDemandCSVFile_Parser(LPCTSTR lpszFileName);   // for road network
 	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
 	bool ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName);  
@@ -437,12 +453,30 @@ void SetStatusText(CString StatusText);
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
 
-	std::list<DTACrash*>	m_CrashSet;
+	std::list<DTAPoint*>	m_DTAPointSet;
+	std::list<DTALine*>		m_DTALineSet;
+	
 
 	std::list<DTANode*>		m_SubareaNodeSet;
 	std::list<DTALink*>		m_SubareaLinkSet;
 
 	std::map<int, DTAZone>	m_ZoneMap;
+
+	int GetZoneID(GDPoint pt)
+	{
+		// for all zones
+		std::map<int, DTAZone>	:: const_iterator itr;
+
+		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); itr++)
+		{
+			DTAZone Zone = itr->second;
+		
+		if(Zone.IsInside (pt))
+				return itr->first;
+		}
+	
+		return -1;
+	}
 	std::list<DTAVehicle*>	m_VehicleSet;
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
@@ -463,6 +497,7 @@ void SetStatusText(CString StatusText);
 	DTANetworkForSP* m_pNetwork;
 	DTANetworkForSP m_Network;
 
+	float m_RandomRoutingCoefficient;
 	int Routing(bool bCheckConnectivity);
 	int AlternativeRouting(int NumberOfRoutes);
 
@@ -470,7 +505,6 @@ void SetStatusText(CString StatusText);
 	CString m_ProjectTitle;
 
 	float FillODMatrixFromCSVFile(LPCTSTR lpszFileName);
-
 	void AdjustCoordinateUnitToMile();
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
@@ -515,6 +549,7 @@ void SetStatusText(CString StatusText);
 	std::map<int, int> m_LinkTypeFreewayMap;
 	std::map<int, int> m_LinkTypeArterialMap;
 	std::map<int, int> m_LinkTypeRampMap;
+	std::map<int, int> m_LinkTypeConnectorMap;
 
 
 	std::map<int, int> m_NodeIDtoNameMap;
@@ -522,12 +557,12 @@ void SetStatusText(CString StatusText);
 	std::map<int, int> m_NodeIDtoZoneNameMap;
 
 	int m_SelectedLinkID;
+	void ZoomToSelectedLink(int SelectedLinkNo);
 	int m_SelectedNodeID;
 	int m_SelectedTrainID;
 
 
 	std::vector<DTA_sensor> m_SensorVector;
-	std::vector<DTADemand> m_DemandVector;
 	std::vector<DTAVehicleType> m_VehicleTypeVector;
 	std::vector<DTADemandType> m_DemandTypeVector;
 	std::vector<DTALinkType> m_LinkTypeVector;
@@ -576,6 +611,8 @@ void SetStatusText(CString StatusText);
 		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
+		m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+
 		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
@@ -646,7 +683,7 @@ void SetStatusText(CString StatusText);
 		return pLink;
 	}
 
-	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0)
+	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0, bool ActivityLocation = false)
 	{
 		DTANode* pNode = new DTANode;
 
@@ -665,6 +702,7 @@ void SetStatusText(CString StatusText);
 
 
 		pNode->m_ZoneID = 0;
+		pNode->m_bZoneActivityLocationFlag = ActivityLocation;
 		m_NodeSet.push_back(pNode);
 		m_NodeIDMap[pNode->m_NodeID] = pNode;
 		m_NodeIDtoNameMap[pNode->m_NodeID ] = pNode->m_NodeNumber;
@@ -700,6 +738,17 @@ void SetStatusText(CString StatusText);
 		int ToNodeID   = pLink->m_ToNodeID ;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections-=1;
+
+		for(int ii = 0; ii< m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.size();ii++)
+		{
+			if(m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector[ii] == pLink->m_LinkNo)
+			{
+			m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.erase(m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.begin()+ii);
+
+			break;
+			}
+		}
+
 		m_NodeIDMap[ToNodeID ]->m_Connections-=1;
 		m_LinkNoMap[pLink->m_LinkNo]  = NULL;
 
@@ -910,10 +959,12 @@ public: // subarea
 
 	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str);
+	bool SaveDemandFile();
 
 	// Overrides
 public:
 
+	void ShowPathListDlg(bool bShowFlag);
 	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
@@ -1000,8 +1051,6 @@ public:
 		afx_msg void OnUpdateEditSetdefaultlinkpropertiesfornewlinks(CCmdUI *pCmdUI);
 		afx_msg void OnToolsProjectfolder();
 		afx_msg void OnToolsOpennextaprogramfolder();
-		afx_msg void OnMoeOddemand();
-		afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
 		afx_msg void OnMoeNoodmoe();
 		afx_msg void OnUpdateMoeNoodmoe(CCmdUI *pCmdUI);
 		afx_msg void OnOdtableImportOdTripFile();
@@ -1087,6 +1136,7 @@ public:
 		afx_msg void OnUpdateLinkmoeTraveltimereliability(CCmdUI *pCmdUI);
 
 		
+		afx_msg void OnMoePathlist();
 };
 
 

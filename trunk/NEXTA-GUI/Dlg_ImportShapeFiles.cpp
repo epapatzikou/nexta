@@ -4,7 +4,9 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "Dlg_ImportShapeFiles.h"
-
+#include "Dlg_GISDataExchange.h"
+#include "MainFrm.h"
+#include "Shellapi.h"
 
 // CDlg_ImportShapeFiles dialog
 
@@ -29,6 +31,8 @@ void CDlg_ImportShapeFiles::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_NodeShapeFile, m_NodeShapeFile);
 	DDX_Text(pDX, IDC_EDIT_LinkShapeFile, m_LinkShapeFile);
 	DDX_Text(pDX, IDC_EDIT_ZoneShapeFile, m_ZoneShapeFile);
+	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
+
 }
 
 
@@ -36,6 +40,8 @@ BEGIN_MESSAGE_MAP(CDlg_ImportShapeFiles, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_Node_File, &CDlg_ImportShapeFiles::OnBnClickedButtonFindNodeFile)
 	ON_BN_CLICKED(IDC_BUTTON_Find_Link_File, &CDlg_ImportShapeFiles::OnBnClickedButtonFindLinkFile)
 	ON_BN_CLICKED(IDC_BUTTON_Find_Zone_File, &CDlg_ImportShapeFiles::OnBnClickedButtonFindZoneFile)
+	ON_BN_CLICKED(IDOK, &CDlg_ImportShapeFiles::OnBnClickedOk)
+	ON_BN_CLICKED(IDIMPORT_LINK, &CDlg_ImportShapeFiles::OnBnClickedLink)
 END_MESSAGE_MAP()
 
 
@@ -75,4 +81,15 @@ void CDlg_ImportShapeFiles::OnBnClickedButtonFindZoneFile()
 		m_ZoneShapeFile = dlg.GetPathName();
 		UpdateData(false);
 	}
+}
+
+void CDlg_ImportShapeFiles::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
+	OnOK();
+}
+
+void CDlg_ImportShapeFiles::OnBnClickedLink()
+{
+
 }
