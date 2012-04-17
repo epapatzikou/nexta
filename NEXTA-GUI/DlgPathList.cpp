@@ -11,7 +11,8 @@
 #include <string>
 #include <sstream>
 
-extern std::list<DTALink*>	g_LinkDisplayList;
+extern std::list<int>	g_LinkDisplayList;
+extern CDlgPathList* g_pPathListDlg;
 // CDlgPathList dialog
 
 IMPLEMENT_DYNAMIC(CDlgPathList, CDialog)
@@ -24,6 +25,7 @@ CDlgPathList::CDlgPathList(CWnd* pParent /*=NULL*/)
 
 CDlgPathList::~CDlgPathList()
 {
+	g_pPathListDlg = NULL;
 }
 
 void CDlgPathList::DoDataExchange(CDataExchange* pDX)
@@ -152,7 +154,7 @@ void CDlgPathList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
 			m_pDoc->m_SelectedLinkID = LinkNo;
-			g_LinkDisplayList.push_back(m_pDoc->m_LinkNoMap[LinkNo]);
+			g_LinkDisplayList.push_back(LinkNo);
 
 	}
 	if(m_ZoomToSelectedLink == true)

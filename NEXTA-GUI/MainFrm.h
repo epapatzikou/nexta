@@ -49,7 +49,8 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-		char m_CurrentDirectory[MAX_PATH+1];
+	bool m_bSynchronizedDisplay;
+	char m_CurrentDirectory[MAX_PATH+1];
 	void UpdateAllViews();
 
 protected:  // control bar embedded members
@@ -91,6 +92,8 @@ public:
 	afx_msg void OnAnimationBackward();
 	afx_msg void OnAnimationSkipforward();
 	afx_msg void OnAnimationSkipbackward();
+	afx_msg void OnWindowSynchronizeddisplay();
+	afx_msg void OnUpdateWindowSynchronizeddisplay(CCmdUI *pCmdUI);
 };
 
 

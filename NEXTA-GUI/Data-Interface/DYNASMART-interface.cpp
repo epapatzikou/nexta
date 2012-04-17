@@ -44,6 +44,7 @@ using namespace std;
 
 BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly)
 {
+	m_OriginOnBottomFlag = 1;
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;
@@ -462,8 +463,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	for(int type = 0; type <=9; type++)
 	{
 	m_LinkTypeFreewayMap[type] = 0;	
-	m_LinkTypeRampMap [type] = 1;
-	m_LinkTypeArterialMap[type] = 1;
+	m_LinkTypeRampMap [type] = 0;
+	m_LinkTypeArterialMap[type] = 0;
+	m_LinkTypeConnectorMap[type] = 0;
 	}
 
 	m_LinkTypeFreewayMap[1] = 1;
@@ -478,6 +480,50 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeFreewayMap[8] = 1;
 	m_LinkTypeFreewayMap[9] = 1;
 
+
+	DTALinkType element;
+
+	element.freeway_flag = 1;
+	element.link_type_name = "Freeway";
+	m_LinkTypeVector.push_back(element);
+
+	element.freeway_flag = 1;
+	element.link_type_name = "Freeway with Detector";
+	m_LinkTypeVector.push_back(element);
+
+	element.ramp_flag = 1;
+	element.link_type_name = "On Ramp";
+	m_LinkTypeVector.push_back(element);
+
+	element.ramp_flag = 1;
+	element.link_type_name = "Off Ramp";
+	m_LinkTypeVector.push_back(element);
+
+
+	element.arterial_flag = 1;
+	element.link_type_name = "Arterial";
+	m_LinkTypeVector.push_back(element);
+
+	element.freeway_flag = 1;
+	element.link_type_name = "HOT";
+	m_LinkTypeVector.push_back(element);
+
+
+	element.freeway_flag = 1;
+	element.link_type_name = "Highway";
+	m_LinkTypeVector.push_back(element);
+
+	element.freeway_flag = 1;
+	element.link_type_name = "HOV";
+	m_LinkTypeVector.push_back(element);
+
+	element.freeway_flag = 1;
+	element.link_type_name = "FreewayHOT";
+	m_LinkTypeVector.push_back(element);
+
+	element.freeway_flag = 1;
+	element.link_type_name = "FreewayHOV";
+	m_LinkTypeVector.push_back(element);
 
 	OffsetLink();
 
@@ -616,6 +662,142 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	if(bNetworkOnly)
 		return true;
 
+
+	// read system.dat
+	fopen_s(&pFile,directory+"system.dat","r");
+	if(pFile!=NULL)
+	{
+		g_Simulation_Time_Horizon = g_read_integer(pFile);
+		/*
+		itsMaxIterations >> temp;
+		itsVehicleGenMode = (veh_gen)temp;
+		is >> itsIntervalsPerAggregation >> itsIntervalsPerAssignment
+		>> itsMUCThreshold >> itsConvergeThreshold; */
+
+		fclose(pFile);
+	}
+
+	// read speed data
+	fopen_s(&pFile,directory+"fort.900","r");
+	std::list<DTALink*>::iterator iLink;
+
+	if(pFile!=NULL)
+	{
+		m_TrafficFlowModelFlag = 2; // enable dynamic display mode after reading speed data
+		// read data every min
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
+		}
+
+		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		{
+			float timestamp = g_read_float(pFile);  // read timestamp in min
+
+			if(timestamp < 0)  // end of file
+				break;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->m_LinkMOEAry[t+1].ObsSpeed = g_read_float(pFile);  // speed;
+			}
+
+		}
+	fclose(pFile);
+	}else
+	{
+	return false; // no simulation data, return 
+	}
+
+	// read queue length data
+	fopen_s(&pFile,directory+"fort.600","r");
+	if(pFile!=NULL)
+	{
+		// read data every min
+
+		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		{
+			float timestamp = g_read_float(pFile);  // read timestamp in min
+
+			if(timestamp < 0)  // end of file
+				break;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				float value  = g_read_float(pFile);  // queue length;
+
+				if(value < -0.5f)
+					break;
+				else
+				(*iLink)->m_LinkMOEAry[t+1].ObsQueueLength = value;
+			}
+
+		}
+	fclose(pFile);
+	}
+
+
+	// read flow rate
+	fopen_s(&pFile,directory+"OutAccuVol.dat","r");
+
+	if(pFile!=NULL)
+	{
+		g_read_float(pFile);  // read 10 min 
+		// This file provides the accummulated number of veh. on of each link           10every sims ints
+
+		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		{
+			float timestamp = g_read_float(pFile);  // read timestamp in min
+
+			if(timestamp < 0)  // end of file
+				break;
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = g_read_float(pFile);  // cumulative flow;
+
+				if(t>=1)
+					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ObsCumulativeFlow)*60);
+			}
+
+		}
+		fclose(pFile);
+	}
+
+		m_SimulationLinkMOEDataLoadingStatus.Format("DYNASMART-P simulation data have been loaded. Simulation horizon = %d min", g_Simulation_Time_Horizon );
+
+	// density_in_veh_per_mile_per_lane
+
+
+
+	/*
+	fopen_s(&st,fname,"r");
+	if(st!=NULL)
+	{
+	int i;
+	int id = 0, zoneNum = 0;
+	DTANode* pNode = 0;
+	for(i = 0; i < g_ODZoneSize; i++)
+	{
+
+	zoneNum	= g_read_integer(pFile);
+	int num_nodes= g_read_integer(pFile);
+
+	if(num_nodes > g_AdjLinkSize)
+	g_AdjLinkSize = num_nodes + 10;  // increaes buffer size
+
+
+	for(int n = 0; n< num_nodes; n++)
+	{
+	int node_number= g_read_integer(pFile);
+
+
+	g_NodeMap[node_number]->m_ZoneID = zoneNum;
+	}
+	}
+	fclose(pFile);
+	}
+	}
+	*/
 	// read vehicle trajectory file
 
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
@@ -763,142 +945,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded.",m_VehicleSet.size());
 	}
 	}
-
-	// read system.dat
-	fopen_s(&pFile,directory+"system.dat","r");
-	if(pFile!=NULL)
-	{
-		g_Simulation_Time_Horizon = g_read_integer(pFile);
-		/*
-		itsMaxIterations >> temp;
-		itsVehicleGenMode = (veh_gen)temp;
-		is >> itsIntervalsPerAggregation >> itsIntervalsPerAssignment
-		>> itsMUCThreshold >> itsConvergeThreshold; */
-
-		fclose(pFile);
-	}
-
-	// read speed data
-	fopen_s(&pFile,directory+"fort.900","r");
-	std::list<DTALink*>::iterator iLink;
-
-	if(pFile!=NULL)
-	{
-		m_TrafficFlowModelFlag = 2; // enable dynamic display mode after reading speed data
-		// read data every min
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
-		}
-
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
-		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
-
-			if(timestamp < 0)  // end of file
-				break;
-
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-				(*iLink)->m_LinkMOEAry[t+1].ObsSpeed = g_read_float(pFile);  // speed;
-			}
-
-		}
-	fclose(pFile);
-	}else
-	{
-	return false; // no simulation data, return 
-	}
-
-	// read queue length data
-	fopen_s(&pFile,directory+"fort.600","r");
-	if(pFile!=NULL)
-	{
-		// read data every min
-
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
-		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
-
-			if(timestamp < 0)  // end of file
-				break;
-
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-				float value  = g_read_float(pFile);  // queue length;
-
-				if(value < -0.5f)
-					break;
-				else
-				(*iLink)->m_LinkMOEAry[t+1].ObsQueueLength = value;
-			}
-
-		}
-	fclose(pFile);
-	}
-
-
-	// read flow rate
-	fopen_s(&pFile,directory+"OutAccuVol.dat","r");
-
-	if(pFile!=NULL)
-	{
-		g_read_float(pFile);  // read 10 min 
-		// This file provides the accummulated number of veh. on of each link           10every sims ints
-
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
-		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
-
-			if(timestamp < 0)  // end of file
-				break;
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-				(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = g_read_float(pFile);  // cumulative flow;
-
-				if(t>=1)
-					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ObsCumulativeFlow)*60);
-			}
-
-		}
-		fclose(pFile);
-	}
-
-		m_SimulationLinkMOEDataLoadingStatus.Format("DYNASMART-P simulation data have been loaded. Simulation horizon = %d min", g_Simulation_Time_Horizon );
-
-	// density_in_veh_per_mile_per_lane
-
-
-
-	/*
-	fopen_s(&st,fname,"r");
-	if(st!=NULL)
-	{
-	int i;
-	int id = 0, zoneNum = 0;
-	DTANode* pNode = 0;
-	for(i = 0; i < g_ODZoneSize; i++)
-	{
-
-	zoneNum	= g_read_integer(pFile);
-	int num_nodes= g_read_integer(pFile);
-
-	if(num_nodes > g_AdjLinkSize)
-	g_AdjLinkSize = num_nodes + 10;  // increaes buffer size
-
-
-	for(int n = 0; n< num_nodes; n++)
-	{
-	int node_number= g_read_integer(pFile);
-
-
-	g_NodeMap[node_number]->m_ZoneID = zoneNum;
-	}
-	}
-	fclose(pFile);
-	}
-	}
-	*/
 
 
 	return true;

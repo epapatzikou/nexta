@@ -26,7 +26,7 @@
 #pragma once
 #include <vector>
 #include "TLiteDoc.h"
-
+#include "BaseDialog.h"
 
 enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,speed_mph,link_density,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory};
 
@@ -44,14 +44,16 @@ class CTimeSeriesLine
 		bool bReferenceMode;
 };
 
-class CDlgMOE : public CDialog
+class CDlgMOE : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlgMOE)
 	
 public:
 	float m_HourlyBackgroundFlow;
 	int m_CarFollowingTimeResolutionPerMin;  // unit: x intervals per min
-	CTLiteDoc* m_pDoc;
+	CTLiteDoc* m_pDoc;  // main document
+	CTLiteDoc* m_pDoc2; // alternative document
+
 	float ** m_VehicleDistanceAry;
 	int m_LinkNoWithCFData;
 
@@ -66,10 +68,13 @@ public:
 	int m_MinDisplayInterval;
 
 	CDlgMOE::CDlgMOE(CWnd* pParent =NULL)
-	: CDialog(CDlgMOE::IDD, pParent)
+	: CBaseDialog(CDlgMOE::IDD, pParent)
 {
+
 	m_NumberOfVehicles = 0;
 	m_pDoc = NULL;
+	m_pDoc2 = NULL; // alternative document
+
 	m_HourlyBackgroundFlow = 1000;
 	m_MinDisplayInterval = 10;
 	m_DisplayVehicleResolution = 1;
@@ -137,7 +142,8 @@ public:
    COLORREF itsBackgroundColor;
 
 	void DrawPlot(CPaintDC* pDC,eLinkMOEMode MOEType, CRect PlotRect, bool LinkTextFlag);
-	void DrawTimeSeries(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
+	int m_LinkDisplayCount;
+	void DrawTimeSeries(CTLiteDoc* pDoc, eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 	void DrawVehicleTrajectory(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);

@@ -41,6 +41,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_ANIMATION_BACKWARD, &CMainFrame::OnAnimationBackward)
 	ON_COMMAND(ID_ANIMATION_SKIPFORWARD, &CMainFrame::OnAnimationSkipforward)
 	ON_COMMAND(ID_ANIMATION_SKIPBACKWARD, &CMainFrame::OnAnimationSkipbackward)
+	ON_COMMAND(ID_WINDOW_SYNCHRONIZEDDISPLAY, &CMainFrame::OnWindowSynchronizeddisplay)
+	ON_UPDATE_COMMAND_UI(ID_WINDOW_SYNCHRONIZEDDISPLAY, &CMainFrame::OnUpdateWindowSynchronizeddisplay)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -58,6 +60,7 @@ CMainFrame::CMainFrame()
 {
 	m_bShowMOEToolBar = true;
 	m_bShowDataToolBar = true;
+	m_bSynchronizedDisplay = true;
 
 }
 
@@ -420,4 +423,14 @@ void CMainFrame::OnAnimationSkipbackward()
 {
 	m_wndPlayerSeekBar.SetPos(max(g_Simulation_Time_Stamp-5,0));
 	UpdateAllViews();
+}
+
+void CMainFrame::OnWindowSynchronizeddisplay()
+{
+	m_bSynchronizedDisplay = !m_bSynchronizedDisplay;
+}
+
+void CMainFrame::OnUpdateWindowSynchronizeddisplay(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck (m_bSynchronizedDisplay);
 }

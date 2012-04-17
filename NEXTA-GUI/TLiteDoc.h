@@ -91,146 +91,10 @@ float GetMinDistance(CPoint pt)
 
 class CTLiteDoc : public CDocument
 {
-protected: // create from serialization only
+public: // create from serialization only
 
-	CTLiteDoc()
-	{
-	   m_RandomRoutingCoefficient = 0.0f;
-       m_bDYNASMARTDataSet = false;
-	   m_AdjLinkSize = 20;  // initial value
-	   m_colorLOS[0] = RGB(190,190,190);
-	   m_colorLOS[1] = RGB(0,255,0);
-	   m_colorLOS[2] = RGB(255,250,117);
-	   m_colorLOS[3] = RGB(255,250,0);
-	   m_colorLOS[4] = RGB(255,216,0);
-	   m_colorLOS[5] = RGB(255,153,0);
-	   m_colorLOS[6] = RGB(255,0,0);
+	CTLiteDoc();
 
-	
-	   m_FreewayColor = RGB(255,211,155);
-	   m_HighwayColor = RGB(100,149,237); 
-       m_ArterialColor = RGB(0,0,0);
-	   m_ConnectorColor = RGB(255,255,0);
-
-		m_BackgroundColor =  RGB(0,100,0);
-		m_MaxLinkWidthAsNumberOfLanes = 5;
-		m_MaxLinkWidthAsLinkVolume = 1000;
-
-		m_VehicleSelectionMode = CLS_network;
-		m_LinkBandWidthMode = LBW_number_of_lanes;
-		m_bLoadNetworkDataOnly = false;
-		m_SamplingTimeInterval = 1;
-		m_AVISamplingTimeInterval = 5;
-
-		m_bSimulationDataLoaded  = false;
-		m_EmissionDataFlag = false;
-		m_bLinkToBeShifted = true;
-		m_SimulationStartTime_in_min = 0;  // 6 AM
-
-		m_NumberOfDays = 0;
-		m_LinkMOEMode = MOE_none;
-		m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
-		m_ODMOEMode = odnone;
-
-		MaxNodeKey = 60000;  // max: unsigned short 65,535;
-		m_BackgroundBitmapLoaded  = false;
-		m_LongLatCoordinateFlag = false;
-		m_ColorFreeway = RGB(198,226,255);
-		m_ColorHighway = RGB(100,149,237);
-		m_ColorArterial = RGB(0,0,0);
-		m_pNetwork = NULL;
-		m_OriginNodeID = -1;
-
-		m_DestinationNodeID = -1;
-		m_NodeSizeSP = 0;
-
-
-		m_PathMOEDlgShowFlag = false;
-		m_SelectPathNo = -1;
-
-		m_ImageX1 = 0;
-		m_ImageX2 = 1000;
-		m_ImageY1 = 0;
-		m_ImageY2 = 1000;
-		m_NodeDisplaySize = 50;
-		m_ShowNodeLayer = false;
-
-
-		m_NetworkRect.top  = 50;
-		m_NetworkRect.bottom = 0;
-
-		m_NetworkRect.left   = 0;
-		m_NetworkRect.right = 100;
-
-		m_UnitMile = 1;
-		m_UnitFeet = 1/5280.0;
-		m_OffsetInFeet = 20;
-		m_LaneWidthInFeet = 20;
-		m_bFitNetworkInitialized = false; 
-	    m_BackgroundBitmapImportedButnotSaved = false;
-
-		m_DefaultNumLanes = 3;
-		m_DefaultSpeedLimit = 65.0f;
-		m_DefaultCapacity = 1900.0f;
-		m_DefaultLinkType = 1;
-		
-		m_ODSize = 0;
-		m_SelectedLinkID = -1;
-	    m_SelectedNodeID = -1;
-		m_SelectedTrainID = -1;
-	
-		m_bSetView = false;
-		m_bShowLegend = false;
-		m_bShowLinkList  = false;
-		m_bShowPathList = false;
-
-		for(int i=0; i<40;i++)
-		{
-			for(int los= 0; los < MAX_LOS_SIZE; los++)
-			{
-				m_LOSBound[i][los] = 0;
-			}
-		}
-
-		// speed LOS bound
-		m_LOSBound[MOE_speed][1] = 100;
-		m_LOSBound[MOE_speed][2] = 90;
-		m_LOSBound[MOE_speed][3] = 70;
-		m_LOSBound[MOE_speed][4] = 50;
-		m_LOSBound[MOE_speed][5] = 40;
-		m_LOSBound[MOE_speed][6] = 33;
-		m_LOSBound[MOE_speed][7] = 0;
-
-		m_LOSBound[MOE_reliability][1] = 0;
-		m_LOSBound[MOE_reliability][2] = 0.1f;
-		m_LOSBound[MOE_reliability][3] = 0.2f;
-		m_LOSBound[MOE_reliability][4] = 0.3f;
-		m_LOSBound[MOE_reliability][5] = 0.5f;
-		m_LOSBound[MOE_reliability][6] = 0.7f;
-		m_LOSBound[MOE_reliability][7] = 999;
-
-		m_LOSBound[MOE_vcratio][1] = 0;
-		m_LOSBound[MOE_vcratio][2] = 0.65f;
-		m_LOSBound[MOE_vcratio][3] = 0.75f;
-		m_LOSBound[MOE_vcratio][4] = 0.85f;
-		m_LOSBound[MOE_vcratio][5] = 0.95f;
-		m_LOSBound[MOE_vcratio][6] = 1.00f;
-		m_LOSBound[MOE_vcratio][7] = 999;
-
-
-
-
-
-		m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
-		m_Doc_Resolution = 1;
-		m_bShowCalibrationResults = false;
-
-		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
-		m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
-		m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
-
-
-	}
 
 	DECLARE_DYNCREATE(CTLiteDoc)
 
@@ -251,6 +115,7 @@ public:
 		return 0;
 	}
 
+	int m_OriginOnBottomFlag;
 	PT_Network m_PT_network;  // public transit network class by Shuguang Li
 	bool m_bShowCalibrationResults;
 
@@ -265,7 +130,6 @@ public:
 
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
-	bool m_bShowLinkList;
 	bool m_bShowPathList;
 	int m_NodeDisplaySize;
 	bool m_ShowNodeLayer;
@@ -348,7 +212,6 @@ public:
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	
 	bool ReadScenarioData();   // for road network
-
 	bool ReadVMSScenarioData();
 	bool WriteVMSScenarioData();
 
@@ -1005,8 +868,6 @@ public:
 	COLORREF GetLinkTypeColor(int LinkType);
 	afx_msg void OnShowShowpathmoe();
 	afx_msg void OnUpdateShowShowpathmoe(CCmdUI *pCmdUI);
-	afx_msg void OnViewShowmoe();
-	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 	afx_msg void OnSearchListtrains();
 	afx_msg void OnTimetableImporttimetable();
 	afx_msg void OnWindow2dview();
@@ -1137,6 +998,8 @@ public:
 
 		
 		afx_msg void OnMoePathlist();
+		afx_msg void OnViewShowmoe();
+		afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 };
-
-
+extern std::list<CTLiteDoc*>	g_DocumentList;
+extern bool g_TestValidDocument(CTLiteDoc* pDoc);

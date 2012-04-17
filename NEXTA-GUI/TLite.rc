@@ -512,9 +512,6 @@ BEGIN
         MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
         MENUITEM "Travel Time Index (base =100)", ID_MOETYPE1_TRAVELTIME
-        MENUITEM "Vehicle Trajectory (every 1 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY
-        MENUITEM "Vehicle Trajectory (every 10 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_10
-        MENUITEM "Vehicle Trajectory (every 30 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_30
         MENUITEM "Oblique Cumulative Lane Volume", ID_MOETYPE_CUMULATIVEVOLUME_Oblique
     END
     POPUP "MOE Type 2"
@@ -527,30 +524,11 @@ BEGIN
         MENUITEM "Density (vpmph)",             ID_MOETYPE2_DENSITY
         MENUITEM "None",                        ID_MOETYPE2_NONE
     END
-    POPUP "MOEType 3"
-    BEGIN
-        MENUITEM "Q-K Curve",                   ID_MOETYPE3_Q
-        MENUITEM "None",                        ID_MOETYPE3_NONE
-    END
-    POPUP "Estimation"
-    BEGIN
-        MENUITEM "Historical Avg Pattern",      ID_ESTIMATION_HISTORICALAVGPATTERN
-        MENUITEM "MOE Variability Plot",        ID_VIEW_MOEVARIABILITYPLOT
-        MENUITEM "Show Event Label",            ID_ESTIMATION_SHOWEVENTLABEL
-        MENUITEM "Highlight Weather Label",     ID_ESTIMATION_SHOWWEATHERDATA
-        MENUITEM "Prediction",                  ID_ESTIMATION_PREDICTION, INACTIVE
-    END
-    POPUP "View"
-    BEGIN
-        MENUITEM "MOE Time Series",             ID_VIEW_MOETIMESERIES
-        MENUITEM "Q-K Curve",                   ID_VIEW_Q
-        MENUITEM "Reset Time Range",            ID_VIEW_RESETTIMERANGE
-        MENUITEM "Simulation vs. Observation",  ID_VIEW_SIMULATIONVS
-    END
     POPUP "Data"
     BEGIN
+        MENUITEM "Simulation vs. Observation",  ID_VIEW_SIMULATIONVS
         MENUITEM "Export Link MOE",             ID_DATA_EXPORT
-        MENUITEM "Export Vehicle Trajectory",   ID_DATA_EXPORTVEHICLETRAJECTORY
+        MENUITEM "Reset Time Range",            ID_VIEW_RESETTIMERANGE
     END
 END
 
@@ -656,7 +634,7 @@ BEGIN
             MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
             MENUITEM "Show/Hide Link MOE",          ID_MOE_NONE
             MENUITEM "Show/Hide Link Arrow",        ID_SHOW_LINKARROW
-            MENUITEM "Hide Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
+            MENUITEM "Show/Hide Time-dependent Link MOE Plots", ID_VIEW_SHOWMOE
         END
         POPUP "Zone"
         BEGIN
@@ -765,6 +743,7 @@ BEGIN
         MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ
         MENUITEM "Tile Vertically",             ID_WINDOW_TILE_VERT
         MENUITEM "&Arrange Icons",              ID_WINDOW_ARRANGE
+        MENUITEM "Synchronized Display",        ID_WINDOW_SYNCHRONIZEDDISPLAY
     END
     POPUP "&Help"
     BEGIN
@@ -1142,6 +1121,59 @@ BEGIN
     END
 END
 
+IDR_MENU_LINK_MOE1 MENU 
+BEGIN
+    POPUP "MOE Type 1"
+    BEGIN
+        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE_LINKVOLUME
+        MENUITEM "Link Volume (vph)",           ID_MOETYPE1_LINKVOLUME
+        MENUITEM "Cumulative Lane Volume",      ID_MOETYPE_CUMULATIVEVOLUME
+        MENUITEM "Speed (mph)",                 ID_MOETYPE1_SPEED
+        MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
+        MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
+        MENUITEM "Travel Time Index (base =100)", ID_MOETYPE1_TRAVELTIME
+        MENUITEM "Vehicle Trajectory (every 1 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY
+        MENUITEM "Vehicle Trajectory (every 10 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_10
+        MENUITEM "Vehicle Trajectory (every 30 vehicle)", ID_MOETYPE1_VEHICLETRAJECTORY_30
+        MENUITEM "Oblique Cumulative Lane Volume", ID_MOETYPE_CUMULATIVEVOLUME_Oblique
+    END
+    POPUP "MOE Type 2"
+    BEGIN
+        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE2_LINKVOLUME
+        MENUITEM "Link Volume (vph)",           ID_MOETYPE2_LINKVOLUME_VPH
+        MENUITEM "Cumulative Lane Volume",      ID_MOETYPE2_CUMULATIVEVOLUME
+        MENUITEM "Speed (mph)",                 ID_MOETYPE2_SPEED_MPH
+        MENUITEM "Speed (km/h)",                ID_MOETYPE2_SPEED
+        MENUITEM "Density (vpmph)",             ID_MOETYPE2_DENSITY
+        MENUITEM "None",                        ID_MOETYPE2_NONE
+    END
+    POPUP "MOEType 3"
+    BEGIN
+        MENUITEM "Q-K Curve",                   ID_MOETYPE3_Q
+        MENUITEM "None",                        ID_MOETYPE3_NONE
+    END
+    POPUP "Estimation"
+    BEGIN
+        MENUITEM "Historical Avg Pattern",      ID_ESTIMATION_HISTORICALAVGPATTERN
+        MENUITEM "MOE Variability Plot",        ID_VIEW_MOEVARIABILITYPLOT
+        MENUITEM "Show Event Label",            ID_ESTIMATION_SHOWEVENTLABEL
+        MENUITEM "Highlight Weather Label",     ID_ESTIMATION_SHOWWEATHERDATA
+        MENUITEM "Prediction",                  ID_ESTIMATION_PREDICTION, INACTIVE
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "MOE Time Series",             ID_VIEW_MOETIMESERIES
+        MENUITEM "Q-K Curve",                   ID_VIEW_Q
+        MENUITEM "Reset Time Range",            ID_VIEW_RESETTIMERANGE
+        MENUITEM "Simulation vs. Observation",  ID_VIEW_SIMULATIONVS
+    END
+    POPUP "Data"
+    BEGIN
+        MENUITEM "Export Link MOE",             ID_DATA_EXPORT
+        MENUITEM "Export Vehicle Trajectory",   ID_DATA_EXPORTVEHICLETRAJECTORY
+    END
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1344,10 +1376,11 @@ CAPTION "Link Information"
 MENU IDR_MENU4
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,538,138
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,538,123
     PUSHBUTTON      "Exit",IDCANCEL,495,157,50,14
     CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,151,87,10
+    LTEXT           "",IDC_DOC_TITLE,7,7,418,8
 END
 
 IDD_ODGRID_DIALOG DIALOGEX 0, 0, 615, 270

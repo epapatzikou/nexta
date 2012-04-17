@@ -391,11 +391,11 @@ void CPlayerSeekBar::OnMouseMove(UINT nFlags, CPoint point)
    {
       g_Simulation_Time_Stamp = current_pos;
 
-	CTLiteApp* pApp;
-	pApp = (CTLiteApp *) AfxGetApp(); 
-	pApp->UpdateAllViews();
+		CTLiteApp* pApp;
+		pApp = (CTLiteApp *) AfxGetApp(); 
+		pApp->UpdateAllViews();
 
-	ShowSimulationTime();
+		ShowSimulationTime();
       m_prev_pos  = current_pos;
       CDialogBar::OnMouseMove(nFlags, point);
    }
