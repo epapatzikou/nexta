@@ -71,5 +71,6 @@ public:
 extern long g_Simulation_Time_Horizon;
 extern int g_Data_Time_Interval;
 extern int g_Number_of_Weekdays;
+extern bool g_bShowLinkList;
 
 extern CTLiteApp theApp;

@@ -103,6 +103,7 @@
 #define IDD_DIALOG_NODE_LANETURN        205
 #define IDR_MENU4                       205
 #define IDD_DIALOG_PATH_LIST            206
+#define IDR_MENU_LINK_MOE1              206
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -280,6 +281,7 @@
 #define IDC_CHECK_ZOOM_TO_SELECTED_LINK 1110
 #define IDC_BUTTON_View_CUBE_File4      1111
 #define IDC_PATHMOE                     1111
+#define IDC_DOC_TITLE                   1113
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -763,14 +765,15 @@
 #define ID_LINKSELECTION_DONOTSHOWCONNECTORS 33378
 #define ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS 33379
 #define ID_MOE_PATHLIST                 33380
+#define ID_WINDOW_SYNCHRONIZEDDISPLAY   33381
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        207
-#define _APS_NEXT_COMMAND_VALUE         33381
-#define _APS_NEXT_CONTROL_VALUE         1113
+#define _APS_NEXT_COMMAND_VALUE         33382
+#define _APS_NEXT_CONTROL_VALUE         1114
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -358,3 +358,4 @@ void CTLiteApp::OnFileOpenmultipletrafficdataprojects()
       pDoc->OnOpenDocument(dlg.GetPathName());
    }
 }
+

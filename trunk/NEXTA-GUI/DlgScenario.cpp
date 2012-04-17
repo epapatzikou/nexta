@@ -37,10 +37,9 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 7
+#define _MAX_SCENARIO_SIZE 4
 // CDlgScenario dialog
-static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Link_Based_Toll","Distance_Based_Toll",
-"Dynamic_Message_Sign","Ramp_Metering", "Work_Zone","Incident","Weather"};
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Incident","Link_Based_Toll","Distance_Based_Toll"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -66,93 +65,54 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 	switch (i)
 	{
-	case 0:
+	case 0:  //work zone
+	case 1:  // incident
 		HeaderList.push_back("Link");
+		HeaderList.push_back("Day No");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Capacity Reduction Percentage (%)");
+		HeaderList.push_back("Speed Limit (mph)");
+
+		DefaultList.push_back("1");
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("40");
+		DefaultList.push_back("45");
+		break;
+	case 2:
+
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Day No");
 		HeaderList.push_back("Start Time in Min");
 		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Charge for LOV ($)");
 		HeaderList.push_back("Charge for HOV ($)");
 		HeaderList.push_back("Charge for Truck ($)");
 
+		DefaultList.push_back("1");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1");
 		DefaultList.push_back("1.5");
 		break;
-	case 1:
+	case 3:
 		HeaderList.push_back("Link");
+		HeaderList.push_back("Day No");
 		HeaderList.push_back("Start Time in Min");
 		HeaderList.push_back("End Time in min");
 		HeaderList.push_back("Charge for LOV ($/mile)");
 		HeaderList.push_back("Charge for HOV ($/mile)");
 		HeaderList.push_back("Charge for Truck ($/mile)");
 
+		DefaultList.push_back("1");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
 		DefaultList.push_back("0.5");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1");
 		break;
-	case 2:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Responce Percentage (%)");
-
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("20");
-		break;
-	case 3:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Metering Rate");
-
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("1500");
-		break;
-	case 4:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Day No");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Capacity Reduction Percentage (%)");
-		HeaderList.push_back("Speed Limit (mph)");
-
-		DefaultList.push_back("1");
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("40");
-		DefaultList.push_back("45");
-		break;
-	case 5:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Capacity Reduction Percentage (%)");
-
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("80");
-		break;
-	case 6:
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Day No");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Capacity Reduction Percentage (%)");
-		HeaderList.push_back("Speed Limit (mph)");
-
-		DefaultList.push_back("1");
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("40");
-		DefaultList.push_back("45");
-		break;
-
 	}
 }
 void CDlgScenario::DoDataExchange(CDataExchange* pDX)
@@ -195,16 +155,12 @@ BOOL CDlgScenario::OnInitDialog()
 		name_vector.clear();
 		value_vector.clear();
 
-		//Read individual xml file
-		//ReadXMLFile(ELEMENTS[i],name_vector,value_vector);
-
-		ReadScenarioCSVFile(SCENARIO_ELEMENTS[i],name_vector,value_vector);
+//		ReadScenarioCSVFile(SCENARIO_ELEMENTS[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
 		tcItem.pszText = _T(SCENARIO_ELEMENTS[i]);
 		m_TabCtrl.InsertItem(i, &tcItem);
-
 
 		std::vector<string> DefaultHeader;
 		std::vector<CString> DefaultValue;
@@ -233,7 +189,6 @@ BOOL CDlgScenario::OnInitDialog()
 	m_TabCtrl.SetCurSel(m_SelectTab);
 
 	SetRectangle();
-
 	return TRUE;
 }
 
@@ -383,74 +338,21 @@ std::vector<std::string> CDlgScenario::GetLinkString()
 	{
 		long i = 0;
 		DTALink* pLink = 0;
-		float default_distance_sum=0;
-		float length_sum = 0;
-		CCSVParser parser;
-
-		CString TempStr(m_pDoc->m_ProjectDirectory + "input_link.csv");
-		std::string std_string(TempStr, TempStr.GetLength());
-
-		if (parser.OpenCSVFile(std_string))
+			std::list<DTALink*>::iterator iLink;
+		for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
 		{
-			while(parser.ReadRecord())
-			{
-				int from_node_id;
-				int to_node_id;
-				int direction;
+						std::stringstream from_node_id_out;
+						std::stringstream to_node_id_out;
 
-				if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
-				{
-					AfxMessageBox("Field from_node_id has not been defined in file input_link.csv. Please check.");
-					break;
-				}
-				if(!parser.GetValueByFieldName("to_node_id",to_node_id))
-				{
-					AfxMessageBox("Field to_node_id has not been defined in file input_link.csv. Please check.");
-					break;
-				}
+						from_node_id_out << (*iLink)->m_FromNodeNumber ;
+						to_node_id_out <<  (*iLink)->m_ToNodeNumber;
 
-				if(!parser.GetValueByFieldName("direction",direction))
-					direction = 1;
+						string subStr;
+						string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
 
-				int link_code_start = 1;
-				int link_code_end = 1;
-
-				if (direction == -1) // reversed
-				{
-					link_code_start = 2; link_code_end = 2;
-				}
-
-				if (direction == 0) // two-directional link
-				{
-					link_code_start = 1; link_code_end = 2;
-				}
-
-				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
-				{
-
-					std::stringstream from_node_id_out;
-					std::stringstream to_node_id_out;
-
-					if(link_code == 1)
-					{
-						from_node_id_out << from_node_id;
-						to_node_id_out << to_node_id;
-					}
-					if(link_code == 2)
-					{
-						from_node_id_out << to_node_id;
-						to_node_id_out << from_node_id;
-					}
-
-					string subStr;
-					string str = "[" + from_node_id_out.str() + "," + to_node_id_out.str() + "]";
-
-					linkstring.push_back(str);
-				}
-			}
+						linkstring.push_back(str);
 		}
-	}
-
+	}	
 	return linkstring;
 }
 
@@ -473,6 +375,7 @@ BOOL CDlgScenario::ReadScenarioCSVFile(const char* ElementType, std::vector<std:
 
 	return TRUE;
 }
+
 
 BOOL CDlgScenario::ReadXMLFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
 {

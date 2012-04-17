@@ -871,11 +871,16 @@ public:
 
 		COVRegularCapacityReduction = 0.1f;
 
+		bWorkzone = false;
+		bIncident = false;
 	}
 
+	bool bWorkzone;
+	bool bIncident;
 
 	float StartTime;
 	float EndTime;
+	int DayNo;
 	float LaneClosureRatio;
 	float SpeedLimit;
 	float ServiceFlowRate;

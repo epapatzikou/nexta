@@ -11,7 +11,8 @@
 #include <string>
 #include <sstream>
 
-extern std::list<DTALink*>	g_LinkDisplayList;
+extern std::list<int>	g_LinkDisplayList;
+extern CDlgLinkList* g_pLinkListDlg;
 // CDlgLinkList dialog
 
 IMPLEMENT_DYNAMIC(CDlgLinkList, CDialog)
@@ -19,12 +20,18 @@ IMPLEMENT_DYNAMIC(CDlgLinkList, CDialog)
 CDlgLinkList::CDlgLinkList(CWnd* pParent /*=NULL*/)
 	: CBaseDialog(CDlgLinkList::IDD, pParent)
 	, m_ZoomToSelectedLink(FALSE)
+	, m_StrDocTitles(_T(""))
 {
  m_AVISensorFlag = false;
+
+ m_pDoc = NULL;
+ m_pDoc2 = NULL;
+
 }
 
 CDlgLinkList::~CDlgLinkList()
-{
+{ 
+	g_pLinkListDlg = NULL;
 }
 
 void CDlgLinkList::DoDataExchange(CDataExchange* pDX)
@@ -32,6 +39,7 @@ void CDlgLinkList::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST, m_ListCtrl);
 	DDX_Check(pDX, IDC_CHECK_ZOOM_TO_SELECTED_LINK, m_ZoomToSelectedLink);
+	DDX_Text(pDX, IDC_DOC_TITLE, m_StrDocTitles);
 }
 
 
@@ -65,25 +73,6 @@ BOOL CDlgLinkList::OnInitDialog()
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
-	std::vector<std::string> m_Column_names;
-
-_TCHAR *ColumnMOELabel[LINKCOLUMNSIZE] =
-{
-	_T("No."),_T("From Node"), _T("To Node"), _T("Length (ml)"), _T("Num of Lanes"), _T("Speed Limit"),
-	_T("Lane Capacity"), _T("Link Type"), _T("VOC"),_T("Volume"), _T("Speed")
-};
-
-
-	//Add Columns and set headers
-	for (size_t i=0;i< LINKCOLUMNSIZE;i++)
-	{
-
-		CGridColumnTrait* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
-		m_ListCtrl.InsertColumnTrait((int)i,ColumnMOELabel[i],LVCFMT_LEFT,-1,-1, pTrait);
-		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
-	}
-	m_ListCtrl.SetColumnWidth(0, 80);
 
 	ReloadData();
 
@@ -91,9 +80,78 @@ _TCHAR *ColumnMOELabel[LINKCOLUMNSIZE] =
 }
 void CDlgLinkList::ReloadData()
 {
+	if(m_pDoc==NULL)
+		return;
+
 	CWaitCursor cursor;
 
-     m_ListCtrl.DeleteAllItems();
+    m_ListCtrl.DeleteAllItems();
+
+	while(m_ListCtrl.GetColumnCount ()>0)
+	{
+	m_ListCtrl.DeleteColumn (0);
+	}
+
+	if(m_pDoc2!=NULL)
+	{
+		m_StrDocTitles.Format("1: %s; 2: %s", m_pDoc->m_ProjectTitle , m_pDoc2->m_ProjectTitle); 
+		UpdateData(0);
+	}
+
+	std::vector<std::string> m_Column_names;
+
+	m_Column_names.push_back ("No.");
+	m_Column_names.push_back ("From Node");
+	m_Column_names.push_back ("To Node");
+	m_Column_names.push_back ("Length (ml)");
+	m_Column_names.push_back ("Num of Lanes");
+	m_Column_names.push_back ("Speed Limit");
+	m_Column_names.push_back ("Lane Capacity");
+	m_Column_names.push_back ("Link Type");
+
+	if(m_pDoc2==NULL)
+	{
+	m_Column_names.push_back ("VOC");
+	}else
+	{
+	m_Column_names.push_back ("VOC_1");
+	m_Column_names.push_back ("VOC_2");
+	m_Column_names.push_back ("VOC_Diff");
+	}
+
+	if(m_pDoc2==NULL)
+	{
+	m_Column_names.push_back ("Speed");
+	}else
+	{
+	m_Column_names.push_back ("Speed_1");
+	m_Column_names.push_back ("Speed_2");
+	m_Column_names.push_back ("Speed_Diff");
+	}
+
+
+	if(m_pDoc2==NULL)
+	{
+	m_Column_names.push_back ("Volume");
+	}else
+	{
+	m_Column_names.push_back ("Volume_1");
+	m_Column_names.push_back ("Volume_2");
+	m_Column_names.push_back ("Volume_Diff");
+	
+	}
+
+
+	//Add Columns and set headers
+	for (size_t i=0;i<m_Column_names.size();i++)
+	{
+
+		CGridColumnTrait* pTrait = NULL;
+//		pTrait = new CGridColumnTraitEdit();
+		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+	}
+	m_ListCtrl.SetColumnWidth(0, 80);
       
 	std::list<DTALink*>::iterator iLink;
 	int i = 0;
@@ -150,17 +208,54 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%s", m_pDoc->m_LinkTypeVector[(*iLink)->m_link_type -1].link_type_name.c_str ());
 		m_ListCtrl.SetItemText(Index,7,text);
 
-		if((*iLink)->m_StaticVOC >0)
-		{
+	if(m_pDoc2==NULL)  // single document view
+	{
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
 		m_ListCtrl.SetItemText(Index,8,text);
 
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
 		m_ListCtrl.SetItemText(Index,9,text);
 
-		sprintf_s(text, "%5.0f",(*iLink)->m_StaticLinkVolume     );
+		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
 		m_ListCtrl.SetItemText(Index,10,text);
+	}else
+	{     // two document view
+
+
+		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
+		m_ListCtrl.SetItemText(Index,8,text);
+
+		//9  
+		// 10
+
+		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
+		m_ListCtrl.SetItemText(Index,11,text);
+
+		// 12
+		//13
+
+		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
+		m_ListCtrl.SetItemText(Index,14,text);
+
+		// 15 m_pDoc2
+		DTALink* pLink2 = m_pDoc2->FindLinkWithNodeNumbers ((*iLink)->m_FromNodeNumber ,(*iLink)->m_ToNodeNumber );
+		if(pLink2!=NULL)  // a link is found in the second document
+		{
+		sprintf_s(text, "%d",pLink2->m_TotalVolume);
+		m_ListCtrl.SetItemText(Index,15,text);
+
+		int diff = pLink2->m_TotalVolume - (*iLink)->m_TotalVolume;
+
+		sprintf_s(text, "%d",diff);
+		m_ListCtrl.SetItemText(Index,16,text);
+
+		
 		}
+		// 16
+
+
+	}
+
 	}
 
 }
@@ -169,8 +264,23 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	
 	UpdateData(1);
-	
+
+	// test valid documents
+	if(g_TestValidDocument(m_pDoc)==false)
+		return;
+
+	if(m_pDoc2!=NULL)
+	{
+	if(g_TestValidDocument(m_pDoc2)==false)
+		return;
+	}
+
+	// 
 	m_pDoc->m_SelectedLinkID = -1;
+
+	if(m_pDoc2!=NULL)
+		m_pDoc2->m_SelectedLinkID = -1;
+
 	g_LinkDisplayList.clear ();
 
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
@@ -185,15 +295,29 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
 			m_pDoc->m_SelectedLinkID = LinkNo;
-			g_LinkDisplayList.push_back(m_pDoc->m_LinkNoMap[LinkNo]);
+
+			if(m_pDoc2)
+				m_pDoc2->m_SelectedLinkID = LinkNo;
+
+			g_LinkDisplayList.push_back(LinkNo);
 
 	}
+
 	if(m_ZoomToSelectedLink == true)
+	{
+
 		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
+
+		if(m_pDoc2!=NULL)
+			m_pDoc2->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
+	}
 
 	Invalidate();
 		
 	m_pDoc->UpdateAllViews(0);
+
+		if(m_pDoc2!=NULL)
+			m_pDoc2->UpdateAllViews(0);
 
 }
 
@@ -205,6 +329,7 @@ void CDlgLinkList::OnBnClickedOk()
 void CDlgLinkList::OnBnClickedCancel()
 {
 	CDialog::OnOK();
+	g_bShowLinkList = false;
 }
 
 

@@ -153,8 +153,6 @@ BOOL CDlgScenarioTab::AddRow()
 	{
 		m_ListCtrl.SetItemText(Index,i,default_value.at(i-1));
 	}
-
-
 	
 	m_NumOfRows++;
 

@@ -12,6 +12,8 @@ class CDlgLinkList : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlgLinkList)
 	CTLiteDoc* m_pDoc;
+	CTLiteDoc* m_pDoc2;
+
 
 
 public:
@@ -45,4 +47,5 @@ public:
 	afx_msg void OnUpdateLinkselectionShowarteriallinksonly(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateLinkselectionShowalllinksexceptconnectors(CCmdUI *pCmdUI);
 	BOOL m_ZoomToSelectedLink;
+	CString m_StrDocTitles;
 };

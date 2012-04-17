@@ -317,18 +317,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 		 
 */
 	}
-	void SetGlobalViewParameters()
-	{
-
-		GetDocument()->m_Doc_Resolution = m_Resolution;
-
-		/*		m_Origin = GetDocument()->m_Doc_Origin;
-		GetDocument()->m_bSetView = true;
-		GetDocument()->m_CurrentViewID  = m_ViewID;
-		GetDocument()->UpdateAllViews(this);
-*/
-	}
-
+	void SetGlobalViewParameters();
 
 	char* m_NodeTypeFaceName;
 
@@ -511,8 +500,6 @@ public:
 	afx_msg void OnUpdateShowGrid(CCmdUI *pCmdUI);
 	afx_msg void OnShowLinkarrow();
 	afx_msg void OnUpdateShowLinkarrow(CCmdUI *pCmdUI);
-	afx_msg void OnViewShowmoe();
-	afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateMoeVehicle(CCmdUI *pCmdUI);
 	afx_msg void OnImageLockbackgroundimageposition();
 	afx_msg void OnViewTextlabel();
@@ -572,7 +559,7 @@ public:
 	afx_msg void OnMoeOddemand();
 	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
 };
-
+extern std::list<CTLiteView*>	g_ViewList;
 
 
 #ifndef _DEBUG  // debug version in TLiteView.cpp

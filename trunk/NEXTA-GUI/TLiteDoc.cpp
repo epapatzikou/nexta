@@ -82,12 +82,14 @@ CDlgMOE *g_LinkMOEDlg = NULL;
 CDlgPathMOE	*g_pPathMOEDlg = NULL;
 CDlg_Legend* g_pLegendDlg = NULL;
 CDlgLinkList* g_pLinkListDlg = NULL;
+bool g_bShowLinkList = false;
 CDlgPathList* g_pPathListDlg = NULL;
-
 extern float g_Simulation_Time_Stamp;
-
 bool g_LinkMOEDlgShowFlag = false;
-std::list<DTALink*>	g_LinkDisplayList;
+std::list<int>	g_LinkDisplayList;
+std::list<CTLiteDoc*>	g_DocumentList;
+std::list<CTLiteView*>	g_ViewList;
+
 
 // CTLiteDoc
 
@@ -224,20 +226,188 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_UPDATE_COMMAND_UI(ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS, &CTLiteDoc::OnUpdateLinkmoeTraveltimereliability)
 
 	ON_COMMAND(ID_MOE_PATHLIST, &CTLiteDoc::OnMoePathlist)
+	ON_COMMAND(ID_VIEW_SHOWMOE, &CTLiteDoc::OnViewShowmoe)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOWMOE, &CTLiteDoc::OnUpdateViewShowmoe)
 	END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
 
+CTLiteDoc::CTLiteDoc()
+{
+	   m_OriginOnBottomFlag = -1;
+	   g_DocumentList.push_back (this);
+	   m_RandomRoutingCoefficient = 0.0f;
+       m_bDYNASMARTDataSet = false;
+	   m_AdjLinkSize = 20;  // initial value
+	   m_colorLOS[0] = RGB(190,190,190);
+	   m_colorLOS[1] = RGB(0,255,0);
+	   m_colorLOS[2] = RGB(255,250,117);
+	   m_colorLOS[3] = RGB(255,250,0);
+	   m_colorLOS[4] = RGB(255,216,0);
+	   m_colorLOS[5] = RGB(255,153,0);
+	   m_colorLOS[6] = RGB(255,0,0);
+
+	
+	   m_FreewayColor = RGB(255,211,155);
+	   m_HighwayColor = RGB(100,149,237); 
+       m_ArterialColor = RGB(0,0,0);
+	   m_ConnectorColor = RGB(255,255,0);
+
+		m_BackgroundColor =  RGB(0,100,0);
+		m_MaxLinkWidthAsNumberOfLanes = 5;
+		m_MaxLinkWidthAsLinkVolume = 1000;
+
+		m_VehicleSelectionMode = CLS_network;
+		m_LinkBandWidthMode = LBW_number_of_lanes;
+		m_bLoadNetworkDataOnly = false;
+		m_SamplingTimeInterval = 1;
+		m_AVISamplingTimeInterval = 5;
+
+		m_bSimulationDataLoaded  = false;
+		m_EmissionDataFlag = false;
+		m_bLinkToBeShifted = true;
+		m_SimulationStartTime_in_min = 0;  // 6 AM
+
+		m_NumberOfDays = 0;
+		m_LinkMOEMode = MOE_none;
+		m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
+		m_ODMOEMode = odnone;
+
+		MaxNodeKey = 60000;  // max: unsigned short 65,535;
+		m_BackgroundBitmapLoaded  = false;
+		m_LongLatCoordinateFlag = false;
+		m_ColorFreeway = RGB(198,226,255);
+		m_ColorHighway = RGB(100,149,237);
+		m_ColorArterial = RGB(0,0,0);
+		m_pNetwork = NULL;
+		m_OriginNodeID = -1;
+
+		m_DestinationNodeID = -1;
+		m_NodeSizeSP = 0;
+
+
+		m_PathMOEDlgShowFlag = false;
+		m_SelectPathNo = -1;
+
+		m_ImageX1 = 0;
+		m_ImageX2 = 1000;
+		m_ImageY1 = 0;
+		m_ImageY2 = 1000;
+		m_NodeDisplaySize = 50;
+		m_ShowNodeLayer = false;
+
+
+		m_NetworkRect.top  = 50;
+		m_NetworkRect.bottom = 0;
+
+		m_NetworkRect.left   = 0;
+		m_NetworkRect.right = 100;
+
+		m_UnitMile = 1;
+		m_UnitFeet = 1/5280.0;
+		m_OffsetInFeet = 20;
+		m_LaneWidthInFeet = 20;
+		m_bFitNetworkInitialized = false; 
+	    m_BackgroundBitmapImportedButnotSaved = false;
+
+		m_DefaultNumLanes = 3;
+		m_DefaultSpeedLimit = 65.0f;
+		m_DefaultCapacity = 1900.0f;
+		m_DefaultLinkType = 1;
+		
+		m_ODSize = 0;
+		m_SelectedLinkID = -1;
+	    m_SelectedNodeID = -1;
+		m_SelectedTrainID = -1;
+	
+		m_bSetView = false;
+		m_bShowLegend = false;
+		m_bShowPathList = false;
+
+		for(int i=0; i<40;i++)
+		{
+			for(int los= 0; los < MAX_LOS_SIZE; los++)
+			{
+				m_LOSBound[i][los] = 0;
+			}
+		}
+
+		// speed LOS bound
+		m_LOSBound[MOE_speed][1] = 100;
+		m_LOSBound[MOE_speed][2] = 90;
+		m_LOSBound[MOE_speed][3] = 70;
+		m_LOSBound[MOE_speed][4] = 50;
+		m_LOSBound[MOE_speed][5] = 40;
+		m_LOSBound[MOE_speed][6] = 33;
+		m_LOSBound[MOE_speed][7] = 0;
+
+		m_LOSBound[MOE_reliability][1] = 0;
+		m_LOSBound[MOE_reliability][2] = 0.1f;
+		m_LOSBound[MOE_reliability][3] = 0.2f;
+		m_LOSBound[MOE_reliability][4] = 0.3f;
+		m_LOSBound[MOE_reliability][5] = 0.5f;
+		m_LOSBound[MOE_reliability][6] = 0.7f;
+		m_LOSBound[MOE_reliability][7] = 999;
+
+		m_LOSBound[MOE_vcratio][1] = 0;
+		m_LOSBound[MOE_vcratio][2] = 0.65f;
+		m_LOSBound[MOE_vcratio][3] = 0.75f;
+		m_LOSBound[MOE_vcratio][4] = 0.85f;
+		m_LOSBound[MOE_vcratio][5] = 0.95f;
+		m_LOSBound[MOE_vcratio][6] = 1.00f;
+		m_LOSBound[MOE_vcratio][7] = 999;
+
+
+
+
+
+		m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
+		m_Doc_Resolution = 1;
+		m_bShowCalibrationResults = false;
+
+		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
+		m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
+		m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+
+
+}
+
+static bool DeleteLinkPointer( DTALink * theElement ) { delete theElement; return true; }
 
 CTLiteDoc::~CTLiteDoc()
 {
+			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+			while (iDoc != g_DocumentList.end())
+			{
+			 if((*iDoc) == this)
+			 {
+			 g_DocumentList.erase (iDoc);  // remove the document to be deleted
+			 break;
+
+			 }
+				iDoc++;
+			}
+
 	m_WarningFile.close();
 
 	if(m_pNetwork!=NULL)
 		delete m_pNetwork;
 
 
+//	m_LinkSet.remove_if (DeleteLinkPointer);
+
+/*
+	std::list<DTANode*>::iterator iNode;
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+			DTANode* pNode = (*iNode);
+
+		if(pNode!=NULL)
+			delete pNode;
+
+	}
+*/
 }
 
 BOOL CTLiteDoc::OnNewDocument()
@@ -859,30 +1029,6 @@ void CTLiteDoc::OnUpdateShowShowpathmoe(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(g_LinkMOEDlgShowFlag);
 }
 
-void CTLiteDoc::OnViewShowmoe()
-{
-	g_LinkMOEDlgShowFlag = !g_LinkMOEDlgShowFlag;
-
-	if(g_LinkMOEDlgShowFlag)
-	{
-		if(g_LinkMOEDlg==NULL)
-		{
-			g_LinkMOEDlg = new CDlgMOE();
-			g_LinkMOEDlg->m_pDoc = this;
-			g_LinkMOEDlg->m_TmLeft = 0 ;
-			g_LinkMOEDlg->m_TmRight = g_Simulation_Time_Horizon ;
-
-			g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
-		}
-
-		g_LinkMOEDlg->ShowWindow(SW_SHOW);
-
-	}else
-	{
-		g_LinkMOEDlg->ShowWindow(SW_HIDE);
-	}
-
-}
 
 
 void CTLiteDoc::OnSearchListtrains()
@@ -2180,7 +2326,9 @@ bool CTLiteDoc::ReadScenarioData()
 			if(plink!=NULL)
 			{
 				CapacityReduction cs;
+				cs.bIncident = true; 
 
+				cs.DayNo = g_read_integer(st);
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 				cs.LaneClosureRatio= g_read_float(st);
@@ -2188,13 +2336,40 @@ bool CTLiteDoc::ReadScenarioData()
 				i++;
 			}
 		}
-
-
 		fclose(st);
 	}
 
+	CString workzone_file = m_ProjectDirectory+"Scenario_Work_Zone.csv";
+	fopen_s(&st,workzone_file,"r");
+	if(st!=NULL)
+	{
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn == -1)
+				break;
+
+			int dsn =  g_read_integer(st);
+
+			DTALink* plink = FindLinkWithNodeNumbers(usn,dsn,incident_file );
+
+			if(plink!=NULL)
+			{
+				CapacityReduction cs;
+				cs.bWorkzone  = true; 
+
+				cs.DayNo = g_read_integer(st);
+				cs.StartTime = g_read_integer(st);
+				cs.EndTime = g_read_integer(st);
+				cs.LaneClosureRatio= g_read_float(st);
+				plink->CapacityReductionVector.push_back(cs);
+				i++;
+			}
+		}
+		fclose(st);
+	}
 	//  Dynamic Message Sign
-	ReadVMSScenarioData();
+//	ReadVMSScenarioData();
 	ReadLink_basedTollScenarioData();
 
 
@@ -4160,13 +4335,14 @@ void CTLiteDoc::OnToolsEditoddemandtable()
 
 void CTLiteDoc::OnSearchLinklist()
 {
-	m_bShowLinkList = !m_bShowLinkList;
-	if(m_bShowLinkList)
+
+	g_bShowLinkList = !g_bShowLinkList;
+
+	if(g_bShowLinkList)
 	{
 		if(g_pLinkListDlg==NULL)
 		{
 			g_pLinkListDlg = new CDlgLinkList();
-			g_pLinkListDlg->m_pDoc = this;
 			g_pLinkListDlg->Create(IDD_DIALOG_LINK_LIST);
 		}
 
@@ -4174,7 +4350,23 @@ void CTLiteDoc::OnSearchLinklist()
 
 		if(g_pLinkListDlg->GetSafeHwnd())
 		{
-			g_pLinkListDlg->m_pDoc = this;
+			// we udpate the pointer list for document every time we open this link list window
+			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+			while (iDoc != g_DocumentList.end())
+			{
+				if ((*iDoc)->m_NodeSet.size()>0)
+				{
+
+					if(g_pLinkListDlg->m_pDoc ==NULL)
+						g_pLinkListDlg->m_pDoc = (*iDoc);
+					else if((*iDoc)!= g_pLinkListDlg->m_pDoc)
+						g_pLinkListDlg->m_pDoc2 = (*iDoc);
+
+				}
+				iDoc++;
+			
+			}
+
 			g_pLinkListDlg->ReloadData ();
 			g_pLinkListDlg->ShowWindow(SW_HIDE);
 			g_pLinkListDlg->ShowWindow(SW_SHOW);
@@ -7274,4 +7466,68 @@ void CTLiteDoc::OnMoePathlist()
 {
 	m_bShowPathList = !m_bShowPathList;
 	ShowPathListDlg(m_bShowPathList);
+}
+
+
+bool g_TestValidDocument(CTLiteDoc* pDoc)
+{
+			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+			while (iDoc != g_DocumentList.end())
+			{
+					if(pDoc == (*iDoc))
+						return true;
+				
+				iDoc++;
+			}
+
+			return false;
+}
+
+void CTLiteDoc::OnViewShowmoe()
+{
+	g_LinkMOEDlgShowFlag = !g_LinkMOEDlgShowFlag;
+	if(g_LinkMOEDlgShowFlag)
+	{
+		if(g_LinkMOEDlg==NULL)
+		{
+			g_LinkMOEDlg = new CDlgMOE();
+			
+			g_LinkMOEDlg->m_TmLeft = 0 ;
+			g_LinkMOEDlg->m_TmRight = g_Simulation_Time_Horizon ;
+			g_LinkMOEDlg->m_pDoc = this;
+			g_LinkMOEDlg->SetModelessFlag(TRUE);
+			g_LinkMOEDlg->Create(IDD_DIALOG_MOE);
+		}
+
+		if(g_LinkMOEDlg->GetSafeHwnd())
+		{
+			// assignemnt document pointers
+			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+			while (iDoc != g_DocumentList.end())
+			{
+				if ((*iDoc)->m_NodeSet.size()>0)
+				{
+					if(g_LinkMOEDlg->m_pDoc ==NULL)
+						g_LinkMOEDlg->m_pDoc = (*iDoc);
+					else if((*iDoc)!= g_LinkMOEDlg->m_pDoc)
+						g_LinkMOEDlg->m_pDoc2 = (*iDoc);
+				}
+							iDoc++;
+			}
+			g_LinkMOEDlg->ShowWindow(SW_HIDE);
+			g_LinkMOEDlg->ShowWindow(SW_SHOW);
+		}
+	}else
+	{
+		if(g_LinkMOEDlg!=NULL && g_LinkMOEDlg->GetSafeHwnd())
+		{
+			g_LinkMOEDlg->ShowWindow(SW_HIDE);
+		}
+	}
+
+}
+
+void CTLiteDoc::OnUpdateViewShowmoe(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(g_LinkMOEDlgShowFlag);
 }
