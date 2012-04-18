@@ -1140,7 +1140,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	}
 
-	strSQL = m_pDoc->ConstructSQL("4-3-PEAK-HOUR-DEMAND");
+	strSQL = m_pDoc->ConstructSQL("4-3-PEAK-PERIOD-DEMAND");
 
 	if(strSQL.GetLength() > 0)
 	{

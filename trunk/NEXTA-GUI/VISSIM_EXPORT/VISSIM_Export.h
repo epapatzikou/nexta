@@ -1,4 +1,4 @@
-//  Portions Copyright 2010 Peng Du pdu@bjtu.edu.cn
+//  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn
 //
 
 //   If you help write or modify the code, please also list your names here.

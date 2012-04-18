@@ -337,7 +337,7 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 void CDlg_ImportPointSensor::OnBnClickedButtonViewSampleFile2()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
 	SampleExcelSensorFile = pMainFrame->m_CurrentDirectory + SampleExcelSensorFile;
 	m_pDoc->OpenCSVFileInExcel (SampleExcelSensorFile);
 }
@@ -350,7 +350,7 @@ void CDlg_ImportPointSensor::OnBnClickedButtonViewSampleFile3()
 void CDlg_ImportPointSensor::OnBnClickedButtonSelectSampleFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+	CString SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
 	SampleExcelSensorFile = pMainFrame->m_CurrentDirectory + SampleExcelSensorFile;
 	m_Sensor_File = SampleExcelSensorFile;
 	UpdateData(false);

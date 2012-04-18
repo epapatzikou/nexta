@@ -7382,7 +7382,7 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	DeleteFile(directory+"AMS_node.kml");
 	ExportNodeLayerToGISFiles(directory+"AMS_node.kml","KML");
 
-	DeleteFile(directory+"AAMS_link.kml");
+	DeleteFile(directory+"AMS_link.kml");
 	ExportLinkLayerToGISFiles(directory+"AMS_link.kml","KML");
 
 
