@@ -7,33 +7,6 @@
 // CDlg_VehPathAnalysis dialog
 
 
-class PathStatistics
-{
-public: 
-	PathStatistics()
-	{
-	TotalVehicleSize = 0;
-	TotalTravelTime = 0;
-	TotalDistance = 0;
-	TotalCost = 0;
-	TotalEmissions = 0;
-	}
-
-	int   NodeNumberSum;
-	int   NodeSize;
-
-	std::vector<int> m_LinkVector;
-	std::vector<DTAVehicle*> m_VehicleVector;
-
-	int   TotalVehicleSize;
-	float TotalTravelTime;
-	float TotalDistance;
-	float TotalCost;
-	float TotalEmissions;
-	CVehicleEmission emissiondata;
-
-
-};
 
 
 

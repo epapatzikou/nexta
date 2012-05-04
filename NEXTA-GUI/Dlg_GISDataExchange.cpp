@@ -339,11 +339,6 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 
 void CDlg_GISDataExchange::OnBnClickedExportCsvFile()
 {
-	if(m_GIS_ShapeFile.GetLength () == 0 )
-	{
-	AfxMessageBox("Please select a shape file first.");
-	return;
-	}
 
 	CString m_CSV_FileName;
 	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,

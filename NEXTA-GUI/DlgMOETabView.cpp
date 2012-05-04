@@ -32,15 +32,21 @@ BOOL CDlgMOETabView::OnInitDialog()
 	CDialog::OnInitDialog();
 
 
-	char* MOE_FileName_List[] = {"incident-data","weather-data"};
-	//m_pDoc->m_ProjectDirectory
+	std::vector<CString> MOE_FileName_List;
+	
+	MOE_FileName_List.push_back("output_assignment_log.csv");
+	MOE_FileName_List.push_back("output_NetworkMOE.csv");
+	MOE_FileName_List.push_back("output_ODMOE.csv");
+	MOE_FileName_List.push_back("output_LinkMOE.csv");
+	MOE_FileName_List.push_back("output_NetworkTDMOE.csv");
+	MOE_FileName_List.push_back("output_LinkTDMOE.csv");
 
-	for (int i=0;i < m_number_of_MOE_files;i++)
+	for (int i=0;i < MOE_FileName_List.size();i++)
 	{
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
-		tcItem.pszText = MOE_FileName_List[i];
+		tcItem.pszText = const_cast<LPTSTR>((LPCTSTR)MOE_FileName_List[i]);
 		m_TabCtrl.InsertItem(i, &tcItem);
 
 		string fileName = m_pDoc->m_ProjectDirectory + MOE_FileName_List[i] + ".csv";
@@ -55,7 +61,7 @@ BOOL CDlgMOETabView::OnInitDialog()
 
 	p_Tabs[0]->ShowWindow(SW_SHOW);
 
-	for (int i=1;i<m_number_of_MOE_files;i++)
+	for (int i=1;i<MOE_FileName_List.size();i++)
 	{
 		p_Tabs[i]->ShowWindow(SW_HIDE);
 	}

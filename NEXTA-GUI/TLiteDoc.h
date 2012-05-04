@@ -39,6 +39,26 @@
 #include <afxdb.h>          // MFC database support
 #include <afxdao.h>
 
+enum layer_mode
+   { 
+	layer_node = 0,
+	layer_link,
+	layer_link_MOE,
+	layer_zone,
+	layer_OD_flow,
+	layer_path_flow,
+	layer_agent_vehicle,
+	layer_subarea, 
+	layer_workzone,
+	layer_incident,
+	layer_VMS,
+	layer_toll,
+	layer_crash,
+	layer_ramp,
+	layer_weather,
+	layer_detector,
+	layer_GPS
+};
 
 enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
@@ -48,6 +68,7 @@ enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_path,CLS_link,C
 enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,CLS_total_CO2,CLS_avg_CO2};
 enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
+
 
 class MovementBezier
 {
@@ -88,6 +109,44 @@ float GetMinDistance(CPoint pt)
 }
 
 };
+class PathStatistics
+{
+public: 
+	PathStatistics()
+	{
+	TotalVehicleSize = 0;
+	TotalTravelTime = 0;
+	TotalDistance = 0;
+	TotalCost = 0;
+	TotalEmissions = 0;
+	}
+
+	int	  Origin;
+	int	  Destination;
+	int   NodeNumberSum;
+	int   NodeSize;
+	int   TotalVehicleSize;
+
+	CString GetPathLabel()
+	{
+		CString label;
+		label.Format("%d,%d,%d,%d", Origin , Destination, NodeNumberSum, NodeSize);
+		return label;
+	}
+
+	std::vector<int> m_LinkVector;
+	std::vector<GDPoint> m_ShapePoints;
+	std::vector<DTAVehicle*> m_VehicleVector;
+
+
+	float TotalTravelTime;
+	float TotalDistance;
+	float TotalCost;
+	float TotalEmissions;
+	CVehicleEmission emissiondata;
+
+
+};
 
 class CTLiteDoc : public CDocument
 {
@@ -100,6 +159,8 @@ public: // create from serialization only
 
 	// Attributes
 public:
+
+
 
 	float GetDemandVolume(int origin,int destination,int demand_type)
 	{
@@ -212,11 +273,16 @@ public:
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	
 	bool ReadScenarioData();   // for road network
+
+
 	bool ReadVMSScenarioData();
+
+	bool WriteLink_basedTollScenarioData();
 	bool WriteVMSScenarioData();
+	bool WriteIncidentScenarioData();
+	bool WriteWorkZoneScenarioData();
 
 	bool ReadLink_basedTollScenarioData();
-	bool WriteLink_basedTollScenarioData();
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
 	bool ReadLinkGeoFile(LPCTSTR lpszFileName);
@@ -231,6 +297,7 @@ public:
 	void LoadSimulationOutput();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
+	void ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
 	void ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
@@ -373,6 +440,8 @@ void SetStatusText(CString StatusText);
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
+	void ReadVehicleBinFile(LPCTSTR lpszFileName);
+
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
 
@@ -428,9 +497,10 @@ void SetStatusText(CString StatusText);
 	std::vector<DTA_sensor> m_SensorVector;
 	std::vector<DTAVehicleType> m_VehicleTypeVector;
 	std::vector<DTADemandType> m_DemandTypeVector;
-	std::vector<DTALinkType> m_LinkTypeVector;
-	std::vector<DTAVOTDistribution> m_VOTDistributionVector;
+	std::map<int,DTALinkType> m_LinkTypeMap;
+	std::map<int, string> m_NodeTypeMap;
 
+	std::vector<DTAVOTDistribution> m_VOTDistributionVector;
 
 	std::vector<DTADemandProfile> m_DemandProfileVector;
 
@@ -702,6 +772,15 @@ void SetStatusText(CString StatusText);
 
 	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
+	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
+	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
+
+	std::map<CString, PathStatistics> m_PathMap;
+
+	void GeneratePathFromVehicleData();
+	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLinkMOEToKMLFiles(CString file_name);
+
 
 	CString m_GISMessage;
 
@@ -1000,6 +1079,14 @@ public:
 		afx_msg void OnMoePathlist();
 		afx_msg void OnViewShowmoe();
 		afx_msg void OnUpdateViewShowmoe(CCmdUI *pCmdUI);
+		afx_msg void OnFileUploadlinkdatatogooglefusiontable();
+		afx_msg void On3Viewdatainexcel();
+		afx_msg void On5Viewdatainexcel();
+		afx_msg void OnMoeViewnetworktimedependentmoe();
+		afx_msg void On2Viewdatainexcel33398();
+		afx_msg void On2Viewnetworkdata();
+		afx_msg void On3Viewoddatainexcel();
+		afx_msg void OnMoeOpenallmoetables();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

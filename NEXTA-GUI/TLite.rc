@@ -92,6 +92,7 @@ IDR_DATA_TOOLBAR        BITMAP                  "res\\sta_tool.bmp"
 IDR_AMS_TOOLBAR         BITMAP                  "res\\bmp00002.bmp"
 IDR_TOOLBAR1            BITMAP                  "res\\bmp00003.bmp"
 IDR_AMS_TOOLBAR1        BITMAP                  "res\\ams_tool.bmp"
+IDR_TOOLBARLAYER        BITMAP                  "res\\toolbar2.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -101,9 +102,10 @@ IDR_AMS_TOOLBAR1        BITMAP                  "res\\ams_tool.bmp"
 IDR_VIEW_TOOLBAR TOOLBAR  16, 15
 BEGIN
     BUTTON      ID_IMPORTDATA_IMPORT
-    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     BUTTON      ID_SCENARIO_CONFIGURATION
-    BUTTON      ID_LINK_LINEDISPLAYMODE
+    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
+    SEPARATOR
+    BUTTON      ID_MOE_NONE
     BUTTON      ID_MOE_VEHICLE
     BUTTON      ID_MOE_VC_Ratio
     BUTTON      ID_MOE_VOLUME
@@ -120,6 +122,12 @@ BEGIN
     BUTTON      ID_EDIT_CREATESUBAREA
     BUTTON      ID_TOOLS_VIEWSIMULATIONSUMMARY
     SEPARATOR
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
@@ -175,7 +183,6 @@ BEGIN
     BUTTON      ID_FILE_SAVE_PROJECT
     SEPARATOR
     BUTTON      ID_SEARCH_FINDLINK
-    BUTTON      ID_VIEW_SELECT
     BUTTON      ID_VIEW_SELECT_NODE
     BUTTON      ID_VIEW_MOVE
     SEPARATOR
@@ -187,6 +194,10 @@ BEGIN
     SEPARATOR
     BUTTON      ID_VIEW_BACKGROUNDIMAGE
     BUTTON      ID_VIEW_IMAGE
+    SEPARATOR
+    BUTTON      ID_LINK_LINEDISPLAYMODE
+    BUTTON      ID_LINK_INCREASEBANDWIDTH
+    BUTTON      ID_LINK_DECREASEBANDWIDTH
     SEPARATOR
     BUTTON      ID_VIEW_ZOOMIN
     BUTTON      ID_VIEW_ZOOMOUT
@@ -206,6 +217,7 @@ BEGIN
     SEPARATOR
     BUTTON      ID_ANIMATION_PLAY
     BUTTON      ID_ANIMATION_REWIND
+    SEPARATOR
     BUTTON      ID_ANIMATION_PAUSE
     BUTTON      ID_ANIMATION_STOP
     SEPARATOR
@@ -265,6 +277,14 @@ BEGIN
     BUTTON      ID_Edit_Create2WayLinks
     SEPARATOR
     BUTTON      ID_HELP_VISITDEVELOPMENTWEBSITE
+END
+
+IDR_TOOLBARLAYER TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_Combobox_Layer
+    SEPARATOR
+    BUTTON      ID_BUTTON33415
+    BUTTON      ID_BUTTON33416
 END
 
 
@@ -570,14 +590,13 @@ IDR_TLiteTYPE1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN
+        MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN_NEW_DOC
         MENUITEM "&Open Traffic Network Only...", ID_FILE_OPEN_NETWORK_ONLY
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
-            MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
             MENUITEM "GIS Shape File",              ID_IMPORT_ARCGISSHAPEFILE
-            MENUITEM "Point Sensor Data",           ID_IMPORT_SENSOR_DATA
+            MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
             POPUP "Background Image"
             BEGIN
                 MENUITEM "Import Background Image",     ID_IMAGE_IMPORTBACKGROUNDIMAGE
@@ -586,6 +605,7 @@ BEGIN
                 MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only", ID_IMAGE_SHIFT
                 MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
             END
+            MENUITEM "Point Sensor Data",           ID_IMPORT_SENSOR_DATA, INACTIVE
         END
         POPUP "Export"
         BEGIN
@@ -599,6 +619,7 @@ BEGIN
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM SEPARATOR
         MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
+        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
         MENUITEM SEPARATOR
         MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
         MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
@@ -612,6 +633,7 @@ BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
         MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+        MENUITEM "GIS Layer Panel",             ID_VIEW_GIS_Layer_Panel
         MENUITEM SEPARATOR
         POPUP "Node"
         BEGIN
@@ -674,12 +696,10 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)", ID_SEARCH_FINDLINK
         MENUITEM SEPARATOR
-        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
     END
     POPUP "Project"
     BEGIN
         MENUITEM "Edit OD Demand Table",        ID_TOOLS_EDITODDEMANDTABLE
-        MENUITEM "Edit Time-Dependent Demand Profile", ID_PROJECT_EDITTIME
         MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
         MENUITEM "Edit Scenario Data",          ID_SCENARIO_CONFIGURATION
         MENUITEM SEPARATOR
@@ -687,15 +707,41 @@ BEGIN
     END
     POPUP "MOE"
     BEGIN
-        MENUITEM "Link List",                   ID_SEARCH_LINKLIST
-        MENUITEM "Path List",                   ID_MOE_PATHLIST
+        MENUITEM "Link List Dialog",            ID_SEARCH_LINKLIST
+        MENUITEM "Path List Dialog",            ID_MOE_PATHLIST
         MENUITEM SEPARATOR
-        MENUITEM "Vehicle Path Analysis (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
-        MENUITEM "Vehicle Statistics ",         ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM "Vehicle Path Analysis Dialog (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "Vehicle Statistics Dialog",   ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM "Open All MOE Tables",         ID_MOE_OPENALLMOETABLES
         MENUITEM SEPARATOR
-        MENUITEM "View Traffic Assignment Summary in Excel", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
-        MENUITEM "View Link MOE Summary in Excel", ID_MOE_VIEWLINKMOESUMMARYFILE
-        MENUITEM "View Traffic Assignment Summary Plot", ID_MOE_VIEWTRAFFICASSIGNMENTSUMMARYPLOT
+        POPUP "1. Traffic Assignment Summary"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+            MENUITEM "View Data in Built-in Plot",  ID_1_VIEWDATAINPLOT
+        END
+        MENUITEM SEPARATOR
+        POPUP "2. Network MOE"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_2_VIEWNETWORKDATA
+        END
+        POPUP "3. OD MOE"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_3_VIEWODDATAINEXCEL
+        END
+        POPUP "4. Link MOE"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_MOE_VIEWLINKMOESUMMARYFILE
+            MENUITEM "View Data in Built-in Table", ID_SEARCH_LINKLIST
+        END
+        MENUITEM SEPARATOR
+        POPUP "5. Network Time-dependent MOE"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_MOE_VIEWNETWORKTIMEDEPENDENTMOE
+        END
+        POPUP "6. Link Time-dependent MOE"
+        BEGIN
+            MENUITEM "View Data in Excel",          ID_5_VIEWDATAINEXCEL
+        END
     END
     POPUP "Tools"
     BEGIN
@@ -713,21 +759,12 @@ BEGIN
             MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
             MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
             MENUITEM SEPARATOR
-            MENUITEM "Color by Speed",              ID_NGSIMDATA_COLORSPEED
-            MENUITEM SEPARATOR
-            MENUITEM "Car Following Simulation",    ID_NGSIMDATA_CARFOLLOWINGSIMULATION
             MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
-            MENUITEM "Show Preceeding Vehicle Position", ID_NGSIMDATA_SHOWPRECEEDINGVEHICLEPOSITION
             MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
             MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
             MENUITEM SEPARATOR
-            MENUITEM "Show Simulated Results",      ID_NGSIMDATA_SHOWSIMULATEDRESULTS
-            MENUITEM "Show both Observed and Simulation Results", ID_NGSIMDATA_SHOWBOTHOBSERVEDANDSIMULATIONRESULTS
-            MENUITEM "Change Settings of Car Following Model", ID_NGSIMDATA_CHANGESETTINGSOFCARFOLLOWINGMODEL
             MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
             MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
-            MENUITEM "Traffic Flow Model Estimation (TFME)", ID_NGSIMMENU_TRAFFICFLOWMODELESTIMATION
-            MENUITEM "Export Cumulative Flow Count Data", ID_NGSIMMENU_EXPORTCUMULATIVEFLOWCOUNTDATA
             MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
@@ -1216,11 +1253,12 @@ EXSTYLE WS_EX_CONTROLPARENT
 CAPTION "About NeXTA Version 3"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Open-Source Software Version 3.0 Beta Release Date: 04/13/2012",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,183,142,50,14,WS_GROUP
     LTEXT           "This package reads DYNASMARAT-P, DTALite, AMS data sets.",IDC_STATIC,41,48,171,20,0,WS_EX_STATICEDGE
+    LTEXT           "This package reads DYNASMARAT-P, DTALite, AMS data sets.",IDC_STATIC,41,73,171,20,0,WS_EX_STATICEDGE
 END
 
 IDD_DIALOG_MOE DIALOGEX 0, 0, 534, 180
@@ -1301,29 +1339,33 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
 END
 
-IDD_DIALOG_LinkProperties DIALOGEX 0, 0, 238, 178
+IDD_DIALOG_LinkProperties DIALOGEX 0, 0, 238, 195
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Link Properties"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,100,157,50,14
-    PUSHBUTTON      "Cancel",ID_CANCEL,181,157,50,14
-    EDITTEXT        IDC_EDIT_FROM_NODE,51,7,52,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
+    DEFPUSHBUTTON   "OK",IDOK,100,174,50,14
+    PUSHBUTTON      "Cancel",ID_CANCEL,181,174,50,14
+    EDITTEXT        IDC_EDIT_FROM_NODE,45,7,62,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
     LTEXT           "From node:",IDC_STATIC,7,7,38,8
-    LTEXT           "To node:",IDC_STATIC,116,7,30,8
-    EDITTEXT        IDC_EDIT_To_NODE,153,7,52,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
-    LTEXT           "Length: (Mile)",IDC_STATIC,7,29,45,8
-    LTEXT           "Speed Limit (mph):",IDC_STATIC,7,49,60,8
-    LTEXT           "Free-flow travel time (min):",IDC_STATIC,7,66,88,8
-    LTEXT           "Lane Capacity (vph):",IDC_STATIC,7,87,68,8
-    LTEXT           "# of Lanes:",IDC_STATIC,7,111,38,8
-    EDITTEXT        IDC_EDIT_LENGTH,102,28,52,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_EDIT_SPEEDLIMIT,102,47,52,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_EDIT_FFTT,102,65,52,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
-    EDITTEXT        IDC_EDIT_LANE_CAPACITY,102,87,52,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_EDIT_NUMLANES,102,111,52,14,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Link Type:",IDC_STATIC,7,132,34,8
-    COMBOBOX        IDC_COMBO1,102,130,114,129,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "To node:",IDC_STATIC,113,7,30,8
+    EDITTEXT        IDC_EDIT_To_NODE,153,7,78,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
+    LTEXT           "Length: (Mile)",IDC_STATIC,7,54,45,8
+    LTEXT           "Speed Limit (mph):",IDC_STATIC,7,74,60,8
+    LTEXT           "Free-flow travel time (min):",IDC_STATIC,7,91,88,8
+    LTEXT           "Lane Capacity (vph):",IDC_STATIC,7,112,68,8
+    LTEXT           "# of Lanes:",IDC_STATIC,7,136,38,8
+    EDITTEXT        IDC_EDIT_LENGTH,102,54,52,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_SPEEDLIMIT,102,72,52,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FFTT,102,90,52,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
+    EDITTEXT        IDC_EDIT_LANE_CAPACITY,102,112,52,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_NUMLANES,102,136,52,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Link Type:",IDC_STATIC,7,158,34,8
+    COMBOBOX        IDC_COMBO1,102,155,114,129,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Link ID:",IDC_STATIC,7,32,25,8
+    EDITTEXT        IDC_EDIT_LINKID,33,28,62,14,ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER
+    LTEXT           "Street Name:",IDC_STATIC,98,31,44,8
+    EDITTEXT        IDC_EDIT_LINKID2,146,29,85,14,ES_AUTOHSCROLL | ES_NUMBER
 END
 
 IDD_DIALOG_Settings DIALOGEX 0, 0, 577, 172
@@ -1383,21 +1425,22 @@ BEGIN
     LTEXT           "",IDC_DOC_TITLE,7,7,418,8
 END
 
-IDD_ODGRID_DIALOG DIALOGEX 0, 0, 615, 270
+IDD_ODDEMAND_GRID_DIALOG DIALOGEX 0, 0, 715, 330
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "OD Demand Table"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    PUSHBUTTON      "Exit without Saving",ID_GRID_QUIT,519,249,78,14
-    CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,7,71,589,166
-    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,30,249,64,14,WS_DISABLED
-    PUSHBUTTON      "Activity Location Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,118,249,117,14,WS_DISABLED
-    LISTBOX         IDC_LIST1,7,18,116,40,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Demand Type List:",IDC_STATIC,7,7,79,8
-    LTEXT           "Time Intervanl List:",IDC_STATIC,151,7,79,8
-    LISTBOX         IDC_LIST4,149,18,116,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Edit Time-dependent Profile",IDC_BUTTON1,295,27,99,14
-    DEFPUSHBUTTON   "Update Demand Matrix for Selected Demand Type",ID_GRID_SAVEQUIT2,271,249,199,14
+    PUSHBUTTON      "Exit",ID_GRID_QUIT,614,309,78,14
+    CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,7,100,687,169
+    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,501,279,64,14,NOT WS_VISIBLE | WS_DISABLED
+    PUSHBUTTON      "Activity Location Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,575,280,117,14,NOT WS_VISIBLE | WS_DISABLED
+    LTEXT           "1. Demand Type List:",IDC_STATIC,7,7,79,8
+    PUSHBUTTON      "4. 24-hour Time-dependent Profile",IDC_BUTTON1,7,297,129,14
+    DEFPUSHBUTTON   "Update Demand Matrix for Selected Demand Type",ID_GRID_SAVEQUIT2,111,82,169,14
+    CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,689,57
+    LTEXT           "2. OD Demand Matrix:",IDC_STATIC,7,84,79,8
+    LTEXT           "3. Loading Multiplier for Constructing 24-hour Demand:",IDC_STATIC,7,279,178,8
+    EDITTEXT        IDC_EDIT_DemandMultipler,199,277,65,14,ES_AUTOHSCROLL
 END
 
 IDD_DIALOG_Image_Width DIALOGEX 0, 0, 316, 141
@@ -1662,17 +1705,13 @@ BEGIN
     RTEXT           "Message List:",IDC_STATIC,7,93,44,8
     DEFPUSHBUTTON   "Import Node, Link and Demand Files",ID_IMPORT_Network_Only,7,69,151,14
     DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,151,225,86,14
-    PUSHBUTTON      "1. View Sample DYNASMART File",IDC_BUTTON_View_DSP_File,349,12,131,14
-    PUSHBUTTON      "2. Import DYNASMART Project",IDC_BUTTON_Import_DSP_FIle,349,33,131,14
-    PUSHBUTTON      "4: Import TRANSIMS Project",IDC_BUTTON_IMPORT_TRANSIMS,349,74,131,14
     GROUPBOX        "Demo:",IDC_STATIC,342,0,145,239,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
-    DEFPUSHBUTTON   "3: View Sample TRANSIMS Project",ID_View_Sample_TRANSIMS_File,349,54,131,14
-    PUSHBUTTON      "5. View Sample TransCAD File and Conversion Tutorial",IDC_BUTTON_View_TRANSCADA_File,349,93,131,24,BS_MULTILINE
-    PUSHBUTTON      "6. View Sample CUBE File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File,349,121,131,24,BS_MULTILINE
-    PUSHBUTTON      "7. View Sample AIMSUN File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File2,350,149,131,24,BS_MULTILINE
-    PUSHBUTTON      "8. View Sample VISUM File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File3,349,178,131,24,BS_MULTILINE
+    PUSHBUTTON      "5. View Sample TransCAD File and Conversion Tutorial",IDC_BUTTON_View_TRANSCADA_File,344,26,131,24,BS_MULTILINE
+    PUSHBUTTON      "6. View Sample CUBE File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File,343,74,131,24,BS_MULTILINE
+    PUSHBUTTON      "7. View Sample AIMSUN File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File2,356,108,131,24,BS_MULTILINE
+    PUSHBUTTON      "8. View Sample VISUM File and Conversion Tutorial",IDC_BUTTON_View_CUBE_File3,349,153,131,24,BS_MULTILINE
     DEFPUSHBUTTON   "Export Network Accessibility Table",ID_EXPORT_DATA3,7,225,131,14
-    PUSHBUTTON      "9. Generate Accessibility Data from DTALite",IDC_BUTTON_View_CUBE_File4,349,206,131,24,BS_MULTILINE
+    SCROLLBAR       IDC_SCROLLBAR1,431,124,8,8,SBS_VERT
 END
 
 IDD_DIALOG_EXCEL_IMPORT_POINT_SENSOR DIALOGEX 0, 0, 479, 222
@@ -1726,31 +1765,34 @@ BEGIN
     PUSHBUTTON      "Update",IDC_BUTTON_UPDATE,372,109,50,14
 END
 
-IDD_NSCHART_DEMAND_DIALOG DIALOGEX 0, 0, 487, 204
+IDD_NSCHART_DEMAND_DIALOG DIALOGEX 0, 0, 673, 204
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "Time-dependent Demand Profile"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Close",IDOK,430,183,50,14
+    DEFPUSHBUTTON   "Exit",IDOK,555,183,111,14
     CONTROL         "Time-Dependent Demand Profile",IDC_CUSTOM1,
-                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,60,404,98
-    GROUPBOX        "Chart style",IDC_STATIC,420,18,60,40,WS_GROUP
-    CONTROL         "Pie Chart",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,423,28,45,10
-    CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,423,43,45,10
-    GROUPBOX        "Chart colors",IDC_STATIC,420,68,60,55,WS_GROUP
-    CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,423,78,49,10
-    CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,423,93,37,10
-    CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,423,109,39,10
-    EDITTEXT        IDC_LABEL,27,166,40,14,ES_AUTOHSCROLL
-    LTEXT           "Label:",IDC_STATIC,7,166,20,14,SS_CENTERIMAGE
-    EDITTEXT        IDC_VALUE,98,166,40,14,ES_AUTOHSCROLL
-    LTEXT           "Value:",IDC_STATIC,73,166,20,14,SS_CENTERIMAGE
-    PUSHBUTTON      "Add",IDC_ADD,142,166,25,14,0,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "Del",IDC_DEL,171,166,25,14,0,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "Modify",IDC_MODIFY,201,166,35,14,0,WS_EX_CLIENTEDGE
+                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,60,597,98
+    GROUPBOX        "Chart style",IDC_STATIC,606,18,60,40,WS_GROUP
+    CONTROL         "Pie Chart",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,610,28,45,10
+    CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,610,43,45,10
+    GROUPBOX        "Chart colors",IDC_STATIC,606,68,60,55,WS_GROUP
+    CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,610,78,49,10
+    CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,610,93,37,10
+    CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,610,109,39,10
+    EDITTEXT        IDC_LABEL,65,166,40,14,ES_AUTOHSCROLL
+    LTEXT           "Time Label:",IDC_STATIC,21,166,44,14,SS_CENTERIMAGE
+    EDITTEXT        IDC_VALUE,136,166,40,14,ES_AUTOHSCROLL
+    LTEXT           "Value:",IDC_STATIC,111,166,20,14,SS_CENTERIMAGE
+    PUSHBUTTON      "Modify",IDC_MODIFY,190,167,35,14,0,WS_EX_CLIENTEDGE
     LISTBOX         IDC_DEMAND_PROFILE_LIST,7,17,229,35,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Demand Profile List:",IDC_STATIC,7,7,64,8
+    LTEXT           "Demand Loading:",IDC_STATIC,256,17,57,8
+    LTEXT           "Start Time:",IDC_STATIC,257,28,35,8
+    LTEXT           "End Time:",IDC_STATIC,388,28,33,8
+    COMBOBOX        IDC_COMBOStartTime,301,28,72,170,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBOEndTime,425,28,72,169,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_NSCHART_VEHICLE_DIALOG DIALOGEX 0, 0, 596, 250
@@ -1831,19 +1873,16 @@ BEGIN
     DEFPUSHBUTTON   "Exit",IDOK,265,201,50,14
     LISTBOX         IDC_LIST1,7,80,304,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,19,306,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,317,20,20,14
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,317,18,20,14
     LTEXT           "Shape File of Point/Line Data Layer:",IDC_STATIC,7,6,116,8
     RTEXT           "Message List:",IDC_STATIC,7,65,44,8
     DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,48,96,14
-    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,7,170,96,14
-    DEFPUSHBUTTON   "Export to GIS Shape File",ID_EXPORT_GPS_SHAPE_FILE,7,149,95,14
-    DEFPUSHBUTTON   "Export to KML File",ID_EXPORT_KML_FILE,7,191,95,14
+    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,113,49,96,14
     GROUPBOX        "Demo:",IDC_STATIC,345,7,127,118,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
     PUSHBUTTON      "1. View Sample Shape File",IDC_BUTTON_View_Sample_File,354,22,109,14
     PUSHBUTTON      "2. Select Sample Shape File",IDC_BUTTON_Load_Sample_Shape_File,354,39,109,14
     PUSHBUTTON      "3. Import GIS Shape File",IDC_BUTTON_Import_GIS_Shape_File,354,57,109,14
     PUSHBUTTON      "4. View Exported CSV File",IDC_BUTTON_Export_to_CSV_File,354,74,109,14
-    PUSHBUTTON      "5. View Exported KML File",IDC_BUTTON_View_EXPORTED_KML_FILE,354,90,109,14
 END
 
 IDD_DIALOG_Legend DIALOGEX 0, 0, 133, 124
@@ -1928,8 +1967,7 @@ BEGIN
     DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,155,220,86,14
     PUSHBUTTON      "1. View Sample Spreadsheet",IDC_BUTTON_View_Sample_File,355,12,109,14
     PUSHBUTTON      "2. Select Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,355,33,109,14
-    PUSHBUTTON      "4: Save Project...",IDC_BUTTON_View_Sample_CSV_File,354,75,109,14
-    GROUPBOX        "Demo:",IDC_STATIC,345,0,125,101,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    GROUPBOX        "Demo:",IDC_STATIC,345,0,125,77,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
     DEFPUSHBUTTON   "3: Import All Tables",ID_IMPORT2,355,54,104,14
     CONTROL         "Remove Connectors and Centroids",IDC_CHECK_REMOVE_CONNECTOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,89,136,10
@@ -1963,15 +2001,6 @@ BEGIN
     EDITTEXT        IDC_EDIT_CURRENT_NODEID,73,7,54,14,ES_AUTOHSCROLL | ES_READONLY
 END
 
-IDD_DIALOG1 DIALOGEX 0, 0, 316, 180
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Dialog"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,205,159,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,259,159,50,14
-END
-
 IDD_DIALOG_NODE_LANETURN DIALOGEX 0, 0, 598, 323
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -1994,6 +2023,16 @@ BEGIN
     PUSHBUTTON      "Find Alternative Route through Random Routing",ID_FIND_RANDOM_ROUTE,103,186,165,14
     LTEXT           "Random Cost Coefficient:",IDC_STATIC,7,172,83,8
     COMBOBOX        IDC_COMBO1,7,186,78,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 358
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,103,206,WS_EX_LEFTSCROLLBAR
+    CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,232,103,120,WS_EX_LEFTSCROLLBAR
+    PUSHBUTTON      "DB",IDC_BUTTON_Database,71,7,17,14
+    PUSHBUTTON      "CF",IDC_BUTTON_Configuration,93,7,17,14
 END
 
 
@@ -2110,7 +2149,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 231
         TOPMARGIN, 7
-        BOTTOMMARGIN, 171
+        BOTTOMMARGIN, 188
     END
 
     IDD_DIALOG_Settings, DIALOG
@@ -2137,12 +2176,12 @@ BEGIN
         BOTTOMMARGIN, 171
     END
 
-    IDD_ODGRID_DIALOG, DIALOG
+    IDD_ODDEMAND_GRID_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 608
+        RIGHTMARGIN, 708
         TOPMARGIN, 7
-        BOTTOMMARGIN, 263
+        BOTTOMMARGIN, 323
     END
 
     IDD_DIALOG_Image_Width, DIALOG
@@ -2315,7 +2354,7 @@ BEGIN
     IDD_NSCHART_DEMAND_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 480
+        RIGHTMARGIN, 666
         TOPMARGIN, 7
         BOTTOMMARGIN, 197
     END
@@ -2407,14 +2446,6 @@ BEGIN
         BOTTOMMARGIN, 316
     END
 
-    IDD_DIALOG1, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 309
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 173
-    END
-
     IDD_DIALOG_NODE_LANETURN, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -2429,6 +2460,14 @@ BEGIN
         RIGHTMARGIN, 340
         TOPMARGIN, 7
         BOTTOMMARGIN, 207
+    END
+
+    IDD_DIALOG_GISLayer, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 110
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 352
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2579,17 +2618,18 @@ END
 
 STRINGTABLE 
 BEGIN
-    ID_VIEW_IMAGE           "\nEnable the background image to be movable"
+    ID_VIEW_IMAGE           "Enable the background image to be movable\nEnable the background image to be movable"
+    ID_VIEW_BACKGROUNDIMAGE "Show/Hide background image\nShow/Hide background image"
 END
 
 STRINGTABLE 
 BEGIN
-    ID_3DZoom               "\nZoom in and zoom out in 3D View \n 3D Zoom in & out"
-    ID_3DPam                "\nPanning. Moving the objects "
-    ID_3DRotate             "\nRotate Objects"
-    ID_3DReset              "\nReset View"
+    ID_3DZoom               "Zoom in and zoom out in 3D View \n 3D Zoom in & out"
+    ID_3DPam                "Panning in 3D Mode\nPanning. Moving the objects "
+    ID_3DRotate             "Rotate 3D View\nRotate 3D View"
+    ID_3DReset              "Reset 3D View\nReset 3D View"
     ID_3DLockZ              "\nLock Z Axis"
-    ID_WINDOW_NEW3DVIEW     "\nShow 3D View"
+    ID_WINDOW_NEW3DVIEW     "Show 3D View\nShow 3D View"
 END
 
 STRINGTABLE 
@@ -2605,23 +2645,27 @@ BEGIN
     ID_WINDOW_SHOW2DVIEW    "\nShow 2D View"
     ID_Edit_Create1WayLink  "Add New One-Way Link\nAdd New One-Way Link"
     ID_Edit_Create2WayLinks "Add New Two-Way Links\nAdd New Two-Way Links"
+    ID_SHOW_GRID            "Show/Hide Grid\nShow/Hide Grid"
 END
 
 STRINGTABLE 
 BEGIN
     ID_VIEW_SHOWMOE         "\nShow Link MOE Window"
+    ID_VIEW_SENSOR          "Show/Hide Sensors\nShow/Hide Sensors"
     ID_SEARCH_FINDLINK      "Search Node/Link/Path/Vehicle (Ctrl+F)\nSearch Node/Link/Path/Vehicle"
 END
 
 STRINGTABLE 
 BEGIN
-    ID_MOE_SPEED            "/nUnit: mph"
-    ID_MOE_VOLUME           "\nUnit: veh/link"
+    ID_MOE_SPEED            "Link Speed/nLink Speed"
+    ID_MOE_VOLUME           "Link Volume\nLink Volume"
+    ID_MOE_NONE             "Display Network Only\nDisplay Network Only"
 END
 
 STRINGTABLE 
 BEGIN
-    ID_MOE_VC_Ratio         "\nVolume/Capacity Ratio"
+    ID_VIEW_TEXTLABEL       "Show/Hide Text Label\nShow/Hide Text Label "
+    ID_MOE_VC_Ratio         "Volume/Capacity Ratio\nVolume/Capacity Ratio"
     ID_MOE_TRAVELTIME       "/n Unit: min"
 END
 
@@ -2639,6 +2683,8 @@ BEGIN
     ID_IMPORT_SENSOR_DATA   "Import Point Sensor Data"
     ID_IMPORT_LINKMOE       "Import Simulated Link MOE File"
     ID_IMPORT_VEHICLEFILE   "Import Simulated Vehicle Trajectory File"
+    ID_LINKMOE_EMISSIONS    "Emissions\nEmissions"
+    ID_LINKMOE_SAFETY       "Crash Rate\nCrash Rate"
 END
 
 STRINGTABLE 
@@ -2648,6 +2694,7 @@ END
 
 STRINGTABLE 
 BEGIN
+    ID_EDIT_CREATESUBAREA   "Create Subarea\nCreate Subarea"
     ID_IMPORT_AVI_DATA      "Import AVI Sensor Data"
 END
 
@@ -2666,18 +2713,75 @@ STRINGTABLE
 BEGIN
     ID_TOOLS_VIEWSIMULATIONSUMMARY 
                             "View Vehicle Statistics\nView Vehicle Statistics"
+    ID_HELP_VISITDEVELOPMENTWEBSITE 
+                            "Visit Development Website\nVisit Development Website"
     ID_EDIT_CREATENODE      "Add New Node\nAdd New Node"
+    ID_VIEW_SELECT_NODE     "Select Node\nSelect Node"
 END
 
 STRINGTABLE 
 BEGIN
     ID_SEARCH_VEHICLE       "Search Vehicles"
+    ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS 
+                            "Link Speed Variability\nLink Speed Variability"
 END
 
 STRINGTABLE 
 BEGIN
-    ID_ANIMATION_SKIPFORWARD "\n Skip Forward 5 min"
-    ID_ANIMATION_SKIPBACKWARD "\n Skip Backward 5 min"
+    ID_LINK_LINEDISPLAYMODE "Switch Link Bar/Line Display Mode\nSwitch Link Bar/Line Display Mode"
+    ID_LINKMOEDISPLAY_QUEUELENGTH "Queue Length\nQueue Length"
+    ID_ANIMATION_SKIPFORWARD "Skip Forward 5 min\nSkip Forward 5 min"
+    ID_ANIMATION_SKIPBACKWARD "Skip Backward 5 min\nSkip Backward 5 min"
+    ID_ANIMATION_FORWARD    "Play Forward\nPlay Forward"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_ZOOMIN          "Zoom In\nZoom In"
+    ID_VIEW_ZOOMOUT         "Zoom Out\nZoom Out"
+    ID_VIEW_SHOWNETWORK     "Show Network\nShow Network"
+    ID_VIEW_MOVE            "Move Network\nMove Network"
+    ID_VIEW_SELECT          "Select Link\nSelect Link"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_LINK_INCREASEBANDWIDTH 
+                            "Increase Link Bandwidth\nIncrease Link Bandwidth"
+    ID_LINK_DECREASEBANDWIDTH 
+                            "Decrease Link Bandwidth\nDecrease Link Bandwidth"
+    ID_VIEW_SHOWHIDE_LEGEND "Show/Hide Legend\nShow/Hide Legend"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_ANIMATION_BACKWARD   "Play Backward\nPlay Backward"
+    ID_VIEW_ZONEBOUNDARY    "Show/Hide Zone Boundary\nShow/Hide Zone Boundary"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_MOE_VEHICLE          "Ainmation with Vehicles\nAinmation with Vehicles"
+    ID_ANIMATION_PLAY       "Start Animation\nStart Animation"
+    ID_ANIMATION_REWIND     "Rewind\nRewind"
+    ID_ANIMATION_PAUSE      "Pause Animation\nPause Animation"
+    ID_ANIMATION_STOP       "Stop Animation\nStop Animation"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_SEARCH_LINKLIST      "Link List\nLink List"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_MOE_PATHLIST         "Path List\nPath List"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_MOE_VEHICLEPATHANALAYSIS 
+                            "Vehicle Path Analysis Dialog\nVehicle Path Analysis Dialog"
 END
 
 #endif    // English (U.S.) resources

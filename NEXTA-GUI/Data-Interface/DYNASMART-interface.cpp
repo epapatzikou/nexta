@@ -44,7 +44,7 @@ using namespace std;
 
 BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly)
 {
-	m_OriginOnBottomFlag = 1;
+	m_OriginOnBottomFlag = -1;
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;
@@ -143,13 +143,16 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int m_LeftBays= g_read_integer(pFile);
 			int m_RightBays= g_read_integer(pFile);
 
-			pLink->m_Length= g_read_float(pFile)/5280;   // 5280 feet per mile, NEXTA use mile as default length unit
+			pLink->m_Length = g_read_float(pFile)/5280;   // 5280 feet per mile, NEXTA use mile as default length unit
 			pLink->m_NumLanes= g_read_integer(pFile);
 
 			int m_FlowModel= g_read_integer(pFile);
 			int m_SpeedAdjustment= g_read_integer(pFile);
 			pLink->m_SpeedLimit = g_read_integer(pFile);
 			pLink->m_StaticSpeed = pLink->m_SpeedLimit;
+			pLink->m_FreeFlowTravelTime = pLink->m_Length*60 / max(1,pLink->m_SpeedLimit);  // * 60: hour -> min
+  
+
 
 			pLink->m_MaximumServiceFlowRatePHPL= g_read_float(pFile);
 			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
@@ -407,7 +410,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
-	/*
+
 	// read demand.dat
 	fopen_s(&pFile,directory+"demand.dat","r");
 	if(pFile!=NULL)
@@ -442,13 +445,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				{
 					float demand_value = g_read_float(pFile) * demand_factor;
 
-					DTADemand element;
-					element.from_zone_id = from_zone+1;
-					element.to_zone_id = to_zone+1;
-					element.starting_time_in_min = TimeIntevalVector[i];
-					element.ending_time_in_min = TimeIntevalVector[i+1];
-					element.number_of_vehicles_per_demand_type.push_back(demand_value);
-					m_DemandVector.push_back (element);
+					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].SetValue (1,demand_value);
+
 				}
 
 		} // time-dependent matrix
@@ -456,7 +454,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
-	*/
 	// set link type
 
 
@@ -480,50 +477,61 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeFreewayMap[8] = 1;
 	m_LinkTypeFreewayMap[9] = 1;
 
+	m_NodeTypeMap[0] = "";
+	m_NodeTypeMap[1] = "No Control";
+	m_NodeTypeMap[2] = "Yield Sign";
+	m_NodeTypeMap[3] = "4-Way Stop Sign";
+	m_NodeTypeMap[4] = "Pretimed Signal";
+	m_NodeTypeMap[5] = "Actuated Signal";
+	m_NodeTypeMap[6] = "2-Way Stop Sign";
+	
+      
 
 	DTALinkType element;
 
+
 	element.freeway_flag = 1;
 	element.link_type_name = "Freeway";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[1] = element;
 
 	element.freeway_flag = 1;
 	element.link_type_name = "Freeway with Detector";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[2] = element;
 
 	element.ramp_flag = 1;
 	element.link_type_name = "On Ramp";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[3] = element;
 
 	element.ramp_flag = 1;
 	element.link_type_name = "Off Ramp";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[4] = element;
 
 
 	element.arterial_flag = 1;
 	element.link_type_name = "Arterial";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[5] = element;
 
 	element.freeway_flag = 1;
 	element.link_type_name = "HOT";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[6] = element;
 
 
 	element.freeway_flag = 1;
 	element.link_type_name = "Highway";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[7] = element;
 
 	element.freeway_flag = 1;
 	element.link_type_name = "HOV";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[8] = element;
 
 	element.freeway_flag = 1;
 	element.link_type_name = "FreewayHOT";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[9] = element;
+
 
 	element.freeway_flag = 1;
 	element.link_type_name = "FreewayHOV";
-	m_LinkTypeVector.push_back(element);
+	m_LinkTypeMap[10] = element;
 
 	OffsetLink();
 

@@ -15,6 +15,9 @@ public:
 	CDlg_TDDemandProfile(CWnd* pParent = NULL);   // standard constructor
 
 	CTLiteDoc* m_pDoc;
+	int m_DemandLoading_StartHour;
+	int m_DemandLoading_EndHour;
+
 // Dialog Data
 	enum { IDD = IDD_NSCHART_DEMAND_DIALOG };
 
@@ -31,7 +34,6 @@ public:
 
 // Implementation
 protected:
-	int m_StartTimeInterval, m_EndTimeInterval;
 	INT m_iItem;
 	HICON m_hIcon;
 	void OnUpdateModify(CCmdUI* pCmdUI);
@@ -53,4 +55,7 @@ protected:
 public:
 	CListBox m_ODProfileList;
 	afx_msg void OnLbnSelchangeDemandProfileList();
+	afx_msg void OnBnClickedOk();
+	CComboBox m_StartTimeCombo;
+	CComboBox m_EndTimeCombo;
 };

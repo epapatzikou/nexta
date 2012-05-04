@@ -253,12 +253,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			m_pDoc->m_LinkTypeConnectorMap[element.link_type] = element.connector_flag  ;
 			
 
-			m_pDoc->m_LinkTypeVector.push_back(element);
+			m_pDoc->m_LinkTypeMap[element.link_type] = element;
 
 			rsLinkType.MoveNext ();
 		}
 		rsLinkType.Close();
-		str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeVector.size());
+		str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeMap.size());
 		m_MessageList.AddString(str_msg);
 	}else
 	{
@@ -1217,10 +1217,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				element.starting_time_in_min = starting_time_in_min;
 				element.ending_time_in_min = ending_time_in_min;
 
-				for(unsigned int	demand_type = 0; demand_type < m_pDoc->m_DemandTypeVector.size(); demand_type++)
+				for(unsigned int	demand_type = 1; demand_type < m_pDoc->m_DemandTypeVector.size(); demand_type++)
 				{
 					CString str_number_of_vehicles; 
-					str_number_of_vehicles.Format ("number_of_vehicle_trips_type%d", demand_type+1);
+					str_number_of_vehicles.Format ("number_of_vehicle_trips_type%d", demand_type);
 					number_of_vehicles = rsDemand.GetDouble(str_number_of_vehicles,bExist,false);
 					if(!bExist)
 					{

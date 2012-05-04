@@ -306,11 +306,15 @@ void CNSChartCtrl::DrawBarChart(CDC *pDC)
 	CNSChartValue* pTmp;
 
     double t = 1.0L;
-	if(m_dMax >= 1.0L){
+	if(m_dMax >= 1.0L)
+	{
 		str.Format("%.0f",m_dMax);
 		int d = 1;
 		for(int i = 0;i<str.GetLength()-1;i++) d*=10;
 		t = max((((double)str.GetAt(0)-48)+1)*d,m_dMax);
+	}else
+	{
+	t = m_dMax;
 	}
 	
 	rect.DeflateRect(40,30,20,20);

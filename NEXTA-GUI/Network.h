@@ -342,6 +342,13 @@ public:
 
 	std::vector<GDPoint> m_ShapePoints;
 	std::map<int, DTADemandVolume> m_ODDemandMatrix;
+
+	std::map<int, float> m_TotalTimeDependentZoneDemand;
+	void SetTDZoneValue(int time_interval, float value)
+	{
+		m_TotalTimeDependentZoneDemand[time_interval] += value;
+
+	}
 	int m_ZoneTAZ;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<DTAActivityLocation> m_ActivityLocationVector;
@@ -554,6 +561,16 @@ public:
 	int ramp_flag;
 };
 
+class DTANodeType
+{
+public:
+	int node_type;
+	string node_type_name;
+	int pretimed_signal_flag;
+	int actuated_signal_flag;
+	int stop_sign_flag;
+	int yield_sign_flag;
+};
 
 class DTAVOTDistribution
 {
@@ -863,6 +880,7 @@ class CapacityReduction
 public:
 	CapacityReduction()
 	{
+		DayNo = 0;
 		for (int i=0;i<MAX_RANDOM_SAMPLE_SIZE;i++)
 		{
 			CapacityReductionSamples[i] = 0.f;
@@ -929,8 +947,14 @@ public:
 class DTAToll
 {
 public:
+	DTAToll()
+	{
+	DayNo = 0;
+	}
+
 	float StartTime;
 	float EndTime;
+	int DayNo;
 	float TollRate[MAX_PRICING_TYPE_SIZE];
 	float TollRateInMin[MAX_PRICING_TYPE_SIZE];
 };
@@ -978,7 +1002,7 @@ public:
 		m_Direction = 1;
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
-		m_LinkMOEAry.reserve(m_SimulationHorizon+1);
+		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 
 
 		m_StochaticCapcityFlag = 0;

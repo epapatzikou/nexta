@@ -474,7 +474,6 @@ void CDlg_VehPathAnalysis::FilterPaths()
 				(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 				(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 			{
-
 				bool bFingFlag =  false;
 
 				for(int p = 0; p< m_PathVector.size(); p++)

@@ -155,7 +155,7 @@ BOOL CDlgScenario::OnInitDialog()
 		name_vector.clear();
 		value_vector.clear();
 
-//		ReadScenarioCSVFile(SCENARIO_ELEMENTS[i],name_vector,value_vector);
+		ReadScenarioCSVFile(SCENARIO_ELEMENTS[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;

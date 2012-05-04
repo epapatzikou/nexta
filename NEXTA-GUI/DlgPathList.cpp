@@ -122,7 +122,9 @@ void CDlgPathList::ReloadData()
 		m_ListCtrl.SetItemText(Index,4,text);
 		total_travel_time+=pLink->m_FreeFlowTravelTime;
 
-		sprintf_s(text, "%s", m_pDoc->m_LinkTypeVector[pLink->m_link_type -1].link_type_name.c_str ());
+		if(m_pDoc->m_LinkTypeMap.find(pLink->m_link_type) != m_pDoc->m_LinkTypeMap.end())
+		{
+		sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
 		m_ListCtrl.SetItemText(Index,5,text);
 
 		}
@@ -132,6 +134,7 @@ void CDlgPathList::ReloadData()
 
 	}
 
+}
 }
 
 void CDlgPathList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)

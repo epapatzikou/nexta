@@ -7,11 +7,12 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "TLiteDoc.h"
+#include "TLiteView.h"
 #include "GLView.h"
 #include "TSView.h"
 
-
 #include "MainFrm.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -43,6 +44,13 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_ANIMATION_SKIPBACKWARD, &CMainFrame::OnAnimationSkipbackward)
 	ON_COMMAND(ID_WINDOW_SYNCHRONIZEDDISPLAY, &CMainFrame::OnWindowSynchronizeddisplay)
 	ON_UPDATE_COMMAND_UI(ID_WINDOW_SYNCHRONIZEDDISPLAY, &CMainFrame::OnUpdateWindowSynchronizeddisplay)
+	ON_COMMAND(ID_VIEW_GIS_Layer_Panel, &CMainFrame::OnViewGisLayerPanel)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_GIS_Layer_Panel, &CMainFrame::OnUpdateViewGisLayerPanel)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_GISLAYER, &CMainFrame::OnLvnItemchangedListGislayer)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_GISLAYER, &CMainFrame::OnNMCustomdrawListGislayer)
+	ON_NOTIFY(NM_RCLICK, IDC_LIST_GISLAYER, &CMainFrame::OnNMRClickListGislayer)
+	ON_BN_CLICKED(IDC_BUTTON_Database, &CMainFrame::OnBnClickedButtonDatabase)
+	ON_BN_CLICKED(IDC_BUTTON_Configuration, &CMainFrame::OnBnClickedButtonConfiguration)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -55,19 +63,42 @@ static UINT indicators[] =
 
 
 // CMainFrame construction/destruction
+#define _NUM_OF_GIS_LAYERS  17 
+static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
+{
+	_T("Node"),
+	_T("Link"),
+	_T("Link MOE"),
+	_T("Zone"),
+	_T("OD Flow"),
+	_T("Path Flow"),
+	_T("Agent/Vehicle"),
+	_T("Subarea"), 
+	_T("Work Zone"),
+	_T("Incident"),
+	_T("VMS"),
+	_T("Toll"),
+	_T("Crash"),
+	_T("Ramp"),
+	_T("Weather"),
+	_T("Detector"),
+	_T("GPS")
+};
 
 CMainFrame::CMainFrame()
 {
+	m_bFeatureInfoInitialized  = false;
+	m_bShowGISLayerToolBar = true;
 	m_bShowMOEToolBar = true;
 	m_bShowDataToolBar = true;
 	m_bSynchronizedDisplay = true;
+	m_iSelectedLayer = layer_link;
 
 }
 
 CMainFrame::~CMainFrame()
 {
 }
-
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -92,14 +123,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
 			CBRS_TOOLTIPS | CBRS_FLYBY);
 
-		if (!m_wndReBar.Create(this) ||
-			!m_wndReBar.AddBar(&m_wndToolBar) ||
-			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
-			)
-		{
-			TRACE0("Failed to create rebar\n");
-			return -1;      // fail to create
-		}
 
 
 	
@@ -114,6 +137,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 */
 
+   
 		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
 			!m_MOEToolBar.LoadToolBar(IDR_VIEW_TOOLBAR))
@@ -129,54 +153,39 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
+		if (!m_wndReBar.Create(this) ||
+			!m_wndReBar.AddBar(&m_wndToolBar) ||
+			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
+//			!m_wndReBar.AddBar(&m_wndLayerBar)
+			)
+		{
+			TRACE0("Failed to create rebar\n");
+			return -1;      // fail to create
+		}
+
+
 		m_MOEToolBar.SetButtonText(0,"Data");
-		m_MOEToolBar.SetButtonText(1,"Simulation");
-		m_MOEToolBar.SetButtonText(2,"Scenario");
-		m_MOEToolBar.SetButtonText(3,"Network");
-		m_MOEToolBar.SetButtonText(4,"Animation");
-		m_MOEToolBar.SetButtonText(5,"V/C");
-		m_MOEToolBar.SetButtonText(6,"Volume");
-		m_MOEToolBar.SetButtonText(7,"Speed");
-		m_MOEToolBar.SetButtonText(8,"Queue");
-		m_MOEToolBar.SetButtonText(10,"Emissions");
-		m_MOEToolBar.SetButtonText(11,"Reliability");
-		m_MOEToolBar.SetButtonText(12,"Safety");
-		m_MOEToolBar.SetButtonText(14,"Link");
-		m_MOEToolBar.SetButtonText(15,"Path");
-		m_MOEToolBar.SetButtonText(16,"Vehicle");
-		m_MOEToolBar.SetButtonText(17,"Subarea");
-		m_MOEToolBar.SetButtonText(18,"System");
+		m_MOEToolBar.SetButtonText(1,"Scenario");
+		m_MOEToolBar.SetButtonText(2,"Simulation");
+		m_MOEToolBar.SetButtonText(4,"Network");
+		m_MOEToolBar.SetButtonText(5,"Animation");
+		m_MOEToolBar.SetButtonText(6,"V/C");
+		m_MOEToolBar.SetButtonText(7,"Volume");
+		m_MOEToolBar.SetButtonText(8,"Speed");
+		m_MOEToolBar.SetButtonText(9,"Queue");
+		m_MOEToolBar.SetButtonText(11,"Emissions");
+		m_MOEToolBar.SetButtonText(12,"Reliability");
+		m_MOEToolBar.SetButtonText(13,"Safety");
+		m_MOEToolBar.SetButtonText(15,"Link");
+		m_MOEToolBar.SetButtonText(16,"Path");
+		m_MOEToolBar.SetButtonText(17,"Vehicle");
+		m_MOEToolBar.SetButtonText(18,"Subarea");
+		m_MOEToolBar.SetButtonText(19,"System");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
 
-
-/*		m_AMSToolBar.SetButtonText(0,"TOOL");
-		m_AMSToolBar.SetButtonText(2,"Network");
-		m_AMSToolBar.SetButtonText(3,"Import");
-		m_AMSToolBar.SetButtonText(4,"Sensor");
-		m_AMSToolBar.SetButtonText(5,"GIS");
-		m_AMSToolBar.SetButtonText(6,"Signal");
-		m_AMSToolBar.SetButtonText(7,"Transit");
-		m_AMSToolBar.SetButtonText(8,"Cloud");
-		m_AMSToolBar.SetButtonText(9,"Background");
-
-		m_AMSToolBar.SetButtonText(11,"Simulation");
-		m_AMSToolBar.SetButtonText(12,"ODME");
-		m_AMSToolBar.SetButtonText(13,"TFME");
-		m_AMSToolBar.SetButtonText(14,"Prediction");
-		m_AMSToolBar.SetButtonText(16,"Editing");
-		m_AMSToolBar.SetButtonText(18,"Pricing");
-		m_AMSToolBar.SetButtonText(19,"Capacity");
-		m_AMSToolBar.SetButtonText(20,"ATIS");
-		m_AMSToolBar.SetButtonText(22,"Website");
-
-		m_AMSToolBar.SetSizes(CSize(42,38),CSize(16,15));
-		m_AMSToolBar.EnableDocking(CBRS_ALIGN_ANY);
-		EnableDocking(CBRS_ALIGN_ANY);
-		DockControlBar(&m_AMSToolBar);
-
-*/		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_MOEToolBar);
 
@@ -190,6 +199,45 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		//	EnableDocking(CBRS_ALIGN_ANY);
 		//	DockControlBar(&m_wndToolBar);
 
+	if (!m_GISLayerBar.Create(this, IDD_DIALOG_GISLayer,
+		CBRS_LEFT|CBRS_TOOLTIPS|CBRS_FLYBY, IDD_DIALOG_GISLayer))
+	{
+		TRACE0("Failed to create DlgBar\n");
+		return -1;      // fail to create
+	}
+
+
+CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
+
+pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
+
+	LV_ITEM lvi;
+	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
+	{
+		lvi.mask = LVIF_TEXT;
+		lvi.iItem = i;
+		lvi.iSubItem = 0;
+		lvi.pszText = _gLayerLabel[i];
+		pGISLayerList->InsertItem(&lvi);
+		m_bShowLayerMap[(layer_mode)(i)] = false;
+
+	}
+
+
+
+	pGISLayerList->SetExtendedStyle(LVS_EX_CHECKBOXES);
+
+
+	m_bShowLayerMap[layer_node] = true;
+	m_bShowLayerMap[layer_link] = true;
+	m_bShowLayerMap[layer_link_MOE] = true;
+	m_bShowLayerMap[layer_zone] = true;
+
+	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
+	{
+
+	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
+	}
 
 	return 0;
 }
@@ -433,4 +481,121 @@ void CMainFrame::OnWindowSynchronizeddisplay()
 void CMainFrame::OnUpdateWindowSynchronizeddisplay(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck (m_bSynchronizedDisplay);
+}
+
+
+void CMainFrame::OnViewGisLayerPanel()
+{
+	m_bShowGISLayerToolBar= !m_bShowGISLayerToolBar;
+	if(m_bShowGISLayerToolBar)
+		ShowControlBar(&m_GISLayerBar,true,false);
+	else
+		ShowControlBar(&m_GISLayerBar,false,false);
+}
+
+void CMainFrame::OnUpdateViewGisLayerPanel(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck (m_bShowGISLayerToolBar);
+}
+
+void CMainFrame::OnLvnItemchangedListGislayer(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
+
+	POSITION pos = pGISLayerList->GetFirstSelectedItemPosition();
+	if (pos != NULL)
+	{
+		int nItem = pGISLayerList->GetNextSelectedItem(pos);
+		 m_iSelectedLayer = (layer_mode) nItem;
+		 bool bChecked = pGISLayerList->GetCheck(nItem); 
+
+	 	m_bShowLayerMap[m_iSelectedLayer] = bChecked;
+
+ 		 TRACE("%d: %s, %d\n",nItem,_gLayerLabel[nItem],bChecked);
+	}
+
+	pGISLayerList->Invalidate (1);
+	UpdateAllViews();
+}
+
+void CMainFrame::OnNMCustomdrawListGislayer(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>( pNMHDR );
+
+    // Take the default processing unless we set this to something else below.
+    *pResult = CDRF_DODEFAULT;
+
+    // First thing - check the draw stage. If it's the control's prepaint
+    // stage, then tell Windows we want messages for every item.
+
+    if ( CDDS_PREPAINT == pLVCD->nmcd.dwDrawStage )
+        {
+        *pResult = CDRF_NOTIFYITEMDRAW;
+        }
+    else if ( CDDS_ITEMPREPAINT == pLVCD->nmcd.dwDrawStage )
+        {
+        // This is the prepaint stage for an item. Here's where we set the
+        // item's text color. Our return value will tell Windows to draw the
+        // item itself, but it will use the new color we set here.
+       
+        COLORREF crText = RGB(0,0,0);
+
+        if (pLVCD->nmcd.dwItemSpec  == (int)(m_iSelectedLayer) ) // first line
+            crText = RGB(255,0,0);
+        
+        // Store the color back in the NMLVCUSTOMDRAW struct.
+        pLVCD->clrText = crText;
+
+        // Tell Windows to paint the control itself.
+        *pResult = CDRF_DODEFAULT;
+        }
+}
+
+
+void CMainFrame::FillFeatureInfo()
+{
+	CListCtrl * pGISFeatureList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_FEATURE_INFO);
+
+	pGISFeatureList->DeleteAllItems ();
+	
+	if(!m_bFeatureInfoInitialized)
+	{
+	pGISFeatureList->InsertColumn(0,"Attribute",LVCFMT_LEFT,70);
+	pGISFeatureList->InsertColumn(1,"Data",LVCFMT_LEFT,100);
+	m_bFeatureInfoInitialized = true;
+	}
+
+	LV_ITEM lvi;
+	for(int i = 0; i < m_FeatureInfoVector.size(); i++)
+	{
+
+		lvi.mask = LVIF_TEXT;
+		lvi.iItem = i;
+		lvi.iSubItem = 0;
+		char text_str[100];
+		sprintf(text_str,"%s",  m_FeatureInfoVector[i].Attribute.c_str());
+
+		lvi.pszText =  text_str;
+		int Index = pGISFeatureList->InsertItem(&lvi);
+		pGISFeatureList->SetItemText(Index,1,m_FeatureInfoVector[i].Data);
+	}
+
+}
+
+void CMainFrame::OnNMRClickListGislayer(NMHDR *pNMHDR, LRESULT *pResult)
+{
+}
+
+void CMainFrame::OnBnClickedButtonDatabase()
+{
+
+}
+
+void CMainFrame::OnBnClickedButtonConfiguration()
+{
+	
 }

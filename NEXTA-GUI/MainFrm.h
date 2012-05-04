@@ -27,6 +27,14 @@
 
 #pragma once
 #include "PlayerSeekBar.h"
+#include "TLiteDoc.h"
+
+class CFeatureInfo
+{
+public:
+	string Attribute;
+	CString Data;
+};
 
 class CMainFrame : public CMDIFrameWnd
 {
@@ -36,8 +44,17 @@ public:
 
 // Attributes
 public:
-		
-// Overrides
+	
+	std::vector <CFeatureInfo> m_FeatureInfoVector;
+
+	void FillFeatureInfo();
+
+	CDialogBar  m_GISLayerBar;
+	bool m_bFeatureInfoInitialized;
+	layer_mode m_iSelectedLayer;
+	std::map<layer_mode, bool> m_bShowLayerMap;
+
+	// Overrides
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 
@@ -55,17 +72,20 @@ public:
 
 protected:  // control bar embedded members
 	CStatusBar  m_wndStatusBar;
-   CReBar      m_wndReBar;
+    CReBar      m_wndReBar;
 	CToolBar    m_wndToolBar;
-   CPlayerSeekBar m_wndPlayerSeekBar;
+    CPlayerSeekBar m_wndPlayerSeekBar;
 
    CToolBar m_MOEToolBar;
    CToolBar m_AMSToolBar;
+
+   bool m_bShowGISLayerToolBar;
 
    bool m_bShowMOEToolBar;
    bool m_bShowDataToolBar;
    bool m_bShowAMSToolBar;
 
+   
 // Generated message map functions
 protected:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -94,6 +114,13 @@ public:
 	afx_msg void OnAnimationSkipbackward();
 	afx_msg void OnWindowSynchronizeddisplay();
 	afx_msg void OnUpdateWindowSynchronizeddisplay(CCmdUI *pCmdUI);
+	afx_msg void OnViewGisLayerPanel();
+	afx_msg void OnUpdateViewGisLayerPanel(CCmdUI *pCmdUI);
+	afx_msg void OnLvnItemchangedListGislayer(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMCustomdrawListGislayer(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMRClickListGislayer(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonDatabase();
+	afx_msg void OnBnClickedButtonConfiguration();
 };
 
 

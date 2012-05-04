@@ -53,6 +53,7 @@ public:
 	int m_CarFollowingTimeResolutionPerMin;  // unit: x intervals per min
 	CTLiteDoc* m_pDoc;  // main document
 	CTLiteDoc* m_pDoc2; // alternative document
+	bool m_bDoc2Ready;
 
 	float ** m_VehicleDistanceAry;
 	int m_LinkNoWithCFData;
@@ -74,6 +75,7 @@ public:
 	m_NumberOfVehicles = 0;
 	m_pDoc = NULL;
 	m_pDoc2 = NULL; // alternative document
+	m_bDoc2Ready = false;
 
 	m_HourlyBackgroundFlow = 1000;
 	m_MinDisplayInterval = 10;

@@ -143,7 +143,6 @@ BOOL CTLiteApp::InitInstance()
         // The main window has been initialized, so show and update it
         pMainFrame->ShowWindow(SW_SHOWMAXIMIZED);
         pMainFrame->UpdateWindow();
-
         return TRUE;
 }
 
@@ -193,7 +192,7 @@ void CTLiteApp::OnAppAbout()
 void CTLiteApp::OnFileOpen()
 {
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		   _T("AMS, DYNASMART Project (*.dlp,*.dws)|*.dlp;*.dws||"));
+		   _T("DYNASMART-P and DTA Projects (*.dlp,*.dws)|*.dlp;*.dws||"));
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();

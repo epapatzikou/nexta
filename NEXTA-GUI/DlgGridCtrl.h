@@ -2,7 +2,7 @@
 
 #include "TLiteDoc.h"
 #include "GridCtrl_src\\GridCtrl.h"
-
+#include "CGridListCtrlEx\\CGridListCtrlEx.h"
 #include <vector>
 #include "afxwin.h"
 
@@ -14,25 +14,29 @@ public:
 	int node_name;
 };
 
-// CDlgGridCtrl dialog
+// CDlgODDemandGridCtrl dialog
 
-class CDlgGridCtrl : public CDialog
+class CDlgODDemandGridCtrl : public CDialog
 {
-	DECLARE_DYNAMIC(CDlgGridCtrl)
+	DECLARE_DYNAMIC(CDlgODDemandGridCtrl)
 
 public:
-	CDlgGridCtrl(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CDlgGridCtrl();
+	CDlgODDemandGridCtrl(CWnd* pParent = NULL);   // standard constructor
+	virtual ~CDlgODDemandGridCtrl();
 
 // Dialog Data
-	enum { IDD = IDD_ODGRID_DIALOG };
+	enum { IDD = IDD_ODDEMAND_GRID_DIALOG };
 
 	std::vector<ZoneRecord> ZoneRecordSet;
 	CTLiteDoc* m_pDoc;
 	void DisplayDemandMatrix();
+	void DisplayDemandTypeTable();
+	int GetSelectedDemandType();
+
 
 private:
-	CGridCtrl m_Grid;
+	CGridCtrl m_ODMatrixGrid;
+	CGridListCtrlEx m_DemandTypeGrid;
 	bool m_bSizeChanged;
 
 protected:
@@ -52,7 +56,7 @@ public:
 	afx_msg void OnBnClickedButtonCreatezones();
 	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
 	afx_msg void OnBnClickedButton1();
-	afx_msg void OnLbnSelchangeList1();
-	CListBox m_DemandTypeList;
 	afx_msg void OnBnClickedGridSavequit2();
+	afx_msg void OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
+	float m_DemandMultipler;
 };

@@ -19,6 +19,8 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, FreeFlowTravelTime(0)
 	, LaneCapacity(0)
 	, nLane(0)
+	, m_LinkID(0)
+	, m_StreetName(_T(""))
 {
 
 }
@@ -44,6 +46,8 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_NUMLANES, nLane);
 	DDV_MinMaxInt(pDX, nLane, 0, 10);
 	DDX_Control(pDX, IDC_COMBO1, m_LinkTypeComboBox);
+	DDX_Text(pDX, IDC_EDIT_LINKID, m_LinkID);
+	DDX_Text(pDX, IDC_EDIT_LINKID2, m_StreetName);
 }
 
 
@@ -61,16 +65,17 @@ END_MESSAGE_MAP()
 BOOL CDlgLinkProperties::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	
-	for(unsigned i = 0; i< m_pDoc->m_LinkTypeVector.size(); i++)
+	std::map<int, DTALinkType>:: const_iterator itr;
+
+	for(itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
 	{
 	
 		CString str;
-		str.Format("%d.%s",i+1,m_pDoc->m_LinkTypeVector[i].link_type_name.c_str ());
+		str.Format("%d,%s",itr->first,itr->second .link_type_name.c_str ());
 		m_LinkTypeComboBox.AddString (str);
 	}
 
-	if(LinkType < m_pDoc->m_LinkTypeVector.size())
+	if(LinkType < m_pDoc->m_LinkTypeMap.size())
 	{
 		m_LinkTypeComboBox.SetCurSel (LinkType-1);
 	}
