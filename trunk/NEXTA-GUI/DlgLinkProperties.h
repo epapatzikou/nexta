@@ -44,4 +44,6 @@ public:
 	afx_msg void OnBnClickedSaveasdefault();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnCbnSelchangeCombo1();
+	long m_LinkID;
+	CString m_StreetName;
 };

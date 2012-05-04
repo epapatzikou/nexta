@@ -13,6 +13,7 @@ class CDlgLinkList : public CBaseDialog
 	DECLARE_DYNAMIC(CDlgLinkList)
 	CTLiteDoc* m_pDoc;
 	CTLiteDoc* m_pDoc2;
+	bool m_bDoc2Ready;
 
 
 

@@ -26,6 +26,7 @@ CDlgLinkList::CDlgLinkList(CWnd* pParent /*=NULL*/)
 
  m_pDoc = NULL;
  m_pDoc2 = NULL;
+ m_bDoc2Ready = false;
 
 }
 
@@ -92,7 +93,7 @@ void CDlgLinkList::ReloadData()
 	m_ListCtrl.DeleteColumn (0);
 	}
 
-	if(m_pDoc2!=NULL)
+	if(m_bDoc2Ready)
 	{
 		m_StrDocTitles.Format("1: %s; 2: %s", m_pDoc->m_ProjectTitle , m_pDoc2->m_ProjectTitle); 
 		UpdateData(0);
@@ -205,8 +206,11 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%4.0f",(*iLink)->m_LaneCapacity  );
 		m_ListCtrl.SetItemText(Index,6,text);
 
-		sprintf_s(text, "%s", m_pDoc->m_LinkTypeVector[(*iLink)->m_link_type -1].link_type_name.c_str ());
+		if(m_pDoc->m_LinkTypeMap.find((*iLink)->m_link_type) != m_pDoc->m_LinkTypeMap.end())
+		{
+		sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type].link_type_name.c_str ());
 		m_ListCtrl.SetItemText(Index,7,text);
+		}
 
 	if(m_pDoc2==NULL)  // single document view
 	{
@@ -269,7 +273,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	if(g_TestValidDocument(m_pDoc)==false)
 		return;
 
-	if(m_pDoc2!=NULL)
+	if(m_bDoc2Ready)
 	{
 	if(g_TestValidDocument(m_pDoc2)==false)
 		return;
@@ -278,7 +282,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	// 
 	m_pDoc->m_SelectedLinkID = -1;
 
-	if(m_pDoc2!=NULL)
+	if(m_bDoc2Ready)
 		m_pDoc2->m_SelectedLinkID = -1;
 
 	g_LinkDisplayList.clear ();
@@ -308,7 +312,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 
 		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
 
-		if(m_pDoc2!=NULL)
+		if(m_bDoc2Ready)
 			m_pDoc2->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
 	}
 
@@ -316,7 +320,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		
 	m_pDoc->UpdateAllViews(0);
 
-		if(m_pDoc2!=NULL)
+		if(m_bDoc2Ready)
 			m_pDoc2->UpdateAllViews(0);
 
 }

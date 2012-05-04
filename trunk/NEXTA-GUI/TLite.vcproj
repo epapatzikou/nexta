@@ -792,6 +792,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\cross-resolution-model\GDAL_output.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\VISSIM_EXPORT\VISSIM_Export.cpp"
 					>
 				</File>
@@ -1149,6 +1153,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FrameGISLayer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FrameLayer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Geometry.h"
 				>
 			</File>
@@ -1170,6 +1182,10 @@
 			</File>
 			<File
 				RelativePath=".\Chart_Control\NSChartCtrl_Demand.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ogr_libkml.h"
 				>
 			</File>
 			<File

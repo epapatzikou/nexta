@@ -28,6 +28,8 @@ void CDlg_TDDemandProfile::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_LABEL, m_sLabel);
 	//}}AFX_DATA_MAP
 	DDX_Control(pDX, IDC_DEMAND_PROFILE_LIST, m_ODProfileList);
+	DDX_Control(pDX, IDC_COMBOStartTime, m_StartTimeCombo);
+	DDX_Control(pDX, IDC_COMBOEndTime, m_EndTimeCombo);
 }
 
 BEGIN_MESSAGE_MAP(CDlg_TDDemandProfile, CDialog)
@@ -49,6 +51,7 @@ BEGIN_MESSAGE_MAP(CDlg_TDDemandProfile, CDialog)
 	ON_UPDATE_COMMAND_UI(IDC_DEL,OnUpdateModify)
 	ON_UPDATE_COMMAND_UI(IDC_ADD,OnUpdateAdd)
 	ON_LBN_SELCHANGE(IDC_DEMAND_PROFILE_LIST, &CDlg_TDDemandProfile::OnLbnSelchangeDemandProfileList)
+	ON_BN_CLICKED(IDOK, &CDlg_TDDemandProfile::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,6 +63,34 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//Subclassing
+
+	for(int hour = 0; hour < 24; hour++)
+	{
+	CString str_hour;
+		if(hour<12)
+			str_hour.Format ("%0d:00 AM",hour);
+		else
+		{
+			if(hour == 12)
+			str_hour.Format ("12:00 PM");
+			else
+			str_hour.Format ("%0d:00 PM", hour-12);
+		}
+
+		m_StartTimeCombo.AddString (str_hour);
+		m_EndTimeCombo.AddString (str_hour);
+	}
+
+	// processing demand data 
+	CString SettingsFile;
+	SettingsFile.Format ("%sDTASettings.ini",m_pDoc->m_ProjectDirectory);
+
+	m_DemandLoading_StartHour = (int) g_GetPrivateProfileFloat("demand", "loading_start_hour",6,SettingsFile);
+	m_DemandLoading_EndHour = (int) g_GetPrivateProfileFloat("demand", "loading_end_hour",12,SettingsFile);
+
+	m_StartTimeCombo.SetCurSel(m_DemandLoading_StartHour);
+	m_EndTimeCombo.SetCurSel(m_DemandLoading_EndHour);
+
 
 	m_chart.SubclassDlgItem(IDC_CUSTOM1,this);
 
@@ -74,10 +105,6 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 
 	m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
 
-	// processing demand data 
-
-		m_StartTimeInterval = 96;
-		m_EndTimeInterval = 0;
 
 		for(unsigned int i = 0; i < m_pDoc->m_DemandProfileVector.size(); i++)
 		{
@@ -105,24 +132,11 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 			ProfileStr.Format ("Series no.%d: ",i+1);
 			ProfileStr = ProfileStr + from_zone_str + to_zone_str + demand_type_str;
 
+
 			m_ODProfileList.AddString (ProfileStr);
 
-			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
-			{
-				double ratio = element.time_dependent_ratio[t];
-				if(ratio>0.00001)
-				{
-				if(t < m_StartTimeInterval)
-					m_StartTimeInterval = t;
-
-				if(t > m_EndTimeInterval)
-					m_EndTimeInterval = t;
-				}
-
-			}
 		}
 
-//		fprintf(st,"from_zone_id,to_zone_id,demand_type,time_series_name,");
 
 		int CurProfileNo = 0;
 
@@ -131,12 +145,10 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 			m_ODProfileList.SetCurSel (CurProfileNo);
 			DTADemandProfile element = m_pDoc->m_DemandProfileVector[CurProfileNo];
 
-//			fprintf(st,"%d,%d,%d,%s,", element.from_zone_id, element.to_zone_id,element.demand_type , element.series_name );
-
-			for(int t = m_StartTimeInterval; t< m_EndTimeInterval; t++)
+			for(int t = m_DemandLoading_StartHour*4; t<= m_DemandLoading_EndHour*4; t++)
 			{
 				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
-				double percentage = element.time_dependent_ratio[t];
+				double percentage = element.time_dependent_ratio[t]*100.f;
 				m_chart.AddValue(percentage,time_stamp_str);
 			}
 
@@ -313,14 +325,20 @@ void CDlg_TDDemandProfile::OnLbnSelchangeDemandProfileList()
 		{
 			DTADemandProfile element = m_pDoc->m_DemandProfileVector[CurProfileNo];
 
-			for(int t = m_StartTimeInterval; t< m_EndTimeInterval; t++)
+			for(int t = m_DemandLoading_StartHour*4; t<= m_DemandLoading_EndHour*4; t++)
 			{
 				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
-				double percentage = element.time_dependent_ratio[t];
+				double percentage = element.time_dependent_ratio[t]*100.0f;
 				m_chart.AddValue(percentage,time_stamp_str);
 			}
 
 		Invalidate();	
 
 		}
+}
+
+void CDlg_TDDemandProfile::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
+	OnOK();
 }

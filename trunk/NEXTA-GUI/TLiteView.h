@@ -33,7 +33,15 @@
 
 
 enum tool
-   { move_tool, select_link_tool, select_node_tool, backgroundimage_tool, network_coordinate_tool, create_1waylink_tool, create_2waylinks_tool, create_node_tool, subarea_tool
+   { move_tool, 
+   select_link_tool, 
+   select_feature_tool, 
+   backgroundimage_tool,
+   network_coordinate_tool, 
+   create_1waylink_tool,
+   create_2waylinks_tool, 
+   create_node_tool, 
+   subarea_tool
    };
 
 enum link_display_mode
@@ -257,6 +265,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	
 	double m_GridResolution;
 	CPoint m_last_cpoint;
+	CPoint m_last_left_down_point;
 	bool m_bMoveDisplay;
 
 	bool m_bMoveImage;
@@ -558,6 +567,8 @@ public:
 	afx_msg void OnUpdateActivitylocationmodeExternaldestination(CCmdUI *pCmdUI);
 	afx_msg void OnMoeOddemand();
 	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

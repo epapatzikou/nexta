@@ -56,6 +56,7 @@
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDD_DIALOG_LINK_LIST            157
 #define IDD_ODGRID_DIALOG               158
+#define IDD_ODDEMAND_GRID_DIALOG        158
 #define IDD_DIALOG_Image_Width          159
 #define IDD_DIALOGSensorDataLoading     162
 #define IDD_DIALOG_IMPORT_ODTABLE       163
@@ -88,6 +89,7 @@
 #define IDR_TOOLBAR1                    189
 #define IDR_AMS_TOOLBAR1                190
 #define IDD_TD_DEMAND_PROFILE_DIALOG    191
+#define IDR_TOOLBARLAYER                191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
@@ -99,11 +101,11 @@
 #define IDD_DIALOG_NODE_MOVEMENT        200
 #define IDD_NGSIM_DIALOG                202
 #define IDD_DIALOG_NODE_PHASE           203
-#define IDD_DIALOG1                     204
 #define IDD_DIALOG_NODE_LANETURN        205
 #define IDR_MENU4                       205
 #define IDD_DIALOG_PATH_LIST            206
 #define IDR_MENU_LINK_MOE1              206
+#define IDD_DIALOG_GISLayer             209
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -122,7 +124,9 @@
 #define IDC_EDIT_NUMLANES               1006
 #define ID_CMB_STYLE                    1006
 #define IDC_LABEL                       1007
+#define IDC_EDIT_LINKID                 1007
 #define IDC_VALUE                       1008
+#define IDC_EDIT_LINKID2                1008
 #define IDC_ADD                         1009
 #define ID_BTN_PRINT                    1009
 #define IDC_PATH_LIST_CONTROL           1010
@@ -282,6 +286,16 @@
 #define IDC_BUTTON_View_CUBE_File4      1111
 #define IDC_PATHMOE                     1111
 #define IDC_DOC_TITLE                   1113
+#define IDC_COMBOStartTime              1117
+#define IDC_COMBOEndTime                1118
+#define IDC_DemandTypeLIST              1118
+#define IDC_EDIT_DemandMultipler        1119
+#define IDC_SCROLLBAR1                  1120
+#define IDC_LIST_GISLAYER               1122
+#define IDC_LIST_FEATURE_INFO           1123
+#define IDC_BUTTON_Database             1124
+#define IDC_BUTTON_Database2            1125
+#define IDC_BUTTON_Configuration        1125
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -766,14 +780,42 @@
 #define ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS 33379
 #define ID_MOE_PATHLIST                 33380
 #define ID_WINDOW_SYNCHRONIZEDDISPLAY   33381
+#define ID_MOE_VIEWNETWORKTIME          33382
+#define ID_MOE_1                        33383
+#define ID_1_VIEWDATAINEXCEL            33384
+#define ID_1_VIEWDATAINPLOT             33385
+#define ID_MOE_2                        33386
+#define ID_2_VIEWDATAINEXCEL            33387
+#define ID_MOE_3                        33388
+#define ID_3_VIEWDATAINEXCEL            33389
+#define ID_MOE_4                        33390
+#define ID_4_VIEWDATAINEXCEL            33391
+#define ID_4_VIEWDATAINLIST             33392
+#define ID_3_VIEWDATAINEXCEL33393       33393
+#define ID_MOE_5                        33394
+#define ID_5_VIEWDATAINEXCEL            33395
+#define ID_MOE_VIEWNETWORKTIMEDEPENDENTMOE 33396
+#define ID_MOE_6                        33397
+#define ID_2_VIEWDATAINEXCEL33398       33398
+#define ID_3_VIEWDATAINEXCEL33399       33399
+#define ID_2_VIEWNETWORKDATA            33400
+#define ID_3_VIEWDATAINEXCEL33401       33401
+#define ID_3_VIEWODDATAINEXCEL          33402
+#define ID_MOE_OPENALLMOETABLES         33403
+#define ID_Combobox_Layer               33408
+#define ID_BUTTON33415                  33415
+#define ID_BUTTON33416                  33416
+#define ID_VIEW_LAYERPENNEL             33417
+#define ID_VIEW_LEFT                    33418
+#define ID_VIEW_GIS_Layer_Panel         33419
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        207
-#define _APS_NEXT_COMMAND_VALUE         33382
-#define _APS_NEXT_CONTROL_VALUE         1114
+#define _APS_NEXT_RESOURCE_VALUE        211
+#define _APS_NEXT_COMMAND_VALUE         33420
+#define _APS_NEXT_CONTROL_VALUE         1126
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

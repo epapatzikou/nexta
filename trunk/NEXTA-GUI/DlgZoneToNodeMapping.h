@@ -13,7 +13,7 @@ public:
 	CDlgZoneToNodeMapping(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgZoneToNodeMapping();
 
-	CDlgGridCtrl* m_pDlg;
+	CDlgODDemandGridCtrl* m_pDlg;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Zone_To_Node_Mapping };
 

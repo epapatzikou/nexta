@@ -32,7 +32,16 @@ END_MESSAGE_MAP()
 
 
 // CDlg_Legend message handlers
+BOOL CDlg_Legend::OnInitDialog()
+{
+     CBaseDialog::OnInitDialog();
+     // Calculate your x and y coordinates of the upper-left corner 
+     // of the dialog (in screen coordinates) based on some logic
 
+     SetWindowPos(NULL, 200, 150, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+
+     return TRUE;
+}
 void CDlg_Legend::OnPaint()
 {
 

@@ -55,8 +55,6 @@ public:
 public:
 	virtual BOOL InitInstance();
 
-
-
 // Implementation
 	afx_msg void OnAppAbout();
 	DECLARE_MESSAGE_MAP()
@@ -68,6 +66,9 @@ public:
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6
+
+
+
 extern long g_Simulation_Time_Horizon;
 extern int g_Data_Time_Interval;
 extern int g_Number_of_Weekdays;

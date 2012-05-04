@@ -6,10 +6,13 @@
 #include "CSVParser.h"
 #include "TLite.h"
 #include "DlgGridCtrl.h"
+#include "CGridListCtrlEx\CGridColumnTraitEdit.h"
+#include "CGridListCtrlEx\CGridColumnTraitCombo.h"
+#include "CGridListCtrlEx\CGridRowTraitXP.h"
 
 #include "DlgZoneToNodeMapping.h"
 #include "Dlg_ImportODDemand.h"
-
+#include "Dlg_TDDemandProfile.h"
 
 #include <map>
 #include <iostream>
@@ -23,49 +26,167 @@ using std::ofstream;
 using std::ifstream;
 using std::istringstream;
 
-// CDlgGridCtrl dialog
+// CDlgODDemandGridCtrl dialog
 
-IMPLEMENT_DYNAMIC(CDlgGridCtrl, CDialog)
+IMPLEMENT_DYNAMIC(CDlgODDemandGridCtrl, CDialog)
 
-CDlgGridCtrl::CDlgGridCtrl(CWnd* pParent /*=NULL*/)
-: CDialog(CDlgGridCtrl::IDD, pParent)
+BEGIN_MESSAGE_MAP(CDlgODDemandGridCtrl, CDialog)
+	ON_NOTIFY(GVN_ENDLABELEDIT, IDC_GRID_CTRL, &CDlgODDemandGridCtrl::OnGridEndEdit)
+	ON_BN_CLICKED(ID_GRID_SAVEQUIT, &CDlgODDemandGridCtrl::OnBnClickedGridSavequit)
+	ON_BN_CLICKED(ID_GRID_QUIT, &CDlgODDemandGridCtrl::OnBnClickedGridQuit)
+	ON_BN_CLICKED(IDC_BUTTON_CreateZones, &CDlgODDemandGridCtrl::OnBnClickedButtonCreatezones)
+	ON_BN_CLICKED(IDC_BUTTON_Edit_Zone_Node_Mapping, &CDlgODDemandGridCtrl::OnBnClickedButtonEditZoneNodeMapping)
+	ON_BN_CLICKED(IDC_BUTTON1, &CDlgODDemandGridCtrl::OnBnClickedButton1)
+	ON_BN_CLICKED(ID_GRID_SAVEQUIT2, &CDlgODDemandGridCtrl::OnBnClickedGridSavequit2)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_DemandTypeLIST, &CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist)
+END_MESSAGE_MAP()
+
+
+
+CDlgODDemandGridCtrl::CDlgODDemandGridCtrl(CWnd* pParent /*=NULL*/)
+: CDialog(CDlgODDemandGridCtrl::IDD, pParent)
+, m_DemandMultipler(0)
 {
 	m_bSizeChanged = false;
 }
 
-CDlgGridCtrl::~CDlgGridCtrl()
+CDlgODDemandGridCtrl::~CDlgODDemandGridCtrl()
 {
 }
 
-void CDlgGridCtrl::DoDataExchange(CDataExchange* pDX)
+void CDlgODDemandGridCtrl::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-
-	DDX_Control(pDX,IDC_GRID_CTRL,m_Grid);
-	DDX_Control(pDX, IDC_LIST1, m_DemandTypeList);
+	DDX_Control(pDX,IDC_GRID_CTRL,m_ODMatrixGrid);
+	DDX_Control(pDX,IDC_DemandTypeLIST,m_DemandTypeGrid);
+	DDX_Text(pDX, IDC_EDIT_DemandMultipler, m_DemandMultipler);
+	DDV_MinMaxFloat(pDX, m_DemandMultipler, 0, 100);
 }
 
-void CDlgGridCtrl::DisplayDemandMatrix()
+void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
+{
+	if(m_pDoc==NULL)
+	return;
+
+	std::vector<std::string> m_Column_names;
+
+	m_Column_names.push_back ("No.");
+	m_Column_names.push_back ("Demand Type");
+	m_Column_names.push_back ("Avg VOT");
+	m_Column_names.push_back ("Pricing Type");
+	m_Column_names.push_back ("% of Pretrip Info");
+	m_Column_names.push_back ("% of Enroutetrip Info");
+
+
+	for(int vt = 0; vt < m_pDoc->m_VehicleTypeVector.size(); vt++)
+	{
+		DTAVehicleType element = m_pDoc->m_VehicleTypeVector[vt];
+		char str_vehicle_type[100];
+
+		sprintf_s(str_vehicle_type,"%% of %s", element.vehicle_type_name );
+		m_Column_names.push_back(str_vehicle_type);
+
+	}
+
+	//Add Columns and set headers
+	for (size_t i=0;i<m_Column_names.size();i++)
+	{
+
+		CGridColumnTrait* pTrait = NULL;
+//		pTrait = new CGridColumnTraitEdit();
+		m_DemandTypeGrid.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
+		m_DemandTypeGrid.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+	}
+	m_DemandTypeGrid.SetColumnWidth(0, 80);
+      
+
+	int FirstDemandTypeIndex= -1;
+	int i = 0;
+	for(std::vector<DTADemandType>::iterator itr = m_pDoc->m_DemandTypeVector.begin(); itr != m_pDoc->m_DemandTypeVector.end(); itr++, i++)
+		{
+			// can be also enhanced to edit the real time information percentage
+		char text[100];
+		sprintf_s(text, "%d",(*itr).demand_type );
+		int Index = m_DemandTypeGrid.InsertItem(LVIF_TEXT,i,text , 0, 0, 0, NULL);
+
+		if(FirstDemandTypeIndex<0)
+			FirstDemandTypeIndex = Index;  // initiailize the first demand
+
+
+		sprintf_s(text, "%s",(*itr).demand_type_name);
+		m_DemandTypeGrid.SetItemText(Index,1,text);
+
+		sprintf_s(text, "%5.2f",(*itr).average_VOT);
+		m_DemandTypeGrid.SetItemText(Index,2,text);
+
+		switch((*itr).pricing_type)
+		{
+		case 1: sprintf_s(text, "SOV"); break;
+		case 2: sprintf_s(text, "HOV"); break;
+		case 3: sprintf_s(text, "Truck"); break;
+		default: sprintf_s(text, "---");
+		}
+		m_DemandTypeGrid.SetItemText(Index,3,text);
+
+		sprintf_s(text, "%3.2f",(*itr).info_class_percentage[1]);
+		m_DemandTypeGrid.SetItemText(Index,4,text);
+
+		sprintf_s(text, "%3.2f",(*itr).info_class_percentage[2]);
+		m_DemandTypeGrid.SetItemText(Index,5,text);
+
+		for(int i=0; i< m_pDoc->m_VehicleTypeVector.size(); i++)
+			{
+		sprintf_s(text, "%3.2f",(*itr).vehicle_type_percentage[i]);
+		m_DemandTypeGrid.SetItemText(Index,6+i,text);
+			}
+		
+	}
+
+	if(FirstDemandTypeIndex >= 0)
+	m_DemandTypeGrid.SetItemState(FirstDemandTypeIndex,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+
+}
+
+
+int CDlgODDemandGridCtrl::GetSelectedDemandType()
+{
+	int demand_type = -1;
+	POSITION pos = m_DemandTypeGrid.GetFirstSelectedItemPosition();
+	while(pos!=NULL)
+	{
+		int nSelectedRow = m_DemandTypeGrid.GetNextSelectedItem(pos);
+		char str[100];
+		m_DemandTypeGrid.GetItemText (nSelectedRow,0,str,20);
+		demand_type = atoi(str);
+	}
+
+   return demand_type;
+
+}
+
+void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 {
 	if(m_pDoc==NULL)
 	return;
 
 	bool bReadDemandSuccess = true;
-	int demand_type = m_DemandTypeList.GetCurSel()+1;
-			m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
-			m_Grid.SetColumnCount(m_pDoc->m_ODSize + 1);
+	int demand_type =  GetSelectedDemandType();
 
-			m_Grid.SetFixedColumnCount(1);
-			m_Grid.SetFixedRowCount(1);
+			m_ODMatrixGrid.SetRowCount(m_pDoc->m_ODSize + 1);
+			m_ODMatrixGrid.SetColumnCount(m_pDoc->m_ODSize + 1);
+
+			m_ODMatrixGrid.SetFixedColumnCount(1);
+			m_ODMatrixGrid.SetFixedRowCount(1);
 
 			GV_ITEM item;
 			item.mask = GVIF_TEXT;
 
 			CString str;
 
-			for (int i=0;i<m_Grid.GetRowCount();i++) //Row
+
+			for (int i=0;i<m_ODMatrixGrid.GetRowCount();i++) //Row
 			{
-				for (int j=0;j<m_Grid.GetColumnCount();j++) //Column
+				for (int j=0;j<m_ODMatrixGrid.GetColumnCount();j++) //Column
 				{
 					if (i==0 && j==0) 
 					{
@@ -81,7 +202,7 @@ void CDlgGridCtrl::DisplayDemandMatrix()
 							str.Format(_T("%d"),j);
 							item.strText = str;
 
-							m_Grid.SetItem(&item);					
+							m_ODMatrixGrid.SetItem(&item);					
 						}
 						else
 						{
@@ -93,7 +214,7 @@ void CDlgGridCtrl::DisplayDemandMatrix()
 								str.Format(_T("%d"),i);
 								item.strText = str;
 
-								m_Grid.SetItem(&item);		
+								m_ODMatrixGrid.SetItem(&item);		
 							}
 							else
 							{
@@ -110,7 +231,7 @@ void CDlgGridCtrl::DisplayDemandMatrix()
 								}
 
 								item.strText = str;
-								m_Grid.SetItem(&item);
+								m_ODMatrixGrid.SetItem(&item);
 							} // neither i nor j is zero
 						} // i is not zero
 					} // Either i or j is not zero
@@ -120,7 +241,7 @@ void CDlgGridCtrl::DisplayDemandMatrix()
 	Invalidate();
 }
 
-BOOL CDlgGridCtrl::OnInitDialog()
+BOOL CDlgODDemandGridCtrl::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	CWaitCursor wait;
@@ -129,26 +250,25 @@ BOOL CDlgGridCtrl::OnInitDialog()
 	if (m_pDoc != NULL)
 		{
 
-		for(std::vector<DTADemandType>::iterator itr = m_pDoc->m_DemandTypeVector.begin(); itr != m_pDoc->m_DemandTypeVector.end(); itr++)
-		{
-			// can be also enhanced to edit the real time information percentage
-			CString str;
-			str.Format(" No.%d: %s, VOT= %5.3f", (*itr).demand_type , (*itr).demand_type_name, (*itr).average_VOT);
-			m_DemandTypeList.AddString(str);
-		}
+	CString SettingsFile;
+	SettingsFile.Format ("%sDTASettings.ini",m_pDoc->m_ProjectDirectory);
 
-		m_DemandTypeList.SetCurSel (0);
+		m_DemandMultipler = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);
 
+		UpdateData(0);
+
+
+		DisplayDemandTypeTable();
 		DisplayDemandMatrix();
 		
-			} // End if ()
+		} // End if ()
 		else
 		{
-			m_Grid.SetRowCount(1);
-			m_Grid.SetColumnCount(1);
+			m_ODMatrixGrid.SetRowCount(1);
+			m_ODMatrixGrid.SetColumnCount(1);
 
-			m_Grid.SetFixedColumnCount(1);
-			m_Grid.SetFixedRowCount(1);
+			m_ODMatrixGrid.SetFixedColumnCount(1);
+			m_ODMatrixGrid.SetFixedRowCount(1);
 		}
 	
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -156,24 +276,12 @@ BOOL CDlgGridCtrl::OnInitDialog()
 
 
 
-BEGIN_MESSAGE_MAP(CDlgGridCtrl, CDialog)
-	ON_NOTIFY(GVN_ENDLABELEDIT, IDC_GRID_CTRL, &CDlgGridCtrl::OnGridEndEdit)
-	ON_BN_CLICKED(ID_GRID_SAVEQUIT, &CDlgGridCtrl::OnBnClickedGridSavequit)
-	ON_BN_CLICKED(ID_GRID_QUIT, &CDlgGridCtrl::OnBnClickedGridQuit)
-	ON_BN_CLICKED(IDC_BUTTON_CreateZones, &CDlgGridCtrl::OnBnClickedButtonCreatezones)
-	ON_BN_CLICKED(IDC_BUTTON_Edit_Zone_Node_Mapping, &CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping)
-	ON_BN_CLICKED(IDC_BUTTON1, &CDlgGridCtrl::OnBnClickedButton1)
-	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgGridCtrl::OnLbnSelchangeList1)
-	ON_BN_CLICKED(ID_GRID_SAVEQUIT2, &CDlgGridCtrl::OnBnClickedGridSavequit2)
-END_MESSAGE_MAP()
+// CDlgODDemandGridCtrl message handlers
 
-
-// CDlgGridCtrl message handlers
-
-void CDlgGridCtrl::OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult)
+void CDlgODDemandGridCtrl::OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult)
 {
 	NM_GRIDVIEW* pItem = (NM_GRIDVIEW*) pNotifyStruct;
-	CString content = m_Grid.GetItemText(pItem->iRow,pItem->iColumn);
+	CString content = m_ODMatrixGrid.GetItemText(pItem->iRow,pItem->iColumn);
 
 	stringstream strstr;
 	strstr << content;
@@ -199,7 +307,7 @@ void CDlgGridCtrl::OnGridEndEdit(NMHDR *pNotifyStruct, LRESULT* pResult)
 }
 
 
-void CDlgGridCtrl::OnBnClickedGridSavequit()
+void CDlgODDemandGridCtrl::OnBnClickedGridSavequit()
 {
 
 	OnOK();
@@ -237,31 +345,34 @@ inline void ResetStringStream(std::istringstream& sstream, std::string s)
 }
 
 
-bool CDlgGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
+bool CDlgODDemandGridCtrl::SaveZoneCSVFileExt(LPCTSTR lpszFileName)
 {
 
 	return true;
 }
 
 
-bool CDlgGridCtrl::SaveDemandMatrix()
+bool CDlgODDemandGridCtrl::SaveDemandMatrix()
 {
 
 	if(m_pDoc==NULL)
 	return false;
 
-	int demand_type = m_DemandTypeList.GetCurSel() +1;
+	int demand_type = 	GetSelectedDemandType();
+
+	if(demand_type < 0)
+		return false;
 
 	// step 1:
 	 // clear all demand element
 
-	for (int i=1;i<m_Grid.GetRowCount();i++)
+	for (int i=1;i<m_ODMatrixGrid.GetRowCount();i++)
 	{
-		CString originStr = m_Grid.GetItemText(i,0);
-		for (int j=1;j<m_Grid.GetColumnCount();j++)
+		CString originStr = m_ODMatrixGrid.GetItemText(i,0);
+		for (int j=1;j<m_ODMatrixGrid.GetColumnCount();j++)
 		{
-			CString destStr = m_Grid.GetItemText(0,j);
-			CString flowStr = m_Grid.GetItemText(i,j);
+			CString destStr = m_ODMatrixGrid.GetItemText(0,j);
+			CString flowStr = m_ODMatrixGrid.GetItemText(i,j);
 
 			int origin_zone_id = atoi(originStr);
 			int destination_zone_id = atoi(destStr);
@@ -274,11 +385,11 @@ bool CDlgGridCtrl::SaveDemandMatrix()
 	return true;
 }
 
-void CDlgGridCtrl::OnBnClickedGridQuit()
+void CDlgODDemandGridCtrl::OnBnClickedGridQuit()
 {
 	OnCancel();
 }
-void CDlgGridCtrl::OnBnClickedButtonCreatezones()
+void CDlgODDemandGridCtrl::OnBnClickedButtonCreatezones()
 {
 	CDlg_ImportODDemand dlg;
 	if(dlg.DoModal() == IDOK)
@@ -292,20 +403,20 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 			return;
 		}
 
-			m_Grid.SetRowCount(m_pDoc->m_ODSize + 1);
-		m_Grid.SetColumnCount(m_pDoc->m_ODSize + 1);
+			m_ODMatrixGrid.SetRowCount(m_pDoc->m_ODSize + 1);
+		m_ODMatrixGrid.SetColumnCount(m_pDoc->m_ODSize + 1);
 
-		m_Grid.SetFixedColumnCount(1);
-		m_Grid.SetFixedRowCount(1);
+		m_ODMatrixGrid.SetFixedColumnCount(1);
+		m_ODMatrixGrid.SetFixedRowCount(1);
 
 		GV_ITEM item;
 		item.mask = GVIF_TEXT;
 
 		CString str;
 
-		for (int i=0;i<m_Grid.GetRowCount();i++) //Row
+		for (int i=0;i<m_ODMatrixGrid.GetRowCount();i++) //Row
 		{
-			for (int j=0;j<m_Grid.GetColumnCount();j++) //Column
+			for (int j=0;j<m_ODMatrixGrid.GetColumnCount();j++) //Column
 			{
 				if (i==0 && j==0) 
 				{
@@ -321,7 +432,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 						str.Format(_T("%d"),j);
 						item.strText = str;
 
-						m_Grid.SetItem(&item);					
+						m_ODMatrixGrid.SetItem(&item);					
 					}
 					else
 					{
@@ -333,7 +444,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 							str.Format(_T("%d"),i);
 							item.strText = str;
 
-							m_Grid.SetItem(&item);		
+							m_ODMatrixGrid.SetItem(&item);		
 						}
 						else
 						{
@@ -343,7 +454,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 							str.Format(_T("%.2f"),0.0f);
 							item.strText = str;
 
-							m_Grid.SetItem(&item);
+							m_ODMatrixGrid.SetItem(&item);
 						} // neither i nor j is zero
 					} // i is not zero
 				} // Either i or j is not zero
@@ -361,7 +472,7 @@ void CDlgGridCtrl::OnBnClickedButtonCreatezones()
 
 }
 
-void CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
+void CDlgODDemandGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
 {
 	CDlgZoneToNodeMapping dlg;
 	dlg.m_pDlg = this;
@@ -369,17 +480,19 @@ void CDlgGridCtrl::OnBnClickedButtonEditZoneNodeMapping()
 
 }
 
-void CDlgGridCtrl::OnBnClickedButton1()
+void CDlgODDemandGridCtrl::OnBnClickedButton1()
 {
-	// TODO: Add your control notification handler code here
+	CDlg_TDDemandProfile dlg;
+	dlg.m_pDoc = m_pDoc;
+	if(dlg.DoModal() ==IDOK)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with OK
+	}
+
 }
 
-void CDlgGridCtrl::OnLbnSelchangeList1()
-{
-	DisplayDemandMatrix();
-}
-
-void CDlgGridCtrl::OnBnClickedGridSavequit2()
+void CDlgODDemandGridCtrl::OnBnClickedGridSavequit2()
 {
 	CWaitCursor wait;
 	bool ret = SaveDemandMatrix();
@@ -388,4 +501,12 @@ void CDlgGridCtrl::OnBnClickedGridSavequit2()
 	{
 		AfxMessageBox("Save Demand file failed!");
 	}
+}
+
+void CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+	DisplayDemandMatrix();
 }
