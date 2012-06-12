@@ -30,12 +30,23 @@ extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
-
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
-
 extern std::map<int, DemandType> g_DemandTypeMap;
+extern std::map<int, PricingType> g_PricingTypeMap;
 extern std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
+extern std::map<int, int> g_LinkTypeFreewayMap;
+extern std::map<int, int> g_LinkTypeHighwayMap;
+
+extern std::map<int, int> g_LinkTypeArterialMap;
+extern std::map<int, int> g_LinkTypeRampMap;
+extern std::map<int, int> g_LinkTypeConnectorMap;
+extern std::map<int, int> g_LinkTypeTransitMap;
+extern std::map<int, int> g_LinkTypeWalkingMap;
+extern std::vector<DTALinkType> g_LinkTypeVector;
+extern	std::vector<VOTDistribution> g_VOTDistributionVector;
+
+
 extern int g_DemandLoadingStartTimeInMin;
 extern int g_DemandLoadingEndTimeInMin;
 
@@ -89,18 +100,10 @@ extern int g_ConvergenceThreshold_in_Num_Switch; // the convergence threshold in
 extern int g_VehicleExperiencedTimeGap; // 1: Vehicle experienced time gap; 0: Avg experienced path time gap
 extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles switched to them
 
-extern std::map<int, int> g_LinkTypeFreewayMap;
-extern std::map<int, int> g_LinkTypeArterialMap;
-extern std::map<int, int> g_LinkTypeRampMap;
-extern std::vector<DTALinkType> g_LinkTypeVector;
-extern	std::vector<VOTDistribution> g_VOTDistributionVector;
-extern	std::vector<VOTDistribution> g_VOTDistributionVector;
-
 // for OD estimation statistics
 
 extern float g_TotalDemandDeviation; 
 extern float g_TotalMeasurementDeviation; 
-
 
 extern ofstream g_scenario_short_description;
 extern ofstream ShortSimulationLogFile;

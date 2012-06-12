@@ -1043,10 +1043,10 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 	int LinkID = g_LinkVector.size();
 
 		// add outgoing connector from the centriod corresponding to the current origin zone to physical nodes of the current zone
-	for(i = 0; i< g_ZoneMap[CurZoneID].m_CentroidNodeAry.size(); i++)
+	for(i = 0; i< g_ZoneMap[CurZoneID].m_OriginActivityVector.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo // root node
-		ToID = g_ZoneMap[CurZoneID].m_CentroidNodeAry [i];
+		ToID = g_ZoneMap[CurZoneID].m_OriginActivityVector [i];
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
 
@@ -1076,9 +1076,9 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 		DTAZone zone = iterZone->second ;
 		if(iterZone->first !=CurZoneID)   // only this origin zone has vehicles, then we build the network
 		{
-			for(i = 0; i<  zone.m_CentroidNodeAry.size(); i++)
+			for(i = 0; i<  zone.m_OriginActivityVector.size(); i++)
 			{
-				FromID = zone.m_CentroidNodeAry [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				FromID = zone.m_OriginActivityVector [i]; // m_PhysicalNodeSize is the centriod number for CurZoneNo
 				ToID =   m_PhysicalNodeSize + iterZone->first; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;

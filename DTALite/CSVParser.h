@@ -13,10 +13,11 @@ using std::istringstream;
 
 class CCSVParser
 {
+public : ifstream inFile;
+
 private:
 	char Delimiter;
 	bool IsFirstLineHeader;
-	ifstream inFile;
 	vector<string> LineFieldsValue;
 	map<string,int> FieldsIndices;
 

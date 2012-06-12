@@ -42,6 +42,8 @@
 #include "CSVParser.h"
 using namespace std;
 
+
+
 std::vector<DTAPathData>   g_global_path_vector;	// global vector of path data
 std::map<CString, int> g_path_index_map; 
 
@@ -50,7 +52,7 @@ extern ofstream g_WarningFile;
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput);
-void g_OutputSimulationStatistics(int NumberOfLinks = 9999999);
+void g_OutputSimulationStatistics();
 
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
@@ -298,7 +300,7 @@ void g_ODBasedDynamicTrafficAssignment()
 
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
-		connector_count += iterZone->second.m_CentroidNodeAry.size();  // only this origin zone has vehicles, then we build the network
+		connector_count += (iterZone->second.m_OriginActivityVector .size() + iterZone->second.m_DestinationActivityVector.size()) ;  // only this origin zone has vehicles, then we build the network
 	}
 
 	int link_size  = g_LinkVector.size() + connector_count; // maximal number of links including connectors assuming all the nodes are destinations
@@ -322,7 +324,10 @@ void g_ODBasedDynamicTrafficAssignment()
 	{
 		cout << "------- Iteration = "<<  iteration << "--------" << endl;
 
-		// initialize for each iteration
+
+		if(iteration == 20)
+			TRACE("");
+   // initialize for each iteration
 		g_CurrentGapValue = 0.0;
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0; 
@@ -368,7 +373,10 @@ void g_ODBasedDynamicTrafficAssignment()
 
 							bool debug_flag = false;
 
-							network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),departure_time,1,DEFAULT_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+								for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from LOV, HOV, truck
+								{
+									network_MP.TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+								}
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 										network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
@@ -443,7 +451,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			int OriginCentriod = m_PhysicalNodeSize;
 			int DestinationCentriod = m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;
 
-			float TotalCost = LabelCostAry[DestinationCentriod];
+			float TotalCost = LabelCostVectorPerType[ pVeh->m_PricingType ][DestinationCentriod];
 			if(TotalCost > MAX_SPLABEL-10)
 			{
 			cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
@@ -537,12 +545,12 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			{
 				// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
 				NodeSize = 0;
-				PredNode = NodePredAry[DestinationCentriod];		
+				PredNode = NodePredVectorPerType[pVeh->m_PricingType ][DestinationCentriod];		
 				while(PredNode != OriginCentriod && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
 				{
 					ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
 					temp_reversed_PathLinkList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
-					PredNode = NodePredAry[PredNode];
+					PredNode =  NodePredVectorPerType[pVeh->m_PricingType ][PredNode];
 				}
 
 			// the first node in the shortest path is the super zone center, should not be counted
@@ -631,6 +639,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 		}
 
 		// delete LeastExperiencedTimes; // Jason : release memory
+		if(PathArray!=NULL)
 		delete PathArray;
 }
 
@@ -660,7 +669,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 				BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 				//using historical short-term travel time
-				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_DemandType,pVeh->m_VOT,false, false );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_PricingType,pVeh->m_VOT,false, false );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				int OriginCentriod = m_PhysicalNodeSize;  // as root node
 				int DestinationCentriod =  m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;  
@@ -850,6 +859,8 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 				} // for each departure time interval
 			}
 		}
+	
+		if(PathArray!=NULL);
 		delete PathArray;
 	}
 
@@ -1166,7 +1177,37 @@ void g_AgentBasedShortestPathGeneration()
 
 	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
 		
-	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
+	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
+
+	int NumberOfCriticalLinks = 3;
+		for(int cl = 1; cl <= NumberOfCriticalLinks; cl++)
+	{
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		{
+			DTALink* pLink = g_LinkVector[li];
+
+			if(pLink->m_FromNodeNumber == CriticalLinkFromNodeNumberAry[cl] && pLink->m_ToNodeNumber == CriticalLinkToNodeNumberAry[cl])
+			{
+			double average_travel_time = pLink->GetTravelTimeByMin(0, pLink->m_SimulationHorizon);
+			double total_volume = pLink->CFlowArrivalCount;
+			float FlowRatio = pLink->CFlowArrivalCount*100.0f/ max(1,g_SimulationResult.number_of_vehicles);
+			float HOV_volume = pLink->CFlowArrivalCount_PricingType[2];
+			float HOVRatio = pLink->CFlowArrivalCount_PricingType[2]*100.0f/max(1,HOV_volume);
+			float SOVPercentage = pLink->CFlowArrivalCount_PricingType[1]*100.0f/max(1,pLink->CFlowArrivalCount);
+			float TruckPercentage = pLink->CFlowArrivalCount_PricingType[3]*100.0f/max(1,pLink->CFlowArrivalCount);
+			double speed = pLink->m_Length / max(0.00001,average_travel_time) *60;  // unit: mph
+			double capacity_simulation_horizon = pLink->m_MaximumServiceFlowRatePHPL * pLink->m_NumLanes * (g_DemandLoadingEndTimeInMin- g_DemandLoadingStartTimeInMin) / 60;
+			double voc_ratio = pLink->CFlowArrivalCount / max(0.1,capacity_simulation_horizon);
+			int percentage_of_speed_limit = int(speed/max(0.1,pLink->m_SpeedLimit)*100+0.5);
+			g_AssignmentLogFile << voc_ratio << "," << total_volume << "," << FlowRatio << "," << HOV_volume << "," << HOVRatio << "," << SOVPercentage << "," << TruckPercentage << ","
+				<< average_travel_time << "," << speed << ",";
+			g_AssignmentLogFile <<	pLink->m_TotalEnergy  << "," << pLink->m_CO2 << ","  << pLink->m_NOX << "," << pLink->m_HC << ",";
+			g_AssignmentLogFile <<	pLink->m_AADT  << "," << pLink->m_NumberOfCrashes << ","  << pLink->m_NumberOfFatalAndInjuryCrashes << "," << pLink->m_NumberOfPDOCrashes << ",";
+			}
+		}
+	}
+		g_AssignmentLogFile << endl;
+
 
 	if(g_ODEstimationFlag == 1)
 		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;

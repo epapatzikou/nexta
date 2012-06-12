@@ -7,9 +7,7 @@
 #include "math.h"
 #include "DTALite.h"
 #include "GlobalData.h"
-#ifdef _DEBUG
-#define new DEBUG_NEW
-#endif
+
 
 using namespace std;
 extern CTime g_AppStartTime;
@@ -54,7 +52,7 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	}
 
 	//step 2: pricing type
-	PricingType = g_DemandTypeMap[demand_type].pricing_type -1;  // -1 is to make the type starts from 0
+	PricingType = g_DemandTypeMap[demand_type].pricing_type; // pricing_type start from 1
 
 	//step 3: information type
 	// default to historical info as class 1
@@ -66,7 +64,6 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 			InformationClass = i+1; // return pretrip as 2 or enoute as 3
 	}
 
-	VOT = g_DemandTypeMap[demand_type].average_VOT;
 	RandomPercentage= g_GetRandomRatio() * 100; 
 
 	for(std::vector<VOTDistribution>::iterator itr = g_VOTDistributionVector.begin(); itr != g_VOTDistributionVector.end(); ++itr)

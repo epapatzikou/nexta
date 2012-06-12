@@ -58,10 +58,10 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 	int LinkID = g_LinkVector.size();
 
 	// add outgoing connectors from origin zone center(m_PhysicalNodeSize) to zone centriods
-	for(i = 0; i< g_ZoneMap[CurZoneID].m_CentroidNodeAry.size(); i++)
+	for(i = 0; i< g_ZoneMap[CurZoneID].m_OriginActivityVector.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-		ToID = g_ZoneMap[CurZoneID].m_CentroidNodeAry[i];
+		ToID = g_ZoneMap[CurZoneID].m_OriginActivityVector[i];
 		// add outcoming connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
 
 		//         TRACE("destination node of current zone %d: %d\n",CurZoneID, g_NodeVector[ToID]);
@@ -79,6 +79,10 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 		for(int t= m_StartIntervalForShortestPathCalculation; t < m_NumberOfSPCalculationIntervals; t+=1)
 		{
 			m_LinkTDTimeAry[LinkID][t] = 0;
+
+			// copy pricing type dependent link toll values
+
+
 		}
 
 
@@ -109,9 +113,9 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 
 		if(iterZone->first != CurZoneID)  // only this origin zone has vehicles, then we build the network
 		{
-			for(i = 0; i< zone.m_CentroidNodeAry.size(); i++)
+			for(i = 0; i< zone.m_DestinationActivityVector .size(); i++)
 			{
-				FromID = zone.m_CentroidNodeAry[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
+				FromID = zone.m_DestinationActivityVector[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
 				ToID =   m_PhysicalNodeSize + iterZone->first ; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
@@ -140,7 +144,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int CurZoneID)  // build t
 	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneSize;
 }
 
-void DTANetworkForSP::BuildPhysicalNetwork()
+void DTANetworkForSP::BuildPhysicalNetwork()  // for agent based 
 {
 
 	bool bDebug = false;
@@ -177,8 +181,6 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
 		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
 
-
-
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
 		m_OutboundSizeAry[FromID] +=1;
@@ -214,15 +216,26 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 				if(m_StartTimeInMin >= g_LinkVector[li]->pTollVector[il].StartTime && m_StartTimeInMin <= g_LinkVector[li]->pTollVector[il].EndTime)
 				{
 					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].m_bTollExist = true;
-					for(int pricing_type = 0; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+					for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
 					{
 						m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].TollValue [pricing_type] = g_LinkVector[li]->pTollVector[il].TollRate[pricing_type];
 					}
 				}
 			}
+			
+			if (g_LinkTypeTransitMap[g_LinkVector[li]->m_link_type ] ==1 || g_LinkTypeWalkingMap[g_LinkVector[li]->m_link_type ] ==1 )  // 
+				{  // transit or walking link
+					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].m_bTollExist = true;
 
-		}
+					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].TollValue [1] = 100;  // transit links do not allow SOV
+					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].TollValue [2] = 100;  // transit links do not allow HOV
+					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].TollValue [3] = 100; // transit links do not allow trucks
+					m_LinkTDCostAry[g_LinkVector[li]->m_LinkID][link_entering_time_interval].TollValue [4] = 0;  // default zero cost
+				}
+			}
+
 	}
+
 
 	// construct outbound movement vector
 	for(li = 0; li< g_LinkVector.size(); li++)
@@ -248,7 +261,7 @@ void DTANetworkForSP::BuildPhysicalNetwork()
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=0, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
 // time -dependent label correcting algorithm with deque implementation
 {
 
@@ -367,6 +380,150 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 }
 
 
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, int departure_time, int pricing_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
+// time -dependent label correcting algorithm with deque implementation
+{
+	int i;
+	float AdditionalCostInMin = 0;
+
+	if(m_OutboundSizeAry[origin]== 0)
+		return false;
+
+	for(i=0; i <m_NodeSize; i++) // Initialization for all nodes
+	{
+		
+		NodePredVectorPerType[pricing_type][i]  = -1;
+
+		NodeStatusAry[i] = 0;
+
+		LabelTimeAry[i] = MAX_SPLABEL;
+		LabelCostVectorPerType[pricing_type][i] = MAX_SPLABEL;
+
+	}
+
+	// Initialization for origin node
+	LabelTimeAry[origin] = float(departure_time);
+	LabelCostVectorPerType[pricing_type][origin] = 0;
+
+	SEList_clear();
+	SEList_push_front(origin);
+
+	int FromID, LinkID, ToID;
+
+
+	float NewTime, NewCost;
+	while(!SEList_empty())
+	{
+		FromID  = SEList_front();
+		SEList_pop_front();
+
+		if(debug_flag )
+		{
+			if(FromID < m_PhysicalNodeSize)  // physical nodes
+			{
+				TRACE("\nScan from node %d",g_NodeVector[FromID].m_NodeName);
+				if(g_NodeVector[FromID].m_NodeName == 11)
+				{
+				TRACE("dest!");
+				}
+
+			}
+			else
+				TRACE("\nScan from node_index %d",FromID);
+
+		}
+
+		NodeStatusAry[FromID] = 2;        //scaned
+
+		for(i=0; i<m_OutboundSizeAry[FromID];  i++)  // for each arc (i,j) belong A(j)
+		{
+			LinkID = m_OutboundLinkAry[FromID][i];
+			ToID = m_OutboundNodeAry[FromID][i];
+
+			if(ToID == origin)
+				continue;
+
+			if(debug_flag )
+			{
+				if(ToID < m_PhysicalNodeSize)  // physical nodes
+						TRACE("\n   to node %d", g_NodeVector[ToID].m_NodeName);
+				else
+						TRACE("\n   to node_index %d", ToID);
+
+			}
+			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
+
+
+			int link_entering_time_interval = int(LabelTimeAry[FromID])/g_AggregationTimetInterval;
+			if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
+				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
+
+			if(link_entering_time_interval < 0)  // limit the size
+				link_entering_time_interval = 0;
+
+			if(distance_cost_flag)
+				NewTime	= LabelTimeAry[FromID];
+			else // distance
+				NewTime	= LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
+
+			if(distance_cost_flag)
+				NewCost    = LabelCostVectorPerType[pricing_type][FromID] + m_LinkTDDistanceAry[LinkID];
+			else
+				NewCost    = LabelCostVectorPerType[pricing_type][FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
+
+			if(VOT > 0.01 && m_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTollExist) 
+			{ // with VOT and toll
+				AdditionalCostInMin = m_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+				if(debug_flag ) 
+					TRACE("AdditionalCostInMin = %f\n",AdditionalCostInMin);
+	
+				NewCost += AdditionalCostInMin;
+			}
+
+
+			if(NewCost < LabelCostVectorPerType[pricing_type][ToID] ) // be careful here: we only compare cost not time
+			{
+				if(debug_flag  && ToID < m_PhysicalNodeSize)  // physical nodes
+				{
+					TRACE("\n         UPDATE to node %d, cost: %f, link travel time %f", g_NodeVector[ToID].m_NodeName, NewCost, m_LinkTDTimeAry[LinkID][link_entering_time_interval]);
+				}
+
+				if(NewTime > g_PlanningHorizon -1)
+					NewTime = float(g_PlanningHorizon-1);
+
+				LabelTimeAry[ToID] = NewTime;
+
+				LabelCostVectorPerType[pricing_type][ToID] = NewCost;
+				if(ToID == 28)
+				{
+					TRACE("\n node g_NodeVector[ToID].m_NodeName: Newcost %f", NewCost);
+				}
+			
+
+				NodePredVectorPerType[pricing_type][ToID]   = FromID;
+
+				// Dequeue implementation
+				//
+				if(NodeStatusAry[ToID]==2) // in the SEList_TD before
+				{
+					SEList_push_front(ToID);
+					NodeStatusAry[ToID] = 1;
+				}
+				if(NodeStatusAry[ToID]==0)  // not be reached
+				{
+					SEList_push_back(ToID);
+					NodeStatusAry[ToID] = 1;
+				}
+
+				//another condition: in the SEList now: there is no need to put this node to the SEList, since it is already there.
+			}
+
+		}      // end of for each link
+
+	} // end of while
+
+	return true;
+}
 
 
 

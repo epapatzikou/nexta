@@ -26,6 +26,7 @@
 #pragma once
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
+
 #include "resource.h"
 
 #include <math.h>
@@ -44,7 +45,7 @@ using namespace std;
 
 #define MAX_INFO_CLASS_SIZE 4
 #define MAX_VEHICLE_TYPE_SIZE 10
-#define MAX_PRICING_TYPE_SIZE 3  // LOV, HOV and Truck
+#define MAX_PRICING_TYPE_SIZE 5  // LOV, HOV and Truck, intermodal: 5 = 4+ 1 , starts from 1 
 #define MAX_TIME_INTERVAL_SIZE 96
 
 #define MAX_SIZE_INFO_USERS 5 
@@ -56,11 +57,13 @@ using namespace std;
 
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
 
+enum Traffic_MOE {MOE_crashes,MOE_CO2, MOE_total_energy};
+
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 extern double g_DTASimulationInterval;
 
 #define	MAX_SPLABEL 99999.0f
-#define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
+//#define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
@@ -71,7 +74,7 @@ extern int g_ObservationEndTime;
 
 extern float g_DefaultSaturationFlowRate_in_vehphpl;
 
-#include "SafetyPlanning.h"
+
 #ifdef _WIN64
 #define MAX_LINK_NO 99999999
 #endif 
@@ -92,11 +95,16 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 void g_ProgramStop();
 float g_RNNOF();
 bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT);
-
+struct GDPoint
+{
+	double x;
+	double y;
+};
 struct VehicleCFData
 {
 	int   VehicleID;
 	int   LaneNo;
+	int   SequentialLinkNo;
 	float FreeflowDistance_per_SimulationInterval;  
 	float   CriticalSpacing_in_meter;
 
@@ -122,33 +130,67 @@ public:
 
 };
 
+class DTAActivityLocation
+{ public: 
+	DTAActivityLocation()
+	{
+		ExternalODFlag = 0;
+	}
+
+  int ZoneID;
+  int NodeID;
+  int ExternalODFlag;
+
+};
+
+
 class DTAZone
 { 
 public:
 	std::map<int, float> m_HistDemand;  // key destination zone, value, demand value
 
-
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
-	std::vector<int> m_CentroidNodeAry;
+	std::vector<int> m_OriginActivityVector;
+	std::vector<int> m_DestinationActivityVector;
 
-	int GetRandomNodeIDInZone(float random_ratio)
+	int GetRandomOriginNodeIDInZone(float random_ratio)
 	{
-		int ArraySize  = m_CentroidNodeAry.size();
+		int ArraySize  = m_OriginActivityVector.size();
 
 		int node_index = int(random_ratio*ArraySize);
 
 		if(node_index >= ArraySize)
 			node_index = ArraySize -1;
 
-		return m_CentroidNodeAry[node_index];
+		return m_OriginActivityVector[node_index];
 	}
 
+	int GetRandomDestinationIDInZone(float random_ratio)
+	{
+		int ArraySize  = m_DestinationActivityVector.size();
+
+		int node_index = int(random_ratio*ArraySize);
+
+		if(node_index >= ArraySize)
+			node_index = ArraySize -1;
+		
+		if(node_index>=0)
+			return m_DestinationActivityVector[node_index];
+		else
+			return 0;
+	}
 
 	DTAZone()
 	{
 		m_Capacity  =0;
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
+	}
+	~DTAZone()
+	{
+		m_HistDemand.clear();
+		m_OriginActivityVector.clear();
+		m_DestinationActivityVector.clear();
 	}
 
 	float m_Capacity;
@@ -177,7 +219,10 @@ public:
 	    m_bDestinationFlag = false;
 
 	};
-	~DTANode(){};
+	~DTANode()
+	{
+	m_DestinationVector.clear();
+	};
 	int m_NodeID;
 	int m_NodeName;
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
@@ -185,6 +230,8 @@ public:
 	float m_TotalCapacity;
 
 	std::vector<DTADestination> m_DestinationVector;
+	std::vector<int> m_IncomingLinkVector;
+
 
 	bool m_bOriginFlag;
 	bool m_bDestinationFlag;
@@ -228,7 +275,7 @@ public:
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
 
-		for(int i = 0; i < MAX_PRICING_TYPE_SIZE; i++)
+		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
 		{
 			CumulativeArrivalCount_PricingType[i] = 0;
 			CumulativeRevenue_PricingType[i] = 0;
@@ -245,7 +292,7 @@ public:
 		ExitQueueLength = 0;
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
-		for(int i = 0; i < MAX_PRICING_TYPE_SIZE; i++)
+		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
 		{
 			CumulativeArrivalCount_PricingType[i] = 0;
 			CumulativeRevenue_PricingType[i] = 0;
@@ -311,6 +358,7 @@ public:
 class CapacityReduction
 {
 public:
+	int DayNo;
 	int StartTime;  // use integer
 	int EndTime;    // use integer
 	float LaneClosureRatio;
@@ -320,6 +368,7 @@ public:
 class MessageSign
 {
 public:
+	int DayNo;
 	float StartTime;
 	float EndTime;
 	float ResponsePercentage;
@@ -341,13 +390,14 @@ public:
 class Toll
 {
 public:
+	int DayNo;
 	float StartTime;
 	float EndTime;
 	float TollRate[MAX_PRICING_TYPE_SIZE];  // 4 is 3_+1 , as pricing 
 
 	Toll()
 	{
-		for(int vt = 0; vt<MAX_PRICING_TYPE_SIZE; vt++)
+		for(int vt = 1; vt<MAX_PRICING_TYPE_SIZE; vt++)
 			TollRate[vt]=0;
 	}
 };
@@ -363,13 +413,22 @@ public:
 		m_AADT = 0;
 		m_bSensorData = false;
 		m_NumberOfCrashes = 0;
+		m_NumberOfFatalAndInjuryCrashes = 0;
+		m_NumberOfPDOCrashes = 0;
+
+		m_Num_Driveways_Per_Mile = 20;
+		m_volume_proportion_on_minor_leg = 0.1;
+		m_Num_3SG_Intersections = 1;
+		m_Num_3ST_Intersections = 1;
+		m_Num_4SG_Intersections = 3;
+		m_Num_4ST_Intersections = 0;
 
 		m_SimulationHorizon	= TimeSize;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 		m_LinkMeasurementAry.resize(m_SimulationHorizon/g_ObservationTimeInterval+1);
 
-		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds
-		m_CumuDeparturelFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);
+		m_CumuArrivalFlow.resize(TimeSize/g_DTASimulationInterval+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
+		m_CumuDeparturelFlow.resize(TimeSize/g_DTASimulationInterval+1);      // TimeSize  (unit: min), TimeSize*10 = 0.1 min: number of simulation time intervals
 		m_StochaticCapcityFlag = 0;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = 0;
@@ -408,11 +467,12 @@ public:
 		return m_MaximumServiceFlowRatePHPL;
 	}
 
-	float GetNumLanes(int Time=-1)  // with lane closure
+	float GetNumLanes(int DayNo=0, int Time=-1)  // with lane closure
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if(Time>=CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime)
+			// DayNO = 0 -> apply for all days, Day No > 0; apply for specific day
+			if( (CapacityReductionVector[il].DayNo ==0 || DayNo == CapacityReductionVector[il].DayNo) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
 			{
 				return (1-CapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
 			}
@@ -436,11 +496,11 @@ public:
 
 	}
 
-	float GetTollRateInDollar(float Time, int PricingType)  
+	float GetTollRateInDollar(int DayNo, float Time, int PricingType)  
 	{
 		for(int il = 0; il< m_TollSize; il++)
 		{
-			if(Time >= pTollVector[il].StartTime && Time<=pTollVector[il].EndTime)
+			if(( pTollVector[il].DayNo ==0 || DayNo == pTollVector[il].DayNo) && (Time >= pTollVector[il].StartTime && Time<=pTollVector[il].EndTime))
 			{
 				return pTollVector[il].TollRate[PricingType];
 			}
@@ -448,11 +508,12 @@ public:
 		return 0;
 	}
 
-
+	std::vector<GDPoint> m_ShapePoints;
 	std::vector <SLinkMOE> m_LinkMOEAry;
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
 	void ComputeVSP();
+	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
 	std::vector <int> m_CumuArrivalFlow;
@@ -470,14 +531,53 @@ public:
 	int m_MergeOnrampLinkID;
 	int m_MergeMainlineLinkID;
 
-
 	std::list<struc_vehicle_item> LoadingBuffer;  //loading buffer of each link, to prevent grid lock
 
 	std::list<struc_vehicle_item> EntranceQueue;  //link-in queue  of each link
 	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
+	int m_LinkID;
+	int m_FromNodeID;  // index starting from 0
+	int m_ToNodeID;    // index starting from 0
+
+	std::vector <int> m_InboundLinkWithoutUTurnVector;
+	std::vector <int> m_OutboundLinkWithoutUTurnVector;
 
 
-	~DTALink(){
+	int m_FromNodeNumber;
+	int m_ToNodeNumber;
+
+	float	m_Length;  // in miles
+	float   m_VehicleSpaceCapacity; // in vehicles
+	int	m_NumLanes;
+	float	m_SpeedLimit;
+	float m_KJam;
+	float m_AADTConversionFactor;
+	float m_BackwardWaveSpeed; // unit: mile/ hour
+	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
+
+	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
+	// optional for display only
+	int	m_link_type;
+
+	// for MOE data array
+	int m_SimulationHorizon;
+
+
+	// traffic flow propagation
+	float m_FreeFlowTravelTime; // min
+	int m_BackwardWaveTimeInSimulationInterval; // simulation time interval
+
+	float m_BPRLinkVolume;
+	float m_BPRLinkTravelTime;
+
+	//  multi-day equilibirum: travel time for stochastic capacity
+	float m_BPRLaneCapacity;
+	float m_DayDependentCapacity[MAX_DAY_SIZE];
+
+
+
+	~DTALink()
+	{
 
 		if(pTollVector)
 			delete pTollVector;
@@ -485,6 +585,20 @@ public:
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
 		ExitQueue.clear();
+		MergeIncomingLinkVector.clear();
+
+		m_ShapePoints.clear();
+		m_LinkMOEAry.clear();
+		m_LinkMeasurementAry.clear();
+		m_VehicleDataVector.clear();
+
+		m_CumuArrivalFlow.clear();
+		m_CumuDeparturelFlow.clear();
+
+		CapacityReductionVector.clear();
+		MessageSignVector.clear();
+		TollVector.clear();
+
 
 	};
 
@@ -520,7 +634,7 @@ public:
 
 		CFlowArrivalCount = 0;
 
-		for(int pt = 0; pt < MAX_PRICING_TYPE_SIZE; pt++)
+		for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
 		{
 			CFlowArrivalCount_PricingType[pt] = 0;
 			CFlowArrivalRevenue_PricingType[pt] = 0;
@@ -534,10 +648,17 @@ public:
 
 		VehicleCount = 0;
 
+		m_TotalEnergy = 0;
+		m_CO2 = 0;
+		m_NOX = 0;
+		m_CO = 0;
+		m_HC = 0;
+
+
 		int t;
 
 
-		for(t=0; t<=MAX_TIME_INTERVAL_ADCURVE; t++)
+		for(t=0; t< m_CumuArrivalFlow.size(); t++)
 		{
 			m_CumuArrivalFlow[t] = 0;
 			m_CumuDeparturelFlow[t] = 0;
@@ -554,40 +675,6 @@ public:
 
 
 	}
-	int m_LinkID;
-	int m_FromNodeID;  // index starting from 0
-	int m_ToNodeID;    // index starting from 0
-
-	int m_FromNodeNumber;
-	int m_ToNodeNumber;
-
-	float	m_Length;  // in miles
-	float   m_VehicleSpaceCapacity; // in vehicles
-	int	m_NumLanes;
-	float	m_SpeedLimit;
-	float m_KJam;
-	float m_BackwardWaveSpeed;
-	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
-
-	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
-	// optional for display only
-	int	m_link_type;
-
-	// for MOE data array
-	int m_SimulationHorizon;
-
-
-	// traffic flow propagation
-	float m_FreeFlowTravelTime; // min
-	int m_BackwardWaveTimeInSimulationInterval; // simulation time interval
-
-	float m_BPRLinkVolume;
-	float m_BPRLinkTravelTime;
-
-	//  multi-day equilibirum: travel time for stochastic capacity
-	float m_BPRLaneCapacity;
-	float m_DayDependentCapacity[MAX_DAY_SIZE];
-
 
 	void InitializeDayDependentCapacity()
 	{
@@ -638,7 +725,27 @@ public:
 	float m_AADT;
 	bool m_bSensorData;
 
+	float m_TotalEnergy;
+	float m_CO2;
+	float m_NOX;
+	float m_CO;
+	float m_HC;
+
+
+	// safety prediction
+		double m_Num_Driveways_Per_Mile;
+		double m_volume_proportion_on_minor_leg;
+		double m_Num_3SG_Intersections; 
+		double m_Num_3ST_Intersections; 
+		double m_Num_4SG_Intersections;
+		double m_Num_4ST_Intersections;
+
 	double m_NumberOfCrashes;
+	double m_NumberOfFatalAndInjuryCrashes;
+	double m_NumberOfPDOCrashes;
+
+
+
 	double m_AdditionalDelayDueToCrashes;
 
 	unsigned int LinkOutCapacity;  // unit: number of vehiles
@@ -674,7 +781,7 @@ public:
 
 	float GetPrevailingTravelTime(int CurrentTime)
 	{
-		if(GetNumLanes(CurrentTime)<0.01)   // road blockage
+		if(GetNumLanes(0,CurrentTime)<0.01)   // road blockage
 			return 120; // unit min
 
 		if(departure_count >= 1 && CurrentTime >0)
@@ -692,7 +799,7 @@ public:
 	{
 		float travel_time  = 0.0f;
 
-		if(GetNumLanes(starting_time)<0.01)   // road blockage
+		if(GetNumLanes(0,starting_time)<0.01)   // road blockage
 			return 120; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
@@ -741,11 +848,12 @@ class SVehicleLink
 {  public:
 
 #ifdef _WIN64
-unsigned long  LinkID;  // range:
+unsigned long  LinkID;  // range: 4294967295
 #else
-unsigned short  LinkID;  // range:
+unsigned short  LinkID;  // range:  65535
 #endif
 
+unsigned short  LaneBasedCumulativeFlowCount;  // range:  65535
 float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
@@ -753,6 +861,7 @@ SVehicleLink()
 	LinkID = MAX_LINK_NO;
 	AbsArrivalTimeOnDSN = 99999;
 	//		LinkWaitingTime = 0;
+	LaneBasedCumulativeFlowCount = 0;
 
 }
 
@@ -817,8 +926,12 @@ public:
 	int link_type;
 	string link_type_name;
 	int freeway_flag;
+	int highway_flag;
 	int arterial_flag;
 	int ramp_flag;
+	int connector_flag;
+	int transit_flag;
+	int walking_flag;
 	int safety_prediction_model_id;
 };
 
@@ -925,6 +1038,8 @@ public:
 		if(m_aryVN != NULL)
 			delete m_aryVN;
 
+		m_OperatingModeCount.clear();
+		m_DayDependentAryLink.clear();
 	};
 
 	void PreTripReset()
@@ -985,11 +1100,22 @@ public:
 
 };
 
+class PricingType
+{
+public:
+	int pricing_type; // 1: SOV, 2: HOV, 3, truck;
+	float default_VOT;
+	CString pricing_type_name;
+	PricingType()
+	{
+	
+	default_VOT = 10;
+	};
+};
 class DemandType
 {
 public:
 	int demand_type;
-	float average_VOT;
 	float vehicle_type_percentage[MAX_VEHICLE_TYPE_SIZE];
 	float cumulative_type_percentage[MAX_VEHICLE_TYPE_SIZE];
 
@@ -1032,6 +1158,10 @@ class VehicleArrayForOriginDepartrureTimeInterval
 {
 public:
 	std::vector<int> VehicleArray;
+	~VehicleArrayForOriginDepartrureTimeInterval()
+	{
+		VehicleArray.clear();
+	}
 };
 
 class NetworkMOE
@@ -1086,6 +1216,9 @@ T **AllocateDynamicArray(int nRows, int nCols)
 template <typename T>
 void DeallocateDynamicArray(T** dArray,int nRows, int nCols)
 {
+	if(!dArray)
+		return;
+
 	for(int x = 0; x < nRows; x++)
 	{
 		delete[] dArray[x];
@@ -1137,6 +1270,8 @@ T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
 template <typename T>
 void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 {
+	if(!dArray)
+		return;
 	for(int x = 0; x < nX; x++)
 	{
 		for(int y = 0; y < nY; y++)
@@ -1151,6 +1286,14 @@ void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 
 }
 
+template <typename M> void FreeClearMap( M & amap ) 
+{
+    for ( typename M::iterator it = amap.begin(); it != amap.end(); ++it ) {
+        delete it->second;
+    }
+    amap.clear();
+}
+
 class DTALinkToll
 {
 	public:
@@ -1161,7 +1304,7 @@ class DTALinkToll
 	DTALinkToll()
 	{
 		m_bTollExist = false;
-		for(int i=0; i< MAX_PRICING_TYPE_SIZE; i++)
+		for(int i=1; i< MAX_PRICING_TYPE_SIZE; i++)
 			TollValue[0] = 0;
 	}
 };
@@ -1207,6 +1350,10 @@ public:
 	int* NodeStatusAry;                // Node status array used in KSP;
 	float* LabelTimeAry;               // label - time
 	int* NodePredAry;  
+	
+	int** NodePredVectorPerType;  
+	float** LabelCostVectorPerType;
+	
 	float* LabelCostAry;
 
 	int* LinkNoAry;  //record link no according to NodePredAry
@@ -1270,6 +1417,10 @@ public:
 		m_ToIDAry = new int[m_LinkSize];
 
 		NodeStatusAry = new int[m_NodeSize];                    // Node status array used in KSP;
+
+		NodePredVectorPerType   =  AllocateDynamicArray<int>(MAX_PRICING_TYPE_SIZE,m_NodeSize);
+		LabelCostVectorPerType   =  AllocateDynamicArray<float>(MAX_PRICING_TYPE_SIZE,m_NodeSize);
+
 		NodePredAry = new int[m_NodeSize];
 		LinkNoAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
@@ -1324,6 +1475,11 @@ public:
 
 		if(NodeStatusAry) delete NodeStatusAry;                 // Node status array used in KSP;
 		if(NodePredAry) delete NodePredAry;
+
+
+		DeallocateDynamicArray<int>(NodePredVectorPerType,MAX_PRICING_TYPE_SIZE,m_NodeSize);
+		DeallocateDynamicArray<float>(LabelCostVectorPerType,MAX_PRICING_TYPE_SIZE,m_NodeSize);
+
 		if(LinkNoAry) delete LinkNoAry;
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
@@ -1333,6 +1489,7 @@ public:
 		if(LinkLabelTimeAry) delete LinkLabelTimeAry;
 		if(LinkLabelCostAry) delete LinkLabelCostAry;
 
+		m_ScanLinkList.clear();
 
 	};
 
@@ -1346,6 +1503,8 @@ public:
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+
 	//movement based shortest path
 	int FindBestPathWithVOT_Movement(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag);
 
@@ -1552,6 +1711,108 @@ public:
 	}
 };
 
+class NetworkSimulationResult
+{
+	public: 
+	
+	int number_of_vehicles;
+	int number_of_vehicles_PricingType[MAX_PRICING_TYPE_SIZE];
+
+	float avg_travel_time_in_min, avg_distance_in_miles, avg_speed;
+
+	;
+
+	float Energy,CO2,NOX,CO,HC;
+
+	NetworkSimulationResult()
+	{
+
+	number_of_vehicles = 0;
+	for(int p = 0; p < MAX_PRICING_TYPE_SIZE; p++)
+	{
+	number_of_vehicles_PricingType [p] = 0;
+	}
+	avg_travel_time_in_min = 0;
+	avg_distance_in_miles = 0;
+
+	Energy = 0;
+	CO2 = 0;
+	NOX = 0;
+	CO = 0;
+	HC = 0;
+	}
+};
+
+
+class ODStatistics
+{
+public: 
+	ODStatistics()
+	{
+		TotalVehicleSize = 0;
+		TotalTravelTime = 0;
+		TotalDistance = 0;
+		TotalCost = 0;
+		TotalEmissions = 0;
+	}
+
+	int   TotalVehicleSize;
+	float TotalTravelTime;
+	float TotalDistance;
+	float TotalCost;
+	float TotalEmissions;
+
+};
+
+
+class PathStatistics
+{
+public: 
+	PathStatistics()
+	{
+		TotalVehicleSize = 0;
+		TotalTravelTime = 0;
+		TotalDistance = 0;
+		TotalCost = 0;
+		TotalEmissions = 0;
+	}
+
+	int   NodeSums;
+
+	int m_LinkSize;
+	std::vector<int> m_LinkNoArray;
+	std::vector<int> m_NodeNameArray;
+
+	int   TotalVehicleSize;
+	float TotalTravelTime;
+	float TotalDistance;
+	float TotalCost;
+	float TotalEmissions;
+
+};
+
+class ODPathSet
+{
+public: 
+	std::vector<PathStatistics> PathSet;
+	int   TotalVehicleSize;
+	float TotalTravelTime;
+	float TotalDistance;
+	float TotalCost;
+	float TotalEmissions;
+
+	ODPathSet()
+	{
+		TotalVehicleSize = 0;
+		TotalTravelTime = 0;
+		TotalDistance = 0;
+		TotalCost = 0;
+		TotalEmissions = 0;
+	}
+
+
+};
+
 
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
@@ -1594,9 +1855,8 @@ int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& A
 void g_DynamicTraffcAssignmentWithinInnerLoop(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated);
 void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_end, int inner_iteration);
 
-
-
 void g_OutputLinkMOESummary(char fname[_MAX_PATH]);
+void g_OutputSummaryKML(Traffic_MOE moe_mode);
 
 extern CString g_GetAppRunningTime();
 void g_ComputeFinalGapValue();
@@ -1643,6 +1903,30 @@ extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation 
 
 extern FILE* g_ErrorFile;
 extern ofstream g_LogFile;
+
 extern ofstream g_AssignmentLogFile;
 extern ofstream g_EstimationLogFile;
+extern ofstream g_UnitTestingLogFile;
+void g_DTALiteMain();
+void g_DTALiteUnitTestingMain();
 
+extern int g_InitializeLogFiles();
+extern void g_ReadDTALiteSettings();
+extern int g_AgentBasedAssignmentFlag;
+extern float g_DemandGlobalMultiplier;
+extern void g_TrafficAssignmentSimulation();
+extern void g_OutputSimulationStatistics();
+extern void g_FreeMemory();
+
+extern NetworkSimulationResult g_SimulationResult;
+extern void g_RunStaticExcel();
+extern bool g_SimulationOutput2UnitTesting;
+extern TCHAR g_DTASettingFileName[_MAX_PATH];
+extern void g_SetLinkTollValue(int usn, int dsn, Toll tc);
+extern void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes);
+extern void g_ReadInputFiles();
+
+extern	int CriticalLinkFromNodeNumberAry[4];
+extern	int CriticalLinkToNodeNumberAry[4];
+extern void g_CreateLinkTollVector();
+extern void g_ReadDemandFile_Parser();
