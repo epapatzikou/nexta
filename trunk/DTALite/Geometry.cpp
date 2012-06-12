@@ -21,8 +21,7 @@ CGeometry::CGeometry(string s)
 	start_idx += start_tag.length();
 	end_idx = tmp.find(end_tag);
 
-	tmp = tmp.substr(start_idx, end_idx - start_idx - 1);
-
+	tmp = tmp.substr(start_idx, end_idx - start_idx);
 	if (type_str.compare("Point") == 0)
 	{
 		m_Type = POINT;
