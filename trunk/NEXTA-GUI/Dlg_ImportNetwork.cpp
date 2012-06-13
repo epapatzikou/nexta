@@ -247,10 +247,26 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				return;
 			}
 
+			element.transit_flag    = rsLinkType.GetLong (CString("transit_flag"),bExist,false);
+			if(!bExist)
+			{
+				m_MessageList.AddString("Field transit_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
+			element.walking_flag    = rsLinkType.GetLong (CString("walking_flag"),bExist,false);
+			if(!bExist)
+			{
+				m_MessageList.AddString("Field walking_flag cannot be found in the input_link_type.csv.");
+				return;
+			}
+
 			m_pDoc->m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
 			m_pDoc->m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
 			m_pDoc->m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
 			m_pDoc->m_LinkTypeConnectorMap[element.link_type] = element.connector_flag  ;
+			m_pDoc->m_LinkTypeTransitMap[element.link_type] = element.transit_flag  ;
+			m_pDoc->m_LinkTypeWalkingMap[element.link_type] = element.walking_flag  ;
 			
 
 			m_pDoc->m_LinkTypeMap[element.link_type] = element;
@@ -292,6 +308,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			i = 0;
 			int line_no = 2;
 			float default_distance_sum = 0;
+			CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
+			float default_AADT_conversion_factor = g_GetPrivateProfileFloat("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
+
+
 			float length_sum = 0;
 			while(!rsLink.IsEOF())
 			{
@@ -471,6 +491,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 				float grade= rsLink.GetDouble(CString("grade"),bExist,false);
+				float AADT_conversion_factor = rsLink.GetDouble(CString("AADT_conversion_factor"),bExist,false);
+				if(!bExist)
+				{
+
+				AADT_conversion_factor = default_AADT_conversion_factor;
+				}
 
 				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit_in_mph"),bExist,false);
 				if(!bExist) 
@@ -656,6 +682,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 
 					pLink->m_Kjam = k_jam;
+					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
@@ -1220,7 +1247,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				for(unsigned int	demand_type = 1; demand_type < m_pDoc->m_DemandTypeVector.size(); demand_type++)
 				{
 					CString str_number_of_vehicles; 
-					str_number_of_vehicles.Format ("number_of_vehicle_trips_type%d", demand_type);
+					str_number_of_vehicles.Format ("number_of_trips_demand_type%d", demand_type);
 					number_of_vehicles = rsDemand.GetDouble(str_number_of_vehicles,bExist,false);
 					if(!bExist)
 					{

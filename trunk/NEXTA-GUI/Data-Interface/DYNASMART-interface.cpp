@@ -463,6 +463,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeRampMap [type] = 0;
 	m_LinkTypeArterialMap[type] = 0;
 	m_LinkTypeConnectorMap[type] = 0;
+	m_LinkTypeTransitMap[type] = 0;
+	m_LinkTypeWalkingMap[type] = 0;
 	}
 
 	m_LinkTypeFreewayMap[1] = 1;

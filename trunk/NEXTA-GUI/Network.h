@@ -39,6 +39,7 @@
 #include <list>
 
 
+
 enum DTA_Approach
 {
 	DTA_North = 0,
@@ -170,7 +171,7 @@ using std::string;
 #define MAX_VEHICLE_TYPE_SIZE 10
 #define MAX_TIME_INTERVAL_SIZE 96
 #define MAX_INFO_CLASS_SIZE 4
-#define MAX_PRICING_TYPE_SIZE  4
+#define MAX_PRICING_TYPE_SIZE  5
 
 
 #define _MAXIMUM_OPERATING_MODE_SIZE 41
@@ -220,6 +221,9 @@ struct GDRect
 	}
 
 };
+
+#include "RailNetwork\\RailNetwork.h"
+
 typedef struct{
 	float speed;
 	float traveltime;
@@ -530,7 +534,7 @@ class DTADemandType
 public:
 	int demand_type;
 	float average_VOT;
-	int pricing_type; // 1: SOV, 2: HOV, 3, truck;
+	int pricing_type; // 1: SOV, 2: HOV, 3: truck, 4: intermodal
 	float info_class_percentage[MAX_INFO_CLASS_SIZE];
 	float vehicle_type_percentage[MAX_VEHICLE_TYPE_SIZE];
 
@@ -559,6 +563,8 @@ public:
 	int arterial_flag;
 	int connector_flag;
 	int ramp_flag;
+	int transit_flag;
+	int walking_flag;
 };
 
 class DTANodeType
@@ -725,6 +731,8 @@ public:
 	float m_DistanceToRoot;
 	string m_Name;
 	GDPoint pt;
+	GDPoint schedule_pt;
+
 	bool m_bSignalData;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
@@ -950,6 +958,12 @@ public:
 	DTAToll()
 	{
 	DayNo = 0;
+
+		for(int p = 0; p  < MAX_PRICING_TYPE_SIZE; p++)
+		{
+		TollRate[p] = 0;
+		TollRateInMin [p] = 0;
+		}
 	}
 
 	float StartTime;
@@ -982,6 +996,8 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_bTrainFromTerminal = false;
+		m_bTrainToTerminal = false;
 		m_bConnector = false;
 		m_ConnectorZoneID = 0;
 		m_NumberOfLeftTurnBay = 0;
@@ -992,6 +1008,8 @@ public:
 		m_ReferenceBandWidthValue = 0;
 		m_SetBackStart = 0;
 		m_SetBackEnd = 0;
+		m_SpeedLimit  = 10;
+		m_ReversedSpeedLimit  = 10;
 
 		m_TotalVolume = 0;
 		m_NumberOfMarkedVehicles = 0;
@@ -999,6 +1017,7 @@ public:
 		m_LinkID = 0;
 		m_LayerNo = 0;
 		m_OrgDir = 1;
+		m_RailBidirectionalFlag = 1;
 		m_Direction = 1;
 		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
@@ -1015,6 +1034,7 @@ public:
 		m_DisplayLinkID = -1;
 
 		m_Kjam = 180;
+		m_AADT_conversion_factor = 0.1;
 		m_Wave_speed_in_mph = 12;
 
 		m_ReliabilityIndex = 100;
@@ -1212,9 +1232,14 @@ public:
 
 	struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
 
+	CLinkTimeTable m_TimeTable;
+	bool m_bTrainFromTerminal;
+	bool m_bTrainToTerminal;
 
-
+	
 	GDPoint m_FromPoint, m_ToPoint;
+	GDPoint m_ScheduleFromPoint, m_ScheduleToPoint;
+
 	double m_SetBackStart, m_SetBackEnd;
 	GDPoint m_FromPointWithSetback, m_ToPointWithSetback;
 
@@ -1385,6 +1410,8 @@ void AdjustLinkEndpointsWithSetBack()
 	}
 	int m_LinkNo;
 	int m_OrgDir;
+	int m_RailBidirectionalFlag;
+	string m_TrackType;
 	int m_Direction; 
 	bool m_bOneWayLink;
 	int m_LinkID;
@@ -1392,6 +1419,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_ToNodeID;    // index starting from 0
 
 	float m_Kjam;
+	float m_AADT_conversion_factor;
 	float m_Wave_speed_in_mph;
 	string m_Mode_code;
 
@@ -1412,6 +1440,8 @@ void AdjustLinkEndpointsWithSetBack()
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int		m_NumLanes;
 	float	m_SpeedLimit;
+	float	m_ReversedSpeedLimit;
+
 	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 
 	float m_FromNodeY;  // From Node, Y value
@@ -2088,6 +2118,7 @@ public:
 		int CurrentNode;
 		int PredecessorNode;
 		int SearchLevel;
+		float TravelTime;
 	};
 
 	SearchTreeElement* m_SearchTreeList;  // predecessor
@@ -2298,7 +2329,7 @@ public:
 	bool OptimalTDLabelCorrecting_DoubleQueue(int origin, int departure_time);
 	// optimal version use a time-node-dimension of TD_LabelCostAry, TD_NodePredAry
 	int FindOptimalSolution(int origin,  int departure_time,  int destination, DTA_Train* pTrain);
-	bool GenerateSearchTree(int origin,  int destination, int node_size);
+	bool GenerateSearchTree(int origin,  int destination, int node_size,float TravelTimeBound);
 
 	// return node arrary from origin to destination, return travelling timestamp at each node
 	// return number_of_nodes in path

@@ -1142,3 +1142,53 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 
 	OpenCSVFileInExcel(SynchroProjectFile);
 }
+
+
+void CTLiteDoc::OGDF_WriteGraph(CString FileName)
+{
+	std::ofstream GMLFile;
+	int nextId = 0;
+
+	GMLFile.open (FileName, ios::out);
+	if (GMLFile.is_open())
+	{
+		GMLFile.width(15);
+		GMLFile.precision(7) ;
+		GMLFile.setf(ios::fixed);
+	}
+	else
+	{
+		return;
+	}
+	GMLFile << "Creator \"NeXTA::writeGML\"\n";
+	GMLFile << "directed 1\n";
+
+	GMLFile << "graph [\n";
+
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+		GMLFile << "node [\n";
+		GMLFile << "id " << (*iNode)->m_NodeNumber << "\n";
+		GMLFile << "label  " << "\"" << (*iNode)->m_Name.c_str () << "\"\n";
+		GMLFile << "x  " << (*iNode)->pt.x << "\n";
+		GMLFile << "y  " << (*iNode)->pt.y << "\n";
+		GMLFile << "]\n"; // node
+		}
+
+		std::list<DTALink*>::iterator iLink;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+		GMLFile << "edge [\n";
+		GMLFile << "source " << (*iLink)->m_FromNodeNumber << "\n";
+		GMLFile << "target " << (*iLink)->m_ToNodeNumber << "\n";
+		GMLFile << "weight " << (*iLink)->m_Length << "\n";
+		GMLFile << "]\n"; // edge
+		
+		}
+
+	GMLFile << "]\n"; // graph
+	GMLFile.close();
+
+}

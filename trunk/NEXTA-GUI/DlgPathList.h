@@ -13,8 +13,6 @@ class CDlgPathList : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlgPathList)
 	CTLiteDoc* m_pDoc;
-
-
 public:
 	ePathSelectionMode m_PathSelectionMode;
 	bool m_AVISensorFlag;

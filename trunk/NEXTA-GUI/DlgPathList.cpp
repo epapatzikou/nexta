@@ -48,12 +48,11 @@ END_MESSAGE_MAP()
 
 
 // CDlgPathList message handlers
-#define PATACOLUMNSIZE 6
+#define PATHDATACOLUMNSIZE 6
 
 BOOL CDlgPathList::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
 	
 	for(int c = 0; c <=10; c++)
 	{
@@ -71,14 +70,14 @@ BOOL CDlgPathList::OnInitDialog()
 
 	std::vector<std::string> m_Column_names;
 
-_TCHAR *ColumnMOELabel[PATACOLUMNSIZE] =
+_TCHAR *ColumnMOELabel[PATHDATACOLUMNSIZE] =
 {
 	_T("No."),_T("Stree Name"), _T("Length (ml)"), _T("Speed Limit"), _T("Travel Time"), _T("Link Type")
 };
 
 
 	//Add Columns and set headers
-	for (size_t i=0;i< PATACOLUMNSIZE;i++)
+	for (size_t i=0;i< PATHDATACOLUMNSIZE;i++)
 	{
 		CGridColumnTrait* pTrait = NULL;
 //		pTrait = new CGridColumnTraitEdit();

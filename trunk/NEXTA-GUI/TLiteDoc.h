@@ -32,6 +32,7 @@
 #include "math.h"
 #include "Network.h"
 #include ".\\cross-resolution-model\\SignalNode.h"
+#include ".\\RailNetwork\\RailNetwork.h"
 
 #include "Transit.h"
 #include <iostream>
@@ -135,6 +136,7 @@ public:
 	}
 
 	std::vector<int> m_LinkVector;
+	std::vector<int> m_NodeVector;
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector<DTAVehicle*> m_VehicleVector;
 
@@ -184,10 +186,11 @@ public:
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
 
 	COLORREF m_FreewayColor;
-	COLORREF m_HighwayColor;
+	COLORREF m_RampColor;
 	COLORREF m_ArterialColor;
 	COLORREF m_ConnectorColor;
-
+	COLORREF m_TransitColor;
+	COLORREF m_WalkingColor;
 
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
@@ -239,10 +242,15 @@ public:
 
 	BOOL OnOpenDocument(CString FileName);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
+	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
 	bool m_bDYNASMARTDataSet;
 
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
+
+	// Open Graph drawing framework 
+	void OGDF_WriteGraph(CString FileName);
+
 
 	std::ofstream m_WarningFile;
 
@@ -250,6 +258,17 @@ public:
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
+
+	bool ReadRailLinkTypeCSVFile(LPCTSTR lpszFileName); 
+	bool ReadRailNodeCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for rail network
+	bool ReadRailTrainXMLFile(char* FileName);   // for road network
+	bool ReadTrainInfoCSVFile(LPCTSTR lpszFileName);
+	bool ReadRailMOWCSVFile(LPCTSTR lpszFileName);
+	
+	std::vector<train_schedule> m_train_schedule_vector;
+	std::map<string, train_info> m_train_map;
+	std::vector<MaintenanceOfWay> m_RailMOW_vector;
 
 	std::vector <int> m_LinkIDRecordVector;  // used to record if a unique link id has been used;
 	int FindUniqueLinkID();
@@ -482,6 +501,8 @@ void SetStatusText(CString StatusText);
 	std::map<int, int> m_LinkTypeArterialMap;
 	std::map<int, int> m_LinkTypeRampMap;
 	std::map<int, int> m_LinkTypeConnectorMap;
+	std::map<int, int> m_LinkTypeTransitMap;
+	std::map<int, int> m_LinkTypeWalkingMap;
 
 
 	std::map<int, int> m_NodeIDtoNameMap;
@@ -491,7 +512,7 @@ void SetStatusText(CString StatusText);
 	int m_SelectedLinkID;
 	void ZoomToSelectedLink(int SelectedLinkNo);
 	int m_SelectedNodeID;
-	int m_SelectedTrainID;
+	string m_SelectedTrainHeader;
 
 
 	std::vector<DTA_sensor> m_SensorVector;
@@ -551,11 +572,12 @@ void SetStatusText(CString StatusText);
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 		m_NodeIDtoLinkMap[LinkKey] = pLink;
 
-		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 		pLink->m_NumLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
+		pLink->m_ReversedSpeedLimit = m_DefaultSpeedLimit;
 		pLink->m_StaticSpeed = m_DefaultSpeedLimit;
 		pLink->m_Length= pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
@@ -776,11 +798,13 @@ void SetStatusText(CString StatusText);
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
 	std::map<CString, PathStatistics> m_PathMap;
+	std::map<CString, PathStatistics> m_ODMatrixMap;
 
 	void GeneratePathFromVehicleData();
 	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkMOEToKMLFiles(CString file_name);
 
+	void ExportPathflowToCSVFiles();
 
 	CString m_GISMessage;
 
@@ -807,10 +831,18 @@ void SetStatusText(CString StatusText);
 	DTA_Turn Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
 	int MaxNodeKey;
+	int MaxNode64Key;
 	unsigned long GetLinkKey(int FromNodeID, int ToNodeID)
 	{
 
 		unsigned long LinkKey = FromNodeID*MaxNodeKey+ToNodeID;
+		return LinkKey;
+	}
+
+	__int64 GetLink64Key(int FromNodeNumber, int ToNodeNumber)
+	{
+
+		__int64 LinkKey = FromNodeNumber*MaxNode64Key+ToNodeNumber;
 		return LinkKey;
 	}
 
@@ -824,7 +856,7 @@ void SetStatusText(CString StatusText);
 		return NULL;
 	}
 
-	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = true)
+	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
 		int FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
 		int ToNodeID = m_NodeNametoIDMap[ToNodeNumber];
@@ -854,14 +886,10 @@ void SetStatusText(CString StatusText);
 	{
 
 		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
-		return m_NodeIDtoLinkMap[LinkKey];
-	}
-
-	DTALink* FindLinkWithNodeNumbers_64bitKey(int FromNodeNumber, int ToNodeNumber)
-	{
-		__int64  LinkKey = FromNodeNumber* ToNodeNumber;
-
-	return m_NodeNumbertoLinkMap[LinkKey];
+		if(m_NodeIDtoLinkMap.find(LinkKey)!=m_NodeIDtoLinkMap.end())
+			return m_NodeIDtoLinkMap[LinkKey];
+		else
+			return NULL;
 	}
 
 
@@ -1006,7 +1034,6 @@ public:
 		afx_msg void OnImportodtripfile3columnformat();
 		afx_msg void OnToolsPerformscheduling();
 		afx_msg void OnFileChangecoordinatestolong();
-		afx_msg void OnFileOpenrailnetworkproject();
 		afx_msg void OnToolsExportopmodedistribution();
 		afx_msg void OnToolsEnumeratepath();
 		afx_msg void OnToolsExporttoHistDatabase();
@@ -1087,6 +1114,10 @@ public:
 		afx_msg void On2Viewnetworkdata();
 		afx_msg void On3Viewoddatainexcel();
 		afx_msg void OnMoeOpenallmoetables();
+		afx_msg void OnFileOpenNewRailDoc();
+		afx_msg void OnBnClickedButtonDatabase();
+		afx_msg void OnToolsUnittesting();
+		afx_msg void OnViewTraininfo();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

@@ -369,7 +369,12 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
-	m_bLineDisplayConditionalMode = false;
+	if(theApp.m_VisulizationTemplate == e_train_scheduling) 
+	m_bLineDisplayConditionalMode = true;
+
+	if(theApp.m_VisulizationTemplate == e_traffic_assignment) 
+		m_bLineDisplayConditionalMode = false;
+
 	m_link_display_mode = link_display_mode_band; // 
 	m_NodeTypeFaceName      = "Arial";
 
@@ -382,7 +387,9 @@ CTLiteView::CTLiteView()
 	isFinishSubarea = false;	
 	m_ViewID = g_ViewID++;
 	m_Resolution = 1;
-	m_bShowText = true;
+	
+	m_bShowText = false;
+
 	m_bMouseDownFlag = false;
 	m_ShowAllPaths = true;
 	m_OriginOnBottomFlag = -1;
@@ -703,14 +710,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		brush_moe[los].CreateSolidBrush (pDoc->m_colorLOS[los]);
 	}
 
-	CPen pen_freeway, pen_highway, pen_arterial, pen_connector;
-	CBrush brush_freeway, brush_highway, brush_arterial, brush_connector;
+	CPen pen_freeway, pen_ramp, pen_arterial, pen_connector,pen_transit,pen_walking;
+	CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector,brush_transit,brush_walking;
 
 	pen_freeway.CreatePen (PS_SOLID, 1, pDoc->m_FreewayColor);
 	brush_freeway.CreateSolidBrush (pDoc->m_FreewayColor);
 
-	pen_highway.CreatePen (PS_SOLID, 1, pDoc->m_HighwayColor);
-	brush_highway.CreateSolidBrush (pDoc->m_HighwayColor);
+	pen_ramp.CreatePen (PS_SOLID, 1, pDoc->m_RampColor);
+	brush_ramp.CreateSolidBrush (pDoc->m_RampColor);
 
 	pen_arterial.CreatePen (PS_SOLID, 1, pDoc->m_ArterialColor);
 	brush_arterial.CreateSolidBrush (pDoc->m_ArterialColor);
@@ -718,6 +725,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	pen_connector.CreatePen (PS_SOLID, 1, pDoc->m_ConnectorColor);
 	brush_connector.CreateSolidBrush (pDoc->m_ConnectorColor);
 
+	pen_transit.CreatePen (PS_SOLID, 1, pDoc->m_TransitColor);
+	brush_transit.CreateSolidBrush (pDoc->m_TransitColor);
+
+	pen_walking.CreatePen (PS_SOLID, 1, pDoc->m_WalkingColor);
+	brush_walking.CreateSolidBrush (pDoc->m_WalkingColor);
 
 	// recongenerate the lind band width offset only when chaning display mode or on volume mode
 	if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
@@ -807,11 +819,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if ( pDoc->m_LinkTypeFreewayMap[(*iLink)->m_link_type] == 1)
 			{
 				pDC->SelectObject(&pen_freeway);
-				pDC->SelectObject(&g_BrushLinkBand);
+				pDC->SelectObject(&brush_freeway);
 			}else if ( pDoc->m_LinkTypeArterialMap[(*iLink)->m_link_type] == 1)
 			{
 				pDC->SelectObject(&pen_arterial);
-				pDC->SelectObject(&g_BrushLinkBand);
+				pDC->SelectObject(&brush_arterial);
+			}else if ( pDoc->m_LinkTypeRampMap[(*iLink)->m_link_type] == 1)
+			{
+				pDC->SelectObject(&pen_ramp);
+				pDC->SelectObject(&brush_ramp);
+			}else if ( pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type] == 1)
+			{
+				pDC->SelectObject(&pen_connector);
+				pDC->SelectObject(&brush_connector);
+			}else if ( pDoc->m_LinkTypeTransitMap[(*iLink)->m_link_type] == 1)
+			{
+				pDC->SelectObject(&pen_transit);
+				pDC->SelectObject(&brush_transit);
+			}else if ( pDoc->m_LinkTypeWalkingMap[(*iLink)->m_link_type] == 1)
+			{
+				pDC->SelectObject(&pen_walking);
+				pDC->SelectObject(&brush_walking);
 			}else
 			{
 				pDC->SelectObject(&pen_arterial);
@@ -896,7 +924,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			if(theta_deg < -90)
 				theta_deg += 180;
-
 
 			if(theta_deg > 90)
 				theta_deg -= 180;
@@ -1024,6 +1051,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 	}
+
+	if(pMainFrame->m_bShowLayerMap[layer_link_MOE] == true && (theApp.m_VisulizationTemplate == e_train_scheduling))
+	{	std::list<DTALink*>::iterator iLink;
+
+		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+		{
+		DrawLinkTimeTable((*iLink),pDC,0);
+		}
+	}
+
 
 	pDC->SelectObject(&node_font);
 
@@ -1202,7 +1239,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 
-				if(feet_size > 0.01 || pDoc->m_ShowNodeLayer) // add or condition to show all nodes
+				if(feet_size*pDoc->m_NodeDisplaySize > 0.2 || pDoc->m_ShowNodeLayer) // add or condition to show all nodes
 				{
 					DrawNode(pDC, (*iNode),point, node_size,tm);
 

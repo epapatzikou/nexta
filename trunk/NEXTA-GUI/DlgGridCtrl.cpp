@@ -124,6 +124,7 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 		case 1: sprintf_s(text, "SOV"); break;
 		case 2: sprintf_s(text, "HOV"); break;
 		case 3: sprintf_s(text, "Truck"); break;
+		case 4: sprintf_s(text, "Intermodal"); break;
 		default: sprintf_s(text, "---");
 		}
 		m_DemandTypeGrid.SetItemText(Index,3,text);

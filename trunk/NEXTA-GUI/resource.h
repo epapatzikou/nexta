@@ -91,6 +91,7 @@
 #define IDD_TD_DEMAND_PROFILE_DIALOG    191
 #define IDR_TOOLBARLAYER                191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
+#define IDR_MAINFRAME_RAIL              192
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
@@ -105,7 +106,10 @@
 #define IDR_MENU4                       205
 #define IDD_DIALOG_PATH_LIST            206
 #define IDR_MENU_LINK_MOE1              206
+#define IDR_TLiteTYPE4                  207
 #define IDD_DIALOG_GISLayer             209
+#define IDD_UNIT_TESTING_DIALOG         212
+#define IDD_DIALOG_UNIT_TEST_LIST       213
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -294,8 +298,7 @@
 #define IDC_LIST_GISLAYER               1122
 #define IDC_LIST_FEATURE_INFO           1123
 #define IDC_BUTTON_Database             1124
-#define IDC_BUTTON_Database2            1125
-#define IDC_BUTTON_Configuration        1125
+#define IDC_TaskLIST                    1126
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -808,14 +811,17 @@
 #define ID_VIEW_LAYERPENNEL             33417
 #define ID_VIEW_LEFT                    33418
 #define ID_VIEW_GIS_Layer_Panel         33419
+#define ID_FILE_OPEN_NEW_RAIL_DOC       33420
+#define ID_TOOLS_UNITTESTING            33421
+#define ID_VIEW_TRAININFO               33422
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        211
-#define _APS_NEXT_COMMAND_VALUE         33420
-#define _APS_NEXT_CONTROL_VALUE         1126
+#define _APS_NEXT_RESOURCE_VALUE        213
+#define _APS_NEXT_COMMAND_VALUE         33423
+#define _APS_NEXT_CONTROL_VALUE         1127
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
