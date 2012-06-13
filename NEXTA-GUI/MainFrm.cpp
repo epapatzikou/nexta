@@ -50,7 +50,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_GISLAYER, &CMainFrame::OnNMCustomdrawListGislayer)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_GISLAYER, &CMainFrame::OnNMRClickListGislayer)
 	ON_BN_CLICKED(IDC_BUTTON_Database, &CMainFrame::OnBnClickedButtonDatabase)
-	ON_BN_CLICKED(IDC_BUTTON_Configuration, &CMainFrame::OnBnClickedButtonConfiguration)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -85,6 +84,14 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("GPS")
 };
 
+#define _NUM_OF_RAIL_GIS_LAYERS  3 
+static _TCHAR *_gRailLayerLabel[_NUM_OF_GIS_LAYERS] =
+{
+	_T("Node"),
+	_T("Link"),
+	_T("Schedule"),
+};
+
 CMainFrame::CMainFrame()
 {
 	m_bFeatureInfoInitialized  = false;
@@ -99,8 +106,17 @@ CMainFrame::CMainFrame()
 CMainFrame::~CMainFrame()
 {
 }
-
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
+		return OnCreate_TrafficNetwork(lpCreateStruct);
+
+	if(theApp.m_VisulizationTemplate == e_train_scheduling)
+		return OnCreate_RailNetwork(lpCreateStruct);
+
+	return 0;
+}
+int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 {
 
 	if (CMDIFrameWnd::OnCreate(lpCreateStruct) == -1)
@@ -123,21 +139,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
 			CBRS_TOOLTIPS | CBRS_FLYBY);
 
-
-
-	
-/*
-		if (!m_AMSToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-			!m_AMSToolBar.LoadToolBar(IDR_AMS_TOOLBAR))
-		{
-			TRACE0("Failed to create toolbar\n");
-			return -1;      // fail to create
-		}
-
-*/
-
-   
 		if (!m_MOEToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
 			!m_MOEToolBar.LoadToolBar(IDR_VIEW_TOOLBAR))
@@ -242,6 +243,94 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	return 0;
 }
 
+int CMainFrame::OnCreate_RailNetwork(LPCREATESTRUCT lpCreateStruct)
+{
+
+	if (CMDIFrameWnd::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+			!m_wndToolBar.LoadToolBar(IDR_MAINFRAME_RAIL))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
+
+		if(!m_wndPlayerSeekBar.Create(this))
+		{
+			TRACE0("Failed to create m_wndPlayerSeekBar toolbar\n");
+			return -1;     // fail to create
+		}
+
+		m_wndPlayerSeekBar.SetBarStyle(m_wndToolBar.GetBarStyle() |
+			CBRS_TOOLTIPS | CBRS_FLYBY);
+
+		if (!m_wndStatusBar.Create(this) ||
+			!m_wndStatusBar.SetIndicators(indicators,
+			sizeof(indicators)/sizeof(UINT)))
+		{
+			TRACE0("Failed to create status bar\n");
+			return -1;      // fail to create
+		}
+
+		if (!m_wndReBar.Create(this) ||
+			!m_wndReBar.AddBar(&m_wndToolBar) ||
+			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
+			)
+		{
+			TRACE0("Failed to create rebar\n");
+			return -1;      // fail to create
+		}
+
+
+		SetTimer(0,1000, NULL); // simulation reflesh timer
+		m_wndPlayerSeekBar.Enable(true);
+		//	   m_wndPlayerSeekBar.SetRange(0,100);
+		m_wndPlayerSeekBar.SetRange(0,g_Simulation_Time_Horizon);
+
+		//	// TODO: Delete these three lines if you don't want the toolbar to be dockable
+		//	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
+		//	EnableDocking(CBRS_ALIGN_ANY);
+		//	DockControlBar(&m_wndToolBar);
+
+	if (!m_GISLayerBar.Create(this, IDD_DIALOG_GISLayer,
+		CBRS_LEFT|CBRS_TOOLTIPS|CBRS_FLYBY, IDD_DIALOG_GISLayer))
+	{
+		TRACE0("Failed to create DlgBar\n");
+		return -1;      // fail to create
+	}
+
+
+CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
+
+pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
+
+	LV_ITEM lvi;
+	for(int i = 0; i < _NUM_OF_RAIL_GIS_LAYERS; i++)
+	{
+		lvi.mask = LVIF_TEXT;
+		lvi.iItem = i;
+		lvi.iSubItem = 0;
+		lvi.pszText = _gRailLayerLabel[i];
+		pGISLayerList->InsertItem(&lvi);
+		m_bShowLayerMap[(layer_mode)(i)] = false;
+
+	}
+	pGISLayerList->SetExtendedStyle(LVS_EX_CHECKBOXES);
+
+	m_bShowLayerMap[layer_node] = true;
+	m_bShowLayerMap[layer_link] = true;
+	m_bShowLayerMap[layer_link_MOE] = true;
+
+	for(int i = 0; i < _NUM_OF_RAIL_GIS_LAYERS; i++)
+	{
+
+	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
+	}
+
+	return 0;
+}
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 {
 	if( !CMDIFrameWnd::PreCreateWindow(cs) )

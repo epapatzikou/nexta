@@ -89,6 +89,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		HeaderList.push_back("Charge for LOV ($)");
 		HeaderList.push_back("Charge for HOV ($)");
 		HeaderList.push_back("Charge for Truck ($)");
+		HeaderList.push_back("Charge for Intermodal ($)");
 
 		DefaultList.push_back("1");
 		DefaultList.push_back("0");

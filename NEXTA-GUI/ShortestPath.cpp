@@ -481,7 +481,7 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 
 
-bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_size)   // Pointer to previous node (node)
+bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_size, float TravelTimeBound)   // Pointer to previous node (node)
 // time -dependent label correcting algorithm with deque implementation
 {
 //  breadth-first search (BFS) is a graph search algorithm that begins at the root node and explores all the neighboring nodes
@@ -495,7 +495,6 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 // we can add a label cost constraint
 
 	int i;
-	int debug_flag = 0;
 
 	if(m_OutboundSizeAry[origin]== 0)
 		return false;
@@ -507,6 +506,7 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 	{
 		m_SearchTreeList[i].CurrentNode = 0;
 		m_SearchTreeList[i].SearchLevel = 0;
+		m_SearchTreeList[i].TravelTime = 0;
 		m_SearchTreeList[i].PredecessorNode = -1;
 	}
 
@@ -525,10 +525,8 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 	{
 		FromID  = m_SearchTreeList[m_TreeListFront].CurrentNode ;
 
-		if(debug_flag)
-			TRACE("\nScan from node %d (%d)",FromID,m_TreeListFront);
 
-		if(FromID==destination || m_SearchTreeList[m_TreeListFront].SearchLevel  >= node_size)
+		if(FromID==destination || m_SearchTreeList[m_TreeListFront].SearchLevel  >= node_size || m_SearchTreeList[m_TreeListFront].TravelTime   >= TravelTimeBound)
 		{
 
 		m_TreeListFront ++; // move to the next front node for breadth first search
@@ -570,8 +568,8 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 			m_SearchTreeList[m_TreeListTail].PredecessorNode = m_TreeListFront;
 			m_SearchTreeList[m_TreeListTail].SearchLevel = m_SearchTreeList[m_TreeListFront].SearchLevel + 1;
 
-		if(debug_flag)
-			TRACE("\n   to node %d (%d)",ToID,m_TreeListTail);
+			float FFTT = m_LinkTDTimeAry[LinkNo][0];
+			m_SearchTreeList[m_TreeListTail].TravelTime  = m_SearchTreeList[m_TreeListFront].TravelTime + FFTT;
 
 		m_TreeListTail++;
 
@@ -590,18 +588,12 @@ bool DTANetworkForSP::GenerateSearchTree(int origin, int destination, int node_s
 	{
 		if(m_SearchTreeList[i].CurrentNode == destination)
 		{
-			TRACE("PathNo: %d ", PathNo);
-			TRACE(" %d <-", m_SearchTreeList[i].CurrentNode);
 			int Pred = m_SearchTreeList[i].PredecessorNode ;
 
 			while(Pred!=0)
 			{
-			TRACE(" %d <- ", m_SearchTreeList[Pred].CurrentNode);
-
 				Pred = m_SearchTreeList[Pred].PredecessorNode ;
 			}
-			TRACE(" %d",  m_SearchTreeList[Pred].CurrentNode);
-			TRACE("\n");
 			PathNo++;
 		}
 

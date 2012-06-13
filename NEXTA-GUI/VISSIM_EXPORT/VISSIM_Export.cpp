@@ -2436,3 +2436,4 @@ int MNode::CheckMissingApproach(void)
 
 	return 10-sumIn;
 }
+

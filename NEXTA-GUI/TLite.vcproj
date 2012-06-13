@@ -433,6 +433,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_UnitTestingList.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_VehEmissions.cpp"
 				>
 			</File>
@@ -768,6 +772,10 @@
 				Name="CXMLFILE"
 				>
 				<File
+					RelativePath=".\pugXML.h"
+					>
+				</File>
+				<File
 					RelativePath=".\CXMLFile_SRC\XMLFile.cpp"
 					>
 				</File>
@@ -853,6 +861,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\bmp00004.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\cur00001.cur"
 						>
 					</File>
@@ -877,11 +889,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -905,11 +917,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -937,11 +949,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
@@ -971,6 +983,18 @@
 				>
 				<File
 					RelativePath=".\Transit.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="RailNetwork"
+				>
+				<File
+					RelativePath=".\RailNetwork\RailNetwork.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\RailNetwork\RailNetwork.h"
 					>
 				</File>
 			</Filter>
@@ -1054,6 +1078,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_TravelTimeReliability.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_UnitTestingList.h"
 				>
 			</File>
 			<File

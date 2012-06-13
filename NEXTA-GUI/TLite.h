@@ -32,9 +32,9 @@
 #include "resource.h"       // main symbols
 
 
-extern bool b_gStaticAssignmentFlag;
+
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
-extern eVisulizationTemplate g_VisulizationTemplate;
+
 extern float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) ;
 
 // CTLiteApp:
@@ -44,7 +44,12 @@ extern float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_v
 class CTLiteApp : public CWinApp
 {
 public:
-	CTLiteApp();
+
+	eVisulizationTemplate m_VisulizationTemplate;
+
+CTLiteApp();
+
+
 
 	void UpdateAllViews();
 
@@ -66,8 +71,6 @@ public:
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6
-
-
 
 extern long g_Simulation_Time_Horizon;
 extern int g_Data_Time_Interval;

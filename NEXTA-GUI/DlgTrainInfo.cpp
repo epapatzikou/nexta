@@ -8,17 +8,18 @@
 
 // CDlgTrainInfo dialog
 
-#define NUM_TRAIN_INFO 8
+#define NUM_TRAIN_INFO 10
 
 static _TCHAR *_gColumnTrainLabel[NUM_TRAIN_INFO] =
 {
-	_T("Type"), _T("Train ID"), _T("Origin"), _T("Destination"),
-	_T("Departure Time"), _T("# of Nodes"), _T("Pref. Arrival Time"), _T("Actual Trip Time")
+	_T("Train Header"), _T("Entry Time"), _T("Origin Node"), _T("Destination Node"),
+	_T("Direction"), _T("Speed Multiplier"), _T("TOB"), _T("Hazmat"),_T("SA Status at Origin"), _T("Terminal Want Time")
 };
+
 
 static int _gColumnWidth[NUM_TRAIN_INFO] =
 {
-	70, 50, 50, 70, 90, 80, 100, 100
+	100, 80, 80, 90, 80, 100, 80, 80, 120, 120
 };
 
 IMPLEMENT_DYNAMIC(CDlgTrainInfo, CDialog)
@@ -86,10 +87,12 @@ void CDlgTrainInfo::InsertTrainInfoItem()
 	// insert items
 
 	
-	unsigned i;
 
-	for(i = 0; i<m_pDoc->m_TrainVector.size(); i++)
-	{
+		std::map<string, train_info>	:: const_iterator itr;
+
+		unsigned int i = 0;
+		for(itr = m_pDoc->m_train_map.begin(); itr != m_pDoc->m_train_map.end(); ++itr, i++)
+		{
 
 		LV_ITEM lvi;
 		char text[100];
@@ -98,50 +101,49 @@ void CDlgTrainInfo::InsertTrainInfoItem()
 		lvi.iItem = i;
 		lvi.iSubItem = 0;
 
-		DTA_Train* pTrain = m_pDoc->m_TrainVector[i];
 
-		sprintf_s(text, "%d",m_pDoc->m_TrainVector[i]->m_TrainID);
+		train_info train = (*itr).second ;
+
+		sprintf_s(text, "%s",train.train_header.c_str () );
 
 		lvi.pszText = text;
-		int ImageNo = pTrain->m_TrainType-1;
+		int ImageNo = 2;
+		if(train.direction == "EASTBOUND")
+			ImageNo = 0;
+		if(train.direction == "WESTBOUND")
+			ImageNo = 1;
+		
 		lvi.iImage = ImageNo;
 		lvi.stateMask = LVIS_STATEIMAGEMASK;
 		lvi.state = INDEXTOSTATEIMAGEMASK(ImageNo);
 
 		m_TrainListControl.InsertItem(&lvi);
-
-		sprintf_s(text, "%d",pTrain->m_TrainType);
-		m_TrainListControl.SetItemText(i,0,text);
-
-		sprintf_s(text, "%d",pTrain->m_TrainID);
+		sprintf_s(text, "%d",train.entry_time );
 		m_TrainListControl.SetItemText(i,1,text);
 
-		sprintf_s(text, "%d",pTrain->m_OriginNodeNumber);
+		sprintf_s(text, "%d",train.origin_node_id );
 		m_TrainListControl.SetItemText(i,2,text);
 
-		sprintf_s(text, "%d",pTrain->m_DestinationNodeNumber);
+		sprintf_s(text, "%d",train.destination_node_id);
 		m_TrainListControl.SetItemText(i,3,text);
 
-		sprintf_s(text, "%d",pTrain->m_DepartureTime);
+		sprintf_s(text, "%s",train.direction.c_str());
 		m_TrainListControl.SetItemText(i,4,text);
 
-		sprintf_s(text, "%d",pTrain->m_NodeSize);
+		sprintf_s(text, "%4.3f",train.speed_multiplier );
 		m_TrainListControl.SetItemText(i,5,text);
 
-		if(pTrain->m_PreferredArrivalTime>0)
-			sprintf_s(text, "%d",pTrain->m_PreferredArrivalTime);
-		else
-			sprintf_s(text, "-");
-
+		sprintf_s(text, "%d",train.tob);
 		m_TrainListControl.SetItemText(i,6,text);
 
-		if(pTrain->m_ActualTripTime>0)
-			sprintf_s(text, "%d",pTrain->m_ActualTripTime);
-		else
-			sprintf_s(text, "-");
-
+		sprintf_s(text, "%s",train.hazmat.c_str () );
 		m_TrainListControl.SetItemText(i,7,text);
 
+		sprintf_s(text, "%d",train.sa_status_at_origin);
+		m_TrainListControl.SetItemText(i,8,text);
+
+		sprintf_s(text, "%d",train.terminal_want_time);
+		m_TrainListControl.SetItemText(i,9,text);
 
 	}
 }
@@ -151,20 +153,22 @@ void CDlgTrainInfo::OnLvnItemchangedTrainListControl(NMHDR *pNMHDR, LRESULT *pRe
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
-	m_pDoc->m_SelectedTrainID = -1;
-		 
+/*	m_pDoc->m_SelectedTrainID = -1;
+
+
 	POSITION pos = m_TrainListControl.GetFirstSelectedItemPosition();
 	if (pos != NULL)
 	{
-		int SelectedNo = m_TrainListControl.GetNextSelectedItem(pos);
-		
-		DTA_Train* pTrain = m_pDoc->m_TrainVector[SelectedNo];
+		int nSelectedRow = m_TrainListControl.GetNextSelectedItem(pos);
 
-		m_pDoc->m_SelectedTrainID 	= pTrain ->m_TrainID ;
+		char str[100];
+		m_TrainListControl.GetItemText (nSelectedRow,0,str,20);
+		
+		m_pDoc->m_SelectedTrainHeader 	= str ;
 
 		Invalidate();
 
 		m_pDoc->UpdateAllViews(0);
 	}
-
+*/
 }

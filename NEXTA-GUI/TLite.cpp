@@ -38,7 +38,6 @@
 #include "DlgPathMOE.h"
 #include "DlgMainTemplate.h"
 
-bool b_gStaticAssignmentFlag = true;
 
 eVisulizationTemplate g_VisulizationTemplate;
 
@@ -68,12 +67,6 @@ END_MESSAGE_MAP()
 
 // CTLiteApp construction
 
-CTLiteApp::CTLiteApp()
-{
-	m_pTemplateGLView = false;
-	m_pTemplateTimeTableView = false;
-
-}
 
 
 // The one and only CTLiteApp object
@@ -82,19 +75,50 @@ CTLiteApp theApp;
 
 
 // CTLiteApp initialization
+CTLiteApp::CTLiteApp()
+{
+	m_pTemplateGLView = false;
+	m_pTemplateTimeTableView = false;
 
+}
 BOOL CTLiteApp::InitInstance()
 {
 	  CWinApp::InitInstance();
 
         // Standard initialization
-        SetRegistryKey(_T("NeXTA"));
+        SetRegistryKey(_T("NeXTA Version 3"));
         LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
 
+		char CurrentDirectory[MAX_PATH+1];
+        GetCurrentDirectory(MAX_PATH,CurrentDirectory);
+
+		CString NEXTASettingsPath;
+		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", CurrentDirectory);
+
+		int visualization_template = (int)g_GetPrivateProfileFloat("template", "traffic_assignment", 0, NEXTASettingsPath);
+		if( visualization_template == 1)
+			m_VisulizationTemplate = e_traffic_assignment;
+		else
+			m_VisulizationTemplate = e_train_scheduling;
+
+
+		if( m_VisulizationTemplate == e_traffic_assignment)
+		{
         m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE1,
                 RUNTIME_CLASS(CTLiteDoc),
                 RUNTIME_CLASS(CChildFrame), // custom MDI child frame
                 RUNTIME_CLASS(CTLiteView));
+
+		}
+		if( m_VisulizationTemplate == e_train_scheduling)
+		{
+        m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE4,
+                RUNTIME_CLASS(CTLiteDoc),
+                RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+                RUNTIME_CLASS(CTLiteView));
+
+		}
+
         if (!m_pDocTemplate2DView)
                 return FALSE;
         AddDocTemplate(m_pDocTemplate2DView);

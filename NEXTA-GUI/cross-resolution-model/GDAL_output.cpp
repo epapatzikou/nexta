@@ -845,11 +845,20 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 						
 						if(m_PathMap[label].TotalVehicleSize == 1)  // new path
 						{
+
 							for(int link= 1; link<pVehicle->m_NodeSize; link++)
 							{
 								m_PathMap[label].m_LinkVector.push_back(pVehicle->m_NodeAry[link].LinkNo);
 
 								DTALink* pLink = m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo];
+
+								if(link==1) // first link
+								{
+									m_PathMap[label].m_NodeVector.push_back(pLink->m_FromNodeNumber );
+								}
+
+								m_PathMap[label].m_NodeVector.push_back(pLink->m_ToNodeNumber);
+
 								for(unsigned int si = 0; si < pLink ->m_ShapePoints .size(); si++)
 								{
 								m_PathMap[label].m_ShapePoints.push_back (pLink->m_ShapePoints[si]);
@@ -872,12 +881,34 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 						m_PathMap[label].emissiondata.HC += pVehicle->m_EmissionData .HC;
 
 
+						// reuse label as OD label
+						label.Format("%d,%d", pVehicle->m_OriginZoneID  , pVehicle->m_DestinationZoneID);
+						m_ODMatrixMap[label].Origin = pVehicle->m_OriginZoneID;
+						m_ODMatrixMap[label].Destination  = pVehicle->m_DestinationZoneID;
+						m_ODMatrixMap[label].TotalVehicleSize+=1;
+						m_ODMatrixMap[label].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+						m_ODMatrixMap[label].TotalDistance   += pVehicle->m_Distance;
+						m_ODMatrixMap[label].TotalCost   += pVehicle->m_TollDollarCost;
+						m_ODMatrixMap[label].TotalEmissions   += pVehicle->m_Emissions;
+					
+						m_ODMatrixMap[label].emissiondata.Energy += pVehicle->m_EmissionData .Energy;
+						m_ODMatrixMap[label].emissiondata.CO2 += pVehicle->m_EmissionData .CO2;
+						m_ODMatrixMap[label].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
+						m_ODMatrixMap[label].emissiondata.CO += pVehicle->m_EmissionData .CO;
+						m_ODMatrixMap[label].emissiondata.HC += pVehicle->m_EmissionData .HC;
+
+
+
+
+
+
 		}
 	}
 }
 void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeString)
 {
 	GeneratePathFromVehicleData();
+
 	CString message_str;
 
 	OGRSFDriver *poDriver;
@@ -963,6 +994,79 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 			}
 	
 	OGRDataSource::DestroyDataSource( poDS );
+
+}
+
+void CTLiteDoc::ExportPathflowToCSVFiles()
+{
+	GeneratePathFromVehicleData();
+
+	CString directory = m_ProjectDirectory;
+	FILE* st = NULL;
+	fopen_s(&st,directory+"output_path_flow.csv","w");
+	if(st!=NULL)
+	{
+	fprintf(st,"route_index,vehicle_type,from_zone_id,from_node_id,to_zone_id,to_node_id,time_span_volume,day_volume,node_chain_number_of_nodes,node_chain_node_sequence\n");
+
+		int route_index = 1;
+		std::map<CString, PathStatistics> ::const_iterator itr;
+		for (itr = m_PathMap.begin(); itr != m_PathMap.end(); itr++)
+		{
+
+			if((*itr).second .TotalVehicleSize >=1)
+			{
+				int number_of_nodes = (*itr).second.m_NodeVector.size();
+						// one vehicle type for now
+				fprintf(st, "%d,%d,%d,%d,%d,%d,%d,%d,%d,", 
+					route_index++,
+					1, 
+					(*itr).second.Origin, 
+					(*itr).second.m_NodeVector[0],
+					(*itr).second .Destination, 
+					(*itr).second.m_NodeVector[number_of_nodes-1],
+					(*itr).second .TotalVehicleSize,
+					(*itr).second .TotalVehicleSize*10,  // 10 for 1/peak hour factor
+					number_of_nodes);
+
+				fprintf(st,"["); 
+				for(unsigned int n = 0; n < number_of_nodes; n++)
+				{
+				fprintf(st,"%d;",(*itr).second.m_NodeVector[n]); 
+				}
+				fprintf(st,"]"); 
+
+				fprintf(st,"\n"); 
+			}
+		}
+	fclose(st);
+	}
+// OD statistics
+		fopen_s(&st,directory+"output_od_flow.csv","w");
+	if(st!=NULL)
+	{
+	fprintf(st,"od_index,vehicle_type,from_zone_id,to_zone_id,time_span_volume,day_volume\n");
+
+		int od_index = 1;
+		std::map<CString, PathStatistics> ::const_iterator itr;
+		for (itr = m_ODMatrixMap.begin(); itr != m_ODMatrixMap.end(); itr++)
+		{
+
+			if((*itr).second .TotalVehicleSize >=1)
+			{
+				int number_of_nodes = (*itr).second.m_NodeVector.size();
+						// one vehicle type for now
+				fprintf(st, "%d,%d,%d,%d,%d,%d\n", 
+					od_index++,
+					1, 
+					(*itr).second.Origin, 
+					(*itr).second .Destination, 
+					(*itr).second .TotalVehicleSize,
+					(*itr).second .TotalVehicleSize*10);  // 10 for 1/peak hour factor
+
+			}	
+		}
+	fclose(st);
+	}
 }
 void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 {

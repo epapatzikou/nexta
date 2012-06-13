@@ -371,12 +371,9 @@ public:
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
 	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag);
-
-
+	bool DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode);
 	bool DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC);
 	
-// ArrowTo()
-//
 void ArrowTo(HDC hDC, int x, int y, ARROWSTRUCT *pA) 
 {
 

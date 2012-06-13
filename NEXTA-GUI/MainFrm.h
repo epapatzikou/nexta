@@ -85,6 +85,8 @@ protected:  // control bar embedded members
    bool m_bShowDataToolBar;
    bool m_bShowAMSToolBar;
 
+	int OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct);
+	int OnCreate_RailNetwork(LPCREATESTRUCT lpCreateStruct);
    
 // Generated message map functions
 protected:
