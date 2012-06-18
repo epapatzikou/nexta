@@ -196,7 +196,6 @@ public:
 	bool m_bShowLegend;
 	bool m_bShowPathList;
 	int m_NodeDisplaySize;
-	bool m_ShowNodeLayer;
 
 	GDPoint m_Origin;
 
@@ -241,6 +240,7 @@ public:
 	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
 	BOOL OnOpenDocument(CString FileName);
+	BOOL OnOpenAMSDocument(CString FileName);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
@@ -940,7 +940,7 @@ public:
 	void Constructandexportsignaldata();
 	void ConstructandexportVISSIMdata();
 	bool m_bFitNetworkInitialized;
-	void CalculateDrawingRectangle();
+	void CalculateDrawingRectangle(bool NodeLayerOnly = false);
 
 	DWORD ProcessExecute(CString & strCmd, CString & strArgs,  CString & strDir, BOOL bWait);
 	DWORD ProcessWait(DWORD PID);
@@ -1118,6 +1118,7 @@ public:
 		afx_msg void OnBnClickedButtonDatabase();
 		afx_msg void OnToolsUnittesting();
 		afx_msg void OnViewTraininfo();
+		afx_msg void OnImportAmsdataset();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

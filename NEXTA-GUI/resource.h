@@ -814,13 +814,15 @@
 #define ID_FILE_OPEN_NEW_RAIL_DOC       33420
 #define ID_TOOLS_UNITTESTING            33421
 #define ID_VIEW_TRAININFO               33422
+#define ID_IMPORT_AMSDA                 33423
+#define ID_IMPORT_AMSDATASET            33424
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        213
-#define _APS_NEXT_COMMAND_VALUE         33423
+#define _APS_NEXT_COMMAND_VALUE         33425
 #define _APS_NEXT_CONTROL_VALUE         1127
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -646,6 +646,7 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
+            MENUITEM "AMS Data Set",                ID_IMPORT_AMSDATASET
             MENUITEM "GIS Shape File",              ID_IMPORT_ARCGISSHAPEFILE
             MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
             POPUP "Background Image"
