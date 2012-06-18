@@ -243,6 +243,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_BN_CLICKED(IDC_BUTTON_Database, &CTLiteDoc::OnBnClickedButtonDatabase)
 	ON_COMMAND(ID_TOOLS_UNITTESTING, &CTLiteDoc::OnToolsUnittesting)
 	ON_COMMAND(ID_VIEW_TRAININFO, &CTLiteDoc::OnViewTraininfo)
+	ON_COMMAND(ID_IMPORT_AMSDATASET, &CTLiteDoc::OnImportAmsdataset)
 	END_MESSAGE_MAP()
 
 
@@ -323,7 +324,6 @@ CTLiteDoc::CTLiteDoc()
 		m_BackgroundColor =  RGB(255,255,255);
 	}
 		
-		m_ShowNodeLayer = false;
 
 
 		m_NetworkRect.top  = 50;
@@ -3490,7 +3490,7 @@ void CTLiteDoc::OnFileSaveProjectAs()
 	// TODO: Add your command handler code here
 }
 
-void CTLiteDoc::CalculateDrawingRectangle()
+void CTLiteDoc::CalculateDrawingRectangle(bool NodeLayerOnly)
 {
 
 	std::list<DTALink*>::iterator iLink;
@@ -3505,7 +3505,7 @@ void CTLiteDoc::CalculateDrawingRectangle()
 
 	for (std::list<DTANode*>::iterator iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
-		if((*iNode)->m_Connections >0)  // we might try import node layer only from shape file, so all nodes have no connected links. 
+		if(NodeLayerOnly || (*iNode)->m_Connections >0 )  // we might try import node layer only from shape file, so all nodes have no connected links. 
 		{
 			if(!bRectIni)
 			{
@@ -7553,7 +7553,6 @@ void CTLiteDoc::OnImportArcgisshapefile()
 
 	//m_UnitFeet = 1;  // default value
 	//m_NodeDisplaySize = 50;
-	m_ShowNodeLayer = true;
 	CalculateDrawingRectangle();
 	m_bFitNetworkInitialized  = false;
 	UpdateAllViews(0);
@@ -8187,4 +8186,14 @@ void CTLiteDoc::OnViewTraininfo()
 
 	train_dlg.DoModal ();
 
+}
+
+void CTLiteDoc::OnImportAmsdataset()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("AMS Configuration (*.ini)|*.ini|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		OnOpenAMSDocument(dlg.GetPathName());
+	}
 }

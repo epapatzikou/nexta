@@ -1239,10 +1239,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 
-				if(feet_size*pDoc->m_NodeDisplaySize > 0.2 || pDoc->m_ShowNodeLayer) // add or condition to show all nodes
+				if(feet_size*pDoc->m_NodeDisplaySize > 0.2) // add or condition to show all nodes
 				{
 					DrawNode(pDC, (*iNode),point, node_size,tm);
-
 				}
 
 			}
@@ -3937,5 +3936,6 @@ void CTLiteView::OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI)
 void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 {
 	CTLiteDoc* pDoc = GetDocument();
+
 	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_vcratio || pDoc->m_LinkMOEMode == MOE_vcratio|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }

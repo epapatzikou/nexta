@@ -58,7 +58,7 @@ END_MESSAGE_MAP()
 
 void CDlg_ImportNetwork::OnBnClickedButtonFindExelFile()
 {
-	static char BASED_CODE szFilter[] = "EXCEL 2003 Workbook (*.xls)|*.xls||";
+	static char BASED_CODE szFilter[] = "AMS File (*.ini)|*.ini|AMS File (*.xls)|*.xls||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)
@@ -86,6 +86,7 @@ void CDlg_ImportNetwork::OnBnClickedButtonFindSensorFile()
 {
 
 }
+
 
 void CDlg_ImportNetwork::OnBnClickedImport()
 {
