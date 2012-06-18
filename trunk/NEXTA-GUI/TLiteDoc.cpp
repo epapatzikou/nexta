@@ -3029,7 +3029,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	if(st!=NULL)
 	{
 		std::list<DTANode*>::iterator iNode;
-		fprintf(st, "node_name,node_id,incoming_link_from_node_id,outgoing_link_to_node_id,turning_direction,starting_time_in_min,ending_time_in_min,turnning_percentage,turning_prohibition_flag,signal_control_no,signal_group_no\n");
+		fprintf(st, "node_name,node_id,incoming_link_from_node_id,outgoing_link_to_node_id,turning_direction,starting_time_in_min,ending_time_in_min,turnning_percentage,turning_volume,turning_prohibition_flag,signal_control_no,signal_group_no\n");
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
 			if((*iNode)->m_LayerNo ==0) 
@@ -3044,6 +3044,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 						movement.starting_time_in_min,
 						movement.ending_time_in_min ,
 						movement.turnning_percentage,
+						movement.turn_volume,
 						movement.turning_prohibition_flag,
 						movement.signal_control_no,
 						movement.signal_group_no);
