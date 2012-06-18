@@ -488,9 +488,17 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_NodeTypeMap[6] = "2-Way Stop Sign";
 	
       
+	m_ControlType_UnknownControl = 0; 
+	m_ControlType_NoControl = 1;
+	m_ControlType_YieldSign = 2;
+	m_ControlType_2wayStopSign =  6;
+	m_ControlType_4wayStopSign = 3;
+	m_ControlType_PretimedSignal = 4;
+	m_ControlType_AcuatedSignal = 5;
+	m_ControlType_Roundabout = 7;
+
 
 	DTALinkType element;
-
 
 	element.freeway_flag = 1;
 	element.link_type_name = "Freeway";
@@ -518,7 +526,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeMap[6] = element;
 
 
-	element.freeway_flag = 1;
+	element.highway_flag  = 1;
 	element.link_type_name = "Highway";
 	m_LinkTypeMap[7] = element;
 
@@ -591,7 +599,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
 
-		if((*iNode)->m_ControlType == 4 || (*iNode)->m_ControlType ==5)
+		if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)
 		{
 			(*iNode)-> m_bSignalData = true;
 			number_of_signals++;

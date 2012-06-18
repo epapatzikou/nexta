@@ -265,7 +265,16 @@ CTLiteDoc::CTLiteDoc()
 	   m_colorLOS[5] = RGB(255,153,0);
 	   m_colorLOS[6] = RGB(255,0,0);
 
-	
+	m_ControlType_UnknownControl = 0; 
+	m_ControlType_NoControl = 1;
+	m_ControlType_YieldSign = 2;
+	m_ControlType_2wayStopSign =  3;
+	m_ControlType_4wayStopSign = 4;
+	m_ControlType_PretimedSignal = 5;
+	m_ControlType_AcuatedSignal = 6;
+	m_ControlType_Roundabout = 7;
+
+
 	   m_FreewayColor = RGB(255,211,155);
 	   m_RampColor = RGB(100,149,237); 
        m_ArterialColor = RGB(0,0,0);
@@ -349,7 +358,6 @@ CTLiteDoc::CTLiteDoc()
 		m_SelectedLinkID = -1;
 	    m_SelectedNodeID = -1;
 
-	
 		m_bSetView = false;
 		m_bShowLegend = false;
 		m_bShowPathList = false;
@@ -871,6 +879,17 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 			return false;
 		}
 
+	m_AMSLogFile << "Step 1: Read AMS type definition data" << endl;
+
+	m_ControlType_UnknownControl = g_GetPrivateProfileInt("control_type","unknown_control",0,ProjectFileName);
+	m_ControlType_NoControl = g_GetPrivateProfileInt("control_type","no_control",1,ProjectFileName);
+	m_ControlType_YieldSign = g_GetPrivateProfileInt("control_type","yield_sign",2,ProjectFileName);
+	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
+	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
+	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
+	m_ControlType_AcuatedSignal = g_GetPrivateProfileInt("control_type","acuated_signal",6,ProjectFileName);
+	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundable",7,ProjectFileName);
+
 	char link_type_file_name[_MAX_STRING_SIZE];
     g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
 	ReadLinkTypeCSVFile(directory+link_type_file_name);
@@ -917,6 +936,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	{
 		OnOpenAMSDocument(ProjectFileName);  
 		// import node, link, zone layers, connectors layers
+
 	}else
 	{
 		if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
@@ -928,20 +948,20 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	}
 
-	char demand_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
+	WritePrivateProfileString("demand_table","format_definition","0: DTALite CSV; 1: OD Matrix CSV; 2: 3-column format; 3TransCAD 3-column CSV;4:VISUM matrix 8",ProjectFileName);
+    	int demand_format_flag = g_GetPrivateProfileInt("demand_table","demand_format",1,ProjectFileName);
+		char demand_file_name[_MAX_STRING_SIZE];
+		g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
 
-	int DTALite_demand_format_flag = g_GetPrivateProfileInt("demand_table","DTALite_demand_format",1,ProjectFileName);
-	int TransCAD_demand_format_flag = g_GetPrivateProfileInt("demand_table","TRANSCAD_demand_format",0,ProjectFileName);
-	
-	if(DTALite_demand_format_flag) 
-	{
-		ReadDemandCSVFile(directory+demand_file_name);
-	}
-	else
-	{
-		ReadTransCADDemandCSVFile(directory+demand_file_name);
-	}
+		switch (demand_format_flag)
+		{
+		case 0:	ReadDemandCSVFile(directory+demand_file_name); break;
+		case 1: break;
+		case 2: break;
+		case 3: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
+		}
+
+
 	
 	LoadSimulationOutput();
 	
@@ -2105,7 +2125,7 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 {
 
-  float LengthinMB;
+ float LengthinMB;
   FILE* pFile;
    fopen_s(&pFile,lpszFileName,"rb");
    if(pFile!=NULL)
@@ -2124,6 +2144,7 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
    }
 
 	long lineno = 0;
+	float total_demand = 0;
 	FILE* st;
 	fopen_s(&st,lpszFileName, "r");
 	if (st!=NULL)
@@ -2159,6 +2180,7 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
 					{
 						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+						total_demand += number_of_vehicles;
 					}
 					else
 					{
@@ -2173,7 +2195,8 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 			}
 
 			fclose(st);
-			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
+			m_AMSLogFile << lineno << "demand entries are loaded from file " << lpszFileName << ". Total demand =  " << total_demand << endl;
+			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s. Total demand = %f",lineno,lpszFileName,total_demand);
 			return true;
 	}else
 	{
@@ -2319,7 +2342,12 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("freeway_flag",element.freeway_flag  ) == false)
 			{
-				AfxMessageBox("Field link_type_name cannot be found in input_link_type.csv.");
+				AfxMessageBox("Field freeway_flag cannot be found in input_link_type.csv.");
+				break;
+			}
+			if(parser.GetValueByFieldName("highway_flag",element.highway_flag   ) == false)
+			{
+				AfxMessageBox("Field highway_flag cannot be found in input_link_type.csv.");
 				break;
 			}
 			if(parser.GetValueByFieldName("ramp_flag",element.ramp_flag  ) == false)
@@ -2802,15 +2830,27 @@ bool  CTLiteDoc::SaveDemandFile()
 		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
 			for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
 			{
-					DTADemandVolume element = m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first];
-					fprintf(st, "%d,%d,%d,%d,", itr_o->first, itr_d->first, element.starting_time_in_min, element.ending_time_in_min);
+				DTADemandVolume element = m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first];
 
+				float total_demand = 0.0f;
 				for( type = 1; type <= m_DemandTypeVector.size(); type++)
 				{
-					 fprintf(st,"%f,",element.GetValue (type));
+					 total_demand += element.GetValue (type);
 				}
 
-				fprintf(st,"\n");				
+				if(total_demand >=0.00001f)
+				{
+
+						fprintf(st, "%d,%d,%d,%d,", itr_o->first, itr_d->first, element.starting_time_in_min, element.ending_time_in_min);
+
+						for( type = 1; type <= m_DemandTypeVector.size(); type++)
+						{
+							 fprintf(st,"%f,",element.GetValue (type));
+						}
+
+						fprintf(st,"\n");				
+				
+				}
 					
 			}
 
@@ -3422,13 +3462,13 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fopen_s(&st,directory+"input_link_type.csv","w");
 	if(st!=NULL)
 	{
-		fprintf(st,"link_type,link_type_name,freeway_flag,ramp_flag,arterial_flag,connector_flag,transit_flag,walking_flag\n");
+		fprintf(st,"link_type,link_type_name,freeway_flag,highway_flag,ramp_flag,arterial_flag,connector_flag,transit_flag,walking_flag\n");
 		for(std::map<int, DTALinkType>::iterator itr = m_LinkTypeMap.begin(); itr != m_LinkTypeMap.end(); itr++)
 		{
 			{
 				fprintf(st, "%d,%s,%d,%d,%d,%d,%d,%d\n", itr->second .link_type  , 
 					itr->second .link_type_name.c_str () , 
-					itr->second .freeway_flag ,itr->second .ramp_flag ,itr->second .arterial_flag,
+					itr->second .freeway_flag ,itr->second .highway_flag,itr->second .ramp_flag ,itr->second .arterial_flag,
 					itr->second .connector_flag, itr->second .transit_flag,itr->second .walking_flag);
 			}
 

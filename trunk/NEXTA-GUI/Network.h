@@ -560,11 +560,25 @@ public:
 	int link_type;
 	string link_type_name;
 	int freeway_flag;
+	int highway_flag;
 	int arterial_flag;
 	int connector_flag;
 	int ramp_flag;
 	int transit_flag;
 	int walking_flag;
+
+	DTALinkType()
+	{
+	freeway_flag = 0;
+	highway_flag = 0;
+	arterial_flag = 0;
+	connector_flag =0;
+	ramp_flag =0;
+	transit_flag = 0;
+	walking_flag = 0;
+
+	};
+
 };
 
 class DTANodeType

@@ -1870,12 +1870,18 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		element.Data.Format ("%d",pNode->m_NodeID );
 		pMainFrame->m_FeatureInfoVector.push_back (element);
 
-		if(pDoc->m_NodeTypeMap.find(pNode->m_ControlType) != pDoc->m_NodeTypeMap.end())
-		{
 			element.Attribute = "Control Type";
-			element.Data.Format ("%s",pDoc->m_NodeTypeMap[pNode->m_ControlType].c_str() );
+
+			if(pNode->m_ControlType == pDoc->m_ControlType_UnknownControl) element.Data.Format ("Unknown Control" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_NoControl) element.Data.Format ("No Control" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_YieldSign) element.Data.Format ("Yield Sign" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_2wayStopSign) element.Data.Format ("2Way Stop" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_4wayStopSign) element.Data.Format ("4Way Stop" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_PretimedSignal) element.Data.Format ("Pretimed Signal" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_AcuatedSignal) element.Data.Format ("Acuated Signal" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_Roundabout) element.Data.Format ("Roundabout" );
+
 			pMainFrame->m_FeatureInfoVector.push_back (element);
-		}
 
 		element.Attribute = "x";
 		element.Data.Format ("%f",pNode->pt.x   );
