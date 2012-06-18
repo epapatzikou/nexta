@@ -216,7 +216,7 @@ void CTLiteApp::OnAppAbout()
 void CTLiteApp::OnFileOpen()
 {
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		   _T("DYNASMART-P and DTA Projects (*.dlp,*.dws)|*.dlp;*.dws||"));
+		   _T("AMS and DYNASMART Projects (*.ini,*.dws)|*.ini;*.dws||"));
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();

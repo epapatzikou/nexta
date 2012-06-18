@@ -190,7 +190,7 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
+	CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.txt";
 
 	proportion[0] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Normal", 0.6f, DTASettingsPath);
 	proportion[1] = g_GetPrivateProfileFloat("TravelTimeReliabilityDemo", "Incident", 0.15f, DTASettingsPath);

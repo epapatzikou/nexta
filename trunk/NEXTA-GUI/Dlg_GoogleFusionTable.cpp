@@ -341,7 +341,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonDownload()
 
 	if(m_pDoc->m_ProjectFile.GetLength () ==0)
 	{
-		m_pDoc->m_ProjectFile.Format ("%s\\temp.dlp",pMainFrame->m_CurrentDirectory );  // create temp project
+		m_pDoc->m_ProjectFile.Format ("%s\\temp.ini",pMainFrame->m_CurrentDirectory );  // create temp project
 	}
 
 	m_pDoc->OnOpenTrafficNetworkDocument (m_pDoc->m_ProjectFile, true );

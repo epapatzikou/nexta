@@ -6,21 +6,32 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "Data-Interface//include//ogrsf_frmts.h"
-#define _MAX_STRING_SIZE _MAX_PATH
 
+
+
+float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float speed_limit_in_mph, int number_of_lanes)
+{
+
+	if(link_capacity_flag == 1)
+		capacity_in_pcphpl = capacity_in_pcphpl/max(1,number_of_lanes);
+
+	if(capacity_in_pcphpl ==0)
+	{  // generate default capacity 
+		if( speed_limit_in_mph <=30)
+			return 600;
+		if( speed_limit_in_mph <=50)
+			return 900;
+		else if (speed_limit_in_mph <=60)
+			return 1200;
+		else 
+			return 1800;
+	}
+
+	return 0;
+}
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
-	   
-	CString directory;
-	m_ProjectFile = FileName;
-	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
-
-	m_ProjectDirectory = directory;
-	m_ProjectTitle = GetWorkspaceTitleName(FileName);
-	SetTitle(m_ProjectTitle);
-
-	TRACE("AMS_FileName: %s",FileName);
-
+ 
 	char model_units[_MAX_STRING_SIZE];
     GetPrivateProfileString("model_attributes","units","MI",model_units,sizeof(model_units),FileName);
 
@@ -31,48 +42,33 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",0,FileName);
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
 	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
-	
+	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
+	int link_capacity_flag = g_GetPrivateProfileInt("model_attributes","lane_capapcity",1,FileName);
+	int number_of_lanes_for_two_way_links_flag = g_GetPrivateProfileInt("model_attributes","number_of_lanes_for_two_way_links",0,FileName);
 
-	ofstream AMSLogFile;
-
-		AMSLogFile.open ( m_ProjectDirectory + "AMS_unit_testing.csv", ios::out);
-		if (AMSLogFile.is_open())
-		{
-			AMSLogFile.width(12);
-			AMSLogFile.precision(3) ;
-			AMSLogFile.setf(ios::fixed);
-			AMSLogFile << "Start AMS conversion..." << endl;
-		}else
-		{
-			AfxMessageBox("File AMS_unit_testing.csv cannot be opened, and it might be locked by another program or the target data folder is read-only.");
-			return false;
-		}
-
-	
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
-
-
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
 
 	// ************************************/
 	// 1: node table
 
 	// ************************************/
 	char node_table_file_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("node_attributes","reference_file_name","",node_table_file_name,sizeof(node_table_file_name),FileName);
+    GetPrivateProfileString("node_table","reference_file_name","",node_table_file_name,sizeof(node_table_file_name),FileName);
 	char node_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("node_attributes","name","NAME",node_name,sizeof(node_name),FileName);
+    GetPrivateProfileString("node_table","name","NAME",node_name,sizeof(node_name),FileName);
 	char node_node_id[_MAX_STRING_SIZE];
-    GetPrivateProfileString("node_attributes","node_id","NO",node_node_id,sizeof(node_node_id),FileName);
+    GetPrivateProfileString("node_table","node_id","NO",node_node_id,sizeof(node_node_id),FileName);
 	char node_control_type[_MAX_STRING_SIZE];
-    GetPrivateProfileString("node_attributes","control_type","CONTROLT~1",node_control_type,sizeof(node_control_type),FileName);
+    GetPrivateProfileString("node_table","control_type","CONTROLT~1",node_control_type,sizeof(node_control_type),FileName);
+
+	char node_TAZ_name[_MAX_STRING_SIZE];
+    GetPrivateProfileString("node_table","TAZ","TAZ",node_TAZ_name,sizeof(node_TAZ_name),FileName);
+
 
 //	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
 
 	CString message_str;
 	OGRRegisterAll();
+
 			OGRDataSource       *poDS;
 
 			CString node_shape_file_name;
@@ -86,6 +82,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			return false;
 			}
 
+			int node_zone_mapping_count = 0;
 	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
     for (int j=0; j < poLayers; j++) 
     {
@@ -110,8 +107,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			int i = 0;
 
-			AMSLogFile << "1: node block---" << endl;
-			AMSLogFile << "node id,control_type,name,x,y" << endl;
+			m_AMSLogFile << "1: node block---" << endl;
+			m_AMSLogFile << "node id,control_type,TAZ,name,x,y" << endl;
 
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
@@ -126,11 +123,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				int control_type = 0;
 				
 				if(control_type_field_flag)
-					poFeature->GetFieldAsInteger(node_control_type);
+					control_type_field_flag = poFeature->GetFieldAsInteger(node_control_type);
 			
+				int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name);
+
 				CString str_name = poFeature->GetFieldAsString(node_name);
 
-				AMSLogFile << id << "," << control_type << "," << str_name << ",";
+				m_AMSLogFile << id << "," << control_type << "," << TAZ << "," <<  str_name << ",";
 
 				OGRGeometry *poGeometry;
 
@@ -143,8 +142,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 						x =   poPoint->getX();
 						y  = poPoint->getY();
-						AMSLogFile << x << "," << y << ",";
-
+						m_AMSLogFile << x << "," << y << ",";
 
 					}
 			
@@ -157,8 +155,27 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pNode->m_Name  = str_name;
 			pNode->m_NodeNumber = id;
 			pNode->m_NodeID = i;
-			pNode->m_ZoneID = 0;
+			pNode->m_ZoneID = TAZ;
 			pNode->m_ControlType = control_type;
+
+
+			if(TAZ>=1)
+			{
+				pNode->m_bZoneActivityLocationFlag = true;
+				m_ZoneMap [TAZ].m_ZoneTAZ = TAZ;
+
+				DTAActivityLocation element;
+				element.ZoneID  = TAZ;
+				element.NodeNumber = id;
+				m_ZoneMap [TAZ].m_ActivityLocationVector .push_back (element );
+
+				if(m_ODSize < TAZ)
+					m_ODSize = TAZ;
+
+			node_zone_mapping_count ++;
+
+			}
+
 
 			m_NodeSet.push_back(pNode);
 			m_NodeIDMap[i] = pNode;
@@ -166,12 +183,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			m_NodeNametoIDMap[id] = i;
 			i++;
 
-			AMSLogFile  << endl;
+			m_AMSLogFile  << endl;
 			}
 				
-		AMSLogFile << "importing " << i << " nodes. " << endl; 
-		// to do: # of nodes: control: two-way stop signs....
+		m_AMSLogFile << "imported " << i << " nodes. " << endl; 
+		m_AMSLogFile << "imported " << m_ZoneMap.size() << " zones from the node layer. " << endl; 
+		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),node_shape_file_name);
+		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",node_zone_mapping_count,node_shape_file_name);
 
+		// to do: # of nodes: control: two-way stop signs....
 	}
 
 	OGRDataSource::DestroyDataSource( poDS );
@@ -185,48 +205,48 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(read_link_layer)
 	{
 	char link_table_file_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","reference_file_name","reference_file_name",link_table_file_name,sizeof(link_table_file_name),FileName);
+    GetPrivateProfileString("link_table","reference_file_name","reference_file_name",link_table_file_name,sizeof(link_table_file_name),FileName);
 
 	char from_node_id_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","from_node_id","from_node_id",from_node_id_name,sizeof(from_node_id_name),FileName);
+    GetPrivateProfileString("link_table","from_node_id","from_node_id",from_node_id_name,sizeof(from_node_id_name),FileName);
 	char to_node_id_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","to_node_id","to_node_id",to_node_id_name,sizeof(to_node_id_name),FileName);
+    GetPrivateProfileString("link_table","to_node_id","to_node_id",to_node_id_name,sizeof(to_node_id_name),FileName);
 
 	char link_id_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","link_id","link_id",link_id_name,sizeof(link_id_name),FileName);
+    GetPrivateProfileString("link_table","link_id","link_id",link_id_name,sizeof(link_id_name),FileName);
 
 	char link_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","name","name",link_name,sizeof(link_name),FileName);
+    GetPrivateProfileString("link_table","name","name",link_name,sizeof(link_name),FileName);
 
 	char link_type_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","link_type","link_type",link_type_name,sizeof(link_type_name),FileName);
+    GetPrivateProfileString("link_table","link_type","link_type",link_type_name,sizeof(link_type_name),FileName);
 
 	char direction_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","direction","direction",direction_name,sizeof(direction_name),FileName);
+    GetPrivateProfileString("link_table","direction","direction",direction_name,sizeof(direction_name),FileName);
 
 	char length_name[_MAX_STRING_SIZE];
 	if(bMileFlag)
-    GetPrivateProfileString("link_attributes","length_in_mile","length_in_mile",length_name,sizeof(length_name),FileName);
+    GetPrivateProfileString("link_table","length_in_mile","length_in_mile",length_name,sizeof(length_name),FileName);
 	else
-    GetPrivateProfileString("link_attributes","length_in_km","length_in_km",length_name,sizeof(length_name),FileName);
+    GetPrivateProfileString("link_table","length_in_km","length_in_km",length_name,sizeof(length_name),FileName);
 
 	char number_of_lanes_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","number_of_lanes","number_of_lanes",number_of_lanes_name,sizeof(number_of_lanes_name),FileName);
+    GetPrivateProfileString("link_table","number_of_lanes","number_of_lanes",number_of_lanes_name,sizeof(number_of_lanes_name),FileName);
 
 	char lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",lane_capacity_in_vhc_per_hour_name,sizeof(lane_capacity_in_vhc_per_hour_name),FileName);
+    GetPrivateProfileString("link_table","lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",lane_capacity_in_vhc_per_hour_name,sizeof(lane_capacity_in_vhc_per_hour_name),FileName);
 
 	char speed_limit_in_mph_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("link_attributes","speed_limit_in_mph","speed_limit_in_mph",speed_limit_in_mph_name,sizeof(speed_limit_in_mph_name),FileName);
+    GetPrivateProfileString("link_table","speed_limit_in_mph","speed_limit_in_mph",speed_limit_in_mph_name,sizeof(speed_limit_in_mph_name),FileName);
 
 	char r_number_of_lanes_name[_MAX_STRING_SIZE];
 	char r_lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
 	char r_speed_limit_in_mph_name[_MAX_STRING_SIZE];
 	if(reserve_direction_field_flag)
 	{
-    GetPrivateProfileString("link_attributes","r_number_of_lanes","number_of_lanes",r_number_of_lanes_name,sizeof(r_number_of_lanes_name),FileName);
-    GetPrivateProfileString("link_attributes","r_lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",r_lane_capacity_in_vhc_per_hour_name,sizeof(r_lane_capacity_in_vhc_per_hour_name),FileName);
-    GetPrivateProfileString("link_attributes","r_speed_limit_in_mph","speed_limit_in_mph",r_speed_limit_in_mph_name,sizeof(r_speed_limit_in_mph_name),FileName);
+    GetPrivateProfileString("link_table","r_number_of_lanes","number_of_lanes",r_number_of_lanes_name,sizeof(r_number_of_lanes_name),FileName);
+    GetPrivateProfileString("link_table","r_lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",r_lane_capacity_in_vhc_per_hour_name,sizeof(r_lane_capacity_in_vhc_per_hour_name),FileName);
+    GetPrivateProfileString("link_table","r_speed_limit_in_mph","speed_limit_in_mph",r_speed_limit_in_mph_name,sizeof(r_speed_limit_in_mph_name),FileName);
 	}
 
 
@@ -241,7 +261,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}
 
 	poLayers = ((OGRDataSource*)poDS)->GetLayerCount();
-    for (int j=0; j < poLayers; j++) 
+
+			float default_distance_sum=0;
+			float length_sum = 0;
+
+			bool bTwoWayLinkFlag = false;
+
+			for (int j=0; j < poLayers; j++) 
     {
 
 			OGRLayer  *poLayer;
@@ -259,16 +285,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			poLayer->ResetReading();
 			int i = 0;
 			int line_no = 1;
-			float default_distance_sum=0;
-			float length_sum = 0;
 
 
-			AMSLogFile << endl << endl << "2: link block---" << endl;
-			AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity," << endl;
+
+			m_AMSLogFile << endl << endl << "2: link block---" << endl;
+			m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity," << endl;
 
 			if(reserve_direction_field_flag)
 			{
-			AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
+			m_AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
 			}
 
 
@@ -288,9 +313,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float length = poFeature->GetFieldAsDouble(length_name);
 
 				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name);
+
+				if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
+				{
+				number_of_lanes = number_of_lanes/2;
+				}
+
 				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name);
 				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(lane_capacity_in_vhc_per_hour_name);
 
+				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
 				int r_number_of_lanes; 
 				float r_speed_limit_in_mph; 
 				float r_capacity_in_pcphpl; 
@@ -298,16 +330,23 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(reserve_direction_field_flag)
 				{
 				r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name);
-				r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name);
-				r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name);
+				if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
+				{
+				number_of_lanes = r_number_of_lanes/2;
 				}
 
-				AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
-				AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
+				r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name);
+				r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name);
+				r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,number_of_lanes);
+
+				}
+
+				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
+				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
 
 				if(reserve_direction_field_flag)
 				{
-				AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
+				m_AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
 				
 				}
 
@@ -315,9 +354,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float grade = 0;
 				float AADT_conversion_factor = 0.1;
 				float k_jam, wave_speed_in_mph;
-				type  = 1;
-
-				if(type==1)
+				if(m_LinkTypeFreewayMap.find(type)!=m_LinkTypeFreewayMap.end())  // freeway link
 				{
 					k_jam = 220;
 				}else
@@ -342,6 +379,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if (direction == 0 || direction ==2) // two-directional link
 				{
 					link_code_start = 1; link_code_end = 2;
+					bTwoWayLinkFlag = true;
 				}
 
 				OGRGeometry *poGeometry;
@@ -353,17 +391,17 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					{
 					    OGRLineString *poLine = (OGRLineString *) poGeometry;
 
-						AMSLogFile << "{" ;
+						m_AMSLogFile << "{" ;
 						for(unsigned int si = 0; si< poLine->getNumPoints(); si++)
 						{
 							CCoordinate pt;
 							pt.X   =  poLine->getX(si);
 							pt.Y =  poLine->getY(si);
 							CoordinateVector.push_back(pt);
-							AMSLogFile << pt.X << ";" << pt.Y << " ";
+							m_AMSLogFile << pt.X << ";" << pt.Y << " ";
 
 						}
-						AMSLogFile << "}" ;
+						m_AMSLogFile << "}" ;
 
 					}
 				}
@@ -372,7 +410,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 				{
 					AfxMessageBox("Invalid data: from_node_id==0 && to_node_id ==0 in the link table.");
-					AMSLogFile.close();
 					return false;
 				}
 
@@ -458,8 +495,6 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 						}
 					}
 
-
-
 					pLink->m_NumLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
@@ -526,13 +561,20 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
+					{  // reset default value
+					if(pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+					{
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = 3;  // signal control
+					}
+					
+					}
+
 					if(m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
 					{ 
 						// mark them as activity location 
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
 					}
-
 
 
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
@@ -550,30 +592,231 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 
 				}  // link code
 
-			AMSLogFile  << endl;
+			m_AMSLogFile  << endl;
 			}  // feature
 				
-		AMSLogFile << "importing " << i << " nodes. " << endl; 
+		m_AMSLogFile << "imported " << i << " links. " << endl; 
+		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
+
+		ConstructMovementVectorForEachNode();
+		AssignUniqueLinkIDForEachLink();
+
+		if(bTwoWayLinkFlag == true)
+			m_bLinkToBeShifted = true;
+
+		GenerateOffsetLinkBand();
+
 		}  // layer
 		// to do: # of nodes: control: two-way stop signs....
 
 	OGRDataSource::DestroyDataSource( poDS );
+
+			m_UnitMile  = 1.0f;
+			if(length_sum>0.000001f)
+				m_UnitMile=  default_distance_sum /length_sum;
+
+			m_UnitFeet = m_UnitMile/5280.0f;  
+
+			if(offset_link_flag)
+			OffsetLink();
+
 	}
 
 	// ************************************/
 	// 3: zone table
 	// ************************************/
 	char zone_table_file_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("zone_attributes","reference_file_name","",zone_table_file_name,sizeof(zone_table_file_name),FileName);
+    GetPrivateProfileString("zone_table","reference_file_name","",zone_table_file_name,sizeof(zone_table_file_name),FileName);
 	char zone_id_name[_MAX_STRING_SIZE];
-    GetPrivateProfileString("zone_attributes","zone_id","NAME",zone_id_name,sizeof(zone_id_name),FileName);
+    GetPrivateProfileString("zone_table","zone_id","ID",zone_id_name,sizeof(zone_id_name),FileName);
+
+	CString zone_shape_file_name;
+			zone_shape_file_name = m_ProjectDirectory + zone_table_file_name;
+
+			poDS = OGRSFDriverRegistrar::Open(zone_table_file_name, FALSE );
+			if( poDS == NULL )
+			{  // zone layer file is not provided
+			m_AMSLogFile << "Zone layer file is not provided. Use node file to generate zone layers." << endl; 
+			m_ZoneDataLoadingStatus.Format ("Zone layer file is not provided. Use node file to generate zone layers.");
+
+			}else  // read zone layer file
+			{
+
+		int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
+		int line_no = 0;
+
+		for (int j=0; j < poLayers; j++) 
+    {
+
+			OGRLayer  *poLayer;
+
+	        poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
+
+			if(poLayer == NULL)
+			{
+				message_str.Format("Open layer %d failed", j+1);
+
+				return false;			
+			}
+
+			OGRFeature *poFeature;
+
+			int feature_count = 0;
+
+			poLayer->ResetReading();
 
 
-	// show network
-	CalculateDrawingRectangle(true);
-	m_bFitNetworkInitialized  = false;
-	UpdateAllViews(0);
-	AMSLogFile.close();
 
-	return false;
+			m_AMSLogFile << "3: zone block---" << endl;
+			m_AMSLogFile << "zone id" << endl;
+
+
+			while( (poFeature = poLayer->GetNextFeature()) != NULL )
+			{
+				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+				// zone id
+				int id = poFeature->GetFieldAsInteger(zone_id_name);
+
+				m_AMSLogFile << id << "," ;
+
+				OGRGeometry *poGeometry;
+
+				poGeometry = poFeature->GetGeometryRef();
+				if( poGeometry != NULL )
+				{
+					
+				if (wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon )
+				{
+
+					OGRPolygon* polygon = (OGRPolygon*)(poGeometry);
+
+					OGRLinearRing *ring = polygon->getExteriorRing();
+						OGRPoint point;
+
+						m_AMSLogFile << "{";
+
+						for(int i = 0; i < ring->getNumPoints(); i++)
+						{
+							ring->getPoint(i, &point);
+							GDPoint pt;
+							pt.x = point.getX();
+							pt.y =point.getY();
+							m_ZoneMap [id].m_ShapePoints.push_back (pt);
+
+							m_AMSLogFile << pt.x << "," << pt.y << " ";
+
+						}
+
+						m_AMSLogFile << "}";
+				} // wkbPolygon
+				line_no++;
+				} // poGeometry
+			} // poFeature
+		} // poLayers
+
+		
+		m_AMSLogFile << "imported " << line_no << " zone boundaries." << endl;
+		m_ZoneDataLoadingStatus.Format ("%d zone boundary records are loaded from file %s.",line_no,zone_shape_file_name);
+
+		}
+	
+
+	return true;
+}
+
+bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
+{
+
+  float LengthinMB;
+  FILE* pFile;
+   fopen_s(&pFile,lpszFileName,"rb");
+   if(pFile!=NULL)
+   {
+      fseek(pFile, 0, SEEK_END );
+      int Length = ftell(pFile);
+      fclose(pFile);
+      LengthinMB= Length*1.0/1024/1024;
+      if(LengthinMB > 100)
+      {
+		 CString msg;
+		 msg.Format("The file %s is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the input_demand file?",lpszFileName,LengthinMB);
+		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+			return true;
+    }
+   }
+
+	long line_no = 0;
+	FILE* st;
+	fopen_s(&st,lpszFileName, "r");
+	if (st!=NULL)
+	{
+		bool AMSLogOutput = true;
+   char  str_line[2000]; // input string
+   int str_line_size;
+
+   //g_read_a_line(st,str_line, str_line_size); //  skip the first line
+
+		int origin_zone, destination_zone;
+			float number_of_vehicles ;
+
+			while( fscanf_s(st,"%d,%d,",&origin_zone,&destination_zone) >0)
+		{
+			// static traffic assignment, set the demand loading horizon to [0, 60 min]
+					if(line_no >= 10)
+					AMSLogOutput = false;
+
+					if(AMSLogOutput)
+					m_AMSLogFile << origin_zone << "," << destination_zone << "," ;
+					
+				for(unsigned int demand_type = 1; demand_type <= m_DemandTypeVector.size(); demand_type++)
+				{
+				number_of_vehicles = 0;
+				if( fscanf_s(st,"%f,",&number_of_vehicles) == 0)
+					{
+
+						CString msg;
+						msg.Format ("Demand type %d in line %d of file %s cannot be found. ",demand_type,line_no,lpszFileName);
+						AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+						return false;
+					}
+					if(AMSLogOutput)					
+						m_AMSLogFile << number_of_vehicles << "," ;
+
+
+
+					if(number_of_vehicles < -0.0001)
+						number_of_vehicles = 0;
+
+					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
+					{
+						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+					}
+					else
+					{
+						CString msg;
+						msg.Format ("Line %d in file %s has a zone number greater than the size of zones (%d). ",line_no,lpszFileName, m_ODSize);
+						AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+						return false;
+					}
+				}
+
+					if(AMSLogOutput)					
+						m_AMSLogFile << endl;
+
+				line_no++;
+			}
+
+		m_AMSLogFile << "imported " << line_no << " demand elements." << endl;
+
+			fclose(st);
+			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",line_no,lpszFileName);
+			return true;
+	}else
+	{
+		//		AfxMessageBox("Error: File input_demand.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
+		return false;
+		//		g_ProgramStop();
+	}
+
 }

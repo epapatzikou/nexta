@@ -621,6 +621,10 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 
 void CTLiteDoc::OnFileConstructandexportsignaldata()
 {
+
+//	if(m_import_shape_files_flag == 1)
+//		SaveProject(m_ProjectFile);
+
 	CDlg_SignalDataExchange dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
@@ -657,6 +661,8 @@ void CTLiteDoc::Constructandexportsignaldata()
 
 void CTLiteDoc::ExportSynchroVersion6Files()
 {
+	GDPoint m_Origin_Current = m_Origin;
+
 	FILE* st = NULL;
 
 	// write lanes/movements file
@@ -741,7 +747,6 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	GDPoint p1, p2;
 	int current_node_id, up_node_id, down_node_id;
 	long LinkID;
-	int i_n = 0;
 
 	fopen_s(&st,m_Synchro_ProjectDirectory+"Layout.csv","w");
 	if(st!=NULL)
@@ -750,14 +755,27 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fprintf(st, "INTID,INTNAME,TYPE,X,Y,NID,SID,EID,WID,NNAME,SNAME,ENAME,WNAME");
 		fprintf(st,"\n");
 
+	// try to set world coordinate so that all coordinates are non-negative
 
-		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i_n++)
+	m_Origin.x  = 1000000;
+	m_Origin.y  = 1000000;
+
+	std::list<DTANode*>::iterator  iNode;
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+	m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
+	m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
+	}
+
+		int i_n = 0;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i_n++)
 		{  // for current node	
 
-				float pt_x = NPtoSP_X(m_NodeIDMap[i]->pt,1/m_UnitFeet);
-				float pt_y = NPtoSP_Y(m_NodeIDMap[i]->pt,1/m_UnitFeet);
+				double resolution = 1/max(0.000001,m_UnitFeet);
+				float pt_x = NPtoSP_X((*iNode)->pt,resolution);
+				float pt_y = NPtoSP_Y((*iNode)->pt,resolution);
 
-			fprintf(st, "%i,%s,%i,%f,%f,", m_NodeIDMap[i_n]->m_NodeNumber, m_NodeIDMap[i_n]->m_Name.c_str(), m_NodeIDMap[i_n]->m_ControlType,
+			fprintf(st, "%i,%s,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_Name.c_str(), (*iNode)->m_ControlType,
 				pt_x, pt_y);
 			// find connecting nodes and links at different directions
 			DTA_NodeBasedLinkSets Node_Link;
@@ -890,6 +908,8 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fclose(st);
 
 	}
+
+	m_Origin = m_Origin_Current;  // restore value
 }
 
 void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)

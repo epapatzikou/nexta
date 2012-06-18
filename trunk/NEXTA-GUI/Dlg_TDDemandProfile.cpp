@@ -83,7 +83,7 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 
 	// processing demand data 
 	CString SettingsFile;
-	SettingsFile.Format ("%sDTASettings.ini",m_pDoc->m_ProjectDirectory);
+	SettingsFile.Format ("%sDTASettings.txt",m_pDoc->m_ProjectDirectory);
 
 	m_DemandLoading_StartHour = (int) g_GetPrivateProfileFloat("demand", "loading_start_hour",6,SettingsFile);
 	m_DemandLoading_EndHour = (int) g_GetPrivateProfileFloat("demand", "loading_end_hour",12,SettingsFile);

@@ -36,6 +36,7 @@
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
 
 extern float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) ;
+extern int g_GetProfileString( LPCTSTR section, LPCTSTR key, LPCTSTR lpdefault, LPTSTR lpReturnedString, DWORD nSize, LPCTSTR filename);
 
 // CTLiteApp:
 // See TLite.cpp for the implementation of this class

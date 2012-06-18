@@ -62,15 +62,14 @@ static UINT indicators[] =
 
 
 // CMainFrame construction/destruction
-#define _NUM_OF_GIS_LAYERS  17 
+#define _NUM_OF_GIS_LAYERS  16 
 static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
 	_T("Link"),
-	_T("Link MOE"),
 	_T("Zone"),
-	_T("OD Flow"),
-	_T("Path Flow"),
+	_T("Connector"),
+	_T("Link MOE"),
 	_T("Agent/Vehicle"),
 	_T("Subarea"), 
 	_T("Work Zone"),
@@ -78,10 +77,10 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("VMS"),
 	_T("Toll"),
 	_T("Crash"),
-	_T("Ramp"),
-	_T("Weather"),
+	_T("Ramp Meters"),
 	_T("Detector"),
-	_T("GPS")
+	_T("Bluetooth"),
+	_T("GPS"),
 };
 
 #define _NUM_OF_RAIL_GIS_LAYERS  3 

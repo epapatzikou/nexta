@@ -410,6 +410,17 @@ void ReadDSPDestinationData(char fname[_MAX_PATH])
       }
 */
 }
+int g_GetProfileString( LPCTSTR section, LPCTSTR key, LPCTSTR lpdefault, LPTSTR lpbuffer, DWORD nSize, LPCTSTR filename) 
+{
+   int char_size  = GetPrivateProfileString(section,key,lpdefault, lpbuffer,nSize,filename);
+
+   if(strcmp(lpbuffer,lpdefault) == 0)  //  the parameter might not exist
+   {
+   WritePrivateProfileString(section,key,lpdefault,filename);
+   }
+
+	return char_size; 
+} 
 
 
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) 
