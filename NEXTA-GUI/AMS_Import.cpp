@@ -562,9 +562,9 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 					{  // reset default value
-					if(pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+					if(pLink->m_SpeedLimit>=35 && pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
 					{
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = 3;  // signal control
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
 					}
 					
 					}
@@ -746,7 +746,8 @@ bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
     }
    }
 
-	long line_no = 0;
+	float total_demand = 0;
+    long line_no = 0;
 	FILE* st;
 	fopen_s(&st,lpszFileName, "r");
 	if (st!=NULL)
@@ -791,6 +792,7 @@ bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
 					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
 					{
 						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+						total_demand += number_of_vehicles;
 					}
 					else
 					{
@@ -810,7 +812,8 @@ bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
 		m_AMSLogFile << "imported " << line_no << " demand elements." << endl;
 
 			fclose(st);
-			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",line_no,lpszFileName);
+			m_AMSLogFile << line_no << "demand entries are loaded from file " << lpszFileName << ". Total demand =  " << total_demand << endl;
+			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s. Total demand = %f",line_no,lpszFileName,total_demand);
 			return true;
 	}else
 	{

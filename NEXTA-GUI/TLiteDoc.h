@@ -526,6 +526,16 @@ void SetStatusText(CString StatusText);
 	std::map<int,DTALinkType> m_LinkTypeMap;
 	std::map<int, string> m_NodeTypeMap;
 
+	int m_ControlType_UnknownControl;
+	int m_ControlType_NoControl;
+	int m_ControlType_YieldSign;
+	int m_ControlType_2wayStopSign;
+	int m_ControlType_4wayStopSign;
+	int m_ControlType_PretimedSignal;
+	int m_ControlType_AcuatedSignal;
+	int m_ControlType_Roundabout;
+
+
 	std::vector<DTAVOTDistribution> m_VOTDistributionVector;
 
 	std::vector<DTADemandProfile> m_DemandProfileVector;

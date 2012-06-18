@@ -366,7 +366,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
 	{  // for current node
 
-		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
+		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			// generate movement set
 			DTA_NodeMovementSet movement_set;	
