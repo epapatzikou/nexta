@@ -251,6 +251,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	   m_import_shape_files_flag = 0;
 	   m_OriginOnBottomFlag = -1;
 	   g_DocumentList.push_back (this);
 	   m_RandomRoutingCoefficient = 0.0f;
@@ -839,6 +840,8 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 
 BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly)
 {
+
+
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;
@@ -849,22 +852,107 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_ProjectFile = ProjectFileName;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
-
 	m_ProjectDirectory = directory;
 	m_ProjectTitle = GetWorkspaceTitleName(ProjectFileName);
 	SetTitle(m_ProjectTitle);
 
+	// default data type definition files
+
+		m_AMSLogFile.open ( m_ProjectDirectory + "AMS_data_conversion_log.csv", ios::out);
+		if (m_AMSLogFile.is_open())
+		{
+			m_AMSLogFile.width(12);
+			m_AMSLogFile.precision(3) ;
+			m_AMSLogFile.setf(ios::fixed);
+			m_AMSLogFile << "Start AMS reading..." << endl;
+		}else
+		{
+			AfxMessageBox("File AMS_data_conversion_log.csv cannot be opened, and it might be locked by another program or the target data folder is read-only.");
+			return false;
+		}
+
+	char link_type_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
+	ReadLinkTypeCSVFile(directory+link_type_file_name);
+
+	char pricing_type_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
+
+	char demand_type_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","demand_type_file_name","input_demand_type.csv",demand_type_file_name,sizeof(demand_type_file_name),ProjectFileName);
+	ReadDemandTypeCSVFile(directory+demand_type_file_name);
+
+	char temporal_demand_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","temporal_demand_file_name","input_temporal_demand_profile.csv",temporal_demand_file_name,sizeof(temporal_demand_file_name),ProjectFileName);
+	ReadTemporalDemandProfileCSVFile(directory+temporal_demand_file_name);
+
+	char VOT_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
+	ReadVOTCSVFile(directory+VOT_file_name);
+
+	char vehicle_type_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","vehicle_type_file_name ","input_vehicle_type.csv",vehicle_type_file_name,sizeof(vehicle_type_file_name),ProjectFileName);
+	ReadVehicleTypeCSVFile(directory+vehicle_type_file_name);
+
+	char emission_rate_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("default_data_tables","vehicle_emission_rate_file_name ","input_vehicle_emission_rate.csv",emission_rate_file_name,sizeof(emission_rate_file_name),ProjectFileName);
+	ReadInputEmissionRateFile(directory+emission_rate_file_name);
+
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);
 
-	if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
-	if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
+	m_import_shape_files_flag = g_GetPrivateProfileInt("model_attributes","import_shape_files",0,ProjectFileName);
 
-	CalculateDrawingRectangle();
+	m_NodeSet.clear ();
+	m_LinkSet.clear ();
+	m_ODSize = 0;
+
+	// test if input_node.csv can be opened.
+	ifstream input_node_file(directory+"input_node.csv");
+	if (!input_node_file.is_open())
+		m_import_shape_files_flag = 1;
+
+
+	if(m_import_shape_files_flag == 1)
+	{
+		OnOpenAMSDocument(ProjectFileName);  
+		// import node, link, zone layers, connectors layers
+	}else
+	{
+		if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
+		if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
+		if(ReadZoneCSVFile(directory+"input_zone.csv"))
+		{
+			ReadActivityLocationCSVFile(directory+"input_activity_location.csv");
+		}
+
+	}
+
+	char demand_file_name[_MAX_STRING_SIZE];
+    g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
+
+	int DTALite_demand_format_flag = g_GetPrivateProfileInt("demand_table","DTALite_demand_format",1,ProjectFileName);
+	int TransCAD_demand_format_flag = g_GetPrivateProfileInt("demand_table","TRANSCAD_demand_format",0,ProjectFileName);
+	
+	if(DTALite_demand_format_flag) 
+	{
+		ReadDemandCSVFile(directory+demand_file_name);
+	}
+	else
+	{
+		ReadTransCADDemandCSVFile(directory+demand_file_name);
+	}
+	
+	LoadSimulationOutput();
+	
+	ReadSubareaCSVFile(directory+"input_subarea.csv");
+
+	CalculateDrawingRectangle(true);
+	m_bFitNetworkInitialized  = false;
 
 	ReadTransitFiles(directory+"transit_data\\");  // read transit data
 
-	m_bFitNetworkInitialized  = false;
+
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -886,20 +974,6 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	//	ReadSensorData(directory+"input_sensor_location.csv");
 	//	ReadHistoricalData(directory);
 
-	if(ReadZoneCSVFile(directory+"input_zone.csv"))
-	{
-		ReadActivityLocationCSVFile(directory+"input_activity_location.csv");
-		ReadLinkTypeCSVFile("input_link_type.csv");
-		ReadVehicleTypeCSVFile(directory+"input_vehicle_type.csv");
-		ReadDemandTypeCSVFile(directory+"input_demand_type.csv");
-		ReadDemandCSVFile(directory+"input_demand.csv");
-		ReadSubareaCSVFile(directory+"input_subarea.csv");
-		ReadVOTCSVFile(directory+"input_VOT.csv");
-		ReadTemporalDemandProfileCSVFile(directory+"input_temporal_demand_profile.csv");
-		LoadSimulationOutput();
-	}
-
-
 	if(ReadSensorData(directory+"input_sensor.csv") == true)
 	{
 		CWaitCursor wc;
@@ -908,11 +982,11 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 		BuildHistoricalDatabase();
 	}
 
-	ReadInputEmissionRateFile(directory+"input_vehicle_emission_rate.csv");
-
 	//ReadObservationLinkVolumeData(directory+"input_static_obs_link_volume.csv");
 
 	ReadBackgroundImageFile(directory+"Background.bmp");
+
+	m_AMSLogFile.close();
 	return true;
 }
 BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
@@ -1005,7 +1079,7 @@ BOOL CTLiteDoc::OnOpenDocument(CString ProjectFileName)
 
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
-	if(ProjectFileName.Find("dlp")>=0)  //DTALite format
+	if(ProjectFileName.Find("ini")>=0)  //DTALite format
 	{
 		OnOpenTrafficNetworkDocument(ProjectFileName,false);
 	}else if(ProjectFileName.Find("dws")>=0)  //DYNASMART-P format
@@ -1048,7 +1122,7 @@ void CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 	//	m_BackgroundBitmapLoaded = true;
 
 	TCHAR IniFilePath[_MAX_PATH];
-	sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
+	sprintf_s(IniFilePath,"%sDTASettings.txt", m_ProjectDirectory);
 	m_NodeDisplaySize = g_GetPrivateProfileFloat("GUI", "node_display_size",180, IniFilePath);
 
 	if(m_BackgroundBitmapLoaded)
@@ -1087,7 +1161,7 @@ void CTLiteDoc::OnFileSaveimagelocation()
 {
 
 	TCHAR IniFilePath[_MAX_PATH];
-	sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
+	sprintf_s(IniFilePath,"%sDTASettings.txt", m_ProjectDirectory);
 
 	char lpbuffer[64];
 
@@ -1483,7 +1557,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			string name;
 			float k_jam = 180;
 
-			CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
+			CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
 
 			float AADT_conversion_factor = g_GetPrivateProfileFloat("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
 
@@ -1829,7 +1903,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 
 		CString SettingsFile;
-		SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
+		SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 		int long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
 
 		/*		if(m_UnitMile<1/50)  // long/lat must be very large and greater than 1/62!
@@ -2058,13 +2132,13 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
    int str_line_size;
       g_read_a_line(st,str_line, str_line_size); //  skip the first line
 
-		int originput_zone, destination_zone;
+		int origin_zone, destination_zone;
 			float number_of_vehicles ;
 			float starting_time_in_min;
 			float ending_time_in_min;
 
 
-			while( fscanf_s(st,"%d,%d,%f,%f,",&originput_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
+			while( fscanf_s(st,"%d,%d,%f,%f,",&origin_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
 		{
 			// static traffic assignment, set the demand loading horizon to [0, 60 min]
 				for(unsigned int demand_type = 1; demand_type <= m_DemandTypeVector.size(); demand_type++)
@@ -2082,9 +2156,9 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 					if(number_of_vehicles < -0.0001)
 						number_of_vehicles = 0;
 
-					if(originput_zone <= m_ODSize && destination_zone <= m_ODSize)
+					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
 					{
-						m_ZoneMap[originput_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
 					}
 					else
 					{
@@ -2169,6 +2243,8 @@ bool CTLiteDoc::ReadDemandTypeCSVFile(LPCTSTR lpszFileName)
 
 			lineno++;
 		}
+		m_AMSLogFile << "Read " << m_DemandTypeVector.size() << " demand types from file "  << lpszFileName << endl; 
+
 
 		return true;
 	}else
@@ -2205,6 +2281,8 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 
 			lineno++;
 		}
+		
+		m_AMSLogFile << "Read " << m_VehicleTypeVector.size() << " vehicle types from file "  << lpszFileName << endl; 
 
 		return true;
 	}else
@@ -2284,6 +2362,8 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 			lineno++;
 		}
 
+		m_AMSLogFile << "Read " << m_LinkTypeMap.size() << " link types from file "  << lpszFileName << endl; 
+
 		return true;
 	}else
 	{
@@ -2349,6 +2429,8 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 			lineno++;
 		}
 	}
+		m_AMSLogFile << "Read " << m_DemandProfileVector.size() << " temporal demand elements from file "  << lpszFileName << endl; 
+
 	return true;
 }
 bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
@@ -2381,6 +2463,9 @@ bool CTLiteDoc::ReadVOTCSVFile(LPCTSTR lpszFileName)
 			lineno++;
 		}
 	}
+
+	m_AMSLogFile << "Read " << m_VOTDistributionVector.size() << " VOT elements from file "  << lpszFileName << endl; 
+
 	return true;
 
 }
@@ -2768,7 +2853,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"Scenario_Ramp_Metering.csv", directory+"Scenario_Ramp_Metering.csv", FALSE);
 		CopyFile(OldDirectory+"Scenario_Work_Zone.csv", directory+"Scenario_Work_Zone.csv", FALSE);
 
-		CopyFile(OldDirectory+"DTASettings.ini", directory+"DTASettings.ini", FALSE);
+		CopyFile(OldDirectory+"DTASettings.txt", directory+"DTASettings.txt", FALSE);
 		CopyFile(OldDirectory+"output_LinkMOE.csv", directory+"output_LinkMOE.csv", FALSE);
 		CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
 //		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
@@ -2783,18 +2868,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	// update m_ProjectDirectory
 	m_ProjectDirectory = directory;
-	fopen_s(&st,lpszPathName,"w");
-	if(st!=NULL)
-	{
-		fprintf(st,"This project includes input_node.csv and input_link.csv.");
-		fclose(st);
-	}else
-	{
-		AfxMessageBox("Error in writing the project file. Please check if the file is opened by another project or the folder is read-only.");
-	}
 
 	TCHAR IniFilePath[_MAX_PATH];
-	sprintf_s(IniFilePath,"%sDTASettings.ini", m_ProjectDirectory);
+	sprintf_s(IniFilePath,"%sDTASettings.txt", m_ProjectDirectory);
 
 	char lpbuffer[64];
 
@@ -2892,7 +2968,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
-
+/*
 	fopen_s(&st,directory+"output_link_MOE.csv","w");
 	if(st!=NULL)
 	{
@@ -2958,7 +3034,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
-
+*/
 
 
 	/*
@@ -4622,7 +4698,7 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 }
 void CTLiteDoc::LoadSimulationOutput()
 {
-	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.ini";
+	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
 
 	m_TrafficFlowModelFlag = (int)g_GetPrivateProfileFloat("simulation", "traffic_flow_model", 3, DTASettingsPath);	
 	g_Simulation_Time_Horizon = (int) g_GetPrivateProfileFloat("simulation", "simulation_horizon_in_min", 60, DTASettingsPath);
@@ -5016,7 +5092,7 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 	bool bOKFlag = false;
 
 	CString SettingsFile;
-	SettingsFile.Format ("%sDTASettings.ini",m_ProjectDirectory);
+	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 	float DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);	
 	int DemandLoadingFlag = (int)g_GetPrivateProfileFloat("demand", "load_vehicle_file_mode", 0, SettingsFile);	
 
@@ -6244,6 +6320,7 @@ void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
 	if (parser_emission.OpenCSVFile(lpszFileName))
 	{
 
+		int line_no = 1;
 		while(parser_emission.ReadRecord())
 		{
 			int vehicle_type;
@@ -6266,14 +6343,15 @@ void CTLiteDoc::ReadInputEmissionRateFile(LPCTSTR lpszFileName)
 			if(parser_emission.GetValueByFieldName("meanBaseRate_HC_(g/hr)",element.meanBaseRate_HC) == false)
 				break;
 
-
 			ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
 			ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
 			EmissionRateData[vehicle_type][opModeID] = element;
+			line_no++;
 		}
+		m_AMSLogFile << "Read " << line_no << " emission rate elements from file "  << lpszFileName << endl; 
 	}
 
-	cout << "Reading file input_vehicle_emission_rate.csv..."<< endl;
+
 
 }
 
@@ -8192,7 +8270,7 @@ void CTLiteDoc::OnViewTraininfo()
 void CTLiteDoc::OnImportAmsdataset()
 {
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("AMS Configuration (*.ini)|*.ini|"));
+		_T("AMS (*.ini)|*.ini|"));
 	if(dlg.DoModal() == IDOK)
 	{
 		OnOpenAMSDocument(dlg.GetPathName());

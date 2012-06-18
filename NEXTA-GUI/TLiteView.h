@@ -310,7 +310,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 
 	CPoint m_ScreenOrigin;
 	GDPoint m_Origin;
-	float m_Resolution;
+	double m_Resolution;
 
 	int m_OriginOnBottomFlag;
 

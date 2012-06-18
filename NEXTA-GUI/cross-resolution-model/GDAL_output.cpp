@@ -31,7 +31,7 @@
 #include "..//Data-Interface//XLEzAutomation.h"
 #include "..//Data-Interface//XLTestDataSource.h"
 #include "..//Data-Interface//include//ogrsf_frmts.h"
-#include "MainFrm.h"
+#include "..//MainFrm.h"
 
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"

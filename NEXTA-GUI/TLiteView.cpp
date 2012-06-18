@@ -762,7 +762,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
-		if(!m_bShowConnector &&  pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  //hide connectors
+		if( pMainFrame->m_bShowLayerMap[layer_connector]==false &&  pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  //hide connectors
 			continue; 
 
 		// step 1: decide if a link is included in the screen region

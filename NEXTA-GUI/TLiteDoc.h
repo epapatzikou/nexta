@@ -28,6 +28,7 @@
 #pragma once
 #pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
 #pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
+#define _MAX_STRING_SIZE _MAX_PATH
 #include "atlimage.h"
 #include "math.h"
 #include "Network.h"
@@ -44,10 +45,9 @@ enum layer_mode
    { 
 	layer_node = 0,
 	layer_link,
-	layer_link_MOE,
 	layer_zone,
-	layer_OD_flow,
-	layer_path_flow,
+	layer_connector,
+	layer_link_MOE,
 	layer_agent_vehicle,
 	layer_subarea, 
 	layer_workzone,
@@ -56,8 +56,8 @@ enum layer_mode
 	layer_toll,
 	layer_crash,
 	layer_ramp,
-	layer_weather,
 	layer_detector,
+	layer_bluetooth,
 	layer_GPS
 };
 
@@ -199,11 +199,11 @@ public:
 
 	GDPoint m_Origin;
 
-    int NPtoSP_X(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+    int NPtoSP_X(GDPoint net_point,double Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.x-m_Origin.x)*Resolution+0.5);
 	}
-    int NPtoSP_Y(GDPoint net_point,float Resolution) // convert network coordinate to screen coordinate
+    int NPtoSP_Y(GDPoint net_point,double Resolution) // convert network coordinate to screen coordinate
 	{
 		return int((net_point.y-m_Origin.y)*Resolution+0.5);
 
@@ -239,8 +239,11 @@ public:
 
 	COLORREF m_ColorFreeway, m_ColorHighway, m_ColorArterial;
 
+	ofstream m_AMSLogFile;
+
 	BOOL OnOpenDocument(CString FileName);
 	BOOL OnOpenAMSDocument(CString FileName);
+	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
@@ -336,6 +339,8 @@ public:
 	bool ReadMultiDaySensorData(LPCTSTR lpszFileName);
 	void ReadInputEmissionRateFile(LPCTSTR lpszFileName);
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
+
+	int m_import_shape_files_flag;
 	CString m_NodeDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;

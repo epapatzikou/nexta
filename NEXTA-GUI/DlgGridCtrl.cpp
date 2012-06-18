@@ -252,7 +252,7 @@ BOOL CDlgODDemandGridCtrl::OnInitDialog()
 		{
 
 	CString SettingsFile;
-	SettingsFile.Format ("%sDTASettings.ini",m_pDoc->m_ProjectDirectory);
+	SettingsFile.Format ("%sDTASettings.txt",m_pDoc->m_ProjectDirectory);
 
 		m_DemandMultipler = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,SettingsFile);
 

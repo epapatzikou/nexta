@@ -712,7 +712,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 
 
-
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
 
 
@@ -957,10 +956,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
 		{
 
-			if((*iNode )->m_NodeNumber == 908)
-			{
-			TRACE("");
-			}
+
 			if((*iNode )->m_bZoneActivityLocationFlag)
 			{
 					int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
@@ -970,8 +966,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						DTAActivityLocation element;
 						element.ZoneID  = ZoneID;
 						element.NodeNumber = (*iNode )->m_NodeNumber;
-
-
 						m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
 
 					}
@@ -1881,7 +1875,7 @@ void CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-	m_pDoc->m_ProjectFile.Format("%s%s", pMainFrame->m_CurrentDirectory, _T("\\Sample-Portland-SHRP2-C05-subarea\\Portland_subarea.dlp"));
+	m_pDoc->m_ProjectFile.Format("%s%s", pMainFrame->m_CurrentDirectory, _T("\\Sample-Portland-SHRP2-C05-subarea\\Portland_subarea.ini"));
 
 	CString str;
 		str.Format("The current project file is saved as %s", MB_ICONINFORMATION);
