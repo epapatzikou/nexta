@@ -31,7 +31,7 @@
 #include "..//Data-Interface//XLEzAutomation.h"
 #include "..//Data-Interface//XLTestDataSource.h"
 #include "..//Data-Interface//include//ogrsf_frmts.h"
-#include "MainFrm.h"
+#include "..//MainFrm.h"
 
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"
@@ -344,6 +344,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 {
 
 	m_MovementVector.clear();
+	m_PhaseVector.clear();
 
 	DTA_NodeMovementSet MovementTemplate; // template with 12 movements
 	DTA_NodePhaseSet PhaseTemplate; // template with 8 phases
@@ -367,10 +368,12 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 		if ((*iNode)->m_ControlType > 0)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
-			// generate movement set and phase set
-
+			// generate movement set
 			DTA_NodeMovementSet movement_set;	
-
+			
+			// generate DTA_NodePhaseSet for this Node
+			DTA_NodePhaseSet PhaseSet;
+			PhaseSet.copy_parameters(PhaseTemplate);
 
 
 			// scan each inbound link and outbound link
@@ -445,12 +448,11 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						{
 							// copy from template
 							MovementTemplate.copy_to_Movement(element, element.movement_dir);
+							// add Movement into m_MovementVector
+							//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_dir);
+							movement_set.MovementMatrix[element.movement_dir] = element;
+							movement_set.copy_from_Movement(element, element.movement_dir);
 						}
-
-						// add Movement into m_MovementVector
-						//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_dir);
-
-						//						movement_set.MovementMatrix[element.movement_dir] = element;
 
 						//	(*iNode)->m_MovementSet.MovementMatrix[element.movement_dir] = element;
 
@@ -464,6 +466,9 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 			movement_set.CurrentNodeID = i;
 			m_MovementVector.push_back(movement_set);  // m_MovementVector for all nodes in the network
 			TRACE("current node: %d\n", movement_set.CurrentNodeID);
+			
+			PhaseSet.CurrentNodeID = i;
+			m_PhaseVector.push_back(PhaseSet);
 
 		} // checking control type
 	}// for each node
