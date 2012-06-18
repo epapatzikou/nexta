@@ -597,6 +597,7 @@ public:
 	signal_control_no = 0;
 	signal_group_no = 0;
 	phase_index = 0;
+	turn_volume = 10;
 
 	}
 
@@ -618,7 +619,7 @@ int turning_prohibition_flag;
 int phase_index;
 int signal_control_no;  // for meso-scopic, link -based
 int signal_group_no;  // for meso-scopic, link -based
-
+int turn_volume;
 };
 
 class DTANodeLaneTurn
