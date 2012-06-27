@@ -70,7 +70,8 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Zone"),
 	_T("Connector"),
 	_T("Link MOE"),
-	_T("Agent/Vehicle"),
+	_T("Observations"),
+	_T("Detector"),
 	_T("Subarea"), 
 	_T("Work Zone"),
 	_T("Incident"),
@@ -78,7 +79,6 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Toll"),
 	_T("Crash"),
 	_T("Ramp Meters"),
-	_T("Detector"),
 	_T("Bluetooth"),
 	_T("GPS"),
 };
@@ -232,6 +232,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	m_bShowLayerMap[layer_link] = true;
 	m_bShowLayerMap[layer_link_MOE] = true;
 	m_bShowLayerMap[layer_zone] = true;
+	m_bShowLayerMap[layer_detector] = true;
 
 	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
 	{

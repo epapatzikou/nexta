@@ -236,6 +236,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 		{
 			DTA_sensor sensor;
 
+
 			if(!parser.GetValueByFieldName("from_node_id",sensor.FromNodeNumber )) 
 				return false;
 			if(!parser.GetValueByFieldName("to_node_id",sensor.ToNodeNumber )) 
@@ -249,7 +250,15 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 			parser.GetValueByFieldName("peak_hour_factor",sensor.peak_hour_factor   );
 //			parser.GetValueByFieldName(elative_location_ratio",relative_location_ratio);
 
-			DTALink* pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
+
+			DTALink* pLink;
+/*			int link_id = 0;
+			parser.GetValueByFieldName("link_id",link_id );
+			if(link_id >0)
+				pLink = m_LinkNoMap[link_id -1];
+			else 
+*/
+				pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
 
 			if(pLink!=NULL)
 			{
@@ -266,9 +275,9 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 			{
 
 				CString msg;
-				msg.Format ("Link %d -> %d in input_sensor.csv does not exit in input_link.csv.");
+				msg.Format ("Link %d -> %d in input_sensor.csv does not exit in input_link.csv.", sensor.FromNodeNumber , sensor.ToNodeNumber);
 				AfxMessageBox(msg);
-				break;
+				continue;
 			}
 
 		}
@@ -1020,12 +1029,8 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 		(*iLink)->m_bIncludedBySelectedPath = false;  // reset all the links are not selected by the path
 		(*iLink)->m_OverlappingCost  = 0;  // randomize link cost to avoid overlapping
 
-		if(m_LinkTypeConnectorMap.find((*iLink)->m_link_type)!= m_LinkTypeConnectorMap.end())
-		{
-		
-			if(m_LinkTypeConnectorMap[(*iLink)->m_link_type]== 1)
+			if(m_LinkTypeMap[(*iLink)->m_link_type].IsConnector ())
 				(*iLink)->m_bConnector = true;
-		}
 
 	}
 

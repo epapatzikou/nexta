@@ -549,8 +549,6 @@ BEGIN
         MENUITEM "Vehicle Statistics Analaysis", ID_LINK_VEHICLESTATISTICSANALAYSIS
         MENUITEM "View Link-based Scenario Data", ID_LINK_VIEWLINK
         MENUITEM SEPARATOR
-        MENUITEM "Add VMS",                     ID_LINK_ADDVMS
-        MENUITEM SEPARATOR
         MENUITEM "Add Link-based Toll",         ID_LINK_ADDLINK
         MENUITEM "Add HOV Toll",                ID_LINK_ADDHOVTOLL
         MENUITEM "Add HOT Toll",                ID_LINK_ADDHOTTOLL
@@ -558,7 +556,8 @@ BEGIN
         MENUITEM "Convert General Purpose Lane to Tolled Lane", ID_LINK_CONVERTGENERALPURPOSELANETOTOLLEDLANE
         MENUITEM SEPARATOR
         MENUITEM "Add Work Zone",               ID_LINK_ADDWORKZONE
-        MENUITEM "Add Incident",                ID_LINK_ADDINC
+        MENUITEM "Add Incident",                ID_LINK_ADDINCIDENT
+        MENUITEM "Add VMS",                     ID_LINK_ADDVMS
         MENUITEM SEPARATOR
         POPUP "Delete"
         BEGIN
@@ -646,7 +645,7 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
-            MENUITEM "AMS Data Set",                ID_IMPORT_AMSDATASET
+            MENUITEM "Transportation Planning Data Set", ID_IMPORT_AMSDATASET
             MENUITEM "GIS Shape File",              ID_IMPORT_ARCGISSHAPEFILE
             MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
             POPUP "Background Image"
@@ -658,6 +657,13 @@ BEGIN
                 MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only", ID_IMAGE_SHIFT32834
             END
             MENUITEM "Point Sensor Data",           ID_IMPORT_SENSOR_DATA, INACTIVE
+            POPUP "Demand File "
+            BEGIN
+                MENUITEM "SOV OD Demand Matrix",        ID_DEMANDFILE_ODDEMANDMATRIX
+                MENUITEM "HOV OD Demand Matrix",        ID_DEMANDFILE_HOVODDEMANDMATRIX
+                MENUITEM "Truck OD Demand Matrix",      ID_DEMANDFILE_TRUCKODDEMANDMATRIX
+                MENUITEM "Intermodal OD Demand Matrix", ID_DEMANDFILE_INTERMODALODDEMANDMATRIX
+            END
         END
         POPUP "Export"
         BEGIN
@@ -822,7 +828,6 @@ BEGIN
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
         MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
-        MENUITEM "Enumerate Paths",             ID_TOOLS_ENUMERATEPATH
     END
     POPUP "&Window"
     BEGIN
@@ -1558,14 +1563,14 @@ BEGIN
     LISTBOX         IDC_LinkTypeLIST,7,21,223,115,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG_LINK_LIST DIALOGEX 0, 0, 552, 178
+IDD_DIALOG_LINK_LIST DIALOGEX 0, 0, 631, 178
 STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Link Information"
 MENU IDR_MENU4
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,538,123
-    PUSHBUTTON      "Exit",IDCANCEL,495,157,50,14
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,617,123
+    PUSHBUTTON      "Exit",IDCANCEL,525,157,50,14
     CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,151,87,10
     LTEXT           "",IDC_DOC_TITLE,7,7,418,8
@@ -2335,7 +2340,7 @@ BEGIN
     IDD_DIALOG_LINK_LIST, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 545
+        RIGHTMARGIN, 624
         TOPMARGIN, 7
         BOTTOMMARGIN, 171
     END

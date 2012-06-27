@@ -48,7 +48,8 @@ enum layer_mode
 	layer_zone,
 	layer_connector,
 	layer_link_MOE,
-	layer_agent_vehicle,
+	layer_observation,
+	layer_detector,
 	layer_subarea, 
 	layer_workzone,
 	layer_incident,
@@ -56,7 +57,6 @@ enum layer_mode
 	layer_toll,
 	layer_crash,
 	layer_ramp,
-	layer_detector,
 	layer_bluetooth,
 	layer_GPS
 };
@@ -163,6 +163,7 @@ public: // create from serialization only
 public:
 
 
+	std::map<std::string,std::string> m_KML_style_map;
 
 	float GetDemandVolume(int origin,int destination,int demand_type)
 	{
@@ -244,7 +245,9 @@ public:
 	BOOL OnOpenDocument(CString FileName);
 	BOOL OnOpenAMSDocument(CString FileName);
 	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
-	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
+	bool RunGravityModel(LPCTSTR lpszFileName,int demand_type);
+	bool ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type);
+	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false, bool bImportShapeFiles = false);
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
 	bool m_bDYNASMARTDataSet;
@@ -499,17 +502,7 @@ void SetStatusText(CString StatusText);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
 
-
-	
 	std::map<int, int> m_VehicleType2PricingTypeMap;
-	std::map<int, int> m_LinkTypeFreewayMap;
-	std::map<int, int> m_LinkTypeArterialMap;
-	std::map<int, int> m_LinkTypeRampMap;
-	std::map<int, int> m_LinkTypeConnectorMap;
-	std::map<int, int> m_LinkTypeTransitMap;
-	std::map<int, int> m_LinkTypeWalkingMap;
-
-
 	std::map<int, int> m_NodeIDtoNameMap;
 	std::map<int, int> m_NodeNametoIDMap;
 	std::map<int, int> m_NodeIDtoZoneNameMap;
@@ -1134,6 +1127,12 @@ public:
 		afx_msg void OnToolsUnittesting();
 		afx_msg void OnViewTraininfo();
 		afx_msg void OnImportAmsdataset();
+		afx_msg void OnDemandfileOddemandmatrix();
+		afx_msg void OnDemandfileHovoddemandmatrix();
+		afx_msg void OnDemandfileTruckoddemandmatrix();
+		afx_msg void OnDemandfileIntermodaloddemandmatrix();
+		afx_msg void OnLinkAddworkzone();
+		afx_msg void OnLinkAddincident();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

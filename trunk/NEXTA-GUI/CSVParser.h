@@ -79,7 +79,12 @@ public:
 				return false;
 			}
 
-			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+			int index  = FieldsIndices[field_name];
+			if(index >=LineFieldsValue.size())
+			{
+			return false;
+			}
+			string str_value = LineFieldsValue[index];
 
 			if (str_value.length() <= 0)
 			{

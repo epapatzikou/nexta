@@ -244,26 +244,40 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TOOLS_UNITTESTING, &CTLiteDoc::OnToolsUnittesting)
 	ON_COMMAND(ID_VIEW_TRAININFO, &CTLiteDoc::OnViewTraininfo)
 	ON_COMMAND(ID_IMPORT_AMSDATASET, &CTLiteDoc::OnImportAmsdataset)
-	END_MESSAGE_MAP()
+	ON_COMMAND(ID_DEMANDFILE_ODDEMANDMATRIX, &CTLiteDoc::OnDemandfileOddemandmatrix)
+	ON_COMMAND(ID_DEMANDFILE_HOVODDEMANDMATRIX, &CTLiteDoc::OnDemandfileHovoddemandmatrix)
+	ON_COMMAND(ID_DEMANDFILE_TRUCKODDEMANDMATRIX, &CTLiteDoc::OnDemandfileTruckoddemandmatrix)
+	ON_COMMAND(ID_DEMANDFILE_INTERMODALODDEMANDMATRIX, &CTLiteDoc::OnDemandfileIntermodaloddemandmatrix)
+	ON_COMMAND(ID_LINK_ADDWORKZONE, &CTLiteDoc::OnLinkAddworkzone)
+	ON_COMMAND(ID_LINK_ADDINCIDENT, &CTLiteDoc::OnLinkAddincident)
+END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
 
 CTLiteDoc::CTLiteDoc()
 {
-	   m_import_shape_files_flag = 0;
-	   m_OriginOnBottomFlag = -1;
-	   g_DocumentList.push_back (this);
-	   m_RandomRoutingCoefficient = 0.0f;
-       m_bDYNASMARTDataSet = false;
-	   m_AdjLinkSize = 20;  // initial value
-	   m_colorLOS[0] = RGB(190,190,190);
-	   m_colorLOS[1] = RGB(0,255,0);
-	   m_colorLOS[2] = RGB(255,250,117);
-	   m_colorLOS[3] = RGB(255,250,0);
-	   m_colorLOS[4] = RGB(255,216,0);
-	   m_colorLOS[5] = RGB(255,153,0);
-	   m_colorLOS[6] = RGB(255,0,0);
+
+	// blue style
+	m_KML_style_map["green"] = "7d00ff00";
+	m_KML_style_map["red"] = "7d0000ff";
+	m_KML_style_map["blue"] = "7dff0000";
+	m_KML_style_map["yellow"] = "7d00ffff";
+
+
+	m_import_shape_files_flag = 0;
+	m_OriginOnBottomFlag = -1;
+	g_DocumentList.push_back (this);
+	m_RandomRoutingCoefficient = 0.0f;
+	m_bDYNASMARTDataSet = false;
+	m_AdjLinkSize = 20;  // initial value
+	m_colorLOS[0] = RGB(190,190,190);
+	m_colorLOS[1] = RGB(0,255,0);
+	m_colorLOS[2] = RGB(255,250,117);
+	m_colorLOS[3] = RGB(255,250,0);
+	m_colorLOS[4] = RGB(255,216,0);
+	m_colorLOS[5] = RGB(255,153,0);
+	m_colorLOS[6] = RGB(255,0,0);
 
 	m_ControlType_UnknownControl = 0; 
 	m_ControlType_NoControl = 1;
@@ -275,52 +289,52 @@ CTLiteDoc::CTLiteDoc()
 	m_ControlType_Roundabout = 7;
 
 
-	   m_FreewayColor = RGB(255,211,155);
-	   m_RampColor = RGB(100,149,237); 
-       m_ArterialColor = RGB(0,0,0);
-	   m_ConnectorColor = RGB(255,255,0);
-	   m_TransitColor = RGB(0,0,255);
-	   m_WalkingColor = RGB(127,255,0);
+	m_FreewayColor = RGB(255,211,155);
+	m_RampColor = RGB(100,149,237); 
+	m_ArterialColor = RGB(0,0,0);
+	m_ConnectorColor = RGB(255,255,0);
+	m_TransitColor = RGB(0,0,255);
+	m_WalkingColor = RGB(127,255,0);
 
-		m_MaxLinkWidthAsNumberOfLanes = 5;
-		m_MaxLinkWidthAsLinkVolume = 1000;
+	m_MaxLinkWidthAsNumberOfLanes = 5;
+	m_MaxLinkWidthAsLinkVolume = 1000;
 
-		m_VehicleSelectionMode = CLS_network;
-		m_LinkBandWidthMode = LBW_number_of_lanes;
-		m_bLoadNetworkDataOnly = false;
-		m_SamplingTimeInterval = 1;
-		m_AVISamplingTimeInterval = 5;
+	m_VehicleSelectionMode = CLS_network;
+	m_LinkBandWidthMode = LBW_number_of_lanes;
+	m_bLoadNetworkDataOnly = false;
+	m_SamplingTimeInterval = 1;
+	m_AVISamplingTimeInterval = 5;
 
-		m_bSimulationDataLoaded  = false;
-		m_EmissionDataFlag = false;
-		m_bLinkToBeShifted = true;
-		m_SimulationStartTime_in_min = 0;  // 6 AM
+	m_bSimulationDataLoaded  = false;
+	m_EmissionDataFlag = false;
+	m_bLinkToBeShifted = true;
+	m_SimulationStartTime_in_min = 0;  // 6 AM
 
-		m_NumberOfDays = 0;
-		m_LinkMOEMode = MOE_none;
-		m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
-		m_ODMOEMode = odnone;
+	m_NumberOfDays = 0;
+	m_LinkMOEMode = MOE_none;
+	m_PrevLinkMOEMode = MOE_fftt;  // make sure the document gets a change to initialize the display view as the first mode is MOE_none
+	m_ODMOEMode = odnone;
 
-		MaxNodeKey = 60000;  // max: unsigned short 65,535;
-		m_BackgroundBitmapLoaded  = false;
-		m_LongLatCoordinateFlag = false;
-		m_ColorFreeway = RGB(198,226,255);
-		m_ColorHighway = RGB(100,149,237);
-		m_ColorArterial = RGB(0,0,0);
-		m_pNetwork = NULL;
-		m_OriginNodeID = -1;
+	MaxNodeKey = 60000;  // max: unsigned short 65,535;
+	m_BackgroundBitmapLoaded  = false;
+	m_LongLatCoordinateFlag = false;
+	m_ColorFreeway = RGB(198,226,255);
+	m_ColorHighway = RGB(100,149,237);
+	m_ColorArterial = RGB(0,0,0);
+	m_pNetwork = NULL;
+	m_OriginNodeID = -1;
 
-		m_DestinationNodeID = -1;
-		m_NodeSizeSP = 0;
+	m_DestinationNodeID = -1;
+	m_NodeSizeSP = 0;
 
 
-		m_PathMOEDlgShowFlag = false;
-		m_SelectPathNo = -1;
+	m_PathMOEDlgShowFlag = false;
+	m_SelectPathNo = -1;
 
-		m_ImageX1 = 0;
-		m_ImageX2 = 1000;
-		m_ImageY1 = 0;
-		m_ImageY2 = 1000;
+	m_ImageX1 = 0;
+	m_ImageX2 = 1000;
+	m_ImageY1 = 0;
+	m_ImageY2 = 1000;
 
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
 	{
@@ -333,79 +347,79 @@ CTLiteDoc::CTLiteDoc()
 		m_NodeDisplaySize = 2000;  // in feet
 		m_BackgroundColor =  RGB(255,255,255);
 	}
-		
 
 
-		m_NetworkRect.top  = 50;
-		m_NetworkRect.bottom = 0;
 
-		m_NetworkRect.left   = 0;
-		m_NetworkRect.right = 100;
+	m_NetworkRect.top  = 50;
+	m_NetworkRect.bottom = 0;
 
-		m_UnitMile = 1;
-		m_UnitFeet = 1/5280.0;
-		m_OffsetInFeet = 20;
-		m_LaneWidthInFeet = 20;
-		m_bFitNetworkInitialized = false; 
-	    m_BackgroundBitmapImportedButnotSaved = false;
+	m_NetworkRect.left   = 0;
+	m_NetworkRect.right = 100;
 
-		m_DefaultNumLanes = 3;
-		m_DefaultSpeedLimit = 65.0f;
-		m_DefaultCapacity = 1900.0f;
-		m_DefaultLinkType = 1;
-		
-		m_ODSize = 0;
-		m_SelectedLinkID = -1;
-	    m_SelectedNodeID = -1;
+	m_UnitMile = 1;
+	m_UnitFeet = 1/5280.0;
+	m_OffsetInFeet = 20;
+	m_LaneWidthInFeet = 20;
+	m_bFitNetworkInitialized = false; 
+	m_BackgroundBitmapImportedButnotSaved = false;
 
-		m_bSetView = false;
-		m_bShowLegend = false;
-		m_bShowPathList = false;
+	m_DefaultNumLanes = 3;
+	m_DefaultSpeedLimit = 65.0f;
+	m_DefaultCapacity = 1900.0f;
+	m_DefaultLinkType = 1;
 
-		for(int i=0; i<40;i++)
+	m_ODSize = 0;
+	m_SelectedLinkID = -1;
+	m_SelectedNodeID = -1;
+
+	m_bSetView = false;
+	m_bShowLegend = false;
+	m_bShowPathList = false;
+
+	for(int i=0; i<40;i++)
+	{
+		for(int los= 0; los < MAX_LOS_SIZE; los++)
 		{
-			for(int los= 0; los < MAX_LOS_SIZE; los++)
-			{
-				m_LOSBound[i][los] = 0;
-			}
+			m_LOSBound[i][los] = 0;
 		}
+	}
 
-		// speed LOS bound
-		m_LOSBound[MOE_speed][1] = 100;
-		m_LOSBound[MOE_speed][2] = 90;
-		m_LOSBound[MOE_speed][3] = 70;
-		m_LOSBound[MOE_speed][4] = 50;
-		m_LOSBound[MOE_speed][5] = 40;
-		m_LOSBound[MOE_speed][6] = 33;
-		m_LOSBound[MOE_speed][7] = 0;
+	// speed LOS bound
+	m_LOSBound[MOE_speed][1] = 100;
+	m_LOSBound[MOE_speed][2] = 90;
+	m_LOSBound[MOE_speed][3] = 70;
+	m_LOSBound[MOE_speed][4] = 50;
+	m_LOSBound[MOE_speed][5] = 40;
+	m_LOSBound[MOE_speed][6] = 33;
+	m_LOSBound[MOE_speed][7] = 0;
 
-		m_LOSBound[MOE_reliability][1] = 0;
-		m_LOSBound[MOE_reliability][2] = 0.1f;
-		m_LOSBound[MOE_reliability][3] = 0.2f;
-		m_LOSBound[MOE_reliability][4] = 0.3f;
-		m_LOSBound[MOE_reliability][5] = 0.5f;
-		m_LOSBound[MOE_reliability][6] = 0.7f;
-		m_LOSBound[MOE_reliability][7] = 999;
+	m_LOSBound[MOE_reliability][1] = 0;
+	m_LOSBound[MOE_reliability][2] = 0.1f;
+	m_LOSBound[MOE_reliability][3] = 0.2f;
+	m_LOSBound[MOE_reliability][4] = 0.3f;
+	m_LOSBound[MOE_reliability][5] = 0.5f;
+	m_LOSBound[MOE_reliability][6] = 0.7f;
+	m_LOSBound[MOE_reliability][7] = 999;
 
-		m_LOSBound[MOE_vcratio][1] = 0;
-		m_LOSBound[MOE_vcratio][2] = 0.65f;
-		m_LOSBound[MOE_vcratio][3] = 0.75f;
-		m_LOSBound[MOE_vcratio][4] = 0.85f;
-		m_LOSBound[MOE_vcratio][5] = 0.95f;
-		m_LOSBound[MOE_vcratio][6] = 1.00f;
-		m_LOSBound[MOE_vcratio][7] = 999;
-
-
-
+	m_LOSBound[MOE_vcratio][1] = 0;
+	m_LOSBound[MOE_vcratio][2] = 0.65f;
+	m_LOSBound[MOE_vcratio][3] = 0.75f;
+	m_LOSBound[MOE_vcratio][4] = 0.85f;
+	m_LOSBound[MOE_vcratio][5] = 0.95f;
+	m_LOSBound[MOE_vcratio][6] = 1.00f;
+	m_LOSBound[MOE_vcratio][7] = 999;
 
 
-		m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
-		m_Doc_Resolution = 1;
-		m_bShowCalibrationResults = false;
 
-		m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
-		m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
-		m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
+
+
+	m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
+	m_Doc_Resolution = 1;
+	m_bShowCalibrationResults = false;
+
+	m_SampleExcelNetworkFile = "\\Sample_Import_Excel_Files\\Simplified_SLC_network.xls";
+	m_SampleOutputProjectFile = "\\Sample_Output_Project_Folder";
+	m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
 
 
 }
@@ -414,17 +428,17 @@ static bool DeleteLinkPointer( DTALink * theElement ) { delete theElement; retur
 
 CTLiteDoc::~CTLiteDoc()
 {
-			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
-			while (iDoc != g_DocumentList.end())
-			{
-			 if((*iDoc) == this)
-			 {
-			 g_DocumentList.erase (iDoc);  // remove the document to be deleted
-			 break;
+	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+	while (iDoc != g_DocumentList.end())
+	{
+		if((*iDoc) == this)
+		{
+			g_DocumentList.erase (iDoc);  // remove the document to be deleted
+			break;
 
-			 }
-				iDoc++;
-			}
+		}
+		iDoc++;
+	}
 
 	m_WarningFile.close();
 
@@ -432,19 +446,19 @@ CTLiteDoc::~CTLiteDoc()
 		delete m_pNetwork;
 
 
-//	m_LinkSet.remove_if (DeleteLinkPointer);
+	//	m_LinkSet.remove_if (DeleteLinkPointer);
 
-/*
+	/*
 	std::list<DTANode*>::iterator iNode;
 	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
-			DTANode* pNode = (*iNode);
+	DTANode* pNode = (*iNode);
 
-		if(pNode!=NULL)
-			delete pNode;
+	if(pNode!=NULL)
+	delete pNode;
 
 	}
-*/
+	*/
 }
 
 BOOL CTLiteDoc::OnNewDocument()
@@ -585,31 +599,31 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 {
 	typedef struct 
 	{
-	int from_node_id;
-	int to_node_id;
-	int timestamp_in_min;
-	int travel_time_in_min;
-	int delay_in_min;
-	float link_volume_in_veh_per_hour_per_lane;
-	float link_volume_in_veh_per_hour_for_all_lanes;
-	float density_in_veh_per_mile_per_lane;
-	float speed_in_mph;
-	float exit_queue_length;
-	int cumulative_arrival_count;
-	int cumulative_departure_count;
-	int cumulative_SOV_count;
-	int cumulative_HOV_count;
-	int cumulative_truck_count;
-	int cumulative_SOV_revenue;
-	int cumulative_HOV_revenue;
-	int cumulative_truck_revenue;
+		int from_node_id;
+		int to_node_id;
+		int timestamp_in_min;
+		int travel_time_in_min;
+		int delay_in_min;
+		float link_volume_in_veh_per_hour_per_lane;
+		float link_volume_in_veh_per_hour_for_all_lanes;
+		float density_in_veh_per_mile_per_lane;
+		float speed_in_mph;
+		float exit_queue_length;
+		int cumulative_arrival_count;
+		int cumulative_departure_count;
+		int cumulative_SOV_count;
+		int cumulative_HOV_count;
+		int cumulative_truck_count;
+		int cumulative_SOV_revenue;
+		int cumulative_HOV_revenue;
+		int cumulative_truck_revenue;
 	} struct_TDMOE;
 
 
 	int i= 0;
-  FILE* pFile;
-   fopen_s(&pFile,lpszFileName,"rb");
-   if(pFile!=NULL)
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"rb");
+	if(pFile!=NULL)
 	{
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -686,11 +700,11 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 	fopen_s(&st,lpszFileName, "r");
 	if (st!=NULL)
 	{
-   char  str_line[2000]; // input string
-   int str_line_size;
-      g_read_a_line(st,str_line, str_line_size); //  skip the first line
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the first line
 
-	int i= 0;
+		int i= 0;
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -781,11 +795,11 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 		}
 		*/
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
-	
+
 		fclose(st);
 	}else
 	{
-//		AfxMessageBox("Error: File output_LinkMOE.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+		//		AfxMessageBox("Error: File output_LinkMOE.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return;
 
 	}
@@ -846,9 +860,8 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 
 
 
-BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly)
+BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly, bool bImportShapeFiles)
 {
-
 
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
@@ -866,18 +879,18 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	// default data type definition files
 
-		m_AMSLogFile.open ( m_ProjectDirectory + "AMS_data_conversion_log.csv", ios::out);
-		if (m_AMSLogFile.is_open())
-		{
-			m_AMSLogFile.width(12);
-			m_AMSLogFile.precision(3) ;
-			m_AMSLogFile.setf(ios::fixed);
-			m_AMSLogFile << "Start AMS reading..." << endl;
-		}else
-		{
-			AfxMessageBox("File AMS_data_conversion_log.csv cannot be opened, and it might be locked by another program or the target data folder is read-only.");
-			return false;
-		}
+	m_AMSLogFile.open ( m_ProjectDirectory + "AMS_data_conversion_log.csv", ios::out);
+	if (m_AMSLogFile.is_open())
+	{
+		m_AMSLogFile.width(12);
+		m_AMSLogFile.precision(3) ;
+		m_AMSLogFile.setf(ios::fixed);
+		m_AMSLogFile << "Start AMS reading..." << endl;
+	}else
+	{
+		AfxMessageBox("File AMS_data_conversion_log.csv cannot be opened, and it might be locked by another program or the target data folder is read-only.");
+		return false;
+	}
 
 	m_AMSLogFile << "Step 1: Read AMS type definition data" << endl;
 
@@ -891,48 +904,46 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundable",7,ProjectFileName);
 
 	char link_type_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
 	ReadLinkTypeCSVFile(directory+link_type_file_name);
 
 	char pricing_type_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
 
 	char demand_type_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","demand_type_file_name","input_demand_type.csv",demand_type_file_name,sizeof(demand_type_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","demand_type_file_name","input_demand_type.csv",demand_type_file_name,sizeof(demand_type_file_name),ProjectFileName);
 	ReadDemandTypeCSVFile(directory+demand_type_file_name);
 
 	char temporal_demand_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","temporal_demand_file_name","input_temporal_demand_profile.csv",temporal_demand_file_name,sizeof(temporal_demand_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","temporal_demand_file_name","input_temporal_demand_profile.csv",temporal_demand_file_name,sizeof(temporal_demand_file_name),ProjectFileName);
 	ReadTemporalDemandProfileCSVFile(directory+temporal_demand_file_name);
 
 	char VOT_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
 	ReadVOTCSVFile(directory+VOT_file_name);
 
 	char vehicle_type_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","vehicle_type_file_name ","input_vehicle_type.csv",vehicle_type_file_name,sizeof(vehicle_type_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","vehicle_type_file_name ","input_vehicle_type.csv",vehicle_type_file_name,sizeof(vehicle_type_file_name),ProjectFileName);
 	ReadVehicleTypeCSVFile(directory+vehicle_type_file_name);
 
 	char emission_rate_file_name[_MAX_STRING_SIZE];
-    g_GetProfileString("default_data_tables","vehicle_emission_rate_file_name ","input_vehicle_emission_rate.csv",emission_rate_file_name,sizeof(emission_rate_file_name),ProjectFileName);
+	g_GetProfileString("default_data_tables","vehicle_emission_rate_file_name ","input_vehicle_emission_rate.csv",emission_rate_file_name,sizeof(emission_rate_file_name),ProjectFileName);
 	ReadInputEmissionRateFile(directory+emission_rate_file_name);
 
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);
-
-	m_import_shape_files_flag = g_GetPrivateProfileInt("model_attributes","import_shape_files",0,ProjectFileName);
 
 	m_NodeSet.clear ();
 	m_LinkSet.clear ();
 	m_ODSize = 0;
 
 	// test if input_node.csv can be opened.
-	ifstream input_node_file(directory+"input_node.csv");
+	/*	ifstream input_node_file(directory+"input_node.csv");
 	if (!input_node_file.is_open())
-		m_import_shape_files_flag = 1;
+	m_import_shape_files_flag = 1;
+	*/
 
-
-	if(m_import_shape_files_flag == 1)
+	if( bImportShapeFiles)
 	{
 		OnOpenAMSDocument(ProjectFileName);  
 		// import node, link, zone layers, connectors layers
@@ -948,26 +959,25 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	}
 
-	WritePrivateProfileString("demand_table","format_definition","0: DTALite CSV; 1: OD Matrix CSV; 2: 3-column format; 3TransCAD 3-column CSV;4:VISUM matrix 8",ProjectFileName);
-    	int demand_format_flag = g_GetPrivateProfileInt("demand_table","demand_format",1,ProjectFileName);
-		char demand_file_name[_MAX_STRING_SIZE];
-		g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
+	WritePrivateProfileString("demand_table","format_definition","0: DTALite CSV; 1: OD Matrix CSV; 2: 3-column format; 3: TransCAD 3-column CSV;4:VISUM matrix 8: 10: gravity model",ProjectFileName);
+	int demand_format_flag = g_GetPrivateProfileInt("demand_table","demand_format",1,ProjectFileName);
+	char demand_file_name[_MAX_STRING_SIZE];
+	g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
 
-		switch (demand_format_flag)
-		{
-		case 0:	ReadDemandCSVFile(directory+demand_file_name); break;
-		case 1: break;
-		case 2: break;
-		case 3: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
-		}
+	switch (demand_format_flag)
+	{
+	case 0:	ReadDemandCSVFile(directory+demand_file_name); break;
+	case 1: ReadDemandMatrixFile(directory+demand_file_name,1); break;
+	case 2: break;
+	case 3: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
+	case 10: RunGravityModel(directory+demand_file_name,1); break;
+	}
 
-
-	
 	LoadSimulationOutput();
-	
+
 	ReadSubareaCSVFile(directory+"input_subarea.csv");
 
-	CalculateDrawingRectangle(true);
+	CalculateDrawingRectangle(false);
 	m_bFitNetworkInitialized  = false;
 
 	ReadTransitFiles(directory+"transit_data\\");  // read transit data
@@ -1073,15 +1083,15 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(LPCTSTR lpszPathName)
 		{
 			if((*iLink) -> m_bToBeShifted)
 			{
-			double DeltaX = (*iLink)->m_ToPoint.x - (*iLink)->m_FromPoint.x ;
-			double DeltaY = (*iLink)->m_ToPoint.y - (*iLink)->m_FromPoint.y ;
-			double theta = atan2(DeltaY, DeltaX);
+				double DeltaX = (*iLink)->m_ToPoint.x - (*iLink)->m_FromPoint.x ;
+				double DeltaY = (*iLink)->m_ToPoint.y - (*iLink)->m_FromPoint.y ;
+				double theta = atan2(DeltaY, DeltaX);
 
-			(*iLink)->m_FromPoint.x += link_offset* cos(theta-PI/2.0f);
-			(*iLink)->m_ToPoint.x += link_offset* cos(theta-PI/2.0f);
+				(*iLink)->m_FromPoint.x += link_offset* cos(theta-PI/2.0f);
+				(*iLink)->m_ToPoint.x += link_offset* cos(theta-PI/2.0f);
 
-			(*iLink)->m_FromPoint.y += link_offset* sin(theta-PI/2.0f);
-			(*iLink)->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
+				(*iLink)->m_FromPoint.y += link_offset* sin(theta-PI/2.0f);
+				(*iLink)->m_ToPoint.y += link_offset* sin(theta-PI/2.0f);
 			}
 		}
 	}
@@ -1371,10 +1381,10 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
-			if(m_LinkTypeConnectorMap[(*iLink)->m_link_type ])  // 1 lane as connector
-						(*iLink)->m_BandWidthValue =  min(1,(*iLink)->m_NumLanes)*LaneVolumeEquivalent*VolumeRatio;
+			if(m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // 1 lane as connector
+				(*iLink)->m_BandWidthValue =  min(1,(*iLink)->m_NumLanes)*LaneVolumeEquivalent*VolumeRatio;
 			else
-						(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
 
 
 		}else if(m_LinkBandWidthMode == LBW_link_volume)
@@ -1426,23 +1436,23 @@ void CTLiteDoc::GenerateOffsetLinkBand()
 		(*iLink)->m_ReferenceBandLeftShapePoints.clear();
 		(*iLink)->m_ReferenceBandRightShapePoints.clear();
 
-			int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
-			double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
-			double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
-			double theta = atan2(DeltaY, DeltaX);
+		int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
+		double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
+		double DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[0].y;
+		double theta = atan2(DeltaY, DeltaX);
 
 		for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
 		{
 
 			// calculate theta for each feature point segment
-			
-			if(si>= 1 && ((*iLink) ->m_ShapePoints .size() >4 || m_LinkTypeRampMap[(*iLink)->m_link_type]==1))  // ramp or >4 feature points
+
+			if(si>= 1 && ((*iLink) ->m_ShapePoints .size() >4 || m_LinkTypeMap[(*iLink)->m_link_type].IsRamp ()))  // ramp or >4 feature points
 			{
-			last_shape_point_id = si;
-			DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[si-1].x;
-			DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[si-1].y;
-			theta = atan2(DeltaY, DeltaX);
-	
+				last_shape_point_id = si;
+				DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[si-1].x;
+				DeltaY = (*iLink)->m_ShapePoints[last_shape_point_id].y - (*iLink)->m_ShapePoints[si-1].y;
+				theta = atan2(DeltaY, DeltaX);
+
 			}
 
 			GDPoint pt;
@@ -1488,18 +1498,18 @@ void CTLiteDoc::OffsetLink()
 			if((*iLink) -> m_bToBeShifted)
 			{
 
-			//Test if an opposite link exits
-			unsigned long OppositeLinkKey = GetLinkKey((*iLink)->m_ToNodeID,(*iLink)->m_FromNodeID);
-			if ( m_NodeIDtoLinkMap.find(OppositeLinkKey) != m_NodeIDtoLinkMap.end())
-			{
-				// set two links as two-way links
-				(*iLink)->m_bOneWayLink = false;
+				//Test if an opposite link exits
+				unsigned long OppositeLinkKey = GetLinkKey((*iLink)->m_ToNodeID,(*iLink)->m_FromNodeID);
+				if ( m_NodeIDtoLinkMap.find(OppositeLinkKey) != m_NodeIDtoLinkMap.end())
+				{
+					// set two links as two-way links
+					(*iLink)->m_bOneWayLink = false;
 
-				DTALink* pLink = m_NodeIDtoLinkMap[OppositeLinkKey];
-				if(pLink!=NULL)
-					pLink->m_bOneWayLink = false;
+					DTALink* pLink = m_NodeIDtoLinkMap[OppositeLinkKey];
+					if(pLink!=NULL)
+						pLink->m_bOneWayLink = false;
 
-			}
+				}
 			}
 		}
 
@@ -1523,27 +1533,27 @@ void CTLiteDoc::OffsetLink()
 				}
 			}
 
-		
+
 		}
 	}
 
-		BezierCurve bezier_smoothing;
+	BezierCurve bezier_smoothing;
 
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		// bezier smoothing
+		std::vector<GDPoint> NewShapePoints;
+
+		if((*iLink) ->m_ShapePoints .size() >2)
 		{
-			// bezier smoothing
-				std::vector<GDPoint> NewShapePoints;
+			// general smooth curve
+			bezier_smoothing.Bezier2D((*iLink) ->m_ShapePoints, NewShapePoints);
 
-				if((*iLink) ->m_ShapePoints .size() >2)
-				{
-					// general smooth curve
-					bezier_smoothing.Bezier2D((*iLink) ->m_ShapePoints, NewShapePoints);
+			// re-write to data
+			(*iLink) ->m_ShapePoints = NewShapePoints;
 
-					// re-write to data
-					(*iLink) ->m_ShapePoints = NewShapePoints;
-
-				}
 		}
+	}
 
 }
 
@@ -1855,7 +1865,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 						pt.y = CoordinateVector[si].Y;
 						pLink->m_ShapePoints .push_back (pt);
 					}
-				
+
 					pLink->m_bToBeShifted = bToBeShifted; 
 				}
 
@@ -1885,8 +1895,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 				m_NodeIDtoLinkMap[LinkKey] = pLink;
 
-		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
-		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+				__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
+				m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 				m_LinkNotoLinkMap[i] = pLink;
 
@@ -2028,11 +2038,11 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 			}
 
 			// if there are multiple nodes for a zone, the last node id is recorded.
-				DTAActivityLocation element;
-				element.ZoneID  = zone_number;
-				element.NodeNumber = node_name;
+			DTAActivityLocation element;
+			element.ZoneID  = zone_number;
+			element.NodeNumber = node_name;
 
-				int External_OD_Flag  = 0;
+			int External_OD_Flag  = 0;
 			parser.GetValueByFieldName("external_OD_flag",External_OD_Flag);
 			element.External_OD_flag = External_OD_Flag;
 
@@ -2073,6 +2083,8 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 		while(parser.ReadRecord())
 		{
 			int zone_number;
+			float production  = 0;
+			float attraction  = 0;
 
 			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
 			{
@@ -2080,7 +2092,28 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 				return false;
 			}
 
+			parser.GetValueByFieldName("production",production);
+			parser.GetValueByFieldName("attraction",attraction);
+
 			m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
+			m_ZoneMap [zone_number].m_Production  = production;
+			m_ZoneMap [zone_number].m_Attraction  = attraction;
+
+			string color_code; 
+			if(parser.GetValueByFieldName("color_code", color_code))
+			{
+				if(m_KML_style_map.find(color_code)!= m_KML_style_map.end())  // color_code has been defined 
+					m_ZoneMap [zone_number].color_code  = color_code;
+			}
+
+			string notes; 
+
+			if(parser.GetValueByFieldName("notes",notes))
+				m_ZoneMap [zone_number].notes  = notes;
+
+			float height; 
+			if(parser.GetValueByFieldName("height",height  ))
+				m_ZoneMap [zone_number].m_Height= height;
 
 			std::vector<CCoordinate> CoordinateVector;
 			string geo_string;
@@ -2092,14 +2125,14 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 				CoordinateVector = geometry.GetCoordinateList();
 
 				int si;
-					for(si = 0; si < CoordinateVector.size(); si++)
-					{
-						GDPoint	pt;
-						pt.x = CoordinateVector[si].X;
-						pt.y = CoordinateVector[si].Y;
-						m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+				for(si = 0; si < CoordinateVector.size(); si++)
+				{
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
 
-					}
+				}
 
 			}
 			if(m_ODSize < zone_number)
@@ -2125,23 +2158,23 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 {
 
- float LengthinMB;
-  FILE* pFile;
-   fopen_s(&pFile,lpszFileName,"rb");
-   if(pFile!=NULL)
-   {
-      fseek(pFile, 0, SEEK_END );
-      int Length = ftell(pFile);
-      fclose(pFile);
-      LengthinMB= Length*1.0/1024/1024;
-      if(LengthinMB > 100)
-      {
-		 CString msg;
-		 msg.Format("The input_demand.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the input_demand file?",LengthinMB);
-		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
-			return true;
-    }
-   }
+	float LengthinMB;
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"rb");
+	if(pFile!=NULL)
+	{
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB > 100)
+		{
+			CString msg;
+			msg.Format("The input_demand.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the input_demand file?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				return true;
+		}
+	}
 
 	long lineno = 0;
 	float total_demand = 0;
@@ -2149,55 +2182,55 @@ bool CTLiteDoc::ReadDemandCSVFile(LPCTSTR lpszFileName)
 	fopen_s(&st,lpszFileName, "r");
 	if (st!=NULL)
 	{
-   char  str_line[2000]; // input string
-   int str_line_size;
-      g_read_a_line(st,str_line, str_line_size); //  skip the first line
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the first line
 
 		int origin_zone, destination_zone;
-			float number_of_vehicles ;
-			float starting_time_in_min;
-			float ending_time_in_min;
+		float number_of_vehicles ;
+		float starting_time_in_min;
+		float ending_time_in_min;
 
 
-			while( fscanf_s(st,"%d,%d,%f,%f,",&origin_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
+		while( fscanf_s(st,"%d,%d,%f,%f,",&origin_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
 		{
 			// static traffic assignment, set the demand loading horizon to [0, 60 min]
-				for(unsigned int demand_type = 1; demand_type <= m_DemandTypeVector.size(); demand_type++)
-				{
+			for(unsigned int demand_type = 1; demand_type <= m_DemandTypeVector.size(); demand_type++)
+			{
 				number_of_vehicles = 0;
 				if( fscanf_s(st,"%f,",&number_of_vehicles) == 0)
-					{
+				{
 
-						CString msg;
-						msg.Format ("Demand type %d in line %d of file %s cannot be found. ",demand_type,lineno+1,lpszFileName);
-						AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
-						return false;
-					}
-
-					if(number_of_vehicles < -0.0001)
-						number_of_vehicles = 0;
-
-					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
-					{
-						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
-						total_demand += number_of_vehicles;
-					}
-					else
-					{
-						CString msg;
-						msg.Format ("Line %d in file %s has a zone number greater than the size of zones (%d). ",lineno,lpszFileName, m_ODSize);
-						AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
-						return false;
-					}
+					CString msg;
+					msg.Format ("Demand type %d in line %d of file %s cannot be found. ",demand_type,lineno+1,lpszFileName);
+					AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+					return false;
 				}
 
-				lineno++;
+				if(number_of_vehicles < -0.0001)
+					number_of_vehicles = 0;
+
+				if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
+				{
+					m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+					total_demand += number_of_vehicles;
+				}
+				else
+				{
+					CString msg;
+					msg.Format ("Line %d in file %s has a zone number greater than the size of zones (%d). ",lineno,lpszFileName, m_ODSize);
+					AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+					return false;
+				}
 			}
 
-			fclose(st);
-			m_AMSLogFile << lineno << "demand entries are loaded from file " << lpszFileName << ". Total demand =  " << total_demand << endl;
-			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s. Total demand = %f",lineno,lpszFileName,total_demand);
-			return true;
+			lineno++;
+		}
+
+		fclose(st);
+		m_AMSLogFile << lineno << "demand entries are loaded from file " << lpszFileName << ". Total demand =  " << total_demand << endl;
+		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s. Total demand = %f",lineno,lpszFileName,total_demand);
+		return true;
 	}else
 	{
 		//		AfxMessageBox("Error: File input_demand.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
@@ -2304,7 +2337,7 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 
 			lineno++;
 		}
-		
+
 		m_AMSLogFile << "Read " << m_VehicleTypeVector.size() << " vehicle types from file "  << lpszFileName << endl; 
 
 		return true;
@@ -2340,52 +2373,12 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 				break;
 			}
 
-			if(parser.GetValueByFieldName("freeway_flag",element.freeway_flag  ) == false)
+			if(parser.GetValueByFieldName("type_code",element.type_code   ) == false)
 			{
-				AfxMessageBox("Field freeway_flag cannot be found in input_link_type.csv.");
+				AfxMessageBox("Field type_code cannot be found in input_link_type.csv.");
 				break;
 			}
-			if(parser.GetValueByFieldName("highway_flag",element.highway_flag   ) == false)
-			{
-				AfxMessageBox("Field highway_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-			if(parser.GetValueByFieldName("ramp_flag",element.ramp_flag  ) == false)
-			{
-				AfxMessageBox("Field ramp_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-			if(parser.GetValueByFieldName("arterial_flag",element.arterial_flag  ) == false)
-			{
-				AfxMessageBox("Field arterial_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-
-			if(parser.GetValueByFieldName("connector_flag",element.connector_flag   ) == false)
-			{
-				AfxMessageBox("Field connector_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-
-			if(parser.GetValueByFieldName("transit_flag",element.transit_flag   ) == false)
-			{
-				AfxMessageBox("Field transit_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-
-			if(parser.GetValueByFieldName("walking_flag",element.walking_flag   ) == false)
-			{
-				AfxMessageBox("Field walking_flag cannot be found in input_link_type.csv.");
-				break;
-			}
-			m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
-			m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
-			m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
-			m_LinkTypeConnectorMap[element.link_type] = element.connector_flag  ;
-			m_LinkTypeTransitMap[element.link_type] = element.transit_flag  ;
-			m_LinkTypeWalkingMap[element.link_type] = element.walking_flag  ;
-
-			m_LinkTypeMap[element.link_type] = element;
+			m_LinkTypeMap[element.link_type] = element ;
 
 			lineno++;
 		}
@@ -2457,7 +2450,7 @@ bool CTLiteDoc::ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName)
 			lineno++;
 		}
 	}
-		m_AMSLogFile << "Read " << m_DemandProfileVector.size() << " temporal demand elements from file "  << lpszFileName << endl; 
+	m_AMSLogFile << "Read " << m_DemandProfileVector.size() << " temporal demand elements from file "  << lpszFileName << endl; 
 
 	return true;
 }
@@ -2508,37 +2501,37 @@ bool CTLiteDoc::Read3ColumnTripTxtFile(LPCTSTR lpszFileName)
 	{
 
 
-			while(!feof(st))
+		while(!feof(st))
+		{
+			int origin_zone	       = g_read_integer(st);
+			if(origin_zone == -1)  // reach end of file
+				break;
+
+			int destination_zone	   = g_read_integer(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
+
+			if(origin_zone > m_ODSize)
 			{
-				int origin_zone	       = g_read_integer(st);
-				if(origin_zone == -1)  // reach end of file
-					break;
-
-				int destination_zone	   = g_read_integer(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
-
-				if(origin_zone > m_ODSize)
-				{
-					CString msg;
-					msg.Format ("Error at line %d: origin zone number = %d, which is greater than the number of OD zones: %d.",lineno,origin_zone, m_ODSize);
-					break;
-				}
-
-				if(destination_zone > m_ODSize)
-				{
-					CString msg;
-					msg.Format ("Error at line %d: destination zone number = %d, which is greater than the number of OD zones: %d.",lineno,origin_zone, m_ODSize);
-					break;
-				}
-
-				float number_of_vehicles = g_read_float(st);
-
-				m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (1, number_of_vehicles);
-
-								lineno++;
+				CString msg;
+				msg.Format ("Error at line %d: origin zone number = %d, which is greater than the number of OD zones: %d.",lineno,origin_zone, m_ODSize);
+				break;
 			}
-			fclose(st);
-			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
-			return true;
+
+			if(destination_zone > m_ODSize)
+			{
+				CString msg;
+				msg.Format ("Error at line %d: destination zone number = %d, which is greater than the number of OD zones: %d.",lineno,origin_zone, m_ODSize);
+				break;
+			}
+
+			float number_of_vehicles = g_read_float(st);
+
+			m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (1, number_of_vehicles);
+
+			lineno++;
+		}
+		fclose(st);
+		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
+		return true;
 	}else
 	{
 		AfxMessageBox("Error: OD Trip file cannot be opened.");
@@ -2555,35 +2548,35 @@ bool CTLiteDoc::ReadTripTxtFile(LPCTSTR lpszFileName)
 	if(st!=NULL)
 	{
 
-			while(!feof(st))
+		while(!feof(st))
+		{
+			for(int i = 1; i <=m_ODSize; i++)
 			{
-				for(int i = 1; i <=m_ODSize; i++)
+				int origin_zone	       = g_read_integer(st);
+				if(origin_zone == -1)  // reach end of file
+					break;
+
+				for(int j = 1; j <=m_ODSize; j++)
 				{
-					int origin_zone	       = g_read_integer(st);
-					if(origin_zone == -1)  // reach end of file
-						break;
+					int destination_zone	   = g_read_integer_with_char_O(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
 
-					for(int j = 1; j <=m_ODSize; j++)
+					if(destination_zone == 0) // we reach "O" of string Origin 
 					{
-						int destination_zone	   = g_read_integer_with_char_O(st);  // we might read "Origin" here, so if we find "O", we return 0 as a key to jump to the next origin.
-
-						if(destination_zone == 0) // we reach "O" of string Origin 
-						{
-							break;
-						}
-
-						destination_zone = j;  // use destination that we read to override j
-
-						float number_of_vehicles = g_read_float(st);
-
-						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (1, number_of_vehicles);
-						lineno++;
+						break;
 					}
+
+					destination_zone = j;  // use destination that we read to override j
+
+					float number_of_vehicles = g_read_float(st);
+
+					m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (1, number_of_vehicles);
+					lineno++;
 				}
 			}
-			fclose(st);
-			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
-			return true;
+		}
+		fclose(st);
+		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file %s.",lineno,lpszFileName);
+		return true;
 	}else
 	{
 		AfxMessageBox("Error: OD Trip file cannot be opened.");
@@ -2598,19 +2591,19 @@ bool CTLiteDoc::ReadScenarioData()
 	int i =0;
 
 	// clean up all scenario data first
-		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			(*iLink)->CapacityReductionVector .clear();
-			(*iLink)->TollVector .clear();
-			(*iLink)->MessageSignVector.clear ();
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+		(*iLink)->TollVector .clear();
+		(*iLink)->MessageSignVector.clear ();
 
-		}
+	}
 
 	CString incident_file = m_ProjectDirectory+"Scenario_Incident.csv";
 	fopen_s(&st,incident_file,"r");
 	int error_count  = 0;
 
-	
+
 	if(st!=NULL)
 	{
 		while(true)
@@ -2628,7 +2621,8 @@ bool CTLiteDoc::ReadScenarioData()
 				CapacityReduction cs;
 				cs.bIncident = true; 
 
-				cs.DayNo = g_read_integer(st);
+				cs.StartDayNo = g_read_integer(st);
+				cs.EndDayNo = cs.StartDayNo;
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 				cs.LaneClosureRatio= g_read_float(st);
@@ -2637,8 +2631,8 @@ bool CTLiteDoc::ReadScenarioData()
 				i++;
 			}else
 			{
-			error_count ++;
-			if(error_count >= 3) break; // no more than 3 warnings
+				error_count ++;
+				if(error_count >= 3) break; // no more than 3 warnings
 			}
 
 		}
@@ -2666,7 +2660,8 @@ bool CTLiteDoc::ReadScenarioData()
 				CapacityReduction cs;
 				cs.bWorkzone  = true; 
 
-				cs.DayNo = g_read_integer(st);
+				cs.StartDayNo  = g_read_integer(st);
+				cs.EndDayNo	   = g_read_integer(st);
 				cs.StartTime = g_read_float(st);
 				cs.EndTime = g_read_float(st);
 				cs.LaneClosureRatio= g_read_float(st);
@@ -2676,9 +2671,9 @@ bool CTLiteDoc::ReadScenarioData()
 				i++;
 			}else
 			{
-			error_count ++;
-			if(error_count >= 3) break; // no more than 3 warnings
-			
+				error_count ++;
+				if(error_count >= 3) break; // no more than 3 warnings
+
 			}
 		}
 		fclose(st);
@@ -2724,13 +2719,13 @@ bool CTLiteDoc::ReadScenarioData()
 			}else
 			{
 				error_count++;
-			if(error_count >= 3) break; // no more than 3 warnings
+				if(error_count >= 3) break; // no more than 3 warnings
 			}
 		}
 
 		fclose(st);
 	}
-	
+
 
 
 	// toll
@@ -2764,8 +2759,8 @@ bool CTLiteDoc::ReadScenarioData()
 				i++;
 			}else
 			{
-			if(error_count >= 3) break; // no more than 3 warnings
-		
+				if(error_count >= 3) break; // no more than 3 warnings
+
 			}
 		}
 
@@ -2802,7 +2797,7 @@ bool  CTLiteDoc::SaveDemandFile()
 	}
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
-	
+
 	fopen_s(&st,directory+"input_demand.csv","w");
 	if(st!=NULL)
 	{
@@ -2830,32 +2825,36 @@ bool  CTLiteDoc::SaveDemandFile()
 		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
 			for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
 			{
+				if(itr_o->second.m_bWithinSubarea == false || itr_d->second.m_bWithinSubarea== false)
+					continue; // skip outside zones after cutting the network
+
+
 				DTADemandVolume element = m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first];
 
 				float total_demand = 0.0f;
 				for( type = 1; type <= m_DemandTypeVector.size(); type++)
 				{
-					 total_demand += element.GetValue (type);
+					total_demand += element.GetValue (type);
 				}
 
 				if(total_demand >=0.00001f)
 				{
 
-						fprintf(st, "%d,%d,%d,%d,", itr_o->first, itr_d->first, element.starting_time_in_min, element.ending_time_in_min);
+					fprintf(st, "%d,%d,%d,%d,", itr_o->first, itr_d->first, element.starting_time_in_min, element.ending_time_in_min);
 
-						for( type = 1; type <= m_DemandTypeVector.size(); type++)
-						{
-							 fprintf(st,"%f,",element.GetValue (type));
-						}
+					for( type = 1; type <= m_DemandTypeVector.size(); type++)
+					{
+						fprintf(st,"%f,",element.GetValue (type));
+					}
 
-						fprintf(st,"\n");				
-				
+					fprintf(st,"\n");				
+
 				}
-					
+
 			}
 
-		fclose(st);
-		return true;
+			fclose(st);
+			return true;
 
 	}else
 	{
@@ -2896,7 +2895,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		CopyFile(OldDirectory+"DTASettings.txt", directory+"DTASettings.txt", FALSE);
 		CopyFile(OldDirectory+"output_LinkMOE.csv", directory+"output_LinkMOE.csv", FALSE);
 		CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
-//		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
+		//		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
 		CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
 		CopyFile(OldDirectory+"assignment.log", directory+"assignment.log", FALSE);
 		CopyFile(OldDirectory+"Vehicle.csv", directory+"Vehicle.csv", FALSE);
@@ -2989,7 +2988,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 			{
 				DTALink * pLine  = m_NodeIDtoLinkMap[ReversedLinkKey];
 				if(pLine!= NULL)
-				pLine -> m_LinkID ;
+					pLine -> m_LinkID ;
 			}
 
 			fprintf(st,"%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet,
@@ -3008,73 +3007,73 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
-/*
+	/*
 	fopen_s(&st,directory+"output_link_MOE.csv","w");
 	if(st!=NULL)
 	{
-		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,mode_code,grade,geometry,");
-		fprintf(st,"speed_index,reliability_index,");
-		// safety prediction attributes
-		//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
-		fprintf(st,"\n");	
+	std::list<DTALink*>::iterator iLink;
+	fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,mode_code,grade,geometry,");
+	fprintf(st,"speed_index,reliability_index,");
+	// safety prediction attributes
+	//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
+	fprintf(st,"\n");	
 
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			if((*iLink)->m_AVISensorFlag == false && (*iLink)->m_LayerNo ==0)
-			{
-				fprintf(st,"%s,%d,%d,%d,%d,%.3f,%s,%s",
-					(*iLink)->m_Name.c_str (),
-					(*iLink)->m_LinkID, 
-					(*iLink)->m_FromNodeNumber, 
-					(*iLink)->m_ToNodeNumber ,(*iLink)->m_SpeedLimit);
-				fprintf(st,"\"<LineString><coordinates>");
-
-				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
-				{
-					fprintf(st,"%f,%f,0.0",(*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
-
-					if(si!=(*iLink)->m_ShapePoints.size()-1)
-						fprintf(st," ");
-				}
-
-				fprintf(st,"</coordinates></LineString>\",");
-			}
-
-			// mobility and reliability
-			float value;
-			float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
-			float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
-			fprintf(st,"%f,%f,",mobility_index, reliability_index);
-
-			// ANM output
-			unsigned long ReversedLinkKey = GetLinkKey((*iLink)->m_ToNodeID, (*iLink)->m_FromNodeID);
-			int reversed_link_id = 0;
-			if ( m_NodeIDtoLinkMap.find ( ReversedLinkKey) != m_NodeIDtoLinkMap.end())
-			{
-				DTALink * pLine  = m_NodeIDtoLinkMap[ReversedLinkKey];
-				if(pLine!= NULL)
-				pLine -> m_LinkID ;
-			}
-
-			fprintf(st,"%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet,
-				GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
-
-
-			//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
-			//		fprintf(st,"%10.6f, %10.6f,%10.6f,%10.1f,0,0,0,0,0,0,%5.1f,%5.1f,%5.1f,%5.1f\n", 0.000005*(*iLink)->m_Length, 0.000105*(*iLink)->m_Length,0.005*(*iLink)->m_LaneCapacity,(*iLink)->m_LaneCapacity*1.3*5*(g_GetRandomRatio()),0.2*(*iLink)->m_Length,0.5*(*iLink)->m_Length,0.6*(*iLink)->m_Length,1.1*(*iLink)->m_Length);
-
-			fprintf(st,"\n");
-		}
-
-		fclose(st);
-	}else
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
-		return false;
+	if((*iLink)->m_AVISensorFlag == false && (*iLink)->m_LayerNo ==0)
+	{
+	fprintf(st,"%s,%d,%d,%d,%d,%.3f,%s,%s",
+	(*iLink)->m_Name.c_str (),
+	(*iLink)->m_LinkID, 
+	(*iLink)->m_FromNodeNumber, 
+	(*iLink)->m_ToNodeNumber ,(*iLink)->m_SpeedLimit);
+	fprintf(st,"\"<LineString><coordinates>");
+
+	for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+	{
+	fprintf(st,"%f,%f,0.0",(*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
+
+	if(si!=(*iLink)->m_ShapePoints.size()-1)
+	fprintf(st," ");
 	}
 
-*/
+	fprintf(st,"</coordinates></LineString>\",");
+	}
+
+	// mobility and reliability
+	float value;
+	float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
+	float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
+	fprintf(st,"%f,%f,",mobility_index, reliability_index);
+
+	// ANM output
+	unsigned long ReversedLinkKey = GetLinkKey((*iLink)->m_ToNodeID, (*iLink)->m_FromNodeID);
+	int reversed_link_id = 0;
+	if ( m_NodeIDtoLinkMap.find ( ReversedLinkKey) != m_NodeIDtoLinkMap.end())
+	{
+	DTALink * pLine  = m_NodeIDtoLinkMap[ReversedLinkKey];
+	if(pLine!= NULL)
+	pLine -> m_LinkID ;
+	}
+
+	fprintf(st,"%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet,
+	GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
+
+
+	//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
+	//		fprintf(st,"%10.6f, %10.6f,%10.6f,%10.1f,0,0,0,0,0,0,%5.1f,%5.1f,%5.1f,%5.1f\n", 0.000005*(*iLink)->m_Length, 0.000105*(*iLink)->m_Length,0.005*(*iLink)->m_LaneCapacity,(*iLink)->m_LaneCapacity*1.3*5*(g_GetRandomRatio()),0.2*(*iLink)->m_Length,0.5*(*iLink)->m_Length,0.6*(*iLink)->m_Length,1.1*(*iLink)->m_Length);
+
+	fprintf(st,"\n");
+	}
+
+	fclose(st);
+	}else
+	{
+	AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+	return false;
+	}
+
+	*/
 
 
 	/*
@@ -3140,7 +3139,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	*/
 
-	
+
 	fopen_s(&st,directory+"input_movement.csv","w");
 	if(st!=NULL)
 	{
@@ -3175,7 +3174,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		return false;
 	}
 
-		fopen_s(&st,directory+"input_phase.csv","w");
+	fopen_s(&st,directory+"input_phase.csv","w");
 	if(st!=NULL)
 	{
 		std::list<DTANode*>::iterator iNode;
@@ -3189,15 +3188,15 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 					for(unsigned int m = 0; m< (*iNode)->m_PhaseVector[p].movement_index_vector.size() ; m++)
 					{
 						int movement_index = (*iNode)->m_PhaseVector[p].movement_index_vector[m];;
-					DTANodeMovement movement = (*iNode)->m_MovementVector[movement_index];
-						
+						DTANodeMovement movement = (*iNode)->m_MovementVector[movement_index];
 
-					fprintf(st,"%s,%d,%d,%d,%d,%s\n",(*iNode)->m_Name.c_str (), 
-						(*iNode)->m_NodeNumber ,
-						p+1,
-						m_NodeIDtoNameMap[movement.in_link_from_node_id],
-						m_NodeIDtoNameMap[movement.out_link_to_node_id ],
-						GetTurnString(movement.movement_turn));
+
+						fprintf(st,"%s,%d,%d,%d,%d,%s\n",(*iNode)->m_Name.c_str (), 
+							(*iNode)->m_NodeNumber ,
+							p+1,
+							m_NodeIDtoNameMap[movement.in_link_from_node_id],
+							m_NodeIDtoNameMap[movement.out_link_to_node_id ],
+							GetTurnString(movement.movement_turn));
 					}
 				}
 			}
@@ -3217,14 +3216,23 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fopen_s(&st,directory+"input_zone.csv","w");
 	if(st!=NULL)
 	{
-		fprintf(st,"zone_id,geometry\n");
+		fprintf(st,"zone_id,production,attraction,color_code,height,notes,geometry\n");
 
 		std::map<int, DTAZone>	:: const_iterator itr;
 
 		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
 		{
-			fprintf(st, "%d,", itr->first);
-		fprintf(st,"\"<Polygon><outerBoundaryIs><LinearRing><coordinates>");
+			if(itr->second.m_bWithinSubarea)
+			{
+				fprintf(st, "%d,%f,%f,%s,%f,%s,", 
+					itr->first,
+					itr->second .m_Production ,
+					itr->second .m_Attraction, 
+					itr->second .color_code.c_str () , 
+					itr->second.m_Height,
+					itr->second .notes.c_str ());
+
+				fprintf(st,"\"<Polygon><outerBoundaryIs><LinearRing><coordinates>");
 				for(unsigned int si = 0; si< itr->second.m_ShapePoints.size(); si++)
 				{
 					fprintf(st,"%f,%f,0.0",itr->second.m_ShapePoints[si].x, itr->second.m_ShapePoints[si].y);
@@ -3232,15 +3240,16 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 					if(si!=itr->second.m_ShapePoints.size()-1)
 						fprintf(st," ");
 				}
-			fprintf(st,"\"<coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
-			fprintf(st, "\n");
+				fprintf(st,"\"<coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
+				fprintf(st, "\n");
+			}
 		}
 
 		fclose(st);
 
 	}else
 	{
-		AfxMessageBox("Error: File input_activity_location.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+		AfxMessageBox("Error: File input_zone.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
 
@@ -3253,12 +3262,11 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
 		{
-
-				for(int i = 0; i< itr->second.m_ActivityLocationVector .size(); i++)
-				{
-					DTAActivityLocation element = itr->second.m_ActivityLocationVector[i];
-					fprintf(st, "%d,%d,%d\n", element.ZoneID , element.NodeNumber , element.External_OD_flag );
-				}
+			for(int i = 0; i< itr->second.m_ActivityLocationVector .size(); i++)
+			{
+				DTAActivityLocation element = itr->second.m_ActivityLocationVector[i];
+				fprintf(st, "%d,%d,%d\n", element.ZoneID , element.NodeNumber , element.External_OD_flag );
+			}
 
 		}
 		fclose(st);
@@ -3280,6 +3288,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		{
 			fprintf(st, "%d,%f,%f\n", sub_i, m_SubareaShapePoints[sub_i].x, m_SubareaShapePoints[sub_i].y);
 		}
+
+		// export path flow file 
+		ExportPathflowToCSVFiles();
 
 		fclose(st);
 
@@ -3462,14 +3473,13 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fopen_s(&st,directory+"input_link_type.csv","w");
 	if(st!=NULL)
 	{
-		fprintf(st,"link_type,link_type_name,freeway_flag,highway_flag,ramp_flag,arterial_flag,connector_flag,transit_flag,walking_flag\n");
+		fprintf(st,"link_type,link_type_name,type_code\n");
 		for(std::map<int, DTALinkType>::iterator itr = m_LinkTypeMap.begin(); itr != m_LinkTypeMap.end(); itr++)
 		{
 			{
-				fprintf(st, "%d,%s,%d,%d,%d,%d,%d,%d\n", itr->second .link_type  , 
+				fprintf(st, "%d,%s,%s\n", itr->second .link_type  , 
 					itr->second .link_type_name.c_str () , 
-					itr->second .freeway_flag ,itr->second .highway_flag,itr->second .ramp_flag ,itr->second .arterial_flag,
-					itr->second .connector_flag, itr->second .transit_flag,itr->second .walking_flag);
+					itr->second .type_code .c_str ());
 			}
 
 		}
@@ -3658,21 +3668,21 @@ void CTLiteDoc::CalculateDrawingRectangle(bool NodeLayerOnly)
 
 	for (std::list<DTALine*>::iterator iLine = m_DTALineSet.begin(); iLine != m_DTALineSet.end(); iLine++)
 	{
-			for(unsigned int i = 0; i< (*iLine)->m_ShapePoints .size(); i++)
+		for(unsigned int i = 0; i< (*iLine)->m_ShapePoints .size(); i++)
+		{
+			if(!bRectIni)
 			{
-				if(!bRectIni)
-				{
-					m_NetworkRect.left = (*iLine)->m_ShapePoints[i].x ;
-					m_NetworkRect.right = (*iLine)->m_ShapePoints[i].x;
-					m_NetworkRect.top = (*iLine)->m_ShapePoints[i].y;
-					m_NetworkRect.bottom = (*iLine)->m_ShapePoints[i].y;
+				m_NetworkRect.left = (*iLine)->m_ShapePoints[i].x ;
+				m_NetworkRect.right = (*iLine)->m_ShapePoints[i].x;
+				m_NetworkRect.top = (*iLine)->m_ShapePoints[i].y;
+				m_NetworkRect.bottom = (*iLine)->m_ShapePoints[i].y;
 
-					bRectIni = true;
-				}else
-				{
-					m_NetworkRect.Expand((*iLine)->m_ShapePoints[i]);
-				}
+				bRectIni = true;
+			}else
+			{
+				m_NetworkRect.Expand((*iLine)->m_ShapePoints[i]);
 			}
+		}
 
 	}
 }
@@ -3748,23 +3758,23 @@ void CTLiteDoc::ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName)
 	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
 	//	node id, node arrival time
 
-  float LengthinMB;
-  FILE* pFile;
-   fopen_s(&pFile,lpszFileName,"rb");
-   if(pFile!=NULL)
-   {
-      fseek(pFile, 0, SEEK_END );
-      int Length = ftell(pFile);
-      fclose(pFile);
-      LengthinMB= Length*1.0/1024/1024;
-      if(LengthinMB>50)
-      {
-		 CString msg;
-		 msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
-		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
-			return;
-    }
-   }
+	float LengthinMB;
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"rb");
+	if(pFile!=NULL)
+	{
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB>50)
+		{
+			CString msg;
+			msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				return;
+		}
+	}
 
 	FILE* st = NULL;
 	fopen_s(&st,lpszFileName,"r");
@@ -3867,23 +3877,23 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
 	//	node id, node arrival time
 
-  float LengthinMB;
-  FILE* pFile;
-   fopen_s(&pFile,lpszFileName,"rb");
-   if(pFile!=NULL)
-   {
-      fseek(pFile, 0, SEEK_END );
-      int Length = ftell(pFile);
-      fclose(pFile);
-      LengthinMB= Length*1.0/1024/1024;
-      if(LengthinMB>250)
-      {
-		 CString msg;
-		 msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
-		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
-			return;
-    }
-   }
+	float LengthinMB;
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"rb");
+	if(pFile!=NULL)
+	{
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB>250)
+		{
+			CString msg;
+			msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				return;
+		}
+	}
 
 
 
@@ -3891,9 +3901,9 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 	fopen_s(&st,lpszFileName,"r");
 	if(st!=NULL)
 	{
-   char  str_line[2000]; // input string
-   int str_line_size;
-    g_read_a_line(st,str_line, str_line_size); //  skip the first line
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the first line
 
 
 		m_VehicleSet.clear();
@@ -3916,22 +3926,22 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 		int number_of_nodes;
 
 		while(fscanf(st,"%d,%d,%d,%f,%f,%d,%f,%d,%d,%d,%d,%f,%f,%f,%f,%d,\"",
-		&vehicle_id,
-		&from_zone_id,
-		&to_zone_id,
-		&departure_time,
-		&arrival_time,
-		&complete_flag,
-		&trip_time,
-		&demand_type,
-		&pricing_type,
-		&vehicle_type,
-		&information_type,
-		&value_of_time,
-		&toll_cost_in_dollar,
-		&emissions,
-		&distance_in_mile,
-		&number_of_nodes)>0	)
+			&vehicle_id,
+			&from_zone_id,
+			&to_zone_id,
+			&departure_time,
+			&arrival_time,
+			&complete_flag,
+			&trip_time,
+			&demand_type,
+			&pricing_type,
+			&vehicle_type,
+			&information_type,
+			&value_of_time,
+			&toll_cost_in_dollar,
+			&emissions,
+			&distance_in_mile,
+			&number_of_nodes)>0	)
 		{
 			if(vehicle_id <0)
 				break;
@@ -4030,49 +4040,49 @@ void CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
 	//	node id, node arrival time
 
-  float LengthinMB;
-  FILE* pFile;
-   fopen_s(&pFile,lpszFileName,"rb");
-   if(pFile!=NULL)
-   {
-      fseek(pFile, 0, SEEK_END );
-      int Length = ftell(pFile);
-      fclose(pFile);
-      LengthinMB= Length*1.0/1024/1024;
-      if(LengthinMB>250)
-      {
-		 CString msg;
-		 msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
-		 if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
-			return;
-    }
-   }
+	float LengthinMB;
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"rb");
+	if(pFile!=NULL)
+	{
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB>250)
+		{
+			CString msg;
+			msg.Format("The Vehicle.csv file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				return;
+		}
+	}
 
 
 	typedef struct  
 	{
-	int vehicle_id;
-	int from_zone_id;
-	int to_zone_id;
-	float departure_time;
-	float arrival_time;
-	int complete_flag;
-	float trip_time;
-	int demand_type;
-	int pricing_type;
-	int vehicle_type;
-	int information_type;
-	float value_of_time;
-	float toll_cost_in_dollar;
-	float emissions;
-	float distance_in_mile;
-	int number_of_nodes;
+		int vehicle_id;
+		int from_zone_id;
+		int to_zone_id;
+		float departure_time;
+		float arrival_time;
+		int complete_flag;
+		float trip_time;
+		int demand_type;
+		int pricing_type;
+		int vehicle_type;
+		int information_type;
+		float value_of_time;
+		float toll_cost_in_dollar;
+		float emissions;
+		float distance_in_mile;
+		int number_of_nodes;
 	} struct_Vehicle_Header;
 
 	typedef  struct  
 	{
-	int NodeName;
-	float AbsArrivalTimeOnDSN;
+		int NodeName;
+		float AbsArrivalTimeOnDSN;
 	} struct_Vehicle_Node;
 
 	FILE* st = NULL;
@@ -4087,13 +4097,13 @@ void CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 		while(!feof(st))
 		{
 
-		size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
+			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
 
-		if( header.vehicle_id < 0)
-			break;
+			if( header.vehicle_id < 0)
+				break;
 
-		if(result!=1)  // read end of file
-			break;
+			if(result!=1)  // read end of file
+				break;
 
 			DTAVehicle* pVehicle = 0;
 			pVehicle = new DTAVehicle;
@@ -4507,58 +4517,58 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 
 	if(m_TrafficFlowModelFlag > 0)
 	{
-			int StartTime = CurrentTime;
-			int EndTime  = min(CurrentTime + AggregationIntervalInMin, pLink->m_SimulationHorizon);
+		int StartTime = CurrentTime;
+		int EndTime  = min(CurrentTime + AggregationIntervalInMin, pLink->m_SimulationHorizon);
 
-			float max_power = 0; 
-			float min_power = 1;
+		float max_power = 0; 
+		float min_power = 1;
 
-			if(LinkMOEMode == MOE_reliability)
-			{
+		if(LinkMOEMode == MOE_reliability)
+		{
 			CurrentTime = int(CurrentTime/60)*60;  // hour by hour
 			AggregationIntervalInMin = 60;
 			EndTime  = min(CurrentTime + AggregationIntervalInMin, pLink->m_SimulationHorizon);
-			
-			}
-		for(CurrentTime  = StartTime; CurrentTime < EndTime; CurrentTime ++)
-		{
-		if(pLink->m_SimulationHorizon > CurrentTime && CurrentTime >=1 && CurrentTime < pLink->m_SimulationHorizon)  //DTAoutput
-		{
-
-			switch (LinkMOEMode)
-			{
-			case MOE_volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow/max_link_volume;
-				value = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow;
-				break;
-			case MOE_speed: 
-			case MOE_reliability: 
-				power = pLink->m_LinkMOEAry[CurrentTime].ObsSpeed/pLink->m_SpeedLimit;
-				value = pLink->m_LinkMOEAry[CurrentTime].ObsSpeed;
-				break;
-			case MOE_vcratio: power = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow/pLink->m_NumLanes /pLink->m_LaneCapacity;
-				value = power;
-				break;
-			case MOE_traveltime:
-				if(pLink->m_LinkMOEAry [CurrentTime].ObsTravelTimeIndex <=0.1)  // no data
-					power = 0;
-				else 
-					power = pLink->m_SpeedLimit / pLink->m_LinkMOEAry [CurrentTime].ObsSpeed/max_speed_ratio; 
-
-				value = pLink->m_LinkMOEAry [CurrentTime].ObsTravelTimeIndex;
-				break;
-			case MOE_density: power = pLink->m_LinkMOEAry[CurrentTime].ObsDensity /max_density; 
-				value = pLink->m_LinkMOEAry[CurrentTime].ObsDensity;
-				break;
-			case MOE_queue_length: power = pLink->m_LinkMOEAry[CurrentTime].ObsQueueLength  ; 
-				value = power;
-				break;
-
-			}
-
-			max_power = max(max_power, power);
-			min_power = min(min_power, power);
 
 		}
+		for(CurrentTime  = StartTime; CurrentTime < EndTime; CurrentTime ++)
+		{
+			if(pLink->m_SimulationHorizon > CurrentTime && CurrentTime >=1 && CurrentTime < pLink->m_SimulationHorizon)  //DTAoutput
+			{
+
+				switch (LinkMOEMode)
+				{
+				case MOE_volume:  power = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow/max_link_volume;
+					value = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow;
+					break;
+				case MOE_speed: 
+				case MOE_reliability: 
+					power = pLink->m_LinkMOEAry[CurrentTime].ObsSpeed/pLink->m_SpeedLimit;
+					value = pLink->m_LinkMOEAry[CurrentTime].ObsSpeed;
+					break;
+				case MOE_vcratio: power = pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow/pLink->m_NumLanes /pLink->m_LaneCapacity;
+					value = power;
+					break;
+				case MOE_traveltime:
+					if(pLink->m_LinkMOEAry [CurrentTime].ObsTravelTimeIndex <=0.1)  // no data
+						power = 0;
+					else 
+						power = pLink->m_SpeedLimit / pLink->m_LinkMOEAry [CurrentTime].ObsSpeed/max_speed_ratio; 
+
+					value = pLink->m_LinkMOEAry [CurrentTime].ObsTravelTimeIndex;
+					break;
+				case MOE_density: power = pLink->m_LinkMOEAry[CurrentTime].ObsDensity /max_density; 
+					value = pLink->m_LinkMOEAry[CurrentTime].ObsDensity;
+					break;
+				case MOE_queue_length: power = pLink->m_LinkMOEAry[CurrentTime].ObsQueueLength  ; 
+					value = power;
+					break;
+
+				}
+
+				max_power = max(max_power, power);
+				min_power = min(min_power, power);
+
+			}
 		}  // end of for loop
 
 		if(AggregationIntervalInMin > 1)
@@ -4746,7 +4756,9 @@ void CTLiteDoc::LoadSimulationOutput()
 	ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 	ReadSimulationLinkStaticMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
 
+
 	ReadVehicleBinFile(m_ProjectDirectory+"vehicle.bin");
+	//ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
 	ReadVehicleEmissionFile(m_ProjectDirectory+"output_vehicle_emission_MOE_summary.csv");
 }
 
@@ -4977,7 +4989,7 @@ void CTLiteDoc::OnSearchLinklist()
 
 				}
 				iDoc++;
-			
+
 			}
 
 			g_pLinkListDlg->ReloadData ();
@@ -5183,7 +5195,7 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 		bOKFlag = true;
 	}else
 	{  // Exit from On cancel
-	bOKFlag = false;
+		bOKFlag = false;
 	}
 	return bOKFlag;
 }
@@ -5194,8 +5206,8 @@ void CTLiteDoc::OnToolsRuntrafficassignment()
 		OnToolsPerformtrafficassignment();
 	else
 	{ //DTALite Settings
-	if(EditTrafficAssignmentOptions())
-		OnToolsPerformtrafficassignment();
+		if(EditTrafficAssignmentOptions())
+			OnToolsPerformtrafficassignment();
 	}
 
 }
@@ -5344,10 +5356,10 @@ void CTLiteDoc::OnFileChangecoordinatestolong()
 			}
 
 			// zone layer
-		std::map<int, DTAZone>	:: iterator itr;
+			std::map<int, DTAZone>	:: iterator itr;
 
-		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
-		{
+			for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
+			{
 				for(unsigned int si = 0; si< itr->second.m_ShapePoints.size(); si++)
 				{
 					itr->second.m_ShapePoints[si].x = (itr->second.m_ShapePoints[si].x - m_XOrigin)*m_XScale;
@@ -5355,7 +5367,7 @@ void CTLiteDoc::OnFileChangecoordinatestolong()
 
 				}
 
-		}
+			}
 
 			CString str_result;
 			str_result.Format ("The coordinates of %d nodes, %d links and %d zones have been adjusted to long/lat format.",m_NodeSet.size(),m_LinkSet.size(),m_ZoneMap.size());
@@ -5542,14 +5554,14 @@ void CTLiteDoc::OnImportdataImport()
 	if(dlg.DoModal() == IDOK)
 	{
 
-	CalculateDrawingRectangle();
-	m_bFitNetworkInitialized  = false;
-	UpdateAllViews(0);
-	if(m_ProjectDirectory.GetLength()==0 && m_NodeSet.size() > 0)  //with newly imported nodes
-	{
+		CalculateDrawingRectangle();
+		m_bFitNetworkInitialized  = false;
+		UpdateAllViews(0);
+		if(m_ProjectDirectory.GetLength()==0 && m_NodeSet.size() > 0)  //with newly imported nodes
+		{
 			OnFileSaveProjectAs();
 			return;
-	}
+		}
 
 	}
 }
@@ -5559,66 +5571,66 @@ float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 
 	float total_demand = 0;
 
-		// Convert a TCHAR string to a LPCSTR
-		CT2CA pszConvertedAnsiString (lpszFileName);
+	// Convert a TCHAR string to a LPCSTR
+	CT2CA pszConvertedAnsiString (lpszFileName);
 
-		// construct a std::string using the LPCSTR input
-		std::string strStd (pszConvertedAnsiString);
-
-
-		CCSVParser parser_ODMatrix;
+	// construct a std::string using the LPCSTR input
+	std::string strStd (pszConvertedAnsiString);
 
 
-		if (parser_ODMatrix.OpenCSVFile(strStd))
+	CCSVParser parser_ODMatrix;
+
+
+	if (parser_ODMatrix.OpenCSVFile(strStd))
+	{
+		while(parser_ODMatrix.ReadRecord())
 		{
-			while(parser_ODMatrix.ReadRecord())
+
+			int origin_zone_id, destination_zone_id;
+			float number_of_vehicles;
+			float starting_time_in_min = 0;
+			float ending_time_in_min = 1440;
+
+			if(parser_ODMatrix.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
+			{
+				AfxMessageBox("Field from_zone_id cannot be found in the demand csv file.");
+				return false;
+			}
+
+			if(parser_ODMatrix.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
+			{
+				AfxMessageBox("Field to_zone_id cannot be found in the demand csv file.");
+				return false;
+			}
+
+			DTADemand element;
+			element.from_zone_id = origin_zone_id;
+			element.to_zone_id = destination_zone_id;
+			element.starting_time_in_min = 0;
+			element.ending_time_in_min = 60;
+			for(unsigned int type = 0; type < m_DemandTypeVector.size(); type++)
 			{
 
-				int origin_zone_id, destination_zone_id;
-				float number_of_vehicles;
-				float starting_time_in_min = 0;
-				float ending_time_in_min = 1440;
+				std::ostringstream  demand_string;
+				demand_string << "number_of_trips_demand_type" << type+1;
 
-				if(parser_ODMatrix.GetValueByFieldName("from_zone_id",origin_zone_id) == false)
+				if(parser_ODMatrix.GetValueByFieldName(demand_string.str(),number_of_vehicles) == false)
 				{
-					AfxMessageBox("Field from_zone_id cannot be found in the demand csv file.");
+					CString str_number_of_vehicles_warning; 
+					str_number_of_vehicles_warning.Format("Field demand_value_type%d cannot be found in the demand csv file.", type);
+					AfxMessageBox(str_number_of_vehicles_warning);
 					return false;
 				}
-
-				if(parser_ODMatrix.GetValueByFieldName("to_zone_id",destination_zone_id) == false)
-				{
-					AfxMessageBox("Field to_zone_id cannot be found in the demand csv file.");
-					return false;
-				}
-
-				DTADemand element;
-				element.from_zone_id = origin_zone_id;
-				element.to_zone_id = destination_zone_id;
-				element.starting_time_in_min = 0;
-				element.ending_time_in_min = 60;
-				for(unsigned int type = 0; type < m_DemandTypeVector.size(); type++)
-				{
-
-					std::ostringstream  demand_string;
-					demand_string << "number_of_trips_demand_type" << type+1;
-
-					if(parser_ODMatrix.GetValueByFieldName(demand_string.str(),number_of_vehicles) == false)
-					{
-						CString str_number_of_vehicles_warning; 
-						str_number_of_vehicles_warning.Format("Field demand_value_type%d cannot be found in the demand csv file.", type);
-						AfxMessageBox(str_number_of_vehicles_warning);
-						return false;
-					}
-					m_ZoneMap[origin_zone_id].m_ODDemandMatrix [destination_zone_id].SetValue (type, number_of_vehicles);
-					element.number_of_vehicles_per_demand_type .push_back (number_of_vehicles);
-					total_demand+= number_of_vehicles;
-
-				}
-
+				m_ZoneMap[origin_zone_id].m_ODDemandMatrix [destination_zone_id].SetValue (type, number_of_vehicles);
+				element.number_of_vehicles_per_demand_type .push_back (number_of_vehicles);
+				total_demand+= number_of_vehicles;
 
 			}
+
+
 		}
-		return total_demand;
+	}
+	return total_demand;
 }
 
 CString CTLiteDoc::GetTableName(CString Tablename)
@@ -5668,462 +5680,9 @@ CString CTLiteDoc::ConstructSQL(CString Tablename)
 	return strSQL;
 
 }
-
 bool CTLiteDoc::CreateNetworkFromExcelFile()
-{
-	// Open the EXCEL file
-	std::string itsErrorMessage;
-	// Make sure the network is empty
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
-	m_NodeNametoIDMap.clear();
+{return true;}
 
-	char warning[200];
-	bool bExist=true;
-
-	CString strSQL;
-	CString str_duplicated_link;
-
-	// this accesses first sheet regardless of name.
-	int i= 0;
-
-
-	// Read record
-
-	strSQL = ConstructSQL("1-NODE");
-
-	if(strSQL.GetLength() > 0)
-	{
-		CRecordsetExt rsNode(&m_Database);
-		rsNode.Open(dbOpenDynaset, strSQL);
-
-		while(!rsNode.IsEOF())
-		{
-			int id = rsNode.GetLong(CString("node_id"),bExist,false);
-
-			if(!bExist)
-			{
-				AfxMessageBox("Field node_id cannot be found in the node table.");
-				return false;
-			}
-
-			if(id < 0)
-			{
-				sprintf_s(warning, "node_id: %d at row %d is invalid. Please check node table.", id, i+1);
-				AfxMessageBox(warning);
-				return false;
-			}
-			if(id == 0)
-			{ // reading this possible empty line
-
-				break; 
-			}
-
-			float x = rsNode.GetDouble(CString("x"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field x cannot be found in the node table.");
-				return false;
-			}
-
-			float y = rsNode.GetDouble(CString("y"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field y cannot be found in the node table.");
-				return false;
-			}
-
-			// Create and insert the node
-			DTANode* pNode = new DTANode;
-			pNode->pt.x = x;
-			pNode->pt.y = y;
-
-			pNode->m_NodeNumber = id;
-			pNode->m_NodeID = i;
-			pNode->m_ZoneID = 0;
-			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNameMap[i] = id;
-			m_NodeNametoIDMap[id] = i;
-			i++;
-
-			rsNode.MoveNext();
-		}	// end of while
-		rsNode.Close();
-
-	}
-	// link table
-
-	if(m_NodeSet.size() > 0)
-	{
-		// Read record
-		strSQL = ConstructSQL("2-LINK");
-
-		if(strSQL.GetLength () > 0)
-		{
-			CRecordsetExt rsLink(&m_Database);
-			rsLink.Open(dbOpenDynaset, strSQL);
-			i = 0;
-			float default_distance_sum = 0;
-			float length_sum = 0;
-			while(!rsLink.IsEOF())
-			{
-
-				int from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field from_node_id cannot be found in the link table.");
-					return false;
-				}
-
-				int to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
-				if(!bExist) 
-				{
-					AfxMessageBox("Field to_node_id cannot be found in the link table.");
-					return false;
-				}
-
-
-				if(from_node_id==0 ||to_node_id ==0)
-					break;
-
-				long link_id =  rsLink.GetLong(CString("link_id"),bExist,false);
-				if(!bExist)
-					link_id = 0;
-
-				if(m_NodeNametoIDMap.find(from_node_id)== m_NodeNametoIDMap.end())
-				{
-					sprintf_s(warning, "from_node_id %d cannot be found in the node table!",from_node_id);
-					AfxMessageBox(warning, MB_ICONINFORMATION);
-					return false;
-				}
-
-				if(m_NodeNametoIDMap.find(to_node_id)== m_NodeNametoIDMap.end())
-				{
-					sprintf_s(warning, "to_node_id %d cannot be found in the node table!",to_node_id);
-					return false;
-				}
-
-				DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_NodeNametoIDMap[to_node_id]);
-
-				if(pExistingLink)
-				{
-					char warning[100];
-					sprintf_s(warning, "Link %d-> %d is duplicated.\n", from_node_id,to_node_id);
-					if(str_duplicated_link.GetLength () < 3000)  // not adding and showing too many links
-					{
-						str_duplicated_link += warning;
-
-						continue;
-					}
-				}
-
-				float length = rsLink.GetDouble(CString("length_in_mile"),bExist,false);
-				if(!bExist) 
-				{
-					AfxMessageBox("Field length_in_mile cannot be found in the link table.");
-					return false;
-				}
-				if(length > 100)
-				{
-					sprintf_s(warning, "The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.",from_node_id,to_node_id);
-					AfxMessageBox(warning);
-					return false;
-				}
-
-				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field number_of_lanes cannot be found in the link table.");
-					return false;
-				}
-
-				float grade= rsLink.GetDouble(CString("grade"),bExist,false);
-
-				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit_in_mph"),bExist,false);
-				if(!bExist) 
-				{
-					AfxMessageBox("Field speed_limit_in_mph cannot be found in the link table.");
-					return false;
-				}
-
-				if(speed_limit_in_mph==0){
-					sprintf_s(warning, "Link %d -> %d has a speed limit of 0, please sort the link table by speed_limit_in_mph and re-check it!",from_node_id,to_node_id);
-					AfxMessageBox(warning, MB_ICONINFORMATION);
-					return false;
-				}
-
-				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
-					return false;
-				}
-
-				if(capacity_in_pcphpl<0){
-					sprintf_s(warning, "Link %d -> %d has a negative capacity, please sort the link table by capacity_in_veh_per_hour_per_lane and re-check it!",from_node_id,to_node_id);
-					AfxMessageBox(warning, MB_ICONINFORMATION);
-					return false;
-				}
-
-				int type = rsLink.GetLong(CString("link_type"),bExist,false);
-				if(!bExist) 
-				{
-					AfxMessageBox("Field link_type cannot be found in the link table.");
-					return false;
-				}
-
-				int direction = rsLink.GetLong(CString("direction"),bExist,false);
-				if(!bExist) 
-				{
-					AfxMessageBox("Field direction cannot be found in the link table.");
-					return false;
-				}
-
-				CString name = rsLink.GetCString(CString("name"));
-
-				float k_jam, wave_speed_in_mph;
-
-				if(type==1)
-				{
-					k_jam = 220;
-				}else
-				{
-					k_jam = 120;
-				}
-
-				wave_speed_in_mph = 12;
-
-
-				int m_SimulationHorizon = 1;
-
-				int link_code_start = 1;
-				int link_code_end = 1;
-
-				if (direction == -1) // reversed
-				{
-					link_code_start = 2; link_code_end = 2;
-				}
-
-				if (direction == 0) // two-directional link
-				{
-					link_code_start = 1; link_code_end = 2;
-				}
-
-				// no geometry information
-				CCoordinate cc_from, cc_to; 
-				cc_from.X = m_NodeIDMap[m_NodeNametoIDMap[from_node_id]]->pt.x;
-				cc_from.Y = m_NodeIDMap[m_NodeNametoIDMap[from_node_id]]->pt.y;
-
-				cc_to.X = m_NodeIDMap[m_NodeNametoIDMap[to_node_id]]->pt.x;
-				cc_to.Y = m_NodeIDMap[m_NodeNametoIDMap[to_node_id]]->pt.y;
-
-				std::vector<CCoordinate> CoordinateVector;
-
-				CoordinateVector.push_back(cc_from);
-				CoordinateVector.push_back(cc_to);
-
-
-				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
-				{
-
-					bool bNodeNonExistError = false;
-					int m_SimulationHorizon = 1;
-					DTALink* pLink = new DTALink(m_SimulationHorizon);
-					pLink->m_LinkNo = i;
-					pLink->m_Name  = name;
-					pLink->m_OrgDir = direction;
-					pLink->m_LinkID = link_id;
-
-					if(link_code == 1)  //AB link
-					{
-						pLink->m_FromNodeNumber = from_node_id;
-
-						pLink->m_ToNodeNumber = to_node_id;
-						pLink->m_Direction  = 1;
-
-						for(int si = 0; si < CoordinateVector.size(); si++)
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							pLink->m_ShapePoints .push_back (pt);
-						}
-
-					}
-
-					if(link_code == 2)  //BA link
-					{
-						pLink->m_FromNodeNumber = to_node_id;
-						pLink->m_ToNodeNumber = from_node_id;
-						pLink->m_Direction  = 1;
-
-						for(int si = CoordinateVector.size()-1; si >=0; si--)
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							pLink->m_ShapePoints .push_back (pt);
-						}
-					}
-
-
-					pLink->m_FromNodeID = m_NodeNametoIDMap[from_node_id];
-					pLink->m_ToNodeID= m_NodeNametoIDMap[to_node_id];
-
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
-
-					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
-
-					unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-					m_NodeIDtoLinkMap[LinkKey] = pLink;
-		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
-		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
-
-					pLink->m_NumLanes= number_of_lanes;
-					pLink->m_SpeedLimit= speed_limit_in_mph;
-					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
-					pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
-					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
-					pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-					pLink->m_link_type= type;
-					pLink->m_Grade = grade;
-
-					if(link_code == 2)  //BA link
-					{
-						int R_number_of_lanes = rsLink.GetLong(CString("R_number_of_lanes"),bExist,false);
-						float R_speed_limit_in_mph= rsLink.GetLong(CString("R_speed_limit_in_mph"),bExist,false);
-						float R_lane_capacity_in_vhc_per_hour= rsLink.GetDouble(CString("R_lane_capacity_in_vhc_per_hour"),bExist,false);
-						float R_grade= rsLink.GetDouble(CString("R_grade"),bExist,false);
-
-						pLink->m_NumLanes= R_number_of_lanes;
-						pLink->m_SpeedLimit= R_speed_limit_in_mph;
-						pLink->m_StaticSpeed = pLink->m_SpeedLimit;
-						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
-						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
-						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-						pLink->m_link_type= type;
-						pLink->m_Grade = R_grade;
-
-
-					}
-
-					pLink->m_Kjam = k_jam;
-					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
-
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
-
-					pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
-
-
-					default_distance_sum+= pLink->DefaultDistance();
-					length_sum += pLink ->m_Length;
-					//			pLink->SetupMOE();
-					m_LinkSet.push_back (pLink);
-					m_LinkNoMap[i]  = pLink;
-					i++;
-
-				}
-
-
-				rsLink.MoveNext();
-			}
-
-			rsLink.Close();
-
-			m_UnitMile  = 1.0f;
-
-			if(length_sum>0.000001f)
-				m_UnitMile=  default_distance_sum /length_sum;
-
-			m_UnitFeet = m_UnitMile/5280.0f;  
-
-			/*
-			if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
-			{
-
-			if(AfxMessageBox("Is the long/lat coordinate system used in this data set?", MB_YESNO) == IDYES)
-			{
-			m_LongLatCoordinateFlag = true;
-			m_UnitFeet = m_UnitMile/62/5280.0f;  // 62 is 1 long = 62 miles
-			}
-			}
-			*/
-
-			OffsetLink();
-
-			if(str_duplicated_link.GetLength() >0)
-			{
-				str_duplicated_link+= "\nDuplicated links are removed.";
-
-				AfxMessageBox(str_duplicated_link);
-			}
-
-		}
-
-	}
-
-
-	strSQL = ConstructSQL("2-1-LINK-TYPE");
-
-	// Read record
-
-	if(strSQL.GetLength () > 0)
-	{
-
-		CRecordsetExt rsLinkType(&m_Database);
-		rsLinkType.Open(dbOpenDynaset, strSQL);
-
-		while(!rsLinkType.IsEOF())
-		{
-			DTALinkType element;
-			int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field link_type cannot be found in input_link_type.csv.");
-				return false;
-			}
-			if(link_type_number ==0)
-				break;
-
-			element.link_type = link_type_number;
-			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
-			element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field freeway_flag cannot be found in the input_link_type.csv.");
-				return false;
-			}
-
-			element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field ramp_flag cannot be found in the input_link_type.csv.");
-				return false;
-			}
-
-			element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field arterial_flag cannot be found in the input_link_type.csv.");
-				return false;
-			}
-
-			m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
-			m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
-			m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
-
-			m_LinkTypeMap[element.link_type] = element;
-
-			rsLinkType.MoveNext ();
-		}
-		rsLinkType.Close();
-	}
-	return true;
-
-}
 bool CTLiteDoc::ImportSensorData()
 {
 
@@ -6681,6 +6240,8 @@ void CTLiteDoc::OnLinkAddvms()
 		// add VMS
 		MessageSign ms;
 
+		ms.StartDayNo = 0;
+		ms.EndDayNo  = 100;
 		ms.StartTime = 0;
 		ms.EndTime = 1440;
 		ms.ResponsePercentage= 20;
@@ -6797,7 +6358,7 @@ bool CTLiteDoc::WriteIncidentScenarioData()
 				if(element.bWorkzone == false)
 				{
 					fprintf(st,"\"[%d,%d]\",%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
-					element.DayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
+						element.StartDayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
 				}
 			}
 		}
@@ -6818,7 +6379,7 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 	{
 		// reset
 
-		fprintf(st, "Link,Day No,Start Time in Min,End Time in min,Capacity Reduction Percentage (%),Speed Limit (mph)\n");
+		fprintf(st, "Link,Start Day, End Day,Start Time in Min,End Time in min,Capacity Reduction Percentage (%),Speed Limit (mph)\n");
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -6830,8 +6391,8 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 
 				if(element.bWorkzone == true)
 				{
-					fprintf(st,"\"[%d,%d]\",%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
-					element.DayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
+					fprintf(st,"\"[%d,%d]\",%d,%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
+						element.StartDayNo  , element.EndDayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
 				}
 			}
 		}
@@ -6870,7 +6431,8 @@ bool CTLiteDoc::ReadVMSScenarioData()
 			if(plink!=NULL)
 			{
 				MessageSign ms;
-
+				ms.StartDayNo  = g_read_integer(st);
+				ms.EndDayNo  = g_read_integer(st);
 				ms.StartTime = g_read_integer(st);
 				ms.EndTime = g_read_integer(st);
 				ms.ResponsePercentage= g_read_float(st);
@@ -6893,14 +6455,15 @@ bool CTLiteDoc::WriteVMSScenarioData()
 	if(st!=NULL)
 	{
 		// reset
-		fprintf(st, "Link,Start Time in Min,End Time in min,Responce Percentage (%)\n");
+		fprintf(st, "Link,Start Day No,End Day No,Start Time in Min,End Time in min,Responce Percentage (%%)\n");
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 
 			for(unsigned int i = 0; i < (*iLink)->MessageSignVector .size(); i++)
 			{
-				fprintf(st,"\"[%d,%d]\",%3.0f,%3.0f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
+				fprintf(st,"\"[%d,%d]\",%d,%d,%3.0f,%3.0f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
+					(*iLink)->MessageSignVector[i].StartDayNo , (*iLink)->MessageSignVector[i].EndDayNo , 
 					(*iLink)->MessageSignVector[i].StartTime , (*iLink)->MessageSignVector[i].EndTime ,(*iLink)->MessageSignVector[i].ResponsePercentage);
 			}
 		}
@@ -7050,7 +6613,7 @@ void CTLiteDoc::OnLinkAddlink()
 
 		ReadLink_basedTollScenarioData();
 
-		// add VMS
+		// add toll
 		DTAToll toll;
 
 		toll.DayNo = 0;
@@ -7640,11 +7203,11 @@ void CTLiteDoc::OnToolsTraveltimereliabilityanalysis()
 	dlg.m_PathFreeFlowTravelTime = 20.0f;  // for a predefined corridor
 	dlg.DoModal ();
 
-		m_LinkMOEMode = MOE_reliability;
-		m_LinkBandWidthMode = LBW_link_volume;
-		ShowLegend(true);
-		GenerateOffsetLinkBand();
-		UpdateAllViews(0);
+	m_LinkMOEMode = MOE_reliability;
+	m_LinkBandWidthMode = LBW_link_volume;
+	ShowLegend(true);
+	GenerateOffsetLinkBand();
+	UpdateAllViews(0);
 
 }
 
@@ -8009,7 +7572,7 @@ void CTLiteDoc::OnExportGeneratezone()
 						int ToNodeNo =  m_NodeNametoIDMap[itrTo->second.m_ActivityLocationVector[j].NodeNumber];
 
 						float TotalCost = 0;
-					m_Network.SimplifiedTDLabelCorrecting_DoubleQueue(FromNodeNo, 0, ToNodeNo, 1, 10.0f,PathLinkList,TotalCost, false, false, false,0);   // Pointer to previous node (node)
+						m_Network.SimplifiedTDLabelCorrecting_DoubleQueue(FromNodeNo, 0, ToNodeNo, 1, 10.0f,PathLinkList,TotalCost, false, false, false,0);   // Pointer to previous node (node)
 
 						total_travel_time += TotalCost;
 
@@ -8024,12 +7587,12 @@ void CTLiteDoc::OnExportGeneratezone()
 
 		}//per destination zone
 
-			fclose(st);
+		fclose(st);
 	}else
 	{
 		CString msg;
 		msg.Format("File %s cannot be opened.\nIt might be currently used and locked by EXCEL.",directory+"output_travel_time_matrix.csv");
-	AfxMessageBox(msg);
+		AfxMessageBox(msg);
 	}
 }
 
@@ -8037,9 +7600,9 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 {
 	if(m_ProjectDirectory.GetLength()==0)
 	{
-			AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
-			OnFileSaveProjectAs();
-			return;
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
 	}
 
 	CWaitCursor wc;
@@ -8083,7 +7646,7 @@ void CTLiteDoc::OnLinkmoedisplayQueuelength()
 	ShowLegend(false);
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
-	
+
 }
 
 void CTLiteDoc::OnUpdateLinkmoedisplayQueuelength(CCmdUI *pCmdUI)
@@ -8100,20 +7663,20 @@ void CTLiteDoc::ZoomToSelectedLink(int SelectedLinkNo)
 {
 	if(m_LinkNoMap.find(SelectedLinkNo) != m_LinkNoMap.end())
 	{
-	DTALink* pLink= m_LinkNoMap [SelectedLinkNo];
-	GDPoint pt;
-	pt.x = (pLink->m_FromPoint.x + pLink->m_ToPoint.x)/2;
-	pt.y = (pLink->m_FromPoint.y + pLink->m_ToPoint.y)/2;
-	m_Origin = pt;
+		DTALink* pLink= m_LinkNoMap [SelectedLinkNo];
+		GDPoint pt;
+		pt.x = (pLink->m_FromPoint.x + pLink->m_ToPoint.x)/2;
+		pt.y = (pLink->m_FromPoint.y + pLink->m_ToPoint.y)/2;
+		m_Origin = pt;
 
-	CTLiteView* pView = 0;
-	POSITION pos = GetFirstViewPosition();
-	if(pos != NULL)
-	{
-		pView = (CTLiteView*) GetNextView(pos);
-		if(pView!=NULL)
-		pView->m_Origin = m_Origin;
-	}
+		CTLiteView* pView = 0;
+		POSITION pos = GetFirstViewPosition();
+		if(pos != NULL)
+		{
+			pView = (CTLiteView*) GetNextView(pos);
+			if(pView!=NULL)
+				pView->m_Origin = m_Origin;
+		}
 
 	}
 }
@@ -8156,16 +7719,16 @@ void CTLiteDoc::OnMoePathlist()
 
 bool g_TestValidDocument(CTLiteDoc* pDoc)
 {
-			std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
-			while (iDoc != g_DocumentList.end())
-			{
-					if(pDoc == (*iDoc))
-						return true;
-				
-				iDoc++;
-			}
+	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+	while (iDoc != g_DocumentList.end())
+	{
+		if(pDoc == (*iDoc))
+			return true;
 
-			return false;
+		iDoc++;
+	}
+
+	return false;
 }
 
 void CTLiteDoc::OnViewShowmoe()
@@ -8176,7 +7739,7 @@ void CTLiteDoc::OnViewShowmoe()
 		if(g_LinkMOEDlg==NULL)
 		{
 			g_LinkMOEDlg = new CDlgMOE();
-			
+
 			g_LinkMOEDlg->m_TmLeft = 0 ;
 			g_LinkMOEDlg->m_TmRight = g_Simulation_Time_Horizon ;
 			g_LinkMOEDlg->m_pDoc = this;
@@ -8200,7 +7763,7 @@ void CTLiteDoc::OnViewShowmoe()
 						g_LinkMOEDlg->m_bDoc2Ready = true;
 					}
 				}
-							iDoc++;
+				iDoc++;
 			}
 			g_LinkMOEDlg->ShowWindow(SW_HIDE);
 			g_LinkMOEDlg->ShowWindow(SW_SHOW);
@@ -8257,44 +7820,44 @@ void CTLiteDoc::On3Viewoddatainexcel()
 
 void CTLiteDoc::OnMoeOpenallmoetables()
 {
-/*	CDlgMOETabView dlg;
+	/*	CDlgMOETabView dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
-*/
+	*/
 
 	OpenCSVFileInExcel(m_ProjectDirectory+"output_assignment_log.csv");
 	OpenCSVFileInExcel(m_ProjectDirectory+"output_NetworkMOE.csv");
 	OpenCSVFileInExcel(m_ProjectDirectory+"output_ODMOE.csv");
 	OpenCSVFileInExcel(m_ProjectDirectory+"output_LinkMOE.csv");
-//	OpenCSVFileInExcel(m_ProjectDirectory+"output_NetworkTDMOE.csv");
-//	OpenCSVFileInExcel(m_ProjectDirectory+"output_LinkTDMOE.csv");
+	//	OpenCSVFileInExcel(m_ProjectDirectory+"output_NetworkTDMOE.csv");
+	//	OpenCSVFileInExcel(m_ProjectDirectory+"output_LinkTDMOE.csv");
 }
 
 
 
 void CTLiteDoc::OnBnClickedButtonDatabase()
 {
-	
+
 }
 
 void CTLiteDoc::OnToolsUnittesting()
 {
 
-		if(g_pUnitTestingListDlg==NULL)
-		{
-			g_pUnitTestingListDlg = new CDlg_UnitTestingList();
-			g_pUnitTestingListDlg->m_pDoc = this;
-			g_pUnitTestingListDlg->Create(IDD_DIALOG_UNIT_TEST_LIST);
-		}
+	if(g_pUnitTestingListDlg==NULL)
+	{
+		g_pUnitTestingListDlg = new CDlg_UnitTestingList();
+		g_pUnitTestingListDlg->m_pDoc = this;
+		g_pUnitTestingListDlg->Create(IDD_DIALOG_UNIT_TEST_LIST);
+	}
 
-		// update using pointer to the active document; 
+	// update using pointer to the active document; 
 
-		if(g_pUnitTestingListDlg->GetSafeHwnd())
-		{
-			g_pUnitTestingListDlg->m_pDoc = this;
-			g_pUnitTestingListDlg->ShowWindow(SW_HIDE);
-			g_pUnitTestingListDlg->ShowWindow(SW_SHOW);
-		}
+	if(g_pUnitTestingListDlg->GetSafeHwnd())
+	{
+		g_pUnitTestingListDlg->m_pDoc = this;
+		g_pUnitTestingListDlg->ShowWindow(SW_HIDE);
+		g_pUnitTestingListDlg->ShowWindow(SW_SHOW);
+	}
 }
 
 void CTLiteDoc::OnViewTraininfo()
@@ -8313,6 +7876,61 @@ void CTLiteDoc::OnImportAmsdataset()
 		_T("AMS (*.ini)|*.ini|"));
 	if(dlg.DoModal() == IDOK)
 	{
-		OnOpenAMSDocument(dlg.GetPathName());
+		OnOpenTrafficNetworkDocument(dlg.GetPathName(),true,true);
 	}
+
+	CDlgFileLoading dlg_loading;
+	dlg_loading.m_pDoc = this;
+	dlg_loading.DoModal ();
+
+	UpdateAllViews(0);
+
+}
+
+void CTLiteDoc::OnDemandfileOddemandmatrix()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("Demand matrix csv (*.csv)|*.csv|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		ReadDemandMatrixFile(dlg.GetPathName(),1);
+	}
+}
+
+void CTLiteDoc::OnDemandfileHovoddemandmatrix()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("Demand matrix csv (*.csv)|*.csv|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		ReadDemandMatrixFile(dlg.GetPathName(),2);
+	}
+}
+
+void CTLiteDoc::OnDemandfileTruckoddemandmatrix()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("Demand matrix csv (*.csv)|*.csv|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		ReadDemandMatrixFile(dlg.GetPathName(),3);
+	}
+}
+
+void CTLiteDoc::OnDemandfileIntermodaloddemandmatrix()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("Demand matrix csv (*.csv)|*.csv|"));
+	if(dlg.DoModal() == IDOK)
+	{
+		ReadDemandMatrixFile(dlg.GetPathName(),4);
+	}
+}
+
+void CTLiteDoc::OnLinkAddworkzone()
+{
+}
+
+void CTLiteDoc::OnLinkAddincident()
+{
 }

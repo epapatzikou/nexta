@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Geometry.h"
+#include "CSVParser.h"
 #include "TLite.h"
 #include "MainFrm.h"
 #include "Shellapi.h"
@@ -39,7 +40,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(strcmp(model_units,"MI")== 0 )
 		bMileFlag = true;
 
-	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",0,FileName);
+	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",1,FileName);
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
 	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
 	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
@@ -339,7 +340,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name);
 				r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,number_of_lanes);
 
+				}else
+				{  // no reserved link fields
+					r_number_of_lanes = number_of_lanes;
+					r_speed_limit_in_mph = speed_limit_in_mph;
+					r_capacity_in_pcphpl= capacity_in_pcphpl;
+				
+				
 				}
+
+				// To Do Error checking, Numbera of lanes... 
 
 				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
 				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
@@ -354,7 +364,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float grade = 0;
 				float AADT_conversion_factor = 0.1;
 				float k_jam, wave_speed_in_mph;
-				if(m_LinkTypeFreewayMap.find(type)!=m_LinkTypeFreewayMap.end())  // freeway link
+				if(m_LinkTypeMap[type].IsFreeway ())  // freeway link
 				{
 					k_jam = 220;
 				}else
@@ -569,7 +579,7 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 					
 					}
 
-					if(m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+					if(m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 					{ 
 						// mark them as activity location 
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
@@ -621,6 +631,7 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 			OffsetLink();
 
 	}
+
 
 	// ************************************/
 	// 3: zone table
@@ -725,8 +736,86 @@ DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_
 	return true;
 }
 
+bool  CTLiteDoc::ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type)
+{
+
+	float total_demand = 0;
+    long line_no = 0;
+	CCSVParser parser;
+
+	m_AMSLogFile << "Reading OD demand matrix, demand type: " << "," << demand_type << ", file: " << lpszFileName << endl;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		parser.ReadRecord();  // header
+	while(parser.ReadRecord())
+	{
+		bool AMSLogOutput = true;
+
+		int origin_zone, destination_zone;
+			float number_of_vehicles ;
+
+			int j;
+
+		std::map<int, DTAZone>	:: const_iterator itr_o;
+		std::map<int, DTAZone>	:: const_iterator itr_d;
+
+		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
+		{
+			int origin_zone  = 0;
+			if(parser.GetValueByFieldName("zone_id",origin_zone) == false)
+
+
+				if(m_ZoneMap.find(origin_zone) == m_ZoneMap.end())
+				{
+					CString str;
+					str.Format("origin zone id %d in OD demand matrix file %s has not been defined. Please check. ", origin_zone, lpszFileName);
+					AfxMessageBox(str);
+					return false;
+				}
+
+				for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
+			{
+					if(line_no >= 10)
+					AMSLogOutput = false;
+
+					int destination_zone = itr_d->first ;
+					string dest_str; 
+					
+					char c_str[10]; 
+					sprintf(c_str,"%d", destination_zone);
+					string str;
+					str = c_str;
+
+					parser.GetValueByFieldName(str,number_of_vehicles);
+
+					if(number_of_vehicles < -0.0001)
+						number_of_vehicles = 0;
+
+
+					if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
+					{
+						m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+						total_demand += number_of_vehicles;
+					}
+
+					if(AMSLogOutput)
+						m_AMSLogFile << origin_zone << "," << destination_zone << "," ;
+					if(number_of_vehicles < -0.0001)
+						number_of_vehicles = 0;
+				} // for each destination 
+					
+		} // for each origin
+	
+	}  // for each line
+	}
+return false;
+}
+
 bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
 {
+
+	m_AMSLogFile << "Reading OD demand file (TransCAD format): " << ", file: " << lpszFileName << endl;
 
   float LengthinMB;
   FILE* pFile;
@@ -784,8 +873,6 @@ bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
 					if(AMSLogOutput)					
 						m_AMSLogFile << number_of_vehicles << "," ;
 
-
-
 					if(number_of_vehicles < -0.0001)
 						number_of_vehicles = 0;
 
@@ -822,4 +909,68 @@ bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)
 		//		g_ProgramStop();
 	}
 
+	return true;
 }
+
+bool  CTLiteDoc::RunGravityModel(LPCTSTR lpszFileName,int demand_type)
+{
+
+	float total_demand = 0;
+    long line_no = 0;
+
+		m_AMSLogFile << endl;
+		m_AMSLogFile << "zone_id,";
+
+		std::map<int, DTAZone>	:: const_iterator itr_o;
+		std::map<int, DTAZone>	:: const_iterator itr_d;
+
+		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)  // for each origin
+		{
+		m_AMSLogFile <<  itr_o->first << ",";
+		}
+
+		m_AMSLogFile << ",,origin_production,sub_total_per_origin" << endl;
+
+		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)  // for each origin
+		{
+			float total_relative_attraction = 0;
+
+			m_AMSLogFile <<  itr_o->first << ",";
+
+			int destination_zone;
+
+			for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
+			{
+
+			destination_zone = itr_d->first ;
+			total_relative_attraction += (itr_d)->second .m_Attraction;
+	
+			}
+
+			if(total_relative_attraction <0.0001f)
+				total_relative_attraction =  0.001f;
+
+			float sub_total = 0 ;
+			for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)  // for each destination
+			{
+					int origin_zone  = itr_o->first ;
+					destination_zone = itr_d->first ;
+
+					float number_of_vehicles = itr_o->second .m_Production * (itr_d)->second .m_Attraction / total_relative_attraction;
+
+					sub_total += number_of_vehicles;
+					m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+						total_demand += number_of_vehicles;
+
+						m_AMSLogFile <<  number_of_vehicles << ",";
+
+					if(number_of_vehicles < -0.0001)
+						number_of_vehicles = 0;
+			}
+				m_AMSLogFile <<",," << itr_o->second .m_Production << ","<< sub_total <<  endl;
+
+		} // for each origin
+
+return false;
+}
+

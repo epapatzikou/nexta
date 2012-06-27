@@ -19,7 +19,7 @@ CGridColumnTraitText::CGridColumnTraitText()
 	:m_pOldFont(NULL)
 	,m_TextColor(COLORREF(-1))
 	,m_BackColor(COLORREF(-1))
-	,m_SortFormatNumber(false)
+	,m_SortFormatNumber(true)
 	,m_OldTextColor(COLORREF(-1))
 	,m_OldBackColor(COLORREF(-1))
 {}
@@ -134,12 +134,21 @@ void CGridColumnTraitText::OnCustomDraw(CGridListCtrlEx& owner, NMLVCUSTOMDRAW* 
 //! @param bAscending Perform sorting in ascending or descending order
 //! @return Is left value less than right value (-1) or equal (0) or larger (1)
 //------------------------------------------------------------------------
+
+int isNumeric (LPCTSTR s)
+{
+    if (s == NULL || *s == '\0' || isspace(*s))
+      return 0;
+    char * p;
+    strtod (s, &p);
+    return *p == '\0';
+}
 int CGridColumnTraitText::OnSortRows(LPCTSTR pszLeftValue, LPCTSTR pszRightValue, bool bAscending)
 {
-	if (m_SortFormatNumber)
+	if (isNumeric(pszLeftValue) && isNumeric(pszRightValue))
 	{
-		int nLeftValue = _ttoi(pszLeftValue);
-		int nRightValue = _ttoi(pszRightValue);
+		float nLeftValue = atof(pszLeftValue);
+		float nRightValue = atof(pszRightValue);
 		if (bAscending)
 			return nLeftValue - nRightValue;
 		else
