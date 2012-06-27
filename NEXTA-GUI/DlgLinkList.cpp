@@ -102,6 +102,7 @@ void CDlgLinkList::ReloadData()
 	std::vector<std::string> m_Column_names;
 
 	m_Column_names.push_back ("No.");
+	m_Column_names.push_back ("Link Name");
 	m_Column_names.push_back ("From Node");
 	m_Column_names.push_back ("To Node");
 	m_Column_names.push_back ("Length (ml)");
@@ -142,12 +143,16 @@ void CDlgLinkList::ReloadData()
 	
 	}
 
+	// single view
+	m_Column_names.push_back ("Obs Volume");
+	m_Column_names.push_back ("Volume Error");
+	m_Column_names.push_back ("Error %");
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
 	{
 
-		CGridColumnTrait* pTrait = NULL;
+		CGridColumnTraitText* pTrait = NULL;
 //		pTrait = new CGridColumnTraitEdit();
 		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
 		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
@@ -162,25 +167,25 @@ void CDlgLinkList::ReloadData()
 		int type  = (*iLink) ->m_link_type ;
 		if(m_LinkSelectionMode == eLinkSelection_FreewayOnly) 
 		{
-			if(m_pDoc->m_LinkTypeFreewayMap[type ]!=1) 
+			if(m_pDoc->m_LinkTypeMap[type ].IsFreeway () == false) 
 			continue; 
 		}
 		
 		if(m_LinkSelectionMode == eLinkSelection_RampOnly) 
 		{
-			if(m_pDoc->m_LinkTypeRampMap[type ]!=1) 
+			if(m_pDoc->m_LinkTypeMap[type ].IsRamp () == false) 
 			continue; 
 		}
 
 		if(m_LinkSelectionMode == eLinkSelection_ArterialOnly) 
 		{
-			if(m_pDoc->m_LinkTypeArterialMap[type ]!=1) 
+			if(m_pDoc->m_LinkTypeMap[type ].IsArterial () == false) 
 			continue; 
 		}
 
 		if(m_LinkSelectionMode == eLinkSelection_NoConnectors) 
 		{
-			if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) 
+			if(m_pDoc->m_LinkTypeMap[type ].IsConnector()) 
 			continue; 
 		}
 
@@ -188,70 +193,86 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%d",(*iLink)->m_LinkNo );
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,text , 0, 0, 0, NULL);
 
-		sprintf_s(text, "%d",(*iLink)->m_FromNodeNumber);
-		m_ListCtrl.SetItemText(Index,1,text);
+		m_ListCtrl.SetItemText(Index,1,(*iLink)->m_Name .c_str ());
 
-		sprintf_s(text, "%d",(*iLink)->m_ToNodeNumber);
+		sprintf_s(text, "%d",(*iLink)->m_FromNodeNumber);
 		m_ListCtrl.SetItemText(Index,2,text);
 
-		sprintf_s(text, "%5.2f",(*iLink)->m_Length);
+		sprintf_s(text, "%d",(*iLink)->m_ToNodeNumber);
 		m_ListCtrl.SetItemText(Index,3,text);
 
-		sprintf_s(text, "%d",(*iLink)->m_NumLanes );
+		sprintf_s(text, "%5.2f",(*iLink)->m_Length);
 		m_ListCtrl.SetItemText(Index,4,text);
 
-		sprintf_s(text, "%4.0f",(*iLink)->m_SpeedLimit  );
+		sprintf_s(text, "%d",(*iLink)->m_NumLanes );
 		m_ListCtrl.SetItemText(Index,5,text);
 
-		sprintf_s(text, "%4.0f",(*iLink)->m_LaneCapacity  );
+		sprintf_s(text, "%4.0f",(*iLink)->m_SpeedLimit  );
 		m_ListCtrl.SetItemText(Index,6,text);
+
+		sprintf_s(text, "%4.0f",(*iLink)->m_LaneCapacity  );
+		m_ListCtrl.SetItemText(Index,7,text);
 
 		if(m_pDoc->m_LinkTypeMap.find((*iLink)->m_link_type) != m_pDoc->m_LinkTypeMap.end())
 		{
 		sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type].link_type_name.c_str ());
-		m_ListCtrl.SetItemText(Index,7,text);
+		m_ListCtrl.SetItemText(Index,8,text);
 		}
 
 	if(m_pDoc2==NULL)  // single document view
 	{
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
-		m_ListCtrl.SetItemText(Index,8,text);
-
-		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
 		m_ListCtrl.SetItemText(Index,9,text);
 
-		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
+		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
 		m_ListCtrl.SetItemText(Index,10,text);
+
+		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
+		m_ListCtrl.SetItemText(Index,11,text);
+
+		sprintf_s(text, "%.0f",(*iLink)->m_ReferenceFlowVolume     );
+		m_ListCtrl.SetItemText(Index,12,text);
+
+		float error = 0;
+		if( (*iLink)->m_ReferenceFlowVolume >=1)
+			error = (*iLink)->m_TotalVolume - (*iLink)->m_ReferenceFlowVolume ;
+		sprintf_s(text, "%.0f", error);
+		m_ListCtrl.SetItemText(Index,13,text);
+
+		float error_percentage = error / max(1,(*iLink)->m_ReferenceFlowVolume)*100 ;
+		sprintf_s(text, "%.1f", error_percentage);
+		m_ListCtrl.SetItemText(Index,14,text);
+
 	}else
 	{     // two document view
 
 
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
-		m_ListCtrl.SetItemText(Index,8,text);
+		m_ListCtrl.SetItemText(Index,9,text);
 
 		//9  
 		// 10
 
 		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
-		m_ListCtrl.SetItemText(Index,11,text);
+		m_ListCtrl.SetItemText(Index,12,text);
 
 		// 12
 		//13
 
 		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
-		m_ListCtrl.SetItemText(Index,14,text);
+		m_ListCtrl.SetItemText(Index,15,text);
 
 		// 15 m_pDoc2
 		DTALink* pLink2 = m_pDoc2->FindLinkWithNodeNumbers ((*iLink)->m_FromNodeNumber ,(*iLink)->m_ToNodeNumber );
 		if(pLink2!=NULL)  // a link is found in the second document
 		{
 		sprintf_s(text, "%d",pLink2->m_TotalVolume);
-		m_ListCtrl.SetItemText(Index,15,text);
+		m_ListCtrl.SetItemText(Index,16,text);
 
 		int diff = pLink2->m_TotalVolume - (*iLink)->m_TotalVolume;
 
 		sprintf_s(text, "%d",diff);
-		m_ListCtrl.SetItemText(Index,16,text);
+		m_ListCtrl.SetItemText(Index,17,text);
 
 		
 		}

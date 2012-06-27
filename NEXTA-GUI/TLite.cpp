@@ -215,8 +215,9 @@ void CTLiteApp::OnAppAbout()
 
 void CTLiteApp::OnFileOpen()
 {
-   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		   _T("AMS and DYNASMART Projects (*.ini,*.dws)|*.ini;*.dws||"));
+	static char BASED_CODE szFilter[] = "AMS Files (*.ini)|*.ini|DYNASMART Workspace Files (*.dws)|*.dws|*.ini; *.dws|All Files (*.*)|*.*||";
+
+   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();

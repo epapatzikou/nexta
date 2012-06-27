@@ -233,8 +233,50 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		return false;
 		//		g_ProgramStop();
 	}
-	// read link xy data
+	
+	FILE *st;
+	fopen_s(&st,directory+"workzone.dat","r");
+	if(st!=NULL)
+	{
+		int total_number = g_read_integer(st);
+		int i= 0 ;
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn == -1)
+				break;
 
+			int dsn =  g_read_integer(st);
+
+			DTALink* plink = FindLinkWithNodeNumbers(usn,dsn,directory+"workzone.dat" );
+
+			if(plink!=NULL)
+			{
+				CapacityReduction cs;
+				cs.bWorkzone  = true; 
+
+				cs.StartDayNo = 0;
+				cs.EndDayNo = 100;
+				cs.StartTime = g_read_float(st);
+				cs.EndTime = g_read_float(st);
+				cs.LaneClosureRatio= g_read_float(st);
+				cs.SpeedLimit = g_read_float(st);
+				 g_read_float(st);
+
+				plink->CapacityReductionVector.push_back(cs);
+				i++;
+			}
+		}
+		fclose(st);
+	}
+
+	ReadSensorData(directory+"input_sensor.csv");
+
+	// read link xy data
+	int ReadLinkXYFile = g_GetPrivateProfileInt("display","read_link_x_y",0,ProjectFileName);
+
+	if(ReadLinkXYFile) 
+	{
 	FILE* pFileLinkXY = NULL;
 	fopen_s(&pFileLinkXY,directory+"linkxy.dat","r");
 	if(pFileLinkXY!=NULL)
@@ -271,8 +313,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			}
 		}
 		fclose(pFileLinkXY);
+	}  // end of reading link xy 
 	}
-
 	//read zone.dat
 	FILE* pZoneXY = NULL;
 	fopen_s(&pZoneXY,directory+"zone.dat","r");
@@ -411,6 +453,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 
+	int ReadDemandFile = g_GetPrivateProfileInt("display","read_demand",0,ProjectFileName);
+
+	if(ReadDemandFile)
+	{
 	// read demand.dat
 	fopen_s(&pFile,directory+"demand.dat","r");
 	if(pFile!=NULL)
@@ -453,32 +499,14 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		fclose(pFile);
 	}
-
+	}
 	// set link type
 
 
-	for(int type = 0; type <=9; type++)
-	{
-	m_LinkTypeFreewayMap[type] = 0;	
-	m_LinkTypeRampMap [type] = 0;
-	m_LinkTypeArterialMap[type] = 0;
-	m_LinkTypeConnectorMap[type] = 0;
-	m_LinkTypeTransitMap[type] = 0;
-	m_LinkTypeWalkingMap[type] = 0;
-	}
+	m_LinkTypeMap[1].type_code  = 'f';
+	m_LinkTypeMap[2].type_code  = 'f';
 
-	m_LinkTypeFreewayMap[1] = 1;
-	m_LinkTypeFreewayMap[2] = 1;
-
-
-	m_LinkTypeRampMap [3] = 1;
-	m_LinkTypeRampMap [4] = 1;
-	m_LinkTypeArterialMap[5] = 1;
-	m_LinkTypeFreewayMap[6] = 1;
-	m_LinkTypeFreewayMap[7] = 1;
-	m_LinkTypeFreewayMap[8] = 1;
-	m_LinkTypeFreewayMap[9] = 1;
-
+	/// to do: 
 	m_NodeTypeMap[0] = "";
 	m_NodeTypeMap[1] = "No Control";
 	m_NodeTypeMap[2] = "Yield Sign";
@@ -500,46 +528,46 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	DTALinkType element;
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "Freeway";
 	m_LinkTypeMap[1] = element;
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "Freeway with Detector";
 	m_LinkTypeMap[2] = element;
 
-	element.ramp_flag = 1;
+	element.type_code = 'r';
 	element.link_type_name = "On Ramp";
 	m_LinkTypeMap[3] = element;
 
-	element.ramp_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "Off Ramp";
 	m_LinkTypeMap[4] = element;
 
 
-	element.arterial_flag = 1;
+	element.type_code = 'r';
 	element.link_type_name = "Arterial";
 	m_LinkTypeMap[5] = element;
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "HOT";
 	m_LinkTypeMap[6] = element;
 
 
-	element.highway_flag  = 1;
+	element.type_code = 'h';
 	element.link_type_name = "Highway";
 	m_LinkTypeMap[7] = element;
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "HOV";
 	m_LinkTypeMap[8] = element;
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "FreewayHOT";
 	m_LinkTypeMap[9] = element;
 
 
-	element.freeway_flag = 1;
+	element.type_code = 'f';
 	element.link_type_name = "FreewayHOV";
 	m_LinkTypeMap[10] = element;
 
@@ -554,7 +582,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		
 	// read control.dat
-	FILE* st;
+
 	fopen_s(&st,directory+"control.dat","r");
 	if(st != NULL)
 	{
@@ -785,8 +813,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	// density_in_veh_per_mile_per_lane
 
-
-
 	/*
 	fopen_s(&st,fname,"r");
 	if(st!=NULL)
@@ -818,6 +844,12 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	*/
 	// read vehicle trajectory file
 
+
+
+	int ReadVehicleTrajectoryFile = g_GetPrivateProfileInt("display","read_trajectory",0,ProjectFileName);
+
+	if(ReadVehicleTrajectoryFile)
+	{
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
 	float LengthinMB;
@@ -961,6 +993,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	fclose(pFile);
 
 	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded.",m_VehicleSet.size());
+	}
 	}
 	}
 

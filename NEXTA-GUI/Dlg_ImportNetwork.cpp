@@ -220,55 +220,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 			element.link_type = link_type_number;
 			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
-			element.freeway_flag   = rsLinkType.GetLong (CString("freeway_flag"),bExist,false);
+			element.type_code    = rsLinkType.GetCString (CString("type_name"));
 			if(!bExist) 
 			{
 				m_MessageList.AddString ("Field freeway_flag cannot be found in the input_link_type.csv.");
 				return;
 			}
-
-			element.ramp_flag   = rsLinkType.GetLong (CString("ramp_flag"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString("Field ramp_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.arterial_flag    = rsLinkType.GetLong (CString("arterial_flag"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString("Field arterial_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.connector_flag    = rsLinkType.GetLong (CString("connector_flag"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString("Field connector_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.transit_flag    = rsLinkType.GetLong (CString("transit_flag"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString("Field transit_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			element.walking_flag    = rsLinkType.GetLong (CString("walking_flag"),bExist,false);
-			if(!bExist)
-			{
-				m_MessageList.AddString("Field walking_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
-
-			m_pDoc->m_LinkTypeFreewayMap[element.link_type] = element.freeway_flag ;
-			m_pDoc->m_LinkTypeArterialMap[element.link_type] = element.arterial_flag  ;
-			m_pDoc->m_LinkTypeRampMap[element.link_type] = element.ramp_flag  ;
-			m_pDoc->m_LinkTypeConnectorMap[element.link_type] = element.connector_flag  ;
-			m_pDoc->m_LinkTypeTransitMap[element.link_type] = element.transit_flag  ;
-			m_pDoc->m_LinkTypeWalkingMap[element.link_type] = element.walking_flag  ;
-			
 
 			m_pDoc->m_LinkTypeMap[element.link_type] = element;
 
@@ -413,7 +370,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 							pt.y = CoordinateVector[0].Y;
 							
 							bool ActivityLocationFlag = false;
-							if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+							if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 								ActivityLocationFlag = true;
 
 							m_pDoc->AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
@@ -428,7 +385,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 							pt.y = CoordinateVector[CoordinateVector.size()-1].Y;
 
 							bool ActivityLocationFlag = false;
-							if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+							if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 								ActivityLocationFlag = true;
 
 							m_pDoc->AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
@@ -438,7 +395,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				}
 
-				if(m_bRemoveConnectors && m_pDoc->m_LinkTypeConnectorMap[type ]==1) 
+				if(m_bRemoveConnectors && m_pDoc->m_LinkTypeMap[type ].IsConnector()) 
 				{  // skip connectors
 					rsLink.MoveNext();
 					continue;
@@ -704,7 +661,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
-					if(m_pDoc->m_LinkTypeConnectorMap[type ]==1) // adjacent node of connectors
+					if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 					{ 
 						// mark them as activity location 
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
@@ -922,7 +879,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
 			{
-				if(m_pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  // connectors
+				if(m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // connectors
 				{
 					
 					GDPoint pt_from = (*iLink)->m_FromPoint ;

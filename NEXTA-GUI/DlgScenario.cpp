@@ -37,9 +37,9 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 4
+#define _MAX_SCENARIO_SIZE 5
 // CDlgScenario dialog
-static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Incident","Link_Based_Toll","Distance_Based_Toll"};
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Distance_Based_Toll"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -66,7 +66,38 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 	switch (i)
 	{
 	case 0:  //work zone
-	case 1:  // incident
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Start Day No");
+		HeaderList.push_back("End Day No");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Capacity Reduction Percentage (%)");
+		HeaderList.push_back("Speed Limit (mph)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("100");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("40");
+		DefaultList.push_back("45");
+		break;
+	case 1:  // VMS
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Start Day No");
+		HeaderList.push_back("End Day No");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Responce Percentage (%)");
+
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("100");
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("100");
+		break;
+	case 2:  // incident
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Day No");
 		HeaderList.push_back("Start Time in Min");
@@ -74,13 +105,13 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		HeaderList.push_back("Capacity Reduction Percentage (%)");
 		HeaderList.push_back("Speed Limit (mph)");
 
-		DefaultList.push_back("1");
+		DefaultList.push_back("0");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
 		DefaultList.push_back("40");
 		DefaultList.push_back("45");
 		break;
-	case 2:
+	case 3:
 
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Day No");
@@ -98,7 +129,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1");
 		DefaultList.push_back("1.5");
 		break;
-	case 3:
+	case 4:
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Day No");
 		HeaderList.push_back("Start Time in Min");

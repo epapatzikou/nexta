@@ -690,10 +690,9 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 		fprintf(st,"<Document>\n");
 		fprintf(st,"<name>KmlFile</name>\n");
 
-		std::vector<std::string> style_names;
+
 		// blue style
-		style_names.push_back("transGreenPoly");
-		fprintf(st,"<Style id=\"transGreenPoly\">\n");
+		fprintf(st,"<Style id=\"green\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
@@ -703,8 +702,8 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
    		fprintf(st,"</Style>\n");
 
 		// red style
-		style_names.push_back("transRedPoly");
-		fprintf(st,"<Style id=\"transRedPoly\">\n");
+
+		fprintf(st,"<Style id=\"red\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
@@ -714,8 +713,8 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
    		fprintf(st,"</Style>\n");
 
 		// blue style
-		style_names.push_back("transBluePoly");
-		fprintf(st,"<Style id=\"transBluePoly\">\n");
+
+		fprintf(st,"<Style id=\"blue\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
@@ -725,8 +724,8 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
    		fprintf(st,"</Style>\n");
 
 		// yellow style
-		style_names.push_back("transYellowPoly");
-		fprintf(st,"<Style id=\"transYellowPoly\">\n");
+
+		fprintf(st,"<Style id=\"yellow\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
@@ -741,13 +740,13 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
       	
 		float max_zone_demand = 0;
 
-		std::map<int, DTAZone>	:: const_iterator itr_o;
+		std::map<int, DTAZone>	:: iterator itr_o;
 		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
 		{
 		
 			for(std::map<int, DTAZone>	:: const_iterator itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
 			{
-				float volume = m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
+				float volume = m_ZoneMap[itr_o->first].GetTotalZonalDemand();
 				if( volume > max_zone_demand)
 					max_zone_demand = volume;
 
@@ -756,14 +755,15 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 		}
 
 		int time_step = 4;
-		for(int t = 6*4; t< 12*4; t+=time_step)
-		{
+		int t = 0;
 		double ratio = 1;
 		
+		int max_zone_height = g_GetPrivateProfileInt("KML_output","max_zone_height",500,m_ProjectFile);
+		int min_zone_height = g_GetPrivateProfileInt("KML_output","min_zone_height",10,m_ProjectFile);
+
 		if(m_DemandProfileVector.size() > 0)
 			ratio = m_DemandProfileVector[0].time_dependent_ratio[t];
  
-   		std::map<int, DTAZone>	:: const_iterator itr_o;
 		for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
 		{
 			float total_zone_demand = 0;
@@ -776,24 +776,22 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 
 		fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",itr_o->first );
-			fprintf(st,"\t\t\t<TimeSpan>\n");
+/*			fprintf(st,"\t\t\t<TimeSpan>\n");
 
 			CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,false);
 			CString time_stamp_str_end = GetTimeStampStrFromIntervalNo (t+time_step,false);
 
-			fprintf(st,"\t\t\t<begin>2012-01-%0d</begin>\n",t/4);
-			fprintf(st,"\t\t\t<end>2012-01-01-%0d</end>\n",(t+time_step)/4);
+			fprintf(st,"\t\t\t<begin>2012-01-%0d</begin>\n",t);
+			fprintf(st,"\t\t\t<end>2012-01-01-%0d</end>\n",t+time_step);
 
 //			fprintf(st,"\t\t\t<begin>2012-01-01-T%s:00Z</begin>\n",time_stamp_str);
 //			fprintf(st,"\t\t\t<end>2012-01-01-T%s:00Z</end>\n",time_stamp_str_end);
 
 			fprintf(st,"\t\t\t </TimeSpan>\n");
-	
+*/	
         	fprintf(st,"\t\t<visibility>1</visibility>\n");
 
-			int style_no = (t+itr_o->first) % style_names.size();
-
-			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",style_names[style_no].c_str ());
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",itr_o->second .color_code.c_str ());
 			fprintf(st,"\t\t<Polygon>\n");
 			fprintf(st,"\t\t<extrude>1</extrude>\n");
 			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
@@ -801,9 +799,15 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			for(unsigned int si = 0; si< itr_o->second.m_ShapePoints.size(); si++)
+			float height = itr_o->second.GetTotalZonalDemand()* max_zone_height/max(1,max_zone_demand);
+	
+			if(height<=min_zone_height)
+				height = min_zone_height;
+
+				for(unsigned int si = 0; si< itr_o->second.m_ShapePoints.size(); si++)
 			{
-				float height = ratio*total_zone_demand*70000/max(1,max_zone_demand);
+
+
 				fprintf(st,"\t\t\t%f,%f,%f\n", itr_o->second.m_ShapePoints[si].x, itr_o->second.m_ShapePoints[si].y,height);
 			}
 
@@ -814,7 +818,7 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 			fprintf(st,"\t\t</Polygon>\n");
 			fprintf(st,"\t</Placemark>\n");
 		}  // for each zone
-		}  //for time slice
+
 		   	fprintf(st,"</Folder>\n");
 			fprintf(st,"</Document>\n");
 			fprintf(st,"</kml>\n");
@@ -838,6 +842,7 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 
 			CString label;
 			label.Format("%d,%d,%d,%d", pVehicle->m_OriginZoneID  , pVehicle->m_DestinationZoneID , pVehicle->m_NodeNumberSum , pVehicle->m_NodeSize );
+
 		//existing path
 						m_PathMap[label].Origin = pVehicle->m_OriginZoneID;
 						m_PathMap[label].Destination  = pVehicle->m_DestinationZoneID;
@@ -896,11 +901,6 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 						m_ODMatrixMap[label].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
 						m_ODMatrixMap[label].emissiondata.CO += pVehicle->m_EmissionData .CO;
 						m_ODMatrixMap[label].emissiondata.HC += pVehicle->m_EmissionData .HC;
-
-
-
-
-
 
 		}
 	}
@@ -999,7 +999,6 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 
 void CTLiteDoc::ExportPathflowToCSVFiles()
 {
-	GeneratePathFromVehicleData();
 
 	CString directory = m_ProjectDirectory;
 	FILE* st = NULL;
@@ -1080,9 +1079,9 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 		fprintf(st,"<Document>\n");
 		fprintf(st,"<name>KmlFile</name>\n");
 
-		std::vector<std::string> style_names;
+		std::vector<std::string> m_KML_style_name;
 		// blue style
-		style_names.push_back("transGreenPoly");
+		m_KML_style_name.push_back("transGreenPoly");
 		fprintf(st,"<Style id=\"transGreenPoly\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
@@ -1093,7 +1092,7 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
    		fprintf(st,"</Style>\n");
 
 		// red style
-		style_names.push_back("transRedPoly");
+		m_KML_style_name.push_back("transRedPoly");
 		fprintf(st,"<Style id=\"transRedPoly\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
@@ -1104,7 +1103,7 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
    		fprintf(st,"</Style>\n");
 
 		// blue style
-		style_names.push_back("transBluePoly");
+		m_KML_style_name.push_back("transBluePoly");
 		fprintf(st,"<Style id=\"transBluePoly\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
@@ -1115,7 +1114,7 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
    		fprintf(st,"</Style>\n");
 
 		// yellow style
-		style_names.push_back("transYellowPoly");
+		m_KML_style_name.push_back("transYellowPoly");
 		fprintf(st,"<Style id=\"transYellowPoly\">\n");
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
@@ -1140,9 +1139,9 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 			fprintf(st,"\t\t<name>%d</name>\n",itr->first );
 			fprintf(st,"\t\t<visibility>1</visibility>\n");
 
-			int style_no = (itr->first % style_names.size());
+			int style_no = (itr->first % m_KML_style_name.size());
 
-			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",style_names[style_no].c_str ());
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",m_KML_style_name[style_no].c_str ());
 
 				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
 				poFeature->SetField("LinkID",(*iLink)->m_LinkID );

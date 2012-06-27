@@ -759,11 +759,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then apply speical conditions for volume and vehicle mode
 
+//	TRACE("connector layer: %d\n", pMainFrame->m_bShowLayerMap[layer_connector]);
+
 	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
-		if( pMainFrame->m_bShowLayerMap[layer_connector]==false &&  pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type ]==1)  //hide connectors
-			continue; 
+		if( !pMainFrame->m_bShowLayerMap[layer_connector] )
+		{
+ 			if (pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  //hide connectors
+				continue; 
+		}
 
 		// step 1: decide if a link is included in the screen region
 		FromPoint = NPtoSP((*iLink)->m_FromPoint);
@@ -816,27 +821,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			//		LinkTypePen.CreatePen(PS_SOLID, 1, link_color);
 			//		pDC->SelectObject(&LinkTypePen);
 
-			if ( pDoc->m_LinkTypeFreewayMap[(*iLink)->m_link_type] == 1)
+			if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsFreeway ())
 			{
 				pDC->SelectObject(&pen_freeway);
 				pDC->SelectObject(&brush_freeway);
-			}else if ( pDoc->m_LinkTypeArterialMap[(*iLink)->m_link_type] == 1)
+			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsArterial())
 			{
 				pDC->SelectObject(&pen_arterial);
 				pDC->SelectObject(&brush_arterial);
-			}else if ( pDoc->m_LinkTypeRampMap[(*iLink)->m_link_type] == 1)
+			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsRamp())
 			{
 				pDC->SelectObject(&pen_ramp);
 				pDC->SelectObject(&brush_ramp);
-			}else if ( pDoc->m_LinkTypeConnectorMap[(*iLink)->m_link_type] == 1)
+			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type] .IsConnector())
 			{
 				pDC->SelectObject(&pen_connector);
 				pDC->SelectObject(&brush_connector);
-			}else if ( pDoc->m_LinkTypeTransitMap[(*iLink)->m_link_type] == 1)
+			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsTransit())
 			{
 				pDC->SelectObject(&pen_transit);
 				pDC->SelectObject(&brush_transit);
-			}else if ( pDoc->m_LinkTypeWalkingMap[(*iLink)->m_link_type] == 1)
+			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsWalking())
 			{
 				pDC->SelectObject(&pen_walking);
 				pDC->SelectObject(&brush_walking);
@@ -892,6 +897,37 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if(DrawLinkAsBand((*iLink),pDC,false)==false)
 				return;
 		}
+
+
+			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
+
+			if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
+				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
+
+			if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
+				DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
+
+			if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
+				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
+
+
+
+			if(pMainFrame->m_bShowLayerMap[layer_detector] == true  && (*iLink)->m_bSensorData)  // only during non display mode
+			{
+				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
+				{
+					pDC->SelectObject(&g_PenSelectColor);
+				}else
+				{
+
+					pDC->SelectObject(&g_PenSensorColor);
+				}		
+				CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
+				int size = 6;
+				pDC->SelectObject(g_BrushSensor);
+				pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
+
+			}
 
 		if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->m_ReferenceFlowVolume > 1)   // draw provided AADT
 		{
@@ -1017,37 +1053,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			// step 8:  show location of scenario/incident /work zone/ toll: link-based objects
 			pDC->SetBkColor(RGB(0, 0, 0));
 
-			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
-
-			if((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0))
-				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
-
-			if((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0))
-				DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
-
-			if((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0))
-				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
-
 			//************************************
 
 			// step 9: draw sensor (based on a link)
-
-			if(m_bShowSensor && (*iLink)->m_bSensorData && pDoc->m_LinkMOEMode != MOE_volume)  // only during non display mode
-			{
-				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkID)
-				{
-					pDC->SelectObject(&g_PenSelectColor);
-				}else
-				{
-
-					pDC->SelectObject(&g_PenSensorColor);
-				}		
-				CPoint midpoint = NPtoSP((*iLink)->GetRelativePosition(0.5));
-				int size = 6;
-				pDC->SelectObject(g_BrushSensor);
-				pDC->Rectangle(midpoint.x-size, midpoint.y-size, midpoint.x+size, midpoint.y+size);
-
-			}
 		}
 	}
 	}
@@ -1867,7 +1875,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		DTANode* pNode = pDoc->m_NodeIDMap [pDoc->m_SelectedNodeID ];
 		CFeatureInfo element;
 		element.Attribute = "Node ID";
-		element.Data.Format ("%d",pNode->m_NodeID );
+		element.Data.Format ("%d",pNode->m_NodeNumber  );
 		pMainFrame->m_FeatureInfoVector.push_back (element);
 
 			element.Attribute = "Control Type";
@@ -2822,7 +2830,11 @@ void CTLiteView::OnUpdateViewSelectNode(CCmdUI *pCmdUI)
 void CTLiteView::OnEditCreatesubarea()
 {
 	m_ToolMode = subarea_tool;
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+		pMainFrame->m_bShowLayerMap[layer_subarea] = true;
 	GetDocument()->m_SubareaShapePoints.clear();
+
 }
 
 void CTLiteView::OnUpdateEditCreatesubarea(CCmdUI *pCmdUI)
@@ -2917,10 +2929,42 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 		else
 		{
 			pDoc->m_NodeIDMap[(*iNode)->m_NodeID ] = (*iNode);
+			pDoc->m_NodeIDMap[(*iNode)->m_NodeID ]->m_bSubareaBoundaryNode = false;
 			++iNode;
 			//inside subarea
 		}
 	}
+
+	//mark zones to be removed. 
+
+		std::map<int, DTAZone>	:: iterator itr;
+
+		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); ++itr)
+		{
+
+			int activty_node_size = itr->second.m_ActivityLocationVector.size();
+			int outofsubarea_count  = 0;
+			// copy to another array first		
+			std::vector<int> activity_node_vector;
+				for(int i = 0; i< itr->second.m_ActivityLocationVector .size(); i++)
+				{
+					DTAActivityLocation element = itr->second.m_ActivityLocationVector[i];
+
+					activity_node_vector.push_back (element.NodeNumber);
+				}
+
+				for(unsigned int k = 0; k < activity_node_vector.size(); k++)
+				{
+					int NodeID  = pDoc->m_NodeNametoIDMap [activity_node_vector[k]];
+					if( pDoc->m_NodeIDMap.find(NodeID) == pDoc->m_NodeIDMap.end())
+						itr->second.RemoveNodeActivityMode(activity_node_vector[k]);
+				}
+
+				if( itr->second.m_ActivityLocationVector.size() ==0 )
+				{
+				     itr->second.m_bWithinSubarea = false;
+				}
+		}
 
 	//remove links
 	pDoc->m_LinkNoMap.clear();
@@ -2933,7 +2977,16 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	{
 		if(pDoc->m_NodeIDMap.find((*iLink)->m_FromNodeID ) == pDoc->m_NodeIDMap.end() || pDoc->m_NodeIDMap.find((*iLink)->m_ToNodeID ) == pDoc->m_NodeIDMap.end()) 
 		{
+			// mark: m_bSubareaBoundaryNode for remaninging nodes
+			if(pDoc->m_NodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_NodeIDMap.end())
+				pDoc->m_NodeIDMap[(*iLink)->m_FromNodeID ]->m_bSubareaBoundaryNode = true;
+
+			// mark: m_bSubareaBoundaryNode for remaninging nodes
+			if(pDoc->m_NodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_NodeIDMap.end())
+				pDoc->m_NodeIDMap[(*iLink)->m_ToNodeID ]->m_bSubareaBoundaryNode = true;
+
 			iLink = pDoc->m_LinkSet.erase(iLink);  // remove when one of end points are covered by the subarea
+
 
 		}else
 		{
@@ -2943,11 +2996,143 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	}
 
 
+	// step 2: add new zones if the boundary has zone --
+
+	iNode = pDoc->m_NodeSet.begin ();
+	int TAZ = 10000;
+	while (iNode != pDoc->m_NodeSet.end())
+	{
+
+		if((*iNode)->m_bSubareaBoundaryNode && (*iNode)->m_ZoneID == 0)  // remaining boundary-and-not-activity-location nodes after out of subarea links are removed. 
+		{
+			// create new zone number and add this node as activity center
+			// try to get TAZ as the node number
+
+			while(pDoc->m_ZoneMap.find (TAZ) != pDoc->m_ZoneMap.end ())  // find unused TAZ as new TAZ
+			{
+				TAZ ++;
+			}
+
+			// now we have an unused TAZ  
+				(*iNode)->m_bZoneActivityLocationFlag = true;
+
+				pDoc->m_ZoneMap [TAZ].m_ZoneTAZ = TAZ;
+				(*iNode)->m_ZoneID = TAZ;
+
+				DTAActivityLocation element;
+				element.ZoneID  = TAZ;
+				element.NodeNumber = (*iNode)->m_NodeNumber  ;
+				pDoc->m_ZoneMap [TAZ].m_ActivityLocationVector .push_back (element );
+				TAZ ++;
+
+		}
+			++iNode;
+	}
+
+    // step 3: generate route file
+		std::list<DTAVehicle*>::iterator iVehicle;
+		pDoc->m_PathMap.clear();
+
+	for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
+	{
+		DTAVehicle* pVehicle = (*iVehicle);
+
+		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete)  // with physical path in the network
+		{
+			
+			// update node sequence
+				std::vector<int> LinkVector;
+			    std::vector<int> NodeVector;
+
+							int StartFlag = 0; // 0: not start yet, 1: start node chain, 2: end node chain
+							for(int link= 1; link<pVehicle->m_NodeSize; link++)
+							{
+								int OrgLinkNO = pVehicle->m_NodeAry[link].LinkNo;
+								if( pDoc->m_LinkNoMap.find(OrgLinkNO)!= pDoc->m_LinkNoMap.end()) // the link exists in subarea 
+								{
+									if(StartFlag <=1)
+										LinkVector.push_back(OrgLinkNO);
+
+									if(StartFlag ==0)
+										StartFlag = 1; // start node chain
+								}else  // link has been removed
+								{
+									if(StartFlag==1) // node chain has been started 
+									{
+										StartFlag = 2;  // terminate
+										break;
+									} else 
+									{
+									 //continue // StartFlag ==0
+									}
+								}
+
+							}
+							// LinkVector for remaining links in subarea 
+
+							if(LinkVector.size() >=2)
+							{
+
+								DTALink* pLinkOrg = pDoc->m_LinkNoMap[LinkVector[0]];
+								DTALink* pLinkDes = pDoc->m_LinkNoMap[LinkVector[LinkVector.size()-1]];
+
+								int NewOriginZoneID = pDoc->m_NodeIDMap[pLinkOrg->m_FromNodeID ]->m_ZoneID  ;
+								int NewDestinationZoneID = pDoc->m_NodeIDMap[pLinkDes->m_ToNodeID ]->m_ZoneID  ;;
+								int NewNodeNumberSum = 0;
+
+							for(unsigned li = 0; li < LinkVector.size(); li++)
+							{
+								DTALink* pLink = pDoc->m_LinkNoMap[LinkVector[li]];
+								if(li==0) // first link
+								{
+									NewNodeNumberSum += pLink->m_FromNodeNumber;
+								}
+
+								NewNodeNumberSum += pLink->m_ToNodeNumber;
+							}
+
+							int Newm_NodeSize = LinkVector.size() +1;
+							CString label;
+							label.Format("%d,%d,%d,%d", NewOriginZoneID  , NewDestinationZoneID , NewNodeNumberSum , Newm_NodeSize );
+
+							//existing path
+							pDoc->m_PathMap[label].Origin = NewOriginZoneID;
+							pDoc->m_PathMap[label].Destination  = NewDestinationZoneID;
+							pDoc->m_PathMap[label].TotalVehicleSize+=1;
+
+						if(pDoc->m_PathMap[label].TotalVehicleSize == 1)  // new path
+						{
+
+							for(unsigned li = 0; li < LinkVector.size(); li++)
+							{
+								DTALink* pLink = pDoc->m_LinkNoMap[LinkVector[li]];
+								if(li==0) // first link
+								{
+									pDoc->m_PathMap[label].m_NodeVector.push_back(pLink->m_FromNodeNumber );
+								}
+
+								pDoc->m_PathMap[label].m_NodeVector.push_back(pLink->m_ToNodeNumber);
+					
+							}
+						}
+
+						//
+												// reuse label as OD label
+						label.Format("%d,%d", pVehicle->m_OriginZoneID  , pVehicle->m_DestinationZoneID);
+						pDoc->m_ODMatrixMap[label].Origin = NewOriginZoneID;
+						pDoc->m_ODMatrixMap[label].Destination  = NewDestinationZoneID;
+						pDoc->m_ODMatrixMap[label].TotalVehicleSize+=1;
+
+
+						}
+
+			}
+	}
+
 	DeleteObject(m_polygonal_region);
 	delete [] m_subarea_points;
 
 	Invalidate();
-
 }
 
 void CTLiteView::OnViewShowAVISensor()
@@ -3131,6 +3316,7 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 		return false;
 	}
 	int si; // we should not use unsigned integer here as si-- 
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	if(bObservationFlag == false)
 	{  // simulated data
@@ -3146,7 +3332,7 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 
 		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
 
-	}else
+	}else if (pMainFrame->m_bShowLayerMap[layer_observation])
 	{  //observed data
 		if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
 		{

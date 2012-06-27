@@ -260,9 +260,13 @@ extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1
 /////
 
 class DTAActivityLocation
-{ public: 
+{ 
+
+public: 
+	bool m_bWithinSubarea;
 	DTAActivityLocation()
 	{
+		m_bWithinSubarea = true;
 		External_OD_flag = 0;
 	}
 
@@ -294,12 +298,16 @@ public:
 	std::vector<DTATimeDependentemand> TimeDependentVector;
 
 	float total_demand;
+	float travel_cost;
+	float friction;
 
 	int starting_time_in_min;
 	int ending_time_in_min;
 
 	DTADemandVolume()
 	{
+	travel_cost = 1;
+	friction = 1;
 	total_demand = 0;
 
 	starting_time_in_min = 0;
@@ -344,9 +352,33 @@ class DTAZone
 { 
 public:
 
+	string notes;
+	string color_code;
+	float  m_Height;
+	float  m_Population;
+	float m_Employment;
+	float m_MedianIncome;
+	float m_GrowthFactor;
+	int m_CBDFlag;
+
+	bool m_bWithinSubarea;
+
+	float GetTotalZonalDemand()
+	{
+	float total_zonal_demand  = 0;
+
+		std::map<int, DTADemandVolume> :: iterator itr;
+
+		for(itr = m_ODDemandMatrix.begin(); itr != m_ODDemandMatrix.end(); itr++)
+			{
+				total_zonal_demand += m_ODDemandMatrix[itr->first ]. GetSubTotalValue ();
+			}
+
+		return total_zonal_demand;
+
+	}
 	std::vector<GDPoint> m_ShapePoints;
 	std::map<int, DTADemandVolume> m_ODDemandMatrix;
-
 	std::map<int, float> m_TotalTimeDependentZoneDemand;
 	void SetTDZoneValue(int time_interval, float value)
 	{
@@ -356,6 +388,9 @@ public:
 	int m_ZoneTAZ;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<DTAActivityLocation> m_ActivityLocationVector;
+
+	float m_Production;
+	float m_Attraction;
 
 	bool bInitialized;
 	GDPoint m_Center;
@@ -424,10 +459,21 @@ public:
 
 	DTAZone()
 	{
+		m_Height = 0;
+		color_code = "red";
 		m_Capacity  =0;
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
 		bInitialized = false;
+
+		m_Production = 0;
+		m_Attraction = 0;
+
+		m_Population =0;
+		m_Employment =0;
+		m_MedianIncome = 0;
+		m_GrowthFactor = 0;
+		m_CBDFlag = 0;
 
 	}
 
@@ -481,6 +527,7 @@ public:
 	
 	float m_Capacity;
 	float m_Demand;
+
 
 };
 
@@ -559,26 +606,62 @@ class DTALinkType
 public:
 	int link_type;
 	string link_type_name;
-	int freeway_flag;
-	int highway_flag;
-	int arterial_flag;
-	int connector_flag;
-	int ramp_flag;
-	int transit_flag;
-	int walking_flag;
-
-	DTALinkType()
+	string type_code;
+	int safety_prediction_model_id;
+	bool IsFreeway()
 	{
-	freeway_flag = 0;
-	highway_flag = 0;
-	arterial_flag = 0;
-	connector_flag =0;
-	ramp_flag =0;
-	transit_flag = 0;
-	walking_flag = 0;
+		if(type_code.find('f')!= string::npos)
+			return true;
+		else
+			return false;
+	}
 
-	};
+	bool IsHighway()
+	{
+		if(type_code.find('h')!= string::npos)
+			return true;
+		else
+			return false;
+	}
 
+	bool IsArterial()
+	{
+		if(type_code.find('a')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsRamp()
+	{
+		if(type_code.find('r')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsConnector()
+	{
+		if(type_code.find('c')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsTransit()
+	{
+		if(type_code.find('t')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+	bool IsWalking()
+	{
+		if(type_code.find('w')!= string::npos)
+			return true;
+		else
+			return false;
+	}
 };
 
 class DTANodeType
@@ -711,9 +794,11 @@ public:
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
 		m_External_OD_flag = 0;
+		m_bSubareaBoundaryNode = false;  // when the associated link is removed as it is outside the boundary, then we mark its from and t nodes as subarea boundary node 
 	};
 	~DTANode(){};
 
+	bool m_bSubareaBoundaryNode;
 	bool m_bZoneActivityLocationFlag; 
 
 	int m_External_OD_flag;
@@ -903,7 +988,9 @@ class CapacityReduction
 public:
 	CapacityReduction()
 	{
-		DayNo = 0;
+		StartDayNo = 0;
+		EndDayNo = 0;
+
 		for (int i=0;i<MAX_RANDOM_SAMPLE_SIZE;i++)
 		{
 			CapacityReductionSamples[i] = 0.f;
@@ -921,7 +1008,8 @@ public:
 
 	float StartTime;
 	float EndTime;
-	int DayNo;
+	int StartDayNo;
+	int EndDayNo;
 	float LaneClosureRatio;
 	float SpeedLimit;
 	float ServiceFlowRate;
@@ -945,10 +1033,12 @@ public:
 class MessageSign
 {
 public:
+
+	int StartDayNo;
+	int EndDayNo;
 	float StartTime;
 	float EndTime;
 	float ResponsePercentage;
-
 
 	/*
 	int   BestPathFlag;
