@@ -45,7 +45,11 @@ enum DTA_Approach
 	DTA_North = 0,
 	DTA_South,
 	DTA_East,
-	DTA_West
+	DTA_West,
+	DTA_NorthEast,
+	DTA_NorthWest,
+	DTA_SouthEast,
+	DTA_SouthWest
 };
 
 enum DTA_Turn
@@ -60,18 +64,38 @@ enum DTA_Turn
 enum DTA_APPROACH_TURN
    {
 	    DTA_LANES_COLUME_init = -1,
-		DTA_NBL =0,
+		DTA_NBL2 = 0,
+		DTA_NBL,
 		DTA_NBT,
 		DTA_NBR,
+		DTA_NBR2,
+		DTA_SBL2,
 		DTA_SBL,
 		DTA_SBT,
 		DTA_SBR,
+		DTA_SBR2,
+		DTA_EBL2,
 		DTA_EBL,
 		DTA_EBT,
 		DTA_EBR,
+		DTA_EBR2,
+		DTA_WBL2,
 		DTA_WBL,
 		DTA_WBT,
-		DTA_WBR
+		DTA_WBR,
+		DTA_WBR2,
+		DTA_NEL,
+		DTA_NET,
+		DTA_NER,
+		DTA_NWL,
+		DTA_NWT,
+		DTA_NWR,
+		DTA_SEL,
+		DTA_SET,
+		DTA_SER,
+		DTA_SWL,
+		DTA_SWT,
+		DTA_SWR
    };
 
 enum LANES_ROW
