@@ -39,21 +39,37 @@
 
 DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
 {
-	if(angle < 45)
+	if(angle < 23)
 	{
 		return DTA_East;
 	}
-	else if(angle < 135) 
+	else if(angle < 68) 
+	{
+		return DTA_NorthEast;
+	}
+	else if(angle < 113) 
 	{
 		return DTA_North;
 	}
-	else if(angle < 225) 
+	else if(angle < 158) 
+	{
+		return DTA_NorthWest;
+	}
+	else if(angle < 203) 
 	{
 		return DTA_West;
 	}
-	else if(angle < 315) 
+	else if(angle < 248) 
+	{
+		return DTA_SouthWest;
+	}
+	else if(angle < 293) 
 	{
 		return DTA_South;
+	}
+	else if(angle < 338) 
+	{
+		return DTA_SouthEast;
 	}
 	else
 		return DTA_East;
@@ -203,7 +219,7 @@ void CTLiteDoc::AssignUniqueLinkIDForEachLink()
 
 }
 
-void  CTLiteDoc::ConstructMovementVectorForEachNode()
+void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four directions
 {
 
 	m_AdjLinkSize = 0;
@@ -340,7 +356,8 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode()
 
 }
 
-void CTLiteDoc::ConstructMovementVector(bool flag_Template)
+void CTLiteDoc::ConstructMovementVector(bool flag_Template) 
+// this function has 8 directions
 {
 
 	m_MovementVector.clear();
@@ -353,6 +370,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 	if (flag_Template)
 	{
+		//LoadMovementDefault(MovementTemplate, PhaseTemplate);
 		if (!LoadMovementTemplateFile(MovementTemplate, PhaseTemplate))
 			LoadMovementDefault(MovementTemplate, PhaseTemplate);
 	}
@@ -442,6 +460,38 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 							case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
 							}
 							break;
+						case DTA_NorthEast:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_dir = DTA_NEL; break;
+							case DTA_Through: element.movement_dir = DTA_NET; break;
+							case DTA_RightTurn: element.movement_dir = DTA_NER; break;
+							}
+							break;
+						case DTA_NorthWest:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_dir = DTA_NWL; break;
+							case DTA_Through: element.movement_dir = DTA_NWT; break;
+							case DTA_RightTurn: element.movement_dir = DTA_NWR; break;
+							}
+							break;
+						case DTA_SouthEast:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_dir = DTA_SEL; break;
+							case DTA_Through: element.movement_dir = DTA_SET; break;
+							case DTA_RightTurn: element.movement_dir = DTA_SER; break;
+							}
+							break;
+						case DTA_SouthWest:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_dir = DTA_SWL; break;
+							case DTA_Through: element.movement_dir = DTA_SWT; break;
+							case DTA_RightTurn: element.movement_dir = DTA_SWR; break;
+							}
+							break;
 						}
 
 						if (element.movement_dir > 0)
@@ -476,9 +526,9 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate)
 {
-	const int LaneColumnSize = 12;
+	const int LaneColumnSize = 32;
 	const int LaneRowSize = 28;
-	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};		
 	string lane_row_name_str[LaneRowSize] = {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
@@ -494,6 +544,7 @@ bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, 
 	{
 		for(i=0; i<LaneRowSize; i++)
 		{
+			//float value = g_GetPrivateProfileFloat(lane_Column_name_str[j].c_str(), lane_row_name_str[i].c_str(), MovementTemplate.DataMatrix[i+2][j].m_text, IniFilePath);
 			float value = g_GetPrivateProfileFloat(lane_Column_name_str[j].c_str(), lane_row_name_str[i].c_str(), 0, IniFilePath);
 			// assign value to DataMatrix[i][j].m_text;
 			MovementTemplate.DataMatrix[i+2][j].m_text = value;
@@ -527,11 +578,11 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 {
 	// set default value to movements
 	const int LaneRowSize = 28;
-	const int LaneColumnSize = 12;
+	const int LaneColumnSize = 32;
 
 	double default_value_M[LaneRowSize][LaneColumnSize] = 
 	{
-		{1,2,1,1,2,1,1,2,1,1,2,1},
+		/*{1,2,1,1,2,1,1,2,1,1,2,1},
 		{0,0,0,0,0,0,0,0,0,0,0,},
 		{12,12,12,12,12,12,12,12,12,12,12,12},
 		{0,0,0,0,0,0,0,0,0,0,0,0},
@@ -558,7 +609,36 @@ bool CTLiteDoc::LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_N
 		{0,0,0,0,0,0,0,0,0,0,0,0},
 		{0,0,0,0,0,0,0,0,0,0,0,0},
 		{0,0,0,0,0,0,0,0,0,0,0,0},
-		{0,0,0,0,0,0,0,0,0,0,0,0}
+		{0,0,0,0,0,0,0,0,0,0,0,0}*/
+
+		{1,1,2,1,0,1,1,2,1,0,1,1,2,1,0,1,1,2,1,0,1,2,1,1,2,1,1,2,1,1,2,1},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,45,0,0,0,0,45,0,0,0,0,45,0,0,0,0,45,0,0,0,45,0,0,45,0,0,45,0,0,45,0},
+		{50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{5,5,2,0,0,1,1,6,0,0,7,7,4,0,0,3,3,8,0,0,5,2,0,3,8,0,7,4,0,1,6,0},
+		{8,8,0,8,6,6,8,0,8,6,6,8,0,8,6,6,8,0,8,6,8,0,8,8,0,8,8,0,8,8,0,8},
+		{8,3,8,8,6,6,3,8,8,6,6,3,8,8,6,6,3,8,8,6,3,8,8,3,8,8,3,8,8,3,8,8},
+		{1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900},
+		{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+		{0,1863,3539,1863,0,0,1863,3539,1863,0,0,1863,3539,1863,0,0,1863,3539,1863,0,1863,3539,1863,1863,3539,1863,1863,3539,1863,1863,3539,1863},
+		{0,1863,3539,1863,0,0,1863,3539,1863,0,0,1863,3539,1863,0,0,1863,3539,1863,0,1863,3539,1863,1863,3539,1863,1863,3539,1863,1863,3539,1863},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,20,20,20,0,0,20,20,20,0,0,20,20,20,0,0,20,20,20,0,20,20,20,20,20,20,20,20,20,20,20,20},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92,0.92},
+		{100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100},
+		{2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 	};
 
 	int i,j;
@@ -666,9 +746,9 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	FILE* st = NULL;
 
 	// write lanes/movements file
-	const int LaneColumnSize = 12;
+	const int LaneColumnSize = 32;
 	const int LaneRowSize = 30;
-	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
 	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 	int i,j, m;
@@ -685,6 +765,33 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 
 		for (m=0; m<movement_size;m++)
 		{
+			// write UpNodeID and DestNodeID using original m_NodeNumber
+			for(i=0; i<2; i++)
+			{
+				fprintf(st, "%s,", lane_row_name_str[i].c_str());
+				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+
+				for(j=0; j<LaneColumnSize;j++)
+				{
+					int NodeID = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
+					TRACE("Node Label: %d\n",NodeID);
+
+					if(NodeID>=0)  //this movement has been initialized
+					{
+						if(m_NodeIDMap.find(NodeID) == m_NodeIDMap.end())
+						{
+							AfxMessageBox("Error in node id!");
+							return;
+						}
+						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
+					}else  // this movement has not been initialized, so the default value is -1
+					{
+						fprintf(st, ",");  
+
+					}
+				}
+				fprintf(st,"\n");
+			}
 			for(i=2; i<LaneRowSize; i++)
 			{
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
@@ -747,25 +854,26 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	GDPoint p1, p2;
 	int current_node_id, up_node_id, down_node_id;
 	long LinkID;
+	const int Dir_size = 8;
 
 	fopen_s(&st,m_Synchro_ProjectDirectory+"Layout.csv","w");
 	if(st!=NULL)
 	{
 		fprintf(st, "Layout Data \n");
-		fprintf(st, "INTID,INTNAME,TYPE,X,Y,NID,SID,EID,WID,NNAME,SNAME,ENAME,WNAME");
+		fprintf(st, "INTID,INTNAME,TYPE,X,Y,NID,SID,EID,WID,NEID,NWID,SEID,SWID,NNAME,SNAME,ENAME,WNAME,NENAME,NWNAME,SENAME,SWNAME");
 		fprintf(st,"\n");
 
-	// try to set world coordinate so that all coordinates are non-negative
+		// try to set world coordinate so that all coordinates are non-negative
 
-	m_Origin.x  = 1000000;
-	m_Origin.y  = 1000000;
+		m_Origin.x  = 1000000;
+		m_Origin.y  = 1000000;
 
-	std::list<DTANode*>::iterator  iNode;
-	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-	{
-	m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
-	m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
-	}
+		std::list<DTANode*>::iterator  iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
+			m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
+		}
 
 		int i_n = 0;
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i_n++)
@@ -810,6 +918,26 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 					Node_Link.Up_ID[2] = up_node_id;
 					Node_Link.Name[2] = m_LinkNoMap[LinkID]->m_Name;
 					break;
+				case DTA_NorthEast:
+					Node_Link.link_flag[7] = true;
+					Node_Link.Up_ID[7] = up_node_id;
+					Node_Link.Name[7] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_NorthWest:
+					Node_Link.link_flag[6] = true;
+					Node_Link.Up_ID[6] = up_node_id;
+					Node_Link.Name[6] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_SouthEast:
+					Node_Link.link_flag[5] = true;
+					Node_Link.Up_ID[5] = up_node_id;
+					Node_Link.Name[5] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_SouthWest:
+					Node_Link.link_flag[4] = true;
+					Node_Link.Up_ID[4] = up_node_id;
+					Node_Link.Name[4] = m_LinkNoMap[LinkID]->m_Name;
+					break;
 				}
 			}
 			for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry[i_n]; outbound_i++)
@@ -841,17 +969,37 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 					Node_Link.Up_ID[3] = down_node_id;
 					Node_Link.Name[3] = m_LinkNoMap[LinkID]->m_Name;
 					break;
+				case DTA_NorthEast:
+					Node_Link.link_flag[4] = true;
+					Node_Link.Up_ID[4] = down_node_id;
+					Node_Link.Name[4] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_NorthWest:
+					Node_Link.link_flag[5] = true;
+					Node_Link.Up_ID[5] = down_node_id;
+					Node_Link.Name[5] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_SouthEast:
+					Node_Link.link_flag[6] = true;
+					Node_Link.Up_ID[6] = down_node_id;
+					Node_Link.Name[6] = m_LinkNoMap[LinkID]->m_Name;
+					break;
+				case DTA_SouthWest:
+					Node_Link.link_flag[7] = true;
+					Node_Link.Up_ID[7] = down_node_id;
+					Node_Link.Name[7] = m_LinkNoMap[LinkID]->m_Name;
+					break;
 				}
 			}
 			// write into file
-			for(i=0; i<4; i++)
+			for(i=0; i<Dir_size; i++)
 			{
 				if (Node_Link.link_flag[i])
 					fprintf(st, "%i,", m_NodeIDMap[Node_Link.Up_ID[i]]->m_NodeNumber);
 				else
 					fprintf(st, ",");
 			}
-			for(i=0; i<4; i++)
+			for(i=0; i<Dir_size; i++)
 			{
 				if (Node_Link.link_flag[i] && !Node_Link.Name[i].empty() && Node_Link.Name[i] != "(null)")
 					fprintf(st, "%i,", Node_Link.Name[i].c_str());
@@ -896,10 +1044,10 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	{
 		fprintf(st, "Turning Movement Count \n");
 		fprintf(st, "60 Minute Counts \n");
-		fprintf(st, "DATE,TIME,INTID,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR \n");
+		fprintf(st, "DATE,TIME,INTID,NBL2,NBL,NBT,NBR,NBR2,SBL2,SBL,SBT,SBR,SBR2,EBL2,EBL,EBT,EBR,EBR2,WBL2,WBL,WBT,WBR,WBR2,NEL,NET,NER,NWL,NWT,NWR,SEL,SET,SER,SWL,SWT,SWR \n");
 		for (m=0; m<movement_size;m++)
 		{				
-			fprintf(st, "12/12/2011,1700,%i,0,0,0,0,0,0,0,0,0,0,0,0", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
+			fprintf(st, "12/12/2011,1700,%i,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 			fprintf(st,"\n");
 		}
 
@@ -926,13 +1074,13 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 	m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
 	}
 
-
+	const int Dir_size = 8;
 
 	FILE* st = NULL;
 
-	const int LaneColumnSize = 12;
+	const int LaneColumnSize = 32;
 	const int LaneRowSize = 30;
-	string lane_Column_name_str[LaneColumnSize] = { "NBL","NBT","NBR", "SBL", "SBT","SBR","EBL","EBT","EBR", "WBL","WBT","WBR"};
+	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
 	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 	unsigned int i,j, m;
@@ -986,7 +1134,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 		// write Links /////////////////////////////////////////////////////////////
 		fprintf(st, "[Links]\n");
 		fprintf(st, "Link Data\n");
-		fprintf(st, "RECORDNAME,INTID,NB,SB,EB,WB,\n");
+		fprintf(st, "RECORDNAME,INTID,NB,SB,EB,WB,NE,NW,SE,SW,\n");
 		string link_row_name_str[18] = {"Up ID","Lanes","Name","Distance","Speed","Time","Grade","Median","Offset","TWLTL","Crosswalk Width","Mandatory Distance","Mandatory Distance2","Positioning Distance","Positioning Distance2","Curve Pt X","Curve Pt Y","Curve Pt Z"};
 		DTA_Approach incoming_approach;
 		GDPoint p1, p2;
@@ -1011,7 +1159,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			// Up_id
 			fprintf(st, "%s,", link_row_name_str[0].c_str());
 			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<4; j++)
+			for (j=0; j<Dir_size; j++)
 			{
 				if (Node_Link.link_flag[j])
 					fprintf(st, "%i,", m_NodeIDMap[Node_Link.Up_ID[j]]->m_NodeNumber);
@@ -1022,7 +1170,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			// Lanes
 			fprintf(st, "%s,", link_row_name_str[1].c_str());
 			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<4; j++)
+			for (j=0; j<Dir_size; j++)
 			{
 				if (Node_Link.link_flag[j])
 					fprintf(st, "%i,", Node_Link.Lanes[j]);
@@ -1033,7 +1181,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			// name
 			fprintf(st, "%s,", link_row_name_str[2].c_str());
 			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<4; j++)
+			for (j=0; j<Dir_size; j++)
 			{
 				if (Node_Link.link_flag[j])
 					fprintf(st, "%s,", Node_Link.Name[j].c_str());
@@ -1047,7 +1195,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 			{
 				fprintf(st, "%s,", link_row_name_str[i+3].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-				for (j=0; j<4; j++)
+				for (j=0; j<Dir_size; j++)
 				{
 					if (Node_Link.link_flag[j])
 						fprintf(st, "%f,", Node_Link.DataMatrix[i][j]);

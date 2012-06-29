@@ -137,10 +137,10 @@ class DTA_NodeBasedLinkSets
 {
 public:
 	int nodeID;
-	bool link_flag[4];
-	int Up_ID[4], Lanes[4];
-	std::string Name[4];
-	float DataMatrix[15][4];
+	bool link_flag[8];
+	int Up_ID[8], Lanes[8];
+	std::string Name[8];
+	float DataMatrix[15][8];
 
 	DTA_NodeBasedLinkSets()
 	{
@@ -148,7 +148,7 @@ public:
 
 	void initial(int node_id)
 	{		
-		for (int i=0; i<4; i++)
+		for (int i=0; i<8; i++)
 			link_flag[i] = false;
 
 		nodeID = node_id;
@@ -203,8 +203,8 @@ class DTA_NodeMovementSet
 {
 public:
 	int CurrentNodeID; 
-	CDataElement DataMatrix[30][12];
-	DTA_Movement MovementMatrix[12];   //12 possible movements
+	CDataElement DataMatrix[30][32];
+	DTA_Movement MovementMatrix[32];   //32 possible movements
 //	DTA_NodeMovementSet &operator=( DTA_NodeMovementSet & );
 
 	DTA_NodeMovementSet()
