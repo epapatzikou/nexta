@@ -245,6 +245,37 @@ typedef struct{
 	float time_stamp;
 }struc_vehicle_item;
 
+class Day2DayLinkMOE
+{
+public:
+	float m_NumberOfCrashes;
+	float m_NumberOfFatalAndInjuryCrashes;
+	float m_NumberOfPDOCrashes;
+	float AvgSpeed;
+	float AvgTravelTime;
+	int TotalFlowCount;
+	
+	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
+
+	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
+
+	Day2DayLinkMOE()
+	{
+	m_NumberOfCrashes = 0;
+	m_NumberOfFatalAndInjuryCrashes = 0;
+	m_NumberOfPDOCrashes = 0;
+	AvgSpeed = 0;
+	AvgTravelTime = 0;
+	TotalFlowCount = 0;
+
+	for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
+		{
+			CumulativeArrivalCount_PricingType[i] = 0;
+			CumulativeRevenue_PricingType[i] = 0;
+		}
+	}
+
+};
 
 class SLinkMOE  // time-dependent link MOE
 {
@@ -358,7 +389,8 @@ public:
 class CapacityReduction
 {
 public:
-	int DayNo;
+	int StartDayNo;
+	int EndDayNo;
 	int StartTime;  // use integer
 	int EndTime;    // use integer
 	float LaneClosureRatio;
@@ -368,7 +400,8 @@ public:
 class MessageSign
 {
 public:
-	int DayNo;
+	int StartDayNo;
+	int EndDayNo;
 	float StartTime;
 	float EndTime;
 	float ResponsePercentage;
@@ -377,12 +410,44 @@ public:
 	int   DetourLinkSize;
 	int   DetourLinkArray[MAX_LINK_SIZE_IN_VMS];
 
+	int* NodePredAry; 
+	int* LinkNoAry;
+	int NodeSize;
+	int DownstreamNodeID;
+	void UpdateNodePredAry(int DayNo, int CurTime);
+
+	void Initialize(int node_size, int node_pred_ary[],int link_no_ary[])
+	{
+		if(NodePredAry ==NULL)
+		{
+		NodeSize = node_size;
+		NodePredAry =  new int[node_size];
+		LinkNoAry = new int[node_size];;
+
+		}
+
+		for(int i=0; i< node_size; i++)
+		{
+			NodePredAry[i] = node_pred_ary[i];
+			LinkNoAry[i]= link_no_ary[i];
+		}
+
+	}
+
 	MessageSign()
 	{
+		NodePredAry = NULL;
+		LinkNoAry = NULL;
 	}
 
 	~MessageSign()
 	{
+		if(NodePredAry !=NULL)
+			delete NodePredAry;
+
+		if(LinkNoAry !=NULL)
+			delete LinkNoAry;
+
 	}
 
 };
@@ -448,11 +513,11 @@ public:
 
 	}
 
-	bool 	GetImpactedFlag(int DepartureTime)
+	bool 	GetImpactedFlag(int DayNo=0, int DepartureTime = -1)
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if(DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60)  // 60 impacted after capacity reduction
+			if((CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
 			{
 				return true;
 			}
@@ -471,8 +536,7 @@ public:
 	{
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			// DayNO = 0 -> apply for all days, Day No > 0; apply for specific day
-			if( (CapacityReductionVector[il].DayNo ==0 || DayNo == CapacityReductionVector[il].DayNo) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
+			if( (CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
 			{
 				return (1-CapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
 			}
@@ -482,11 +546,12 @@ public:
 
 	}
 
-	int GetInformationResponseID(float Time)  // from information signs
+	int GetInformationResponseID(int DayNo=0, float Time=-1)  // from information signs
 	{
 		for(unsigned int il = 0; il< MessageSignVector.size(); il++)
 		{
-			if(Time>=MessageSignVector[il].StartTime && Time<=MessageSignVector[il].EndTime)
+			if((MessageSignVector[il].StartDayNo  <=DayNo && DayNo <= MessageSignVector[il].EndDayNo )
+				&&(Time>=MessageSignVector[il].StartTime && Time<=MessageSignVector[il].EndTime))
 			{
 				return il;
 			}
@@ -516,6 +581,7 @@ public:
 	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
+	std::vector<Day2DayLinkMOE> m_Day2DayLinkMOEVector;
 	std::vector <int> m_CumuArrivalFlow;
 	std::vector <int> m_CumuDeparturelFlow;
 
@@ -758,7 +824,7 @@ public:
 
 	float GetSpeed(int time)
 	{
-		return m_Length/max(0.1,GetTravelTimeByMin(time,1))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
+		return m_Length/max(0.1,GetTravelTimeByMin(-1,time,1))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
 
 	int GetArrivalFlow(int time)
@@ -779,10 +845,10 @@ public:
 
 	};
 
-	float GetPrevailingTravelTime(int CurrentTime)
+	float GetPrevailingTravelTime(int DayNo,int CurrentTime)
 	{
-		if(GetNumLanes(0,CurrentTime)<0.01)   // road blockage
-			return 120; // unit min
+		if(GetNumLanes(DayNo,CurrentTime)<0.01)   // road blockage
+			return 1440; // unit min
 
 		if(departure_count >= 1 && CurrentTime >0)
 		{
@@ -795,15 +861,14 @@ public:
 	};
 
 
-	float GetTravelTimeByMin(int starting_time, int time_interval)
+	float GetTravelTimeByMin(int DayNo,int starting_time, int time_interval)  // DayNo =-1: unknown day
 	{
 		float travel_time  = 0.0f;
 
-		if(GetNumLanes(0,starting_time)<0.01)   // road blockage
-			return 120; // unit min
+		if(GetNumLanes(DayNo,starting_time)<0.01)   // road blockage
+			return 9999; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
-
 
 			int t;
 			float total_travel_time = 0;
@@ -862,28 +927,7 @@ SVehicleLink()
 	AbsArrivalTimeOnDSN = 99999;
 	//		LinkWaitingTime = 0;
 	LaneBasedCumulativeFlowCount = 0;
-
 }
-
-};
-
-class DTAPathData   // dynamica path data
-{
-public:
-	int m_NodeSize;
-	int* m_LinkSequence;
-	
-	DTAPathData()
-	{
-		m_LinkSequence = NULL;
-	}
-
-	~DTAPathData()
-	{
-		if(m_LinkSequence)
-			delete m_LinkSequence;
-	
-	}
 
 };
 
@@ -920,20 +964,88 @@ public:
 	CString vehicle_type_name;
 };
 
+
 class DTALinkType
 {
 public:
 	int link_type;
 	string link_type_name;
-	int freeway_flag;
-	int highway_flag;
-	int arterial_flag;
-	int ramp_flag;
-	int connector_flag;
-	int transit_flag;
-	int walking_flag;
+	string type_code;
 	int safety_prediction_model_id;
+	bool IsFreeway()
+	{
+		if(type_code.find('f')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsHighway()
+	{
+		if(type_code.find('h')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsArterial()
+	{
+		if(type_code.find('a')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsRamp()
+	{
+		if(type_code.find('r')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsConnector()
+	{
+		if(type_code.find('c')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+
+	bool IsTransit()
+	{
+		if(type_code.find('t')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+	bool IsWalking()
+	{
+		if(type_code.find('w')!= string::npos)
+			return true;
+		else
+			return false;
+	}
 };
+
+class DTAPath
+{
+public:
+	std::vector<int> LinkSequence;
+	int NodeSum;
+	float Distance;
+	float TravelTime;
+	bool bDiverted;
+	
+	DTAPath ()
+	{ 
+	  bDiverted = false;
+	  Distance = 0;
+	  TravelTime = 0;
+	
+	}
+};
+
 
 class DTAVehicle
 {
@@ -965,10 +1077,12 @@ public:
 
 	int m_TimeToRetrieveInfo;  // in simulation interval
 	float m_DepartureTime;
+	float m_Distance;
+
 	float m_ArrivalTime;
 	float m_TripTime;
 	float m_Delay;
-	float m_Distance;
+
 	bool m_bSwitched;  // switch route in assignment
 
 	// used for simulation
@@ -993,6 +1107,18 @@ public:
 	float m_MeanTravelTime;
 	float m_TravelTimeVariance;
 	unsigned short m_NumberOfSamples;  // when switch a new path, the number of samples starts with 0
+
+	std::map<int,DTAPath> Day2DayPathMap;
+
+	void StorePath(int DayNo)
+	{
+
+	Day2DayPathMap[DayNo].NodeSum = m_NodeNumberSum;
+
+	for(int i = 0; i < m_NodeSize; i++)
+		Day2DayPathMap[DayNo].LinkSequence.push_back (m_aryVN[i].LinkID );
+
+	};
 
 	void PostTripUpdate(float TripTime)   
 	{
@@ -1496,10 +1622,10 @@ public:
 	float GetTollRateInMin(int LinkID, float Time, int PricingType);  // built-in function for each network_SP to avoid conflicts with OpenMP parallel computing
 	
 
-	void BuildNetworkBasedOnZoneCentriod(int ZoneID);
+	void BuildNetworkBasedOnZoneCentriod(int DayNo,int ZoneID);
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
-	void BuildTravelerInfoNetwork(int CurrentTime, float Perception_error_ratio);
-	void BuildPhysicalNetwork();
+	void BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VMSLinkID, float Perception_error_ratio);
+	void BuildPhysicalNetwork(int DayNo=-1, int CurZoneID =-1);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
@@ -1747,6 +1873,7 @@ class NetworkSimulationResult
 class ODStatistics
 {
 public: 
+
 	ODStatistics()
 	{
 		TotalVehicleSize = 0;
@@ -1754,6 +1881,10 @@ public:
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
+		
+		Diverted_TotalVehicleSize = 0;
+		Diverted_TotalTravelTime = 0;
+		Diverted_TotalDistance = 0;
 	}
 
 	int   TotalVehicleSize;
@@ -1762,8 +1893,19 @@ public:
 	float TotalCost;
 	float TotalEmissions;
 
+	int   Diverted_TotalVehicleSize;
+	float Diverted_TotalTravelTime;
+	float Diverted_TotalDistance;
+
 };
 
+class D2DODStatistics
+{
+public: 
+
+	std::map<int,ODStatistics> D2DODStatisticsMap;
+
+};
 
 class PathStatistics
 {
@@ -1844,10 +1986,10 @@ int g_GetRandomInteger_From_FloatingPointValue(float Value);
 void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork);
 void g_ReadDemandFile();
 
-void g_VehicleRerouting(int v, float CurrentTime, MessageSign is); // v for vehicle id
+void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is); // v for vehicle id
 void g_ODBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
-void g_OneShotNetworkLoading();
+
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
 int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,
@@ -1855,7 +1997,7 @@ int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& A
 void g_DynamicTraffcAssignmentWithinInnerLoop(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated);
 void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_end, int inner_iteration);
 
-void g_OutputLinkMOESummary(char fname[_MAX_PATH]);
+void g_OutputLinkMOESummary(int iteration, char fname[_MAX_PATH]);
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
 
 extern CString g_GetAppRunningTime();
@@ -1864,6 +2006,7 @@ void g_ComputeFinalGapValue();
 extern float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS];
 extern float g_VMSPerceptionErrorRatio;
 extern int g_information_updating_interval_of_en_route_info_travelers_in_min;
+extern int g_information_updating_interval_of_VMS_in_min;
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output);
@@ -1915,7 +2058,7 @@ extern void g_ReadDTALiteSettings();
 extern int g_AgentBasedAssignmentFlag;
 extern float g_DemandGlobalMultiplier;
 extern void g_TrafficAssignmentSimulation();
-extern void g_OutputSimulationStatistics();
+extern void g_OutputSimulationStatistics(int Iteration);
 extern void g_FreeMemory();
 
 extern NetworkSimulationResult g_SimulationResult;
@@ -1930,3 +2073,4 @@ extern	int CriticalLinkFromNodeNumberAry[4];
 extern	int CriticalLinkToNodeNumberAry[4];
 extern void g_CreateLinkTollVector();
 extern void g_ReadDemandFile_Parser();
+extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);

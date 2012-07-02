@@ -35,15 +35,8 @@ extern std::map<int, DTAVehicle*> g_VehicleMap;
 extern std::map<int, DemandType> g_DemandTypeMap;
 extern std::map<int, PricingType> g_PricingTypeMap;
 extern std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
-extern std::map<int, int> g_LinkTypeFreewayMap;
-extern std::map<int, int> g_LinkTypeHighwayMap;
 
-extern std::map<int, int> g_LinkTypeArterialMap;
-extern std::map<int, int> g_LinkTypeRampMap;
-extern std::map<int, int> g_LinkTypeConnectorMap;
-extern std::map<int, int> g_LinkTypeTransitMap;
-extern std::map<int, int> g_LinkTypeWalkingMap;
-extern std::vector<DTALinkType> g_LinkTypeVector;
+extern std::map<int, DTALinkType> g_LinkTypeMap;
 extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
 
@@ -65,6 +58,9 @@ extern int g_ODZoneSize;
 // assignment and simulation settings
 extern int g_ParallelComputingMode;
 extern int g_NumberOfIterations;
+extern int g_StartIterationsForOutputPath;
+extern int g_EndIterationsForOutputPath;
+
 extern float g_ConvergencyRelativeGapThreshold_in_perc;
 extern int g_NumberOfInnerIterations;
 extern int g_AggregationTimetIntervalSize;

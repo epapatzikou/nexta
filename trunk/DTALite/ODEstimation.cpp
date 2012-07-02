@@ -886,7 +886,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output)
 
 				if(g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime  > 0 && g_ODEstimationMeasurementType == 2)  // with speed observations
 					{ // not implemented yet. 
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = g_LinkVector[li]->GetTravelTimeByMin(time-g_ObservationTimeInterval,1);
+					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = g_LinkVector[li]->GetTravelTimeByMin(-1,time-g_ObservationTimeInterval,1);
 					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfTravelTime   = 
 						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
 					}

@@ -44,7 +44,6 @@ using namespace std;
 
 
 
-std::vector<DTAPathData>   g_global_path_vector;	// global vector of path data
 std::map<CString, int> g_path_index_map; 
 
 extern ofstream g_WarningFile;
@@ -52,7 +51,7 @@ extern ofstream g_WarningFile;
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput);
-void g_OutputSimulationStatistics();
+void g_OutputSimulationStatistics(int Iteration);
 
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
@@ -88,7 +87,6 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 				cout << "Processor " << id << " is working on shortest path calculation..  " << endl;
 
 				DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
-				network_MP.BuildPhysicalNetwork ();  // build network for this zone, because different zones have different connectors...
 				//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 
 				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
@@ -101,7 +99,10 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 					{
-						// scan all possible departure times
+
+					network_MP.BuildPhysicalNetwork (iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
+
+				// scan all possible departure times
 						for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 						{
 
@@ -163,6 +164,8 @@ for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.siz
 				TRACE("");
 				bDebugFlag = true;
 			}
+
+			bDebugFlag = true;
 
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 //			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
@@ -358,7 +361,7 @@ void g_ODBasedDynamicTrafficAssignment()
 						if(g_ZoneMap[CurZoneID].m_OriginVehicleSize >0)  // only this origin zone has vehicles, then we build the network
 						{
 							// create network for shortest path calculation at this processor
-							network_MP.BuildNetworkBasedOnZoneCentriod(CurZoneID);  // build network for this zone, because different zones have different connectors...
+							network_MP.BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 							if(g_ODZoneSize > 300)  // only for large networks
 							{
@@ -432,7 +435,6 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 		int vehicle_id_trace  = -1;
 
-
 		PathArrayForEachODT *PathArray;
 		PathArray = new PathArrayForEachODT[g_ODZoneSize + 1]; // remember to release memory
 
@@ -465,6 +467,8 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 			if(iteration > 0) // update path assignments -> determine whether or not the vehicle will switch
 			{
+
+
 				float m_gap;
 				float ExperiencedTravelTime = pVeh->m_TripTime;
 
@@ -767,7 +771,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 				// create network for shortest path calculation at this processor
 				DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
 				int id = omp_get_thread_num( );  // starting from 0
-				network_MP.BuildNetworkBasedOnZoneCentriod(CurZoneID);  // build network for this zone, because different zones have different connectors...
+				network_MP.BuildNetworkBasedOnZoneCentriod(g_NumberOfIterations,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 				// scan all possible departure times
 				for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
@@ -1082,7 +1086,7 @@ void g_AgentBasedShortestPathGeneration()
 	// create network for shortest path calculation at this processor
 			DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 			int	cpu_id = omp_get_thread_num( );  // starting from 0
-			network_MP.BuildPhysicalNetwork();  // build network for this zone, because different zones have different connectors...
+			network_MP.BuildPhysicalNetwork(0);  // build network for this zone, because different zones have different connectors...
 			
 			for(int node_index  = 0; node_index < node_size; node_index++)
 			{
@@ -1146,6 +1150,9 @@ void g_AgentBasedShortestPathGeneration()
 
 	void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput)
 {
+
+
+
 	TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
 	g_AssignmentMOEVector[iteration]  = SimuOutput;
@@ -1179,16 +1186,38 @@ void g_AgentBasedShortestPathGeneration()
 		
 	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
 
+	unsigned li;
+		for(li = 0; li< g_LinkVector.size(); li++)
+		{
+			DTALink* pLink = g_LinkVector[li];
+
+			Day2DayLinkMOE element;
+			element.TotalFlowCount  = pLink->CFlowArrivalCount;
+			element.AvgTravelTime = pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
+			element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime ) *60;  // unit: mph
+
+				for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
+				{
+				element.CumulativeArrivalCount_PricingType[i] = pLink->CFlowArrivalCount_PricingType[i];
+				}
+
+			element.m_NumberOfCrashes =  pLink->m_NumberOfCrashes;
+			element.m_NumberOfFatalAndInjuryCrashes = pLink->m_NumberOfFatalAndInjuryCrashes;
+			element.m_NumberOfPDOCrashes = pLink->m_NumberOfPDOCrashes;
+
+			pLink->m_Day2DayLinkMOEVector .push_back (element);
+		}
+
 	int NumberOfCriticalLinks = 3;
 		for(int cl = 1; cl <= NumberOfCriticalLinks; cl++)
 	{
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		for(li = 0; li< g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
 
 			if(pLink->m_FromNodeNumber == CriticalLinkFromNodeNumberAry[cl] && pLink->m_ToNodeNumber == CriticalLinkToNodeNumberAry[cl])
 			{
-			double average_travel_time = pLink->GetTravelTimeByMin(0, pLink->m_SimulationHorizon);
+			double average_travel_time = pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
 			double total_volume = pLink->CFlowArrivalCount;
 			float FlowRatio = pLink->CFlowArrivalCount*100.0f/ max(1,g_SimulationResult.number_of_vehicles);
 			float HOV_volume = pLink->CFlowArrivalCount_PricingType[2];
@@ -1198,7 +1227,10 @@ void g_AgentBasedShortestPathGeneration()
 			double speed = pLink->m_Length / max(0.00001,average_travel_time) *60;  // unit: mph
 			double capacity_simulation_horizon = pLink->m_MaximumServiceFlowRatePHPL * pLink->m_NumLanes * (g_DemandLoadingEndTimeInMin- g_DemandLoadingStartTimeInMin) / 60;
 			double voc_ratio = pLink->CFlowArrivalCount / max(0.1,capacity_simulation_horizon);
+			
 			int percentage_of_speed_limit = int(speed/max(0.1,pLink->m_SpeedLimit)*100+0.5);
+			
+			
 			g_AssignmentLogFile << voc_ratio << "," << total_volume << "," << FlowRatio << "," << HOV_volume << "," << HOVRatio << "," << SOVPercentage << "," << TruckPercentage << ","
 				<< average_travel_time << "," << speed << ",";
 			g_AssignmentLogFile <<	pLink->m_TotalEnergy  << "," << pLink->m_CO2 << ","  << pLink->m_NOX << "," << pLink->m_HC << ",";

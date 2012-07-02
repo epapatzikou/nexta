@@ -106,7 +106,6 @@ enum eSensivityTestMode {eSensivityDemand,eSensivityNumOfLanes,eSensivityToll};
 	g_NumberOfIterations = TotalUEIterationNumber;			// 0+1 iterations
 	g_AgentBasedAssignmentFlag = 0;		// no agent-based assigment 
 
-
 	if(SensivityTestMode == eSensivityDemand)
 	{
 	g_DemandGlobalMultiplier =  0.01 * iteration;	// very low demand    
@@ -157,8 +156,7 @@ enum eSensivityTestMode {eSensivityDemand,eSensivityNumOfLanes,eSensivityToll};
 			g_AgentBasedAssisnment();  // agent-based assignment
 		}
 
-
-	g_OutputSimulationStatistics();
+		g_OutputSimulationStatistics(iteration);
 
 		g_UnitTestingLogFile <<",," << iteration << "," << 
 		g_SimulationResult.number_of_vehicles << "," <<
@@ -191,7 +189,7 @@ enum eSensivityTestMode {eSensivityDemand,eSensivityNumOfLanes,eSensivityToll};
 
 			if(pLink->m_FromNodeNumber == CriticalLinkFromNodeNumberAry[cl] && pLink->m_ToNodeNumber == CriticalLinkToNodeNumberAry[cl])
 			{
-			double average_travel_time = pLink->GetTravelTimeByMin(0, pLink->m_SimulationHorizon);
+			double average_travel_time = pLink->GetTravelTimeByMin(g_NumberOfIterations,0, pLink->m_SimulationHorizon);
 			double total_volume = pLink->CFlowArrivalCount;
 			float FlowRatio = pLink->CFlowArrivalCount*100.0f/g_SimulationResult.number_of_vehicles;
 			float HOV_volume = pLink->CFlowArrivalCount_PricingType[2];
@@ -314,7 +312,7 @@ enum eSensivityTestMode {eSensivityDemand,eSensivityNumOfLanes,eSensivityToll};
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			double average_travel_time = pLink->GetTravelTimeByMin(0, pLink->m_SimulationHorizon);
+			double average_travel_time = pLink->GetTravelTimeByMin(g_NumberOfIterations,0, pLink->m_SimulationHorizon);
 			double speed = pLink->m_Length / max(0.00001,average_travel_time) *60;  // unit: mph
 			double capacity_simulation_horizon = pLink->m_MaximumServiceFlowRatePHPL * pLink->m_NumLanes * (g_DemandLoadingEndTimeInMin- g_DemandLoadingStartTimeInMin) / 60;
 			double voc_ratio = pLink->CFlowArrivalCount / max(0.1,capacity_simulation_horizon);
