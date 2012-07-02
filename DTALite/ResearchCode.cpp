@@ -669,50 +669,6 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 */
 
 
-		void g_OneShotNetworkLoading()
-	{
-		int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
-		int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-
-		// assign different zones to different processors
-		int nthreads = omp_get_max_threads ( );
-
-		/*
-		// when debugging use single processor only
-		cout << "  Number of processors available = " << omp_get_num_procs ( ) << "\n";
-		cout << "  Number of threads =              " << omp_get_max_threads ( ) << "\n";
-
-		g_RealTimeShortestPathCalculation(0);
-
-		CTime EndTime = CTime::GetCurrentTime();
-		CTimeSpan ts = EndTime  - StartTime;
-
-		cout << "  real-time info shortest path calculation takes " << ts.GetTotalSeconds()<< " seconds\n";
-		cout << "   real-time info shortest path calculation for a node takes " << ts.GetTotalSeconds()*1.0 / node_size << " seconds\n";
-		*/
-		//	nthreads = 1;
-		bool bStartWithEmptyFile = true;
-		bool bStartWithEmptyFile_for_assignment = true;
-
-		g_LogFile << "Number of Iterations = " << g_NumberOfIterations << endl;
-
-		int iteration = 0;
-		bool NotConverged = true;
-		int TotalNumOfVehiclesGenerated = 0;
-		std::set<DTALink*>::iterator iterLink;
-
-		// BPR based loading
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
-		{
-			g_LinkVector[li]->m_BPRLinkTravelTime = g_LinkVector[li]->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(g_LinkVector[li]->m_BPRLinkVolume/(g_LinkVector[li]->m_BPRLaneCapacity*g_LinkVector[li]->GetNumLanes()),4.0f)));
-		}
-		NetworkLoadingOutput SimuOutput;
-		int simulation_mode = 1; // simulation from demand
-		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, simulation_mode,iteration);
-		g_OutputMOEData(iteration);
-
-	}
-
 	int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,
 		int InformationClass=-1, int DemandType=-1,int DepartureTimeInterval = -1)
 	{
@@ -1108,60 +1064,6 @@ int DTANetworkForSP::FindOptimalSolution(int origin, int departure_time, int des
 
 }
 
-void DTANetworkForSP::BuildTravelerInfoNetwork(int CurrentTime, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
-{
-
-	std::set<DTANode*>::iterator iterNode;
-	std::set<DTALink*>::iterator iterLink;
-
-	int IntervalLinkID=0;
-	int FromID, ToID;
-
-	int i;
-
-	// add physical links
-	m_PhysicalNodeSize = g_NodeVector.size();
-
-	for(i=0; i< m_PhysicalNodeSize; i++)
-	{
-		m_OutboundSizeAry[i] = 0;
-		m_InboundSizeAry[i] =0;
-	}
-
-
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
-	{
-		FromID = g_LinkVector[li]->m_FromNodeID;
-		ToID   = g_LinkVector[li]->m_ToNodeID;
-
-		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
-		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
-
-		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
-		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
-		m_OutboundSizeAry[FromID] +=1;
-
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID ;
-		m_InboundSizeAry[ToID] +=1;
-
-		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
-
-
-			float AvgTravelTime = g_LinkVector[li]->GetPrevailingTravelTime(CurrentTime);
-//			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime,AvgTravelTime);
-
-			float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
-
-			float travel_time  = AvgTravelTime + Normal_random_value;
-			if(travel_time < g_LinkVector[li]->m_FreeFlowTravelTime )
-				travel_time = g_LinkVector[li]->m_FreeFlowTravelTime;
-
-			m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = travel_time;
-
-	}
-	m_NodeSize = m_PhysicalNodeSize;
-}
 
 
 bool DTANetworkForSP::OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination)
@@ -1281,3 +1183,51 @@ bool DTANetworkForSP::OptimalTDLabelCorrecting_DQ(int origin, int departure_time
 
 
 
+
+/* one one-shot simulation from demand 
+		// generating paths for historical travel information
+
+		if( SimulationMode == 1 // one-shot simulation from demand //)
+		{
+			if(simulation_time_interval_no%(g_AggregationTimetInterval*10) == 0)
+			{
+				cout <<g_GetAppRunningTime()<<  "Calculating shortest paths..." << endl;
+
+#pragma omp parallel for
+				for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
+				{
+					int DepartureTimeInterval = time/g_AggregationTimetInterval;
+					if(DepartureTimeInterval < g_AggregationTimetIntervalSize)
+					{
+
+						int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
+						int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
+
+						// create network for shortest path calculation at this processor
+						DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
+						int	id = omp_get_thread_num( );  // starting from 0
+						// assign paths to historical information (for all vehicles)
+						network_MP.HistInfoVehicleBasedPathAssignment(CurZoneID,time,time+g_AggregationTimetInterval);
+
+					}
+
+				}
+			}
+
+//			g_AssignPathsForInformationUsers(Iteration,time, simulation_time_interval_no);
+
+
+			if(simulation_time_interval_no%(g_AggregationTimetInterval*10) == 0)
+			{
+
+				// reset statistics for departure-time-based travel time collection
+
+				for(unsigned li = 0; li< g_LinkVector.size(); li++)
+				{
+					g_LinkVector[li]-> departure_count = 0;
+					g_LinkVector[li]-> total_departure_based_travel_time = 0;
+				}
+			}
+		}
+
+*/
