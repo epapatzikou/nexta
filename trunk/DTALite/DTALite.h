@@ -63,7 +63,7 @@ enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 extern double g_DTASimulationInterval;
 
 #define	MAX_SPLABEL 99999.0f
-//#define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
+#define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
@@ -492,8 +492,9 @@ public:
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 		m_LinkMeasurementAry.resize(m_SimulationHorizon/g_ObservationTimeInterval+1);
 
-		m_CumuArrivalFlow.resize(TimeSize/g_DTASimulationInterval+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
-		m_CumuDeparturelFlow.resize(TimeSize/g_DTASimulationInterval+1);      // TimeSize  (unit: min), TimeSize*10 = 0.1 min: number of simulation time intervals
+		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
+		m_CumuDeparturelFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);      // TimeSize  (unit: min), TimeSize*10 = 0.1 min: number of simulation time intervals
+
 		m_StochaticCapcityFlag = 0;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = 0;
@@ -578,7 +579,7 @@ public:
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
 	void ComputeVSP();
-	void ComputeVSP_FastMethod();
+//	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
 	std::vector<Day2DayLinkMOE> m_Day2DayLinkMOEVector;

@@ -759,13 +759,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 		// cummulative flow counts
 
-		int t_residual = simulation_time_interval_no;
-		if(t_residual < g_LinkVector[li]->m_CumuArrivalFlow.size())
-		{
-			g_LinkVector[li]->m_CumuArrivalFlow[t_residual] = g_LinkVector[li]->CFlowArrivalCount;
-			g_LinkVector[li]->m_CumuDeparturelFlow[t_residual] = g_LinkVector[li]->CFlowDepartureCount;
-
-		}
+		int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) % MAX_TIME_INTERVAL_ADCURVE;
+         g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_backwardwaveTime] = g_LinkVector[li]->CFlowArrivalCount;
+         g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] = g_LinkVector[li]->CFlowDepartureCount;
 
 		if(simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
 		{

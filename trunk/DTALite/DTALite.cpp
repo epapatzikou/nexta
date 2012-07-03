@@ -758,6 +758,8 @@ void g_ReadInputFiles()
 	char InputLinkFileName[_MAX_PATH];
 
 	GetPrivateProfileString("input_file","link_data","input_link.csv",InputLinkFileName,_MAX_PATH,g_DTASettingFileName);
+	int AllowExtremelyLowCapacityFlag = g_GetPrivateProfileInt("input_checking", "allow_extremely_low_capacity", 1, g_DTASettingFileName);	
+
 
 	cout << "Step 3: Reading file input_link.csv..."<< endl;
 	g_LogFile << "Step 3: Reading file input_link.csv..." << endl;
@@ -960,11 +962,10 @@ void g_ReadInputFiles()
 
 				pLink->m_MaximumServiceFlowRatePHPL= capacity;
 
-				if(capacity < 10)
+				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10)
 				{
-					cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error" << endl;
+					cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error." << endl;
 					getchar();
-					exit(0);
 				}
 
 				pLink->m_BPRLaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
@@ -1505,7 +1506,8 @@ void g_ReadInputFiles()
 		cout << "Step 10: Reading file input_demand.csv..."<< endl;
 		g_LogFile << "Step 10: Reading file input_demand.csv..."<< endl;
 
-		g_ReadDemandFile_Parser();
+//		g_ReadDemandFile_Parser();
+		g_ReadDemandFile();
 
 	}else
 	{  // load from vehicle file
@@ -2780,6 +2782,12 @@ void g_ReadDTALiteSettings()
 
 	g_DemandLoadingStartTimeInMin = ((int) g_GetPrivateProfileFloat("demand", "loading_start_hour",6,g_DTASettingFileName)*60);	
 	g_DemandLoadingEndTimeInMin = ((int)g_GetPrivateProfileFloat("demand", "loading_end_hour",12,g_DTASettingFileName)*60);	
+
+	if(g_DemandLoadingEndTimeInMin >=2000)
+	{
+		cout << "Error: g_DemandLoadingEndTimeInMin >=2000" ;
+		g_ProgramStop();
+	}
 
 	if(g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
 	{
