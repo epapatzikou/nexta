@@ -41,6 +41,7 @@
 #include <afxdb.h>          // MFC database support
 #include <afxdao.h>
 
+
 enum layer_mode
    { 
 	layer_node = 0,
@@ -298,6 +299,16 @@ public:
 	bool ReadLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	
 	bool ReadScenarioData();   // for road network
+
+	// structure for demand file
+
+	struct DemandRecordData
+	{
+		INT32 origin_zone, destination_zone;
+		INT32 starting_time_in_min;
+		INT32 ending_time_in_min;
+		float number_of_vehicles[5] ;
+	};
 
 
 	bool ReadVMSScenarioData();
@@ -947,6 +958,10 @@ public:
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
 	void ConstructandexportVISSIMdata();
+	void ReadSynchroUniversalDataFiles();
+	bool ReadSynchroLayoutFile(LPCTSTR lpszFileName);
+	bool ReadSynchroLaneFile(LPCTSTR lpszFileName);
+
 	bool m_bFitNetworkInitialized;
 	void CalculateDrawingRectangle(bool NodeLayerOnly = false);
 
@@ -1133,6 +1148,7 @@ public:
 		afx_msg void OnDemandfileIntermodaloddemandmatrix();
 		afx_msg void OnLinkAddworkzone();
 		afx_msg void OnLinkAddincident();
+		afx_msg void OnImportSynchroutdfcsvfiles();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

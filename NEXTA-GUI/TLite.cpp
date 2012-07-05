@@ -215,7 +215,7 @@ void CTLiteApp::OnAppAbout()
 
 void CTLiteApp::OnFileOpen()
 {
-	static char BASED_CODE szFilter[] = "AMS Files (*.ini)|*.ini|DYNASMART Workspace Files (*.dws)|*.dws|*.ini; *.dws|All Files (*.*)|*.*||";
+	static char BASED_CODE szFilter[] = "Transportation Network Projects (*.tnp)|*.tnp|DYNASMART Workspace Files (*.dws)|*.dws|*.tnp; *.dws|All Files (*.*)|*.*||";
 
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
    if(dlg.DoModal() == IDOK)

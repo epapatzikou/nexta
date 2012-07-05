@@ -12,6 +12,7 @@ CCSVParser::CCSVParser(void)
 {
         Delimiter = ',';
         IsFirstLineHeader = true;
+		m_bSkipFirstLine = false;
 }
 
 CCSVParser::~CCSVParser(void)
@@ -27,6 +28,11 @@ bool CCSVParser::OpenCSVFile(string fileName)
         
         if (inFile.is_open())
         {
+			if(m_bSkipFirstLine)
+			{
+            string s;
+            std::getline(inFile,s);
+			}
                 if (IsFirstLineHeader)
                 {
                         string s;

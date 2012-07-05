@@ -306,6 +306,9 @@ public:
 	int starting_time_in_min;
 	int ending_time_in_min;
 	float time_dependent_value;
+	int type;
+	
+
 	DTATimeDependentemand()
 	{
 	starting_time_in_min = 0;
@@ -353,6 +356,10 @@ public:
 	DTATimeDependentemand element;
 	element.starting_time_in_min = starting_time;
 	element.ending_time_in_min = ending_time;
+	element.time_dependent_value = value;
+	element.type = demand_type;
+
+	TimeDependentVector.push_back(element);
 
 	}
 
@@ -628,6 +635,11 @@ public:
 class DTALinkType
 {
 public:
+	DTALinkType()
+	{
+	link_type = 0;
+	
+	}
 	int link_type;
 	string link_type_name;
 	string type_code;
@@ -731,7 +743,6 @@ DTA_APPROACH_TURN movement_dir;
 int in_link_from_node_id;
 int in_link_to_node_id;  // this equals to the current node number
 int out_link_to_node_id;
-
 
 int starting_time_in_min;
 int ending_time_in_min;
@@ -1139,6 +1150,7 @@ public:
 		m_SetBackEnd = 0;
 		m_SpeedLimit  = 10;
 		m_ReversedSpeedLimit  = 10;
+		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
 		m_TotalVolume = 0;
 		m_NumberOfMarkedVehicles = 0;
@@ -1572,6 +1584,7 @@ void AdjustLinkEndpointsWithSetBack()
 	float	m_ReversedSpeedLimit;
 
 	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
+	float   m_Saturation_flow_rate_in_vhc_per_hour_per_lane;
 
 	float m_FromNodeY;  // From Node, Y value
 	float m_ToNodeY;    // To Node, Y value
