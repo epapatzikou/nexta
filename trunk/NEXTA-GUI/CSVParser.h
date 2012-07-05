@@ -24,6 +24,7 @@ private:
 	vector<string> ParseLine(string line);
 	
 public:
+	bool m_bSkipFirstLine;  // for synchro CSV files
 	CCSVParser(void);
 	bool OpenCSVFile(string fileName);
 	void CloseCSVFile(void);

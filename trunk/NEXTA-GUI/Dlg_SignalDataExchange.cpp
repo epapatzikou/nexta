@@ -50,3 +50,4 @@ void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 	m_pDoc->ExportPathflowToCSVFiles();
 	m_pDoc->ConstructandexportVISSIMdata();
 }
+

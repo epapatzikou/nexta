@@ -152,12 +152,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 			pLink->m_FreeFlowTravelTime = pLink->m_Length*60 / max(1,pLink->m_SpeedLimit);  // * 60: hour -> min
   
-
-
 			pLink->m_MaximumServiceFlowRatePHPL= g_read_float(pFile);
 			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 
 			int m_SaturationFlowRate= g_read_integer(pFile);
+			
+			pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = m_SaturationFlowRate;
+
 			int DSP_link_type = g_read_integer(pFile);
 			pLink->m_link_type = DSP_link_type;
 
@@ -391,6 +392,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				element.ZoneID  = zone_number;
 				element.NodeNumber = destination_node;
 
+				m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
 				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 
 			}
@@ -453,7 +455,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 
-	int ReadDemandFile = g_GetPrivateProfileInt("display","read_demand",0,ProjectFileName);
+	int ReadDemandFile = 1;
 
 	if(ReadDemandFile)
 	{
@@ -476,26 +478,44 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			TimeIntevalVector.push_back(start_time);
 
 		}
+
+		int time_interval = 60; // min
+		
+		if(TimeIntevalVector.size() >=2)
+			time_interval = TimeIntevalVector[1] - TimeIntevalVector[0];
+
 		// read the last value
 		int end_of_simulation_horizon = g_read_float(pFile);
 		TimeIntevalVector.push_back(end_of_simulation_horizon);
 
+		long RecordCount = 0;
+		float total_demand = 0;
 		for(i = 0; i < num_matrices; i++)
 		{
 			// Find a line with non-blank values to start
 			// Origins
 			double start_time= g_read_float(pFile); // start time
 
-			for(int from_zone=0; from_zone< num_zones; from_zone++)
-				for(int to_zone=0; to_zone< num_zones; to_zone++)
+			for(int from_zone=1; from_zone<= num_zones; from_zone++)
+				for(int to_zone=1; to_zone<= num_zones; to_zone++)
 				{
 					float demand_value = g_read_float(pFile) * demand_factor;
+					total_demand += demand_value;
 
+					DTADemandVolume element;
+
+//					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].AddTimeDependentValue (1,demand_value,start_time,start_time+time_interval);
 					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].SetValue (1,demand_value);
 
+
+					RecordCount++;
 				}
 
 		} // time-dependent matrix
+
+		m_AMSLogFile << RecordCount << "demand entries are loaded from file demand.dat "  ". Total demand =  " 
+			<< total_demand << endl;
+		m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file demand.dat. Total demand = %f",RecordCount,total_demand);
 
 		fclose(pFile);
 	}
@@ -574,7 +594,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	OffsetLink();
 
 	CalculateDrawingRectangle();
-
 
 	m_bFitNetworkInitialized  = false;
 

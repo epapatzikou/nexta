@@ -379,6 +379,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 		LoadMovementDefault(MovementTemplate, PhaseTemplate);
 	}
 
+
+	int signal_count = 0;
 	// generate all movements
 	int i = 0;
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
@@ -386,6 +388,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
+			signal_count ++;
 			// generate movement set
 			DTA_NodeMovementSet movement_set;	
 			
@@ -522,6 +525,21 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 		} // checking control type
 	}// for each node
+
+	if(signal_count == 0)
+		AfxMessageBox("0 pretimed/actuated signal has been specified in input_node.csv in the current data set.");
+
+	std::list<DTANode*>::iterator iNode;
+	m_Origin.x  = 1000000;
+	m_Origin.y  = 1000000;
+
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+	m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
+	m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
+	}
+
+	TRACE("\n Size of m_MovementVector = %d", m_MovementVector.size());
 }
 
 bool CTLiteDoc::LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate)
@@ -712,29 +730,29 @@ void CTLiteDoc::OnFileConstructandexportsignaldata()
 }
 void CTLiteDoc::Constructandexportsignaldata()
 {
-	CString str;
-	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		"Synchro Data File (*.csv)|*.csv||", NULL);
-	if(dlg.DoModal() == IDOK)
-	{
 
-		CWaitCursor wait;
-		char fname[_MAX_PATH];
-		wsprintf(fname,"%s", dlg.GetPathName());
 
-		CString SynchroProjectFile = dlg.GetPathName();
-		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
 
+		m_Synchro_ProjectDirectory  = m_ProjectDirectory + "Exporting_Synchro_UTDF\\";
+
+		if ( GetFileAttributes(m_Synchro_ProjectDirectory) == INVALID_FILE_ATTRIBUTES) 
+		{
+		  CreateDirectory(m_Synchro_ProjectDirectory,NULL);
+		}
 		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
 		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 		ConstructMovementVector(true);
 
-		ExportSingleSynchroFile(SynchroProjectFile);
-
 		ExportSynchroVersion6Files();
 
-	}
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		ShellExecute( NULL,  "explore", m_Synchro_ProjectDirectory, NULL,  NULL, SW_SHOWNORMAL );
+
+
+//		ExportSingleSynchroFile(SynchroProjectFile);
+
+
 
 }
 
@@ -749,7 +767,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	const int LaneColumnSize = 32;
 	const int LaneRowSize = 30;
 	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
-	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+	string lane_row_name_str[LaneRowSize] = {"Up Node","Dest Node","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 	int i,j, m;
 	int movement_size = m_MovementVector.size();
@@ -883,7 +901,14 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				float pt_x = NPtoSP_X((*iNode)->pt,resolution);
 				float pt_y = NPtoSP_Y((*iNode)->pt,resolution);
 
-			fprintf(st, "%i,%s,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_Name.c_str(), (*iNode)->m_ControlType,
+				int control_type = 0;
+				if((*iNode)->m_ControlType == m_ControlType_PretimedSignal)
+					control_type = 0;  
+				else
+					control_type = 1;  
+
+
+			fprintf(st, "%i,%s,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_Name.c_str(), control_type,
 				pt_x, pt_y);
 			// find connecting nodes and links at different directions
 			DTA_NodeBasedLinkSets Node_Link;
@@ -1058,21 +1083,14 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	}
 
 	m_Origin = m_Origin_Current;  // restore value
+
+
 }
 
 void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 { 
 	// reset origin for converted network in synchro
 
-	std::list<DTANode*>::iterator iNode;
-	m_Origin.x  = 1000000;
-	m_Origin.y  = 1000000;
-
-	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-	{
-	m_Origin.x = min(m_Origin.x,(*iNode)->pt .x);
-	m_Origin.y= min(m_Origin.y,(*iNode)->pt .y);
-	}
 
 	const int Dir_size = 8;
 
@@ -1081,7 +1099,7 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 	const int LaneColumnSize = 32;
 	const int LaneRowSize = 30;
 	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
-	string lane_row_name_str[LaneRowSize] = {"UpNodeID","DestNodeID","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+	string lane_row_name_str[LaneRowSize] = {"Up Node","Dest Node","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 	unsigned int i,j, m;
 	int movement_size = m_MovementVector.size();
@@ -1317,51 +1335,3 @@ void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 }
 
 
-void CTLiteDoc::OGDF_WriteGraph(CString FileName)
-{
-	std::ofstream GMLFile;
-	int nextId = 0;
-
-	GMLFile.open (FileName, ios::out);
-	if (GMLFile.is_open())
-	{
-		GMLFile.width(15);
-		GMLFile.precision(7) ;
-		GMLFile.setf(ios::fixed);
-	}
-	else
-	{
-		return;
-	}
-	GMLFile << "Creator \"NeXTA::writeGML\"\n";
-	GMLFile << "directed 1\n";
-
-	GMLFile << "graph [\n";
-
-		std::list<DTANode*>::iterator iNode;
-		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-		GMLFile << "node [\n";
-		GMLFile << "id " << (*iNode)->m_NodeNumber << "\n";
-		GMLFile << "label  " << "\"" << (*iNode)->m_Name.c_str () << "\"\n";
-		GMLFile << "x  " << (*iNode)->pt.x << "\n";
-		GMLFile << "y  " << (*iNode)->pt.y << "\n";
-		GMLFile << "]\n"; // node
-		}
-
-		std::list<DTALink*>::iterator iLink;
-
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-		GMLFile << "edge [\n";
-		GMLFile << "source " << (*iLink)->m_FromNodeNumber << "\n";
-		GMLFile << "target " << (*iLink)->m_ToNodeNumber << "\n";
-		GMLFile << "weight " << (*iLink)->m_Length << "\n";
-		GMLFile << "]\n"; // edge
-		
-		}
-
-	GMLFile << "]\n"; // graph
-	GMLFile.close();
-
-}
