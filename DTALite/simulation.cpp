@@ -187,7 +187,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	// loading buffer
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	int link_size = g_LinkVector.size();
+	for(unsigned li = 0; li< link_size; li++)
 	{
 		while(g_LinkVector[li]->LoadingBuffer.size() >0 && g_LinkVector[li]->GetNumLanes(DayNo,CurrentTime)>0.01)  // no load vehicle into a blocked link
 		{
@@ -242,7 +243,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	// step 2: move vehicles from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+#pragma omp parallel for
+	for(int li = 0; li< link_size; li++)
 	{
 		if(debug_flag && link_id_trace == li && CurrentTime >=484)
 		{
@@ -289,7 +291,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	}
 	else // queueing model
 	{
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+
+
+	#pragma omp parallel for
+		for(int li = 0; li< link_size; li++)
 		{
 			float PerHourCapacity = g_LinkVector[li]->GetHourlyPerLaneCapacity(CurrentTime);  // static capacity from BRP function
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
@@ -309,11 +314,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 			}
 
+			/* comment out for now: Xuesong: avoid conflict for g_LinkTypeMap
 			//Highway/Expressway,			 Principal arteria				Major arterial					 Frontage road
 			if(!(g_LinkTypeMap[g_LinkVector[li]->m_link_type ].IsFreeway() || g_LinkTypeMap[g_LinkVector[li]->m_link_type ].IsRamp()))
 			{
 				PerHourCapacityAtCurrentSimulatioInterval = GetDynamicCapacityAtSignalizedIntersection(PerHourCapacity, g_CycleLength_in_seconds,CurrentTime);
 			}
+			*/
 
 			// determine link out capacity 
 			float MaximumFlowRate = PerHourCapacityAtCurrentSimulatioInterval *g_DTASimulationInterval/60.0f*g_LinkVector[li]->GetNumLanes(DayNo,CurrentTime); //60 --> cap per min --> unit # of vehicle per simulation interval
@@ -348,7 +355,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 								g_LinkVector[li]->EntranceQueue.size(), g_LinkVector[li]->ExitQueue.size());
 						}
 
-						int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) ;
+						int t_residual_minus_backwardwaveTime = max(0,simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval)% MAX_TIME_INTERVAL_ADCURVE ;
 
 						float VehCountUnderJamDensity = g_LinkVector[li]->m_Length * g_LinkVector[li]->GetNumLanes(DayNo,CurrentTime) *g_LinkVector[li]->m_KJam;
 						// when there is a capacity reduction, in the above model, we assume the space capacity is also reduced proportional to the out flow discharge capacity, 
@@ -358,7 +365,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						// to do list: we should add another parameter of space capacity reduction ratio to represent the fact that the space capacity reduction magnitude is different from the outflow capacity reduction level,
 						// particularly for road construction areas on long links, with smooth barrier on the merging section. 
 						int N_Arrival_Now_Constrainted = (int)(g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountUnderJamDensity);  //g_LinkVector[li]->m_Length 's unit is mile
-						int t_residual_minus_1 = (simulation_time_interval_no - 1) ;
+						int t_residual_minus_1 = max(0, simulation_time_interval_no - 1)% MAX_TIME_INTERVAL_ADCURVE ;
 
 						int N_Now_minus_1 = (int)g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_1];
 						int Flow_allowed = N_Arrival_Now_Constrainted - N_Now_minus_1;
@@ -408,7 +415,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 		// distribute link in capacity to different incoming links
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		for(unsigned li = 0; li< link_size; li++)
 		{
 			unsigned int il;
 			if(g_LinkVector[li] -> m_bMergeFlag >= 1)
@@ -497,7 +504,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	//for each node, we scan each incoming link in a randomly sequence, based on simulation_time_interval_no
 
-	for(unsigned node = 0; node < g_NodeVector.size(); node++)
+	int node_size = g_NodeVector.size();
+	for(unsigned node = 0; node < node_size; node++)
 	{
 		int IncomingLinkSize = g_NodeVector[node].m_IncomingLinkVector.size();
 		int incoming_link_count = 0;
@@ -754,14 +762,16 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	} // for each node
 
 	//	step 5: statistics collection
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+#pragma omp parallel for
+	for(int li = 0; li< link_size; li++)
 	{
 
 		// cummulative flow counts
 
-		int t_residual_minus_backwardwaveTime = int(simulation_time_interval_no - g_LinkVector[li]->m_BackwardWaveTimeInSimulationInterval) % MAX_TIME_INTERVAL_ADCURVE;
-         g_LinkVector[li]->m_CumuArrivalFlow[t_residual_minus_backwardwaveTime] = g_LinkVector[li]->CFlowArrivalCount;
-         g_LinkVector[li]->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] = g_LinkVector[li]->CFlowDepartureCount;
+		int t_residual = simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
+
+         g_LinkVector[li]->m_CumuArrivalFlow[t_residual] = g_LinkVector[li]->CFlowArrivalCount;
+         g_LinkVector[li]->m_CumuDeparturelFlow[t_residual] = g_LinkVector[li]->CFlowDepartureCount;
 
 		if(simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
 		{
@@ -999,7 +1009,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		}
 		if(simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
 		{
-			cout << "simulation clock:" << int(time) << " min, # of vehicles -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			cout << "simu clock:" << int(time) << " min, # of veh -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 			g_LogFile << "simulation clock in min:" << int(time) << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 		}
 	}

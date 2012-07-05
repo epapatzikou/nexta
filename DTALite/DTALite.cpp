@@ -926,6 +926,7 @@ void g_ReadInputFiles()
 				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 				pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
+/* common out for now to speed up the process
 				std::vector<CCoordinate> CoordinateVector;
 				string geo_string;
 				if(parser_link.GetValueByFieldName("geometry",geo_string))
@@ -941,7 +942,7 @@ void g_ReadInputFiles()
 						pLink->m_ShapePoints .push_back (pt);
 					}
 				}
-
+*/
 				// read safety-related data
 
 				parser_link.GetValueByFieldName("num_driveways_per_mile",pLink->m_Num_Driveways_Per_Mile);
@@ -1116,7 +1117,7 @@ void g_ReadInputFiles()
 
 			int external_od_flag;
 			if(parser_activity_location.GetValueByFieldName("external_OD_flag",external_od_flag) == false)
-				break;
+				external_od_flag  =0 ;
 
 			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 
@@ -1491,9 +1492,9 @@ void g_ReadInputFiles()
 
 
 	// done with zone.csv
-	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	PhysicalNetwork.BuildPhysicalNetwork(0);
-	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+//	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+//	PhysicalNetwork.BuildPhysicalNetwork(0);
+//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 	//	ConnectivityChecking(&PhysicalNetwork);
 
 	//*******************************
@@ -1515,14 +1516,14 @@ void g_ReadInputFiles()
 		cout << "Step 10: Reading file input_vehicle.csv..."<< endl;
 		g_LogFile << "Step 10: Reading file input_vehicle.csv..."<< endl;
 
-		ReadDTALiteVehicleFile("input_vehicle.csv",&PhysicalNetwork);
+//		ReadDTALiteVehicleFile("input_vehicle.csv",&PhysicalNetwork);
 
 	}
 
 	cout << "Step 11: Reading file input_sensor.csv "<< endl;
 	g_LogFile << "Step 11: Reading file input_sensor.csv"<< endl;
 
-	g_ReadLinkMeasurementFile(&PhysicalNetwork);
+//	g_ReadLinkMeasurementFile(&PhysicalNetwork);
 
 	/* to do: change this to the loop for map structure 
 	for(z = 1; z <=g_ODZoneSize; z++)
@@ -1535,7 +1536,7 @@ void g_ReadInputFiles()
 	//*******************************
 	// step 9: Crash Prediction input
 
-	ReadScenarioInputFiles(&PhysicalNetwork);
+//	ReadScenarioInputFiles(&PhysicalNetwork);
 
 
 	//	cout << "Global Loading Factor = "<< g_DemandGlobalMultiplier << endl;
@@ -1622,6 +1623,9 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		}
 
 		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
+
+		if(vhc.m_DepartureTime  >=1000)
+			TRACE("");
 
 		// important notes: to save memory and for simplicity, DTALite simulation still uses interval clock starts from as 0
 		// when we output the all statistics, we need to 
@@ -1775,6 +1779,9 @@ void g_ConvertDemandToVehicles()
 				exit(0);
 
 			}
+
+			if(i == 25686)
+				TRACE("");
 			pVehicle->m_VehicleID		= i;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
@@ -1889,7 +1896,7 @@ void g_ReadDemandFile_Parser()
 					{
 						// condition 2: with time-dependent profile 
 						// for each time interval
-						for(int time_interval = 0; time_interval <= MAX_TIME_INTERVAL_SIZE; time_interval++)
+						for(int time_interval = 0; time_interval < MAX_TIME_INTERVAL_SIZE; time_interval++)
 						{
 							// go through all applicable temproal elements
 							double time_dependent_ratio = 0;
@@ -1971,6 +1978,8 @@ void g_ReadDemandFile()
 	float total_demand_in_demand_file = 0;
 	float total_number_of_vehicles_to_be_generated = 0;
 
+	int max_line_number = 100000;
+
 	FILE* st;
 	fopen_s(&st,"input_demand.csv", "r");
 	if (st!=NULL)
@@ -1990,6 +1999,9 @@ void g_ReadDemandFile()
 
 		while( fscanf(st,"%d,%d,%f,%f,",&originput_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
 		{
+
+			
+
 			// static traffic assignment, set the demand loading horizon to [0, 60 min]
 			if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
 			{
@@ -2033,7 +2045,7 @@ void g_ReadDemandFile()
 					{
 						// condition 2: with time-dependent profile 
 						// for each time interval
-						for(int time_interval = 0; time_interval <= MAX_TIME_INTERVAL_SIZE; time_interval++)
+						for(int time_interval = 0; time_interval < MAX_TIME_INTERVAL_SIZE; time_interval++)
 						{
 							// go through all applicable temproal elements
 							double time_dependent_ratio = 0;
@@ -2074,6 +2086,9 @@ void g_ReadDemandFile()
 				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
 			}
 			line_no++;
+
+			//if(line_no >= max_line_number)
+			//	break;
 		}
 
 		fclose(st);
