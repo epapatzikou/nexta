@@ -50,7 +50,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				OpenMP="true"
+				OpenMP="false"
 				UsePrecompiledHeader="2"
 				WarningLevel="2"
 				DebugInformationFormat="4"
@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				RuntimeLibrary="1"
-				OpenMP="false"
+				OpenMP="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -192,7 +192,7 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				OpenMP="true"
+				OpenMP="false"
 				UsePrecompiledHeader="2"
 				WarningLevel="2"
 				DebugInformationFormat="3"

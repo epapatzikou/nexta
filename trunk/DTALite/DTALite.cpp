@@ -268,8 +268,8 @@ float g_GetRandomRatio()
 
 int g_GetRandomInteger_From_FloatingPointValue(float Value)
 {
-	float Residual = Value -int(Value);
-	float RandomNumber= g_GetRandomRatio(); 
+	float Residual = Value - int(Value);
+	float RandomNumber = g_GetRandomRatio(); 
 	if(RandomNumber < Residual)
 	{
 		return int(Value)+1;
@@ -278,6 +278,21 @@ int g_GetRandomInteger_From_FloatingPointValue(float Value)
 	{
 		return int(Value);
 	}
+}
+
+int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID, int SimulationIntervalNo)
+{ // we have to use this random number generator in parallel computing mode, as the above version uses the "shared" seed
+	float Residual = Value - int(Value);
+	float RandomNumber = ((LinkID + SimulationIntervalNo)%100)/100.0f;
+	if(RandomNumber < Residual)
+	{
+		return int(Value)+1;
+	}
+	else
+	{
+		return int(Value);
+	}
+
 }
 
 float g_GetRandomRatioForVehicleGeneration()
@@ -926,23 +941,23 @@ void g_ReadInputFiles()
 				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 				pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
-/* common out for now to speed up the process
+				/* common out for now to speed up the process
 				std::vector<CCoordinate> CoordinateVector;
 				string geo_string;
 				if(parser_link.GetValueByFieldName("geometry",geo_string))
 				{
-					// overwrite when the field "geometry" exists
-					CGeometry geometry(geo_string);
-					CoordinateVector = geometry.GetCoordinateList();
-					for(int si = 0; si < CoordinateVector.size(); si++)
-					{
-						GDPoint	pt;
-						pt.x = CoordinateVector[si].X;
-						pt.y = CoordinateVector[si].Y;
-						pLink->m_ShapePoints .push_back (pt);
-					}
+				// overwrite when the field "geometry" exists
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+				for(int si = 0; si < CoordinateVector.size(); si++)
+				{
+				GDPoint	pt;
+				pt.x = CoordinateVector[si].X;
+				pt.y = CoordinateVector[si].Y;
+				pLink->m_ShapePoints .push_back (pt);
 				}
-*/
+				}
+				*/
 				// read safety-related data
 
 				parser_link.GetValueByFieldName("num_driveways_per_mile",pLink->m_Num_Driveways_Per_Mile);
@@ -1492,9 +1507,9 @@ void g_ReadInputFiles()
 
 
 	// done with zone.csv
-//	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-//	PhysicalNetwork.BuildPhysicalNetwork(0);
-//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+	//	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	//	PhysicalNetwork.BuildPhysicalNetwork(0);
+	//	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 	//	ConnectivityChecking(&PhysicalNetwork);
 
 	//*******************************
@@ -1507,7 +1522,7 @@ void g_ReadInputFiles()
 		cout << "Step 10: Reading file input_demand.csv..."<< endl;
 		g_LogFile << "Step 10: Reading file input_demand.csv..."<< endl;
 
-//		g_ReadDemandFile_Parser();
+		//		g_ReadDemandFile_Parser();
 		g_ReadDemandFile();
 
 	}else
@@ -1516,14 +1531,14 @@ void g_ReadInputFiles()
 		cout << "Step 10: Reading file input_vehicle.csv..."<< endl;
 		g_LogFile << "Step 10: Reading file input_vehicle.csv..."<< endl;
 
-//		ReadDTALiteVehicleFile("input_vehicle.csv",&PhysicalNetwork);
+		ReadDTALiteVehicleFile("input_vehicle.bin");
 
 	}
 
 	cout << "Step 11: Reading file input_sensor.csv "<< endl;
 	g_LogFile << "Step 11: Reading file input_sensor.csv"<< endl;
 
-//	g_ReadLinkMeasurementFile(&PhysicalNetwork);
+	//	g_ReadLinkMeasurementFile(&PhysicalNetwork);
 
 	/* to do: change this to the loop for map structure 
 	for(z = 1; z <=g_ODZoneSize; z++)
@@ -1536,7 +1551,7 @@ void g_ReadInputFiles()
 	//*******************************
 	// step 9: Crash Prediction input
 
-//	ReadScenarioInputFiles(&PhysicalNetwork);
+	//	ReadScenarioInputFiles(&PhysicalNetwork);
 
 
 	//	cout << "Global Loading Factor = "<< g_DemandGlobalMultiplier << endl;
@@ -1635,7 +1650,7 @@ void CreateVehicles(int originput_zone, int destination_zone, float number_of_ve
 		g_simple_vector_vehicles.push_back(vhc);
 	}
 }
-void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork)
+void ReadDTALiteVehicleFile(char fname[_MAX_PATH])
 {
 
 
@@ -1648,110 +1663,92 @@ void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNet
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
 
 
-	int   PathNodeList[MAX_NODE_SIZE_IN_A_PATH];
-
-	cout << "Reading vehicle file as simulation input... "  << endl;
-
 	FILE* st = NULL;
-	fopen_s(&st,fname,"r");
+	fopen_s(&st,fname,"rb");
 	if(st!=NULL)
 	{
-		while(!feof(st))
+
+		float total_demand = 0;
+		fseek (st , 0 , SEEK_END);
+		long lSize = ftell (st);
+		rewind (st);
+		int RecordCount = lSize/sizeof(struct_VehicleInfo_Header);
+		if(RecordCount >=1)
 		{
-			int vehicle_id     = g_read_integer(st);
-			if(vehicle_id == -1)  // reach end of file
-				break;
+			cout << "Reading " << RecordCount << " vehicles from input_vehicle.bin file as simulation input... "  << endl;
 
-			DTAVehicle* pVehicle = 0;
-			pVehicle = new DTAVehicle;
-			pVehicle->m_VehicleID = vehicle_id;
-			pVehicle->m_OriginZoneID = g_read_integer(st);
-			pVehicle->m_DestinationZoneID = g_read_integer(st);
-			pVehicle->m_DepartureTime = g_read_float(st);
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			// allocate memory to contain the whole file:
+			struct_VehicleInfo_Header* pVehicleData = new struct_VehicleInfo_Header [RecordCount];
+			// copy the file into the buffer:
+			fread (pVehicleData,1,sizeof(struct_VehicleInfo_Header)*RecordCount,st);
 
-			float m_ArrivalTime = g_read_float(st); // to be determined by simulation
-			pVehicle->m_ArrivalTime  = 0;
-			int CompleteFlag = g_read_integer(st);
-			pVehicle->m_bComplete = false;
-			pVehicle->m_bLoaded  = false;
-			float TripTime  = g_read_float(st);  // to be determined by simulation
-			pVehicle->m_DemandType = g_read_integer(st);
 
-			if(g_DemandTypeMap.find(pVehicle->m_DemandType) == g_DemandTypeMap.end())
+			for(int i =0; i < RecordCount; i++)
 			{
-				cout << "Error: The input_vehicle file has demand_type = " << pVehicle->m_DemandType << "for vehicle_id = " << vehicle_id << ", which has not been defined in input_demand_type.csv."<< endl;
-				g_ProgramStop();
-			}
-			pVehicle->m_PricingType  = g_read_integer(st) ; 
-			pVehicle->m_VehicleType = g_read_integer(st);
 
-			pVehicle->m_InformationClass = g_read_integer(st);
-			pVehicle->m_VOT = g_read_float(st);
-			pVehicle->m_TollDollarCost = g_read_float(st);
-			pVehicle->m_Emissions  = g_read_float(st);
-			pVehicle->m_Distance = g_read_float(st);
+				struct_VehicleInfo_Header element = pVehicleData[i];
 
-			pVehicle->m_NodeSize = g_read_integer(st);
+				DTAVehicle* pVehicle = 0;
+				pVehicle = new DTAVehicle;
+				pVehicle->m_VehicleID = i;
+				pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
-			int NodeSize = pVehicle->m_NodeSize;
+				pVehicle->m_OriginZoneID = element.from_zone_id;
+				pVehicle->m_DestinationZoneID = element.to_zone_id ;
 
-			if(pVehicle->m_NodeSize > 0)
-			{
-				pVehicle->m_aryVN = new SVehicleLink[NodeSize];
-				if(pVehicle->m_aryVN==NULL)
+				pVehicle->m_OriginNodeID	= g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+				pVehicle->m_DestinationNodeID 	=  g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
+
+
+				if(g_ZoneMap.find( element.from_zone_id)!= g_ZoneMap.end())
 				{
-
-					cout << "Insufficient memory for allocating vehicle arrays!";
-					getchar();
-					exit(0);
+					g_ZoneMap[ element.from_zone_id].m_Demand += 1;
+					// setup historical demand value for static OD estimation
+					g_ZoneMap[ element.from_zone_id].m_HistDemand[element.to_zone_id] += 1;
 				}
+
+				pVehicle->m_DepartureTime =  element.departure_time ;
+				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+
+				pVehicle->m_ArrivalTime  = 0;
+				pVehicle->m_bComplete = false;
+				pVehicle->m_bLoaded  = false;
+				pVehicle->m_DemandType = element.demand_type ;
+
+				pVehicle->m_PricingType  = element.pricing_type ;
+				pVehicle->m_VehicleType = element.vehicle_type ;
+
+				pVehicle->m_InformationClass = element.information_type ;
+				pVehicle->m_VOT = element.value_of_time ;
+				pVehicle->m_TollDollarCost = 0;
+				pVehicle->m_Emissions  = 0;
+				pVehicle->m_Distance = 0;
+
+				pVehicle->m_NodeSize = 0;
 
 				pVehicle->m_NodeNumberSum =0;
 				pVehicle->m_Distance =0;
 
-				int i;
-				for(i = 0; i< NodeSize; i++)
+
+				g_VehicleVector.push_back(pVehicle);
+				g_VehicleMap[i]  = pVehicle;
+
+				int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
+
+				if(AssignmentInterval >= g_AggregationTimetIntervalSize)
 				{
-					PathNodeList[i] = g_read_integer(st);
-					float timestamp = g_read_float(st);
-					float travel_time = g_read_float(st);
-					float emissions = g_read_float(st);
-					pVehicle->m_NodeNumberSum +=PathNodeList[i];
+					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
 				}
-
-				// find out link id
-				for(i = 0; i< NodeSize-1; i++)
-				{
-					pVehicle->m_aryVN[i].LinkID = pPhysicalNetwork->GetLinkNoByNodeIndex(g_NodeNametoIDMap[PathNodeList[i]],g_NodeNametoIDMap[PathNodeList[i+1]]);
-					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_aryVN [i].LinkID] ->m_Length ;
-
-				}
-
+				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
 
 			}
 
-			g_VehicleVector.push_back(pVehicle);
-			g_VehicleMap[pVehicle->m_VehicleID]  = pVehicle;
-
-			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-
-			if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-			{
-				AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-			}
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
-
-
+			if(pVehicleData!=NULL)
+				delete pVehicleData;
 		}
 		fclose(st);	
-	}else
-	{
-		cout << "Error: File input_vehicle.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-		g_ProgramStop();
 	}
-	g_scenario_short_description << "load vehicles from input_vehicle.csv;";
 }
 
 
@@ -1803,7 +1800,6 @@ void g_ConvertDemandToVehicles()
 
 			pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
 			g_VehicleVector.push_back(pVehicle);
-
 			g_VehicleMap[i]  = pVehicle;
 
 			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
@@ -2000,7 +1996,7 @@ void g_ReadDemandFile()
 		while( fscanf(st,"%d,%d,%f,%f,",&originput_zone,&destination_zone,&starting_time_in_min, &ending_time_in_min) >0)
 		{
 
-			
+
 
 			// static traffic assignment, set the demand loading horizon to [0, 60 min]
 			if(g_TrafficFlowModelFlag ==0)  //BRP  // static assignment parameters
@@ -2088,7 +2084,7 @@ void g_ReadDemandFile()
 			line_no++;
 
 			//if(line_no >= max_line_number)
-			//	break;
+			//break;
 		}
 
 		fclose(st);
@@ -2463,12 +2459,16 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 
 	FILE* st_struct = NULL;
 
+	FILE* st_info_struct = NULL;
+
 	if(bStartWithEmpty)
 		fopen_s(&st,fname,"w");
 	else
 		fopen_s(&st,fname,"a");
 
 	fopen_s(&st_struct,"vehicle.bin","wb");
+	fopen_s(&st_info_struct,"input_vehicle.bin","wb");
+
 
 	typedef struct  
 	{
@@ -2550,7 +2550,20 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 				header. distance_in_mile = pVehicle->m_Distance;
 				header. number_of_nodes = pVehicle->m_NodeSize;
 
+				struct_VehicleInfo_Header InfoHeader;
+				InfoHeader.vehicle_id = pVehicle->m_VehicleID;
+				InfoHeader.from_zone_id = pVehicle->m_OriginZoneID;
+				InfoHeader. to_zone_id = pVehicle->m_DestinationZoneID;
+				InfoHeader. departure_time = pVehicle->m_DepartureTime;
+				InfoHeader. demand_type = pVehicle->m_DemandType;
+				InfoHeader. pricing_type = pVehicle->m_PricingType;
+				InfoHeader. vehicle_type =pVehicle->m_VehicleType;
+				InfoHeader. information_type = pVehicle->m_InformationClass;
+				InfoHeader. value_of_time =pVehicle->m_VOT;
+
 				fwrite(&header, sizeof(struct_Vehicle_Header), 1, st_struct);
+				fwrite(&InfoHeader, sizeof(struct_VehicleInfo_Header), 1, st_info_struct);
+
 
 				fprintf(st, "\"");
 
@@ -2621,6 +2634,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 		}
 		fclose(st);
 		fclose(st_struct);
+		fclose(st_info_struct);
 	}else
 	{
 		fprintf(g_ErrorFile, "File vehicle.csv cannot be opened. It might be currently used and locked by EXCEL.");
@@ -3405,29 +3419,29 @@ void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 		{
 			DTAVehicle* pVeh = iterVM->second;
-					for(int DayNo = g_StartIterationsForOutputPath; DayNo<= g_EndIterationsForOutputPath; DayNo++)
+			for(int DayNo = g_StartIterationsForOutputPath; DayNo<= g_EndIterationsForOutputPath; DayNo++)
+			{
+				DTAPath element = pVeh->Day2DayPathMap [DayNo];
+				output_path_file << pVeh->m_OriginZoneID << "," << pVeh->m_DestinationZoneID << "," << pVeh->m_DepartureTime  << ",v" << pVeh->m_VehicleID  << "," << DayNo << "," <<
+					element.NodeSum << "," << (int)(element.LinkSequence .size()) << ",{";
+
+				if(element.LinkSequence.size()>=1)
+				{
+					int LinkID_0 = element.LinkSequence [0];
+					output_path_file << g_LinkVector[LinkID_0]->m_FromNodeNumber << ";";
+
+					for(int j = 0; j< element.LinkSequence.size()-1; j++)
 					{
-						DTAPath element = pVeh->Day2DayPathMap [DayNo];
-						output_path_file << pVeh->m_OriginZoneID << "," << pVeh->m_DestinationZoneID << "," << pVeh->m_DepartureTime  << ",v" << pVeh->m_VehicleID  << "," << DayNo << "," <<
-							element.NodeSum << "," << (int)(element.LinkSequence .size()) << ",{";
+						int LinkID = element.LinkSequence[j];
+						output_path_file << g_LinkVector[LinkID]->m_ToNodeNumber<< ";";
+					}
 
-						if(element.LinkSequence.size()>=1)
-						{
-						int LinkID_0 = element.LinkSequence [0];
-						output_path_file << g_LinkVector[LinkID_0]->m_FromNodeNumber << ";";
-
-							for(int j = 0; j< element.LinkSequence.size()-1; j++)
-							{
-								int LinkID = element.LinkSequence[j];
-								output_path_file << g_LinkVector[LinkID]->m_ToNodeNumber<< ";";
-							}
-
-						}
+				}
 
 
-						output_path_file << "}" <<endl;
-					} // for each day
-				} // for each vehicle
+				output_path_file << "}" <<endl;
+			} // for each day
+		} // for each vehicle
 
 
 		output_path_file.close();
