@@ -39,6 +39,7 @@
 using namespace std;
 
 // extention for multi-day equilibirum
+#define MAX_FIFO_QUEUESIZE 5000
 #define MAX_DAY_SIZE 1
 #define MAX_PATH_LINK_SIZE 1000
 #define MAX_MEASUREMENT_INTERVAL 15 
@@ -328,6 +329,8 @@ public:
 			CumulativeArrivalCount_PricingType[i] = 0;
 			CumulativeRevenue_PricingType[i] = 0;
 		}
+
+
 	}
 
 } ;
@@ -473,6 +476,11 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+	FIFO_queue_max_size = 5000;
+
+	FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
+	
+
 		m_ObservedFlowVolume = 0;
 		m_FlowMeasurementError = 0;
 		m_AADT = 0;
@@ -601,7 +609,94 @@ public:
 	std::list<struc_vehicle_item> LoadingBuffer;  //loading buffer of each link, to prevent grid lock
 
 	std::list<struc_vehicle_item> EntranceQueue;  //link-in queue  of each link
+
+	struc_vehicle_item EntranceBuffer[1000];  //link-in buffer  of each link, controlled by vehicle loading and transferring parts
+	
+	struc_vehicle_item* FIFOQueue;   // implementation through a cycle 
+	int FIFO_front;
+	int FIFO_end;
+	int FIFO_queue_size;
+	int FIFO_queue_max_size;
+
+	void FIFOQueue_init()
+	{
+	FIFO_front = 0;
+	FIFO_end = 0;
+	FIFO_queue_size = 0;
+
+	if(FIFOQueue!=NULL)
+	{
+
+	delete FIFOQueue;
+	
+	FIFO_queue_max_size = 50000;
+	FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
+	}
+
+	}
+
+
+	void FIFO_queue_check_size()
+	{
+		if(FIFO_queue_size >= FIFO_queue_max_size-10)
+	{
+
+	cout << "FIFO_queue_size>=MAX_FIFO_QUEUESIZE " << FIFO_queue_max_size;
+	
+	struc_vehicle_item* FIFOQueueTemp;   // implementation through a cycle 
+
+	FIFOQueueTemp = new struc_vehicle_item[FIFO_queue_max_size*2];  // increase size
+
+
+	for(int new_i = 0; new_i < FIFO_queue_size; new_i++)
+	{
+		int index = FIFO_front%(FIFO_queue_max_size-1);  // (FIFO_queue_max_size-1 is old cycle length
+		FIFOQueueTemp[new_i] = FIFOQueue[index]; // copy old content
+	
+		FIFO_front = (FIFO_front+1)%(FIFO_queue_max_size-1); // move forward
+	
+	}
+
+	//reset  front and end pointers
+	FIFO_front = 0;
+	FIFO_end = FIFO_queue_size;
+	
+	if(FIFOQueue)  // delete old pointer
+		delete FIFOQueue;
+
+	FIFOQueue = FIFOQueueTemp;  // copy pointer
+
+	FIFO_queue_max_size  = FIFO_queue_max_size*2;  // increase actual size
+
+	}
+	}
+
+	void FIFOQueue_push_back(struc_vehicle_item item)
+	{
+	FIFO_queue_check_size();
+
+	FIFOQueue[FIFO_end] = item;
+	FIFO_end = (FIFO_end+1)%(FIFO_queue_max_size-1); // move forward
+	FIFO_queue_size ++;
+	
+	}
+
+	struc_vehicle_item FIFOQueue_pop_front()
+	{
+	FIFO_queue_check_size();
+
+	struc_vehicle_item item = FIFOQueue[FIFO_front];
+	FIFO_front = (FIFO_front+1)%(FIFO_queue_max_size-1); // move forward
+	FIFO_queue_size --;
+	return item;
+	}
+
+	int EntranceBufferSize;
+	int NewVehicleCount;
+	int ExitVehicleCount;
+
 	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
+
 	int m_LinkID;
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
@@ -645,6 +740,11 @@ public:
 
 	~DTALink()
 	{
+		if(FIFOQueue!=NULL)
+			delete FIFOQueue;
+
+		if(LoadingBufferVector!=NULL && LoadingBufferSize>=1)
+			delete LoadingBufferVector;
 
 		if(pTollVector)
 			delete pTollVector;
@@ -697,6 +797,12 @@ public:
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
+		m_FFTT_simulation_interval = int(m_FreeFlowTravelTime/g_DTASimulationInterval);
+		LoadingBufferVector = NULL;
+
+		LoadingBufferSize = 0;
+		FIFOQueue_init();
+
 		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*60/g_DTASimulationInterval); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
@@ -707,6 +813,14 @@ public:
 			CFlowArrivalRevenue_PricingType[pt] = 0;
 		}
 
+		for(int t=0; t<MAX_TIME_INTERVAL_ADCURVE; t++)
+		{
+		A[t] = 0;
+		D[t] = 0;
+		}
+
+		StartIndexOfLoadingBuffer = 0;
+		LoadingBufferVector = NULL;
 
 		CFlowDepartureCount = 0;
 
@@ -786,6 +900,17 @@ public:
 
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
+
+	int  A[MAX_TIME_INTERVAL_ADCURVE];
+	int  D[MAX_TIME_INTERVAL_ADCURVE];
+	int  m_FFTT_simulation_interval;  // integral value of  FFTT, in terms of simulation  time interval
+
+	int* LoadingBufferVector;
+	int  LoadingBufferSize;
+
+
+	int  StartIndexOfLoadingBuffer;
+
 
 	float m_ObservedFlowVolume;
 	float m_FlowMeasurementError ;
@@ -910,6 +1035,7 @@ public:
 
 
 // link element of a vehicle path
+
 class SVehicleLink
 {  public:
 
@@ -1432,7 +1558,7 @@ class DTALinkToll
 	{
 		m_bTollExist = false;
 		for(int i=1; i< MAX_PRICING_TYPE_SIZE; i++)
-			TollValue[0] = 0;
+			TollValue[i] = 0;
 	}
 };
 
@@ -1458,6 +1584,7 @@ public:
 
 	int** m_OutboundNodeAry; //Outbound node array
 	int** m_OutboundLinkAry; //Outbound link array
+	int** m_OutboundConnectorZoneIDAry; //Outbound connector array
 	int* m_OutboundSizeAry;  //Number of outbound links
 
 	int** m_OutboundMovementAry; //Outbound link movement array: for each link
@@ -1504,8 +1631,11 @@ public:
 
 	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
+	DTANetworkForSP()
+	{};
 
-	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
+		void Setup(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0)
+		{
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
 
@@ -1522,6 +1652,9 @@ public:
 
 		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_OutboundConnectorZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+
+		
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
 		//movement-specific array
@@ -1558,27 +1691,23 @@ public:
 		LinkLabelTimeAry = new float[m_LinkSize];                     // label - time
 		LinkLabelCostAry = new float[m_LinkSize];                     // label - cost
 
+		};
+	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
 
-		if(m_OutboundSizeAry==NULL || m_LinkList==NULL || m_FromIDAry==NULL || m_ToIDAry==NULL  ||
-			NodeStatusAry ==NULL || NodePredAry==NULL || LabelTimeAry==NULL || LabelCostAry==NULL
-			|| LinkStatusAry ==NULL || LinkPredAry==NULL || LinkLabelTimeAry==NULL || LinkLabelCostAry==NULL)
-		{
-			cout << "Error: insufficent memory.";
-			g_ProgramStop();
-		}
-
+		Setup(NodeSize, LinkSize, PlanningHorizonInMin,AdjLinkSize,StartTimeInMin=0);
 	};
 
-	DTANetworkForSP();
 
 		~DTANetworkForSP()
 	{
 
-		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
-		if(m_InboundSizeAry)  delete m_InboundSizeAry;
+		if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
+		if(m_InboundSizeAry && m_NodeSize>=1)  delete m_InboundSizeAry;
 
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<int>(m_OutboundConnectorZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
+		
 		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 
 		// delete movement array
@@ -1637,7 +1766,7 @@ public:
 
 	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
-	int  FindBestPathWithVOT(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
+	int  FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
 
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
@@ -1957,6 +2086,20 @@ public:
 };
 
 
+	typedef struct  
+	{
+		int vehicle_id;
+		int from_zone_id;
+		int to_zone_id;
+		float departure_time;
+		int demand_type;
+		int pricing_type;
+		int vehicle_type;
+		int information_type;
+		float value_of_time;
+	} struct_VehicleInfo_Header;
+
+
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
@@ -1983,8 +2126,9 @@ float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float Cyc
 
 float g_GetRandomRatio();
 int g_GetRandomInteger_From_FloatingPointValue(float Value);
+int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID, int SimulationIntervalNo);
 
-void ReadDTALiteVehicleFile(char fname[_MAX_PATH], DTANetworkForSP* pPhysicalNetwork);
+void ReadDTALiteVehicleFile(char fname[_MAX_PATH]);
 void g_ReadDemandFile();
 
 void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is); // v for vehicle id

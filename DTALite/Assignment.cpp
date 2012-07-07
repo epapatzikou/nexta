@@ -53,6 +53,7 @@ void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput);
 void g_OutputSimulationStatistics(int Iteration);
 
+#define _MAX_NUMBER_OF_PROCESSORS  4
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
@@ -71,9 +72,10 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	bool NotConverged = true;
 	int TotalNumOfVehiclesGenerated = 0;
 
-	DTANetworkForSP network_MP[8]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
-	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+	DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+
+	for(int ProcessID=0;  ProcessID < _MAX_NUMBER_OF_PROCESSORS; ProcessID++)
 	{
 	network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	}
@@ -162,7 +164,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 	{
 		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
-		ASSERT(pVeh!=NULL);
+		if(pVeh==NULL)
+			TRACE("");
 
 		/// finding optimal path 
 		bool bDebugFlag  = false;
@@ -176,56 +179,36 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			bDebugFlag = true;
 		}
 
-
-		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
-		//			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
-
+		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
+		float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 		bool bSwitchFlag = false;
-		pVeh->m_bSwitched = false;
-
-		if(iteration > 0) // update path assignments -> determine whether or not the vehicle will switch
-		{
-			float m_gap;
-			float ExperiencedTravelTime = pVeh->m_TripTime;
-
-			m_gap = ExperiencedTravelTime - TotalCost;
-
-			if(m_gap<0)  // force negative gap values to zero, as experienced travel time can be smaller than the shortest path travel time for a (long) aggregation time period
-				m_gap = 0;
-
-			if(pVeh->m_VehicleID  == vehicle_id_trace)
-			{
-				TRACE("gap= %f = exp %f - shortest path %f\n",m_gap, ExperiencedTravelTime,TotalCost);
-
-			}
-
-			pVeh->SetMinCost(TotalCost);
-
-			if(m_gap < 0) m_gap = 0.0;			
-
-			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-
-			float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
-
-			float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
-
-			if((pVeh->m_bComplete==false && pVeh->m_NodeSize >=2)) //for incomplete vehicles with feasible paths, need to switch at the next iteration
+			if(iteration==0)
 			{
 				bSwitchFlag = true;
 			}else
-			{
+			{ // iteration >=1
 				if(RandomNumber < switching_rate)  			
 				{
 					bSwitchFlag = true;
 				}				
 			} 
-		}else	// iteration = 0;  at iteration 0, every vehicle needs a path for simulation, so every vehicle switches
-		{
-			bSwitchFlag = true;
-		}
 
-		if(bSwitchFlag)  
-		{
+			if(bSwitchFlag)
+			{
+
+				// swtich: find shortest path
+			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		//			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+			pVeh->SetMinCost(TotalCost);
+
+			float ExperiencedTravelTime = pVeh->m_TripTime;
+			float m_gap = ExperiencedTravelTime - TotalCost;
+
+			if(m_gap < 0) m_gap = 0.0;			
+
+			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+
 			/// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
 
 			// Jason : accumulate number of vehicles switching paths
@@ -285,19 +268,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 
-			}else
-			{
-				if(iteration==0)
-				{
-					g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from  " << g_NodeVector[pVeh ->m_OriginNodeID].m_NodeName  << " to "  << g_NodeVector[pVeh ->m_DestinationNodeID].m_NodeName  << " does not have a physical path in the network. " << endl;
-					TRACE("\nWarning: vehicle: %d from %d",g_NodeVector[pVeh ->m_OriginNodeID].m_NodeName , g_NodeVector[pVeh ->m_DestinationNodeID].m_NodeName);
-				}
-
-				pVeh->m_bLoaded  = false;
-				pVeh->m_bComplete = false;
 			}
 
-		}
+		}  // switch
 
 	} // for each vehicle on this OD pair
 
@@ -1180,7 +1153,10 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
+	if(g_AgentBasedAssignmentFlag==0) // OD based
 		SimuOutput.AvgUEGap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
+	else  // agent based, we record gaps only for vehicles switched (after they find the paths)
+		SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesSwitched);
 
 	}
 
