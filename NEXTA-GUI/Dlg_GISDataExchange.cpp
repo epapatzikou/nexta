@@ -462,7 +462,7 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
 void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleShapeFileFolder = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\";
+	CString SampleShapeFileFolder = "\\importing_sample_data_sets\\Utah_90th_South_Network\\";
 	SampleShapeFileFolder = pMainFrame->m_CurrentDirectory + SampleShapeFileFolder;
 	ShellExecute( NULL,  "explore", SampleShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
 }
@@ -470,7 +470,7 @@ void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
 void CDlg_GISDataExchange::OnBnClickedButtonLoadSampleShapeFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleShapeFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\Subarea_Highway_Crashes.shp";
+	CString SampleShapeFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_90_Work_Zone_Network_Link.shp";
 	SampleShapeFile = pMainFrame->m_CurrentDirectory + SampleShapeFile;
 	m_GIS_ShapeFile = SampleShapeFile;
 	UpdateData(false);
@@ -485,7 +485,7 @@ void CDlg_GISDataExchange::OnBnClickedButtonImportGisShapeFile()
 void CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleShapeCSVFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\crash.csv";
+	CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.csv";
 	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
 	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
 
@@ -493,7 +493,7 @@ void CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile()
 void CDlg_GISDataExchange::OnBnClickedButtonViewExportedKmlFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	CString SampleShapeCSVFile = "\\Sample-Portland-SHRP2-C05-subarea\\GIS_shape_files\\crash.kml";
+	CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.KML";
 	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
 	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
 }

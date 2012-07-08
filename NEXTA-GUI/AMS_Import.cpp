@@ -384,6 +384,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				long link_id =  poFeature->GetFieldAsInteger(link_id_name);
 				CString name =  poFeature->GetFieldAsString(link_name);
 				int type = poFeature->GetFieldAsInteger(link_type_name);
+
+				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name);
+
 				int direction = 1;
 				if(direction_field_flag) 
 					direction = poFeature->GetFieldAsInteger(direction_name);
@@ -397,7 +400,21 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					number_of_lanes = number_of_lanes/2;
 				}
 
-				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name);
+				if(type==0)  // no type information
+				{
+					// check speed limit to determine type
+
+					if(speed_limit_in_mph>=55)
+						type = 1; // default freeway
+					else
+						type = 4; // default arterial street
+
+					if(number_of_lanes>=7)
+						type = 10; // default connectors;
+				
+				}
+
+
 				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(lane_capacity_in_vhc_per_hour_name);
 
 				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
@@ -885,8 +902,13 @@ bool  CTLiteDoc::ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type)
 			} // for each origin
 
 		}  // for each line
+	
+
 	}
-	return false;
+	CString msg;
+	msg.Format("%6.2f demand trips are importedfrom file %s",total_demand,lpszFileName);
+	m_MessageStringVector.push_back (msg);
+
 }
 
 bool CTLiteDoc::ReadTransCADDemandCSVFile(LPCTSTR lpszFileName)

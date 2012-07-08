@@ -68,16 +68,20 @@ BOOL CDlgDefaultLinkProperties::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-		m_LinkTypeList.AddString ("1.Freeway");
-		m_LinkTypeList.AddString ("2.Highway/Expressway");
-		m_LinkTypeList.AddString ("3.Principal arterial");
-		m_LinkTypeList.AddString ("4.Major arterial");
-		m_LinkTypeList.AddString ("5.Minor arterial");
-		m_LinkTypeList.AddString ("6.Collector");
-		m_LinkTypeList.AddString ("7.Local");
-		m_LinkTypeList.AddString ("8.Frontage road");
-		m_LinkTypeList.AddString ("9.Ramp");
-		m_LinkTypeList.AddString ("10.Zonal Connector");
+	CString str;
+		for(std::map<int, DTALinkType>::iterator itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+		{
+			if(itr->second .link_type_name.length () > 0 && itr->second .type_code.length () > 0)
+			{
+
+				str.Format("%d:%s,%s", itr->second .link_type  , 
+					itr->second .link_type_name.c_str () , 
+					itr->second .type_code .c_str ());
+
+				m_LinkTypeList.AddString (str);
+			}
+		}
+		
 
 		m_LinkTypeList.SetCurSel (LinkType-1);
 	return TRUE;  // return TRUE unless you set the focus to a control

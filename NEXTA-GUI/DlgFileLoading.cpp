@@ -39,6 +39,11 @@ BOOL CDlgFileLoading::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	for(unsigned int i = 0; i< m_pDoc->m_MessageStringVector.size(); i++)
+	{
+	m_ListBox_NetworkData.AddString (m_pDoc->m_MessageStringVector[i]);
+	}
+
 	m_ListBox_NetworkData.AddString (m_pDoc->m_NodeDataLoadingStatus);
 	m_ListBox_NetworkData.AddString (m_pDoc->m_LinkDataLoadingStatus);
 
@@ -73,9 +78,6 @@ BOOL CDlgFileLoading::OnInitDialog()
 	{
 		m_ListBox_NetworkData.AddString(m_pDoc->m_SignalDataLoadingStatus);
 	}
-
-
-
 
 
 	if(m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus.GetLength () >0) // there are data being loaded
