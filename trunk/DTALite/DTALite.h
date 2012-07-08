@@ -2118,6 +2118,7 @@ void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWit
 
 
 float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename);
+int g_WritePrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) ;
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
 
 float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity);

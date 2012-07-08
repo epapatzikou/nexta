@@ -209,6 +209,15 @@ int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR
 	return value; 
 }
 
+int g_WritePrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) 
+{
+	char lpbuffer[64];
+	int value = def_value;
+	sprintf_s(lpbuffer,"%d",def_value);
+	WritePrivateProfileString(section,key,lpbuffer,filename);
+	return value; 
+}
+
 float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) 
 { 
 	char lpbuffer[64];
