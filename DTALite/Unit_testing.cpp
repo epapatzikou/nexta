@@ -540,5 +540,4 @@ void g_DTALiteUnitTestingMain()
 	// case 4: test toll sensitivity
 //	g_UnitTestingHOTStrategy(0,200,25,220,20);
 
-
 }

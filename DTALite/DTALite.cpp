@@ -202,7 +202,6 @@ float g_MaxDensityRatioForVehicleLoading = 0.8f;
 int g_CycleLength_in_seconds;
 float g_DefaultSaturationFlowRate_in_vehphpl;
 
-
 std::vector<VOTDistribution> g_VOTDistributionVector;
 std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
 int g_DemandLoadingStartTimeInMin = 0;
@@ -743,7 +742,7 @@ void g_ReadInputFiles()
 				cout << "Error: Field link_type cannot be found in file input_link_type.csv."<< endl;
 				g_ProgramStop();
 			}
-
+			
 
 			if(parser_link_type.GetValueByFieldName("link_type_name",element.link_type_name ) == false)
 			{
@@ -870,6 +869,13 @@ void g_ReadInputFiles()
 				exit(0);
 			}
 
+			if(g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
+			{
+				cout << "Link: " << from_node_name << "->" << to_node_name << " in input_link.csv has " << "link_type = " << type << ", which has not been defined in file input_link.csv. Please check.";
+				getchar();
+				exit(0);
+
+			}
 			if(!parser_link.GetValueByFieldName("AADT_conversion_factor",AADT_conversion_factor))
 				AADT_conversion_factor = 0.1;
 
@@ -1575,6 +1581,10 @@ void g_ReadInputFiles()
 		}
 
 	}
+
+	g_WritePrivateProfileInt("output", "simulation_data_horizon_in_min", g_PlanningHorizon, g_DTASettingFileName);
+
+	// 
 	g_NetworkMOEAry.clear();
 
 	for(int time = 0; time <=  g_PlanningHorizon; time++)
@@ -2216,54 +2226,58 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
+
+			DTALink* pLink = g_LinkVector[li];
 			for(int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon;time++)
 			{
-				if((g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount - g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
+
+				if((pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
 				{
-					float LinkOutFlow = float(g_LinkVector[li]->GetDepartureFlow(time));
-					float travel_time = g_LinkVector[li]->GetTravelTimeByMin(Iteration,time,1);
+					float LinkOutFlow = float(pLink->GetDepartureFlow(time));
+					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,1);
 
 					struct_TDMOE tdmoe_element;
 
-					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f, %d, %d, %d,",
-						g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName, g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName,time,
-						travel_time, travel_time - g_LinkVector[li]->m_FreeFlowTravelTime ,
-						LinkOutFlow*60.0/g_LinkVector[li]->m_NumLanes ,LinkOutFlow*60.0,
-						(g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount)/g_LinkVector[li]->m_Length /g_LinkVector[li]->m_NumLanes,
-						g_LinkVector[li]->GetSpeed(time), g_LinkVector[li]->m_LinkMOEAry[time].ExitQueueLength, 
-						g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount ,
-						g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount);
+					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,",
+						g_NodeVector[pLink->m_FromNodeID].m_NodeName, g_NodeVector[pLink->m_ToNodeID].m_NodeName,time,
+						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
+						LinkOutFlow*60.0/pLink->m_NumLanes ,LinkOutFlow*60.0,
+						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes,
+						pLink->GetSpeed(time),
+						pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam /pLink->m_NumLanes), /* in percentage*/
+						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
+						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
 
-					tdmoe_element. from_node_id = g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeName;
-					tdmoe_element. to_node_id = g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeName;
+					tdmoe_element. from_node_id = g_NodeVector[pLink->m_FromNodeID].m_NodeName;
+					tdmoe_element. to_node_id = g_NodeVector[pLink->m_ToNodeID].m_NodeName;
 					tdmoe_element. timestamp_in_min = time;
 					tdmoe_element. travel_time_in_min = travel_time;
-					tdmoe_element. delay_in_min = travel_time - g_LinkVector[li]->m_FreeFlowTravelTime;
-					tdmoe_element. link_volume_in_veh_per_hour_per_lane = LinkOutFlow*60.0/g_LinkVector[li]->m_NumLanes;
+					tdmoe_element. delay_in_min = travel_time - pLink->m_FreeFlowTravelTime;
+					tdmoe_element. link_volume_in_veh_per_hour_per_lane = LinkOutFlow*60.0/pLink->m_NumLanes;
 					tdmoe_element. link_volume_in_veh_per_hour_for_all_lanes = LinkOutFlow*60.0;
-					tdmoe_element.  density_in_veh_per_mile_per_lane = (g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount-g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount)/g_LinkVector[li]->m_Length /g_LinkVector[li]->m_NumLanes;
-					tdmoe_element.  speed_in_mph = g_LinkVector[li]->GetSpeed(time);
-					tdmoe_element. exit_queue_length = g_LinkVector[li]->m_LinkMOEAry[time].ExitQueueLength;
-					tdmoe_element. cumulative_arrival_count = g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount;
-					tdmoe_element. cumulative_departure_count = g_LinkVector[li]->m_LinkMOEAry[time].CumulativeDepartureCount;
-					tdmoe_element. cumulative_SOV_count = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[1];
-					tdmoe_element. cumulative_HOV_count = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[2];
-					tdmoe_element. cumulative_truck_count = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[3];
-					tdmoe_element. cumulative_SOV_revenue = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[1];
-					tdmoe_element. cumulative_HOV_revenue = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[2];
-					tdmoe_element. cumulative_truck_revenue = g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[3];
+					tdmoe_element.  density_in_veh_per_mile_per_lane = (pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes;
+					tdmoe_element.  speed_in_mph = pLink->GetSpeed(time);
+					tdmoe_element. exit_queue_length = pLink->m_LinkMOEAry[time].ExitQueueLength /(pLink->m_KJam /pLink->m_NumLanes); /* in percentage*/;
+					tdmoe_element. cumulative_arrival_count = pLink->m_LinkMOEAry[time].CumulativeArrivalCount;
+					tdmoe_element. cumulative_departure_count = pLink->m_LinkMOEAry[time].CumulativeDepartureCount;
+					tdmoe_element. cumulative_SOV_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[1];
+					tdmoe_element. cumulative_HOV_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[2];
+					tdmoe_element. cumulative_truck_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[3];
+					tdmoe_element. cumulative_SOV_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[1];
+					tdmoe_element. cumulative_HOV_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[2];
+					tdmoe_element. cumulative_truck_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[3];
 
 
 					int pt;
 					for(pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
 					{
-						fprintf(st, "%d,",g_LinkVector[li]->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[pt]); 
+						fprintf(st, "%d,",pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[pt]); 
 					}
 
 					for(pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
 					{
-						fprintf(st, "%6.2f,",g_LinkVector[li]->m_LinkMOEAry [time].CumulativeRevenue_PricingType[pt]); 
+						fprintf(st, "%6.2f,",pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[pt]); 
 					}
 
 					fprintf(st,"\n");
@@ -2705,7 +2719,7 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
-	ShortSimulationLogFile.open ("output_NetworkMOE.csv", ios::out);
+	ShortSimulationLogFile.open ("short_summary.csv", ios::out);
 	if (ShortSimulationLogFile.is_open())
 	{
 		ShortSimulationLogFile.width(12);
@@ -2733,10 +2747,10 @@ int g_InitializeLogFiles()
 	}
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
-	cout << "Version 0.991, Release Date 04/24/2012."<< endl;
+	cout << "Version 1.000, Release Date 07/09/2012."<< endl;
 
 	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
-	g_LogFile << "Version 0.991, Release Date 04/24/2012."<< endl;
+	g_LogFile << "Version 1.000, Release Date 07/09/2012."<< endl;
 
 	fopen_s(&g_ErrorFile,"error.log","w");
 	if(g_ErrorFile==NULL)

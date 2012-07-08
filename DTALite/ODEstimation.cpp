@@ -836,22 +836,22 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output)
 			{
 
 				int time_index = time/g_ObservationTimeInterval;
-				if(time_index >=1 && g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount >0)
+				if(time_index >=1 && pLink->m_LinkMeasurementAry[time_index-1].ObsFlowCount >0)
 				{
 					// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
-					int SimulatedFlowCount = g_LinkVector[li]->m_LinkMOEAry[time].CumulativeArrivalCount - g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount; 
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuFlowCount = SimulatedFlowCount;
+					int SimulatedFlowCount = pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount; 
+					pLink->m_LinkMeasurementAry[time_index-1].SimuFlowCount = SimulatedFlowCount;
 					
 
 
-					float ObsFlowCount  = g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsFlowCount;
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfFlowCount = SimulatedFlowCount -  ObsFlowCount;
+					float ObsFlowCount  = pLink->m_LinkMeasurementAry[time_index-1].ObsFlowCount;
+					pLink->m_LinkMeasurementAry[time_index-1].DeviationOfFlowCount = SimulatedFlowCount -  ObsFlowCount;
 
 					if(ObsFlowCount >= 1 && g_ODEstimationMeasurementType ==0)  // flow count
 					{
 						float AbosolutePercentageError = fabs((SimulatedFlowCount -  ObsFlowCount)/ObsFlowCount*100);
-						float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/g_ObservationTimeInterval/g_LinkVector[li]->m_NumLanes;												
-						g_EstimationLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
+						float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/g_ObservationTimeInterval/pLink->m_NumLanes;												
+						g_EstimationLogFile << "Link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
 							<< " @ "<< time << " Obs link flow: "<< ObsFlowCount <<"; Error: " << SimulatedFlowCount -  ObsFlowCount << 
 							", " << AbosolutePercentageError << " %" << "Lane Flow Error /h= " << LaneFlowError << endl;
 
@@ -861,19 +861,19 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output)
 
 					}
 
-					if(g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles > 0 && g_ODEstimationMeasurementType ==1)   // with density observations
+					if(pLink->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles > 0 && g_ODEstimationMeasurementType ==1)   // with density observations
 					{
 
-					int NumberOfVehicles  = g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount - g_LinkVector[li]->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeDepartureCount;
-						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles  = NumberOfVehicles;
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles  = 
-						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles  ;
+					int NumberOfVehicles  = pLink->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeArrivalCount - pLink->m_LinkMOEAry[time-g_ObservationTimeInterval].CumulativeDepartureCount;
+						pLink->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles  = NumberOfVehicles;
+					pLink->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles  = 
+						pLink->m_LinkMeasurementAry[time_index-1].SimuNumberOfVehicles - pLink->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles  ;
 
 					
-						float AbosolutePercentageError = fabs((g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles)/g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles*100);
-						float ObsDensity = (g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles)/g_LinkVector[li]->m_NumLanes / g_LinkVector[li]->m_Length ;											
-						float DensityError = (g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles)/g_LinkVector[li]->m_NumLanes / g_LinkVector[li]->m_Length ;											
-						g_EstimationLogFile << "Link " << g_LinkVector[li]->m_FromNodeNumber << "->" << g_LinkVector[li]->m_ToNodeNumber 
+						float AbosolutePercentageError = fabs((pLink->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles)/pLink->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles*100);
+						float ObsDensity = (pLink->m_LinkMeasurementAry[time_index-1].ObsNumberOfVehicles)/pLink->m_NumLanes / pLink->m_Length ;											
+						float DensityError = (pLink->m_LinkMeasurementAry[time_index-1].DeviationOfNumberOfVehicles)/pLink->m_NumLanes / pLink->m_Length ;											
+						g_EstimationLogFile << "Link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
 							<< " @ "<< time << " Obs link density: "<< ObsFlowCount <<"; Error: " << DensityError << 
 							", " << AbosolutePercentageError << " %" << "Density Error /h= " << DensityError << endl;
 
@@ -884,11 +884,11 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output)
 					
 					}
 
-				if(g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime  > 0 && g_ODEstimationMeasurementType == 2)  // with speed observations
+				if(pLink->m_LinkMeasurementAry[time_index-1].ObsTravelTime  > 0 && g_ODEstimationMeasurementType == 2)  // with speed observations
 					{ // not implemented yet. 
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = g_LinkVector[li]->GetTravelTimeByMin(-1,time-g_ObservationTimeInterval,1);
-					g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].DeviationOfTravelTime   = 
-						g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].SimuTravelTime - g_LinkVector[li]->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
+					pLink->m_LinkMeasurementAry[time_index-1].SimuTravelTime    = pLink->GetTravelTimeByMin(-1,time-g_ObservationTimeInterval,1);
+					pLink->m_LinkMeasurementAry[time_index-1].DeviationOfTravelTime   = 
+						pLink->m_LinkMeasurementAry[time_index-1].SimuTravelTime - pLink->m_LinkMeasurementAry[time_index-1].ObsTravelTime   ;
 					}
 					
 

@@ -1187,8 +1187,8 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	{
 		if(ShortSimulationLogFile.is_open())
 		{
-			ShortSimulationLogFile << "# of Vehicles,Avg Travel Time (min),Avg Distance (miles),Energy (KJ),CO2 (KG)" << endl;
-			ShortSimulationLogFile << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgDistance;
+			ShortSimulationLogFile << "# of Veh = " << g_VehicleVector.size() << "; Avg Travel Time =" << output.AvgTravelTime 
+				<<  "  min; Avg Distance = " << output.AvgDistance ;
 
 			g_SimulationResult.number_of_vehicles  = g_VehicleVector.size();
 			g_SimulationResult.avg_travel_time_in_min = output.AvgTravelTime;
@@ -1720,6 +1720,7 @@ bool g_VehicularSimulation_BasedOnADCurves(int DayNo, double CurrentTime, int si
 		{
 			pLink->VehicleCount = pLink->CFlowArrivalCount - pLink->CFlowDepartureCount;
 			pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  pLink->CFlowArrivalCount;
+			pLink->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength =  pLink->FIFO_queue_size;
 
 			// toll collection 
 			for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
