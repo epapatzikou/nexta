@@ -57,10 +57,9 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_SimulationMethodControl.AddString ("DYNASMART-P Model");
-	m_SimulationMethodControl.AddString ("Spatial Queue Model");
+	m_SimulationMethodControl.AddString ("BPR Function");
+	m_SimulationMethodControl.AddString ("Point Queue Model");
 	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
-	m_SimulationMethodControl.AddString ("BPR Fuction");
 	m_SimulationMethodControl.SetCurSel(m_SimultionMethod);
 
 	m_DemandLoadingModeList.AddString ("Demand Table");

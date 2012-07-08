@@ -58,7 +58,7 @@ END_MESSAGE_MAP()
 
 void CDlg_ImportNetwork::OnBnClickedButtonFindExelFile()
 {
-	static char BASED_CODE szFilter[] = "AMS File (*.ini)|*.ini|AMS File (*.xls)|*.xls||";
+	static char BASED_CODE szFilter[] = "Excel File (*.xls)|*.xls||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)
@@ -220,12 +220,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 			element.link_type = link_type_number;
 			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
-			element.type_code    = rsLinkType.GetCString (CString("type_name"));
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field freeway_flag cannot be found in the input_link_type.csv.");
-				return;
-			}
+			element.type_code    = rsLinkType.GetCString (CString("type_code"));
 
 			m_pDoc->m_LinkTypeMap[element.link_type] = element;
 
@@ -1832,7 +1827,7 @@ void CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-	m_pDoc->m_ProjectFile.Format("%s%s", pMainFrame->m_CurrentDirectory, _T("\\Sample-Portland-SHRP2-C05-subarea\\Portland_subarea.ini"));
+	m_pDoc->m_ProjectFile.Format("%s%s", pMainFrame->m_CurrentDirectory,m_pDoc->m_SampleExcelNetworkFile);
 
 	CString str;
 		str.Format("The current project file is saved as %s", MB_ICONINFORMATION);

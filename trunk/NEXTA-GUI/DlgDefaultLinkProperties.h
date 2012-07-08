@@ -1,6 +1,8 @@
 #pragma once
 #include "afxwin.h"
-
+#include "TLite.h"
+#include "Network.h"
+#include "TLiteDoc.h"
 
 // CDlgDefaultLinkProperties dialog
 
@@ -20,6 +22,9 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+
+	CTLiteDoc* m_pDoc;
+	
 	float SpeedLimit;
 	int LaneCapacity;
 	int NumLanes;

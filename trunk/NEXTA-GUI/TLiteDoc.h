@@ -249,6 +249,8 @@ public:
 	bool RunGravityModel(LPCTSTR lpszFileName,int demand_type);
 	bool ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false, bool bImportShapeFiles = false);
+	BOOL ImportingTransportationPlanningDataSet(CString ProjectFileName, bool bNetworkOnly = false, bool bImportShapeFiles = false);
+
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
 	bool m_bDYNASMARTDataSet;
@@ -351,10 +353,13 @@ public:
 	void BuildHistoricalDatabase();
 
 	bool ReadMultiDaySensorData(LPCTSTR lpszFileName);
-	void ReadInputEmissionRateFile(LPCTSTR lpszFileName);
+	bool ReadInputEmissionRateFile(LPCTSTR lpszFileName);
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 
 	int m_import_shape_files_flag;
+
+	std::vector <CString> m_MessageStringVector;
+	 
 	CString m_NodeDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;
