@@ -29,14 +29,18 @@
 #include "TLite.h"
 #include "Page_Node_Movement.h"
 
+#include "CGridListCtrlEx\CGridColumnTraitDateTime.h"
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
 
 #include <string>
 #include <sstream>
+
 // CPage_Node_Movement dialog
 
+PinPoint::PinPoint(){}
+PinPoint::~PinPoint(){}
 
 IMPLEMENT_DYNAMIC(CPage_Node_Movement, CPropertyPage)
 
@@ -44,12 +48,23 @@ CPage_Node_Movement::CPage_Node_Movement()
 	: CPropertyPage(CPage_Node_Movement::IDD)
 	, m_CurrentNodeName(0)
 {
-	m_SelectedMovementIndex = -1;
+	m_nSelectedMovementIndex = -1;
+	m_ptCenter = CPoint(0,0);
+	m_dScale   = 1.0;
+	m_bLBTNDown = false;
+	m_nSelectedInLinkID = -1;
+	m_nSelectedOutLinkID= -1;
 	
 }
 
 CPage_Node_Movement::~CPage_Node_Movement()
 {
+	for(int i=0;i<m_PinPointSet.size();i++)
+	{
+		PinPoint* p = m_PinPointSet[i];
+		delete p;
+	}
+	m_PinPointSet.clear();
 }
 
 void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
@@ -64,6 +79,10 @@ BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_PAINT()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Movement::OnLvnItemchangedGridlistctrlex)
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
+	ON_NOTIFY(LVN_ENDLABELEDIT, IDC_GRIDLISTCTRLEX, &CPage_Node_Movement::OnLvnEndlabeleditGridlistctrlex)
 END_MESSAGE_MAP()
 
 
@@ -71,59 +90,95 @@ END_MESSAGE_MAP()
 BOOL CPage_Node_Movement::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
-	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
-
+	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID;
 	m_CurrentNodeName = m_pDoc->m_NodeIDtoNameMap [m_CurrentNodeID];
-	// Give better margin to editors
+
 	m_ListCtrl.SetCellMargin(1.2);
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
 	std::vector<std::string> m_Column_names;
 
-	m_Column_names.push_back ("Movement Index");
-	m_Column_names.push_back ("Incoming Node");
-	m_Column_names.push_back ("Outgoing Node");
-	m_Column_names.push_back ("Turn Type");
-	m_Column_names.push_back ("Prohibition");
-	m_Column_names.push_back ("Turnning %");
-	m_Column_names.push_back ("Signal Group No");
+	int nWidth[5] = {50,50,50,100,100};
+
+	m_Column_names.push_back ("Indx");
+	m_Column_names.push_back ("I Node");
+	m_Column_names.push_back ("O Node");
+	m_Column_names.push_back ("T Type");
+	m_Column_names.push_back ("Prhb");
+	//m_Column_names.push_back ("SC NO");
+	//m_Column_names.push_back ("SG No");
 
 	//Add Columns and set headers
+	m_ListCtrl.InsertHiddenLabelColumn();
 	for (size_t i=0;i<m_Column_names.size();i++)
 	{
-
 		CGridColumnTrait* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
-		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
-		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+		if ( i != m_Column_names.size()-1 )
+		{
+			pTrait = NULL; //new CGridColumnTraitEdit();
+			m_ListCtrl.InsertColumnTrait((int)(i+1),m_Column_names.at(i).c_str(),LVCFMT_LEFT,nWidth[i],i,pTrait);
+			//m_ListCtrl.SetColumnWidth((int)(i+1),LVSCW_AUTOSIZE_USEHEADER);
+		}
+		if ( i == m_Column_names.size()-1)
+		{
+			//CGridColumnTraitDateTime *pDTTrait = new CGridColumnTraitDateTime();
+			//pDTTrait->AddImageIndex(nStateImageIdx, _T("Permit"), true);		// Unchecked (and not editable)
+			//pDTTrait->AddImageIndex(nStateImageIdx+1, _T("Forbid"), true);	// Checked (and editable)
+			//pDTTrait->SetToggleSelection(true);
+			//pTrait = pDTTrait;
+			CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
+			pComboTrait->AddItem(0,_T("Permit"));
+			pComboTrait->AddItem(1,_T("Forbid"));
+			pTrait = pComboTrait;
+			m_ListCtrl.InsertColumnTrait((int)(i+1),m_Column_names.at(i).c_str(),LVCFMT_LEFT,nWidth[i],i,pTrait);
+		}
 
 	}
-	m_ListCtrl.SetColumnWidth(0, 80);
+	//m_ListCtrl.SetColumnWidth(0, 80);
 
 	//Add Rows
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	//DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	MNode* pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
 
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (int i=0;i< pNode->Movements.size();i++)
 	{
 		CString str;
 		str.Format("%d",i+1);
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
 
-		DTANodeMovement movement = pNode->m_MovementVector[i];
-
-		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.in_link_from_node_id] );
 		m_ListCtrl.SetItemText(Index, 1,str);
+		MMovement* pMovement = pNode->Movements[i];
+		MLink* pLink;
+		pLink = m_pView->m_ms.GetMLinkbyID( pMovement->nFromLinkId);
+		int nLinkFromNodeID = pLink->m_FromNodeID;
+		pLink = m_pView->m_ms.GetMLinkbyID( pMovement->nToLinkId);
+		int nLinkToNodeID   = pLink->m_ToNodeID;
 
-		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.out_link_to_node_id ] );
+		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[nLinkFromNodeID] );
 		m_ListCtrl.SetItemText(Index, 2,str);
+
+		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[nLinkToNodeID] );
+		m_ListCtrl.SetItemText(Index, 3,str);
 		
-		m_ListCtrl.SetItemText(Index, 3,m_pDoc->GetTurnString(movement.movement_turn));
-		m_SelectedRowVector.push_back(false);
+		CString strTurn;
+		switch(pMovement->nRTL)
+		{
+		case 1: strTurn = _T("RightTurn"); break;
+		case 2: strTurn = _T("Through"); break;
+		case 3: strTurn = _T("LeftTurn"); break;
+		}
+		m_ListCtrl.SetItemText(Index,4,strTurn);
+		str.Format("%s",pMovement->bForbid ? "Forbid" : "Permit");
+		m_ListCtrl.SetItemText(Index,5,str);
+
 	}
 
 	UpdateData(0);
+
+	CreatePinPoints();
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -135,12 +190,16 @@ void CPage_Node_Movement::OnPaint()
 	GetClientRect(PlotRect);
 	m_PlotRect = PlotRect;
 
-		m_PlotRect.top += 35;
-		m_PlotRect.bottom -= 35;
-		m_PlotRect.left += 450;
-		m_PlotRect.right -= 50;
+	m_PlotRect.top += 35;
+	m_PlotRect.bottom -= 35;
+	m_PlotRect.left += 450;
+	m_PlotRect.right -= 50;
 
-	DrawMovements(&dc,m_PlotRect);
+	//DrawMovements(&dc,m_PlotRect);
+	DrawFrame(&dc,m_PlotRect);
+	DrawCentroid(&dc,m_PlotRect);
+	DrawPinPoints(&dc,m_PlotRect);
+	DrawNewMovement(&dc);
 }
 
 void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
@@ -284,19 +343,10 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		CPoint Point_Movement[4];
 
 
-		if(i == m_SelectedMovementIndex)
+		if(i == m_nSelectedMovementIndex)
 			pDC->SelectObject(&SelectedPen);
 		else
 			pDC->SelectObject(&NormalPen);
-
-
-
-		Point_Movement[0]= NPtoSP(pt_movement[0]);
-		Point_Movement[1]= NPtoSP(pt_movement[1]);
-		Point_Movement[2]= NPtoSP(pt_movement[1]);
-		Point_Movement[3]= NPtoSP(pt_movement[2]);
-
-
 
 		Point_Movement[0]= NPtoSP(pt_movement[0]);
 		Point_Movement[1]= NPtoSP(pt_movement[1]);
@@ -323,6 +373,9 @@ void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,
 		//then offset
 		int link_offset = lane_width;
 
+		CPen pen,*pOldPen;
+		pen.CreatePen(PS_DASH,1,RGB(255,0,0));
+
 		pt_from.x += link_offset* cos(theta-PI/2.0f);
 		pt_to.x += link_offset* cos(theta-PI/2.0f);
 
@@ -342,7 +395,9 @@ void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,
 		DrawPoint[2] = NPtoSP(pt_to);
 		DrawPoint[3] = NPtoSP(pt_from);
 
+		pOldPen = pDC->SelectObject(&pen);
 		pDC->Polygon(DrawPoint, 4);
+		pDC->SelectObject(pOldPen);
 
 }
 // CPage_Node_Movement message handlers
@@ -350,28 +405,41 @@ void CPage_Node_Movement::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,
 void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
-		unsigned int i;
-
-		DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
-		for ( i=0;i< pNode->m_MovementVector.size();i++)
-		{
-		m_ListCtrl.SelectRow (i,false);
-		}
-
-	m_SelectedMovementIndex =  FindClickedMovement(point);
-	
-	if(m_SelectedMovementIndex >=0)
+	m_bLBTNDown = true;
+	SetFocus();
+	PinPoint *pSelected = PinPointHitTest(point);
+	if (pSelected)
 	{
-		for ( i=0;i< pNode->m_MovementVector.size();i++)
+		// 加一些判断！
+		if (pSelected->nIO == 1 )
+		{
+			m_nSelectedInLinkID = pSelected->nLinkID;
+		}
+		else
+		{
+			m_nSelectedOutLinkID = pSelected->nLinkID;
+		}
+	}
+	else
+	{
+		m_nSelectedInLinkID = -1;
+		m_nSelectedOutLinkID = -1;
+	}
+	m_nSelectedMovementIndex = UpdateMovementStatus(pSelected);
+
+	if(m_nSelectedMovementIndex >=0)
+	{
+		MNode* pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+		for (int i=0;i<pNode->Movements.size();i++)
 		{
 			char str[100];
 			m_ListCtrl.GetItemText (i,0,str,20);
 			int MovementIndex = atoi(str)-1; // the movement index has been sorted 
 
-			if(i == m_SelectedMovementIndex)
-			{
+			if(MovementIndex == m_nSelectedMovementIndex)
 				m_ListCtrl.SelectRow (i,true);
-			}
+			else
+				m_ListCtrl.SelectRow(i,false);
 		}
 	}
 
@@ -384,24 +452,399 @@ void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT 
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here
-	*pResult = 0;
-
-	for(unsigned int i = 0; i < m_SelectedRowVector.size(); i++)
-		m_SelectedRowVector[i] = false;
 
 	POSITION pos = m_ListCtrl.GetFirstSelectedItemPosition();
+	int nSelected = -1;
+	//CString strChange;
+
 	while(pos!=NULL)
 	{
-	int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
+		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
+		CString str;
+		str = m_ListCtrl.GetItemText (nSelectedRow,0);
+		//str = m_ListCtrl.GetItemText (nSelectedRow,1);
+		nSelected = atoi(str)-1;
+		//strChange = m_ListCtrl.GetItemText (nSelectedRow,4);
+		//strChange = m_ListCtrl.GetItemText (nSelectedRow,5);
+	}
+	m_nSelectedMovementIndex = nSelected;
+	//if ( nSelected >= 0 )
+	//{
+	//	int nComboIndex;
+	//	if ( _T("Permit") == strChange ) nComboIndex = 0;
+	//	else nComboIndex = 1;
+	//	UpdateMovement(nSelected,nComboIndex);
+	//}
+	Invalidate();
+}
+////////////////////////////////////////////////////////////////////////////////////////
+void CPage_Node_Movement::DrawFrame(CPaintDC *pDC, CRect PlotRect)
+{
+	CPen NormalPen(PS_SOLID,2,RGB(0,0,0));
+	CBrush  WhiteBrush(RGB(255,255,255));
 
-	char str[100];
-	m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
-	m_SelectedMovementIndex = atoi(str)-1;
+	pDC->SetBkMode(TRANSPARENT);
+	CPen *pOldPen = pDC->SelectObject(&NormalPen);
+	CBrush* pOldBrush=pDC->SelectObject(&WhiteBrush);
 
+	pDC->Rectangle (PlotRect);
 
-	m_SelectedRowVector[m_SelectedMovementIndex] = true;
+	pDC->SelectObject(pOldPen);
+	pDC->SelectObject(pOldBrush);
+}
+void CPage_Node_Movement::DrawCentroid(CPaintDC* pDC,CRect PlotRect)
+{
+	int nRadius1 = 10;
+	int nRadius2 = 14;
+	int nDiff    = nRadius2 - nRadius1;
 
+	CPen NormalPen(PS_SOLID,1,RGB(0,0,0));
+	CPen DashPen(PS_DOT,1,RGB(0,0,0));
+	CPen *pOldPen;
+	CBrush  WhiteBrush(RGB(255,255,255));
+	CBrush *pOldBrush;
+
+	pOldPen   = pDC->SelectObject(&DashPen);
+	pOldBrush = pDC->SelectObject(&WhiteBrush);
+
+	GDPoint cntPoint,lefttop,bottomright;
+	CRect centerRect;
+
+	cntPoint.x = 0.0;
+	cntPoint.y = 0.0;
+	
+	lefttop.x = cntPoint.x - nRadius2;
+	lefttop.y = cntPoint.y - nRadius2;
+	bottomright.x = cntPoint.x + nRadius2;
+	bottomright.y = cntPoint.y + nRadius2;
+	
+	centerRect = CRect(NPtoSP(lefttop),NPtoSP(bottomright));
+	pDC->Ellipse(centerRect);
+
+	pDC->SelectObject(&NormalPen);
+	lefttop.x = cntPoint.x - nRadius1;
+	lefttop.y = cntPoint.y - nRadius1;
+	bottomright.x = cntPoint.x + nRadius1;
+	bottomright.y = cntPoint.y + nRadius1;
+	
+	centerRect = CRect(NPtoSP(lefttop),NPtoSP(bottomright));
+
+	pDC->Ellipse(centerRect);
+
+	pDC->SelectObject(pOldPen);
+	pDC->SelectObject(pOldBrush);
+}
+void CPage_Node_Movement::CreatePinPoints()
+{
+	if ( m_PinPointSet.size() > 0 ) return;
+	// 根据Node的in和outlink，生成PinPoint
+	MNode *pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+	int i;
+	for(i=0;i<pNode->inLinks.size();i++)
+	{
+		MLink* pLink = pNode->inLinks[i];
+		PinPoint * p = new PinPoint();
+		p->nIO		 = 1;
+		p->nLinkID	 = pLink->m_LinkID;
+		p->bSelected = false;
+		MNode* ppn   = m_pView->m_ms.GetMNodebyID(pLink->m_FromNodeID);
+		p->nNodeID	 = ppn->m_NodeID;
+		p->pp		 = ppn->pt;
+		m_PinPointSet.push_back(p);
+	}
+	for(i=0;i<pNode->outLinks.size();i++)
+	{
+		MLink* pLink = pNode->outLinks[i];
+		PinPoint * p = new PinPoint();
+		p->nIO		 = 0;
+		p->nLinkID	 = pLink->m_LinkID;
+		p->bSelected = false;
+		MNode* ppn   = m_pView->m_ms.GetMNodebyID(pLink->m_ToNodeID);
+		p->nNodeID	 = ppn->m_NodeID;
+		p->pp		 = ppn->pt;
+		m_PinPointSet.push_back(p);
+	}
+
+	int nOffset = 100;
+	int nRadius = 5;  // pin point radius
+	GDPoint p2 = pNode->pt;
+	for(i=0;i<m_PinPointSet.size();i++)
+	{
+		PinPoint * p = m_PinPointSet[i];
+		double DeltaX,DeltaY,theta;
+		if ( 1 == p->nIO )
+		{
+			GDPoint p1 = p->pp;
+			DeltaX = p2.x - p1.x ;
+			DeltaY = p2.y - p1.y ;
+			theta = atan2(DeltaY, DeltaX);
+			p->dpp.x = (-1)*nOffset*cos(theta) + nRadius* cos(theta-PI/2.0f);  
+			p->dpp.y = (-1)*nOffset*sin(theta) + nRadius* sin(theta-PI/2.0f);
+			p->cpp.x = (-1)*nRadius*cos(theta) + nRadius* cos(theta-PI/2.0f);  
+			p->cpp.y = (-1)*nRadius*sin(theta) + nRadius* sin(theta-PI/2.0f);  
+		}
+		else // 0 == p->nIO
+		{
+			GDPoint p3 = p->pp;
+			DeltaX = p3.x - p2.x ;
+			DeltaY = p3.y - p2.y ;
+			theta = atan2(DeltaY, DeltaX);
+			p->dpp.x = nOffset*cos(theta) + nRadius* cos(theta-PI/2.0f);  
+			p->dpp.y = nOffset*sin(theta) + nRadius* sin(theta-PI/2.0f);
+			p->cpp.x = nRadius*cos(theta) + nRadius* cos(theta-PI/2.0f);  
+			p->cpp.y = nRadius*sin(theta) + nRadius* sin(theta-PI/2.0f);  
+		}
+	}
+}
+void CPage_Node_Movement::DrawPinPoints(CPaintDC *pDC, CRect PlotRect)
+{
+	int nRadius = 5;
+
+	CPen NormalPen(PS_SOLID,1,RGB(0,0,0));
+	CPen *pOldPen;
+	CBrush  GreyBrush(RGB(128,128,128));
+	CBrush  RedBrush(RGB(255,0,0));
+	CBrush *pOldBrush;
+
+	pOldPen = pDC->SelectObject(&NormalPen);
+	pOldBrush = pDC->SelectObject(&GreyBrush);
+
+	for(int i=0;i<m_PinPointSet.size();i++)
+	{
+		PinPoint *p = m_PinPointSet[i];
+		GDPoint cntPoint,lefttop,bottomright;
+		CRect centerRect;
+
+		cntPoint.x = p->dpp.x;
+		cntPoint.y = p->dpp.y;
+		
+		lefttop.x = cntPoint.x - nRadius;
+		lefttop.y = cntPoint.y - nRadius;
+		bottomright.x = cntPoint.x + nRadius;
+		bottomright.y = cntPoint.y + nRadius;
+		
+		centerRect = CRect(NPtoSP(lefttop),NPtoSP(bottomright));
+		centerRect.NormalizeRect();
+		if ( p->nLinkID == m_nSelectedInLinkID || p->nLinkID == m_nSelectedOutLinkID)
+			pDC->SelectObject(&RedBrush);
+		else
+			pDC->SelectObject(&GreyBrush);
+		pDC->Ellipse(centerRect);
+	}
+	pDC->SelectObject(pOldPen);
+	pDC->SelectObject(pOldBrush);
+}
+PinPoint* CPage_Node_Movement::PinPointHitTest(CPoint pt)
+{// return the pointer of the PinPoint clicked, or NULL
+	PinPoint* pRt = NULL;
+	int nRadius =5;
+
+	for(int i=0;i<m_PinPointSet.size();i++)
+	{
+		PinPoint *p = m_PinPointSet[i];
+		GDPoint cntPoint,lefttop,bottomright;
+		CRect centerRect;
+
+		cntPoint.x = p->dpp.x;
+		cntPoint.y = p->dpp.y;
+		
+		lefttop.x = cntPoint.x - nRadius;
+		lefttop.y = cntPoint.y - nRadius;
+		bottomright.x = cntPoint.x + nRadius;
+		bottomright.y = cntPoint.y + nRadius;
+		
+		centerRect = CRect(NPtoSP(lefttop),NPtoSP(bottomright));
+		centerRect.NormalizeRect();
+		if ( centerRect.PtInRect(pt) )
+		{
+			pRt = p;
+			break;
+		}
+	}
+	return pRt;
+}
+void CPage_Node_Movement::DrawNewMovement(CPaintDC *pDC)
+{
+	if ( m_nSelectedMovementIndex < 0 ) return;
+
+	CPen GreyPen(PS_SOLID,2,RGB(128,128,128));
+	CPen RedPen(PS_SOLID,2,RGB(255,0,0));
+	CPen *pOldPen;
+	int nRadius = 5;
+
+	pOldPen = pDC->SelectObject(&GreyPen);
+	MNode* pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+
+	for(int i=0;i<pNode->Movements.size();i++)
+	{
+		MMovement* move= pNode->Movements[i];
+		if (i != m_nSelectedMovementIndex) continue;
+
+		GDPoint pin = GetPinPointByLinkID(move->nFromLinkId)->dpp;
+		GDPoint cin = GetPinPointByLinkID(move->nFromLinkId)->cpp;
+		GDPoint pout= GetPinPointByLinkID(move->nToLinkId)->dpp;
+		GDPoint cout= GetPinPointByLinkID(move->nToLinkId)->cpp;
+
+		pDC->MoveTo(NPtoSP(pin));
+		pDC->LineTo(NPtoSP(cin));
+		//pDC->MoveTo(NPtoSP(cout));
+		//pDC->LineTo(NPtoSP(pout));
+		DrawArrow(pDC,cout,pout);
+
+		GDPoint cntPoint,lefttop,bottomright;
+		CRect centerRect;
+
+		cntPoint.x = 0.0;
+		cntPoint.y = 0.0;
+		
+		lefttop.x = cntPoint.x - nRadius;
+		lefttop.y = cntPoint.y - nRadius;
+		bottomright.x = cntPoint.x + nRadius;
+		bottomright.y = cntPoint.y + nRadius;
+		
+		centerRect = CRect(NPtoSP(lefttop),NPtoSP(bottomright));
+		centerRect.NormalizeRect();
+
+		pDC->Arc(centerRect,NPtoSP(cin),NPtoSP(cout));
 
 	}
-		Invalidate();
+	pDC->SelectObject(pOldPen);
+}
+PinPoint* CPage_Node_Movement::GetPinPointByLinkID(int nLinkID)
+{
+	PinPoint *p = NULL;
+	for(int i=0;i<m_PinPointSet.size();i++)
+	{
+		p = m_PinPointSet[i];
+		if ( p->nLinkID == nLinkID)
+			break;
+	}
+	return p;
+}
+int CPage_Node_Movement::UpdateMovementStatus(PinPoint *p /*= 0*/)
+{
+	int nRt = -1;
+	MNode* pNode  = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+	for(int i=0;i<pNode->Movements.size();i++)
+	{
+		MMovement *move= pNode->Movements[i];
+		if ( m_nSelectedInLinkID == move->nFromLinkId &&
+			 m_nSelectedOutLinkID== move->nToLinkId )
+		{
+			 nRt = i;
+			 break;
+		}
+	}
+	return nRt;
+}
+void CPage_Node_Movement::DrawArrow(CDC* pDC, GDPoint m_One, GDPoint m_Two)
+{
+    double slopy , cosy , siny;   
+    double Par = 8.0;//length of Arrow (>)   
+    slopy = atan2( (double)( m_One.y - m_Two.y ),(double)( m_One.x - m_Two.x ) );   
+    cosy = cos( slopy );   
+    siny = sin( slopy );   
+   
+    //draw a line between the 2 endpoint   
+    pDC->MoveTo( NPtoSP(m_One) );   
+    pDC->LineTo( NPtoSP(m_Two) );   
+       
+	GDPoint pa1,pa2;
+	pa1.x = m_Two.x + Par * cosy -  Par / 2.0 * siny ;
+	pa1.y = m_Two.y + Par * siny +  Par / 2.0 * cosy ;
+	pa2.x = m_Two.x + Par * cosy +  Par / 2.0 * siny ;
+	pa2.y = m_Two.y - Par * siny -  Par / 2.0 * cosy ; 
+	pDC->MoveTo(NPtoSP(m_Two));
+	pDC->LineTo(NPtoSP(pa1));
+	pDC->LineTo(NPtoSP(pa2));
+	pDC->LineTo(NPtoSP(m_Two));
+}
+void CPage_Node_Movement::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_bLBTNDown) 
+	{
+		m_bLBTNDown = false;
+	}
+
+	CPropertyPage::OnLButtonUp(nFlags, point);
+}
+
+void CPage_Node_Movement::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_bLBTNDown)
+	{
+		HCURSOR   hc     =LoadCursor(NULL,IDC_CROSS); 
+		SetCursor(hc);
+	}
+
+	CPropertyPage::OnMouseMove(nFlags, point);
+}
+
+BOOL CPage_Node_Movement::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	// 判断pt在作图rect内
+	if (zDelta > 0)
+	{
+		m_dScale += 0.2;
+		if (m_dScale >= 2)
+			m_dScale = 2;
+	}
+	else
+	{
+		m_dScale -= 0.2;
+		if (m_dScale <= 0.4)
+			m_dScale = 0.4;
+	}
+
+	Invalidate();
+	return TRUE;
+}
+void CPage_Node_Movement::UpdateMovement(int nSelectedIndex, int nComboIndex)
+{
+	MNode* pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+	for(int i=0;i<pNode->Movements.size();i++)
+	{
+		MMovement *p = pNode->Movements[i];
+		if ( i == nSelectedIndex )
+		{
+			if ( 0 == nComboIndex )
+				p->bForbid = false;
+			else
+				p->bForbid = true;
+			break;
+		}
+	}
+	return;
+}
+void CPage_Node_Movement::OnLvnEndlabeleditGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+
+	POSITION pos = m_ListCtrl.GetFirstSelectedItemPosition();
+	int nSelected = -1;
+	CString strChange;
+
+	while(pos!=NULL)
+	{
+		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
+		CString str;
+		str = m_ListCtrl.GetItemText (nSelectedRow,0);
+		str = m_ListCtrl.GetItemText (nSelectedRow,1);
+		nSelected = atoi(str)-1;
+		strChange = m_ListCtrl.GetItemText (nSelectedRow,4);
+		strChange = m_ListCtrl.GetItemText (nSelectedRow,5);
+	}
+	m_nSelectedMovementIndex = nSelected;
+	if ( nSelected >= 0 )
+	{
+		int nComboIndex;
+		if ( _T("Permit") == strChange ) nComboIndex = 0;
+		else nComboIndex = 1;
+		UpdateMovement(nSelected,nComboIndex);
+	}
+	Invalidate();
 }

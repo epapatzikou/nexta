@@ -100,6 +100,7 @@
 #define IDD_NSCHART_TOLL_DIALOG         198
 #define IDD_DIALOG_EXCEL_DATA_IMPORT    199
 #define IDD_DIALOG_NODE_MOVEMENT        200
+#define IDD_DIALOG_NODE_LANE            200
 #define IDD_NGSIM_DIALOG                202
 #define IDD_DIALOG_NODE_PHASE           203
 #define IDD_DIALOG_NODE_LANETURN        205
@@ -110,6 +111,9 @@
 #define IDD_DIALOG_GISLayer             209
 #define IDD_UNIT_TESTING_DIALOG         212
 #define IDD_DIALOG_UNIT_TEST_LIST       213
+#define IDD_DIALOG1                     218
+#define IDD_DIALOG_NODE_LANE1           219
+#define IDD_DIALOG_NODE_LANE2           220
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -205,11 +209,16 @@
 #define IDC_BUTTON_DELETE               1056
 #define IDC_COMBO_VOT_LB                1056
 #define IDC_BUTTON_READ_Signal_Timing   1056
+#define IDC_BUTTON_DEL_PHASE            1056
 #define IDC_COMBO_VOT_UB                1057
 #define IDC_BUTTON3                     1057
 #define IDC_BUTTON_LINK_WEB             1057
+#define IDC_BUTTON_NEW_SC               1057
+#define IDC_BTN_ADDTURN                 1057
 #define IDC_GRIDLIST_MOE                1058
 #define IDC_BUTTON_LINK_WEB_Subarea     1058
+#define IDC_BUTTON_SAVE_SC              1058
+#define IDC_BTN_DELTURN                 1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
 #define IDC_EDIT_Demand_CSV_File        1060
@@ -250,7 +259,9 @@
 #define IDC_BUTTON_GENERATE_DATA2       1083
 #define IDC_BUTTON_GENERATE_VISSIM_DATA 1083
 #define IDC_BUTTON_Import_Sample_File   1083
+#define IDC_LANE_C                      1083
 #define IDC_DEMAND_PROFILE_LIST         1084
+#define IDC_LANE_D                      1084
 #define IDC_VEHICLE_CHART1              1085
 #define IDC_COMBO_XAxis                 1086
 #define IDC_TravelTime_CHART            1086
@@ -299,6 +310,11 @@
 #define IDC_LIST_FEATURE_INFO           1123
 #define IDC_BUTTON_Database             1124
 #define IDC_TaskLIST                    1126
+#define IDC_CHECK_NORM                  1127
+#define IDC_LANE_P                      1128
+#define IDC_BUTTON_NEW_PHASE            1129
+#define IDC_COMBO_SC                    1130
+#define IDC_EDIT_CYCLE_LENGTH           1131
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -822,15 +838,20 @@
 #define ID_DEMANDFILE_TRUCKODDEMANDMATRIX 33428
 #define ID_DEMANDFILE_INTERMODALODDEMANDMATRIX 33429
 #define ID_LINK_ADDINCIDENT             33430
-#define ID_IMPORT_SYNCHROUTDFCSVFILES   33431
+#define ID_EDIT_CREATEDEFAULTJUNCTION   33431
+#define ID_EDIT_LOADJUNCTIONS           33432
+#define ID_EXPORT_CREATEVISSIMFILES     33433
+#define ID_EDIT_SAVEJUNCTIONS           33434
+#define ID_IMPORT_SYNCHROCVS            33435
+#define ID_IMPORT_SYNCHROUTDFCSVFILES   33436
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        213
-#define _APS_NEXT_COMMAND_VALUE         33432
-#define _APS_NEXT_CONTROL_VALUE         1127
+#define _APS_NEXT_RESOURCE_VALUE        221
+#define _APS_NEXT_COMMAND_VALUE         33437
+#define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
