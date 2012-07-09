@@ -146,7 +146,6 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_ZONEBOUNDARY, &CTLiteView::OnUpdateViewZoneboundary)
 	ON_COMMAND(ID_VIEW_SHOW_CONNECTOR, &CTLiteView::OnViewShowConnector)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SHOW_CONNECTOR, &CTLiteView::OnUpdateViewShowConnector)
-	ON_COMMAND(ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK, &CTLiteView::OnToolsGeneratephysicalzonecentroidsonroadnetwork)
 	ON_COMMAND(ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS, &CTLiteView::OnViewHighlightcentroidsandactivitylocations)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS, &CTLiteView::OnUpdateViewHighlightcentroidsandactivitylocations)
 	ON_COMMAND(ID_VIEW_BACKGROUNDCOLOR, &CTLiteView::OnViewBackgroundcolor)
@@ -872,6 +871,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		// special condition 3: when a link is selected
 
+		//outside subarea
 		if((*iLink)->m_DisplayLinkID>=0 )
 		{
 			g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
@@ -2916,26 +2916,80 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	// Create a polygonal region
 	m_polygonal_region = CreatePolygonRgn(m_subarea_points, pDoc->m_SubareaShapePoints.size(), WINDING);
 
-	pDoc->m_NodeIDMap.clear();
+	// step 01
+		std::list<DTANode*>::iterator iNode;
+			iNode = pDoc->m_NodeSet.begin ();
 
-	std::list<DTANode*>::iterator iNode = pDoc->m_NodeSet.begin ();
+
 	while (iNode != pDoc->m_NodeSet.end())
 	{
 		CPoint point = NPtoSP((*iNode)->pt);
 		if(PtInRegion(m_polygonal_region, point.x, point.y) == false)  //outside subarea
+		{
+			(*iNode)->m_bSubareaFlag = 0;
+		}
+		else
+		{
+			(*iNode)->m_bSubareaFlag = 1;	//inside subarea
+		}
+
+			(*iNode)->m_tobeRemoved = true;  // mark all to be removed first
+
+			++iNode;
+	}
+
+
+	//step 02
+	//remove links
+	pDoc->m_LinkNoMap.clear();
+
+	std::list<DTALink*>::iterator iLink;
+
+	iLink = pDoc->m_LinkSet.begin(); 
+
+	while (iLink != pDoc->m_LinkSet.end())
+	{
+		DTANode* pFromNode = pDoc->m_NodeIDMap[(*iLink)->m_FromNodeID];
+		DTANode* pToNode = pDoc->m_NodeIDMap[(*iLink)->m_ToNodeID];
+
+		if(pFromNode->m_bSubareaFlag == 0 &&  pToNode ->m_bSubareaFlag == 0 ) 
+		{
+			iLink = pDoc->m_LinkSet.erase(iLink);  // remove when one of end points are covered by the subarea
+
+		}else
+		{
+			pDoc->m_LinkNoMap[(*iLink)->m_LinkNo] = (*iLink);
+
+			pFromNode->m_tobeRemoved = false;  // no need to remove as long as one adjacent link is kept
+			pToNode->m_tobeRemoved = false; 
+
+			++iLink;
+		}
+	}
+
+
+	// step 03: remove nodes
+
+
+	pDoc->m_NodeIDMap.clear();
+
+	iNode = pDoc->m_NodeSet.begin ();
+	while (iNode != pDoc->m_NodeSet.end())
+	{
+
+		if((*iNode)->m_tobeRemoved == true )  //outside subarea
 		{
 			iNode = pDoc->m_NodeSet.erase (iNode);
 		}
 		else
 		{
 			pDoc->m_NodeIDMap[(*iNode)->m_NodeID ] = (*iNode);
-			pDoc->m_NodeIDMap[(*iNode)->m_NodeID ]->m_bSubareaBoundaryNode = false;
 			++iNode;
 			//inside subarea
 		}
 	}
 
-	//mark zones to be removed. 
+	// step 04: mark zones to be removed. 
 
 		std::map<int, DTAZone>	:: iterator itr;
 
@@ -2966,44 +3020,14 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 				}
 		}
 
-	//remove links
-	pDoc->m_LinkNoMap.clear();
-
-	std::list<DTALink*>::iterator iLink;
-
-	iLink = pDoc->m_LinkSet.begin(); 
-
-	while (iLink != pDoc->m_LinkSet.end())
-	{
-		if(pDoc->m_NodeIDMap.find((*iLink)->m_FromNodeID ) == pDoc->m_NodeIDMap.end() || pDoc->m_NodeIDMap.find((*iLink)->m_ToNodeID ) == pDoc->m_NodeIDMap.end()) 
-		{
-			// mark: m_bSubareaBoundaryNode for remaninging nodes
-			if(pDoc->m_NodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_NodeIDMap.end())
-				pDoc->m_NodeIDMap[(*iLink)->m_FromNodeID ]->m_bSubareaBoundaryNode = true;
-
-			// mark: m_bSubareaBoundaryNode for remaninging nodes
-			if(pDoc->m_NodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_NodeIDMap.end())
-				pDoc->m_NodeIDMap[(*iLink)->m_ToNodeID ]->m_bSubareaBoundaryNode = true;
-
-			iLink = pDoc->m_LinkSet.erase(iLink);  // remove when one of end points are covered by the subarea
-
-
-		}else
-		{
-			pDoc->m_LinkNoMap[(*iLink)->m_LinkNo] = (*iLink);
-			++iLink;
-		}
-	}
-
-
-	// step 2: add new zones if the boundary has zone --
+	// step 05: add new zones if the boundary has zone --
 
 	iNode = pDoc->m_NodeSet.begin ();
 	int TAZ = 10000;
 	while (iNode != pDoc->m_NodeSet.end())
 	{
 
-		if((*iNode)->m_bSubareaBoundaryNode && (*iNode)->m_ZoneID == 0)  // remaining boundary-and-not-activity-location nodes after out of subarea links are removed. 
+		if((*iNode)->m_bSubareaFlag ==0 && (*iNode)->m_ZoneID == 0)  // remaining boundary-and-not-activity-location nodes after out of subarea links are removed. 
 		{
 			// create new zone number and add this node as activity center
 			// try to get TAZ as the node number
@@ -3029,7 +3053,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 			++iNode;
 	}
 
-    // step 3: generate route file
+    // step 06: generate route file
 		std::list<DTAVehicle*>::iterator iVehicle;
 		pDoc->m_PathMap.clear();
 
@@ -3048,8 +3072,11 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 							for(int link= 1; link<pVehicle->m_NodeSize; link++)
 							{
 								int OrgLinkNO = pVehicle->m_NodeAry[link].LinkNo;
+
+
 								if( pDoc->m_LinkNoMap.find(OrgLinkNO)!= pDoc->m_LinkNoMap.end()) // the link exists in subarea 
 								{
+
 									if(StartFlag <=1)
 										LinkVector.push_back(OrgLinkNO);
 
@@ -3941,9 +3968,6 @@ void CTLiteView::OnUpdateViewShowConnector(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(m_bShowConnector);
 }
 
-void CTLiteView::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
-{
-}
 
 void CTLiteView::OnViewHighlightcentroidsandactivitylocations()
 {

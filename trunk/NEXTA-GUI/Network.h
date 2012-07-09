@@ -829,11 +829,17 @@ public:
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
 		m_External_OD_flag = 0;
-		m_bSubareaBoundaryNode = false;  // when the associated link is removed as it is outside the boundary, then we mark its from and t nodes as subarea boundary node 
+		m_tobeRemoved = false;
+		m_bSubareaFlag = 0;  // when the associated link is removed as it is outside the boundary, then we mark its from and t nodes as subarea boundary node 
+		m_CentroidUpdateFlag = 0;
 	};
+
+
 	~DTANode(){};
 
-	bool m_bSubareaBoundaryNode;
+	int m_CentroidUpdateFlag;  // used by node splitting for subarea
+	int m_bSubareaFlag;
+	bool m_tobeRemoved;
 	bool m_bZoneActivityLocationFlag; 
 
 	int m_External_OD_flag;
@@ -1136,6 +1142,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_CentroidUpdateFlag = 0; 
 		m_bTrainFromTerminal = false;
 		m_bTrainToTerminal = false;
 		m_bConnector = false;
@@ -1209,6 +1216,7 @@ public:
 	};
 
 
+	int m_CentroidUpdateFlag;
 	std::vector<DTALane> m_LaneVector;
 	// end: for micro simulation 
 
