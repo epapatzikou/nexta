@@ -553,6 +553,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MyPropertySheet.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Page_Node_Lane.cpp"
 				>
 			</File>
@@ -897,11 +901,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -925,11 +929,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -957,19 +961,19 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar2.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toolbar2.bmp"
 						>
 					</File>
 					<File
@@ -1206,6 +1210,10 @@
 			</File>
 			<File
 				RelativePath=".\MainFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MyPropertySheet.h"
 				>
 			</File>
 			<File

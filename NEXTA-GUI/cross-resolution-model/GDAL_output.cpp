@@ -1002,7 +1002,7 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 
 	CString directory = m_ProjectDirectory;
 	FILE* st = NULL;
-	fopen_s(&st,directory+"subarea_path_flow.csv","w");
+	fopen_s(&st,directory+"output_path_flow.csv","w");
 	if(st!=NULL)
 	{
 	fprintf(st,"route_index,vehicle_type,from_zone_id,from_node_id,to_zone_id,to_node_id,time_span_volume,day_volume,node_chain_number_of_nodes,node_chain_node_sequence\n");
@@ -1040,7 +1040,7 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 	fclose(st);
 	}
 // OD statistics
-		fopen_s(&st,directory+"subarea_od_flow.csv","w");
+		fopen_s(&st,directory+"output_od_flow.csv","w");
 	if(st!=NULL)
 	{
 	fprintf(st,"od_index,vehicle_type,from_zone_id,to_zone_id,time_span_volume,day_volume\n");

@@ -219,6 +219,10 @@ protected: // create from serialization only
 public:
 
 		Mustang m_ms;
+		int m_msStatus;
+
+		void CreateDefaultJunction();
+
 	BezierCurve m_BezierCurve;
 
 	bool m_bLineDisplayConditionalMode;
