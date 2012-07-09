@@ -30,7 +30,7 @@
 #include <atlimage.h>
 #include <comdef.h>
 
-
+#include "VISSIM_EXPORT\\VISSIM_Export.h"
 
 enum tool
    { move_tool, 
@@ -218,6 +218,7 @@ protected: // create from serialization only
 // Attributes
 public:
 
+		Mustang m_ms;
 	BezierCurve m_BezierCurve;
 
 	bool m_bLineDisplayConditionalMode;
