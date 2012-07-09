@@ -44,6 +44,7 @@
 #include "Page_Node_Movement.h"
 #include "Page_Node_Phase.h"
 #include "Page_Node_LaneTurn.h"
+#include "MyPropertySheet.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -368,6 +369,8 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_msStatus = 0;
+
 	if(theApp.m_VisulizationTemplate == e_train_scheduling) 
 	m_bLineDisplayConditionalMode = true;
 
@@ -3885,47 +3888,72 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 }
 void CTLiteView::OnNodeMovementproperties()
 {
-	CPropertySheet sheet;
+
+
+	CMyPropertySheet sheet;
 
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc == NULL)
 		return;
 
+	if ( 0 == m_msStatus )
+	{
+		m_ms.m_pDoc = pDoc;
+		m_ms.PrepareData4Editing();
+		m_msStatus = 1;
+	}
+
 	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
 
 	if(pDoc->m_SelectedNodeID >=0)
 	{
+		CString str;
+		str.Format("Node %d",pDoc->m_NodeIDtoNameMap[pDoc->m_SelectedNodeID]);
+		CMyPropertySheet sheet(str);
+		sheet.SetTitle(str);
 		CPage_Node_Movement MovementPage;
 		MovementPage.m_pDoc = pDoc;
+		MovementPage.m_pView= this;
+		MovementPage.m_psp.dwFlags |= PSP_USETITLE;
+		MovementPage.m_psp.pszTitle = _T("Movement");
 		sheet.AddPage(&MovementPage);  // 0
 
-		if(pDoc->m_NodeIDMap.find(pDoc->m_SelectedNodeID) ==pDoc->m_NodeIDMap.end())
-			return;
 
-		DTANode*  pNode = pDoc->m_NodeIDMap[pDoc->m_SelectedNodeID];
+		//if(pDoc->m_NodeIDMap.find(pDoc->m_SelectedNodeID) ==pDoc->m_NodeIDMap.end())
+		//	return;
 
-		if(pNode ->m_bSignalData)
-		{
-			CPage_Node_Phase PhasePage;
-			PhasePage.m_pDoc = pDoc;
-			sheet.AddPage(&PhasePage);  // 1
-		}
+		//DTANode*  pNode = pDoc->m_NodeIDMap[pDoc->m_SelectedNodeID];
 
-		/*
+		CPage_Node_Lane LanePage;
+		LanePage.m_pDoc = pDoc;
+		LanePage.m_pView= this;
+		LanePage.m_psp.dwFlags |= PSP_USETITLE;
+		LanePage.m_psp.pszTitle = _T("Lane");
+		sheet.AddPage(&LanePage);  // 2
+		
 		CPage_Node_LaneTurn LaneTurnPage;
 		LaneTurnPage.m_pDoc = pDoc;
-		sheet.AddPage(&LaneTurnPage);  // 2
-		*/
-		// Change the caption of the CPropertySheet object 
-		// from "Simple PropertySheet" to "Simple Properties".
-		sheet.SetActivePage (0);
+		LaneTurnPage.m_pView= this;
+		LaneTurnPage.m_psp.dwFlags |= PSP_USETITLE;
+		LaneTurnPage.m_psp.pszTitle = _T("LaneTurn");
+		sheet.AddPage(&LaneTurnPage);  // 3
+
+		CPage_Node_Phase PhasePage;
+		PhasePage.m_pDoc = pDoc;
+		PhasePage.m_pView= this;
+		PhasePage.m_psp.dwFlags |= PSP_USETITLE;
+		PhasePage.m_psp.pszTitle = _T("Phase");
+		sheet.AddPage(&PhasePage);  // 4
 
 		if(sheet.DoModal() == IDOK)
 		{
-			// do something
+			AfxMessageBox("sheet.domoal is IDOK",MB_OK);
 		}
-
+		else
+		{
+			AfxMessageBox("sheet.domoal is IDCANCEL",MB_OK);
+		}
 	}
 }
 
@@ -4155,3 +4183,5 @@ void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 
 	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_vcratio || pDoc->m_LinkMOEMode == MOE_vcratio|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }
+
+void CTLiteView::CreateDefaultJunction(){	CTLiteDoc* pDoc = GetDocument();	if(pDoc == NULL)		return;	if ( 0 == m_msStatus )	{		m_ms.m_pDoc = pDoc;		m_ms.PrepareData4Editing();		m_msStatus = 1;		AfxMessageBox("Junctions are created with default information!",MB_OK);	}}
