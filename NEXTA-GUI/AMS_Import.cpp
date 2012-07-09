@@ -2005,3 +2005,4 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 //		GenerateOffsetLinkBand();
 	return 1;
 }
+

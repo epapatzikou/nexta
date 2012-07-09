@@ -255,6 +255,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_ADDWORKZONE, &CTLiteDoc::OnLinkAddworkzone)
 	ON_COMMAND(ID_LINK_ADDINCIDENT, &CTLiteDoc::OnLinkAddincident)
 	ON_COMMAND(ID_IMPORT_SYNCHROUTDFCSVFILES, &CTLiteDoc::OnImportSynchroutdfcsvfiles)
+	ON_COMMAND(ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK, &CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork)
 	END_MESSAGE_MAP()
 
 
@@ -3161,7 +3162,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 			{
 				DTALink * pLine  = m_NodeIDtoLinkMap[ReversedLinkKey];
 				if(pLine!= NULL)
-					pLine -> m_LinkID ;
+					reversed_link_id = pLine -> m_LinkID ;
 			}
 
 			fprintf(st,"%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet,
@@ -8265,4 +8266,125 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 
 	m_ProjectFile = "";  // reset m_ProjectFile so that the user has to give a new project name
 	return true;
+}
+
+void CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
+{
+	CWaitCursor cursor;
+	// step 1: mark old centroids, remove old activity locations 
+		std::map<int, DTAZone>	:: iterator itr;
+		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
+		{
+			for(int i = 0; i< itr->second.m_ActivityLocationVector .size(); i++)
+			{
+				DTAActivityLocation element = itr->second.m_ActivityLocationVector[i];
+				m_NodeIDMap [m_NodeNametoIDMap[element.NodeNumber ] ] -> m_CentroidUpdateFlag = 1; // old centroid
+			}
+
+			itr->second.m_ActivityLocationVector.clear();  // remove all old activity locations
+
+		}
+
+	// step 2: create new centriods: find a pair of incoming and outgoing links to centroid, if exist
+	
+		std::list<DTALink*>::iterator iLink;
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+		
+			DTALink * pLink = (*iLink);
+			DTALink * pRevLink = NULL; //reversed link
+			unsigned long ReversedLinkKey = GetLinkKey(pLink->m_ToNodeID, pLink->m_FromNodeID);
+
+			int reversed_link_id = 0;
+			if ( m_NodeIDtoLinkMap.find ( ReversedLinkKey) != m_NodeIDtoLinkMap.end())
+			{
+				  pRevLink = m_NodeIDtoLinkMap[ReversedLinkKey];
+			}
+
+			DTANode* pFromNode = m_NodeIDMap[pLink->m_FromNodeID ];
+			DTANode* pToNode = m_NodeIDMap[pLink->m_ToNodeID ];
+
+			if(pFromNode->m_CentroidUpdateFlag >=1 && pRevLink != NULL && m_LinkTypeMap[pLink->m_link_type ].IsConnector()) // old centroid and no-external origin node // if it is an external origin node, then we do not need to add nodes
+			{
+				int zone_number = pFromNode->m_ZoneID ;
+				int new_node_number;
+				// construct new node number based on from and to node ids
+				if(pFromNode->m_NodeID < pToNode->m_NodeID)
+					new_node_number = pFromNode->m_NodeID * 10000 + pToNode->m_NodeID ;  // fromID*10000+ToID
+				else
+					new_node_number = pToNode->m_NodeID * 10000 +  pFromNode->m_NodeID ;  // ToID*10000+fromID
+
+				// add new node and update from_node
+				if(m_NodeNametoIDMap.find(new_node_number) == m_NodeNametoIDMap.end() )
+				{
+					GDPoint	pt;
+					pt.x = (pFromNode->pt.x + pToNode->pt.x) /2;
+					pt.y = (pFromNode->pt.y + pToNode->pt.y) /2;
+
+					AddNewNode(pt, new_node_number);
+
+					// mark it as activity location.
+					DTAActivityLocation element;
+					element.ZoneID  = zone_number;
+					element.NodeNumber = new_node_number;
+					element.External_OD_flag = 0;
+
+					int new_node_id = m_NodeNametoIDMap[new_node_number];
+
+					DTANode* pNewNode = m_NodeIDMap [new_node_id ] ;
+					m_NodeIDtoZoneNameMap[new_node_id] = zone_number;
+
+					pNewNode -> m_ZoneID = zone_number;
+					pNewNode ->m_Name == "New_Node";
+					pNewNode ->m_External_OD_flag = element.External_OD_flag;
+
+					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+
+					//update from node of this link
+					pLink->m_FromNodeNumber = new_node_number;
+					pLink->m_FromNodeID  = new_node_id;
+					pLink->m_FromPoint = pt;
+					pLink->m_CentroidUpdateFlag = 1;
+
+					pLink->m_ShapePoints .clear();
+					pLink->m_ShapePointRatios  .clear();
+					pLink->m_ShapePoints.push_back (pLink->m_FromPoint);
+					pLink->m_ShapePoints.push_back (pLink->m_ToPoint);
+					
+					//update downstream node of the reversed link
+					pRevLink->m_CentroidUpdateFlag = 1;
+					pRevLink->m_ToNodeNumber = new_node_number;
+					pRevLink->m_ToNodeID  = new_node_id;
+					pRevLink->m_ToPoint = pt;
+
+					pRevLink->m_ShapePoints .clear();
+					pRevLink->m_ShapePointRatios  .clear();
+					pRevLink->m_ShapePoints.push_back (pLink->m_ToPoint);
+					pRevLink->m_ShapePoints.push_back (pLink->m_FromPoint);
+
+				}  //two-way link  from node
+
+			}  // centriod 
+
+		}  // for each link
+
+		// step 3: remove old centroids
+		std::list<DTANode*>::iterator iNode;
+		iNode = m_NodeSet.begin();
+
+		while(iNode != m_NodeSet.end())
+		{
+			if((*iNode)->m_CentroidUpdateFlag  == 1)
+			{
+				m_NodeIDMap[(*iNode)->m_NodeID ] = NULL;
+				m_NodeNametoIDMap[(*iNode)->m_NodeNumber  ] = -1;
+				iNode = m_NodeSet.erase  (iNode); //  correctly update the iterator to point to the location after the iterator we removed.
+			}else
+			{
+			++iNode;
+			}
+		}
+
+		GenerateOffsetLinkBand();
+		UpdateAllViews(0);
 }

@@ -665,10 +665,8 @@ void SetStatusText(CString StatusText);
 	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0, bool ActivityLocation = false)
 	{
 		DTANode* pNode = new DTANode;
-
 		pNode->pt = newpt;
 		pNode->m_LayerNo = LayerNo;
-
 		pNode->m_NodeID = GetUnusedNodeID();
 		if(NewNodeNumber ==0 )
 		{
@@ -1154,6 +1152,7 @@ public:
 		afx_msg void OnLinkAddworkzone();
 		afx_msg void OnLinkAddincident();
 		afx_msg void OnImportSynchroutdfcsvfiles();
+		afx_msg void OnToolsGeneratephysicalzonecentroidsonroadnetwork();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

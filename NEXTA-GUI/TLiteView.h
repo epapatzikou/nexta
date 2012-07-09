@@ -550,7 +550,6 @@ public:
 	afx_msg void OnUpdateViewZoneboundary(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowConnector();
 	afx_msg void OnUpdateViewShowConnector(CCmdUI *pCmdUI);
-	afx_msg void OnToolsGeneratephysicalzonecentroidsonroadnetwork();
 	afx_msg void OnViewHighlightcentroidsandactivitylocations();
 	afx_msg void OnUpdateViewHighlightcentroidsandactivitylocations(CCmdUI *pCmdUI);
 	afx_msg void OnViewBackgroundcolor();
