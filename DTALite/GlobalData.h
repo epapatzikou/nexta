@@ -48,6 +48,7 @@ extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 // time inteval settings in assignment and simulation
 extern double g_DTASimulationInterval; // min
 extern int g_number_of_intervals_per_min; // round to nearest integer
+extern int g_number_of_car_following_intervals_per_min;
 extern int g_AggregationTimetInterval; // min
 
 // maximal # of adjacent links of a node (including physical nodes and centriods( with connectors))

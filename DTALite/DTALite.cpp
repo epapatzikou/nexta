@@ -144,7 +144,9 @@ std::map<int, DTALinkType> g_LinkTypeMap;
 
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
+double g_CarFollowingSimulationInterval = 1.0/600; // 1/ 600 min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
+int g_number_of_car_following_intervals_per_min = 600; // round to nearest integer
 int g_AggregationTimetInterval = 15; // min
 int g_AggregationTimetIntervalSize = 2;
 float g_DemandGlobalMultiplier = 1.0f;
