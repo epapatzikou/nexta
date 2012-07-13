@@ -570,6 +570,7 @@ public:
 	afx_msg void OnUpdateMoeOddemand(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI);
+	afx_msg void OnExportCreatevissimfiles();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

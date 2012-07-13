@@ -246,6 +246,7 @@ public:
 	BOOL OnOpenDocument(CString FileName);
 	BOOL OnOpenAMSDocument(CString FileName);
 	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
+	bool ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int start_time_in_min,int end_time_in_min);
 	bool RunGravityModel(LPCTSTR lpszFileName,int demand_type);
 	bool ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type);
 	BOOL OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false, bool bImportShapeFiles = false);
@@ -928,6 +929,9 @@ void SetStatusText(CString StatusText);
 
 
 	COLORREF m_BackgroundColor;
+	COLORREF m_ZoneColor;
+	COLORREF m_ZoneTextColor;
+
 	bool m_BackgroundBitmapLoaded;
 	bool m_LongLatCoordinateFlag;
 	CImage m_BackgroundBitmap;  // background bitmap
@@ -1153,6 +1157,7 @@ public:
 		afx_msg void OnLinkAddincident();
 		afx_msg void OnImportSynchroutdfcsvfiles();
 		afx_msg void OnToolsGeneratephysicalzonecentroidsonroadnetwork();
+		afx_msg void OnImportDemanddataset();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);
