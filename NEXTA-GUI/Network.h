@@ -1255,6 +1255,8 @@ public:
 	void CalculateShapePointRatios()
 	{
 
+		m_ShapePointRatios.clear();
+
 		float total_distance = 0; 
 		unsigned int si;
 		for(si = 0; si < m_ShapePoints .size()-1; si++)

@@ -164,7 +164,7 @@ int CTLiteDoc::FindUniqueLinkID()
 }
 void CTLiteDoc::AssignUniqueLinkIDForEachLink()
 {
-
+	return;
 
 	std::list<DTALink*>::iterator iLink;
 

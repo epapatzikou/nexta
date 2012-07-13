@@ -844,13 +844,14 @@
 #define ID_EDIT_SAVEJUNCTIONS           33434
 #define ID_IMPORT_SYNCHROCVS            33435
 #define ID_IMPORT_SYNCHROUTDFCSVFILES   33436
+#define ID_IMPORT_DEMANDDATASET         33437
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        221
-#define _APS_NEXT_COMMAND_VALUE         33437
+#define _APS_NEXT_COMMAND_VALUE         33438
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -256,6 +256,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_ADDINCIDENT, &CTLiteDoc::OnLinkAddincident)
 	ON_COMMAND(ID_IMPORT_SYNCHROUTDFCSVFILES, &CTLiteDoc::OnImportSynchroutdfcsvfiles)
 	ON_COMMAND(ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK, &CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork)
+	ON_COMMAND(ID_IMPORT_DEMANDDATASET, &CTLiteDoc::OnImportDemanddataset)
 	END_MESSAGE_MAP()
 
 
@@ -390,10 +391,13 @@ CTLiteDoc::CTLiteDoc()
 	m_ImageY1 = 0;
 	m_ImageY2 = 1000;
 
+	m_ZoneColor = RGB(0,0,205);
+	m_ZoneTextColor = RGB(0,0,205);
+
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
 	{
 		m_NodeDisplaySize = 50;  // in feet
-		m_BackgroundColor =  RGB(0,100,0);
+		m_BackgroundColor =  RGB(225,225,225);
 	}
 
 	if(theApp.m_VisulizationTemplate == e_train_scheduling)
@@ -3031,6 +3035,7 @@ bool  CTLiteDoc::SaveDemandFile()
 		AfxMessageBox("Error: File input_demand.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 		return false;
 	}
+	return true;
 }
 BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 {
@@ -8113,160 +8118,6 @@ void CTLiteDoc::OnImportSynchroutdfcsvfiles()
 {
 	ReadSynchroUniversalDataFiles();
 }
-BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, bool bNetworkOnly, bool bImportShapeFiles)
-{
-
-	CTime LoadingStartTime = CTime::GetCurrentTime();
-
-	FILE* st = NULL;
-	//	cout << "Reading file node.csv..."<< endl;
-
-	CString directory;
-	m_ProjectFile = ProjectFileName;
-	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
-
-	m_ProjectDirectory = directory;
-	m_ProjectTitle = GetWorkspaceTitleName(ProjectFileName);
-	SetTitle(m_ProjectTitle);
-
-	// default data type definition files
-
-	m_AMSLogFile.open ( m_ProjectDirectory + "AMS_data_conversion_log.csv", ios::out);
-	if (m_AMSLogFile.is_open())
-	{
-		m_AMSLogFile.width(12);
-		m_AMSLogFile.precision(3) ;
-		m_AMSLogFile.setf(ios::fixed);
-		m_AMSLogFile << "Start AMS reading..." << endl;
-	}else
-	{
-		AfxMessageBox("File AMS_data_conversion_log.csv cannot be opened, and it might be locked by another program or the target data folder is read-only.");
-		return false;
-	}
-
-	m_AMSLogFile << "Step 1: Read control type definition data" << endl;
-
-	m_ControlType_UnknownControl = g_GetPrivateProfileInt("control_type","unknown_control",0,ProjectFileName);
-	m_ControlType_NoControl = g_GetPrivateProfileInt("control_type","no_control",1,ProjectFileName);
-	m_ControlType_YieldSign = g_GetPrivateProfileInt("control_type","yield_sign",2,ProjectFileName);
-	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
-	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
-	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
-	m_ControlType_AcuatedSignal = g_GetPrivateProfileInt("control_type","acuated_signal",6,ProjectFileName);
-	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundable",7,ProjectFileName);
-
-	char link_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
-
-
-	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-
-	CString DefaultDataFolder;
-	DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
-
-
-	if(ReadLinkTypeCSVFile(directory+link_type_file_name) == false)
-	{
-	// read files from default fold
-		ReadLinkTypeCSVFile(DefaultDataFolder+link_type_file_name);
-	}
-
-	char pricing_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
-
-
-	char temporal_demand_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","temporal_demand_file_name","input_temporal_demand_profile.csv",temporal_demand_file_name,sizeof(temporal_demand_file_name),ProjectFileName);
-	if(ReadTemporalDemandProfileCSVFile(directory+temporal_demand_file_name)==false)
-	{
-	ReadTemporalDemandProfileCSVFile(DefaultDataFolder+"input_temporal_demand_profile.csv");
-	}
-
-	char VOT_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
-	if(ReadVOTCSVFile(directory+VOT_file_name)==false)
-	{
-	ReadVOTCSVFile(DefaultDataFolder+VOT_file_name);
-	}
-
-	char vehicle_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","vehicle_type_file_name ","input_vehicle_type.csv",vehicle_type_file_name,sizeof(vehicle_type_file_name),ProjectFileName);
-	if(ReadVehicleTypeCSVFile(directory+vehicle_type_file_name)==false)
-	{
-		ReadVehicleTypeCSVFile(DefaultDataFolder+vehicle_type_file_name);
-	}
-
-	char demand_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","demand_type_file_name","input_demand_type.csv",demand_type_file_name,sizeof(demand_type_file_name),ProjectFileName);
-	if(ReadDemandTypeCSVFile(directory+demand_type_file_name)==false)
-	{
-	ReadDemandTypeCSVFile(DefaultDataFolder+demand_type_file_name);
-	}
-
-
-	char emission_rate_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","vehicle_emission_rate_file_name ","input_vehicle_emission_rate.csv",emission_rate_file_name,sizeof(emission_rate_file_name),ProjectFileName);
-	if(ReadInputEmissionRateFile(directory+emission_rate_file_name) == false)
-	{
-	ReadInputEmissionRateFile(DefaultDataFolder+emission_rate_file_name);
-	}
-
-	CWaitCursor wc;
-	OpenWarningLogFile(directory);
-
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
-	m_ODSize = 0;
-
-	OnOpenAMSDocument(ProjectFileName);  
-
-	int demand_format_flag = 0;
-	char demand_file_name[_MAX_STRING_SIZE] = "input_demand.csv";
-
-	WritePrivateProfileString("demand_table","format_definition","0: AMS Demand CSV; 1: OD Matrix CSV; 2: 3-column format; 3: TransCAD 3-column CSV;4:VISUM matrix 8; 10: Gravity model",ProjectFileName);
-	demand_format_flag = g_GetPrivateProfileInt("demand_table","demand_format",1,ProjectFileName);
-
-	g_GetProfileString("demand_table","demand_file_name ","input_demand.csv",demand_file_name,sizeof(demand_file_name),ProjectFileName);
-
-
-	CString msg;
-	msg.Format("demand_format= %d specified in %s is not supported. Please contact developers.",demand_format_flag,ProjectFileName);
-	
-	switch (demand_format_flag)
-	{
-	case 0:	ReadDemandCSVFile(directory+demand_file_name); break;
-	case 1: ReadDemandMatrixFile(directory+demand_file_name,1); break;
-	case 2: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
-	case 3: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
-	case 10: RunGravityModel(directory+demand_file_name,1); break;
-		
-	default:
-		{
-		AfxMessageBox(msg);
-		}
-	}
-
-	ReadTransitFiles(directory+"transit_data\\");  // read transit data
-	
-
-	CalculateDrawingRectangle(false);
-	m_bFitNetworkInitialized  = false;
-
-
-	CTime LoadingEndTime = CTime::GetCurrentTime();
-
-	CTimeSpan ts = LoadingEndTime  - LoadingStartTime;
-	CString str_running_time;
-
-	str_running_time.Format ("Network loading time: %d min(s) %d sec(s)...",ts.GetMinutes(), ts.GetSeconds());
-
-	SetStatusText(str_running_time);
-
-	m_AMSLogFile.close();
-
-	m_ProjectFile = "";  // reset m_ProjectFile so that the user has to give a new project name
-	return true;
-}
 
 void CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
 {
@@ -8364,6 +8215,7 @@ void CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
 
 				}  //two-way link  from node
 
+				pFromNode->m_CentroidUpdateFlag = -1; // -1 as to be removed
 			}  // centriod 
 
 		}  // for each link
@@ -8374,7 +8226,7 @@ void CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
 
 		while(iNode != m_NodeSet.end())
 		{
-			if((*iNode)->m_CentroidUpdateFlag  == 1)
+			if((*iNode)->m_CentroidUpdateFlag  == -1)
 			{
 				m_NodeIDMap[(*iNode)->m_NodeID ] = NULL;
 				m_NodeNametoIDMap[(*iNode)->m_NodeNumber  ] = -1;
@@ -8388,3 +8240,5 @@ void CTLiteDoc::OnToolsGeneratephysicalzonecentroidsonroadnetwork()
 		GenerateOffsetLinkBand();
 		UpdateAllViews(0);
 }
+
+

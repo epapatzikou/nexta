@@ -1443,6 +1443,14 @@ BEGIN
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
+    BUTTON      ID_BUTTON32976
 END
 
 IDR_MAINFRAME1 TOOLBAR  16, 15
@@ -1829,7 +1837,7 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "Node"
     BEGIN
-        MENUITEM "Properties",                  ID_NODE_MOVEMENTPROPERTIES
+        MENUITEM "Node-Movement Properties",    ID_NODE_MOVEMENTPROPERTIES
         MENUITEM SEPARATOR
         POPUP "Activity Location Mode"
         BEGIN
@@ -1952,7 +1960,8 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
-            MENUITEM "Transportation Planning Data Set", ID_IMPORT_AMSDATASET
+            MENUITEM "Transportation Network Data Set", ID_IMPORT_AMSDATASET
+            MENUITEM "Demand Data Set",             ID_IMPORT_DEMANDDATASET
             MENUITEM "GIS Shape File",              ID_IMPORT_ARCGISSHAPEFILE
             MENUITEM "Network/ Demand Data in Excel", ID_IMPORTDATA_IMPORT
             POPUP "Background Image"

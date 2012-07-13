@@ -162,6 +162,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_MOE_ODDEMAND, &CTLiteView::OnUpdateMoeOddemand)
 	ON_UPDATE_COMMAND_UI(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnUpdateLinkIncreasebandwidth)
 	ON_UPDATE_COMMAND_UI(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnUpdateLinkDecreasebandwidth)
+	ON_COMMAND(ID_EXPORT_CREATEVISSIMFILES, &CTLiteView::OnExportCreatevissimfiles)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -260,7 +261,7 @@ CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
 CPen g_AVILinkPen(PS_DASH,0,RGB(0,255,0));
 CPen g_SubareaLinkPen(PS_SOLID,0,RGB(255,255,0));
 CPen g_SubareaPen(PS_DASH,2,RGB(255,0,0));
-CPen g_ZonePen(PS_DASH,1,RGB(211,211,211));
+
 CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 CPen g_PenVehicle(PS_SOLID,1,RGB(0,255,0));  // yellow
@@ -499,8 +500,10 @@ void CTLiteView::OnDraw(CDC* pDC)
 	CTLiteDoc* pDoc = GetDocument();
 
 	CBrush brush;
+	
 	if (!brush.CreateSolidBrush(pDoc->m_BackgroundColor))
 		return;
+
 	brush.UnrealizeObject();
 	memDC.FillRect(rectClient, &brush);
 
@@ -900,7 +903,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if(DrawLinkAsBand((*iLink),pDC,false)==false)
 				return;
 		}
-
 
 			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 
@@ -1312,9 +1314,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	// step 13: draw zone layer
 
+	CPen ZonePen;
+
+// Create a solid red pen of width 2.
+	ZonePen.CreatePen(PS_DASH, 1, pDoc->m_ZoneColor);
+
 	if(pMainFrame->m_bShowLayerMap[layer_zone])
 	{	
-		pDC->SelectObject(&g_ZonePen);
+		pDC->SelectObject(&ZonePen);
 
 		CFont zone_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 		zone_font.CreatePointFont(nFontSize*4, m_NodeTypeFaceName);
@@ -1324,7 +1331,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		std::map<int, DTAZone>	:: const_iterator itr;
 
 
-		pDC->SetTextColor(RGB(255,255,255));
+		pDC->SetTextColor(pDoc->m_ZoneTextColor);
 
 
 		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); itr++)
@@ -3888,14 +3895,15 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 }
 void CTLiteView::OnNodeMovementproperties()
 {
-
-
-	CMyPropertySheet sheet;
-
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc == NULL)
 		return;
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(pDoc->m_SelectedNodeID >=0)
+	{
 
 	if ( 0 == m_msStatus )
 	{
@@ -3904,12 +3912,9 @@ void CTLiteView::OnNodeMovementproperties()
 		m_msStatus = 1;
 	}
 
-	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
-
-	if(pDoc->m_SelectedNodeID >=0)
-	{
 		CString str;
 		str.Format("Node %d",pDoc->m_NodeIDtoNameMap[pDoc->m_SelectedNodeID]);
+
 		CMyPropertySheet sheet(str);
 		sheet.SetTitle(str);
 		CPage_Node_Movement MovementPage;
@@ -3946,14 +3951,7 @@ void CTLiteView::OnNodeMovementproperties()
 		PhasePage.m_psp.pszTitle = _T("Phase");
 		sheet.AddPage(&PhasePage);  // 4
 
-		if(sheet.DoModal() == IDOK)
-		{
-			AfxMessageBox("sheet.domoal is IDOK",MB_OK);
-		}
-		else
-		{
-			AfxMessageBox("sheet.domoal is IDCANCEL",MB_OK);
-		}
+		sheet.DoModal();
 	}
 }
 
@@ -4184,4 +4182,40 @@ void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_vcratio || pDoc->m_LinkMOEMode == MOE_vcratio|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }
 
-void CTLiteView::CreateDefaultJunction(){	CTLiteDoc* pDoc = GetDocument();	if(pDoc == NULL)		return;	if ( 0 == m_msStatus )	{		m_ms.m_pDoc = pDoc;		m_ms.PrepareData4Editing();		m_msStatus = 1;		AfxMessageBox("Junctions are created with default information!",MB_OK);	}}
+void CTLiteView::CreateDefaultJunction()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc == NULL)
+		return;
+
+	if ( 0 == m_msStatus )
+	{
+		m_ms.m_pDoc = pDoc;
+		m_ms.PrepareData4Editing();
+		m_msStatus = 1;
+		AfxMessageBox("Junctions are created with default information!",MB_OK);
+	}
+}
+
+
+void CTLiteView::OnExportCreatevissimfiles()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc == NULL)
+		return;
+
+	if ( 0 == m_msStatus )
+	{
+		m_ms.m_pDoc = pDoc;
+		m_ms.PrepareData4Editing();
+		m_msStatus = 1;
+		AfxMessageBox("Junctions are created with default information!",MB_OK);
+	}
+	if ( 1 == m_msStatus )
+	{
+		m_ms.Create2Files();
+		AfxMessageBox("VISSIM files are created!",MB_OK);
+	}
+}
