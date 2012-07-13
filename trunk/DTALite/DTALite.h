@@ -62,9 +62,10 @@ enum Traffic_MOE {MOE_crashes,MOE_CO2, MOE_total_energy};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 extern double g_DTASimulationInterval;
+extern double g_CarFollowingSimulationInterval;
 
 #define	MAX_SPLABEL 99999.0f
-#define MAX_TIME_INTERVAL_ADCURVE 200  // 200 simulation intervals of data are stored to keep tract cummulative flow counts of each link
+#define MAX_TIME_INTERVAL_ADCURVE 3000  // 3000 simulation intervals of data are stored to keep tract cummulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
@@ -243,7 +244,15 @@ public:
 // event structure in this "event-basd" traffic simulation
 typedef struct{
 	int veh_id;
+	int veh_car_following_no;
 	float time_stamp;
+
+	struc_vehicle_item()
+	{
+		veh_car_following_no = -1; // default value
+		vehicle_simulation_time_interval_no = 100000;
+	};
+
 }struc_vehicle_item;
 
 class Day2DayLinkMOE
@@ -476,6 +485,11 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+
+	CurrentSequenceNoForVechileDistanceAry = 0;
+	CycleSizeForVechileDistanceAry = 0;
+	VechileDistanceAry = NULL;
+	FIFO_queue_acutal_max_size  = 0;
 	FIFO_queue_max_size = 5000;
 
 	FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
@@ -615,8 +629,12 @@ public:
 	struc_vehicle_item* FIFOQueue;   // implementation through a cycle 
 	int FIFO_front;
 	int FIFO_end;
-	int FIFO_queue_size;
-	int FIFO_queue_max_size;
+	int FIFO_queue_size;  // time-dependent size per simulation time interval
+	int FIFO_queue_max_size;   // for memory allocation
+
+	int FIFO_queue_acutal_max_size; // for car following simulation, across all simulation time intervals
+
+
 
 	void FIFOQueue_init()
 	{
@@ -631,6 +649,8 @@ public:
 	
 	FIFO_queue_max_size = 50000;
 	FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
+	
+
 	}
 
 	}
@@ -675,9 +695,22 @@ public:
 	{
 	FIFO_queue_check_size();
 
+	if(CycleSizeForVechileDistanceAry>=5)  // car following simulation
+	{
+		// assign car following sequence no in the distance array
+		item.veh_car_following_no = CurrentSequenceNoForVechileDistanceAry%CycleSizeForVechileDistanceAry;
+		VechileDistanceAry[item.veh_car_following_no] = 0.0f; // initialize the starting position
+		CurrentSequenceNoForVechileDistanceAry++;
+	}
+
 	FIFOQueue[FIFO_end] = item;
 	FIFO_end = (FIFO_end+1)%(FIFO_queue_max_size-1); // move forward
 	FIFO_queue_size ++;
+
+	if(FIFO_queue_size > FIFO_queue_acutal_max_size)
+	{
+		FIFO_queue_acutal_max_size = FIFO_queue_size;  // update acutal max # of vehicles on a link at any given time
+	}
 	
 	}
 
@@ -685,6 +718,7 @@ public:
 	{
 	FIFO_queue_check_size();
 
+	FIFOQueue[FIFO_front].veh_car_following_no  = -1;  // reset
 	struc_vehicle_item item = FIFOQueue[FIFO_front];
 	FIFO_front = (FIFO_front+1)%(FIFO_queue_max_size-1); // move forward
 	FIFO_queue_size --;
@@ -694,6 +728,10 @@ public:
 	int EntranceBufferSize;
 	int NewVehicleCount;
 	int ExitVehicleCount;
+
+	float **VechileDistanceAry;
+	int CurrentSequenceNoForVechileDistanceAry;  // start from 0, 
+	int CycleSizeForVechileDistanceAry; // cycle size
 
 	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
 
