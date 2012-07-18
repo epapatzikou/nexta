@@ -2124,6 +2124,7 @@ BEGIN
     END
     POPUP "Tools"
     BEGIN
+        MENUITEM "View Path MOE List",          ID_SHOW_SHOWPATHMOE
         MENUITEM "Unit Testing",                ID_TOOLS_UNITTESTING
         MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
         MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION

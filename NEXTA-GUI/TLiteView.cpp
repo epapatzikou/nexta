@@ -1043,8 +1043,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if(with_text)
 			{
 				CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
-				pDC->SetBkColor(RGB(0, 0, 0));
-				pDC->SetTextColor(RGB(255,255,0));
+				pDC->SetBkColor(RGB(0,0, 0));
+				pDC->SetTextColor(RGB(0,0,0));
 				pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
 
 				if(str_reference_text.GetLength () > 0 )  // reference text with different color4
@@ -2243,7 +2243,10 @@ void CTLiteView::OnNodeDestination()
 		TRACE("ONode %s selected.\n", pDoc->m_NodeIDMap [pDoc->m_DestinationNodeID]->m_Name );
 
 	m_ShowAllPaths = true;
-	pDoc->Routing(false);
+	// pDoc->Routing(false);
+
+	pDoc->AlternativeRouting(3);
+
 	if(pDoc->m_bShowPathList)
 		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
@@ -2466,7 +2469,6 @@ void CTLiteView::OnSearchFindlink()
 				pDoc->m_SelectedNodeID = pNode->m_NodeID ;
 
 				m_bShowNode = true;
-				m_bShowNodeNumber = false;
 				Invalidate();
 			}else
 			{
@@ -4182,6 +4184,7 @@ void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_vcratio || pDoc->m_LinkMOEMode == MOE_vcratio|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }
 
+
 void CTLiteView::CreateDefaultJunction()
 {
 	CTLiteDoc* pDoc = GetDocument();
@@ -4219,3 +4222,4 @@ void CTLiteView::OnExportCreatevissimfiles()
 		AfxMessageBox("VISSIM files are created!",MB_OK);
 	}
 }
+
