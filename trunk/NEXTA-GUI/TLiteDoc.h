@@ -487,8 +487,6 @@ void SetStatusText(CString StatusText);
 	void ReadVehicleBinFile(LPCTSTR lpszFileName);
 
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
-	void ReadVehicleEmissionFile(LPCTSTR lpszFileName);
-
 	
 	CString GetPricingTypeStr(int PricingType)
 	{

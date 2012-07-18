@@ -344,10 +344,10 @@ CTLiteDoc::CTLiteDoc()
 	m_colorLOS[5] = RGB(255,153,0);
 	m_colorLOS[6] = RGB(255,0,0);
 
-	m_FreewayColor = RGB(255,211,155);
-	m_RampColor = RGB(100,149,237); 
-	m_ArterialColor = RGB(0,0,0);
-	m_ConnectorColor = RGB(255,255,0);
+	m_FreewayColor = RGB(030,144,255);
+	m_RampColor = RGB(160,032,240); 
+	m_ArterialColor = RGB(034,139,034);
+	m_ConnectorColor = RGB(255,165,000);
 	m_TransitColor = RGB(0,0,255);
 	m_WalkingColor = RGB(127,255,0);
 
@@ -391,13 +391,13 @@ CTLiteDoc::CTLiteDoc()
 	m_ImageY1 = 0;
 	m_ImageY2 = 1000;
 
-	m_ZoneColor = RGB(0,0,205);
-	m_ZoneTextColor = RGB(0,0,205);
+	m_ZoneColor = RGB(000,191,255);
+	m_ZoneTextColor = RGB(0,191,255);
 
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
 	{
 		m_NodeDisplaySize = 50;  // in feet
-		m_BackgroundColor =  RGB(225,225,225);
+		m_BackgroundColor =  RGB(255,255,255);  //white
 	}
 
 	if(theApp.m_VisulizationTemplate == e_train_scheduling)
@@ -4243,6 +4243,11 @@ void CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 		float emissions;
 		float distance_in_mile;
 		int number_of_nodes;
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
 	} struct_Vehicle_Header;
 
 	typedef  struct  
@@ -4351,43 +4356,6 @@ void CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 
 	}
 }
-
-void CTLiteDoc::ReadVehicleEmissionFile(LPCTSTR lpszFileName)
-{
-
-	CCSVParser parser;
-	if (parser.OpenCSVFile(lpszFileName))
-	{
-
-		while(parser.ReadRecord())
-		{
-			int vehicle_id;
-
-			if(parser.GetValueByFieldName("vehicle_id",vehicle_id) == false)
-				break;
-
-			DTAVehicle* pVehicle = m_VehicleIDMap[vehicle_id];
-
-			if(pVehicle!=NULL)
-			{
-				if(parser.GetValueByFieldName("TotalEnergy_(J)",pVehicle->m_EmissionData .Energy) == false)
-					break;
-
-				if(parser.GetValueByFieldName("CO2_(g)",pVehicle->m_EmissionData .CO2) == false)
-					break;
-				if(parser.GetValueByFieldName("NOX_(g)",pVehicle->m_EmissionData .NOX) == false)
-					break;
-				if(parser.GetValueByFieldName("CO_(g)",pVehicle->m_EmissionData .CO ) == false)
-					break;
-				if(parser.GetValueByFieldName("HC_(g)",pVehicle->m_EmissionData .HC) == false)
-					break;
-			}
-		}
-
-		m_EmissionDataFlag = true;
-	}
-}
-
 
 int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio)
 {
@@ -4925,7 +4893,6 @@ void CTLiteDoc::LoadSimulationOutput()
 
 	ReadVehicleBinFile(m_ProjectDirectory+"vehicle.bin");
 	//ReadVehicleCSVFile(m_ProjectDirectory+"Vehicle.csv");
-	ReadVehicleEmissionFile(m_ProjectDirectory+"output_vehicle_emission_MOE_summary.csv");
 }
 
 
