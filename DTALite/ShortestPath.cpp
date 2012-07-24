@@ -1,4 +1,4 @@
-//  Portions Copyright 2010 Xuesong Zhou
+// Portions Copyright 2010 Xuesong Zhou
 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
@@ -83,7 +83,6 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 			m_LinkTDTimeAry[LinkID][t] = 0;
 
 			// copy pricing type dependent link toll values
-
 
 		}
 
@@ -179,10 +178,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 	unsigned li;
 	for(li = 0; li< g_LinkVector.size(); li++)
 	{
-
-		if(CurrentZoneNo == 3 &&  g_LinkVector[li]->m_FromNodeNumber == 1353 && g_LinkVector[li]->m_ToNodeNumber == 11173) 
-			TRACE("");
-
+			
 		FromID = g_LinkVector[li]->m_FromNodeID;
 		ToID   = g_LinkVector[li]->m_ToNodeID;
 
@@ -619,7 +615,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, i
 
 
 
-int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
+int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
 
@@ -653,7 +649,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		FromID  = SEList_front();
 		SEList_pop_front();
 
-		if(debug_flag )
+		if(debug_flag)
 			TRACE("\nScan from node %d",g_NodeVector[FromID].m_NodeName);
 
 		NodeStatusAry[FromID] = 2;        //scaned
@@ -663,7 +659,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			LinkID = m_OutboundLinkAry[FromID][i];
 			ToID = m_OutboundNodeAry[FromID][i];
 
-			if(m_OutboundConnectorZoneIDAry[FromID][i] >=0 && m_OutboundConnectorZoneIDAry[FromID][i]!= origin_zone)
+			if(m_OutboundConnectorZoneIDAry[FromID][i] >=1 /* TAZ >=1*/ && (m_OutboundConnectorZoneIDAry[FromID][i]!= origin_zone ) )
 				continue;  // skip connectors that do not belong to this origin zone
 
 			if(ToID == origin)

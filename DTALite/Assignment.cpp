@@ -39,7 +39,7 @@
 #include <stdlib.h>  
 #include <math.h>    
 
-#include "CSVParser.h"
+
 using namespace std;
 
 
@@ -53,7 +53,7 @@ void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput);
 void g_OutputSimulationStatistics(int Iteration);
 
-#define _MAX_NUMBER_OF_PROCESSORS  4
+#define _MAX_NUMBER_OF_PROCESSORS  8
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
@@ -63,7 +63,20 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	int number_of_threads = omp_get_max_threads ( );
 
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
+
+
+	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
+	{ 
+	cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
+	g_ProgramStop();
+	}
 	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
+
+	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
+
+	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
+
+
 	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
 	g_LogFile<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
 	 
@@ -97,17 +110,17 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 			int	id = omp_get_thread_num( );  // starting from 0
 
 			//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-			cout << "---- building network ----" << endl;
 			network_MP[id].BuildPhysicalNetwork (iteration);  // build network for this zone, because different zones have different connectors...
 
+					cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 			{
-
 
 				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 				{
 
-				if(g_ODZoneSize > 300)  // only for large networks
+
+			if(g_ODZoneSize > 1000)  // only for large networks
 				{
 					cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
 				}
@@ -197,7 +210,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			{
 
 				// swtich: find shortest path
-			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 		//			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			pVeh->SetMinCost(TotalCost);
@@ -264,6 +277,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					exit(0);
 					}
 					*/
+					ASSERT(pVeh->m_aryVN [i].LinkID < g_LinkVector.size());
+
 					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
@@ -971,8 +986,6 @@ void g_AgentBasedShortestPathGeneration()
 	// find unique origin node
 	// find unique destination node
 
-
-
 	int node_size  = g_NodeVector.size();
 	int link_size  = g_LinkVector.size();
 
@@ -1058,6 +1071,7 @@ void g_AgentBasedShortestPathGeneration()
 	cout<< "# of processors = "  << number_of_threads  << endl; 
 
 	g_LogFile<< "# of OD pairs = "  << line << endl; 
+
 	g_LogFile<< "# of unique origins = "  << UniqueOriginSize << " with " << line/UniqueOriginSize << " nodes per origin" << endl; 
 	g_LogFile <<  g_GetAppRunningTime() << "# of processors = "  << number_of_threads  << endl; 
 
@@ -1134,8 +1148,6 @@ void g_AgentBasedShortestPathGeneration()
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput)
 {
 
-
-
 	TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
 
 	g_AssignmentMOEVector[iteration]  = SimuOutput;
@@ -1172,6 +1184,43 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
 
+	if(iteration==0)
+	{
+		g_SummaryStatFile.SetFieldName ("Iteration #");
+		g_SummaryStatFile.SetFieldName ("CPU Running Time");
+		g_SummaryStatFile.SetFieldName ("# of agents");
+		g_SummaryStatFile.SetFieldName ("Avg Travel Time (min)");
+		g_SummaryStatFile.SetFieldName ("Avg Travel Time Index");
+		g_SummaryStatFile.SetFieldName ("Avg Distance (miles)");
+		g_SummaryStatFile.SetFieldName ("% switching");
+		g_SummaryStatFile.SetFieldName ("% completing trips");
+		g_SummaryStatFile.SetFieldName ("Avg UE gap (min)");
+
+		if(g_ODEstimationFlag == 1)
+		{
+		g_SummaryStatFile.SetFieldName ("Avg OD UE gap (min)");
+		g_SummaryStatFile.SetFieldName ("Demand Dev");
+		g_SummaryStatFile.SetFieldName ("Avg volume error");
+
+		}
+		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
+
+		g_SummaryStatFile.WriteHeader ();
+
+	}
+
+		g_SummaryStatFile.SetValueByFieldName ("Iteration #",iteration);
+		g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
+		g_SummaryStatFile.SetValueByFieldName ("# of agents",SimuOutput.NumberofVehiclesGenerated);
+		g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",SimuOutput.AvgTravelTime);
+		g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time Index",SimuOutput.AvgTTI );
+		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
+		g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
+		g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
+		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
+		g_SummaryStatFile.WriteRecord ();
+
+
 	unsigned li;
 	for(li = 0; li< g_LinkVector.size(); li++)
 	{
@@ -1194,36 +1243,6 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		pLink->m_Day2DayLinkMOEVector .push_back (element);
 	}
 
-	int NumberOfCriticalLinks = 3;
-	for(int cl = 1; cl <= NumberOfCriticalLinks; cl++)
-	{
-		for(li = 0; li< g_LinkVector.size(); li++)
-		{
-			DTALink* pLink = g_LinkVector[li];
-
-			if(pLink->m_FromNodeNumber == CriticalLinkFromNodeNumberAry[cl] && pLink->m_ToNodeNumber == CriticalLinkToNodeNumberAry[cl])
-			{
-				double average_travel_time = pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
-				double total_volume = pLink->CFlowArrivalCount;
-				float FlowRatio = pLink->CFlowArrivalCount*100.0f/ max(1,g_SimulationResult.number_of_vehicles);
-				float HOV_volume = pLink->CFlowArrivalCount_PricingType[2];
-				float HOVRatio = pLink->CFlowArrivalCount_PricingType[2]*100.0f/max(1,HOV_volume);
-				float SOVPercentage = pLink->CFlowArrivalCount_PricingType[1]*100.0f/max(1,pLink->CFlowArrivalCount);
-				float TruckPercentage = pLink->CFlowArrivalCount_PricingType[3]*100.0f/max(1,pLink->CFlowArrivalCount);
-				double speed = pLink->m_Length / max(0.00001,average_travel_time) *60;  // unit: mph
-				double capacity_simulation_horizon = pLink->m_MaximumServiceFlowRatePHPL * pLink->m_NumLanes * (g_DemandLoadingEndTimeInMin- g_DemandLoadingStartTimeInMin) / 60;
-				double voc_ratio = pLink->CFlowArrivalCount / max(0.1,capacity_simulation_horizon);
-
-				int percentage_of_speed_limit = int(speed/max(0.1,pLink->m_SpeedLimit)*100+0.5);
-
-
-				g_AssignmentLogFile << voc_ratio << "," << total_volume << "," << FlowRatio << "," << HOV_volume << "," << HOVRatio << "," << SOVPercentage << "," << TruckPercentage << ","
-					<< average_travel_time << "," << speed << ",";
-				g_AssignmentLogFile <<	pLink->m_TotalEnergy  << "," << pLink->m_CO2 << ","  << pLink->m_NOX << "," << pLink->m_HC << ",";
-				g_AssignmentLogFile <<	pLink->m_AADT  << "," << pLink->m_NumberOfCrashes << ","  << pLink->m_NumberOfFatalAndInjuryCrashes << "," << pLink->m_NumberOfPDOCrashes << ",";
-			}
-		}
-	}
 	g_AssignmentLogFile << endl;
 
 

@@ -28,6 +28,8 @@
 extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
+extern std::map<string, DTALink*> g_LinkMap;
+
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
@@ -83,6 +85,14 @@ extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_TrafficFlowModelFlag;
 extern int g_EmissionDataOutputFlag;
+extern int g_TimeDependentODMOEOutputFlag;
+extern int g_VehiclePathOutputFlag;
+
+extern int g_OutputSecondBySecondEmissionData;
+extern int g_start_departure_time_in_min_for_output_second_by_second_emission_data;
+extern int g_end_departure_time_in_min_for_output_second_by_second_emission_data;
+extern int g_OutputEmissionOperatingModeData;
+extern int g_TargetVehicleID_OutputSecondBySecondEmissionData;
 extern int g_TollingMethodFlag;
 extern float g_VMTTollingRate;
 

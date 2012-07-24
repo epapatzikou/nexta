@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				RuntimeLibrary="1"
-				OpenMP="true"
+				OpenMP="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -136,6 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkIncremental="2"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -274,6 +275,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkIncremental="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -420,6 +422,10 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\WELL512a.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -439,35 +445,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ExcelInterface.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Geometry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\XLAutomation.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\XLAutomation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\XLEzAutomation.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\XLEzAutomation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\XLTestDataSource.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\XLTestDataSource.h"
 				>
 			</File>
 		</Filter>
