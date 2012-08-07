@@ -53,7 +53,7 @@ using namespace std;
 	int NumberOfCriticalLinks = 3;
 	int NumberOfCriticalODPairs = 3;
 
-	CCSVWriter csv_output("output_unit_testing_results.csv");
+	CCSVWriter csv_output("output_multi_scenario_results.csv");
 	csv_output.WriteTextString("Unit of output:");
 	csv_output.WriteTextString(",,distance=,miles");
 	csv_output.WriteTextString(",,speed=,mph");

@@ -125,6 +125,19 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		DTAVehicle* pVeh = iterVM->second;
 		if(pVeh->m_bLoaded == false && g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime))  // not being loaded
 		{
+			if(pVeh->m_PricingType == 4)
+			{
+			  //transit route simulation
+
+			   pVeh->m_bLoaded = true;
+			   if(pVeh->m_NodeSize >=2)
+				   pVeh->m_bComplete = true;
+				//skip this vehicle in road simulation
+			   g_LastLoadedVehicleID = pVeh->m_VehicleID ;	
+			   continue;
+
+
+			}
 			if(pVeh->m_NodeSize >=2)  // with physical path
 			{
 			int FirstLink =pVeh->m_aryVN[0].LinkID;
@@ -232,11 +245,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// add cumulative flow count to vehicle
 
 				pVehicle->m_TollDollarCost += g_LinkVector[li]->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
-
-				if(g_LinkVector[li]->CFlowArrivalCount !=  (g_LinkVector[li]->CFlowArrivalCount_PricingType[1]+ g_LinkVector[li]->CFlowArrivalCount_PricingType[2] + g_LinkVector[li]->CFlowArrivalCount_PricingType[3]))
-				{
-					TRACE("error!");
-				}
 
 
 				if(debug_flag && vi.veh_id == vehicle_id_trace )
@@ -656,7 +664,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						pVehicle->m_TollDollarCost += p_Nextlink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
 
 
-						if(p_Nextlink->CFlowArrivalCount !=  (p_Nextlink->CFlowArrivalCount_PricingType[1]+ p_Nextlink->CFlowArrivalCount_PricingType[2] + p_Nextlink->CFlowArrivalCount_PricingType[3]))
+						if(p_Nextlink->CFlowArrivalCount !=  (p_Nextlink->CFlowArrivalCount_PricingType[1]+ p_Nextlink->CFlowArrivalCount_PricingType[2] + p_Nextlink->CFlowArrivalCount_PricingType[3] + p_Nextlink->CFlowArrivalCount_PricingType[4]))
 						{
 							//						TRACE("error!");
 						}
@@ -1172,14 +1180,14 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
 	{
-		if((*iterVehicle)->m_bComplete )
+		if((*iterVehicle)->m_bComplete && (*iterVehicle)->m_OriginZoneID  ==2 && (*iterVehicle)->m_DestinationZoneID  ==1)
 		{
 			TotalTripTime+= (*iterVehicle)->m_TripTime;
 			TotalDelay += (*iterVehicle)->m_Delay;
 			TotalDistance+= (*iterVehicle)->m_Distance ;
 			VehicleSizeComplete +=1;
 
-			if((*iterVehicle)->m_bSwitched)
+			if((*iterVehicle)->m_bSwitched )
 			{
 				NumberofVehiclesSwitched+=1;
 			}
