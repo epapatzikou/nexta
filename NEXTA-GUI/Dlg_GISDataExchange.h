@@ -4,7 +4,9 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "TLiteView.h"
+#ifndef _WIN64
 #include "Data-Interface\\include\\ogrsf_frmts.h"
+#endif
 #include "afxwin.h"
 // CDlg_GISDataExchange dialog
 

@@ -26,6 +26,7 @@
 #pragma	warning(disable: 4018) // signed/unsigned mismatch
 #pragma	warning(disable: 4305) //  truncation from 'double' to 'float'
 #pragma	warning(disable: 4995) //  'CDaoRecordset': name was marked as #pragma deprecated
+#pragma	warning(disable: 4267) //  'initializing' : conversion from 'size_t' to 'int', possible loss of data
 
 #include "resource.h"
 #include "Utility.h"
@@ -57,7 +58,9 @@ enum DTA_Turn
 	DTA_LeftTurn,
 	DTA_Through,
 	DTA_RightTurn,
-	DTA_OtherTurn
+	DTA_OtherTurn,
+	DTA_LeftTurn2,
+	DTA_RightTurn2,
 };
 
 
@@ -317,29 +320,39 @@ public:
 	}
 
 };
+
+class DTADemandMetaDataType
+{
+public:
+	string format_type;
+	CString key;
+	int demand_table_type_no;
+	int trip_type;
+	int start_time_in_min;
+	int end_time_in_min;
+	float subtotal_demand_volume;
+
+	DTADemandMetaDataType()
+	{
+	format_type = "3 column";
+	subtotal_demand_volume = 0;
+	}
+
+};
 class DTADemandVolume
 {
 public:
 	std::map<int, float> TypeValue;
 
-	std::vector<DTATimeDependentemand> TimeDependentVector;
-
 	float total_demand;
 	float travel_cost;
 	float friction;
-
-	int starting_time_in_min;
-	int ending_time_in_min;
 
 	DTADemandVolume()
 	{
 	travel_cost = 1;
 	friction = 1;
 	total_demand = 0;
-
-	starting_time_in_min = 0;
-	ending_time_in_min = 60;
-
 	}
 
 	void SetValue(int demand_type, float value)
@@ -347,22 +360,6 @@ public:
 	TypeValue[demand_type]= value;
 	total_demand += value;
 	}
-
-	void AddTimeDependentValue(int demand_type, float value, int starting_time, int ending_time)
-	{
-	TypeValue[demand_type]= value;
-	total_demand += value;
-
-	DTATimeDependentemand element;
-	element.starting_time_in_min = starting_time;
-	element.ending_time_in_min = ending_time;
-	element.time_dependent_value = value;
-	element.type = demand_type;
-
-	TimeDependentVector.push_back(element);
-
-	}
-
 
 	float GetValue(int demand_type)
 	{
@@ -410,6 +407,7 @@ public:
 	}
 	std::vector<GDPoint> m_ShapePoints;
 	std::map<int, DTADemandVolume> m_ODDemandMatrix;
+
 	std::map<int, float> m_TotalTimeDependentZoneDemand;
 	void SetTDZoneValue(int time_interval, float value)
 	{
@@ -517,7 +515,7 @@ public:
 	double MaxX  = pt.x ; 
 	double MaxY  = pt.y;
 
-   int num_points = m_ShapePoints.size();
+  int num_points = (int)(m_ShapePoints.size());
   for(unsigned i = 0; i < num_points; i++)
    {
      MinX = min(m_ShapePoints[i].x, MinX);
@@ -638,8 +636,10 @@ public:
 	DTALinkType()
 	{
 	link_type = 0;
-	
+	default_lane_capacity = 1000;  // per hour per lane
 	}
+
+	float default_lane_capacity;
 	int link_type;
 	string link_type_name;
 	string type_code;
@@ -819,6 +819,7 @@ public:
 	{
 		m_bZoneActivityLocationFlag = false;
 		m_NodeNumber = 0;
+		m_NodeOriginalNumber = 0;
 		m_ControlType = 0;
 		m_ZoneID = 0;
 		m_TotalCapacity = 0;
@@ -877,6 +878,7 @@ public:
 	bool m_bSignalData;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
+	int m_NodeOriginalNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
 	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
 	int m_ControlType; // Type: ....
@@ -1160,6 +1162,7 @@ public:
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
 		m_TotalVolume = 0;
+		m_TotalDiffValue = 0;
 		m_NumberOfMarkedVehicles = 0;
 		m_AVISensorFlag = false;
 		m_LinkID = 0;
@@ -1364,9 +1367,10 @@ public:
 		m_SimulationHorizon	= TimeHorizon;
 
 		m_TotalVolume = 0;
+		m_TotalDiffValue = 0;
 		m_NumberOfMarkedVehicles = 0;
 
-		int OldSize = m_LinkMOEAry.size();
+		int OldSize = (int)(m_LinkMOEAry.size());
 		m_LinkMOEAry.resize (m_SimulationHorizon+1);
 
 
@@ -1640,6 +1644,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int CFlowDepartureCount;
 
 	int m_TotalVolume;
+	int m_TotalDiffValue;
 
 	float GetObsSpeed(int t)
 	{
@@ -2114,7 +2119,7 @@ public:
 	int FromNodeNumber;
 	int ToNodeNumber;
 	int LinkID;
-	int SensorType;
+	string SensorType;
 
 	float AADT;
 	float peak_hour_factor;
@@ -2122,7 +2127,7 @@ public:
 	float PerTrucks;
 
 	float RelativeLocationRatio;
-	int SensorID;
+	string SensorID;
 	GDPoint pt;
 
 };
@@ -2618,6 +2623,7 @@ public:
 	{
 		TotalVehicleSize = 0;
 		TotalTravelTime = 0;
+		TotalVariance = 0;
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
@@ -2631,6 +2637,7 @@ public:
 	bool bImpactFlag;
 	int   TotalVehicleSize;
 	float TotalTravelTime;
+	float TotalVariance;
 	float TotalDistance;
 	float TotalGeneralizedCost;
 	float TotalGeneralizedTime;

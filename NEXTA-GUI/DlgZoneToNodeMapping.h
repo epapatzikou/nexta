@@ -24,4 +24,5 @@ protected:
 public:
 	CListBox m_ListMapping;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnBnClickedOk();
 };

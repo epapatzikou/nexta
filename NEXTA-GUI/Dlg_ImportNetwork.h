@@ -7,6 +7,7 @@
 #include "TLiteDoc.h"
 #include "afxwin.h"
 
+#ifndef _WIN64
 
 // CDlg_ImportNetwork dialog
 
@@ -52,3 +53,5 @@ public:
 	afx_msg void OnBnClickedImport2();
 	BOOL m_bRemoveConnectors;
 };
+
+#endif 

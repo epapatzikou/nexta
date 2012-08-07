@@ -34,13 +34,17 @@ public:
 	std::vector<train_movements> movement_vector; 
 };
 
+
+
 class train_info
 {
 public:
 	string train_header;
 	int entry_time;
+
 	int origin_node_id;
 	int destination_node_id;
+
 	string direction;
 	float speed_multiplier;
 	float train_length;

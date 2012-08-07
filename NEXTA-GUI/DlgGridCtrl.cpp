@@ -48,6 +48,7 @@ CDlgODDemandGridCtrl::CDlgODDemandGridCtrl(CWnd* pParent /*=NULL*/)
 , m_DemandMultipler(0)
 {
 	m_bSizeChanged = false;
+	m_SelectedDemandMetaType = -1;
 }
 
 CDlgODDemandGridCtrl::~CDlgODDemandGridCtrl()
@@ -70,100 +71,72 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 
 	std::vector<std::string> m_Column_names;
 
-	m_Column_names.push_back ("No.");
-	m_Column_names.push_back ("Demand Type");
-	m_Column_names.push_back ("Avg VOT");
-	m_Column_names.push_back ("Pricing Type");
-	m_Column_names.push_back ("% of Pretrip Info");
-	m_Column_names.push_back ("% of Enroutetrip Info");
+static _TCHAR *_gColumnTrainLabel[7] =
+{
+	_T("No."), _T("Demand Type No."), _T("Demand Type"), _T("Start Time (min)"),
+	_T("End Time (min)"), _T("Subtotal Demand Volume"), _T("File Name")};
 
+	LV_COLUMN lvc;
 
-	for(int vt = 0; vt < m_pDoc->m_VehicleTypeVector.size(); vt++)
-	{
-		DTAVehicleType element = m_pDoc->m_VehicleTypeVector[vt];
-		char str_vehicle_type[100];
-
-		sprintf_s(str_vehicle_type,"%% of %s", element.vehicle_type_name );
-		m_Column_names.push_back(str_vehicle_type);
-
-	}
+	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 
 	//Add Columns and set headers
-	for (size_t i=0;i<m_Column_names.size();i++)
+	for (size_t i=0;i<7;i++)
 	{
 
-		CGridColumnTrait* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
-		m_DemandTypeGrid.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
-		m_DemandTypeGrid.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+		lvc.iSubItem = i;
+		lvc.pszText = _gColumnTrainLabel[i];
+		lvc.cx = 120;
+		lvc.fmt = LVCFMT_LEFT;
+		m_DemandTypeGrid.InsertColumn(i,&lvc);
 	}
+
+
+	m_DemandTypeGrid.SetExtendedStyle(LVS_EX_AUTOSIZECOLUMNS | LVS_EX_FULLROWSELECT |LVS_EX_HEADERDRAGDROP);
+
 	m_DemandTypeGrid.SetColumnWidth(0, 80);
       
-
 	int FirstDemandTypeIndex= -1;
-	int i = 0;
-	for(std::vector<DTADemandType>::iterator itr = m_pDoc->m_DemandTypeVector.begin(); itr != m_pDoc->m_DemandTypeVector.end(); itr++, i++)
-		{
+		for(int i = 0; i<m_pDoc->m_DemandMetaDataKeyVector.size();i++)
+			{
+
+				DTADemandMetaDataType demand_meta_data_element = m_pDoc->DTADemandMetaDataTypeMap[m_pDoc->m_DemandMetaDataKeyVector[i]];
 			// can be also enhanced to edit the real time information percentage
-		char text[100];
-		sprintf_s(text, "%d",(*itr).demand_type );
+		char text[300];
+		sprintf_s(text, "%d",demand_meta_data_element.demand_table_type_no );
 		int Index = m_DemandTypeGrid.InsertItem(LVIF_TEXT,i,text , 0, 0, 0, NULL);
 
 		if(FirstDemandTypeIndex<0)
-			FirstDemandTypeIndex = Index;  // initiailize the first demand
+			FirstDemandTypeIndex = Index+1;  // initiailize the first demand
 
-
-		sprintf_s(text, "%s",(*itr).demand_type_name);
+		sprintf_s(text, "%d",demand_meta_data_element.trip_type);
 		m_DemandTypeGrid.SetItemText(Index,1,text);
 
-		sprintf_s(text, "%5.2f",(*itr).average_VOT);
-		m_DemandTypeGrid.SetItemText(Index,2,text);
-
-		switch((*itr).pricing_type)
+		if((demand_meta_data_element.trip_type -1) <  m_pDoc->m_DemandTypeVector.size())
 		{
-		case 1: sprintf_s(text, "SOV"); break;
-		case 2: sprintf_s(text, "HOV"); break;
-		case 3: sprintf_s(text, "Truck"); break;
-		case 4: sprintf_s(text, "Intermodal"); break;
-		default: sprintf_s(text, "---");
+		sprintf_s(text, "%s",m_pDoc->m_DemandTypeVector[demand_meta_data_element.trip_type-1].demand_type_name);
+		m_DemandTypeGrid.SetItemText(Index,2,text);
 		}
+
+		sprintf_s(text, "%d",demand_meta_data_element.start_time_in_min);
 		m_DemandTypeGrid.SetItemText(Index,3,text);
 
-		sprintf_s(text, "%3.2f",(*itr).info_class_percentage[1]);
+		sprintf_s(text, "%d",demand_meta_data_element.end_time_in_min );
 		m_DemandTypeGrid.SetItemText(Index,4,text);
 
-		sprintf_s(text, "%3.2f",(*itr).info_class_percentage[2]);
+		sprintf_s(text, "%.4f",demand_meta_data_element.subtotal_demand_volume  );
 		m_DemandTypeGrid.SetItemText(Index,5,text);
-
-		for(int i=0; i< m_pDoc->m_VehicleTypeVector.size(); i++)
-			{
-		sprintf_s(text, "%3.2f",(*itr).vehicle_type_percentage[i]);
-		m_DemandTypeGrid.SetItemText(Index,6+i,text);
-			}
 		
+		sprintf_s(text, "%s",demand_meta_data_element.key );
+		m_DemandTypeGrid.SetItemText(Index,6,text);
 	}
 
 	if(FirstDemandTypeIndex >= 0)
-	m_DemandTypeGrid.SetItemState(FirstDemandTypeIndex,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+		m_DemandTypeGrid.SetItemState(FirstDemandTypeIndex,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
 
 }
 
 
-int CDlgODDemandGridCtrl::GetSelectedDemandType()
-{
-	int demand_type = -1;
-	POSITION pos = m_DemandTypeGrid.GetFirstSelectedItemPosition();
-	while(pos!=NULL)
-	{
-		int nSelectedRow = m_DemandTypeGrid.GetNextSelectedItem(pos);
-		char str[100];
-		m_DemandTypeGrid.GetItemText (nSelectedRow,0,str,20);
-		demand_type = atoi(str);
-	}
-
-   return demand_type;
-
-}
 
 void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 {
@@ -171,10 +144,10 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 	return;
 
 	bool bReadDemandSuccess = true;
-	int demand_type =  GetSelectedDemandType();
+	int demand_type =  m_SelectedDemandMetaType;
 
-			m_ODMatrixGrid.SetRowCount(m_pDoc->m_ODSize + 1);
-			m_ODMatrixGrid.SetColumnCount(m_pDoc->m_ODSize + 1);
+			m_ODMatrixGrid.SetRowCount(m_pDoc->m_ZoneMap.size() + 1);
+			m_ODMatrixGrid.SetColumnCount(m_pDoc->m_ZoneMap.size() + 1);
 
 			m_ODMatrixGrid.SetFixedColumnCount(1);
 			m_ODMatrixGrid.SetFixedRowCount(1);
@@ -185,6 +158,8 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 			CString str;
 
 
+			if(demand_type>=1)
+			{
 			for (int i=0;i<m_ODMatrixGrid.GetRowCount();i++) //Row
 			{
 				for (int j=0;j<m_ODMatrixGrid.GetColumnCount();j++) //Column
@@ -224,7 +199,7 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 
 								if (bReadDemandSuccess)
 								{
-									str.Format(_T("%.2f"),m_pDoc->GetDemandVolume(i,j,demand_type));
+									str.Format(_T("%.4f"),m_pDoc->GetDemandVolume(i,j,demand_type));
 								}
 								else
 								{
@@ -238,7 +213,7 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 					} // Either i or j is not zero
 				} // End for j
 			} //End for i
-
+			}
 	Invalidate();
 }
 
@@ -359,9 +334,9 @@ bool CDlgODDemandGridCtrl::SaveDemandMatrix()
 	if(m_pDoc==NULL)
 	return false;
 
-	int demand_type = 	GetSelectedDemandType();
+	int demand_type = 	m_SelectedDemandMetaType;
 
-	if(demand_type < 0)
+	if(demand_type < 1)
 		return false;
 
 	// step 1:
@@ -404,7 +379,7 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonCreatezones()
 			return;
 		}
 
-			m_ODMatrixGrid.SetRowCount(m_pDoc->m_ODSize + 1);
+		m_ODMatrixGrid.SetRowCount(m_pDoc->m_ODSize + 1);
 		m_ODMatrixGrid.SetColumnCount(m_pDoc->m_ODSize + 1);
 
 		m_ODMatrixGrid.SetFixedColumnCount(1);
@@ -504,10 +479,24 @@ void CDlgODDemandGridCtrl::OnBnClickedGridSavequit2()
 	}
 }
 
+
+
 void CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
-	DisplayDemandMatrix();
+
+	m_SelectedDemandMetaType = -1;
+	POSITION pos = m_DemandTypeGrid.GetFirstSelectedItemPosition();
+	while(pos!=NULL)
+	{
+		int nSelectedRow = m_DemandTypeGrid.GetNextSelectedItem(pos);
+		char str[100];
+		m_DemandTypeGrid.GetItemText (nSelectedRow,1,str,20);
+		m_SelectedDemandMetaType = atoi(str);
+//		TRACE("Select %d\n",m_SelectedDemandMetaType);
+		DisplayDemandMatrix();
+	}
+
 }

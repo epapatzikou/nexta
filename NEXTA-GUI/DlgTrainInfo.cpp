@@ -153,8 +153,7 @@ void CDlgTrainInfo::OnLvnItemchangedTrainListControl(NMHDR *pNMHDR, LRESULT *pRe
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
-/*	m_pDoc->m_SelectedTrainID = -1;
-
+	m_pDoc->m_SelectedTrainHeader.empty ();
 
 	POSITION pos = m_TrainListControl.GetFirstSelectedItemPosition();
 	if (pos != NULL)
@@ -170,5 +169,4 @@ void CDlgTrainInfo::OnLvnItemchangedTrainListControl(NMHDR *pNMHDR, LRESULT *pRe
 
 		m_pDoc->UpdateAllViews(0);
 	}
-*/
 }

@@ -2,6 +2,7 @@
 //
 
 #include "StdAfx.h"
+#ifndef _WIN64
 #include "RecordSetExt.h"
 
 #ifdef _DEBUG
@@ -140,3 +141,5 @@ float CRecordsetExt::GetFloat(CString ColumnName)
    return vargDest.fltVal;
 }
 
+
+#endif

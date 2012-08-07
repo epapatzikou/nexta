@@ -3,7 +3,9 @@
 #include "..\\Network.h"
 #include "..\\TLiteDoc.h"
 #include "..\\TLiteView.h"
+#ifndef _WIN64
 #include "include\\ogrsf_frmts.h"
+#endif
 
 void CTLiteDoc::ExportOGRShapeFile()
 {
@@ -12,6 +14,7 @@ void CTLiteDoc::ExportOGRShapeFile()
 
 void CTLiteDoc::ImportOGRShapeFile(CString FileName)
 {
+	#ifndef _WIN64
 	
 		OGRRegisterAll();
 			OGRDataSource       *poDS;
@@ -80,5 +83,5 @@ void CTLiteDoc::ImportOGRShapeFile(CString FileName)
 	}
 
 			OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }

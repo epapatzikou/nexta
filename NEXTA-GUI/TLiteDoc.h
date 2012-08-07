@@ -38,9 +38,11 @@
 #include "Transit.h"
 #include <iostream>
 #include <fstream>
+
+#ifndef _WIN64
 #include <afxdb.h>          // MFC database support
 #include <afxdao.h>
-
+#endif
 
 enum layer_mode
    { 
@@ -49,7 +51,7 @@ enum layer_mode
 	layer_zone,
 	layer_connector,
 	layer_link_MOE,
-	layer_observation,
+	layer_ODMatrix,
 	layer_detector,
 	layer_subarea, 
 	layer_workzone,
@@ -138,6 +140,7 @@ public:
 
 	std::vector<int> m_LinkVector;
 	std::vector<int> m_NodeVector;
+	std::vector<DTALink*> m_LinkPointerVector;  // used when generating physical side streets from centroids
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector<DTAVehicle*> m_VehicleVector;
 
@@ -148,6 +151,17 @@ public:
 	float TotalEmissions;
 	CVehicleEmission emissiondata;
 
+
+};
+
+class Movement3Node
+{
+public:
+	int TotalVehicleSize;
+	Movement3Node()
+	{
+	TotalVehicleSize  = 0;
+	}
 
 };
 
@@ -197,7 +211,8 @@ public:
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
 	bool m_bShowPathList;
-	int m_NodeDisplaySize;
+	float m_NodeDisplaySize;
+	float m_NodeTextDisplayRatio;
 
 	GDPoint m_Origin;
 
@@ -254,6 +269,7 @@ public:
 
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
+	bool ReadGPSData(string FileName);
 	bool m_bDYNASMARTDataSet;
 
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
@@ -270,15 +286,49 @@ public:
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
 	bool ReadRailLinkTypeCSVFile(LPCTSTR lpszFileName); 
-	bool ReadRailNodeCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadRailNodeCSVFile(LPCTSTR lpszFileName);   // for rail network
 	bool ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for rail network
-	bool ReadRailTrainXMLFile(char* FileName);   // for road network
+	bool ReadRailTrainXMLFile(CString FileName);   // for rail network
 	bool ReadTrainInfoCSVFile(LPCTSTR lpszFileName);
 	bool ReadRailMOWCSVFile(LPCTSTR lpszFileName);
+	bool CheckFeasibility();   // for rail network
 	
 	std::vector<train_schedule> m_train_schedule_vector;
 	std::map<string, train_info> m_train_map;
 	std::vector<MaintenanceOfWay> m_RailMOW_vector;
+
+
+	std::map<CString, DTADemandMetaDataType> DTADemandMetaDataTypeMap;
+	std::vector<CString> m_DemandMetaDataKeyVector;  // keep the order of meta demand database.
+
+	int GetDemandTableType(int DemandType,int start_time_in_min, int end_time_in_min)
+	{
+		CString TableTypeKey;
+		TableTypeKey.Format("type_%d_%d_%d_min",DemandType,start_time_in_min,end_time_in_min);
+
+
+		if(DTADemandMetaDataTypeMap.find(TableTypeKey)!= DTADemandMetaDataTypeMap.end())
+		{
+			return DTADemandMetaDataTypeMap[TableTypeKey].demand_table_type_no ;
+		}else
+		{
+			int demand_table_type_no = DTADemandMetaDataTypeMap.size()+1;  // starting from 1
+
+			DTADemandMetaDataType element;
+			element.demand_table_type_no = demand_table_type_no;
+			element.key = TableTypeKey;
+			element.trip_type = DemandType;
+			element.start_time_in_min = start_time_in_min;
+			element.end_time_in_min = end_time_in_min;
+			DTADemandMetaDataTypeMap[TableTypeKey] = element;
+			m_DemandMetaDataKeyVector.push_back(TableTypeKey);
+
+			return demand_table_type_no;
+	
+		}
+		
+	}
+
 
 	std::vector <int> m_LinkIDRecordVector;  // used to record if a unique link id has been used;
 	int FindUniqueLinkID();
@@ -294,6 +344,7 @@ public:
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadActivityLocationCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadMetaDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
 	bool ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName);  
@@ -376,6 +427,8 @@ public:
 	CString m_SimulationLinkMOEDataLoadingStatus;
 	bool m_bSimulationDataLoaded;
 	CString m_SimulationVehicleDataLoadingStatus;
+	CString m_PathDataLoadingStatus;
+	CString m_MovementDataLoadingStatus;
 	CString m_SignalDataLoadingStatus;
 	CString m_SensorLocationLoadingStatus;
 
@@ -435,6 +488,10 @@ void SetStatusText(CString StatusText);
 	std::list<DTALink*>		m_SubareaLinkSet;
 
 	std::map<int, DTAZone>	m_ZoneMap;
+	int m_CriticalOriginZone;
+	int m_CriticalDestinationZone;
+
+	VehicleStatistics** m_ODMOEMatrix;
 
 	int GetZoneID(GDPoint pt)
 	{
@@ -483,8 +540,11 @@ void SetStatusText(CString StatusText);
 
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName);
+	void ReadAMSPathCSVFile(LPCTSTR lpszFileName);
+	void ReadAMSMovementCSVFile(LPCTSTR lpszFileName);
+
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
-	void ReadVehicleBinFile(LPCTSTR lpszFileName);
+	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
 
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 	
@@ -528,7 +588,7 @@ void SetStatusText(CString StatusText);
 	string m_SelectedTrainHeader;
 
 
-	std::vector<DTA_sensor> m_SensorVector;
+	std::map<string, DTA_sensor> m_SensorMap;
 	std::vector<DTAVehicleType> m_VehicleTypeVector;
 	std::vector<DTADemandType> m_DemandTypeVector;
 	std::map<int,DTALinkType> m_LinkTypeMap;
@@ -578,7 +638,7 @@ void SetStatusText(CString StatusText);
 
 		pLink = new DTALink(1);
 		pLink->m_AVISensorFlag = bAVIFlag;
-		pLink->m_LinkNo = m_LinkSet.size();
+		pLink->m_LinkNo = (int)(m_LinkSet.size());
 		pLink->m_FromNodeNumber = m_NodeIDtoNameMap[FromNodeID];
 		pLink->m_ToNodeNumber = m_NodeIDtoNameMap[ToNodeID];
 		pLink->m_FromNodeID = FromNodeID;
@@ -635,7 +695,7 @@ void SetStatusText(CString StatusText);
 
 		double lane_offset = m_UnitFeet*m_LaneWidthInFeet;  // 20 feet per lane
 
-			int last_shape_point_id = pLink ->m_ShapePoints .size() -1;
+			unsigned int last_shape_point_id = pLink ->m_ShapePoints .size() -1;
 			double DeltaX = pLink->m_ShapePoints[last_shape_point_id].x - pLink->m_ShapePoints[0].x;
 			double DeltaY = pLink->m_ShapePoints[last_shape_point_id].y - pLink->m_ShapePoints[0].y;
 			double theta = atan2(DeltaY, DeltaX);
@@ -817,9 +877,15 @@ void SetStatusText(CString StatusText);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLinkDiffLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
 	std::map<CString, PathStatistics> m_PathMap;
+
 	std::map<CString, PathStatistics> m_ODMatrixMap;
+
+	std::map<CString, Movement3Node> m_Movement3NodeMap;  // turnning movement count
+	
 
 	void GeneratePathFromVehicleData();
 	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
@@ -830,14 +896,31 @@ void SetStatusText(CString StatusText);
 	CString m_GISMessage;
 
 	void ExportSynchroVersion6Files();
+	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
 	CString m_Synchro_ProjectDirectory;
 
 	void ExportOGRShapeFile();
 	void ImportOGRShapeFile(CString FileName);
-	
+
+
+	std::map<CString,DTA_Approach> m_PredefinedApproachMap;
+
 	int Find_P2P_Angle(GDPoint p1, GDPoint p2);
+	DTA_Turn Find_RelativeAngle_to_Left_OR_Right_Turn(int relative_angle);
+	DTA_Turn Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(int relative_angle);
+
+
 	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
+
 	DTA_Approach g_Angle_to_Approach_New(int angle);
+	DTA_Approach Find_Closest_Angle_to_Approach(int angle);
+
+	std::map<DTA_Approach,int> m_ApproachMap;
+
+	std::map<DTA_Approach,DTA_Approach> m_OpposingDirectionMap;
+	
+
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
@@ -850,6 +933,11 @@ void SetStatusText(CString StatusText);
 
 	int Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
 	DTA_Turn Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
+
+	DTA_Turn Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2);
+
+	DTA_Turn Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2);
+
 
 	int MaxNodeKey;
 	int MaxNode64Key;
@@ -938,8 +1026,9 @@ void SetStatusText(CString StatusText);
 	float m_ImageMoveSize;
 	bool m_BackgroundBitmapImportedButnotSaved;
 
+#ifndef _WIN64
 	CDaoDatabase m_Database;
-
+#endif
 
 	// Operations
 public:
@@ -1153,9 +1242,11 @@ public:
 		afx_msg void OnDemandfileIntermodaloddemandmatrix();
 		afx_msg void OnLinkAddworkzone();
 		afx_msg void OnLinkAddincident();
-		afx_msg void OnImportSynchroutdfcsvfiles();
 		afx_msg void OnToolsGeneratephysicalzonecentroidsonroadnetwork();
 		afx_msg void OnImportDemanddataset();
+		afx_msg void OnNodeIncreasenodetextsize();
+		afx_msg void OnNodeDecreasenodetextsize();
+		afx_msg void OnToolsCheckingfeasibility();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

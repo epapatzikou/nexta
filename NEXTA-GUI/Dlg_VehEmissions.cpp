@@ -19,6 +19,8 @@ CDlg_VehPathAnalysis::CDlg_VehPathAnalysis(CWnd* pParent /*=NULL*/)
 
 CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
 {
+	m_pDoc->m_CriticalOriginZone = -1;
+	m_pDoc->m_CriticalDestinationZone  = -1;
 
 	if(m_ODMOEMatrix !=NULL)
 		DeallocateDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
@@ -78,6 +80,7 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_BN_CLICKED(ID_EXPORT_PATH_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportPathData)
 	ON_BN_CLICKED(ID_EXPORT_VEHICLE_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportVehicleData)
 	ON_BN_CLICKED(ID_FindCriticalOD, &CDlg_VehPathAnalysis::OnBnClickedFindcriticalod)
+	ON_BN_CLICKED(IDOK, &CDlg_VehPathAnalysis::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -284,7 +287,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
-			if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
+			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
 				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
@@ -322,6 +325,25 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		count = 0;
 		m_ODList.ResetContent ();
 
+				// variability measure
+		for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
+		{
+			DTAVehicle* pVehicle = (*iVehicle);
+			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
+			{
+				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
+					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
+					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
+					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
+					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
+					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
+				{
+					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
+					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_ArrivalTime- AvgTravelTime)*(pVehicle->m_ArrivalTime- AvgTravelTime);
+				}
+			}
+		}
+
 		VehicleStatistics total_summary;
 
 		for(i=1; i <= m_pDoc->m_ODSize ; i++)
@@ -332,6 +354,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					float AvgDistance = m_ODMOEMatrix[i][j].TotalDistance /m_ODMOEMatrix[i][j].TotalVehicleSize;
 					float AvgTravelTime = m_ODMOEMatrix[i][j].TotalTravelTime /m_ODMOEMatrix[i][j].TotalVehicleSize;
 					float AvgCost = m_ODMOEMatrix[i][j].TotalCost  /m_ODMOEMatrix[i][j].TotalVehicleSize;
+					float STDTravelTime = sqrt(m_ODMOEMatrix[i][j].TotalVariance   /m_ODMOEMatrix[i][j].TotalVehicleSize);
 
 					float AvgEnergy = m_ODMOEMatrix[i][j].emissiondata .Energy / m_ODMOEMatrix[i][j].TotalVehicleSize;
 					float AvgCO2 = m_ODMOEMatrix[i][j].emissiondata.CO2  / m_ODMOEMatrix[i][j].TotalVehicleSize;
@@ -343,11 +366,12 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 
 						CString ODInfoString;
 
-						if(m_pDoc->m_EmissionDataFlag )
-							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed, AvgCost,AvgEnergy, AvgCO2);
-						else
-							ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph, $%4.3f",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgCost);
+						//if(m_pDoc->m_EmissionDataFlag )
+						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed, AvgCost,AvgEnergy, AvgCO2);
+						//else
+						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph, $%4.3f",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgCost);
 
+						ODInfoString.Format ("%d->%d: %d vehicles, %3.1f min, %3.1f mile, STD: %3.1f min",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,STDTravelTime);
 
 						if(ImpactLinkNo<0)  // no impact link is selected
 						{
@@ -386,6 +410,25 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 				}
 			}
 
+			// variability measure
+	for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
+		{
+			DTAVehicle* pVehicle = (*iVehicle);
+			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
+			{
+				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
+					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
+					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
+					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
+					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
+					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
+				{
+					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
+					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_ArrivalTime- AvgTravelTime)*(pVehicle->m_ArrivalTime- AvgTravelTime);
+				}
+			}
+		}
+
 				CString SummaryInfoString;
 				float AvgSpeed = total_summary.TotalDistance * 60 / max(0.1,total_summary.TotalTravelTime);  // mph
 
@@ -400,11 +443,12 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					total_summary.emissiondata .CO2/max(1,total_summary.TotalVehicleSize));
 				}else
 				{
-				SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile,%.0f mph,$%4.3f",total_summary.TotalVehicleSize, 
+					SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile,%.0f mph, STD: %5.1f min",total_summary.TotalVehicleSize, 
 					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
 					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
 					AvgSpeed,
-					total_summary.TotalCost/max(1,total_summary.TotalVehicleSize));
+					sqrt(total_summary.TotalVariance/max(1,total_summary.TotalVehicleSize))
+					);
 				}
 
 
@@ -669,6 +713,26 @@ void CDlg_VehPathAnalysis::OnCbnSelchangeComboMinTraveltimeindex()
 void CDlg_VehPathAnalysis::OnLbnSelchangeListOd()
 {
 	FilterPaths();
+	//show OD pair
+
+		int ODPairNo = m_ODList.GetCurSel();
+	int Origin, Destination;
+
+	if(ODPairNo>=0)	// if one of "all" options is selected, we need to narrow down to OD pair
+	{
+		char m_Text[MAX_STRING_LENGTH];
+		m_ODList.GetText (ODPairNo, m_Text);
+		sscanf(m_Text, "%d->%d", &Origin, &Destination);
+		
+		m_pDoc->m_CriticalOriginZone = Origin;
+		m_pDoc->m_CriticalDestinationZone  = Destination;
+
+		m_pDoc->UpdateAllViews (0);
+
+
+	}
+
+
 }
 
 void CDlg_VehPathAnalysis::OnLbnSelchangeListPath()
@@ -849,4 +913,9 @@ void CDlg_VehPathAnalysis::OnBnClickedFindcriticalod()
 	m_MinDistanceBox.SetCurSel(2);
 	FilterOriginDestinationPairs();
 
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
 }

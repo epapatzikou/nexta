@@ -45,7 +45,7 @@ using namespace std;
 void CTLiteDoc::OnFileOpenNewRailDoc()
 {
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Rail Network Projects (*.rnp)|*.rnp||"));
+		_T("Rail Train Schedule (*.xml)|*.xml||"));
 	if(dlg.DoModal() == IDOK)
 	{
 		OnOpenRailNetworkDocument(dlg.GetPathName(),false);
@@ -58,6 +58,8 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetwork
 	m_NodeSet.clear ();
 	m_LinkSet.clear ();
 	m_NodeNametoIDMap.clear();
+	m_RailMOW_vector.clear();
+	m_train_schedule_vector.clear();
 
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
@@ -79,17 +81,14 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetwork
 	if(!ReadRailLinkCSVFile(directory+"input_rail_arc.csv",false,false))
 		return false;
 
+	CalculateDrawingRectangle();
+	m_bFitNetworkInitialized  = false;
+
 	ReadTrainInfoCSVFile(directory+"input_train_info.csv");
 	ReadRailMOWCSVFile(directory+"input_MOW.csv");
 
-	char ScheduleXMLFileName[MAX_PATH+1];
-	sprintf(ScheduleXMLFileName,"%soutput_schedule.xml",directory);
+	ReadRailTrainXMLFile(ProjectFileName);
 
-	ReadRailTrainXMLFile(ScheduleXMLFileName);
-
-	CalculateDrawingRectangle();
-
-	m_bFitNetworkInitialized  = false;
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -101,6 +100,7 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetwork
 
 	SetStatusText(str_running_time);
 	UpdateAllViews(0);
+
 
 	return true;
 }
@@ -217,7 +217,7 @@ bool CTLiteDoc::ReadTrainInfoCSVFile(LPCTSTR lpszFileName)
 
 			m_train_map[element.train_header] = element;
 		}
-	
+
 	}
 	return true;
 }
@@ -238,7 +238,7 @@ bool CTLiteDoc::ReadRailMOWCSVFile(LPCTSTR lpszFileName)
 
 			m_RailMOW_vector.push_back(element);
 		}
-	
+
 	}
 	return true;
 }
@@ -521,6 +521,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
+		m_LongLatCoordinateFlag = false;
 
 		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
 
@@ -533,6 +534,8 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 		return false;
 		//		g_ProgramStop();
 	}
+
+	
 
 }
 
@@ -767,7 +770,7 @@ bool ParseTrainString(string trainString, train_schedule& tSchedule)
 	return true;
 }
 
-bool ReadTrainsFromFile(char* fileName,std::vector<train_schedule>& ts_vector)
+bool ReadTrainsFromFile(CString fileName,std::vector<train_schedule>& ts_vector)
 {
 	ifstream in(fileName);
 	string line,s;
@@ -801,7 +804,7 @@ bool ReadTrainsFromFile(char* fileName,std::vector<train_schedule>& ts_vector)
 }
 
 
-bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
+bool CTLiteDoc::ReadRailTrainXMLFile(CString FileName)
 {
 	// create timetable element for each link
 	std::list<DTALink*>::iterator iLink;
@@ -854,13 +857,23 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 
 	for (int i=0;i<m_train_schedule_vector.size();i++)
 	{
+		float current_time  = -100;
 		for (int j=0;j< m_train_schedule_vector[i].movement_vector.size();j++)
 		{
 			train_movements mv = m_train_schedule_vector[i].movement_vector[j];
+
+			
+			bool bFindLink = false;
 			for (int k=0;k< mv.movement_arc_vector.size();k++)
 			{
+
+
 				train_movement_arc arc = mv.movement_arc_vector[k];
+
 				DTALink* pLink = FindLinkWithNodeNumbers(arc.from_node_id, arc.to_node_id);
+				bFindLink = true;
+
+				float arc_traveling_time = 100;
 
 				// assignment arc to each link
 				train_movement_arc element;
@@ -869,7 +882,7 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 				element.entry_time_in_sec = arc.entry_time_in_sec;
 
 				train_info train;
-					
+
 				if(m_train_map.find(element.train_id) != m_train_map.end())
 					train = m_train_map[element.train_id];
 
@@ -881,6 +894,7 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 				}
 
 				double train_length_time = 0;
+
 				if(pLink!=NULL)
 				{
 					element.direction = 1;
@@ -888,21 +902,21 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 					float speed_multilier = train.speed_multiplier;
 					if( pLink->m_TrackType.find("S") != string::npos || pLink->m_TrackType.find("SW")!= string::npos || pLink->m_TrackType.find("C")!= string::npos)
 						speed_multilier = 1.0f; // constant speed on switch  
-		
-//					train_length_time=  train.train_length *3600/ (max(1,pLink->m_SpeedLimit *speed_multilier));
-// the new rule of RAS competition: train_length_time=  0;
-					train_length_time=  0;
+
+
+					arc_traveling_time=   pLink->m_Length *3600/ (max(1,pLink->m_SpeedLimit *speed_multilier));
 					element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
 
-				if(k==0)
-				{   
-					pLink->m_bTrainFromTerminal  = true;
-				}
 
-				if(k== mv.movement_arc_vector.size()-1)
-				{   
-					pLink->m_bTrainToTerminal  = true;
-				}
+					if(k==0)
+					{   
+						pLink->m_bTrainFromTerminal  = true;
+					}
+
+					if(k== mv.movement_arc_vector.size()-1)
+					{   
+						pLink->m_bTrainToTerminal  = true;
+					}
 
 					pLink->m_TimeTable .m_train_movement_vector .push_back (element);
 				}else
@@ -912,12 +926,16 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 					if(pLink!=NULL)
 					{
 						element.direction = -1;
-					float speed_multilier = train.speed_multiplier;
-					if( pLink->m_TrackType.find("S") != string::npos || pLink->m_TrackType.find("SW")!= string::npos || pLink->m_TrackType.find("C")!= string::npos)
-						speed_multilier = 1.0f; // constant speed on switch  
+						float speed_multilier = train.speed_multiplier;
+						if( pLink->m_TrackType.find("S") != string::npos || pLink->m_TrackType.find("SW")!= string::npos || pLink->m_TrackType.find("C")!= string::npos)
+							speed_multilier = 1.0f; // constant speed on switch  
 
-						train_length_time=  train.train_length *3600/ (max(1,pLink->m_ReversedSpeedLimit *speed_multilier));
+//						train_length_time=  train.train_length *3600/ (max(1,pLink->m_ReversedSpeedLimit *speed_multilier));
+ 					arc_traveling_time=   pLink->m_Length *3600/ (max(1,pLink->m_ReversedSpeedLimit *speed_multilier));
+						train_length_time = 0;  // we do not consider train length
 						element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
+
+
 
 						// resersed direction
 						if(k==0)
@@ -933,10 +951,19 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 
 						pLink->m_TimeTable .m_train_movement_vector .push_back (element);
 
+					}else
+					{
+
+							CString msg;
+							msg.Format ("arc (%d,%d) in file %s has not been defined in input_rail_arc.csv.\nPlease check",arc.from_node_id, arc.to_node_id, FileName);
+							AfxMessageBox(msg);
+							return false;
+					
 					}
 
-
 				}
+				if(current_time < arc.exit_time_in_sec )
+					current_time = arc.exit_time_in_sec;
 
 			}
 		}
@@ -944,8 +971,7 @@ bool CTLiteDoc::ReadRailTrainXMLFile(char* FileName)
 	}
 
 	//
-
-	return 0;
+	return true;
 }
 
 
@@ -1001,11 +1027,11 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 
 		if(pLink -> m_bTrainFromTerminal)
 		{
-		pDC->TextOut(from_cpt.x-10,from_cpt.y-5,buff);
+			pDC->TextOut(from_cpt.x-10,from_cpt.y-5,buff);
 		}
 		if(pLink -> m_bTrainToTerminal)
 		{
-		pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
+			pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
 		}
 
 	}
@@ -1019,43 +1045,52 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 		if( (mow.from_node_id == pLink->m_FromNodeNumber && mow.to_node_id == pLink->m_ToNodeNumber)
 			|| (mow.from_node_id == pLink->m_ToNodeNumber && mow.to_node_id == pLink->m_FromNodeNumber))
 		{
-		GDPoint from_pt, to_pt;
-		double ratio = (mow.start_time_in_min - pLink ->m_TimeTable.start_time_in_min )*1.0 /  max(1,pLink ->m_TimeTable.end_time_in_min - pLink ->m_TimeTable.start_time_in_min);
+			GDPoint from_pt, to_pt;
+			double ratio = (mow.start_time_in_min - pLink ->m_TimeTable.start_time_in_min )*1.0 /  max(1,pLink ->m_TimeTable.end_time_in_min - pLink ->m_TimeTable.start_time_in_min);
 
-		from_pt.x = pLink ->m_TimeTable.pt_from_start.x + ratio* (pLink ->m_TimeTable.pt_from_end.x - pLink ->m_TimeTable.pt_from_start.x);
-		from_pt.y = pLink ->m_TimeTable.pt_from_start.y + ratio* (pLink ->m_TimeTable.pt_from_end.y - pLink ->m_TimeTable.pt_from_start.y);
+			from_pt.x = pLink ->m_TimeTable.pt_from_start.x + ratio* (pLink ->m_TimeTable.pt_from_end.x - pLink ->m_TimeTable.pt_from_start.x);
+			from_pt.y = pLink ->m_TimeTable.pt_from_start.y + ratio* (pLink ->m_TimeTable.pt_from_end.y - pLink ->m_TimeTable.pt_from_start.y);
 
-		to_pt.x = pLink ->m_TimeTable.pt_to_start.x + ratio* (pLink ->m_TimeTable.pt_to_end.x - pLink ->m_TimeTable.pt_to_start.x);
-		to_pt.y = pLink ->m_TimeTable.pt_to_start.y + ratio* (pLink ->m_TimeTable.pt_to_end.y - pLink ->m_TimeTable.pt_to_start.y);
+			to_pt.x = pLink ->m_TimeTable.pt_to_start.x + ratio* (pLink ->m_TimeTable.pt_to_end.x - pLink ->m_TimeTable.pt_to_start.x);
+			to_pt.y = pLink ->m_TimeTable.pt_to_start.y + ratio* (pLink ->m_TimeTable.pt_to_end.y - pLink ->m_TimeTable.pt_to_start.y);
 
-		RectPt[0] =  NPtoSP(from_pt);
-		RectPt[1]  =  NPtoSP(to_pt);
+			RectPt[0] =  NPtoSP(from_pt);
+			RectPt[1]  =  NPtoSP(to_pt);
 
-		ratio = (mow.end_time_in_min - pLink ->m_TimeTable.start_time_in_min)*1.0 /  max(1,pLink ->m_TimeTable.end_time_in_min - pLink ->m_TimeTable.start_time_in_min);
+			ratio = (mow.end_time_in_min - pLink ->m_TimeTable.start_time_in_min)*1.0 /  max(1,pLink ->m_TimeTable.end_time_in_min - pLink ->m_TimeTable.start_time_in_min);
 
-		from_pt.x = pLink ->m_TimeTable.pt_from_start.x + ratio* (pLink ->m_TimeTable.pt_from_end.x - pLink ->m_TimeTable.pt_from_start.x);
-		from_pt.y = pLink ->m_TimeTable.pt_from_start.y + ratio* (pLink ->m_TimeTable.pt_from_end.y - pLink ->m_TimeTable.pt_from_start.y);
+			from_pt.x = pLink ->m_TimeTable.pt_from_start.x + ratio* (pLink ->m_TimeTable.pt_from_end.x - pLink ->m_TimeTable.pt_from_start.x);
+			from_pt.y = pLink ->m_TimeTable.pt_from_start.y + ratio* (pLink ->m_TimeTable.pt_from_end.y - pLink ->m_TimeTable.pt_from_start.y);
 
-		to_pt.x = pLink ->m_TimeTable.pt_to_start.x + ratio* (pLink ->m_TimeTable.pt_to_end.x - pLink ->m_TimeTable.pt_to_start.x);
-		to_pt.y = pLink ->m_TimeTable.pt_to_start.y + ratio* (pLink ->m_TimeTable.pt_to_end.y - pLink ->m_TimeTable.pt_to_start.y);
+			to_pt.x = pLink ->m_TimeTable.pt_to_start.x + ratio* (pLink ->m_TimeTable.pt_to_end.x - pLink ->m_TimeTable.pt_to_start.x);
+			to_pt.y = pLink ->m_TimeTable.pt_to_start.y + ratio* (pLink ->m_TimeTable.pt_to_end.y - pLink ->m_TimeTable.pt_to_start.y);
 
-		RectPt[3] =  NPtoSP(from_pt);
-		RectPt[2]  =  NPtoSP(to_pt);
-		RectPt[4] = RectPt[0];
+			RectPt[3] =  NPtoSP(from_pt);
+			RectPt[2]  =  NPtoSP(to_pt);
+			RectPt[4] = RectPt[0];
 
-		CPen PenWOWColor(PS_SOLID,3,RGB(255,165,0));
-		pDC->SelectObject(PenWOWColor);
-		pDC->SetTextColor(RGB(255,165,0));
-		pDC->SetBkMode(TRANSPARENT);
-		pDC->SelectStockObject(NULL_BRUSH);
-		pDC->Polygon (RectPt,5);
-		pDC->TextOut(RectPt[0].x,RectPt[0].y-20,"MOW");
+			CPen PenWOWColor(PS_SOLID,3,RGB(255,165,0));
+			pDC->SelectObject(PenWOWColor);
+			pDC->SetTextColor(RGB(255,165,0));
+			pDC->SetBkMode(TRANSPARENT);
+			pDC->SelectStockObject(NULL_BRUSH);
+			pDC->Polygon (RectPt,5);
+			pDC->TextOut(RectPt[0].x,RectPt[0].y-20,"MOW");
 		}
-	
+
 	}
 
 	CPen PenTrainColor(PS_SOLID,1,RGB(0,0,0));
 	CPen PenTrainColor2(PS_DOT,1,RGB(0,0,0));
+
+	CPen PenSelectedTrain(PS_SOLID,3,RGB(255,0,0));
+
+
+
+	int size_for_display_timestamp = 100*100;
+	for(int train = 0; train < pLink->m_TimeTable .m_train_movement_vector.size(); train++)
+	{
+
 
 	if( pLink->m_TrackType.find("S") != string::npos
 		|| pLink->m_TrackType.find("SW")!= string::npos
@@ -1066,12 +1101,30 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 	{
 		pDC->SelectObject(PenTrainColor);
 	}
+
+
 	pDC->SetTextColor(RGB(0, 0, 0));
 
-	int size_for_display_timestamp = 100*100;
-	for(int train = 0; train < pLink->m_TimeTable .m_train_movement_vector.size(); train++)
-	{
 		train_movement_arc element = pLink->m_TimeTable .m_train_movement_vector[train];
+
+		if(element.entry_time_in_sec < 0 || element.exit_time_in_sec < 0)
+			continue;
+
+		if(GetDocument()->m_SelectedTrainHeader.compare (element.train_id )==0)
+		{
+		
+		pDC->SelectObject(PenSelectedTrain);
+
+		// draw select links
+		FromPoint = NPtoSP(pLink->m_FromPoint);
+		ToPoint = NPtoSP(pLink->m_ToPoint);
+
+		pDC->MoveTo(FromPoint);
+		pDC->LineTo(ToPoint);
+
+		
+		}
+
 
 		GDPoint from_pt, to_pt;
 		double ratio;
@@ -1100,10 +1153,10 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 			CSize size = from_cpt - to_cpt;
 			if(size.cx*size.cx+size.cy*size.cy >= size_for_display_timestamp && m_bShowText)
 			{
-			wsprintf(buff,"%dm %ds",(int)(element.entry_time_in_sec/60),(int)(element.entry_time_in_sec));
-			pDC->TextOut(from_cpt.x,from_cpt.y-5,buff);
-			wsprintf(buff,"%dm %ds",(int)(element.exit_time_in_sec/60),(int)(element.exit_time_in_sec));
-			pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
+				wsprintf(buff,"%dm %ds",(int)(element.entry_time_in_sec/60),(int)(element.entry_time_in_sec));
+				pDC->TextOut(from_cpt.x,from_cpt.y-5,buff);
+				wsprintf(buff,"%dm %ds",(int)(element.exit_time_in_sec/60),(int)(element.exit_time_in_sec));
+				pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
 			}
 
 		}else // -1
@@ -1130,13 +1183,13 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 			CSize size = from_cpt - to_cpt;
 			if(size.cx*size.cx+size.cy*size.cy >= size_for_display_timestamp && m_bShowText)
 			{
-			wsprintf(buff,"%dm %ds",(int)(element.exit_time_in_sec/60),(int)(element.exit_time_in_sec));
-			pDC->TextOut(from_cpt.x,from_cpt.y-5,buff);
-			wsprintf(buff,"%dm %ds",(int)(element.entry_time_in_sec/60),(int)(element.entry_time_in_sec));
-			pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
+				wsprintf(buff,"%dm %ds",(int)(element.exit_time_in_sec/60),(int)(element.exit_time_in_sec));
+				pDC->TextOut(from_cpt.x,from_cpt.y-5,buff);
+				wsprintf(buff,"%dm %ds",(int)(element.entry_time_in_sec/60),(int)(element.entry_time_in_sec));
+				pDC->TextOut(to_cpt.x,to_cpt.y-5,buff);
 			}
 
-			
+
 		}
 
 		if(element.b_train_label == true)
@@ -1153,4 +1206,309 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 		}
 	}
 	return true;
+}
+
+void CTLiteDoc::OnToolsCheckingfeasibility()
+{
+	CWaitCursor wait;
+	CheckFeasibility();
+}
+bool CTLiteDoc::CheckFeasibility()
+{
+
+	int error_count = 0;
+
+	ofstream feasibility_check_file;
+	bool b_check_feasibility_flag = true;
+
+
+	CString check_file_name;
+
+	check_file_name.Format ("%s\\feasibility_checking.txt",m_ProjectDirectory);
+	
+	feasibility_check_file.open(check_file_name);
+
+	if(feasibility_check_file.is_open ()==false)
+	{
+
+		AfxMessageBox("File feasibility_check.log cannot be opened.");
+		return false;
+
+	}
+
+
+	for (int i=0;i<m_train_schedule_vector.size();i++)
+	{
+		float current_time  = -100;
+		for (int j=0;j< m_train_schedule_vector[i].movement_vector.size();j++)
+		{
+			train_movements mv = m_train_schedule_vector[i].movement_vector[j];
+
+			
+			bool bFindLink = false;
+			for (int k=0;k< mv.movement_arc_vector.size();k++)
+			{
+
+
+				train_movement_arc arc = mv.movement_arc_vector[k];
+
+				DTALink* pLink = FindLinkWithNodeNumbers(arc.from_node_id, arc.to_node_id);
+				bFindLink = true;
+
+				float arc_traveling_time = 100;
+
+				// assignment arc to each link
+				train_movement_arc element;
+				element.train_id = mv.train_id ;
+				element.arc_sequence_no = k;
+				element.entry_time_in_sec = arc.entry_time_in_sec;
+
+				train_info train;
+
+				if(m_train_map.find(element.train_id) != m_train_map.end())
+					train = m_train_map[element.train_id];
+
+				element.exit_time_in_sec_with_train_length_time = arc.exit_time_in_sec;
+
+				if(k==0 || k== mv.movement_arc_vector.size()-1)
+				{   
+					element.b_train_label = true;
+				}
+
+				double train_length_time = 0;
+
+				if(arc.entry_time_in_sec>=0 && current_time-1 > arc.entry_time_in_sec )
+				{
+
+					CString msg;
+					msg.Format("Train %s: <movement arc='(%d,%d)' entry='%5.1f' exit='%5.1f'/>: Previous exit time %5.1f > entry time %5.1f.\n",train.train_header.c_str () ,
+						arc.from_node_id, arc.to_node_id,element.entry_time_in_sec,element.exit_time_in_sec,current_time,element.entry_time_in_sec);
+					feasibility_check_file << msg;
+					b_check_feasibility_flag = false;
+				}
+
+
+
+				if(pLink!=NULL)
+				{
+					element.direction = 1;
+
+					float speed_multilier = train.speed_multiplier;
+					if( pLink->m_TrackType.find("S") != string::npos || pLink->m_TrackType.find("SW")!= string::npos || pLink->m_TrackType.find("C")!= string::npos)
+						speed_multilier = 1.0f; // constant speed on switch  
+
+
+					arc_traveling_time=   pLink->m_Length *3600/ (max(1,pLink->m_SpeedLimit *speed_multilier));
+					element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
+
+					if(element.exit_time_in_sec >=0 &&(element.exit_time_in_sec - (element.entry_time_in_sec + arc_traveling_time))<-1)
+					{
+						CString msg;
+						msg.Format("Train %s: <movement arc='(%d,%d)' entry='%5.1f' exit='%5.1f'/> does not satisfy arc travel time requirement: %5.1f seconds\n.",train.train_header.c_str () ,
+							arc.from_node_id, arc.to_node_id,element.entry_time_in_sec ,element.exit_time_in_sec,arc_traveling_time);
+						feasibility_check_file << msg;
+						b_check_feasibility_flag = false;
+
+					}
+
+					if(k==0)
+					{   
+						pLink->m_bTrainFromTerminal  = true;
+					}
+
+					if(k== mv.movement_arc_vector.size()-1)
+					{   
+						pLink->m_bTrainToTerminal  = true;
+					}
+
+				}else
+				{  // reversed direction
+					pLink = FindLinkWithNodeNumbers(arc.to_node_id,arc.from_node_id);
+
+					if(pLink!=NULL)
+					{
+						element.direction = -1;
+						float speed_multilier = train.speed_multiplier;
+						if( pLink->m_TrackType.find("S") != string::npos || pLink->m_TrackType.find("SW")!= string::npos || pLink->m_TrackType.find("C")!= string::npos)
+							speed_multilier = 1.0f; // constant speed on switch  
+
+//						train_length_time=  train.train_length *3600/ (max(1,pLink->m_ReversedSpeedLimit *speed_multilier));
+ 					arc_traveling_time=   pLink->m_Length *3600/ (max(1,pLink->m_ReversedSpeedLimit *speed_multilier));
+						train_length_time = 0;  // we do not consider train length
+						element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
+
+						if(element.exit_time_in_sec - (element.entry_time_in_sec + arc_traveling_time) <-1)
+						{
+							if(element.exit_time_in_sec>=0)
+							{
+
+							CString msg;
+							msg.Format(" Train %s: <movement arc='(%d,%d)' entry='%5.1f' exit='%5.1f'/> does not satisfy arc travel time requirement: %5.1f seconds.\n",train.train_header.c_str () ,
+								arc.from_node_id, arc.to_node_id,element.entry_time_in_sec ,element.exit_time_in_sec,arc_traveling_time);
+							feasibility_check_file << msg;
+							b_check_feasibility_flag = false;
+
+							}
+
+						}
+
+
+						// resersed direction
+						if(k==0)
+						{   
+							pLink->m_bTrainToTerminal  = true;
+						}
+
+						if(k== mv.movement_arc_vector.size()-1)
+						{   
+							pLink->m_bTrainFromTerminal  = true;
+						}
+
+
+
+					}else
+					{
+
+							CString msg;
+							msg.Format ("arc (%d,%d) has not been defined in input_rail_arc.csv.\nPlease check",arc.from_node_id, arc.to_node_id);
+							AfxMessageBox(msg);
+							b_check_feasibility_flag = false;
+
+					
+					}
+
+				}
+				if(current_time < arc.exit_time_in_sec )
+					current_time = arc.exit_time_in_sec;
+
+			}
+		}
+
+	}
+
+
+	int safety_headway  = 5*60-1; // 5*60 -1 seconds
+	std::list<DTALink*>::iterator iLink;
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink* pLink = (*iLink);
+
+		std::map<int,CString > TrackUsageMap;
+
+		// check MOW
+		for(int m = 0 ; m <m_RailMOW_vector.size(); m++)
+		{
+			CPoint RectPt[5];
+			MaintenanceOfWay mow = m_RailMOW_vector[m];
+			if( (mow.from_node_id == pLink->m_FromNodeNumber && mow.to_node_id == pLink->m_ToNodeNumber)
+				|| (mow.from_node_id == pLink->m_ToNodeNumber && mow.to_node_id == pLink->m_FromNodeNumber))
+			{
+
+				for(int time = mow.start_time_in_min*60+1; time <  mow.end_time_in_min*60-1; time ++)
+				{
+					TrackUsageMap[time] = "MOW";  // -1 as a mark for MOW
+				}
+			}
+
+		}
+
+		for(int train = 0; train < pLink->m_TimeTable .m_train_movement_vector.size(); train++)
+		{
+			train_movement_arc element = pLink->m_TimeTable .m_train_movement_vector[train];
+
+			int entry_time_in_sec = element.entry_time_in_sec ;
+			int exit_time_in_sec = element.exit_time_in_sec  ;
+
+			if(entry_time_in_sec > exit_time_in_sec)
+			{
+				swap(entry_time_in_sec,exit_time_in_sec);
+			}
+
+			for(int time = entry_time_in_sec; time < exit_time_in_sec; time++)
+			{
+				int time_in_a_day  = time;
+				if(time_in_a_day < 0)
+					time_in_a_day+=1440*60;
+
+				if(time_in_a_day > 1440*60)  // in second
+					time_in_a_day-=1440*60;
+
+				if(TrackUsageMap.find(time_in_a_day)!= TrackUsageMap.end())  // this time stamp has been used before
+				{
+					b_check_feasibility_flag = false;
+					if(TrackUsageMap[time_in_a_day].Compare  ("MOW")== 0)
+					{
+						feasibility_check_file << "Trains cannot occupy tracks inside the MOW window during the duration of the MOW. Conflict beween train " << element.train_id << " and MOW " << " at time " << (float) (time_in_a_day/60.0) << " (unit: min) " << time_in_a_day << " (unit: sec) at track " <<  pLink->m_FromNodeNumber  << " -> " <<  pLink->m_ToNodeNumber << "." << endl;
+						break;
+					}
+
+					if( TrackUsageMap[time_in_a_day].Find ("headway")!= -1 )
+					{
+						feasibility_check_file << "Headway constraints: when an arc is traversed by a train, there must be at least 5 minutes of separation. " << " Conflict beween train " << element.train_id << " and " << TrackUsageMap[time_in_a_day]  << " at time " << (float)(time_in_a_day/60.0) << " (unit: min) " << time_in_a_day << " (unit: sec) at track " <<  pLink->m_FromNodeNumber  << " -> " <<  pLink->m_ToNodeNumber << "." << endl;
+						break;
+					}else if(TrackUsageMap[time_in_a_day].Find ("train")!= -1)
+					{  // no headway substring here
+						feasibility_check_file << "Nonconcurrency constraints: No more than 1 train can occupy an arc at any given time.  " 
+							<< " Conflict beween train " << element.train_id << " and  " << TrackUsageMap[time_in_a_day] << " at time " << float(time_in_a_day/60.0) << " (unit: min) " << time_in_a_day << " (unit: sec)  at track " <<  pLink->m_FromNodeNumber  << " -> " <<  pLink->m_ToNodeNumber << "." << endl;
+						break;
+					}
+
+
+				}
+			}
+			
+			for(int time = entry_time_in_sec-(5*60-1); time < exit_time_in_sec+(5*60-1); time+=10)  //every 10 seconds
+			{
+
+					CString str;
+					if(entry_time_in_sec>=0 &&  exit_time_in_sec>=0 && time >= entry_time_in_sec && time < exit_time_in_sec) // we only check feasibility conditions for non-negative values, so we can output -1 value as default values to test routes
+					{
+						str.Format("train %s",element.train_id.c_str ());
+					}else
+					{
+						str.Format("headway of train %s",element.train_id.c_str ());					
+					}
+
+					if(time<0)
+						time+=1400*60;
+
+					if(time>1400*60)
+						time-=1400*60;
+
+					TrackUsageMap[time] = str;
+			}
+
+		}
+
+		}  // for each train in a link
+
+		for (int i=0;i<m_train_schedule_vector.size();i++)
+	{
+		for (int j=0;j< m_train_schedule_vector[i].movement_vector.size();j++)
+		{
+			train_movements mv = m_train_schedule_vector[i].movement_vector[j];
+			for (int k=0;k< mv.movement_arc_vector.size();k++)
+			{
+				train_movement_arc arc = mv.movement_arc_vector[k];
+
+//				TRACE("direction: %d\n",arc.direction );
+			}
+
+		}
+	}
+	feasibility_check_file.close();
+
+	if(b_check_feasibility_flag == false)
+	{
+		CString msg;
+		msg.Format("The train schedule does not pass feasibility check. Please check log file %s",check_file_name);
+		if(AfxMessageBox(msg))
+		{
+		HINSTANCE result = ShellExecute(NULL, _T("open"),check_file_name , NULL,NULL, SW_SHOW);;	
+		}
+	}else
+	{
+	   AfxMessageBox("This train schedule passes preliminary feasibility check.\nTo check a complete set of constraint requirements, please follow the document released by the 2012 RAS Problem Solving Competition organizing committee.");
+	}
+	return 0;
 }

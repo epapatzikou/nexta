@@ -28,9 +28,9 @@
 #include "..//TLite.h"
 #include "..//Network.h"
 #include "..//TLiteDoc.h"
-#include "..//Data-Interface//XLEzAutomation.h"
-#include "..//Data-Interface//XLTestDataSource.h"
+#ifndef _WIN64
 #include "..//Data-Interface//include//ogrsf_frmts.h"
+#endif 
 #include "..//MainFrm.h"
 
 #include "SignalNode.h"
@@ -318,48 +318,16 @@ void CTLiteDoc::OnExportAms()
 
 void CTLiteDoc::RunExcelAutomation() 
 {
-	//CXLEzAutomation class constructor starts Excel and creates empty worksheet  
-	CXLEzAutomation XL;
-	//Close Excel if failed to open file 
-	if(!XL.OpenExcelFile("C:\\NEXTA_OpenSource\\DTALite\\test_QEM.xlsx"))
-	{
-		XL.ReleaseExcel();
-		//				MessageBox("Failed to Open Excel File", "Error", MB_OK);
-		return;
-	}
-
-	XL.SetActiveWorksheet(0);
-	//To access data use this:
-	XL.SetCellValue(2,4,"1");
-	CString szCellValue5 = XL.GetCellValue(2, 52);
-	//Itterate through all cells given by (Column, Row) to
-	//access all data
-
-	//CTestDataSource provide set of data for testing XY plot function
-	CTestDataSource DataSource;
-
-	/*	//All data will be stored by szData
-	CString szData;
-	//Itterate to fill data buffer with 100 data points
-	for(int i = 0; i < 100; i++)
-	szData = szData + DataSource.GetNextXYPoint();
-
-	//Use clipboard export function to move all data to Excel worksheet
-	XL.ExportCString(szData);
-
-	//Y values for this plot are in Column = 2
-	XL.CreateXYChart(2);
-	*/	
-	//	XL.EnableAlert(false);
-	XL.ReleaseExcel();
 
 
 }
-
+#ifndef _WIN64
 void AddGISField(std::vector<OGRFieldDefn> &OGRFieldVector, CString field_name,  OGRFieldType type)
 {
+
 	OGRFieldDefn oField(field_name, type );
 	OGRFieldVector.push_back(oField);
+
 }
 
 bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer)
@@ -378,12 +346,13 @@ bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer
 
 	return true;
 }
-
+#endif 
 void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeString)
 {
+#ifndef _WIN64
+
 	CString message_str;
 
-	// 
 	OGRSFDriver *poDriver;
 
 	OGRRegisterAll();
@@ -467,11 +436,12 @@ void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeStri
 	} // end of node layer
 
 	OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 
 void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeString)
 {
+#ifndef _WIN64
 	CString message_str;
 
 	OGRSFDriver *poDriver;
@@ -584,12 +554,13 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 
 	} // end of link layer
 	OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 
 
 void CTLiteDoc::ExportZoneLayerToGISFiles(CString file_name, CString GISTypeString)
 {
+#ifndef _WIN64
 	CString message_str;
 
 	// 
@@ -676,7 +647,7 @@ void CTLiteDoc::ExportZoneLayerToGISFiles(CString file_name, CString GISTypeStri
 		}
 	} // end of zone layer
 	OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 
 void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeString)
@@ -827,6 +798,377 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 
 }
 
+void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeString)
+{
+	
+//	m_LinkBandWidthMode =  LBW_number_of_lanes;
+	m_LinkBandWidthMode  = LBW_link_volume;
+
+	// other options:
+	m_LinkBandWidthMode  = LBW_number_of_lanes;
+
+	std::list<DTALink*>::iterator iLink;
+	float max_link_volume = 0;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_TotalVolume > max_link_volume)
+			max_link_volume = (*iLink)->m_TotalVolume;
+	}
+
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+
+		if(m_LinkBandWidthMode  == LBW_number_of_lanes)
+		{
+		(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *10;
+		}else
+		{
+		(*iLink)->m_BandWidthValue = (*iLink)->m_TotalVolume*250/max_link_volume;
+		
+		}
+
+	}
+	GenerateOffsetLinkBand();
+
+
+	FILE* st;
+	fopen_s(&st,file_name,"w");
+	GDPoint BandPoint[2000];
+	if(st!=NULL)
+	{
+		fprintf(st,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fprintf(st,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+		fprintf(st,"<Document>\n");
+		fprintf(st,"<name>KmlFile</name>\n");
+
+
+		// blue style
+		fprintf(st,"<Style id=\"green\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ff00</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// red style
+
+		fprintf(st,"<Style id=\"red\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d0000ff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// blue style
+
+		fprintf(st,"<Style id=\"blue\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7dff0000</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// yellow style
+
+		fprintf(st,"<Style id=\"yellow\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ffff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		fprintf(st,"<Folder>\n");
+   		fprintf(st,"<name>Zone Layer</name>\n");
+   		fprintf(st," <visibility>1</visibility>\n");
+      	
+
+		int time_step = 4;
+
+		int t = 0;
+		double ratio = 1;
+		
+		int max_link_height = g_GetPrivateProfileInt("KML_output","max_link_height",5000,m_ProjectFile);
+		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",10,m_ProjectFile);
+
+ 
+		max_link_height = 60;
+
+		float min_link_volume_threadshold= 2000;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_TotalVolume >= min_link_volume_threadshold || m_LinkBandWidthMode  == LBW_number_of_lanes)
+			{
+			fprintf(st,"\t<Placemark>\n");
+			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
+/*			fprintf(st,"\t\t\t<TimeSpan>\n");
+
+			CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,false);
+			CString time_stamp_str_end = GetTimeStampStrFromIntervalNo (t+time_step,false);
+
+			fprintf(st,"\t\t\t<begin>2012-01-%0d</begin>\n",t);
+			fprintf(st,"\t\t\t<end>2012-01-01-%0d</end>\n",t+time_step);
+
+//			fprintf(st,"\t\t\t<begin>2012-01-01-T%s:00Z</begin>\n",time_stamp_str);
+//			fprintf(st,"\t\t\t<end>2012-01-01-T%s:00Z</end>\n",time_stamp_str_end);
+
+			fprintf(st,"\t\t\t </TimeSpan>\n");
+*/	
+        	fprintf(st,"\t\t<visibility>1</visibility>\n");
+
+			string color_code = "red";
+
+			if((*iLink)->m_NumLanes == 2)
+				color_code = "green";
+
+			if((*iLink)->m_NumLanes == 1)
+				color_code = "yellow";
+
+
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
+			fprintf(st,"\t\t<Polygon>\n");
+			fprintf(st,"\t\t<extrude>1</extrude>\n");
+			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
+			fprintf(st,"\t\t<outerBoundaryIs>\n");
+			fprintf(st,"\t\t<LinearRing>\n");
+			fprintf(st,"\t\t<coordinates>\n");
+
+			float height =(*iLink)->m_TotalVolume* max_link_height/max(1,max_link_volume);
+	
+			if(height<=min_link_height)
+				height = min_link_height;
+
+			int si;
+			int band_point_index = 0;
+		for(si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandLeftShapePoints[si];
+		}
+
+		for(si = (*iLink) ->m_ShapePoints .size()-1; si >=0 ; si--)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandRightShapePoints[si];
+		}
+
+		BandPoint[band_point_index++]= (*iLink)->m_BandLeftShapePoints[0];
+
+
+
+			for(unsigned int i = 0; i< band_point_index; i++)
+			{
+				fprintf(st,"\t\t\t%f,%f,%f\n", BandPoint[i].x,  BandPoint[i].y,height);
+			}
+
+
+			fprintf(st,"\t\t</coordinates>\n");
+			fprintf(st,"\t\t</LinearRing>\n");
+			fprintf(st,"\t\t</outerBoundaryIs>\n");
+
+			fprintf(st,"\t\t</Polygon>\n");
+			fprintf(st,"\t</Placemark>\n");
+			}
+		}  // for each link
+
+		   	fprintf(st,"</Folder>\n");
+			fprintf(st,"</Document>\n");
+			fprintf(st,"</kml>\n");
+			fclose(st);
+		} // end of file
+
+}
+
+void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISTypeString)
+{
+	
+//	m_LinkBandWidthMode = LBW_link_volume;
+
+	// other options:
+	m_LinkBandWidthMode  = LBW_link_volume;
+
+	std::list<DTALink*>::iterator iLink;
+	float max_link_volume = 0;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_TotalVolume > max_link_volume)
+			max_link_volume = (*iLink)->m_TotalVolume;
+	}
+
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+
+		(*iLink)->m_BandWidthValue = (*iLink)->m_TotalVolume*250/max_link_volume;
+
+	}
+
+
+	GenerateOffsetLinkBand();
+
+
+	FILE* st;
+	fopen_s(&st,file_name,"w");
+	GDPoint BandPoint[2000];
+	if(st!=NULL)
+	{
+		fprintf(st,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fprintf(st,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+		fprintf(st,"<Document>\n");
+		fprintf(st,"<name>KmlFile</name>\n");
+
+
+		// blue style
+		fprintf(st,"<Style id=\"green\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ff00</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// red style
+
+		fprintf(st,"<Style id=\"red\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d0000ff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// blue style
+
+		fprintf(st,"<Style id=\"blue\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7dff0000</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// yellow style
+
+		fprintf(st,"<Style id=\"yellow\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ffff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		fprintf(st,"<Folder>\n");
+   		fprintf(st,"<name>Zone Layer</name>\n");
+   		fprintf(st," <visibility>1</visibility>\n");
+      	
+
+		int time_step = 4;
+
+		int t = 0;
+		double ratio = 1;
+		
+		int max_link_height = g_GetPrivateProfileInt("KML_output","max_link_height",5000,m_ProjectFile);
+		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",10,m_ProjectFile);
+
+ 
+		max_link_height = 60;
+
+		float min_link_volume_threadshold= 3000;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_TotalVolume >= min_link_volume_threadshold)
+			{
+			fprintf(st,"\t<Placemark>\n");
+			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
+/*			fprintf(st,"\t\t\t<TimeSpan>\n");
+
+			CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,false);
+			CString time_stamp_str_end = GetTimeStampStrFromIntervalNo (t+time_step,false);
+
+			fprintf(st,"\t\t\t<begin>2012-01-%0d</begin>\n",t);
+			fprintf(st,"\t\t\t<end>2012-01-01-%0d</end>\n",t+time_step);
+
+//			fprintf(st,"\t\t\t<begin>2012-01-01-T%s:00Z</begin>\n",time_stamp_str);
+//			fprintf(st,"\t\t\t<end>2012-01-01-T%s:00Z</end>\n",time_stamp_str_end);
+
+			fprintf(st,"\t\t\t </TimeSpan>\n");
+*/	
+        	fprintf(st,"\t\t<visibility>1</visibility>\n");
+
+			string color_code = "red";
+
+			if((*iLink)->m_NumLanes == 2)
+				color_code = "green";
+
+			if((*iLink)->m_NumLanes == 1)
+				color_code = "yellow";
+
+
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
+			fprintf(st,"\t\t<Polygon>\n");
+			fprintf(st,"\t\t<extrude>1</extrude>\n");
+			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
+			fprintf(st,"\t\t<outerBoundaryIs>\n");
+			fprintf(st,"\t\t<LinearRing>\n");
+			fprintf(st,"\t\t<coordinates>\n");
+
+			float height =(*iLink)->m_TotalVolume* max_link_height/max(1,max_link_volume);
+	
+			if(height<=min_link_height)
+				height = min_link_height;
+
+			int si;
+			int band_point_index = 0;
+		for(si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandLeftShapePoints[si];
+		}
+
+		for(si = (*iLink) ->m_ShapePoints .size()-1; si >=0 ; si--)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandRightShapePoints[si];
+		}
+
+		BandPoint[band_point_index++]= (*iLink)->m_BandLeftShapePoints[0];
+
+
+
+			for(unsigned int i = 0; i< band_point_index; i++)
+			{
+				fprintf(st,"\t\t\t%f,%f,%f\n", BandPoint[i].x,  BandPoint[i].y,height);
+			}
+
+
+			fprintf(st,"\t\t</coordinates>\n");
+			fprintf(st,"\t\t</LinearRing>\n");
+			fprintf(st,"\t\t</outerBoundaryIs>\n");
+
+			fprintf(st,"\t\t</Polygon>\n");
+			fprintf(st,"\t</Placemark>\n");
+			}
+		}  // for each link
+
+		   	fprintf(st,"</Folder>\n");
+			fprintf(st,"</Document>\n");
+			fprintf(st,"</kml>\n");
+			fclose(st);
+		} // end of file
+
+}
 void CTLiteDoc::GeneratePathFromVehicleData()
 {
 	m_PathMap.clear();
@@ -907,6 +1249,7 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 }
 void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeString)
 {
+#ifndef _WIN64
 	GeneratePathFromVehicleData();
 
 	CString message_str;
@@ -994,7 +1337,7 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 			}
 	
 	OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 
 void CTLiteDoc::ExportPathflowToCSVFiles()
@@ -1039,7 +1382,41 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 		}
 	fclose(st);
 	}
-// OD statistics
+// write to a common path file
+	fopen_s(&st,directory+"AMS_path_flow.csv","w");
+	if(st!=NULL)
+	{
+	fprintf(st,"route_index,volume,node_chain_number_of_nodes,node_chain_node_sequence\n");
+
+		int route_index = 1;
+		std::map<CString, PathStatistics> ::const_iterator itr;
+		for (itr = m_PathMap.begin(); itr != m_PathMap.end(); itr++)
+		{
+
+			if((*itr).second .TotalVehicleSize >=1)
+			{
+				int number_of_nodes = (*itr).second.m_NodeVector.size();
+						// one vehicle type for now
+				fprintf(st, "%d,%d,%d", 
+					route_index++,
+					(*itr).second .TotalVehicleSize,
+					number_of_nodes);
+
+				fprintf(st,"["); 
+				for(unsigned int n = 0; n < number_of_nodes; n++)
+				{
+				fprintf(st,"%d;",(*itr).second.m_NodeVector[n]); 
+				}
+				fprintf(st,"]"); 
+
+				fprintf(st,"\n"); 
+			}
+		}
+	fclose(st);
+	}
+
+	
+	// OD statistics
 		fopen_s(&st,directory+"output_od_flow.csv","w");
 	if(st!=NULL)
 	{

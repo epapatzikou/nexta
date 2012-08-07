@@ -31,12 +31,13 @@ public:
 	CTLiteDoc* m_pDoc;
 	void DisplayDemandMatrix();
 	void DisplayDemandTypeTable();
-	int GetSelectedDemandType();
+
+	int m_SelectedDemandMetaType;
 
 
 private:
 	CGridCtrl m_ODMatrixGrid;
-	CGridListCtrlEx m_DemandTypeGrid;
+	CListCtrl m_DemandTypeGrid;
 	bool m_bSizeChanged;
 
 protected:
@@ -57,6 +58,6 @@ public:
 	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedGridSavequit2();
-	afx_msg void OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
 	float m_DemandMultipler;
+	afx_msg void OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
 };

@@ -569,7 +569,9 @@ BEGIN_MESSAGE_MAP(CGridCtrl, CWnd)
     ON_WM_LBUTTONUP()
     ON_WM_LBUTTONDOWN()
     ON_WM_MOUSEMOVE()
+#ifndef _WIN64
     ON_WM_TIMER()
+#endif
     ON_WM_GETDLGCODE()
     ON_WM_KEYDOWN()
     ON_WM_CHAR()
@@ -824,7 +826,8 @@ void CGridCtrl::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 
 // For drag-selection. Scrolls hidden cells into view
 // TODO: decrease timer interval over time to speed up selection over time
-void CGridCtrl::OnTimer(UINT nIDEvent)
+#ifndef _WIN64
+void CGridCtrl::OnTimer(UINT_PTR  nIDEvent)
 {
     ASSERT(nIDEvent == WM_LBUTTONDOWN);
     if (nIDEvent != WM_LBUTTONDOWN)
@@ -900,7 +903,10 @@ void CGridCtrl::OnTimer(UINT nIDEvent)
         pt.x = nFixedColWidth + 1;
         OnSelecting(GetCellFromPt(pt));
     }
+
 }
+
+#endif
 
 // move about with keyboard
 void CGridCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)

@@ -228,7 +228,9 @@ void DTAPath::UpdateWithinDayStatistics()
 bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 {
 	CCSVParser parser;
+	int error_count = 0;
 
+	int data_count = 0;
 	if (parser.OpenCSVFile(lpszFileName))
 	{
 	int sensor_count = 0;
@@ -246,10 +248,9 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 			if(!parser.GetValueByFieldName("sensor_id",sensor.SensorID )) 
 				return false;
 
-			parser.GetValueByFieldName("AADT",sensor.AADT  );
-			parser.GetValueByFieldName("peak_hour_factor",sensor.peak_hour_factor   );
-//			parser.GetValueByFieldName(elative_location_ratio",relative_location_ratio);
-
+			parser.GetValueByFieldName("x_coord",sensor.pt.x );
+			parser.GetValueByFieldName("y_coord",sensor.pt.y );
+			
 
 			DTALink* pLink;
 /*			int link_id = 0;
@@ -258,34 +259,64 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 				pLink = m_LinkNoMap[link_id -1];
 			else 
 */
-				pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
+			pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
+
 
 			if(pLink!=NULL)
 			{
 				sensor.LinkID = pLink->m_LinkNo ;
-				m_SensorVector.push_back(sensor);
-				m_SensorIDtoLinkMap[sensor.SensorID] = pLink;
+
+				if(m_SensorMap.find(sensor.SensorID) == m_SensorMap.end())
+				{
+					m_SensorMap[sensor.SensorID] = sensor;
+				}
 
 				pLink->m_bSensorData  = true;
-				pLink->m_ReferenceFlowVolume = sensor.AADT*sensor.peak_hour_factor;
-				pLink->m_AADT = sensor.AADT;
-				pLink->m_PeakHourFactor = sensor.peak_hour_factor;
 
+				int start_time_in_min =0;
+				int end_time_in_min = 0;
+
+				parser.GetValueByFieldName("start_time_in_min",start_time_in_min );
+				parser.GetValueByFieldName("end_time_in_min",end_time_in_min );
+
+
+				int volume_count= 0;
+
+				parser.GetValueByFieldName("volume_count",volume_count );
+				data_count++;
+
+				for(int t = start_time_in_min; t< end_time_in_min; t++)
+				{
+					if((unsigned int)t < pLink->m_LinkMOEAry.size())
+					{
+
+						if(sensor.SensorType == "link_count")
+						{
+
+							pLink->m_LinkMOEAry[ t].ObsLinkFlow = volume_count*60/max(1,end_time_in_min-start_time_in_min)/pLink->m_NumLanes;  // convert to per hour lane flow
+						}
+
+					}
+				}
 			}else
 			{
+				if(error_count<3)
+				{
 
 				CString msg;
-				msg.Format ("Link %d -> %d in input_sensor.csv does not exit in input_link.csv.", sensor.FromNodeNumber , sensor.ToNodeNumber);
+				msg.Format ("Link %d -> %d in input_sensor.csv does not exist in input_link.csv.", sensor.FromNodeNumber , sensor.ToNodeNumber);
 				AfxMessageBox(msg);
+				error_count++;
 				continue;
+				}
 			}
 
 		}
 
 
-		if(m_SensorVector.size()>0)
+		if(m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",m_SensorVector.size (),lpszFileName);
+			m_SensorLocationLoadingStatus.Format("%d sensors and %d sensor records are loaded from file %s.",m_SensorMap.size(),data_count,lpszFileName);
 			return true;
 		}
 		else

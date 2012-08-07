@@ -198,6 +198,7 @@ CBrush g_BrushQueueBandColor(RGB(255,0,0));
 
 CPen g_PenCrashColor(PS_SOLID,1,RGB(255,0,0));
 CBrush  g_BrushCrash(HS_VERTICAL,RGB(255,0,255)); //green
+CBrush  g_TransitCrash(HS_CROSS,RGB(255,0,255)); //green
 
 CPen g_PenSensorColor(PS_SOLID,0,RGB(0,255,0));
 CBrush g_BrushSensor(RGB(0,255,0));
@@ -266,6 +267,7 @@ CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 CPen g_PenVehicle(PS_SOLID,1,RGB(0,255,0));  // yellow
 CPen g_BrushVehicle(PS_SOLID,1,RGB(0,255,0)); //magenta
+CPen g_BrushTransitUser(PS_SOLID,1,RGB(255,0,0)); //magenta
 
 void g_SelectColorCode(CDC* pDC, int ColorCount)
 {
@@ -662,7 +664,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	CFont node_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 	int node_size = min(20,max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution)));
 
-	int NodeTypeSize = 8;
+	int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
 	int nFontSize =  max(node_size * NodeTypeSize, 10);
 
 	m_LinkTextFontSize = min(node_size * NodeTypeSize, 15);
@@ -716,7 +718,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	}
 
 	CPen pen_freeway, pen_ramp, pen_arterial, pen_connector,pen_transit,pen_walking;
-	CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector,brush_transit,brush_walking;
+	CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector,brush_walking;
 
 	pen_freeway.CreatePen (PS_SOLID, 1, pDoc->m_FreewayColor);
 	brush_freeway.CreateSolidBrush (pDoc->m_FreewayColor);
@@ -731,7 +733,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	brush_connector.CreateSolidBrush (pDoc->m_ConnectorColor);
 
 	pen_transit.CreatePen (PS_SOLID, 1, pDoc->m_TransitColor);
-	brush_transit.CreateSolidBrush (pDoc->m_TransitColor);
 
 	pen_walking.CreatePen (PS_SOLID, 1, pDoc->m_WalkingColor);
 	brush_walking.CreateSolidBrush (pDoc->m_WalkingColor);
@@ -751,7 +752,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDoc->m_LinkBandWidthMode = LBW_link_volume;
 	}else
 	{
-		pDoc->m_LinkBandWidthMode = LBW_number_of_lanes;
+		pDoc->m_LinkBandWidthMode = LBW_number_of_lanes;  // e.g. queue
 	}
 
 	if(pDoc->m_LinkSet.size() > 0)  // update for a network with links
@@ -845,7 +846,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsTransit())
 			{
 				pDC->SelectObject(&pen_transit);
-				pDC->SelectObject(&brush_transit);
+				pDC->SelectObject(&g_TransitCrash);
 			}else if ( pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsWalking())
 			{
 				pDC->SelectObject(&pen_walking);
@@ -1399,18 +1400,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		pDC->SelectObject(&g_PenNotMatchedSensorColor);
 
-		std::vector<DTA_sensor>::iterator iSensor;
+		std::map<string, DTA_sensor>::iterator iSensor;
 
-		for (iSensor = pDoc->m_SensorVector.begin(); iSensor != pDoc->m_SensorVector.end(); iSensor++)
+		for (iSensor = pDoc->m_SensorMap.begin(); iSensor != pDoc->m_SensorMap.end(); iSensor++)
 		{
-			CPoint point = NPtoSP((*iSensor).pt);
+			CPoint point = NPtoSP((*iSensor).second .pt);
 
 			int sensor_size = 2;
-			if((*iSensor).LinkID<0)
-			{
-				pDC->Ellipse(point.x - sensor_size, point.y + sensor_size,
-					point.x + sensor_size, point.y - sensor_size);
-			}
+			//if((*iSensor).second .LinkID 0)
+			//{
+			//	pDC->Ellipse(point.x - sensor_size, point.y + sensor_size,
+			//		point.x + sensor_size, point.y - sensor_size);
+			//}
 		}
 	}
 
@@ -1440,6 +1441,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				g_Simulation_Time_Stamp <=(*iVehicle)->m_ArrivalTime && (*iVehicle)->m_NodeSize>=2)
 			{
 
+				if((*iVehicle)->m_PricingType ==4)  // transit user
+					pDC->SelectObject(&g_BrushTransitUser); //red transit users
+		
 				float ratio = 0;
 				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
 
@@ -1460,29 +1464,28 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//////////////////////////////////////
 	// step 16: draw OD demand
 
-	if(m_bShowODDemandVolume)
+	if(pMainFrame->m_bShowLayerMap[layer_ODMatrix])
 	{
 		int i,j;
 
-		float MaxODDemand = 1;
+		float MaxODDemand = 500;
 		std::map<int, DTAZone>	:: const_iterator itr_o;
 		std::map<int, DTAZone>	:: const_iterator itr_d;
 
-		for(itr_o = pDoc->m_ZoneMap.begin(); itr_o != pDoc->m_ZoneMap.end(); itr_o++)
-			for(itr_d = pDoc->m_ZoneMap.begin(); itr_d != pDoc->m_ZoneMap.end(); itr_d++)
-			{
-				float volume = pDoc->m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
-				if(volume > MaxODDemand & (itr_o->first !=itr_d->first))
-					MaxODDemand = volume;
+		//for(itr_o = pDoc->m_ZoneMap.begin(); itr_o != pDoc->m_ZoneMap.end(); itr_o++)
+		//	for(itr_d = pDoc->m_ZoneMap.begin(); itr_d != pDoc->m_ZoneMap.end(); itr_d++)
+		//	{
+		//		float volume = pDoc->m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
+		//		if(volume > MaxODDemand & (itr_o->first !=itr_d->first))
+		//			MaxODDemand = volume;
 
-			}
-
+		//	}
 
 			for(itr_o = pDoc->m_ZoneMap.begin(); itr_o != pDoc->m_ZoneMap.end(); itr_o++)
 				for(itr_d = pDoc->m_ZoneMap.begin(); itr_d != pDoc->m_ZoneMap.end(); itr_d++)
 				{
 					float volume = pDoc->m_ZoneMap[itr_o->first].m_ODDemandMatrix [itr_d->first].GetSubTotalValue ();
-					if(volume>=1 && (itr_o->first !=itr_d->first))
+					if(volume>=10 && (itr_o->first !=itr_d->first))
 					{
 						CPoint FromPoint = NPtoSP(pDoc->m_ZoneMap[itr_o->first].GetCenter());
 						CPoint ToPoint = NPtoSP(pDoc->m_ZoneMap[itr_d->first].GetCenter());
@@ -1505,6 +1508,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				}
 	}
+
+
+	if(pDoc->m_ZoneMap.find(pDoc->m_CriticalOriginZone)!= pDoc->m_ZoneMap.end() 
+		&& pDoc->m_ZoneMap.find(pDoc->m_CriticalDestinationZone)!= pDoc->m_ZoneMap.end())
+	{
+			CPoint FromPoint = NPtoSP(pDoc->m_ZoneMap[pDoc->m_CriticalOriginZone].GetCenter());
+			CPoint ToPoint = NPtoSP(pDoc->m_ZoneMap[pDoc->m_CriticalDestinationZone].GetCenter());
+
+			CPen penmoe;
+			float Width = 5;
+
+			if(Width>=0.2)  //draw critical OD demand only
+			{
+				penmoe.CreatePen (PS_SOLID, (int)(Width), RGB(0,255,255));
+				pDC->SelectObject(&penmoe);
+				pDC->MoveTo(FromPoint);
+				pDC->LineTo(ToPoint);
+			}
+
+	}
+
 
 	// step 17: draw Public Transit Layer
 
@@ -1968,7 +1992,16 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		element.Data.Format ("%4.3f",pLink->m_FreeFlowTravelTime    );
 		pMainFrame->m_FeatureInfoVector.push_back (element);
 
+		element.Attribute = "# of lanes";
+		element.Data.Format ("%d",pLink->m_NumLanes );
+		pMainFrame->m_FeatureInfoVector.push_back (element);
+
+		element.Attribute = "Lane Capacity";
+		element.Data.Format ("%4.0f",pLink->m_MaximumServiceFlowRatePHPL  );
+		pMainFrame->m_FeatureInfoVector.push_back (element);
+
 		pMainFrame->FillFeatureInfo ();
+
 		
 		}else
 		{
@@ -2771,7 +2804,12 @@ void CTLiteView::OnLinkEditlink()
 			pLink->m_Name  = dlg.m_StreetName;
 
 			pLink->m_LaneCapacity  = dlg.LaneCapacity;
+
+			if(pLink->m_NumLanes  != dlg.nLane)
+			{
 			pLink->m_NumLanes  = dlg.nLane;
+			pDoc->GenerateOffsetLinkBand();  // update width of band
+			}
 			pLink->m_link_type = dlg.LinkType ;
 
 			pDoc->m_DefaultSpeedLimit = dlg.DefaultSpeedLimit;
@@ -3371,23 +3409,23 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 
 		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
 
-	}else if (pMainFrame->m_bShowLayerMap[layer_observation])
-	{  //observed data
-		if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
-		{
+	//}else if (pMainFrame->m_bShowLayerMap[layer_observation])
+	//{  //observed data
+	//	if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
+	//	{
 
-			for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
-			{
-				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[si]);
-			}
+	//		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+	//		{
+	//			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[si]);
+	//		}
 
-			for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
-			{
-				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[si]);
-			}
+	//		for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+	//		{
+	//			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[si]);
+	//		}
 
-			m_BandPoint[band_point_index++]= NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
-		}
+	//		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
+	//	}
 
 	}
 
@@ -3735,7 +3773,7 @@ void CTLiteView::OnLinkIncreasebandwidth()
 	// 
 	if(pDoc->m_LinkBandWidthMode == LBW_link_volume)
 	{
-		pDoc->m_MaxLinkWidthAsLinkVolume  /=1.2;
+		pDoc->m_MaxLinkWidthAsLinkVolume  /=1.5;
 	}
 
 	pDoc->GenerateOffsetLinkBand();
@@ -3753,7 +3791,7 @@ void CTLiteView::OnLinkDecreasebandwidth()
 	// 
 	if(pDoc->m_LinkBandWidthMode == LBW_link_volume)
 	{
-		pDoc->m_MaxLinkWidthAsLinkVolume  *=1.2;
+		pDoc->m_MaxLinkWidthAsLinkVolume  *=1.5;
 	}
 
 

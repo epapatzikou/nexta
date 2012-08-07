@@ -51,7 +51,6 @@ public:
 CTLiteApp();
 
 
-
 	void UpdateAllViews();
 
 	CMultiDocTemplate* m_pDocTemplate2DView;
@@ -69,6 +68,7 @@ public:
 	virtual int ExitInstance();
 	afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 	afx_msg void OnFileOpenmultipletrafficdataprojects();
+	afx_msg void OnAppExit();
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6

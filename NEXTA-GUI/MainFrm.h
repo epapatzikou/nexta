@@ -99,7 +99,7 @@ public:
 	afx_msg void OnWindow2dview();
 	afx_msg void OnWindowShow2dview();
 	afx_msg void On3ddisplayAnimation();
-	afx_msg void OnTimer(UINT nIDEvent);
+	afx_msg void OnTimer(UINT_PTR  nIDEvent);
 
 	afx_msg void OnAnimationPlay();
 	afx_msg void OnAnimationRewind();

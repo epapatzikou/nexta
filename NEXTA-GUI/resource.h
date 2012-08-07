@@ -24,6 +24,7 @@
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
+#define IDR_HTML_DLG_DEMANDTYPE         103
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
@@ -111,9 +112,9 @@
 #define IDD_DIALOG_GISLayer             209
 #define IDD_UNIT_TESTING_DIALOG         212
 #define IDD_DIALOG_UNIT_TEST_LIST       213
-#define IDD_DIALOG1                     218
 #define IDD_DIALOG_NODE_LANE1           219
 #define IDD_DIALOG_NODE_LANE2           220
+#define IDD_DIALOG_Demand_Type          221
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -846,14 +847,17 @@
 #define ID_IMPORT_SYNCHROUTDFCSVFILES   33436
 #define ID_IMPORT_DEMANDDATASET         33437
 #define ID_TOOLS_VIEWPATHMOELIST        33438
+#define ID_NODE_INCREASENODETEXTSIZE    33439
+#define ID_NODE_DECREASENODETEXTSIZE    33440
+#define ID_TOOLS_CHECKINGFEASIBILITY    33441
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        221
-#define _APS_NEXT_COMMAND_VALUE         33439
+#define _APS_NEXT_RESOURCE_VALUE        222
+#define _APS_NEXT_COMMAND_VALUE         33442
 #define _APS_NEXT_CONTROL_VALUE         1132
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif
