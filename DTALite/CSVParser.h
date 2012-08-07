@@ -63,6 +63,10 @@ public:
 				return false;
 			}
 
+			if(FieldsIndices[field_name] >= LineFieldsValue.size())  // no value is read for index FieldsIndices[field_name]
+			{
+				return false;
+			}
 			string str_value = LineFieldsValue[FieldsIndices[field_name]];
 
 			if (str_value.length() <= 0)

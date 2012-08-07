@@ -67,8 +67,8 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
 	{ 
-	cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-	g_ProgramStop();
+		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
+		g_ProgramStop();
 	}
 	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
 
@@ -79,7 +79,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
 	g_LogFile<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
-	 
+
 
 	int iteration = 0;
 	bool NotConverged = true;
@@ -90,7 +90,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	for(int ProcessID=0;  ProcessID < _MAX_NUMBER_OF_PROCESSORS; ProcessID++)
 	{
-	network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
+		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	}
 
 	// ----------* start of outer loop *----------
@@ -112,7 +112,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 			//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 			network_MP[id].BuildPhysicalNetwork (iteration);  // build network for this zone, because different zones have different connectors...
 
-					cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
+			cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 			{
 
@@ -120,10 +120,10 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 				{
 
 
-			if(g_ODZoneSize > 1000)  // only for large networks
-				{
-					cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
-				}
+					if(g_ODZoneSize > 1000)  // only for large networks
+					{
+						cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
+					}
 
 					// scan all possible departure times
 					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
@@ -166,19 +166,20 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
+	int TempPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
 	int NodeSize;
-	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
+	int TempNodeSize;
 
-	int vehicle_id_trace  = 25686;
+	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
 	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
 	{
 		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
-		if(pVeh==NULL)
-			TRACE("");
+
+		pVeh->m_bSwitched = false;
 
 		/// finding optimal path 
 		bool bDebugFlag  = false;
@@ -186,37 +187,124 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		float TotalCost;
 		bool bDistanceFlag = false;
 
-		if(pVeh->m_VehicleID  == vehicle_id_trace)
-		{
-			TRACE("");
-			bDebugFlag = true;
-		}
+		// general settings
+
+		int final_departuret_time_shift = 0;  // unit: min
+		TempNodeSize = 0;
+		float switch_threshold = 0;   // 2 min for day to day learning, - 100 min for  special case when using MSA, so 15% of agents will be selected for swtiching for sure. 
+
+		// 2 min for day to day learning, 
+		// -100 min for  special case when using MSA
+		// +100 will disallow any departure switch, because the benchmark (experienced travel time - 100) is too low. 
+
 
 		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
-		float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
-		bool bSwitchFlag = false;
-			if(iteration==0)
-			{
-				bSwitchFlag = true;
-			}else
-			{ // iteration >=1
-				if(RandomNumber < switching_rate)  			
-				{
-					bSwitchFlag = true;
-				}				
-			} 
 
-			if(bSwitchFlag)
+		if(g_UEAssignmentMethod==0)
+		{
+			switching_rate = 1.0f/(iteration+1);
+		}
+		else
+		{
+			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+		}
+
+
+			float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
+		bool bSwitchFlag = false;
+
+		float ExperiencedTravelTime = pVeh->m_TripTime;
+		float ExperiencedGeneralizedTravelTime = pVeh->m_TripTime + pVeh->m_TollDollarCost / max(1, pVeh->m_VOT);  // unit: min
+
+		bool bAllowDepartureTimeSwitchFlag = false;
+
+		
+
+		if(iteration==0)  //we always switch at the first iteration
+		{
+			bSwitchFlag = true;
+
+			pVeh->m_PreferredDepartureTime = pVeh->m_DepartureTime;  // set departure time to m_PreferredDepartureTime
+
+			// get the first feasible solution
+			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+
+		}else
+		{ // iteration >=1
+			if(g_Day2DayAgentLearningMethod>=1)  			
 			{
+				float gain_factor = 0.1f;
+
+				if(iteration<=1)
+				{
+						pVeh->m_EstimatedTravelTime = ExperiencedGeneralizedTravelTime;
+				}
+				else
+				{
+						pVeh->m_EstimatedTravelTime = pVeh->m_EstimatedTravelTime*(1-gain_factor)+ ExperiencedGeneralizedTravelTime*(gain_factor);
+				}
+
+				bSwitchFlag = false;
+				// agent based implementation
+
+				DTADecisionAlternative min_cost_alternative;
+				int departuret_time_shift =0;
 
 				// swtich: find shortest path
+				TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, TempPathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+				min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, 0, TempNodeSize, TempPathLinkList);
+
+				if(g_Day2DayAgentLearningMethod==2)  //departure time choice
+				{
+					departuret_time_shift = -5; //leave early
+					// leaving option: +5*
+					TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime+departuret_time_shift , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, TempPathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+					// add additional cost due to leaving early
+					TotalCost+= fabs(departuret_time_shift*g_DepartureTimeChoiceEarlyDelayPenalty);
+					min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, departuret_time_shift, TempNodeSize, TempPathLinkList);
+
+
+					departuret_time_shift = 5; //leave later
+					// leaving option: +5*
+					TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime+departuret_time_shift , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, TempPathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+					// add additional cost due to leaving late
+					TotalCost+= fabs(departuret_time_shift*g_DepartureTimeChoiceLateDelayPenalty);
+					min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, departuret_time_shift, TempNodeSize, TempPathLinkList);
+
+				}
+				//switching to the min cost alternative
+				if( min_cost_alternative.total_cost < pVeh->m_EstimatedTravelTime - switch_threshold)
+				{
+					bSwitchFlag = true;
+					final_departuret_time_shift = min_cost_alternative.final_departuret_time_shift ;
+
+					NodeSize = min_cost_alternative.node_size ; // copy the shortest path array and # of nodes along the path
+
+					for(int n = 0; n < NodeSize; n++)
+					{
+						PathLinkList[n] = min_cost_alternative.path_link_list [n];
+					}
+				}
+			}else if(RandomNumber < switching_rate)  // g_Day2DayAgentLearningMethod==0: no learning, just switching 
+			{
+			bSwitchFlag = true;
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
-		//			NodeSize = FindBestPathWithVOT_Movement(pVeh->m_OriginNodeID , pVeh->m_DepartureTime ,pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+
+
+			}
+		}
+		if(bSwitchFlag)  // for all vehicles that need to switch
+		{
+
+			pVeh->m_DepartureTime  = pVeh->m_PreferredDepartureTime  + final_departuret_time_shift;
 
 			pVeh->SetMinCost(TotalCost);
 
-			float ExperiencedTravelTime = pVeh->m_TripTime;
-			float m_gap = ExperiencedTravelTime - TotalCost;
+			float m_gap = ExperiencedGeneralizedTravelTime - TotalCost;
 
 			if(m_gap < 0) m_gap = 0.0;			
 
@@ -229,7 +317,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			pVeh->m_bSwitched = true;
 
-			if( pVeh->m_aryVN !=NULL)
+			if( pVeh->m_aryVN !=NULL)  // delete the old path
 			{
 				delete pVeh->m_aryVN;
 			}
@@ -263,13 +351,6 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					pVeh->m_aryVN[i].LinkID = PathLinkList[i];
 					pVeh->m_NodeNumberSum += PathLinkList[i];
 
-					if(pVeh->m_VehicleID  == vehicle_id_trace)
-					{
-						TRACE("Vehicle path: no. %d link: %d -> %d \n", i, 
-							g_NodeVector[g_LinkVector[pVeh->m_aryVN[i].LinkID]->m_FromNodeID].m_NodeName,
-							g_NodeVector[g_LinkVector[pVeh->m_aryVN[i].LinkID]->m_ToNodeID].m_NodeName);
-					}
-
 					/*if(g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL)
 					{
 					cout << "Error: g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
@@ -280,6 +361,62 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					ASSERT(pVeh->m_aryVN [i].LinkID < g_LinkVector.size());
 
 					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+
+				}
+
+
+				if(pVeh->m_PricingType ==4)  //assign travel time for transit users
+				{
+					pVeh->m_ArrivalTime = pVeh->m_DepartureTime + 0.1;  // at leat 0.1 min
+
+					for(int i = 0; i< NodeSize; i++)
+					{
+
+						if(pVeh->m_VehicleID ==771)
+							TRACE("");
+
+						if(i==0)  // initialize departure time
+						{
+							pVeh->m_aryVN[i].AbsArrivalTimeOnDSN = pVeh->m_DepartureTime ;
+						}
+
+						if(i< NodeSize-1)  // for all physical links
+						{
+							float transit_travel_time = 0;
+							DTALink* pLink = g_LinkVector[pVeh->m_aryVN[i].LinkID];
+
+							if (g_LinkTypeMap[pLink->m_link_type ].IsTransit() ==false)
+							{
+								if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
+								{
+									transit_travel_time = 99999;			
+								}else
+								{
+									transit_travel_time = pLink->m_Length/5*60;  // walking speed  = 5 mph			
+								}
+
+							}else
+							{
+								transit_travel_time = pLink->m_FreeFlowTravelTime ;  // calculated from speed limit of bus
+
+							}
+
+
+							pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN =
+								pVeh->m_aryVN[i].AbsArrivalTimeOnDSN + transit_travel_time ;
+
+							if(pVeh->m_ArrivalTime < pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN)  // update arrival time
+							{
+								pVeh->m_ArrivalTime = pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN;
+								pVeh->m_TripTime = pVeh->m_ArrivalTime - pVeh->m_DepartureTime;
+							}
+
+
+						}
+
+
+
+					}
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 
@@ -443,10 +580,6 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 
-		if(vehicle_id_trace == VehicleID)
-		{
-			debug_flag = true;
-		}
 
 		int OriginCentriod = m_PhysicalNodeSize;
 		int DestinationCentriod = m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;
@@ -666,7 +799,7 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 			DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 			ASSERT(pVeh!=NULL);
 
-			if(pVeh->m_NodeSize >0) // path assigned (from input_vehicle.csv)
+			if(pVeh->m_NodeSize >0) // path assigned (from input_agent.csv)
 				continue;
 
 			BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
@@ -1165,10 +1298,10 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
-	if(g_AgentBasedAssignmentFlag==0) // OD based
-		SimuOutput.AvgUEGap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
-	else  // agent based, we record gaps only for vehicles switched (after they find the paths)
-		SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesSwitched);
+		if(g_AgentBasedAssignmentFlag==0) // OD based
+			SimuOutput.AvgUEGap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
+		else  // agent based, we record gaps only for vehicles switched (after they find the paths)
+			SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesSwitched);
 
 	}
 
@@ -1198,9 +1331,9 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 		if(g_ODEstimationFlag == 1)
 		{
-		g_SummaryStatFile.SetFieldName ("Avg OD UE gap (min)");
-		g_SummaryStatFile.SetFieldName ("Demand Dev");
-		g_SummaryStatFile.SetFieldName ("Avg volume error");
+			g_SummaryStatFile.SetFieldName ("Avg OD UE gap (min)");
+			g_SummaryStatFile.SetFieldName ("Demand Dev");
+			g_SummaryStatFile.SetFieldName ("Avg volume error");
 
 		}
 		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
@@ -1209,16 +1342,16 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	}
 
-		g_SummaryStatFile.SetValueByFieldName ("Iteration #",iteration);
-		g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
-		g_SummaryStatFile.SetValueByFieldName ("# of agents",SimuOutput.NumberofVehiclesGenerated);
-		g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",SimuOutput.AvgTravelTime);
-		g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time Index",SimuOutput.AvgTTI );
-		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
-		g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
-		g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
-		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
-		g_SummaryStatFile.WriteRecord ();
+	g_SummaryStatFile.SetValueByFieldName ("Iteration #",iteration);
+	g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
+	g_SummaryStatFile.SetValueByFieldName ("# of agents",SimuOutput.NumberofVehiclesGenerated);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",SimuOutput.AvgTravelTime);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time Index",SimuOutput.AvgTTI );
+	g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
+	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
+	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
+	g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
+	g_SummaryStatFile.WriteRecord ();
 
 
 	unsigned li;
@@ -1242,8 +1375,6 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 		pLink->m_Day2DayLinkMOEVector .push_back (element);
 	}
-
-	g_AssignmentLogFile << endl;
 
 
 	if(g_ODEstimationFlag == 1)

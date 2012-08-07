@@ -69,7 +69,6 @@ extern int g_NumberOfInnerIterations;
 extern int g_AggregationTimetIntervalSize;
 
 extern int g_PlanningHorizon; // min
-extern int g_ObservationTimeInterval; //min 
 extern int g_Number_of_CompletedVehicles;
 extern int g_Number_of_GeneratedVehicles;
 
@@ -97,7 +96,9 @@ extern int g_TollingMethodFlag;
 extern float g_VMTTollingRate;
 
 // for traffic assignment 
-extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
+extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
+extern int g_Day2DayAgentLearningMethod; // 0: no learning (use previous day), 1: route choice learning only, 2: route choice and departure time learning
+extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration
 extern float g_PrevGapValue; // total network gap value in last iteration
 extern float g_RelativeGap; // = abs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue 

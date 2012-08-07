@@ -52,14 +52,18 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	VehicleType = 1;
 	// default to a single value
 	int i;
-	for(i= 1; i<= g_VehicleTypeVector.size(); i++)
-	{
-		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
-			VehicleType = i;
-	}
+
 
 	//step 2: pricing type
 	PricingType = g_DemandTypeMap[demand_type].pricing_type; // pricing_type start from 1
+
+
+		for(i= 1; i<= g_VehicleTypeVector.size(); i++)
+		{
+			if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
+				VehicleType = i;
+		}
+
 
 	//step 3: information type
 	// default to historical info as class 1
@@ -69,6 +73,12 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	{
 		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i])
 			InformationClass = i+1; // return pretrip as 2 or enoute as 3
+	}
+
+	if(PricingType == 4) 
+	{
+		VehicleType = 0;  // no vehicle type
+		InformationClass = 0;
 	}
 
 	RandomPercentage= g_GetRandomRatio() * 100; 
@@ -245,7 +255,7 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 
 void g_FreeMemoryForVehicleVector()
 {
-	cout << "Free vehicle set... " << endl;
+	cout << "Free memory for vehicle set... " << endl;
 	std::vector<DTAVehicle*>::iterator iterVehicle;		//this part of code needs to be carelfully reviewed, as it tries to delete pointers within STL					
 	for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end();iterVehicle++)
 	{
@@ -254,6 +264,7 @@ void g_FreeMemoryForVehicleVector()
 
 	g_VehicleVector.clear();
 	g_VehicleMap.clear();
+	cout << "Complete. " << endl;
 }
 
 void g_FreeODTKPathVector()
