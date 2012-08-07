@@ -42,39 +42,5 @@ void CTLiteDoc::OnEstimationOdestimation()
 
 void  CTLiteDoc::ReadObservationLinkVolumeData(LPCTSTR lpszFileName)
 {
-       FILE* st = NULL;
 
-	fopen_s(&st,lpszFileName,"r");
-	int count = 0 ;
-
-	if(st!=NULL)
-	{
-		std::list<DTALink*>::iterator iLink;
-
-		while(!feof(st))
-		{
-			//	sensor ID, Hourly flow volume
-			long SensorID =g_read_integer(st);
-			if(SensorID == -1)  // reach end of file
-				break;
-
-			float HourlyFlowVolume = g_read_float(st);
-			map<long, DTALink*>::iterator it;
-
-			if ( (it = m_SensorIDtoLinkMap.find(SensorID)) != m_SensorIDtoLinkMap.end()) 
-			{
-				DTALink* pLink = it->second;
-
-				if(pLink!=NULL)
-				{
-					pLink->m_ObsHourlyLinkVolume = HourlyFlowVolume;
-					count ++;
-				}
-			}
-		}
-
-		m_ObsLinkVolumeStatus.Format ("%d hourly link volume records are loaded from file %s.",count,lpszFileName);
-
-		fclose(st);
-	}
 }

@@ -377,6 +377,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_DemandType.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Find_Vehicle.cpp"
 				>
 			</File>
@@ -542,10 +546,6 @@
 			</File>
 			<File
 				RelativePath=".\Geometry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\GLView.cpp"
 				>
 			</File>
 			<File
@@ -823,18 +823,6 @@
 					RelativePath=".\VISSIM_EXPORT\VISSIM_Export.h"
 					>
 				</File>
-				<File
-					RelativePath=".\Data-Interface\XLAutomation.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Data-Interface\XLEzAutomation.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Data-Interface\XLTestDataSource.cpp"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="ChartCtrl"
@@ -1029,6 +1017,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_DemandType.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Find_Vehicle.h"
 				>
 			</File>
@@ -1205,10 +1197,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\GLView.h"
-				>
-			</File>
-			<File
 				RelativePath=".\MainFrm.h"
 				>
 			</File>
@@ -1300,18 +1288,6 @@
 				RelativePath=".\Utility.h"
 				>
 			</File>
-			<File
-				RelativePath=".\Data-Interface\XLAutomation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Data-Interface\XLEzAutomation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Data-Interface\XLTestDataSource.h"
-				>
-			</File>
 			<Filter
 				Name="GridCtrl"
 				>
@@ -1373,60 +1349,13 @@
 				>
 			</File>
 		</Filter>
-		<Filter
-			Name="ZipUtility"
-			>
-			<File
-				RelativePath=".\Zip_utility\unzip.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\Zip_utility\unzip.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Zip_utility\zip.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\Zip_utility\zip.h"
-				>
-			</File>
-		</Filter>
 		<File
 			RelativePath=".\ClassDiagram11.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\Dlg_DemandType.htm"
+			DeploymentContent="true"
 			>
 		</File>
 	</Files>

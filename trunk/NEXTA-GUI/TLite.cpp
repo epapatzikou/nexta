@@ -32,7 +32,6 @@
 #include "ChildFrm.h"
 #include "TLiteDoc.h"
 #include "TLiteView.h"
-#include "GLView.h"
 #include "TSView.h"
 #include "DlgMOE.h"
 #include "DlgPathMOE.h"
@@ -60,6 +59,7 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_FILE_OPEN_NEW_DOC, &CTLiteApp::OnFileOpenNewDoc)
 	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat)
 	ON_COMMAND(ID_FILE_OPENMULTIPLETRAFFICDATAPROJECTS, &CTLiteApp::OnFileOpenmultipletrafficdataprojects)
+	ON_COMMAND(ID_APP_EXIT, &CTLiteApp::OnAppExit)
 END_MESSAGE_MAP()
 
 
@@ -77,7 +77,7 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
-	m_pTemplateGLView = false;
+	//m_pTemplateGLView = false;
 	m_pTemplateTimeTableView = false;
 
 }
@@ -96,6 +96,7 @@ BOOL CTLiteApp::InitInstance()
 		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", CurrentDirectory);
 
 		int visualization_template = (int)g_GetPrivateProfileFloat("template", "traffic_assignment", 0, NEXTASettingsPath);
+
 		if( visualization_template == 1)
 			m_VisulizationTemplate = e_traffic_assignment;
 		else
@@ -129,13 +130,14 @@ BOOL CTLiteApp::InitInstance()
         //when the program starts. 
         //The template object below is a secondary template that can be activated in response to the New GLView Window menu item.
 
-        m_pTemplateGLView = new CMultiDocTemplate(
+ /*       m_pTemplateGLView = new CMultiDocTemplate(
     IDR_TLiteTYPE1,
     RUNTIME_CLASS(CTLiteDoc),
     RUNTIME_CLASS(CChildFrame),
     RUNTIME_CLASS(CGLView));
 
-	m_pTemplateTimeTableView = new CMultiDocTemplate(
+	*/
+		m_pTemplateTimeTableView = new CMultiDocTemplate(
     IDR_TLiteTYPE1,
     RUNTIME_CLASS(CTLiteDoc),
     RUNTIME_CLASS(CChildFrame),
@@ -215,7 +217,7 @@ void CTLiteApp::OnAppAbout()
 
 void CTLiteApp::OnFileOpen()
 {
-	static char BASED_CODE szFilter[] = "Transportation Network Projects (*.tnp)|*.tnp|DYNASMART Workspace Files (*.dws)|*.dws|*.tnp; *.dws|All Files (*.*)|*.*||";
+	static char BASED_CODE szFilter[] = "DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|*.tnp; *.dws|All Files (*.*)|*.*||";
 
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
    if(dlg.DoModal() == IDOK)
@@ -236,7 +238,7 @@ void CTLiteApp::OnFileOpenNewDoc()
 int CTLiteApp::ExitInstance()
 {
 
-	delete m_pTemplateGLView;
+	//delete m_pTemplateGLView;
 	delete m_pTemplateTimeTableView;
 
 	return CWinApp::ExitInstance();
@@ -383,3 +385,8 @@ void CTLiteApp::OnFileOpenmultipletrafficdataprojects()
    }
 }
 
+
+void CTLiteApp::OnAppExit()
+{
+	exit(0);
+}

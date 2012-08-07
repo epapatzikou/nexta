@@ -16,51 +16,6 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Chinese (P.R.C.) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
-#ifdef _WIN32
-LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
-#pragma code_page(936)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_DIALOG1 DIALOGEX 0, 0, 316, 183
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_SYSMENU
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "确定",IDOK,205,162,50,14
-    PUSHBUTTON      "取消",IDCANCEL,259,162,50,14
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
-BEGIN
-    IDD_DIALOG1, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 309
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 176
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-#endif    // Chinese (P.R.C.) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
@@ -82,7 +37,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.0 Beta",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software Version 3.0 Beta Release Date: 04/13/2012",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
+    LTEXT           "Open-Source Software Version 3.0 Beta Release Date: 08/06/2012",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,183,142,50,14,WS_GROUP
     LTEXT           "This package reads DYNASMARAT-P, DTALite, AMS data sets.",IDC_STATIC,41,48,171,20,0,WS_EX_STATICEDGE
     LTEXT           "This package reads DYNASMARAT-P, DTALite, AMS data sets.",IDC_STATIC,41,73,171,20,0,WS_EX_STATICEDGE
@@ -355,7 +310,6 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,417,297,50,14
     LISTBOX         IDC_LIST_VEHICLE,297,172,194,71,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Vehicle List:",IDC_STATIC,290,150,51,8
     COMBOBOX        IDC_COMBO_Origin,14,37,43,88,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Origin Zone:",IDC_STATIC,14,22,51,8
     LTEXT           "Destination\nZone:",IDC_STATIC,63,15,46,16
@@ -365,8 +319,6 @@ BEGIN
     LTEXT           "Vehicle\nType:",IDC_STATIC,169,15,35,20
     COMBOBOX        IDC_COMBO_VehicleType,167,37,74,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "OD List:",IDC_STATIC,17,55,51,8
-    LTEXT           "Operating Mode Distributions (Emissions Analysis):",IDC_STATIC,17,241,162,8
-    LISTBOX         IDC_OpMode_LINK,15,254,247,29,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "Export",ID_EXPORT,209,132,29,14,NOT WS_TABSTOP
     GROUPBOX        "OD Pair Filter:",IDC_STATIC,7,7,484,126
     LTEXT           "Information\nClass:",IDC_STATIC,247,15,50,19
@@ -393,11 +345,14 @@ BEGIN
     COMBOBOX        IDC_COMBO_VOT_UB,427,87,42,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "Value of Time Range",IDC_STATIC,415,36,76,67
     COMBOBOX        IDC_COMBO_DemandType,113,37,46,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Demand\nType:",IDC_STATIC,113,15,43,16
+    LTEXT           "Trip\nType:",IDC_STATIC,113,15,43,16
     EDITTEXT        IDC_SUMMARY_INFO,15,133,191,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
     DEFPUSHBUTTON   "Export",ID_EXPORT_PATH_DATA,232,230,29,14,NOT WS_TABSTOP
     DEFPUSHBUTTON   "Export",ID_EXPORT_VEHICLE_DATA,462,243,29,14,NOT WS_TABSTOP
     PUSHBUTTON      "Find Critical OD Pairs",ID_FindCriticalOD,413,7,78,19,0,WS_EX_STATICEDGE
+    LTEXT           "Vehicle List:",IDC_STATIC,290,150,51,8
+    LISTBOX         IDC_OpMode_LINK,15,254,247,57,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Travel Time Distributions:",IDC_STATIC,17,241,82,8
 END
 
 IDD_DIALOG_CarFollowingSettings DIALOGEX 0, 0, 276, 95
@@ -906,6 +861,16 @@ BEGIN
     PUSHBUTTON      "Del Turn",IDC_BTN_DELTURN,203,7,50,14
 END
 
+IDD_DIALOG_Demand_Type DIALOGEX 0, 0, 454, 183
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Demand Type"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,162,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,397,162,50,14
+    CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,28,440,71
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1327,6 +1292,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 313
     END
+
+    IDD_DIALOG_Demand_Type, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 447
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 176
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1519,12 +1492,6 @@ BEGIN
     BUTTON      ID_VIEW_ZOOMOUT
     BUTTON      ID_VIEW_SHOWNETWORK
     SEPARATOR
-    BUTTON      ID_WINDOW_NEW3DVIEW
-    BUTTON      ID_3DZoom
-    BUTTON      ID_3DPam
-    BUTTON      ID_3DRotate
-    BUTTON      ID_3DReset
-    SEPARATOR
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
     BUTTON      ID_EDIT_CREATENODE
@@ -1626,12 +1593,6 @@ BEGIN
     BUTTON      ID_VIEW_ZOOMIN
     BUTTON      ID_VIEW_ZOOMOUT
     BUTTON      ID_VIEW_SHOWNETWORK
-    SEPARATOR
-    BUTTON      ID_WINDOW_NEW3DVIEW
-    BUTTON      ID_3DZoom
-    BUTTON      ID_3DPam
-    BUTTON      ID_3DRotate
-    BUTTON      ID_3DReset
     SEPARATOR
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
@@ -2017,6 +1978,8 @@ BEGIN
             MENUITEM "Node Number",                 ID_SHOW_SHOWNODENUMBER
             MENUITEM "Increase Node Size (Page Up Key)", ID_VIEW_INCREASENODESIZE
             MENUITEM "Decrease Node Size (Page Down Key)", ID_VIEW_DECREATENODESIZE
+            MENUITEM "Increase Node Text Size",     ID_NODE_INCREASENODETEXTSIZE
+            MENUITEM "Decrease Node Text Size",     ID_NODE_DECREASENODETEXTSIZE
         END
         POPUP "Link"
         BEGIN
@@ -2124,9 +2087,10 @@ BEGIN
     END
     POPUP "Tools"
     BEGIN
-        MENUITEM "View Path MOE List",          ID_SHOW_SHOWPATHMOE
-        MENUITEM "Unit Testing",                ID_TOOLS_UNITTESTING
+        MENUITEM "Subarea Cut",                 ID_EDIT_DELETELINKSOUTSIDESUBAREA
         MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
+        MENUITEM SEPARATOR
+        MENUITEM "View Path MOE List",          ID_SHOW_SHOWPATHMOE
         MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
         MENUITEM "NGSIM Data",                  ID_IMPORT_NGSIM_FILE
         POPUP "NGSIM  Menu"
@@ -2150,6 +2114,7 @@ BEGIN
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
         MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
+        MENUITEM "Unit Testing",                ID_TOOLS_UNITTESTING
     END
     POPUP "&Window"
     BEGIN
@@ -2634,7 +2599,6 @@ BEGIN
         MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         MENUITEM "GIS Layer Panel",             ID_VIEW_GIS_Layer_Panel
-        MENUITEM "Train Info",                  ID_VIEW_TRAININFO
         MENUITEM SEPARATOR
         POPUP "Node"
         BEGIN
@@ -2664,6 +2628,11 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Search Node/Link/Path/Train (Ctrl+F)", ID_SEARCH_FINDLINK
         MENUITEM SEPARATOR
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Train List",                  ID_VIEW_TRAININFO
+        MENUITEM "Check Schedule Feasibility",  ID_TOOLS_CHECKINGFEASIBILITY
     END
     POPUP "&Window"
     BEGIN
@@ -2777,6 +2746,13 @@ BEGIN
     0
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// HTML
+//
+
+IDR_HTML_DLG_DEMANDTYPE HTML                    "Dlg_DemandType.htm"
 
 /////////////////////////////////////////////////////////////////////////////
 //

@@ -45,6 +45,12 @@ public:
 				return false;
 			}
 
+			int size = (int)(LineFieldsValue.size());
+			if(FieldsIndices[field_name]>= size)
+			{
+				return false;
+			}
+
 			string str_value = LineFieldsValue[FieldsIndices[field_name]];
 
 			if (str_value.length() <= 0)

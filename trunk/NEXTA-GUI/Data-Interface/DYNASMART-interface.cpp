@@ -29,6 +29,8 @@
 #include "..//TLite.h"
 #include "..//Network.h"
 #include "..//TLiteDoc.h"
+#include "..//Geometry.h"
+#include "..//CSVParser.h"
 #include <iostream>                          // for cout, endl
 #include <fstream>                           // for ofstream
 #include <sstream>
@@ -42,6 +44,149 @@ using namespace std;
 // 
 
 
+bool CTLiteDoc::ReadGPSData(string FileName)
+{
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	m_ODSize  = 0;
+	int good_vehicle_id = 1;
+
+	CCSVParser parser;
+
+	string str0 = FileName;
+	CT2CA pszConvertedAnsiString (str0.c_str());
+	// construct a std::string using the LPCSTR input
+	std::string  strStd (pszConvertedAnsiString);
+
+	if (parser.OpenCSVFile(strStd))
+	{
+		int i=0;
+		while(parser.ReadRecord())
+		{
+
+			string Trajectory_ID, Trajectory_Start_Time;
+			int Probe_ID,Origin_Area_ID,Destination_Area_ID;
+			float Trajectory_Time,Trajectory_Length;
+
+		if(parser.GetValueByFieldName("Trajectory ID",Trajectory_ID) == false)
+				break;
+
+		parser.GetValueByFieldName("Probe ID",Probe_ID);
+		parser.GetValueByFieldName("Trajectory Time (s)",Trajectory_Time);
+		parser.GetValueByFieldName("Trajectory Length (m)",Trajectory_Length);
+		parser.GetValueByFieldName("Origin Area ID",Origin_Area_ID);
+		parser.GetValueByFieldName("Destination Area ID",Destination_Area_ID);
+		parser.GetValueByFieldName("Trajectory Start Time",Trajectory_Start_Time);
+
+	
+
+		int m_VehicleID= Probe_ID;
+		//Trajectory ID,Probe ID,Trajectory Time (s),Trajectory Length (m),Origin Area ID,Destination Area ID,Trajectory Start Time
+
+		//		64555_1,64555,2630.78,32963.56,468,579,Sat May 01 18:01:19 2010
+		DTAVehicle* pVehicle = 0;
+		pVehicle = new DTAVehicle;
+		pVehicle->m_VehicleID		= m_VehicleID;
+
+		int NodeSizeOffset = 0;
+		pVehicle->m_bComplete = true;
+
+		pVehicle->m_OriginZoneID	= Origin_Area_ID;
+		pVehicle->m_DestinationZoneID = Destination_Area_ID;
+
+		if( pVehicle->m_OriginZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_OriginZoneID ;
+
+		if( pVehicle->m_DestinationZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_DestinationZoneID ;
+
+		m_ZoneMap[Origin_Area_ID].m_ODDemandMatrix [Destination_Area_ID].SetValue (1,1);
+
+		pVehicle->m_InformationClass = 0;
+
+		//int FirstNodeID = g_read_integer(pFile); 
+		//int SecondNodeID = g_read_integer(pFile);    // (4) first node
+		//int DestinationNodeID = g_read_integer(pFile);    // last node
+
+		pVehicle->m_DepartureTime	= m_SimulationStartTime_in_min ;
+
+		if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
+			g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
+
+		// Total Travel Time=   0.34 # of Nodes=   2 VehType 1 LOO 1
+		pVehicle->m_TripTime  = Trajectory_Time;
+		pVehicle->m_ArrivalTime = pVehicle->m_DepartureTime + pVehicle->m_TripTime;
+
+		pVehicle->m_NodeSize	= 0;
+		pVehicle->m_DemandType = 1;
+		pVehicle->m_PricingType = 1;
+
+		//			pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
+
+		pVehicle->m_VOT = 10;
+		pVehicle->m_TollDollarCost = 0;
+		pVehicle->m_Emissions = 0;
+		pVehicle->m_Distance = Trajectory_Length/5480;
+
+		//pVehicle->m_Distance = 0;
+
+		//pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+		//pVehicle->m_NodeNumberSum = 0;
+
+		//m_PathNodeVectorSP[0] =  FirstNodeID;
+
+		//int i;
+		//for(i=1; i< pVehicle->m_NodeSize; i++)
+		//{
+		//	m_PathNodeVectorSP[i] = g_read_integer(pFile);
+
+		//	pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
+		//	DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i],directory+"VehTrajectory.dat");
+		//	if(pLink==NULL)
+		//	{
+		//		CString str;
+		//		str.Format ("Error in reading file Vehicle.csv, good vehicle id: %d",good_vehicle_id);
+		//		AfxMessageBox(str);
+		//		fclose(pFile);
+
+		//		return false;
+		//	}
+		//	pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+		//	
+		//	pLink->m_TotalVolume +=1;
+		//}
+
+
+		//// ==>Node Exit Time Point
+		//for(i=1; i< pVehicle->m_NodeSize + NodeSizeOffset; i++)
+		//{
+		//	pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = m_SimulationStartTime_in_min + g_read_float(pFile);
+		//}
+
+
+		//// ==>Link Travel Time
+		//for(i=1; i< pVehicle->m_NodeSize + NodeSizeOffset; i++)
+		//{
+		//	g_read_float(pFile);  // // travel time
+		//}
+		//// ==>Accumulated Stop Time
+		//for(i=1; i< pVehicle->m_NodeSize +NodeSizeOffset; i++)
+		//{
+		//	g_read_float(pFile);  // stop time
+		//}
+
+		m_VehicleSet.push_back (pVehicle);
+		m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
+
+		good_vehicle_id = m_VehicleID;
+	}
+
+	}
+
+	return true;
+}
 BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly)
 {
 	m_OriginOnBottomFlag = -1;
@@ -51,12 +196,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	m_bDYNASMARTDataSet = true;
 
-	int YCorridonateFlag = -1;
+	int YCorridonateFlag = g_GetPrivateProfileInt("coordinate","y_coordinate_flag",-1,ProjectFileName);
 
 	CString directory;
 	m_ProjectFile = ProjectFileName;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
+	SetCurrentDirectory(directory);
 	m_ProjectDirectory = directory;
 	m_ProjectTitle = GetWorkspaceTitleName(ProjectFileName);
 	SetTitle(m_ProjectTitle);
@@ -79,6 +225,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	if(pFile!=NULL)
 	{
 		num_zones = g_read_integer(pFile);
+
+		m_ODSize = num_zones;
 		int num_nodes= g_read_integer(pFile);
 		int num_links = g_read_integer(pFile);
 
@@ -431,21 +579,23 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					return false;
 				}
 
-				int node_id  = m_NodeNametoIDMap[to_node];
-				m_NodeIDtoZoneNameMap[node_id] = zone_number;
+				// To do: need to record generation link, so that we can save the data to DSP format
 
-				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
+				//int node_id  = m_NodeNametoIDMap[to_node];
+				//m_NodeIDtoZoneNameMap[node_id] = zone_number;
 
-				// if there are multiple nodes for a zone, the last node id is recorded.
+				//m_NodeIDMap[node_id]->m_ZoneID = zone_number;
 
-				if(m_ZoneMap [zone_number].FindANode(to_node) == false)
-				{
-				DTAActivityLocation element;
-				element.ZoneID  = zone_number;
-				element.NodeNumber = to_node;
+				//// if there are multiple nodes for a zone, the last node id is recorded.
 
-				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-				}
+				//if(m_ZoneMap [zone_number].FindANode(to_node) == false)
+				//{
+				//DTAActivityLocation element;
+				//element.ZoneID  = zone_number;
+				//element.NodeNumber = to_node;
+
+				//m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+				//}
 
 			}
 
@@ -453,6 +603,24 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		fclose(pFile);
 	}
+
+			DTADemandType demand_type_element;
+			demand_type_element.demand_type =1;
+			demand_type_element.demand_type_name = "SOV";
+			demand_type_element.pricing_type = 1;
+			demand_type_element.average_VOT = 10;
+			m_DemandTypeVector.push_back(demand_type_element);
+
+			demand_type_element.demand_type =2;
+			demand_type_element.pricing_type = 2;
+			demand_type_element.demand_type_name = "HOV";
+			demand_type_element.average_VOT = 10;
+			m_DemandTypeVector.push_back(demand_type_element);
+
+			demand_type_element.demand_type =3;
+			demand_type_element.pricing_type = 3;
+			demand_type_element.demand_type_name = "truck";
+			m_DemandTypeVector.push_back(demand_type_element);
 
 
 	int ReadDemandFile = 1;
@@ -496,6 +664,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			// Origins
 			double start_time= g_read_float(pFile); // start time
 
+			int demand_table_type = GetDemandTableType(1,start_time,start_time+time_interval);
 			for(int from_zone=1; from_zone<= num_zones; from_zone++)
 				for(int to_zone=1; to_zone<= num_zones; to_zone++)
 				{
@@ -504,8 +673,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 					DTADemandVolume element;
 
-//					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].AddTimeDependentValue (1,demand_value,start_time,start_time+time_interval);
-					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].SetValue (1,demand_value);
+					// obtain demand table type
+
+					m_ZoneMap[from_zone].m_ODDemandMatrix [to_zone].SetValue (demand_table_type,demand_value);
 
 
 					RecordCount++;
@@ -724,8 +894,15 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	SetStatusText(str_running_time);
 
-	if(bNetworkOnly)
-		return true;
+	ReadGPSData("2010-5-2.csv");
+	ReadGPSData("2010-5-3.csv");
+	ReadGPSData("2010-5-4.csv");
+	ReadGPSData("2010-5-5.csv");
+	ReadGPSData("2010-5-6.csv");
+	ReadGPSData("2010-5-7.csv");
+	ReadGPSData("2010-5-8.csv");
+
+	m_SimulationLinkMOEDataLoadingStatus.Format("Load %d GPS probe records.", m_VehicleIDMap.size());
 
 
 	// read system.dat
@@ -769,9 +946,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		}
 	fclose(pFile);
-	}else
-	{
-	return false; // no simulation data, return 
 	}
 
 	// read queue length data
@@ -802,13 +976,27 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 
+	bool CumulativeFlag = true;
 	// read flow rate
 	fopen_s(&pFile,directory+"OutAccuVol.dat","r");
+
+	if(pFile==NULL)
+	{
+		fopen_s(&pFile,directory+"LinkVolume.dat","r");
+		CumulativeFlag = false;
+	}
+
 
 	if(pFile!=NULL)
 	{
 		g_read_float(pFile);  // read 10 min 
 		// This file provides the accummulated number of veh. on of each link           10every sims ints
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+			
+				(*iLink)->m_TotalVolume = 0;
+			}
 
 		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
 		{
@@ -818,10 +1006,22 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				break;
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
+				if(CumulativeFlag)  // DSP 
+				{
 				(*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow = g_read_float(pFile);  // cumulative flow;
 
 				if(t>=1)
+				{
 					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].ObsCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ObsCumulativeFlow)*60);
+					(*iLink)->m_TotalVolume+= (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
+
+				}
+				}else  // DYNASMART -P 
+				{
+					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  g_read_float(pFile)*60;
+					(*iLink)->m_TotalVolume+= (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
+			
+				}
 			}
 
 		}
@@ -864,9 +1064,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	// read vehicle trajectory file
 
 
-
 	int ReadVehicleTrajectoryFile = g_GetPrivateProfileInt("display","read_trajectory",0,ProjectFileName);
 
+	ReadVehicleTrajectoryFile = 1;
 	if(ReadVehicleTrajectoryFile)
 	{
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
@@ -895,7 +1095,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	if(pFile != NULL)
 	{
-		m_ODSize  = 0;
 	int good_vehicle_id = 1;
 	while(!feof(pFile) )
 	{
@@ -1015,6 +1214,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 	}
 	}
+
 
 
 	return true;

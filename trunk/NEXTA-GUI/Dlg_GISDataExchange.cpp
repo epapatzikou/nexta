@@ -52,7 +52,7 @@ END_MESSAGE_MAP()
 
 void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 {
-
+#ifndef _WIN64
 	if(m_GIS_ShapeFile.GetLength () == 0 )
 	{
 	AfxMessageBox("Please select a file first.");
@@ -148,7 +148,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 	}
 
 			OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 
 void CDlg_GISDataExchange::OnBnClickedButtonFindSensorFile()
@@ -175,6 +175,7 @@ void CDlg_GISDataExchange::OnLbnSelchangeList1()
 }
 void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 {
+#ifndef _WIN64
 
 	CString message_str;
 	OGRRegisterAll();
@@ -335,6 +336,7 @@ void CDlg_GISDataExchange::ExportDataToCSV(CString csv_file_name)
 			OGRDataSource::DestroyDataSource( poDS );
 
 			CSVFile.close();
+#endif
 }
 
 void CDlg_GISDataExchange::OnBnClickedExportCsvFile()
@@ -383,6 +385,8 @@ void CDlg_GISDataExchange::OnBnClickedExportKmlFile()
 
 void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeString)
 {
+
+#ifndef _WIN64
 	CString message_str;
 
     OGRSFDriver *poDriver;
@@ -457,7 +461,7 @@ void CDlg_GISDataExchange::ExportToGISFile(CString file_name, CString GISTypeStr
     }
 
     OGRDataSource::DestroyDataSource( poDS );
-
+#endif
 }
 void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
 {

@@ -2,6 +2,8 @@
 #define RecordsetExt_H
 #pragma	warning(disable: 4995) //  'CDaoRecordset': name was marked as #pragma deprecated
 
+#ifndef _WIN64
+
 #define MAX_FIELD 200
 
 #include <afxdb.h>          // MFC database support
@@ -40,4 +42,5 @@ public:
 
 };
 
+#endif
 #endif

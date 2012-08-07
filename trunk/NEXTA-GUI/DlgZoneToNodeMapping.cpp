@@ -30,6 +30,7 @@ void CDlgZoneToNodeMapping::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CDlgZoneToNodeMapping, CDialog)
+	ON_BN_CLICKED(IDOK, &CDlgZoneToNodeMapping::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -52,4 +53,10 @@ BOOL CDlgZoneToNodeMapping::OnInitDialog()
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CDlgZoneToNodeMapping::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
+	OnOK();
 }

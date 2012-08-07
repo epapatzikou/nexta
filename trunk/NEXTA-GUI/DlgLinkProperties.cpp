@@ -73,12 +73,14 @@ BOOL CDlgLinkProperties::OnInitDialog()
 		CString str;
 		str.Format("%d,%s",itr->first,itr->second .link_type_name.c_str ());
 		m_LinkTypeComboBox.AddString (str);
+
+		if(LinkType == itr->first)
+		{
+			m_LinkTypeComboBox.SetCurSel (m_LinkTypeComboBox.GetCount ()-1);
+		}
 	}
 
-	if(LinkType < m_pDoc->m_LinkTypeMap.size())
-	{
-		m_LinkTypeComboBox.SetCurSel (LinkType-1);
-	}
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -90,7 +92,18 @@ void CDlgLinkProperties::OnCbnEditchangeCombo1()
 
 void CDlgLinkProperties::OnBnClickedOk()
 {
-	LinkType = m_LinkTypeComboBox.GetCurSel ()+1;
+	char m_Text[100];
+
+	int CurSelNo = m_LinkTypeComboBox.GetCurSel ();
+
+	char LinkTypeString[50]; 
+	if(CurSelNo>0)
+	{
+	
+		m_LinkTypeComboBox.GetLBText (CurSelNo,m_Text);
+		sscanf_s(m_Text, "%d,%s", &LinkType, LinkTypeString,sizeof(LinkTypeString));
+	
+	}
 
 	OnOK();
 }

@@ -70,7 +70,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Zone"),
 	_T("Connector"),
 	_T("Link MOE"),
-	_T("Observations"),
+	_T("OD Matrix"),
 	_T("Detector"),
 	_T("Subarea"), 
 	_T("Work Zone"),
@@ -368,26 +368,26 @@ void CMainFrame::Dump(CDumpContext& dc) const
 
 void CMainFrame::OnWindowNew3dview()
 {
-	CMDIChildWnd* pActiveChild = MDIGetActive();
-	CDocument* pDocument;
-	if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
-		TRACE("Warning:  No active document for WindowNew command\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Command failed
-	}
-	// Otherwise, we have a new frame!
-	CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
-	ASSERT_VALID(pTemplate);
+	//CMDIChildWnd* pActiveChild = MDIGetActive();
+	//CDocument* pDocument;
+	//if (pActiveChild == NULL || (pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+	//	TRACE("Warning:  No active document for WindowNew command\n");
+	//	AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+	//	return; // Command failed
+	//}
+	//// Otherwise, we have a new frame!
+	//CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
+	//ASSERT_VALID(pTemplate);
 
-	CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
-	if (pFrame == NULL)
-	{
-		TRACE("Warning:  failed to create new frame\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Command failed
-		// make it visisable
-	}
-	pTemplate->InitialUpdateFrame(pFrame, pDocument);
+	//CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	//if (pFrame == NULL)
+	//{
+	//	TRACE("Warning:  failed to create new frame\n");
+	//	AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+	//	return; // Command failed
+	//	// make it visisable
+	//}
+	//pTemplate->InitialUpdateFrame(pFrame, pDocument);
 
 }
 
@@ -432,7 +432,7 @@ void CMainFrame::On3ddisplayAnimation()
 {
 	// TODO: Add your command handler code here
 }
-void CMainFrame::OnTimer(UINT nIDEvent)
+void CMainFrame::OnTimer(UINT_PTR  nIDEvent)
 {
 
 	if(g_Player_Status == 1) // play
@@ -515,18 +515,19 @@ void CMainFrame::OnWindowShowestimationview()
 		return; // Command failed
 	}
 	// Otherwise, we have a new frame!
-	CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
-	ASSERT_VALID(pTemplate);
+	//CDocTemplate* pTemplate = ((CTLiteApp*) AfxGetApp())->m_pTemplateGLView;
+	//ASSERT_VALID(pTemplate);
 
-	CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
-	if (pFrame == NULL)
-	{
-		TRACE("Warning:  failed to create new frame\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Command failed
-		// make it visisable
-	}
-	pTemplate->InitialUpdateFrame(pFrame, pDocument);}
+	//CFrameWnd* pFrame = pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	//if (pFrame == NULL)
+	//{
+	//	TRACE("Warning:  failed to create new frame\n");
+	//	AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+	//	return; // Command failed
+	//	// make it visisable
+	//}
+	//pTemplate->InitialUpdateFrame(pFrame, pDocument);
+}
 
 void CMainFrame::OnViewDatatoolbar()
 {

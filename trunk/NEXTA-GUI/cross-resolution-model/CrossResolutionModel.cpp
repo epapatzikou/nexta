@@ -25,18 +25,89 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
+#include "..//Geometry.h"
+#include "..//CSVParser.h"
 #include "..//TLite.h"
 #include "..//Network.h"
 #include "..//TLiteDoc.h"
-#include "..//Data-Interface//XLEzAutomation.h"
-#include "..//Data-Interface//XLTestDataSource.h"
+#ifndef _WIN64
 #include "..//Data-Interface//include//ogrsf_frmts.h"
+#endif 
 #include "..//MainFrm.h"
 
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"
 
-
+DTA_Approach CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
+{
+	if(angle < 23)
+	{
+		return DTA_East;
+	}else if(angle < 45 && m_ApproachMap.find(DTA_East)== m_ApproachMap.end())  // East has not been used previously
+	{
+		return DTA_East;
+	}
+	else if(angle < 68 ) 
+	{
+		if(m_ApproachMap.find(DTA_North)== m_ApproachMap.end())  //North not used
+			return DTA_North;
+		else
+			return DTA_NorthEast;
+	}
+	else if(angle < 113) 
+	{
+		return DTA_North;
+	}
+	else if(angle < 135) 
+	{
+		if(m_ApproachMap.find(DTA_North)== m_ApproachMap.end())  //North not used
+			return DTA_North;
+		else
+			return DTA_NorthWest;
+	}
+	else if(angle < 158) 
+	{
+		if(m_ApproachMap.find(DTA_West)== m_ApproachMap.end())  //West not used
+			return DTA_West;
+		else
+			return DTA_NorthWest;
+	}
+	else if(angle < 203) 
+	{
+		return DTA_West;
+	}
+	else if(angle < 225 && m_ApproachMap.find(DTA_West)== m_ApproachMap.end())  //West not used
+	{
+		return DTA_West;
+	}
+	else if(angle < 248) 
+	{
+		if(m_ApproachMap.find(DTA_South)== m_ApproachMap.end())  //South not used
+			return DTA_South;
+		else
+			return DTA_SouthWest;
+	}
+	else if(angle < 293) 
+	{
+		return DTA_South;
+	}
+	else if(angle < 315) 
+	{
+		if(m_ApproachMap.find(DTA_South)== m_ApproachMap.end())  //South not used
+			return DTA_South;
+		else
+			return DTA_SouthEast;
+	}
+	else if(angle < 338) 
+	{
+		if(m_ApproachMap.find(DTA_East)== m_ApproachMap.end())  //East not used
+			return DTA_East;
+		else
+			return DTA_SouthEast;
+	}
+	else
+		return DTA_East;
+}
 DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
 {
 	if(angle < 23)
@@ -75,6 +146,42 @@ DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
 		return DTA_East;
 }
 
+
+DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(int relative_angle)
+{
+	int min_diff = 89;
+
+	int ideal_left = 90;
+	int ideal_right = -90;
+	int ideal_through = 0;
+
+	if(abs(relative_angle - ideal_left) <= min_diff)
+		return DTA_LeftTurn;
+
+	if(abs(relative_angle - ideal_right) <= min_diff)
+		return DTA_RightTurn;
+
+	return DTA_OtherTurn;
+}
+
+
+DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Left_OR_Right_Turn(int relative_angle)
+{
+	int min_diff = 89;
+
+	int ideal_left = 90;
+	int ideal_right = -90;
+	int ideal_through = 0;
+
+
+	if(abs(relative_angle - ideal_left) <= min_diff)
+		return DTA_LeftTurn;
+
+	if(abs(relative_angle - ideal_right) <= min_diff)
+		return DTA_RightTurn;
+
+	return DTA_OtherTurn;
+}
 
 DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Turn(int relative_angle)
 {
@@ -128,6 +235,34 @@ DTA_Turn CTLiteDoc::Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3)
 	return Find_RelativeAngle_to_Turn(relative_angle);
 
 }
+
+
+DTA_Turn CTLiteDoc::Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2)
+{
+	if(approach2 == m_OpposingDirectionMap[approach1])
+		return DTA_Through;
+	else
+	{
+	int relative_angle = Find_PPP_RelativeAngle(p1,p2,p3);
+	return Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(relative_angle);
+	}
+
+}
+
+
+DTA_Turn CTLiteDoc::Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2)
+{
+	if(approach2 == m_OpposingDirectionMap[approach1])
+		return DTA_Through;
+	else
+	{
+	int relative_angle = Find_PPP_RelativeAngle(p1,p2,p3);
+	return Find_RelativeAngle_to_Left_OR_Right_Turn(relative_angle);
+	}
+
+}
+
+
 int CTLiteDoc::Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3)
 {
 	int relative_angle;
@@ -359,6 +494,19 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four dire
 void CTLiteDoc::ConstructMovementVector(bool flag_Template) 
 // this function has 8 directions
 {
+	m_OpposingDirectionMap[DTA_North] = DTA_South;
+	m_OpposingDirectionMap[DTA_South] = DTA_North;
+
+	m_OpposingDirectionMap[DTA_East] = DTA_West;
+	m_OpposingDirectionMap[DTA_West] =  DTA_East;
+
+	m_OpposingDirectionMap[DTA_NorthEast] =  DTA_SouthWest;
+	m_OpposingDirectionMap[DTA_SouthWest] =  DTA_NorthEast;
+	
+	m_OpposingDirectionMap[DTA_SouthEast] =  DTA_NorthWest;
+	m_OpposingDirectionMap[DTA_NorthWest] =  DTA_SouthEast;
+
+	ReadSynchroPreGeneratedLayoutFile(m_Synchro_ProjectDirectory+"Synchro_layout.csv");
 
 	m_MovementVector.clear();
 	m_PhaseVector.clear();
@@ -386,7 +534,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
 	{  // for current node
 
-		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
+//		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			signal_count ++;
 			// generate movement set
@@ -397,8 +545,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 			PhaseSet.copy_parameters(PhaseTemplate);
 
 
-			// scan each inbound link and outbound link
-
+			// step 1: mark movement turn first
+			m_ApproachMap.clear();
 			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
 			{
 				// for each incoming link
@@ -425,7 +573,158 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						p3  = m_NodeIDMap[element.DestNodeID]->pt;
 
 						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+
+						m_ApproachMap[element.movement_approach] = 1;
+
+					}
+				}
+			}
+
+
+			// step 2: scan each inbound link and outbound link
+
+			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
+			{
+			
+				// pre processing to determine the number of turning movements
+
+					std::map<DTA_Turn,int> MovementCount;
+					std::map<DTA_Turn,int> MaxAbsAngelForMovement;
+
+///////////////////////////////// begin of preprocessing              ////////////////////////////////////////////////////////////////////////////////
+				{
+
+				// for each incoming link
+				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
+				{
+					//for each outging link
+					int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
+
+					if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
+					{
+						// do not consider u-turn
+
+						DTA_Movement element;
+
+						element.CurrentNodeID = i;						
+
+						element.InboundLinkID = LinkID;
+						element.UpNodeID = m_Network.m_FromIDAry[LinkID];
+						element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
+
+						GDPoint p1, p2, p3;
+						p1  = m_NodeIDMap[element.UpNodeID]->pt;
+						p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
+						p3  = m_NodeIDMap[element.DestNodeID]->pt;
+
+
+						// method 1: identify movement approach from scratch 
+						element.movement_approach = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
+						// method 2: read pre-generated layout file from synchro
+
+						CString str_key;
+						str_key.Format("%d,%d",element.CurrentNodeID+1, element.UpNodeID+1);
+
+
 						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
+
+						if (m_PredefinedApproachMap.find(str_key) != m_PredefinedApproachMap.end())  // approach has been predefined in synchro_layout.csv file
+						{
+						element.movement_approach = m_PredefinedApproachMap[str_key];
+
+						str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
+
+						DTA_Approach approach2= m_PredefinedApproachMap[str_key];
+						
+						element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
+						MovementCount[element.movement_turn]+=1;
+
+						if(MaxAbsAngelForMovement.find(element.movement_turn) == MaxAbsAngelForMovement.end()) // initialize
+						{
+						
+							MaxAbsAngelForMovement[element.movement_turn] = abs(Find_PPP_RelativeAngle(p1,p2,p3));
+						}else  // with data before
+						{
+							int relative_angel = abs(Find_PPP_RelativeAngle(p1,p2,p3));
+							
+							if(relative_angel > MaxAbsAngelForMovement[element.movement_turn])
+								 MaxAbsAngelForMovement[element.movement_turn] = relative_angel;
+					
+						}
+
+						}
+
+					}
+					}
+				}
+////////////////////////////////// end of processing /////////////////////////////////////////////// //
+
+				// for each incoming link
+				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
+				{
+					//for each outging link
+					int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
+
+					if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
+					{
+						// do not consider u-turn
+
+						DTA_Movement element;
+
+						element.CurrentNodeID = i;						
+
+						element.InboundLinkID = LinkID;
+						element.UpNodeID = m_Network.m_FromIDAry[LinkID];
+						element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
+
+						GDPoint p1, p2, p3;
+						p1  = m_NodeIDMap[element.UpNodeID]->pt;
+						p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
+						p3  = m_NodeIDMap[element.DestNodeID]->pt;
+
+
+						// method 1: identify movement approach from scratch 
+						element.movement_approach = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
+						// method 2: read pre-generated layout file from synchro
+
+						CString str_key;
+						str_key.Format("%d,%d",element.CurrentNodeID+1, element.UpNodeID+1);
+
+
+						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
+
+						if (m_PredefinedApproachMap.find(str_key) != m_PredefinedApproachMap.end())  // approach has been predefined in synchro_layout.csv file
+						{
+						element.movement_approach = m_PredefinedApproachMap[str_key];
+
+						str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
+
+						DTA_Approach approach2= m_PredefinedApproachMap[str_key];
+						
+						element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
+
+						if(MovementCount[element.movement_turn] >=2)
+						{
+						// we have more than 1 movement, use angle to determine movement again
+
+							int relative_angel = abs(Find_PPP_RelativeAngle(p1,p2,p3));
+
+							if(relative_angel == MaxAbsAngelForMovement[element.movement_turn])
+							{  // adjust movement
+								
+								if(element.movement_turn == DTA_LeftTurn)
+									element.movement_turn = DTA_LeftTurn2;
+
+								if(element.movement_turn == DTA_RightTurn)
+									element.movement_turn = DTA_RightTurn2;
+							
+							}
+
+						
+						}
+
+						}
+
 
 						// determine  movement type /direction here
 						element.movement_dir = DTA_LANES_COLUME_init;
@@ -434,65 +733,81 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						case DTA_North:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
 							case DTA_Through: element.movement_dir = DTA_NBT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_NBL2; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_NBR2; break;
 							}
 							break;
 						case DTA_East:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
 							case DTA_Through: element.movement_dir = DTA_EBT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_EBL2; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_EBR2; break;
 							}
 							break;
 						case DTA_South:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
 							case DTA_Through: element.movement_dir = DTA_SBT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_SBL2; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_SBR2; break;
 							}
 							break;
 						case DTA_West:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
 							case DTA_Through: element.movement_dir = DTA_WBT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_WBL2; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_WBR2; break;
 							}
 							break;
 						case DTA_NorthEast:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_NEL; break;
 							case DTA_Through: element.movement_dir = DTA_NET; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_NEL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_NER; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_NEL; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_NER; break;
 							}
 							break;
 						case DTA_NorthWest:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_NWL; break;
 							case DTA_Through: element.movement_dir = DTA_NWT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_NWL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_NWR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_NWL; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_NWR; break;
 							}
 							break;
 						case DTA_SouthEast:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_SEL; break;
 							case DTA_Through: element.movement_dir = DTA_SET; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_SEL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_SER; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_SEL; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_SER; break;
 							}
 							break;
 						case DTA_SouthWest:
 							switch (element.movement_turn)
 							{
-							case DTA_LeftTurn: element.movement_dir = DTA_SWL; break;
 							case DTA_Through: element.movement_dir = DTA_SWT; break;
+							case DTA_LeftTurn: element.movement_dir = DTA_SWL; break;
 							case DTA_RightTurn: element.movement_dir = DTA_SWR; break;
+							case DTA_LeftTurn2: element.movement_dir = DTA_SWL; break;
+							case DTA_RightTurn2: element.movement_dir = DTA_SWR; break;
 							}
 							break;
 						}
@@ -525,6 +840,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 		} // checking control type
 	}// for each node
+
+	m_ApproachMap.clear();
 
 	if(signal_count == 0)
 		AfxMessageBox("0 pretimed/actuated signal has been specified in input_node.csv in the current data set.");
@@ -757,8 +1074,19 @@ void CTLiteDoc::Constructandexportsignaldata()
 }
 
 
+
+
 void CTLiteDoc::ExportSynchroVersion6Files()
 {
+
+	// to do: store old node number to another file
+			std::list<DTANode*>::iterator  iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			(*iNode)->m_NodeOriginalNumber = (*iNode)->m_NodeNumber;
+			(*iNode)->m_NodeNumber = (*iNode)->m_NodeID +1;  //reset all node numbers
+		}
+
 	GDPoint m_Origin_Current = m_Origin;
 
 	FILE* st = NULL;
@@ -829,6 +1157,9 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fprintf(st,"\n");
 
 		fclose(st);
+	}else
+	{
+	AfxMessageBox("File Lanes.csv cannot be opened.");
 	}
 
 	// write phase file
@@ -865,6 +1196,9 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fprintf(st,"\n");
 
 		fclose(st);
+	}else
+	{
+		AfxMessageBox("File Phasing.csv cannot be opened.");
 	}
 
 	// write layout file
@@ -907,8 +1241,10 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				else
 					control_type = 1;  
 
+				if(i_n==350)
+					TRACE("");
 
-			fprintf(st, "%i,%s,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_Name.c_str(), control_type,
+			fprintf(st, "%i,%i,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_NodeNumber , control_type,
 				pt_x, pt_y);
 			// find connecting nodes and links at different directions
 			DTA_NodeBasedLinkSets Node_Link;
@@ -1027,7 +1363,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 			for(i=0; i<Dir_size; i++)
 			{
 				if (Node_Link.link_flag[i] && !Node_Link.Name[i].empty() && Node_Link.Name[i] != "(null)")
-					fprintf(st, "%i,", Node_Link.Name[i].c_str());
+					fprintf(st, "%s,", Node_Link.Name[i].c_str());
 				else
 					fprintf(st, ",");
 			}
@@ -1036,6 +1372,10 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fprintf(st,"\n");
 
 		fclose(st);
+	}else
+	{
+	
+		AfxMessageBox("File Layout.csv cannot be opened.");
 	}
 
 	// write timing file
@@ -1061,7 +1401,19 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 		fprintf(st,"\n");
 
 		fclose(st);
+	}else
+	{
+		AfxMessageBox("File Timing.csv file cannot be opened.");
 	}
+
+	CWaitCursor  wait;
+
+	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
+
+	float default_hourly_volume_conversion_factor = g_GetPrivateProfileFloat("synchro_conversion", "default_hourly_volume_conversion_factor", 1, DTASettingsPath);	
+
+
+	default_hourly_volume_conversion_factor = 0.33333f;
 
 	// write volume file
 	fopen_s(&st,m_Synchro_ProjectDirectory+"Volume.csv","w");
@@ -1069,18 +1421,56 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	{
 		fprintf(st, "Turning Movement Count \n");
 		fprintf(st, "60 Minute Counts \n");
-		fprintf(st, "DATE,TIME,INTID,NBL2,NBL,NBT,NBR,NBR2,SBL2,SBL,SBT,SBR,SBR2,EBL2,EBL,EBT,EBR,EBR2,WBL2,WBL,WBT,WBR,WBR2,NEL,NET,NER,NWL,NWT,NWR,SEL,SET,SER,SWL,SWT,SWR \n");
+		fprintf(st, "DATE,TIME,INTID,NBL2,NBL,NBT,NBR,NBR2,SBL2,SBL,SBT,SBR,SBR2,EBL2,EBL,EBT,EBR,EBR2,WBL2,WBL,WBT,WBR,WBR2,NEL,NET,NER,NWL,NWT,NWR,SEL,SET,SER,SWL,SWT,SWR\n");
 		for (m=0; m<movement_size;m++)
 		{				
-			fprintf(st, "12/12/2011,1700,%i,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
-			fprintf(st,"\n");
+			// DATE,TIME,INTID
+			int CurNodeNumber  =  m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeID +1;
+			fprintf(st, "07/20/2011,1700,%i,",CurNodeNumber);
+			// 
+				for(j=0; j<LaneColumnSize;j++)
+				{
+				
+					int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+					int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+					
+					int FromNodeNumber = 0;
+					int DestNodeNumber = 0;
+					int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeOriginalNumber;
+
+					if(FromNodeID > 0)
+						FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeOriginalNumber;
+
+					if(DestNodeID > 0)
+						DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeOriginalNumber;
+
+					 CString movement_label;
+					 movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+
+					 int count = 0;
+
+					 if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
+					 {
+					 count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
+					 
+					 }
+
+					 fprintf(st, "%i,",count);
+				}
+					 fprintf(st, "\n");
+
+
 		}
 
 		fprintf(st,"\n");
 
 		fclose(st);
 
+	}else
+	{
+		AfxMessageBox("File Volume.csv file cannot be opened.");
 	}
+
 
 	m_Origin = m_Origin_Current;  // restore value
 
@@ -1089,249 +1479,74 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 
 void CTLiteDoc::ExportSingleSynchroFile(CString SynchroProjectFile)
 { 
-	// reset origin for converted network in synchro
 
-
-	const int Dir_size = 8;
-
-	FILE* st = NULL;
-
-	const int LaneColumnSize = 32;
-	const int LaneRowSize = 30;
-	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
-	string lane_row_name_str[LaneRowSize] = {"Up Node","Dest Node","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
-
-	unsigned int i,j, m;
-	int movement_size = m_MovementVector.size();
-
-	const int PhaseColumnSize = 8;
-	const int PhaseRowSize = 23;
-	string phase_Column_name_str[PhaseColumnSize] = { "D1","D2","D3","D4","D5","D6","D7","D8"};
-	string phase_row_name_str[PhaseRowSize] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
-
-	int p, phase_size = m_PhaseVector.size();
-
-	fopen_s(&st,SynchroProjectFile,"w");
-	if(st!=NULL)
-	{
-		// write Network /////////////////////////////////////////////////////////////
-		fprintf(st, "[Network]\n");
-		fprintf(st, "Network Settings\n");
-		fprintf(st, "RECORDNAME,DATA,\n");
-		fprintf(st, "Metric,%i,\n",0);
-		fprintf(st, "yellowTime,%f,\n",3.5);
-		fprintf(st, "allRedTime,%f,\n",0.5);
-		fprintf(st, "Walk,%i,\n",5);
-		fprintf(st, "DontWalk,%i,\n",11);
-		fprintf(st, "HV,%f,\n",0.02);
-		fprintf(st, "PHF,%i,\n",1);
-		fprintf(st, "DefWidth,%i,\n",12);
-		fprintf(st, "DefFlow,%i,\n",1900);
-		fprintf(st, "vehLength,%i,\n",25);
-		fprintf(st, "growth,%i,\n",1);
-		fprintf(st, "PedSpeed,%i,\n",4);
-		fprintf(st, "LostTimeAdjust,%i,\n",0);
-		fprintf(st, "\n");
-
-		// write Nodes /////////////////////////////////////////////////////////////
-		fprintf(st, "[Nodes]\n");
-		fprintf(st, "Node Data\n");
-		fprintf(st, "INTID,TYPE,X,Y,Z,DESCRIPTION,CBD,\n");
-		for (i=0; i < m_NodeSet.size(); i++)
-		{
-				float pt_x = NPtoSP_X(m_NodeIDMap[i]->pt,1/m_UnitFeet);
-				float pt_y = NPtoSP_Y(m_NodeIDMap[i]->pt,1/m_UnitFeet);
-
-				fprintf(st, "%i,%i,%f,%f,%f,%s,%i,\n", m_NodeIDMap[i]->m_NodeNumber, 
-				m_NodeIDMap[i]->m_ControlType, 
-				pt_x, pt_y,
-				0.0, m_NodeIDMap[i]->m_Name.c_str(), 0);
-		}
-		fprintf(st,"\n");
-
-		// write Links /////////////////////////////////////////////////////////////
-		fprintf(st, "[Links]\n");
-		fprintf(st, "Link Data\n");
-		fprintf(st, "RECORDNAME,INTID,NB,SB,EB,WB,NE,NW,SE,SW,\n");
-		string link_row_name_str[18] = {"Up ID","Lanes","Name","Distance","Speed","Time","Grade","Median","Offset","TWLTL","Crosswalk Width","Mandatory Distance","Mandatory Distance2","Positioning Distance","Positioning Distance2","Curve Pt X","Curve Pt Y","Curve Pt Z"};
-		DTA_Approach incoming_approach;
-		GDPoint p1, p2;
-		int current_node_id, up_node_id;
-		long LinkID;
-		int i_n = 0;
-		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i_n++)
-		{  // for current node		
-			DTA_NodeBasedLinkSets Node_Link;
-			current_node_id = i_n;
-			Node_Link.initial(current_node_id);
-			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i_n]; inbound_i++)
-			{		
-				LinkID = m_Network.m_InboundLinkAry[i_n][inbound_i];
-				up_node_id = m_Network.m_FromIDAry[LinkID];
-				p1  = m_NodeIDMap[up_node_id]->pt;
-				p2  = m_NodeIDMap[current_node_id]->pt;
-				incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
-				Node_Link.LoadLink(m_LinkNoMap[LinkID], incoming_approach);
-			}
-			// write file
-			// Up_id
-			fprintf(st, "%s,", link_row_name_str[0].c_str());
-			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<Dir_size; j++)
-			{
-				if (Node_Link.link_flag[j])
-					fprintf(st, "%i,", m_NodeIDMap[Node_Link.Up_ID[j]]->m_NodeNumber);
-				else
-					fprintf(st, ",");
-			}
-			fprintf(st,"\n");
-			// Lanes
-			fprintf(st, "%s,", link_row_name_str[1].c_str());
-			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<Dir_size; j++)
-			{
-				if (Node_Link.link_flag[j])
-					fprintf(st, "%i,", Node_Link.Lanes[j]);
-				else
-					fprintf(st, ",");
-			}
-			fprintf(st,"\n");
-			// name
-			fprintf(st, "%s,", link_row_name_str[2].c_str());
-			fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-			for (j=0; j<Dir_size; j++)
-			{
-				if (Node_Link.link_flag[j])
-					fprintf(st, "%s,", Node_Link.Name[j].c_str());
-				else
-					fprintf(st, ",");
-			}
-			fprintf(st,"\n");
-
-			// data matrix
-			for(i=0; i<15; i++)
-			{
-				fprintf(st, "%s,", link_row_name_str[i+3].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[current_node_id]->m_NodeNumber);
-				for (j=0; j<Dir_size; j++)
-				{
-					if (Node_Link.link_flag[j])
-						fprintf(st, "%f,", Node_Link.DataMatrix[i][j]);
-					else
-						fprintf(st, ",");
-				}			
-				fprintf(st,"\n");
-			}
-		}
-		fprintf(st,"\n");
-
-		// write Lanes /////////////////////////////////////////////////////////////
-		fprintf(st, "[Lanes]\n");
-		fprintf(st, "Lane Group Data\n");
-		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<LaneColumnSize;j++)
-			fprintf(st, "%s,", lane_Column_name_str[j].c_str());
-		fprintf(st,"\n");
-
-		for (m=0; m<movement_size;m++)
-		{
-			// write UpNodeID and DestNodeID using original m_NodeNumber
-			for(i=0; i<2; i++)
-			{
-				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
-
-				for(j=0; j<LaneColumnSize;j++)
-				{
-					int NodeID = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
-					TRACE("Node Label: %d\n",NodeID);
-
-					if(NodeID>=0)  //this movement has been initialized
-					{
-						if(m_NodeIDMap.find(NodeID) == m_NodeIDMap.end())
-						{
-							AfxMessageBox("Error in node id!");
-							return;
-						}
-						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
-					}else  // this movement has not been initialized, so the default value is -1
-					{
-						fprintf(st, ",");  
-
-					}
-				}
-				fprintf(st,"\n");
-			}
-
-			for(i=2; i<LaneRowSize; i++)
-			{
-				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
-
-				for(j=0; j<LaneColumnSize;j++)
-				{
-					float text = m_MovementVector[m].DataMatrix[i][j].m_text;
-					if (text >= 0)
-						fprintf(st, "%f,",text);
-					else
-						fprintf(st, ",");
-				}
-				fprintf(st,"\n");
-			}
-			// fprintf(st,"\n");
-		}
-		fprintf(st,"\n");
-
-		// write Timeplans /////////////////////////////////////////////////////////////
-		fprintf(st, "[Timeplans]\n");
-		fprintf(st, "Timing Plan Settings\n");
-		fprintf(st, "RECORDNAME,INTID,DATA,\n");
-		DTA_TimePlan time_plan;
-		time_plan.initial();
-		const int TimePlanRowSize = 10;
-		string time_plan_row_name_str[TimePlanRowSize] = { "Control Type","Cycle Length","Lock Timings","Referenced To","Reference Phase","Offset","Master","Yield","Node 0","Node 1"};
-		for (p=0; p<phase_size;p++)
-		{
-			for(i=0; i<TimePlanRowSize; i++)
-			{
-				fprintf(st, "%s,", time_plan_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
-				fprintf(st, "%i,", time_plan.DataAry[i]);
-				fprintf(st,"\n");
-			}
-		}
-		fprintf(st,"\n");
-
-		// write Phases /////////////////////////////////////////////////////////////
-		fprintf(st, "[Phases]\n");
-		fprintf(st, "Phasing Data\n");
-		fprintf(st, "RECORDNAME,INTID,");
-		for(j=0; j<PhaseColumnSize;j++)
-			fprintf(st, "%s,", phase_Column_name_str[j].c_str());
-		fprintf(st,"\n");
-
-		for (p=0; p<phase_size;p++)
-		{
-			for(i=0; i<PhaseRowSize; i++)
-			{
-				fprintf(st, "%s,", phase_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
-
-				for(j=0; j<PhaseColumnSize;j++)
-				{
-					fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
-				}
-				fprintf(st,"\n");
-			}
-			//fprintf(st,"\n");
-		}
-		fprintf(st,"\n");
-
-
-		fclose(st);
-	}
-
-	OpenCSVFileInExcel(SynchroProjectFile);
 }
 
 
+
+
+
+bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
+{
+	const int approach_size = 8;
+
+	string approach_column_name_str[approach_size] = { "NID","SID",	"EID","WID","NEID","NWID","SEID","SWID"};
+
+	// we need to use the opposite direction
+	DTA_Approach approach_vector[approach_size] = { 
+		DTA_South,
+		DTA_North,
+		DTA_West,
+		DTA_East,
+		DTA_SouthWest,
+		DTA_SouthEast,
+		DTA_NorthWest,
+		DTA_NorthEast};
+
+	int approach_node_id[approach_size];
+
+	m_PredefinedApproachMap.clear();
+
+	CCSVParser parser;
+	parser.m_bSkipFirstLine  = true;  // skip the first line  
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		int i=0;
+		while(parser.ReadRecord())
+		{
+			int node_id;
+			string name;
+			DTANode* pNode = 0;
+
+			int control_type;
+			double X;
+			double Y;
+			if(parser.GetValueByFieldName("INTID",node_id) == false)
+				break;
+
+			for(int a = 0; a< approach_size; a++)
+			{	
+				approach_node_id[a]=0;  // initialization
+				bool bField_Exist = parser.GetValueByFieldName(approach_column_name_str[a],approach_node_id[a]);
+
+				if(bField_Exist && approach_node_id[a]>0)
+				{
+				TRACE("node = %d,%d,%s\n", node_id, approach_node_id[a], approach_column_name_str[a].c_str ());
+
+				CString str_key;
+				str_key.Format("%d,%d",node_id, approach_node_id[a]);
+
+				m_PredefinedApproachMap[str_key] = approach_vector[a];
+				
+				}
+
+			}
+			
+
+		}
+
+		AfxMessageBox("Synchro_layout file is used.", MB_ICONINFORMATION);
+		return true;
+	}
+	return false;
+}

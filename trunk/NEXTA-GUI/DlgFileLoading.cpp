@@ -107,6 +107,16 @@ BOOL CDlgFileLoading::OnInitDialog()
 	m_ListBox_OutputData.AddString(m_pDoc->m_SimulationVehicleDataLoadingStatus);
 	}
 
+	if(m_pDoc->m_PathDataLoadingStatus.GetLength ()>0)
+	{
+	m_ListBox_OutputData.AddString(m_pDoc->m_PathDataLoadingStatus);
+	}
+	
+	if(m_pDoc->m_MovementDataLoadingStatus.GetLength ()>0)
+	{
+	m_ListBox_OutputData.AddString(m_pDoc->m_MovementDataLoadingStatus);
+	}
+
 	m_ListBox_OutputData.AddString(m_pDoc->m_StrLoadingTime);
 	
 	return TRUE;  // return TRUE unless you set the focus to a control

@@ -6,8 +6,9 @@
 #include "Shellapi.h"
 #include "Network.h"
 #include "TLiteDoc.h"
+#ifndef _WIN64
 #include "Data-Interface//include//ogrsf_frmts.h"
-
+#endif 
 class SynchroLaneData
 {
 public:
@@ -109,6 +110,7 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 }
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
+	#ifndef _WIN64
 
 	char model_units[_MAX_STRING_SIZE];
 	GetPrivateProfileString("model_attributes","units","MI",model_units,sizeof(model_units),FileName);
@@ -565,7 +567,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					number_of_lanes = number_of_lanes/2;
 				}
 
-				if(type==0)  // no type information
+				if(type==0)  // no type information available
 				{
 					// check speed limit to determine type
 
@@ -576,6 +578,27 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					if(number_of_lanes>=7)
 						type = 10; // default connectors;
+
+					
+					int node_id  =0 ;
+					
+					if(m_NodeNametoIDMap.find (from_node_id) != m_NodeNametoIDMap.end())
+					{
+						node_id =  m_NodeNametoIDMap[from_node_id];
+						DTANode* pFromNode = m_NodeIDMap[node_id];
+						if(pFromNode->m_ZoneID >=1)
+						{
+						  // from node is a zone centroid, then the link is a connector
+							type = 10;
+
+						}
+
+
+					}
+
+					
+					
+
 				
 				}
 
@@ -583,6 +606,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(lane_capacity_in_vhc_per_hour_name);
 
 				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
+
+				// if link_capacity_flag == 0, we give a default value
 				int r_number_of_lanes; 
 				float r_speed_limit_in_mph; 
 				float r_capacity_in_pcphpl; 
@@ -927,6 +952,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		int default_number_of_lanes = g_GetPrivateProfileInt("connector_conversion","default_number_of_lanes",2,FileName);
 		int default_lane_capacity = g_GetPrivateProfileInt("connector_conversion","lane_capacity",10000,FileName);
 		int default_speed_limit = g_GetPrivateProfileInt("connector_conversion","default_speed_limit",60,FileName);
+		int default_link_type = g_GetPrivateProfileInt("connector_conversion","default_link_type_for_connector",99,FileName);
 
 		int direction = g_GetPrivateProfileInt("connector_conversion","direction",0,FileName);
 
@@ -971,7 +997,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
 
 				long link_id =  0;
-				int type = 10;  // find default connectors type.
+				int type = default_link_type;  // find default connectors type.
 				float length = poFeature->GetFieldAsDouble(length_name);
 
 				int number_of_lanes = default_number_of_lanes;
@@ -1307,7 +1333,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	}
 
-
+#endif
 	return true;
 }
 
@@ -1528,7 +1554,7 @@ bool CTLiteDoc::ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int 
 
 				if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
 				{
-					m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].AddTimeDependentValue (demand_type,number_of_vehicles,starting_time_in_min, ending_time_in_min);
+					//m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].AddTimeDependentValue (demand_type,number_of_vehicles,starting_time_in_min, ending_time_in_min);
 					total_demand += number_of_vehicles;
 				}
 				else

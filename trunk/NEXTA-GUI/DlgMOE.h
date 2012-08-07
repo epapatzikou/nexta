@@ -145,7 +145,7 @@ public:
 
 	void DrawPlot(CPaintDC* pDC,eLinkMOEMode MOEType, CRect PlotRect, bool LinkTextFlag);
 	int m_LinkDisplayCount;
-	void DrawTimeSeries(CTLiteDoc* pDoc, eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
+	void DrawTimeSeries(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 	void DrawVehicleTrajectory(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);

@@ -302,7 +302,7 @@ public:
 	afx_msg void OnUpdate3ddisplayAnimation(CCmdUI *pCmdUI);
 	afx_msg void On3ddisplayBasicview();
 	afx_msg void OnClose();
-	afx_msg void OnTimer(UINT nIDEvent);
+	afx_msg void OnTimer(UINT_PTR  nIDEvent);
 	afx_msg void On3dCarfol();
 	afx_msg void OnUpdate3dCarfol(CCmdUI *pCmdUI);
 };

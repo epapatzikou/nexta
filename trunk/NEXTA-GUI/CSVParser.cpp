@@ -37,6 +37,10 @@ bool CCSVParser::OpenCSVFile(string fileName)
                 {
                         string s;
                         std::getline(inFile,s);
+
+						if(s.length () ==0)
+							return true; 
+
                         vector<string> FieldNames = ParseLine(s);
 
                         for (size_t i=0;i<FieldNames.size();i++)
