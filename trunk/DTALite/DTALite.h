@@ -121,6 +121,88 @@ struct VehicleCFData
 class LinkMOEStatisticsData
 {
 
+<<<<<<< .mine
+public:
+	int SOV_volume, HOV_volume, Truck_volume,Intermodal_volume;
+	float number_of_crashes_per_year, number_of_fatal_and_injury_crashes_per_year,number_of_property_damage_only_crashes_per_year;
+	char level_of_service;
+	LinkMOEStatisticsData()
+	{
+		Init();
+	}
+	void Init()
+	{
+		level_of_service = 'A';
+		SOV_volume = HOV_volume =  Truck_volume = Intermodal_volume = 0;
+		number_of_crashes_per_year = number_of_fatal_and_injury_crashes_per_year = number_of_property_damage_only_crashes_per_year = 0;
+
+	}
+
+};
+class EmissionStatisticsData
+{
+public: 
+
+	float TotalEnergy;
+	float TotalCO2;
+	float TotalNOX;
+	float TotalCO;
+	float TotalHC;
+
+	float AvgEnergy;
+	float AvgCO2;
+	float AvgNOX;
+	float AvgCO;
+	float AvgHC;
+
+	float TotalMilesPerGallon;
+	float AvgMilesPerGallon;
+
+
+	EmissionStatisticsData()
+	{
+		Init();
+	}
+	void Init()
+	{
+		TotalEnergy = 0;
+		TotalCO2 = 0;
+		TotalNOX = 0;
+		TotalCO = 0;
+		TotalHC = 0;
+
+		AvgEnergy = 0;
+		AvgCO2  = 0;
+		AvgNOX  = 0;
+		AvgCO = 0;
+		AvgHC = 0;
+		TotalMilesPerGallon = 0;
+		AvgMilesPerGallon = 0;
+
+	}
+
+};
+
+class EmissionLaneData
+{
+public: 
+
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
+	EmissionLaneData()
+	{
+		Energy = 0;
+		CO2 = 0;
+		NOX = 0;
+		CO = 0;
+		HC = 0;
+	}
+
+};
+=======
 public:
 	int SOV_volume, HOV_volume, Truck_volume,Intermodal_volume;
 	float number_of_crashes_per_year, number_of_fatal_and_injury_crashes_per_year,number_of_property_damage_only_crashes_per_year;
@@ -194,6 +276,7 @@ public:
 	}
 
 };
+>>>>>>> .r199
 class LaneVehicleCFData
 {
 
@@ -671,9 +754,17 @@ public:
 
 	bool 	GetImpactedFlag(int DayNo=0, int DepartureTime = -1)
 	{
-		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 		{
-			if((CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
+			if((WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (DepartureTime >= WorkZoneCapacityReductionVector[il].StartTime && DepartureTime<=WorkZoneCapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
+			{
+				return true;
+			}
+		}
+
+		for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
+		{
+			if((IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (DepartureTime >= IncidentCapacityReductionVector[il].StartTime && DepartureTime<=IncidentCapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
 			{
 				return true;
 			}
@@ -690,11 +781,19 @@ public:
 
 	float GetNumLanes(int DayNo=0, int Time=-1)  // with lane closure
 	{
-		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 		{
-			if( (CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
+			if( (WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (Time>= WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
 			{
-				return (1-CapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
+				return (1-WorkZoneCapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
+			}
+		}
+
+		for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
+		{
+			if( (IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (Time>= IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime))
+			{
+				return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
 			}
 		}
 
@@ -812,7 +911,8 @@ public:
 	std::vector <int> m_CumuArrivalFlow;
 	std::vector <int> m_CumuDeparturelFlow;
 
-	std::vector<CapacityReduction> CapacityReductionVector;
+	std::vector<CapacityReduction> WorkZoneCapacityReductionVector;
+	std::vector<CapacityReduction> IncidentCapacityReductionVector;
 	std::vector<MessageSign> MessageSignVector;
 	std::vector<Toll> TollVector;
 
@@ -1006,7 +1106,8 @@ public:
 		m_CumuArrivalFlow.clear();
 		m_CumuDeparturelFlow.clear();
 
-		CapacityReductionVector.clear();
+		WorkZoneCapacityReductionVector.clear();
+		IncidentCapacityReductionVector.clear();
 		MessageSignVector.clear();
 		TollVector.clear();
 
@@ -1019,11 +1120,18 @@ public:
 			return m_BPRLinkTravelTime;
 		else 
 		{
-			for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+			for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 			{
-				if(Time>=CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime)
+				if(Time>=WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime)
 				{
-					return m_Length/max(1,CapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
+					return m_Length/max(1,WorkZoneCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
+				}
+			}
+			for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
+			{
+				if(Time>=IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime)
+				{
+					return m_Length/max(1,IncidentCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
 			}
 			return m_FreeFlowTravelTime;
@@ -2430,6 +2538,7 @@ public:
 };
 
 
+<<<<<<< .mine
 typedef struct  
 {
 	int vehicle_id;
@@ -2444,6 +2553,58 @@ typedef struct
 } struct_VehicleInfo_Header;
 
 
+class DTANodeMovement
+{
+public:
+	DTANodeMovement()
+	{
+=======
+typedef struct  
+{
+	int vehicle_id;
+	int from_zone_id;
+	int to_zone_id;
+	float departure_time;
+	int demand_type;
+	int pricing_type;
+	int vehicle_type;
+	int information_type;
+	float value_of_time;
+} struct_VehicleInfo_Header;
+>>>>>>> .r199
+
+	starting_time_in_min = 0;
+	ending_time_in_min = 1440;
+	turnning_percentage = 0;
+	turning_prohibition_flag = 1;
+	signal_control_no = 0;
+	signal_group_no = 0;
+	phase_index = 0;
+	turn_volume = 10;
+	total_vehicle_count = 0;
+	total_vehicle_delay = 0;
+	}
+
+int IncomingLinkID;
+int OutgoingLinkID;
+string turning_direction;
+int in_link_from_node_id;
+int in_link_to_node_id;  // this equals to the current node number
+int out_link_to_node_id;
+
+int total_vehicle_count;
+float total_vehicle_delay;
+
+float movement_hourly_capacity;
+int starting_time_in_min;
+int ending_time_in_min;
+float turnning_percentage;
+int turning_prohibition_flag;
+int phase_index;
+int signal_control_no;  // for meso-scopic, link -based
+int signal_group_no;  // for meso-scopic, link -based
+int turn_volume;
+};
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
@@ -2504,7 +2665,7 @@ extern int g_information_updating_interval_of_en_route_info_travelers_in_min;
 extern int g_information_updating_interval_of_VMS_in_min;
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int, int); // construct path array for each ODT
-extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output);
+extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Iteration);
 extern void g_GenerateVehicleData_ODEstimation();
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
 extern bool g_read_a_line(FILE* f, char* aline, int & size);

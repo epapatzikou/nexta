@@ -28,8 +28,14 @@
 extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
+<<<<<<< .mine
+extern std::map<string, DTALink*> g_LinkMap;
+extern std::map<string, DTANodeMovement> g_MovementMap;
+
+=======
 extern std::map<string, DTALink*> g_LinkMap;
 
+>>>>>>> .r199
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
@@ -44,6 +50,8 @@ extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
 extern int g_DemandLoadingStartTimeInMin;
 extern int g_DemandLoadingEndTimeInMin;
+
+
 
 extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 
@@ -82,6 +90,7 @@ extern int g_TravelTimeDifferenceForSwitching;  // min
 extern int g_StochasticCapacityMode ;
 extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
+extern int g_FIFOConditionAcrossDifferentMovementFlag;
 extern int g_TrafficFlowModelFlag;
 extern int g_EmissionDataOutputFlag;
 extern int g_TimeDependentODMOEOutputFlag;
@@ -107,7 +116,8 @@ extern int g_PrevNumOfVehiclesSwitched; // // total number of vehicles switching
 extern int g_ConvergenceThreshold_in_Num_Switch; // the convergence threshold in terms of number of vehicles switching paths; for MSA, g_UEAssignmentMethod = 0
 extern int g_VehicleExperiencedTimeGap; // 1: Vehicle experienced time gap; 0: Avg experienced path time gap
 extern int g_NewPathWithSwitchedVehicles; // number of new paths with vehicles switched to them
-
+extern int g_ODEstimationStartTimeInMin;
+extern int g_ODEstimationEndTimeInMin;
 // for OD estimation statistics
 
 extern float g_TotalDemandDeviation; 
@@ -115,6 +125,10 @@ extern float g_TotalMeasurementDeviation;
 
 extern ofstream g_scenario_short_description;
 extern ofstream ShortSimulationLogFile;
+extern void OutputMovementMOEData(ofstream &output_MovementMOE_file);
+extern bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2);
+extern string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName);
+extern void g_ReadDemandFileBasedOnMetaDatabase();
 
 
 

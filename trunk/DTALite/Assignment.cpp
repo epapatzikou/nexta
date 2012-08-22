@@ -56,6 +56,11 @@ void g_OutputSimulationStatistics(int Iteration);
 #define _MAX_NUMBER_OF_PROCESSORS  8
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
+	// reset random number seeds
+
+
+
+
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
@@ -432,6 +437,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 void g_ODBasedDynamicTrafficAssignment()
 {
+
+
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneSize;
 
 	int connector_count = 0;
