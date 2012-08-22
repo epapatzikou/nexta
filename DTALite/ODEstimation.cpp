@@ -152,57 +152,10 @@ bool g_ReadLinkMeasurementFile()
 			if(!parser.GetValueByFieldName("to_node_id",ToNodeNumber )) 
 				continue;
 
-<<<<<<< .mine
-			if(g_LinkMap.find(GetLinkStringID(FromNodeNumber,ToNodeNumber))== g_LinkMap.end())
-=======
 			if(g_LinkMap.find(GetLinkStringID(FromNodeNumber,ToNodeNumber))== g_LinkMap.end())
 			{
-				cout << "Link " << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check.";
-				g_ProgramStop();
-			}
-
-
-			DTALink* pLink = g_LinkMap[GetLinkStringID(FromNodeNumber,ToNodeNumber)];
-
-			if(pLink!=NULL)
->>>>>>> .r199
-			{
-<<<<<<< .mine
 				cout << "Link " << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check." << endl;
-=======
 
-				int start_time_in_min = 0;
-				int end_time_in_min  = 0;
-				int volume_count = 0;
-
-				if(!parser.GetValueByFieldName("start_time_in_min",start_time_in_min ))
-				{
-					cout << "Field start_time_in_min is not found in file input_sensor.csv. Please check.";
-					g_ProgramStop();
-				}
-				if(!parser.GetValueByFieldName("end_time_in_min",end_time_in_min ))
-				{
-					cout << "Field end_time_in_min is not found in file input_sensor.csv. Please check.";
-					g_ProgramStop();
-				}
-
-				parser.GetValueByFieldName("volume_count",volume_count );
-
-				float occupancy = 0;
-				float avg_speed = 50;
-				parser.GetValueByFieldName("occupancy",occupancy );
-				parser.GetValueByFieldName("avg_speed",avg_speed );
-
-				pLink->m_bSensorData  = true;
-				SLinkMeasurement element;
-				element.StartTime = start_time_in_min;
-				element.EndTime  = end_time_in_min;
-				element.ObsFlowCount   = volume_count;
-				element.ObsNumberOfVehicles = occupancy*100* pLink->m_Length * pLink->m_NumLanes;  // convert occupancy to density
-				element.ObsTravelTime =  pLink->m_Length / max(1,avg_speed)*60;
->>>>>>> .r199
-
-<<<<<<< .mine
 				g_LogFile << "Link " << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check." << endl;
 				//if(error_count<=3)
 				//{
@@ -210,27 +163,11 @@ bool g_ReadLinkMeasurementFile()
 				//}
 				error_count ++;
 				continue;
-=======
-				pLink->m_LinkMeasurementAry.push_back (element);
-
-
-			}else
-			{
-				cout << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
-				g_LogFile << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
->>>>>>> .r199
 			}
 
 
-<<<<<<< .mine
 			DTALink* pLink = g_LinkMap[GetLinkStringID(FromNodeNumber,ToNodeNumber)];
-=======
-	}
-	cout << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
-	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
->>>>>>> .r199
 
-<<<<<<< .mine
 			if(pLink!=NULL)
 			{
 
@@ -281,9 +218,6 @@ bool g_ReadLinkMeasurementFile()
 	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 
 	return true;
-=======
-	return true;
->>>>>>> .r199
 }
 
 
@@ -834,56 +768,23 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 			for(unsigned int i = 0; i< pLink->m_LinkMeasurementAry.size(); i++)
 			{
 
-<<<<<<< .mine
 				if( pLink->m_LinkMeasurementAry[i].StartTime  < g_ODEstimationStartTimeInMin || pLink->m_LinkMeasurementAry[i].EndTime > g_ODEstimationEndTimeInMin)
 					continue;
-=======
-				// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
-				int SimulatedFlowCount = pLink->m_LinkMOEAry[pLink->m_LinkMeasurementAry[i].EndTime].CumulativeArrivalCount - pLink->m_LinkMOEAry[pLink->m_LinkMeasurementAry[i].StartTime ].CumulativeArrivalCount; 
-				pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
->>>>>>> .r199
 
 				// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
 
-<<<<<<< .mine
 				if(pLink->m_LinkMeasurementAry[i].EndTime <  pLink->m_LinkMOEAry.size())
 				{
 				int SimulatedFlowCount = pLink->m_LinkMOEAry[pLink->m_LinkMeasurementAry[i].EndTime].CumulativeArrivalCount - pLink->m_LinkMOEAry[pLink->m_LinkMeasurementAry[i].StartTime ].CumulativeArrivalCount; 
-=======
-				int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
-				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
->>>>>>> .r199
 
-<<<<<<< .mine
 				if(SimulatedFlowCount>=0)
 				{
 				pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
-=======
-				if(ObsFlowCount >= 1)  // flow count
-				{
-					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/ObsFlowCount*100);
-					float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
-						max(1,pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime)/pLink->m_NumLanes;												
-					g_EstimationLogFile << "Link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
-						<< ",time "<<  pLink->m_LinkMeasurementAry[i].StartTime << "->" << pLink->m_LinkMeasurementAry[i].EndTime << ",Sim link count," << SimulatedFlowCount << ",Obs link flow,"<< ObsFlowCount <<", Error: " << SimulatedFlowCount -  ObsFlowCount << 
-						", " << AbosolutePercentageError << " %" << "Lane Flow Error /h= " << LaneFlowError << endl;
->>>>>>> .r199
 
-<<<<<<< .mine
-=======
-					TotalMOEPercentageError +=AbosolutePercentageError ; 
-					TotalMOEAbsError += fabs(LaneFlowError) ;
-					TotaMOESampleSize ++;
->>>>>>> .r199
 
-<<<<<<< .mine
 				int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
 				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
-=======
-				}
->>>>>>> .r199
 
-<<<<<<< .mine
 				if(ObsFlowCount >= 1)  // flow count
 				{
 					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/ObsFlowCount*100);
@@ -901,8 +802,6 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 				}
 				}
 
-=======
->>>>>>> .r199
 			}
 		}
 	}	

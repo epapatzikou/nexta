@@ -121,7 +121,6 @@ struct VehicleCFData
 class LinkMOEStatisticsData
 {
 
-<<<<<<< .mine
 public:
 	int SOV_volume, HOV_volume, Truck_volume,Intermodal_volume;
 	float number_of_crashes_per_year, number_of_fatal_and_injury_crashes_per_year,number_of_property_damage_only_crashes_per_year;
@@ -202,81 +201,6 @@ public:
 	}
 
 };
-=======
-public:
-	int SOV_volume, HOV_volume, Truck_volume,Intermodal_volume;
-	float number_of_crashes_per_year, number_of_fatal_and_injury_crashes_per_year,number_of_property_damage_only_crashes_per_year;
-	char level_of_service;
-	LinkMOEStatisticsData()
-	{
-		Init();
-	}
-	void Init()
-	{
-		level_of_service = 'A';
-		SOV_volume = HOV_volume =  Truck_volume = Intermodal_volume = 0;
-		number_of_crashes_per_year = number_of_fatal_and_injury_crashes_per_year = number_of_property_damage_only_crashes_per_year = 0;
-
-	}
-
-};
-class EmissionStatisticsData
-{
-public: 
-
-	float TotalEnergy;
-	float TotalCO2;
-	float TotalNOX;
-	float TotalCO;
-	float TotalHC;
-
-	float AvgEnergy;
-	float AvgCO2;
-	float AvgNOX;
-	float AvgCO;
-	float AvgHC;
-
-	EmissionStatisticsData()
-	{
-		Init();
-	}
-	void Init()
-	{
-		TotalEnergy = 0;
-		TotalCO2 = 0;
-		TotalNOX = 0;
-		TotalCO = 0;
-		TotalHC = 0;
-
-		AvgEnergy = 0;
-		AvgCO2  = 0;
-		AvgNOX  = 0;
-		AvgCO = 0;
-		AvgHC = 0;
-	}
-
-};
-
-class EmissionLaneData
-{
-public: 
-
-	float Energy;
-	float CO2;
-	float NOX;
-	float CO;
-	float HC;
-	EmissionLaneData()
-	{
-		Energy = 0;
-		CO2 = 0;
-		NOX = 0;
-		CO = 0;
-		HC = 0;
-	}
-
-};
->>>>>>> .r199
 class LaneVehicleCFData
 {
 
@@ -2538,7 +2462,6 @@ public:
 };
 
 
-<<<<<<< .mine
 typedef struct  
 {
 	int vehicle_id;
@@ -2558,20 +2481,6 @@ class DTANodeMovement
 public:
 	DTANodeMovement()
 	{
-=======
-typedef struct  
-{
-	int vehicle_id;
-	int from_zone_id;
-	int to_zone_id;
-	float departure_time;
-	int demand_type;
-	int pricing_type;
-	int vehicle_type;
-	int information_type;
-	float value_of_time;
-} struct_VehicleInfo_Header;
->>>>>>> .r199
 
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;

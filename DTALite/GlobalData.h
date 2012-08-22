@@ -28,14 +28,9 @@
 extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
-<<<<<<< .mine
 extern std::map<string, DTALink*> g_LinkMap;
 extern std::map<string, DTANodeMovement> g_MovementMap;
 
-=======
-extern std::map<string, DTALink*> g_LinkMap;
-
->>>>>>> .r199
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
