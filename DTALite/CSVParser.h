@@ -124,6 +124,190 @@ public:
 
 	~CCSVParser(void);
 };
+<<<<<<< .mine
+
+class CCSVWriter
+{
+	public : 
+	ofstream outFile;
+	char Delimiter;
+	int FieldIndex;
+	bool IsFirstLineHeader;
+	map<int,string> LineFieldsValue;
+	vector<string> LineFieldsName;
+	vector<string> LineFieldsCategoryName;
+	map<string,int> FieldsIndices;  
+
+	bool row_title;
+
+public:
+	void SetRowTitle(bool flag)
+	{
+	row_title = flag;
+	}
+
+	bool OpenCSVFile(string fileName);
+	void CloseCSVFile(void);
+	template <class T> bool SetValueByFieldName(string field_name, T& value)  // by doing so, we do not need to exactly follow the sequence of field names
+	{
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			return false;
+		}
+		else
+		{
+			
+			LineFieldsValue[FieldsIndices[field_name]] = NumberToString(value);
+
+			return true;
+		}
+	}
+
+	void Reset()
+	{
+
+	LineFieldsValue.clear();
+	LineFieldsName.clear();
+	LineFieldsCategoryName.clear();
+	FieldsIndices.clear();
+	
+	}
+	void SetFieldName(string field_name)
+	{ 
+		FieldsIndices[field_name] = LineFieldsName.size();
+		LineFieldsName.push_back (field_name);
+		LineFieldsCategoryName.push_back(" ");
+
+	}
+
+	void SetFieldNameWithCategoryName(string field_name,string category_name)
+	{ 
+		FieldsIndices[field_name] = LineFieldsName.size();
+		LineFieldsName.push_back (field_name);
+		LineFieldsCategoryName.push_back(category_name);
+
+	}
+	
+
+	void WriteTextString(CString textString)
+	{
+		if (!outFile.is_open()) 
+			return;
+		outFile << textString << endl;
+
+	}
+
+	void WriteTextLabel(CString textString)
+	{
+		if (!outFile.is_open()) 
+			return;
+		outFile << textString;
+
+	}
+
+	template <class T>  void WriteNumber(T value)
+	{
+		if (!outFile.is_open()) 
+			return;
+		outFile << NumberToString(value) << endl;
+	}
+
+	template <class T>  void WriteParameterValue(CString textString, T value)
+	{
+		if (!outFile.is_open()) 
+			return;
+
+		outFile << textString <<"=,"<< NumberToString(value) << endl;
+	}
+
+	void WriteNewEndofLine()
+	{
+		if (!outFile.is_open()) 
+			return;
+		outFile << endl;
+	}
+
+
+	void WriteHeader()
+	{
+		if (!outFile.is_open()) 
+			return;
+
+
+		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
+		{
+		outFile << LineFieldsCategoryName[i] << ",";
+		}
+		outFile << endl;
+
+		if(row_title == true)
+			outFile << ",";
+
+		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
+		{
+		outFile << LineFieldsName[i] << ",";
+		}
+
+		outFile << endl;
+	}
+	void WriteRecord()
+	{
+		if (!outFile.is_open()) 
+			return;
+
+		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
+		{
+			string str ;
+			if(LineFieldsValue.find(i) != LineFieldsValue.end()) // has been initialized
+				outFile << LineFieldsValue[i].c_str () << ",";
+			else
+				outFile << ' ' << ",";
+		}
+
+		LineFieldsValue.clear();
+
+		outFile << endl;
+	}
+
+	CCSVWriter::CCSVWriter()
+{
+	row_title = false;
+	FieldIndex = 0;
+	Delimiter = ',';
+	IsFirstLineHeader = true;
+}
+
+CCSVWriter::~CCSVWriter(void)
+{
+	if (outFile.is_open()) outFile.close();
+}
+
+
+CCSVWriter::CCSVWriter(string fileName)
+{
+	Open(fileName);
+	
+};
+
+void CCSVWriter::Open(string fileName)
+{
+	outFile.open(fileName.c_str());
+
+	if (outFile.is_open()==false)
+	{
+	cout << "File " << fileName.c_str() << " cannot be opened." << endl;
+	getchar();
+	exit(0);
+	}
+	
+};
+
+
+};
+
+
+
+=======
 
 class CCSVWriter
 {
@@ -306,3 +490,4 @@ void CCSVWriter::Open(string fileName)
 
 
 
+>>>>>>> .r199
