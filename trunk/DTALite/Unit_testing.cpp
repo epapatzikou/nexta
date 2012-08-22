@@ -174,11 +174,7 @@ using namespace std;
 			g_ProgramStop();
 		}
 
-<<<<<<< .mine
 		g_NumberOfIterations = TotalUEIterationNumber-1;			// 0+1 iterations
-=======
-		g_NumberOfIterations = TotalUEIterationNumber;			// 0+1 iterations
->>>>>>> .r199
 
 
 		if(parser_scenario.GetValueByFieldName("demand_multiplier",g_DemandGlobalMultiplier)==false)
@@ -198,25 +194,16 @@ using namespace std;
 	
 	if(TestFromNode!=0 && TestToNode!=0)
 	{
-<<<<<<< .mine
 			if(g_LinkMap.find(GetLinkStringID(TestFromNode,TestToNode))== g_LinkMap.end())
 			{
 				cout << "Test Link " << TestFromNode << "-> " << TestToNode << " at line " << line_no << "has not been defined in input_link.csv.";
 				g_ProgramStop();
 			}
-=======
-			if(g_LinkMap.find(GetLinkStringID(TestFromNode,TestToNode))== g_LinkMap.end())
-			{
-				cout << "Link " << TestFromNode << "-> " << TestToNode << " at line " << line_no << "has not been defined in input_link.csv.";
-				g_ProgramStop();
-			}
->>>>>>> .r199
 
 			g_SetLinkAttributes(TestFromNode,TestToNode,TestNumberOfLanes);
 
 	}
 
-<<<<<<< .mine
 		if(parser_scenario.GetValueByFieldName("File_Link_Based_Toll",File_Link_Based_Toll))
 		{
 			cout << "Reading File_Link_Based_Toll" << endl;
@@ -224,39 +211,20 @@ using namespace std;
 		 ReadLinkTollScenarioFile(File_Link_Based_Toll);
 		}
 		if(parser_scenario.GetValueByFieldName("File_Incident",File_Incident))
-=======
-		if(parser_scenario.GetValueByFieldName("File_Link_Based_Toll",File_Link_Based_Toll))
->>>>>>> .r199
 		{
-<<<<<<< .mine
 			cout << "Reading File_Incident" << endl;
-		 ReadIncidentScenarioFile(File_Incident);
-=======
-		 ReadIncidentScenarioFile(File_Link_Based_Toll);
->>>>>>> .r199
-		}
-		if(parser_scenario.GetValueByFieldName("File_Incident",File_Incident))
-		{
 		 ReadIncidentScenarioFile(File_Incident);
 		}
 
 		if(parser_scenario.GetValueByFieldName("File_MessageSign",File_MessageSign))
 		{
-<<<<<<< .mine
 		cout << "Reading File_MessageSign" << endl;
 		ReadVMSScenarioFile(File_MessageSign);
-=======
-		ReadVMSScenarioFile(File_MessageSign);
->>>>>>> .r199
 		}
 		if(parser_scenario.GetValueByFieldName("File_WorkZone",File_WorkZone))
 		{
-<<<<<<< .mine
 		cout << "Reading File_WorkZone" << endl;
 		 ReadWorkZoneScenarioFile(File_WorkZone);
-=======
-		 ReadWorkZoneScenarioFile(File_WorkZone);
->>>>>>> .r199
 		}
 		
 

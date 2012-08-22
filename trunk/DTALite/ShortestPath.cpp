@@ -182,13 +182,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 		FromID = pLink->m_FromNodeID;
 		ToID   = pLink->m_ToNodeID;
 
-<<<<<<< .mine
 			if( pLink->m_FromNodeNumber == 117 && pLink->m_ToNodeNumber == 116)
 			{
-=======
-			if( pLink->m_FromNodeNumber == 42 && pLink->m_ToNodeNumber == 10)
-			{
->>>>>>> .r199
 			TRACE("");
 			}
 
