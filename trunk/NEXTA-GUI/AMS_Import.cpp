@@ -470,6 +470,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		char link_type_name[_MAX_STRING_SIZE];
 		GetPrivateProfileString("link_table","link_type","link_type",link_type_name,sizeof(link_type_name),FileName);
 
+		char mode_code_name[_MAX_STRING_SIZE];
+		GetPrivateProfileString("link_table","mode_code","mode_code",mode_code_name,sizeof(mode_code_name),FileName);
+
 		char direction_name[_MAX_STRING_SIZE];
 		GetPrivateProfileString("link_table","direction","direction",direction_name,sizeof(direction_name),FileName);
 
@@ -551,6 +554,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				long link_id =  poFeature->GetFieldAsInteger(link_id_name);
 				CString name =  poFeature->GetFieldAsString(link_name);
 				int type = poFeature->GetFieldAsInteger(link_type_name);
+
+				CString mode_code = poFeature->GetFieldAsString(mode_code_name);
+
 
 				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name);
 
@@ -780,6 +786,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_OrgDir = direction;
 					pLink->m_LinkID = link_id;
 
+					CT2CA pszConvertedAnsiString (mode_code);
+					// construct a std::string using the LPCSTR input
+					std::string  strStd (pszConvertedAnsiString);
+
+					pLink->m_Mode_code = strStd;
+
 					if(link_code == 1)  //AB link
 					{
 						pLink->m_FromNodeNumber = from_node_id;
@@ -954,7 +966,25 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		int default_speed_limit = g_GetPrivateProfileInt("connector_conversion","default_speed_limit",60,FileName);
 		int default_link_type = g_GetPrivateProfileInt("connector_conversion","default_link_type_for_connector",99,FileName);
 
-		int direction = g_GetPrivateProfileInt("connector_conversion","direction",0,FileName);
+
+		if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
+		{
+		
+			CString message;
+			message.Format("default_link_type_for_connector=%d has not been defined in the input_link_type.csv file.\nThe NEXTA data conversion utility will add this link type definition automatically.");
+
+			AfxMessageBox(message);
+
+			m_LinkTypeMap[default_link_type].link_type = default_link_type;
+			m_LinkTypeMap[default_link_type].type_code = 'c';
+			m_LinkTypeMap[default_link_type].default_lane_capacity = 4000;
+
+
+		}
+		char direction_name[_MAX_STRING_SIZE];
+		GetPrivateProfileString("connector_conversion","direction","direction",direction_name,sizeof(direction_name),FileName);
+
+		int direction = g_GetPrivateProfileInt("connector_conversion","default_direction",0,FileName);
 
 		CString link_shape_file_name;
 		link_shape_file_name = m_ProjectDirectory + link_table_file_name;
@@ -995,6 +1025,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name);
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
+
+				if(direction_field_flag) 
+				{
+					direction = poFeature->GetFieldAsInteger(direction_name);
+				}
+
 
 				long link_id =  0;
 				int type = default_link_type;  // find default connectors type.
@@ -1245,7 +1281,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	CString zone_shape_file_name;
 	zone_shape_file_name = m_ProjectDirectory + zone_table_file_name;
 
-	poDS = OGRSFDriverRegistrar::Open(zone_table_file_name, FALSE );
+	poDS = OGRSFDriverRegistrar::Open(zone_shape_file_name, FALSE );
 	if( poDS == NULL )
 	{  // zone layer file is not provided
 		m_AMSLogFile << "Zone layer file is not provided. Use node file to generate zone layers." << endl; 
@@ -1653,6 +1689,7 @@ bool  CTLiteDoc::RunGravityModel(LPCTSTR lpszFileName,int demand_type)
 
 void  CTLiteDoc::ReadSynchroUniversalDataFiles()
 {
+	CWaitCursor wait;
 	static char BASED_CODE szFilter[] = "Synchro UTDF LAYOUT File (LAYOUT.csv)|LAYOUT.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
@@ -1670,8 +1707,80 @@ void  CTLiteDoc::ReadSynchroUniversalDataFiles()
 			m_bFitNetworkInitialized  = false;
 
 		}
+	
+		UpdateAllViews(0);
+	
 	}
 
+}
+
+bool  CTLiteDoc::ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LPCTSTR lpszFileName)
+{
+
+	string direction_vector[8] = {"NID","SID","EID","WID","NEID","NWID","SEID","SWID"};
+
+	CCSVParser parser;
+	parser.m_bSkipFirstLine  = true;  // skip the first line  
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		int i=0;
+		while(parser.ReadRecord())
+		{
+			int node_id;
+			string name;
+			DTANode* pNode = 0;
+
+			int node_type;
+			double X;
+			double Y;
+			if(parser.GetValueByFieldName("INTID",node_id) == false)
+				break;
+
+			if(!parser.GetValueByFieldName("INTNAME",name))
+				name = "";
+
+			if(!parser.GetValueByFieldName("TYPE",node_type))
+				node_type = 0;
+
+			// use the X and Y as default values first
+			bool bFieldX_Exist = parser.GetValueByFieldName("X",X);
+			parser.GetValueByFieldName("Y",Y);
+
+			if(node_type != 1)  // not external node
+			{
+
+				for(int direction = 0; direction < 8; direction++)
+				{
+					int outgoing_node_number;
+					if(parser.GetValueByFieldName(direction_vector[direction],outgoing_node_number))// value exits
+					{
+						// add a new link
+						int from_node_id = m_NodeNametoIDMap[node_id];
+						int to_node_id = m_NodeNametoIDMap[outgoing_node_number];
+
+						if(m_NodeIDMap.find(to_node_id) != m_NodeIDMap.end())
+						{
+							if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode)
+							{  // add new link if the outbound node is an external node
+								AddNewLink(from_node_id, to_node_id,false);
+								AddNewLink(to_node_id,from_node_id,false);
+								TRACE("Add New Link = %d, %d\n", node_id, outgoing_node_number);
+							}
+
+						}
+
+					
+					}
+			
+
+				}
+				
+			}
+
+		}
+	}
+
+	return true;
 }
 
 bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
@@ -1695,7 +1804,7 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			string name;
 			DTANode* pNode = 0;
 
-			int control_type;
+			int node_type;
 			double X;
 			double Y;
 			if(parser.GetValueByFieldName("INTID",node_id) == false)
@@ -1704,8 +1813,8 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			if(!parser.GetValueByFieldName("INTNAME",name))
 				name = "";
 
-			if(!parser.GetValueByFieldName("TYPE",control_type))
-				control_type = 0;
+			if(!parser.GetValueByFieldName("TYPE",node_type))
+				node_type = 0;
 
 			// use the X and Y as default values first
 			bool bFieldX_Exist = parser.GetValueByFieldName("X",X);
@@ -1722,9 +1831,11 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			pNode = new DTANode;
 			pNode->m_Name = name;
 
-			if(control_type == 0) 
+			if(node_type == 0) 
 				pNode->m_ControlType = m_ControlType_PretimedSignal;
-			if(control_type == 1) 
+			if(node_type == 1) 
+				pNode->m_ControlType = m_ControlType_ExternalNode;
+			if(node_type == 2) 
 				pNode->m_ControlType = m_ControlType_NoControl;
 
 
@@ -1743,6 +1854,11 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			TRACE("node = %d, X: %f, Y: %f\n", node_id, X, Y);
 
 		}
+
+		parser.CloseCSVFile ();
+
+		// add links
+		ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(lpszFileName);
 
 		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),lpszFileName);
 		return true;

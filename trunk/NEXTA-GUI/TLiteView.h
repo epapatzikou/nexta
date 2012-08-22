@@ -372,7 +372,7 @@ public:
 	CPoint m_BandPoint[2000];  // maximum 1000 feature points
 	int m_LinkTextFontSize;
 
-	void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
+	void DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
 	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag);

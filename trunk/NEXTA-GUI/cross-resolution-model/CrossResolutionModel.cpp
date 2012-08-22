@@ -1049,7 +1049,6 @@ void CTLiteDoc::Constructandexportsignaldata()
 {
 
 
-
 		m_Synchro_ProjectDirectory  = m_ProjectDirectory + "Exporting_Synchro_UTDF\\";
 
 		if ( GetFileAttributes(m_Synchro_ProjectDirectory) == INVALID_FILE_ATTRIBUTES) 
@@ -1083,7 +1082,11 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 			std::list<DTANode*>::iterator  iNode;
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			(*iNode)->m_NodeOriginalNumber = (*iNode)->m_NodeNumber;
+			if((*iNode)->m_NodeOriginalNumber==0)  // overwrite only default value
+			{
+				(*iNode)->m_NodeOriginalNumber = (*iNode)->m_NodeNumber;
+			}
+
 			(*iNode)->m_NodeNumber = (*iNode)->m_NodeID +1;  //reset all node numbers
 		}
 
@@ -1104,7 +1107,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	if(st!=NULL)
 	{		
 		fprintf(st, "Lane Group Data \n");
-		fprintf(st, "RECORDNAME,INTID,");
+		fprintf(st, "RECORDNAME,INTID,");  // write titles of fields
 		for(j=0; j<LaneColumnSize;j++)
 			fprintf(st, "%s,", lane_Column_name_str[j].c_str());
 		fprintf(st,"\n");
@@ -1239,12 +1242,23 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				if((*iNode)->m_ControlType == m_ControlType_PretimedSignal)
 					control_type = 0;  
 				else
-					control_type = 1;  
+				{
+					if( ((*iNode)->m_IncomingLinkVector.size() > 0 && (*iNode)->m_OutgoingLinkVector.size() ==0) /* only has incoming links*/ 
+						||  ((*iNode)->m_IncomingLinkVector.size() == 0 && (*iNode)->m_OutgoingLinkVector.size() > 0) /* only has outgoing links*/ )
+					{
+						control_type = 1;   // external nodes
+					}else
+					{
+						control_type = 3;   // unsignalized
+
+					}
+
+				}
 
 				if(i_n==350)
 					TRACE("");
 
-			fprintf(st, "%i,%i,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_NodeNumber , control_type,
+			fprintf(st, "%i,%i,%i,%f,%f,", (*iNode)->m_NodeNumber, (*iNode)->m_NodeOriginalNumber , control_type,
 				pt_x, pt_y);
 			// find connecting nodes and links at different directions
 			DTA_NodeBasedLinkSets Node_Link;

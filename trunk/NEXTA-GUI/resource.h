@@ -850,13 +850,15 @@
 #define ID_NODE_INCREASENODETEXTSIZE    33439
 #define ID_NODE_DECREASENODETEXTSIZE    33440
 #define ID_TOOLS_CHECKINGFEASIBILITY    33441
+#define ID_TOOLS_GPSMAPMATCHING         33442
+#define ID_BUTTON33444                  33444
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        222
-#define _APS_NEXT_COMMAND_VALUE         33442
+#define _APS_NEXT_COMMAND_VALUE         33445
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

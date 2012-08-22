@@ -92,7 +92,7 @@ BOOL CPage_Node_Phase::OnInitDialog()
 	m_Column_names.push_back ("Group No");		  //combo
 	m_Column_names.push_back ("Start Time");      //edit
 	m_Column_names.push_back ("Green Length");    //edit
-	int nWidth[6] = {50,50,80,50,50,50};
+	int nWidth[6] = {100,100,100,100,100,100};
 
 	std::vector<CString> m_Sequence_names;
 	m_Sequence_names.push_back("Red-Green");
@@ -176,7 +176,7 @@ void CPage_Node_Phase::OnPaint()
 
 	m_PlotRect.top += 35;
 	m_PlotRect.bottom -= 35;
-	m_PlotRect.left += 450;
+	m_PlotRect.left += 550;
 	m_PlotRect.right -= 50;
 
 	DrawBackground(&dc);

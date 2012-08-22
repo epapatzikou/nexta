@@ -99,13 +99,13 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	std::vector<std::string> m_Column_names;
 
-	int nWidth[5] = {50,50,50,100,100};
+	int nWidth[5] = {60,90,90,80,120};
 
-	m_Column_names.push_back ("Indx");
-	m_Column_names.push_back ("I Node");
-	m_Column_names.push_back ("O Node");
-	m_Column_names.push_back ("T Type");
-	m_Column_names.push_back ("Prhb");
+	m_Column_names.push_back ("Index");
+	m_Column_names.push_back ("Incoming Node");
+	m_Column_names.push_back ("Outgoing Node");
+	m_Column_names.push_back ("Turn Type");
+	m_Column_names.push_back ("Permit/Forbid");
 	//m_Column_names.push_back ("SC NO");
 	//m_Column_names.push_back ("SG No");
 
@@ -141,6 +141,9 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	//DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
 	MNode* pNode = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+
+	if(pNode==NULL)
+		return true;
 
 	for (int i=0;i< pNode->Movements.size();i++)
 	{
@@ -192,7 +195,7 @@ void CPage_Node_Movement::OnPaint()
 
 	m_PlotRect.top += 35;
 	m_PlotRect.bottom -= 35;
-	m_PlotRect.left += 450;
+	m_PlotRect.left += 550;
 	m_PlotRect.right -= 50;
 
 	//DrawMovements(&dc,m_PlotRect);
@@ -725,6 +728,10 @@ int CPage_Node_Movement::UpdateMovementStatus(PinPoint *p /*= 0*/)
 {
 	int nRt = -1;
 	MNode* pNode  = m_pView->m_ms.GetMNodebyID(m_CurrentNodeID);
+
+	if(pNode==NULL)
+		return 0;
+
 	for(int i=0;i<pNode->Movements.size();i++)
 	{
 		MMovement *move= pNode->Movements[i];

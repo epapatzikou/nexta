@@ -96,15 +96,15 @@ BOOL CPage_Node_Lane::OnInitDialog()
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
 	std::vector<std::string> m_Column_names;
-	int nWidth[7] = {30,50,50,50,50,60,100};
+	int nWidth[7] = {60,60,70,90,60,80,90};
 
 	m_Column_names.push_back ("Index");
 	m_Column_names.push_back ("Link ID");
-	m_Column_names.push_back ("I/O Link");
-	m_Column_names.push_back ("F/T Node");
+	m_Column_names.push_back ("In/Out Link");
+	m_Column_names.push_back ("From/To Node");
 	m_Column_names.push_back ("Lane No.");
 	m_Column_names.push_back ("Lane Type");
-	m_Column_names.push_back ("Pocket Len");
+	m_Column_names.push_back ("Pocket Length");
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
@@ -136,7 +136,7 @@ void CPage_Node_Lane::OnPaint()
 
 		m_PlotRect.top += 35;
 		m_PlotRect.bottom -= 35;
-		m_PlotRect.left += 450;
+		m_PlotRect.left += 550;
 		m_PlotRect.right -= 50;
 
 		DrawCentroidRadicalLines(&dc,m_PlotRect,m_bOriginAngle);
@@ -766,9 +766,12 @@ void CPage_Node_Lane::UpdateLinkDataAdd(int nCP)
 				{
 					pLink->inLanes[j]->m_Index ++;
 				}
-				for(int j=pRecord->nChnlNum;j>0;j++)
+				for(int j= pRecord->nChnlNum;j>0;j++)
 				{
+					if(j<=4)
+					{
 					pRecord->fChnlLngth[j]=pRecord->fChnlLngth[j-1];
+					}
 				}
 				pRecord->fChnlLngth[0] = 40.0;
 				pRecord->nChnlNum ++;

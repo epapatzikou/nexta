@@ -175,7 +175,7 @@ void CPage_Node_LaneTurn::OnPaint()
 
 	m_PlotRect.top += 35;
 	m_PlotRect.bottom -= 35;
-	m_PlotRect.left += 450;
+	m_PlotRect.left += 550;
 	m_PlotRect.right -= 50;
 
 	DrawCentroidRadicalLines(&dc,m_PlotRect,false);

@@ -240,13 +240,13 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 
 
 			if(!parser.GetValueByFieldName("from_node_id",sensor.FromNodeNumber )) 
-				return false;
+				continue;
 			if(!parser.GetValueByFieldName("to_node_id",sensor.ToNodeNumber )) 
-				return false;
+				continue;
 			if(!parser.GetValueByFieldName("sensor_type",sensor.SensorType)) 
-				return false;
+				continue;
 			if(!parser.GetValueByFieldName("sensor_id",sensor.SensorID )) 
-				return false;
+				continue;
 
 			parser.GetValueByFieldName("x_coord",sensor.pt.x );
 			parser.GetValueByFieldName("y_coord",sensor.pt.y );
@@ -293,7 +293,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 						if(sensor.SensorType == "link_count")
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsLinkFlow = volume_count*60/max(1,end_time_in_min-start_time_in_min)/pLink->m_NumLanes;  // convert to per hour lane flow
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1,end_time_in_min-start_time_in_min)/60);  // convert to per hour lane flow
 						}
 
 					}

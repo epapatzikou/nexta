@@ -178,6 +178,31 @@ public: // create from serialization only
 public:
 
 
+	int FindClosestNode(GDPoint point)
+{
+	int SelectedNodeID = -1;
+
+	double min_distance = 99999;
+	std::list<DTANode*>::iterator iNode;
+
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+		double cx = point.x - (*iNode)->pt.x;
+		double cy = point.y - (*iNode)->pt.y;
+
+		double distance = pow((cx*cx + cy*cy),0.5);
+		if( distance < min_distance)
+		{
+			SelectedNodeID = (*iNode)->m_NodeID ;
+			min_distance = distance;
+		}
+
+	}
+
+	return SelectedNodeID;
+
+}
+
 	std::map<std::string,std::string> m_KML_style_map;
 
 	float GetDemandVolume(int origin,int destination,int demand_type)
@@ -229,6 +254,8 @@ public:
 	void ChangeNetworkCoordinates(int LayerNo, float XScale, float YScale, float deltaX_ratio, float deltaY_ratio);
 
 	void HighlightPath(	std::vector<int>	m_LinkVector, int DisplayID);
+
+	std::vector<GDPoint> m_HighlightGDPointVector;
 
 	void HighlightSelectedVehicles(bool bSelectionFlag);
 	int m_CurrentViewID;
@@ -284,6 +311,8 @@ public:
 	// two basic input
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
+
+	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
 
 	bool ReadRailLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	bool ReadRailNodeCSVFile(LPCTSTR lpszFileName);   // for rail network
@@ -596,6 +625,7 @@ void SetStatusText(CString StatusText);
 
 	int m_ControlType_UnknownControl;
 	int m_ControlType_NoControl;
+	int m_ControlType_ExternalNode;
 	int m_ControlType_YieldSign;
 	int m_ControlType_2wayStopSign;
 	int m_ControlType_4wayStopSign;
@@ -877,6 +907,7 @@ void SetStatusText(CString StatusText);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkDiffLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
@@ -1054,6 +1085,7 @@ public:
 	void ConstructandexportVISSIMdata();
 	void ReadSynchroUniversalDataFiles();
 	bool ReadSynchroLayoutFile(LPCTSTR lpszFileName);
+	bool ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LPCTSTR lpszFileName);
 	bool ReadSynchroLaneFile(LPCTSTR lpszFileName);
 
 	bool m_bFitNetworkInitialized;
@@ -1247,6 +1279,8 @@ public:
 		afx_msg void OnNodeIncreasenodetextsize();
 		afx_msg void OnNodeDecreasenodetextsize();
 		afx_msg void OnToolsCheckingfeasibility();
+		afx_msg void OnToolsGpsmapmatching();
+		afx_msg void OnImportSynchroutdfcsvfiles();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

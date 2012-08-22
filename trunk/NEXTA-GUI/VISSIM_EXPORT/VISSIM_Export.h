@@ -1,3 +1,4 @@
+#pragma once
 //  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn
 //
 
@@ -23,6 +24,27 @@
 
 //    You should have received a copy of the GNU General Public License
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
+
+class PhaseRecord
+{
+public:
+	PhaseRecord();
+	~PhaseRecord();
+	PhaseRecord(int PhaseNo,CString Name,int PhaseType,int Angle,int GroupNo,int SequenceType,int StartTime,int GreenLength,int YellowLength=0,int RedLength=0,int CycleLength=120,int nOffset=0);
+	int nPhaseNo;
+	int nPhaseType; // 1: through; 2: left turn
+	int nAngle;
+	int nGroupNo;
+	int nSequenceType; // 1: red-green; 2: red-yellow-green
+	int nStartTime;    // in second
+	int nGreenLength;
+	int nYellowLength;
+	int nRedLength;
+	CString strName;
+	int nCycleLength;
+	int nOffset;
+	int nSCNo;
+};
 
 enum MLinkApproach {
 	North=1,
@@ -80,6 +102,30 @@ public:
 };
 typedef CArray<CMSignalControl*,CMSignalControl*&> CMSignalControlArray;
 
+class MSigG
+{
+public:
+	MSigG();
+	~MSigG();
+	int nSGNO;
+	int nGTStart;
+	int nGTEnd;
+	int nMinGT;
+	int nAT;
+};
+class MSigC
+{
+public:
+	MSigC();
+	~MSigC();
+	int nID;
+	std::string strName;
+	int nCycleLength;
+	int nOffset;
+	int nType;
+	std::vector<MSigG*> SGs;
+};
+
 class MLane
 {
 public:
@@ -97,6 +143,20 @@ public:
 	bool	rightTurn;
 	int		m_SGNO;		// signal group no
 };
+class MMovement
+{
+public:
+	MMovement();
+	~MMovement();
+	int nSeqNo;
+	int		nFromLinkId;
+	int		nToLinkId;
+	int		nRTL;  //Right=1,Through=2,Left=3
+	bool    bForbid;
+	int     nSCNO; // signal controller number for this node
+	int		nSGNO; // signal group of this movement
+	int     nPhaseNO;
+};
 class MLaneTurn
 {
 public:
@@ -110,6 +170,7 @@ public:
 	int		nRTL;  //Right=1,Through=2,Left=3
 	int		nSCNO;
 	int		nSignalGroupNo;
+	bool    bForbid;
 	int		nNEMA; //NEMA sequence
 };
 
@@ -137,6 +198,16 @@ public:
 	std::vector<MLane*> inLanes;
 	std::vector<MLane*> outLanes;
 	int			GetLaneCount(int nInOut,int RTL=0); // 1:In, 0:Out; RTL 1,2,3,0=all lane count
+
+	int			nInAngle;
+	int			nOutAngle;
+
+	int		nIO;	// used in page node laneturn
+	int		nAngle; // used in page node laneturn
+	double  theta;  // used in page node laneturn
+
+	CString strANMID;
+	CString strANMRID;
 };
 
 class MNode
@@ -154,11 +225,21 @@ public:
 	int			nSCNO;			// Signal control no
 	std::vector<MLink*>	inLinks;// links with this node as to_node
 	std::vector<MLink*> outLinks;//links with this node as from_node
+	std::vector<MLink*> orderedLinks;
 	std::map<int,MLink*> inLinkMap;
 	std::map<int,MLink*> outLinkMap;
 	std::vector<MLaneTurn*> LaneTurns;
-	int			m_nProcessType;  // 4: 标准十字路口 3:标准T路口 0: 边界点、只进或只出 1:边界点、一进一出 2:联接点、二进二出or一进一出（单联接） 5:其他情况
+	std::vector<MMovement*> Movements;
+	int			m_nProcessType;  // 4: 标准十字路口 3:标准T路口 0: 边界点、只进或只出 1:边界点、一进一出 2:联接点、二进二出or一进一出（单联接） -1:孤立点  5:其他情况
 	int			CheckMissingApproach(void); // 检查T路口是否为标准，0为非标准，否则返回缺失的方向1-4
+	MLink*		GetBrunchLink(int nLeg = 8); // 7 pre, 9 post			
+	void		OrderLink(MLink* pMLink=NULL);
+	void		AddInLink(MLink* pLink);
+	void		AddOutLink(MLink* pLink);
+	int			GetLaneTurnIndex(int nInLink,int nInLane,int nOutLink,int nOutLane);
+	MMovement*  GetMMovement(int nFromLinkID,int nToLinkID);
+
+
 };
 class MZone
 {
@@ -178,14 +259,28 @@ public:
 public:
 	int	m_nFromZone;
 	int m_nToZone;
+	int m_nVehicleType;
 	float m_fDemand[4];
-	int m_nStartMin;
-	int m_nEndMin;
+	//int m_nStartMin;
+	//int m_nEndMin;
+};
+class MPath
+{
+public:
+	MPath();
+	~MPath();
+	int m_nFromZone;
+	int m_nToZone;
+	int m_nIndex;
+	std::vector<int> m_nodes;
+	float m_vti1;
+	float m_vti2;
 };
 class Mustang
 {
 public:
 	Mustang();
+	Mustang(CTLiteDoc* pDoc);
 	~Mustang();
 public:
 	float refLongi; // reference longitude, set by the first node
@@ -206,6 +301,10 @@ public:
 	std::list<MLink*> m_LinkList;
 	std::map<int, MLink*> m_LinkNotoLinkMap;
 
+	// datastruct for demand
+	std::vector<MDemand*> m_odDemand;
+	std::vector<MPath*> m_pathDemand;
+
 	// auxillary data structure
 	CString m_szANMFileName;
 	CString m_szVersNo;
@@ -221,6 +320,7 @@ public:
 
 	CMVehClassArray m_VehClassArray;
 	std::vector<MZone*> m_ZoneVector;
+	std::vector<MZone*> m_RefZone;
 	std::vector<MDemand*> m_DemandVector;
 
 	CString m_szLinkTypes;     // This string is reserved for attributes of LINKTYPES. The following 3 are in groups
@@ -232,7 +332,12 @@ public:
 
 	CString m_szPTLines;
 
-	CMSignalControlArray	m_SignalControlArray;
+	CMSignalControlArray	m_SignalControlArray; //no use
+	std::vector<MSigC*> m_SCs;
+	CString m_strFolder;
+
+	std::ofstream m_rf;
+	CTLiteDoc * m_pDoc;
 
 public:
 	bool OpenLogFile(std::string strLogFileName);
@@ -244,9 +349,15 @@ public:
 	void DumpNodeLink2Log(); // called after ReadInputLinkCSV to check the info, debug only
 	bool ReadInputDemandCSV(std::string strFileName);
 	int  GetMLinkApproach(std::string dir,int* nAppr);
+	void ReadInputZoneCentroid(std::string strFileName);
+	GDPoint GetZoneCentroid(int nZoneID);
 	bool ReadInputZoneCSV(std::string strFileName);
+	bool ReadInputZoneCSV2(std::string strFileName);
 	bool ReadInputLaneCSV(std::string strFileName);
 	bool ReadInputSignalCSV(std::string strFileName);
+
+	bool ReadOutputODFlowCSV(std::string strFileName);
+	bool ReadOutputPathFlowCSV(std::string strFileName);
 
 	bool ClassifyNodes(void);//set node ProcessType
 	bool CreateDefaultLanes(void); //create default lanes if no lane data
@@ -255,10 +366,43 @@ public:
 	int	 GetSCNO(int nNodeNumber);
 	int	 GetSGNO(int nNodeNumber,int appr,int RTL);
 
-	bool CreateANMFile(std::string strFileName);
+	bool CreateANMFile2(std::string strFileName);
+	bool WriteVehTypes();
+	bool WriteVehClasses();
+	bool WriteNodes();
+	bool WriteZones();
+	bool WriteLinkTypes();
+	bool WriteLinks();
+	bool WritePTStops();
+	bool WritePTLines();
+	bool WriteSignalControls();
+	std::vector<string> GetSignalControls(void);
+	bool GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases);
+	bool WritePhases(std::vector<PhaseRecord*> phases);
 	CString Minutes2PTString(int nMin);
 	void CreateDefaultData();
 	bool CreateANMRoutesFile(std::string strFileName);
 
-	void WriteTest(CString szFileName);
+	std::vector<int> GetNodeVector(std::string s);
+
+	MNode* GetMNodebyID(int nMNodeID);
+	MLink* GetMLinkbyID(int nMLinkID);
+	void  FillReverseMLinkID(void);
+	int   GetReverseMLinkID(int nMLinkID);
+	bool  CreateMovement(void);
+	void  CreateSignal(void);
+	void  CreateLanes(bool bPocket=true);//default one left turn pocket
+	void  CreateLaneTurns(void);
+	void  WriteMSSignal(std::string strFileName);
+	void  WriteMSLane(std::string strFileName);
+	void  WriteMSLaneturn(std::string strFileName);
+	void  ReadMSLane(std::string strFileName);
+	void  ReadMSLaneturn(std::string strFileName);
+
+	void  PrepareData4Editing(void);
+	void  LoadData4Editing(void);
+	void  Create2Files(void);
+	void  SaveJunctions(void);
+
+	bool CheckDuplicateODDemand(int fromZoneID,int toZoneID,int nVehType=1);
 };
