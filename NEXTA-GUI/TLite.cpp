@@ -217,7 +217,9 @@ void CTLiteApp::OnAppAbout()
 
 void CTLiteApp::OnFileOpen()
 {
-	static char BASED_CODE szFilter[] = "DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|*.tnp; *.dws|All Files (*.*)|*.*||";
+	static char BASED_CODE szFilter[] = "NEXTA Data Files (*.dws;*.tnp)|*.dws; *.tnp|DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|All Files (*.*)|*.*||";
+
+	 
 
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
    if(dlg.DoModal() == IDOK)

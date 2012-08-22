@@ -805,7 +805,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 	m_LinkBandWidthMode  = LBW_link_volume;
 
 	// other options:
-	m_LinkBandWidthMode  = LBW_number_of_lanes;
+//	m_LinkBandWidthMode  = LBW_number_of_lanes;
 
 	std::list<DTALink*>::iterator iLink;
 	float max_link_volume = 0;
@@ -831,6 +831,14 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 	}
 	GenerateOffsetLinkBand();
+
+
+		// processing demand data 
+	CString SettingsFile;
+	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
+
+	int DemandLoading_StartHour = (int) g_GetPrivateProfileFloat("demand", "loading_start_hour",6,SettingsFile);
+	int DemandLoading_EndHour = (int) g_GetPrivateProfileFloat("demand", "loading_end_hour",12,SettingsFile);
 
 
 	FILE* st;
@@ -901,9 +909,9 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",10,m_ProjectFile);
 
  
-		max_link_height = 60;
+		max_link_height = 500;
 
-		float min_link_volume_threadshold= 2000;
+		float min_link_volume_threadshold= 50;
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -926,13 +934,31 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 */	
         	fprintf(st,"\t\t<visibility>1</visibility>\n");
 
-			string color_code = "red";
 
-			if((*iLink)->m_NumLanes == 2)
-				color_code = "green";
+			float total_speed = 0;
+			int start_time_in_min = min((*iLink)->m_LinkMOEAry.size()-1,DemandLoading_StartHour*60+30);
+			int end_time_in_min = min((*iLink)->m_LinkMOEAry.size(),DemandLoading_EndHour*60);
 
-			if((*iLink)->m_NumLanes == 1)
+			if(start_time_in_min> end_time_in_min)
+				end_time_in_min = start_time_in_min;
+
+
+			for(int t = start_time_in_min; t<end_time_in_min ; t++)
+			{
+			total_speed += (*iLink)->m_LinkMOEAry[t].ObsSpeed ;
+			}
+			float avg_speed = total_speed/max(1,end_time_in_min-start_time_in_min);
+			float speed_limit_ratio =  avg_speed/max(1,(*iLink)->m_SpeedLimit);
+
+			TRACE("\nspeed = %d, ratio = %f",avg_speed,speed_limit_ratio);
+
+			string color_code = "green";
+
+			if(speed_limit_ratio<0.9)
 				color_code = "yellow";
+
+			if(speed_limit_ratio<0.5)
+				color_code = "red";
 
 
 			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
@@ -979,6 +1005,169 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 			}
 		}  // for each link
 
+		   	fprintf(st,"</Folder>\n");
+			fprintf(st,"</Document>\n");
+			fprintf(st,"</kml>\n");
+			fclose(st);
+		} // end of file
+
+}
+
+void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GISTypeString, int ColorCode)
+{
+	
+	m_LinkBandWidthMode =  LBW_number_of_lanes;
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+
+		if(ColorCode==0)
+			(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *10;
+
+		if(ColorCode==1)
+			(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *30;
+	}
+	GenerateOffsetLinkBand();
+
+	FILE* st;
+	fopen_s(&st,file_name,"w");
+	GDPoint BandPoint[2000];
+	if(st!=NULL)
+	{
+		fprintf(st,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fprintf(st,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+		fprintf(st,"<Document>\n");
+		fprintf(st,"<name>KmlFile</name>\n");
+
+		// blue style
+		fprintf(st,"<Style id=\"green\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ff00</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// red style
+
+		fprintf(st,"<Style id=\"red\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d0000ff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// blue style
+
+		fprintf(st,"<Style id=\"blue\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7dff0000</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		// yellow style
+
+		fprintf(st,"<Style id=\"yellow\">\n");
+		fprintf(st,"<LineStyle>\n");
+		fprintf(st,"<width>1.5</width>\n");
+		fprintf(st,"</LineStyle>\n");
+		fprintf(st,"<PolyStyle>\n");
+		fprintf(st," <color>7d00ffff</color>\n");
+		fprintf(st,"</PolyStyle>\n");
+   		fprintf(st,"</Style>\n");
+
+		fprintf(st,"<Folder>\n");
+   		fprintf(st,"<name>Zone Layer</name>\n");
+   		fprintf(st," <visibility>1</visibility>\n");
+      	
+
+		int time_step = 4;
+
+		int t = 0;
+		double ratio = 1;
+		
+	 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->green_height >=1|| (*iLink)->red_height >=1)
+			{
+			fprintf(st,"\t<Placemark>\n");
+			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
+/*			fprintf(st,"\t\t\t<TimeSpan>\n");
+
+			CString time_stamp_str = GetTimeStampStrFromIntervalNo (t,false);
+			CString time_stamp_str_end = GetTimeStampStrFromIntervalNo (t+time_step,false);
+
+			fprintf(st,"\t\t\t<begin>2012-01-%0d</begin>\n",t);
+			fprintf(st,"\t\t\t<end>2012-01-01-%0d</end>\n",t+time_step);
+
+//			fprintf(st,"\t\t\t<begin>2012-01-01-T%s:00Z</begin>\n",time_stamp_str);
+//			fprintf(st,"\t\t\t<end>2012-01-01-T%s:00Z</end>\n",time_stamp_str_end);
+
+			fprintf(st,"\t\t\t </TimeSpan>\n");
+*/	
+        	fprintf(st,"\t\t<visibility>1</visibility>\n");
+
+
+	
+
+			string color_code = "green";
+
+			if(ColorCode==1)
+				color_code = "red";
+
+
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
+			fprintf(st,"\t\t<Polygon>\n");
+			fprintf(st,"\t\t<extrude>1</extrude>\n");
+			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
+			fprintf(st,"\t\t<outerBoundaryIs>\n");
+			fprintf(st,"\t\t<LinearRing>\n");
+			fprintf(st,"\t\t<coordinates>\n");
+
+
+			float height =(*iLink)->green_height;
+	
+				if(ColorCode==1)
+					height =(*iLink)->red_height;
+
+			int si;
+			int band_point_index = 0;
+		for(si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandLeftShapePoints[si];
+		}
+
+		for(si = (*iLink) ->m_ShapePoints .size()-1; si >=0 ; si--)
+		{
+			BandPoint[band_point_index++] = (*iLink)->m_BandRightShapePoints[si];
+		}
+
+		BandPoint[band_point_index++]= (*iLink)->m_BandLeftShapePoints[0];
+
+
+
+			for(unsigned int i = 0; i< band_point_index; i++)
+			{
+				fprintf(st,"\t\t\t%f,%f,%f\n", BandPoint[i].x,  BandPoint[i].y,height);
+			}
+
+
+			fprintf(st,"\t\t</coordinates>\n");
+			fprintf(st,"\t\t</LinearRing>\n");
+			fprintf(st,"\t\t</outerBoundaryIs>\n");
+
+			fprintf(st,"\t\t</Polygon>\n");
+			fprintf(st,"\t</Placemark>\n");
+			}
+		}  // for each link
+	
 		   	fprintf(st,"</Folder>\n");
 			fprintf(st,"</Document>\n");
 			fprintf(st,"</kml>\n");
@@ -1355,7 +1544,7 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 		for (itr = m_PathMap.begin(); itr != m_PathMap.end(); itr++)
 		{
 
-			if((*itr).second .TotalVehicleSize >=1)
+			if((*itr).second .m_NodeVector  .size() >=2 && (*itr).second .TotalVehicleSize >=1)
 			{
 				int number_of_nodes = (*itr).second.m_NodeVector.size();
 						// one vehicle type for now
@@ -1438,6 +1627,31 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 					(*itr).second .Destination, 
 					(*itr).second .TotalVehicleSize,
 					(*itr).second .TotalVehicleSize*10);  // 10 for 1/peak hour factor
+
+			}	
+		}
+	fclose(st);
+	}
+
+	//AMS OD statistics
+		fopen_s(&st,directory+"AMS_OD_table.csv","w");
+	if(st!=NULL)
+	{
+	fprintf(st,"from_zone_id,to_zone_id,time_span_volume\n");
+
+		int od_index = 1;
+		std::map<CString, PathStatistics> ::const_iterator itr;
+		for (itr = m_ODMatrixMap.begin(); itr != m_ODMatrixMap.end(); itr++)
+		{
+
+			if((*itr).second .TotalVehicleSize >=1)
+			{
+				int number_of_nodes = (*itr).second.m_NodeVector.size();
+						// one vehicle type for now
+				fprintf(st, "%d,%d,%d\n", 
+					(*itr).second.Origin, 
+					(*itr).second .Destination, 
+					(*itr).second .TotalVehicleSize);
 
 			}	
 		}

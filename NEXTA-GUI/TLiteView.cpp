@@ -935,7 +935,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			}
 
-		if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->m_ReferenceFlowVolume > 1)   // draw provided AADT
+		if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->GetObsLinkVolumeCopy(g_Simulation_Time_Stamp) > 1)   // draw provided AADT
 		{
 			pDC->SelectObject(&g_BrushLinkReference);   //reference brush
 			pDC->SelectObject(&g_PenLinkReference);   //reference pen
@@ -1275,6 +1275,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		for (iCrash = pDoc->m_DTAPointSet.begin(); iCrash != pDoc->m_DTAPointSet.end(); iCrash++)
 		{
 			CPoint point = NPtoSP((*iCrash)->pt);
+
+			node_size = 3;
+
+			/// starting drawing nodes in normal mode
+			pDC->Ellipse(point.x - node_size, point.y + node_size,
+				point.x + node_size, point.y - node_size);
+
+		}
+	}
+
+	if(pMainFrame->m_bShowLayerMap[layer_GPS])
+	{
+		pDC->SelectObject(&g_BlackBrush);
+		pDC->SetTextColor(RGB(255,255,0));
+		pDC->SelectObject(&g_PenSelectColor5);
+		pDC->SetBkColor(RGB(0,0,0));
+
+
+		for (int i =0; i < pDoc->m_HighlightGDPointVector .size(); i++)
+		{
+			CPoint point = NPtoSP(pDoc->m_HighlightGDPointVector[i]);
 
 			node_size = 3;
 
@@ -1915,10 +1936,11 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			element.Attribute = "Control Type";
 
 			if(pNode->m_ControlType == pDoc->m_ControlType_UnknownControl) element.Data.Format ("Unknown Control" );
+			if(pNode->m_ControlType == pDoc->m_ControlType_ExternalNode) element.Data.Format ("External Node" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_NoControl) element.Data.Format ("No Control" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_YieldSign) element.Data.Format ("Yield Sign" );
-			if(pNode->m_ControlType ==  pDoc->m_ControlType_2wayStopSign) element.Data.Format ("2Way Stop" );
-			if(pNode->m_ControlType ==  pDoc->m_ControlType_4wayStopSign) element.Data.Format ("4Way Stop" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_2wayStopSign) element.Data.Format ("2 Way Stop" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_4wayStopSign) element.Data.Format ("4 Way Stop" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_PretimedSignal) element.Data.Format ("Pretimed Signal" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_AcuatedSignal) element.Data.Format ("Acuated Signal" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_Roundabout) element.Data.Format ("Roundabout" );
@@ -2552,7 +2574,7 @@ void CTLiteView::OnSearchFindlink()
 
 		if(dlg.m_SearchMode == efind_vehicle)
 		{
-			int SelectedVehicleID = dlg.m_VehicleNumber -1; // internal vehicle index starts from zero
+			int SelectedVehicleID = dlg.m_VehicleNumber; // internal vehicle index starts from zero
 
 			if(pDoc->m_VehicleIDMap.find(SelectedVehicleID) == pDoc->m_VehicleIDMap.end())
 			{
@@ -2570,6 +2592,11 @@ void CTLiteView::OnSearchFindlink()
 			}
 
 			pDoc->HighlightPath(LinkVector,1);
+
+
+			pDoc->m_HighlightGDPointVector.clear();
+
+			pDoc->m_HighlightGDPointVector = pVehicle->m_GPSLocationVector ; // assign the GPS points to be highlighted
 
 		}
 	}
@@ -2953,6 +2980,8 @@ void CTLiteView::CopyLinkSetInSubarea()
 
 void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 {
+
+
 	CTLiteDoc* pDoc = GetDocument();
 
 	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
@@ -2989,6 +3018,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	}
 
 
+
 	//step 02
 	//remove links
 	pDoc->m_LinkNoMap.clear();
@@ -3019,8 +3049,6 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 
 
 	// step 03: remove nodes
-
-
 	pDoc->m_NodeIDMap.clear();
 
 	iNode = pDoc->m_NodeSet.begin ();
@@ -3038,6 +3066,8 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 			//inside subarea
 		}
 	}
+
+	
 
 	// step 04: mark zones to be removed. 
 
@@ -3074,6 +3104,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 
 	iNode = pDoc->m_NodeSet.begin ();
 	int TAZ = 10000;
+	int boundary_zone_count = 0;
 	while (iNode != pDoc->m_NodeSet.end())
 	{
 
@@ -3097,11 +3128,14 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 				element.ZoneID  = TAZ;
 				element.NodeNumber = (*iNode)->m_NodeNumber  ;
 				pDoc->m_ZoneMap [TAZ].m_ActivityLocationVector .push_back (element );
+				boundary_zone_count++;
 				TAZ ++;
 
 		}
 			++iNode;
 	}
+
+
 
     // step 06: generate route file
 		std::list<DTAVehicle*>::iterator iVehicle;
@@ -3208,6 +3242,24 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 
 	DeleteObject(m_polygonal_region);
 	delete [] m_subarea_points;
+
+			int zone_count = 0;
+
+		std::map<int, DTAZone>	:: const_iterator itr_zone;
+
+		for(itr_zone = pDoc->m_ZoneMap.begin(); itr_zone != pDoc->m_ZoneMap.end(); ++itr_zone)
+		{
+			if(itr_zone->second.m_ActivityLocationVector .size() > 0)
+				zone_count++;
+
+		}
+	CString SubareaCutMessage;
+	SubareaCutMessage.Format ("The subarea includes %d nodes, %d links;\n%d zones, %d newly generated boundary zones;\n%d subarea OD pairs, %d subarea path records.",
+		pDoc->m_NodeSet.size(), pDoc->m_LinkSet.size(), zone_count,boundary_zone_count,pDoc->m_ODMatrixMap.size(),
+		pDoc->m_PathMap.size());
+
+	AfxMessageBox(SubareaCutMessage, MB_ICONINFORMATION);
+
 
 	Invalidate();
 }
@@ -3409,23 +3461,23 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 
 		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
 
-	//}else if (pMainFrame->m_bShowLayerMap[layer_observation])
-	//{  //observed data
-	//	if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
-	//	{
+	}else if (pMainFrame->m_bShowLayerMap[layer_detector])
+	{  //observed data
+		if(pLink ->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
+		{
 
-	//		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
-	//		{
-	//			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[si]);
-	//		}
+			for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+			{
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[si]);
+			}
 
-	//		for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
-	//		{
-	//			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[si]);
-	//		}
+			for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+			{
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[si]);
+			}
 
-	//		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
-	//	}
+			m_BandPoint[band_point_index++]= NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
+		}
 
 	}
 
@@ -3933,6 +3985,9 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 		pDC->SelectObject(&g_PenNodeColor);
 
 }
+
+
+
 void CTLiteView::OnNodeMovementproperties()
 {
 	CTLiteDoc* pDoc = GetDocument();

@@ -306,6 +306,7 @@ public:
 class DTATimeDependentemand
 {
 public: 
+	int movement_hourly_capacity;
 	int starting_time_in_min;
 	int ending_time_in_min;
 	float time_dependent_value;
@@ -314,6 +315,7 @@ public:
 
 	DTATimeDependentemand()
 	{
+	movement_hourly_capacity = -1;
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;
 	time_dependent_value = 0;
@@ -731,6 +733,7 @@ public:
 	signal_group_no = 0;
 	phase_index = 0;
 	turn_volume = 10;
+	movement_hourly_capacity = 1000;
 
 	}
 
@@ -744,6 +747,7 @@ int in_link_from_node_id;
 int in_link_to_node_id;  // this equals to the current node number
 int out_link_to_node_id;
 
+float movement_hourly_capacity;
 int starting_time_in_min;
 int ending_time_in_min;
 float turnning_percentage;
@@ -846,6 +850,7 @@ public:
 	int m_External_OD_flag;
 
 	std::vector<int> m_OutgoingLinkVector;
+	std::vector<int> m_IncomingLinkVector;
 	std::vector <DTANodeMovement> m_MovementVector;
 
 	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
@@ -1151,6 +1156,7 @@ public:
 		m_ConnectorZoneID = 0;
 		m_NumberOfLeftTurnBay = 0;
 		m_LeftTurnBayLengthInFeet = 0;	
+		m_LeftTurnCapacity = 0;
 
 		m_bOneWayLink = true;
 		m_BandWidthValue = 1;
@@ -1162,10 +1168,15 @@ public:
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
 		m_TotalVolume = 0;
+		m_MeanSpeed  = m_SpeedLimit;
+		m_TotalTravelTime = 0;
 		m_TotalDiffValue = 0;
 		m_NumberOfMarkedVehicles = 0;
 		m_AVISensorFlag = false;
 		m_LinkID = 0;
+		green_height = 0;
+		red_height = 0;
+
 		m_LayerNo = 0;
 		m_OrgDir = 1;
 		m_RailBidirectionalFlag = 1;
@@ -1367,6 +1378,8 @@ public:
 		m_SimulationHorizon	= TimeHorizon;
 
 		m_TotalVolume = 0;
+		m_MeanSpeed  = m_SpeedLimit;
+		m_TotalTravelTime = 0;
 		m_TotalDiffValue = 0;
 		m_NumberOfMarkedVehicles = 0;
 
@@ -1570,8 +1583,12 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_Direction; 
 	bool m_bOneWayLink;
 	int m_LinkID;
+
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
+
+	int green_height;  // for 3D KML
+	int red_height;
 
 	float m_Kjam;
 	float m_AADT_conversion_factor;
@@ -1586,11 +1603,13 @@ void AdjustLinkEndpointsWithSetBack()
 
 	int m_NumberOfLeftTurnBay;
 	int m_LeftTurnBayLengthInFeet;	
+	int m_LeftTurnCapacity;
 
 	DTA_Approach m_FromApproach;
 	DTA_Approach m_ToApproach;
 	int m_ReverseLinkId;
 
+	float	m_OriginalLength;  // in miles
 	float	m_Length;  // in miles
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int		m_NumLanes;
@@ -1644,6 +1663,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int CFlowDepartureCount;
 
 	int m_TotalVolume;
+	int m_TotalTravelTime;
 	int m_TotalDiffValue;
 
 	float GetObsSpeed(int t)
@@ -1957,6 +1977,13 @@ public:
 
 };
 
+class GPSLocationRecord
+{
+public:
+double x;
+double y;
+
+};
 class DTAVehicle
 {
 public:
@@ -1968,6 +1995,7 @@ public:
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
 
+	string m_VehicleKey;
 	int m_OriginZoneID;  //range 0, 65535
 	int m_DestinationZoneID;  // range 0, 65535
 
@@ -1995,6 +2023,8 @@ public:
 	bool m_bMarked;
 
 	DTAVehicleAdditionalData* pVehData;
+
+	std::vector<GDPoint> m_GPSLocationVector;
 
 	CVehicleEmission m_EmissionData;
 
