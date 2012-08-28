@@ -1224,61 +1224,19 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		output.SwitchPercentage = 0;
 	}
 
-	/*
-	ifstream is;
-	int file_length= 0;
-	is.open ("cumulative_scenario_summary.csv", ios::app);
-	if(is.is_open())
-	{
-	 get length of file:
-	is.seekg (0, ios::end);
-	file_length = is.tellg();
-	is.seekg (0, ios::beg);
-	is.close();
-	}
-
-	ShortSimulationLogFile.open ("cumulative_scenario_summary.csv", ios::app);
-	if(ShortSimulationLogFile.is_open())
-	{
-
-	if(file_length == 0)
-	{  // write field names
-	ShortSimulationLogFile << "short scenario summary,# of Vehicles,Avg Travel Time in min,Avg Travel Time Index (1.0=FFTT),Avg Distance in mile"<< endl;
-	}
-
-	ShortSimulationLogFile << g_scenario_short_description  << "," << g_VehicleVector.size() << "," << output.AvgTravelTime << "," << output.AvgTTI  << "," << output.AvgDistance << endl;
-	ShortSimulationLogFile.close();
-	}else
-	{
-	cout << "Error: File cumulative_scenario_summary.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-	g_ProgramStop();
-	}
-
-	*/
 	if( Iteration == g_NumberOfIterations)  // output results at the last iteration
 	{
-		if(ShortSimulationLogFile.is_open())
-		{
-			ShortSimulationLogFile << "# of Veh = " << g_VehicleVector.size() << "; Avg Travel Time =" << output.AvgTravelTime 
-				<<  "  min; Avg Distance = " << output.AvgDistance ;
-
 			g_SimulationResult.number_of_vehicles  = g_VehicleVector.size();
 			g_SimulationResult.avg_travel_time_in_min = output.AvgTravelTime;
 			g_SimulationResult.avg_distance_in_miles = output.AvgDistance;
 			g_SimulationResult.avg_speed = output.AvgDistance/(max(0.1,output.AvgTravelTime)/60.0f);
 
 
-		}else
-		{
-			cout << "Error: File output_NetworkMOE cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-			g_ProgramStop();
-
-		}
 	}
 
 	// update crash prediction statistics
-	DTASafetyPredictionModel SafePredictionModel;
-	SafePredictionModel.UpdateCrashRateForAllLinks();
+	//DTASafetyPredictionModel SafePredictionModel;
+	//SafePredictionModel.UpdateCrashRateForAllLinks();
 
 	std::map<int, DTAVehicle*>::iterator iterVM;
 	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)

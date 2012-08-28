@@ -422,10 +422,6 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
-			<File
-				RelativePath=".\WELL512a.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
