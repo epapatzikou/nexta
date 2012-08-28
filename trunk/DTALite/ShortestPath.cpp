@@ -240,7 +240,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 			for(int itoll = 0; itoll< pLink->TollVector.size(); itoll++)
 			{
 
-				if((DayNo == pLink->TollVector[itoll].DayNo) && m_StartTimeInMin >= pLink->TollVector[itoll].StartTime && m_StartTimeInMin <= pLink->TollVector[itoll].EndTime)
+				if((DayNo >= pLink->TollVector[itoll].StartDayNo && DayNo <= pLink->TollVector[itoll].EndDayNo  ) && m_StartTimeInMin >= pLink->TollVector[itoll].StartTime && m_StartTimeInMin <= pLink->TollVector[itoll].EndTime)
 				{
 					m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].m_bTollExist = true;
 

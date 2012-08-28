@@ -37,8 +37,6 @@ extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
 extern std::map<int, DemandType> g_DemandTypeMap;
 extern std::map<int, PricingType> g_PricingTypeMap;
-extern std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
-
 extern std::map<int, DTALinkType> g_LinkTypeMap;
 extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
@@ -119,11 +117,12 @@ extern float g_TotalDemandDeviation;
 extern float g_TotalMeasurementDeviation; 
 
 extern ofstream g_scenario_short_description;
-extern ofstream ShortSimulationLogFile;
 extern void OutputMovementMOEData(ofstream &output_MovementMOE_file);
 extern bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2);
 extern string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName);
 extern void g_ReadDemandFileBasedOnMetaDatabase();
+extern void g_ReadTimeDependentDemandProfile();
+extern void g_ReadVOTProfile();
 
 
 

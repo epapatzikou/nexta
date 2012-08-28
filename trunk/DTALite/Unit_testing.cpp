@@ -38,6 +38,11 @@
 using namespace std;
 	void g_MultiScenarioTrafficAssignment() 
 {
+
+	g_SummaryStatFile.Open("output_summary.csv");
+	g_SummaryStatFile.WriteTextLabel ("DTALite:\nA Fast Open Source DTA Engine\n");
+	g_SummaryStatFile.WriteTextLabel("Software Version =,1.000\nRelease Date=,July 20th 2012\n");
+
 	int scenario_no;
 	string scenario_name;
 	int TotalUEIterationNumber = 5;
@@ -57,16 +62,16 @@ using namespace std;
 	csv_output.WriteTextString("Unit of output:");
 	csv_output.WriteTextString(",,distance=,miles");
 	csv_output.WriteTextString(",,speed=,mph");
-	csv_output.WriteTextString(",,energy=,joule");
-	csv_output.WriteTextString(",,energy=,joule");
+	csv_output.WriteTextString(",,energy=,1000 joule");
 	csv_output.WriteTextString(",,CO2,NOX,CO,HC=,g");
 
 	int cl;
 	
 	csv_output.SetFieldName ("scenario_no");
+	csv_output.SetFieldName ("demand_multiplier");
 	csv_output.SetFieldName ("scenario_name");
 	csv_output.SetFieldName ("number_of_assignment_days");
-	
+
 	
 	CCSVParser parser_MOE_settings;
 	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
@@ -134,7 +139,7 @@ using namespace std;
 		int line_no = 1;
 
 	CCSVParser parser_scenario;
-	if (parser_scenario.OpenCSVFile("input_multi_scenario.csv"))
+	if (parser_scenario.OpenCSVFile("input_scenario_settings.csv"))
 	{
 		if(g_InitializeLogFiles()==0) 
 		return;
@@ -164,9 +169,13 @@ using namespace std;
 			cout << "Field scenario_name cannot be found in file input_multi_scenario.csv. Please check." << endl;
 			g_ProgramStop();
 		}
-		
-		parser_scenario.GetValueByFieldName("demand_loading_mode",g_VehicleLoadingMode) ;
-		
+
+		g_SummaryStatFile.WriteTextLabel ("----------------------");
+		g_SummaryStatFile.WriteTextLabel (scenario_name.c_str ());
+		g_SummaryStatFile.WriteTextLabel ("----------------------\n");
+
+//		parser_scenario.GetValueByFieldName("demand_loading_mode",g_VehicleLoadingMode) ;
+		g_VehicleLoadingMode = 2;  // default meta data mode
 
 		if(parser_scenario.GetValueByFieldName("number_of_assignment_days",TotalUEIterationNumber)==false)
 		{
@@ -182,63 +191,31 @@ using namespace std;
 			cout << "Field demand_multiplier cannot be found in file input_multi_scenario.csv. Please check." << endl;
 			g_ProgramStop();
 		}
-		parser_scenario.GetValueByFieldName("test_from_node_id",TestFromNode) ;
-		parser_scenario.GetValueByFieldName("test_to_node_id",TestToNode) ;
-
 
 		string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;
 
-
-
-	g_ReadInputFiles();
+		g_EmissionDataOutputFlag  = 0;
+		if(parser_scenario.GetValueByFieldName("emission_data_output",g_EmissionDataOutputFlag )==false)
+		{
+			cout << "Field emission_data_output cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			g_ProgramStop();
+		}
 	
-	if(TestFromNode!=0 && TestToNode!=0)
-	{
-			if(g_LinkMap.find(GetLinkStringID(TestFromNode,TestToNode))== g_LinkMap.end())
-			{
-				cout << "Test Link " << TestFromNode << "-> " << TestToNode << " at line " << line_no << "has not been defined in input_link.csv.";
-				g_ProgramStop();
-			}
+		g_TimeDependentODMOEOutputFlag = 0;
 
-			g_SetLinkAttributes(TestFromNode,TestToNode,TestNumberOfLanes);
-
-	}
-
-		if(parser_scenario.GetValueByFieldName("File_Link_Based_Toll",File_Link_Based_Toll))
-		{
-			cout << "Reading File_Link_Based_Toll" << endl;
-
-		 ReadLinkTollScenarioFile(File_Link_Based_Toll);
-		}
-		if(parser_scenario.GetValueByFieldName("File_Incident",File_Incident))
-		{
-			cout << "Reading File_Incident" << endl;
-		 ReadIncidentScenarioFile(File_Incident);
-		}
-
-		if(parser_scenario.GetValueByFieldName("File_MessageSign",File_MessageSign))
-		{
-		cout << "Reading File_MessageSign" << endl;
-		ReadVMSScenarioFile(File_MessageSign);
-		}
-		if(parser_scenario.GetValueByFieldName("File_WorkZone",File_WorkZone))
-		{
-		cout << "Reading File_WorkZone" << endl;
-		 ReadWorkZoneScenarioFile(File_WorkZone);
-		}
-		
-
-	cout << "Start Traffic Assignment/Simulation... " << endl;
+		g_ReadInputFiles(scenario_no);
+	
+		cout << "Start Traffic Assignment/Simulation... " << endl;
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
 			g_AgentBasedAssisnment();  // agent-based assignment
 
-	//	g_OutputSimulationStatistics(g_NumberOfIterations);
+		g_OutputSimulationStatistics(g_NumberOfIterations);
 
 		csv_output.SetValueByFieldName ("scenario_no",scenario_no);
 		csv_output.SetValueByFieldName ("scenario_name",scenario_name);
 		csv_output.SetValueByFieldName ("number_of_assignment_days",TotalUEIterationNumber);
-		csv_output.SetValueByFieldName ("scenario_no",g_DemandGlobalMultiplier);
+		csv_output.SetValueByFieldName ("demand_multiplier",g_DemandGlobalMultiplier);
 
 	CCSVParser parser_MOE_settings;
 	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
@@ -271,10 +248,10 @@ using namespace std;
 			parser_MOE_settings.GetValueByFieldName("to_node_id",to_node_id);
 			parser_MOE_settings.GetValueByFieldName("origin_zone_id",origin_zone_id);
 			parser_MOE_settings.GetValueByFieldName("destination_zone_id",destination_zone_id);
-			parser_MOE_settings.GetValueByFieldName("departure_starting_time",departure_starting_time);
-			parser_MOE_settings.GetValueByFieldName("departure_ending_time",departure_ending_time);
-			parser_MOE_settings.GetValueByFieldName("entrance_starting_time",entrance_starting_time);
-			parser_MOE_settings.GetValueByFieldName("entrance_ending_time",entrance_ending_time);
+			parser_MOE_settings.GetValueByFieldName("departure_starting_time_in_min",departure_starting_time);
+			parser_MOE_settings.GetValueByFieldName("departure_ending_time_in_min",departure_ending_time);
+			parser_MOE_settings.GetValueByFieldName("entrance_starting_time_in_min",entrance_starting_time);
+			parser_MOE_settings.GetValueByFieldName("entrance_ending_time_in_min",entrance_ending_time);
 		
 
 			int Count=0; 
@@ -284,7 +261,7 @@ using namespace std;
 			Count = g_OutputSimulationMOESummary(AvgTravelTime,AvgDistance, AvgSpeed,AvgCost, emission_data, link_data,
 				demand_type,vehicle_type, information_type, origin_zone_id,destination_zone_id,
 				from_node_id, mid_node_id, to_node_id,	
-				departure_starting_time,departure_ending_time );
+				departure_starting_time,departure_ending_time,entrance_starting_time,entrance_ending_time );
 
 			float percentage = Count*100.0f/max(1,g_SimulationResult.number_of_vehicles);
 
@@ -331,7 +308,14 @@ using namespace std;
 	}  // for each scenario
 
 	parser_MOE_settings.CloseCSVFile ();
-	}  // parser is opened
+
+	}else
+	{
+
+		cout << "File input_scenario_settings.csv cannot be found. Please check." << endl;
+		g_ProgramStop();
+	
+	}
 	  
 }
 

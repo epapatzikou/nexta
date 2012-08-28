@@ -602,7 +602,8 @@ public:
 class Toll
 {
 public:
-	int DayNo;
+	int StartDayNo;
+	int EndDayNo;
 	float StartTime;
 	float EndTime;
 	float TollRate[MAX_PRICING_TYPE_SIZE];  // 4 is 3_+1 , as pricing 
@@ -740,11 +741,11 @@ public:
 
 	}
 
-	float GetTollRateInDollar(int DayNo, float Time, int PricingType)  
+	float GetTollRateInDollar(int DayNo=0, float Time=0, int PricingType=1)  
 	{
 		for(int il = 0; il< m_TollSize; il++)
 		{
-			if(( pTollVector[il].DayNo ==0 || DayNo == pTollVector[il].DayNo) && (Time >= pTollVector[il].StartTime && Time<=pTollVector[il].EndTime))
+			if(( pTollVector[il].StartDayNo  <= DayNo &&  DayNo <= pTollVector[il].EndDayNo) && (Time >= pTollVector[il].StartTime && Time<=pTollVector[il].EndTime))
 			{
 				return pTollVector[il].TollRate[PricingType];
 			}
@@ -1248,6 +1249,21 @@ public:
 
 	};
 
+	float GetTrafficVolumeByMin(int DayNo,int starting_time, int time_interval)  // DayNo =-1: unknown day
+	{
+
+		int t;
+		int total_flow =0;
+		int time_end = min(starting_time+time_interval, m_SimulationHorizon);
+		for(t=starting_time; t< time_end; t++)
+		{
+			total_flow +=  m_LinkMOEAry[t].TotalFlowCount ;
+		}
+
+		return total_flow;
+
+	};
+
 
 	float GetTravelTimeByMin(int DayNo,int starting_time, int time_interval)  // DayNo =-1: unknown day
 	{
@@ -1286,7 +1302,6 @@ public:
 			}
 
 		}
-
 
 		return travel_time;
 
@@ -2622,6 +2637,7 @@ extern int g_InitializeLogFiles();
 extern void g_ReadDTALiteSettings();
 extern int g_AgentBasedAssignmentFlag;
 extern float g_DemandGlobalMultiplier;
+
 extern void g_TrafficAssignmentSimulation();
 extern void g_OutputSimulationStatistics(int Iteration);
 extern void g_FreeMemory();
@@ -2631,11 +2647,11 @@ extern NetworkSimulationResult g_SimulationResult;
 extern void g_RunStaticExcel();
 extern TCHAR g_DTASettingFileName[_MAX_PATH];
 extern void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes);
-extern void g_ReadInputFiles();
-void  ReadIncidentScenarioFile(string FileName);
-void ReadVMSScenarioFile(string FileName);
-void ReadLinkTollScenarioFile(string FileName);
-void ReadWorkZoneScenarioFile(string FileName);
+extern void g_ReadInputFiles(int scenario_no);
+void  ReadIncidentScenarioFile(string FileName,int scenario_no=0);
+void ReadVMSScenarioFile(string FileName,int scenario_no=0);
+void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
+void ReadWorkZoneScenarioFile(string FileName,int scenario_no=0);
 extern void g_CreateLinkTollVector();
 extern void g_ReadDemandFile_Parser();
 extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);
@@ -2643,4 +2659,4 @@ extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIterat
 extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed, float & AvgCost, EmissionStatisticsData &emission_data, LinkMOEStatisticsData &link_data,
 										 int DemandType=0,int VehicleType = 0, int InformationClass=0, int origin_zone_id = 0, int destination_zone_id = 0,
 										 int from_node_id = 0, int mid_node_id	=0, int to_node_id	=0,	
-										 int departure_starting_time	 = 0,int departure_ending_time= 144);
+										 int departure_starting_time	 = 0,int departure_ending_time= 1440, int entrance_starting_time=0,int inentrance_ending_time = 1440);
