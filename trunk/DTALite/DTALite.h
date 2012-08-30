@@ -332,6 +332,51 @@ public:
 	int destination_node_index;
 	float destination_node_cost_label;
 };
+
+class DTANodeMovement
+{
+public:
+	DTANodeMovement()
+	{
+
+	starting_time_in_min = 0;
+	ending_time_in_min = 1440;
+	turnning_percentage = 0;
+	turning_prohibition_flag = 1;
+	signal_control_no = 0;
+	signal_group_no = 0;
+	phase_index = 0;
+	turn_volume = 10;
+	total_vehicle_count = 0;
+	total_vehicle_delay = 0;
+	movement_capacity_per_simulation_interval = 0;
+	movement_vehicle_counter = 0 ;
+	}
+
+int IncomingLinkID;
+int OutgoingLinkID;
+string turning_direction;
+int in_link_from_node_id;
+int in_link_to_node_id;  // this equals to the current node number
+int out_link_to_node_id;
+
+int total_vehicle_count;
+float total_vehicle_delay;
+
+float movement_hourly_capacity;
+float movement_capacity_per_simulation_interval;
+int movement_vehicle_counter;
+int starting_time_in_min;
+int ending_time_in_min;
+float turnning_percentage;
+int turning_prohibition_flag;
+int phase_index;
+int signal_control_no;  // for meso-scopic, link -based
+int signal_group_no;  // for meso-scopic, link -based
+int turn_volume;
+};
+
+
 class DTANode
 {
 public:
@@ -357,6 +402,7 @@ public:
 
 	std::vector<DTADestination> m_DestinationVector;
 	std::vector<int> m_IncomingLinkVector;
+	std::map<string, DTANodeMovement> m_MovementMap;
 
 
 	bool m_bOriginFlag;
@@ -2499,45 +2545,6 @@ typedef struct
 	float value_of_time;
 } struct_VehicleInfo_Header;
 
-
-class DTANodeMovement
-{
-public:
-	DTANodeMovement()
-	{
-
-	starting_time_in_min = 0;
-	ending_time_in_min = 1440;
-	turnning_percentage = 0;
-	turning_prohibition_flag = 1;
-	signal_control_no = 0;
-	signal_group_no = 0;
-	phase_index = 0;
-	turn_volume = 10;
-	total_vehicle_count = 0;
-	total_vehicle_delay = 0;
-	}
-
-int IncomingLinkID;
-int OutgoingLinkID;
-string turning_direction;
-int in_link_from_node_id;
-int in_link_to_node_id;  // this equals to the current node number
-int out_link_to_node_id;
-
-int total_vehicle_count;
-float total_vehicle_delay;
-
-float movement_hourly_capacity;
-int starting_time_in_min;
-int ending_time_in_min;
-float turnning_percentage;
-int turning_prohibition_flag;
-int phase_index;
-int signal_control_no;  // for meso-scopic, link -based
-int signal_group_no;  // for meso-scopic, link -based
-int turn_volume;
-};
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
