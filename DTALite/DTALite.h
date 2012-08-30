@@ -753,6 +753,15 @@ public:
 		return 0;
 	}
 
+	unsigned int m_RandomSeed; 
+		float GetRandomRatio()  // get link_specific random seed
+	{
+		m_RandomSeed = (LCG_a * m_RandomSeed + LCG_c) % LCG_M;  //m_RandomSeed is automatically updated.
+
+		return float(m_RandomSeed)/LCG_M;
+	}
+
+
 	std::map<int, int> m_OperatingModeCount;
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector <SLinkMOE> m_LinkMOEAry;
@@ -2557,8 +2566,8 @@ void InitWELLRNG512a (unsigned int *init);
 double WELLRNG512a (void);
 
 double g_GetRandomRatio();
-int g_GetRandomInteger_From_FloatingPointValue(float Value);
-int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID, int SimulationIntervalNo);
+int g_GetRandomInteger_SingleProcessorMode(float Value);
+int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID);
 
 void g_ReadDTALiteVehicleFile(char fname[_MAX_PATH]);
 void g_ReadDTALiteAgentCSVFile(char fname[_MAX_PATH]);

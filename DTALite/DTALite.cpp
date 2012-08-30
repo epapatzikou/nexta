@@ -284,7 +284,7 @@ double g_GetRandomRatio()
 	return WELLRNG512a();
 }
 
-int g_GetRandomInteger_From_FloatingPointValue(float Value)
+int g_GetRandomInteger_SingleProcessorMode(float Value)
 {
 	int int_value = int(Value);
 	double Residual = Value - int_value;
@@ -299,10 +299,10 @@ int g_GetRandomInteger_From_FloatingPointValue(float Value)
 	}
 }
 
-int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID, int SimulationIntervalNo)
+int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID)
 { // we have to use this random number generator in parallel computing mode, as the above version uses the "shared" seed
 	float Residual = Value - int(Value);
-	float RandomNumber = ((LinkID + SimulationIntervalNo)%100)/100.0f;
+	float RandomNumber = g_LinkVector[LinkID]->GetRandomRatio();
 	if(RandomNumber < Residual)
 	{
 		return int(Value)+1;
@@ -1149,6 +1149,8 @@ void g_ReadInputFiles(int scenario_no)
 
 				}
 				pLink->m_LinkID = i;
+				pLink->m_RandomSeed = pLink->m_LinkID; // assign a link specific random seed
+
 				pLink->m_OrgLinkID =  org_link_id;
 				pLink->m_link_code  = link_code;
 				pLink->m_FromNodeNumber = FromID;
@@ -1820,7 +1822,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 
 	// reset the range of demand loading interval
 
-	int number_of_vehicles_generated = g_GetRandomInteger_From_FloatingPointValue(number_of_vehicles);
+	int number_of_vehicles_generated = g_GetRandomInteger_SingleProcessorMode(number_of_vehicles);
 	//g_LogFile << "r," << number_of_vehicles << "," << number_of_vehicles_generated << ",";
 
 
@@ -2498,6 +2500,7 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 	FILE* st = NULL;
 
 	FILE* st_struct = NULL;
+	FILE* st_path_link_sequence = NULL;
 
 	FILE* st_info_struct = NULL;
 
@@ -2505,6 +2508,9 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 
 	fopen_s(&st_struct,"agent.bin","wb");
 	fopen_s(&st_info_struct,"input_agent.bin","wb");
+
+	fopen_s(&st_path_link_sequence,"output_path_link_sequence.csv","w");
+
 
 
 	typedef struct  
@@ -2544,6 +2550,9 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 		int VehicleCount_withPhysicalPath = 0;
 		// output statistics
 		fprintf(st, "agent_id,from_zone_id,to_zone_id,departure_time,arrival_time,complete_flag,trip_time,demand_type,pricing_type,vehicle_type,information_type,value_of_time,toll_cost_in_dollar,emissions,distance_in_mile,TotalEnergy_(KJ),CO2_(g),NOX_(g),CO_(g),HC_(g),number_of_nodes,path_sequence\n");
+
+		if(st_path_link_sequence!=NULL)
+			fprintf(st_path_link_sequence,"vehicle_id,from_zone_id,to_zone_id,link_sequence,from_node_id->to_node_id,from_node_time_stamp_in_min,travel_time_in_min,delay_in_min\n");
 
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 		{
@@ -2656,6 +2665,8 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 							int FromNodeID = g_LinkVector[LinkID]->m_FromNodeID;
 							int FromNodeNumber = g_NodeVector[FromNodeID].m_NodeName ;
 
+							int ToNodeID = g_LinkVector[LinkID]->m_ToNodeID;
+							int ToNodeNumber = g_NodeVector[ToNodeID].m_NodeName ;
 
 							int NextLinkID = pVehicle->m_aryVN [j+1].LinkID;
 							int NextNodeID = g_LinkVector[NextLinkID]->m_ToNodeID;
@@ -2670,6 +2681,13 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 								g_MovementMap[movement_id].total_vehicle_delay += LinkWaitingTime;
 
 							}
+
+		if(st_path_link_sequence!=NULL)
+		{
+					fprintf(st_path_link_sequence,"v%d,%d,%d,%d,%d->%d,%.2f,%.2f,%.2f\n", pVehicle->m_VehicleID,pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID ,
+						j,FromNodeNumber,ToNodeNumber,pVehicle->m_aryVN [j].AbsArrivalTimeOnDSN,LinkTravelTime,LinkWaitingTime);
+		}
+
 						}
 
 
@@ -2703,6 +2721,9 @@ void OutputVehicleTrajectoryData(char fname[_MAX_PATH],int Iteration, bool bStar
 		fclose(st);
 		fclose(st_struct);
 		fclose(st_info_struct);
+
+		if(st_path_link_sequence!=NULL)
+		fclose(st_path_link_sequence);
 	}else
 	{
 		fprintf(g_ErrorFile, "File agent.csv cannot be opened. It might be currently used and locked by EXCEL.");
