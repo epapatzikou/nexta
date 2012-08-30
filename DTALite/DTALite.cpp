@@ -1309,6 +1309,9 @@ void g_ReadInputFiles(int scenario_no)
 				string movement_id = GetMovementStringID(element.in_link_from_node_id, element.in_link_to_node_id, element.out_link_to_node_id);
 				g_MovementMap[movement_id] = element;
 
+				int middle_node_id = g_NodeNametoIDMap[element.in_link_to_node_id];
+				g_NodeVector[middle_node_id].m_MovementMap[movement_id] = element;  // assign movement to individual node
+
 			}// skip -1 as no data available
 			i++;
 		}

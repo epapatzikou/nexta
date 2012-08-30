@@ -211,6 +211,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	// loading buffer
 
 	int link_size = g_LinkVector.size();
+#pragma omp parallel for
 	for(unsigned li = 0; li< link_size; li++)
 	{
 			DTALink * pLink = g_LinkVector[li];
@@ -539,12 +540,38 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	// NewTime = ReadyTime + FFTT(next link)
 
 
+	// step 4.1: calculate movement capacity per simulation interval for movements defined in input_movement.csv
+
+	int node_size = g_NodeVector.size();
+	for(unsigned node = 0; node < node_size; node++)
+	{
+		DTANode* pNode  = &(g_NodeVector[node]);
+			for (std::map<string, DTANodeMovement>::iterator iter = pNode->m_MovementMap.begin(); 
+				iter != pNode->m_MovementMap.end(); iter++)
+			{
+				if( iter->second.movement_hourly_capacity>=0 )  // if data are available
+				{
+
+					float movement_hourly_capacity = iter->second.movement_hourly_capacity/60 * g_DTASimulationInterval ;
+					iter->second.movement_capacity_per_simulation_interval =  g_GetRandomInteger_SingleProcessorMode(movement_hourly_capacity); // hourly -> min -> 6 seconds);
+
+					iter->second.movement_vehicle_counter = 0; // reset counter of passing vehicles to zero for each simulation interval
+
+					//		TRACE("\n hourly cap: %f, cap per simulation interval %d",movement_hourly_capacity, iter->second.movement_capacity_per_simulation_interval);
+
+				}
+
+
+			}
+
+	}
+
 	int NextLink;
 	DTALink* p_Nextlink;
 
 	//for each node, we scan each incoming link in a randomly sequence, based on simulation_time_interval_no
 
-	int node_size = g_NodeVector.size();
+#pragma omp parallel for
 	for(unsigned node = 0; node < node_size; node++)
 	{
 		int IncomingLinkSize = g_NodeVector[node].m_IncomingLinkVector.size();
@@ -612,6 +639,56 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						TRACE("Error at vehicle %d,",vehicle_id);
 						ASSERT(p_Nextlink!=NULL);
 					}
+
+
+					//
+					// test if movement capacity available
+					//DTANodeMovement movement_element;
+					//string movement_id;
+
+					if(g_NodeVector[node].m_MovementMap.size()>0)  // check movement capacity if there is an input movement table
+					{
+
+					int from_node = pLink->m_FromNodeNumber ;
+					int to_node = pLink->m_ToNodeNumber ;
+					int dest_node =  p_Nextlink->m_ToNodeNumber ;
+
+					string movement_id = GetMovementStringID(from_node, to_node,dest_node);
+
+					if(g_NodeVector[node].m_MovementMap.find(movement_id) != g_NodeVector[node].m_MovementMap.end()) // the capacity for this movement has been defined
+					{
+
+						DTANodeMovement movement_element = g_NodeVector[node].m_MovementMap[movement_id];
+						if(movement_element.movement_vehicle_counter >= movement_element.movement_capacity_per_simulation_interval)
+						{ // capacity are unavailable
+
+							vehicle_out_count--;
+
+							//if(g_FIFOConditionAcrossDifferentMovementFlag==0)  // not enforcing FIFO conditions 
+							//{
+							//	++it_queue; // move to the next vehicle
+							//	
+							//continue;  // skip the current vehicle, try the next vehicle
+
+							//}else
+							{
+								break; // not move any vehicles behind this vehicle
+							}
+
+
+
+						} else
+						{
+							// move to the next step to check if the link in capacity is available
+
+							//								TRACE("move to the next step to check if the link in capacity is available");
+
+						}
+
+					}
+
+					}  // end of movement checking
+					//
 
 					if(p_Nextlink->LinkInCapacity > 0) // if there is available spatial capacity on next link, then move to next link, otherwise, stay on the current link
 					{
@@ -767,9 +844,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					// finally move to next link
 					g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1;
 
-					g_Number_of_CompletedVehicles +=1;
-
-					g_NetworkMOEAry[time_stamp_in_min].CumulativeOutFlow = g_Number_of_CompletedVehicles;
 
 					g_VehicleMap[vehicle_id]->m_ArrivalTime = ArrivalTimeOnDSN;
 
@@ -786,7 +860,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 					g_VehicleMap[vehicle_id]->m_bComplete = true;
 					int OriginDepartureTime = (int)(g_VehicleMap[vehicle_id]->m_DepartureTime );
+			#pragma omp critical
+                {
+					g_Number_of_CompletedVehicles +=1;
+					g_NetworkMOEAry[time_stamp_in_min].CumulativeOutFlow = g_Number_of_CompletedVehicles;
 					g_NetworkMOEAry[OriginDepartureTime].AbsArrivalTimeOnDSN_in_a_min +=g_VehicleMap[vehicle_id]->m_TripTime;
+				}
 
 					pLink->CFlowDepartureCount +=1;
 					pLink->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime  += TravelTime;
