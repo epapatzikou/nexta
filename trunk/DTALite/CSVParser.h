@@ -36,6 +36,7 @@ class CCSVParser
 {
 public : ifstream inFile;
 
+		 string mFileName;
 private:
 	char Delimiter;
 	bool IsFirstLineHeader;
@@ -46,9 +47,114 @@ private:
 	
 public:
 	CCSVParser(void);
-	bool OpenCSVFile(string fileName);
+	bool OpenCSVFile(string fileName, bool b_required = true);
 	void CloseCSVFile(void);
 	bool ReadRecord();
+
+			template <class T> bool GetValueByFieldNameRequired(string field_name, T& value)
+	{
+		bool required_field = true;
+		bool print_out = false;
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			if(required_field)
+			{
+				cout << "Field " << field_name << " in File " << mFileName << " does not exit."  << endl;
+			
+				g_ProgramStop();
+			}
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				return false;
+			}
+
+			if(FieldsIndices[field_name] >= LineFieldsValue.size())  // no value is read for index FieldsIndices[field_name]
+			{
+				return false;
+			}
+			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+			if (str_value.length() <= 0)
+			{
+				return false;
+			}
+
+			istringstream ss(str_value);
+
+			T converted_value;
+			ss >> converted_value;
+
+			if(print_out)
+			{
+			cout << "Field " << field_name << " = " << converted_value << endl;
+			}
+
+			if (/*!ss.eof() || */ ss.fail())
+			{
+				return false;
+			}
+
+			value = converted_value;
+			return true;
+		}
+	}
+
+
+		template <class T> bool GetValueByFieldNameWithPrintOut(string field_name, T& value)
+	{
+		bool required_field = true;
+		bool print_out = true;
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			if(required_field)
+			{
+				cout << "Field " << field_name << " in File " << mFileName << " does not exit."  << endl;
+			
+				g_ProgramStop();
+			}
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				return false;
+			}
+
+			if(FieldsIndices[field_name] >= LineFieldsValue.size())  // no value is read for index FieldsIndices[field_name]
+			{
+				return false;
+			}
+			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+			if (str_value.length() <= 0)
+			{
+				return false;
+			}
+
+			istringstream ss(str_value);
+
+			T converted_value;
+			ss >> converted_value;
+
+			if(print_out)
+			{
+			cout << "Field " << field_name << " = " << converted_value << endl;
+			}
+
+			if (/*!ss.eof() || */ ss.fail())
+			{
+				return false;
+			}
+
+			value = converted_value;
+			return true;
+		}
+	}
 
 	template <class T> bool GetValueByFieldName(string field_name, T& value)
 	{
@@ -85,6 +191,7 @@ public:
 			}
 
 			value = converted_value;
+
 			return true;
 		}
 	}
@@ -145,7 +252,7 @@ public:
 	row_title = flag;
 	}
 
-	bool OpenCSVFile(string fileName);
+	bool OpenCSVFile(string fileName, bool b_required=true);
 	void CloseCSVFile(void);
 	template <class T> bool SetValueByFieldName(string field_name, T& value)  // by doing so, we do not need to exactly follow the sequence of field names
 	{
@@ -301,7 +408,18 @@ void CCSVWriter::Open(string fileName)
 	
 };
 
+void CCSVWriter::OpenAppend(string fileName)
+{
+	outFile.open(fileName.c_str(), fstream::app);
 
+	if (outFile.is_open()==false)
+	{
+	cout << "File " << fileName.c_str() << " cannot be opened." << endl;
+	getchar();
+	exit(0);
+	}
+	
+};
 };
 
 

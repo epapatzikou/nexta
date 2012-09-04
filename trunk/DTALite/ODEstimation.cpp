@@ -213,10 +213,30 @@ bool g_ReadLinkMeasurementFile()
 
 		}
 
+	}else
+	{
+		cout << "File input_sensor.dat does not exit or cannot be opened."  << endl;
+		g_ProgramStop();
+	
+
 	}
-	cout << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
+
+			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./ODME_Settings.txt");
+			g_ODEstimationMeasurementType = g_GetPrivateProfileInt("estimation", "measurement_type", 1, ODMESettingFileName,true);	
+			g_ODEstimation_StepSize = g_GetPrivateProfileFloat("estimation", "adjustment_step_size", 0.15, ODMESettingFileName,true);
+			g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
+			g_ODEstimationStartTimeInMin = g_GetPrivateProfileInt("estimation", "estimation_start_time_in_min", 0, ODMESettingFileName,true);	
+			g_ODEstimationEndTimeInMin = g_GetPrivateProfileInt("estimation", "estimation_end_time_in_min", 1440, ODMESettingFileName,true);	
+			g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
+			g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 10, ODMESettingFileName,true);
+		cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
 	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 
+			cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
+			cout << "Please press 'n' if you want to exit and edit files ODME_Settings.txt and input_sensor.csv. Pleaes press the other key to continue." << endl;
+			char ret = getchar();
+			if(ret=='n')
+				exit(0);
 	return true;
 }
 
@@ -640,7 +660,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int zone,int depar
 void g_GenerateVehicleData_ODEstimation()
 {
 
-	g_EstimationLogFile << " g_GenerateVehicleData_ODEstimation "  <<endl; 
+//	g_EstimationLogFile << "g_GenerateVehicleData_ODEstimation "  <<endl; 
 
 	g_FreeMemoryForVehicleVector();
 
@@ -659,12 +679,12 @@ void g_GenerateVehicleData_ODEstimation()
 
 		}
 		// create vehicle heres...
-		g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
+//		g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
 
 		cout << "Converting demand flow to vehicles..."<< endl;
 
 		std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
-		g_EstimationLogFile << " std::sort... "  <<endl; 
+//		g_EstimationLogFile << " std::sort... "  <<endl; 
 
 		std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
 
@@ -747,7 +767,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 	//MAPE Mean absolute percentage error 
 	//RMSE  root mean sequared error
 
-	g_EstimationLogFile << "--------------------------------- Iteration" << Iteration << " -----------------------------" << endl;
+//	g_EstimationLogFile << "--------------------------------- Iteration" << Iteration << " -----------------------------" << endl;
 	float TotaMOESampleSize  = 0;
 	float TotalFlowError = 0;
 	float TotalFlowSequaredError = 0;
@@ -790,9 +810,9 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/ObsFlowCount*100);
 					float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
 						max(1,pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime)/pLink->m_NumLanes;												
-					g_EstimationLogFile << "Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
+					g_EstimationLogFile << "Iteration," << Iteration << ",,,Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
 						<< ",time "<<  pLink->m_LinkMeasurementAry[i].StartTime << "->" << pLink->m_LinkMeasurementAry[i].EndTime <<  ",Obs link flow,"<< ObsFlowCount << ",Sim link count," << SimulatedFlowCount <<", Error:, " << SimulatedFlowCount -  ObsFlowCount << 
-						", " << AbosolutePercentageError << " %" << "Lane Flow Error /h= " << LaneFlowError << endl;
+						"," << AbosolutePercentageError << " %" << ",Lane Flow Error /h=, " << LaneFlowError << endl;
 
 					TotalMOEPercentageError +=AbosolutePercentageError ; 
 					TotalMOEAbsError += fabs(LaneFlowError) ;

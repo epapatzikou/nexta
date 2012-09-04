@@ -96,6 +96,7 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 #define LCG_M 65521  // it should be 2^32, but we use a small 16-bit number to save memory
 
 void g_ProgramStop();
+void g_ProgramTrace(CString str);
 float g_RNNOF();
 bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT);
 
@@ -351,7 +352,19 @@ public:
 	total_vehicle_delay = 0;
 	movement_capacity_per_simulation_interval = 0;
 	movement_vehicle_counter = 0 ;
+	movement_hourly_capacity = 100;
 	}
+
+	float GetAvgDelay_In_Min()
+	{
+	float avg_delay = total_vehicle_delay/ max(1, total_vehicle_count );
+
+	if(movement_hourly_capacity<=0.1)
+		avg_delay = 99999;
+
+	return avg_delay;
+	}
+
 
 int IncomingLinkID;
 int OutgoingLinkID;
@@ -382,6 +395,8 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_CycleLength_In_Second = 60;
+		m_SignalOffset_In_Second = 0;
 		m_ControlType = 0;
 		m_ZoneID = 0;
 		m_TotalCapacity = 0;
@@ -397,7 +412,9 @@ public:
 	int m_NodeID;
 	int m_NodeName;
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
-	int m_ControlType; // Type: ....
+	int m_ControlType; // Type:
+	int m_SignalOffset_In_Second;
+	int m_CycleLength_In_Second;
 	float m_TotalCapacity;
 
 	std::vector<DTADestination> m_DestinationVector;
@@ -661,12 +678,32 @@ public:
 	}
 };
 
+class DTALinkOutCapacity
+{
+public:
+	DTALinkOutCapacity(double time_stamp, float out_capacity)	
+	{
+		time_stamp_in_min = time_stamp;
+		hourly_out_capacity = out_capacity; // per lane
+
+	}
+	double time_stamp_in_min;
+	float hourly_out_capacity;
+
+};
 
 class DTALink
 {
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+		m_EffectiveGreenTime_In_Second = 0;
+		m_DownstreamCycleLength_In_Second = 120;
+		m_DownstreamNodeSignalOffset_In_Second = 0;
+		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;
+		m_bFreewayType = false;
+		m_bArterialType = false;
+		m_bSignalizedArterialType = false;
 
 		TotalEnergy  = 0;
 		TotalCO2  = 0;
@@ -719,7 +756,7 @@ public:
 	{
 		m_SimulationHorizon	= TimeSize;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
-		m_LinkMeasurementAry.clear();
+//		m_LinkMeasurementAry.clear();  do not remove measurement data for ODME 
 
 	}
 
@@ -811,6 +848,8 @@ public:
 	std::map<int, int> m_OperatingModeCount;
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector <SLinkMOE> m_LinkMOEAry;
+
+	std::vector<DTALinkOutCapacity> m_OutCapacityVector;
 
 	float TotalEnergy;
 	float TotalCO2;
@@ -1044,6 +1083,16 @@ public:
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
 	int	m_link_type;
+
+	bool m_bFreewayType;  //created to store the freeway type, used in simulation
+	bool m_bArterialType;
+	bool m_bSignalizedArterialType;
+	int m_DownstreamCycleLength_In_Second;
+	int m_DownstreamNodeSignalOffset_In_Second;
+
+	int m_EffectiveGreenTime_In_Second;
+	int m_GreenStartTime_In_Second;
+	int m_SaturationFlowRate_In_vhc_per_hour_per_lane; 
 
 	// for MOE data array
 	int m_SimulationHorizon;
@@ -2019,11 +2068,12 @@ public:
 	int** m_OutboundNodeAry; //Outbound node array
 	int** m_OutboundLinkAry; //Outbound link array
 	int** m_OutboundConnectorZoneIDAry; //Outbound connector array
+	int* m_OutboundLinkConnectorZoneIDAry; //Outbound connector array
 	int* m_OutboundSizeAry;  //Number of outbound links
 
 	int** m_OutboundMovementAry; //Outbound link movement array: for each link
 	int* m_OutboundMovementSizeAry;  //Number of outbound movement for each link
-	float** m_OutboundMovementCostAry; //Outbound link movement array: for each link
+	float** m_OutboundMovementDelayAry; //Outbound link movement array: for each link
 
 	int** m_InboundLinkAry; //inbound link array
 	int* m_InboundSizeAry;  //Number of inbound links
@@ -2090,13 +2140,16 @@ public:
 		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundConnectorZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
+
+		
 
 
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
 		//movement-specific array
 		m_OutboundMovementAry = AllocateDynamicArray<int>(m_LinkSize,m_AdjLinkSize+1);
-		m_OutboundMovementCostAry = AllocateDynamicArray<float>(m_LinkSize,m_AdjLinkSize+1);
+		m_OutboundMovementDelayAry = AllocateDynamicArray<float>(m_LinkSize,m_AdjLinkSize+1);
 		m_OutboundMovementSizeAry = new int[m_LinkSize];
 
 		m_LinkList = new int[m_NodeSize];
@@ -2147,12 +2200,15 @@ public:
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 		DeallocateDynamicArray<int>(m_OutboundConnectorZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
 
+		if(m_LinkSize>=1)
+			delete m_OutboundLinkConnectorZoneIDAry;
+
 		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 
 		// delete movement array
 		if(m_OutboundMovementSizeAry)  delete m_OutboundMovementSizeAry;
 		DeallocateDynamicArray<int>(m_OutboundMovementAry,m_LinkSize, m_AdjLinkSize+1);
-		DeallocateDynamicArray<float>(m_OutboundMovementCostAry,m_LinkSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<float>(m_OutboundMovementDelayAry,m_LinkSize, m_AdjLinkSize+1);
 
 
 		if(m_LinkList) delete m_LinkList;
@@ -2202,7 +2258,7 @@ public:
 	bool TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 
 	//movement based shortest path
-	int FindBestPathWithVOT_Movement(int origin, int departure_time, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag);
+	int FindBestPathWithVOT_Movement(int origin_zone, int origin, int departure_time,  int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag);
 
 	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
@@ -2562,13 +2618,13 @@ void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file, int cut_off_v
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 
 
-float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename);
+float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename,bool print_out=false);
 int g_WritePrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) ;
-int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
+int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename, bool print_out=false);
 
 float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity);
 
-float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float CycleLength_in_seconds,double CurrentTime);
+float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second, int EffectiveGreenTime_in_second, int GreenStartTime_in_second, int offset_in_second, double CurrentTime, float SaturationFlowRate);
 void InitWELLRNG512a (unsigned int *init);
 double WELLRNG512a (void);
 
@@ -2577,7 +2633,7 @@ int g_GetRandomInteger_SingleProcessorMode(float Value);
 int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID);
 
 void g_ReadDTALiteVehicleFile(char fname[_MAX_PATH]);
-void g_ReadDTALiteAgentCSVFile(char fname[_MAX_PATH]);
+void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
@@ -2593,6 +2649,7 @@ void g_DynamicTraffcAssignmentWithinInnerLoop(int iteration, bool NotConverged, 
 void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_end, int inner_iteration);
 
 void g_OutputLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
+void g_OutputLinkOutCapacitySummary();
 void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
 
@@ -2668,6 +2725,10 @@ void  ReadIncidentScenarioFile(string FileName,int scenario_no=0);
 void ReadVMSScenarioFile(string FileName,int scenario_no=0);
 void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
 void ReadWorkZoneScenarioFile(string FileName,int scenario_no=0);
+
+void ReadLinkCapacityScenarioFile(string FileName,int scenario_no=0);
+void ReadMovementCapacityScenarioFile(string FileName,int scenario_no=0);
+
 extern void g_CreateLinkTollVector();
 extern void g_ReadDemandFile_Parser();
 extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);

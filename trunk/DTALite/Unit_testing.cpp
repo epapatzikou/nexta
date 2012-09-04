@@ -41,7 +41,7 @@ using namespace std;
 
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel ("DTALite:\nA Fast Open Source DTA Engine\n");
-	g_SummaryStatFile.WriteTextLabel("Software Version =,1.000\nRelease Date=,July 20th 2012\n");
+	g_SummaryStatFile.WriteTextLabel("Software Version =,1.000\nRelease Date=,September 1st 2012\n");
 
 	int scenario_no;
 	string scenario_name;
@@ -96,7 +96,13 @@ using namespace std;
 
 			parser_MOE_settings.GetValueByFieldName("moe_type",moe_type);
 			parser_MOE_settings.GetValueByFieldName("moe_category_label",moe_category_label);
-	
+			
+			TRACE("%s\n",moe_category_label.c_str ());
+			if(moe_category_label.find (",") !=  string::npos)
+			{
+			moe_category_label = '"' + moe_category_label + '"' ;
+			}
+
 
 			csv_output.SetFieldNameWithCategoryName ("#_of_vehicles_"+moe_category_label,moe_category_label );
 			csv_output.SetFieldName ("percentage_"+moe_category_label );
@@ -113,7 +119,6 @@ using namespace std;
 			
 			if(moe_type.find("Link") != string::npos)  // Link MOE
 			{
-
 //			csv_output.SetFieldName("level_of_service"+moe_category_label);
 
 			csv_output.SetFieldName("SOV_volume"+moe_category_label);
@@ -146,7 +151,6 @@ using namespace std;
 
 	g_TrafficFlowModelFlag = 3;  		// Newell's traffic flow model
 	g_ODEstimationFlag = 0; 			// no OD estimation
-	g_AgentBasedAssignmentFlag = 0;		// no agent-based assigment 
 	
 	int max_scenarios = 50000;
 	while(parser_scenario.ReadRecord())
@@ -158,15 +162,15 @@ using namespace std;
 		g_ReadDTALiteSettings();
 
 
-		if(parser_scenario.GetValueByFieldName("scenario_no",scenario_no)==false)
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("scenario_no",scenario_no)==false)
 		{
-			cout << "Field scenario_no cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			cout << "Field scenario_no cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
 		
-		if(parser_scenario.GetValueByFieldName("scenario_name",scenario_name)==false)
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("scenario_name",scenario_name)==false)
 		{
-			cout << "Field scenario_name cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			cout << "Field scenario_name cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
 
@@ -174,41 +178,45 @@ using namespace std;
 		g_SummaryStatFile.WriteTextLabel (scenario_name.c_str ());
 		g_SummaryStatFile.WriteTextLabel ("----------------------\n");
 
-//		parser_scenario.GetValueByFieldName("demand_loading_mode",g_VehicleLoadingMode) ;
+//		parser_scenario.GetValueByFieldNameWithPrintOut("demand_loading_mode",g_VehicleLoadingMode) ;
 		g_VehicleLoadingMode = 2;  // default meta data mode
 
-		if(parser_scenario.GetValueByFieldName("number_of_assignment_days",TotalUEIterationNumber)==false)
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("number_of_assignment_days",TotalUEIterationNumber)==false)
 		{
-			cout << "Field number_of_assignment_days cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			cout << "Field number_of_assignment_days cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
 
 		g_NumberOfIterations = TotalUEIterationNumber-1;			// 0+1 iterations
 
 
-		if(parser_scenario.GetValueByFieldName("demand_multiplier",g_DemandGlobalMultiplier)==false)
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false)
 		{
-			cout << "Field demand_multiplier cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			cout << "Field demand_multiplier cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
 
 		string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;
 
 		g_EmissionDataOutputFlag  = 0;
-		if(parser_scenario.GetValueByFieldName("emission_data_output",g_EmissionDataOutputFlag )==false)
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("emission_data_output",g_EmissionDataOutputFlag )==false)
 		{
-			cout << "Field emission_data_output cannot be found in file input_multi_scenario.csv. Please check." << endl;
+			cout << "Field emission_data_output cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
-	
-		g_TimeDependentODMOEOutputFlag = 0;
+
+		g_ODEstimationFlag = 0;
+
+		parser_scenario.GetValueByFieldNameWithPrintOut ("ODME_mode",g_ODEstimationFlag );
+
 
 		g_ReadInputFiles(scenario_no);
 	
 		cout << "Start Traffic Assignment/Simulation... " << endl;
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
-			g_AgentBasedAssisnment();  // agent-based assignment
+
+		g_AgentBasedAssisnment();  // agent-based assignment
 
 		g_OutputSimulationStatistics(g_NumberOfIterations);
 
@@ -307,12 +315,13 @@ using namespace std;
 	line_no++;
 	}  // for each scenario
 
+	csv_output.WriteTextLabel (g_GetAppRunningTime());
 	parser_MOE_settings.CloseCSVFile ();
 
 	}else
 	{
 
-		cout << "File input_scenario_settings.csv cannot be found. Please check." << endl;
+		cout << "File pLink.csv cannot be found. Please check." << endl;
 		g_ProgramStop();
 	
 	}

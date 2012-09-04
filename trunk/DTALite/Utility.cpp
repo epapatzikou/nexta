@@ -14,6 +14,92 @@
 using namespace std;
 extern CTime g_AppStartTime;
 // polar form of the Box-Muller transformation to get two random numbers that follow a standard normal distribution 
+unsigned int g_RandomSeedForVehicleGeneration = 101;
+// Linear congruential generator 
+#define g_LCG_a 17364
+#define g_LCG_c 0
+#define g_LCG_M 65521  
+
+long g_precision_constant=100000L;
+long g_precision_constant2=1000L;
+extern float g_DemandGlobalMultiplier;
+bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2)
+{
+	long lValue1 = (long) (value1*g_precision_constant);
+	long lValue2 = (long) (value2*g_precision_constant);
+
+	if(lValue1<=lValue2)
+		return true;
+	else 
+		return false;
+
+}
+
+bool g_floating_point_value_less_than(double value1, double value2)
+{
+	long lValue1 = (long) (value1*g_precision_constant2);
+	long lValue2 = (long) (value2*g_precision_constant2);
+
+	if(lValue1<lValue2)
+		return true;
+	else 
+		return false;
+
+}
+
+bool g_Compare_Vehicle_Item(struc_vehicle_item item1, struc_vehicle_item item2)
+{
+	if(item1.time_stamp < item2.time_stamp)  // item1 is earlier than item2
+		return true;
+	else 
+		return false;
+}
+
+double g_GetRandomRatio()
+{
+	//	g_RandomSeed = (g_LCG_a * g_RandomSeed + g_LCG_c) % g_LCG_M;  //m_RandomSeed is automatically updated.
+	//	return float(g_RandomSeed)/g_LCG_M;
+
+	return WELLRNG512a();
+}
+
+int g_GetRandomInteger_SingleProcessorMode(float Value)
+{
+	int int_value = int(Value);
+	double Residual = Value - int_value;
+	double RandomNumber = g_GetRandomRatio(); //between 0 and 1
+	if(RandomNumber < Residual)
+	{
+		return int_value+1;
+	}
+	else
+	{
+		return int_value;
+	}
+}
+
+int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID)
+{ // we have to use this random number generator in parallel computing mode, as the above version uses the "shared" seed
+	float Residual = Value - int(Value);
+	float RandomNumber = g_LinkVector[LinkID]->GetRandomRatio();
+	if(RandomNumber < Residual)
+	{
+		return int(Value)+1;
+	}
+	else
+	{
+		return int(Value);
+	}
+
+}
+
+float g_GetRandomRatioForVehicleGeneration()
+{
+	g_RandomSeedForVehicleGeneration = (g_LCG_a * g_RandomSeedForVehicleGeneration + g_LCG_c) % g_LCG_M;  //m_RandomSeed is automatically updated.
+
+	return float(g_RandomSeedForVehicleGeneration)/g_LCG_M;
+
+}
 
 string GetLinkStringID(int FromNodeName, int ToNodeName)
 {
@@ -147,6 +233,12 @@ void g_ProgramStop()
 	exit(0);
 };
 
+void g_ProgramTrace(CString str)
+{
+//	cout << str << endl;
+//	getchar();
+
+};
 int g_read_integer(FILE* f)
 // read an integer from the current pointer of the file, skip all spaces
 {
@@ -219,7 +311,7 @@ float g_read_float(FILE *f)
 
 }
 
-int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename) 
+int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename,bool print_out) 
 {
 	char lpbuffer[64];
 	int value = def_value;
@@ -233,6 +325,10 @@ int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR
 		sprintf_s(lpbuffer,"%d",def_value);
 		WritePrivateProfileString(section,key,lpbuffer,filename);
 	}
+
+	if(print_out)
+		cout << "section <" << section << ">: " <<  key << " = "  << value << endl;
+
 	return value; 
 }
 
@@ -245,7 +341,7 @@ int g_WritePrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTS
 	return value; 
 }
 
-float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename) 
+float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, LPCTSTR filename,bool print_out) 
 { 
 	char lpbuffer[64];
 	float value = def_value;
@@ -259,6 +355,8 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 		sprintf_s(lpbuffer,"%5.2f",def_value);
 		WritePrivateProfileString(section,key,lpbuffer,filename);
 	}
+	if(print_out)
+		cout << "section <" << section << ">: " <<  key << " = "  << value << endl;
 
 	return value; 
 } 
@@ -369,6 +467,99 @@ bool g_read_a_line(FILE* f, char* aline, int & size)
    }
 }
 
+
+int  DTANetworkForSP:: GetLinkNoByNodeIndex(int usn_index, int dsn_index)
+{
+	int LinkNo = -1;
+	for(int i=0; i < m_OutboundSizeAry[usn_index]; i++)
+	{
+
+		if(m_OutboundNodeAry[usn_index][i] == dsn_index)
+		{
+			LinkNo = m_OutboundLinkAry[usn_index][i];
+			return LinkNo;
+		}
+	}
+
+	cout << " Error in GetLinkNoByNodeIndex " << g_NodeVector[usn_index].m_NodeName  << "-> " << g_NodeVector[dsn_index].m_NodeName ;
+
+	g_ProgramStop();
+
+
+	return MAX_LINK_NO;
+
+
+}
+
+void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
+{
+	// network connectivity checking
+
+	unsigned int i;
+	int OriginForTesting=0;
+	for(i=0; i< g_NodeVector.size(); i++)
+	{
+		if(pPhysicalNetwork->m_OutboundSizeAry [i] >0)
+		{
+			OriginForTesting = i;
+			break;
+		}
+	}
+
+	// starting with first node with origin nodes;
+	pPhysicalNetwork->BuildPhysicalNetwork(0);
+
+	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false);  // CurNodeID is the node ID
+	// assign shortest path calculation results to label array
+
+
+	int count = 0;
+	int centroid_count = 0;
+
+	/*
+	for(i=0; i< g_NodeVector.size(); i++)
+	{
+	if(pPhysicalNetwork->LabelCostAry[i] > MAX_SPLABEL-100)
+	{
+
+	if(g_NodeVector[i].m_ZoneID > 0)
+	{
+	cout << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+	g_WarningFile << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+	centroid_count ++;
+	}else
+	{
+	cout << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+	g_WarningFile << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  <<", Cost: "  << endl;
+	}
+	count++;
+
+	}
+
+	}
+	*/
+	//	for(i=0; i< g_NodeVector.size(); i++)
+	//	{
+	//		g_WarningFile << "Node "<<  g_NodeVector[i] << " Cost: " << pPhysicalNetwork->LabelCostAry[i] << endl;
+	//	}
+	if(count > 0)
+	{
+		cout << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+		g_WarningFile << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+
+		if(centroid_count > 0 )
+		{
+			cout << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+			g_WarningFile << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+			//			cout << "Please check file warning.log later. Press any key to continue..."<< endl;
+			//getchar();
+		}
+	}
+
+}
+
+
+
 /* ***************************************************************************** */
 /* Copyright:      Francois Panneton and Pierre L'Ecuyer, University of Montreal */
 /*                 Makoto Matsumoto, Hiroshima University                        */
@@ -420,3 +611,4 @@ double WELLRNG512a (void){
   state_i = (state_i + 15) & 0x0000000fU;
   return ((double) STATE[state_i]) * FACT;
 }
+
