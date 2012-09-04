@@ -174,23 +174,25 @@ CPen g_TransitPen(PS_SOLID,1,RGB(0,255,255));
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
-CPen g_PenSelectColor(PS_SOLID,2,RGB(255,0,0));
+CPen g_PenSelectColor(PS_SOLID,3,RGB(255,0,0));
 
 CPen g_PenExternalDColor(PS_SOLID,2,RGB(173,255,047)); 
 CPen g_PenExternalOColor(PS_SOLID,2,RGB(255,165,0));
 
 CPen g_PenODColor(PS_SOLID,2,RGB(255,255,0));
-CPen g_PenSelectPath(PS_SOLID,2,RGB(255,255,0));
-
-CPen g_PenSignalColor(PS_SOLID,2,RGB(255,255,255));
+CPen g_PenSelectPath(PS_SOLID,3,RGB(0,0,255));  // blue
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
 
+CPen g_PenStopSignNodeColor(PS_SOLID,1,RGB(205,200,177));
+CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,0,0));
+
+
+
 CPen g_PenConnectorColor(PS_DASH,1,RGB(0,0,255));
 CPen g_PenCentroidColor(PS_SOLID,1,RGB(0,255,255));
 
-CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,255,0));
 CPen g_PenQueueColor(PS_SOLID,3,RGB(255,0,0));
 
 CPen g_PenQueueBandColor(PS_SOLID,1,RGB(255,0,0));
@@ -233,9 +235,6 @@ CBrush  g_BrushColor2(HS_VERTICAL,RGB(255,0,255)); //magenta
 CBrush  g_BrushColor3(HS_HORIZONTAL,RGB(0,255,255));   // cyan
 CBrush  g_BrushColor4(HS_CROSS,RGB(0,0,255));  // blue
 CBrush  g_BrushColor5(HS_DIAGCROSS,RGB(255,255,0)); // yellow
-
-CPen g_PenHighlightPath(PS_SOLID,3,RGB(255,255,0));  // yellow
-CBrush  g_BrushHighlightPath(RGB(255,255,0));  // yellow
 
 CBrush  g_BrushLinkBand(RGB(125,125,0)); // 
 CBrush  g_BrushLinkBandVolume(RGB(0,0,255)); // 
@@ -1162,6 +1161,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		if((*iNode)->m_NodeID == pDoc->m_SelectedNodeID)
 		{
 			pDC->SelectObject(&g_PenSelectColor);
+
 		}else if((*iNode)->m_ZoneID > 0 && m_bHighlightActivityLocation)
 		{
 			pDC->SelectObject(&g_PenCentroidColor);
@@ -1188,7 +1188,22 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		}else
 		{
+		
+			//default;
 			pDC->SelectObject(&g_PenNodeColor);
+
+			if((*iNode)->m_ControlType == pDoc->m_ControlType_YieldSign || 
+				(*iNode)->m_ControlType == pDoc->m_ControlType_2wayStopSign ||
+				(*iNode)->m_ControlType == pDoc->m_ControlType_4wayStopSign)
+			{			
+				pDC->SelectObject(&g_PenStopSignNodeColor);
+			}
+			if((*iNode)->m_ControlType == pDoc->m_ControlType_PretimedSignal || 
+				(*iNode)->m_ControlType == pDoc->m_ControlType_AcuatedSignal)
+			{
+				pDC->SelectObject(&g_PenSignalNodeColor);
+			}
+
 		}
 
 		if((*iNode)->m_NodeID == pDoc->m_OriginNodeID)
@@ -2273,7 +2288,7 @@ void CTLiteView::OnNodeOrigin()
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 100);  // 100 is screen unit
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
 
 	pDoc->m_OriginNodeID = pDoc->m_SelectedNodeID;
 	if(pDoc->m_SelectedNodeID>=0)
@@ -2298,9 +2313,7 @@ void CTLiteView::OnNodeDestination()
 		TRACE("ONode %s selected.\n", pDoc->m_NodeIDMap [pDoc->m_DestinationNodeID]->m_Name );
 
 	m_ShowAllPaths = true;
-	// pDoc->Routing(false);
-
-	pDoc->AlternativeRouting(3);
+	pDoc->Routing(false);
 
 	if(pDoc->m_bShowPathList)
 		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
@@ -3941,20 +3954,30 @@ void CTLiteView::DrawPublicTransitLayer(CDC *pDC)
 void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm)
 {
 
-	if(pNode->m_ZoneID >0)  // if destination node associated with zones
-	{
-		float zone_multipler = 1;
-		pDC->Ellipse(point.x - node_size*zone_multipler, point.y + node_size*zone_multipler,
-			point.x + node_size*zone_multipler, point.y - node_size*zone_multipler);
-	}else if(pNode->m_bSignalData)  // traffic signal control
-	{
-		pDC->SelectObject(&g_PenSignalNodeColor);
+	//if(pNode->m_ZoneID >0)  // if destination node associated with zones
+	//{
+	//	float zone_multipler = 1.2;
+	//	pDC->Ellipse(point.x - node_size*zone_multipler, point.y + node_size*zone_multipler,
+	//		point.x + node_size*zone_multipler, point.y - node_size*zone_multipler);
+	//}
+	CTLiteDoc* pDoc = GetDocument();
 
-		pDC->Ellipse(point.x - node_size, point.y + node_size,
-			point.x + node_size, point.y - node_size);
-	} else
+	if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal || 
+	pNode->m_ControlType == pDoc->m_ControlType_AcuatedSignal)  // traffic signal control
 	{
-		pDC->Rectangle(point.x - node_size, point.y + node_size,
+		pDC->Rectangle (point.x - node_size, point.y + node_size,
+			point.x + node_size, point.y - node_size);
+	}else if (pNode->m_ControlType == pDoc->m_ControlType_YieldSign || 
+				pNode->m_ControlType == pDoc->m_ControlType_2wayStopSign ||
+				pNode->m_ControlType == pDoc->m_ControlType_4wayStopSign)
+	{
+		int  width_of_ellipse = node_size*4/5;
+		pDC->RoundRect (point.x - node_size, point.y + node_size,
+			point.x + node_size, point.y - node_size,width_of_ellipse,width_of_ellipse);
+	
+	}else
+	{
+		pDC->Ellipse(point.x - node_size, point.y + node_size,
 			point.x + node_size, point.y - node_size);
 	}
 
@@ -3967,10 +3990,10 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 		if(m_bHighlightActivityLocation)
 		{
 
-			if(pNode->m_ZoneID > 0 && pNode->m_External_OD_flag == 1)  // external origin
-				str_nodenumber.Format ("EO:%d",pNode->m_NodeNumber );
-			if(pNode->m_ZoneID > 0 && pNode->m_External_OD_flag == -1)  // external destination
-				str_nodenumber.Format ("ED:%d",pNode->m_NodeNumber );
+			if(pNode->m_ZoneID > 0)  // external origin
+				str_nodenumber.Format ("%d",pNode->m_ZoneID );
+			else
+				str_nodenumber.Format ("");
 		}
 
 		if(pNode->m_DistanceToRoot > 0.00001 && pNode->m_DistanceToRoot < MAX_SPLABEL-1)  // check connectivity, overwrite with distance to the root

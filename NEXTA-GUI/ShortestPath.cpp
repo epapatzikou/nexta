@@ -62,7 +62,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
 	{
 
-		if((*iterLink)->m_bConnector )  // no connectors
+		if((*iterLink)->m_bConnector )  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
 			continue; 
 
 		FromID = (*iterLink)->m_FromNodeID;
@@ -156,8 +156,6 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 				random_value = 5;
 
 			float random_cost = max(0.1f,m_LinkTDTimeAry[LinkNo][0]*(1+RandomCostCoef*random_value));
-
-
 
 
 			NewTime	 = LabelTimeAry[FromID] + random_cost;  // time-dependent travel times come from simulator

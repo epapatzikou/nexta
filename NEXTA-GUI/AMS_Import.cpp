@@ -94,7 +94,7 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 	if(link_capacity_flag == 1)
 		capacity_in_pcphpl = capacity_in_pcphpl/max(1,number_of_lanes);
 
-	if(capacity_in_pcphpl ==0)
+	if(capacity_in_pcphpl == 2)  // link capacity flag == 2, use default
 	{  // generate default capacity 
 		if( speed_limit_in_mph <=30)
 			return 600;
@@ -106,7 +106,7 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 			return 1800;
 	}
 
-	return 0;
+	return capacity_in_pcphpl;
 }
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
@@ -131,7 +131,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
 	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
 	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
-	int link_capacity_flag = g_GetPrivateProfileInt("model_attributes","lane_capapcity",1,FileName);
+	int link_capacity_flag = g_GetPrivateProfileInt("model_attributes","link_capacity_flag",1,FileName);
 	int number_of_lanes_for_two_way_links_flag = g_GetPrivateProfileInt("model_attributes","number_of_lanes_for_two_way_links",0,FileName);
 	int use_optional_centroid_layer = g_GetPrivateProfileInt("model_attributes","use_optional_centroid_layer",0,FileName);
 	int use_optional_connector_layer = g_GetPrivateProfileInt("model_attributes","use_optional_connector_layer",0,FileName);
@@ -836,11 +836,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
 
-					if(length < 0.00001) // zero value in length field, we consider no length info.
-					{
-						float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
-						pLink->m_Length = distance_in_mile;
-					}
+					//if(length < 0.00001) // zero value in length field, we consider no length info.
+					//{
+					//	float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
+					//	pLink->m_Length = distance_in_mile;
+					//}
 
 					pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
 					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -898,9 +898,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 					{  // reset default value
-						if(pLink->m_SpeedLimit>=35 && pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+						if(pLink->m_SpeedLimit>30 && pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
 						{
 							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
+						}
+
+						if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+						{
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
 						}
 
 					}
@@ -1397,7 +1402,7 @@ bool  CTLiteDoc::ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type)
 			std::map<int, DTAZone>	:: const_iterator itr_o;
 			std::map<int, DTAZone>	:: const_iterator itr_d;
 
-			for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)
+			for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)  // for each origin zone
 			{
 				int origin_zone  = 0;
 				if(parser.GetValueByFieldName("zone_id",origin_zone) == false)
@@ -1411,7 +1416,7 @@ bool  CTLiteDoc::ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type)
 						return false;
 					}
 
-					for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
+					for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++) // for each destination zone
 					{
 						if(line_no >= 10)
 							AMSLogOutput = false;

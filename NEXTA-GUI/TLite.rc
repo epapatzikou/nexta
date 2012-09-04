@@ -871,6 +871,17 @@ BEGIN
     CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,28,440,71
 END
 
+IDD_DIALOG_NODE_PHASE2 DIALOGEX 0, 0, 784, 323
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,28,369,186
+    LTEXT           "Current Node ID:",-1,6,9,56,8
+    EDITTEXT        IDC_EDIT_CURRENT_NODEID,73,7,54,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "New Phase",IDC_BUTTON_NEW_PHASE,137,7,50,14
+    PUSHBUTTON      "Delete Phase",IDC_BUTTON_DEL_PHASE,203,7,62,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1300,6 +1311,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 176
     END
+
+    IDD_DIALOG_NODE_PHASE2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 777
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 316
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1382,7 +1401,7 @@ IDR_MAINFRAME_RAIL      BITMAP                  "res\\bmp00004.bmp"
 
 IDR_VIEW_TOOLBAR TOOLBAR  16, 15
 BEGIN
-    BUTTON      ID_IMPORTDATA_IMPORT
+    BUTTON      ID_TOOLS_EDITODDEMANDTABLE
     BUTTON      ID_SCENARIO_CONFIGURATION
     BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     SEPARATOR
@@ -1400,7 +1419,6 @@ BEGIN
     BUTTON      ID_SEARCH_LINKLIST
     BUTTON      ID_MOE_PATHLIST
     BUTTON      ID_MOE_VEHICLEPATHANALAYSIS
-    BUTTON      ID_EDIT_CREATESUBAREA
     BUTTON      ID_TOOLS_VIEWSIMULATIONSUMMARY
     SEPARATOR
     BUTTON      ID_BUTTON32976
@@ -1940,9 +1958,6 @@ BEGIN
             POPUP "Demand File "
             BEGIN
                 MENUITEM "SOV OD Demand Matrix",        ID_DEMANDFILE_ODDEMANDMATRIX
-                MENUITEM "HOV OD Demand Matrix",        ID_DEMANDFILE_HOVODDEMANDMATRIX
-                MENUITEM "Truck OD Demand Matrix",      ID_DEMANDFILE_TRUCKODDEMANDMATRIX
-                MENUITEM "Intermodal OD Demand Matrix", ID_DEMANDFILE_INTERMODALODDEMANDMATRIX
             END
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
         END
@@ -2044,11 +2059,26 @@ BEGIN
     END
     POPUP "Project"
     BEGIN
-        MENUITEM "Edit OD Demand Table",        ID_TOOLS_EDITODDEMANDTABLE
-        MENUITEM "Edit Assignment Settings",    ID_TOOLS_EDITASSIGNMENTSETTINGS
-        MENUITEM "Edit Scenario Data",          ID_SCENARIO_CONFIGURATION
+        MENUITEM "1. Demand Meta Database",     ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM "2. Simulation MOE Settings",  ID_PROJECT_EDITMOESETTINGS
+        MENUITEM "3. Traffic Managment / Road Pricing Scenario Data", ID_SCENARIO_CONFIGURATION
+        MENUITEM "4. Single/Multi-Scenario Settings", ID_TOOLS_EDITASSIGNMENTSETTINGS
         MENUITEM SEPARATOR
-        MENUITEM "Perform Traffic Assignment",  ID_TOOLS_PERFORMTRAFFICASSIGNMENT
+        MENUITEM "5. Perform Traffic Assignment", ID_TOOLS_PERFORMTRAFFICASSIGNMENT
+        MENUITEM SEPARATOR
+        MENUITEM "6. Traffic Assignment Summary", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "7. Multi-Scenario Result Comparison", ID_PROJECT_Multi_Scenario_Results
+        MENUITEM SEPARATOR
+        MENUITEM "8. Network Time-Dependent MOE", ID_2_VIEWNETWORKDATA
+        MENUITEM "9. Origin-Destination MOE",   ID_3_VIEWODDATAINEXCEL
+        MENUITEM "10. Link MOE",                ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM "11. Path MOE",                ID_PROJECT_12
+        MENUITEM "12. Movement MOE",            ID_VIEW_MOVEMENT_MOE
+        MENUITEM "13. Time-dependent Link MOE", ID_PROJECT_TIME_DEPENDENT_LINK_MOE
+        MENUITEM "14. Agent MOE",               ID_PROJECT_VIEW_AGENT_MOE
+        MENUITEM SEPARATOR
+        MENUITEM "OD Matrix Estimation Input",  ID_PROJECT_ODMATRIXESTIMATIONINPUT
+        MENUITEM "15. OD Matrix Estimation Result", ID_VIEW_ODME_Result
     END
     POPUP "MOE"
     BEGIN
@@ -2056,37 +2086,7 @@ BEGIN
         MENUITEM "Path List Dialog",            ID_MOE_PATHLIST
         MENUITEM SEPARATOR
         MENUITEM "Vehicle Path Analysis Dialog (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
-        MENUITEM "Vehicle Statistics Dialog",   ID_TOOLS_VIEWSIMULATIONSUMMARY
-        MENUITEM "Open All MOE Tables",         ID_MOE_OPENALLMOETABLES
-        MENUITEM SEPARATOR
-        POPUP "1. Traffic Assignment Summary"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
-            MENUITEM "View Data in Built-in Plot",  ID_1_VIEWDATAINPLOT
-        END
-        MENUITEM SEPARATOR
-        POPUP "2. Network MOE"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_2_VIEWNETWORKDATA
-        END
-        POPUP "3. OD MOE"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_3_VIEWODDATAINEXCEL
-        END
-        POPUP "4. Link MOE"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_MOE_VIEWLINKMOESUMMARYFILE
-            MENUITEM "View Data in Built-in Table", ID_SEARCH_LINKLIST
-        END
-        MENUITEM SEPARATOR
-        POPUP "5. Network Time-dependent MOE"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_MOE_VIEWNETWORKTIMEDEPENDENTMOE
-        END
-        POPUP "6. Link Time-dependent MOE"
-        BEGIN
-            MENUITEM "View Data in Excel",          ID_5_VIEWDATAINEXCEL
-        END
+        MENUITEM "Network Statistics Dialog",   ID_TOOLS_VIEWSIMULATIONSUMMARY
     END
     POPUP "Tools"
     BEGIN
@@ -2117,8 +2117,6 @@ BEGIN
             MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
-        MENUITEM "Edit Pricing Scenario Data",  ID_PROJECT_EDITPRICINGSCENARIODATA
-        MENUITEM "Unit Testing",                ID_TOOLS_UNITTESTING
     END
     POPUP "&Window"
     BEGIN
@@ -3029,6 +3027,7 @@ END
 
 STRINGTABLE 
 BEGIN
+    ID_TOOLS_EDITODDEMANDTABLE "View Demand Tables"
     ID_SEARCH_LINKLIST      "Link List\nLink List"
 END
 

@@ -164,7 +164,7 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		}
 
 
-		m_MOEToolBar.SetButtonText(0,"Data");
+		m_MOEToolBar.SetButtonText(0,"Demand");
 		m_MOEToolBar.SetButtonText(1,"Scenario");
 		m_MOEToolBar.SetButtonText(2,"Simulation");
 		m_MOEToolBar.SetButtonText(4,"Network");
@@ -179,8 +179,7 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(15,"Link");
 		m_MOEToolBar.SetButtonText(16,"Path");
 		m_MOEToolBar.SetButtonText(17,"Vehicle");
-		m_MOEToolBar.SetButtonText(18,"Subarea");
-		m_MOEToolBar.SetButtonText(19,"System");
+		m_MOEToolBar.SetButtonText(18,"System");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));

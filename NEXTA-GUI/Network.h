@@ -306,7 +306,7 @@ public:
 class DTATimeDependentemand
 {
 public: 
-	int movement_hourly_capacity;
+
 	int starting_time_in_min;
 	int ending_time_in_min;
 	float time_dependent_value;
@@ -315,7 +315,6 @@ public:
 
 	DTATimeDependentemand()
 	{
-	movement_hourly_capacity = -1;
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;
 	time_dependent_value = 0;
@@ -378,6 +377,7 @@ public:
 
 
 };
+
 class DTAZone
 { 
 public:
@@ -490,6 +490,7 @@ public:
 
 	DTAZone()
 	{
+
 		m_Height = 0;
 		color_code = "red";
 		m_Capacity  =0;
@@ -733,7 +734,7 @@ public:
 	signal_group_no = 0;
 	phase_index = 0;
 	turn_volume = 10;
-	movement_hourly_capacity = 1000;
+	movement_hourly_capacity = 10000;
 
 	}
 
@@ -747,7 +748,7 @@ int in_link_from_node_id;
 int in_link_to_node_id;  // this equals to the current node number
 int out_link_to_node_id;
 
-float movement_hourly_capacity;
+int movement_hourly_capacity;
 int starting_time_in_min;
 int ending_time_in_min;
 float turnning_percentage;
@@ -787,6 +788,8 @@ int signal_group_no; // micro-scopic, lane-based
 	  int amber;
 
       std::vector<int> movement_index_vector;
+      std::vector<int> movement_type_vector;  // prohibited, permitted, protected, free
+
 
 	  // if a link is added or deleted from a link, the corresponding movement array should be adjusted. 
 
@@ -830,7 +833,8 @@ public:
 		m_Connections = 0;
 		m_LayerNo = 0;
 		m_DistanceToRoot = 0;
-		m_CycleLength =0;
+		m_CycleLengthInSecond = 60;
+		m_SignalOffsetInSecond = 0;
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
 		m_External_OD_flag = 0;
@@ -873,7 +877,8 @@ public:
 
 	std::vector <DTANodePhase> m_PhaseVector;
 	 
-	int m_CycleLength;
+	int m_CycleLengthInSecond;
+	int m_SignalOffsetInSecond;
 	int m_NumberofPhases;
 	float m_DistanceToRoot;
 	string m_Name;
@@ -1038,6 +1043,7 @@ public:
 	{
 		StartDayNo = 0;
 		EndDayNo = 0;
+		ScenarioNo = 0;
 
 		for (int i=0;i<MAX_RANDOM_SAMPLE_SIZE;i++)
 		{
@@ -1057,6 +1063,7 @@ public:
 	float StartTime;
 	float EndTime;
 	int StartDayNo;
+	int ScenarioNo;
 	int EndDayNo;
 	float LaneClosureRatio;
 	float SpeedLimit;
@@ -1082,6 +1089,7 @@ class MessageSign
 {
 public:
 
+	int ScenarioNo;
 	int StartDayNo;
 	int EndDayNo;
 	float StartTime;
@@ -1096,6 +1104,9 @@ public:
 
 	MessageSign()
 	{
+		ScenarioNo = 0;
+		StartDayNo= 0;
+		EndDayNo = 100;
 
 	}
 
@@ -1110,7 +1121,9 @@ class DTAToll
 public:
 	DTAToll()
 	{
-	DayNo = 0;
+		ScenarioNo = 0;
+		StartDayNo = 0;
+		EndDayNo = 100;
 
 		for(int p = 0; p  < MAX_PRICING_TYPE_SIZE; p++)
 		{
@@ -1119,9 +1132,11 @@ public:
 		}
 	}
 
+	int ScenarioNo;
 	float StartTime;
 	float EndTime;
-	int DayNo;
+	int StartDayNo;
+	int EndDayNo;
 	float TollRate[MAX_PRICING_TYPE_SIZE];
 	float TollRateInMin[MAX_PRICING_TYPE_SIZE];
 };
@@ -1149,6 +1164,8 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_EffectiveGreenTimeInSecond = 0;
+		m_GreenStartTimetInSecond =0;
 		m_CentroidUpdateFlag = 0; 
 		m_bTrainFromTerminal = false;
 		m_bTrainToTerminal = false;
@@ -1593,6 +1610,8 @@ void AdjustLinkEndpointsWithSetBack()
 	float m_Kjam;
 	float m_AADT_conversion_factor;
 	float m_Wave_speed_in_mph;
+	int m_EffectiveGreenTimeInSecond;
+	int m_GreenStartTimetInSecond;
 	string m_Mode_code;
 
 

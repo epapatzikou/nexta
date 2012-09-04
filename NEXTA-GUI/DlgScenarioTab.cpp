@@ -149,7 +149,7 @@ BOOL CDlgScenarioTab::AddRow()
 {
 	//static CString
 	int Index = m_ListCtrl.InsertItem(LVIF_TEXT,m_NumOfRows,NULL,0,0,0,NULL);
-	for (int i=1;i<m_NumOfCols;i++)
+	for (int i=1;i< min(default_value.size()+1,m_NumOfCols);i++)
 	{
 		m_ListCtrl.SetItemText(Index,i,default_value.at(i-1));
 	}

@@ -29,7 +29,6 @@ CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
 	// empty vector
 	m_pDoc->HighlightPath(LinkVector,1);
 
-
 }
 
 void CDlg_VehPathAnalysis::DoDataExchange(CDataExchange* pDX)
@@ -747,7 +746,7 @@ void CDlg_VehPathAnalysis::ShowSelectedPath()
 	int PathNo = m_PathList.GetCurSel();
 
 	if(PathNo >= 0)
-		m_pDoc->HighlightPath(m_PathVector[PathNo].m_LinkVector,1);
+		m_pDoc->HighlightPath(m_PathVector[PathNo].m_LinkVector,2);
 
 }
 
@@ -917,5 +916,5 @@ void CDlg_VehPathAnalysis::OnBnClickedFindcriticalod()
 
 void CDlg_VehPathAnalysis::OnBnClickedOk()
 {
-	// TODO: Add your control notification handler code here
+	OnOK();
 }

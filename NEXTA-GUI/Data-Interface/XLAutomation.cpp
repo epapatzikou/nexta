@@ -452,6 +452,7 @@ BOOL CXLAutomation::ReleaseExcel()
 	// This can occur if a document is in need of saving.  The CreateChart() code
 	// always clears the dirty bit on the documents it creates, avoiding this problem.
 	ClearAllArgs();
+	bool not_quit_message = false;
 	ExlInvoke(m_pdispExcelApp, L"Quit", NULL, DISPATCH_METHOD, 0);
 	
 	// Even though Excel has been told to Quit, we still need to release the
