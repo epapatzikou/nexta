@@ -6,7 +6,7 @@
 
 using std::ifstream;
 using std::istringstream;
-
+extern void g_ProgramStop();
 
 CCSVParser::CCSVParser(void)
 {
@@ -20,7 +20,7 @@ CCSVParser::~CCSVParser(void)
 }
 
 
-bool CCSVParser::OpenCSVFile(string fileName)
+bool CCSVParser::OpenCSVFile(string fileName,bool b_required)
 {
 	inFile.open(fileName.c_str());
 	
@@ -55,6 +55,12 @@ bool CCSVParser::OpenCSVFile(string fileName)
 	}
 	else
 	{
+		if(b_required)
+		{
+		
+		cout << "File " << fileName << " does not exist. Please check."  << endl;
+		g_ProgramStop();
+		}
 		return false;
 	}
 }

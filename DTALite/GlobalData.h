@@ -25,12 +25,12 @@
 // global data structure
 #include <iostream>
 #include <fstream>
+
+extern ofstream g_WarningFile;
 extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
 extern std::map<string, DTALink*> g_LinkMap;
-extern std::map<string, DTANodeMovement> g_MovementMap;
-
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
@@ -38,6 +38,8 @@ extern std::map<int, DTAVehicle*> g_VehicleMap;
 extern std::map<int, DemandType> g_DemandTypeMap;
 extern std::map<int, PricingType> g_PricingTypeMap;
 extern std::map<int, DTALinkType> g_LinkTypeMap;
+extern std::map<int, string> g_NodeControlTypeMap;
+
 extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
 
@@ -85,6 +87,7 @@ extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_FIFOConditionAcrossDifferentMovementFlag;
 extern int g_TrafficFlowModelFlag;
+extern int g_ShortestPathWithMovementDelayFlag;
 extern int g_EmissionDataOutputFlag;
 extern int g_TimeDependentODMOEOutputFlag;
 extern int g_VehiclePathOutputFlag;
@@ -119,10 +122,12 @@ extern float g_TotalMeasurementDeviation;
 extern ofstream g_scenario_short_description;
 extern void OutputMovementMOEData(ofstream &output_MovementMOE_file);
 extern bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2);
+extern bool g_floating_point_value_less_than(double value1, double value2);
 extern string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName);
 extern void g_ReadDemandFileBasedOnMetaDatabase();
 extern void g_ReadTimeDependentDemandProfile();
 extern void g_ReadVOTProfile();
+extern float g_GetRandomRatioForVehicleGeneration();
 
 
 

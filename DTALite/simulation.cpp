@@ -39,40 +39,25 @@ extern bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int
 extern  int NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND;
 extern ofstream g_LogFile;
 
-long g_precision_constant=100000L;
-extern float g_DemandGlobalMultiplier;
-bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2)
-{
-	long lValue1 = (long) (value1*g_precision_constant);
-	long lValue2 = (long) (value2*g_precision_constant);
-
-	if(lValue1<=lValue2)
-		return true;
-	else 
-		return false;
-
-}
-
-bool g_Compare_Vehicle_Item(struc_vehicle_item item1, struc_vehicle_item item2)
-{
-	if(item1.time_stamp < item2.time_stamp)  // item1 is earlier than item2
-		return true;
-	else 
-		return false;
-}
 
 bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_interval_no, int TrafficFlowModelFlag)
 {
+	int trace_step = 14;
+
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
 	std::map<int, DTAVehicle*>::iterator iterVM;
-	int   PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 
 	int time_stamp_in_min = int(CurrentTime+0.0001);
 
+	CString trace_msg;
+
+	trace_msg.Format ("time %f, interval %d",CurrentTime,simulation_time_interval_no);
+	g_ProgramTrace(trace_msg);
+
 	std::list<struc_vehicle_item>::iterator vii;
 
-	int vehicle_id_trace = 8297;
+	int vehicle_id_trace = 0;
 	int link_id_trace = -1;
 	bool debug_flag = true ;
 
@@ -209,10 +194,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	}
 
 	// loading buffer
+	if(simulation_time_interval_no>=trace_step)
+	g_ProgramTrace("loading buffer");
 
 	int link_size = g_LinkVector.size();
 #pragma omp parallel for
-	for(unsigned li = 0; li< link_size; li++)
+	for(int li = 0; li< link_size; li++)
 	{
 			DTALink * pLink = g_LinkVector[li];
 
@@ -263,14 +250,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	}
 
 	// step 2: move vehicles from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
+	if(simulation_time_interval_no>=trace_step)
+	g_ProgramTrace("move vehicles from EntranceQueue To ExitQueue");
 
 #pragma omp parallel for
 	for(int li = 0; li< link_size; li++)
 	{
 
-			DTALink * pLink = g_LinkVector[li];
+		DTALink * pLink = g_LinkVector[li];
 
 		while(pLink->EntranceQueue.size() >0)
+
 		{
 
 			struc_vehicle_item vi = pLink->EntranceQueue.front();
@@ -318,7 +308,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	else // queueing model
 	{
 
-
 #pragma omp parallel for
 		for(int li = 0; li< link_size; li++)
 		{
@@ -328,7 +317,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
 
 			// freeway 
-
 
 			if(g_LinkTypeMap [pLink->m_link_type].IsFreeway())  
 			{
@@ -343,16 +331,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 			}
 
-			/* comment out for now: Xuesong: avoid conflict for g_LinkTypeMap
-			//Highway/Expressway,			 Principal arteria				Major arterial					 Frontage road
-			if(!(g_LinkTypeMap[pLink->m_link_type ].IsFreeway() || g_LinkTypeMap[pLink->m_link_type ].IsRamp()))
+			if(pLink->m_bSignalizedArterialType == true)
 			{
-			PerHourCapacityAtCurrentSimulatioInterval = GetDynamicCapacityAtSignalizedIntersection(PerHourCapacity, g_CycleLength_in_seconds,CurrentTime);
+			PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( pLink->m_DownstreamCycleLength_In_Second, pLink->m_EffectiveGreenTime_In_Second ,pLink->m_GreenStartTime_In_Second ,  pLink->m_DownstreamNodeSignalOffset_In_Second, CurrentTime, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane);
+			DTALinkOutCapacity element(CurrentTime,PerHourCapacityAtCurrentSimulatioInterval);
+			pLink->m_OutCapacityVector .push_back (element);
 			}
-			*/
+			
 
 			// determine link out capacity 
-
 
 			float MaximumFlowRate = PerHourCapacityAtCurrentSimulatioInterval *g_DTASimulationInterval/60.0f*pLink->GetNumLanes(DayNo,CurrentTime); //60 --> cap per min --> unit # of vehicle per simulation interval
 
@@ -360,14 +347,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			// use integer number of vehicles as unit of capacity
 			
 			pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
-
-		if(debug_flag && pLink->m_FromNodeNumber == 34 &&  pLink->m_ToNodeNumber == 30 && CurrentTime >=860)
-		{
-			TRACE("Step 3: Time %f, Link: %d -> %d: entrance queue length: %d, exit queue length %d, cap = %f, int, %d\n",
-				CurrentTime, pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,
-				pLink->EntranceQueue.size(), pLink->ExitQueue.size(),Capacity, pLink-> LinkOutCapacity);
-		}
-
 
 			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)(pLink->CFlowArrivalCount - pLink->CFlowDepartureCount);
 
@@ -407,9 +386,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						int N_Arrival_Now_Constrainted = (int)(pLink->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountUnderJamDensity);  //pLink->m_Length 's unit is mile
 						int t_residual_minus_1 = max(0, simulation_time_interval_no - 1)% MAX_TIME_INTERVAL_ADCURVE ;
 
+						ASSERT(t_residual_minus_1>=0);
+						ASSERT(t_residual_minus_1<MAX_TIME_INTERVAL_ADCURVE);
 						int N_Now_minus_1 = (int)pLink->m_CumuArrivalFlow[t_residual_minus_1];
 						int Flow_allowed = N_Arrival_Now_Constrainted - N_Now_minus_1;
-										TRACE("\ntime %d, D:%d,A%d",simulation_time_interval_no,pLink->m_CumuDeparturelFlow[t_residual_minus_1],pLink->m_CumuArrivalFlow[t_residual_minus_1]);
+						
+						//TRACE("\ntime %d, D:%d,A%d",simulation_time_interval_no,pLink->m_CumuDeparturelFlow[t_residual_minus_1],pLink->m_CumuArrivalFlow[t_residual_minus_1]);
 
 						if(Flow_allowed < 0)
 							Flow_allowed  = 0;
@@ -426,7 +408,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 								//							g_LogFile << "Queue spillback"<< CurrentTime <<  g_NodeVector[pLink->m_FromNodeID] << " -> " <<	g_NodeVector[pLink->m_ToNodeID] << " " << pLink->LinkInCapacity << endl;
 
 								// update traffic state
-								pLink->m_LinkMOEAry[(int)(CurrentTime)].TrafficStateCode = 2;  // 2: fully congested
+								int CurrentTime_int = (int)(CurrentTime);
+								
+								if(CurrentTime_int >= pLink->m_LinkMOEAry.size())
+								{
+								cout << "CurrentTime_int >= pLink->m_LinkMOEAry.size()";
+								g_ProgramStop();
+								}
+								
+								pLink->m_LinkMOEAry[CurrentTime_int].TrafficStateCode = 2;  // 2: fully congested
 
 								//							TRACE("Queue spillback at %d -> %d\n", g_NodeVector[pLink->m_FromNodeID], g_NodeVector[pLink->m_ToNodeID]);
 							}
@@ -538,7 +528,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	// step 4: move vehicles from ExitQueue to next link's EntranceQueue, if there is available capacity
 	// NewTime = ReadyTime + FFTT(next link)
-
+	if(simulation_time_interval_no>=trace_step)
+	g_ProgramTrace("step 4: move vehicles from ExitQueue to next link's EntranceQueue");
 
 	// step 4.1: calculate movement capacity per simulation interval for movements defined in input_movement.csv
 
@@ -570,9 +561,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	DTALink* p_Nextlink;
 
 	//for each node, we scan each incoming link in a randomly sequence, based on simulation_time_interval_no
+	if(simulation_time_interval_no>=trace_step)
+	g_ProgramTrace("step 5: for each node, we scan each incoming link in a randomly sequence");
 
-#pragma omp parallel for
-	for(unsigned node = 0; node < node_size; node++)
+//#pragma omp parallel for
+	for(int node = 0; node < node_size; node++)
 	{
 		int IncomingLinkSize = g_NodeVector[node].m_IncomingLinkVector.size();
 		int incoming_link_count = 0;
@@ -884,6 +877,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	} // for each node
 
 	//	step 5: statistics collection
+	if(simulation_time_interval_no>=trace_step)
+	g_ProgramTrace("step 5: step 5: statistics collection");
+
 #pragma omp parallel for
 	for(int li = 0; li< link_size; li++)
 	{
@@ -1056,6 +1052,8 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	g_Number_of_CompletedVehicles = 0;
 	g_Number_of_GeneratedVehicles = 0;
 
+
+
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 		DTALink* pLink = g_LinkVector[li];
@@ -1073,8 +1071,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		}
 
 	}
-
-	cout << "Free global path set... " << endl;
 
 	g_ODTKPathVector.clear();   
 	// clear the global path set vector, will be regenerated in OD path flow adjustment module ConstructPathArrayForEachODT_ODEstimation()
@@ -1122,44 +1118,44 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		DTAVehicle* pVeh = (*iterVehicle);
 		pVeh->PreTripReset();
 
-		if(pVeh->m_NodeSize >=2)  // has feasible path
-		{
-			int FirstLink =pVeh->m_aryVN[0].LinkID;
+		//if(pVeh->m_NodeSize >=2)  // has feasible path
+		//{
+		//	int FirstLink =pVeh->m_aryVN[0].LinkID;
 
-			DTALink* pLink = g_LinkVector[FirstLink];
-			pLink ->LoadingBufferSize ++;
-		}
-		// load into loading buffer
+		//	DTALink* pLink = g_LinkVector[FirstLink];
+		//	pLink ->LoadingBufferSize ++;
+		//}
+		//// load into loading buffer
 	}
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
-	{
-		DTALink* pLink = g_LinkVector[li];
+	//for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	//{
+	//	DTALink* pLink = g_LinkVector[li];
 
-		if(pLink ->LoadingBufferVector!=NULL)
-			delete pLink ->LoadingBufferVector;
+	//	if(pLink ->LoadingBufferVector!=NULL)
+	//		delete pLink ->LoadingBufferVector;
 
-		if(pLink ->LoadingBufferSize >=1)
-		{
-			pLink ->LoadingBufferVector = new int[pLink ->LoadingBufferSize];
-			pLink ->LoadingBufferSize = 0; // reset
-		}
-	}
+	//	if(pLink ->LoadingBufferSize >=1)
+	//	{
+	//		pLink ->LoadingBufferVector = new int[pLink ->LoadingBufferSize];
+	//		pLink ->LoadingBufferSize = 0; // reset
+	//	}
+	//}
 
-	// assign vehicles to loading buffer
-	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
-	{
-		DTAVehicle* pVeh = (*iterVehicle);
-		pVeh->PreTripReset();
+	//// assign vehicles to loading buffer
+	//for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
+	//{
+	//	DTAVehicle* pVeh = (*iterVehicle);
+	//	pVeh->PreTripReset();
 
-		if(pVeh->m_NodeSize >=2)  // has feasible path
-		{
-			int FirstLink =pVeh->m_aryVN[0].LinkID;
+	//	if(pVeh->m_NodeSize >=2)  // has feasible path
+	//	{
+	//		int FirstLink =pVeh->m_aryVN[0].LinkID;
 
-			DTALink* pLink = g_LinkVector[FirstLink];
-			pLink ->LoadingBufferVector [pLink ->LoadingBufferSize ++] = pVeh->m_VehicleID ;
-		}
-		// load into loading buffer
-	}
+	//		DTALink* pLink = g_LinkVector[FirstLink];
+	//		pLink ->LoadingBufferVector [pLink ->LoadingBufferSize ++] = pVeh->m_VehicleID ;
+	//	}
+	//	// load into loading buffer
+	//}
 
 
 	cout << "start simulation process..."  << endl;
@@ -1170,11 +1166,10 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	// generate historical info based shortst path, based on constant link travel time
 
-
 	for(time = g_DemandLoadingStartTimeInMin ; time< g_PlanningHorizon; simulation_time_interval_no++)  // the simulation time clock is advanced by 0.1 seconds
 	{
 		time= g_DemandLoadingStartTimeInMin+ simulation_time_interval_no*g_DTASimulationInterval;
-
+		
 	//if(TrafficFlowModelFlag ==1) // point queue
 	//	g_VehicularSimulation_BasedOnADCurves(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 	//else // , spatial queue and Newell's model
@@ -1192,8 +1187,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 			g_LogFile << "simulation clock in min:" << int(time) << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 		}
 	}
-
-
 
 	if(g_ODEstimationFlag) 
 	{
@@ -1364,25 +1357,30 @@ float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity)  // per lane
 	return Capacity;
 }
 
-float GetDynamicCapacityAtSignalizedIntersection(float HourlyCapacity, float CycleLength_in_seconds,double CurrentTime)
+float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second, int EffectiveGreenTime_in_second, int GreenStartTime_in_second,int offset_in_second, double CurrentTime, float SaturationFlowRate)
 {
 
-	float CyclceLength_in_min = CycleLength_in_seconds/60.0f;
-	float g_over_c_ratio = HourlyCapacity/g_DefaultSaturationFlowRate_in_vehphpl;
-	float EndofGreenTime = g_over_c_ratio*CyclceLength_in_min;
 
-	float PerCycleTime_StartTime = CurrentTime-int(CurrentTime/CyclceLength_in_min)*CyclceLength_in_min;
+	ASSERT(EffectiveGreenTime_in_second>=1);
+
+	float CyclceLength_in_min = CycleLength_in_second/60.0f;
+	float GreenEndTime_In_Second = GreenStartTime_in_second + EffectiveGreenTime_in_second/60.0f;
+
+	float offset_in_min = offset_in_second/60;
+	int number_of_cycles = int((CurrentTime-offset_in_min)/CyclceLength_in_min);
+
+	float PerCycleTime_StartTime = (CurrentTime-offset_in_min) - number_of_cycles*CyclceLength_in_min - GreenStartTime_in_second;
 	float PerCycleTime_EndTime = PerCycleTime_StartTime + g_DTASimulationInterval;  // unit: min
 
+	// we now find the intersection of two time intervals
+
+	float intersection_start_time = max(PerCycleTime_StartTime, GreenStartTime_in_second);
+	float intersection_end_time = min(PerCycleTime_EndTime, GreenEndTime_In_Second);
+
 	float DynamicCapacity  = 0;
-	if(PerCycleTime_EndTime < EndofGreenTime)  // before green time
-		DynamicCapacity = g_DefaultSaturationFlowRate_in_vehphpl;
-	else if (PerCycleTime_StartTime > EndofGreenTime) // after, red time
-		DynamicCapacity =  0;
-	else //  PerCycleTime_StartTime < EndofGreenTime < PerCycleTime_EndTime: partial time interval
-	{
-		DynamicCapacity =  g_DefaultSaturationFlowRate_in_vehphpl*(PerCycleTime_EndTime-EndofGreenTime)/g_DTASimulationInterval;
-	}
+	
+	// max(0,intersection_end_time-intersection_start_time)  is the duraiton of intersection of two time intervals
+	DynamicCapacity =  SaturationFlowRate*max(0,intersection_end_time-intersection_start_time)/g_DTASimulationInterval;
 
 	return DynamicCapacity;
 }
@@ -1482,405 +1480,3 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 
 
 
-//bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int simulation_time_interval_no, int TrafficFlowModelFlag)
-//{
-//
-//	int time_stamp_in_min = int(CurrentTime+0.0001);
-//
-//	int current_simulation_time_interval_no = g_DemandLoadingStartTimeInMin*g_number_of_car_following_intervals_per_min+simulation_time_interval_no;
-//
-//	//	TRACE("st=%d\n", simulation_time_interval_no);
-//	//DTALite:
-//	// vertical queue data structure
-//	// load vehicles into network
-//
-//	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
-//	// load this vehicle into the ready queue
-//
-//	// comment: we use map here as the g_VehicleMap map is sorted by departure times.
-//	// At each iteration, we start  the last loaded id, and exit if the departure time of a vehicle is later than the current time.
-//
-//
-//	//for each node, we scan each incoming link in a randomly sequence, based on simulation_time_interval_no
-//
-//	bool bParallelMode = true;
-//	int node_size = g_NodeVector.size();
-//	int link_size = g_LinkVector.size();
-//
-//
-//	//step 0: initialization 
-//	#pragma omp parallel for
-//	for(int li = 0; li< link_size; li++)
-//	{
-//
-//		// cummulative flow counts
-//		DTALink* pLink  = g_LinkVector[li];
-//
-//			 pLink->EntranceBufferSize = 0;
-//			 pLink->NewVehicleCount = 0;
-//			 pLink->ExitVehicleCount = 0;
-//	}
-//
-//
-//				// step 1: load vehicles 
-//
-//#pragma omp parallel for
-//	for(int li = 0; li< link_size; li++)
-//	{
-//
-//		// cummulative flow counts
-//		DTALink* pLink  = g_LinkVector[li];
-//
-//		DTAVehicle* pVeh;
-//
-//			while(pLink->StartIndexOfLoadingBuffer < pLink->LoadingBufferSize)
-//			{
-//				int VehicleID = pLink->LoadingBufferVector [pLink->StartIndexOfLoadingBuffer];
-//				pVeh = g_VehicleMap[VehicleID];
-//				if(g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime) == false)
-//				{	
-//					// later than the current time
-//					break;
-//				}else
-//				{ // before than the current time: load
-//					pVeh->m_SimLinkSequenceNo = 0;
-//					pVeh->m_TollDollarCost +=pLink->GetTollRateInDollar(DayNo,CurrentTime,pVeh->m_PricingType );
-//
-//					struc_vehicle_item vi;
-//					vi.veh_id = pVeh->m_VehicleID ;
-//					// update vehicle statistics
-//					vi.time_stamp = pVeh->m_DepartureTime + pLink->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);  // unit: min
-//
-//					// update link statistics
-//					pLink->NewVehicleCount++;
-//					pLink->EntranceBuffer[pLink->EntranceBufferSize++]=vi;
-//
-//					if(pLink->EntranceBufferSize>=900)
-//					{
-//					cout << "EntranceBufferEntranceBufferSize>=900"; 
-//					g_ProgramStop();
-//					
-//					}
-//					// add cumulative flow count to vehicle
-//
-//					int pricing_type = pVeh->m_PricingType ;
-//					pLink->CFlowArrivalCount_PricingType[pricing_type] +=1;
-//					pLink->CFlowArrivalRevenue_PricingType[pricing_type] += pLink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
-//					
-//
-//
-//					pLink->StartIndexOfLoadingBuffer++;
-//				}
-//
-//			}
-//
-//
-//		} // for each link
-//	
-//
-//
-//		// step 2: determine capacity
-//#pragma omp parallel for
-//	for(int node = 0; node < node_size; node++)  // for each node
-//	{
-//		int IncomingLinkSize = g_NodeVector[node].m_IncomingLinkVector.size();
-//		int incoming_link_count = 0;
-//
-//		for(incoming_link_count=0;  incoming_link_count < IncomingLinkSize; incoming_link_count++)  // for each incoming link
-//		{
-//
-//			int li = g_NodeVector[node].m_IncomingLinkVector[incoming_link_count];
-//
-//			DTALink* pLink = g_LinkVector[li];
-//
-//			// vehicle_out_count is the minimum of LinkOutCapacity and ExitQueue Size
-//
-//			// determine link out capacity 
-//			float MaximumFlowRate = pLink->m_MaximumServiceFlowRatePHPL *g_CarFollowingSimulationInterval/60.0f*pLink->GetNumLanes(DayNo,CurrentTime); //60 --> cap per min --> unit # of vehicle per simulation interval
-//			// use integer number of vehicles as unit of capacity
-//
-//			int A_time_index = max(0,current_simulation_time_interval_no-1-pLink->m_FFTT_simulation_interval) % MAX_TIME_INTERVAL_ADCURVE;
-//			int D_time_index = max(0,current_simulation_time_interval_no-1) % MAX_TIME_INTERVAL_ADCURVE;
-//			int number_of_vehicles_in_vertical_queue = pLink->A[A_time_index] - pLink->D[D_time_index];
-//
-//			int cap_value = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaximumFlowRate,li,current_simulation_time_interval_no);
-//
-//			int vehicle_out_count = min(number_of_vehicles_in_vertical_queue,cap_value);
-//	
-//			// enforcing hard constraints on the number of vehicles can be discharged.
-//			if(vehicle_out_count > pLink->FIFO_queue_size)
-//			{
-//				vehicle_out_count = pLink->FIFO_queue_size;
-//			}
-//			// step 3:  move vehicles
-//			while(vehicle_out_count >=1)
-//			{
-//
-//			 ASSERT(pLink->FIFO_queue_size>=1);
-//			  struc_vehicle_item vi = pLink->FIFOQueue_pop_front();
-//				pLink->CFlowDepartureCount +=1;
-//				pLink-> departure_count +=1;
-//
-//
-//				int vehicle_id = vi.veh_id;
-//
-//				DTAVehicle* pVeh = g_VehicleMap[vehicle_id];
-//
-//
-//				// record arrival time at the downstream node of current link
-//				int link_sequence_no = pVeh->m_SimLinkSequenceNo;
-//
-//				int t_link_arrival_time=0;
-//				if(link_sequence_no >=1)
-//				{
-//					t_link_arrival_time= int(pVeh->m_aryVN[link_sequence_no-1].AbsArrivalTimeOnDSN);
-//				}else
-//				{
-//					t_link_arrival_time = int(pVeh->m_DepartureTime);
-//				}
-//
-//				float ArrivalTimeOnDSN = 0;
-//				if(g_floating_point_value_less_than_or_eq_comparison(CurrentTime-g_CarFollowingSimulationInterval,vi.time_stamp)) 
-//					// arrival at previous interval
-//				{  // no delay 
-//					ArrivalTimeOnDSN = vi.time_stamp;
-//				}else
-//				{  // delayed at previous time interval, discharge at CurrentTime 
-//					ArrivalTimeOnDSN = CurrentTime; 
-//				}
-//
-//				// update statistics for traveled link
-//				pVeh->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN = ArrivalTimeOnDSN;
-//				float TravelTime = 0;
-//
-//				if(link_sequence_no >=1)
-//				{
-//					TravelTime= pVeh->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
-//						pVeh->m_aryVN[link_sequence_no-1].AbsArrivalTimeOnDSN;
-//				}else
-//				{
-//					TravelTime= pVeh->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
-//						pVeh->m_DepartureTime ;
-//
-//				}
-//				pVeh->m_Delay += (TravelTime-pLink->m_FreeFlowTravelTime);
-//				// finally move to next link
-//				pVeh->m_SimLinkSequenceNo = pVeh->m_SimLinkSequenceNo+1;
-//
-//
-//				pLink-> total_departure_based_travel_time += TravelTime;
-//				if(t_link_arrival_time < pLink->m_LinkMOEAry.size())
-//				{
-//					pLink->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime  += TravelTime;
-//					pLink->m_LinkMOEAry[t_link_arrival_time].TotalFlowCount +=1;
-//				}
-//
-//
-//				int number_of_links = pVeh->m_NodeSize-1;
-//				if(pVeh->m_SimLinkSequenceNo < number_of_links-1)  // not reach destination yet
-//				{
-//					// not reach destination yet
-//					// advance to next link
-//
-//
-//					int NextLink = pVeh->m_aryVN[pVeh->m_SimLinkSequenceNo].LinkID;
-//					DTALink* p_Nextlink = g_LinkVector[NextLink];
-//
-//					if(p_Nextlink->m_FromNodeID != node)
-//					{
-//						cout << "p_Nextlink->m_FromNodeID : veh " << pVeh->m_VehicleID << ": " << " this link: " << pLink ->m_FromNodeNumber << "->" << pLink ->m_ToNodeNumber << " next link" << p_Nextlink ->m_FromNodeNumber << "->" << p_Nextlink ->m_ToNodeNumber << ";; current Node: " << g_NodeVector[node].m_NodeName;
-//					getchar();
-//					}
-//
-//					vi.veh_id = vehicle_id;
-//
-//					vi.time_stamp = ArrivalTimeOnDSN + p_Nextlink->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);
-//					// update link statistics
-//					p_Nextlink->EntranceBuffer [p_Nextlink->EntranceBufferSize]=vi;
-//
-//					p_Nextlink->EntranceBufferSize++;
-//					if(p_Nextlink->EntranceBufferSize>=900)
-//					{
-//					cout << "EntranceBufferEntranceBufferSize>=900"; 
-//					g_ProgramStop();
-//					
-//					}
-//					
-//
-//					// important notes: because all incoming links that have access to p_NextLink belong to one node, our parallelization around nodes is safe
-//
-//
-//					//int pricing_type = pVeh->m_PricingType ;
-//					//p_Nextlink->CFlowArrivalCount_PricingType[pricing_type] +=1;
-//					//p_Nextlink->CFlowArrivalRevenue_PricingType[pricing_type] += p_Nextlink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
-//					//pVeh->m_TollDollarCost += p_Nextlink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
-//
-//				}else
-//				{  // reach destination
-//
-//					pLink->ExitVehicleCount ++;
-//					pVeh->m_ArrivalTime = ArrivalTimeOnDSN;
-//					pVeh->m_TripTime = pVeh->m_ArrivalTime - pVeh->m_DepartureTime;
-//					pVeh->m_bComplete = true;
-//				}
-//
-//				
-//				vehicle_out_count--;
-//
-//			}
-//
-//
-//		}  // for each incoming link
-//	} // for each node
-//
-////------------------------------------ car following simulation
-////	#pragma omp parallel for
-//	for(int li = 0; li< link_size; li++)
-//	{
-//		DTALink* pLink  = g_LinkVector[li];
-//
-//		// calculate free-flow moving distance
-//		float FreeflowDistance_per_SimulationInterval  = pLink->m_SpeedLimit* 1609.344f/3600/NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND; 
-//		float CriticalSpacing_in_meter = 1609.344f / pLink->m_KJam ; 
-//		float link_length_in_meter = pLink-> m_Length * 1609.344f; //1609.344f: mile to meters;
-//		int TimeLag_in_SimulationInterval = (int)(3600*NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND/(pLink->m_BackwardWaveSpeed * pLink->m_KJam )+0.5);
-//
-//		if(TimeLag_in_SimulationInterval>=300)
-//		{
-//		
-//			TimeLag_in_SimulationInterval = 300;
-//		
-//		}
-//	
-//		for(int vehicle_sequence_no = 0; vehicle_sequence_no < pLink->FIFO_queue_size; vehicle_sequence_no++)
-//	{
-//		int index = (pLink->FIFO_front+vehicle_sequence_no) %(pLink->FIFO_queue_max_size-1);  // (FIFO_queue_max_size-1 is old cycle length
-//		struc_vehicle_item item = pLink->FIFOQueue[index]; 
-//
-//		// car following simuluation
-//		int current_time_interval_no = simulation_time_interval_no%300;  // 300 is the time dimension size of vehicle distance array
-//		int previous_time_interval_no = max(0,simulation_time_interval_no-1)%300;  // 300 is the time dimension size of vehicle distance array
-//
-//		int current_vehicle_sequence_no = item.veh_car_following_no ;
-//
-//		float CurrentVehicleDistance = pLink->VechileDistanceAry [current_vehicle_sequence_no][previous_time_interval_no] + FreeflowDistance_per_SimulationInterval;
-//
-//		int leader_vehicle_sequence_no = (item.veh_car_following_no - pLink->m_NumLanes)%(pLink->FIFO_queue_max_size-1);
-//
-//		if(item.veh_car_following_no >= pLink->m_NumLanes && pLink->FIFOQueue[leader_vehicle_sequence_no].veh_car_following_no >=0)  // with leader car
-//		{
-//			//xiC(t) = xi-1(t-tau) - delta
-//			int time_t_minus_tau = (current_time_interval_no - TimeLag_in_SimulationInterval)%300; // need to convert time in second to time in simulation time interval
-//
-//			if(time_t_minus_tau >=0)  // the leader has not reached destination yet
-//			{
-//				// vehicle v-1: previous car
-//				float CongestedDistance =  pLink->VechileDistanceAry[leader_vehicle_sequence_no][time_t_minus_tau]  - CriticalSpacing_in_meter ;
-//				// xi(t) = min(xAF(t), xAC(t))
-//				if (CurrentVehicleDistance  > CongestedDistance && CongestedDistance >=  pLink->VechileDistanceAry[current_vehicle_sequence_no][previous_time_interval_no])
-//					CurrentVehicleDistance = CongestedDistance;
-//			}
-//
-//			pLink->VechileDistanceAry[current_vehicle_sequence_no][current_time_interval_no] = CurrentVehicleDistance;
-//
-//			}
-//	
-//		
-//						if(simulation_time_interval_no%NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND == 0)  // per_second
-//					{
-//						// for active vehicles (with positive speed or positive distance
-//
-//						float SpeedBySecond = pLink->m_SpeedLimit* 0.44704f ; // 1 mph = 0.44704 meters per second
-//
-//						float vehicle_entrance_time_in_simulation_interval = (item.time_stamp - pLink->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime))/g_CarFollowingSimulationInterval;
-//
-//						if(current_simulation_time_interval_no  >= vehicle_entrance_time_in_simulation_interval + NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND)  // not the first second
-//						{
-//							SpeedBySecond = (pLink->VechileDistanceAry[current_vehicle_sequence_no][simulation_time_interval_no] -   
-//								pLink->VechileDistanceAry[current_vehicle_sequence_no][simulation_time_interval_no-NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND]);
-//						}
-//
-//						// different lanes have different vehicle numbers, so we should not have openMP conflicts here
-//						DTAVehicle* pVehicle  = g_VehicleMap[item.veh_id ];
-//						float accelation = SpeedBySecond - pVehicle->m_PrevSpeed ;
-//						//int OperatingMode =  pLink->ComputeOperatingModeFromSpeed(SpeedBySecond, accelation);
-//						pVehicle->m_OperatingModeCount[OperatingMode]+=1;
-//						pVehicle->m_PrevSpeed  = SpeedBySecond;
-//					}
-//	
-//		}
-//	}
-//// car following simulation ------------------------------------
-//
-//	// step 3: calculate statistics
-//	// cummulative flow counts
-//
-//		// single thread
-//	for(int li = 0; li< link_size; li++)
-//	{	
-//					DTALink* pLink = g_LinkVector[li];
-//					// update network statistics
-//					g_Number_of_GeneratedVehicles += pLink->NewVehicleCount ;
-//					g_Number_of_CompletedVehicles += pLink->ExitVehicleCount ;
-//
-//	g_NetworkMOEAry[time_stamp_in_min].Flow_in_a_min += pLink->NewVehicleCount;
-//
-//	}
-//	g_NetworkMOEAry[time_stamp_in_min].CumulativeInFlow = g_Number_of_GeneratedVehicles;
-//
-//				g_NetworkMOEAry[time_stamp_in_min].CumulativeOutFlow = g_Number_of_CompletedVehicles;
-////to do					int OriginDepartureTime = (int)(pVeh->m_DepartureTime );
-////to do					g_NetworkMOEAry[OriginDepartureTime].AbsArrivalTimeOnDSN_in_a_min +=pVeh->m_TripTime;
-//
-//// step 4: move vehicles from EntranceBuffer to EntranceQueue
-//
-//#pragma omp parallel for
-//	for(int li = 0; li< link_size; li++)
-//	{
-//
-//		// cummulative flow counts
-//		DTALink* pLink  = g_LinkVector[li];
-//
-//
-//		for(int i= 0; i < pLink->EntranceBufferSize; i++)
-//		{
-//
-//
-//			pLink->FIFOQueue_push_back (pLink->EntranceBuffer[i]);
-//			pLink->CFlowArrivalCount++;
-//
-//			struc_vehicle_item vi =  pLink->EntranceBuffer[i];
-//
-//		}
-//		pLink->EntranceBufferSize  = 0;
-//
-//		int time_index  = current_simulation_time_interval_no  % MAX_TIME_INTERVAL_ADCURVE;
-//		pLink->A[time_index] = pLink->CFlowArrivalCount;
-//		pLink->D[time_index] = pLink->CFlowDepartureCount;
-//
-//		//int t_residual = simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
-//
-//		//pLink->m_CumuArrivalFlow[t_residual] = pLink->CFlowArrivalCount;
-//		//pLink->m_CumuDeparturelFlow[t_residual] = pLink->CFlowDepartureCount;
-//
-//		if(simulation_time_interval_no%g_number_of_car_following_intervals_per_min==0 )  // per min statistics
-//		{
-//			pLink->VehicleCount = pLink->CFlowArrivalCount - pLink->CFlowDepartureCount;
-//			pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  pLink->CFlowArrivalCount;
-//			pLink->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength =  pLink->FIFO_queue_size;
-//
-//			// toll collection 
-//			for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
-//			{
-//				pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount_PricingType[pt] = pLink->CFlowArrivalCount_PricingType[pt];
-//				pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeRevenue_PricingType[pt] = pLink->CFlowArrivalRevenue_PricingType[pt];
-//			}
-//
-//			pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeDepartureCount = pLink->CFlowDepartureCount;
-//
-//		}
-//	}
-//	return true;
-//}
-//
-//

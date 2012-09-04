@@ -46,7 +46,6 @@ using namespace std;
 
 std::map<CString, int> g_path_index_map; 
 
-extern ofstream g_WarningFile;
 
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
@@ -62,6 +61,9 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	// assign different zones to different processors
 	int number_of_threads = omp_get_max_threads ( );
+
+	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
+		number_of_threads = 1;
 
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
@@ -132,7 +134,12 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
 						{
-							network_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+
+									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+										network_MP[id].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+									else
+										network_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+
 						}
 					}  // for each departure time
 				}
@@ -142,7 +149,10 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		cout<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
 		g_LogFile<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
 
-
+			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // re-generate vehicles based on global path set
+			{
+				g_GenerateVehicleData_ODEstimation();
+			}
 		cout << "---- Network Loading for Iteration " << iteration <<"----" << endl;
 
 		NetworkLoadingOutput SimuOutput;
@@ -220,12 +230,15 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		bool bAllowDepartureTimeSwitchFlag = false;
 
 		
+			if(pVeh->m_VehicleID ==1001)
+				TRACE("");
 
 		if(iteration==0)  //we always switch at the first iteration
 		{
 			bSwitchFlag = true;
 
 			pVeh->m_PreferredDepartureTime = pVeh->m_DepartureTime;  // set departure time to m_PreferredDepartureTime
+
 
 			// get the first feasible solution
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
@@ -1301,9 +1314,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
-		if(g_AgentBasedAssignmentFlag==0) // OD based
-			SimuOutput.AvgUEGap = g_CurrentGapValue / TotalNumOfVehiclesGenerated;
-		else  // agent based, we record gaps only for vehicles switched (after they find the paths)
+			//agent based, we record gaps only for vehicles switched (after they find the paths)
 			SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesSwitched);
 
 	}
@@ -1339,7 +1350,14 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 			g_SummaryStatFile.SetFieldName ("Avg volume error");
 
 		}
-		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
+		cout << "Avg Gap: " << SimuOutput.AvgUEGap ;
+	
+		if(g_ODEstimationFlag == 1)
+		{
+		cout << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError;
+		}
+
+		cout << endl;
 
 		g_SummaryStatFile.WriteHeader ();
 
