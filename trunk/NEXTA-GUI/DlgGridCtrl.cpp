@@ -73,7 +73,7 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 
 static _TCHAR *_gColumnTrainLabel[7] =
 {
-	_T("No."), _T("Demand Type No."), _T("Demand Type"), _T("Start Time (min)"),
+	_T("No."), _T("File Type."), _T("Demand Type"), _T("Start Time (min)"),
 	_T("End Time (min)"), _T("Subtotal Demand Volume"), _T("File Name")};
 
 	LV_COLUMN lvc;

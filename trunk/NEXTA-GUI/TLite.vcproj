@@ -803,6 +803,30 @@
 					RelativePath=".\Data-Interface\ogr-interface.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\Data-Interface\XLAutomation.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLAutomation.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLEzAutomation.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLEzAutomation.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLTestDataSource.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Data-Interface\XLTestDataSource.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="Cross_resolution"

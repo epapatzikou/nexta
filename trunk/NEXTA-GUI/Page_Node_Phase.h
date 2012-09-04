@@ -28,7 +28,7 @@ public:
 
 	int m_NumberOfPhases;
 // Dialog Data
-	enum { IDD = IDD_DIALOG_NODE_PHASE };
+	enum { IDD = IDD_DIALOG_NODE_PHASE2 };
 
 	CGridListCtrlEx m_ListCtrl;
 	

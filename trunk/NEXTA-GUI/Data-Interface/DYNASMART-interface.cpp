@@ -422,7 +422,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	ReadSensorData(directory+"input_sensor.csv");
 
 	// read link xy data
-	int ReadLinkXYFile = g_GetPrivateProfileInt("display","read_link_x_y",0,ProjectFileName);
+	int ReadLinkXYFile = g_GetPrivateProfileInt("display","read_link_x_y",1,ProjectFileName);
 
 	if(ReadLinkXYFile) 
 	{
@@ -487,6 +487,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int zone_id = g_read_integer(pZoneXY);
 			m_ZoneMap [zone_id].m_ZoneTAZ = zone_id;
 
+			m_ZoneMap [zone_id].m_ShapePoints .clear();
+
 			int number_of_feature_points = g_read_integer(pZoneXY);
 
 			for(int f = 0; f < number_of_feature_points; f++)
@@ -542,7 +544,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
 				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-
+				m_ZoneMap [zone_number].m_ShapePoints .push_back (m_NodeIDMap [node_id ] ->pt);
 			}
 
 
@@ -805,7 +807,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				DTANode*  pNode = m_NodeIDMap[m_NodeNametoIDMap[node_name]];
 				pNode->m_ControlType  = g_read_integer(st);
 				pNode->m_NumberofPhases = g_read_integer(st);
-				pNode->m_CycleLength = g_read_integer(st);
+				pNode->m_CycleLengthInSecond = g_read_integer(st);
 
 		}
 
@@ -894,15 +896,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	SetStatusText(str_running_time);
 
-	ReadGPSData("2010-5-2.csv");
-	ReadGPSData("2010-5-3.csv");
-	ReadGPSData("2010-5-4.csv");
-	ReadGPSData("2010-5-5.csv");
-	ReadGPSData("2010-5-6.csv");
-	ReadGPSData("2010-5-7.csv");
-	ReadGPSData("2010-5-8.csv");
-
-	m_SimulationLinkMOEDataLoadingStatus.Format("Load %d GPS probe records.", m_VehicleIDMap.size());
+//	m_SimulationLinkMOEDataLoadingStatus.Format("Load %d GPS probe records.", m_VehicleIDMap.size());
 
 
 	// read system.dat

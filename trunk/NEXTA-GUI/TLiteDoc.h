@@ -125,6 +125,11 @@ public:
 	TotalEmissions = 0;
 	}
 
+	float GetAvgTravelTime()
+	{
+	return TotalTravelTime/max(1,TotalVehicleSize);
+	}
+
 	int	  Origin;
 	int	  Destination;
 	int   NodeNumberSum;
@@ -158,9 +163,16 @@ class Movement3Node
 {
 public:
 	int TotalVehicleSize;
+	int Phase1;
+	int PermPhase1;
+	int DetectPhase1;
+
 	Movement3Node()
 	{
 	TotalVehicleSize  = 0;
+	Phase1 = 0;
+	PermPhase1 = 0;
+	DetectPhase1 = 0;
 	}
 
 };
@@ -309,10 +321,12 @@ public:
 
 	void OpenWarningLogFile(CString directory);
 	// two basic input
+	bool ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
 	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadGPSDataFile(LPCTSTR lpszFileName);   // for road network
 
 	bool ReadRailLinkTypeCSVFile(LPCTSTR lpszFileName); 
 	bool ReadRailNodeCSVFile(LPCTSTR lpszFileName);   // for rail network
@@ -537,7 +551,33 @@ void SetStatusText(CString StatusText);
 	
 		return -1;
 	}
+
+		int GetZoneIDFromShapePoints(GDPoint pt)
+	{
+		// for all zones
+		std::map<int, DTAZone>	:: const_iterator itr;
+          double min_distance = 999999;
+		  int ZoneID = -1;
+		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); itr++)
+		{
+			DTAZone Zone = itr->second;
+		
+               float distance = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt, Zone.GetCenter());  // go through each GPS location point
+               if(distance < min_distance)
+               {
+                  min_distance = distance;
+				  ZoneID = itr->first;
+               }
+		}
+	
+		return ZoneID;
+	}
+
 	std::list<DTAVehicle*>	m_VehicleSet;
+	std::map<long, DTAVehicle*> m_VehicleIDMap;
+
+	std::list<DTAVehicle*>	m_ProbeSet;
+	std::map<long, DTAVehicle*> m_ProbeMap;
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
 	
@@ -547,7 +587,6 @@ void SetStatusText(CString StatusText);
 	bool CTLiteDoc::WriteSubareaFiles();
 
 	std::map<long, DTALink*> m_LinkNoMap;
-	std::map<long, DTAVehicle*> m_VehicleIDMap;
 
 
 	bool m_EmissionDataFlag;
@@ -830,11 +869,16 @@ void SetStatusText(CString StatusText);
 		}
 
 		// 
-		//resort link id;
+		//resort link no;
+
+		m_LinkNotoLinkMap.clear();
+
+		m_LinkNoMap.clear();
 		int i= 0;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++, i++)
 		{
 		(*iLink)->m_LinkNo = i;
+		m_LinkNotoLinkMap[i] = (*iLink);
 		m_LinkNoMap[i] = (*iLink);
 		}
 
@@ -915,6 +959,8 @@ void SetStatusText(CString StatusText);
 
 	std::map<CString, PathStatistics> m_ODMatrixMap;
 
+	std::map<CString, PathStatistics> m_ODProbeMatrixMap;
+
 	std::map<CString, Movement3Node> m_Movement3NodeMap;  // turnning movement count
 	
 
@@ -927,6 +973,7 @@ void SetStatusText(CString StatusText);
 	CString m_GISMessage;
 
 	void ExportSynchroVersion6Files();
+	void ExportQEMData(int NodeNumber);
 	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
 	CString m_Synchro_ProjectDirectory;
 
@@ -1281,6 +1328,14 @@ public:
 		afx_msg void OnToolsCheckingfeasibility();
 		afx_msg void OnToolsGpsmapmatching();
 		afx_msg void OnImportSynchroutdfcsvfiles();
+		afx_msg void OnProjectEditmoesettings();
+		afx_msg void OnProjectMultiScenarioResults();
+		afx_msg void OnProject12();
+		afx_msg void OnViewMovementMoe();
+		afx_msg void OnProjectTimeDependentLinkMoe();
+		afx_msg void OnViewOdmeResult();
+		afx_msg void OnProjectViewAgentMoe();
+		afx_msg void OnProjectOdmatrixestimationinput();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

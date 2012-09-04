@@ -318,8 +318,7 @@ void CTLiteDoc::OnExportAms()
 
 void CTLiteDoc::RunExcelAutomation() 
 {
-
-
+	ExportQEMData(0);
 }
 #ifndef _WIN64
 void AddGISField(std::vector<OGRFieldDefn> &OGRFieldVector, CString field_name,  OGRFieldType type)

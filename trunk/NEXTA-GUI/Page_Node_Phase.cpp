@@ -146,16 +146,16 @@ BOOL CPage_Node_Phase::OnInitDialog()
 	//Add Rows
 	ReadPhaseData(-1);
 	FillPhaseData();
-	CString str;
-	str.Format("%d",m_nCycleLength);
-	GetDlgItem(IDC_EDIT_CYCLE_LENGTH)->SetWindowTextA(str);
-	CComboBox * pCombo = (CComboBox *)GetDlgItem(IDC_COMBO_SC);
-	for(int i=1001;i<=1003;i++)
-	{
-	   str.Format("%d",i);
-	   pCombo->AddString(str); 
-	}
-	pCombo->SetCurSel(0);
+	//CString str;
+	//str.Format("%d",m_nCycleLength);
+	//GetDlgItem(IDC_EDIT_CYCLE_LENGTH)->SetWindowTextA(str);
+	//CComboBox * pCombo = (CComboBox *)GetDlgItem(IDC_COMBO_SC);
+	//for(int i=1001;i<=1003;i++)
+	//{
+	//   str.Format("%d",i);
+	//   pCombo->AddString(str); 
+	//}
+	//pCombo->SetCurSel(0);
 
 	CButton* pBtnNew = (CButton*)GetDlgItem(IDC_BUTTON_NEW_PHASE);
 	pBtnNew->EnableWindow(FALSE);
@@ -180,8 +180,8 @@ void CPage_Node_Phase::OnPaint()
 	m_PlotRect.right -= 50;
 
 	DrawBackground(&dc);
-	DrawPhase(&dc);
-/*
+	// DrawPhase(&dc); // this is code from Peng
+
 	DrawMovements(&dc,m_PlotRect,-1);
 
 	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
@@ -209,7 +209,7 @@ void CPage_Node_Phase::OnPaint()
 		DrawPhaseMovements(&dc,PlotPhaseRect, i);
 
 	}
-*/
+
 }
 
 void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentPhaseIndex = -1)

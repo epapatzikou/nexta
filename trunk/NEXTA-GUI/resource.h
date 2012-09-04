@@ -115,6 +115,7 @@
 #define IDD_DIALOG_NODE_LANE1           219
 #define IDD_DIALOG_NODE_LANE2           220
 #define IDD_DIALOG_Demand_Type          221
+#define IDD_DIALOG_NODE_PHASE2          222
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -851,14 +852,29 @@
 #define ID_NODE_DECREASENODETEXTSIZE    33440
 #define ID_TOOLS_CHECKINGFEASIBILITY    33441
 #define ID_TOOLS_GPSMAPMATCHING         33442
-#define ID_BUTTON33444                  33444
+#define ID_PROJECT_EDITMOESETTINGS      33445
+#define ID_PROJECT_7                    33446
+#define ID_PROJECT_Multi_Scenario_Results 33447
+#define ID_PROJECT_3                    33448
+#define ID_PROJECT_11                   33449
+#define ID_PROJECT_12                   33450
+#define ID_MOE_7                        33451
+#define ID_VIEW_MOVEMENT_MOE            33452
+#define ID_PROJECT_13                   33453
+#define ID_PROJECT_                     33454
+#define ID_PROJECT_TIME_DEPENDENT_LINK_MOE 33455
+#define ID_PROJECT_14                   33456
+#define ID_VIEW_ODME_Result             33457
+#define ID_PROJECT_15                   33458
+#define ID_PROJECT_VIEW_AGENT_MOE       33459
+#define ID_PROJECT_ODMATRIXESTIMATIONINPUT 33460
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        222
-#define _APS_NEXT_COMMAND_VALUE         33445
+#define _APS_NEXT_COMMAND_VALUE         33461
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

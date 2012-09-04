@@ -488,6 +488,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
 			m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
+
 			m_LinkNotoLinkMap[i] = pLink;
 
 			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
