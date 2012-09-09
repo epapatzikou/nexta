@@ -170,9 +170,9 @@ public:
 	Movement3Node()
 	{
 	TotalVehicleSize  = 0;
-	Phase1 = 0;
-	PermPhase1 = 0;
-	DetectPhase1 = 0;
+	Phase1 = -1;  // default value
+	PermPhase1 = -1;
+	DetectPhase1 = -1;
 	}
 
 };
@@ -379,6 +379,7 @@ public:
 	bool ReadTransitFiles(CString ProjectFolder);   // for road network
 
 	void OffsetLink();
+	bool m_bBezierCurveFlag;
 
 
 	void GenerateOffsetLinkBand();
@@ -669,7 +670,7 @@ void SetStatusText(CString StatusText);
 	int m_ControlType_2wayStopSign;
 	int m_ControlType_4wayStopSign;
 	int m_ControlType_PretimedSignal;
-	int m_ControlType_AcuatedSignal;
+	int m_ControlType_actuatedSignal;
 	int m_ControlType_Roundabout;
 
 
@@ -951,7 +952,7 @@ void SetStatusText(CString StatusText);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
-	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode);
+	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkDiffLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
@@ -1336,6 +1337,7 @@ public:
 		afx_msg void OnViewOdmeResult();
 		afx_msg void OnProjectViewAgentMoe();
 		afx_msg void OnProjectOdmatrixestimationinput();
+		afx_msg void OnProjectInputsensordataforodme();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

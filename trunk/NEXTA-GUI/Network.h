@@ -841,6 +841,14 @@ public:
 		m_tobeRemoved = false;
 		m_bSubareaFlag = 0;  // when the associated link is removed as it is outside the boundary, then we mark its from and t nodes as subarea boundary node 
 		m_CentroidUpdateFlag = 0;
+
+		for(int si = 0; si <10; si++)
+			m_SignalPhaseNo[si] = 0;
+
+		m_SignalCycleLength = 0;
+
+		m_bQEM_optimized = false;
+
 	};
 
 
@@ -897,6 +905,12 @@ public:
 
 	// DTA_NodeMovementSet m_MovementSet;
 
+	// signal data
+
+	int m_SignalPhaseNo[10];//optimized by QEM
+	int m_SignalCycleLength; //optimized by QEM
+	bool m_bQEM_optimized;
+	
 };
 
 class DTAPoint
@@ -1191,8 +1205,10 @@ public:
 		m_NumberOfMarkedVehicles = 0;
 		m_AVISensorFlag = false;
 		m_LinkID = 0;
-		green_height = 0;
-		red_height = 0;
+		green_height = 10;
+		red_height = 100;
+		blue_height = 300;
+		yellow_height = 1000;
 
 		m_LayerNo = 0;
 		m_OrgDir = 1;
@@ -1606,6 +1622,9 @@ void AdjustLinkEndpointsWithSetBack()
 
 	int green_height;  // for 3D KML
 	int red_height;
+	int blue_height;
+	int yellow_height;
+
 
 	float m_Kjam;
 	float m_AADT_conversion_factor;
@@ -1715,6 +1734,45 @@ void AdjustLinkEndpointsWithSetBack()
 		}
 	}
 
+		float GetAvgLinkVolume(int start_time, int end_time)
+	{
+
+		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticLinkVolume;
+
+		float total_volume = 0;
+		for(int t= start_time ; t< end_time; t++)
+		{
+		
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			total_volume += m_LinkMOEAry[t].ObsLinkFlow;
+		}
+		return total_volume/max(1, end_time-start_time);
+	}
+
+
+		float GetAvgLinkSpeed(int start_time, int end_time)
+	{
+
+		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_StaticSpeed;
+
+		float total_Speed = 0;
+		for(int t= start_time ; t< end_time; t++)
+		{
+		
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			total_Speed += m_LinkMOEAry[t].ObsSpeed;
+		}
+		return total_Speed/max(1, end_time-start_time);
+	}
+
+		float GetAvgLinkTravelTime(int start_time, int end_time)
+	{
+
+		//to do
+		return 0;
+	}
 	float GetObsLaneVolumeCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())

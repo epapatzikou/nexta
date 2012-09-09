@@ -1965,9 +1965,7 @@ BEGIN
         BEGIN
             MENUITEM "Save Network as KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Construct and Export Signal Data...", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
-            MENUITEM "Upload Link Data to Google Fusion Table", ID_FILE_UPLOADLINKDATATOGOOGLEFUSIONTABLE
             MENUITEM "Generate Zone-to-zone Travel Time Matrix", ID_EXPORT_GENERATEZONE
-            MENUITEM "Create VISSIM files",         ID_EXPORT_CREATEVISSIMFILES
         END
         MENUITEM SEPARATOR
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
@@ -2052,10 +2050,6 @@ BEGIN
         MENUITEM "Delete Subarea",              ID_SUBAREA_DELETESUBAREA
         MENUITEM SEPARATOR
         MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)", ID_SEARCH_FINDLINK
-        MENUITEM SEPARATOR
-        MENUITEM "Create Default Junctions",    ID_EDIT_CREATEDEFAULTJUNCTION
-        MENUITEM "Load Junctions",              ID_EDIT_LOADJUNCTIONS
-        MENUITEM "Save Junctions",              ID_EDIT_SAVEJUNCTIONS
     END
     POPUP "Project"
     BEGIN
@@ -2077,8 +2071,6 @@ BEGIN
         MENUITEM "13. Time-dependent Link MOE", ID_PROJECT_TIME_DEPENDENT_LINK_MOE
         MENUITEM "14. Agent MOE",               ID_PROJECT_VIEW_AGENT_MOE
         MENUITEM SEPARATOR
-        MENUITEM "OD Matrix Estimation Input",  ID_PROJECT_ODMATRIXESTIMATIONINPUT
-        MENUITEM "15. OD Matrix Estimation Result", ID_VIEW_ODME_Result
     END
     POPUP "MOE"
     BEGIN
@@ -2092,10 +2084,14 @@ BEGIN
     BEGIN
         MENUITEM "Subarea Cut",                 ID_EDIT_DELETELINKSOUTSIDESUBAREA
         MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
-        MENUITEM "GPS Map Matching",            ID_TOOLS_GPSMAPMATCHING
+        POPUP "OD Demand Estimation"
+        BEGIN
+            MENUITEM "1. OD Matrix Estimation Settings", ID_PROJECT_ODMATRIXESTIMATIONINPUT
+            MENUITEM "2. Input Sensor Data for ODME", ID_PROJECT_INPUTSENSORDATAFORODME
+            MENUITEM "3. OD Matrix Estimation Result", ID_VIEW_ODME_Result
+        END
         MENUITEM SEPARATOR
         MENUITEM "View Path MOE List",          ID_SHOW_SHOWPATHMOE
-        MENUITEM "OD Demand Estimation",        ID_RESEARCHTOOLS_ODDEMANDESTIMATION
         MENUITEM "NGSIM Data",                  ID_IMPORT_NGSIM_FILE
         POPUP "NGSIM  Menu"
         BEGIN
@@ -2117,12 +2113,10 @@ BEGIN
             MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
         MENUITEM "View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+        MENUITEM "GPS Map Matching",            ID_TOOLS_GPSMAPMATCHING
     END
     POPUP "&Window"
     BEGIN
-        MENUITEM "Show 3D View",                ID_WINDOW_NEW3DVIEW
-        MENUITEM "Show 2D View",                ID_WINDOW_SHOW2DVIEW
-        MENUITEM SEPARATOR
         MENUITEM "&New Window",                 ID_WINDOW_NEW
         MENUITEM "&Cascade",                    ID_WINDOW_CASCADE
         MENUITEM "&Tile Horizontally",          ID_WINDOW_TILE_HORZ

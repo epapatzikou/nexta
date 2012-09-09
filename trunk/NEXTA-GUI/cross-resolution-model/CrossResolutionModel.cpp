@@ -32,9 +32,9 @@
 #include "..//TLiteDoc.h"
 #ifndef _WIN64
 #include "..//Data-Interface//include//ogrsf_frmts.h"
+#endif 
 #include "..//Data-Interface//XLTestDataSource.h"
 #include "..//Data-Interface//XLEzAutomation.h"
-#endif 
 #include "..//MainFrm.h"
 
 #include "SignalNode.h"
@@ -536,7 +536,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
 	{  // for current node
 
-		//		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
+		//		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_actuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			signal_count ++;
 			// generate movement set
@@ -1150,42 +1150,42 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				for(j=0; j<LaneColumnSize;j++)
 				{
 
-					float text = m_MovementVector[m].DataMatrix[i][j].m_text;
+					float text = m_MovementVector[m].DataMatrix[i][j].m_text; // default value
 					//find movement, overwrite data
 					if( lane_row_name_str[i].find("Phase1")!= string::npos || lane_row_name_str[i].find("PermPhase1")!= string::npos ||  lane_row_name_str[i].find("DetectPhase1")!= string::npos )
 					{
-								int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
-								int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+						int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+						int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
 
-								int FromNodeNumber = 0;
-								int DestNodeNumber = 0;
-								int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeOriginalNumber;
+						int FromNodeNumber = 0;
+						int DestNodeNumber = 0;
+						int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeOriginalNumber;
 
-								if(FromNodeID > 0)
-									FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeOriginalNumber ;
+						if(FromNodeID > 0)
+							FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeOriginalNumber ;
 
-								if(DestNodeID > 0)
-									DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeOriginalNumber;
+						if(DestNodeID > 0)
+							DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeOriginalNumber;
 
-								CString movement_label;
-								movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+						CString movement_label;
+						movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
 
-							if(FromNodeNumber >0 && m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
+						if(FromNodeNumber >0 && m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
+						{
+							if (lane_row_name_str[i].find("Phase1")!= string::npos && m_Movement3NodeMap[movement_label].Phase1 != -1)  // has been set/ initialized
 							{
-								if (lane_row_name_str[i].find("Phase1")!= string::npos && m_Movement3NodeMap[movement_label].Phase1 !=0)
-								{
-								  text = m_Movement3NodeMap[movement_label].Phase1;
-								}
-								if (lane_row_name_str[i].find("PermPhase1")!= string::npos && m_Movement3NodeMap[movement_label].PermPhase1!=0)
-								{
-								  text = m_Movement3NodeMap[movement_label].PermPhase1;
-								}
-
-								if (lane_row_name_str[i].find("DetectPhase1")!= string::npos && m_Movement3NodeMap[movement_label].DetectPhase1!=0)
-								{
-								   text = m_Movement3NodeMap[movement_label].DetectPhase1;
-								}
+								text = m_Movement3NodeMap[movement_label].Phase1;
 							}
+							if (lane_row_name_str[i].find("PermPhase1")!= string::npos && m_Movement3NodeMap[movement_label].PermPhase1!= -1)
+							{
+								text = m_Movement3NodeMap[movement_label].PermPhase1;
+							}
+
+							if (lane_row_name_str[i].find("DetectPhase1")!= string::npos && m_Movement3NodeMap[movement_label].DetectPhase1!=-1)
+							{
+								text = m_Movement3NodeMap[movement_label].DetectPhase1;
+							}
+						}
 					}
 
 					if (text >= 0)
@@ -1445,11 +1445,23 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 			fprintf(st, "%i,%i,", plan.PlanID, m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
 			DTA_Timing timing;
 			timing.initial(m_PhaseVector[p], plan.DataAry[TIMING_Cycle_Length]);
+		if( m_NodeIDMap[m_PhaseVector[p].CurrentNodeID] ->m_bQEM_optimized == false)
+		{
 			for(i=0; i<8; i++)
 			{
 				fprintf(st, "%i,", timing.DataAry[i]);
 			}
 			fprintf(st, "%i,%i,%i,%s,\n", timing.Cycle, timing.OFF, timing.LD, timing.REF.c_str());
+		}else
+		{
+			for(i=0; i<8; i++)
+			{
+				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID] -> m_SignalPhaseNo[1+i]);
+			}
+			fprintf(st, "%i,%i,%i,%i,\n", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID] ->m_SignalCycleLength,0,0,0);
+		
+		
+		}
 		}
 		fprintf(st,"\n");
 
@@ -1466,7 +1478,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	float default_hourly_volume_conversion_factor = g_GetPrivateProfileFloat("synchro_conversion", "default_hourly_volume_conversion_factor", 1, DTASettingsPath);	
 
 
-	default_hourly_volume_conversion_factor = 0.33333f;
+	default_hourly_volume_conversion_factor = 1;  // to do: allow users to change conversion factor
 
 	// write volume file
 	fopen_s(&st,m_Synchro_ProjectDirectory+"Volume.csv","w");
@@ -1617,169 +1629,340 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 	CString QEM2_Excel_File;
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	QEM2_Excel_File.Format ("%s//QEM2.xls",pMainFrame->m_CurrentDirectory);
+	QEM2_Excel_File.Format ("%s//QEM_SIG.xls",pMainFrame->m_CurrentDirectory);
+	if(XL.OpenExcelFile(QEM2_Excel_File)==false)
+	{
+	CString message; 
+	message.Format ("File %s cannot be found.",QEM2_Excel_File);
+	AfxMessageBox(message);
+	}
 
-	XL.OpenExcelFile(QEM2_Excel_File);
+	CString QEM2_CSV_LOG_File;
+	QEM2_CSV_LOG_File.Format ("%s\\QEM_log.csv",pMainFrame->m_CurrentDirectory);
+
+	FILE* st = NULL;
+	fopen_s(&st,QEM2_CSV_LOG_File,"w");
+	if(st==NULL)
+	{
+
+		AfxMessageBox("File QEM.csv cannot be opened. Please check if the file is locked by Excel.");
+		return;
+	}
 
 
-				const int LaneColumnSize = 32;
-				const int LaneRowSize = 30;
-				string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};		
+
+	const int LaneColumnSize = 32;
+	const int LaneRowSize = 30;
+	int volume_row_number = 4;
+	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};		
+	string lane_row_name_str[LaneRowSize] = {"Up Node","Dest Node","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 
-				int movement_size = m_MovementVector.size();
 
-				for (int m=0; m<movement_size;m++)
+	int movement_size = m_MovementVector.size();
+
+	for (int m=0; m<movement_size;m++)
+	{
+		int node_number = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+
+		int node_id = m_NodeNametoIDMap[node_number];
+
+
+
+		if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_actuatedSignal )  //this movement vector is the same as the current node
+		{
+			// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
+
+			int i,j;
+
+			std::vector<CString> movement_label_vector;
+			// log csv file title
+			fprintf(st, "Lane Group Data \n");
+			fprintf(st, "RECORDNAME,INTID,");  // write titles of fields
+			for(j=0; j<LaneColumnSize;j++)
+				fprintf(st, "%s,", lane_Column_name_str[j].c_str());
+			fprintf(st,"\n");
+
+			for(i=0; i<2; i++)  // upstream node, destination node
+			{
+				fprintf(st, "%s,", lane_row_name_str[i].c_str());
+				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+
+				for(j=0; j<LaneColumnSize;j++)
 				{
+					int UpstreamNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
 
-					int node_number = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
-
-					
-					int node_id = m_NodeNametoIDMap[node_number];
-
-					int i,j;
-
-					if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_AcuatedSignal )  //this movement vector is the same as the current node
+					if(UpstreamNodeID >=0)
 					{
-						// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
-						for(j=0; j<LaneColumnSize;j++)
+
+						int NodeID = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
+						int NodeNumber =0;
+
+						if(NodeID>=0)  //this movement has been initialized
 						{
-							int UpstreamNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
-
-							if(UpstreamNodeID >=0)
-							{
-
-								for(i=0; i<2; i++)
-								{
-
-									int NodeID = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
-
-									if(NodeID>=0)  //this movement has been initialized
-									{
-										XL.SetCellValue(3+j,2+i,m_NodeIDMap[NodeID]->m_NodeNumber);
-										TRACE("Node Label, %d\n",m_NodeIDMap[NodeID]->m_NodeNumber);
-									}else
-									{
-										XL.SetCellValue(3+j,2+i,0);
-								
-									}
-								}
-
-								//// # of lanes, shared lanes... 
-								for(i=2; i<9; i++)
-								{
-
-										int text = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
-										if (text >= 0)
-											XL.SetCellValue(3+j,2+i,text);
-										else
-											XL.SetCellValue(3+j,2+i,0);
-
-								}
-								// movement volume
-
-								int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
-								int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
-
-								int FromNodeNumber = 0;
-								int DestNodeNumber = 0;
-								int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
-
-								if(FromNodeID > 0)
-									FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
-
-								if(DestNodeID > 0)
-									DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
-
-								CString movement_label;
-								movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
-
-								int count = 0;
-
-								if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
-								{
-									count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
-									XL.SetCellValue(3+j,11,count);
-
-									TRACE("count = %d\n",count);
-
-								}else
-								{
-									XL.SetCellValue(3+j,11,0);								
-								}
-							} // if upstream node id >=0
-						} // for each column/movement
-
-						//stage 2: fetch data
-						for(j=0; j<LaneColumnSize;j++)
-						{
-								int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
-								int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
-
-								int FromNodeNumber = 0;
-								int DestNodeNumber = 0;
-								int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
-
-								if(FromNodeID > 0)
-									FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
-
-								if(DestNodeID > 0)
-									DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
-
-								CString movement_label;
-								movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
-
-							if(FromNodeNumber >0)
-							{
-								CString szValue;
-								szValue = XL.GetCellValue(3+j, 14);
-								m_Movement3NodeMap[movement_label].Phase1 = atoi(szValue);
-
-								szValue = XL.GetCellValue(3+j, 15);
-								m_Movement3NodeMap[movement_label].PermPhase1  = atoi(szValue);
-
-								szValue = XL.GetCellValue(3+j, 16);
-								m_Movement3NodeMap[movement_label].DetectPhase1   = atoi(szValue);
-
-								TRACE("node %d, movement %s: phase %d, perm_phase %d, detect_phase %d\n",NodeNumber, movement_label,m_Movement3NodeMap[movement_label].Phase1, m_Movement3NodeMap[movement_label].PermPhase1 , m_Movement3NodeMap[movement_label].DetectPhase1 );
-							}
-
+							NodeNumber = m_NodeIDMap[NodeID]->m_NodeNumber;
 						}
+						XL.SetCellValue(3+j,2+i,NodeNumber);
+						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
 
+					}else
+					{
+						int NodeNumber =0;
+						XL.SetCellValue(3+j,2+i,NodeNumber);
+						fprintf(st, "%i,",NodeNumber);  
+
+					}
+				}
+				fprintf(st,"\n");
+			}
+
+			///	TurnVolume			
+			fprintf(st, "TurnVolume,");
+			fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+
+			for(j=0; j<LaneColumnSize;j++)
+			{
+
+				int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+				int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+
+				int FromNodeNumber = 0;
+				int DestNodeNumber = 0;
+				int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+
+				if(FromNodeID > 0)
+					FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+
+				if(DestNodeID > 0)
+					DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
+
+				CString movement_label;
+				movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+
+				movement_label_vector.push_back(movement_label);
+
+				int count = 0;
+
+
+				if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
+				{
+					count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
+					XL.SetCellValue(3+j,volume_row_number,count);
+					fprintf(st, "%i,",count);
+					TRACE("count = %d\n",count);
+
+				}else
+				{
+					XL.SetCellValue(3+j,volume_row_number,0);								
+					fprintf(st, "0,");
+				}
+
+				// if upstream node id >=0
+			} // for each column/movement
+
+
+			fprintf(st,"\n");
+
+			//// # of lanes, shared lanes... 
+			// starting row number 5, 
+			for(i=2; i<9; i++)
+			{
+				fprintf(st, "%s,", lane_row_name_str[i].c_str());
+				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
+
+				for(j=0; j<LaneColumnSize;j++)
+				{
+					int text = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
+					if (text >= 0)
+					{
+						XL.SetCellValue(3+j,3+i,text);
+						fprintf(st, "%d,",text);
+					}
+					else
+					{
+						XL.SetCellValue(3+j,3+i,0);
+						fprintf(st, "0,");
 
 					}
 
-				}  // for each movement vector record
+				}
+				fprintf(st,"\n");
+			}
+			// movement volume
+
+			//stage 2: fetch data
+			for(j=0; j<LaneColumnSize;j++)
+			{
+				int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+				int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+
+				int FromNodeNumber = 0;
+				int DestNodeNumber = 0;
+				int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+
+				if(FromNodeID > 0)
+					FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+
+				if(DestNodeID > 0)
+					DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
+
+				CString movement_label;
+				movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+
+				if(FromNodeNumber >0)
+				{
+					CString szValue;
+					szValue = XL.GetCellValue(3+j, 14);
+					m_Movement3NodeMap[movement_label].Phase1 = atoi(szValue);
+
+					szValue = XL.GetCellValue(3+j, 15);
+					m_Movement3NodeMap[movement_label].PermPhase1  = atoi(szValue);
+
+					szValue = XL.GetCellValue(3+j, 16);
+					m_Movement3NodeMap[movement_label].DetectPhase1   = atoi(szValue);
+
+					TRACE("node %d, movement %s: phase %d, perm_phase %d, detect_phase %d\n",NodeNumber, movement_label,m_Movement3NodeMap[movement_label].Phase1, m_Movement3NodeMap[movement_label].PermPhase1 , m_Movement3NodeMap[movement_label].DetectPhase1 );
+				}
+			}
+
+
+			CString szValue;
+			for(int col = 0; col < 8; col++)
+			{
+			szValue = XL.GetCellValue(2+col, 41);
+			m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]  = atoi(szValue);
+			}
+
+			szValue = XL.GetCellValue(10, 41);
+			m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength  = atoi(szValue);
+
+			m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_bQEM_optimized = true;
+
+			//log message
+			for(int i=0; i<3; i++) // 3 lines
+			{
+
+				if(i==0)
+				{
+					fprintf(st, "Phase1,");
+				}
+
+				if(i==1)
+				{
+					fprintf(st, "PermPhase1,");
+				}
+				if(i==2)
+				{
+					fprintf(st, "DetectPhase1,");
+				}
+
+				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+
+				for(j=0; j<LaneColumnSize;j++)
+				{
+					int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+					int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+
+					int FromNodeNumber = 0;
+					int DestNodeNumber = 0;
+					int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+
+					if(FromNodeID > 0)
+						FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+
+					if(DestNodeID > 0)
+						DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
+
+					CString movement_label;
+					movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+
+					if(FromNodeNumber >0)
+					{
+						if(i==0)
+						{
+							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].Phase1);
+						}
+
+						if(i==1)
+						{
+							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].PermPhase1);
+						}
+						if(i==2)
+						{
+							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].DetectPhase1);
+						}
+					}else
+					{
+						fprintf(st, ",");
+
+					}
+				}
+
+				fprintf(st,"\n");
+			}
+
+			fprintf(st,"INTID,");
+
+			int col;
+
+			for(col = 0; col < 8; col++)
+			{
+			CString str;
+			str.Format ("S%d,",col+1);
+			fprintf(st,str);
+			}
+
+			fprintf(st,"CL,OFF,LD,REF,\n");
+
+			fprintf(st,",");
+
+			for(int col = 0; col < 8; col++)
+			{
+			fprintf(st,"%d,",m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]);
+			}
+
+			fprintf(st,"%d,",m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength);
+
+			fprintf(st,"\n");
+	
+			// end of log message
+
+		}  // for each movement vector record
+	}
 
 	//Close Excel when done (or leave it open by deleting the
 	//next line):
+	//Before closing server in your application disable alerts by calling:
 	XL.ReleaseExcel();
 
+	if(st!=NULL)
+		fclose(st);
 	// 
 
 	CString directory;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
-	FILE* st;
 	fopen_s(&st,directory+"ouput_movement_phasing.csv","w");
 	if(st!=NULL)
 	{
-	fprintf(st,"movement_index,three-node key,count\n");
+		fprintf(st,"movement_index,three-node key,count\n");
 
 		int movement_index = 1;
 		std::map<CString, Movement3Node> ::const_iterator itr;
 		for (itr = m_Movement3NodeMap.begin(); itr != m_Movement3NodeMap.end(); itr++)
 		{
-				fprintf(st, "%d,%s,%d,phase,%d,perm_phase,%d,detect_phase,%d\n", 
-					movement_index++,
-					(*itr).first, 
-					(*itr).second.TotalVehicleSize,
-					(*itr).second.Phase1, (*itr).second.PermPhase1 , (*itr).second.DetectPhase1
+			fprintf(st, "%d,%s,%d,phase,%d,perm_phase,%d,detect_phase,%d\n", 
+				movement_index++,
+				(*itr).first, 
+				(*itr).second.TotalVehicleSize,
+				(*itr).second.Phase1, (*itr).second.PermPhase1 , (*itr).second.DetectPhase1
 
-					);
+				);
 
 		}
 		fclose(st);
 	}
+
+	AfxMessageBox("Excel Automation Done!", MB_ICONINFORMATION);
 
 }

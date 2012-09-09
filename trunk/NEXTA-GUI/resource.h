@@ -868,13 +868,14 @@
 #define ID_PROJECT_15                   33458
 #define ID_PROJECT_VIEW_AGENT_MOE       33459
 #define ID_PROJECT_ODMATRIXESTIMATIONINPUT 33460
+#define ID_PROJECT_INPUTSENSORDATAFORODME 33461
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        222
-#define _APS_NEXT_COMMAND_VALUE         33461
+#define _APS_NEXT_COMMAND_VALUE         33462
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

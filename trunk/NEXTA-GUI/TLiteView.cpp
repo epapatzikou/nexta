@@ -174,7 +174,7 @@ CPen g_TransitPen(PS_SOLID,1,RGB(0,255,255));
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
-CPen g_PenSelectColor(PS_SOLID,3,RGB(255,0,0));
+CPen g_PenSelectColor(PS_SOLID,5,RGB(9,249,17));
 
 CPen g_PenExternalDColor(PS_SOLID,2,RGB(173,255,047)); 
 CPen g_PenExternalOColor(PS_SOLID,2,RGB(255,165,0));
@@ -1199,7 +1199,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				pDC->SelectObject(&g_PenStopSignNodeColor);
 			}
 			if((*iNode)->m_ControlType == pDoc->m_ControlType_PretimedSignal || 
-				(*iNode)->m_ControlType == pDoc->m_ControlType_AcuatedSignal)
+				(*iNode)->m_ControlType == pDoc->m_ControlType_actuatedSignal)
 			{
 				pDC->SelectObject(&g_PenSignalNodeColor);
 			}
@@ -1257,6 +1257,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 
 				feet_size = pDoc->m_UnitFeet*m_Resolution;
+
+				if((*iNode)->m_NodeID == pDoc->m_SelectedNodeID)
+				{
+						feet_size = max(50,min(100,feet_size*3));  // 
+			
+				}
+
 
 				/// starting drawing nodes in normal mode
 
@@ -1957,7 +1964,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_2wayStopSign) element.Data.Format ("2 Way Stop" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_4wayStopSign) element.Data.Format ("4 Way Stop" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_PretimedSignal) element.Data.Format ("Pretimed Signal" );
-			if(pNode->m_ControlType ==  pDoc->m_ControlType_AcuatedSignal) element.Data.Format ("Acuated Signal" );
+			if(pNode->m_ControlType ==  pDoc->m_ControlType_actuatedSignal) element.Data.Format ("actuated Signal" );
 			if(pNode->m_ControlType ==  pDoc->m_ControlType_Roundabout) element.Data.Format ("Roundabout" );
 
 			pMainFrame->m_FeatureInfoVector.push_back (element);
@@ -3963,7 +3970,7 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal || 
-	pNode->m_ControlType == pDoc->m_ControlType_AcuatedSignal)  // traffic signal control
+	pNode->m_ControlType == pDoc->m_ControlType_actuatedSignal)  // traffic signal control
 	{
 		pDC->Rectangle (point.x - node_size, point.y + node_size,
 			point.x + node_size, point.y - node_size);

@@ -75,6 +75,9 @@ BOOL CXLEzAutomation::SetCellValue(int nColumn, int nRow, CString szValue)
 //Quit Excel
 BOOL CXLEzAutomation::ReleaseExcel()
 {
+	// Added by Xuesong to avoid alert
+
+	m_pXLServer->EnableAlert(false);
 	return m_pXLServer->ReleaseExcel();
 }
 //Delete line from worksheet

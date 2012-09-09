@@ -494,11 +494,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		char r_number_of_lanes_name[_MAX_STRING_SIZE];
 		char r_lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
 		char r_speed_limit_in_mph_name[_MAX_STRING_SIZE];
+		char r_link_type_name[_MAX_STRING_SIZE];
 		if(reserve_direction_field_flag)
 		{
 			GetPrivateProfileString("link_table","r_number_of_lanes","number_of_lanes",r_number_of_lanes_name,sizeof(r_number_of_lanes_name),FileName);
 			GetPrivateProfileString("link_table","r_lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",r_lane_capacity_in_vhc_per_hour_name,sizeof(r_lane_capacity_in_vhc_per_hour_name),FileName);
 			GetPrivateProfileString("link_table","r_speed_limit_in_mph","speed_limit_in_mph",r_speed_limit_in_mph_name,sizeof(r_speed_limit_in_mph_name),FileName);
+			GetPrivateProfileString("link_table","r_link_type","link_type",r_link_type_name,sizeof(r_link_type_name),FileName);
 		}
 
 
@@ -551,6 +553,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name);
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
 
+				if(from_node_id == 613)
+					TRACE("");
+
 				long link_id =  poFeature->GetFieldAsInteger(link_id_name);
 				CString name =  poFeature->GetFieldAsString(link_name);
 				int type = poFeature->GetFieldAsInteger(link_type_name);
@@ -601,10 +606,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 					}
-
-					
-					
-
 				
 				}
 
@@ -614,11 +615,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
 
 				// if link_capacity_flag == 0, we give a default value
-				int r_number_of_lanes; 
-				float r_speed_limit_in_mph; 
-				float r_capacity_in_pcphpl; 
+				int r_number_of_lanes =0; 
+				int r_link_type = 0; 
+				float r_speed_limit_in_mph = 0; 
+				float r_capacity_in_pcphpl=0; 
 
-				if(reserve_direction_field_flag)
+				if(reserve_direction_field_flag)  // with reserved direction field
 				{
 					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name);
 					if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
@@ -629,12 +631,27 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name);
 					r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name);
 					r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,number_of_lanes);
+					r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+
+						if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 
+						{
+						  r_link_type = type; //reset r_link_type by type
+						}
+
+					
 
 				}else
 				{  // no reserved link fields
 					r_number_of_lanes = number_of_lanes;
 					r_speed_limit_in_mph = speed_limit_in_mph;
 					r_capacity_in_pcphpl= capacity_in_pcphpl;
+					r_link_type = 0;
+
+						if(m_LinkTypeMap[type ].IsConnector ()) // forward link is connector, r_link_type is not defined 
+						{
+						  r_link_type = type; //reset r_link_type by type
+						}
+
 
 
 				}
@@ -676,7 +693,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				}
 
 
-				if (direction == 0 || direction ==2) // two-directional link
+				if ((direction == 0 || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
 				{
 					link_code_start = 1; link_code_end = 2;
 					bTwoWayLinkFlag = true;
@@ -2743,8 +2760,8 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
 	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
 	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
-	m_ControlType_AcuatedSignal = g_GetPrivateProfileInt("control_type","acuated_signal",6,ProjectFileName);
-	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundable",7,ProjectFileName);
+	m_ControlType_actuatedSignal = g_GetPrivateProfileInt("control_type","actuated_signal",6,ProjectFileName);
+	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundabout",7,ProjectFileName);
 
 	char link_type_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);

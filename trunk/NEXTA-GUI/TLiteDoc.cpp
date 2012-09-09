@@ -269,6 +269,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_VIEW_ODME_Result, &CTLiteDoc::OnViewOdmeResult)
 	ON_COMMAND(ID_PROJECT_VIEW_AGENT_MOE, &CTLiteDoc::OnProjectViewAgentMoe)
 	ON_COMMAND(ID_PROJECT_ODMATRIXESTIMATIONINPUT, &CTLiteDoc::OnProjectOdmatrixestimationinput)
+	ON_COMMAND(ID_PROJECT_INPUTSENSORDATAFORODME, &CTLiteDoc::OnProjectInputsensordataforodme)
 	END_MESSAGE_MAP()
 
 
@@ -276,6 +277,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_bBezierCurveFlag = true;
 
 	m_CriticalOriginZone = -1;
 	m_CriticalDestinationZone = -1;
@@ -286,7 +288,7 @@ CTLiteDoc::CTLiteDoc()
 	m_ControlType_2wayStopSign = 3;
 	m_ControlType_4wayStopSign = 4;
 	m_ControlType_PretimedSignal = 5;
-	m_ControlType_AcuatedSignal = 6;
+	m_ControlType_actuatedSignal = 6;
 	m_ControlType_Roundabout = 7;
 
 	m_ControlType_ExternalNode = 100;
@@ -990,8 +992,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
 	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
 	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
-	m_ControlType_AcuatedSignal = g_GetPrivateProfileInt("control_type","acuated_signal",6,ProjectFileName);
-	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundable",7,ProjectFileName);
+	m_ControlType_actuatedSignal = g_GetPrivateProfileInt("control_type","actuated_signal",6,ProjectFileName);
+	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundabout",7,ProjectFileName);
 
 	ReadLinkTypeCSVFile(directory+"input_link_type.csv");
 
@@ -1340,8 +1342,8 @@ bool CTLiteDoc::ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName)
 	m_NodeTypeMap[3] = "2way_stop_sign";
 	m_NodeTypeMap[4] = "4way_stop_sign";
 	m_NodeTypeMap[5] = "pretimed_signal";
-	m_NodeTypeMap[6] = "acuated_signal";
-	m_NodeTypeMap[7] = "roundable";
+	m_NodeTypeMap[6] = "actuated_signal";
+	m_NodeTypeMap[7] = "roundabout";
 	
 
 	CCSVParser parser;
@@ -1376,12 +1378,12 @@ bool CTLiteDoc::ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName)
 			  m_NodeTypeMap[control_type_code] = "pretimed_signal";
 
 			  control_type_code = 6;
-			  parser.GetValueByFieldName("acuated_signal",control_type_code);
-			  m_NodeTypeMap[control_type_code] = "acuated_signal";
+			  parser.GetValueByFieldName("actuated_signal",control_type_code);
+			  m_NodeTypeMap[control_type_code] = "actuated_signal";
 
 			  control_type_code = 7;
-			  parser.GetValueByFieldName("roundable",control_type_code);
-			  m_NodeTypeMap[control_type_code] = "roundable";
+			  parser.GetValueByFieldName("roundabout",control_type_code);
+			  m_NodeTypeMap[control_type_code] = "roundabout";
 		
 		
 		
@@ -1679,6 +1681,8 @@ void CTLiteDoc::OffsetLink()
 		}
 	}
 
+	if(m_bBezierCurveFlag)  //do not apply m_bBezierCurveFlag 
+	{
 	BezierCurve bezier_smoothing;
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -1697,6 +1701,7 @@ void CTLiteDoc::OffsetLink()
 		}
 	}
 
+	}
 }
 
 bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = false,  int LayerNo = 0)
@@ -1885,10 +1890,14 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			}
 
 			int green_height = 0;
-			parser.GetValueByFieldName("green_height",green_height);
+			parser.GetValueByFieldName("KML_green_height",green_height);
 			int red_height = 0;
-			parser.GetValueByFieldName("red_height",red_height);
+			parser.GetValueByFieldName("KML_red_height",red_height);
 
+			int blue_height = 0;
+			parser.GetValueByFieldName("KML_blue_height",blue_height);
+			int yellow_height = 0;
+			parser.GetValueByFieldName("KML_yellow_height",yellow_height);
 
 			float saturation_flow_rate_in_vhc_per_hour_per_lane;
 			parser.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane",saturation_flow_rate_in_vhc_per_hour_per_lane);
@@ -1995,6 +2004,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 				pLink->green_height = green_height;
 				pLink->red_height = red_height;
+				pLink->blue_height = blue_height;
+				pLink->yellow_height = yellow_height;
 
 				if(link_code == 1)  //AB link
 				{
@@ -2370,6 +2381,10 @@ bool CTLiteDoc::ReadMetaDemandCSVFile(LPCTSTR lpszFileName)
 			parser.GetValueByFieldName("end_time_in_min",end_time_in_min);
 			parser.GetValueByFieldName("subtotal_demand_volume",subtotal_demand_volume);
 
+
+
+			//only works for 3-colume format. to do 
+			return false;
 
 			int demand_table_type = GetDemandTableType(demand_type,start_time_in_min,end_time_in_min);
 
@@ -3318,16 +3333,34 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 
 	if(OldDirectory!=directory)
 	{
+
 		// copy output files
-		CopyFile(OldDirectory+"DTASettings.txt", directory+"DTASettings.txt", FALSE);
 		CopyFile(OldDirectory+"output_LinkMOE.csv", directory+"output_LinkMOE.csv", FALSE);
 		CopyFile(OldDirectory+"LinkStaticMOE.csv", directory+"LinkStaticMOE.csv", FALSE);
 		//		CopyFile(OldDirectory+"NetworkMOE_1min.csv", directory+"NetworkMOE_1min.csv", FALSE);
-		CopyFile(OldDirectory+"summary.log", directory+"summary.log", FALSE);
-		CopyFile(OldDirectory+"assignment.log", directory+"assignment.log", FALSE);
-		CopyFile(OldDirectory+"Vehicle.csv", directory+"Vehicle.csv", FALSE);
-		CopyFile(OldDirectory+"error.log", directory+"error.log", FALSE);
-		CopyFile(OldDirectory+"warning.log", directory+"warning.log", FALSE);
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	CString DefaultDataFolder;
+
+	if(m_ProjectDirectory.GetLength () ==0) // has not been initialized 
+		DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
+	else
+		DefaultDataFolder = m_ProjectDirectory;
+
+	CopyFile(DefaultDataFolder+"input_MOE_settings.csv", directory+"input_MOE_settings.csv", FALSE);
+	CopyFile(DefaultDataFolder+"input_pricing_type.csv", directory+"input_pricing_type.csv", FALSE);
+	CopyFile(DefaultDataFolder+"input_vehicle_emission_rate.csv", directory+"input_vehicle_emission_rate.csv", FALSE);
+	CopyFile(DefaultDataFolder+"input_demand_meta_data.csv", directory+"input_demand_meta_data.csv", FALSE);
+	CopyFile(DefaultDataFolder+"input_scenario_settings.csv", directory+"input_scenario_settings.csv", FALSE);
+	
+	CopyFile(DefaultDataFolder+"input_vehicle_type.csv", directory+"input_vehicle_type.csv", FALSE);
+	
+	CopyFile(DefaultDataFolder+"input_VOT.csv", directory+"input_VOT.csv", FALSE);
+	CopyFile(DefaultDataFolder+"ms_vehtypes.csv", directory+"ms_vehtypes.csv", FALSE);
+	CopyFile(DefaultDataFolder+"ms_linktypes.csv", directory+"ms_linktypes.csv", FALSE);
+	CopyFile(DefaultDataFolder+"ms_signal.csv", directory+"ms_signal.csv", FALSE);
+	CopyFile(DefaultDataFolder+"ms_vehclasses.csv", directory+"ms_vehclasses.csv", FALSE);
 
 	}
 
@@ -3347,7 +3380,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fopen_s(&st,directory+"input_node_control_type.csv","w");
 	if(st!=NULL)
 	{
-	fprintf(st, "control_type_name,unknown_control,no_control,yield_sign,2way_stop_sign,4way_stop_sign,pretimed_signal,acuated_signal,roundable\n");
+	fprintf(st, "control_type_name,unknown_control,no_control,yield_sign,2way_stop_sign,4way_stop_sign,pretimed_signal,actuated_signal,roundabout\n");
 	fprintf(st,"control_type");
 	fprintf(st,",%d",m_ControlType_UnknownControl);
 	fprintf(st,",%d",m_ControlType_NoControl);
@@ -3355,7 +3388,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fprintf(st,",%d",m_ControlType_2wayStopSign);
 	fprintf(st,",%d",m_ControlType_4wayStopSign);
 	fprintf(st,",%d",m_ControlType_PretimedSignal);
-	fprintf(st,",%d",m_ControlType_AcuatedSignal);
+	fprintf(st,",%d",m_ControlType_actuatedSignal);
 	fprintf(st,",%d",m_ControlType_Roundabout);
 	fclose(st);
 	}else
@@ -3373,6 +3406,10 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 		{
 			if((*iNode)->m_LayerNo ==0) 
 			{
+
+				//if((*iNode)->m_IncomingLinkVector.size()>=3)  // more than 2 movements
+				//	(*iNode)->m_ControlType = m_ControlType_PretimedSignal;
+
 				CString control_type_name="";
 
 				if( m_NodeTypeMap.find((*iNode)->m_ControlType)!= m_NodeTypeMap.end())
@@ -3380,7 +3417,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 				control_type_name = m_NodeTypeMap[(*iNode)->m_ControlType].c_str() ;
 				}
 
-				if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_AcuatedSignal)
+				if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_actuatedSignal)
 				{
 					(*iNode)->m_CycleLengthInSecond = 0;
 					(*iNode)->m_SignalOffsetInSecond = 0;
@@ -3416,10 +3453,32 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	{
 		std::list<DTALink*>::iterator iLink;
 		fprintf(st,"name,link_id,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,AADT_conversion_factor,mode_code,grade,geometry,");
-		fprintf(st,"green_height,red_height,");
+		fprintf(st,"KML_green_height,KML_red_height,KML_blue_height,KML_yellow_leight");
 		// ANM output
-		fprintf(st,"number_of_left_turn_bays,length_of_bays_in_feet,left_turn_capacity_in_veh_per_hour,from_approach,to_approach,reversed_link_id");
+		fprintf(st,"number_of_left_turn_bays,length_of_bays_in_feet,left_turn_capacity_in_veh_per_hour,from_approach,to_approach,reversed_link_id,");
 
+
+		int hour;
+		for(hour =0; hour <= 23; hour++)
+		{
+			CString str_MOE_hour;
+			str_MOE_hour.Format ("h%d_link_volume,",hour);
+			fprintf(st,str_MOE_hour);
+		}
+
+		for(hour =0; hour <= 23; hour++)
+		{
+			CString str_MOE_hour;
+			str_MOE_hour.Format ("h%d_speed,",hour);
+			fprintf(st,str_MOE_hour);
+		}
+
+		for(hour =0; hour <= 23; hour++)
+		{
+			CString str_MOE_hour;
+			str_MOE_hour.Format ("h%d_travel_time,",hour);
+			fprintf(st,str_MOE_hour);
+		}
 		// safety prediction attributes
 		//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
 		fprintf(st,"\n");	
@@ -3432,7 +3491,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 					DTANode* pNode = m_NodeIDMap[ToNodeID];
 					//set default green time 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
-					pNode->m_ControlType == m_ControlType_AcuatedSignal)
+					pNode->m_ControlType == m_ControlType_actuatedSignal)
 				{
 				
 					if((*iLink)->m_EffectiveGreenTimeInSecond ==0)  // no default value
@@ -3482,7 +3541,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 			}
 
 			// mobility and reliability
-			fprintf(st,"%d,%d,",(*iLink)->green_height, (*iLink)->red_height);
+			fprintf(st,"%d,%d,%d,%d,",(*iLink)->green_height, (*iLink)->red_height,(*iLink)->blue_height, (*iLink)->yellow_height);
 
 			// ANM output
 			unsigned long ReversedLinkKey = GetLinkKey((*iLink)->m_ToNodeID, (*iLink)->m_FromNodeID);
@@ -3497,6 +3556,21 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 			fprintf(st,"%d,%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_LeftTurnCapacity,
 				GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
 
+			for(hour =0; hour <= 23; hour++)
+			{ 
+				fprintf(st,"%f,", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60));
+			}
+
+			for(hour =0; hour <= 23; hour++)
+			{ 
+				float avg_travel_time = (*iLink)->m_Length *60/max (1,(*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
+				fprintf(st,"%.2f,", (*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
+			}
+			for(hour =0; hour <= 23; hour++)
+			{ 
+				float avg_travel_time = (*iLink)->m_Length *60/max (1,(*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
+				fprintf(st,"%.2f,", avg_travel_time );
+			}
 
 			//		fprintf(st,"num_fi_crashes_per_year, num_pto_crashes_per_year,add_delay_per_period,AADT,minor_leg_AADT,two_way_AADT,on_ramp_AADT,off_ramp_AADT,upstream_AADT,num_driveway,intersection_3sg,intersection_4sg,intersection_3st,intersection_4st");
 			//		fprintf(st,"%10.6f, %10.6f,%10.6f,%10.1f,0,0,0,0,0,0,%5.1f,%5.1f,%5.1f,%5.1f\n", 0.000005*(*iLink)->m_Length, 0.000105*(*iLink)->m_Length,0.005*(*iLink)->m_LaneCapacity,(*iLink)->m_LaneCapacity*1.3*5*(g_GetRandomRatio()),0.2*(*iLink)->m_Length,0.5*(*iLink)->m_Length,0.6*(*iLink)->m_Length,1.1*(*iLink)->m_Length);
@@ -4531,7 +4605,10 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			CString msg;
 			msg.Format("The agent.bin file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load the vehicle file?",LengthinMB);
 			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+			{
+				fclose(pFile);
 				return true;
+			}
 		}
 
 		if(LengthinMB>20)  // if the file size is greater then 20 MB, ask the question
@@ -4542,7 +4619,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
 				bCreateMovementMap = false;
 		}
-
+				fclose(pFile);
 	}
 
 
@@ -8176,8 +8253,8 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	//DeleteFile(directory+"AMS_node.kmz");
 	//ExportNodeLayerToGISFiles(directory+"AMS_node.kml","KML");
 
-	//DeleteFile(directory+"AMS_link.kmz");
-	//ExportLinkLayerToGISFiles(directory+"AMS_link.kml","KML");
+	DeleteFile(directory+"AMS_link.shp");
+	ExportLinkLayerToGISFiles(directory+"AMS_link.shp","ESRI Shapefile");
 
 //	OGDF_WriteGraph(directory+"graph.gml");
 
@@ -8187,9 +8264,15 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	DeleteFile(directory+"AMS_link_3D.kml");
 	ExportLink3DLayerToKMLFiles(directory+"AMS_link_3D.kml","LIBKML");
 
-	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_3D.kml","LIBKML",0);
-	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_red_3D.kml","LIBKML",1);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_3D.kml","LIBKML",0,false);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_red_3D.kml","LIBKML",1,false);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_blue_3D.kml","LIBKML",2,false);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_yellow_3D.kml","LIBKML",3,false);
 
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_3D_SL.kml","LIBKML",0,true);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_red_3D_SL.kml","LIBKML",1,true);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_blue_3D_SL.kml","LIBKML",2,true);
+	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_yellow_3D_SL.kml","LIBKML",3,true);
 
 	//DeleteFile(directory+"AMS_agent.kmz");
 	//ExportAgentLayerToKMLFiles(directory+"AMS_agent.kml","KML");
@@ -8756,7 +8839,7 @@ void CTLiteDoc::OnProjectMultiScenarioResults()
 
 void CTLiteDoc::OnProject12()
 {
-	OpenCSVFileInExcel(m_ProjectDirectory+"output_PathMOE.csv");
+	OpenCSVFileInExcel(m_ProjectDirectory+"output_Path.csv");
 }
 
 void CTLiteDoc::OnViewMovementMoe()
@@ -8771,7 +8854,7 @@ void CTLiteDoc::OnProjectTimeDependentLinkMoe()
 
 void CTLiteDoc::OnViewOdmeResult()
 {
-	OpenCSVFileInExcel(m_ProjectDirectory+"output_EstimationMOE.csv");
+	OpenCSVFileInExcel(m_ProjectDirectory+"output_ODME_MOE.csv");
 }
 
 void CTLiteDoc::OnProjectViewAgentMoe()
@@ -8782,4 +8865,9 @@ void CTLiteDoc::OnProjectViewAgentMoe()
 void CTLiteDoc::OnProjectOdmatrixestimationinput()
 {
 	OpenCSVFileInExcel(m_ProjectDirectory+"ODME_Settings.txt");
+}
+
+void CTLiteDoc::OnProjectInputsensordataforodme()
+{
+	OpenCSVFileInExcel(m_ProjectDirectory+"input_sensor.csv");
 }
