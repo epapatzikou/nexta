@@ -487,8 +487,52 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 		OGRFieldDefn oField8 ("LaneCap", OFTInteger); 
 		OGRFieldDefn oField9 ("FunctClass", OFTInteger); 
 		OGRFieldDefn oField10 ("FFTT", OFTReal); 
-		OGRFieldDefn oField11 ("iSpeed", OFTReal); 
-		OGRFieldDefn oField12 ("iReliable", OFTReal); 
+
+		OGRFieldDefn oField_vol_h0 ("vol_0", OFTReal); 
+		OGRFieldDefn oField_vol_h1 ("vol_1", OFTReal); 
+		OGRFieldDefn oField_vol_h2 ("vol_2", OFTReal); 
+		OGRFieldDefn oField_vol_h3 ("vol_3", OFTReal); 
+		OGRFieldDefn oField_vol_h4 ("vol_4", OFTReal); 
+		OGRFieldDefn oField_vol_h5 ("vol_5", OFTReal); 
+		OGRFieldDefn oField_vol_h6 ("vol_6", OFTReal); 
+		OGRFieldDefn oField_vol_h7 ("vol_7", OFTReal); 
+		OGRFieldDefn oField_vol_h8 ("vol_8", OFTReal); 
+		OGRFieldDefn oField_vol_h9 ("vol_9", OFTReal); 
+		OGRFieldDefn oField_vol_h10 ("vol_10", OFTReal); 
+		OGRFieldDefn oField_vol_h11 ("vol_11", OFTReal); 
+		OGRFieldDefn oField_vol_h12 ("vol_12", OFTReal); 
+		OGRFieldDefn oField_vol_h13 ("vol_13", OFTReal); 
+		OGRFieldDefn oField_vol_h14 ("vol_14", OFTReal); 
+		OGRFieldDefn oField_vol_h15 ("vol_15", OFTReal); 
+		OGRFieldDefn oField_vol_h16 ("vol_16", OFTReal); 
+		OGRFieldDefn oField_vol_h17 ("vol_17", OFTReal); 
+		OGRFieldDefn oField_vol_h18 ("vol_18", OFTReal); 
+		OGRFieldDefn oField_vol_h19 ("vol_19", OFTReal); 
+		OGRFieldDefn oField_vol_h20 ("vol_20", OFTReal); 
+
+
+		OGRFieldDefn oField_spd_h0 ("spd_0", OFTReal); 
+		OGRFieldDefn oField_spd_h1 ("spd_1", OFTReal); 
+		OGRFieldDefn oField_spd_h2 ("spd_2", OFTReal); 
+		OGRFieldDefn oField_spd_h3 ("spd_3", OFTReal); 
+		OGRFieldDefn oField_spd_h4 ("spd_4", OFTReal); 
+		OGRFieldDefn oField_spd_h5 ("spd_5", OFTReal); 
+		OGRFieldDefn oField_spd_h6 ("spd_6", OFTReal); 
+		OGRFieldDefn oField_spd_h7 ("spd_7", OFTReal); 
+		OGRFieldDefn oField_spd_h8 ("spd_8", OFTReal); 
+		OGRFieldDefn oField_spd_h9 ("spd_9", OFTReal); 
+		OGRFieldDefn oField_spd_h10 ("spd_10", OFTReal); 
+		OGRFieldDefn oField_spd_h11 ("spd_11", OFTReal); 
+		OGRFieldDefn oField_spd_h12 ("spd_12", OFTReal); 
+		OGRFieldDefn oField_spd_h13 ("spd_13", OFTReal); 
+		OGRFieldDefn oField_spd_h14 ("spd_14", OFTReal); 
+		OGRFieldDefn oField_spd_h15 ("spd_15", OFTReal); 
+		OGRFieldDefn oField_spd_h16 ("spd_16", OFTReal); 
+		OGRFieldDefn oField_spd_h17 ("spd_17", OFTReal); 
+		OGRFieldDefn oField_spd_h18 ("spd_18", OFTReal); 
+		OGRFieldDefn oField_spd_h19 ("spd_19", OFTReal); 
+		OGRFieldDefn oField_spd_h20 ("spd_20", OFTReal); 
+
 
 		CString str;  
 		if( poLayer->CreateField( &oField1 ) != OGRERR_NONE ) { str.Format("Creating field %s failed", oField1.GetNameRef()); AfxMessageBox(str); return; }
@@ -501,8 +545,50 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 		if( poLayer->CreateField( &oField8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField8.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField9.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField10.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField11.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField12.GetNameRef()); AfxMessageBox(str); return ;	}
+
+		if( poLayer->CreateField( &oField_vol_h0 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h0.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h1 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h1.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h2 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h2.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h3.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h4.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h5.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h6 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h6.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h7 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h7.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h8.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h9.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h10.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h11.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h12.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h13 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h13.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h14 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h14.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h15 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h15.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h16 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h16.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h17 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h17.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h18 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h18.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h19 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h19.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_vol_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h20.GetNameRef()); AfxMessageBox(str); return ;	}
+
+		if( poLayer->CreateField( &oField_spd_h0 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h0.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h1 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h1.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h2 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h2.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h3.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h4.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h5.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h6 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h6.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h7 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h7.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h8.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h9.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h10.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h11.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h12.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h13 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h13.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h14 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h14.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h15 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h15.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h16 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h16.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h17 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h17.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h18 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h18.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h19 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h19.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField_spd_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h20.GetNameRef()); AfxMessageBox(str); return ;	}
 
 		std::list<DTALink*>::iterator iLink;
 
@@ -525,11 +611,62 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				poFeature->SetField("FunctClass", (*iLink)->m_link_type );
 				poFeature->SetField("FFTT", (*iLink)->m_FreeFlowTravelTime );
 
-				float value;
-				float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
-				float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
-				poFeature->SetField("iSpeed", mobility_index);
-				poFeature->SetField("iReliable", reliability_index );
+
+				int hour = 0;
+
+				
+				poFeature->SetField("vol_0", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_1", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_2", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_3", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_4", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_5", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_6", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_7", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_8", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_9", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				
+				poFeature->SetField("vol_10", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_11", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_12", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_13", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_14", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_15", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_16", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_17", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_18", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_19", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_20", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+
+				hour= 0;
+				poFeature->SetField("spd_0", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_1", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_2", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_3", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_4", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_5", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_6", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_7", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_8", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_9", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				
+				poFeature->SetField("spd_10", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_11", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_12", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_13", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_14", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_15", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_16", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_17", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_18", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_19", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("spd_20", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
+
+				//float value;
+				//float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
+				//float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
+				//poFeature->SetField("iSpeed", mobility_index);
+				//poFeature->SetField("iReliable", reliability_index );
 
 				OGRLineString line;
 				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
@@ -815,6 +952,15 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 			max_link_volume = (*iLink)->m_TotalVolume;
 	}
 
+	float min_link_volume = 99999;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_TotalVolume < min_link_volume)
+			min_link_volume = (*iLink)->m_TotalVolume;
+	}
+
+
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
@@ -912,9 +1058,11 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 		float min_link_volume_threadshold= 50;
 
+		
+
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->m_TotalVolume >= min_link_volume_threadshold || m_LinkBandWidthMode  == LBW_number_of_lanes)
+			if(min_link_volume < 0.1f || (*iLink)->m_TotalVolume >= min_link_volume_threadshold || m_LinkBandWidthMode  == LBW_number_of_lanes)
 			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
@@ -1012,7 +1160,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 }
 
-void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GISTypeString, int ColorCode)
+void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GISTypeString, int ColorCode, bool no_curve_flag)
 {
 	
 	m_LinkBandWidthMode =  LBW_number_of_lanes;
@@ -1094,7 +1242,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 		
 	 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->green_height >=1|| (*iLink)->red_height >=1)
+			if((*iLink)->green_height >=1|| (*iLink)->red_height >=1 || (*iLink)->blue_height >=1|| (*iLink)->yellow_height >=1)
 			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
@@ -1114,13 +1262,16 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
         	fprintf(st,"\t\t<visibility>1</visibility>\n");
 
 
-	
-
 			string color_code = "green";
 
 			if(ColorCode==1)
 				color_code = "red";
 
+			if(ColorCode==2)
+				color_code = "blue";
+
+			if(ColorCode==3)
+				color_code = "yellow";
 
 			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
 			fprintf(st,"\t\t<Polygon>\n");
@@ -1136,15 +1287,28 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 				if(ColorCode==1)
 					height =(*iLink)->red_height;
 
-			int si;
+				if(ColorCode==2)
+					height =(*iLink)->blue_height;
+
+				if(ColorCode==3)
+					height =(*iLink)->yellow_height;
+
+				int si;
 			int band_point_index = 0;
+			int size = (*iLink) ->m_ShapePoints .size();
 		for(si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
 		{
+			if(no_curve_flag && size >=3 && si >=1 && si< size -1) // skip intermedate points
+				continue;
+
 			BandPoint[band_point_index++] = (*iLink)->m_BandLeftShapePoints[si];
 		}
 
 		for(si = (*iLink) ->m_ShapePoints .size()-1; si >=0 ; si--)
 		{
+			if(no_curve_flag && size >=3 && si >=1 && si< size -1) // skip intermedate points
+				continue;
+
 			BandPoint[band_point_index++] = (*iLink)->m_BandRightShapePoints[si];
 		}
 
@@ -1269,7 +1433,7 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 		double ratio = 1;
 		
 		int max_link_height = g_GetPrivateProfileInt("KML_output","max_link_height",5000,m_ProjectFile);
-		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",10,m_ProjectFile);
+		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",100,m_ProjectFile);
 
  
 		max_link_height = 60;

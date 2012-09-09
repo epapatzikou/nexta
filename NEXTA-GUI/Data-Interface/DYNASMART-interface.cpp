@@ -408,7 +408,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				cs.EndDayNo = 100;
 				cs.StartTime = g_read_float(st);
 				cs.EndTime = g_read_float(st);
-				cs.LaneClosureRatio= g_read_float(st);
+				cs.LaneClosureRatio= g_read_float(st)*100;  //DYNASMART-P use ratio, DTALite use percentage
 				cs.SpeedLimit = g_read_float(st);
 				 g_read_float(st);
 
@@ -430,6 +430,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	fopen_s(&pFileLinkXY,directory+"linkxy.dat","r");
 	if(pFileLinkXY!=NULL)
 	{
+	
+		m_bBezierCurveFlag = false; // do not apply bezier curve fitting 
+
 		while (!feof(pFileLinkXY))
 		{
 			int from_node = g_read_integer(pFileLinkXY);
@@ -464,6 +467,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFileLinkXY);
 	}  // end of reading link xy 
 	}
+
+	// test
+	
 	//read zone.dat
 	FILE* pZoneXY = NULL;
 	fopen_s(&pZoneXY,directory+"zone.dat","r");
@@ -625,7 +631,28 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			m_DemandTypeVector.push_back(demand_type_element);
 
 
+
 	int ReadDemandFile = 1;
+
+		fopen_s(&pFile,directory+"demand.dat","rb");
+	if(pFile!=NULL)
+	{
+		fseek(pFile, 0, SEEK_END );
+		int Length = ftell(pFile);
+		fclose(pFile);
+		float LengthinMB= Length*1.0/1024/1024;
+		if(LengthinMB>20)
+		{
+			CString msg;
+			msg.Format("The demand.dat file is %5.1f MB in size.\nIt could take quite a while to load this file.\nWould you like to load this file?",LengthinMB);
+			if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDNO)
+			{
+				ReadDemandFile = 0;
+			}
+		}
+
+		fclose(pFile);
+	}
 
 	if(ReadDemandFile)
 	{
@@ -714,7 +741,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_ControlType_2wayStopSign =  6;
 	m_ControlType_4wayStopSign = 3;
 	m_ControlType_PretimedSignal = 4;
-	m_ControlType_AcuatedSignal = 5;
+	m_ControlType_actuatedSignal = 5;
 	m_ControlType_Roundabout = 7;
 
 
@@ -770,7 +797,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_bFitNetworkInitialized  = false;
 
 	//read control.dat
-
 		
 	// read control.dat
 
@@ -818,7 +844,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
 
-		if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_AcuatedSignal)
+		if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_actuatedSignal)
 		{
 			(*iNode)-> m_bSignalData = true;
 			number_of_signals++;

@@ -40,6 +40,10 @@
 #include <iostream>
 #include <io.h>
 #include <tchar.h>
+
+// added by Xuesong
+#include <iostream>
+#include <locale>
 //#include <msxml2.h>   
 //#import "msxml4.dll" 
 
@@ -52,50 +56,52 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 
 	CWaitCursor cursor;
 	Mustang ms(this);
-		CString strFolder  = m_ProjectDirectory;
-		ms.m_strFolder = strFolder;
-		CString strNodeCSV = strFolder + _T("input_node.csv");;
-		CString strLinkCSV = strFolder + _T("input_link.csv");
-		CString strLinkTypeCSV = strFolder + _T("input_link_type.csv");
-		CString strANMFile = strFolder + _T("simulation.anm");
-		CString strANMRoutesFile = strFolder + _T("simulation.anmRoutes");
-		CString strLogFile = strFolder + _T("msLog.log");
-		CString strZoneCSV = strFolder + _T("input_zone.csv");
-		CString strODCSV = strFolder + _T("output_od_flow.csv");
-		CString strPathCSV = strFolder + _T("output_path_flow.csv");
+	CString strFolder  = m_ProjectDirectory;
+	ms.m_strFolder = strFolder;
+	CString strNodeCSV = strFolder + _T("input_node.csv");;
+	CString strLinkCSV = strFolder + _T("input_link.csv");
+	CString strLinkTypeCSV = strFolder + _T("input_link_type.csv");
+	CString strANMFile = strFolder + _T("simulation.anm");
+	CString strANMRoutesFile = strFolder + _T("simulation.anmRoutes");
+	CString strLogFile = strFolder + _T("msLog.log");
+	CString strZoneCSV = strFolder + _T("input_zone.csv");
+	CString strODCSV = strFolder + _T("output_od_flow.csv");
+	CString strPathCSV = strFolder + _T("output_path_flow.csv");
 
-		std::string strNodeFileName,strLinkFileName,strLinkTypeFileName,strANMFileName,strODFileName,strPathFileName,strANMRoutesFileName,strLogFileName,strZoneFileName;
-		USES_CONVERSION;
-		strNodeFileName = T2A(strNodeCSV.GetBuffer());
-		strLinkFileName = T2A(strLinkCSV.GetBuffer());
-		strLinkTypeFileName = T2A(strLinkTypeCSV.GetBuffer());
-		strANMFileName  = T2A(strANMFile.GetBuffer());
-		strANMRoutesFileName = T2A(strANMRoutesFile.GetBuffer());
-		strLogFileName  = T2A(strLogFile.GetBuffer());
-		strZoneFileName = T2A(strZoneCSV.GetBuffer());
-		strODFileName	= T2A(strODCSV.GetBuffer());
-		strPathFileName = T2A(strPathCSV.GetBuffer());
+	std::string strNodeFileName,strLinkFileName,strLinkTypeFileName,strANMFileName,strODFileName,strPathFileName,strANMRoutesFileName,strLogFileName,strZoneFileName;
+	USES_CONVERSION;
+	strNodeFileName = T2A(strNodeCSV.GetBuffer());
+	strLinkFileName = T2A(strLinkCSV.GetBuffer());
+	strLinkTypeFileName = T2A(strLinkTypeCSV.GetBuffer());
+	strANMFileName  = T2A(strANMFile.GetBuffer());
+	strANMRoutesFileName = T2A(strANMRoutesFile.GetBuffer());
+	strLogFileName  = T2A(strLogFile.GetBuffer());
+	strZoneFileName = T2A(strZoneCSV.GetBuffer());
+	strODFileName	= T2A(strODCSV.GetBuffer());
+	strPathFileName = T2A(strPathCSV.GetBuffer());
 
-		ms.OpenLogFile(strLogFileName);
-		ms.ReadInputNodeCSV(strNodeFileName);
-		CWaitCursor wait;
-		ms.ReadInputLinkCSV(strLinkFileName);
-		ms.ReadInputLinkTypeCSV(strLinkTypeFileName);
-		//ms.ReadInputZoneCSV(strZoneFileName);
+	ms.OpenLogFile(strLogFileName);
+	ms.ReadInputNodeCSV(strNodeFileName);
+	CWaitCursor wait;
+	ms.ReadInputLinkCSV(strLinkFileName);
+	ms.ReadInputLinkTypeCSV(strLinkTypeFileName);
+	//ms.ReadInputZoneCSV(strZoneFileName);
 
-		bool bReturn = ms.ClassifyNodes();
-		ms.DumpNodeLink2Log();
-		bReturn = ms.CreateDefaultLanes();
-		bReturn = ms.ProcessLanes();
-		ms.CreateDefaultData();
-		ms.CreateANMFile2(strANMFileName);
-		//ms.CreateANMFile(strANMFileName);
-		//ms.ReadOutputODFlowCSV(strODFileName);
-		//ms.ReadOutputPathFlowCSV(strPathFileName);
-		//ms.CreateANMRoutesFile(strANMRoutesFileName);
-		ms.CloseLogFile();
+	ms.ReadInputSignalCSV("ms_signal.csv");
 
-		OnToolsProjectfolder();	
+	bool bReturn = ms.ClassifyNodes();
+	ms.DumpNodeLink2Log();
+	bReturn = ms.CreateDefaultLanes();
+	bReturn = ms.ProcessLanes();
+	ms.CreateDefaultData();
+	ms.CreateANMFile2(strANMFileName);
+
+	ms.ReadOutputODFlowCSV(strODFileName);
+	ms.ReadOutputPathFlowCSV(strPathFileName);
+	ms.CreateANMRoutesFile(strANMRoutesFileName);
+	ms.CloseLogFile();
+
+	OnToolsProjectfolder();	
 }
 ////////////////////////////////////////////////////////
 MSigG::MSigG()
@@ -277,7 +283,7 @@ bool Mustang::CloseLogFile()
 	if (m_logFile.is_open())
 		m_logFile.close();
 	return true;
-	
+
 }
 bool Mustang::OpenLogFile(std::string strLogFileName)
 {
@@ -353,7 +359,7 @@ bool Mustang::ReadInputNodeCSV(std::string strFileName)
 				refLati  = Y;
 				refScale = 111700.0;
 			}
-			
+
 			pNode->ptLL.x = X;
 			pNode->ptLL.y = Y;
 
@@ -483,10 +489,17 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 
 			for(int si = 0; si < CoordinateVector.size(); si++)
 			{
+
+				// Xuesong: 09/06/2012: avoid reading and writing too many shape points for curve fitting
+
+				if(si==0 || si == CoordinateVector.size()-1)  // first point and the last point
+				{
 				GDPoint	pt;
 				pt.x = L2X(CoordinateVector[si].X,CoordinateVector[si].Y);
 				pt.y = L2Y(CoordinateVector[si].Y);
+
 				pLink->m_ShapePoints .push_back (pt);
+				}
 			}
 
 			pLink->m_NumLanes= max(1,number_of_lanes);
@@ -695,7 +708,7 @@ bool Mustang::ReadInputLinkTypeCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputLinkTypeCSV function called!"<<endl;
 	m_szLinkTypes = _T("");     // This string is reserved for attributes of LINKTYPES. The following 3 are in groups
-	
+
 	CCSVParser parser;
 	if (parser.OpenCSVFile(strFileName))
 	{
@@ -711,6 +724,11 @@ bool Mustang::ReadInputLinkTypeCSV(std::string strFileName)
 
 			if(parser.GetValueByFieldName("link_type",link_type) == false)			 continue;
 			if(parser.GetValueByFieldName("link_type_name",link_type_name) == false) continue;
+
+			// remove space
+			link_type_name.erase(link_type_name.find_last_not_of(" \n\r\t")+1);
+
+
 			if(parser.GetValueByFieldName("freeway_flag",freeway_flag) == false)	 freeway_flag=0;
 			if(parser.GetValueByFieldName("ramp_flag",ramp_flag) == false)			 ramp_flag=0;
 			if(parser.GetValueByFieldName("arterial_flag",arterial_flag) == false)	 arterial_flag=0;
@@ -885,8 +903,8 @@ bool Mustang::ReadInputZoneCSV2(std::string strFileName)
 				GDPoint pt;// = GetZoneCentroid(pZone->m_nID);
 				//if ( 0 == pt.x && 0 == pt.y)
 				//{
-					pt.x = pNode->pt.x * 1.01;
-					pt.y = pNode->pt.y * 1.01;
+				pt.x = pNode->pt.x * 1.01;
+				pt.y = pNode->pt.y * 1.01;
 				//}
 				pZone->pt = pt;
 			}
@@ -961,8 +979,8 @@ bool Mustang::ReadInputZoneCSV(std::string strFileName)
 				GDPoint pt;// = GetZoneCentroid(pZone->m_nID);
 				//if ( 0 == pt.x && 0 == pt.y)
 				//{
-					pt.x = pNode->pt.x * 1.01;
-					pt.y = pNode->pt.y * 1.01;
+				pt.x = pNode->pt.x * 1.01;
+				pt.y = pNode->pt.y * 1.01;
 				//}
 				pZone->pt = pt;
 			}
@@ -1503,7 +1521,7 @@ bool Mustang::CreateDefaultLanes(void)
 				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNameMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}	
-			
+
 			for(i=1;i<=piLLink->m_NumLanes;i++) // left in, all lanes through, first lane share right turn
 			{
 				pLane = new MLane();
@@ -1597,7 +1615,7 @@ bool Mustang::ProcessLanes(void)
 		pNode = (*iNode);
 		if (pNode->m_nProcessType == 4)
 		{
-			
+
 			//根据车道的转向属性和方位，产生laneturn，并给出默认的信号控制
 			MLink *piLink;
 			MLink *poRLink,*poTLink,*poLLink;
@@ -1687,13 +1705,13 @@ bool Mustang::ProcessLanes(void)
 					pLaneTurn->nSignalGroupNo = GetSGNO(pNode->m_NodeNumber,appr,3);
 				}
 			}
-			
+
 		}
 		else if (pNode->m_nProcessType == 3)
 		{
 			// T type 关键是确定出主干道和唯一的一个branch。缺少哪个方向，对应的方向就是branch
 			// 3 个方向加起来的和，应相等，同时也知道缺少哪个方向了
-			
+
 			int  nTotal=0,missingAppr;
 			for(iLink = pNode->inLinks.begin();iLink!=pNode->inLinks.end();iLink++)
 				nTotal += (*iLink)->m_ToNodeApproach;
@@ -1712,7 +1730,7 @@ bool Mustang::ProcessLanes(void)
 
 			MLink* piRLink = pNode->inLinkMap[rightAppr];
 			MLink* poRLink = pNode->outLinkMap[rightAppr];	
-			
+
 			// 产生laneTurns
 			// ① branch in, to right out and to left out
 			nInCount = piBLink->GetLaneCount(1,1);
@@ -1872,7 +1890,7 @@ bool Mustang::ProcessLanes(void)
 					pLaneTurn->nSignalGroupNo = GetSGNO(pNode->m_NodeNumber,appr,2);
 				}
 			}
-			
+
 		}
 		else if (pNode->m_nProcessType == 2)
 		{
@@ -1943,7 +1961,7 @@ bool Mustang::ProcessLanes(void)
 				<<"SC ["<<(*iTurn)->nSCNO<<"] SG["<<(*iTurn)->nSignalGroupNo<<"]"<<endl;
 		}
 		m_logFile<<endl;
-		
+
 	} // end of for node list
 	return true;
 }
@@ -2004,7 +2022,7 @@ bool Mustang::WriteVehTypes()
 			int vehtype_no;
 			string name;
 			string vehcategory;
- 
+
 			if(!parser.GetValueByFieldName("vehtype_no",vehtype_no))
 				vehtype_no = 100;
 
@@ -2044,7 +2062,7 @@ bool Mustang::WriteVehClasses()
 			int vehtypeid_no;
 			std::vector<int> idvector;
 
- 
+
 			if(!parser.GetValueByFieldName("vehclass_id",vehclass_id))
 				vehclass_id = "PtDefault";
 
@@ -2106,7 +2124,7 @@ bool Mustang::WriteNodes()
 
 		std::vector<MLink*>::iterator iMLink;
 		std::vector<MLane*>::iterator iMLane;
-		float default_width = 3.75;
+		double default_width = 3.75f;
 
 		// in lanes in in links
 		for(iMLink=pMNode->inLinks.begin();iMLink!=pMNode->inLinks.end();iMLink++)
@@ -2117,8 +2135,8 @@ bool Mustang::WriteNodes()
 				MLane* pLane = (*iMLane);
 				if ( pLane->m_PocketLength == 0 ) szTemp = _T("false");
 				else	szTemp = _T("true");
-				strLine.Format("\t\t\t\t\t<LANE LINKID=\"%s\" INDEX=\"%d\" POCKET=\"%s\" POCKETLENGTH=\"%.4f\" WIDTH=\"%.4f\" />\n",
-					GetMLinkbyID(pLane->m_LinkID)->strANMID,pLane->m_Index,szTemp,pLane->m_PocketLength,default_width);
+				strLine.Format("\t\t\t\t\t<LANE LINKID=\"%d\" INDEX=\"%d\" POCKET=\"%s\" POCKETLENGTH=\"%.4f\" WIDTH=\"%.4f\" />\n",
+					pLane->m_LinkID,pLane->m_Index,szTemp,pLane->m_PocketLength,default_width);
 				m_rf<<strLine;
 			}
 		}
@@ -2131,8 +2149,8 @@ bool Mustang::WriteNodes()
 				MLane* pLane = (*iMLane);
 				if ( pLane->m_PocketLength == 0 ) szTemp = _T("false");
 				else	szTemp = _T("true");
-				strLine.Format("\t\t\t\t\t<LANE LINKID=\"%s\" INDEX=\"%d\" POCKET=\"%s\" POCKETLENGTH=\"%.4f\" WIDTH=\"%.4f\" />\n",
-					GetMLinkbyID(pLane->m_LinkID)->strANMID,pLane->m_Index,szTemp,pLane->m_PocketLength,default_width);
+				strLine.Format("\t\t\t\t\t<LANE LINKID=\"%d\" INDEX=\"%d\" POCKET=\"%s\" POCKETLENGTH=\"%.4f\" WIDTH=\"%.4f\" />\n",
+					pLane->m_LinkID,pLane->m_Index,szTemp,pLane->m_PocketLength,default_width);
 				m_rf<<strLine;
 			}
 		}
@@ -2149,13 +2167,13 @@ bool Mustang::WriteNodes()
 			MLaneTurn* pTurn = (*iTurn);
 			if (1 == pMNode->nControlType)
 			{
-				strLine.Format("\t\t\t\t\t<LANETURN FROMLINKID=\"%s\" FROMLANEINDEX=\"%d\" TOLINKID=\"%s\" TOLANEINDEX=\"%d\" SCNO=\"%d\" SGNO=\"%d\" />\n",
-					GetMLinkbyID(pTurn->nFromLinkId)->strANMID,pTurn->nFromIndex,GetMLinkbyID(pTurn->nToLinkId)->strANMID,pTurn->nToIndex,pTurn->nSCNO,pTurn->nSignalGroupNo);
+				strLine.Format("\t\t\t\t\t<LANETURN FROMLINKID=\"%d\" FROMLANEINDEX=\"%d\" TOLINKID=\"%d\" TOLANEINDEX=\"%d\" SCNO=\"%d\" SGNO=\"%d\" />\n",
+					GetMLinkbyID(pTurn->nFromLinkId)->m_LinkID ,pTurn->nFromIndex,GetMLinkbyID(pTurn->nToLinkId)->m_LinkID ,pTurn->nToIndex,pTurn->nSCNO,pTurn->nSignalGroupNo);
 			}
 			else
 			{
-				strLine.Format("\t\t\t\t\t<LANETURN FROMLINKID=\"%s\" FROMLANEINDEX=\"%d\" TOLINKID=\"%s\" TOLANEINDEX=\"%d\" />\n",
-					GetMLinkbyID(pTurn->nFromLinkId)->strANMID,pTurn->nFromIndex,GetMLinkbyID(pTurn->nToLinkId)->strANMID,pTurn->nToIndex);
+				strLine.Format("\t\t\t\t\t<LANETURN FROMLINKID=\"%d\" FROMLANEINDEX=\"%d\" TOLINKID=\"%d\" TOLANEINDEX=\"%d\" />\n",
+					GetMLinkbyID(pTurn->nFromLinkId)->m_LinkID,pTurn->nFromIndex,GetMLinkbyID(pTurn->nToLinkId)->m_LinkID ,pTurn->nToIndex);
 			}
 			m_rf<<strLine;
 		}
@@ -2211,7 +2229,7 @@ bool Mustang::WriteLinkTypes()
 			int linktype_no;
 			string name;
 			string drivingbehavior;
- 
+
 			if(!parser.GetValueByFieldName("linktype_no",linktype_no))
 				linktype_no = 0;
 
@@ -2240,29 +2258,76 @@ bool Mustang::WriteLinks()
 	{
 		MLink* pLink=(*iMLink);
 		CString strLine;
-		if ( pLink->m_ShapePoints.size() == 2 )
+
+		if(pLink->m_ReverseLinkID==0 || pLink->m_ReverseLinkID==pLink->m_LinkID) //Xuesong: ReserseLinkID is null
 		{
-			strLine.Format("\t\t\t<LINK ID=\"%s\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%s\" />\n",
-				pLink->strANMID,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->strANMRID);
-			m_rf<<strLine;
+			if ( pLink->m_ShapePoints.size() == 2 )
+			{
+				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" />\n",
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes);
+				m_rf<<strLine;
+			}
+			else
+			{
+				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" >\n",
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes);
+				m_rf<<strLine;
+				strLine.Format("\t\t\t\t<LINKPOLY>\n");
+				m_rf<<strLine;
+
+				// Xuesong do write out duplicated points;
+
+				GDPoint GDP_prev;
+				GDP_prev.x = 0;
+				GDP_prev.y = 0;
+
+				for(int i=1 ; i< pLink->m_ShapePoints.size()-1 ; i++)
+				{
+					
+					GDPoint GDP = pLink->m_ShapePoints[i];
+
+					if(fabs(GDP_prev.x-GDP.x) + fabs(GDP_prev.y-GDP.y)>0.0001 )
+					{
+					strLine.Format("\t\t\t\t\t<POINT INDEX=\"%d\" XCOORD=\"%.4f\" YCOORD=\"%.4f\" />\n",i,GDP.x,GDP.y);
+					}
+
+					GDP_prev.x = GDP.x;
+					GDP_prev.y = GDP.y;
+
+					m_rf<<strLine;
+				}
+				strLine.Format("\t\t\t\t</LINKPOLY>\n");
+				m_rf<<strLine;
+				strLine.Format("\t\t\t</LINK>\n");
+				m_rf<<strLine;
+			}
 		}
 		else
 		{
-			strLine.Format("\t\t\t<LINK ID=\"%s\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%s\" >\n",
-				pLink->strANMID,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->strANMRID);
-			m_rf<<strLine;
-			strLine.Format("\t\t\t\t<LINKPOLY>\n");
-			m_rf<<strLine;
-			for(int i=1 ; i< pLink->m_ShapePoints.size()-1 ; i++)
+			if ( pLink->m_ShapePoints.size() == 2 )
 			{
-				GDPoint GDP = pLink->m_ShapePoints[i];
-				strLine.Format("\t\t\t\t\t<POINT INDEX=\"%d\" XCOORD=\"%.4f\" YCOORD=\"%.4f\" />\n",i,GDP.x,GDP.y);
+				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" />\n",
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->m_ReverseLinkID );
 				m_rf<<strLine;
 			}
-			strLine.Format("\t\t\t\t</LINKPOLY>\n");
-			m_rf<<strLine;
-			strLine.Format("\t\t\t</LINK>\n");
-			m_rf<<strLine;
+			else
+			{
+				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" >\n",
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->m_ReverseLinkID);
+				m_rf<<strLine;
+				strLine.Format("\t\t\t\t<LINKPOLY>\n");
+				m_rf<<strLine;
+				for(int i=1 ; i< pLink->m_ShapePoints.size()-1 ; i++)
+				{
+					GDPoint GDP = pLink->m_ShapePoints[i];
+					strLine.Format("\t\t\t\t\t<POINT INDEX=\"%d\" XCOORD=\"%.4f\" YCOORD=\"%.4f\" />\n",i,GDP.x,GDP.y);
+					m_rf<<strLine;
+				}
+				strLine.Format("\t\t\t\t</LINKPOLY>\n");
+				m_rf<<strLine;
+				strLine.Format("\t\t\t</LINK>\n");
+				m_rf<<strLine;
+			}
 		}
 	}
 	return true;
@@ -2300,12 +2365,12 @@ bool Mustang::WriteSignalControls()
 			MSigG* pg = p->SGs[j];
 			//write a group
 			strLine.Format("\t\t\t\t<SIGNALGROUP NO=\"%d\" NAME=\"%s\" GTSTART=\"%s\" GTEND=\"%s\" MINGTIME=\"%s\" ATIME=\"%s\" SIGNALGROUPTYPE=\"%s\" />\n",
-									pg->nSGNO,"",
-									Minutes2PTString(pg->nGTStart),
-									Minutes2PTString(pg->nGTEnd),
-									Minutes2PTString(pg->nMinGT),
-									Minutes2PTString(pg->nAT),
-									strSigalGroupType);
+				pg->nSGNO,"",
+				Minutes2PTString(pg->nGTStart),
+				Minutes2PTString(pg->nGTEnd),
+				Minutes2PTString(pg->nMinGT),
+				Minutes2PTString(pg->nAT),
+				strSigalGroupType);
 			m_rf<<strLine;
 		}
 
@@ -2351,12 +2416,12 @@ bool Mustang::WritePhases(std::vector<PhaseRecord*> phases)
 			break;
 		//write a group
 		strLine.Format("\t\t\t\t<SIGNALGROUP NO=\"%d\" NAME=\"%s\" GTSTART=\"%s\" GTEND=\"%s\" MINGTIME=\"%s\" ATIME=\"%s\" SIGNALGROUPTYPE=\"%s\" />\n",
-								p->nGroupNo,p->strName,
-								Minutes2PTString(p->nStartTime),
-								Minutes2PTString(p->nStartTime+p->nGreenLength),
-								Minutes2PTString(0),
-								Minutes2PTString(0),
-								strSigalGroupType);
+			p->nGroupNo,p->strName,
+			Minutes2PTString(p->nStartTime),
+			Minutes2PTString(p->nStartTime+p->nGreenLength),
+			Minutes2PTString(0),
+			Minutes2PTString(0),
+			strSigalGroupType);
 		m_rf<<strLine;
 		nGroupIndex ++;
 	}
@@ -2372,22 +2437,22 @@ bool Mustang::WritePhases(std::vector<PhaseRecord*> phases)
 }
 std::vector<string> Mustang::GetSignalControls()
 {// get those signal files
-    _finddata_t file;
-    long lf;
+	_finddata_t file;
+	long lf;
 	std::vector<string> files;
 	CString str;
 	str.Format("%s\\sig*.csv",m_strFolder);
-    if((lf = _findfirst(str, &file))==-1l)//_findfirst返回的是long型; long __cdecl _findfirst(const char *, struct _finddata_t *)
-        AfxMessageBox("文件没有找到!",MB_OK);
-    else
-    {
-        while( _findnext( lf, &file ) == 0 )//int __cdecl _findnext(long, struct _finddata_t *);如果找到下个文件的名字成功的话就返回0,否则返回-1
-        {
-            cout<<file.name;
+	if((lf = _findfirst(str, &file))==-1l)//_findfirst返回的是long型; long __cdecl _findfirst(const char *, struct _finddata_t *)
+		AfxMessageBox("文件没有找到!",MB_OK);
+	else
+	{
+		while( _findnext( lf, &file ) == 0 )//int __cdecl _findnext(long, struct _finddata_t *);如果找到下个文件的名字成功的话就返回0,否则返回-1
+		{
+			cout<<file.name;
 			files.push_back(file.name);
-        }
-    }
-    _findclose(lf);
+		}
+	}
+	_findclose(lf);
 	return files;
 }
 bool Mustang::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases)
@@ -2416,7 +2481,7 @@ bool Mustang::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases
 			int offset;
 			int sc_no;
 			rt = true;
- 
+
 			if( rt ) rt = parser.GetValueByFieldName("phase_no",phase_no);
 			if( rt ) rt = parser.GetValueByFieldName("phase_name",phase_name);
 			if( rt ) rt = parser.GetValueByFieldName("phase_type",phase_type);
@@ -2432,17 +2497,17 @@ bool Mustang::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases
 			if( rt )
 			{
 				PhaseRecord* pRecord = new PhaseRecord(phase_no,
-													   phase_name.c_str(),
-													   phase_type,
-													   -1,
-													   group_no,
-													   sequence_type,
-													   start_time,
-													   green_length,
-													   yellow_length,
-													   red_length,
-													   cycle_length,
-													   offset);
+					phase_name.c_str(),
+					phase_type,
+					-1,
+					group_no,
+					sequence_type,
+					start_time,
+					green_length,
+					yellow_length,
+					red_length,
+					cycle_length,
+					offset);
 				pRecord->nSCNo = sc_no;
 				phases.push_back(pRecord);				
 			}
@@ -2517,7 +2582,7 @@ void Mustang::CreateDefaultData()
 	s1 = _T("200");
 	pVehClass->m_szVehTypeIdArray.Add(s1);
 	m_VehClassArray.Add(pVehClass);
-	
+
 	//m_szLinkTypes = _T("");     // This string is reserved for attributes of LINKTYPES. The following 3 are in groups
 	//m_szLinkTypeNo.Add(_T("1"));
 	//m_szLinkTypeName.Add(_T("Major State Hwy"));
@@ -2585,50 +2650,50 @@ bool Mustang::CreateANMRoutesFile(std::string strFileName)
 	rf.open(strFileName.c_str());
 	rf<<"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
 	rf<<"<ABSTRACTNETWORKMODEL VERSNO=\"1.0\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\" NAME=\"simulation.anmRoutes\">\n";
-		rf<<"\t<MATRICES>\n";
-			rf<<"\t\t<MATRIX VEHTYPEID=\"100\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\">\n";
-				rf<<"\t\t\t<ELEMS>\n";
-				for(int i=0;i<m_odDemand.size();i++)
-				{
-					sprintf_s(elem,"\t\t\t\t<ELEM FROMZONENO=\"%d\" TOZONENO=\"%d\" VOLUME=\"%.3f\"/>\n",
-							m_odDemand[i]->m_nFromZone,
-							m_odDemand[i]->m_nToZone,
-							m_odDemand[i]->m_fDemand[0]);
-					rf<<elem;
-				}
-				rf<<"\t\t\t</ELEMS>\n";
-			rf<<"\t\t</MATRIX>\n";
-			rf<<"\t\t<MATRIX VEHTYPEID=\"200\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\">\n";
-				rf<<"\t\t\t<ELEMS>\n";
-				rf<<"\t\t\t</ELEMS>\n";
-			rf<<"\t\t</MATRIX>\n";
-		rf<<"\t</MATRICES>\n";
-		rf<<"\t<ROUTING>\n";
-			rf<<"\t\t<VEHTYPETIS>\n";
-				rf<<"\t\t\t<VEHTYPETI INDEX=\"1\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\" VEHTYPEID=\"100\"/>\n";
-				rf<<"\t\t\t<VEHTYPETI INDEX=\"2\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\" VEHTYPEID=\"200\"/>\n";
-			rf<<"\t\t</VEHTYPETIS>\n";
-			rf<<"\t\t<ROUTES>\n";
-				for(int i=0;i<m_pathDemand.size();i++)
-				{
-					MPath *pPath = m_pathDemand[i];
-					sprintf_s(elem,"\t\t\t\t<ROUTE FROMZONENO=\"%d\" TOZONENO=\"%d\" INDEX=\"%d\">\n",pPath->m_nFromZone,pPath->m_nToZone,pPath->m_nIndex);
-					rf<<elem;
-					rf<<"\t\t\t\t\t<ITEMS>\n";
-					for(int j=0;j<pPath->m_nodes.size();j++)
-					{
-						sprintf_s(elem,"\t\t\t\t\t\t<ITEM NODE=\"%d\"/>\n",pPath->m_nodes[j]);
-						rf<<elem;
-					}
-					rf<<"\t\t\t\t\t</ITEMS>\n";
-					rf<<"\t\t\t\t\t<DEMANDS>\n";
-					sprintf_s(elem,"\t\t\t\t\t\t<DEMAND VTI=\"1\" VOLUME=\"%.3f\"/>\n",pPath->m_vti1);
-					rf<<elem;
-					rf<<"\t\t\t\t\t</DEMANDS>\n";
-					rf<<"\t\t\t\t</ROUTE>\n";
-				}
-			rf<<"\t\t</ROUTES>\n";
-		rf<<"\t</ROUTING>\n";
+	rf<<"\t<MATRICES>\n";
+	rf<<"\t\t<MATRIX VEHTYPEID=\"100\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\">\n";
+	rf<<"\t\t\t<ELEMS>\n";
+	for(int i=0;i<m_odDemand.size();i++)
+	{
+		sprintf_s(elem,"\t\t\t\t<ELEM FROMZONENO=\"%d\" TOZONENO=\"%d\" VOLUME=\"%.3f\"/>\n",
+			m_odDemand[i]->m_nFromZone,
+			m_odDemand[i]->m_nToZone,
+			m_odDemand[i]->m_fDemand[0]);
+		rf<<elem;
+	}
+	rf<<"\t\t\t</ELEMS>\n";
+	rf<<"\t\t</MATRIX>\n";
+	rf<<"\t\t<MATRIX VEHTYPEID=\"200\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\">\n";
+	rf<<"\t\t\t<ELEMS>\n";
+	rf<<"\t\t\t</ELEMS>\n";
+	rf<<"\t\t</MATRIX>\n";
+	rf<<"\t</MATRICES>\n";
+	rf<<"\t<ROUTING>\n";
+	rf<<"\t\t<VEHTYPETIS>\n";
+	rf<<"\t\t\t<VEHTYPETI INDEX=\"1\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\" VEHTYPEID=\"100\"/>\n";
+	rf<<"\t\t\t<VEHTYPETI INDEX=\"2\" FROMTIME=\"09:00:00\" TOTIME=\"12:00:00\" VEHTYPEID=\"200\"/>\n";
+	rf<<"\t\t</VEHTYPETIS>\n";
+	rf<<"\t\t<ROUTES>\n";
+	for(int i=0;i<m_pathDemand.size();i++)
+	{
+		MPath *pPath = m_pathDemand[i];
+		sprintf_s(elem,"\t\t\t\t<ROUTE FROMZONENO=\"%d\" TOZONENO=\"%d\" INDEX=\"%d\">\n",pPath->m_nFromZone,pPath->m_nToZone,pPath->m_nIndex);
+		rf<<elem;
+		rf<<"\t\t\t\t\t<ITEMS>\n";
+		for(int j=0;j<pPath->m_nodes.size();j++)
+		{
+			sprintf_s(elem,"\t\t\t\t\t\t<ITEM NODE=\"%d\"/>\n",pPath->m_nodes[j]);
+			rf<<elem;
+		}
+		rf<<"\t\t\t\t\t</ITEMS>\n";
+		rf<<"\t\t\t\t\t<DEMANDS>\n";
+		sprintf_s(elem,"\t\t\t\t\t\t<DEMAND VTI=\"1\" VOLUME=\"%.3f\"/>\n",pPath->m_vti1);
+		rf<<elem;
+		rf<<"\t\t\t\t\t</DEMANDS>\n";
+		rf<<"\t\t\t\t</ROUTE>\n";
+	}
+	rf<<"\t\t</ROUTES>\n";
+	rf<<"\t</ROUTING>\n";
 	rf<<"</ABSTRACTNETWORKMODEL>";
 	rf.close();
 	return true;
@@ -2639,117 +2704,117 @@ bool Mustang::CreateANMRoutesFile(std::string strFileName)
 // Follow is from Xuesong
 void CTLiteDoc::ConstructandexportVISSIMdata()
 {
-	CString str;
-	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		"VISSIM Data File (*.csv)|*.csv||", NULL);
-	if(dlg.DoModal() == IDOK)
-	{
+CString str;
+CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+"VISSIM Data File (*.csv)|*.csv||", NULL);
+if(dlg.DoModal() == IDOK)
+{
 
-		CWaitCursor wait;
-		char fname[_MAX_PATH];
-		wsprintf(fname,"%s", dlg.GetPathName());
+CWaitCursor wait;
+char fname[_MAX_PATH];
+wsprintf(fname,"%s", dlg.GetPathName());
 
-		CString SynchroProjectFile = dlg.GetPathName();
-		m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
+CString SynchroProjectFile = dlg.GetPathName();
+m_Synchro_ProjectDirectory  = SynchroProjectFile.Left(SynchroProjectFile.ReverseFind('\\') + 1);
 
-		m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
-		m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
+m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
+m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, true, false);
 
-		}
+}
 
 
-	// generate all movements
-	int i = 0;
-	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
-	{  // for current node
-		
-		if ((*iNode)->m_ControlType > 1)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
-		{
-	
+// generate all movements
+int i = 0;
+for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
+{  // for current node
 
-			// scan each inbound link and outbound link
+if ((*iNode)->m_ControlType > 1)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
+{
 
-			for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
-			{
-				// for each incoming link
-				for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
-				{
-					//for each outging link
-					int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
 
-					if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
-					{
-						// do not consider u-turn
+// scan each inbound link and outbound link
 
-						DTA_Movement element;
+for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
+{
+// for each incoming link
+for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
+{
+//for each outging link
+int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
 
-						element.CurrentNodeID = i;						
+if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
+{
+// do not consider u-turn
 
-						element.InboundLinkID = LinkID;
-						element.UpNodeID = m_Network.m_FromIDAry[LinkID];
-						element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
+DTA_Movement element;
 
-						GDPoint p1, p2, p3;
-						p1  = m_NodeIDMap[element.UpNodeID]->pt;
-						p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
-						p3  = m_NodeIDMap[element.DestNodeID]->pt;
+element.CurrentNodeID = i;						
 
-						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
-						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
+element.InboundLinkID = LinkID;
+element.UpNodeID = m_Network.m_FromIDAry[LinkID];
+element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
 
-						// determine  movement type /direction here
-						element.dir = DTA_LANES_COLUME_init;
-						switch (element.movement_approach)
-						{
-							case DTA_North:
-								switch (element.movement_turn)
-								{
-									case DTA_LeftTurn: element.dir = DTA_NBL; break;
-									case DTA_Through: element.dir = DTA_NBT; break;
-									case DTA_RightTurn: element.dir = DTA_NBR; break;
-								}
-								break;
-							case DTA_East:
-								switch (element.movement_turn)
-								{
-									case DTA_LeftTurn: element.dir = DTA_EBL; break;
-									case DTA_Through: element.dir = DTA_EBT; break;
-									case DTA_RightTurn: element.dir = DTA_EBR; break;
-								}
-								break;
-							case DTA_South:
-								switch (element.movement_turn)
-								{
-									case DTA_LeftTurn: element.dir = DTA_SBL; break;
-									case DTA_Through: element.dir = DTA_SBT; break;
-									case DTA_RightTurn: element.dir = DTA_SBR; break;
-								}
-								break;
-							case DTA_West:
-								switch (element.movement_turn)
-								{
-									case DTA_LeftTurn: element.dir = DTA_WBL; break;
-									case DTA_Through: element.dir = DTA_WBT; break;
-									case DTA_RightTurn: element.dir = DTA_WBR; break;
-								}
-								break;
-						}
+GDPoint p1, p2, p3;
+p1  = m_NodeIDMap[element.UpNodeID]->pt;
+p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
+p3  = m_NodeIDMap[element.DestNodeID]->pt;
 
-	
-					}  // for each feasible movement (without U-turn)
-					
-				} // for each outbound link
+element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
-			} // for each inbound link
+// determine  movement type /direction here
+element.dir = DTA_LANES_COLUME_init;
+switch (element.movement_approach)
+{
+case DTA_North:
+switch (element.movement_turn)
+{
+case DTA_LeftTurn: element.dir = DTA_NBL; break;
+case DTA_Through: element.dir = DTA_NBT; break;
+case DTA_RightTurn: element.dir = DTA_NBR; break;
+}
+break;
+case DTA_East:
+switch (element.movement_turn)
+{
+case DTA_LeftTurn: element.dir = DTA_EBL; break;
+case DTA_Through: element.dir = DTA_EBT; break;
+case DTA_RightTurn: element.dir = DTA_EBR; break;
+}
+break;
+case DTA_South:
+switch (element.movement_turn)
+{
+case DTA_LeftTurn: element.dir = DTA_SBL; break;
+case DTA_Through: element.dir = DTA_SBT; break;
+case DTA_RightTurn: element.dir = DTA_SBR; break;
+}
+break;
+case DTA_West:
+switch (element.movement_turn)
+{
+case DTA_LeftTurn: element.dir = DTA_WBL; break;
+case DTA_Through: element.dir = DTA_WBT; break;
+case DTA_RightTurn: element.dir = DTA_WBR; break;
+}
+break;
+}
 
-		} // checking control type
-	}// for each node
+
+}  // for each feasible movement (without U-turn)
+
+} // for each outbound link
+
+} // for each inbound link
+
+} // checking control type
+}// for each node
 }
 */
 MLink* MNode::GetBrunchLink(int nLeg /*= 8*/)
 {
 	if ( inLinks.size() != 3) return NULL;
-	
+
 	MLink* p0 = inLinks[0];
 	MLink* p1 = inLinks[1];
 	MLink* p2 = inLinks[2];
@@ -2793,9 +2858,9 @@ int MNode::CheckMissingApproach(void)
 	if (mulIn == 0) return 0;
 
 	if ( (sumIn == 6 && mulIn == 6) ||
-		 (sumIn == 9 && mulIn == 24)||
-		 (sumIn == 8 && mulIn == 12)||
-		 (sumIn == 7 && mulIn == 8) )
+		(sumIn == 9 && mulIn == 24)||
+		(sumIn == 8 && mulIn == 12)||
+		(sumIn == 7 && mulIn == 8) )
 	{
 	}
 	else
@@ -2898,7 +2963,7 @@ bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
 			if(!parser.GetValueByFieldName("route_index",route_index))			route_index	 = 0;
 			if(!parser.GetValueByFieldName("vehicle_type",vehicle_type))		vehicle_type = 1;
 			if( !parser.GetValueByFieldName("from_zone_id",from_zone_id) || 
-			    !parser.GetValueByFieldName("from_node_id",from_node_id) || 
+				!parser.GetValueByFieldName("from_node_id",from_node_id) || 
 				!parser.GetValueByFieldName("to_zone_id",to_zone_id)	 ||
 				!parser.GetValueByFieldName("to_node_id",to_node_id)     )
 			{
@@ -3433,7 +3498,7 @@ void Mustang::PrepareData4Editing()
 void Mustang::FillReverseMLinkID()
 {
 	// 同时赋anmID的值
-	m_logFile<< "FillReverseMLinkID function called!"<<endl;
+	//	m_logFile<< "FillReverseMLinkID function called!"<<endl;
 	std::list<MLink*>::iterator iLink;
 	int nANMID = 1;
 	for (iLink = m_LinkList.begin(); iLink != m_LinkList.end(); iLink++)
@@ -3450,7 +3515,7 @@ void Mustang::FillReverseMLinkID()
 			nANMID ++;
 		}
 	}
-	m_logFile<< "FillReverseMLinkID function Ended!"<<endl;
+	//	m_logFile<< "FillReverseMLinkID function Ended!"<<endl;
 }
 int  Mustang::GetReverseMLinkID(int nMLinkID)
 {
@@ -3493,14 +3558,14 @@ void Mustang::WriteMSLane(std::string strFileName)
 					if (pLane->through )  nTurn+=2;
 					if (pLane->rightTurn) nTurn+=4;
 					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeID,pLink->m_LinkID,1,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
-													pLane->m_PocketLength+pLane->m_ChannelLength,nTurn,0);
+						pLane->m_PocketLength+pLane->m_ChannelLength,nTurn,0);
 				}
 				for(int k=0;k<pLink->outLanes.size();k++)
 				{
 					int nTurn=0;
 					MLane* pLane = pLink->outLanes[k];
 					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeID,pLink->m_LinkID,0,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
-													0.00,nTurn,0);
+						0.00,nTurn,0);
 				}
 			}
 		}
@@ -3528,7 +3593,7 @@ void Mustang::WriteMSLaneturn(std::string strFileName)
 				MLink* pFromLink = GetMLinkbyID(pTurn->nFromLinkId);
 				MLink* pToLink   = GetMLinkbyID(pTurn->nToLinkId);
 				fprintf(f,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",pNode->m_NodeID,pFromLink->m_LinkID,pToLink->m_LinkID,pTurn->nRTL,
-															pTurn->bForbid ? 1 : 0,pTurn->nFromIndex,pTurn->nToIndex,pTurn->nSCNO,pTurn->nSignalGroupNo,0);
+					pTurn->bForbid ? 1 : 0,pTurn->nFromIndex,pTurn->nToIndex,pTurn->nSCNO,pTurn->nSignalGroupNo,0);
 			}
 		}
 		fclose(f);

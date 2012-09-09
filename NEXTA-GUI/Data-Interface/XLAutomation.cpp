@@ -1534,17 +1534,17 @@ CString CXLAutomation::GetWorksheetName(int nWorksheet)
 // bShowAlert = TRUE will enable alerts
 BOOL CXLAutomation::EnableAlert(BOOL bShowAlert)
 {
-/*     if(NULL == m_pdispExcelApp)
+    if(NULL == m_pdispExcelApp)
 		return FALSE;
 
 	ClearAllArgs();
 	AddArgumentBool(NULL, bShowAlert, true);
-	if(!ExlInvoke(m_pdispExcelApp, LbDisplayAlertsb, NULL, DISPATCH_METHOD, DISP_FREEARGS))
-  	return FALSE; 
-*/
-	return TRUE;
-}
+	if(!ExlInvoke(m_pdispExcelApp,  L"Worksheets", NULL, DISPATCH_METHOD, DISP_FREEARGS))
+  		return FALSE; 
+	else
+		return TRUE;
 
+}
 //Before closing server in your application disable alerts by calling:
 //XL.EnableAlerts(FALSE);
 //XL.ReleaseExcel();
