@@ -46,7 +46,75 @@ extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 extern int g_DemandLoadingStartTimeInMin;
 extern int g_DemandLoadingEndTimeInMin;
 
+class HistoricalDemand
+{
 
+public:
+	HistoricalDemand()
+	{
+		m_HistDemand = NULL;
+	}
+	~HistoricalDemand()
+	{
+	if(m_HistDemand!=NULL)
+		{
+		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		}
+	}
+
+	float *** m_HistDemand;
+	int m_StatisticsIntervalSize;
+	int m_StartingTimeInterval;
+
+	void Reset()
+	{
+			for(int i= 0; i<=g_ODZoneSize; i++)
+			for(int j= 0; j<=g_ODZoneSize; j++)
+				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
+				{
+				m_HistDemand[i][j][t] = 0;;
+				}
+
+	}
+
+	void Initialize ()
+	{
+		m_StatisticsIntervalSize = 0;
+		m_StartingTimeInterval = 0;
+		if(m_HistDemand!=NULL)
+		{
+		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		}
+
+		m_StatisticsIntervalSize = (g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/15;  // 15 min: department_time_intreval
+		m_StartingTimeInterval = g_DemandLoadingStartTimeInMin/15;
+
+		m_HistDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,m_StatisticsIntervalSize+2);
+
+		Reset();
+
+	}
+	void AddValue(int origin_zone, int destination_zone, int AssignmentInterval, float value)
+	{
+		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+			return; 
+
+		m_HistDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval] += value;
+	}
+
+
+	float GetValue(int origin_zone, int destination_zone, int AssignmentInterval)
+	{
+		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+			return 0.0f; 
+
+			return 	m_HistDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval];
+
+	}
+
+};
+
+extern HistoricalDemand g_HistDemand;
 
 extern std::vector<NetworkMOE>  g_NetworkMOEAry;
 

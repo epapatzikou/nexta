@@ -22,6 +22,7 @@ CCSVParser::~CCSVParser(void)
 
 bool CCSVParser::OpenCSVFile(string fileName,bool b_required)
 {
+	mFileName = fileName;
 	inFile.open(fileName.c_str());
 	
 	if (inFile.is_open())
