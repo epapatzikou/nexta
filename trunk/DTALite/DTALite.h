@@ -54,7 +54,7 @@ using namespace std;
 #define MAX_VOT_RANGE 101
 #define DEFAULT_VOT 12
 
-
+extern int g_ODZoneSize;
 
 enum SPEED_BIN {VSP_0_25mph=0,VSP_25_50mph,VSP_GT50mph};
 enum VSP_BIN {VSP_LT0=0,VSP_0_3,VSP_3_6,VSP_6_9,VSP_9_12,VSP_GT12,VSP_6_12,VSP_LT6};
@@ -66,10 +66,14 @@ enum Traffic_MOE {MOE_crashes,MOE_CO2, MOE_total_energy};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 extern double g_DTASimulationInterval;
+extern int g_SimulateSignals;
+extern float g_DefaultArterialKJam;
+extern int g_DefaultCycleLength;
+
 extern double g_CarFollowingSimulationInterval;
 
 #define	MAX_SPLABEL 99999.0f
-#define MAX_TIME_INTERVAL_ADCURVE 300  // 300 simulation intervals of data are stored to keep tract cummulative flow counts of each link
+#define MAX_TIME_INTERVAL_ADCURVE 300  // 300 simulation intervals of data are stored to keep tract Cumulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
 extern float g_MaxDensityRatioForVehicleLoading;
@@ -237,44 +241,13 @@ int NodeID;
 int ExternalODFlag;
 
 };
-class TimeOfDayDemand
-{
-public: 
-	std::map<int, float> ValueMap;
-	void SetValue(int AssignmentInterval, float value)
-	{
-		ValueMap[AssignmentInterval] = value;
-	}
 
-	void AddValue(int AssignmentInterval, float value)
-	{
-		if(ValueMap.find(AssignmentInterval)!= ValueMap.end())
-		{
-			ValueMap[AssignmentInterval] +=value;
-		}else
-		{
-			ValueMap[AssignmentInterval] = value;
 
-		}
-	}
-
-	float GetValue(int AssignmentInterval)
-	{
-		if(ValueMap.find(AssignmentInterval)!= ValueMap.end())
-		{
-			return ValueMap[AssignmentInterval];
-		}else
-			return 0;
-
-	}
-
-};
 
 class DTAZone
 { 
 public:
-	std::map<int, TimeOfDayDemand> m_HistDemand;  // key destination zone, value, demand value
-
+	
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_OriginActivityVector;
 	std::vector<int> m_DestinationActivityVector;
@@ -312,10 +285,10 @@ public:
 		m_Capacity  =0;
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
+
 	}
 	~DTAZone()
 	{
-		m_HistDemand.clear();
 		m_OriginActivityVector.clear();
 		m_DestinationActivityVector.clear();
 	}
@@ -547,7 +520,9 @@ class SLinkMeasurement  // time-dependent link measurement
 public:
 	int StartTime;
 	int EndTime;
-
+	
+	string name;
+	string direction;
 	// observed
 	float ObsFlowCount;
 	float ObsNumberOfVehicles;  // converted from density
@@ -589,7 +564,7 @@ public:
 	{
 		m_LinkInCapacityRatio = 0;
 	};
-	int m_LinkID;
+	int m_LinkNo;
 	int m_link_type;
 	int m_NumLanes;
 	float m_LinkInCapacityRatio;
@@ -738,7 +713,7 @@ public:
 		m_SimulationHorizon	= TimeSize;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 
-		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for cummulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
+		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for Cumulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
 		m_CumuDeparturelFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);      // TimeSize  (unit: min), TimeSize*10 = 0.1 min: number of simulation time intervals
 
 		m_StochaticCapcityFlag = 0;
@@ -784,7 +759,7 @@ public:
 
 	float GetHourlyPerLaneCapacity(int Time=-1)
 	{
-		return m_MaximumServiceFlowRatePHPL;
+		return m_LaneCapacity;
 	}
 
 	float GetNumLanes(int DayNo=0, int Time=-1)  // with lane closure
@@ -1058,7 +1033,7 @@ public:
 
 	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
 
-	int m_LinkID;
+	int m_LinkNo;
 	int m_OrgLinkID;    //original link id from input_link.csv file
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
@@ -1078,7 +1053,7 @@ public:
 	float m_KJam;
 	float m_AADTConversionFactor;
 	float m_BackwardWaveSpeed; // unit: mile/ hour
-	float	m_MaximumServiceFlowRatePHPL;  //Capacity used in BPR for each link, reduced due to link type and other factors.
+	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
@@ -1256,7 +1231,7 @@ public:
 			float hourly_capacity = TotalCapacity/number_of_days;
 			TRACE("Hourly Capacity %f\n", hourly_capacity);
 
-			m_DayDependentCapacity[day] = hourly_capacity/1870*m_MaximumServiceFlowRatePHPL;
+			m_DayDependentCapacity[day] = hourly_capacity/1870*m_LaneCapacity;
 			//1820.31 is the mean capacity derived from mean headway
 
 		}
@@ -1340,7 +1315,7 @@ public:
 
 	float GetPrevailingTravelTime(int DayNo,int CurrentTime)
 	{
-		if(GetNumLanes(DayNo,CurrentTime)<0.01)   // road blockage
+		if(GetNumLanes(DayNo,CurrentTime)<=0.1)   // road blockage, less than 0.1 lanes, or about 2000 capacity
 			return 1440; // unit min
 
 		if(departure_count >= 1 && CurrentTime >0)
@@ -1373,7 +1348,7 @@ public:
 	{
 		float travel_time  = 0.0f;
 
-		if(GetNumLanes(DayNo,starting_time)<0.01)   // road blockage
+		if(GetNumLanes(DayNo,starting_time)<=0.1)   // road blockage
 			return 9999; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
@@ -1399,7 +1374,7 @@ public:
 
 		if(travel_time > 99999)
 		{
-			TRACE("Error, link %d", this ->m_LinkID );
+			TRACE("Error, link %d", this ->m_LinkNo );
 			for(t=starting_time; t< time_end; t++)
 			{
 				TRACE("t = %d,%f\n",t,m_LinkMOEAry[t].TotalTravelTime);
@@ -1420,9 +1395,9 @@ class SVehicleLink
 {  public:
 
 #ifdef _WIN64
-unsigned long  LinkID;  // range: 4294967295
+unsigned long  LinkNo;  // range: 4294967295
 #else
-unsigned short  LinkID;  // range:  65535
+unsigned short  LinkNo;  // range:  65535
 #endif
 
 unsigned short  LaneBasedCumulativeFlowCount;  // range:  65535
@@ -1430,7 +1405,7 @@ float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a 
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
 {
-	LinkID = MAX_LINK_NO;
+	LinkNo = MAX_LINK_NO;
 	AbsArrivalTimeOnDSN = 99999;
 	//		LinkWaitingTime = 0;
 	LaneBasedCumulativeFlowCount = 0;
@@ -1649,7 +1624,7 @@ class DTAVehicle
 public:
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
-	SVehicleLink *m_aryVN; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
+	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
 
 	float m_PrevSpeed;
 	std::map<int, int> m_OperatingModeCount;
@@ -1718,7 +1693,7 @@ public:
 		Day2DayPathMap[DayNo].NodeSum = m_NodeNumberSum;
 
 		for(int i = 0; i < m_NodeSize; i++)
-			Day2DayPathMap[DayNo].LinkSequence.push_back (m_aryVN[i].LinkID );
+			Day2DayPathMap[DayNo].LinkSequence.push_back (m_NodeAry[i].LinkNo );
 
 	};
 
@@ -1744,7 +1719,7 @@ public:
 
 		m_MinCost = 0;
 
-		m_aryVN = NULL;
+		m_NodeAry = NULL;
 		m_NodeSize	= 0;
 		m_bImpacted = false; 
 		m_InformationClass = 1;
@@ -1764,8 +1739,8 @@ public:
 	};
 	~DTAVehicle()
 	{
-		if(m_aryVN != NULL)
-			delete m_aryVN;
+		if(m_NodeAry != NULL)
+			delete m_NodeAry;
 
 		m_OperatingModeCount.clear();
 		m_DayDependentAryLink.clear();
@@ -2337,7 +2312,7 @@ int g_read_integer_with_char_O(FILE* f);
 float g_read_float(FILE *f);
 
 void ReadNetworkTables();
-int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,long PathIndex = -1);
+int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,long PathIndex = -1, bool bChangeHistDemandTable=true);
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
@@ -2383,27 +2358,27 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-
+#define _MAX_ODT_PATH_SIZE_4_ODME 30
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
 {
 	//  // for path flow adjustment
 	int   NumOfVehicles;
 	float   DeviationNumOfVehicles; 
-	int   MeasurementDeviationPathMarginal[100];
-	float AvgPathGap[100]; 
-	float NewNumberOfVehicles[100]; 
+	int   MeasurementDeviationPathMarginal[_MAX_ODT_PATH_SIZE_4_ODME];
+	float AvgPathGap[_MAX_ODT_PATH_SIZE_4_ODME]; 
+	float NewNumberOfVehicles[_MAX_ODT_PATH_SIZE_4_ODME]; 
 
 	int  LeastTravelTime;
 
 	//
 	int   NumOfPaths;
-	int   PathNodeSums[100];            // max 100 path for each ODT
-	int   NumOfVehsOnEachPath[100]; 	
-	int   PathLinkSequences[100][100];	// max 100 links on each path
-	int   PathSize[100];				// number of nodes on each path
+	int   PathNodeSums[_MAX_ODT_PATH_SIZE_4_ODME];            // max 100 path for each ODT
+	int   NumOfVehsOnEachPath[_MAX_ODT_PATH_SIZE_4_ODME]; 	
+	int   PathLinkSequences[_MAX_ODT_PATH_SIZE_4_ODME][100];	// max 100 links on each path
+	int   PathSize[_MAX_ODT_PATH_SIZE_4_ODME];				// number of nodes on each path
 	//	int   BestPath[100];				// the link sequence of the best path for each ODT
 	int   BestPathIndex;				// index of the best (i.e., least experienced time) path for each ODT
-	float AvgPathTimes[100]; 	       // average path travel time across different vehicles on the same path with the same departure time
+	float AvgPathTimes[_MAX_ODT_PATH_SIZE_4_ODME]; 	       // average path travel time across different vehicles on the same path with the same departure time
 
 
 };
@@ -2602,6 +2577,7 @@ typedef struct
 } struct_VehicleInfo_Header;
 
 
+
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
@@ -2632,8 +2608,9 @@ double g_GetRandomRatio();
 int g_GetRandomInteger_SingleProcessorMode(float Value);
 int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float Value, int LinkID);
 
-void g_ReadDTALiteVehicleFile(char fname[_MAX_PATH]);
+void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
+bool g_ReadAgentBinFile(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
@@ -2678,7 +2655,6 @@ extern bool g_ReadLinkMeasurementFile();
 //extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
 
 // for OD estimation
-extern float*** g_HistODDemand;
 extern float    g_ODEstimation_WeightOnHistODDemand;
 extern float    g_ODEstimation_Weight_Flow;
 extern float    g_ODEstimation_Weight_NumberOfVehicles;

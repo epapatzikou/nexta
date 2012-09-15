@@ -59,7 +59,7 @@ public:
 		{
 			if(required_field)
 			{
-				cout << "Field " << field_name << " in File " << mFileName << " does not exit."  << endl;
+				cout << "Field " << field_name << " in file " << mFileName << " does not exist. Please check the file."  << endl;
 			
 				g_ProgramStop();
 			}

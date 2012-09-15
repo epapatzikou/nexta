@@ -23,6 +23,99 @@ unsigned int g_RandomSeedForVehicleGeneration = 101;
 long g_precision_constant=100000L;
 long g_precision_constant2=1000L;
 extern float g_DemandGlobalMultiplier;
+
+
+#include<iostream>
+#include<cmath>
+using namespace std;
+
+
+//******************************************************************************
+// linear regression code is modified based on
+// http://codesam.blogspot.com/2011/06/least-square-linear-regression-of-data.html
+//********************************************************************************/
+
+struct DataPoint
+{
+   double x;
+   double y;
+};
+
+void LeastRegression(std::vector <DataPoint> DataVector)
+{
+
+	if(DataVector.size()<=2)
+		return;
+
+   double sum_x = 0;     //sum of x values
+   double sum_y = 0;     //sum of y values
+   double sum_xy = 0;    //sum of x * y
+   double sum_xx = 0;    //sum of x^2
+   double sum_res = 0;   //sum of squared residue
+   double res = 0;      //residue squared
+   double slope = 0;    //slope of regression line
+   double y_intercept = 0; //y intercept of regression line
+   double sum_y_res = 0; //sum of squared of the discrepancies
+   double AVGy = 0;     //mean of y
+   double AVGx = 0;     //mean of x
+   double Yres = 0;     //squared of the discrepancies
+   double Rsqr = 0;     //coefficient of determination
+
+   //calculate various sum_s 
+   for (int i = 0; i < DataVector.size(); i++)
+   {
+      //sum of x
+      sum_x = sum_x + DataVector[i].x;
+      //sum of y
+      sum_y = sum_y + DataVector[i].y;
+      //sum of squared x*y
+      sum_xy = sum_xy + DataVector[i].x * DataVector[i].y;
+      //sum of squared x
+      sum_xx = sum_xx + DataVector[i].x * DataVector[i].x;
+   }
+
+   //calculate the means of x and y
+   int dataSize = DataVector.size();
+   AVGy = sum_y / dataSize;
+   AVGx = sum_x / dataSize;
+
+   //slope or a1
+   slope = (dataSize * sum_xy - sum_x * sum_y) / (dataSize * sum_xx - sum_x*sum_x);
+
+   //y itercept or a0
+   y_intercept = AVGy - slope * AVGx;
+   
+   //calculate squared residues, their sum_ etc.
+   for (int i = 0; i <  DataVector.size(); i++) 
+   {
+      //current (y_i - a0 - a1 * x_i)^2
+      Yres = pow((DataVector[i].y - y_intercept - (slope * DataVector[i].x)), 2);
+
+      //sum of (y_i - a0 - a1 * x_i)^2
+      sum_y_res += Yres;
+
+      //current residue squared (y_i - AVGy)^2
+      res = pow(DataVector[i].y - AVGy, 2);
+
+      //sum of squared residues
+      sum_res += res;
+      
+      TRACE ("   (%0.2f %0.2f)      %0.5E         %0.5E\n", 
+       DataVector[i].x, DataVector[i].y, res, Yres);
+   }
+
+   //calculate r^2 coefficient of determination
+   Rsqr = (sum_res - sum_y_res) / sum_res;
+   
+   TRACE("--------------------------------------------------\n");
+   TRACE("sum of (y_i - y_avg)^2 = %0.5E\t\n", sum_res);
+   TRACE("sum of (y_i - a_o - a_1*x_i)^2 = %0.5E\t\n", sum_y_res);
+   TRACE("Standard deviation(St) = %0.5E\n", sqrt(sum_res / (dataSize - 1)));
+   TRACE("Standard error of the estimate(Sr) = %0.5E\t\n", sqrt(sum_y_res / (dataSize-2)));
+   TRACE("Coefficent of determination(r^2) = %0.5E\t\n", (sum_res - sum_y_res)/sum_res);
+   TRACE("Correlation coefficient(r) = %0.5E\t\n", sqrt(Rsqr));
+
+}
 bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2)
 {
 	long lValue1 = (long) (value1*g_precision_constant);
@@ -611,4 +704,7 @@ double WELLRNG512a (void){
   state_i = (state_i + 15) & 0x0000000fU;
   return ((double) STATE[state_i]) * FACT;
 }
+
+
+
 

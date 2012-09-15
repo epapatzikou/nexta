@@ -180,18 +180,18 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 		FromID = pLink->m_FromNodeID;
 		ToID   = pLink->m_ToNodeID;
 
-			if( pLink->m_FromNodeNumber == 117 && pLink->m_ToNodeNumber == 116)
+			if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
 			{
 			TRACE("");
 			}
 
-		m_FromIDAry[pLink->m_LinkID] = FromID;
-		m_ToIDAry[pLink->m_LinkID]   = ToID;
+		m_FromIDAry[pLink->m_LinkNo] = FromID;
+		m_ToIDAry[pLink->m_LinkNo]   = ToID;
 
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = pLink->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = pLink->m_LinkNo ;
 
-		int link_id = pLink->m_LinkID ;
+		int link_id = pLink->m_LinkNo ;
 		if(g_LinkTypeMap[g_LinkVector[link_id]->m_link_type].IsConnector())
 		{
 			m_OutboundConnectorZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
@@ -204,12 +204,12 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = pLink->m_LinkID  ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = pLink->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
-		m_LinkTDDistanceAry[pLink->m_LinkID] = pLink->m_Length ;
+		m_LinkTDDistanceAry[pLink->m_LinkNo] = pLink->m_Length ;
 
 		int link_entering_time_interval;
 		for(t = m_StartTimeInMin; t < m_PlanningHorizonInMin; t += g_AggregationTimetInterval)
@@ -232,7 +232,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeName, g_NodeVector[ToID].m_NodeName, t,AvgTravelTime );
 			}
 
-			m_LinkTDTimeAry[pLink->m_LinkID][link_entering_time_interval] = AvgTravelTime;
+			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTravelTime;
 
 
 			// copy pricing type dependent link toll values
@@ -241,7 +241,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 
 				if((DayNo >= pLink->TollVector[itoll].StartDayNo && DayNo <= pLink->TollVector[itoll].EndDayNo  ) && m_StartTimeInMin >= pLink->TollVector[itoll].StartTime && m_StartTimeInMin <= pLink->TollVector[itoll].EndTime)
 				{
-					m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].m_bTollExist = true;
+					m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTollExist = true;
 
 					float speed =  pLink->m_Length /AvgTravelTime*60;
 
@@ -266,7 +266,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 					//	{
 					//	pLink->TollVector[itoll].TollRate[pricing_type] = 2;
 					//	}
-						m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].TollValue [pricing_type] = pLink->TollVector[itoll].TollRate[pricing_type];
+						m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue [pricing_type] = pLink->TollVector[itoll].TollRate[pricing_type];
 					}
 				}
 			}
@@ -274,27 +274,27 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 			if (g_LinkTypeMap[pLink->m_link_type ].IsTransit() 
 				|| g_LinkTypeMap[pLink->m_link_type ].IsWalking() )  // 
 			{  // transit or walking link
-				m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].m_bTollExist = true;
+				m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTollExist = true;
 
-				m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].TollValue [1] = 100;  // transit links do not allow SOV
-				m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].TollValue [2] = 100;  // transit links do not allow HOV
-				m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].TollValue [3] = 100; // transit links do not allow trucks
-				m_LinkTDCostAry[pLink->m_LinkID][link_entering_time_interval].TollValue [4] = 0;  // default zero cost
+				m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue [1] = 100;  // transit links do not allow SOV
+				m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue [2] = 100;  // transit links do not allow HOV
+				m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue [3] = 100; // transit links do not allow trucks
+				m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue [4] = 0;  // default zero cost
 			}
 
 			if (g_LinkTypeMap[pLink->m_link_type ].IsTransit() ==false)
 			{
 				if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
 				{
-					m_LinkTDTransitTimeAry[pLink->m_LinkID][link_entering_time_interval] = 99999;			
+					m_LinkTDTransitTimeAry[pLink->m_LinkNo][link_entering_time_interval] = 99999;			
 				}else
 				{
-					m_LinkTDTransitTimeAry[pLink->m_LinkID][link_entering_time_interval] = pLink->m_Length/5*60;  // walking speed  = 5 mph			
+					m_LinkTDTransitTimeAry[pLink->m_LinkNo][link_entering_time_interval] = pLink->m_Length/5*60;  // walking speed  = 5 mph			
 				}
 
 			}else
 			{
-				m_LinkTDTransitTimeAry[pLink->m_LinkID][link_entering_time_interval] = m_LinkTDTimeAry[pLink->m_LinkID][link_entering_time_interval];  // calculated from speed limit of bus
+				m_LinkTDTransitTimeAry[pLink->m_LinkNo][link_entering_time_interval] = m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval];  // calculated from speed limit of bus
 
 			}
 
@@ -383,21 +383,21 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VM
 	{
 
 		if(g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsConnector() && g_NodeVector[g_LinkVector[li]->m_FromNodeID ].m_ZoneID >= 0 
-			&& g_LinkVector[li]->m_LinkID != VMSLinkNo) // connector from centroid and not the starting link
+			&& g_LinkVector[li]->m_LinkNo != VMSLinkNo) // connector from centroid and not the starting link
 			continue;
 
 		FromID = g_LinkVector[li]->m_FromNodeID;
 		ToID   = g_LinkVector[li]->m_ToNodeID;
 
-		m_FromIDAry[g_LinkVector[li]->m_LinkID] = FromID;
-		m_ToIDAry[g_LinkVector[li]->m_LinkID]   = ToID;
+		m_FromIDAry[g_LinkVector[li]->m_LinkNo] = FromID;
+		m_ToIDAry[g_LinkVector[li]->m_LinkNo]   = ToID;
 
 		//      TRACE("FromID %d -> ToID %d \n", FromID, ToID);
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
-		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkID ;
+		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = g_LinkVector[li]->m_LinkNo ;
 		m_OutboundSizeAry[FromID] +=1;
 
-		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkID ;
+		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = g_LinkVector[li]->m_LinkNo ;
 		m_InboundSizeAry[ToID] +=1;
 
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
@@ -412,7 +412,7 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VM
 		if(travel_time < g_LinkVector[li]->m_FreeFlowTravelTime )
 			travel_time = g_LinkVector[li]->m_FreeFlowTravelTime;
 
-		m_LinkTDTimeAry[g_LinkVector[li]->m_LinkID][0] = travel_time;
+		m_LinkTDTimeAry[g_LinkVector[li]->m_LinkNo][0] = travel_time;
 
 	}
 	m_NodeSize = m_PhysicalNodeSize;

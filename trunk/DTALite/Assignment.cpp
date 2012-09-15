@@ -62,8 +62,8 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	// assign different zones to different processors
 	int number_of_threads = omp_get_max_threads ( );
 
-	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
-		number_of_threads = 1;
+//	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
+//		number_of_threads = 1;
 
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
@@ -78,6 +78,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
 
 	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
+	g_SummaryStatFile.WriteTextString(" ");
 
 
 	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
@@ -91,15 +92,22 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
+		cout << "------- Allocating memory for networks " << endl;
+
 	for(int ProcessID=0;  ProcessID < _MAX_NUMBER_OF_PROCESSORS; ProcessID++)
 	{
 		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	}
+		cout << "------- Memory allocation completed.-------" << endl;
 
 	// ----------* start of outer loop *----------
 	for(iteration=0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
 	{
 		cout << "------- Iteration = "<<  iteration << "--------" << endl;
+
+
+		//if( iteration >=6)
+		//	g_SimulateSignals = 1;  // enable signal after the path flow has been stabalizied. 
 
 		// initialize for each iteration
 		g_CurrentGapValue = 0.0;
@@ -235,6 +243,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 		if(iteration==0)  //we always switch at the first iteration
 		{
+			if(pVeh->m_NodeSize ==0)  // without pre-loaded path
+			{
 			bSwitchFlag = true;
 
 			pVeh->m_PreferredDepartureTime = pVeh->m_DepartureTime;  // set departure time to m_PreferredDepartureTime
@@ -242,6 +252,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			// get the first feasible solution
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+			}
 
 
 		}else
@@ -331,9 +342,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			pVeh->m_bSwitched = true;
 
-			if( pVeh->m_aryVN !=NULL)  // delete the old path
+			if( pVeh->m_NodeAry !=NULL)  // delete the old path
 			{
-				delete pVeh->m_aryVN;
+				delete pVeh->m_NodeAry;
 			}
 
 			pVeh->m_NodeSize = NodeSize;
@@ -349,9 +360,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					g_ProgramStop();
 				}
 
-				pVeh->m_aryVN = new SVehicleLink[NodeSize];
+				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_aryVN==NULL)
+				if(pVeh->m_NodeAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -362,19 +373,19 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					pVeh->m_aryVN[i].LinkID = PathLinkList[i];
+					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
 					pVeh->m_NodeNumberSum += PathLinkList[i];
 
-					/*if(g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL)
+					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
 					{
-					cout << "Error: g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
+					cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
 					getchar();
 					exit(0);
 					}
 					*/
-					ASSERT(pVeh->m_aryVN [i].LinkID < g_LinkVector.size());
+					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
 
-					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+					pVeh->m_Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 
 				}
 
@@ -391,13 +402,13 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 						if(i==0)  // initialize departure time
 						{
-							pVeh->m_aryVN[i].AbsArrivalTimeOnDSN = pVeh->m_DepartureTime ;
+							pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN = pVeh->m_DepartureTime ;
 						}
 
 						if(i< NodeSize-1)  // for all physical links
 						{
 							float transit_travel_time = 0;
-							DTALink* pLink = g_LinkVector[pVeh->m_aryVN[i].LinkID];
+							DTALink* pLink = g_LinkVector[pVeh->m_NodeAry[i].LinkNo];
 
 							if (g_LinkTypeMap[pLink->m_link_type ].IsTransit() ==false)
 							{
@@ -416,12 +427,12 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 							}
 
 
-							pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN =
-								pVeh->m_aryVN[i].AbsArrivalTimeOnDSN + transit_travel_time ;
+							pVeh->m_NodeAry[i+1].AbsArrivalTimeOnDSN =
+								pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN + transit_travel_time ;
 
-							if(pVeh->m_ArrivalTime < pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN)  // update arrival time
+							if(pVeh->m_ArrivalTime < pVeh->m_NodeAry[i+1].AbsArrivalTimeOnDSN)  // update arrival time
 							{
-								pVeh->m_ArrivalTime = pVeh->m_aryVN[i+1].AbsArrivalTimeOnDSN;
+								pVeh->m_ArrivalTime = pVeh->m_NodeAry[i+1].AbsArrivalTimeOnDSN;
 								pVeh->m_TripTime = pVeh->m_ArrivalTime - pVeh->m_DepartureTime;
 							}
 
@@ -489,6 +500,7 @@ void g_ODBasedDynamicTrafficAssignment()
 		// initialize for OD estimation
 		g_TotalDemandDeviation = 0;
 		g_TotalMeasurementDeviation = 0; 
+		int Actual_ODZoneSize = g_ZoneMap.size();  // Actual_ODZoneSize can be < ODZoneSize after subarea cut with new zones
 
 		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
@@ -514,7 +526,7 @@ void g_ODBasedDynamicTrafficAssignment()
 							// create network for shortest path calculation at this processor
 							network_MP.BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
-							if(g_ODZoneSize > 300)  // only for large networks
+							if(Actual_ODZoneSize > 300)  // only for large networks
 							{
 								cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
 							}
@@ -689,6 +701,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			} 
 		}else	// iteration = 0;  at iteration 0, every vehicle needs a path for simulation, so every vehicle switches
 		{
+
 			bSwitchFlag = true;
 		}
 
@@ -729,9 +742,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			pVeh->m_bSwitched = true;
 			pVeh->m_NodeSize = NodeSize;
 
-			if( pVeh->m_aryVN !=NULL)
+			if( pVeh->m_NodeAry !=NULL)
 			{
-				delete pVeh->m_aryVN;
+				delete pVeh->m_NodeAry;
 			}
 
 			if(pVeh->m_NodeSize>=2)
@@ -744,9 +757,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 					g_ProgramStop();
 				}
 
-				pVeh->m_aryVN = new SVehicleLink[NodeSize];
+				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_aryVN==NULL)
+				if(pVeh->m_NodeAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -757,9 +770,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 				for(int i = 0; i< NodeSize-1; i++) // NodeSize-1 is the number of links along the paths
 				{
-					pVeh->m_aryVN[i].LinkID = GetLinkNoByNodeIndex(PathNodeList[i], PathNodeList[i+1]);
+					pVeh->m_NodeAry[i].LinkNo = GetLinkNoByNodeIndex(PathNodeList[i], PathNodeList[i+1]);
 					pVeh->m_NodeNumberSum += PathNodeList[i];
-					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+					pVeh->m_Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 
@@ -847,9 +860,9 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 			pVeh->m_NodeSize = NodeSize;
 
-			if( pVeh->m_aryVN !=NULL)
+			if( pVeh->m_NodeAry !=NULL)
 			{
-				delete pVeh->m_aryVN;
+				delete pVeh->m_NodeAry;
 			}
 
 			if(pVeh->m_NodeSize>=2)
@@ -864,9 +877,9 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 
 				}
 
-				pVeh->m_aryVN = new SVehicleLink[NodeSize];
+				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_aryVN==NULL)
+				if(pVeh->m_NodeAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -878,17 +891,17 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 				for(int i = 0; i< NodeSize-1; i++)
 				{
 					//					TRACE("ID:%d, %d \n",i, g_NodeVector[PathNodeList[i]]);
-					pVeh->m_aryVN[i].LinkID = GetLinkNoByNodeIndex(PathNodeList[NodeSize-i-1], PathNodeList[NodeSize-i-2]);
+					pVeh->m_NodeAry[i].LinkNo = GetLinkNoByNodeIndex(PathNodeList[NodeSize-i-1], PathNodeList[NodeSize-i-2]);
 					pVeh->m_NodeNumberSum +=PathNodeList[NodeSize-i-2];
 
-					if(g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL)
+					if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
 					{
-						cout << "Error: g_LinkVector[pVeh->m_aryVN [i].LinkID]==NULL", pVeh->m_aryVN [i].LinkID;
+						cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
 						getchar();
 						exit(0);
 					}
 
-					pVeh->m_Distance+= g_LinkVector[pVeh->m_aryVN [i].LinkID] ->m_Length ;
+					pVeh->m_Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 				}
 				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
 			}	
@@ -913,7 +926,7 @@ void g_ComputeFinalGapValue()
 	//#pragma omp parallel for
 	for(int CurZoneID=1;  CurZoneID <= g_ODZoneSize; CurZoneID++)
 	{
-		if(g_ZoneMap[CurZoneID].m_OriginVehicleSize>0)  // only this origin zone has vehicles, then we build the network
+		if(g_ZoneMap[CurZoneID].m_Demand>0)  // only this origin zone has vehicles, then we build the network
 		{
 			// create network for shortest path calculation at this processor
 			DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
@@ -1057,7 +1070,7 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 			// obtain path link sequence from vehicle link sequence
 			for(int i = 0; i< NodeSize-1; i++)
 			{
-				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_aryVN[i].LinkID; 
+				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
 			}
 			PathArray[VehicleDest].PathSize[PathArray[VehicleDest].NumOfPaths] = NodeSize;
 		}
@@ -1083,7 +1096,7 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 				// obtain path link sequence from vehicle link sequence
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_aryVN[i].LinkID; 
+					PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
 				}
 				PathArray[VehicleDest].PathSize[PathArray[VehicleDest].NumOfPaths] = NodeSize;
 			}
@@ -1343,19 +1356,13 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("% completing trips");
 		g_SummaryStatFile.SetFieldName ("Avg UE gap (min)");
 
-		if(g_ODEstimationFlag == 1)
-		{
-			g_SummaryStatFile.SetFieldName ("Avg OD UE gap (min)");
-			g_SummaryStatFile.SetFieldName ("Demand Dev");
-			g_SummaryStatFile.SetFieldName ("Avg volume error");
-
-		}
+//		if(g_ODEstimationFlag == 1)
+//		{
+//			g_SummaryStatFile.SetFieldName ("Demand Deviation");
+		g_SummaryStatFile.SetFieldName ("ODME: Absolute link count error");
+//		}
 		cout << "Avg Gap: " << SimuOutput.AvgUEGap ;
 	
-		if(g_ODEstimationFlag == 1)
-		{
-		cout << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError;
-		}
 
 		cout << endl;
 
@@ -1371,7 +1378,15 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
 	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
+
+		if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
+		{
+		SimuOutput.AvgUEGap = 0;
+		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",SimuOutput.LinkVolumeAvgAbsError);
+		}
+
 	g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
+
 	g_SummaryStatFile.WriteRecord ();
 
 

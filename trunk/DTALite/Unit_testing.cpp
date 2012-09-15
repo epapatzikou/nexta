@@ -71,6 +71,10 @@ using namespace std;
 	csv_output.SetFieldName ("demand_multiplier");
 	csv_output.SetFieldName ("scenario_name");
 	csv_output.SetFieldName ("number_of_assignment_days");
+	csv_output.SetFieldName ("traffic_flow_model");
+
+	csv_output.SetFieldName ("default_arterial_k_jam");
+	csv_output.SetFieldName ("default_cycle_length");
 
 	
 	CCSVParser parser_MOE_settings;
@@ -189,6 +193,26 @@ using namespace std;
 
 		g_NumberOfIterations = TotalUEIterationNumber-1;			// 0+1 iterations
 
+		g_AgentBasedAssignmentFlag = 1;  // default value
+//		parser_scenario.GetValueByFieldName("agent_based_assignment",g_AgentBasedAssignmentFlag);
+
+
+		int traffic_flow_model = 3;
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("traffic_flow_model",traffic_flow_model)==false)
+		{
+			cout << "Field traffic_flow_model cannot be found in file input_scenario_settings.csv. Please check." << endl;
+			g_ProgramStop();
+		}
+
+		g_DefaultArterialKJam = 0;
+		parser_scenario.GetValueByFieldNameWithPrintOut("default_arterial_k_jam",g_DefaultArterialKJam);
+				
+		g_DefaultCycleLength = 0;
+		parser_scenario.GetValueByFieldNameWithPrintOut("default_cycle_length",g_DefaultCycleLength);
+
+
+		if(traffic_flow_model==4) 
+			g_SimulateSignals = 0;  // no signal simulation logic
 
 		if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false)
 		{
@@ -216,7 +240,10 @@ using namespace std;
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
 
+	if(g_AgentBasedAssignmentFlag==1)
 		g_AgentBasedAssisnment();  // agent-based assignment
+	else
+		g_ODBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
 
 		g_OutputSimulationStatistics(g_NumberOfIterations);
 
@@ -225,7 +252,11 @@ using namespace std;
 		csv_output.SetValueByFieldName ("number_of_assignment_days",TotalUEIterationNumber);
 		csv_output.SetValueByFieldName ("demand_multiplier",g_DemandGlobalMultiplier);
 
-	CCSVParser parser_MOE_settings;
+		csv_output.SetValueByFieldName ("traffic_flow_model",traffic_flow_model);
+		csv_output.SetValueByFieldName ("default_arterial_k_jam",g_DefaultArterialKJam);
+		csv_output.SetValueByFieldName ("default_cycle_length",g_DefaultCycleLength);
+
+		CCSVParser parser_MOE_settings;
 	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
 	{
 		while(parser_MOE_settings.ReadRecord())
@@ -248,6 +279,8 @@ using namespace std;
 
 			parser_MOE_settings.GetValueByFieldName("moe_type",moe_type);
 			parser_MOE_settings.GetValueByFieldName("moe_category_label",moe_category_label);
+
+			cout << " outputing MOE type " << moe_type << ", " << moe_category_label << endl;
 			parser_MOE_settings.GetValueByFieldName("demand_type",demand_type);
 			parser_MOE_settings.GetValueByFieldName("vehicle_type",vehicle_type);
 			parser_MOE_settings.GetValueByFieldName("information_type",information_type);
@@ -311,6 +344,7 @@ using namespace std;
 		csv_output.WriteRecord ();
 
 
+	//
 	g_FreeMemory();
 	line_no++;
 	}  // for each scenario
@@ -321,7 +355,7 @@ using namespace std;
 	}else
 	{
 
-		cout << "File pLink.csv cannot be found. Please check." << endl;
+		cout << "File input_scenario_settings.csv cannot be found. Please check." << endl;
 		g_ProgramStop();
 	
 	}

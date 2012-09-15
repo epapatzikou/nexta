@@ -59,6 +59,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	int vehicle_id_trace = 0;
 	int link_id_trace = -1;
+
+
 	bool debug_flag = true ;
 
 
@@ -84,7 +86,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					//calculate shortest path
 					DTANetworkForSP network(g_NodeVector.size(), g_LinkVector.size(), 1,g_AdjLinkSize);
 					float COV_perception_erorr = g_VMSPerceptionErrorRatio;
-					network.BuildTravelerInfoNetwork(DayNo,CurrentTime,pLink->m_LinkID , COV_perception_erorr);
+					network.BuildTravelerInfoNetwork(DayNo,CurrentTime,pLink->m_LinkNo , COV_perception_erorr);
 					network.TDLabelCorrecting_DoubleQueue(g_LinkVector[li]->m_ToNodeID ,CurrentTime,1,10,false, false );
 
 					TRACE("\nVMS %d -> %d",g_LinkVector[li]->m_FromNodeNumber ,pLink->m_ToNodeNumber );
@@ -126,7 +128,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 			if(pVeh->m_NodeSize >=2)  // with physical path
 			{
-			int FirstLink =pVeh->m_aryVN[0].LinkID;
+			int FirstLink =pVeh->m_NodeAry[0].LinkNo;
 
 			DTALink* p_link = g_LinkVector[FirstLink];
 
@@ -331,11 +333,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 			}
 
-			if(pLink->m_bSignalizedArterialType == true)
+			if(pLink->m_bSignalizedArterialType == true && g_SimulateSignals)
 			{
 			PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( pLink->m_DownstreamCycleLength_In_Second, pLink->m_EffectiveGreenTime_In_Second ,pLink->m_GreenStartTime_In_Second ,  pLink->m_DownstreamNodeSignalOffset_In_Second, CurrentTime, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane);
-			DTALinkOutCapacity element(CurrentTime,PerHourCapacityAtCurrentSimulatioInterval);
-			pLink->m_OutCapacityVector .push_back (element);
+//  comment this out for the official release, as it is memory-intensive
+//			DTALinkOutCapacity element(CurrentTime,PerHourCapacityAtCurrentSimulatioInterval);
+//			pLink->m_OutCapacityVector .push_back (element);
 			}
 			
 
@@ -357,7 +360,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			{
 				// determine link in capacity 
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
-				fLinkInCapacity = min (AvailableSpaceCapacity, MaximumFlowRate); 
+				fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane * pLink->GetNumLanes(DayNo,CurrentTime)); 
 				//			TRACE(" time %5.2f, SC: %5.2f, MFR %5.2f\n",CurrentTime, AvailableSpaceCapacity, MaximumFlowRate);
 
 				// the inflow capcaity is the minimum of (1) incoming maximum flow rate (determined by the number of lanes) and (2) available space capacty  on the link.
@@ -367,12 +370,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				{
 					if(simulation_time_interval_no >=pLink->m_BackwardWaveTimeInSimulationInterval ) /// we only apply backward wave checking after the simulation time is later than the backward wave speed interval
 					{
-						if(debug_flag && link_id_trace == li && CurrentTime >=480)
-						{
-							TRACE("Step 3: Time %f, Link: %d -> %d: tracing backward wave\n",
-								CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeName , g_NodeVector[pLink->m_ToNodeID].m_NodeName,
-								pLink->EntranceQueue.size(), pLink->ExitQueue.size());
-						}
 
 						int t_residual_minus_backwardwaveTime = max(0,simulation_time_interval_no - pLink->m_BackwardWaveTimeInSimulationInterval)% MAX_TIME_INTERVAL_ADCURVE ;
 
@@ -454,7 +451,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				int TotalInFlowCount = 0;
 				for( il = 0; il< pLink->MergeIncomingLinkVector.size(); il++)
 				{
-					TotalInFlowCount+= g_LinkVector [ pLink->MergeIncomingLinkVector[il].m_LinkID]->ExitQueue.size();  // count vehiciles waiting at exit queue
+					TotalInFlowCount+= g_LinkVector [ pLink->MergeIncomingLinkVector[il].m_LinkNo]->ExitQueue.size();  // count vehiciles waiting at exit queue
 
 				}
 
@@ -474,7 +471,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							for( il = 0; il< pLink->MergeIncomingLinkVector.size(); il++)
 							{
-								pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio = g_LinkVector [ pLink->MergeIncomingLinkVector[il].m_LinkID]->ExitQueue.size()*1.0f/TotalInFlowCount ;
+								pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio = g_LinkVector [ pLink->MergeIncomingLinkVector[il].m_LinkNo]->ExitQueue.size()*1.0f/TotalInFlowCount ;
 							}
 						}
 
@@ -483,7 +480,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 							float LinkOutCapacity = pLink-> LinkInCapacity * pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio;
 
 							int LinkOutCapacity_int= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
-							g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkID]->LinkOutCapacity = LinkOutCapacity_int;
+							g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity = LinkOutCapacity_int;
 
 						}
 					}
@@ -578,9 +575,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			int li = g_NodeVector[node].m_IncomingLinkVector[incoming_link_sequence];
 
 			DTALink* pLink = g_LinkVector[li];
-			if(debug_flag && (pLink->m_FromNodeNumber  == 10 && pLink->m_ToNodeNumber == 5) && CurrentTime >=480)
+			if(debug_flag && (pLink->m_FromNodeNumber  == 11159 && pLink->m_ToNodeNumber == 5112) && CurrentTime >=990)
 			{
-				TRACE("Step 3: Time %f, Link: %d -> %d: tracing \n", CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeName , g_NodeVector[pLink->m_ToNodeID].m_NodeName);
+				TRACE("Step 3: Time %f, Link: %d -> %d: tracing queue: capacity: %d, queue size %d \n", 
+					CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeName , g_NodeVector[pLink->m_ToNodeID].m_NodeName,
+					pLink->LinkOutCapacity, pLink->ExitQueue.size() );
 			}
 
 			// vehicle_out_count is the minimum of LinkOutCapacity and ExitQueue Size
@@ -606,13 +605,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				int t_link_arrival_time=0;
 				if(link_sequence_no >=1)
 				{
-					t_link_arrival_time= int(g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no-1].AbsArrivalTimeOnDSN);
+					t_link_arrival_time= int(g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no-1].AbsArrivalTimeOnDSN);
 				}else
 				{
 					t_link_arrival_time = int(g_VehicleMap[vehicle_id]->m_DepartureTime);
 				}
 				// update cumultive lane based flow count
-				g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].LaneBasedCumulativeFlowCount =  pLink->CFlowArrivalCount  / pLink->m_NumLanes ;
+				g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].LaneBasedCumulativeFlowCount =  pLink->CFlowArrivalCount  / pLink->m_NumLanes ;
 
 				// not reach destination yet
 				int number_of_links = g_VehicleMap[vehicle_id]->m_NodeSize-1;
@@ -624,7 +623,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					if(vehicle_id == vehicle_id_trace)
 						TRACE("simulation link sequence no. %d",g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo);
 
-					NextLink = g_VehicleMap[vehicle_id]->m_aryVN[g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1].LinkID;
+					NextLink = g_VehicleMap[vehicle_id]->m_NodeAry[g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1].LinkNo;
 					p_Nextlink = g_LinkVector[NextLink];
 
 					if(p_Nextlink==NULL)
@@ -699,16 +698,16 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						float TimeOnNextLink = 0;
 
 						// update statistics for traveled link
-						g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN = ArrivalTimeOnDSN;
+						g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN = ArrivalTimeOnDSN;
 						float TravelTime = 0;
 
 						if(link_sequence_no >=1)
 						{
-							TravelTime= g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
-								g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no-1].AbsArrivalTimeOnDSN;
+							TravelTime= g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN -
+								g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no-1].AbsArrivalTimeOnDSN;
 						}else
 						{
-							TravelTime= g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
+							TravelTime= g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN -
 								g_VehicleMap[vehicle_id]->m_DepartureTime ;
 
 						}
@@ -818,16 +817,16 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 					// update statistics for traveled link
 					int link_sequence_no = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo;
-					g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN = ArrivalTimeOnDSN;
+					g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN = ArrivalTimeOnDSN;
 					float TravelTime = 0;
 
 					if(link_sequence_no >=1)
 					{
-						TravelTime= g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
-							g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no-1].AbsArrivalTimeOnDSN;
+						TravelTime= g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN -
+							g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no-1].AbsArrivalTimeOnDSN;
 					}else
 					{
-						TravelTime= g_VehicleMap[vehicle_id]->m_aryVN[link_sequence_no].AbsArrivalTimeOnDSN -
+						TravelTime= g_VehicleMap[vehicle_id]->m_NodeAry[link_sequence_no].AbsArrivalTimeOnDSN -
 							g_VehicleMap[vehicle_id]->m_DepartureTime ;
 
 					}
@@ -884,7 +883,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	for(int li = 0; li< link_size; li++)
 	{
 
-		// cummulative flow counts
+		// Cumulative flow counts
 
 		int t_residual = simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
 
@@ -961,17 +960,17 @@ void g_AssignPathsForInformationUsers(int DayNo, double time, int simulation_tim
 
 			int	cid = omp_get_thread_num( );  // starting from 0
 
-			int CurrentLinkID = g_VehicleVector[v]->m_aryVN[g_VehicleVector[v]->m_SimLinkSequenceNo].LinkID;
+			int CurrentLinkID = g_VehicleVector[v]->m_NodeAry[g_VehicleVector[v]->m_SimLinkSequenceNo].LinkNo;
 			int	CurrentNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
 
-			int LastLinkID = g_VehicleVector[v]->m_aryVN[g_VehicleVector[v]->m_NodeSize-2].LinkID;  // m_NodeSize-1 is # of links, m_NodeSize-2 is no. of link sequence
+			int LastLinkID = g_VehicleVector[v]->m_NodeAry[g_VehicleVector[v]->m_NodeSize-2].LinkNo;  // m_NodeSize-1 is # of links, m_NodeSize-2 is no. of link sequence
 			int	LastNodeID = g_LinkVector[LastLinkID]->m_ToNodeID;
 
 			int l;
 			// copy exsting links up to the current link
 			for(l=0; l<= g_VehicleVector[v]->m_SimLinkSequenceNo; l++)
 			{
-				PathLinkList[cid][l] = g_VehicleVector[v]->m_aryVN[l].LinkID;
+				PathLinkList[cid][l] = g_VehicleVector[v]->m_NodeAry[l].LinkNo;
 			}
 
 			if(pNetwork[cid] == NULL)
@@ -1007,15 +1006,15 @@ void g_AssignPathsForInformationUsers(int DayNo, double time, int simulation_tim
 
 
 			// update paths
-			if( g_VehicleVector[v]->m_aryVN !=NULL)
+			if( g_VehicleVector[v]->m_NodeAry !=NULL)
 			{
-				delete g_VehicleVector[v]->m_aryVN;
+				delete g_VehicleVector[v]->m_NodeAry;
 			}
 
 			g_VehicleVector[v]->m_NodeSize = l+1;
-			g_VehicleVector[v]->m_aryVN = new SVehicleLink[g_VehicleVector[v]->m_NodeSize];
+			g_VehicleVector[v]->m_NodeAry = new SVehicleLink[g_VehicleVector[v]->m_NodeSize];
 
-			if(g_VehicleVector[v]->m_aryVN==NULL)
+			if(g_VehicleVector[v]->m_NodeAry==NULL)
 			{
 				cout << "Insufficient memory for allocating vehicle arrays!";
 				g_ProgramStop();
@@ -1025,7 +1024,7 @@ void g_AssignPathsForInformationUsers(int DayNo, double time, int simulation_tim
 			// copy existing link sequence back to the new link no array
 			for(i=0; i<l; i++)
 			{
-				g_VehicleVector[v]->m_aryVN[i].LinkID = PathLinkList[cid][i];
+				g_VehicleVector[v]->m_NodeAry[i].LinkNo = PathLinkList[cid][i];
 			}
 
 			if(g_VehicleVector[v]->m_InformationClass  == 2) /* pre-trip info */
@@ -1084,7 +1083,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 			{
 				for(int i = 0; i< (*vIte)->m_NodeSize-1; i++)
 				{
-					g_LinkVector[(*vIte)->m_aryVN[i].LinkID]->m_BPRLinkVolume++;
+					g_LinkVector[(*vIte)->m_NodeAry[i].LinkNo]->m_BPRLinkVolume++;
 				}
 			}
 		}
@@ -1120,7 +1119,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 		//if(pVeh->m_NodeSize >=2)  // has feasible path
 		//{
-		//	int FirstLink =pVeh->m_aryVN[0].LinkID;
+		//	int FirstLink =pVeh->m_NodeAry[0].LinkNo;
 
 		//	DTALink* pLink = g_LinkVector[FirstLink];
 		//	pLink ->LoadingBufferSize ++;
@@ -1149,7 +1148,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	//	if(pVeh->m_NodeSize >=2)  // has feasible path
 	//	{
-	//		int FirstLink =pVeh->m_aryVN[0].LinkID;
+	//		int FirstLink =pVeh->m_NodeAry[0].LinkNo;
 
 	//		DTALink* pLink = g_LinkVector[FirstLink];
 	//		pLink ->LoadingBufferVector [pLink ->LoadingBufferSize ++] = pVeh->m_VehicleID ;
@@ -1183,8 +1182,14 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		}
 		if(simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
 		{
-			cout << "simu clock: " << int(time) << " min, # of veh -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
-			g_LogFile << "simulation clock in min:" << int(time) << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			int hour = ((int)(time))/60;
+			int min = time - hour*60;
+
+			CString time_str;
+			time_str.Format("%2d:%02d",hour, min);
+
+			cout << "simu clock: " << time_str << ",# of veh -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			g_LogFile << "simulation clock: " << time_str << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 		}
 	}
 
@@ -1238,7 +1243,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
 	{
-		if((*iterVehicle)->m_bComplete && (*iterVehicle)->m_OriginZoneID  ==2 && (*iterVehicle)->m_DestinationZoneID  ==1)
+		if((*iterVehicle)->m_bComplete)
 		{
 			TotalTripTime+= (*iterVehicle)->m_TripTime;
 			TotalDelay += (*iterVehicle)->m_Delay;
@@ -1392,15 +1397,15 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={-1};  // new nodes
 	SVehicleLink vehicle_link_ary [MAX_NODE_SIZE_IN_A_PATH];
 
-	int CurrentLinkID = g_VehicleVector[v]->m_aryVN[g_VehicleVector[v]->m_SimLinkSequenceNo].LinkID;
+	int CurrentLinkID = g_VehicleVector[v]->m_NodeAry[g_VehicleVector[v]->m_SimLinkSequenceNo].LinkNo;
 	int	CurrentNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
 
 	// copy exsting links up to the current link
 	for(int l =0; l<= g_VehicleVector[v]->m_SimLinkSequenceNo; l++)
 	{
-		vehicle_link_ary[l].AbsArrivalTimeOnDSN = g_VehicleVector[v]->m_aryVN[l].AbsArrivalTimeOnDSN ;
-		vehicle_link_ary[l].LaneBasedCumulativeFlowCount  =  g_VehicleVector[v]->m_aryVN[l].LaneBasedCumulativeFlowCount ;
-		vehicle_link_ary[l].LinkID = g_VehicleVector[v]->m_aryVN[l].LinkID  ;
+		vehicle_link_ary[l].AbsArrivalTimeOnDSN = g_VehicleVector[v]->m_NodeAry[l].AbsArrivalTimeOnDSN ;
+		vehicle_link_ary[l].LaneBasedCumulativeFlowCount  =  g_VehicleVector[v]->m_NodeAry[l].LaneBasedCumulativeFlowCount ;
+		vehicle_link_ary[l].LinkNo = g_VehicleVector[v]->m_NodeAry[l].LinkNo  ;
 	}
 
 	/*
@@ -1416,7 +1421,7 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 
 	}
 	*/
-	int LastLinkID = g_VehicleVector[v]->m_aryVN[g_VehicleVector[v]->m_NodeSize-2].LinkID;  // m_NodeSize-1 is # of links, m_NodeSize-2 is no. of link sequence
+	int LastLinkID = g_VehicleVector[v]->m_NodeAry[g_VehicleVector[v]->m_NodeSize-2].LinkNo;  // m_NodeSize-1 is # of links, m_NodeSize-2 is no. of link sequence
 	int	LastNodeID = g_LinkVector[LastLinkID]->m_ToNodeID;
 
 	// find shortest path
@@ -1441,15 +1446,15 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 	PathNodeList[SubPathNodeSize++] = CurrentNodeID;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
 
 	// update paths
-	if( g_VehicleVector[v]->m_aryVN !=NULL)
+	if( g_VehicleVector[v]->m_NodeAry !=NULL)
 	{
-		delete g_VehicleVector[v]->m_aryVN;
+		delete g_VehicleVector[v]->m_NodeAry;
 	}
 
 	g_VehicleVector[v]->m_NodeSize = g_VehicleVector[v]->m_SimLinkSequenceNo + SubPathNodeSize +1;
-	g_VehicleVector[v]->m_aryVN = new SVehicleLink[g_VehicleVector[v]->m_NodeSize];
+	g_VehicleVector[v]->m_NodeAry = new SVehicleLink[g_VehicleVector[v]->m_NodeSize];
 
-	if(g_VehicleVector[v]->m_aryVN==NULL)
+	if(g_VehicleVector[v]->m_NodeAry==NULL)
 	{
 		cout << "Insufficient memory for allocating vehicle arrays!";
 		g_ProgramStop();
@@ -1459,9 +1464,9 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 	int i;
 	for(i=0; i<=g_VehicleVector[v]->m_SimLinkSequenceNo; i++)
 	{
-		g_VehicleVector[v]->m_aryVN[i].AbsArrivalTimeOnDSN  = vehicle_link_ary[i].AbsArrivalTimeOnDSN ;
-		g_VehicleVector[v]->m_aryVN[i].LaneBasedCumulativeFlowCount   = vehicle_link_ary[i].LaneBasedCumulativeFlowCount ;
-		g_VehicleVector[v]->m_aryVN[i].LinkID   = vehicle_link_ary[i].LinkID ;
+		g_VehicleVector[v]->m_NodeAry[i].AbsArrivalTimeOnDSN  = vehicle_link_ary[i].AbsArrivalTimeOnDSN ;
+		g_VehicleVector[v]->m_NodeAry[i].LaneBasedCumulativeFlowCount   = vehicle_link_ary[i].LaneBasedCumulativeFlowCount ;
+		g_VehicleVector[v]->m_NodeAry[i].LinkNo   = vehicle_link_ary[i].LinkNo ;
 	}
 
 	for(i=0; i<SubPathNodeSize-1; i++)
@@ -1469,7 +1474,7 @@ void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is) /
 		int link_id = PathLinkList[SubPathNodeSize-2-i];
 		ASSERT(link_id < g_LinkVector.size());
 		//		TRACE("\nlink from: %d, ",g_LinkVector[link_id]->m_FromNodeID );
-		g_VehicleVector[v]->m_aryVN[g_VehicleVector[v]->m_SimLinkSequenceNo+1+i].LinkID = link_id;
+		g_VehicleVector[v]->m_NodeAry[g_VehicleVector[v]->m_SimLinkSequenceNo+1+i].LinkNo = link_id;
 	}
 
 	g_VehicleVector[v]->Day2DayPathMap[DayNo].bDiverted = true;  // mark diversion
