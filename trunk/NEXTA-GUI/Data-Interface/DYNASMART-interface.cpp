@@ -196,7 +196,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	m_bDYNASMARTDataSet = true;
 
-	int YCorridonateFlag = g_GetPrivateProfileInt("coordinate","y_coordinate_flag",-1,ProjectFileName);
+	int YCorridonateFlag = -1;
 
 	CString directory;
 	m_ProjectFile = ProjectFileName;

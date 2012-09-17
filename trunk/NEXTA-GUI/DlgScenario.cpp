@@ -81,8 +81,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
-		DefaultList.push_back("40");
-		DefaultList.push_back("45");
+		DefaultList.push_back("50");
+		DefaultList.push_back("50");
 		break;
 	case 1:  // VMS
 		HeaderList.push_back("Link");
@@ -111,11 +111,11 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		HeaderList.push_back("Speed Limit (mph)");
 
 		DefaultList.push_back("0");
-		DefaultList.push_back("0");
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("40");
-		DefaultList.push_back("45");
+		DefaultList.push_back("10");
+		DefaultList.push_back("600");
+		DefaultList.push_back("640");
+		DefaultList.push_back("60");
+		DefaultList.push_back("30");
 		break;
 	case 3:
 		// link toll
@@ -141,22 +141,9 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1.5");
 		DefaultList.push_back("0");
 		break;
-	case 4:
-		// distance toll
-		HeaderList.push_back("Link");
-		HeaderList.push_back("Day No");
-		HeaderList.push_back("Start Time in Min");
-		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Charge for LOV ($/mile)");
-		HeaderList.push_back("Charge for HOV ($/mile)");
-		HeaderList.push_back("Charge for Truck ($/mile)");
+	case 5:
+		// link capacity
 
-		DefaultList.push_back("1");
-		DefaultList.push_back("0");
-		DefaultList.push_back("1440");
-		DefaultList.push_back("0.5");
-		DefaultList.push_back("0");
-		DefaultList.push_back("1");
 		break;
 	}
 }
@@ -269,6 +256,8 @@ BEGIN_MESSAGE_MAP(CDlgScenario, CDialog)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_SCENARIO_TAB, &CDlgScenario::OnTcnSelchangeScenarioTab)
 	ON_BN_CLICKED(IDC_BUTTON_ADD, &CDlgScenario::OnBnClickedButtonAdd)
 	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CDlgScenario::OnBnClickedButtonDelete)
+	ON_BN_CLICKED(IDC_BUTTON_ADD_SCENARIO, &CDlgScenario::OnBnClickedButtonAddScenario)
+	ON_BN_CLICKED(IDC_BUTTON_EDIT_DATA_IN_EXCEL, &CDlgScenario::OnBnClickedButtonEditDataInExcel)
 END_MESSAGE_MAP()
 
 
@@ -364,7 +353,6 @@ void CDlgScenario::OnBnClickedButtonAdd()
 {
 	// TODO: Add your control notification handler code here
 	int cur_tab = m_TabCtrl.GetCurSel();
-
 	p_SubTabs[cur_tab]->AddRow();
 }
 
@@ -475,4 +463,18 @@ BOOL CDlgScenario::ReadXMLFile(const char* ElementType, std::vector<std::string>
 	}
 
 	return TRUE;
+}
+void CDlgScenario::OnBnClickedButtonAddScenario()
+{
+	// TODO: Add your control notification handler code here
+	int cur_tab = m_TabCtrl.GetCurSel();
+	p_SubTabs[cur_tab]->CopyRow();
+}
+
+void CDlgScenario::OnBnClickedButtonEditDataInExcel()
+{
+	int cur_tab = m_TabCtrl.GetCurSel();
+	std::string fileName = m_pDoc->m_ProjectDirectory + "Scenario_"+SCENARIO_ELEMENTS[cur_tab] + ".csv";
+	std::vector<std::string> value;
+	m_pDoc->OpenCSVFileInExcel(fileName.c_str());
 }

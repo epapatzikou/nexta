@@ -28,7 +28,7 @@
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
 
-enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,speed_mph,link_density,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory};
+enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,speed_mph,link_density,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count};
 
 // CDlgMOE dialog
 

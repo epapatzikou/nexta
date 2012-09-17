@@ -1795,6 +1795,16 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 		}
 	fclose(st);
 	}
+	
+	SaveAMS_ODTable();
+
+
+}
+
+void CTLiteDoc::SaveAMS_ODTable()
+{
+		CString directory = m_ProjectDirectory;
+	FILE* st = NULL;
 
 	//AMS OD statistics
 		fopen_s(&st,directory+"AMS_OD_table.csv","w");

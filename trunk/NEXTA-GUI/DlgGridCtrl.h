@@ -6,6 +6,7 @@
 #include <vector>
 #include "afxwin.h"
 
+using std::map;
 class ZoneRecord
 {
 public:
@@ -33,11 +34,33 @@ public:
 	void DisplayDemandTypeTable();
 
 	int m_SelectedDemandMetaType;
+	int m_DemandSequenceNo;
 
+	std::map<CString,float> m_ODMatrixMap;
 
+	CString GetODKey(int origin,int destination)
+	{
+	CString str;
+	str.Format("%d,%d",origin,destination);
+	return str;
+
+	}
+
+	void SetODMatrx(int origin,int destination,float value)
+	{
+	m_ODMatrixMap[GetODKey(origin,destination)] = value;
+
+	m_ODMatrixMap[GetODKey(origin,m_pDoc->m_ODSize+1)] += value; // destination subtotal
+
+	m_ODMatrixMap[GetODKey(m_pDoc->m_ODSize+1,destination)] += value; // origin subtotal
+
+	}
+
+	CString LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType, bool bLoadDemandData);
 private:
 	CGridCtrl m_ODMatrixGrid;
 	CListCtrl m_DemandTypeGrid;
+	CListCtrl m_DemandFileGrid;
 	bool m_bSizeChanged;
 
 protected:
@@ -58,6 +81,11 @@ public:
 	afx_msg void OnBnClickedButtonEditZoneNodeMapping();
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedGridSavequit2();
-	float m_DemandMultipler;
 	afx_msg void OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedEditMetaDatabase();
+	afx_msg void OnLvnItemchangedDemandtypelist2(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedEditMetaDatabase2();
+	afx_msg void OnBnClickedEditVehicleTypeFile();
+	afx_msg void OnBnClickedEditVehicleEmissionsFile();
+	afx_msg void OnBnClickedEditMetaDatabase3();
 };

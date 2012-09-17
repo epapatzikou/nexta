@@ -245,8 +245,6 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 				continue;
 			if(!parser.GetValueByFieldName("sensor_type",sensor.SensorType)) 
 				continue;
-			if(!parser.GetValueByFieldName("sensor_id",sensor.SensorID )) 
-				continue;
 
 			parser.GetValueByFieldName("x_coord",sensor.pt.x );
 			parser.GetValueByFieldName("y_coord",sensor.pt.y );
@@ -273,8 +271,8 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 
 				pLink->m_bSensorData  = true;
 
-				int start_time_in_min =0;
-				int end_time_in_min = 0;
+				float start_time_in_min =0;
+				float end_time_in_min = 0;
 
 				parser.GetValueByFieldName("start_time_in_min",start_time_in_min );
 				parser.GetValueByFieldName("end_time_in_min",end_time_in_min );
@@ -285,16 +283,35 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 				parser.GetValueByFieldName("volume_count",volume_count );
 				data_count++;
 
+				if(start_time_in_min <0)
+				{
+					CString msg;
+					msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0. Please check.",sensor.FromNodeNumber , sensor.ToNodeNumber);
+					AfxMessageBox(msg);
+					return false;
+				}
+
+				if(end_time_in_min < start_time_in_min+1)
+				{
+					CString msg;
+					msg.Format ("Sensor %d-> %d has an error of end_time_in_min <= start_time_in_min: %d < %d. Please check.",sensor.FromNodeNumber , sensor.ToNodeNumber,
+						end_time_in_min, start_time_in_min);
+					AfxMessageBox(msg);
+					return false;
+				}
+			
 				for(int t = start_time_in_min; t< end_time_in_min; t++)
 				{
 					if((unsigned int)t < pLink->m_LinkMOEAry.size())
 					{
 
-						if(sensor.SensorType == "link_count")
+//						if(!sensor.SensorType.empty () && sensor.SensorType.find("count")!= string::npos)
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1,end_time_in_min-start_time_in_min)/60);  // convert to per hour lane flow
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1.0,end_time_in_min-start_time_in_min)/60);  // convert to per hour lane flow
 						}
+
+
 
 					}
 				}

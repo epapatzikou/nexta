@@ -218,6 +218,7 @@ protected: // create from serialization only
 // Attributes
 public:
 
+	bool bShowVehiclesWithIncompleteTrips;
 		Mustang m_ms;
 		int m_msStatus;
 
@@ -279,6 +280,8 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bShowLinkArrow;
 	bool m_bShowNode;
 	bool m_bShowNodeNumber;
+	bool m_bShowVehicleNumber;
+	bool m_bShowSelectedVehicleOnly;
 	bool m_bShowImage;
 	bool m_bShowLinkType;
 
@@ -571,6 +574,12 @@ public:
 	afx_msg void OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI);
 	afx_msg void OnExportCreatevissimfiles();
+	afx_msg void OnDebugShowvehicleswithincompletetripsonly();
+	afx_msg void OnUpdateDebugShowvehicleswithincompletetripsonly(CCmdUI *pCmdUI);
+	afx_msg void OnVehicleVehiclenumber();
+	afx_msg void OnUpdateVehicleVehiclenumber(CCmdUI *pCmdUI);
+	afx_msg void OnVehicleShowselectedvehicleonly();
+	afx_msg void OnUpdateVehicleShowselectedvehicleonly(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 
