@@ -1071,9 +1071,6 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	}
 
-	g_ODTKPathVector.clear();   
-	// clear the global path set vector, will be regenerated in OD path flow adjustment module ConstructPathArrayForEachODT_ODEstimation()
-
 	if(TrafficFlowModelFlag == 0) // using BPR function
 	{
 		//Calculate BPRLinkVolume based on previous vehicle paths

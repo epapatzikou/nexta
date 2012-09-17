@@ -29,7 +29,7 @@
 #include <algorithm>
 
 using namespace std;
-
+std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 /***************
 to do list:
 completed: read historical demand file
@@ -122,7 +122,6 @@ float    g_ODEstimation_Weight_NumberOfVehicles = 1.0f;
 float    g_ODEstimation_Weight_TravelTime = 1.0f;
 float    g_ODEstimation_StepSize  = 0.1f;
 
-std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 int g_ODEstimationFlag = 0;
 int g_Agent_shortest_path_generation_flag = 0;
 int g_ODEstimationMeasurementType = 0; // 0: flow, 1: density, 2, speed
@@ -176,7 +175,7 @@ bool g_ReadLinkMeasurementFile()
 				parser.GetValueByFieldNameRequired("start_time_in_min",start_time_in_min );
 				parser.GetValueByFieldNameRequired("end_time_in_min",end_time_in_min );
 
-				parser.GetValueByFieldNameRequired ("volume_count",volume_count );
+				parser.GetValueByFieldNameRequired ("link_count",volume_count );
 
 				float occupancy = 0;
 				float avg_speed = 50;
@@ -247,12 +246,12 @@ bool g_ReadLinkMeasurementFile()
 
 
 
-void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], int zone, int AssignmentInterval)
+void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], int origin_zone, int AssignmentInterval)
 {  // this function has been enhanced for path flow adjustment
 	// step 1: initialization
 
-	int CriticalOD_origin = 2;
-	int CriticalOD_destination = 1;
+	int CriticalOD_origin = 431;
+	int CriticalOD_destination = 2251;
 
 	int DestZoneID; 
 	for(DestZoneID=1; DestZoneID <= g_ODZoneSize; DestZoneID++) // initialization...
@@ -268,16 +267,16 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			PathArray[DestZoneID].AvgPathTimes[p] = 0.0;
 			PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] = 0.0;
 			PathArray[DestZoneID].PathSize[p] = 0;
-			for(int q=0; q< _MAX_ODT_PATH_SIZE_4_ODME; q++)
-				PathArray[DestZoneID].PathLinkSequences[p][q] = 0.0;
+			//for(int q=0; q< _MAX_ODT_PATH_SIZE_4_ODME; q++)
+			//	PathArray[DestZoneID].PathLinkSequences[p][q] = 0.0;
 		}
 	}
 
 	//step 2: construct path array
 	// Scan all vehicles and construct path array for each destination
-	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[origin_zone][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[origin_zone][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 
@@ -287,6 +286,13 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 		int NodeSize = pVeh->m_NodeSize;
 
 		PathArray[VehicleDest].NumOfVehicles++;  // count the number of vehicles from o to d at assignment time interval tau
+		if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination )
+		{
+			g_EstimationLogFile << "Critical vehicle: " <<  VehicleID << endl;
+
+			if(VehicleID == 3759)
+				cout << "tracking vehicle id " << VehicleID << endl;
+		}
 
 
 		if(PathArray[VehicleDest].NumOfPaths == 0) // the first path for VehicleDest
@@ -299,6 +305,7 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			for(int i = 0; i< NodeSize-1; i++)
 			{
 				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
+
 			}
 			PathArray[VehicleDest].PathSize[PathArray[VehicleDest].NumOfPaths] = NodeSize;
 		}
@@ -317,6 +324,12 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			if(PathIndex == 0) // a new path is found
 			{
 				PathArray[VehicleDest].NumOfPaths++;
+
+				if(PathArray[VehicleDest].NumOfPaths>= _MAX_ODT_PATH_SIZE_4_ODME-1) 
+				{
+					cout << " Too many paths for ODME: " <<  PathArray[VehicleDest].NumOfPaths << " > " << _MAX_ODT_PATH_SIZE_4_ODME << endl;
+ 					g_ProgramStop();
+				}
 				PathArray[VehicleDest].NumOfVehsOnEachPath[PathArray[VehicleDest].NumOfPaths]++;
 				PathArray[VehicleDest].PathNodeSums[PathArray[VehicleDest].NumOfPaths] = NodeSum;
 				PathArray[VehicleDest].AvgPathTimes[PathArray[VehicleDest].NumOfPaths] = TripTime;
@@ -362,13 +375,13 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 				PathArray[DestZoneID].AvgPathGap[p] =  PathArray[DestZoneID].AvgPathTimes[p] -  LeastTime;
 
-				if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
+				if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
 				{
-					g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID << " path " << p << " gap: " << PathArray[DestZoneID].AvgPathGap[p] << endl;
+					g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID << " path " << p << " gap: " << PathArray[DestZoneID].AvgPathGap[p] << endl;
 				}
 
 				// we calculate the gap for the previous iteraiton, for each path, path travel time gap * path flow
-				g_CurrentGapValue += (PathArray[DestZoneID].AvgPathGap[p]* PathArray[DestZoneID].NumOfVehsOnEachPath[p]);
+// comment out for omp				g_CurrentGapValue += (PathArray[DestZoneID].AvgPathGap[p]* PathArray[DestZoneID].NumOfVehsOnEachPath[p]);
 
 			}
 
@@ -380,18 +393,18 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 	{
 		// step 4.1: calculate the vehicle size deviation for  each O D tau pair
 
-		// if demand has not been assigned to this destination zone yet,skip
+		// if demand has not been assigned to this destination origin_zone yet,skip
 
-		float hist_demand = g_HistDemand.GetValue (zone, DestZoneID, AssignmentInterval);
+		float hist_demand = g_HistDemand.GetValue (origin_zone, DestZoneID, AssignmentInterval);
 
 		if(hist_demand < 0.001)  // only perform OD estimation when hist_demand  is positive
 			continue; 
 
 		PathArray[DestZoneID].DeviationNumOfVehicles = PathArray[DestZoneID].NumOfVehicles - hist_demand;
 
-		if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
+		if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
 		{
-			g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID <<  " with "<< PathArray[DestZoneID].NumOfPaths << " paths; Hist Demand =" << hist_demand << "; simu Demand = " << PathArray[DestZoneID].NumOfVehicles  << ";Dev = " << PathArray[DestZoneID].DeviationNumOfVehicles <<endl; 
+			g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID <<  " with "<< PathArray[DestZoneID].NumOfPaths << " paths; Hist Demand =" << hist_demand << "; simu Demand = " << PathArray[DestZoneID].NumOfVehicles  << ";Dev = " << PathArray[DestZoneID].DeviationNumOfVehicles <<endl; 
 		}
 
 
@@ -403,9 +416,9 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 			float ArrivalTime = AssignmentInterval * g_AggregationTimetInterval;
 
-			if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination && ArrivalTime>=990)
+			if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination && ArrivalTime>=990)
 			{
-				g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID << "arrival time = "<< ArrivalTime << endl;
+				g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID << "arrival time = "<< ArrivalTime << endl;
 			}
 
 			int l = 0;
@@ -415,9 +428,9 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 				DTALink* pLink = g_LinkVector[LinkID];
 
-						if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination && ArrivalTime>=990)
+						if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination && ArrivalTime>=990)
 						{
-							g_EstimationLogFile << "Link Index : " << l << "Critical OD demand " << zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ", arrival time = "<< ArrivalTime << endl;
+							g_EstimationLogFile << "Link Index : " << l << "Critical OD demand " << origin_zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ", arrival time = "<< ArrivalTime << endl;
 						}
 
 
@@ -433,9 +446,9 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 					{
 						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= pLink->GetDeviationOfFlowCount(ArrivalTime);
 
-						if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
+						if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
 						{
-							g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
+							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
 								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << endl;
@@ -459,9 +472,9 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 						// flow rate gradient  // we assume the sensor is located upstream of the link, so we do not consider the departure flow rate increase at the downstream of the link
 						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= pLink->GetDeviationOfFlowCount(ArrivalTime);
 
-						if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
+						if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
 						{
-							g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
+							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
 								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << endl;
@@ -504,20 +517,18 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 
 			}
 
-			#pragma omp critical  // protect global varaibles
-			{
 			// calculate the total demand deviation statistics only for the first path
-			if(p==1) 
-			{
-				g_TotalDemandDeviation += PathArray[DestZoneID].DeviationNumOfVehicles;
-						if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
-						{
-							g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID <<
-								" TotalDemandDeviation = " <<  PathArray[DestZoneID].DeviationNumOfVehicles << endl;
-						}
-			}
+			//if(p==1) 
+			//{
+			//	g_TotalDemandDeviation += PathArray[DestZoneID].DeviationNumOfVehicles;
+			//			if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
+			//			{
+			//				g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID <<
+			//					" TotalDemandDeviation = " <<  PathArray[DestZoneID].DeviationNumOfVehicles << endl;
+			//			}
+			//}
 
-			g_TotalMeasurementDeviation += PathArray[DestZoneID].MeasurementDeviationPathMarginal[p];
+			//g_TotalMeasurementDeviation += PathArray[DestZoneID].MeasurementDeviationPathMarginal[p];
 
 			// this is a very important path flow adjustment equation;
 
@@ -548,38 +559,47 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			- g_ODEstimation_StepSize*FlowAdjustment); /*gradient wrt gap function*/
 
 
-			if(zone == CriticalOD_origin && DestZoneID == CriticalOD_destination)
-			{
-				g_EstimationLogFile << "Critical OD demand " << zone << " -> " << DestZoneID << ", path" << p << ", existing # of vehicles:" << PathArray[DestZoneID].NumOfVehsOnEachPath[p] <<", flow adjustment: " <<FlowAdjustment << ",New number of vehicles ="<< PathArray[DestZoneID].NewNumberOfVehicles[p] << endl;
-			}
 
 
-			/*			g_EstimationLogFile << "OD " << zone << " -> " << DestZoneID << " path =" << p << " @ "<< AssignmentInterval*g_AggregationTimetInterval << ": Measurement Dev=" << PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << 
+
+			/*			g_EstimationLogFile << "OD " << origin_zone << " -> " << DestZoneID << " path =" << p << " @ "<< AssignmentInterval*g_AggregationTimetInterval << ": Measurement Dev=" << PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << 
 			"; Demand Dev=" << PathArray[DestZoneID].DeviationNumOfVehicles <<
 			"; Gap Dev "<< g_ODEstimation_WeightOnUEGap*PathArray[DestZoneID].AvgPathGap[p]  <<endl; 
 			*/
 
 			PathArrayForEachODTK element;
-			int PathIndex  = g_ODTKPathVector.size();
-			element.Setup (PathIndex,zone, DestZoneID, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
-				PathArray[DestZoneID].PathSize[p]-1, PathArray[DestZoneID].PathLinkSequences[p],PathArray[DestZoneID].NewNumberOfVehicles[p],PathArray[DestZoneID].PathNodeSums[p] );
-			g_ODTKPathVector.push_back(element);
-			}
+			int PathIndex  = g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.size();
+				
 
-			//			g_AssignmentLogFile << "OED: O: " << zone << ", D:" << DestZoneID << "Demand Dev: " << PathArray[DestZoneID].DeviationNumOfVehicles << ", Path:" << p << ", marginal: " <<  PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << ", AvgTT: "<< PathArray[DestZoneID].AvgPathTimes[p]<< ", Gap : "<< PathArray[DestZoneID].AvgPathGap[p]<<  ", VehicleSize:" << PathArray[DestZoneID].NewNumberOfVehicles[p] << ", flow adjustment" << FlowAdjustment << endl;
+			element.Setup (PathIndex,origin_zone, DestZoneID, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
+				PathArray[DestZoneID].PathSize[p]-1, PathArray[DestZoneID].PathLinkSequences[p],PathArray[DestZoneID].NewNumberOfVehicles[p],PathArray[DestZoneID].PathNodeSums[p],AssignmentInterval );
 
-		}   // for path p
+			//PathArrayForEachODTK element;
+			//int PathIndex  = g_ODTKPathVector.size();
+			//element.Setup (PathIndex,zone, DestZoneID, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
+			//	PathArray[DestZoneID].PathSize[p]-1, PathArray[DestZoneID].PathLinkSequences[p],PathArray[DestZoneID].NewNumberOfVehicles[p],PathArray[DestZoneID].PathNodeSums[p] );
+			//g_ODTKPathVector.push_back(element);
+
+			g_HistDemand.AddUpdatedValue(origin_zone,DestZoneID,AssignmentInterval, PathArray[DestZoneID].NewNumberOfVehicles[p]); // to store the initial table as hist database
+
+			g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.push_back(element);
+			
+
+			//			g_AssignmentLogFile << "OED: O: " << origin_zone << ", D:" << DestZoneID << "Demand Dev: " << PathArray[DestZoneID].DeviationNumOfVehicles << ", Path:" << p << ", marginal: " <<  PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << ", AvgTT: "<< PathArray[DestZoneID].AvgPathTimes[p]<< ", Gap : "<< PathArray[DestZoneID].AvgPathGap[p]<<  ", VehicleSize:" << PathArray[DestZoneID].NewNumberOfVehicles[p] << ", flow adjustment" << FlowAdjustment << endl;
+
+		   // for path p
 
 	}
 
 }
 
+}
 
-void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration)
+
+
+void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,int departure_time_begin, int departure_time_end, int iteration)
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
-
-	cout << " OD adjustment for zone " << zone << ", departure time " << departure_time_begin << " -> " << departure_time_end << endl;
 
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
@@ -587,11 +607,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int zone,int depar
 
 	// g_VehcileIDPerAssignmentIntervalMap is more like a cursor to record the last scanned position
 
-
-	//PathArrayForEachODT PathArray[20]; // for test only
 	PathArrayForEachODT *PathArray;
 	PathArray = new PathArrayForEachODT[g_ODZoneSize + 1]; // remember to release memory
-	ConstructPathArrayForEachODT_ODEstimation(PathArray, zone, AssignmentInterval);
+	ConstructPathArrayForEachODT_ODEstimation(PathArray, origin_zone, AssignmentInterval);
 
 	delete PathArray;
 }
@@ -604,27 +622,44 @@ void g_GenerateVehicleData_ODEstimation()
 
 	g_FreeMemoryForVehicleVector();
 
+		cout << "Converting OD demand flow to vehicles..."<< endl;
+
+			;
 	for(int z = 0; z < g_ODZoneSize+1; z++)
 		for(int di = 0; di < g_AggregationTimetIntervalSize; di++)
 		{
 			g_TDOVehicleArray[z][di].VehicleArray.clear ();
+		
+
+			for(int pi = 0; pi< g_TDOVehicleArray[z][di].m_ODTKPathVector .size(); pi++)
+			{
+			PathArrayForEachODTK element = g_TDOVehicleArray[z][di].m_ODTKPathVector[pi];
+
+			CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,
+				element.m_VehicleSize ,
+				element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,
+				element.m_PathIndex,false, element.m_DepartureTimeIndex );
+			}
+
 		}
 
-		PathArrayForEachODTK element;
 
-		for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
-		{
-			element = g_ODTKPathVector[vi];
-			CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex,false);
+		//PathArrayForEachODTK element;
 
-		}
+		//for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
+		//{
+		//	element = g_ODTKPathVector[vi];
+		//	CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
+
+		//}
+
+		
 		// create vehicle heres...
 //		g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
 
-		cout << "Converting demand flow to vehicles..."<< endl;
 
 		std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
-//		g_EstimationLogFile << " std::sort... "  <<endl; 
+		cout << " Sort vehicles... "  <<endl; 
 
 		std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
 
@@ -633,7 +668,7 @@ void g_GenerateVehicleData_ODEstimation()
 		int i = 0;
 		while(kvhc != g_simple_vector_vehicles.end())
 		{
-			if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
+			if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-origin_zone traffic
 			{
 
 				pVehicle = new DTAVehicle;
@@ -644,6 +679,10 @@ void g_GenerateVehicleData_ODEstimation()
 					exit(0);
 
 				}
+
+				//if(i%10000==0)
+				//cout << " Adding "<< i/10000<< "K vehicles... "  <<endl; 
+
 				pVehicle->m_VehicleID		= i;
 				pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
@@ -655,8 +694,15 @@ void g_GenerateVehicleData_ODEstimation()
 
 				pVehicle->m_DemandType	= kvhc->m_DemandType;
 				pVehicle->m_InformationClass = kvhc->m_InformationClass;
+				
+				if( kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
+				{
+				cout << "kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size()" << endl;
+				g_ProgramStop();
+				}
+				PathArrayForEachODTK element = g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector[kvhc->m_PathIndex ];
 
-				PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
+//				PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
 
 				int NodeSize = element.m_LinkSize+1;
 				pVehicle->m_NodeSize = NodeSize;
@@ -676,18 +722,10 @@ void g_GenerateVehicleData_ODEstimation()
 					pVehicle->m_NodeAry[j].LinkNo = element.m_LinkNoArray[j];
 					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_Length ;
 				}
-
 				g_VehicleVector.push_back(pVehicle);
 				g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
 
-
-				int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-
-				if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-				{
-					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-				}
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(i);
+				g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
 
 
 				i++;
@@ -696,6 +734,14 @@ void g_GenerateVehicleData_ODEstimation()
 
 		}
 		g_simple_vector_vehicles.clear ();
+
+			for(int z = 0; z < g_ODZoneSize+1; z++)
+		for(int di = 0; di < g_AggregationTimetIntervalSize; di++)
+		{
+			g_TDOVehicleArray[z][di].m_ODTKPathVector.clear();
+		
+		}
+
 }
 
 
@@ -718,6 +764,9 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 	float TotalDensityError = 0;
 
 	int number_of_sensors = 0;
+
+	std::vector <SensorDataPoint> SensorDataVector;
+
 					g_EstimationLogFile << "Iteration," << Iteration << "," << "direction" << ","<< "link name" << "," <<  "Link " << "from node" << ",->," << "to node" 
 						<< ",time "<<  "start time in min" << "->" << "end time in min" <<  ",,"<< "observed link count" << "," << "simulated link count" <<", Error:, " << "Simulated flow count -  Obs flow count" << 
 						"," << "Abosolute Percentage Error " << ",,Lane Flow Error /h=,Capacity ,obs voc,simu VOC" << endl;
@@ -748,12 +797,18 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 
 				int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
+
+				SensorDataPoint element;
+				element.x = ObsFlowCount;
+				element.y = SimulatedFlowCount;
+				SensorDataVector.push_back (element);
+
 				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
 
 				if(ObsFlowCount >= 1)  // flow count
 				{
 					int time_interval = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
-					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/ObsFlowCount*100);
+					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100);
 					float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
 						max(1,time_interval)/pLink->m_NumLanes;												
 
@@ -782,9 +837,11 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 		}
 	}	
 
-	output.LinkVolumeAvgAbsPercentageError /=max(1,number_of_sensors);
+	output.ODME_result = LeastRegression(SensorDataVector, true);
+
+	output.LinkVolumeAvgAbsPercentageError =TotalMOEPercentageError/max(1,TotaMOESampleSize);
 	output.LinkVolumeAvgAbsError = TotalMOEAbsError /max(1,TotaMOESampleSize);
-	float mean_sqared_error = output.LinkVolumeRootMeanSquaredError/max(1,number_of_sensors);
+	float mean_sqared_error = output.LinkVolumeRootMeanSquaredError/max(1,TotaMOESampleSize);
 	output.LinkVolumeRootMeanSquaredError = sqrt(mean_sqared_error);
 
 	if(TotaMOESampleSize > 0) 

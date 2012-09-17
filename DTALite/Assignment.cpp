@@ -133,7 +133,12 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 					if(g_ODZoneSize > 1000)  // only for large networks
 					{
+
+					if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+						cout <<  "Processor " << id << " is adjusting OD demand table for zone " << CurZoneID << endl;
+					else
 						cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
+
 					}
 
 					// scan all possible departure times
@@ -505,6 +510,9 @@ void g_ODBasedDynamicTrafficAssignment()
 		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
 			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl; 
+
+			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)
+				g_HistDemand.ResetUpdatedValue(); // reset update hist table
 
 #pragma omp parallel for
 			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
@@ -1037,15 +1045,16 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 		PathArray[DestZoneID].NumOfVehicles = 0;
 		PathArray[DestZoneID].DeviationNumOfVehicles = 0;
 		PathArray[DestZoneID].BestPathIndex = 0;
-		for(int p=0; p<100; p++)
+		for(int p=0; p<_MAX_ODT_PATH_SIZE_4_ODME; p++)
 		{
 			PathArray[DestZoneID].NumOfVehsOnEachPath[p] = 0;
 			PathArray[DestZoneID].PathNodeSums[p] = 0;
 			PathArray[DestZoneID].AvgPathTimes[p] = 0.0;
 			PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] = 0.0;
 			PathArray[DestZoneID].PathSize[p] = 0;
-			for(int q=0; q<100; q++)
-				PathArray[DestZoneID].PathLinkSequences[p][q] = 0.0;
+// no need for initialization here
+//			for(int q=0; q< _MAX_PATH_NODE_SIZE_4_ODME; q++)
+//				PathArray[DestZoneID].PathLinkSequences[p][q] = 0.0;
 		}
 	}
 
@@ -1060,6 +1069,13 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 		float TripTime = pVeh->m_TripTime;
 		int NodeSum = pVeh->m_NodeNumberSum;
 		int NodeSize = pVeh->m_NodeSize;
+
+		if(NodeSize>= _MAX_PATH_NODE_SIZE_4_ODME-2)
+		{
+			cout << "ODME error: vehicle id " << VehicleID << " has NodeSize = " << NodeSize << ", which is greater than array size = " << _MAX_PATH_NODE_SIZE_4_ODME << endl;
+			g_ProgramStop();
+		
+		}
 
 		if(PathArray[VehicleDest].NumOfPaths == 0) // the first path for VehicleDest
 		{
@@ -1359,7 +1375,12 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 //		if(g_ODEstimationFlag == 1)
 //		{
 //			g_SummaryStatFile.SetFieldName ("Demand Deviation");
+		g_SummaryStatFile.SetFieldName ("ODME: number of data points");
 		g_SummaryStatFile.SetFieldName ("ODME: Absolute link count error");
+		g_SummaryStatFile.SetFieldName ("ODME: % link count error");
+		g_SummaryStatFile.SetFieldName ("ODME: slope");
+		g_SummaryStatFile.SetFieldName ("ODME: r_squared");
+		g_SummaryStatFile.SetFieldName ("ODME: avg_simulated_to_avg_obs");
 //		}
 		cout << "Avg Gap: " << SimuOutput.AvgUEGap ;
 	
@@ -1379,10 +1400,19 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
 
+	g_PercentageCompleteTrips = PercentageComplete;
+
 		if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
 		{
 		SimuOutput.AvgUEGap = 0;
+		
+		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",SimuOutput.ODME_result .data_size );
 		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",SimuOutput.LinkVolumeAvgAbsError);
+		g_SummaryStatFile.SetValueByFieldName ("ODME: % link count error",SimuOutput.LinkVolumeAvgAbsPercentageError );
+		
+		g_SummaryStatFile.SetValueByFieldName ("ODME: slope",SimuOutput.ODME_result .slope );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared",SimuOutput.ODME_result .rsqr );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",SimuOutput.ODME_result.avg_y_to_x_ratio  );
 		}
 
 	g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);

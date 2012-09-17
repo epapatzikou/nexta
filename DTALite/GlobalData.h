@@ -60,19 +60,46 @@ public:
 		{
 		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 		}
+	if(m_UpdatedDemand!=NULL)
+		{
+		Deallocate3DDynamicArray(m_UpdatedDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		}
 	}
 
 	float *** m_HistDemand;
+	float *** m_UpdatedDemand;
 	int m_StatisticsIntervalSize;
 	int m_StartingTimeInterval;
 
+	void Print(CString file_name)
+	{
+		FILE* st = fopen(file_name,"w");
+		
+		if(st!=NULL)
+		{
+			fprintf(st, "origin_zone,destination_zone,time_interval,hist,updated,diff\n");
+			for(int i= 0; i<=g_ODZoneSize; i++)
+			for(int j= 0; j<=g_ODZoneSize; j++)
+				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
+				{
+					if(m_HistDemand[i][j][t]>0.5f)
+					{
+					fprintf(st, "%d,%d,%d,%.2f,%.2f,%.2f\n",i,j,t,m_HistDemand[i][j][t],m_UpdatedDemand[i][j][t],m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t]);
+					}
+				}
+		fclose(st);
+		}
+
+	
+	}
 	void Reset()
 	{
 			for(int i= 0; i<=g_ODZoneSize; i++)
 			for(int j= 0; j<=g_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
-				m_HistDemand[i][j][t] = 0;;
+				m_HistDemand[i][j][t] = 0;
+				m_UpdatedDemand[i][j][t] = 0;
 				}
 
 	}
@@ -86,10 +113,16 @@ public:
 		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
 		}
 
+		if(m_UpdatedDemand!=NULL)
+		{
+		Deallocate3DDynamicArray(m_UpdatedDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		}
+
 		m_StatisticsIntervalSize = (g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/15;  // 15 min: department_time_intreval
 		m_StartingTimeInterval = g_DemandLoadingStartTimeInMin/15;
 
 		m_HistDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,m_StatisticsIntervalSize+2);
+		m_UpdatedDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,m_StatisticsIntervalSize+2);
 
 		Reset();
 
@@ -109,6 +142,33 @@ public:
 			return 0.0f; 
 
 			return 	m_HistDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval];
+
+	}
+
+	void AddUpdatedValue(int origin_zone, int destination_zone, int AssignmentInterval, float value)
+	{
+		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+			return; 
+
+		m_UpdatedDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval] += value;
+	}
+
+	void ResetUpdatedValue()
+	{
+			for(int i= 0; i<=g_ODZoneSize; i++)
+			for(int j= 0; j<=g_ODZoneSize; j++)
+				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
+				{
+				m_HistDemand[i][j][t] = 0;
+				}
+
+	}
+	float GetUpdatedValue(int origin_zone, int destination_zone, int AssignmentInterval)
+	{
+		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+			return 0.0f; 
+
+			return 	m_UpdatedDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval];
 
 	}
 
@@ -173,6 +233,8 @@ extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed sw
 extern int g_Day2DayAgentLearningMethod; // 0: no learning (use previous day), 1: route choice learning only, 2: route choice and departure time learning
 extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration
+extern float g_PercentageCompleteTrips; // total network gap value in the current iteration
+
 extern float g_PrevGapValue; // total network gap value in last iteration
 extern float g_RelativeGap; // = abs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue 
 extern int g_CurrentNumOfVehiclesSwitched; // total number of vehicles switching paths in the current iteration; for MSA, g_UEAssignmentMethod = 0
@@ -196,6 +258,7 @@ extern void g_ReadDemandFileBasedOnMetaDatabase();
 extern void g_ReadTimeDependentDemandProfile();
 extern void g_ReadVOTProfile();
 extern float g_GetRandomRatioForVehicleGeneration();
+extern struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &DataVector, bool bSetYInterceptTo0 = true);
 
 
 
