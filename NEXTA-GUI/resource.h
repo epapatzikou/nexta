@@ -164,10 +164,15 @@
 #define IDC_EDIT_WIDTH                  1026
 #define ID_GRID_SAVEQUIT2               1026
 #define IDC_EDIT_WIDTH2                 1027
+#define ID_EDIT_META_DATABASE           1027
+#define ID_EDIT_META_DATABASE2          1028
 #define IDC_LIST_SIMULATION_METHOD      1029
+#define ID_EDIT_VEHICLE_TYPE_FILE       1029
 #define IDC_LIST_DEMAND_LOADING_MODE    1030
+#define ID_EDIT_VEHICLE_EMISSIONS_FILE  1030
 #define IDC_EDIT_Number_of_Days         1031
 #define IDC_LIST_Routing_METHOD         1031
+#define ID_EDIT_META_DATABASE3          1031
 #define IDC_EDIT_TimeInterval           1032
 #define IDC_EDIT3                       1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
@@ -217,10 +222,12 @@
 #define IDC_BUTTON_LINK_WEB             1057
 #define IDC_BUTTON_NEW_SC               1057
 #define IDC_BTN_ADDTURN                 1057
+#define IDC_BUTTON_ADD_SCENARIO         1057
 #define IDC_GRIDLIST_MOE                1058
 #define IDC_BUTTON_LINK_WEB_Subarea     1058
 #define IDC_BUTTON_SAVE_SC              1058
 #define IDC_BTN_DELTURN                 1058
+#define IDC_BUTTON_EDIT_DATA_IN_EXCEL   1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
 #define IDC_EDIT_Demand_CSV_File        1060
@@ -307,6 +314,7 @@
 #define IDC_COMBOEndTime                1118
 #define IDC_DemandTypeLIST              1118
 #define IDC_EDIT_DemandMultipler        1119
+#define IDC_DemandTypeLIST2             1119
 #define IDC_SCROLLBAR1                  1120
 #define IDC_LIST_GISLAYER               1122
 #define IDC_LIST_FEATURE_INFO           1123
@@ -869,13 +877,26 @@
 #define ID_PROJECT_VIEW_AGENT_MOE       33459
 #define ID_PROJECT_ODMATRIXESTIMATIONINPUT 33460
 #define ID_PROJECT_INPUTSENSORDATAFORODME 33461
+#define ID_TOOLS_DEBUG                  33462
+#define ID_DEBUG_SHOWVEHICLESWITHINCOMPLETETRIPSONLY 33463
+#define ID_VEHICLE_VEHICLENUMBER        33464
+#define ID_VEHICLE_SHOWVEHICLESWITHINCOMPLETETRIPSONLY 33465
+#define ID_VEHICLE_SHOWSELECTEDVEHICLEONLY 33466
+#define ID_MOETYPE1_CUMULATIVESOVLINKCONT 33467
+#define ID_MOETYPE1_CUMULATIVEHOVLINKCOUNT 33468
+#define ID_MOETYPE1_CUMULATIVESOVLINKCOUNT 33469
+#define ID_MOETYPE1_CUMULATIVEINTERMODALLINKCOUNT 33470
+#define ID_MOE_LINKMOE                  33471
+#define ID_LINKMOE_SSD                  33472
+#define ID_HELP_USERGUIDE               33473
+#define ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL 33474
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        222
-#define _APS_NEXT_COMMAND_VALUE         33462
+#define _APS_NEXT_COMMAND_VALUE         33475
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

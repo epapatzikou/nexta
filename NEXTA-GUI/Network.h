@@ -824,6 +824,9 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_NodeProduction =0;
+		m_NodeAttraction =0;
+
 		m_bZoneActivityLocationFlag = false;
 		m_NodeNumber = 0;
 		m_NodeOriginalNumber = 0;
@@ -853,6 +856,9 @@ public:
 
 
 	~DTANode(){};
+
+	float m_NodeProduction;
+	float m_NodeAttraction;
 
 	int m_CentroidUpdateFlag;  // used by node splitting for subarea
 	int m_bSubareaFlag;
@@ -1707,16 +1713,20 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetObsSpeed(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeed);  
-		else
+		{
+			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+				return m_LinkMOEAry[t].ObsSpeed;
+		}
 			return m_StaticSpeed;
 	}
 
 	float GetObsSpeedCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(m_StaticSpeed, m_LinkMOEAry[t].ObsSpeedCopy);  
-		else
+		{
+			if(m_LinkMOEAry[t].ObsFlowCopy >=1) // with flow
+				return m_LinkMOEAry[t].ObsSpeedCopy;
+		}
 			return m_StaticSpeed;
 	}
 
@@ -1851,7 +1861,35 @@ void AdjustLinkEndpointsWithSetBack()
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			return m_LinkMOEAry[t].ObsCumulativeFlow;  
 		else
-			return m_StaticLinkVolume;
+			return 0;
+	}
+
+	void SetDefaultCumulativeFlow()
+	{
+		int ObsCumulativeFlow = 0;
+		int CumulativeArrivalCount_PricingType[5];
+		
+		int p;
+		for(p = 1;  p<=4; p++)
+			CumulativeArrivalCount_PricingType[p] = 0;
+
+		for(int t =0; t< m_LinkMOEAry.size(); t++)
+		{
+			if(t>=1)
+			{
+				m_LinkMOEAry[t].ObsCumulativeFlow = max(ObsCumulativeFlow, m_LinkMOEAry[t].ObsCumulativeFlow); // in case there are empty flow volumes
+
+				for(p = 1;  p<=4; p++)
+					m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p] =  max(CumulativeArrivalCount_PricingType[p], m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p]);
+
+			}
+
+			ObsCumulativeFlow = m_LinkMOEAry[t].ObsCumulativeFlow;  
+
+			for(p = 1;  p<=4; p++)
+				CumulativeArrivalCount_PricingType[p] = m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p];
+		}
+
 	}
 
 	float GetObsDensity(int t)

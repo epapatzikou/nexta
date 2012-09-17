@@ -25,6 +25,7 @@ private:
 	CDlgScenarioTab* p_SubTabs[6];
 	CXMLFile m_XMLFile;
 	int m_PrevTab;
+public:
 	int m_SelectTab;
 
 	BOOL ReadXMLFile(const char* ElementName, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector);
@@ -45,4 +46,6 @@ public:
 	afx_msg void OnTcnSelchangeScenarioTab(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonAdd();
 	afx_msg void OnBnClickedButtonDelete();
+	afx_msg void OnBnClickedButtonAddScenario();
+	afx_msg void OnBnClickedButtonEditDataInExcel();
 };

@@ -112,6 +112,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
 	#ifndef _WIN64
 
+	CString warning_message = "";
+
 	char model_units[_MAX_STRING_SIZE];
 	GetPrivateProfileString("model_attributes","units","MI",model_units,sizeof(model_units),FileName);
 
@@ -141,6 +143,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	// 1: node table
 
 	// ************************************/
+
+
+
 	char node_table_file_name[_MAX_STRING_SIZE];
 	GetPrivateProfileString("node_table","reference_file_name","",node_table_file_name,sizeof(node_table_file_name),FileName);
 	char node_name[_MAX_STRING_SIZE];
@@ -504,6 +509,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		}
 
 
+
 		CString link_shape_file_name;
 		link_shape_file_name = m_ProjectDirectory + link_table_file_name;
 
@@ -760,36 +766,35 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					return false;
 				}
 
-				/*		error checking
+				
 				DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNametoIDMap[from_node_id],m_NodeNametoIDMap[to_node_id]);
 
+				// error checking 
+				CString str_msg;
 				if(pExistingLink)
 				{
-				// str_msg.Format ("Link %d-> %d at row %d is duplicated with the previous link at row %d.\n", from_node_id,to_node_id, line_no, pExistingLink->input_line_no);
+				str_msg.Format ("Link %d-> %d at row %d is duplicated with the previous link at row %d. NEXTA will skip this link.\n", from_node_id,to_node_id, line_no, pExistingLink->input_line_no);
 				continue;
 				}
 				if(length > 100)
 				{
-				//AMSlog("The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.",from_node_id,to_node_id);
-				return false;
+				str_msg.Format ("The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.\n",from_node_id,to_node_id);
 				}
+
 				if(number_of_lanes ==0)
 				{
-				//AMS << str_msg.Format ("Link %d -> %d has 0 lane. Skip.",from_node_id,to_node_id);
-				continue; 
+				str_msg.Format ("Link %d -> %d has 0 lane.\n",from_node_id,to_node_id);
 				}
 				if(speed_limit_in_mph ==0)
 				{
-				// AMS	str_msg.Format ("Link %d -> %d has a speed limit of 0. Skip.",from_node_id,to_node_id);
-
-				continue; 
+				str_msg.Format ("Link %d -> %d has a speed limit of 0.\n",from_node_id,to_node_id);
 				}
 				if(capacity_in_pcphpl<0)
 				{
-				//AMS		rsLink.Close();
-				return;
+				str_msg.Format ("Link %d -> %d has a capcaity of 0.\n",from_node_id,to_node_id);
 				}
-				*/
+				warning_message+= str_msg;
+
 
 				line_no ++;
 				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
@@ -914,28 +919,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
-					{  // reset default value
-						if(pLink->m_SpeedLimit>30 && pLink->m_SpeedLimit<=50 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
-						{
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
-						}
-
-						if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
-						{
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
-						}
-
-					}
-
 					if(m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 					{ 
 						// mark them as activity location 
 						m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
 						m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
+
+						m_NodeIDMap[pLink->m_FromNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+
 					}
 
 
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+					m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(i);
 
 
 					unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
@@ -963,6 +960,39 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		OGRDataSource::DestroyDataSource( poDS );
 
 		}
+
+				
+		// determine control type for nodes
+	
+
+		int MinimumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","minimum_speed_limit_for_signals",30,FileName);
+	int MaximumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","maximum_speed_limit_for_signals",60,FileName);
+
+		std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+
+		DTALink* pLink = (*iLink);
+
+					{  // reset default value
+						if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
+							pLink->m_SpeedLimit> MinimumSpeedLimit4SignalControl && pLink->m_SpeedLimit<= MaximumSpeedLimit4SignalControl && 
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size() >=3) 
+						{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
+						}
+
+						if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+						{
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
+						}
+
+					}
+		}
+
+
 
 	if(use_optional_connector_layer == 1)
 	{
@@ -1389,6 +1419,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		m_AMSLogFile << "imported " << line_no << " zone boundaries." << endl;
 		m_ZoneDataLoadingStatus.Format ("%d zone boundary records are loaded from file %s.",line_no,zone_shape_file_name);
 
+		if(warning_message.GetLength () >=1)
+		{
+			CString final_message; 
+			final_message = "Warning messages:\n" + warning_message + "\nPlease check your original shape files and corresponding dbf files\n\n";
+			AfxMessageBox(final_message);
+		}
+
+
 	}
 
 #endif
@@ -1645,39 +1683,48 @@ bool CTLiteDoc::ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int 
 	return true;
 }
 
-bool  CTLiteDoc::RunGravityModel(LPCTSTR lpszFileName,int demand_type)
+bool  CTLiteDoc::RunGravityModel()
 {
-
 	float total_demand = 0;
 	long line_no = 0;
 
-	m_AMSLogFile << endl;
-	m_AMSLogFile << "zone_id,";
+	std::map<int, DTAZone>	:: iterator itr_o;
+	std::map<int, DTAZone>	:: iterator itr_d;
 
-	std::map<int, DTAZone>	:: const_iterator itr_o;
-	std::map<int, DTAZone>	:: const_iterator itr_d;
-
+	// stage 1: determine initial production and attraction
 	for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)  // for each origin
 	{
-		m_AMSLogFile <<  itr_o->first << ",";
-	}
+		if(itr_o->second.m_bWithinSubarea)
+		{
+		for(unsigned int i = 0; i< itr_o->second.m_ActivityLocationVector.size(); i++)
+		{
+			DTANode* pNode = m_NodeIDMap[m_NodeNametoIDMap[itr_o->second.m_ActivityLocationVector[i].NodeNumber]];
+				
+ 		itr_o->second .m_Production = pNode ->m_NodeProduction;
+		itr_o->second .m_Attraction = pNode ->m_NodeAttraction;
 
-	m_AMSLogFile << ",,origin_production,sub_total_per_origin" << endl;
+		}
+		}
+	}
 
 	for(itr_o = m_ZoneMap.begin(); itr_o != m_ZoneMap.end(); itr_o++)  // for each origin
 	{
 		float total_relative_attraction = 0;
 
-		m_AMSLogFile <<  itr_o->first << ",";
+		if(itr_o->second.m_bWithinSubarea)
+		{
 
 		int destination_zone;
 
 		for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
 		{
+			if(itr_d->second.m_bWithinSubarea)
+			{
+				destination_zone = itr_d->first ;
+				total_relative_attraction += (itr_d)->second .m_Attraction;
+			}
 
-			destination_zone = itr_d->first ;
-			total_relative_attraction += (itr_d)->second .m_Attraction;
-
+		}
 		}
 
 		if(total_relative_attraction <0.0001f)
@@ -1686,21 +1733,30 @@ bool  CTLiteDoc::RunGravityModel(LPCTSTR lpszFileName,int demand_type)
 		float sub_total = 0 ;
 		for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)  // for each destination
 		{
+			if(itr_d->second.m_bWithinSubarea)
+			{
 			int origin_zone  = itr_o->first ;
-			destination_zone = itr_d->first ;
+			int destination_zone = itr_d->first ;
 
 			float number_of_vehicles = itr_o->second .m_Production * (itr_d)->second .m_Attraction / total_relative_attraction;
 
-			sub_total += number_of_vehicles;
-			m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
-			total_demand += number_of_vehicles;
 
-			m_AMSLogFile <<  number_of_vehicles << ",";
+			sub_total += number_of_vehicles;
+			
+			// m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+
+			CString label;
+			
+			label.Format("%d,%d", origin_zone   , destination_zone);
+			m_ODMatrixMap[label].Origin = origin_zone;
+			m_ODMatrixMap[label].Destination  = destination_zone;
+			m_ODMatrixMap[label].TotalVehicleSize = number_of_vehicles; 
+			total_demand += number_of_vehicles;
 
 			if(number_of_vehicles < -0.0001)
 				number_of_vehicles = 0;
+			}
 		}
-		m_AMSLogFile <<",," << itr_o->second .m_Production << ","<< sub_total <<  endl;
 
 	} // for each origin
 
@@ -2763,6 +2819,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	m_ControlType_actuatedSignal = g_GetPrivateProfileInt("control_type","actuated_signal",6,ProjectFileName);
 	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundabout",7,ProjectFileName);
 
+
 	char link_type_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
 
@@ -2781,13 +2838,6 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	char pricing_type_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
 
-
-	char temporal_demand_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","temporal_demand_file_name","input_temporal_demand_profile.csv",temporal_demand_file_name,sizeof(temporal_demand_file_name),ProjectFileName);
-	if(ReadTemporalDemandProfileCSVFile(directory+temporal_demand_file_name)==false)
-	{
-	ReadTemporalDemandProfileCSVFile(DefaultDataFolder+"input_temporal_demand_profile.csv");
-	}
 
 	char VOT_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
@@ -2913,7 +2963,7 @@ void CTLiteDoc::OnImportDemanddataset()
 	//case 2: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
 	//case 3: ReadTransCADDemandCSVFile(directory+demand_file_name); break;
 	//case 4: ReadVISUMDemandCSVFile(directory+demand_file_name,demand_type,start_time_in_min,end_time_in_min); break;
-	//case 10: RunGravityModel(directory+demand_file_name,1); break;
+	//case 10: RunGravityModel(); break;
 	//	
 	//default:
 	//	{

@@ -144,7 +144,51 @@ CString CDlgScenarioTab::GetTabText()
 	return m_TabText;
 }
 
+BOOL CDlgScenarioTab::CopyRow()
+{
+	if(m_NumOfRows==0)
+		return false;
 
+	int OriginalNumOfRows = m_NumOfRows;
+	int Index = m_NumOfRows;
+
+	int k;
+	int number_of_selected_rows = 0;
+
+		for(k = 0; k<  OriginalNumOfRows; k++)
+	{
+	if(m_ListCtrl.IsRowSelected(k))  // if row is selected
+	{
+		number_of_selected_rows++;
+	}
+	}
+
+		if(number_of_selected_rows ==0)
+		{
+		m_ListCtrl.SelectRow (m_NumOfRows-1,true);  // auto select last row
+		}
+
+	for(k = 0; k<  OriginalNumOfRows; k++)
+	{
+	if(m_ListCtrl.IsRowSelected(k))  // if row is selected
+	{
+	//static CString
+	Index = m_ListCtrl.InsertItem(LVIF_TEXT,m_NumOfRows,NULL,0,0,0,NULL);
+	for (int i=0;i< min(default_value.size()+1,m_NumOfCols);i++)
+	{
+		CString text = m_ListCtrl.GetItemText(k,i);
+		m_ListCtrl.SetItemText(Index,i,text);
+	}
+	
+
+	m_NumOfRows++;
+	}
+
+	}
+	m_ListCtrl.SetItemState(Index,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+	m_ListCtrl.SetFocus();
+	return TRUE;
+}
 BOOL CDlgScenarioTab::AddRow()
 {
 	//static CString

@@ -338,12 +338,13 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
 					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_ArrivalTime- AvgTravelTime)*(pVehicle->m_ArrivalTime- AvgTravelTime);
+					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
 				}
 			}
 		}
 
 		VehicleStatistics total_summary;
+		count = 0;
 
 		for(i=1; i <= m_pDoc->m_ODSize ; i++)
 			for(j=1; j<= m_pDoc->m_ODSize ; j++)
@@ -423,7 +424,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
 					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_ArrivalTime- AvgTravelTime)*(pVehicle->m_ArrivalTime- AvgTravelTime);
+					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
 				}
 			}
 		}

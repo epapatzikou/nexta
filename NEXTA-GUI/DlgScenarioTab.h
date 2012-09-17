@@ -12,6 +12,7 @@ class CDlgScenarioTab : public CDialog
 public:
 	CDlgScenarioTab(CWnd* pParent = NULL);   // standard constructor
 	CDlgScenarioTab(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values, std::vector<std::string> linkstring);
+	BOOL CopyRow();
 	BOOL AddRow();
 	BOOL DeleteRow();
 	CString GenerateRecordString();

@@ -163,6 +163,12 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnUpdateLinkIncreasebandwidth)
 	ON_UPDATE_COMMAND_UI(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnUpdateLinkDecreasebandwidth)
 	ON_COMMAND(ID_EXPORT_CREATEVISSIMFILES, &CTLiteView::OnExportCreatevissimfiles)
+	ON_COMMAND(ID_DEBUG_SHOWVEHICLESWITHINCOMPLETETRIPSONLY, &CTLiteView::OnDebugShowvehicleswithincompletetripsonly)
+	ON_UPDATE_COMMAND_UI(ID_DEBUG_SHOWVEHICLESWITHINCOMPLETETRIPSONLY, &CTLiteView::OnUpdateDebugShowvehicleswithincompletetripsonly)
+	ON_COMMAND(ID_VEHICLE_VEHICLENUMBER, &CTLiteView::OnVehicleVehiclenumber)
+	ON_UPDATE_COMMAND_UI(ID_VEHICLE_VEHICLENUMBER, &CTLiteView::OnUpdateVehicleVehiclenumber)
+	ON_COMMAND(ID_VEHICLE_SHOWSELECTEDVEHICLEONLY, &CTLiteView::OnVehicleShowselectedvehicleonly)
+	ON_UPDATE_COMMAND_UI(ID_VEHICLE_SHOWSELECTEDVEHICLEONLY, &CTLiteView::OnUpdateVehicleShowselectedvehicleonly)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -174,7 +180,7 @@ CPen g_TransitPen(PS_SOLID,1,RGB(0,255,255));
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
-CPen g_PenSelectColor(PS_SOLID,5,RGB(9,249,17));
+CPen g_PenSelectColor(PS_SOLID,5,RGB(255,0,0));
 
 CPen g_PenExternalDColor(PS_SOLID,2,RGB(173,255,047)); 
 CPen g_PenExternalOColor(PS_SOLID,2,RGB(255,165,0));
@@ -266,7 +272,12 @@ CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
 
 CPen g_PenVehicle(PS_SOLID,1,RGB(0,255,0));  // yellow
 CPen g_BrushVehicle(PS_SOLID,1,RGB(0,255,0)); //magenta
+
+CPen g_PenSelectedVehicle(PS_SOLID,2,RGB(255,0,0));  // red
+
 CPen g_BrushTransitUser(PS_SOLID,1,RGB(255,0,0)); //magenta
+
+
 
 void g_SelectColorCode(CDC* pDC, int ColorCount)
 {
@@ -371,6 +382,8 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	bShowVehiclesWithIncompleteTrips = false;
+
 	m_msStatus = 0;
 
 	if(theApp.m_VisulizationTemplate == e_train_scheduling) 
@@ -409,6 +422,8 @@ CTLiteView::CTLiteView()
 	m_bShowLinkArrow = false;
 	m_bShowNode = true;
 	m_bShowNodeNumber = true;
+	m_bShowVehicleNumber = false;
+	m_bShowSelectedVehicleOnly = false;
 	m_bShowLinkType  = true;
 
 	m_Origin.x = 0;
@@ -982,10 +997,15 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			CString str_text, str_reference_text;
 
 			// show text condition 1: street name
-			if(pDoc->m_LinkMOEMode == MOE_none && (*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
+			if((*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
 			{
 				str_text = (*iLink)->m_Name.c_str ();
 				with_text = true;
+			}else
+			{
+				str_text.Format ("%d->%d", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber );
+				with_text = true;
+			
 			}
 
 			// show text condition 2: crash rates
@@ -1463,26 +1483,38 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if( pDoc->m_LinkMOEMode == MOE_vehicle)
 	{
 
+	CFont vehicle_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
+
+	int vehicle_size = min(20,max(3,int(pDoc->m_VehicleDisplaySize *pDoc->m_UnitFeet*m_Resolution)));
+
+	int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
+	int nFontSize =  max(vehicle_size * NodeTypeSize*0.8, 10);
+
+	vehicle_font.CreatePointFont(nFontSize, m_NodeTypeFaceName);
+
+	pDC->SelectObject(&vehicle_font);
+
+	TEXTMETRIC tm_vehicle;
+	memset(&tm_vehicle, 0, sizeof TEXTMETRIC);
+	pDC->GetOutputTextMetrics(&tm_vehicle);
+
 		pDC->SelectObject(&g_PenVehicle);  //green
 		pDC->SelectObject(&g_BrushVehicle); //green
 
-		int vehicle_size = 1;
-
-		if(m_GridResolution<2)
-			vehicle_size = 2;
-
-		if(m_GridResolution<1)
-			vehicle_size = 3;
-
-		if(m_GridResolution<0.5)
-			vehicle_size = 4;
 
 		std::list<DTAVehicle*>::iterator iVehicle;
 		for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
 		{
-			if((*iVehicle)->m_bComplete && (*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
+			if((*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
 				g_Simulation_Time_Stamp <=(*iVehicle)->m_ArrivalTime && (*iVehicle)->m_NodeSize>=2)
 			{
+
+				if(bShowVehiclesWithIncompleteTrips && (*iVehicle)->m_bComplete)  // show incomplete vehicles only
+					continue;
+
+				if(m_bShowSelectedVehicleOnly && (*iVehicle)->m_VehicleID != pDoc->m_SelectedVehicleID)  // show selected vehicle only
+					continue;
+
 
 				if((*iVehicle)->m_PricingType ==4)  // transit user
 					pDC->SelectObject(&g_BrushTransitUser); //red transit users
@@ -1495,9 +1527,31 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 
 					CPoint VehPoint= NPtoSP(pLink->GetRelativePosition(ratio));
+					if((*iVehicle)->m_VehicleID == pDoc->m_SelectedVehicleID)
+					{
+						pDC->SelectObject(&g_PenSelectedVehicle); //red transit users
+						pDC->Ellipse (VehPoint.x - vehicle_size*3, VehPoint.y - vehicle_size*3,
+						VehPoint.x + vehicle_size*3, VehPoint.y + vehicle_size*3);
+						pDC->SelectObject(&g_PenVehicle);  //green
+
+					}else
+					{ 
 
 					pDC->Ellipse (VehPoint.x - vehicle_size, VehPoint.y - vehicle_size,
 						VehPoint.x + vehicle_size, VehPoint.y + vehicle_size);
+
+					}
+
+				if(m_bShowVehicleNumber)
+				{
+
+					CString str_number;
+					str_number.Format ("%d",(*iVehicle)->m_VehicleID  );
+
+					VehPoint.y -= tm_vehicle.tmHeight / 2;
+
+					pDC->TextOut(VehPoint.x , VehPoint.y,str_number);
+				}
 				}
 
 			}
@@ -1640,7 +1694,6 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		{
 
 			int LayerNo = 0;
-
 
 			// change image size
 			CTLiteDoc* pDoc = GetDocument();
@@ -1861,8 +1914,9 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 			 isCreatingSubarea = false;
 			 CopyLinkSetInSubarea();
 			 isFinishSubarea = true;
-			 m_ToolMode = select_link_tool;
+			 m_ToolMode = move_tool;
 			 ReleaseCapture();
+			 FitNetworkToScreen();
 
 		 }
 			else
@@ -2528,6 +2582,8 @@ void CTLiteView::OnSearchFindlink()
 				pDoc->m_SelectedLinkID = pLink->m_LinkNo ;
 				pDoc->m_SelectedNodeID = -1;
 
+				pDoc->ZoomToSelectedLink(pLink->m_LinkNo);
+
 				m_SelectFromNodeNumber = dlg.m_FromNodeNumber;
 				m_SelectToNodeNumber = dlg.m_ToNodeNumber;
 				Invalidate();
@@ -2542,6 +2598,7 @@ void CTLiteView::OnSearchFindlink()
 			{
 				pDoc->m_SelectedLinkID = -1;
 				pDoc->m_SelectedNodeID = pNode->m_NodeID ;
+				pDoc->ZoomToSelectedNode(dlg.m_NodeNumber);
 
 				m_bShowNode = true;
 				Invalidate();
@@ -2595,24 +2652,45 @@ void CTLiteView::OnSearchFindlink()
 		if(dlg.m_SearchMode == efind_vehicle)
 		{
 			int SelectedVehicleID = dlg.m_VehicleNumber; // internal vehicle index starts from zero
+			std::vector<int> LinkVector;
 
 			if(pDoc->m_VehicleIDMap.find(SelectedVehicleID) == pDoc->m_VehicleIDMap.end())
 			{
+				if(SelectedVehicleID>=0)
+				{
 				CString str_message;
 				str_message.Format ("Vehicle Id %d cannot be found.", SelectedVehicleID+1);
 				AfxMessageBox(str_message);
+				}
+				
+				pDoc->m_SelectedVehicleID = -1;
+				pDoc->HighlightPath(LinkVector,1);
+
 				return;
 			}
 
-			std::vector<int> LinkVector;
+			pDoc->m_SelectedVehicleID = SelectedVehicleID;
+
 			DTAVehicle* pVehicle = pDoc->m_VehicleIDMap[SelectedVehicleID];
+
+			    CPlayerSeekBar m_wndPlayerSeekBar;
+
+
+				// set departure time to the current time of display
+			g_Simulation_Time_Stamp = pVehicle->m_DepartureTime +1;
+
+			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+			pMainFrame->m_wndPlayerSeekBar.SetPos(g_Simulation_Time_Stamp);
+
+			pDoc->m_LinkMOEMode = MOE_vehicle;
+
 			for(int link= 1; link<pVehicle->m_NodeSize; link++)
 			{
 				LinkVector.push_back (pVehicle->m_NodeAry[link].LinkNo);
 			}
 
 			pDoc->HighlightPath(LinkVector,1);
-
 
 			pDoc->m_HighlightGDPointVector.clear();
 
@@ -2675,13 +2753,13 @@ void CTLiteView::OnUpdateShowShownode(CCmdUI *pCmdUI)
 
 void CTLiteView::OnShowShowallpaths()
 {
-	m_ShowAllPaths = !m_ShowAllPaths;
+//	m_ShowAllPaths = !m_ShowAllPaths;
+
 	Invalidate();
 }
 
 void CTLiteView::OnUpdateShowShowallpaths(CCmdUI *pCmdUI)
 {
-	pCmdUI->SetCheck(m_ShowAllPaths);
 }
 
 
@@ -3123,7 +3201,12 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	// step 05: add new zones if the boundary has zone --
 
 	iNode = pDoc->m_NodeSet.begin ();
-	int TAZ = 10000;
+	int TAZ = 1000;  // mark for subarea
+
+	if(pDoc->m_ZoneMap .size() > TAZ)
+	{
+	   TAZ = pDoc->m_ZoneMap.size()+1000;
+	}
 	int boundary_zone_count = 0;
 	while (iNode != pDoc->m_NodeSet.end())
 	{
@@ -3260,6 +3343,13 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 			}
 	}
 
+	// step 7: gravity model to generate initial OD demand
+	if(pDoc->m_ODMatrixMap.size()==0 )
+	{
+	
+	}
+
+
 	DeleteObject(m_polygonal_region);
 	delete [] m_subarea_points;
 
@@ -3280,7 +3370,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 
 	AfxMessageBox(SubareaCutMessage, MB_ICONINFORMATION);
 
-
+	pDoc->m_bSaveProjectFromSubareaCut =true;  // mark subarea cut
 	Invalidate();
 }
 
@@ -3341,10 +3431,19 @@ void CTLiteView::OnViewIncreasenodesize()
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	pDoc->m_NodeDisplaySize *=1.2;
+	 if(pDoc->m_LinkMOEMode != MOE_vehicle)
+	 {
+			pDoc->m_NodeDisplaySize *=1.2;
+	if(pDoc->m_NodeDisplaySize > 1000)  // fast increase the size
+		pDoc->m_NodeDisplaySize = 1000;
+	 }
+	 else 
+	 {
+	pDoc->m_VehicleDisplaySize*=1.2;
+	if(pDoc->m_VehicleDisplaySize > 1000)  // fast increase the size
+		pDoc->m_VehicleDisplaySize = 1000;
+	 }
 
-	if(pDoc->m_NodeDisplaySize < 1)  // fast increase the size
-		pDoc->m_NodeDisplaySize = 1;
 
 	Invalidate();
 
@@ -3353,8 +3452,15 @@ void CTLiteView::OnViewIncreasenodesize()
 void CTLiteView::OnViewDecreatenodesize()
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->m_NodeDisplaySize /=1.2;
+
+	 if(pDoc->m_LinkMOEMode != MOE_vehicle)
+		pDoc->m_NodeDisplaySize /=1.2;
+	 else
+		pDoc->m_VehicleDisplaySize/=1.2;
+	
 	Invalidate();
+
+
 }
 
 
@@ -4346,3 +4452,38 @@ void CTLiteView::OnExportCreatevissimfiles()
 	}
 }
 
+
+void CTLiteView::OnDebugShowvehicleswithincompletetripsonly()
+{
+	bShowVehiclesWithIncompleteTrips = !bShowVehiclesWithIncompleteTrips;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateDebugShowvehicleswithincompletetripsonly(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(bShowVehiclesWithIncompleteTrips);
+}
+
+void CTLiteView::OnVehicleVehiclenumber()
+{
+	m_bShowVehicleNumber = !m_bShowVehicleNumber;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateVehicleVehiclenumber(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowVehicleNumber);
+}
+
+void CTLiteView::OnVehicleShowselectedvehicleonly()
+{
+	m_bShowSelectedVehicleOnly = ! m_bShowSelectedVehicleOnly;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateVehicleShowselectedvehicleonly(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowSelectedVehicleOnly);
+}
