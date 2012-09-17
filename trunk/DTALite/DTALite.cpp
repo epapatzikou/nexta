@@ -184,6 +184,7 @@ int g_Day2DayAgentLearningMethod  =0;
 float g_DepartureTimeChoiceEarlyDelayPenalty = 1;
 float g_DepartureTimeChoiceLateDelayPenalty = 1;
 float g_CurrentGapValue = 0.0; // total network gap value in the current iteration
+float g_PercentageCompleteTrips = 100.0;
 float g_PrevGapValue = 0.0; // total network gap value in last iteration
 float g_RelativeGap = 0.0; // = abs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue 
 int g_CurrentNumOfVehiclesSwitched = 0; // total number of vehicles switching paths in the current iteration; for MSA, g_UEAssignmentMethod = 0
@@ -959,7 +960,7 @@ void g_ReadInputFiles(int scenario_no)
 
 				if(i%1000==0)
 				{
-					cout << " loading " << i << " links..." << endl;
+					cout << " loading " << i/1000 << "K links..." << endl;
 				}
 
 				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != 2) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
@@ -1506,7 +1507,7 @@ void g_ReadInputFiles(int scenario_no)
 // debug:
 
 
-int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, long PathIndex,bool bChangeHistDemandTable)
+int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, int PathIndex,bool bChangeHistDemandTable, int DepartureTimeIndex)
 {
 	if( origin_zone == destination_zone)  // do not simulate intra-zone traffic
 		return 0; 
@@ -1523,6 +1524,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 		vhc.m_OriginZoneID = origin_zone;
 		vhc.m_DestinationZoneID = destination_zone;
 		vhc.m_PathIndex = PathIndex;
+		vhc.m_DepartureTimeIndex = DepartureTimeIndex;
 
 		g_ZoneMap[origin_zone].m_OriginVehicleSize ++;
 
@@ -1546,10 +1548,12 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 		// when we output the all statistics, we need to 
 		vhc.m_DemandType = demand_type;
 
-		if(g_ODEstimationFlag==1 && bChangeHistDemandTable ==true)  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
+		if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 		{
 			int time_interval = vhc.m_DepartureTime/15;
-			g_HistDemand.AddValue(origin_zone,destination_zone,time_interval, 1); // for ODME
+
+			if(bChangeHistDemandTable ==true)
+				g_HistDemand.AddValue(origin_zone,destination_zone,time_interval, 1); // to store the initial table as hist database
 		}
 
 		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass , vhc.m_VOT);
@@ -2459,8 +2463,7 @@ void FreeMemory()
 	}
 
 
-	g_FreeODTKPathVector();
-	g_LinkVector.clear();
+		g_LinkVector.clear();
 	g_LinkVector.clear();
 	g_VehicleTypeVector.clear();
 	g_NodeNametoIDMap.clear();
@@ -2551,7 +2554,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
 						LinkOutFlow*60.0/pLink->m_NumLanes ,LinkOutFlow*60.0,
 						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes,
-						pLink->m_Length/travel_time,
+						pLink->GetSpeed(time),
 						pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam /pLink->m_NumLanes), /* in percentage*/
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
@@ -2565,7 +2568,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					tdmoe_element. link_volume_in_veh_per_hour_per_lane = LinkOutFlow*60.0/pLink->m_NumLanes;
 					tdmoe_element. link_volume_in_veh_per_hour_for_all_lanes = LinkOutFlow*60.0;
 					tdmoe_element.  density_in_veh_per_mile_per_lane = (pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes;
-					tdmoe_element.  speed_in_mph = pLink->m_Length/travel_time;
+					tdmoe_element.  speed_in_mph = pLink->GetSpeed(time);
 					tdmoe_element. exit_queue_length = pLink->m_LinkMOEAry[time].ExitQueueLength /(pLink->m_KJam /pLink->m_NumLanes); /* in percentage*/;
 					tdmoe_element. cumulative_arrival_count = pLink->m_LinkMOEAry[time].CumulativeArrivalCount;
 					tdmoe_element. cumulative_departure_count = pLink->m_LinkMOEAry[time].CumulativeDepartureCount;
@@ -2622,6 +2625,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 
 }
+
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file)
 {

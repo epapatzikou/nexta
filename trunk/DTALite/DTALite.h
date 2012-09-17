@@ -42,7 +42,7 @@ using namespace std;
 // extention for multi-day equilibirum
 #define MAX_FIFO_QUEUESIZE 5000
 #define MAX_DAY_SIZE 1
-#define MAX_PATH_LINK_SIZE 1000
+#define MAX_PATH_LINK_SIZE 300
 #define MAX_MEASUREMENT_INTERVAL 15 
 
 #define MAX_INFO_CLASS_SIZE 4
@@ -105,6 +105,29 @@ float g_RNNOF();
 bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT);
 
 string GetLinkStringID(int FromNodeName, int ToNodeName);
+
+///////////////////////////
+// linear regression
+//////////////////
+struct SensorDataPoint
+{
+
+   double x;
+   double y;
+};
+
+struct struc_LinearRegressionResult
+{
+	double avg_y_to_x_ratio;
+	double slope;
+	double y_intercept;
+	double rsqr;
+	double average_residue;
+	int data_size;
+
+};
+
+//////////////////////
 
 struct GDPoint
 {
@@ -1795,6 +1818,7 @@ public:
 	int m_DestinationZoneID;
 
 	int m_DemandType;
+	int m_DepartureTimeIndex;
 	int m_VehicleType;
 	int m_PricingType;
 	int m_InformationClass;
@@ -1802,7 +1826,7 @@ public:
 	float    m_DepartureTime;
 	int m_TimeToRetrieveInfo;
 	float m_VOT;
-	long m_PathIndex;  // for OD estimation
+	int m_PathIndex;  // for OD estimation
 
 
 	bool operator<(const DTA_vhc_simple &other) const
@@ -1865,15 +1889,7 @@ public:
 
 };
 
-class VehicleArrayForOriginDepartrureTimeInterval
-{
-public:
-	std::vector<int> VehicleArray;
-	~VehicleArrayForOriginDepartrureTimeInterval()
-	{
-		VehicleArray.clear();
-	}
-};
+
 
 class NetworkMOE
 {
@@ -2015,7 +2031,7 @@ public:
 	DTALinkToll()
 	{
 		m_bTollExist = false;
-		for(int i=1; i< MAX_PRICING_TYPE_SIZE; i++)
+		for(int i=0; i< MAX_PRICING_TYPE_SIZE; i++)
 			TollValue[i] = 0;
 	}
 };
@@ -2312,13 +2328,15 @@ int g_read_integer_with_char_O(FILE* f);
 float g_read_float(FILE *f);
 
 void ReadNetworkTables();
-int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,long PathIndex = -1, bool bChangeHistDemandTable=true);
+int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,int PathIndex = -1, bool bChangeHistDemandTable=true, int departure_time_index = 0);
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
 struct NetworkLoadingOutput
 {
 public:
+
+	struc_LinearRegressionResult ODME_result;
 	NetworkLoadingOutput()
 	{
 		ResetStatistics();
@@ -2358,7 +2376,9 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-#define _MAX_ODT_PATH_SIZE_4_ODME 30
+#define _MAX_ODT_PATH_SIZE_4_ODME 50
+#define _MAX_PATH_NODE_SIZE_4_ODME 300
+
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
 {
 	//  // for path flow adjustment
@@ -2374,7 +2394,7 @@ struct PathArrayForEachODT // Jason : store the path set for each OD pair and ea
 	int   NumOfPaths;
 	int   PathNodeSums[_MAX_ODT_PATH_SIZE_4_ODME];            // max 100 path for each ODT
 	int   NumOfVehsOnEachPath[_MAX_ODT_PATH_SIZE_4_ODME]; 	
-	int   PathLinkSequences[_MAX_ODT_PATH_SIZE_4_ODME][100];	// max 100 links on each path
+	int   PathLinkSequences[_MAX_ODT_PATH_SIZE_4_ODME][_MAX_PATH_NODE_SIZE_4_ODME];	// max 300 links on each path
 	int   PathSize[_MAX_ODT_PATH_SIZE_4_ODME];				// number of nodes on each path
 	//	int   BestPath[100];				// the link sequence of the best path for each ODT
 	int   BestPathIndex;				// index of the best (i.e., least experienced time) path for each ODT
@@ -2386,11 +2406,12 @@ struct PathArrayForEachODT // Jason : store the path set for each OD pair and ea
 class PathArrayForEachODTK // Xuesong: store path set for each OD, tau and k set.
 {
 public: 
-	long m_PathIndex; 
-	unsigned short m_OriginZoneID;  //range 0, 65535
-	unsigned short m_DestinationZoneID;  // range 0, 65535
-	unsigned char m_DemandType;     // 1: passenger,  2, HOV, 2, truck, 3: bus
+	int m_PathIndex; 
+	int m_OriginZoneID;  //range 0, 65535
+	int m_DestinationZoneID;  // range 0, 65535
+	int m_DemandType;     // 1: passenger,  2, HOV, 2, truck, 3: bus
 
+	int m_DepartureTimeIndex;
 	int m_NodeSum; 
 
 	float m_starting_time_in_min;
@@ -2404,12 +2425,14 @@ public:
 	{
 		m_LinkSize = 0;
 		m_VehicleSize = 0;
+		m_DepartureTimeIndex = 0;
 
 	}
 
-	void Setup(int PathIndex,int OriginZoneID, int DestinationZoneID, int DemandType, int starting_time_in_min, int ending_time_in_min, int LinkSize, int PathLinkSequences[100], float VehicleSize, int NodeSum)
+	void Setup(int PathIndex,int OriginZoneID, int DestinationZoneID, int DemandType, int starting_time_in_min, int ending_time_in_min, int LinkSize, int PathLinkSequences[100], float VehicleSize, int NodeSum, int DepartureTimeIndex)
 	{
 		m_PathIndex  = PathIndex;
+		m_DepartureTimeIndex = DepartureTimeIndex;
 
 		m_OriginZoneID = OriginZoneID;
 		m_DestinationZoneID = DestinationZoneID;
@@ -2576,9 +2599,18 @@ typedef struct
 	float value_of_time;
 } struct_VehicleInfo_Header;
 
+class VehicleArrayForOriginDepartrureTimeInterval
+{
+public:
+	std::vector<int> VehicleArray;
+	std::vector<PathArrayForEachODTK> m_ODTKPathVector;  // for ODME
 
-
-extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
+	~VehicleArrayForOriginDepartrureTimeInterval()
+	{
+		VehicleArray.clear();
+		m_ODTKPathVector.clear();
+	}
+};
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
@@ -2647,7 +2679,6 @@ extern bool g_read_a_line(FILE* f, char* aline, int & size);
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
 
 extern void g_FreeMemoryForVehicleVector();
-extern void g_FreeODTKPathVector();
 
 void g_AgentBasedShortestPathGeneration();
 
@@ -2713,3 +2744,5 @@ extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance
 										 int DemandType=0,int VehicleType = 0, int InformationClass=0, int origin_zone_id = 0, int destination_zone_id = 0,
 										 int from_node_id = 0, int mid_node_id	=0, int to_node_id	=0,	
 										 int departure_starting_time	 = 0,int departure_ending_time= 1440, int entrance_starting_time=0,int inentrance_ending_time = 1440);
+
+extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;

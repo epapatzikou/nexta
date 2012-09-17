@@ -552,6 +552,15 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(g_ShortestPathWithMovementDelayFlag)
 	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, pricing_type, VOT, PathLinkList, TotalCost,distance_flag, debug_flag);
 
+	if(pricing_type == 0) // unknown type
+		pricing_type = 1; 
+
+	if(origin_zone ==8 && destination_zone==11 && origin==163)
+	{
+		debug_flag = true;
+			TRACE("\nScan from root node %d,",g_NodeVector[origin].m_NodeName);
+			TRACE("\ndestination node %d,",g_NodeVector[destination].m_NodeName);
+	}
 
 	// checking boundary condition for departure time changes
 	if(departure_time < g_DemandLoadingStartTimeInMin)
@@ -700,6 +709,12 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			temp_reversed_PathLinkList[LinkSize++] = LinkNoAry[PredNode];
 
 			PredNode = NodePredAry[PredNode];
+
+			if(debug_flag)
+			{
+			TRACE("\nTrace from node %d,",g_NodeVector[PredNode].m_NodeName);
+			}
+
 		}
 
 		int j = 0;

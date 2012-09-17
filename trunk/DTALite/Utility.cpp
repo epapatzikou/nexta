@@ -35,30 +35,32 @@ using namespace std;
 // http://codesam.blogspot.com/2011/06/least-square-linear-regression-of-data.html
 //********************************************************************************/
 
-struct DataPoint
-{
-   double x;
-   double y;
-};
 
-void LeastRegression(std::vector <DataPoint> DataVector)
+struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &DataVector, bool SetYInterceptTo0)
 {
 
-	if(DataVector.size()<=2)
-		return;
+	struc_LinearRegressionResult result;
+	result.data_size = DataVector.size();
+	result.average_residue = 0;
+	result.rsqr = 1;
+	result.slope = 1;
+	result.y_intercept = 0;
+
+	if(DataVector.size()<=1)
+		return result;
 
    double sum_x = 0;     //sum of x values
    double sum_y = 0;     //sum of y values
    double sum_xy = 0;    //sum of x * y
    double sum_xx = 0;    //sum of x^2
-   double sum_res = 0;   //sum of squared residue
+   double sum_residue = 0;   //sum of squared residue
    double res = 0;      //residue squared
    double slope = 0;    //slope of regression line
    double y_intercept = 0; //y intercept of regression line
    double sum_y_res = 0; //sum of squared of the discrepancies
-   double AVGy = 0;     //mean of y
-   double AVGx = 0;     //mean of x
-   double Yres = 0;     //squared of the discrepancies
+   double average_y = 0;     //mean of y
+   double average_x = 0;     //mean of x
+   double y_residual = 0;     //squared of the discrepancies
    double Rsqr = 0;     //coefficient of determination
 
    //calculate various sum_s 
@@ -76,44 +78,45 @@ void LeastRegression(std::vector <DataPoint> DataVector)
 
    //calculate the means of x and y
    int dataSize = DataVector.size();
-   AVGy = sum_y / dataSize;
-   AVGx = sum_x / dataSize;
+   average_y = sum_y / dataSize;
+   average_x = sum_x / dataSize;
 
    //slope or a1
    slope = (dataSize * sum_xy - sum_x * sum_y) / (dataSize * sum_xx - sum_x*sum_x);
 
    //y itercept or a0
-   y_intercept = AVGy - slope * AVGx;
-   
+   y_intercept = average_y - slope * average_x;
+
+  
    //calculate squared residues, their sum_ etc.
    for (int i = 0; i <  DataVector.size(); i++) 
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((DataVector[i].y - y_intercept - (slope * DataVector[i].x)), 2);
+      y_residual = pow((DataVector[i].y - y_intercept - (slope * DataVector[i].x)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
-      sum_y_res += Yres;
+      sum_y_res += y_residual;
 
-      //current residue squared (y_i - AVGy)^2
-      res = pow(DataVector[i].y - AVGy, 2);
+      //current residue squared (y_i - average_y)^2
+      res = pow(DataVector[i].y - average_y, 2);
 
       //sum of squared residues
-      sum_res += res;
+      sum_residue += res;
       
-      TRACE ("   (%0.2f %0.2f)      %0.5E         %0.5E\n", 
-       DataVector[i].x, DataVector[i].y, res, Yres);
-   }
+  }
 
    //calculate r^2 coefficient of determination
-   Rsqr = (sum_res - sum_y_res) / sum_res;
-   
-   TRACE("--------------------------------------------------\n");
-   TRACE("sum of (y_i - y_avg)^2 = %0.5E\t\n", sum_res);
-   TRACE("sum of (y_i - a_o - a_1*x_i)^2 = %0.5E\t\n", sum_y_res);
-   TRACE("Standard deviation(St) = %0.5E\n", sqrt(sum_res / (dataSize - 1)));
-   TRACE("Standard error of the estimate(Sr) = %0.5E\t\n", sqrt(sum_y_res / (dataSize-2)));
-   TRACE("Coefficent of determination(r^2) = %0.5E\t\n", (sum_res - sum_y_res)/sum_res);
-   TRACE("Correlation coefficient(r) = %0.5E\t\n", sqrt(Rsqr));
+    Rsqr = (sum_residue - sum_y_res) / max(0.00001,sum_residue);
+
+    Rsqr = 1 - (sum_y_res / max(0.000001,sum_residue));
+
+   	result.average_residue = sum_y_res/max(1,DataVector.size());
+	result.rsqr = Rsqr;
+	result.slope = slope; 
+	result.y_intercept = y_intercept;
+	result.avg_y_to_x_ratio = average_y / max(0.0000001,average_x);  // directly calculate bias slope 
+
+   return result;
 
 }
 bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2)
@@ -134,7 +137,7 @@ bool g_floating_point_value_less_than(double value1, double value2)
 	long lValue2 = (long) (value2*g_precision_constant2);
 
 	if(lValue1<lValue2)
-		return true;
+	return true;
 	else 
 		return false;
 
@@ -478,13 +481,6 @@ for_each(g_VehicleVector.begin(), g_VehicleVector.end(), entity_deleter());
 	g_VehicleVector.clear();
 	g_VehicleMap.clear();
 	cout << "Complete. " << endl;
-}
-
-void g_FreeODTKPathVector()
-{
-	cout << "Free global path set... " << endl;
-
-	g_ODTKPathVector.clear(); 
 }
 
 
