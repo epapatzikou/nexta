@@ -616,7 +616,7 @@ void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase()
 	m_pDoc->OpenCSVFileInExcel (file_name);
 }
 
-CString CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType, bool bLoadData = true)
+void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType)
 {
 
 	CString SelectedFileName;
@@ -709,9 +709,6 @@ CString CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSeque
 			int apply_additional_time_dependent_profile =0;	
 			parser.GetValueByFieldName("apply_additional_time_dependent_profile",apply_additional_time_dependent_profile);
 			parser.GetValueByFieldName("loading_multiplier",local_demand_loading_multiplier);
-
-			if(bLoadData==false)  // do not load demand data
-				continue;
 
 			double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE] = {0};
 
@@ -990,7 +987,7 @@ CString CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSeque
 	// cout << "Total demand volume = " << total_demand_in_demand_file << endl;
 
 	// create vehicle heres...
-	return SelectedFileName;
+	return;
 }
 void CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist2(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -1022,18 +1019,5 @@ void CDlgODDemandGridCtrl::OnBnClickedEditVehicleEmissionsFile()
 
 void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase3()
 {
-	m_SelectedDemandMetaType = -1;
-	POSITION pos = m_DemandFileGrid.GetFirstSelectedItemPosition();
-	while(pos!=NULL)
-	{
-		int nSelectedRow = m_DemandFileGrid.GetNextSelectedItem(pos);
-		char str[100];
-		m_DemandFileGrid.GetItemText (nSelectedRow,1,str,20);
-		m_SelectedDemandMetaType = atoi(str);
-		CString file_name = LoadDemandMatrixFromDemandFile(nSelectedRow,1,false)
-		//		TRACE("Select %d\n",m_SelectedDemandMetaType);
-	file_name.Format ("%s\\%d",m_pDoc->m_ProjectDirectory,file_name);
-	m_pDoc->OpenCSVFileInExcel (file_name);
-	}
 
 }

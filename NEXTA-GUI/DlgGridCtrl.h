@@ -56,7 +56,7 @@ public:
 
 	}
 
-	CString LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType, bool bLoadDemandData);
+	void LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType);
 private:
 	CGridCtrl m_ODMatrixGrid;
 	CListCtrl m_DemandTypeGrid;

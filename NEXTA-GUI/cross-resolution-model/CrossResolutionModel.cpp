@@ -536,7 +536,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 	for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++, i++)
 	{  // for current node
 
-		//		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_actuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
+		//		if ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)  //(m_Network.m_InboundSizeAry[i] >= 3) // add node control types
 		{
 			signal_count ++;
 			// generate movement set
@@ -1669,7 +1669,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 
 
-		if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_actuatedSignal )  //this movement vector is the same as the current node
+		if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_ActuatedSignal )  //this movement vector is the same as the current node
 		{
 			// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
 

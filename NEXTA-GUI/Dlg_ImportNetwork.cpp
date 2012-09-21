@@ -1218,7 +1218,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			}
 			rsDemand.Close();
 
-			str_msg.Format ( "%f vehicles have been succesfully imported from the peak-hour-demand table.", total_demand);
+			str_msg.Format ( "%f vehicles have been successfully imported from the peak-hour-demand table.", total_demand);
 			m_MessageList.AddString (str_msg);
 
 	}
