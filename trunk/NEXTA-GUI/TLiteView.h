@@ -252,12 +252,10 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_SelectFromNodeNumber; 
 	int m_SelectToNodeNumber;
 
-	bool m_bShowZoneBoundary;
 	bool m_bShowODDemandVolume;
 	bool m_bShowConnector;
 	bool m_bHighlightActivityLocation;
 
-	bool m_bShowSensor;
 	bool m_bShowTransit;
 	bool m_bShowText;
 	bool m_bShowAVISensor;
@@ -491,7 +489,6 @@ protected:
 	afx_msg void OnNodeDestination();
 	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
 public:
-	afx_msg void OnViewSensor();
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg void OnSearchFindlink();
 	afx_msg void OnEditChangebackgroupimagethroughmouse();
@@ -547,14 +544,12 @@ public:
 	afx_msg void OnNodeDirectiontohereandreliabilityanalysis();
 	afx_msg void OnLinkIncreasebandwidth();
 	afx_msg void OnLinkDecreasebandwidth();
-	afx_msg void OnUpdateViewSensor(CCmdUI *pCmdUI);
 	afx_msg void OnLinkSwichtolineBandwidthMode();
 	afx_msg void OnViewTransitlayer();
 	afx_msg void OnUpdateViewTransitlayer(CCmdUI *pCmdUI);
 	afx_msg void OnNodeMovementproperties();
 	afx_msg void OnLinkLinedisplaymode();
 	afx_msg void OnUpdateLinkLinedisplaymode(CCmdUI *pCmdUI);
-	afx_msg void OnViewZoneboundary();
 	afx_msg void OnUpdateViewZoneboundary(CCmdUI *pCmdUI);
 	afx_msg void OnViewShowConnector();
 	afx_msg void OnUpdateViewShowConnector(CCmdUI *pCmdUI);

@@ -110,6 +110,7 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 }
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
+	CWaitCursor wait;
 	#ifndef _WIN64
 
 	CString warning_message = "";
@@ -132,11 +133,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",1,FileName);
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
 	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
+
 	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
+	bool bSkipShapePoints = 1-g_GetPrivateProfileInt("model_attributes","use_curve_info_from_shape_points",1,FileName);
+	m_bBezierCurveFlag = g_GetPrivateProfileInt("model_attributes","apply_bezier_curve_fitting",1,FileName);
+
 	int link_capacity_flag = g_GetPrivateProfileInt("model_attributes","link_capacity_flag",1,FileName);
 	int number_of_lanes_for_two_way_links_flag = g_GetPrivateProfileInt("model_attributes","number_of_lanes_for_two_way_links",0,FileName);
 	int use_optional_centroid_layer = g_GetPrivateProfileInt("model_attributes","use_optional_centroid_layer",0,FileName);
 	int use_optional_connector_layer = g_GetPrivateProfileInt("model_attributes","use_optional_connector_layer",0,FileName);
+
 
 
 	// ************************************/
@@ -189,6 +195,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		if(poLayer == NULL)
 		{
 			message_str.Format("Open layer %d failed", j+1);
+			AfxMessageBox(message_str);
 
 			return false;			
 		}
@@ -218,7 +225,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			int control_type = 0;
 
 			if(control_type_field_flag)
-				control_type_field_flag = poFeature->GetFieldAsInteger(node_control_type);
+				control_type = poFeature->GetFieldAsInteger(node_control_type);
 
 			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name);
 
@@ -333,6 +340,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		if(poLayer == NULL)
 		{
 			message_str.Format("Open layer %d failed", j+1);
+			AfxMessageBox(message_str);
 
 			return false;			
 		}
@@ -358,8 +366,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			// node id
 			int id = poFeature->GetFieldAsInteger(node_node_id);
-
-			int control_type = 0;
 
 			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name);
 
@@ -398,7 +404,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pNode->m_NodeNumber = id;
 			pNode->m_NodeID = i;
 			pNode->m_ZoneID = TAZ;
-			pNode->m_ControlType = control_type;
+			pNode->m_ControlType = m_ControlType_NoControl;
 
 
 			if(TAZ>=1)
@@ -448,7 +454,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	// 2: link table
 
 	// ************************************/
-	bool bSkipShapePoints = false;
 	bool read_link_layer = true;
 
 	bool bTwoWayLinkFlag = false;
@@ -742,7 +747,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						TRACE("\nNumber_of_Shape_Points = %d",Number_of_Shape_Points);
 						}
 					
-					if(Number_of_Shape_Points>=10)  //
+					if(Number_of_Shape_Points>=20)  //
 						step = (int)(Number_of_Shape_Points/10);
 
 					for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)
@@ -793,7 +798,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				{
 				str_msg.Format ("Link %d -> %d has a capcaity of 0.\n",from_node_id,to_node_id);
 				}
-				warning_message+= str_msg;
+
+				if(warning_message.GetLength ()<10000)  // to avoid too many error messages
+				{
+					warning_message+= str_msg;
+				}
 
 
 				line_no ++;
@@ -1355,6 +1364,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			if(poLayer == NULL)
 			{
 				message_str.Format("Open layer %d failed", j+1);
+				AfxMessageBox(message_str);
 
 				return false;			
 			}
@@ -1370,7 +1380,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			m_AMSLogFile << "3: zone block---" << endl;
 			m_AMSLogFile << "zone id" << endl;
 
-
+			int zone_record_count = 1;
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -1378,6 +1388,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				// zone id
 				int id = poFeature->GetFieldAsInteger(zone_id_name);
 
+				if(id ==0)
+				{
+				
+				CString str;
+				str.Format ("Reading field %s = 0 at record No. %d",zone_id_name, zone_record_count);
+				
+				AfxMessageBox(str);
+				return false;
+				}
 				m_AMSLogFile << id << "," ;
 
 				OGRGeometry *poGeometry;
@@ -1412,6 +1431,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					} // wkbPolygon
 					line_no++;
 				} // poGeometry
+			zone_record_count++;
 			} // poFeature
 		} // poLayers
 
@@ -2810,29 +2830,29 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 
 	m_AMSLogFile << "Step 1: Read control type definition data" << endl;
 
-	m_ControlType_UnknownControl = g_GetPrivateProfileInt("control_type","unknown_control",0,ProjectFileName);
-	m_ControlType_NoControl = g_GetPrivateProfileInt("control_type","no_control",1,ProjectFileName);
-	m_ControlType_YieldSign = g_GetPrivateProfileInt("control_type","yield_sign",2,ProjectFileName);
-	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
-	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
-	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
-	m_ControlType_actuatedSignal = g_GetPrivateProfileInt("control_type","actuated_signal",6,ProjectFileName);
-	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundabout",7,ProjectFileName);
 
-
-	char link_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","link_type_file_name","input_link_type.csv",link_type_file_name,sizeof(link_type_file_name),ProjectFileName);
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	CString DefaultDataFolder;
 	DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
 
-
-	if(ReadLinkTypeCSVFile(directory+link_type_file_name) == false)
+	if(ReadNodeControlTypeCSVFile(directory+"input_node_control_type.csv") == false)
 	{
-	// read files from default fold
-		ReadLinkTypeCSVFile(DefaultDataFolder+link_type_file_name);
+		CString msg;
+		msg.Format ("Please prepare node control type definition file input_node_control_type.csv and place it at folder %s.",
+			directory);
+			AfxMessageBox(msg);
+		return false;
+	}
+
+
+	if(ReadLinkTypeCSVFile(directory+"input_link_type.csv") == false)
+	{
+		CString msg;
+		msg.Format ("Please prepare link type definition file input_link_type.csv and place it at folder %s.",directory);
+			AfxMessageBox(msg);
+		return false;
 	}
 
 	char pricing_type_file_name[_MAX_STRING_SIZE];

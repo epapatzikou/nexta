@@ -741,7 +741,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_ControlType_2wayStopSign =  6;
 	m_ControlType_4wayStopSign = 3;
 	m_ControlType_PretimedSignal = 4;
-	m_ControlType_actuatedSignal = 5;
+	m_ControlType_ActuatedSignal = 5;
 	m_ControlType_Roundabout = 7;
 
 
@@ -844,7 +844,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
 
-		if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_actuatedSignal)
+		if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
 		{
 			(*iNode)-> m_bSignalData = true;
 			number_of_signals++;

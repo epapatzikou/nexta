@@ -1,4 +1,4 @@
-TLiteDoc.cpp : implementation of the CTLiteDoc class
+//TLiteDoc.cpp : implementation of the CTLiteDoc class
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -271,6 +271,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_PROJECT_INPUTSENSORDATAFORODME, &CTLiteDoc::OnProjectInputsensordataforodme)
 	ON_COMMAND(ID_HELP_USERGUIDE, &CTLiteDoc::OnHelpUserguide)
 	ON_COMMAND(ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL, &CTLiteDoc::OnToolsGenerateodmatrixgravitymodel)
+	ON_COMMAND(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnLinkattributedisplayLinkname)
+	ON_UPDATE_COMMAND_UI(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnUpdateLinkattributedisplayLinkname)
 	END_MESSAGE_MAP()
 
 
@@ -294,9 +296,8 @@ CTLiteDoc::CTLiteDoc()
 	m_ControlType_2wayStopSign = 3;
 	m_ControlType_4wayStopSign = 4;
 	m_ControlType_PretimedSignal = 5;
-	m_ControlType_actuatedSignal = 6;
+	m_ControlType_ActuatedSignal = 6;
 	m_ControlType_Roundabout = 7;
-
 	m_ControlType_ExternalNode = 100;
 
 
@@ -999,17 +1000,11 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_ProjectTitle = GetWorkspaceTitleName(ProjectFileName);
 	SetTitle(m_ProjectTitle);
 
-	// default data type definition files
-
-	m_ControlType_UnknownControl = g_GetPrivateProfileInt("control_type","unknown_control",0,ProjectFileName);
-	m_ControlType_ExternalNode  = g_GetPrivateProfileInt("control_type","external_node",100,ProjectFileName);
-	m_ControlType_NoControl = g_GetPrivateProfileInt("control_type","no_control",1,ProjectFileName);
-	m_ControlType_YieldSign = g_GetPrivateProfileInt("control_type","yield_sign",2,ProjectFileName);
-	m_ControlType_2wayStopSign = g_GetPrivateProfileInt("control_type","2way_stop_sign",3,ProjectFileName);
-	m_ControlType_4wayStopSign = g_GetPrivateProfileInt("control_type","4way_stop_sign",4,ProjectFileName);
-	m_ControlType_PretimedSignal = g_GetPrivateProfileInt("control_type","pretimed_signal",5,ProjectFileName);
-	m_ControlType_actuatedSignal = g_GetPrivateProfileInt("control_type","actuated_signal",6,ProjectFileName);
-	m_ControlType_Roundabout = g_GetPrivateProfileInt("control_type","roundabout",7,ProjectFileName);
+	
+	
+	
+	// read users' prespecified control type
+	ReadNodeControlTypeCSVFile(directory+"input_node_control_type.csv");
 
 	ReadLinkTypeCSVFile(directory+"input_link_type.csv");
 
@@ -1032,7 +1027,6 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_import_shape_files_flag = 1;
 	*/
 
-		ReadNodeControlTypeCSVFile(directory+"input_node_control_type.csv");
 		if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
 		if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
 		if(ReadZoneCSVFile(directory+"input_zone.csv"))
@@ -1367,45 +1361,58 @@ bool CTLiteDoc::ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName)
 			  control_type_code = 0;
 			  parser.GetValueByFieldName("unknown_control",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "unknown_control";
+			  m_ControlType_UnknownControl = control_type_code;
 
 			  control_type_code = 1;
 			  parser.GetValueByFieldName("no_control",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "no_control";
+			  m_ControlType_NoControl = control_type_code;
 
 			  control_type_code = 2;
 			  parser.GetValueByFieldName("yield_sign",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "yield_sign";
+			  m_ControlType_YieldSign = control_type_code;
 
 			  control_type_code = 3;
 			  parser.GetValueByFieldName("2way_stop_sign",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "2way_stop_sign";
+			  m_ControlType_2wayStopSign = control_type_code;
 
 			  control_type_code = 4;
 			  parser.GetValueByFieldName("4way_stop_sign",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "4way_stop_sign";
+			  m_ControlType_4wayStopSign = control_type_code;
 
 			  control_type_code = 5;
 			  parser.GetValueByFieldName("pretimed_signal",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "pretimed_signal";
+			  m_ControlType_PretimedSignal = control_type_code;
 
 			  control_type_code = 6;
 			  parser.GetValueByFieldName("actuated_signal",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "actuated_signal";
+		 	m_ControlType_ActuatedSignal = control_type_code;
 
 			  control_type_code = 7;
 			  parser.GetValueByFieldName("roundabout",control_type_code);
 			  m_NodeTypeMap[control_type_code] = "roundabout";
+			   m_ControlType_Roundabout = control_type_code;
 		
-		
+
+			  control_type_code = 100;
+			  parser.GetValueByFieldName("roundabout",m_ControlType_ExternalNode);
+			  m_NodeTypeMap[control_type_code] = "roundabout";
+			   m_ControlType_Roundabout = control_type_code;
 		
 		break;  // just one line
 		}
 
 
 
-
-	}
 	return true;
+	}
+
+	return false;
 }
 
 bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName)
@@ -1679,7 +1686,7 @@ void CTLiteDoc::OffsetLink()
 				for(unsigned int si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
 				{
 					// calculate theta for each feature point segment
-					if(si>= 1 && ((*iLink) ->m_ShapePoints .size() >4 || m_LinkTypeMap[(*iLink)->m_link_type].IsRamp ()))  // ramp or >4 feature points
+					if(si>= 1 && ( (*iLink) ->m_ShapePoints .size() >4 || m_LinkTypeMap[(*iLink)->m_link_type].IsRamp ()))  // ramp or >4 feature points
 					{
 						last_shape_point_id = si;
 						DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[si-1].x;
@@ -3032,6 +3039,8 @@ bool  CTLiteDoc::SaveDemandFile()
 		fprintf(st_meta_data,"0,1,AMS_OD_table.csv,column,0,1,%d,%d,0,0,1,1\n",m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin);
 		// m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin are read from the original project
 		fclose(st_meta_data);
+
+		AfxMessageBox("File input_demand_meta_data.csv is reset with AMS_OD_table.csv as a new demand input file, as a result of the subarea cut.", MB_ICONINFORMATION);
 	}else
 	{
 		AfxMessageBox("Error: File input_demand_meta_data.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
@@ -3105,7 +3114,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 	fprintf(st,",%d",m_ControlType_2wayStopSign);
 	fprintf(st,",%d",m_ControlType_4wayStopSign);
 	fprintf(st,",%d",m_ControlType_PretimedSignal);
-	fprintf(st,",%d",m_ControlType_actuatedSignal);
+	fprintf(st,",%d",m_ControlType_ActuatedSignal);
 	fprintf(st,",%d",m_ControlType_Roundabout);
 	fclose(st);
 	}else
@@ -3134,7 +3143,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 				control_type_name = m_NodeTypeMap[(*iNode)->m_ControlType].c_str() ;
 				}
 
-				if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_actuatedSignal)
+				if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_ActuatedSignal)
 				{
 					(*iNode)->m_CycleLengthInSecond = 0;
 					(*iNode)->m_SignalOffsetInSecond = 0;
@@ -3213,7 +3222,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName)
 					DTANode* pNode = m_NodeIDMap[ToNodeID];
 					//set default green time 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
-					pNode->m_ControlType == m_ControlType_actuatedSignal)
+					pNode->m_ControlType == m_ControlType_ActuatedSignal)
 				{
 				
 					if((*iLink)->m_EffectiveGreenTimeInSecond ==0)  // no default value
@@ -3658,7 +3667,7 @@ void CTLiteDoc::OnFileSaveProjectAs()
 		if(SaveProject(fdlg.GetPathName()))
 		{
 			CString msg;
-			msg.Format ("Files input_node.csv and input_link.csv have been successfully saved with %d nodes, %d links.",m_NodeSet.size(), m_LinkSet.size());
+			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d links, %d zones.",m_NodeSet.size(), m_LinkSet.size(), m_ZoneMap.size());
 			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
 
 			SetTitle(m_ProjectTitle);
@@ -4887,7 +4896,13 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 	if(m_bDYNASMARTDataSet)
 		sCommand.Format("%s\\planning.exe", pMainFrame->m_CurrentDirectory);
 	else
-		sCommand.Format("%s\\DTALite.exe", pMainFrame->m_CurrentDirectory);
+	{
+	#ifndef _WIN64
+		sCommand.Format("%s\\DTALite_32.exe", pMainFrame->m_CurrentDirectory);
+	#else
+		sCommand.Format("%s\\DTALite_32.exe", pMainFrame->m_CurrentDirectory);
+	#endif
+	}
 
 	ProcessExecute(sCommand, strParam, m_ProjectDirectory, true);
 
@@ -4962,7 +4977,7 @@ void CTLiteDoc::OnUpdateMoeTraveltime(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeCapacity()
 {
 	m_LinkMOEMode = MOE_capacity;
-
+	ShowTextLabel();
 	UpdateAllViews(0);
 }
 
@@ -4974,7 +4989,7 @@ void CTLiteDoc::OnUpdateMoeCapacity(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeSpeedlimit()
 {
 	m_LinkMOEMode = MOE_speedlimit;
-
+	ShowTextLabel();
 	UpdateAllViews(0);
 }
 
@@ -4986,6 +5001,7 @@ void CTLiteDoc::OnUpdateMoeSpeedlimit(CCmdUI *pCmdUI)
 void CTLiteDoc::OnMoeFreeflowtravletime()
 {
 	m_LinkMOEMode = MOE_fftt;
+	ShowTextLabel();
 
 	UpdateAllViews(0);
 }
@@ -5037,7 +5053,7 @@ void CTLiteDoc::OnEditDeleteselectedlink()
 void CTLiteDoc::OnMoeLength()
 {
 	m_LinkMOEMode = MOE_length;
-
+	ShowTextLabel();
 	UpdateAllViews(0);
 }
 
@@ -5365,7 +5381,7 @@ void CTLiteDoc::OnToolsRuntrafficassignment()
 		OnToolsPerformtrafficassignment();
 	else
 	{ //DTALite Settings
-		if(EditTrafficAssignmentOptions())
+	//	if(EditTrafficAssignmentOptions())
 			OnToolsPerformtrafficassignment();
 	}
 
@@ -8733,4 +8749,25 @@ void CTLiteDoc::OnToolsGenerateodmatrixgravitymodel()
 	RunGravityModel();
 	SaveAMS_ODTable();
 	OnToolsProjectfolder();
+}
+
+void CTLiteDoc::ShowTextLabel()
+{
+		std::list<CTLiteView*>::iterator iView = g_ViewList.begin ();
+		while (iView != g_ViewList.end())
+		{
+			(*iView)-> m_bShowText = true;
+			iView++;
+		}
+}
+void CTLiteDoc::OnLinkattributedisplayLinkname()
+{
+	m_LinkMOEMode = MOE_none;
+	ShowTextLabel();
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkMOEMode == MOE_none);
 }

@@ -529,9 +529,9 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,163,118,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,243,118,50,14
-    PUSHBUTTON      "Generate Synchro  Universal Traffic Data Format (UTDF) files",IDC_BUTTON_GENERATE_DATA,29,21,217,14
-    PUSHBUTTON      "Perform Quick Estimation Method (QEM) for Signals",IDC_BUTTON_QEM,29,74,217,14
-    PUSHBUTTON      "Generate simulation.anm file for VISSIM Simulation",IDC_BUTTON_GENERATE_VISSIM_DATA,29,47,217,14
+    PUSHBUTTON      "Generate Synchro  Universal Traffic Data Format (UTDF) files",IDC_BUTTON_GENERATE_DATA,30,46,217,14
+    PUSHBUTTON      "Perform Quick Estimation Method (QEM) for Signals",IDC_BUTTON_QEM,30,22,217,14
+    PUSHBUTTON      "Generate simulation.anm file for VISSIM Simulation",IDC_BUTTON_GENERATE_VISSIM_DATA,30,70,217,14
 END
 
 IDD_DIALOG_DemandPattern DIALOGEX 0, 0, 534, 180
@@ -1497,8 +1497,6 @@ BEGIN
     BUTTON      ID_VIEW_SHOWHIDE_LEGEND
     BUTTON      ID_VIEW_TEXTLABEL
     BUTTON      ID_SHOW_GRID
-    BUTTON      ID_VIEW_ZONEBOUNDARY
-    BUTTON      ID_VIEW_SENSOR
     SEPARATOR
     BUTTON      ID_VIEW_BACKGROUNDIMAGE
     BUTTON      ID_VIEW_IMAGE
@@ -1991,13 +1989,13 @@ BEGIN
         END
         POPUP "Link"
         BEGIN
-            POPUP "Link MOE Display"
+            POPUP "Link Attribute Display"
             BEGIN
-                MENUITEM "Travel Time",                 ID_MOE_TRAVELTIME
                 MENUITEM "Capacity",                    ID_MOE_CAPACITY
                 MENUITEM "Speed Limit",                 ID_MOE_SPEEDLIMIT
-                MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
                 MENUITEM "Length",                      ID_MOE_LENGTH
+                MENUITEM "Free-flow Travel Time",       ID_MOE_FREEFLOWTRAVLETIME
+                MENUITEM "Link Name (Street Name or From Node ->To Node)", ID_LINKATTRIBUTEDISPLAY_LINKNAME
             END
             MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
             MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
@@ -2949,7 +2947,7 @@ BEGIN
     ID_HELP_VISITDEVELOPMENTWEBSITE 
                             "Visit Development Website\nVisit Development Website"
     ID_EDIT_CREATENODE      "Add New Node\nAdd New Node"
-    ID_VIEW_SELECT_NODE     "Select Node\nSelect Node"
+    ID_VIEW_SELECT_NODE     "Select Object\nSelect Object"
 END
 
 STRINGTABLE 

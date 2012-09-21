@@ -890,13 +890,14 @@
 #define ID_LINKMOE_SSD                  33472
 #define ID_HELP_USERGUIDE               33473
 #define ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL 33474
+#define ID_LINKATTRIBUTEDISPLAY_LINKNAME 33475
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        222
-#define _APS_NEXT_COMMAND_VALUE         33475
+#define _APS_NEXT_COMMAND_VALUE         33476
 #define _APS_NEXT_CONTROL_VALUE         1132
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

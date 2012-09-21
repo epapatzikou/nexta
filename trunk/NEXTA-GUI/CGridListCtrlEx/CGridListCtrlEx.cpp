@@ -2714,7 +2714,7 @@ void CGridListCtrlEx::DeleteColumnTrait(int nCol)
 //!
 //! @param wParam The index of the column just deleted
 //! @param lParam Not used
-//! @return Whether the column was succesfully deleted
+//! @return Whether the column was successfully deleted
 //------------------------------------------------------------------------
 LRESULT CGridListCtrlEx::OnDeleteColumn(WPARAM wParam, LPARAM lParam)
 {
@@ -2734,7 +2734,7 @@ LRESULT CGridListCtrlEx::OnDeleteColumn(WPARAM wParam, LPARAM lParam)
 //!
 //! @param wParam The index of the column just inserted
 //! @param lParam Not used
-//! @return Whether the column was succesfully inserted
+//! @return Whether the column was successfully inserted
 //------------------------------------------------------------------------
 LRESULT CGridListCtrlEx::OnInsertColumn(WPARAM wParam, LPARAM lParam)
 {

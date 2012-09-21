@@ -190,6 +190,10 @@ public: // create from serialization only
 public:
 
 
+	void ShowTextLabel();
+
+
+
 	int FindClosestNode(GDPoint point)
 	{
 		int SelectedNodeID = -1;
@@ -684,7 +688,7 @@ public:
 	int m_ControlType_2wayStopSign;
 	int m_ControlType_4wayStopSign;
 	int m_ControlType_PretimedSignal;
-	int m_ControlType_actuatedSignal;
+	int m_ControlType_ActuatedSignal;
 	int m_ControlType_Roundabout;
 
 
@@ -1385,6 +1389,8 @@ public:
 	afx_msg void OnProjectInputsensordataforodme();
 	afx_msg void OnHelpUserguide();
 	afx_msg void OnToolsGenerateodmatrixgravitymodel();
+	afx_msg void OnLinkattributedisplayLinkname();
+	afx_msg void OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);
