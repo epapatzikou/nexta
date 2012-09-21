@@ -1360,6 +1360,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
 
+	g_AssignmentLogFile << endl;
+
 	if(iteration==0)
 	{
 		g_SummaryStatFile.SetFieldName ("Iteration #");

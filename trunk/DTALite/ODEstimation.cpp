@@ -127,9 +127,31 @@ int g_Agent_shortest_path_generation_flag = 0;
 int g_ODEstimationMeasurementType = 0; // 0: flow, 1: density, 2, speed
 int g_ODEstimation_StartingIteration = 2;
 
+int g_ODEstimationNumberOfIterationsForSequentialAdjustment = 10;
+int g_ODEstimationTimePeriodForSequentialAdjustment = 60; // min
+
 int g_ODDemandIntervalSize = 1;
 std::map<long, long> g_LinkIDtoSensorIDMap;
 
+bool g_GetSequentialEstimationTimePeriod(int iteration,float ArrivalTime)
+{
+ // 20 iterations for each hour adjustment period
+
+	int ODME_iteration_no = iteration - g_ODEstimation_StartingIteration;
+
+	int SequentialAdjustmentTimePeriodStart = g_ODEstimationStartTimeInMin + ODME_iteration_no/g_ODEstimationNumberOfIterationsForSequentialAdjustment*60; // 60 min
+
+	if(SequentialAdjustmentTimePeriodStart>= g_ODEstimationEndTimeInMin) // restart from the beginning 
+		SequentialAdjustmentTimePeriodStart = g_ODEstimationStartTimeInMin; 
+
+	int SequentialAdjustmentTimePeriodEnd = SequentialAdjustmentTimePeriodStart +  g_ODEstimationTimePeriodForSequentialAdjustment; // 60 min
+
+	if(ArrivalTime >= SequentialAdjustmentTimePeriodStart && ArrivalTime <=SequentialAdjustmentTimePeriodEnd)
+		return true;
+	else 
+		return false;
+
+}
 bool g_ReadLinkMeasurementFile()
 {
 	CCSVParser parser;
@@ -229,6 +251,10 @@ bool g_ReadLinkMeasurementFile()
 			g_ODEstimationEndTimeInMin = g_GetPrivateProfileInt("estimation", "estimation_end_time_in_min", 1440, ODMESettingFileName,true);	
 			g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
 			g_ODEstimation_StartingIteration = g_GetPrivateProfileInt("estimation", "starting_iteration", 10, ODMESettingFileName,true);
+			g_ODEstimationNumberOfIterationsForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "number_of_iterations_per_sequential_adjustment", 10, ODMESettingFileName,true);	
+			g_ODEstimationTimePeriodForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "time_period_in_min_per_sequential_adjustment", 60, ODMESettingFileName,true);	
+			
+
 		cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
 	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 
@@ -246,7 +272,7 @@ bool g_ReadLinkMeasurementFile()
 
 
 
-void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], int origin_zone, int AssignmentInterval)
+void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT PathArray[], int origin_zone, int AssignmentInterval)
 {  // this function has been enhanced for path flow adjustment
 	// step 1: initialization
 
@@ -415,12 +441,14 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			// step 4.3: walk through the link sequence to accumlate the link marginals
 
 			float ArrivalTime = AssignmentInterval * g_AggregationTimetInterval;
+			float ArrivalTimeBasedonTravelTime = AssignmentInterval * g_AggregationTimetInterval;
 
 			if(origin_zone == CriticalOD_origin && DestZoneID == CriticalOD_destination && ArrivalTime>=990)
 			{
 				g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneID << "arrival time = "<< ArrivalTime << endl;
 			}
 
+			int number_of_links_with_extremely_heavy_congestion = 0;
 			int l = 0;
 			while(l>=0 && l< PathArray[DestZoneID].PathSize[p]-1)  // for each link along the path
 			{
@@ -434,15 +462,24 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 						}
 
 
+
 					int ArrivalTime_int = (int)(ArrivalTime);
 
 					if (ArrivalTime_int >= g_PlanningHorizon)  // time of interest exceeds the simulation horizon
 						break;
 
+					int arrival_time_in_hour = int(ArrivalTimeBasedonTravelTime/60);
+				if( pLink->SimultedHourlySpeed[arrival_time_in_hour] < pLink->m_SpeedLimit *0.15) // 15% of speed limit
+							number_of_links_with_extremely_heavy_congestion++;
+
+				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,15);  // update travel time 
+
+
 				if(pLink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) 					// if Arrival at Free-flow condition.
 				{
 
-					if(pLink->ContainFlowCount(ArrivalTime)) // with flow measurement
+					
+					if(g_GetSequentialEstimationTimePeriod(iteration,ArrivalTime) && pLink->ContainFlowCount(ArrivalTime)) // with flow measurement
 					{
 						PathArray[DestZoneID].MeasurementDeviationPathMarginal[p]+= pLink->GetDeviationOfFlowCount(ArrivalTime);
 
@@ -538,6 +575,16 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			+ g_ODEstimation_WeightOnUEGap*PathArray[DestZoneID].AvgPathGap[p];
 
 
+			if(FlowAdjustment<0.0001f) // negative flow (simu - observed) : simu < observed: we wanted to increase the flow at the next iteration
+			{
+				if(number_of_links_with_extremely_heavy_congestion >=2)
+				{
+					FlowAdjustment = 0; // reset the adjustment volume to zero if there are more than 2  heavily congested links
+//					cout << "ODME: reset adjustment flow to 0: avoid heavy congestion." << endl;
+				}
+			}
+				
+
 			float lower_bound_of_path_flow = max(1, PathArray[DestZoneID].NumOfVehsOnEachPath[p]*0.5);
 			float upper_bound_of_path_flow_adjustment = PathArray[DestZoneID].NumOfVehsOnEachPath[p]*0.5;
 
@@ -557,9 +604,6 @@ void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT PathArray[], 
 			PathArray[DestZoneID].NewNumberOfVehicles[p] = max(lower_bound_of_path_flow,
 				PathArray[DestZoneID].NumOfVehsOnEachPath[p]   // this is the existing path flow volume
 			- g_ODEstimation_StepSize*FlowAdjustment); /*gradient wrt gap function*/
-
-
-
 
 
 			/*			g_EstimationLogFile << "OD " << origin_zone << " -> " << DestZoneID << " path =" << p << " @ "<< AssignmentInterval*g_AggregationTimetInterval << ": Measurement Dev=" << PathArray[DestZoneID].MeasurementDeviationPathMarginal[p] << 
@@ -609,7 +653,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,in
 
 	PathArrayForEachODT *PathArray;
 	PathArray = new PathArrayForEachODT[g_ODZoneSize + 1]; // remember to release memory
-	ConstructPathArrayForEachODT_ODEstimation(PathArray, origin_zone, AssignmentInterval);
+	ConstructPathArrayForEachODT_ODEstimation(iteration,PathArray, origin_zone, AssignmentInterval);
 
 	delete PathArray;
 }

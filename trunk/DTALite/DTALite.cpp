@@ -574,7 +574,8 @@ void g_ReadInputFiles(int scenario_no)
 	g_LogFile << "Step 3: Reading file input_link.csv..." << endl;
 
 	int i = 0;
-
+	int number_of_warnings = 0;
+	int max_number_of_warnings_to_be_showed = 5;
 	DTALink* pLink = 0;
 	CCSVParser parser_link;
 	if (parser_link.OpenCSVFile(InputLinkFileName))
@@ -649,8 +650,6 @@ void g_ReadInputFiles(int scenario_no)
 			{
 				cout << "Link: " << from_node_name << "->" << to_node_name << " in input_link.csv has " << "length_in_mile = " << length_in_mile << " , which might be too long. Please check.";
 				//				sleep(5);
-
-
 			}
 
 			if(!parser_link.GetValueByFieldName("number_of_lanes",number_of_lanes))
@@ -853,10 +852,11 @@ void g_ReadInputFiles(int scenario_no)
 
 				pLink->m_LaneCapacity= capacity;
 
-				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10)
+				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10 && number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 					cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error." << endl;
 					getchar();
+					number_of_warnings++;
 				}
 
 
@@ -893,20 +893,24 @@ void g_ReadInputFiles(int scenario_no)
 				if(pLink->m_bArterialType  && g_NodeVector[pLink->m_ToNodeID].m_ControlType == pretimed_signal_control_type_code || g_NodeVector[pLink->m_ToNodeID].m_ControlType == actuated_signal_control_type_code)
 				{
 				// only check SaturationFlowRate values for siganlized intersections
-				if(SaturationFlowRate < capacity)
+				if(SaturationFlowRate < capacity  && number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 				
 					cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < lane_capacity_in_vhc_per_hour: " << SaturationFlowRate << " < "  << capacity << " for link " << 
 						from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
 						getchar();
+					number_of_warnings++;
+
 				}
 
-				if(SaturationFlowRate < 1000 && SaturationFlowRate > capacity -1)
+				if(SaturationFlowRate < 1000 && SaturationFlowRate > capacity -1  && number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 			
 				cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < 1000: " << SaturationFlowRate << " for link " << 
 						from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
 						getchar();
+					number_of_warnings++;
+
 				}
 
 					int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
@@ -916,11 +920,13 @@ void g_ReadInputFiles(int scenario_no)
 						CycleLength_In_Second = g_DefaultCycleLength;
 
 
-					if(CycleLength_In_Second < 10)  // use approximate cycle lenght
+					if(CycleLength_In_Second < 10  && number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
 					{
 						cout << "Input data error: cycle lenght for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeName << " = "<< CycleLength_In_Second <<  ", reset it to 60 seconds." << endl;
 						getchar ();
 						CycleLength_In_Second = 60; 
+					number_of_warnings++;
+
 					}
 
 						if(EffectiveGreenTimeInSecond==0) // no value input
@@ -1036,6 +1042,12 @@ void g_ReadInputFiles(int scenario_no)
 
 			if(parser_zone.GetValueByFieldName("zone_id",zone_number) == false)
 				break;
+
+			if(zone_number ==0)
+			{
+				cout << "Error: zone_id = 0 in input_zone.csv" << endl;
+				g_ProgramStop();
+			}
 
 			DTAZone zone;
 			g_ZoneMap[zone_number] = zone;
@@ -3549,7 +3561,6 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			string format_type= "null";
 			int number_of_lines_to_be_skipped = 0;
 			int subtotal_in_last_column = 0;
-			float loading_multiplier =1;
 			int start_time_in_min = 0; 
 			int end_time_in_min = 1440;
 			int number_of_demand_types = 0;
@@ -3615,6 +3626,10 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				if (file_name.find ("agent.bin")!= string::npos && format_type.find("agent_bin")== string::npos)
 				{
 				cout << "Please specify agent_bin format for agent binary file , other than " << format_type << endl; 			
+				}
+				if (file_name.find ("agent.bin")!= string::npos && format_type.find("agent_bin")!= string::npos)
+				{
+				cout << "Please remame file agent.bin to input_agent.bin, as DTALite alway outputs agent.bin as the simulation results."<< endl; 			
 				}
 			}
 
@@ -3792,16 +3807,26 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				fopen_s(&st,file_name.c_str (), "r");
 				if (st!=NULL)
 				{
+					int number_of_zones = g_ZoneMap.size();
 					// read the first line
-					for(int dest = 1; dest <= g_ZoneMap.size(); dest++)
+					for(int dest = 1; dest <= number_of_zones; dest++)
 					{
 						g_read_float(st);
 					}
 
+					cout << "number_of_zones = " << number_of_zones << endl;
 					int line_no = 0;
 					for(int origin_zone = 1; origin_zone <= g_ZoneMap.size(); origin_zone++)
 					{
-						g_read_float(st); // read the origin zone number
+						int origin_zone_number = g_read_float(st); // read the origin zone number
+
+						if(origin_zone!= origin_zone_number)
+						{
+							cout << "Reading file " << file_name << " error: Sequential zone number "<< origin_zone << " is expected, but a zone number of " << origin_zone_number << " is found." <<  endl;
+
+							g_ProgramStop();
+				
+						}
 						cout << "Reading file " << file_name << " at zone "<< origin_zone << " ... "<< endl;
 
 						for(int destination_zone = 1; destination_zone <= g_ZoneMap.size(); destination_zone++)
@@ -3811,12 +3836,12 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							if(line_no<=5)  // read only one line, but has not reached the end of the line
 								cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
 
+
 							line_no++;
 							int type = 1;  // first demand type definition
 							if(demand_type_code[type]>=1)  // feasible demand type
 							{
 								total_demand_in_demand_file += number_of_vehicles;
-								number_of_vehicles*= loading_multiplier;
 							
 								if(g_ZoneMap.find(origin_zone)!= g_ZoneMap.end())
 								{
@@ -3927,7 +3952,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			for(int origin_zone=1; origin_zone<= num_zones; origin_zone++)
 				for(int destination_zone=1; destination_zone<= num_zones; destination_zone++)
 				{
-					float number_of_vehicles = g_read_float(st) * loading_multiplier * g_DemandGlobalMultiplier;
+					float number_of_vehicles = g_read_float(st) * demand_factor*local_demand_loading_multiplier * g_DemandGlobalMultiplier;
 					total_demand_in_demand_file += number_of_vehicles;
 
 					// obtain demand table type
@@ -3976,7 +4001,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			}else 
 			{
-				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix and agent."<< endl;
+				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, dynasmart, agent_csv, and agent_bin."<< endl;
 				g_ProgramStop();
 
 			}

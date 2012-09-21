@@ -861,6 +861,8 @@ public:
 	//	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
 
+	float SimultedHourlySpeed[25];
+
 	bool ContainFlowCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
@@ -1222,6 +1224,9 @@ public:
 		{
 			m_LinkMOEAry[t].SetupMOE();
 		}
+		for(int hour = 0; hour <= 24; hour++)  // used for ODME
+			SimultedHourlySpeed[hour] = m_SpeedLimit;
+
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
 		ExitQueue.clear();
@@ -2670,7 +2675,7 @@ extern float g_VMSPerceptionErrorRatio;
 extern int g_information_updating_interval_of_en_route_info_travelers_in_min;
 extern int g_information_updating_interval_of_VMS_in_min;
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
-extern void ConstructPathArrayForEachODT_ODEstimation(PathArrayForEachODT *, int, int); // construct path array for each ODT
+extern void ConstructPathArrayForEachODT_ODEstimation(int,PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Iteration);
 extern void g_GenerateVehicleData_ODEstimation();
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);

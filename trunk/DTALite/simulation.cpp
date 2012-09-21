@@ -1227,6 +1227,11 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 		}
 
+	
+		for(int hour = g_DemandLoadingStartTimeInMin/60; hour < g_PlanningHorizon/60+1; hour++)  // used for ODME
+			{
+				pLink->SimultedHourlySpeed[hour] = pLink->m_Length / pLink->GetTravelTimeByMin (Iteration,hour*60, 60 /*interval*/)*60;  // 60: convert min to hour
+			}
 	}
 
 	g_UpdateLinkMOEDeviation_ODEstimation(output,Iteration);
