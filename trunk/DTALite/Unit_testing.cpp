@@ -210,8 +210,7 @@ using namespace std;
 		g_DefaultCycleLength = 0;
 		parser_scenario.GetValueByFieldNameWithPrintOut("default_cycle_length",g_DefaultCycleLength);
 
-
-		if(traffic_flow_model==4) 
+		if(g_DefaultCycleLength==0) 
 			g_SimulateSignals = 0;  // no signal simulation logic
 
 		if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false)

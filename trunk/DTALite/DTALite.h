@@ -270,7 +270,7 @@ int ExternalODFlag;
 class DTAZone
 { 
 public:
-	
+	int m_ZoneSequentialNo;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_OriginActivityVector;
 	std::vector<int> m_DestinationActivityVector;
@@ -305,6 +305,7 @@ public:
 
 	DTAZone()
 	{
+		m_ZoneSequentialNo = 0;
 		m_Capacity  =0;
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
