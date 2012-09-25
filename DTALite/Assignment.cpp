@@ -130,23 +130,22 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 				{
 
-
-					if(g_ODZoneSize > 1000)  // only for large networks
-					{
-
-					if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-						cout <<  "Processor " << id << " is adjusting OD demand table for zone " << CurZoneID << endl;
-					else
-						cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
-
-					}
-
 					// scan all possible departure times
 					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 					{
 
 						if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
 						{
+
+							if(g_ODZoneSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
+							{
+
+							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+								cout <<  "Processor " << id << " is adjusting OD demand table for zone " << CurZoneID << endl;
+							else
+								cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
+
+							}
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
 										network_MP[id].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
@@ -254,9 +253,13 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			pVeh->m_PreferredDepartureTime = pVeh->m_DepartureTime;  // set departure time to m_PreferredDepartureTime
 
-
 			// get the first feasible solution
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+			}else
+			{
+			
+			bSwitchFlag = false;
+			
 			}
 
 

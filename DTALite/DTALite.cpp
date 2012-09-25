@@ -137,6 +137,8 @@ std::vector<DTALink*> g_LinkVector;
 std::map<string, DTALink*> g_LinkMap;
 
 std::map<int, DTAZone> g_ZoneMap;
+std::vector<int> g_ZoneIDVector;
+
 std::vector<DTAVehicleType> g_VehicleTypeVector;
 
 std::vector<DTAVehicle*>		g_VehicleVector;
@@ -220,7 +222,7 @@ int g_DemandLoadingEndTimeInMin = 0;
 int g_ODEstimationStartTimeInMin =0;
 int g_ODEstimationEndTimeInMin =0;
 
-
+int g_number_of_warnings = 0;  // use a global count to avoid warning messages when running multiple scenarioss
 
 ofstream g_scenario_short_description;
 
@@ -574,7 +576,7 @@ void g_ReadInputFiles(int scenario_no)
 	g_LogFile << "Step 3: Reading file input_link.csv..." << endl;
 
 	int i = 0;
-	int number_of_warnings = 0;
+
 	int max_number_of_warnings_to_be_showed = 5;
 	DTALink* pLink = 0;
 	CCSVParser parser_link;
@@ -771,14 +773,17 @@ void g_ReadInputFiles(int scenario_no)
 				continue;
 			}
 
-			if(number_of_lanes>=1 && capacity <1)  // skip this link 
+			if(capacity <1)  // skip this link 
 			{
-				g_WarningFile << "link with 0 capacity but number_of_lanes =" << number_of_lanes << ", use default value 1000 " <<from_node_name << " -> " <<to_node_name << endl;
-				capacity = 1000;
+				g_WarningFile << "link with capacity " <<  capacity << ", skip: " <<from_node_name << " -> " <<to_node_name << endl;
+				continue;
 			}
 
-			if(speed_limit_in_mph <0.1)  //reset the speed limit
-				speed_limit_in_mph = 5;  // minium speed limit
+			if(speed_limit_in_mph <1)  // skip this link 
+			{
+				g_WarningFile << "link with speed limit " <<  speed_limit_in_mph << ", skip: " <<from_node_name << " -> " <<to_node_name << endl;
+				continue;
+			}
 
 			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
 			{
@@ -852,11 +857,11 @@ void g_ReadInputFiles(int scenario_no)
 
 				pLink->m_LaneCapacity= capacity;
 
-				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10 && number_of_warnings<max_number_of_warnings_to_be_showed)
+				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10 && g_number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 					cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error." << endl;
 					getchar();
-					number_of_warnings++;
+					g_number_of_warnings++;
 				}
 
 
@@ -893,39 +898,38 @@ void g_ReadInputFiles(int scenario_no)
 				if(pLink->m_bArterialType  && g_NodeVector[pLink->m_ToNodeID].m_ControlType == pretimed_signal_control_type_code || g_NodeVector[pLink->m_ToNodeID].m_ControlType == actuated_signal_control_type_code)
 				{
 				// only check SaturationFlowRate values for siganlized intersections
-				if(SaturationFlowRate < capacity  && number_of_warnings<max_number_of_warnings_to_be_showed)
+				if(SaturationFlowRate < capacity  && g_number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 				
 					cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < lane_capacity_in_vhc_per_hour: " << SaturationFlowRate << " < "  << capacity << " for link " << 
 						from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
 						getchar();
-					number_of_warnings++;
+					g_number_of_warnings++;
 
 				}
 
-				if(SaturationFlowRate < 1000 && SaturationFlowRate > capacity -1  && number_of_warnings<max_number_of_warnings_to_be_showed)
+				if(SaturationFlowRate < 1000 && SaturationFlowRate > capacity -1  && g_number_of_warnings<max_number_of_warnings_to_be_showed)
 				{
 			
 				cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < 1000: " << SaturationFlowRate << " for link " << 
 						from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
 						getchar();
-					number_of_warnings++;
+					g_number_of_warnings++;
 
 				}
 
 					int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
 					int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
 
-					if(g_DefaultCycleLength>=1)  // use default cycle length
+					if(g_DefaultCycleLength ==-1)  // use default cycle length
 						CycleLength_In_Second = g_DefaultCycleLength;
 
-
-					if(CycleLength_In_Second < 10  && number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
+					if(g_SimulateSignals && CycleLength_In_Second < 10  && g_number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
 					{
-						cout << "Input data error: cycle lenght for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeName << " = "<< CycleLength_In_Second <<  ", reset it to 60 seconds." << endl;
+						cout << "Input data error: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeName << " = "<< CycleLength_In_Second <<  ", reset it to 60 seconds." << endl;
 						getchar ();
 						CycleLength_In_Second = 60; 
-					number_of_warnings++;
+						g_number_of_warnings++;
 
 					}
 
@@ -1049,7 +1053,10 @@ void g_ReadInputFiles(int scenario_no)
 				g_ProgramStop();
 			}
 
+			g_ZoneIDVector.push_back(zone_number);
 			DTAZone zone;
+
+			zone.m_ZoneSequentialNo = i++;
 			g_ZoneMap[zone_number] = zone;
 
 		}
@@ -3545,7 +3552,10 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	}  //determine loading horizon
 
 			//step 2:
-	g_HistDemand.Initialize ();
+		if(g_ODEstimationFlag==1 )
+		{
+			g_HistDemand.Initialize ();
+		}
 	CCSVParser parser;
 
 	//step 3:
@@ -3670,7 +3680,17 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			for(int type = 1; type <= number_of_demand_types; type++)
 			{
 				sprintf(demand_type_field_name,"demand_type_%d",type);
-				parser.GetValueByFieldNameWithPrintOut(demand_type_field_name,demand_type_code[type]);
+				int demand_type= -1;
+				parser.GetValueByFieldNameWithPrintOut(demand_type_field_name,demand_type);
+
+				if(demand_type == -1)
+				{
+					cout << "Missing input: no value has been specified for field " << demand_type_field_name << " in file " << file_name << " in demand meta file input_demand_meta_data.csv. "<< endl; 
+					g_ProgramStop();
+				
+				}
+
+				demand_type_code[type]  = demand_type;
 			}
 
 

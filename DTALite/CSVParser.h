@@ -127,6 +127,8 @@ public:
 
 			if(FieldsIndices[field_name] >= LineFieldsValue.size())  // no value is read for index FieldsIndices[field_name]
 			{
+				cout << "Missing value for " << field_name << " in File " << mFileName <<  endl;
+
 				return false;
 			}
 			string str_value = LineFieldsValue[FieldsIndices[field_name]];
