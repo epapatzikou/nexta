@@ -100,7 +100,7 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 				m_HistLinkMOEAry[t].ObsLinkFlow +=m_LinkMOEAry[day*1440+t].ObsFlowCopy;
 				m_HistLinkMOEAry[t].ObsCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsCumulativeFlowCopy;
 				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensityCopy;
-				m_HistLinkMOEAry[t].ObsTravelTimeIndex += m_LinkMOEAry[day*1440+t].ObsTravelTimeIndexCopy;
+				m_HistLinkMOEAry[t].SimulatedTravelTime += m_LinkMOEAry[day*1440+t].SimulatedTravelTimeCopy;
 
 				count++;
 
@@ -129,7 +129,7 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 			m_HistLinkMOEAry[t].ObsLinkFlow /=count;
 			m_HistLinkMOEAry[t].ObsCumulativeFlow /=count;
 			m_HistLinkMOEAry[t].ObsDensity /=count;
-			m_HistLinkMOEAry[t].ObsTravelTimeIndex /=count;
+			m_HistLinkMOEAry[t].SimulatedTravelTime /=count;
 		}
 
 
@@ -168,7 +168,7 @@ void DTALink::Compute15MinAvg()
 		m_LinkMOEAry_15min[t/15].ObsLinkFlow +=m_LinkMOEAry[t].ObsFlowCopy;
 		m_LinkMOEAry_15min[t/15].ObsCumulativeFlow +=m_LinkMOEAry[t].ObsCumulativeFlowCopy;
 		m_LinkMOEAry_15min[t/15].ObsDensity += m_LinkMOEAry[t].ObsDensityCopy;
-		m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex += m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+		m_LinkMOEAry_15min[t/15].SimulatedTravelTime += m_LinkMOEAry[t].SimulatedTravelTimeCopy;
 
 
 		if(t%15 == 0 && count>=1) // every 15 min
@@ -178,7 +178,7 @@ void DTALink::Compute15MinAvg()
 			m_LinkMOEAry_15min[t/15].ObsLinkFlow /=count;
 			m_LinkMOEAry_15min[t/15].ObsCumulativeFlow /=count;
 			m_LinkMOEAry_15min[t/15].ObsDensity /=count;
-			m_LinkMOEAry_15min[t/15].ObsTravelTimeIndex /=count;
+			m_LinkMOEAry_15min[t/15].SimulatedTravelTime /=count;
 		}
 
 		count++;
@@ -193,7 +193,7 @@ struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHo
 
 	struc_traffic_state future_state;
 	// step 1: calculate delta w
-	float DeltaW =  m_LinkMOEAry[CurrentTime].ObsTravelTimeIndex -  m_HistLinkMOEAry[CurrentTime%1440].ObsTravelTimeIndex;
+	float DeltaW =  m_LinkMOEAry[CurrentTime].SimulatedTravelTime -  m_HistLinkMOEAry[CurrentTime%1440].SimulatedTravelTime;
 
 	// step 2: propogate delta w to Furture time
 	//this is the most tricky part
@@ -201,7 +201,7 @@ struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHo
 	float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
 	// step 3: add future delta w to historical time at future time
 
-	future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].ObsTravelTimeIndex;
+	future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].SimulatedTravelTime;
 	// step 4: produce speed
 
 	future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
@@ -449,7 +449,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 						{
  							pLink->m_LinkMOEAry[ t].ObsLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
-							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+							pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
@@ -463,7 +463,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 								pLink->m_LinkMOEAry[ t+tt].ObsLinkFlow = pLink->m_LinkMOEAry[t].ObsLinkFlow ;
 								pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
 								pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
-								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
+								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTime = pLink->m_LinkMOEAry[t].SimulatedTravelTime;
 
 							}
 						}else // simulation data loaded
@@ -471,7 +471,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
-							pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+							pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
@@ -485,7 +485,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 								pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
 								pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
 								pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
-								pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTimeCopy = pLink->m_LinkMOEAry[t].SimulatedTravelTimeCopy;
 
 							}
 						}
@@ -1068,7 +1068,8 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 {
 	CWaitCursor cws;
 	m_NodeSizeSP = 0;  // reset 
-		m_PathDisplayList.clear ();		
+
+	m_PathDisplayList.clear ();		
 
 	std::list<DTALink*>::iterator iLink;
 
@@ -1080,6 +1081,8 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 			if(m_LinkTypeMap[(*iLink)->m_link_type].IsConnector ())
 				(*iLink)->m_bConnector = true;
 
+
+		// consider intermediate destination here
 	}
 
 
@@ -1092,6 +1095,8 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 		return 0;
 	}
 	}
+
+
 
  // create network every time, because we might add nodes/links on the fly
 	
@@ -1111,11 +1116,8 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 			
 			int     NodeSize ;
 			
-			if(bCheckConnectivity==false)
-				NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)
-			else
+			if(bCheckConnectivity==true)
 			{
-			
 				m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, true, false,0);   // Pointer to previous node (node)
 
 					for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
@@ -1126,21 +1128,41 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 				return 0;
 			}
 
+			//the code below is not checking connectivity
+
+			std::vector<int> ODNodeSequenceVector;
+
+			ODNodeSequenceVector.push_back(m_OriginNodeID);
+
+			// add intermediate destinations 
+			for(unsigned int idest = 0; idest < m_IntermediateDestinationVector.size(); idest++)
+			{
+			ODNodeSequenceVector.push_back(m_IntermediateDestinationVector[idest]);
+			}
+
+			ODNodeSequenceVector.push_back(m_DestinationNodeID);
+
+
+				DTAPath path_element;
+				path_element.Init (0,g_Simulation_Time_Horizon);
+
+			for(unsigned int ODSequenceNo = 0; ODSequenceNo < ODNodeSequenceVector.size()-1; ODSequenceNo++)
+			{
+			NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(ODNodeSequenceVector[ODSequenceNo], 0, ODNodeSequenceVector[ODSequenceNo+1], 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)
+			path_element.m_LinkSize += NodeSize;
 			
-				// update m_PathDisplayList
+			// update m_PathDisplayList
 			if(NodeSize <= 1)
 			{
 				TRACE("error");
 				return 0;
 			}
 
-				DTAPath path_element;
-				path_element.Init (NodeSize-1,g_Simulation_Time_Horizon);
 
 				for (int i=0 ; i < NodeSize-1; i++)
 				{
 
-						path_element.m_LinkVector [i] = PathLinkList[i] ; //starting from m_NodeSizeSP-2, to 0
+						path_element.m_LinkVector.push_back(PathLinkList[i]) ; //starting from m_NodeSizeSP-2, to 0
 
 						DTALink* pLink = m_LinkNotoLinkMap[PathLinkList[i]];
 
@@ -1151,7 +1173,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 
 							pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
 
-						if(i==0) // first link
+						if(path_element.m_LinkVector.size()==1) // first link
 						{
 							path_element.m_TravelTime = pLink->GetTravelTime(g_Simulation_Time_Stamp);
 						}else
@@ -1161,9 +1183,12 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 						}
 						}
 				}
+			}
 				m_PathDisplayList.push_back  (path_element);
+				m_SelectPathNo = 0;  // select the first path
+				UpdateAllViews(0);
 
-				// calculate time-dependent travel time
+	// calculate time-dependent travel time
 
 /*
 		for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
@@ -1262,8 +1287,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 
 		}
 */
-		m_SelectPathNo = 0;  // select the first path
-		UpdateAllViews(0);
 
 /*
 	if(g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())

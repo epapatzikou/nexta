@@ -67,20 +67,21 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
 	_T("Link"),
+	_T("Link Label"),
 	_T("Zone"),
 	_T("Connector"),
 	_T("Link MOE"),
 	_T("OD Matrix"),
 	_T("Detector"),
 	_T("Subarea"), 
-	_T("Work Zone"),
-	_T("Incident"),
+	_T("Workzone"),
+	_T("Crash"),
 	_T("VMS"),
 	_T("Toll"),
-	_T("Crash"),
 	_T("Ramp Meters"),
 	_T("Bluetooth"),
 	_T("GPS"),
+
 };
 
 #define _NUM_OF_RAIL_GIS_LAYERS  3 

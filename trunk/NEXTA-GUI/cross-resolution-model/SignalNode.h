@@ -33,6 +33,7 @@ public:
 class DTA_NodePhaseSet
 {
 public:
+	bool m_bPresetValueFromQEMExist;
 	int CurrentNodeID;
 	float BRP, MinGreen, MaxGreen, VehExt, TimeBeforeReduce, TimeToReduce, MinGap, Yellow, AllRed, Recall, Walk, DontWalk;
 	float PedCalls, MinSplit, DualEntry, InhibitMax, Start, End, Yield, Yield170, LocalStart, LocalYield, LocalYield170; 
@@ -42,10 +43,13 @@ public:
 
 	DTA_NodePhaseSet()
 	{
+		m_bPresetValueFromQEMExist = false;
 	}
 
 	void copy_parameters(DTA_NodePhaseSet P)
 	{
+		if(m_bPresetValueFromQEMExist== false)  // if only we do not have data from QEM
+		{
 		int i,j;
 		CurrentNodeID = P.CurrentNodeID;
 		for(j=0; j<8;j++)
@@ -54,6 +58,7 @@ public:
 			{
 				DataMatrix[i][j] = P.DataMatrix[i][j];
 			}
+		}
 		}
 	}
 

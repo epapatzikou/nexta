@@ -40,4 +40,7 @@ public:
 	afx_msg void OnCbnSelchangeCombo1();
 
 	CComboBox m_ComboRandomCoef;
+	afx_msg void OnBnClickedExportRoute();
+	afx_msg void OnPathDataExportCSV();
+	afx_msg void OnDataImportCsv();
 };

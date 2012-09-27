@@ -962,6 +962,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 				(*iLink)->m_LinkMOEAry[t+1].ObsSpeed = g_read_float(pFile);  // speed;
+
+				(*iLink)->m_LinkMOEAry[t+1].SimulatedTravelTime = (*iLink)->m_Length * 60/ max(1,(*iLink)->m_LinkMOEAry[t+1].ObsSpeed);
 			}
 
 		}

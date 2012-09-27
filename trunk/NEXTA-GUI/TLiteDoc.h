@@ -48,6 +48,7 @@ enum layer_mode
 { 
 	layer_node = 0,
 	layer_link,
+	layer_link_label,
 	layer_zone,
 	layer_connector,
 	layer_link_MOE,
@@ -55,10 +56,9 @@ enum layer_mode
 	layer_detector,
 	layer_subarea, 
 	layer_workzone,
-	layer_incident,
+	layer_crash,
 	layer_VMS,
 	layer_toll,
-	layer_crash,
 	layer_ramp,
 	layer_bluetooth,
 	layer_GPS
@@ -455,6 +455,7 @@ public:
 	int m_AVISamplingTimeInterval;
 	int m_NumberOfDays;
 	int m_SimulationStartTime_in_min;
+	int m_SimulationEndTime_in_min;
 
 
 	bool ReadSensorData(LPCTSTR lpszFileName);
@@ -613,6 +614,9 @@ public:
 	DTANetworkForSP m_Network;
 
 	float m_RandomRoutingCoefficient;
+
+	std::vector<int> m_IntermediateDestinationVector;
+
 	int Routing(bool bCheckConnectivity);
 	int AlternativeRouting(int NumberOfRoutes);
 
@@ -1391,6 +1395,7 @@ public:
 	afx_msg void OnToolsGenerateodmatrixgravitymodel();
 	afx_msg void OnLinkattributedisplayLinkname();
 	afx_msg void OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI);
+	afx_msg void OnToolsGeneratesignalcontrollocations();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

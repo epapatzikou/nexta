@@ -165,7 +165,10 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VEHICLE_VEHICLENUMBER, &CTLiteView::OnUpdateVehicleVehiclenumber)
 	ON_COMMAND(ID_VEHICLE_SHOWSELECTEDVEHICLEONLY, &CTLiteView::OnVehicleShowselectedvehicleonly)
 	ON_UPDATE_COMMAND_UI(ID_VEHICLE_SHOWSELECTEDVEHICLEONLY, &CTLiteView::OnUpdateVehicleShowselectedvehicleonly)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_NODE_ADDINTERMEDIATEDESTINATIONHERE, &CTLiteView::OnNodeAddintermediatedestinationhere)
+	ON_COMMAND(ID_NODE_REMOVEALLINTERMEDIATEDESTINATION, &CTLiteView::OnNodeRemoveallintermediatedestination)
+	ON_COMMAND(ID_LINK_AVOIDUSINGTHISLINKINROUTING, &CTLiteView::OnLinkAvoidusingthislinkinrouting)
+	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
@@ -1143,7 +1146,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		pDC->SelectObject(&g_PenSelectPath);
 
-		for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo].m_LinkSize; i++)
+		for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo].m_LinkVector.size(); i++)
 		{
 			DTALink* pLink = pDoc->m_LinkNoMap[pDoc->m_PathDisplayList[pDoc->m_SelectPathNo].m_LinkVector[i]];
 			if(pLink!=NULL)
@@ -1277,6 +1280,29 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				pDC->SelectObject(oldFont);  // restore font
 
+
+			}else if ((*iNode)->m_IntermediateDestinationNo>=1)
+			{
+				CFont* oldFont = pDC->SelectObject(&od_font);// these are local font, created inside the function, we do not want to create them in another sub functions to speed up the display efficiency.
+
+				TEXTMETRIC tmOD;
+				memset(&tmOD, 0, sizeof TEXTMETRIC);
+				pDC->GetOutputTextMetrics(&tmOD);
+
+				pDC->SelectObject(&g_PenSelectColor);
+				pDC->SelectObject(&g_BlackBrush);
+				pDC->SetTextColor(RGB(255,0,0));
+				pDC->SetBkColor(RGB(0,0,0));
+
+				pDC->Rectangle (point.x - nODNodeSize, point.y + nODNodeSize,
+					point.x + nODNodeSize, point.y - nODNodeSize);
+
+				point.y -= tmOD.tmHeight / 2;
+				CString str;
+				str.Format ("I%d",(*iNode)->m_IntermediateDestinationNo);
+				pDC->TextOut(point.x , point.y , str);
+
+				pDC->SelectObject(oldFont);  // restore font
 
 			}else
 			{
@@ -4471,4 +4497,83 @@ void CTLiteView::OnVehicleShowselectedvehicleonly()
 void CTLiteView::OnUpdateVehicleShowselectedvehicleonly(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowSelectedVehicleOnly);
+}
+
+void CTLiteView::OnNodeAddintermediatedestinationhere()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	int SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	if(SelectedNodeID>=0)
+	{
+
+	pDoc->m_IntermediateDestinationVector.push_back(SelectedNodeID);
+
+	pDoc->m_NodeIDMap[SelectedNodeID]->m_IntermediateDestinationNo = pDoc->m_IntermediateDestinationVector.size();
+
+	}
+
+
+
+	pDoc->Routing(false);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	m_ShowAllPaths = true;
+	Invalidate();
+}
+
+void CTLiteView::OnNodeRemoveallintermediatedestination()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	pDoc->m_IntermediateDestinationVector.clear();
+	std::list<DTANode*>::iterator iNode;
+
+	for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
+	{
+		(*iNode)->m_IntermediateDestinationNo = 0;
+
+	}
+
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->m_AdditionalCost = 0;
+	}
+
+	pDoc->Routing(false);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	m_ShowAllPaths = true;
+	Invalidate();
+}
+
+void CTLiteView::OnLinkAvoidusingthislinkinrouting()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(pDoc->m_SelectedLinkID==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink = pDoc->m_LinkNoMap [pDoc->m_SelectedLinkID ];
+	pLink -> m_AdditionalCost = 10000;
+	pDoc->Routing(false);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	m_ShowAllPaths = true;
+	Invalidate();
+
 }

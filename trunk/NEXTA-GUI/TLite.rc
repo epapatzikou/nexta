@@ -797,14 +797,15 @@ BEGIN
     PUSHBUTTON      "Save SC",IDC_BUTTON_SAVE_SC,186,279,50,14
 END
 
-IDD_DIALOG_PATH_LIST DIALOGEX 0, 0, 347, 214
+IDD_DIALOG_PATH_LIST DIALOGEX 0, 0, 560, 250
 STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Path Information"
+MENU IDR_MENU_PATH_INFO
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,333,138
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,546,138
     LTEXT           "Random Cost Coefficient:",IDC_STATIC,7,172,83,8
-    PUSHBUTTON      "Exit",IDCANCEL,290,193,50,14
+    PUSHBUTTON      "Exit",IDCANCEL,503,229,50,14
     LTEXT           "",IDC_PATHMOE,105,147,158,17,0,WS_EX_STATICEDGE
     COMBOBOX        IDC_COMBO1,7,186,78,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
@@ -1260,9 +1261,9 @@ BEGIN
     IDD_DIALOG_PATH_LIST, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 340
+        RIGHTMARGIN, 553
         TOPMARGIN, 7
-        BOTTOMMARGIN, 207
+        BOTTOMMARGIN, 243
     END
 
     IDD_DIALOG_GISLayer, DIALOG
@@ -1828,15 +1829,18 @@ BEGIN
             MENUITEM "External Destination",        ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION
         END
         MENUITEM SEPARATOR
+        MENUITEM "Check Connectivity from here", ID_NODE_CHECKCONNECTIVITYFROMHERE
+        MENUITEM SEPARATOR
         MENUITEM "Direction from here",         ID_NODE_ORIGIN
         MENUITEM "Direction to here ",          ID_NODE_DESTINATION
+        MENUITEM "Add Intermediate Destination here", ID_NODE_ADDINTERMEDIATEDESTINATIONHERE
+        MENUITEM "Remove All Intermediate Destination(s)", ID_NODE_REMOVEALLINTERMEDIATEDESTINATION
         MENUITEM SEPARATOR
         MENUITEM "Direction to here and Reliability Analysis", ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS
         MENUITEM SEPARATOR
         MENUITEM "Direction from here and Vehicle Analysis", ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS
         MENUITEM "Direction to here and Vehicle Analaysis ", ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS
         MENUITEM SEPARATOR
-        MENUITEM "Check Connectivity from here", ID_NODE_CHECKCONNECTIVITYFROMHERE
     END
     POPUP "Link"
     BEGIN
@@ -1861,6 +1865,7 @@ BEGIN
             MENUITEM "Incident ",                   ID_DELETE_INCIDENT
             MENUITEM "Link",                        ID_DELETE_SELECTED_LINK
         END
+        MENUITEM "Avoid Using This Link in Routing", ID_LINK_AVOIDUSINGTHISLINKINROUTING
     END
 END
 
@@ -1956,14 +1961,12 @@ BEGIN
         BEGIN
             MENUITEM "Network as KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Microscopic Network and Traffic Control Data", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
-            MENUITEM "Zone-to-Zone Travel Time Matrix", ID_EXPORT_GENERATEZONE
         END
         MENUITEM SEPARATOR
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
         MENUITEM "Save Project As",             ID_FILE_SAVE_PROJECT_AS
         MENUITEM SEPARATOR
         MENUITEM "Check Data Loading Status",   ID_FILE_DATALOADINGSTATUS
-        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
         MENUITEM SEPARATOR
         MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
         MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
@@ -2065,6 +2068,8 @@ BEGIN
     BEGIN
         MENUITEM "Subarea Cut",                 ID_EDIT_DELETELINKSOUTSIDESUBAREA
         MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
+        MENUITEM "Generate Signal Control Locations", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
+        MENUITEM SEPARATOR
         POPUP "OD Demand Estimation"
         BEGIN
             MENUITEM "1. Configure OD Matrix Estimation Settings", ID_PROJECT_ODMATRIXESTIMATIONINPUT
@@ -2073,6 +2078,8 @@ BEGIN
             MENUITEM "4. View OD Demand Estimation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
         END
         MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+        MENUITEM SEPARATOR
+        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
         MENUITEM SEPARATOR
         POPUP "NGSIM  Menu"
         BEGIN
@@ -2093,6 +2100,9 @@ BEGIN
             MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
             MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Time-Dependent Path Travel Time Profile", ID_TOOLS_GENERATETIME_DEPENDENT_TRAVEL_TIME_PROFILE
+        MENUITEM "Zone-to-Zone Travel Time Matrix", ID_EXPORT_GENERATEZONE
     END
     POPUP "&Window"
     BEGIN
@@ -2626,6 +2636,15 @@ BEGIN
     BEGIN
         MENUITEM "&About NeXTA Version 3...",   ID_APP_ABOUT
         MENUITEM "Visit Development Website",   ID_HELP_VISITDEVELOPMENTWEBSITE
+    END
+END
+
+IDR_MENU_PATH_INFO MENU 
+BEGIN
+    POPUP "Data"
+    BEGIN
+        MENUITEM "Import CSV",                  ID_DATA_IMPORT_CSV
+        MENUITEM "Export CSV",                  ID_PATH_DATA_EXPORT_CSV
     END
 END
 

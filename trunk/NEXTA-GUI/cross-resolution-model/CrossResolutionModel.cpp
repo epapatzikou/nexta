@@ -1226,11 +1226,22 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 			for(i=0; i<PhaseRowSize; i++)
 			{
 				fprintf(st, "%s,", phase_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);
+				fprintf(st, "%i,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_NodeNumber);  // intersection id
 
-				for(j=0; j<PhaseColumnSize;j++)
+				if (  m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_bQEM_optimized)
 				{
-					fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j].m_text);
+					for(j=0; j<PhaseColumnSize;j++)
+					{
+						fprintf(st, "%f,", m_NodeIDMap[m_PhaseVector[p].CurrentNodeID]->m_PhaseDataMatrix [i][j]); // use optimized vlaue from QEM
+					}
+				
+				}
+				else  // default value
+				{
+					for(j=0; j<PhaseColumnSize;j++)
+					{
+						fprintf(st, "%f,",m_PhaseVector[p].DataMatrix[i][j]); //
+					}
 				}
 				fprintf(st,"\n");
 			}
@@ -1619,6 +1630,9 @@ bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
 
 void CTLiteDoc::ExportQEMData(int NodeNumber)
 {
+
+	string phase_row_name_str[23] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
+
 	m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
 	m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
@@ -1657,6 +1671,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};		
 	string lane_row_name_str[LaneRowSize] = {"Up Node","Dest Node","Lanes","Shared","Width","Storage","StLanes","Grade","Speed","FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow","SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
+	int QEM_node_count = 0;
 
 
 	int movement_size = m_MovementVector.size();
@@ -1671,6 +1686,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 		if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_ActuatedSignal )  //this movement vector is the same as the current node
 		{
+			QEM_node_count++;
 			// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
 
 			int i,j;
@@ -1702,13 +1718,13 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 						{
 							NodeNumber = m_NodeIDMap[NodeID]->m_NodeNumber;
 						}
-						XL.SetCellValue(3+j,2+i,NodeNumber);
+						XL.SetCellValue(3+j,2+i,NodeNumber);  // input from node value to QEM spreadsheet
 						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
 
 					}else
 					{
 						int NodeNumber =0;
-						XL.SetCellValue(3+j,2+i,NodeNumber);
+						XL.SetCellValue(3+j,2+i,NodeNumber); // input to node value to QEM spreadsheet
 						fprintf(st, "%i,",NodeNumber);  
 
 					}
@@ -1747,7 +1763,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 				if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
 				{
 					count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
-					XL.SetCellValue(3+j,volume_row_number,count);
+					XL.SetCellValue(3+j,volume_row_number,count); // input turning movement volume value to QEM spreadsheet
 					fprintf(st, "%i,",count);
 					TRACE("count = %d\n",count);
 
@@ -1773,6 +1789,36 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 				for(j=0; j<LaneColumnSize;j++)
 				{
 					int text = (int)(m_MovementVector[m].DataMatrix[i][j].m_text);
+
+						int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
+						int FromNodeNumber = 0;
+						if(FromNodeID > 0)
+							FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+
+						if(FromNodeNumber>0)  // with movement
+						{
+						DTALink* pLink = FindLinkWithNodeNumbers(FromNodeNumber,node_number);
+						if(pLink!=NULL)
+						{
+						if(i==2) // lanes
+							{
+
+								if(lane_Column_name_str[j].find("T")!= string::npos ) // through
+									text = pLink->m_NumLanes;
+								else
+									text = 1; // left and right: to do list: input left-turn and right turn data for # of lanes
+
+							}
+						if(i==8) // speed
+							{
+								text = pLink->m_SpeedLimit ;
+							}
+						}
+		
+						
+						}
+						// we have to consider some special attributes here
+		
 					if (text >= 0)
 					{
 						XL.SetCellValue(3+j,3+i,text);
@@ -1790,7 +1836,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 			}
 			// movement volume
 
-			//stage 2: fetch data
+			//stage 2: fetch data from QEM
 			for(j=0; j<LaneColumnSize;j++)
 			{
 				int FromNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
@@ -1812,13 +1858,13 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 				if(FromNodeNumber >0)
 				{
 					CString szValue;
-					szValue = XL.GetCellValue(3+j, 14);
+					szValue = XL.GetCellValue(3+j, 14);  // read Phase1 data from QEM
 					m_Movement3NodeMap[movement_label].Phase1 = atoi(szValue);
 
-					szValue = XL.GetCellValue(3+j, 15);
+					szValue = XL.GetCellValue(3+j, 15); // read PermPhase1 data from QEM
 					m_Movement3NodeMap[movement_label].PermPhase1  = atoi(szValue);
 
-					szValue = XL.GetCellValue(3+j, 16);
+					szValue = XL.GetCellValue(3+j, 16); // read DetectPhase1 data from QEM
 					m_Movement3NodeMap[movement_label].DetectPhase1   = atoi(szValue);
 
 					TRACE("node %d, movement %s: phase %d, perm_phase %d, detect_phase %d\n",NodeNumber, movement_label,m_Movement3NodeMap[movement_label].Phase1, m_Movement3NodeMap[movement_label].PermPhase1 , m_Movement3NodeMap[movement_label].DetectPhase1 );
@@ -1827,10 +1873,18 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 
 			CString szValue;
-			for(int col = 0; col < 8; col++)
+			for(int col = 0; col < 8; col++)  //8 phases
 			{
-			szValue = XL.GetCellValue(2+col, 41);
+			szValue = XL.GetCellValue(2+col, 41);  //   read timing data from QEM
 			m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]  = atoi(szValue);
+
+				for(int phase_attribute_no = 0;  phase_attribute_no< 23; phase_attribute_no++)
+				{
+					szValue = XL.GetCellValue(3+col, 43+phase_attribute_no);  //   read timing data from QEM
+					m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[phase_attribute_no][col] =  atof(szValue);
+
+				}
+
 			}
 
 			szValue = XL.GetCellValue(10, 41);
@@ -1924,6 +1978,18 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 			fprintf(st,"%d,",m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength);
 
 			fprintf(st,"\n");
+
+			// output phasing data logs
+
+			for(int row = 0; row < 23; row++)
+			{
+				fprintf(st,"%s,",phase_row_name_str[row].c_str() ); // phase attribute label
+				for (int col = 0; col < 8; col++)
+				{ 
+					fprintf(st,"%f,",m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[row][col]);
+				}
+			fprintf(st,"\n");
+			}
 	
 			// end of log message
 
@@ -1963,6 +2029,8 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 		fclose(st);
 	}
 
-	AfxMessageBox("Excel Automation Done!", MB_ICONINFORMATION);
+	CString msg;
+	msg.Format ("Excel Automation Done!\n%d signalized nodes now have estimated movement capacity and signal timing plans.",QEM_node_count);
+	AfxMessageBox(msg, MB_ICONINFORMATION);
 
 }
