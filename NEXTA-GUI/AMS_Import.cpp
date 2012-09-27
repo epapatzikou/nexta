@@ -113,7 +113,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	CWaitCursor wait;
 	#ifndef _WIN64
 
-	CString warning_message = "";
+	CString warning_message;
 
 	char model_units[_MAX_STRING_SIZE];
 	GetPrivateProfileString("model_attributes","units","MI",model_units,sizeof(model_units),FileName);
@@ -133,6 +133,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",1,FileName);
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
 	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
+	int link_type_field_flag = g_GetPrivateProfileInt("model_attributes","link_type_field",1,FileName);
 
 	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
 	bool bSkipShapePoints = 1-g_GetPrivateProfileInt("model_attributes","use_curve_info_from_shape_points",1,FileName);
@@ -591,7 +592,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				if(type==0)  // no type information available
 				{
-					// check speed limit to determine type
+
+					if(link_type_field_flag)// if link type information is required, skip this link
+						continue;
+					else
+					{// check speed limit to determine type
 
 					if(speed_limit_in_mph>=55)
 						type = 1; // default freeway
@@ -601,7 +606,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					if(number_of_lanes>=7)
 						type = 10; // default connectors;
 
-					
 					int node_id  =0 ;
 					
 					if(m_NodeNametoIDMap.find (from_node_id) != m_NodeNametoIDMap.end())
@@ -616,6 +620,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						}
 
 
+					}
 					}
 				
 				}
@@ -750,8 +755,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					if(Number_of_Shape_Points>=20)  //
 						step = (int)(Number_of_Shape_Points/10);
 
-					for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)
+					unsigned int si;
+					for( si = 0; si< Number_of_Shape_Points; si+=step)
 					{
+
 						CCoordinate pt;
 						pt.X   =  poLine->getX(si)*long_lat_unit;
 						pt.Y =  poLine->getY(si)*long_lat_unit;
@@ -759,6 +766,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						m_AMSLogFile << pt.X << ";" << pt.Y << " ";
 
 					}
+
+					if(si!= Number_of_Shape_Points)  // not include the last point
+					{
+						CCoordinate pt;
+						pt.X   =  poLine->getX(Number_of_Shape_Points-1)*long_lat_unit;
+						pt.Y =  poLine->getY(Number_of_Shape_Points-1)*long_lat_unit;
+						CoordinateVector.push_back(pt);
+					
+					}
+
 					m_AMSLogFile << "}" ;
 
 				}
@@ -799,7 +816,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				str_msg.Format ("Link %d -> %d has a capcaity of 0.\n",from_node_id,to_node_id);
 				}
 
-				if(warning_message.GetLength ()<10000)  // to avoid too many error messages
+				if(warning_message.GetLength ()<1000)  // to avoid too many error messages
 				{
 					warning_message+= str_msg;
 				}
@@ -974,7 +991,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		// determine control type for nodes
 	
 
-		int MinimumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","minimum_speed_limit_for_signals",30,FileName);
+	int MinimumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","minimum_speed_limit_for_signals",30,FileName);
 	int MaximumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","maximum_speed_limit_for_signals",60,FileName);
 
 		std::list<DTALink*>::iterator iLink;
@@ -1147,10 +1164,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						TRACE("\nNumber_of_Shape_Points = %d",Number_of_Shape_Points);
 						}
 					
-					if(Number_of_Shape_Points>=10)  //
-						step = (int)(Number_of_Shape_Points/10);
+					//if(Number_of_Shape_Points>=10)  //
+					//	step = (int)(Number_of_Shape_Points/10);
 
-					for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)
+					for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)  // up to Number_of_Shape_Points-1
 					{
 						CCoordinate pt;
 						pt.X   =  poLine->getX(si)*long_lat_unit;
@@ -1159,6 +1176,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						m_AMSLogFile << pt.X << ";" << pt.Y << " ";
 
 					}
+						//CCoordinate pt;
+						//pt.X   =  poLine->getX(Number_of_Shape_Points-1)*long_lat_unit;
+						//pt.Y =  poLine->getY(Number_of_Shape_Points-1)*long_lat_unit;
+						//CoordinateVector.push_back(pt);
+						//m_AMSLogFile << pt.X << ";" << pt.Y << " ";
+
 					m_AMSLogFile << "}" ;
 
 				}

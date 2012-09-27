@@ -1497,7 +1497,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 
 	pLink->m_LinkMOEAry[ t].ObsLinkFlow = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 	pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
-	pLink->m_LinkMOEAry[ t].ObsTravelTimeIndex = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+	pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 	pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
 
@@ -1509,7 +1509,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	pLink->m_LinkMOEAry[ t+tt].ObsLinkFlow = pLink->m_LinkMOEAry[t].ObsLinkFlow ;
 	pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
 	pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
-	pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndex = pLink->m_LinkMOEAry[t].ObsTravelTimeIndex;
+	pLink->m_LinkMOEAry[t+tt].SimulatedTravelTime = pLink->m_LinkMOEAry[t].SimulatedTravelTime;
 	}
 
 	}
@@ -1518,7 +1518,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 
 	pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
 	pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
-	pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+	pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 	pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
@@ -1531,7 +1531,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
 	pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
 	pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
-	pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
+	pLink->m_LinkMOEAry[t+tt].SimulatedTravelTimeCopy = pLink->m_LinkMOEAry[t].SimulatedTravelTimeCopy;
 	}
 
 	}

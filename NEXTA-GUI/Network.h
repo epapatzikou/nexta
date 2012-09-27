@@ -824,6 +824,7 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_IntermediateDestinationNo = 0;
 		m_NodeProduction =0;
 		m_NodeAttraction =0;
 
@@ -899,6 +900,8 @@ public:
 	GDPoint pt;
 	GDPoint schedule_pt;
 
+	int m_IntermediateDestinationNo;  ///id, starting from zero, continuous sequence
+
 	bool m_bSignalData;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
@@ -915,6 +918,7 @@ public:
 
 	int m_SignalPhaseNo[10];//optimized by QEM
 	int m_SignalCycleLength; //optimized by QEM
+	float m_PhaseDataMatrix[23][8]; //optimized by QEM
 	bool m_bQEM_optimized;
 	
 };
@@ -965,7 +969,7 @@ class SLinkMOE  // time-dependent link MOE
 {
 public:
 	float ObsQueueLength;
-	float ObsTravelTimeIndex;
+	float SimulatedTravelTime;
 
 	float ObsSpeed;  // speed
 	float ObsLinkFlow;   // flow volume
@@ -975,7 +979,7 @@ public:
 	float ObsSpeedCopy;  // speed
 	float ObsFlowCopy;   // flow volume
 	float ObsDensityCopy;   // ObsDensity
-	float ObsTravelTimeIndexCopy;
+	float SimulatedTravelTimeCopy;
 
 	float ObsCumulativeFlow;   // flow volume
 	float ObsCumulativeFlowCopy;   // flow volume
@@ -1005,7 +1009,7 @@ public:
 		EpisoDuration = 0;
 		EpisodeNo = 0;
 		ObsQueueLength = 0;
-		ObsTravelTimeIndex = 0;
+		SimulatedTravelTime = 0;
 		ObsSpeed = 0;
 		ObsLinkFlow = 0;
 		ObsCumulativeFlow = 0;
@@ -1021,15 +1025,15 @@ public:
 		ObsSpeedCopy = 0;
 		ObsFlowCopy = 0;
 		ObsDensityCopy = 0;
-		ObsTravelTimeIndexCopy = 0;
+		SimulatedTravelTimeCopy = 0;
 
 	};
 
 	void SetupMOE(float FreeFlowTravelTime, float SpeedLimit)
 	{
 		ObsQueueLength = 0;
-		ObsTravelTimeIndex = FreeFlowTravelTime;
-		ObsTravelTimeIndexCopy = FreeFlowTravelTime;
+		SimulatedTravelTime = FreeFlowTravelTime;
+		SimulatedTravelTimeCopy = FreeFlowTravelTime;
 
 		ObsSpeed = SpeedLimit;
 		ObsLinkFlow = 0;
@@ -1184,6 +1188,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_AdditionalCost = 0;
 		m_EffectiveGreenTimeInSecond = 0;
 		m_GreenStartTimetInSecond =0;
 		m_CentroidUpdateFlag = 0; 
@@ -1655,6 +1660,8 @@ void AdjustLinkEndpointsWithSetBack()
 
 	float	m_OriginalLength;  // in miles
 	float	m_Length;  // in miles
+
+	float   m_AdditionalCost;
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int		m_NumLanes;
 	float	m_SpeedLimit;
@@ -1823,10 +1830,10 @@ void AdjustLinkEndpointsWithSetBack()
 		}
 	}
 
-	float GetObsTravelTimeIndex(int t)
+	float GetSimulatedTravelTime(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsTravelTimeIndex;
+			return m_LinkMOEAry[t].SimulatedTravelTime;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -1836,10 +1843,10 @@ void AdjustLinkEndpointsWithSetBack()
 		}
 	}
 
-	float GetObsTravelTimeIndexCopy(int t)
+	float GetSimulatedTravelTimeCopy(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return  m_LinkMOEAry[t].ObsTravelTimeIndexCopy;  
+			return  m_LinkMOEAry[t].SimulatedTravelTimeCopy;  
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -1920,8 +1927,8 @@ void AdjustLinkEndpointsWithSetBack()
 		if(GetImpactedFlag(120))
 			return 100;
 
-		if(this->m_bSensorData == false)
-			return m_FreeFlowTravelTime;
+		//if(this->m_bSensorData == false)
+		//	return m_FreeFlowTravelTime;
 
 		float travel_time  = max(m_StaticTravelTime,m_FreeFlowTravelTime);
 
@@ -1930,17 +1937,19 @@ void AdjustLinkEndpointsWithSetBack()
 			float total_travel_time = 0;
 			for(int t=starting_time; t< starting_time + time_interval && (unsigned int)t < m_LinkMOEAry.size(); t++)
 			{
-				total_travel_time += m_LinkMOEAry[t].ObsTravelTimeIndex/100;
+				total_travel_time +=  ( m_Length * 60/ max(1,m_LinkMOEAry[t].ObsSpeed));
+
+				
 			}
 
 			travel_time =  total_travel_time/time_interval;
 
-			if(travel_time < m_FreeFlowTravelTime)
-				travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
+			//if(travel_time < m_FreeFlowTravelTime)
+			//	travel_time = m_FreeFlowTravelTime; // minimum travel time constraint for shortest path calculation
 
 		}
 
-		ASSERT(travel_time>=0.09);
+		ASSERT(travel_time>=0.0001);
 
 		return travel_time;
 
@@ -1955,6 +1964,7 @@ class DTAPath
 public:
 	DTAPath()
 	{
+		m_LinkSize = 0;
 		for(int t=0; t<1440; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
@@ -2015,7 +2025,7 @@ public:
 	}
 
 	int m_LinkSize;
-	int m_LinkVector[MAX_NODE_SIZE_IN_A_PATH];
+	std::vector<int> m_LinkVector;
 	int m_NodeNodeSum;
 
 	float m_TimeDependentTravelTime[1440];

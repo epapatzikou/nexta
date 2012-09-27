@@ -38,7 +38,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 {
 
 	// build a network from the current zone centroid (1 centroid here) to all the other zones' centroids (all the zones)
-
 	float Perception_error_ratio = 0.7f;
 
 	std::list<DTANode*>::iterator iterNode;
@@ -65,6 +64,9 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		if((*iterLink)->m_bConnector )  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
 			continue; 
 
+		if((*iterLink)->m_AdditionalCost >1)  // skip prevented links (defined by users)
+			continue;
+
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
@@ -79,15 +81,13 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = (*iterLink)->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
-		m_LinkTDTimeAry[(*iterLink)->m_LinkNo][0] = (*iterLink)->m_Length;
-		m_LinkTDCostAry[(*iterLink)->m_LinkNo][0]=  (*iterLink)->m_Length;
+		m_LinkTDTimeAry[(*iterLink)->m_LinkNo][0] = (*iterLink)->m_Length + (*iterLink)->m_AdditionalCost;
+		m_LinkTDCostAry[(*iterLink)->m_LinkNo][0]=  (*iterLink)->m_Length ;
 			// use travel time now, should use cost later
 
 	}
 
 	m_LinkSize = p_LinkSet->size();
-
-
 }
 
 
@@ -148,7 +148,7 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 				continue;
 
 
-								  TRACE("\n   to node %d",ToID);
+			  TRACE("\n   to node %d",ToID);
 			// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
 			float random_value = g_RNNOF();
@@ -164,7 +164,7 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{
 
-								       TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][0]);
+				TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][0]);
 
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
@@ -214,7 +214,6 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 		}
 
 		TotalCost = LabelCostAry[destination];
-
 
 		if(TotalCost > MAX_SPLABEL-10)
 		{

@@ -575,6 +575,9 @@ public:
 	afx_msg void OnUpdateVehicleVehiclenumber(CCmdUI *pCmdUI);
 	afx_msg void OnVehicleShowselectedvehicleonly();
 	afx_msg void OnUpdateVehicleShowselectedvehicleonly(CCmdUI *pCmdUI);
+	afx_msg void OnNodeAddintermediatedestinationhere();
+	afx_msg void OnNodeRemoveallintermediatedestination();
+	afx_msg void OnLinkAvoidusingthislinkinrouting();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

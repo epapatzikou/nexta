@@ -49,4 +49,5 @@ public:
 	afx_msg void OnUpdateLinkselectionShowalllinksexceptconnectors(CCmdUI *pCmdUI);
 	BOOL m_ZoomToSelectedLink;
 	CString m_StrDocTitles;
+
 };

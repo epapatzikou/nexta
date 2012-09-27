@@ -413,3 +413,4 @@ void CDlgLinkList::OnUpdateLinkselectionShowalllinksexceptconnectors(CCmdUI *pCm
 {
 	pCmdUI->SetCheck(m_LinkSelectionMode == eLinkSelection_NoConnectors);
 }
+
