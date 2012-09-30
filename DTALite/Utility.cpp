@@ -45,9 +45,14 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	result.rsqr = 1;
 	result.slope = 1;
 	result.y_intercept = 0;
+	result.avg_y_to_x_ratio = 0;
 
 	if(DataVector.size()<=1)
+	{
+		cout << "No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
+		g_ProgramStop();
 		return result;
+	}
 
    double sum_x = 0;     //sum of x values
    double sum_y = 0;     //sum of y values
@@ -114,7 +119,7 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	result.rsqr = Rsqr;
 	result.slope = slope; 
 	result.y_intercept = y_intercept;
-	result.avg_y_to_x_ratio = average_y / max(0.0000001,average_x);  // directly calculate bias slope 
+	result.avg_y_to_x_ratio = average_y / max(0.0001,average_x);  // directly calculate bias slope 
 
    return result;
 
@@ -407,6 +412,57 @@ float g_read_float(FILE *f)
 
 }
 
+
+int g_read_number_of_numerical_values(char* line_string, int length)
+//read a floating point number from the current pointer of the file,
+//skip all spaces
+
+{
+	char ch, buf[ 32 ];
+	
+	int number_count= 0;
+	int string_index = 0;
+
+	/* returns -1 if end of file is reached */
+	while(string_index<length)
+	{
+
+	int i = 0;
+	int flag = 1;
+
+	while(true)
+	{
+		ch = line_string[string_index++];
+		if( ch == EOF ) return number_count;
+		if (isdigit(ch))
+			break;
+
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+
+	};
+	if( ch == EOF ) return number_count;
+	while( isdigit( ch ) || ch == '.' ) {
+		buf[ i++ ] = ch;
+		ch = line_string[string_index++];
+
+	}
+	buf[ i ] = 0;
+	
+	number_count++;
+	}
+
+	/* atof function converts a character string (char *) into a doubleing
+	pointer equivalent, and if the string is not a floting point number,
+	a zero will be return.
+	*/
+
+	return number_count;
+
+}
+
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename,bool print_out) 
 {
 	char lpbuffer[64];
@@ -482,7 +538,20 @@ for_each(g_VehicleVector.begin(), g_VehicleVector.end(), entity_deleter());
 	g_VehicleMap.clear();
 	cout << "Complete. " << endl;
 }
+CString g_GetTimeStampString(int time_stamp_in_min)
+{
+	CString str;
+	int hour = time_stamp_in_min/60;
+	int min = (time_stamp_in_min - hour*60);
 
+	if(hour<10)
+		str.Format ("0%d:%02d",hour,min);
+	else
+		str.Format ("%2d:%02d",hour,min);
+
+	// Convert a TCHAR string to a LPCSTR
+	return str;
+}
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval)
 {
@@ -504,6 +573,7 @@ std::string g_GetTimeStampStrFromIntervalNo(int time_interval)
 
 	return strStd;
 }
+
 
 CString g_GetAppRunningTime(bool with_title)
 {

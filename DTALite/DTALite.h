@@ -54,10 +54,12 @@ using namespace std;
 #define MAX_VOT_RANGE 101
 #define DEFAULT_VOT 12
 
-extern int g_ODZoneSize;
+extern int g_ODZoneNumberSize;
+extern int g_ODZoneIDSize;
 
 enum SPEED_BIN {VSP_0_25mph=0,VSP_25_50mph,VSP_GT50mph};
 enum VSP_BIN {VSP_LT0=0,VSP_0_3,VSP_3_6,VSP_6_9,VSP_9_12,VSP_GT12,VSP_6_12,VSP_LT6};
+enum SENSOR_TYPE {sensor_type_time_dependent_link_count=0,sensor_type_static_link_count,sensor_type_time_dependent_movement_count,sensor_type_static_movement_count};
 
 
 enum Traffic_State {FreeFlow,PartiallyCongested,FullyCongested};
@@ -542,9 +544,13 @@ public:
 class SLinkMeasurement  // time-dependent link measurement
 {
 public:
+
+	
+	int DestinationNode;
 	int StartTime;
 	int EndTime;
-	
+	SENSOR_TYPE m_SensorType;
+	string sensor_type;
 	string name;
 	string direction;
 	// observed
@@ -564,6 +570,7 @@ public:
 
 	SLinkMeasurement()
 	{
+		DestinationNode = -1;
 		ObsFlowCount = 0;
 		ObsNumberOfVehicles = 0;
 		ObsTravelTime = 0;
@@ -844,6 +851,7 @@ public:
 	}
 
 
+	string m_LinkTypeName;
 	std::map<int, int> m_OperatingModeCount;
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector <SLinkMOE> m_LinkMOEAry;
@@ -879,7 +887,7 @@ public:
 		return false;
 	}
 
-	int GetDeviationOfFlowCount(float timestamp)
+	int GetDeviationOfFlowCount(float timestamp, int DestinationNodeNo = -1)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
@@ -887,6 +895,8 @@ public:
 			{
 
 				return m_LinkMeasurementAry[i].DeviationOfFlowCount ;
+
+
 			}
 
 		}
@@ -1144,7 +1154,7 @@ public:
 
 	};
 
-	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, float Time = -1)
+	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, int DayNo=0, float Time = -1)
 	{
 		if(TrafficModelFlag == 0) // BRP model
 			return m_BPRLinkTravelTime;
@@ -1152,14 +1162,14 @@ public:
 		{
 			for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 			{
-				if(Time>=WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime)
+				if((WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) &&(Time>=WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
 				{
 					return m_Length/max(1,WorkZoneCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
 			}
 			for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
 			{
-				if(Time>=IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime)
+				if(IncidentCapacityReductionVector[il].StartDayNo   <=DayNo && Time>=IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime)
 				{
 					return m_Length/max(1,IncidentCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
@@ -2332,6 +2342,7 @@ int g_read_integer(FILE* f);
 int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);
+int g_read_number_of_numerical_values(char* line_string, int length);
 
 void ReadNetworkTables();
 int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,int PathIndex = -1, bool bChangeHistDemandTable=true, int departure_time_index = 0);
@@ -2683,6 +2694,8 @@ extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
 extern bool g_read_a_line(FILE* f, char* aline, int & size);
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
+extern CString g_GetTimeStampString(int time_stamp_in_mine);
+
 
 extern void g_FreeMemoryForVehicleVector();
 

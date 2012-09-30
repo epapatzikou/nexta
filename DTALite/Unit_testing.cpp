@@ -204,6 +204,28 @@ using namespace std;
 			g_ProgramStop();
 		}
 
+		g_UEAssignmentMethod = 1;
+		if(parser_scenario.GetValueByFieldName("traffic_assignment_method",g_UEAssignmentMethod)==false)
+		{
+			cout << "Field traffic_assignment_method has not been specified in file input_scenario_settings.csv. A default method of day-to-day learning is used." << endl;
+			getchar();
+		}
+
+		g_FreewayBiasFactor = 1;
+		if(parser_scenario.GetValueByFieldName("freeway_bias_factor",g_FreewayBiasFactor)==false)
+		{
+			cout << "Field freeway_bias_factor has not been specified in file input_scenario_settings.csv. A default factor of 1 is used." << endl;
+			getchar();
+		}
+
+
+		if(g_FreewayBiasFactor<0.1 || g_FreewayBiasFactor>2)
+		{
+			cout << "Field freeway_bias_factor in file input_scenario_settings.csv is out of feasible range. A default factor of 1 is used." << endl;
+			getchar();
+		
+		}
+
 		g_DefaultArterialKJam = 0;
 		parser_scenario.GetValueByFieldNameWithPrintOut("default_arterial_k_jam",g_DefaultArterialKJam);
 				

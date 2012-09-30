@@ -138,7 +138,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				vi.veh_id = pVeh->m_VehicleID ;
 				g_LastLoadedVehicleID = pVeh->m_VehicleID ;
 
-				vi.time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);  // unit: min
+				vi.time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, DayNo, CurrentTime);  // unit: min
 				pVeh->m_bLoaded = true;
 				pVeh->m_SimLinkSequenceNo = 0;
 
@@ -739,7 +739,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 						vi.veh_id = vehicle_id;
 
-						float FFTT = p_Nextlink->GetFreeMovingTravelTime(TrafficFlowModelFlag, CurrentTime);
+						float FFTT = p_Nextlink->GetFreeMovingTravelTime(TrafficFlowModelFlag,DayNo,CurrentTime);
 
 						vi.time_stamp = ArrivalTimeOnDSN + FFTT;
 
@@ -1204,7 +1204,16 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		if(pLink->m_LinkMOEAry[g_PlanningHorizon-1].ExitQueueLength>=1)  // remaining queue at the end of simulation horizon
 			NextCongestionTransitionTimeStamp = g_PlanningHorizon-1;
 
+
 		int time_min;
+		
+		for(time_min = g_DemandLoadingStartTimeInMin+1; time_min <= g_PlanningHorizon-1 ; time_min++)  // move backward
+		{
+		
+			pLink->m_LinkMOEAry[time_min].CumulativeArrivalCount  = max(pLink->m_LinkMOEAry[time_min-1].CumulativeArrivalCount,pLink->m_LinkMOEAry[time_min].CumulativeArrivalCount); // remove data holes
+			pLink->m_LinkMOEAry[time_min].CumulativeDepartureCount  = max(pLink->m_LinkMOEAry[time_min-1].CumulativeDepartureCount ,pLink->m_LinkMOEAry[time_min].CumulativeDepartureCount); // remove data holes		}
+		}
+
 		for(time_min = g_PlanningHorizon-1; time_min>= g_DemandLoadingStartTimeInMin ; time_min--)  // move backward
 		{
 			// transition condition 1: from partial congestion to free-flow; action: move to the next lini
