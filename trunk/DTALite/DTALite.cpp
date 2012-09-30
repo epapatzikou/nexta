@@ -165,7 +165,8 @@ float g_DemandGlobalMultiplier = 1.0f;
 // maximal # of adjacent links of a node (including physical nodes and centriods( with connectors))
 int g_AdjLinkSize = 30; // initial value of adjacent links
 
-int g_ODZoneSize = 0;
+int g_ODZoneNumberSize = 0;
+int g_ODZoneIDSize = 0;
 
 int g_StartIterationsForOutputPath = 2;
 int g_EndIterationsForOutputPath = 2;
@@ -182,6 +183,7 @@ int g_PlanningHorizon = 120;  // short horizon for saving memory
 
 // assignment
 int g_UEAssignmentMethod = 1; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
+float g_FreewayBiasFactor = 1.0f;
 int g_Day2DayAgentLearningMethod  =0; 
 float g_DepartureTimeChoiceEarlyDelayPenalty = 1;
 float g_DepartureTimeChoiceLateDelayPenalty = 1;
@@ -418,6 +420,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	int 	 pretimed_signal_control_type_code = 5;
 	int 	 actuated_signal_control_type_code = 6;
+	int 	 no_signal_control_type_code = 1;
 
 	ReadNodeControlTypeCSVFile();
 
@@ -429,6 +432,11 @@ void g_ReadInputFiles(int scenario_no)
 	if(FindNodeControlType("actuated_signal")>0)  //valid record
 	{
 	actuated_signal_control_type_code = FindNodeControlType("actuated_signal");
+	}
+
+	if(FindNodeControlType("no_control")>0)  //valid record
+	{
+	no_signal_control_type_code = FindNodeControlType("no_control");
 	}
 
 	int NodeControlTypeCount[10];
@@ -580,7 +588,9 @@ void g_ReadInputFiles(int scenario_no)
 	int max_number_of_warnings_to_be_showed = 5;
 	DTALink* pLink = 0;
 	CCSVParser parser_link;
-	if (parser_link.OpenCSVFile(InputLinkFileName))
+	int signal_reset_count = 0;
+	int control_node_number = 0;
+		if (parser_link.OpenCSVFile(InputLinkFileName))
 	{
 		bool bNodeNonExistError = false;
 		while(parser_link.ReadRecord())
@@ -728,6 +738,8 @@ void g_ReadInputFiles(int scenario_no)
 				//				if(g_UseDefaultLaneCapacityFlag ==1)
 				capacity = g_LinkTypeMap[type].default_lane_capacity;
 			}
+
+			
 			if(!parser_link.GetValueByFieldName("AADT_conversion_factor",AADT_conversion_factor))
 				AADT_conversion_factor = 0.1;
 
@@ -885,13 +897,28 @@ void g_ReadInputFiles(int scenario_no)
 					}
 				}
 
+				pLink->m_LinkTypeName  = g_LinkTypeMap[type].link_type_name;
+
+
 				pLink->m_bFreewayType = g_LinkTypeMap[type].IsFreeway ();
 				pLink->m_bArterialType = g_LinkTypeMap[type].IsArterial();
+
+
 
 
 				pLink->m_KJam = K_jam;
 				pLink->m_AADTConversionFactor = AADT_conversion_factor;
 				pLink->m_BackwardWaveSpeed = wave_speed_in_mph;
+
+				if(g_LinkTypeMap[type].IsConnector () == true && g_NodeVector[pLink->m_ToNodeID]. m_ControlType!= no_signal_control_type_code)
+				{
+						 //"no_control" for the downstream node of a connector
+//							g_NodeVector[pLink->m_ToNodeID]. m_ControlType = no_signal_control_type_code;
+							if(control_node_number==0)
+								control_node_number= pLink->m_ToNodeNumber ;
+
+//							signal_reset_count++;
+				}
 
 
 		
@@ -990,6 +1017,12 @@ void g_ReadInputFiles(int scenario_no)
 	}
 
 
+	if(signal_reset_count>=1)
+	{
+	cout << signal_reset_count << " nodes' control type is reset to 'no control', as they are connected to connectors. " << endl << "For example, node " << control_node_number << endl;
+	getchar();
+	}
+
 	cout << " total # of links loaded = " << g_LinkVector.size() << endl;
 
 	g_SummaryStatFile.WriteParameterValue ("# of Links", g_LinkVector.size());
@@ -1036,8 +1069,13 @@ void g_ReadInputFiles(int scenario_no)
 
 
 	}
+
+
+
 	if (parser_zone.inFile .is_open () || parser_zone.OpenCSVFile("input_zone.csv"))
 	{
+
+		int max_zone_number = 0;
 		int i=0;
 
 		while(parser_zone.ReadRecord())
@@ -1045,7 +1083,11 @@ void g_ReadInputFiles(int scenario_no)
 			int zone_number;
 
 			if(parser_zone.GetValueByFieldName("zone_id",zone_number) == false)
+			{
+				cout << "Error: Field zone_id does not exist in input_zone.csv" << endl;
+				g_ProgramStop();
 				break;
+			}
 
 			if(zone_number ==0)
 			{
@@ -1053,13 +1095,36 @@ void g_ReadInputFiles(int scenario_no)
 				g_ProgramStop();
 			}
 
-			g_ZoneIDVector.push_back(zone_number);
+			if(max_zone_number < zone_number)
+				max_zone_number = zone_number;
+
 			DTAZone zone;
 
 			zone.m_ZoneSequentialNo = i++;
 			g_ZoneMap[zone_number] = zone;
 
 		}
+
+		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+		{
+			if(max_zone_number < iterZone->first)
+				max_zone_number = iterZone->first;
+	
+		}
+
+		g_ODZoneIDSize = g_ZoneMap.size();
+
+		for(int i = 0; i<= max_zone_number; i++)
+		{
+			g_ZoneIDVector.push_back(-1);
+		}
+
+			for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+			{
+				g_ZoneIDVector[iterZone->first ] = iterZone->second .m_ZoneSequentialNo ;
+			}
+
+
 	}else
 	{
 		cout << "input_zone.csv cannot be opened."<< endl;
@@ -1112,8 +1177,8 @@ void g_ReadInputFiles(int scenario_no)
 				break;
 
 			int nodeid = g_NodeNametoIDMap[node_number];
-			if(g_ODZoneSize < zone_number)
-				g_ODZoneSize = zone_number;
+			if(g_ODZoneNumberSize < zone_number)
+				g_ODZoneNumberSize = zone_number;
 
 			int external_od_flag;
 			if(parser_activity_location.GetValueByFieldName("external_OD_flag",external_od_flag) == false)
@@ -1422,7 +1487,7 @@ void g_ReadInputFiles(int scenario_no)
 	}
 
 	/* to do: change this to the loop for map structure 
-	for(z = 1; z <=g_ODZoneSize; z++)
+	for(z = 1; z <=g_ODZoneNumberSize; z++)
 	{
 	if(g_ZoneMap[z]->m_Demand >= g_ZoneMap[z].m_Capacity )
 	g_WarningFile << "Zone "<< z << " has demand " << g_ZoneMap[z]->m_Demand  << " and capacity " << g_ZoneMap[z].m_Capacity<< endl;
@@ -1437,7 +1502,7 @@ void g_ReadInputFiles(int scenario_no)
 	//	cout << "Global Loading Factor = "<< g_DemandGlobalMultiplier << endl;
 
 
-	cout << "Number of Zones = "<< g_ODZoneSize  << endl;
+	cout << "Number of Zones = "<< g_ODZoneNumberSize  << endl;
 	cout << "Number of Nodes = "<< g_NodeVector.size() << endl;
 	cout << "Number of Links = "<< g_LinkVector.size() << endl;
 
@@ -1512,7 +1577,7 @@ void g_ReadInputFiles(int scenario_no)
 	cout << "Number of Demand Types = "<< g_DemandTypeMap.size() << endl;
 	cout << "Number of VOT records = "<< g_VOTDistributionVector.size() << endl;
 
-	g_LogFile << "Number of Zones = "<< g_ODZoneSize  << endl;
+	g_LogFile << "Number of Zones = "<< g_ODZoneNumberSize  << endl;
 	g_LogFile << "Number of Nodes = "<< g_NodeVector.size() << endl;
 	g_LogFile << "Number of Links = "<< g_LinkVector.size() << endl;
 	g_LogFile << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
@@ -1591,7 +1656,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 	}
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 	CCSVParser parser_agent;
 
@@ -1720,7 +1785,7 @@ void g_ReadDTALiteAgentBinFile(string file_name)
 	}
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 
 	FILE* st = NULL;
@@ -2025,7 +2090,7 @@ void g_ReadDemandFile_Parser()
 
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();
 }
@@ -2098,16 +2163,48 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 			{
 				int local_scenario_no = g_read_integer(st);
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st);
+				cs.StartDayNo = g_read_integer(st); // start from zero
 				cs.EndDayNo = cs.StartDayNo;
+
+				if(cs.StartDayNo <0)
+				{
+				cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Incident.csv. Please ensure Start Day >=0." <<endl;
+				g_ProgramStop();
+				}
+
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
+				
+				if(cs.StartTime >= cs.EndTime )
+				{
+				cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Incident.csv. Please ensure End Time >= Start Time." <<endl;
+				g_ProgramStop();
+				}
+
+
 				cs.LaneClosureRatio= g_read_float(st)/100.0f; // percentage -> to ratio
+
+				if(cs.LaneClosureRatio < 1.1f)
+				{
+				cout << "Capacity Reduction Percentage = " <<  cs.LaneClosureRatio << " % in line " << count +1 << "in file Scenario_Incident.csv. Please check!" <<endl;
+
+				g_ProgramStop();
+				
+				}
+
+
 				if(cs.LaneClosureRatio > 1.0)
 					cs.LaneClosureRatio = 1.0;
 				if(cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
+
+				if(cs.SpeedLimit < -0.1f)
+				{
+				cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Incident.csv. Please check!" <<endl;
+				g_ProgramStop();
+				
+				}
 
 				if(local_scenario_no==0 || local_scenario_no == scenario_no)
 				{
@@ -2176,16 +2273,42 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st);
+				cs.StartDayNo = g_read_integer(st); // start from zero
 				cs.EndDayNo = g_read_integer(st);
+
+				if(cs.StartDayNo <0)
+				{
+				cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
+				g_ProgramStop();
+				}
+
+				if(cs.EndDayNo <0)
+				{
+				cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
+				g_ProgramStop();
+				}
+
+				if(cs.EndDayNo < cs.StartDayNo )
+				{
+				cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+				g_ProgramStop();
+				}
+
+
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
+
+				if(cs.StartTime >= cs.EndTime )
+				{
+				cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+				g_ProgramStop();
+				}
 
 				float percentage = g_read_float(st);
 
 				if(percentage < 1.1f)
 				{
-				cout << "Capacity Reduction Percentage = " <<  percentage << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+				cout << "Capacity Reduction Percentage = " <<  percentage << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
 
 				g_ProgramStop();
 				
@@ -2199,6 +2322,13 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
 
+				if(cs.SpeedLimit < -0.1f)
+				{
+				cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+
+				g_ProgramStop();
+				
+				}
 				if(local_scenario_no==0 || local_scenario_no == scenario_no)
 				{
 					pLink->WorkZoneCapacityReductionVector.push_back(cs);
@@ -2466,9 +2596,9 @@ void FreeMemory()
 
 	cout << "Free node set... " << endl;
 
-	if(g_TDOVehicleArray!=NULL && g_ODZoneSize > 0);
+	if(g_TDOVehicleArray!=NULL && g_ODZoneNumberSize > 0);
 	{
-		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
+		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
 		g_TDOVehicleArray = NULL;
 	}
 
@@ -2851,7 +2981,7 @@ void g_ReadDTALiteSettings()
 
 	//	g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, g_DTASettingFileName);	
 	g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, g_DTASettingFileName);
-	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "aggregation_time_interval_in_min", 15, g_DTASettingFileName);	
+	g_AggregationTimetInterval = 15;	
 	g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, g_DTASettingFileName);	
 	g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, g_DTASettingFileName);	
 	//g_StartIterationsForOutputPath = g_GetPrivateProfileInt("output", "start_iteration_output_path", g_NumberOfIterations, g_DTASettingFileName);	
@@ -3503,16 +3633,14 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			parser0.GetValueByFieldNameWithPrintOut("file_sequence_no",file_sequence_no);
 
-
-			if(file_sequence_no ==-1)  // skip negative sequence no 
-			{
-				cout << "Please provide file_sequence_no in file input_demand_meta_data.csv" <<endl;
-				g_ProgramStop();
-			}
-
+			if(file_sequence_no <=-1)  // skip negative sequence no 
+				break;
 
 			parser0.GetValueByFieldNameWithPrintOut("file_name",file_name);
-
+			if(file_name.length()==0)  // no file name input
+			{
+			break;
+			}
 
 			parser0.GetValueByFieldNameWithPrintOut("start_time_in_min",start_time_in_min);
 			parser0.GetValueByFieldNameWithPrintOut("end_time_in_min",end_time_in_min);
@@ -3588,6 +3716,10 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			parser.GetValueByFieldNameWithPrintOut("file_name",file_name);
 
+			if(file_name.length()==0)  // no file name input
+			{
+			break;
+			}
 
 			parser.GetValueByFieldNameWithPrintOut("start_time_in_min",start_time_in_min);
 			parser.GetValueByFieldNameWithPrintOut("end_time_in_min",end_time_in_min);
@@ -3707,6 +3839,33 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				int i;
 
 				FILE* st;
+
+				//test # of numerical values per line
+				fopen_s(&st,file_name.c_str (), "r");
+				if (st!=NULL)
+				{
+
+					char  str_line[2000]; // input string
+					int str_line_size;
+
+					// skip lines
+					for(int line_skip = 0 ;line_skip < number_of_lines_to_be_skipped;line_skip++)
+					{
+						g_read_a_line(st,str_line, str_line_size); //  skip the first line
+						cout << str_line << endl;
+					}
+				g_read_a_line(st,str_line, str_line_size); //  skip the first line
+				int number_of_values = g_read_number_of_numerical_values(str_line,str_line_size);
+				
+				if(number_of_values != 2 + number_of_demand_types) // 2: origin, destination 
+				{
+				cout << "There are " << number_of_values << " values per line in file " << file_name << ", but " << number_of_demand_types << " demand type(s) are defined in file input_demand_meta_data.csv. Please check." << endl;
+				g_ProgramStop();
+				
+				}
+				fclose(st);
+				}
+
 				fopen_s(&st,file_name.c_str (), "r");
 				if (st!=NULL)
 				{
@@ -3721,7 +3880,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 					}
 
 					bFileReady = true;
-					int line_no = 0;
+					int line_no = number_of_lines_to_be_skipped;
 
 					while(true)
 					{
@@ -3739,7 +3898,19 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							break;
 						}
 
+						if(origin_zone > g_ODZoneNumberSize) 
+						{
+							cout << endl << "Error: Line " << line_no << " origin zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
+							g_ProgramStop();
+						}
+
 						int destination_zone = g_read_integer(st);
+
+						if(destination_zone > g_ODZoneNumberSize) 
+						{
+							cout << endl << "Error: Line " << line_no << " destination zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
+							g_ProgramStop();
+						}
 						float number_of_vehicles ;
 
 
@@ -4047,7 +4218,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();
 }

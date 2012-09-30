@@ -51,19 +51,21 @@ class HistoricalDemand
 {
 
 public:
+	int m_ODZoneSize;
 	HistoricalDemand()
 	{
+		m_ODZoneSize = 1;
 		m_HistDemand = NULL;
 	}
 	~HistoricalDemand()
 	{
 	if(m_HistDemand!=NULL)
 		{
-		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		Deallocate3DDynamicArray(m_HistDemand,m_ODZoneSize+1,m_ODZoneSize+1);
 		}
 	if(m_UpdatedDemand!=NULL)
 		{
-		Deallocate3DDynamicArray(m_UpdatedDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		Deallocate3DDynamicArray(m_UpdatedDemand,m_ODZoneSize+1,m_ODZoneSize+1);
 		}
 	}
 
@@ -79,8 +81,8 @@ public:
 		if(st!=NULL)
 		{
 			fprintf(st, "origin_zone,destination_zone,time_interval,hist,updated,diff\n");
-			for(int i= 0; i<=g_ODZoneSize; i++)
-			for(int j= 0; j<=g_ODZoneSize; j++)
+			for(int i= 0; i<=m_ODZoneSize; i++)
+			for(int j= 0; j<=m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
 					if(m_HistDemand[i][j][t]>0.5f)
@@ -95,8 +97,8 @@ public:
 	}
 	void Reset()
 	{
-			for(int i= 0; i<=g_ODZoneSize; i++)
-			for(int j= 0; j<=g_ODZoneSize; j++)
+			for(int i= 0; i<=m_ODZoneSize; i++)
+			for(int j= 0; j<=m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
 				m_HistDemand[i][j][t] = 0;
@@ -107,48 +109,63 @@ public:
 
 	void Initialize ()
 	{
+		m_ODZoneSize = g_ZoneMap.size();
+
 		m_StatisticsIntervalSize = 0;
 		m_StartingTimeInterval = 0;
+
+
 		if(m_HistDemand!=NULL)
 		{
-		Deallocate3DDynamicArray(m_HistDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		Deallocate3DDynamicArray(m_HistDemand,m_ODZoneSize+1,m_ODZoneSize+1);
 		}
 
 		if(m_UpdatedDemand!=NULL)
 		{
-		Deallocate3DDynamicArray(m_UpdatedDemand,g_ODZoneSize+1,g_ODZoneSize+1);
+		Deallocate3DDynamicArray(m_UpdatedDemand,m_ODZoneSize+1,m_ODZoneSize+1);
 		}
 
 		m_StatisticsIntervalSize = (g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/15;  // 15 min: department_time_intreval
 		m_StartingTimeInterval = g_DemandLoadingStartTimeInMin/15;
 
-		m_HistDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,m_StatisticsIntervalSize+2);
-		m_UpdatedDemand = Allocate3DDynamicArray<float>(g_ODZoneSize+1,g_ODZoneSize+1,m_StatisticsIntervalSize+2);
+		m_HistDemand = Allocate3DDynamicArray<float>(m_ODZoneSize+1,m_ODZoneSize+1,m_StatisticsIntervalSize+2);
+		m_UpdatedDemand = Allocate3DDynamicArray<float>(m_ODZoneSize+1,m_ODZoneSize+1,m_StatisticsIntervalSize+2);
 
 		Reset();
 
 	}
-	void AddValue(int origin_zone, int destination_zone, int AssignmentInterval, float value)
+	void AddValue(int origin_zone_number, int destination_zone_number, int AssignmentInterval, float value)
 	{
-		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+		int origin_zone = g_ZoneIDVector[origin_zone_number];
+		int destination_zone = g_ZoneIDVector[destination_zone_number];
+
+		if(origin_zone > m_ODZoneSize || destination_zone > m_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
 			return; 
 
 		m_HistDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval] += value;
 	}
 
 
-	float GetValue(int origin_zone, int destination_zone, int AssignmentInterval)
+	float GetValue(int origin_zone_number, int destination_zone_number, int AssignmentInterval)
 	{
-		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+		int origin_zone = g_ZoneIDVector[origin_zone_number];
+		int destination_zone = g_ZoneIDVector[destination_zone_number];
+
+		if(origin_zone > m_ODZoneSize || destination_zone > m_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
 			return 0.0f; 
 
 			return 	m_HistDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval];
 
 	}
 
-	void AddUpdatedValue(int origin_zone, int destination_zone, int AssignmentInterval, float value)
+	void AddUpdatedValue(int origin_zone_number, int destination_zone_number, int AssignmentInterval, float value)
 	{
-		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+
+		int origin_zone = g_ZoneIDVector[origin_zone_number];
+		int destination_zone = g_ZoneIDVector[destination_zone_number];
+
+
+		if(origin_zone > m_ODZoneSize || destination_zone > m_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
 			return; 
 
 		m_UpdatedDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval] += value;
@@ -156,17 +173,20 @@ public:
 
 	void ResetUpdatedValue()
 	{
-			for(int i= 0; i<=g_ODZoneSize; i++)
-			for(int j= 0; j<=g_ODZoneSize; j++)
+			for(int i= 0; i<=m_ODZoneSize; i++)
+			for(int j= 0; j<=m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
 				m_HistDemand[i][j][t] = 0;
 				}
 
 	}
-	float GetUpdatedValue(int origin_zone, int destination_zone, int AssignmentInterval)
+	float GetUpdatedValue(int origin_zone_number, int destination_zone_number, int AssignmentInterval)
 	{
-		if(origin_zone > g_ODZoneSize || destination_zone > g_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
+		int origin_zone = g_ZoneIDVector[origin_zone_number];
+		int destination_zone = g_ZoneIDVector[destination_zone_number];
+
+		if(origin_zone > m_ODZoneSize || destination_zone > m_ODZoneSize || (AssignmentInterval-m_StartingTimeInterval) > m_StatisticsIntervalSize)
 			return 0.0f; 
 
 			return 	m_UpdatedDemand[origin_zone][destination_zone][AssignmentInterval-m_StartingTimeInterval];
@@ -188,7 +208,7 @@ extern int g_AggregationTimetInterval; // min
 // maximal # of adjacent links of a node (including physical nodes and centriods( with connectors))
 extern int g_AdjLinkSize; // initial value of adjacent links
 
-extern int g_ODZoneSize;
+extern int m_ODZoneSize;
 
 // assignment and simulation settings
 extern int g_ParallelComputingMode;
@@ -231,6 +251,8 @@ extern float g_VMTTollingRate;
 
 // for traffic assignment 
 extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
+extern float g_FreewayBiasFactor; // 1: default value, 0.9 travel time on freeway will be weighted less
+
 extern int g_Day2DayAgentLearningMethod; // 0: no learning (use previous day), 1: route choice learning only, 2: route choice and departure time learning
 extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration

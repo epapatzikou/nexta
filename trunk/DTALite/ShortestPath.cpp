@@ -47,7 +47,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 	unsigned int i;
 	int t;
 
-	for(i=0; i< m_PhysicalNodeSize + g_ODZoneSize+1; i++)
+	for(i=0; i< m_PhysicalNodeSize + g_ODZoneNumberSize+1; i++)
 	{
 		m_OutboundSizeAry[i] = 0;
 		m_InboundSizeAry[i] =0;
@@ -140,7 +140,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 			}
 		}
 	}
-	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneSize;
+	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneNumberSize;
 }
 
 void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for agent based 
@@ -221,6 +221,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
 			float AvgTravelTime = pLink->GetTravelTimeByMin (DayNo,t,g_AggregationTimetInterval);
 
+			if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
+				AvgTravelTime*=g_FreewayBiasFactor;
 
 			if(AvgTravelTime < 0.01f)  // to avoid possible loops
 				AvgTravelTime = 0.01f ;
