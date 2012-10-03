@@ -117,6 +117,8 @@
 #define IDD_DIALOG_Demand_Type          221
 #define IDD_DIALOG_NODE_PHASE2          222
 #define IDR_MENU_PATH_INFO              222
+#define IDD_DIALOG_ASSIGNMENTSIM_SETTINGS 223
+#define IDD_DIALOG_SETTING_TAB          224
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -326,6 +328,8 @@
 #define IDC_BUTTON_NEW_PHASE            1129
 #define IDC_COMBO_SC                    1130
 #define IDC_EDIT_CYCLE_LENGTH           1131
+#define IDC_SETTING_TAB                 1132
+#define IDC_BUTTON_COPY                 1133
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -903,14 +907,15 @@
 #define ID_PATH_DATA_EXPORT             33484
 #define ID_PATH_DATA_EXPORT_CSV         33485
 #define ID_DATA_IMPORT_CSV              33486
+#define ID_Menu33487                    33487
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        223
-#define _APS_NEXT_COMMAND_VALUE         33487
-#define _APS_NEXT_CONTROL_VALUE         1132
+#define _APS_NEXT_COMMAND_VALUE         33488
+#define _APS_NEXT_CONTROL_VALUE         1134
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif
