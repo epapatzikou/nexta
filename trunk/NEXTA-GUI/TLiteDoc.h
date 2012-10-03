@@ -1396,6 +1396,7 @@ public:
 	afx_msg void OnLinkattributedisplayLinkname();
 	afx_msg void OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI);
 	afx_msg void OnToolsGeneratesignalcontrollocations();
+	afx_msg void OnAssignmentSimulatinSettinsClicked();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

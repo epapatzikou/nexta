@@ -80,6 +80,8 @@
 #include "LinePlot\\LinePlotTestDlg.h"
 #include "Page_Node_Movement.h"
 
+#include "AssignmentSimulationSettingDlg.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -274,6 +276,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnLinkattributedisplayLinkname)
 	ON_UPDATE_COMMAND_UI(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnUpdateLinkattributedisplayLinkname)
 	ON_COMMAND(ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS, &CTLiteDoc::OnToolsGeneratesignalcontrollocations)
+	ON_COMMAND(ID_Menu33487, &CTLiteDoc::OnAssignmentSimulatinSettinsClicked)
 	END_MESSAGE_MAP()
 
 
@@ -8855,4 +8858,12 @@ void CTLiteDoc::OnToolsGeneratesignalcontrollocations()
 	AfxMessageBox(msg,MB_ICONINFORMATION);
 	UpdateAllViews(0);
 	
+}
+
+void CTLiteDoc::OnAssignmentSimulatinSettinsClicked()
+{
+	// TODO: Add your command handler code here
+	CAssignmentSimulationSettingDlg dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
 }
