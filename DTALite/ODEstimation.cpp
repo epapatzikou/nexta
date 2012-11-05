@@ -513,6 +513,19 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 					if (ArrivalTime_int >= g_PlanningHorizon)  // time of interest exceeds the simulation horizon
 						break;
 
+
+
+				if(l==0) // first link: check loading buffer
+				{
+
+					// if loading buffer is congested at the current time, we need to move the the end of the congestion period (to start over)
+						if(  pLink->m_LinkMOEAry[ArrivalTime_int].LoadingBuffer_QueueLength >=1)
+						{
+						ArrivalTime  = pLink->m_LinkMOEAry[ArrivalTime_int].LoadingBuffer_EndTimeOfCongestion;
+						ArrivalTime_int = (int)(ArrivalTime);
+						}
+				}
+
 					int arrival_time_in_hour = int(ArrivalTimeBasedonTravelTime/60);
 				if( pLink->SimultedHourlySpeed[arrival_time_in_hour] < pLink->m_SpeedLimit *0.15) // 15% of speed limit
 							number_of_links_with_extremely_heavy_congestion++;
@@ -629,6 +642,21 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				}
 			}
 				
+
+			// add constraints based on the deviation from historical demand 
+
+			if ( abs(PathArray[DestZoneID].DeviationNumOfVehicles) >  hist_demand * 0.3) 
+			{
+				if( PathArray[DestZoneID].DeviationNumOfVehicles < 0 /* current demand < hist demand * 0.7  */ && FlowAdjustment > 0 /* total simulated > total observed so that we have to further decrease the demand pattern*/)
+				{
+					FlowAdjustment  = 0 ; 
+				}
+			
+				if( PathArray[DestZoneID].DeviationNumOfVehicles >  0 /* current demand > hist demand * 1.3  */ && FlowAdjustment < 0 /* total simulated < total observed so that we have to further decrease the demand pattern*/)
+				{
+					FlowAdjustment  = 0 ; 
+				}
+			}
 
 			float lower_bound_of_path_flow = max(1, PathArray[DestZoneID].NumOfVehsOnEachPath[p]*0.5);
 			float upper_bound_of_path_flow_adjustment = PathArray[DestZoneID].NumOfVehsOnEachPath[p]*0.5;

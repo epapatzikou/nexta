@@ -351,7 +351,7 @@ int g_read_integer(FILE* f)
 	while(true)
 	{
 		ch = getc( f );
-		if( ch == EOF ) return -1;
+		if( ch == EOF || ch == '*' || ch == '$') return -1; // * and $ are special characters for comments
 		if (isdigit(ch))
 			break;
 		if (ch == '-')
@@ -360,6 +360,8 @@ int g_read_integer(FILE* f)
 			flag = 1;
 	};
 	if( ch == EOF ) return -1;
+
+	
 	while( isdigit( ch )) {
 		buf[ i++ ] = ch;
 		ch = fgetc( f );
@@ -385,7 +387,7 @@ float g_read_float(FILE *f)
 	while(true)
 	{
 		ch = getc( f );
-		if( ch == EOF ) return -1;
+		if( ch == EOF || ch == '*' || ch == '$' ) return -1;
 		if (isdigit(ch))
 			break;
 
@@ -432,6 +434,12 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 
 	while(true)
 	{
+		if(string_index==length)
+		{
+		break;
+		}
+
+
 		ch = line_string[string_index++];
 		if( ch == EOF ) return number_count;
 		if (isdigit(ch))
@@ -451,7 +459,12 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 	}
 	buf[ i ] = 0;
 	
-	number_count++;
+	double value = atof( buf );
+	if(value>0.0000001)  // positive values
+	{
+	
+		number_count++;
+	}
 	}
 
 	/* atof function converts a character string (char *) into a doubleing

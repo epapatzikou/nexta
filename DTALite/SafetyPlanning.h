@@ -109,7 +109,11 @@ public:
 	double Nsv_total_4ST,Nsv_fatal_injury_4ST,NSv_PDO_4ST;
 
 
-	double EstimateArterialCrashRatePerYear(double &total_fatal_injury_per_year, double &total_PDO_per_year,double AADT = 26000,
+	double EstimateArterialCrashRatePerYear(double crash_ratio_on_this_link, 
+		double &total_fatal_injury_per_year, double &total_PDO_per_year,
+		double &total_intersection_crash_per_year, double &total_intersection_fatal_injury_per_year, double &total_intersection_PDO_per_year,
+		
+		double AADT = 26000,
 		double Length  = 0.89, 
 		double Num_Driveways_Per_Mile = 20,
 		double volume_proportion_on_minor_leg = 0.1,
@@ -201,7 +205,7 @@ public:
 			Nsv_total_4SG, Nsv_fatal_injury_4SG,Nsv_PDO_4SG,
 			Nsv_total_4ST,Nsv_fatal_injury_4ST,NSv_PDO_4ST);
 
-		double total_crash_per_year = 
+		double total_crash_per_year = crash_ratio_on_this_link *(
 			Nmvnd_total +
 			Nsv_total +
 			Nmvd_total + 
@@ -212,9 +216,9 @@ public:
 			Nsv_total_3SG +
 			Nsv_total_3ST + 
 			Nsv_total_4SG +
-			Nsv_total_4ST;
+			Nsv_total_4ST);
 
-	total_fatal_injury_per_year = 
+	total_fatal_injury_per_year =  crash_ratio_on_this_link *(
 			Nmvnd_fatal_injury +
 			Nsv_fatal_injury +
 			Nmvd_fatal_injury + 
@@ -225,9 +229,9 @@ public:
 			Nsv_fatal_injury_3SG +
 			Nsv_fatal_injury_3ST + 
 			Nsv_fatal_injury_4SG +
-			Nsv_fatal_injury_4ST;
+			Nsv_fatal_injury_4ST);
 
-	total_PDO_per_year = 
+	total_PDO_per_year = crash_ratio_on_this_link * (
 			Nmvnd_PDO +
 			Nsv_PDO +
 			Nmvd_PDO + 
@@ -238,7 +242,37 @@ public:
 			Nsv_PDO_3SG +
 			NSv_PDO_3ST + 
 			Nsv_PDO_4SG +
-			NSv_PDO_4ST;
+			NSv_PDO_4ST );
+
+	total_intersection_crash_per_year = crash_ratio_on_this_link *(
+			Nmv_total_3SG +
+			Nmv_total_3ST +
+			Nmv_total_4SG +
+			Nmv_total_4ST +
+			Nsv_total_3SG +
+			Nsv_total_3ST + 
+			Nsv_total_4SG +
+			Nsv_total_4ST);
+
+	total_intersection_fatal_injury_per_year =  crash_ratio_on_this_link *(
+			Nmv_fatal_injury_3SG +
+			Nmv_fatal_injury_3ST +
+			Nmv_fatal_injury_4SG +
+			Nmv_fatal_injury_4ST +
+			Nsv_fatal_injury_3SG +
+			Nsv_fatal_injury_3ST + 
+			Nsv_fatal_injury_4SG +
+			Nsv_fatal_injury_4ST);
+
+	total_intersection_PDO_per_year = crash_ratio_on_this_link * (
+			Nmv_PDO_3SG +
+			Nmv_PDO_3ST +
+			Nmv_PDO_4SG +
+			Nmv_PDO_4ST +
+			Nsv_PDO_3SG +
+			NSv_PDO_3ST + 
+			Nsv_PDO_4SG +
+			NSv_PDO_4ST );
 		return total_crash_per_year;
 	}
 

@@ -219,22 +219,22 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
 
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
-			float AvgTravelTime = pLink->GetTravelTimeByMin (DayNo,t,g_AggregationTimetInterval);
+			float AvgTripTime = pLink->GetTravelTimeByMin (DayNo,t,g_AggregationTimetInterval);
 
 			if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
-				AvgTravelTime*=g_FreewayBiasFactor;
+				AvgTripTime*=g_FreewayBiasFactor;
 
-			if(AvgTravelTime < 0.01f)  // to avoid possible loops
-				AvgTravelTime = 0.01f ;
+			if(AvgTripTime < 0.01f)  // to avoid possible loops
+				AvgTripTime = 0.01f ;
 
-			ASSERT(AvgTravelTime < 99999);
+			ASSERT(AvgTripTime < 99999);
 
 			if(bDebug) 
 			{
-				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeName, g_NodeVector[ToID].m_NodeName, t,AvgTravelTime );
+				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeName, g_NodeVector[ToID].m_NodeName, t,AvgTripTime );
 			}
 
-			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTravelTime;
+			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTripTime;
 
 
 			// copy pricing type dependent link toll values
@@ -245,7 +245,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 				{
 					m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTollExist = true;
 
-					float speed =  pLink->m_Length /AvgTravelTime*60;
+					float speed =  pLink->m_Length /AvgTripTime*60;
 
 
 					for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
@@ -405,12 +405,12 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VM
 		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
 
 
-		float AvgTravelTime = g_LinkVector[li]->GetPrevailingTravelTime(DayNo,CurrentTime);
-		//			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime,AvgTravelTime);
+		float AvgTripTime = g_LinkVector[li]->GetPrevailingTravelTime(DayNo,CurrentTime);
+		//			TRACE("\n%d -> %d, time %d, TT: %f", g_NodeVector[g_LinkVector[li]->m_FromNodeID], g_NodeVector[g_LinkVector[li]->m_ToNodeID],CurrentTime,AvgTripTime);
 
-		float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTravelTime;
+		float Normal_random_value = g_RNNOF() * Perception_error_ratio*AvgTripTime;
 
-		float travel_time  = AvgTravelTime + Normal_random_value;
+		float travel_time  = AvgTripTime + Normal_random_value;
 		if(travel_time < g_LinkVector[li]->m_FreeFlowTravelTime )
 			travel_time = g_LinkVector[li]->m_FreeFlowTravelTime;
 

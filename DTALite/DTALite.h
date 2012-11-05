@@ -187,6 +187,9 @@ public:
 	float TotalMilesPerGallon;
 	float AvgMilesPerGallon;
 
+	float TotalMiles;
+	float TotalGasolineGallon;
+
 
 	EmissionStatisticsData()
 	{
@@ -207,6 +210,10 @@ public:
 		AvgHC = 0;
 		TotalMilesPerGallon = 0;
 		AvgMilesPerGallon = 0;
+
+		TotalMiles = 0;
+		TotalGasolineGallon = 0;
+
 
 	}
 
@@ -273,6 +280,7 @@ class DTAZone
 { 
 public:
 	int m_ZoneSequentialNo;
+	int m_ZoneNumber;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<int> m_OriginActivityVector;
 	std::vector<int> m_DestinationActivityVector;
@@ -280,6 +288,15 @@ public:
 	int GetRandomOriginNodeIDInZone(float random_ratio)
 	{
 		int ArraySize  = m_OriginActivityVector.size();
+
+		if(ArraySize==0)
+		{
+		cout << "Zone " << m_ZoneNumber << " does not have any activity locations." << endl;
+
+		getchar();
+		exit(0);
+		
+		}
 
 		int node_index = int(random_ratio*ArraySize);
 
@@ -442,7 +459,7 @@ public:
 	float m_NumberOfFatalAndInjuryCrashes;
 	float m_NumberOfPDOCrashes;
 	float AvgSpeed;
-	float AvgTravelTime;
+	float AvgTripTime;
 	int TotalFlowCount;
 
 	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
@@ -454,8 +471,10 @@ public:
 		m_NumberOfCrashes = 0;
 		m_NumberOfFatalAndInjuryCrashes = 0;
 		m_NumberOfPDOCrashes = 0;
+
+
 		AvgSpeed = 0;
-		AvgTravelTime = 0;
+		AvgTripTime = 0;
 		TotalFlowCount = 0;
 
 		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
@@ -483,9 +502,15 @@ public:
 
 	int CumulativeArrivalCount; 
 	int CumulativeDepartureCount;
+
 	int ExitQueueLength;
 	int EndTimeOfPartialCongestion;  // time in min to the end of partial congestion
 	int TrafficStateCode;  // 0: free-flow: 1: partial congested: 2: fully congested
+
+	int LoadingBuffer_QueueLength;
+	int LoadingBuffer_EndTimeOfCongestion;  // time in min to the end of partial congestion
+	int LoadingBuffer_TrafficStateCode;  // 0: free-flow: 1: partial congested: 2: fully congested
+
 
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
@@ -506,6 +531,11 @@ public:
 		ExitQueueLength = 0;
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
+
+		LoadingBuffer_QueueLength = 0;
+		LoadingBuffer_EndTimeOfCongestion = 0 ;  // time in min to the end of partial congestion at loading buffer
+		LoadingBuffer_TrafficStateCode = 0;  // 0: free-flow: 1: congested:
+
 
 		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
 		{
@@ -708,6 +738,8 @@ public:
 		m_DownstreamNodeSignalOffset_In_Second = 0;
 		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;
 		m_bFreewayType = false;
+		m_bOnRampType = false;
+		m_bOffRampType = false;
 		m_bArterialType = false;
 		m_bSignalizedArterialType = false;
 
@@ -733,6 +765,12 @@ public:
 		m_NumberOfCrashes = 0;
 		m_NumberOfFatalAndInjuryCrashes = 0;
 		m_NumberOfPDOCrashes = 0;
+
+
+		m_Intersection_NumberOfCrashes = 0;
+		m_Intersection_NumberOfFatalAndInjuryCrashes = 0;
+		m_Intersection_NumberOfPDOCrashes = 0;
+
 
 		m_Num_Driveways_Per_Mile = 20;
 		m_volume_proportion_on_minor_leg = 0.1;
@@ -842,8 +880,8 @@ public:
 		return 0;
 	}
 
-	unsigned int m_RandomSeed; 
-		float GetRandomRatio()  // get link_specific random seed
+	unsigned long m_RandomSeed; 
+		double GetRandomRatio()  // get link_specific random seed
 	{
 		m_RandomSeed = (LCG_a * m_RandomSeed + LCG_c) % LCG_M;  //m_RandomSeed is automatically updated.
 
@@ -1090,11 +1128,14 @@ public:
 	float m_AADTConversionFactor;
 	float m_BackwardWaveSpeed; // unit: mile/ hour
 	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
+	float m_LoadingBufferWaitingTime;
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
 	int	m_link_type;
 
+	bool m_bOffRampType;
+	bool m_bOnRampType;  // On Ramp type
 	bool m_bFreewayType;  //created to store the freeway type, used in simulation
 	bool m_bArterialType;
 	bool m_bSignalizedArterialType;
@@ -1198,6 +1239,7 @@ public:
 		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*60/g_DTASimulationInterval); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
+		m_LoadingBufferWaitingTime = 0;
 
 		for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
 		{
@@ -1241,6 +1283,7 @@ public:
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
 		ExitQueue.clear();
+		m_OutCapacityVector.clear();
 
 
 	}
@@ -1289,6 +1332,9 @@ public:
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
 
+	std::string m_geometry_string;
+	std::string m_original_geometry_string;
+
 	int  A[MAX_TIME_INTERVAL_ADCURVE];
 	int  D[MAX_TIME_INTERVAL_ADCURVE];
 	int  m_FFTT_simulation_interval;  // integral value of  FFTT, in terms of simulation  time interval
@@ -1317,6 +1363,9 @@ public:
 	double m_NumberOfFatalAndInjuryCrashes;
 	double m_NumberOfPDOCrashes;
 
+	double m_Intersection_NumberOfCrashes;
+	double m_Intersection_NumberOfFatalAndInjuryCrashes;
+	double m_Intersection_NumberOfPDOCrashes;
 
 
 	double m_AdditionalDelayDueToCrashes;
@@ -1508,7 +1557,7 @@ public:
 	{
 		if(type_code.find('f')!= string::npos)
 			return true;
-		else
+		else	
 			return false;
 	}
 
@@ -1532,6 +1581,18 @@ public:
 	{
 		if(type_code.find('r')!= string::npos)
 			return true;
+		else
+			return false;
+	}
+
+
+	bool IsOffRamp()
+	{
+		if(type_code.find('r')!= string::npos)
+		{
+
+			return true;
+		}
 		else
 			return false;
 	}
@@ -1670,7 +1731,7 @@ public:
 	std::map<int, int> m_SpeedCount;
 	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
 
-	unsigned int m_RandomSeed;
+	unsigned long m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
 
 	int m_OriginZoneID;  
@@ -1690,11 +1751,13 @@ public:
 
 	int m_TimeToRetrieveInfo;  // in simulation interval
 	float m_DepartureTime;
+	float m_LeavingTimeFromLoadingBuffer;
 	float m_PreferredDepartureTime;
 	float m_Distance;
 
 	float m_ArrivalTime;
 	float m_TripTime;
+	float m_TravelTime; // without including waiting time at loading buffer
 	float m_EstimatedTravelTime;
 	float m_Delay;
 
@@ -1806,11 +1869,11 @@ public:
 
 	}
 
-	float GetRandomRatio()
+	double GetRandomRatio()
 	{
 		m_RandomSeed = (LCG_a * m_RandomSeed + LCG_c) % LCG_M;  //m_RandomSeed is automatically updated.
 
-		return float(m_RandomSeed)/LCG_M;
+		return double(m_RandomSeed)/LCG_M;
 	}
 
 	void SetMinCost(float MinCost)
@@ -1915,6 +1978,8 @@ public:
 	int Flow_in_a_min;
 	float AbsArrivalTimeOnDSN_in_a_min;
 	float AvgTripTime;
+	float AvgTravelTime;  // without buffer waiting time
+
 
 	NetworkMOE()
 	{
@@ -1923,6 +1988,8 @@ public:
 		Flow_in_a_min = 0;
 		AbsArrivalTimeOnDSN_in_a_min = 0;
 		AvgTripTime = 0;
+		AvgTravelTime = 0;
+
 	}
 };
 
@@ -2368,6 +2435,7 @@ public:
 		LinkVolumeRootMeanSquaredError = 0;
 		CorrelationBetweenObservedAndSimulatedLinkVolume = 0;
 
+		AvgTripTime = 0;
 		AvgTravelTime = 0;
 		AvgDelay = 0;
 		AvgTTI = 0;
@@ -2376,6 +2444,7 @@ public:
 		NumberofVehiclesGenerated = 0;
 		SwitchPercentage = 0;
 	}
+	float AvgTripTime;
 	float AvgTravelTime;
 	float AvgDelay;
 	float AvgTTI;
@@ -2485,7 +2554,7 @@ public:
 	int number_of_vehicles;
 	int number_of_vehicles_PricingType[MAX_PRICING_TYPE_SIZE];
 
-	float avg_travel_time_in_min, avg_distance_in_miles, avg_speed;
+	float avg_trip_time_in_min, avg_distance_in_miles, avg_speed;
 
 	;
 
@@ -2499,7 +2568,7 @@ public:
 		{
 			number_of_vehicles_PricingType [p] = 0;
 		}
-		avg_travel_time_in_min = 0;
+		avg_trip_time_in_min = 0;
 		avg_distance_in_miles = 0;
 
 		Energy = 0;
@@ -2669,7 +2738,7 @@ void g_AgentBasedAssisnment();
 
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
-int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,float& AvgCost, EmissionStatisticsData &emission_data,
+int g_OutputSimulationSummary(float& AvgTripTime, float& AvgDistance, float& AvgSpeed,float& AvgCost, EmissionStatisticsData &emission_data,
 							  int InformationClass, int DemandType, int VehicleType, int DepartureTimeInterval);
 void g_DynamicTraffcAssignmentWithinInnerLoop(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated);
 void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_end, int inner_iteration);
@@ -2759,7 +2828,7 @@ extern void g_CreateLinkTollVector();
 extern void g_ReadDemandFile_Parser();
 extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);
 
-extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed, float & AvgCost, EmissionStatisticsData &emission_data, LinkMOEStatisticsData &link_data,
+extern	int g_OutputSimulationMOESummary(float& AvgTripTime, float& AvgDistance, float& AvgSpeed, float & AvgCost, EmissionStatisticsData &emission_data, LinkMOEStatisticsData &link_data,
 										 int DemandType=0,int VehicleType = 0, int InformationClass=0, int origin_zone_id = 0, int destination_zone_id = 0,
 										 int from_node_id = 0, int mid_node_id	=0, int to_node_id	=0,	
 										 int departure_starting_time	 = 0,int departure_ending_time= 1440, int entrance_starting_time=0,int inentrance_ending_time = 1440);
