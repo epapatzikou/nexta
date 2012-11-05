@@ -233,8 +233,10 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		}
 
 
-			float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
-		bool bSwitchFlag = false;
+			double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
+
+
+			bool bSwitchFlag = false;
 
 		float ExperiencedTravelTime = pVeh->m_TripTime;
 		float ExperiencedGeneralizedTravelTime = pVeh->m_TripTime + pVeh->m_TollDollarCost / max(1, pVeh->m_VOT);  // unit: min
@@ -698,7 +700,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 				break;
 			}
 
-			float RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
+			double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 
 			if((pVeh->m_bComplete==false && pVeh->m_NodeSize >=2)) //for incomplete vehicles with feasible paths, need to switch at the next iteration
 			{
@@ -1356,10 +1358,10 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	if(SimuOutput.NumberofVehiclesGenerated>0)
 		PercentageComplete =  SimuOutput.NumberofVehiclesCompleteTrips*100.0f/SimuOutput.NumberofVehiclesGenerated;
 
-	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
-	cout << g_GetAppRunningTime() << "Iteration: " << iteration <<", Average Travel Time: " << SimuOutput.AvgTravelTime << ", Average Distance: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
+	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Trip Time: " << SimuOutput.AvgTripTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
+	cout << g_GetAppRunningTime() << "Iter: " << iteration <<", Avg Trip Time: " << SimuOutput.AvgTripTime << ", Avg Buffer Time: " << SimuOutput.AvgTripTime  - SimuOutput.AvgTravelTime   << ", Avg Dist: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", # of veh Complete Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
 
-	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
+	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTripTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
 
 	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
 
@@ -1371,8 +1373,11 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("CPU Running Time");
 		g_SummaryStatFile.SetFieldName ("# of agents");
 		g_SummaryStatFile.SetFieldName ("Avg Travel Time (min)");
-		g_SummaryStatFile.SetFieldName ("Avg Travel Time Index");
-		g_SummaryStatFile.SetFieldName ("Avg Distance (miles)");
+		g_SummaryStatFile.SetFieldName ("Avg Trip Time (min)");
+		g_SummaryStatFile.SetFieldName ("Avg Waiting Time at Origin (min)");
+		g_SummaryStatFile.SetFieldName ("Avg Trip Time Index");
+		g_SummaryStatFile.SetFieldName ("Avg Speed (mph)");
+		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
 		g_SummaryStatFile.SetFieldName ("% switching");
 		g_SummaryStatFile.SetFieldName ("% completing trips");
 		g_SummaryStatFile.SetFieldName ("Avg UE gap (min)");
@@ -1400,8 +1405,16 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
 	g_SummaryStatFile.SetValueByFieldName ("# of agents",SimuOutput.NumberofVehiclesGenerated);
 	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",SimuOutput.AvgTravelTime);
-	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time Index",SimuOutput.AvgTTI );
+	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time (min)",SimuOutput.AvgTripTime);
+
+	float buffer_waiting_time  = SimuOutput.AvgTripTime - SimuOutput.AvgTravelTime;
+	g_SummaryStatFile.SetValueByFieldName ("Avg Waiting Time at Origin (min)",buffer_waiting_time);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time Index",SimuOutput.AvgTTI );
 	g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
+
+	float avg_speed = SimuOutput.AvgDistance/max(0.1,SimuOutput.AvgTravelTime)*60;
+
+	g_SummaryStatFile.SetValueByFieldName ("Avg Speed (mph)",avg_speed);
 	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
 
@@ -1432,8 +1445,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 		Day2DayLinkMOE element;
 		element.TotalFlowCount  = pLink->CFlowArrivalCount;
-		element.AvgTravelTime = pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
-		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime ) *60;  // unit: mph
+		element.AvgTripTime = pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
+		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTripTime ) *60;  // unit: mph
 
 		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
 		{

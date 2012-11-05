@@ -235,6 +235,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 				DTAVehicle* pVehicle  = g_VehicleMap[vi.veh_id];
 
+				// mark the actual leaving time from the loading buffer, so that we can calculate the exact time for traversing the physical net
+				pVehicle->m_LeavingTimeFromLoadingBuffer = CurrentTime;
+
+				pLink->m_LoadingBufferWaitingTime+= (CurrentTime - pVehicle->m_DepartureTime );
+
+				if(pLink->m_FromNodeNumber == 1285)
+				{
+					TRACE("%f, vehicle: %d; buffer time %f", CurrentTime, pVehicle->m_VehicleID , (CurrentTime - pVehicle->m_DepartureTime ) );
+				}
+
+
 				// add cumulative flow count to vehicle
 
 				pVehicle->m_TollDollarCost += pLink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
@@ -335,10 +346,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			if(pLink->m_bSignalizedArterialType == true && g_SimulateSignals)
 			{
+
+				if(pLink->m_FromNodeNumber == 9053 && pLink->m_ToNodeNumber == 9055)
+				{
+					TRACE("");
+				}
 			PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( pLink->m_DownstreamCycleLength_In_Second, pLink->m_EffectiveGreenTime_In_Second ,pLink->m_GreenStartTime_In_Second ,  pLink->m_DownstreamNodeSignalOffset_In_Second, CurrentTime, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane);
 //  comment this out for the official release, as it is memory-intensive
-//			DTALinkOutCapacity element(CurrentTime,PerHourCapacityAtCurrentSimulatioInterval);
-//			pLink->m_OutCapacityVector .push_back (element);
+			DTALinkOutCapacity element(CurrentTime,PerHourCapacityAtCurrentSimulatioInterval);
+			pLink->m_OutCapacityVector .push_back (element);
 			}
 			
 
@@ -840,6 +856,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					g_VehicleMap[vehicle_id]->m_ArrivalTime = ArrivalTimeOnDSN;
 
 					g_VehicleMap[vehicle_id]->m_TripTime = g_VehicleMap[vehicle_id]->m_ArrivalTime - g_VehicleMap[vehicle_id]->m_DepartureTime;
+					g_VehicleMap[vehicle_id]->m_TravelTime  = g_VehicleMap[vehicle_id]->m_ArrivalTime - g_VehicleMap[vehicle_id]->m_LeavingTimeFromLoadingBuffer ;
 
 					if(debug_flag && vi.veh_id == vehicle_id_trace )
 					{
@@ -901,6 +918,20 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			if(pLink->m_LinkMOEAry [time_stamp_in_min].ExitQueueLength >=1 && pLink->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode != 2)   // not fully congested
 				pLink->m_LinkMOEAry [time_stamp_in_min].TrafficStateCode  = 1;  // partially congested
+
+
+
+			pLink->m_LinkMOEAry [time_stamp_in_min].LoadingBuffer_QueueLength  = pLink->LoadingBuffer .size(); 
+
+			if(pLink->m_FromNodeNumber == 5577 &&  pLink->m_ToNodeNumber  == 5436 && pLink->m_LinkMOEAry [time_stamp_in_min].LoadingBuffer_QueueLength >=1)
+			{
+				TRACE("\nloading buffer at time %d: size = %d", time_stamp_in_min,pLink->m_LinkMOEAry [time_stamp_in_min].LoadingBuffer_QueueLength );
+			
+			}
+
+			if(pLink->m_LinkMOEAry [time_stamp_in_min].LoadingBuffer_QueueLength >=1 ) 
+				pLink->m_LinkMOEAry [time_stamp_in_min].LoadingBuffer_TrafficStateCode  = 1;  // partially congested
+
 
 			// time_stamp_in_min+1 is because we take the stastistics to next time stamp
 			pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount =  pLink->CFlowArrivalCount;
@@ -1236,6 +1267,25 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 		}
 
+		// for loading buffer
+		NextCongestionTransitionTimeStamp = g_PlanningHorizon+10;  // // start with the initial value, no queue
+
+		for(time_min = g_PlanningHorizon-1; time_min>= g_DemandLoadingStartTimeInMin ; time_min--)  // move backward
+		{
+			// transition condition 1: from partial congestion to free-flow; action: move to the next lini
+			if(time_min>=1 && pLink->m_LinkMOEAry[time_min-1].LoadingBuffer_QueueLength >=1 && pLink->m_LinkMOEAry[time_min].LoadingBuffer_QueueLength==0)  // previous time_min interval has queue, current time_min interval has no queue --> end of congestion 
+			{
+				NextCongestionTransitionTimeStamp = time_min;			
+			}
+
+			if(pLink->m_LinkMOEAry[time_min].LoadingBuffer_QueueLength > 0 ) // there is queue at time time_min, but it is not end of queue
+			{
+				pLink->m_LinkMOEAry[time_min].LoadingBuffer_EndTimeOfCongestion  = NextCongestionTransitionTimeStamp;
+			}
+
+		}
+
+
 	
 		for(int hour = g_DemandLoadingStartTimeInMin/60; hour < g_PlanningHorizon/60+1; hour++)  // used for ODME
 			{
@@ -1247,6 +1297,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	}
 
 	float TotalTripTime = 0;
+	float TotalTravelTime = 0;
 	float TotalDelay = 0;
 	int VehicleSizeComplete = 0;
 	float TotalDistance =0;
@@ -1257,6 +1308,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		if((*iterVehicle)->m_bComplete)
 		{
 			TotalTripTime+= (*iterVehicle)->m_TripTime;
+			TotalTravelTime += (*iterVehicle)->m_TravelTime;
 			TotalDelay += (*iterVehicle)->m_Delay;
 			TotalDistance+= (*iterVehicle)->m_Distance ;
 			VehicleSizeComplete +=1;
@@ -1269,12 +1321,14 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	}
 
 	float AvgTravelTime = 0;
+	float AvgTripTime = 0;
 	float AvgDelay = 0;
 	float AvgDistance = 0;
 	float SwitchPercentage = 0;
 	if(VehicleSizeComplete>0)
 	{
-		AvgTravelTime = TotalTripTime /VehicleSizeComplete;
+		AvgTripTime = TotalTripTime /VehicleSizeComplete;
+		AvgTravelTime = TotalTravelTime /VehicleSizeComplete;
 		AvgDelay = TotalDelay /VehicleSizeComplete;
 		AvgDistance = TotalDistance /VehicleSizeComplete;
 		SwitchPercentage = (float)NumberofVehiclesSwitched*100.0f/VehicleSizeComplete;
@@ -1282,16 +1336,19 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 
 	output.NumberofVehiclesCompleteTrips = VehicleSizeComplete;
 	output.NumberofVehiclesGenerated = g_Number_of_GeneratedVehicles;
-	if(AvgTravelTime > 0)
+	if(AvgTripTime > 0)
 	{
+		output.AvgTripTime = AvgTripTime;
 		output.AvgTravelTime = AvgTravelTime;
 		output.AvgDelay = AvgDelay;
-		output.AvgTTI = AvgTravelTime/(AvgTravelTime - AvgDelay);  // (AvgTravelTime - AvgDelay) is the free flow travel time
+		output.AvgTTI = AvgTripTime/(AvgTripTime - AvgDelay);  // (AvgTripTime - AvgDelay) is the free flow travel time
 		output.AvgDistance = AvgDistance;
 		output.SwitchPercentage = SwitchPercentage;
+		output.AvgTravelTime  = AvgTravelTime;
 	}else
 	{
-		output.AvgTravelTime = 0;
+		output.AvgTripTime = 0;
+		output.AvgTravelTime  = 0;
 		output.AvgDelay = 0;
 		output.AvgTTI = 1;
 		output.AvgDistance = 0;
@@ -1301,9 +1358,9 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	if( Iteration == g_NumberOfIterations)  // output results at the last iteration
 	{
 			g_SimulationResult.number_of_vehicles  = g_VehicleVector.size();
-			g_SimulationResult.avg_travel_time_in_min = output.AvgTravelTime;
+			g_SimulationResult.avg_trip_time_in_min = output.AvgTripTime;
 			g_SimulationResult.avg_distance_in_miles = output.AvgDistance;
-			g_SimulationResult.avg_speed = output.AvgDistance/(max(0.1,output.AvgTravelTime)/60.0f);
+			g_SimulationResult.avg_speed = output.AvgDistance/(max(0.1,output.AvgTripTime)/60.0f);
 
 
 	}

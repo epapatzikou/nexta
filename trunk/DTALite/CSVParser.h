@@ -141,6 +141,8 @@ public:
 			istringstream ss(str_value);
 
 			T converted_value;
+
+			ss >> std::noskipws;
 			ss >> converted_value;
 
 			if(print_out)
@@ -184,6 +186,7 @@ public:
 
 			istringstream ss(str_value);
 
+			ss >> std::noskipws;
 			T converted_value;
 			ss >> converted_value;
 

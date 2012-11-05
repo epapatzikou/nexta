@@ -41,7 +41,7 @@ using namespace std;
 
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel ("DTALite:\nA Fast Open Source DTA Engine\n");
-	g_SummaryStatFile.WriteTextLabel("Software Version =,1.000\nRelease Date=,September 1st 2012\n");
+	g_SummaryStatFile.WriteTextLabel("Software Version =,1.001\nRelease Date=,November 1st 2012\n");
 
 	int scenario_no;
 	string scenario_name;
@@ -120,6 +120,7 @@ using namespace std;
 			csv_output.SetFieldName("avg_NOX_"+moe_category_label);
 			csv_output.SetFieldName("avg_CO_"+moe_category_label);
 			csv_output.SetFieldName("avg_HC_"+moe_category_label);
+			csv_output.SetFieldName("avg_MilesPerGallon_"+moe_category_label);
 			
 			if(moe_type.find("Link") != string::npos)  // Link MOE
 			{
@@ -317,10 +318,10 @@ using namespace std;
 		
 
 			int Count=0; 
-			float AvgTravelTime, AvgDistance, AvgSpeed, AvgCost;
+			float AvgTripTime, AvgDistance, AvgSpeed, AvgCost;
 			EmissionStatisticsData emission_data;
 			LinkMOEStatisticsData  link_data;
-			Count = g_OutputSimulationMOESummary(AvgTravelTime,AvgDistance, AvgSpeed,AvgCost, emission_data, link_data,
+			Count = g_OutputSimulationMOESummary(AvgTripTime,AvgDistance, AvgSpeed,AvgCost, emission_data, link_data,
 				demand_type,vehicle_type, information_type, origin_zone_id,destination_zone_id,
 				from_node_id, mid_node_id, to_node_id,	
 				departure_starting_time,departure_ending_time,entrance_starting_time,entrance_ending_time );
@@ -331,7 +332,7 @@ using namespace std;
 
 			csv_output.SetValueByFieldName ("#_of_vehicles_"+ moe_category_label,Count );
 			csv_output.SetValueByFieldName ("percentage_"+moe_category_label,percentage );
-			csv_output.SetValueByFieldName ("avg_travel_time(min)_"+moe_category_label,AvgTravelTime);
+			csv_output.SetValueByFieldName ("avg_travel_time(min)_"+moe_category_label,AvgTripTime);
 			csv_output.SetValueByFieldName ("avg_distance_"+moe_category_label,AvgDistance);
 			csv_output.SetValueByFieldName ("avg_speed_"+ moe_category_label,AvgSpeed);
 			csv_output.SetValueByFieldName ("avg_toll_cost_"+ moe_category_label,AvgCost);
@@ -342,6 +343,8 @@ using namespace std;
 			csv_output.SetValueByFieldName("avg_NOX_"+moe_category_label,emission_data.AvgNOX);
 			csv_output.SetValueByFieldName("avg_CO_"+moe_category_label,emission_data.AvgCO);
 			csv_output.SetValueByFieldName("avg_HC_"+moe_category_label,emission_data.AvgHC);
+			csv_output.SetValueByFieldName("avg_MilesPerGallon_"+moe_category_label,emission_data.AvgMilesPerGallon );
+
 
 				if(moe_type.find("Link")!=string::npos) // Link MOE
 				{
