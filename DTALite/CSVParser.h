@@ -17,21 +17,21 @@ using std::ostringstream;
 using namespace std;
 
 template <typename T>
-  string NumberToString ( T Number )
-  {
-     ostringstream ss;
-     ss << Number;
-     return ss.str();
-  }
+string NumberToString ( T Number )
+{
+	ostringstream ss;
+	ss << Number;
+	return ss.str();
+}
 
 
-  template <typename T>
-  T StringToNumber ( const string &Text )
-  {
-     istringstream ss(Text);
-     T result;
-     return ss >> result ? result : 0;
-  }
+template <typename T>
+T StringToNumber ( const string &Text )
+{
+	istringstream ss(Text);
+	T result;
+	return ss >> result ? result : 0;
+}
 class CCSVParser
 {
 public : ifstream inFile;
@@ -44,14 +44,14 @@ private:
 	map<string,int> FieldsIndices;
 
 	vector<string> ParseLine(string line);
-	
+
 public:
 	CCSVParser(void);
 	bool OpenCSVFile(string fileName, bool b_required = true);
 	void CloseCSVFile(void);
 	bool ReadRecord();
 
-			template <class T> bool GetValueByFieldNameRequired(string field_name, T& value)
+	template <class T> bool GetValueByFieldNameRequired(string field_name, T& value)
 	{
 		bool required_field = true;
 		bool print_out = false;
@@ -60,7 +60,7 @@ public:
 			if(required_field)
 			{
 				cout << "Field " << field_name << " in file " << mFileName << " does not exist. Please check the file."  << endl;
-			
+
 				g_ProgramStop();
 			}
 			return false;
@@ -90,7 +90,7 @@ public:
 
 			if(print_out)
 			{
-			cout << "Field " << field_name << " = " << converted_value << endl;
+				cout << "Field " << field_name << " = " << converted_value << endl;
 			}
 
 			if (/*!ss.eof() || */ ss.fail())
@@ -104,7 +104,7 @@ public:
 	}
 
 
-		template <class T> bool GetValueByFieldNameWithPrintOut(string field_name, T& value)
+	template <class T> bool GetValueByFieldNameWithPrintOut(string field_name, T& value)
 	{
 		bool required_field = true;
 		bool print_out = true;
@@ -113,7 +113,7 @@ public:
 			if(required_field)
 			{
 				cout << "Field " << field_name << " in File " << mFileName << " does not exit."  << endl;
-			
+
 				g_ProgramStop();
 			}
 			return false;
@@ -147,7 +147,7 @@ public:
 
 			if(print_out)
 			{
-			cout << "Field " << field_name << " = " << converted_value << endl;
+				cout << "Field " << field_name << " = " << converted_value << endl;
 			}
 
 			if (/*!ss.eof() || */ ss.fail())
@@ -201,7 +201,40 @@ public:
 		}
 	}
 
-	template <> bool GetValueByFieldName<string>(string field_name, string& value)
+	bool GetValueByFieldNameWithPrintOut(string field_name, string& value)
+	{
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				return false;
+			}
+
+			int index = FieldsIndices[field_name];
+			int size = LineFieldsValue.size();
+
+			if(FieldsIndices[field_name]>= LineFieldsValue.size())
+			{
+				return false;
+			}
+			if (LineFieldsValue[FieldsIndices[field_name]].length() <= 0)
+			{
+				return false;
+			}
+			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+
+
+			value = str_value;
+			return true;
+		}
+	}
+
+	bool GetValueByFieldName(string field_name, string& value)
 	{
 		if (FieldsIndices.find(field_name) == FieldsIndices.end())
 		{
@@ -239,7 +272,7 @@ public:
 
 class CCSVWriter
 {
-	public : 
+public : 
 	ofstream outFile;
 	char Delimiter;
 	int FieldIndex;
@@ -254,7 +287,7 @@ class CCSVWriter
 public:
 	void SetRowTitle(bool flag)
 	{
-	row_title = flag;
+		row_title = flag;
 	}
 
 	bool OpenCSVFile(string fileName, bool b_required=true);
@@ -267,7 +300,7 @@ public:
 		}
 		else
 		{
-			
+
 			LineFieldsValue[FieldsIndices[field_name]] = NumberToString(value);
 
 			return true;
@@ -277,11 +310,11 @@ public:
 	void Reset()
 	{
 
-	LineFieldsValue.clear();
-	LineFieldsName.clear();
-	LineFieldsCategoryName.clear();
-	FieldsIndices.clear();
-	
+		LineFieldsValue.clear();
+		LineFieldsName.clear();
+		LineFieldsCategoryName.clear();
+		FieldsIndices.clear();
+
 	}
 	void SetFieldName(string field_name)
 	{ 
@@ -298,7 +331,7 @@ public:
 		LineFieldsCategoryName.push_back(category_name);
 
 	}
-	
+
 
 	void WriteTextString(CString textString)
 	{
@@ -347,7 +380,7 @@ public:
 
 		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
 		{
-		outFile << LineFieldsCategoryName[i] << ",";
+			outFile << LineFieldsCategoryName[i] << ",";
 		}
 		outFile << endl;
 
@@ -356,7 +389,7 @@ public:
 
 		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
 		{
-		outFile << LineFieldsName[i] << ",";
+			outFile << LineFieldsName[i] << ",";
 		}
 
 		outFile << endl;
@@ -381,50 +414,50 @@ public:
 	}
 
 	CCSVWriter::CCSVWriter()
-{
-	row_title = false;
-	FieldIndex = 0;
-	Delimiter = ',';
-	IsFirstLineHeader = true;
-}
-
-CCSVWriter::~CCSVWriter(void)
-{
-	if (outFile.is_open()) outFile.close();
-}
-
-
-CCSVWriter::CCSVWriter(string fileName)
-{
-	Open(fileName);
-	
-};
-
-void CCSVWriter::Open(string fileName)
-{
-	outFile.open(fileName.c_str());
-
-	if (outFile.is_open()==false)
 	{
-	cout << "File " << fileName.c_str() << " cannot be opened." << endl;
-	getchar();
-	exit(0);
+		row_title = false;
+		FieldIndex = 0;
+		Delimiter = ',';
+		IsFirstLineHeader = true;
 	}
-	
-};
 
-void CCSVWriter::OpenAppend(string fileName)
-{
-	outFile.open(fileName.c_str(), fstream::app);
-
-	if (outFile.is_open()==false)
+	CCSVWriter::~CCSVWriter(void)
 	{
-	cout << "File " << fileName.c_str() << " cannot be opened." << endl;
-	getchar();
-	exit(0);
+		if (outFile.is_open()) outFile.close();
 	}
-	
-};
+
+
+	CCSVWriter::CCSVWriter(string fileName)
+	{
+		Open(fileName);
+
+	};
+
+	void CCSVWriter::Open(string fileName)
+	{
+		outFile.open(fileName.c_str());
+
+		if (outFile.is_open()==false)
+		{
+			cout << "File " << fileName.c_str() << " cannot be opened." << endl;
+			getchar();
+			exit(0);
+		}
+
+	};
+
+	void CCSVWriter::OpenAppend(string fileName)
+	{
+		outFile.open(fileName.c_str(), fstream::app);
+
+		if (outFile.is_open()==false)
+		{
+			cout << "File " << fileName.c_str() << " cannot be opened." << endl;
+			getchar();
+			exit(0);
+		}
+
+	};
 };
 
 
