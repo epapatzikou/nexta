@@ -220,7 +220,7 @@ void CLinePlotTestDlg::OnBtnCurrRemove()
 void CLinePlotTestDlg::OnResizePlot() 
 {
 
-	for(int nIndex= m_LinePlot.Count(); nIndex--; nIndex>=0)
+	for(int nIndex= m_LinePlot.Count(); nIndex>=0; nIndex--)
 	{
 		m_LinePlot.Remove(nIndex);
 	}

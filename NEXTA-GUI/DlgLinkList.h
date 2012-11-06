@@ -50,4 +50,5 @@ public:
 	BOOL m_ZoomToSelectedLink;
 	CString m_StrDocTitles;
 
+	afx_msg void OnBnClickedCheckZoomToSelectedLink();
 };

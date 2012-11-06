@@ -288,7 +288,7 @@ void CXLAutomation::ClearAllArgs()
  *  Clears a particular variant structure and releases any external objects
  *  or memory contained in the variant.  Supports the data types listed above.
  */
-void CXLAutomation::ReleaseVariant(VARIANTARG *pvarg)
+int CXLAutomation::ReleaseVariant(VARIANTARG *pvarg)
 {
 	VARTYPE vt;
 	VARIANTARG *pvargArray;
@@ -324,7 +324,9 @@ void CXLAutomation::ReleaseVariant(VARIANTARG *pvarg)
 		}
 		else 
 		{
-			MessageBox(NULL, _T("ReleaseVariant: Array contains non-variant type"), "Failed", MB_OK | MB_ICONSTOP);
+			return 1; //  non-variant type
+
+			// MessageBox(NULL, _T("ReleaseVariant: Array contains non-variant type"), "Failed", MB_OK | MB_ICONSTOP);
 		}
 		
 		// Free the array itself.
@@ -351,12 +353,15 @@ void CXLAutomation::ReleaseVariant(VARIANTARG *pvarg)
 				break;
 				
 			default:
-				MessageBox(NULL, _T("ReleaseVariant: Unknown type"), "Failed", MB_OK | MB_ICONSTOP);
+
+				return 2; //unknonw type
+				// MessageBox(NULL, _T("ReleaseVariant: Unknown type"), "Failed", MB_OK | MB_ICONSTOP);
 				break;
 		}
 	}
 	
 	ClearVariant(pvarg);
+	return 0;
 
 }
 
@@ -570,7 +575,15 @@ BOOL CXLAutomation::SetCellsValueToString(double Column, double Row, CString szS
     AddArgumentCString(NULL, 0, szStr );
 	if (!ExlInvoke(vargRng.pdispVal, L"Value", NULL, DISPATCH_PROPERTYPUT, 0))
 		return FALSE;
-	ReleaseVariant(&vargRng);
+
+
+	if(ReleaseVariant(&vargRng)>=1)
+	{
+	
+	CString error;
+	error.Format("Error in outputing row %d, colume %d, value %s", Row, Column, szStr);
+	AfxMessageBox(error);
+	}
 	
 	
 	return TRUE;
@@ -915,7 +928,7 @@ void CXLAutomation::ShowException(LPOLESTR szMember, HRESULT hr, EXCEPINFO *pexc
 			break;
 	}
 	
-	MessageBox(NULL, szBuf, "OLE Error", MB_OK | MB_ICONSTOP);
+// comment out in automation	MessageBox(NULL, szBuf, "OLE Error", MB_OK | MB_ICONSTOP);
 
 }
 //Delete entire line from the current worksheet
@@ -993,7 +1006,7 @@ CString CXLAutomation::GetCellValueCString(int nColumn, int nRow)
 				{
 					unsigned char nChr = vargValue.bVal;
 // comment out					szValue = nChr;
-				}
+				} 
 				break;
 			case VT_I4:
 				{
@@ -1235,6 +1248,7 @@ BOOL CXLAutomation::InsertPictureToWorksheet(BYTE *pImage, int Column, int Row, 
 //Open Microsoft Excel file and switch to the firs available worksheet. 
 BOOL CXLAutomation::OpenExcelFile(CString szFileName)
 {
+
 	//Leave if the file cannot be open
 	if(NULL == m_pdispExcelApp)
 		return FALSE;

@@ -20,7 +20,9 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, LaneCapacity(0)
 	, nLane(0)
 	, m_LinkID(0)
-	, m_StreetName(_T(""))
+	, SaturationFlowRate(0)
+	, EffectiveGreenTime(0)
+	, StreetName(_T(""))
 {
 
 }
@@ -47,7 +49,13 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, nLane, 0, 10);
 	DDX_Control(pDX, IDC_COMBO1, m_LinkTypeComboBox);
 	DDX_Text(pDX, IDC_EDIT_LINKID, m_LinkID);
-	DDX_Text(pDX, IDC_EDIT_LINKID2, m_StreetName);
+	DDX_Text(pDX, IDC_EDIT_SATURATION_FLOW_RATE, SaturationFlowRate);
+	DDV_MinMaxInt(pDX, SaturationFlowRate, 0, 5000);
+	DDX_Text(pDX, IDC_EDIT_EFFECTIVE_GREEN_TIME, EffectiveGreenTime);
+	DDV_MinMaxInt(pDX, EffectiveGreenTime, 0, 400);
+	DDX_Text(pDX, IDC_EDIT_STREET_NAME, StreetName);
+    DDV_MaxChars(pDX, StreetName, 100);
+
 }
 
 

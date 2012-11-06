@@ -35,7 +35,7 @@
 #include ".\\cross-resolution-model\\SignalNode.h"
 #include ".\\RailNetwork\\RailNetwork.h"
 
-#include "Transit.h"
+
 #include <iostream>
 #include <fstream>
 
@@ -48,7 +48,7 @@ enum layer_mode
 { 
 	layer_node = 0,
 	layer_link,
-	layer_link_label,
+	layer_movement,
 	layer_zone,
 	layer_connector,
 	layer_link_MOE,
@@ -60,11 +60,11 @@ enum layer_mode
 	layer_VMS,
 	layer_toll,
 	layer_ramp,
-	layer_bluetooth,
+	layer_transit,
 	layer_GPS
 };
 
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_vcratio,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_density, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -113,6 +113,7 @@ public:
 	}
 
 };
+#define _TOTAL_NUMBER_OF_PROJECTS 5
 class PathStatistics
 {
 public: 
@@ -123,6 +124,15 @@ public:
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
+
+		for(int i = 0; i< _TOTAL_NUMBER_OF_PROJECTS; i++)
+		{
+		 TotalVehicleSizeVector[i] = 0;
+		 TotalTravelTimeVector[i] = 0;
+		 TotalDistanceVector[i] = 0;
+		 TotalCostVector[i] = 0;
+		 TotalEmissionsVector[i] = 0;
+		}
 	}
 
 	float GetAvgTravelTime()
@@ -134,7 +144,6 @@ public:
 	int	  Destination;
 	int   NodeNumberSum;
 	int   NodeSize;
-	int   TotalVehicleSize;
 
 	CString GetPathLabel()
 	{
@@ -150,12 +159,24 @@ public:
 	std::vector<DTAVehicle*> m_VehicleVector;
 
 
+	int date_id;
+	float departure_time_in_min;
+
+	int   TotalVehicleSize;
 	float TotalTravelTime;
 	float TotalDistance;
 	float TotalCost;
 	float TotalEmissions;
-	CVehicleEmission emissiondata;
 
+
+	int   TotalVehicleSizeVector[_TOTAL_NUMBER_OF_PROJECTS];
+	float TotalTravelTimeVector[_TOTAL_NUMBER_OF_PROJECTS];
+	float TotalDistanceVector[_TOTAL_NUMBER_OF_PROJECTS];
+	float TotalCostVector[_TOTAL_NUMBER_OF_PROJECTS];
+	float TotalEmissionsVector[_TOTAL_NUMBER_OF_PROJECTS];
+
+
+	CVehicleEmission emissiondata;
 
 };
 
@@ -166,6 +187,15 @@ public:
 	int Phase1;
 	int PermPhase1;
 	int DetectPhase1;
+	int EffectiveGreen;
+	int Capacity;
+	float VOC;
+	float Delay;
+	char LOS;
+	float DischargeRate;
+
+
+
 
 	Movement3Node()
 	{
@@ -173,6 +203,13 @@ public:
 		Phase1 = -1;  // default value
 		PermPhase1 = -1;
 		DetectPhase1 = -1;
+
+		EffectiveGreen = 0;
+		Capacity = 0;
+		VOC = 0;
+		Delay = 0;
+		LOS = 'A';
+		DischargeRate = 0;
 	}
 
 };
@@ -181,7 +218,9 @@ class CTLiteDoc : public CDocument
 {
 public: // create from serialization only
 
+
 	CTLiteDoc();
+
 
 
 	DECLARE_DYNCREATE(CTLiteDoc)
@@ -189,10 +228,17 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	std::vector <int> m_ZoneIDVector;
+	std::vector <int> m_ZoneNumberVector;
+
+	VehicleStatistics*** m_ODMOEMatrix;
+
+	int m_DemandTypeSize; 
+
+
+	void ResetODMOEMatrix();
 
 	void ShowTextLabel();
-
-
 
 	int FindClosestNode(GDPoint point)
 	{
@@ -218,6 +264,7 @@ public:
 		return SelectedNodeID;
 
 	}
+
 
 	std::map<std::string,std::string> m_KML_style_map;
 
@@ -281,6 +328,7 @@ public:
 	float m_Doc_Resolution;
 
 	int m_ODSize;
+	int m_ZoneNoSize;
 	Link_MOE m_LinkMOEMode;
 	Link_MOE m_PrevLinkMOEMode;
 
@@ -315,6 +363,7 @@ public:
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
 	bool ReadGPSData(string FileName);
 	bool m_bDYNASMARTDataSet;
+	bool m_bGPSDataSet;
 
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
@@ -327,7 +376,7 @@ public:
 	void OpenWarningLogFile(CString directory);
 	// two basic input
 	bool ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName);   // for road network
-	bool ReadNodeCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo=0);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
 	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
@@ -382,6 +431,7 @@ public:
 	int FindUniqueLinkID();
 
 	bool ReadTransitFiles(CString ProjectFolder);   // for road network
+	bool TransitTripMatching();
 
 	void OffsetLink();
 	bool m_bBezierCurveFlag;
@@ -429,8 +479,6 @@ public:
 	bool WriteIncidentScenarioData();
 	bool WriteWorkZoneScenarioData();
 
-
-
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
 	bool ReadLinkGeoFile(LPCTSTR lpszFileName);
 	bool ReadZoneGeoFile(LPCTSTR lpszFileName); 
@@ -445,7 +493,7 @@ public:
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
-	void ReadSimulationLinkStaticMOEData(LPCTSTR lpszFileName);
+	void ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
@@ -498,7 +546,8 @@ public:
 	DTALink* FindLinkFromSensorLocation(float x, float y, CString orientation);
 
 	int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
-	float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime);
+	bool GetGPSVehilePosition(DTAVehicle* pVehicle, double CurrentTime, GDPoint & pt);
+
 	float GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode, int CurrentTime,  int AggregationIntervalInMin, float &value);
 
 	CString GetTurnString(DTA_Turn turn)
@@ -515,20 +564,61 @@ public:
 		return str;
 	}
 
-	int GetLOSCode(float Power)
+	CString GetTurnDirectionString(DTA_APPROACH_TURN turn_dir)
 	{
+		CString str;
+		switch (turn_dir)
+		{
+		case DTA_LANES_COLUME_init: str.Format("N/A"); break;
+		case DTA_NBL2: str.Format("NBL2"); break;
+		case DTA_NBL: str.Format("NBL"); break;
+		case DTA_NBT: str.Format("NBT"); break;
+		case DTA_NBR: str.Format("NBR"); break;
+		case DTA_NBR2: str.Format("NBR2"); break;
+		case DTA_SBL2: str.Format("SBL2"); break;
+		case DTA_SBL: str.Format("SBL"); break;
+		case DTA_SBT: str.Format("SBT"); break;
+		case DTA_SBR: str.Format("SBR"); break;
+		case DTA_SBR2: str.Format("SBR2"); break;
+		case DTA_EBL2: str.Format("EBL2"); break;
+		case DTA_EBL: str.Format("EBL"); break;
+		case DTA_EBT: str.Format("EBT"); break;
+		case DTA_EBR: str.Format("EBR"); break;
+		case DTA_EBR2: str.Format("EBR2"); break;
+		case DTA_WBL2: str.Format("WBL2"); break;
+		case DTA_WBL: str.Format("WBL"); break;
+		case DTA_WBT: str.Format("WBT"); break;
+		case DTA_WBR: str.Format("WBR"); break;
+		case DTA_WBR2: str.Format("WBR2"); break;
+		case DTA_NEL: str.Format("NEL"); break;
+		case DTA_NET: str.Format("NET"); break;
+		case DTA_NER: str.Format("NER"); break;
+		case DTA_NWL: str.Format("NWL"); break;
+		case DTA_NWT: str.Format("NWT"); break;
+		case DTA_NWR: str.Format("NWR"); break;
+		case DTA_SEL: str.Format("SEL"); break;
+		case DTA_SET: str.Format("SET"); break;
+		case DTA_SER: str.Format("SER"); break;
+		case DTA_SWL: str.Format("SWL"); break;
+		case DTA_SWT: str.Format("SWT"); break;
+		case DTA_SWR: str.Format("SWR"); break;
 
-		if(m_LinkMOEMode == MOE_speed)
-			Power *=100;
+		default :  str.Format("N/A");
+		}
+
+		return str;
+	}
+	int GetLOSCode(float Value)
+	{
 
 		for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 		{
-			if( (m_LOSBound[m_LinkMOEMode][los] <= Power && Power < m_LOSBound[m_LinkMOEMode][los+1]) ||
-				(m_LOSBound[m_LinkMOEMode][los] >= Power && Power > m_LOSBound[m_LinkMOEMode][los+1]))
+			if( (m_LOSBound[m_LinkMOEMode][los] <= Value && Value < m_LOSBound[m_LinkMOEMode][los+1]) ||
+				(m_LOSBound[m_LinkMOEMode][los] >= Value && Value > m_LOSBound[m_LinkMOEMode][los+1]))
 
 				return los;
 		}
-		return 0;
+		return 1;
 	}
 
 public:
@@ -550,8 +640,6 @@ public:
 	std::map<int, DTAZone>	m_ZoneMap;
 	int m_CriticalOriginZone;
 	int m_CriticalDestinationZone;
-
-	VehicleStatistics** m_ODMOEMatrix;
 
 	int GetZoneID(GDPoint pt)
 	{
@@ -599,6 +687,7 @@ public:
 	std::map<long, CAVISensorPair> m_AVISensorMap;
 
 	std::map<int, DTANode*> m_NodeIDMap;
+	std::map<int, DTANode*> m_NodeNumberMap;
 
 	std::map<int, DTANode*> m_SubareaNodeIDMap;
 	bool CTLiteDoc::WriteSubareaFiles();
@@ -633,6 +722,7 @@ public:
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
+	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id);
 
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 
@@ -670,7 +760,7 @@ public:
 	std::map<int, int> m_NodeNametoIDMap;
 	std::map<int, int> m_NodeIDtoZoneNameMap;
 
-	int m_SelectedLinkID;
+	int m_SelectedLinkNo;
 	void ZoomToSelectedLink(int SelectedLinkNo);
 	void ZoomToSelectedNode(int SelectedNodeNumber);
 
@@ -694,6 +784,11 @@ public:
 	int m_ControlType_PretimedSignal;
 	int m_ControlType_ActuatedSignal;
 	int m_ControlType_Roundabout;
+
+	int m_LinkTypeFreeway;
+	int m_LinkTypeArterial;
+	int m_LinkTypeHighway;
+
 
 
 	std::vector<DTAVOTDistribution> m_VOTDistributionVector;
@@ -740,6 +835,7 @@ public:
 		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
+
 		m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
 
 		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
@@ -753,7 +849,7 @@ public:
 		pLink->m_NumLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
 		pLink->m_ReversedSpeedLimit = m_DefaultSpeedLimit;
-		pLink->m_StaticSpeed = m_DefaultSpeedLimit;
+		pLink->m_avg_simulated_speed = m_DefaultSpeedLimit;
 		pLink->m_Length= pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -847,6 +943,14 @@ public:
 		{
 			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == NodeID)
 			{
+
+				int ZoneID = (*iNode)->m_ZoneID;
+
+				m_ZoneMap[ZoneID].RemoveNodeActivityMode ((*iNode)->m_NodeNumber);
+				
+				m_NodeIDMap[(*iNode)->m_NodeID ] = NULL;
+				m_NodeNametoIDMap[(*iNode)->m_NodeNumber  ] = -1;
+
 				m_NodeSet.erase  (iNode);
 				return true;
 			}
@@ -854,6 +958,8 @@ public:
 
 		return false;
 	}
+
+	
 
 	bool DeleteLink(int LinkNo)
 	{
@@ -961,7 +1067,7 @@ public:
 	std::vector<DTA_NodePhaseSet> m_PhaseVector;
 
 	// 	void ConstructMovementVector(bool flag_Template);
-	void ConstructMovementVectorForEachNode();
+	void Construct4DirectionMovementVector(bool ResetFlag = false);
 	void AssignUniqueLinkIDForEachLink();
 
 	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
@@ -986,6 +1092,7 @@ public:
 
 	std::map<CString, Movement3Node> m_Movement3NodeMap;  // turnning movement count
 
+	std::map<CString, DTANodeMovement*> m_MovementPointerMap;  // turnning movement pointer
 
 	void GeneratePathFromVehicleData();
 	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
@@ -997,11 +1104,14 @@ public:
 	CString m_GISMessage;
 
 	void ExportSynchroVersion6Files();
+	bool m_bMovementAvailableFlag;
 	void ExportQEMData(int NodeNumber);
 	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
 	CString m_Synchro_ProjectDirectory;
 
 	void ExportOGRShapeFile();
+
+	bool m_ImportNetworkAlready;
 	void ImportOGRShapeFile(CString FileName);
 
 
@@ -1014,13 +1124,14 @@ public:
 
 	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
 
-	DTA_Approach g_Angle_to_Approach_New(int angle);
+	DTA_Approach g_Angle_to_Approach_8_direction(int angle);
+	DTA_Approach g_Angle_to_Approach_4_direction(int angle);
+	
 	DTA_Approach Find_Closest_Angle_to_Approach(int angle);
 
 	std::map<DTA_Approach,int> m_ApproachMap;
 
 	std::map<DTA_Approach,DTA_Approach> m_OpposingDirectionMap;
-
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1065,6 +1176,27 @@ public:
 				return (*iNode);
 		}
 		return NULL;
+	}
+
+		DTANode* FindSignalNodeWithCoordinate(double x, double y, int LayerNo = 0, double min_distance = 9999999)
+	{
+		
+		DTANode* pNode= NULL;
+
+		int NodeID = -1;
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if((*iNode)->m_LayerNo == LayerNo && (*iNode)->m_ControlType == m_ControlType_PretimedSignal)
+			{
+			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
+			if( distance <  min_distance)
+			{
+				min_distance= distance;
+				pNode = (*iNode);
+			}
+			}
+		}
+		return pNode;
 	}
 
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
@@ -1112,7 +1244,7 @@ public:
 	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote);
 	CString GetTimeStampFloatingPointStrFromIntervalNo(int time_interval);
 
-	CString GetTimeStamString(int time_stamp_in_min);
+	CString GetTimeStampString(int time_stamp_in_min);
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
 
@@ -1156,6 +1288,10 @@ public:
 	void Constructandexportsignaldata();
 	void ConstructandexportVISSIMdata();
 	void ReadSynchroUniversalDataFiles();
+
+	bool ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName);
+
+
 	bool ReadSynchroLayoutFile(LPCTSTR lpszFileName);
 	bool ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LPCTSTR lpszFileName);
 	bool ReadSynchroLaneFile(LPCTSTR lpszFileName);
@@ -1170,7 +1306,7 @@ public:
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
-	BOOL SaveProject(LPCTSTR lpszPathName);
+	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo);
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
 	{
@@ -1208,6 +1344,8 @@ public:
 	CString m_SampleNGSIMDataFile;
 
 	// Implementation
+	void GenerateMovementCountFromVehicleFile();
+	void MapSignalDataAcrossProjects();
 public:
 	virtual ~CTLiteDoc();
 #ifdef _DEBUG
@@ -1347,7 +1485,7 @@ public:
 	afx_msg void OnLinkViewlink();
 	afx_msg void OnDeleteSelectedLink();
 	afx_msg void OnImportRegionalplanninganddtamodels();
-	afx_msg void OnExportGeneratezone();
+	afx_msg void OnExportGenerateTravelTimeMatrix();
 	afx_msg void OnExportGenerateshapefiles();
 	afx_msg void OnLinkmoedisplayQueuelength();
 	afx_msg void OnUpdateLinkmoedisplayQueuelength(CCmdUI *pCmdUI);
@@ -1397,6 +1535,14 @@ public:
 	afx_msg void OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI);
 	afx_msg void OnToolsGeneratesignalcontrollocations();
 	afx_msg void OnAssignmentSimulatinSettinsClicked();
+	afx_msg void OnProjectNetworkData();
+	afx_msg void OnLinkAddsensor();
+	afx_msg void OnImportSynchrocombinedcsvfile();
+	afx_msg void OnToolsObtainCyclelengthfromNearbySignals();
+	afx_msg void OnToolsSaveprojectforexternallayer();
+	afx_msg void OnToolsUpdateeffectivegreentimebasedoncyclelength();
+	afx_msg void OnMoeTableDialog();
+	afx_msg void OnToolsObtaintrafficcontroldatafromreferencenetwork();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

@@ -232,22 +232,13 @@ bool CTLiteDoc::ReadGPSDataFile(LPCTSTR lpszFileName)
 		int m_OriginZoneID = GetZoneIDFromShapePoints(pt_origin);
 		int m_DestinationZoneID  = GetZoneIDFromShapePoints( pt_destination);
 
-			CString label;
-						// reuse label as OD label
-			label.Format("%d,%d", m_OriginZoneID  , m_DestinationZoneID);
-			m_ODProbeMatrixMap[label].Origin = m_OriginZoneID;
-			m_ODProbeMatrixMap[label].Destination  = m_DestinationZoneID;
-			m_ODProbeMatrixMap[label].TotalVehicleSize+=1;
-			m_ODProbeMatrixMap[label].TotalTravelTime  += trajecory_travel_time/60 ;
-
 		}
 
   
     }
 
 	fclose(pFile);
-	return false;
-
+	
 	return true;
 
 	}else
@@ -320,7 +311,6 @@ bool CTLiteDoc::ReadGPSCSVFile(LPCTSTR lpszFileName)
     if (parser.OpenCSVFile(lpszFileName))
     {    
         m_VehicleSet.clear();
-        float x1, y1, x2, y2;
         float TrajecoryTravelTime;
         DTAVehicle* pVehicle = 0;
         std::vector<string> SeperatedStrings;

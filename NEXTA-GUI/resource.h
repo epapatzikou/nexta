@@ -25,6 +25,7 @@
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_HTML_DLG_DEMANDTYPE         103
+#define IDR_HTML_DLG_DISPLAY_CONFIGURATION_NODE 104
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
@@ -94,6 +95,7 @@
 #define IDD_NSCHART_VEHICLE_DIALOG      192
 #define IDR_MAINFRAME_RAIL              192
 #define IDD_VISUALIZATION_CONFIG        193
+#define IDR_VIEW_TOOLBAR_NU             193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDD_DIALOG_Legend               196
@@ -119,6 +121,10 @@
 #define IDR_MENU_PATH_INFO              222
 #define IDD_DIALOG_ASSIGNMENTSIM_SETTINGS 223
 #define IDD_DIALOG_SETTING_TAB          224
+#define IDD_DIALOG_NETWORK_DATA         225
+#define IDD_DIALOG_DISPLAY_CONFIG       227
+#define IDD_DIALOG_NodeProperties       228
+#define IDD_DIALOG_NODE_MOVEMENTS       229
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -140,12 +146,15 @@
 #define IDC_EDIT_LINKID                 1007
 #define IDC_VALUE                       1008
 #define IDC_EDIT_LINKID2                1008
+#define IDC_EDIT_STREET_NAME            1008
 #define IDC_ADD                         1009
 #define ID_BTN_PRINT                    1009
 #define IDC_PATH_LIST_CONTROL           1010
 #define IDC_DEL                         1010
 #define ID_BTN_SAVE_TO_FILE             1010
+#define IDC_EDIT_SATURATION_FLOW_RATE   1010
 #define IDC_MODIFY                      1011
+#define IDC_EDIT_EFFECTIVE_GREEN_TIME   1011
 #define IDC_TRAIN_LIST_CONTROL          1013
 #define IDC_LIST_NETEWORK_FILE          1014
 #define IDC_LIST_NETEWORK_FILE2         1015
@@ -231,6 +240,7 @@
 #define IDC_BUTTON_SAVE_SC              1058
 #define IDC_BTN_DELTURN                 1058
 #define IDC_BUTTON_EDIT_DATA_IN_EXCEL   1058
+#define IDC_COMBO_DayNo                 1058
 #define IDC_EDIT_NodeShapeFile          1059
 #define IDC_EDIT_LinkShapeFile          1060
 #define IDC_EDIT_Demand_CSV_File        1060
@@ -322,6 +332,7 @@
 #define IDC_LIST_GISLAYER               1122
 #define IDC_LIST_FEATURE_INFO           1123
 #define IDC_BUTTON_Database             1124
+#define IDC_BUTTON_Configuration        1125
 #define IDC_TaskLIST                    1126
 #define IDC_CHECK_NORM                  1127
 #define IDC_LANE_P                      1128
@@ -330,6 +341,17 @@
 #define IDC_EDIT_CYCLE_LENGTH           1131
 #define IDC_SETTING_TAB                 1132
 #define IDC_BUTTON_COPY                 1133
+#define IDC_LIST_INFO                   1135
+#define IDC_LIST_NODE_TEXT_LABEL        1136
+#define IDC_LIST_LINK_TEXT_LABEL        1137
+#define IDC_EDIT_NODE_ID                1137
+#define IDC_LIST_ZONE_TEXT_LABEL        1138
+#define IDC_LIST_MOVEMENT_TEXT_LABEL    1139
+#define IDC_MOE_AGGREGATION_INTERVAL_LIST 1140
+#define IDC_LIST_GPS_TEXT_LABEL         1141
+#define IDC_COMBO_MovementTextBoxSize   1142
+#define IDC_LIST_Size_Text_Control      1143
+#define IDC_CHECK_ZOOM_TO_SELECTED_OBJECT 1143
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -908,14 +930,28 @@
 #define ID_PATH_DATA_EXPORT_CSV         33485
 #define ID_DATA_IMPORT_CSV              33486
 #define ID_Menu33487                    33487
+#define ID_AssigngmentSimulationSettings 33488
+#define ID_PROJECT_1                    33489
+#define ID_PROJECT_1_NETWORK            33490
+#define ID_LINK_ADDSENSOR               33491
+#define ID_IMPORT_SYNCHROCOMBINEDCSVFILE 33492
+#define ID_TOOLS_OBTAINCYCLELENGTHFROM  33494
+#define ID_EDIT_NETWORKMAPPINGMODE      33495
+#define ID_NETWORKMAPPINGMODE_ENABLENETWORK 33496
+#define ID_NETWORKMAPPINGMODE_SHIFT     33497
+#define ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER 33498
+#define ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH 33499
+#define ID_NODE_NODEPROPERTIES          33500
+#define ID_MOE_MOE                      33501
+#define ID_TOOLS_OBTAINTRAFFICCONTROLDATAFROMREFERENCENETWORK 33502
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        223
-#define _APS_NEXT_COMMAND_VALUE         33488
-#define _APS_NEXT_CONTROL_VALUE         1134
-#define _APS_NEXT_SYMED_VALUE           104
+#define _APS_NEXT_RESOURCE_VALUE        228
+#define _APS_NEXT_COMMAND_VALUE         33503
+#define _APS_NEXT_CONTROL_VALUE         1144
+#define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

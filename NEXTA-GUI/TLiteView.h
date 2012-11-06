@@ -44,6 +44,116 @@ enum tool
    subarea_tool
    };
 
+enum link_text_display_mode
+   { link_display_none = 0, 
+   link_display_link_MOE,
+   link_display_street_name, 
+   link_display_from_id_to_id, 
+   link_display_speed_limit, 
+   link_display_length, 
+   link_display_free_flow_travel_time, 
+   link_display_number_of_lanes, 
+   link_display_link_capacity_per_hour,
+   link_display_lane_capacity_per_hour,
+   link_display_saturation_flow_rate,
+   link_display_effective_green_time_length_in_second,
+   link_display_effective_green_time_length_in_second_positive_number_only,
+   link_display_green_start_time_in_second,
+   link_display_link_grade,
+   link_display_jam_density_in_vhc_pmpl,
+   link_display_wave_speed_in_mph,
+   link_display_link_type_in_text,
+   link_display_link_type_in_number,
+   link_display_internal_link_id,
+	link_display_Num_Driveways_Per_Mile,
+	link_display_volume_proportion_on_minor_leg,
+	link_display_Num_3SG_Intersections, 
+	link_display_Num_3ST_Intersections, 
+	link_display_Num_4SG_Intersections,
+	link_display_Num_4ST_Intersections,
+
+	link_display_total_link_volume,
+	link_display_volume_over_capacity_ratio,
+	link_display_LevelOfService,
+	link_display_avg_waiting_time_on_loading_buffer,
+	link_display_avg_simulated_speed,
+	link_display_total_sensor_link_volume,
+	link_display_total_link_count_error,
+	link_display_simulated_AADT,
+	link_display_number_of_crashes,
+	link_display_num_of_fatal_and_injury_crashes_per_year,
+	link_display_num_of_PDO_crashes_per_year,
+
+	link_display_number_of_intersection_crashes,
+	link_display_num_of_intersection_fatal_and_injury_crashes_per_year,
+	link_display_num_of_intersection_PDO_crashes_per_year
+
+
+};
+enum movement_text_display_mode
+   { 
+   movement_display_none = 0, 
+   movement_display_turn_type, 
+   movement_display_turn_up_node_number, 
+   movement_display_turn_dest_node_number, 
+   movement_display_turn_three_node_numbers, 
+   movement_display_turn_protected_permited_prohibitted,
+   movement_display_sim_turn_count, 
+   movement_display_sim_turn_hourly_count,
+   movement_display_sim_turn_percentage, 
+   movement_display_sim_turn_delay, 
+
+   movement_display_obs_turn_count, 
+   movement_display_obs_turn_hourly_count,
+   movement_display_obs_turn_percentage, 
+   movement_display_obs_turn_delay, 
+
+   movement_display_QEM_TurnDirection,
+   movement_display_QEM_Lanes,
+   movement_display_QEM_Shared,
+   movement_display_QEM_Width,
+   movement_display_QEM_Storage,
+   movement_display_QEM_StLanes,
+   movement_display_QEM_Grade,
+   movement_display_QEM_Speed,
+   movement_display_QEM_IdealFlow,
+   movement_display_QEM_LostTime,
+   movement_display_QEM_Phase1,
+   movement_display_QEM_PermPhase1,
+   movement_display_QEM_DetectPhase1,
+
+   movement_display_QEM_TurnVolume,
+   movement_display_QEM_TurnPercentage,
+   movement_display_QEM_EffectiveGreen,
+   movement_display_QEM_Capacity,
+   movement_display_QEM_VOC,
+   movement_display_QEM_SatFlow,
+   movement_display_QEM_Delay,
+   movement_display_QEM_LOS
+};
+
+enum node_display_mode
+   { node_display_none = 0, 
+   node_display_node_number, 
+   node_display_zone_number, 
+   node_display_cycle_length_in_second, 
+   node_display_cycle_length_in_second_for_signal_only, 
+   node_display_offset_in_second_for_signal_only, 
+   node_display_intersection_name, 
+   node_display_control_type,
+   node_display_travel_time_from_origin
+
+};
+
+enum GPS_display_mode
+   { GPS_display_none = 0, 
+     GPS_display_vehicle_id, 
+     GPS_display_timestamp_in_min, 
+     GPS_display_timegap_in_min, 
+     GPS_display_speed,
+     GPS_display_all 
+};
+
 enum link_display_mode
    { link_display_mode_line, link_display_mode_band, link_display_mode_lane_group };
 
@@ -218,6 +328,7 @@ protected: // create from serialization only
 // Attributes
 public:
 
+
 	bool bShowVehiclesWithIncompleteTrips;
 		Mustang m_ms;
 		int m_msStatus;
@@ -257,7 +368,6 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bHighlightActivityLocation;
 
 	bool m_bShowTransit;
-	bool m_bShowText;
 	bool m_bShowAVISensor;
 
 	LPPOINT m_subarea_points;
@@ -266,7 +376,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 
 	CTLiteDoc* GetDocument() const;
 	tool m_ToolMode; 
-	
+	bool m_bNetworkCooridinateHints;
 	double m_GridResolution;
 	CPoint m_last_cpoint;
 	CPoint m_last_left_down_point;
@@ -277,7 +387,16 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bShowGrid;
 	bool m_bShowLinkArrow;
 	bool m_bShowNode;
-	bool m_bShowNodeNumber;
+	
+
+	node_display_mode m_ShowNodeTextMode;
+	GPS_display_mode m_ShowGPSTextMode;
+
+	link_text_display_mode m_ShowLinkTextMode;
+	movement_text_display_mode m_ShowMovementTextMode;
+	float m_MovementTextBoxSizeInFeet;
+	int m_NodeDisplayBoundarySize; 
+
 	bool m_bShowVehicleNumber;
 	bool m_bShowSelectedVehicleOnly;
 	bool m_bShowImage;
@@ -372,6 +491,7 @@ public:
 	CPoint m_arrow_pts[3];
 	CPoint m_BandPoint[2000];  // maximum 1000 feature points
 	int m_LinkTextFontSize;
+	int m_NodeTextFontSize;
 
 	void DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
@@ -387,6 +507,10 @@ void ArrowTo(HDC hDC, int x, int y, ARROWSTRUCT *pA)
 
 	ArrowTo(hDC, &ptTo, pA);
 }
+
+void DrawMovementLink(CDC* pDC,GDPoint pt_from, GDPoint pt_to,int NumberOfLanes, double theta, int lane_width);
+void DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect);
+
 
 // ArrowTo()
 //
@@ -455,6 +579,7 @@ void ArrowTo(HDC hDC, const POINT *lpTo, ARROWSTRUCT *pA)
 public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+
 protected:
 
 // Implementation
@@ -578,6 +703,8 @@ public:
 	afx_msg void OnNodeAddintermediatedestinationhere();
 	afx_msg void OnNodeRemoveallintermediatedestination();
 	afx_msg void OnLinkAvoidusingthislinkinrouting();
+	afx_msg void OnBnClickedButtonConfiguration();
+	afx_msg void OnNodeNodeproperties();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

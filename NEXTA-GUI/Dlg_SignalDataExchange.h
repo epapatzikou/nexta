@@ -3,6 +3,7 @@
 #include "TLite.h"
 #include "Network.h"
 #include "TLiteDoc.h"
+#include "afxwin.h"
 
 // CDlg_SignalDataExchange dialog
 
@@ -26,4 +27,7 @@ public:
 	afx_msg void OnBnClickedButtonGenerateData();
 	afx_msg void OnBnClickedButtonQem();
 	afx_msg void OnBnClickedButtonGenerateVissimData();
+	afx_msg void OnBnClickedOk();
+	CListBox m_InfoList;
+	virtual BOOL OnInitDialog();
 };

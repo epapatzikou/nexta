@@ -109,6 +109,8 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 		{
 			CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
 
+			pComboTrait->SetStyle (CBS_DROPDOWNLIST);
+
 			for (size_t n=0; n < MAX_FLOW_MODEL ;n++)
 			{
 				pComboTrait->AddItem((int)n, Traffic_Flow_Model_String[n]);
@@ -122,6 +124,7 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 			{
 				CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
 
+				pComboTrait->SetStyle (CBS_DROPDOWNLIST);
 				pComboTrait->AddItem(0, _T("No"));
 				pComboTrait->AddItem(0, _T("Yes"));
 

@@ -941,7 +941,7 @@ void CLinePlot::Print()
 				nPrinterHeight = dcPrinter.GetDeviceCaps(VERTRES);
 
 				//  claculate a size for the text.
-				int nFontHeight = nPrinterHeight / 120.0f;
+				int nFontHeight = (int)(nPrinterHeight / 120.0f);
 
 				//  get the area to draw in.
 				CRect rcClient(0, 0, nPrinterWidth, nPrinterHeight);
@@ -1075,7 +1075,7 @@ int CLinePlot::Add(CString szName, COLORREF crColor, enumPlotStyle nStyle, std::
 		if (PlotData.m_eYDataMin < m_eYMin)
 			m_eYMin = PlotData.m_eYDataMin;
 		if (int(PlotData.m_eYDataMax+1) > m_eYMax)
-			m_eYMax = int(PlotData.m_eYDataMax+1);  // set to integer numbers
+			m_eYMax = (int)(PlotData.m_eYDataMax+1);  // set to integer numbers
 		for (UINT ii=0; ii < m_lstPlotData.size(); ii++)
 			m_lstPlotData[ii].m_oIsDirty = true;
 	}

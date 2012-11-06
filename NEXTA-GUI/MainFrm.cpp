@@ -19,6 +19,7 @@
 #endif
 
 int  g_Player_Status=-1;	     //-1: edit 0: stop, 1: play, 2: pause
+int g_MOEAggregationIntervalInMin = 1;
 IMPLEMENT_DYNAMIC(CMainFrame, CMDIFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
@@ -67,7 +68,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
 	_T("Link"),
-	_T("Link Label"),
+	_T("Movement"),
 	_T("Zone"),
 	_T("Connector"),
 	_T("Link MOE"),
@@ -79,7 +80,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("VMS"),
 	_T("Toll"),
 	_T("Ramp Meters"),
-	_T("Bluetooth"),
+	_T("Transit"),
 	_T("GPS"),
 
 };
@@ -98,7 +99,7 @@ CMainFrame::CMainFrame()
 	m_bShowGISLayerToolBar = true;
 	m_bShowMOEToolBar = true;
 	m_bShowDataToolBar = true;
-	m_bSynchronizedDisplay = true;
+	m_bSynchronizedDisplay = false;
 	m_iSelectedLayer = layer_link;
 
 }
@@ -170,13 +171,21 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(2,"Simulation");
 		m_MOEToolBar.SetButtonText(4,"Network");
 		m_MOEToolBar.SetButtonText(5,"Animation");
-		m_MOEToolBar.SetButtonText(6,"V/C");
+		m_MOEToolBar.SetButtonText(6,"Density");
 		m_MOEToolBar.SetButtonText(7,"Volume");
 		m_MOEToolBar.SetButtonText(8,"Speed");
 		m_MOEToolBar.SetButtonText(9,"Queue");
+
+
+		//m_MOEToolBar.SetButtonText(11,"Radiation");
+		//m_MOEToolBar.SetButtonText(12,"Analysis");
+		//m_MOEToolBar.SetButtonText(13,"Plan");
+
+
 		m_MOEToolBar.SetButtonText(11,"Emissions");
 		m_MOEToolBar.SetButtonText(12,"Reliability");
 		m_MOEToolBar.SetButtonText(13,"Safety");
+
 		m_MOEToolBar.SetButtonText(15,"Link");
 		m_MOEToolBar.SetButtonText(16,"Path");
 		m_MOEToolBar.SetButtonText(17,"Vehicle");
@@ -233,6 +242,10 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	m_bShowLayerMap[layer_link_MOE] = true;
 	m_bShowLayerMap[layer_zone] = true;
 	m_bShowLayerMap[layer_detector] = true;
+	m_bShowLayerMap[layer_workzone] = true;
+	m_bShowLayerMap[layer_VMS] = true;
+	m_bShowLayerMap[layer_toll] = true;
+
 
 	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
 	{

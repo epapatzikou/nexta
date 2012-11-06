@@ -111,14 +111,15 @@ BOOL CTLiteApp::InitInstance()
                 RUNTIME_CLASS(CTLiteView));
 
 		}
-		if( m_VisulizationTemplate == e_train_scheduling)
-		{
-        m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE4,
-                RUNTIME_CLASS(CTLiteDoc),
-                RUNTIME_CLASS(CChildFrame), // custom MDI child frame
-                RUNTIME_CLASS(CTLiteView));
 
-		}
+		//if( m_VisulizationTemplate == e_train_scheduling)
+		//{
+  //      m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE4,
+  //              RUNTIME_CLASS(CTLiteDoc),
+  //              RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+  //              RUNTIME_CLASS(CTLiteView));
+
+		//}
 
         if (!m_pDocTemplate2DView)
                 return FALSE;
@@ -137,11 +138,6 @@ BOOL CTLiteApp::InitInstance()
     RUNTIME_CLASS(CGLView));
 
 	*/
-		m_pTemplateTimeTableView = new CMultiDocTemplate(
-    IDR_TLiteTYPE1,
-    RUNTIME_CLASS(CTLiteDoc),
-    RUNTIME_CLASS(CChildFrame),
-    RUNTIME_CLASS(CTimeSpaceView));
 
 
         // create main MDI Frame window

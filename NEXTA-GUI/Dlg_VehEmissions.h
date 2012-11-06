@@ -3,6 +3,7 @@
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
 #include "network.h"
+#include "CGridListCtrlEx\\CGridListCtrlEx.h"
 
 // CDlg_VehPathAnalysis dialog
 
@@ -18,8 +19,17 @@ public:
 	CDlg_VehPathAnalysis(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_VehPathAnalysis();
 
+	CGridListCtrlEx m_ListCtrl;
 	CTLiteDoc* m_pDoc;
-	VehicleStatistics** m_ODMOEMatrix;
+	VehicleStatistics*** m_ODMOEMatrix;
+
+	int m_ProjectSize;
+
+	std::vector<int> m_TAZVector;
+	int m_SelectedOrigin;
+	int m_SelectedDestination;
+	int m_ZoneNoSize ;
+
 
 	std::vector<PathStatistics> m_PathVector;
 
@@ -36,6 +46,8 @@ public:
 
 // Dialog Data
 	enum { IDD = IDD_DIALOG_VEHICLE_PATH };
+	int m_GPS_start_day;
+	int m_GPS_end_day;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -62,7 +74,7 @@ public:
 	CComboBox m_InformationClassBox;
 	CComboBox m_MinVehicleSizeBox;
 	CComboBox m_MinDistanceBox;
-	CComboBox m_MinTTIBox;
+	CComboBox m_MaxSpeedBox;
 	CComboBox m_TimeIntervalBox;
 	CListBox m_ODList;
 	afx_msg void OnCbnSelchangeComboTimeinterval();
@@ -89,4 +101,7 @@ public:
 	afx_msg void OnBnClickedExportVehicleData();
 	afx_msg void OnBnClickedFindcriticalod();
 	afx_msg void OnBnClickedOk();
+	afx_msg void OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult);
+	CComboBox m_DayNo_Combobox;
+	afx_msg void OnCbnSelchangeComboDayno();
 };

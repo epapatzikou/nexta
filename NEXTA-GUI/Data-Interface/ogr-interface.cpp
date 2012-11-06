@@ -83,5 +83,7 @@ void CTLiteDoc::ImportOGRShapeFile(CString FileName)
 	}
 
 			OGRDataSource::DestroyDataSource( poDS );
+#else
+	AfxMessageBox("NEXTA 64-bit version does not support shape file exporting function. Please use NEXTA_32.exe ");
 #endif
 }

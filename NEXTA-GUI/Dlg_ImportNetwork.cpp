@@ -593,7 +593,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					pLink->m_NumLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
-					pLink->m_StaticSpeed = pLink->m_SpeedLimit;
+					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
 
 					if(length < 0.00001) // zero value in length field, we consider no length info.
@@ -625,7 +625,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_Grade = R_grade;
 
-						pLink->m_StaticSpeed = pLink->m_SpeedLimit;
+						pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
 						pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
 						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;

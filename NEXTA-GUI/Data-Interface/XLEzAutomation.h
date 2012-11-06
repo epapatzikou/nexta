@@ -16,6 +16,7 @@
 class CXLEzAutomation  
 {
 public:
+	CString m_CurrentFileName;
 	BOOL InsertPictureFromBuffer(BYTE* pImage, int Column, int Row, double dXScale, double dYScale);
 	BOOL OpenExcelFile(CString szFileName);
 	BOOL PlacePictureToClipboard(BYTE* pImage);
@@ -23,6 +24,12 @@ public:
 	BOOL InsertPictureFromFile(CString szFileName, int Column, int Row);
 	CString GetCellValue(int nColumn, int nRow);
 	BOOL SaveFileAs(CString szFileName);
+
+	BOOL SaveFile()
+	{
+	return SaveFileAs(m_CurrentFileName);
+	}
+
 	BOOL DeleteRow(int nRow);
 	BOOL ReleaseExcel();
 	BOOL SetCellValue(int nColumn, int nRow, CString szValue);

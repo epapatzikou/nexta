@@ -1131,6 +1131,7 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 		double ratio;
 		int t ;
 		CPoint from_cpt, to_cpt;
+		bool m_bShowText = true;
 
 		// draw train line
 		if(element.direction ==1)

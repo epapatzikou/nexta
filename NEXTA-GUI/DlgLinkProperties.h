@@ -30,6 +30,7 @@ public:
 	int LaneCapacity;
 	int nLane;
 	int LinkType;
+
 	CComboBox m_LinkTypeComboBox;
 
 	
@@ -45,5 +46,7 @@ public:
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnCbnSelchangeCombo1();
 	long m_LinkID;
-	CString m_StreetName;
+	int SaturationFlowRate;
+	int EffectiveGreenTime;
+	CString StreetName;
 };

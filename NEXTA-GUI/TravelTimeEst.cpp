@@ -233,7 +233,18 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 	int data_count = 0;
 	if (parser.OpenCSVFile(lpszFileName))
 	{
+
+					std::list<DTALink*>::iterator iLink;
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+			(*iLink)->m_bSensorData = false;
+			}
+
 	int sensor_count = 0;
+
+	CString error_message;
+
+	CString prev_error_message;
 		while(parser.ReadRecord())
 		{
 			DTA_sensor sensor;
@@ -280,24 +291,38 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 
 				int volume_count= 0;
 
-				parser.GetValueByFieldName("volume_count",volume_count );
+				parser.GetValueByFieldName("link_count",volume_count );
+
+				pLink->m_SensorTypeString = sensor.SensorType;
+
+
+
 				data_count++;
 
-				if(start_time_in_min <0)
+				if(start_time_in_min <0 && error_message.GetLength () < 1000)
 				{
 					CString msg;
-					msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0. Please check.",sensor.FromNodeNumber , sensor.ToNodeNumber);
-					AfxMessageBox(msg);
-					return false;
+					msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
+
+				if(prev_error_message!=msg)
+				{
+					error_message+=msg;
+					prev_error_message=  msg;
 				}
 
-				if(end_time_in_min < start_time_in_min+1)
+				}
+
+				if(end_time_in_min < start_time_in_min+1 && error_message.GetLength () < 1000)
 				{
 					CString msg;
-					msg.Format ("Sensor %d-> %d has an error of end_time_in_min <= start_time_in_min: %d < %d. Please check.",sensor.FromNodeNumber , sensor.ToNodeNumber,
+					msg.Format ("Sensor %d-> %d has an error of end_time_in_min <= start_time_in_min: %d < %d.\n",sensor.FromNodeNumber , sensor.ToNodeNumber,
 						end_time_in_min, start_time_in_min);
-					AfxMessageBox(msg);
-					return false;
+
+				if(prev_error_message!=msg)
+				{
+					error_message+=msg;
+					prev_error_message=  msg;
+				}
 				}
 			
 				for(int t = start_time_in_min; t< end_time_in_min; t++)
@@ -308,7 +333,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 //						if(!sensor.SensorType.empty () && sensor.SensorType.find("count")!= string::npos)
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1.0,end_time_in_min-start_time_in_min)/60);  // convert to per hour lane flow
+							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1.0,end_time_in_min-start_time_in_min)/60);  // convert to per hour link flow
 						}
 
 
@@ -317,17 +342,29 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 				}
 			}else
 			{
-				if(error_count<3)
+				if(error_message.GetLength () < 1000)
 				{
 
 				CString msg;
-				msg.Format ("Link %d -> %d in input_sensor.csv does not exist in input_link.csv.", sensor.FromNodeNumber , sensor.ToNodeNumber);
-				AfxMessageBox(msg);
+				msg.Format ("Link %d -> %d in input_sensor.csv does not exist in input_link.csv.\n", sensor.FromNodeNumber , sensor.ToNodeNumber);
+				if(prev_error_message!=msg)
+				{
+					error_message+=msg;
+					prev_error_message=  msg;
+				}
+
 				error_count++;
 				continue;
 				}
 			}
 
+		}
+
+		if(error_message.GetLength ()>=1)
+		{
+		
+		AfxMessageBox(error_message);
+			
 		}
 
 
@@ -1164,12 +1201,17 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 
 						path_element.m_LinkVector.push_back(PathLinkList[i]) ; //starting from m_NodeSizeSP-2, to 0
 
+						CString label;
+						label.Format ("%d", 1);
+						path_element.m_PathLabelVector.push_back(label);
+
 						DTALink* pLink = m_LinkNotoLinkMap[PathLinkList[i]];
 
 					
 						if(pLink!=NULL)
 						{ 
 							path_element.m_Distance += m_LinkNotoLinkMap[PathLinkList[i]]->m_Length ;
+							path_element.m_NumberOfSensorsPassed += pLink->m_bSensorData;
 
 							pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
 
@@ -1183,7 +1225,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 						}
 						}
 				}
-			}
+			}  // for each origin sequence
 				m_PathDisplayList.push_back  (path_element);
 				m_SelectPathNo = 0;  // select the first path
 				UpdateAllViews(0);

@@ -365,6 +365,22 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AssignmentSimulationSettingDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\AssignmentSimulationSettingDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\AssignmentSimulationTabDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\AssignmentSimulationTabDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\BaseDialog.cpp"
 				>
 			</File>
@@ -378,6 +394,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_DemandType.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_DisplayConfiguration.cpp"
 				>
 			</File>
 			<File
@@ -422,6 +442,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_LinkVisualizationConfig.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_NodeProperties.cpp"
 				>
 			</File>
 			<File
@@ -557,7 +581,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Page_Node_Lane.cpp"
+				RelativePath=".\NetworkDataDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkDataTabDlg.cpp"
 				>
 			</File>
 			<File
@@ -851,14 +879,6 @@
 					RelativePath=".\VISSIM_EXPORT\VISSIM_Export.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="ChartCtrl"
-				>
-				<File
-					RelativePath=".\Chart_Control\NSChartCtrl.cpp"
-					>
-				</File>
 				<Filter
 					Name="Resource Files"
 					Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
@@ -917,11 +937,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -945,11 +965,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -977,15 +997,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar2.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
@@ -993,7 +1009,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\TrainToolbar.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\view_too.bmp"
 						>
 					</File>
 					<File
@@ -1005,6 +1029,14 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="ChartCtrl"
+				>
+				<File
+					RelativePath=".\Chart_Control\NSChartCtrl.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="Transit"
@@ -1049,6 +1081,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_DisplayConfiguration.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Find_Vehicle.h"
 				>
 			</File>
@@ -1090,6 +1126,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_LinkVisualizationConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_NodeProperties.h"
 				>
 			</File>
 			<File
@@ -1237,6 +1277,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\NetworkDataDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkDataTabDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Chart_Control\NSChartCtrl.h"
 				>
 			</File>
@@ -1378,11 +1426,7 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\ClassDiagram11.cd"
-			>
-		</File>
-		<File
-			RelativePath=".\Dlg_DemandType.htm"
+			RelativePath=".\Dlg_Display_Configuration_Node.htm"
 			DeploymentContent="true"
 			>
 		</File>

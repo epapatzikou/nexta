@@ -80,8 +80,16 @@ bool CGeometry::ReadLineStringCoordinates(string s)
 	istringstream ss(s);
 	string sub_str;
 
+	if(std::string::npos == s.find_first_of("0123456789"))
+	{
+			// "digit not found!, empty string//
+		return false;
+	}
+
 	while(std::getline(ss,sub_str, ' '))
 	{
+
+
 		CCoordinate coordinate;
 		istringstream sub_ss(sub_str);
 		string tmp;

@@ -40,6 +40,362 @@
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"
 
+#include <tlhelp32.h>
+//
+// Some definitions from NTDDK and other sources
+//
+
+
+
+
+typedef LONG    NTSTATUS;
+typedef LONG    KPRIORITY;
+
+#define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)
+
+#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
+
+#define SystemProcessesAndThreadsInformation    5
+
+typedef struct _CLIENT_ID {
+    DWORD        UniqueProcess;
+    DWORD        UniqueThread;
+} CLIENT_ID;
+
+typedef struct _UNICODE_STRING {
+    USHORT        Length;
+    USHORT        MaximumLength;
+    PWSTR        Buffer;
+} UNICODE_STRING;
+
+typedef struct _VM_COUNTERS {
+    SIZE_T        PeakVirtualSize;
+    SIZE_T        VirtualSize;
+    ULONG        PageFaultCount;
+    SIZE_T        PeakWorkingSetSize;
+    SIZE_T        WorkingSetSize;
+    SIZE_T        QuotaPeakPagedPoolUsage;
+    SIZE_T        QuotaPagedPoolUsage;
+    SIZE_T        QuotaPeakNonPagedPoolUsage;
+    SIZE_T        QuotaNonPagedPoolUsage;
+    SIZE_T        PagefileUsage;
+    SIZE_T        PeakPagefileUsage;
+} VM_COUNTERS;
+
+typedef struct _SYSTEM_THREADS {
+    LARGE_INTEGER   KernelTime;
+    LARGE_INTEGER   UserTime;
+    LARGE_INTEGER   CreateTime;
+    ULONG            WaitTime;
+    PVOID            StartAddress;
+    CLIENT_ID        ClientId;
+    KPRIORITY        Priority;
+    KPRIORITY        BasePriority;
+    ULONG            ContextSwitchCount;
+    LONG            State;
+    LONG            WaitReason;
+} SYSTEM_THREADS, * PSYSTEM_THREADS;
+
+// Note that the size of the SYSTEM_PROCESSES structure is 
+// different on NT 4 and Win2K, but we don't care about it, 
+// since we don't access neither IoCounters member nor 
+//Threads array
+
+typedef struct _SYSTEM_PROCESSES {
+    ULONG            NextEntryDelta;
+    ULONG            ThreadCount;
+    ULONG            Reserved1[6];
+    LARGE_INTEGER   CreateTime;
+    LARGE_INTEGER   UserTime;
+    LARGE_INTEGER   KernelTime;
+    UNICODE_STRING  ProcessName;
+    KPRIORITY        BasePriority;
+    ULONG            ProcessId;
+    ULONG            InheritedFromProcessId;
+    ULONG            HandleCount;
+    ULONG            Reserved2[2];
+    VM_COUNTERS        VmCounters;
+#if _WIN32_WINNT >= 0x500
+    IO_COUNTERS        IoCounters;
+#endif
+    SYSTEM_THREADS  Threads[1];
+} SYSTEM_PROCESSES, * PSYSTEM_PROCESSES;
+
+
+class CProcessManager
+{
+private:
+    //Functions loaded from Kernel32
+    typedef HANDLE (WINAPI *PFCreateToolhelp32Snapshot)(
+        DWORD dwFlags,       
+        DWORD th32ProcessID  
+        );
+
+    typedef BOOL (WINAPI *PFProcess32First)(
+        HANDLE hSnapshot,      
+        LPPROCESSENTRY32 lppe  
+        );
+
+    typedef BOOL (WINAPI *PFProcess32Next)(
+        HANDLE hSnapshot,      
+        LPPROCESSENTRY32 lppe  
+        );
+
+    // Native NT API Definitions
+    typedef NTSTATUS (WINAPI * PFZwQuerySystemInformation)
+        (UINT, PVOID, ULONG, PULONG);
+    typedef HANDLE (WINAPI* PFGetProcessHeap)(VOID);
+    typedef LPVOID (WINAPI* PFHeapAlloc)
+        (HANDLE,DWORD,SIZE_T);
+    typedef BOOL (WINAPI* PFHeapFree)(HANDLE,DWORD,LPVOID);
+public:
+    CProcessManager() : FCreateToolhelp32Snapshot(NULL), 
+        FProcess32First(NULL), FProcess32Next(NULL), 
+        m_hKernelLib(NULL),
+        m_hNTLib(NULL)
+    {
+        m_hKernelLib = ::LoadLibraryA("Kernel32");
+        if (m_hKernelLib)  
+        {
+            // Find ToolHelp functions
+            FCreateToolhelp32Snapshot = 
+                (PFCreateToolhelp32Snapshot)
+                ::GetProcAddress(m_hKernelLib,
+                _TEXT("CreateToolhelp32Snapshot"));
+            FProcess32First = (PFProcess32First)
+                ::GetProcAddress(m_hKernelLib, 
+                _TEXT("Process32First"));
+            FProcess32Next = (PFProcess32Next)
+                ::GetProcAddress(m_hKernelLib, 
+                _TEXT("Process32Next"));
+        }
+        if(!FCreateToolhelp32Snapshot || 
+            !FProcess32First || !FProcess32Next)
+        { // i.e. we couldn't find the ToolHelp functions, 
+            //so we must be on NT4. Let's load the
+            // undocumented one instead.
+            if(!m_hKernelLib)
+                return; // can't do anything at all without 
+            //the kernel.
+
+            m_hNTLib = ::LoadLibraryA("ntdll.dll");
+            if(m_hNTLib)
+            {
+                FQuerySysInfo = 
+                    (PFZwQuerySystemInformation)
+                    ::GetProcAddress(m_hNTLib, 
+                    _TEXT("ZwQuerySystemInformation"));
+                // load some support funcs from the kernel
+                FGetProcessHeap = (PFGetProcessHeap)
+                    ::GetProcAddress(m_hKernelLib, 
+                    _TEXT("GetProcessHeap"));
+                FHeapAlloc = (PFHeapAlloc)
+                    ::GetProcAddress(m_hKernelLib, 
+                    _TEXT("HeapAlloc"));
+                FHeapFree = (PFHeapFree)
+                    ::GetProcAddress(m_hKernelLib, 
+                    _TEXT("HeapFree"));
+            }
+        }
+    }
+    ~CProcessManager()
+    {
+        if(m_hKernelLib)
+            FreeLibrary(m_hKernelLib);
+        if(m_hNTLib)
+            FreeLibrary(m_hNTLib);
+    }
+    bool KillProcess(IN const char* pstrProcessName)
+    {
+        DWORD dwId;
+        HANDLE hProcess = FindProcess(pstrProcessName, 
+            dwId);
+        BOOL bResult;
+        if(!hProcess)
+            return false;
+
+        // TerminateAppEnum() posts WM_CLOSE to all windows whose PID
+        // matches your process's.
+        ::EnumWindows((WNDENUMPROC)
+            CProcessManager::TerminateAppEnum, 
+            (LPARAM) dwId);
+        // Wait on the handle. If it signals, great. 
+        //If it times out, then you kill it.
+        if(WaitForSingleObject(hProcess, 1000)
+            !=WAIT_OBJECT_0)
+            bResult = TerminateProcess(hProcess,0);
+        else
+            bResult = TRUE; 
+        CloseHandle(hProcess);
+        return bResult == TRUE;
+    }
+
+    HANDLE FindProcess(IN const char* pstrProcessName,
+        OUT DWORD& dwId)
+    {
+        if(!m_hKernelLib)
+            return NULL;
+
+        if(FCreateToolhelp32Snapshot && FProcess32First && 
+            FProcess32Next) // use toolhelpapi
+            return THFindProcess(pstrProcessName, dwId);
+        if(FQuerySysInfo && FHeapAlloc && 
+            FGetProcessHeap && FHeapFree) // use NT api
+            return NTFindProcess(pstrProcessName, dwId);
+        // neither one got loaded. Strange.
+        return NULL;
+    }
+
+private:
+    HANDLE THFindProcess(IN const char* pstrProcessName, 
+        OUT DWORD& dwId)
+    {
+        HANDLE            hSnapShot=NULL;
+        HANDLE            hResult = NULL;
+        PROCESSENTRY32    processInfo;
+        char*            pstrExeName;
+
+        bool bFirst = true;
+        ::ZeroMemory(&processInfo, sizeof(PROCESSENTRY32));
+        processInfo.dwSize = sizeof(PROCESSENTRY32);
+        hSnapShot = FCreateToolhelp32Snapshot(
+            TH32CS_SNAPPROCESS, 0);
+        if(hSnapShot == INVALID_HANDLE_VALUE)
+            return NULL; 
+
+        // ok now let's iterate with Process32Next until we 
+        // match up the name of our process
+        while((bFirst ? FProcess32First(hSnapShot, 
+            &processInfo) : FProcess32Next(hSnapShot, 
+            &processInfo)))
+        {
+            bFirst = false;
+            // we need to check for path... and extract 
+            // just the exe name
+            pstrExeName = strrchr(processInfo.szExeFile, 
+                '\\');
+            if(!pstrExeName)
+                pstrExeName = processInfo.szExeFile;
+            else
+                pstrExeName++; // skip the \
+            // ok now compare against our process name
+            if(stricmp(pstrExeName, pstrProcessName) == 0) 
+                // wee weee we found it
+            {
+                // let's get a HANDLE on it
+                hResult=OpenProcess(
+                    SYNCHRONIZE|PROCESS_TERMINATE, TRUE, 
+                    processInfo.th32ProcessID);
+                dwId = processInfo.th32ProcessID;
+                break;
+            }
+        } // while(Process32Next(hSnapShot, &processInfo){
+        if(hSnapShot)
+            CloseHandle(hSnapShot);
+        return hResult;
+    }
+    HANDLE NTFindProcess(IN const char* pstrProcessName, 
+        OUT DWORD& dwId)
+    {
+        HANDLE hHeap = FGetProcessHeap();
+        NTSTATUS Status;
+        ULONG cbBuffer = 0x8000;
+        PVOID pBuffer = NULL;
+        HANDLE hResult = NULL;
+        // it is difficult to say a priory which size of 
+        // the buffer will be enough to retrieve all 
+        // information, so we startwith 32K buffer and 
+        // increase its size until we get the
+        // information successfully
+        do
+        {
+            pBuffer = HeapAlloc(hHeap, 0, cbBuffer);
+            if (pBuffer == NULL)
+                return SetLastError(
+                ERROR_NOT_ENOUGH_MEMORY), NULL;
+
+            Status = FQuerySysInfo(
+                SystemProcessesAndThreadsInformation,
+                pBuffer, cbBuffer, NULL);
+
+            if (Status == STATUS_INFO_LENGTH_MISMATCH)
+            {
+                HeapFree(hHeap, 0, pBuffer);
+                cbBuffer *= 2;
+            }
+            else if (!NT_SUCCESS(Status))
+            {
+                HeapFree(hHeap, 0, pBuffer);
+                return SetLastError(Status), NULL;
+            }
+        }
+        while (Status == STATUS_INFO_LENGTH_MISMATCH);
+
+        PSYSTEM_PROCESSES pProcesses = 
+            (PSYSTEM_PROCESSES)pBuffer;
+
+        for (;;)
+        {
+            PCWSTR pszProcessName = 
+                pProcesses->ProcessName.Buffer;
+            if (pszProcessName == NULL)
+                pszProcessName = L"Idle";
+
+            CHAR szProcessName[MAX_PATH];
+            WideCharToMultiByte(CP_ACP, 0, pszProcessName, 
+                -1,szProcessName, MAX_PATH, NULL, NULL);
+
+            if(stricmp(szProcessName, pstrProcessName) 
+                == 0) // found it
+            {
+                hResult=OpenProcess(
+                    SYNCHRONIZE|PROCESS_TERMINATE, TRUE, 
+                    pProcesses->ProcessId);
+                dwId = pProcesses->ProcessId;
+                break;
+            }
+
+            if (pProcesses->NextEntryDelta == 0)
+                break;
+
+            // find the address of the next process 
+            // structure
+            pProcesses = (PSYSTEM_PROCESSES)(
+                ((LPBYTE)pProcesses)
+                + pProcesses->NextEntryDelta);
+        }
+
+        HeapFree(hHeap, 0, pBuffer);
+        return hResult;
+    }
+    // callback function for window enumeration
+    static BOOL CALLBACK TerminateAppEnum( HWND hwnd, 
+        LPARAM lParam )
+    {
+        DWORD dwID ;
+
+        GetWindowThreadProcessId(hwnd, &dwID) ;
+
+        if(dwID == (DWORD)lParam)
+        {
+            PostMessage(hwnd, WM_CLOSE, 0, 0) ;
+        }
+
+        return TRUE ;
+    }
+    HMODULE            m_hNTLib;
+    HMODULE            m_hKernelLib;
+    // ToolHelp related functions
+    PFCreateToolhelp32Snapshot    FCreateToolhelp32Snapshot;
+    PFProcess32First            FProcess32First;
+    PFProcess32Next                FProcess32Next;
+    // native NT api functions
+    PFZwQuerySystemInformation    FQuerySysInfo;
+    PFGetProcessHeap            FGetProcessHeap;
+    PFHeapAlloc                    FHeapAlloc;
+    PFHeapFree                    FHeapFree;
+};
+
 DTA_Approach CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
 {
 	if(angle < 23)
@@ -110,7 +466,7 @@ DTA_Approach CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
 	else
 		return DTA_East;
 }
-DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
+DTA_Approach CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
 {
 	if(angle < 23)
 	{
@@ -148,6 +504,27 @@ DTA_Approach CTLiteDoc::g_Angle_to_Approach_New(int angle)
 		return DTA_East;
 }
 
+DTA_Approach CTLiteDoc::g_Angle_to_Approach_4_direction(int angle)
+{
+	if(angle < 45)
+	{
+		return DTA_East;
+	}
+	else if(angle < 135) 
+	{
+		return DTA_North;
+	}
+	else if(angle < 225) 
+	{
+		return DTA_West;
+	}
+	else if(angle < 315) 
+	{
+		return DTA_South;
+	}
+	else
+		return DTA_East;
+}
 
 DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(int relative_angle)
 {
@@ -356,8 +733,10 @@ void CTLiteDoc::AssignUniqueLinkIDForEachLink()
 
 }
 
-void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four directions
+void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part has four directions
 {
+	if(m_bMovementAvailableFlag == true && ResetFlag == false)
+		return;
 
 	m_AdjLinkSize = 0;
 
@@ -381,6 +760,7 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four dire
 	{  // for current node
 
 		// scan each inbound link and outbound link
+
 
 		// generate two default phases;
 		(*iNode)->m_PhaseVector.clear();
@@ -414,19 +794,24 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four dire
 					element.in_link_from_node_id = m_Network.m_FromIDAry[LinkID];
 					element.out_link_to_node_id = m_Network.m_OutboundNodeAry [i][outbound_i];
 
+					if((*iNode)->m_NodeNumber == 52508 )
+					{
+						TRACE("Up Node: %d\n",m_NodeIDMap[element.in_link_from_node_id]->m_NodeNumber);
+					}
+
 					GDPoint p1, p2, p3;
 					p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
 					p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
 					p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
 
-					element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+					element.movement_approach = g_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2));
 					// movement_approach is for in_bound link
 					DTALink* pLink = m_LinkNoMap[LinkID];
 					if(pLink!=NULL)
 					{
 						// we have not considered different directions/approach with respect to from and to nodes (e.g. with a curve)
 						pLink ->m_FromApproach = element.movement_approach;
-						pLink ->m_ToApproach = g_Angle_to_Approach_New(Find_P2P_Angle(p2,p1));
+						pLink ->m_ToApproach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p2,p1));
 					}
 
 
@@ -474,6 +859,8 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four dire
 						case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
 						}
 						break;
+					default:
+						TRACE("");
 					}
 
 					int movement_index = (*iNode)->m_MovementVector.size();
@@ -491,11 +878,17 @@ void  CTLiteDoc::ConstructMovementVectorForEachNode() // this part has four dire
 		} // for each inbound link
 	}// for each node
 
+	m_bMovementAvailableFlag = true;
 }
 
 void CTLiteDoc::ConstructMovementVector(bool flag_Template) 
 // this function has 8 directions
 {
+	if(m_bMovementAvailableFlag == true)
+		return;
+
+	m_bMovementAvailableFlag = true; // executed once only
+
 	m_OpposingDirectionMap[DTA_North] = DTA_South;
 	m_OpposingDirectionMap[DTA_South] = DTA_North;
 
@@ -507,6 +900,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 	m_OpposingDirectionMap[DTA_SouthEast] =  DTA_NorthWest;
 	m_OpposingDirectionMap[DTA_NorthWest] =  DTA_SouthEast;
+
+	m_Synchro_ProjectDirectory  = m_ProjectDirectory + "Exporting_Synchro_UTDF\\";
 
 	ReadSynchroPreGeneratedLayoutFile(m_Synchro_ProjectDirectory+"Synchro_layout.csv");
 
@@ -574,7 +969,12 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
 						p3  = m_NodeIDMap[element.DestNodeID]->pt;
 
-						element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+						if(m_NodeIDMap[element.CurrentNodeID]->m_NodeNumber==93)
+						{
+						TRACE("Node 1: %d\nNode 2: %d\nNode 3: %d\n",m_NodeIDMap[element.UpNodeID]->m_NodeNumber,m_NodeIDMap[element.CurrentNodeID]->m_NodeNumber, m_NodeIDMap[element.DestNodeID]->m_NodeNumber );
+						}
+
+						element.movement_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 
 						m_ApproachMap[element.movement_approach] = 1;
 
@@ -1320,7 +1720,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				up_node_id = m_Network.m_FromIDAry[LinkID];
 				p1  = m_NodeIDMap[up_node_id]->pt;
 				p2  = m_NodeIDMap[current_node_id]->pt;
-				incoming_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+				incoming_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 				switch (incoming_approach)
 				{ 
 				case DTA_North:
@@ -1371,7 +1771,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				down_node_id = m_Network.m_ToIDAry[LinkID];
 				p1  = m_NodeIDMap[current_node_id]->pt;
 				p2  = m_NodeIDMap[down_node_id]->pt;
-				out_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+				out_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 				switch (out_approach)
 				{ 
 				case DTA_North:
@@ -1484,12 +1884,8 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 
 	CWaitCursor  wait;
 
-	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
+	float hourly_volume_conversion_factor = 60.0f/max(1,m_DemandLoadingEndTimeInMin - m_DemandLoadingStartTimeInMin);
 
-	float default_hourly_volume_conversion_factor = g_GetPrivateProfileFloat("synchro_conversion", "default_hourly_volume_conversion_factor", 1, DTASettingsPath);	
-
-
-	default_hourly_volume_conversion_factor = 1;  // to do: allow users to change conversion factor
 
 	// write volume file
 	fopen_s(&st,m_Synchro_ProjectDirectory+"Volume.csv","w");
@@ -1527,7 +1923,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 
 				if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
 				{
-					count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
+					count = m_Movement3NodeMap[movement_label].TotalVehicleSize* hourly_volume_conversion_factor;
 
 				}
 
@@ -1594,9 +1990,7 @@ bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
 				string name;
 				DTANode* pNode = 0;
 
-				int control_type;
-				double X;
-				double Y;
+
 				if(parser.GetValueByFieldName("INTID",node_id) == false)
 					break;
 
@@ -1621,29 +2015,88 @@ bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
 
 			}
 
-			AfxMessageBox("Synchro_layout file is used.", MB_ICONINFORMATION);
+			AfxMessageBox("Synchro_layout.csv file is used to specify the movement vector in QEM and Synchro exporting functions.", MB_ICONINFORMATION);
 			return true;
 		}
 		return false;
 }
 
 
-void CTLiteDoc::ExportQEMData(int NodeNumber)
+void CTLiteDoc::ExportQEMData(int ThisNodeNumber)
 {
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+
+
+	#ifndef _WIN64
+
+// kill Excel process first
+
+
+	CProcessManager kill_process;
+
+
+		if(m_bMovementAvailableFlag==false) // first time to detect EXCEL
+		{
+			   DWORD dwId;
+				HANDLE hProcess = kill_process.FindProcess("EXCEL.exe", 	dwId);
+				if(hProcess)
+				{
+				 AfxMessageBox("Please close all Excel applications before use the QEM method.",MB_ICONINFORMATION);
+				}
+
+		}
+
+		CWaitCursor wait;
+
+	bool b_Excel_found_flag = false;
+			   DWORD dwId;
+				HANDLE hProcess = kill_process.FindProcess("EXCEL.exe", 	dwId);
+				if(hProcess)
+				{
+					b_Excel_found_flag = true;
+				}
+
+		if(b_Excel_found_flag == true)
+		{
+		while(kill_process.KillProcess("EXCEL.exe")==true);
+		}
 
 	string phase_row_name_str[23] = {"BRP","MinGreen","MaxGreen","VehExt","TimeBeforeReduce","TimeToReduce","MinGap","Yellow","AllRed","Recall","Walk","DontWalk","PedCalls","MinSplit","DualEntry","InhibitMax","Start","End","Yield","Yield170","LocalStart","LocalYield","LocalYield170"};
 
 	m_Network.Initialize (m_NodeSet.size(), m_LinkSet.size(), 1, m_AdjLinkSize);
 	m_Network.BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
-	float default_hourly_volume_conversion_factor = 1;
+	float hourly_volume_conversion_factor = 	60.0f/max(1,m_DemandLoadingEndTimeInMin - m_DemandLoadingStartTimeInMin);
+	
 	ConstructMovementVector(true);
 
 	CXLEzAutomation XL;
 
 	CString QEM2_Excel_File;
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-	QEM2_Excel_File.Format ("%s//QEM_SIG.xls",pMainFrame->m_CurrentDirectory);
+
+
+	if(ThisNodeNumber==0)
+	{  // batch mode
+	QEM2_Excel_File.Format ("%s\\QEM_SIG.xls",pMainFrame->m_CurrentDirectory);
+	}else
+	{
+	QEM2_Excel_File.Format ("%s\\QEM_SIG.xls",pMainFrame->m_CurrentDirectory);
+
+	//	QEM2_Excel_File.Format ("%sQEM_SIG.xls",pMainFrame->m_CurrentDirectory);
+
+	//CString QEM_Node_File;
+	//QEM_Node_File.Format("%sQEM_SIG_NODE_%d.xls",directory,ThisNodeNumber);
+
+	//CopyFile( QEM2_Excel_File, QEM_Node_File, TRUE);
+
+	//QEM2_Excel_File = QEM_Node_File;  // replace
+
+	}
+	
+	
 	if(XL.OpenExcelFile(QEM2_Excel_File)==false)
 	{
 	CString message; 
@@ -1680,14 +2133,24 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 	{
 		int node_number = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 
+		if(ThisNodeNumber>=1 && node_number != ThisNodeNumber)
+		{
+		// show data for current node number only
+		continue;
+		}
+
 		int node_id = m_NodeNametoIDMap[node_number];
-
-
 
 		if(m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_PretimedSignal || m_NodeIDMap[node_id]->m_ControlType ==  m_ControlType_ActuatedSignal )  //this movement vector is the same as the current node
 		{
 			QEM_node_count++;
 			// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
+
+			// current node number
+				for(int k = 2; k<38; k++)
+				{
+					XL.SetCellValue(2,k,m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // street names
+				}
 
 			int i,j;
 
@@ -1704,6 +2167,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
 
+
 				for(j=0; j<LaneColumnSize;j++)
 				{
 					int UpstreamNodeID = (int)(m_MovementVector[m].DataMatrix[0][j].m_text);
@@ -1719,6 +2183,12 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 							NodeNumber = m_NodeIDMap[NodeID]->m_NodeNumber;
 						}
 						XL.SetCellValue(3+j,2+i,NodeNumber);  // input from node value to QEM spreadsheet
+						
+						if(i==0)  // upstream node only
+						{
+						XL.SetCellValue(3+j,38,NodeNumber);  // street names
+						}
+
 						fprintf(st, "%i,",m_NodeIDMap[NodeID]->m_NodeNumber);  
 
 					}else
@@ -1755,6 +2225,10 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 				CString movement_label;
 				movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
 
+				if(FromNodeNumber== 2085 && CurrentNodeNumber==4611 && DestNodeNumber==4608)
+				{
+					TRACE("");
+				}
 				movement_label_vector.push_back(movement_label);
 
 				int count = 0;
@@ -1762,7 +2236,7 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 				if(m_Movement3NodeMap.find(movement_label) != m_Movement3NodeMap.end())
 				{
-					count = m_Movement3NodeMap[movement_label].TotalVehicleSize*default_hourly_volume_conversion_factor;
+					count = m_Movement3NodeMap[movement_label].TotalVehicleSize*hourly_volume_conversion_factor;
 					XL.SetCellValue(3+j,volume_row_number,count); // input turning movement volume value to QEM spreadsheet
 					fprintf(st, "%i,",count);
 					TRACE("count = %d\n",count);
@@ -1795,6 +2269,24 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 						if(FromNodeID > 0)
 							FromNodeNumber = m_NodeIDMap[FromNodeID]->m_NodeNumber ;
 
+						int CurrentNodeNumber = m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+						int DestNodeID = (int)(m_MovementVector[m].DataMatrix[1][j].m_text);
+
+							int DestNodeNumber = 0;
+							if(DestNodeID > 0)
+								DestNodeNumber = m_NodeIDMap[DestNodeID]->m_NodeNumber;
+
+							CString movement_label;
+							movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
+
+							DTANodeMovement* pMovement = NULL;
+
+							if(m_MovementPointerMap.find(movement_label) != m_MovementPointerMap.end())
+							{
+								DTANodeMovement* pMovement = m_MovementPointerMap[movement_label];
+							}
+
+
 						if(FromNodeNumber>0)  // with movement
 						{
 						DTALink* pLink = FindLinkWithNodeNumbers(FromNodeNumber,node_number);
@@ -1806,13 +2298,40 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 								if(lane_Column_name_str[j].find("T")!= string::npos ) // through
 									text = pLink->m_NumLanes;
 								else
-									text = 1; // left and right: to do list: input left-turn and right turn data for # of lanes
+								{
+									text = 1; // left and right: to do list: input left-turn and right turn data fr # of lanes
+
+									if(pMovement!=NULL)
+										text = pMovement->QEM_Lanes ;
+
+								}
 
 							}
+
 						if(i==8) // speed
 							{
 								text = pLink->m_SpeedLimit ;
+
 							}
+
+					if(pMovement!=NULL)
+					{
+
+						switch (i)
+						{
+						case 3: text = pMovement->QEM_Shared; break; //  // "Shared",
+						case 4: text = pMovement->QEM_Width ; break; //  // "Width",
+						case 5: text = pMovement->QEM_Storage ; break; //  // "Storage",
+						case 6: text = pMovement->QEM_StLanes; break; //  // "StLanes",
+						case 7: text = pMovement->QEM_Grade; break; //  // "",
+						case 8: 
+							text = pMovement->QEM_Speed;// "speed",
+							
+							break; //  
+						
+						}
+					}
+
 						}
 		
 						
@@ -1867,7 +2386,32 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 					szValue = XL.GetCellValue(3+j, 16); // read DetectPhase1 data from QEM
 					m_Movement3NodeMap[movement_label].DetectPhase1   = atoi(szValue);
 
-					TRACE("node %d, movement %s: phase %d, perm_phase %d, detect_phase %d\n",NodeNumber, movement_label,m_Movement3NodeMap[movement_label].Phase1, m_Movement3NodeMap[movement_label].PermPhase1 , m_Movement3NodeMap[movement_label].DetectPhase1 );
+							DTANodeMovement* pMovement = NULL;
+
+							if(m_MovementPointerMap.find(movement_label) != m_MovementPointerMap.end())
+							{
+								DTANodeMovement* pMovement = m_MovementPointerMap[movement_label];
+								if(pMovement !=NULL)
+								{
+								pMovement->QEM_Phase1  = m_Movement3NodeMap[movement_label].Phase1;
+								pMovement->QEM_PermPhase1  = m_Movement3NodeMap[movement_label].PermPhase1;
+								pMovement->QEM_DetectPhase1  = m_Movement3NodeMap[movement_label].DetectPhase1;
+
+								if(CurrentNodeNumber == 94) 
+									TRACE("");
+
+								pMovement->QEM_EffectiveGreen  = atoi(XL.GetCellValue(3+j, 17)); // EffectiveGreen 
+								pMovement->QEM_Capacity  = atoi(XL.GetCellValue(3+j, 18)); // Capacity 
+								pMovement->QEM_VOC   = atoi(XL.GetCellValue(3+j, 19)); // V/C 
+								pMovement->QEM_Delay  = atoi(XL.GetCellValue(3+j, 20)); // Delay 
+								pMovement->QEM_LOS = XL.GetCellValue(3+j, 21); // LOS 
+								pMovement->QEM_SatFlow   = atoi(XL.GetCellValue(3+j, 39)); // DischargeRate 
+
+								}
+							}
+
+
+					TRACE("node %d, movement %s: phase %d, perm_phase %d, detect_phase %d\n",CurrentNodeNumber, movement_label,m_Movement3NodeMap[movement_label].Phase1, m_Movement3NodeMap[movement_label].PermPhase1 , m_Movement3NodeMap[movement_label].DetectPhase1 );
 				}
 			}
 
@@ -1893,21 +2437,25 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 			m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_bQEM_optimized = true;
 
 			//log message
-			for(int i=0; i<3; i++) // 3 lines
+			for(int i=0; i<9; i++) // 9 lines
 			{
 
-				if(i==0)
+				switch (i)
 				{
-					fprintf(st, "Phase1,");
+				case 0: fprintf(st, "Phase1,"); break;
+				case 1: fprintf(st, "PermPhase1,"); break;
+				case 2: fprintf(st, "DetectPhase1,"); break;
+				case 3: fprintf(st, "EffectiveGreen,"); break;
+				case 4: fprintf(st, "Capacity ,"); break;
+				case 5: fprintf(st, "V/C,"); break;
+				case 6: fprintf(st, "Delay,"); break;
+				case 7: fprintf(st, "LOS,"); break;
+				case 8: fprintf(st, "DischargeRate,"); break;
 				}
 
-				if(i==1)
+				if(i<=7)
 				{
-					fprintf(st, "PermPhase1,");
-				}
-				if(i==2)
-				{
-					fprintf(st, "DetectPhase1,");
+					fprintf(st, ",");
 				}
 
 				fprintf(st, "%i,", m_NodeIDMap[m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
@@ -1932,19 +2480,30 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 
 					if(FromNodeNumber >0)
 					{
-						if(i==0)
-						{
-							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].Phase1);
-						}
+					DTANodeMovement* pMovement = m_MovementPointerMap[movement_label];
 
-						if(i==1)
-						{
-							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].PermPhase1);
-						}
-						if(i==2)
-						{
-							fprintf(st, "%d,",m_Movement3NodeMap[movement_label].DetectPhase1);
-						}
+					if(CurrentNodeNumber == 94)
+						TRACE("");
+
+					if(pMovement!= NULL)
+					{
+					switch (i)
+					{
+					case 0: fprintf(st, "%d,",m_Movement3NodeMap[movement_label].Phase1); break;
+					case 1: fprintf(st, "%d,",m_Movement3NodeMap[movement_label].PermPhase1 ); break;
+					case 2: fprintf(st, "%d,",m_Movement3NodeMap[movement_label].Phase1 ); break;
+					case 3: fprintf(st, "%.0f,",pMovement->QEM_EffectiveGreen ); break;
+					case 4: fprintf(st, "%.2f,",pMovement->QEM_VOC ); break;
+					case 5: fprintf(st, "%.1f,",pMovement->QEM_Delay ); break;
+					case 6: fprintf(st, "%s,", pMovement->QEM_LOS ); break;
+					case 7: fprintf(st, "%.0f,",pMovement->QEM_SatFlow ); break;
+					}
+					}else
+					{
+						fprintf(st, ",");
+					
+					}
+
 					}else
 					{
 						fprintf(st, ",");
@@ -1999,14 +2558,22 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 	//Close Excel when done (or leave it open by deleting the
 	//next line):
 	//Before closing server in your application disable alerts by calling:
-	XL.ReleaseExcel();
+
+	if(ThisNodeNumber ==0)
+	{
+		XL.ReleaseExcel();
+	}
+
+	//if(ThisNodeNumber >0)
+	//{
+	//XL.SaveFile();
+	//}
+
 
 	if(st!=NULL)
 		fclose(st);
 	// 
 
-	CString directory;
-	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
 	fopen_s(&st,directory+"ouput_movement_phasing.csv","w");
 	if(st!=NULL)
@@ -2029,8 +2596,18 @@ void CTLiteDoc::ExportQEMData(int NodeNumber)
 		fclose(st);
 	}
 
+	if(ThisNodeNumber<=0)
+	{
 	CString msg;
 	msg.Format ("Excel Automation Done!\n%d signalized nodes now have estimated movement capacity and signal timing plans.",QEM_node_count);
 	AfxMessageBox(msg, MB_ICONINFORMATION);
+	}
 
-}
+#else if
+	CString msg;
+	msg.Format ("Excel automation is not available under the 64-bit version yet.");
+	AfxMessageBox(msg, MB_ICONINFORMATION);
+
+#endif
+
+  }
