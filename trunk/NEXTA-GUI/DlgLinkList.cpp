@@ -58,6 +58,7 @@ BEGIN_MESSAGE_MAP(CDlgLinkList, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWRAMPLINKSONLY, &CDlgLinkList::OnUpdateLinkselectionShowramplinksonly)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWARTERIALLINKSONLY, &CDlgLinkList::OnUpdateLinkselectionShowarteriallinksonly)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS, &CDlgLinkList::OnUpdateLinkselectionShowalllinksexceptconnectors)
+	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_LINK, &CDlgLinkList::OnBnClickedCheckZoomToSelectedLink)
 END_MESSAGE_MAP()
 
 
@@ -111,49 +112,32 @@ void CDlgLinkList::ReloadData()
 	m_Column_names.push_back ("Lane Capacity");
 	m_Column_names.push_back ("Link Type");
 
-	if(m_pDoc2==NULL)
-	{
 	m_Column_names.push_back ("VOC");
-	}else
-	{
-	m_Column_names.push_back ("VOC_1");
-	m_Column_names.push_back ("VOC_2");
-	m_Column_names.push_back ("VOC_Diff");
-	}
-
-	if(m_pDoc2==NULL)
-	{
 	m_Column_names.push_back ("Speed");
-	}else
-	{
-	m_Column_names.push_back ("Speed_1");
-	m_Column_names.push_back ("Speed_2");
-	m_Column_names.push_back ("Speed_Diff");
-	}
+	m_Column_names.push_back ("Simulated Volume");
+	m_Column_names.push_back ("Level Of Service");
 
+	m_Column_names.push_back ("Waiting Time at Origin");
+	m_Column_names.push_back ("AADT Conversion Factor");
+	m_Column_names.push_back ("Simulated AADT");
 
-	if(m_pDoc2==NULL)
-	{
-	m_Column_names.push_back ("Volume");
-	}else
-	{
-	m_Column_names.push_back ("Volume_1");
-	m_Column_names.push_back ("Volume_2");
-	m_Column_names.push_back ("Volume_Diff");
-	
-	}
+	m_Column_names.push_back ("# of Crashes Per Year");
+	m_Column_names.push_back ("# of Fatal/Injury Crashes Per Year");
+	m_Column_names.push_back ("# of PTO Crashes Per Year");
 
-	// single view
-	m_Column_names.push_back ("Obs Volume");
+	m_Column_names.push_back ("Observed Volume");
 	m_Column_names.push_back ("Volume Error");
 	m_Column_names.push_back ("Error %");
+
+	m_Column_names.push_back ("Volume Difference");
+	m_Column_names.push_back ("Speed Difference");
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
 	{
 
 		CGridColumnTraitText* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
+		//		pTrait = new CGridColumnTraitEdit();
 		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
 		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
 	}
@@ -219,41 +203,65 @@ void CDlgLinkList::ReloadData()
 		m_ListCtrl.SetItemText(Index,8,text);
 		}
 
-	if(m_pDoc2==NULL)  // single document view
-	{
-		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
-		m_ListCtrl.SetItemText(Index,9,text);
+		int column_index = 9;
+		sprintf_s(text, "%5.2f",(*iLink)->m_volume_over_capacity_ratio    );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
-		m_ListCtrl.SetItemText(Index,10,text);
+		sprintf_s(text, "%5.2f",(*iLink)->m_avg_simulated_speed    );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		sprintf_s(text, "%d",(*iLink)->m_TotalVolume     );
-		m_ListCtrl.SetItemText(Index,11,text);
+		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%.0f",(*iLink)->m_ReferenceFlowVolume     );
-		m_ListCtrl.SetItemText(Index,12,text);
+		sprintf_s(text, "%c",(*iLink)->m_LevelOfService      );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.1f",(*iLink)->m_avg_waiting_time_on_loading_buffer       );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.2f",(*iLink)->m_AADT_conversion_factor       );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.0f",(*iLink)->m_simulated_AADT        );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+
+		sprintf_s(text, "%.4f",(*iLink)->m_number_of_crashes        );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.4f",(*iLink)->m_num_of_fatal_and_injury_crashes_per_year        );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.4f",(*iLink)->m_num_of_PDO_crashes_per_year        );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.0f",(*iLink)->m_total_sensor_link_volume        );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		float error = 0;
 		if( (*iLink)->m_ReferenceFlowVolume >=1)
-			error = (*iLink)->m_TotalVolume - (*iLink)->m_ReferenceFlowVolume ;
+			error = (*iLink)->m_TotalVolume - (*iLink)->m_total_sensor_link_volume ;
 		sprintf_s(text, "%.0f", error);
-		m_ListCtrl.SetItemText(Index,13,text);
+		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		float error_percentage = error / max(1,(*iLink)->m_ReferenceFlowVolume)*100 ;
+		float error_percentage = error / max(1,(*iLink)->m_total_sensor_link_volume)*100 ;
 		sprintf_s(text, "%.1f", error_percentage);
-		m_ListCtrl.SetItemText(Index,14,text);
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+		
 
-	}else
+
+		/*
+
 	{     // two document view
 
 
-		sprintf_s(text, "%5.2f",(*iLink)->m_StaticVOC    );
+		sprintf_s(text, "%5.2f",(*iLink)->m_volume_over_capacity_ratio    );
 		m_ListCtrl.SetItemText(Index,9,text);
 
 		//9  
 		// 10
 
-		sprintf_s(text, "%5.2f",(*iLink)->m_StaticSpeed    );
+		sprintf_s(text, "%5.2f",(*iLink)->m_avg_simulated_speed    );
 		m_ListCtrl.SetItemText(Index,12,text);
 
 		// 12
@@ -278,11 +286,11 @@ void CDlgLinkList::ReloadData()
 		}
 		// 16
 
+		*/
 
 	}
 
-	}
-
+	
 }
 
 void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
@@ -301,10 +309,10 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 
 	// 
-	m_pDoc->m_SelectedLinkID = -1;
+	m_pDoc->m_SelectedLinkNo = -1;
 
 	if(m_bDoc2Ready)
-		m_pDoc2->m_SelectedLinkID = -1;
+		m_pDoc2->m_SelectedLinkNo = -1;
 
 	g_LinkDisplayList.clear ();
 
@@ -319,10 +327,10 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		char str[100];
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
-			m_pDoc->m_SelectedLinkID = LinkNo;
+			m_pDoc->m_SelectedLinkNo = LinkNo;
 
 			if(m_pDoc2)
-				m_pDoc2->m_SelectedLinkID = LinkNo;
+				m_pDoc2->m_SelectedLinkNo = LinkNo;
 
 			g_LinkDisplayList.push_back(LinkNo);
 
@@ -331,10 +339,10 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	if(m_ZoomToSelectedLink == true)
 	{
 
-		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
+		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 
 		if(m_bDoc2Ready)
-			m_pDoc2->ZoomToSelectedLink(m_pDoc->m_SelectedLinkID);
+			m_pDoc2->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 	}
 
 	Invalidate();
@@ -355,6 +363,7 @@ void CDlgLinkList::OnBnClickedCancel()
 {
 	CDialog::OnOK();
 	g_bShowLinkList = false;
+
 }
 
 
@@ -414,3 +423,8 @@ void CDlgLinkList::OnUpdateLinkselectionShowalllinksexceptconnectors(CCmdUI *pCm
 	pCmdUI->SetCheck(m_LinkSelectionMode == eLinkSelection_NoConnectors);
 }
 
+
+void CDlgLinkList::OnBnClickedCheckZoomToSelectedLink()
+{
+	// TODO: Add your control notification handler code here
+}

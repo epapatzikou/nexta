@@ -43,4 +43,7 @@ public:
 	afx_msg void OnBnClickedExportRoute();
 	afx_msg void OnPathDataExportCSV();
 	afx_msg void OnDataImportCsv();
+	afx_msg void OnBnClickedCheckZoomToSelectedLink();
+	CListBox m_PathList;
+	afx_msg void OnLbnSelchangeList1();
 };

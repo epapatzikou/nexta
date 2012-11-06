@@ -49,7 +49,7 @@ class CDlgCarFollowing : public CDialog
 	DECLARE_DYNAMIC(CDlgCarFollowing)
 
 public:
-	int m_SelectedLinkID;
+	int m_SelectedLinkNo;
 	CTLiteDoc* pDoc;
 	CDlgCarFollowing(CWnd* pParent = NULL);   // standard constructor
 	~CDlgCarFollowing()

@@ -1,6 +1,6 @@
 // Transit.cpp : Implementation file
 //
-//  Portions Copyright 2012 Shuguang Li (xalxlsg@gmail.com)
+//  Portions Copyright 2012 Shuguang Li (xalxlsg@gmail.com), Xuesong Zhou (zhou99@gmail.com)
 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
@@ -38,6 +38,7 @@
 
 bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 {
+
 	//	// step 1: read  route files
 	string str0 = m_ProjectDirectory +"routes.txt";
 	//string str =  "h:/routes.csv";
@@ -49,6 +50,9 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 
 	if (parser.OpenCSVFile(strStd))
 	{
+
+		AfxMessageBox("Start reading Google Transit Feed files...", MB_ICONINFORMATION);
+
 		int count =0;
 		PT_Route route;
 		while(parser.ReadRecord())
@@ -85,9 +89,13 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 		}
 		parser.CloseCSVFile ();
 
+	}else
+	{
+		return false;
 	}
 
-	///read stop information
+	CString missing_stops_message;
+	// step 1: read stop information
 	string str2 = m_ProjectDirectory +"stops.txt";
 
 
@@ -122,8 +130,8 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 			if(parser.GetValueByFieldName("stop_code",stop.stop_code ) == false)
 				stop.stop_code=0;
 
-			if(parser.GetValueByFieldName("stop_desc",stop.stop_desc) == false)
-				break;
+			parser.GetValueByFieldName("stop_desc",stop.stop_desc);
+
 
 			if(parser.GetValueByFieldName("stop_name",stop.stop_name) == false)
 				stop.stop_name="";
@@ -135,9 +143,12 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 			if(m_PT_StopMap.find(stop.stop_id) == m_PT_StopMap.end())
 			{
 				m_PT_StopMap[stop.stop_id] = stop;
+
 			}else
-			{
-				AfxMessageBox("Duplicated Stop ID!");
+			{   CString msg;
+			msg.Format("Duplicated Stop ID %d", stop.stop_id);
+
+			AfxMessageBox(msg);
 			}
 
 			count++;
@@ -146,6 +157,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 		parser.CloseCSVFile ();
 
 	}
+
 
 	//read trip file
 	string str3 = m_ProjectDirectory +"trips.txt";
@@ -193,7 +205,10 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 	}
 
 
+
 	// read stop_times.txt
+	int stop_times_count =0;
+	int max_stop_times_record  = 1000;
 
 	string str4 = m_ProjectDirectory +"stop_times.txt";
 	CT2CA pszConvertedAnsiString4 (str4.c_str());
@@ -201,16 +216,13 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 	std::string  strStd4 (pszConvertedAnsiString4);
 	if (parser.OpenCSVFile(strStd4))
 	{
-		int count =0;
+
 		while(parser.ReadRecord())
 		{
 			PT_StopTime TransitStopTime;
 
 			if(parser.GetValueByFieldName("stop_id",TransitStopTime.stop_id) == false)
 				break;	
-
-			if(parser.GetValueByFieldName("stop_sequence",TransitStopTime.stop_sequence) == false)
-				break; 			
 
 			if(parser.GetValueByFieldName("arrival_time",TransitStopTime.arrival_time) == false)
 				break;
@@ -221,65 +233,72 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 			if(parser.GetValueByFieldName("trip_id",TransitStopTime.trip_id) == false)
 				break; 
 
-			if(parser.GetValueByFieldName("drop_off_type",TransitStopTime.drop_off_type) == false)
-				TransitStopTime.drop_off_type=0; 
 
-			if(parser.GetValueByFieldName("pickup_type",TransitStopTime.pickup_type) == false)
-				TransitStopTime.pickup_type=0;
-
-			if(parser.GetValueByFieldName("shape_dist_traveled",TransitStopTime.shape_dist_traveled) == false)
-				TransitStopTime.shape_dist_traveled=0;	
-
-			if(parser.GetValueByFieldName("stop_headsign",TransitStopTime.stop_headsign) == false)
-				TransitStopTime.stop_headsign=0; 
-
-			if(parser.GetValueByFieldName("timepoint",TransitStopTime.timepoint) == false)
-				TransitStopTime.timepoint=0;	
-
-
-			m_PT_StopTimeVector.push_back(TransitStopTime) ;
-
-			count++;
-
-		}
-		parser.CloseCSVFile ();
-	}
-
-	//read route shape file
-	string str5 = m_ProjectDirectory +"shapes.txt";
-	CT2CA pszConvertedAnsiString5 (str5.c_str());
-	// construct a std::string using the LPCSTR input
-	std::string  strStd5 (pszConvertedAnsiString5);
-	if (parser.OpenCSVFile(strStd5))
-	{
-		int count =0;
-		while(parser.ReadRecord())
-		{
-			PT_shape_feature_point ft;
-			//GDPoint point;
-
-			if(parser.GetValueByFieldName("shape_id",ft.shape_id) == false)
-				break;	
-
-			if(parser.GetValueByFieldName("shape_pt_lat",ft.shape_pt_lat) == false)
+			if(parser.GetValueByFieldName("stop_sequence",TransitStopTime.stop_sequence) == false)
 				break; 			
 
-			if(parser.GetValueByFieldName("shape_pt_lon",ft.shape_pt_lon) == false)
-				break;
+			/*
+			if(parser.GetValueByFieldName("drop_off_type",TransitStopTime.drop_off_type) == false)
+			TransitStopTime.drop_off_type=0; 
 
-			if(parser.GetValueByFieldName("shape_pt_sequence",ft.shape_pt_sequence) == false)
-				break;	
+			if(parser.GetValueByFieldName("pickup_type",TransitStopTime.pickup_type) == false)
+			TransitStopTime.pickup_type=0;
 
-			//			if(parser.GetValueByFieldName("shape_dist_traveled",Tripshapes.shape_dist_traveled) == false)
-			//				Tripshapes.shape_dist_traveled=0; 
+			if(parser.GetValueByFieldName("shape_dist_traveled",TransitStopTime.shape_dist_traveled) == false)
+			TransitStopTime.shape_dist_traveled=0;	
 
+			if(parser.GetValueByFieldName("stop_headsign",TransitStopTime.stop_headsign) == false)
+			TransitStopTime.stop_headsign=0; 
 
-			m_PT_shapes_map[ft.shape_id].feature_point_vector.push_back(ft);
-			count++;
+			if(parser.GetValueByFieldName("timepoint",TransitStopTime.timepoint) == false)
+			TransitStopTime.timepoint=0;*/	
+
+			if(m_PT_StopMap.find(TransitStopTime.stop_id)!= m_PT_StopMap.end())
+			{
+				TransitStopTime.pt.x = m_PT_StopMap[TransitStopTime.stop_id].m_ShapePoint .x ;
+				TransitStopTime.pt.y = m_PT_StopMap[TransitStopTime.stop_id].m_ShapePoint .y ;
+			}else
+			{
+				if(missing_stops_message.GetLength ()<1000)
+				{
+					CString msg;
+					msg.Format ("Mising stop %d\n",TransitStopTime.stop_id);
+					missing_stops_message+=msg;
+
+				}
+
+			}
+
+			//m_PT_StopTimeVector.push_back(TransitStopTime) ;
+			stop_times_count++;
+
+			//if(stop_times_count >=max_stop_times_record)  // for testing purposes
+			//	break;
+
+			if(m_PT_TripMap.find(TransitStopTime.trip_id) != m_PT_TripMap.end())
+			{
+				m_PT_TripMap[TransitStopTime.trip_id].m_PT_StopTimeVector .push_back(TransitStopTime);
+			}
 
 		}
 		parser.CloseCSVFile ();
 	}
+
+	CString message;
+
+	int trip_size = m_PT_TripMap.size();
+	int stop_size = m_PT_StopMap.size();
+	int stop_time_size = stop_times_count;
+	message.Format("%d transit trips, %d stops and %d stop time records are loaded.", trip_size, stop_size, stop_time_size);
+
+	AfxMessageBox(message, MB_ICONINFORMATION);
+
+	if(missing_stops_message.GetLength ()>0)
+	{
+		AfxMessageBox(missing_stops_message);	
+	}
+
+/*
 
 	//read transfer file
 	string str6 = m_ProjectDirectory +"transfers.txt";
@@ -288,92 +307,29 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 	std::string  strStd6 (pszConvertedAnsiString6);
 	if (parser.OpenCSVFile(strStd6))
 	{
-		int count =0;
-		while(parser.ReadRecord())
-		{
-			PT_transfers transfers;
-
-			if(parser.GetValueByFieldName("from_stop_id",transfers.from_stop_id) == false)
-				break;	
-
-			if(parser.GetValueByFieldName("to_stop_id",transfers.to_stop_id) == false)
-				break; 			
-
-			if(parser.GetValueByFieldName("transfer_type",transfers.transfer_type) == false)
-				break;
-
-			m_PT_transfers.push_back(transfers) ;
-			count++;
-		}
-		parser.CloseCSVFile ();
-	}
-
-
-
-	// step 2: assemble data
-	// add stop times into trips
-	// add trips into routes
-	std::map<int, PT_Route>::iterator iPT_RouteMap;
-	std::map<int, PT_Trip>::iterator iPT_TripMap;
-	std::map<int, PT_Stop>::iterator iPT_StopMap;
-	std::vector<PT_StopTime>::iterator iPT_StopTimeVector;
-
-	std::vector<PT_shapes>::iterator  iPT_shapes; 
-
-	//find shape line point on the route by the (route_id) the route----(trip.id,route.id,shape.id)trip table--(shape_id)shapes table
-	for ( iPT_RouteMap=m_PT_RouteMap.begin() ; iPT_RouteMap != m_PT_RouteMap.end(); iPT_RouteMap++ )
+	int count =0;
+	while(parser.ReadRecord())
 	{
-		for ( iPT_TripMap=m_PT_TripMap.begin() ; iPT_TripMap != m_PT_TripMap.end(); iPT_TripMap++ )
-		{
-			if ((*iPT_RouteMap).second.route_id  ==(*iPT_TripMap).second.route_id )// find shape_id in the trip
-			{
-				//find shape line point on the route by the (route_id) the route----(trip.id,route.id,shape.id)trip table--(shape_id)shapes table
+	PT_transfers transfers;
 
-				if( m_PT_shapes_map.find((*iPT_TripMap).second.shape_id) != m_PT_shapes_map.end())
-				{ // make sure shape id exists
-					for ( int i = 0; i< m_PT_shapes_map[(*iPT_TripMap).second.shape_id].feature_point_vector.size(); i++)
-					{ // for each feature point with the same shape id
-						PT_shape_feature_point ft = m_PT_shapes_map[(*iPT_TripMap).second.shape_id].feature_point_vector[i];
+	if(parser.GetValueByFieldName("from_stop_id",transfers.from_stop_id) == false)
+	break;	
 
-						// insert the feature point according to the shape point sequence
-						m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[ft.shape_pt_sequence].y =ft.shape_pt_lat;
-						m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteShapePoints[ft.shape_pt_sequence].x =ft.shape_pt_lon;
+	if(parser.GetValueByFieldName("to_stop_id",transfers.to_stop_id) == false)
+	break; 			
 
-						GDPoint pt;
-						pt.x = ft.shape_pt_lon;
-						pt.y = ft.shape_pt_lat;
+	if(parser.GetValueByFieldName("transfer_type",transfers.transfer_type) == false)
+	break;
 
-						if( network_rect.PtInRect(pt) == true)
-							(*iPT_RouteMap).second.bInsideFreewayNetwork = true;
-
-					}
-
-				}
-
-
-				//find bus stop point on the route by the (route_id) the route----(trip.id,route.id,shape.id)trip table----(trip.id,stop.id)stoptime table--(stop.id)stop table
-				for ( iPT_StopTimeVector=m_PT_StopTimeVector.begin() ; iPT_StopTimeVector != m_PT_StopTimeVector.end(); iPT_StopTimeVector++ )
-				{
-					if ((*iPT_StopTimeVector).trip_id == (*iPT_TripMap).second.trip_id)// find shape_id in the trip
-					{ // find trip_id in the bus stop time ,then get stop_id, further obtain stop location in stop table
-						iPT_StopMap= m_PT_StopMap.find((*iPT_StopTimeVector).stop_id);
-						m_PT_RouteMap[(*iPT_RouteMap).first].m_RouteBusStopShapePoints[(*iPT_StopMap).second.stop_id]=(*iPT_StopMap).second.m_ShapePoint ;
-
-			  }
-				}    
-				break;  // one shape point sequence for one signle trip id on the route
-
-			}
-
-		}
-
-
-
-
+	m_PT_transfers.push_back(transfers) ;
+	count++;
+	}
+	parser.CloseCSVFile ();
 	}
 
+	*/
 
-
+	// map matching
 
 
 
@@ -383,15 +339,196 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
 {
 
-	CString str = TransitDataProjectFolder;
-	CT2CA pszConvertedAnsiString (str);
-	// construct a std::string using the LPCSTR input
-	std::string  strStd (pszConvertedAnsiString);
-
-	m_PT_network.m_ProjectDirectory = strStd;
+	m_PT_network.m_ProjectDirectory = TransitDataProjectFolder;
 	m_PT_network.ReadGTFFiles(m_NetworkRect);
+
+	if( m_PT_network.m_PT_TripMap.size()>0 && AfxMessageBox("Do you want to generate bus trip data?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
+	{
+		TransitTripMatching();
+	}
 
 	return true;
 }
 
 
+bool CTLiteDoc::TransitTripMatching()
+{
+
+	FILE* st;
+	fopen_s(&st,m_PT_network.m_ProjectDirectory +"input_transit_trip.csv","w");
+	if(st==NULL)
+	{
+		AfxMessageBox("Error: File input_transit_trip.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+	}
+
+	if(st!=NULL)
+	{
+
+		fprintf(st,"route_id,trip_id,link_sequence_no,from_node_id,to_node_id,street_name,stop_id,stop_sequence,arrival_time,departure_time\n");
+
+
+		std::list<DTALink*>::iterator iLink;
+
+		// pass 0: initialization 
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
+		{
+			(*iLink)-> m_OriginalLength = (*iLink)->m_Length;
+
+		}
+
+		int count = 0;
+		std::map<int, int> RouteMap;
+
+		// step 2: assemble data
+		std::map<int, PT_Trip>::iterator iPT_TripMap;
+		for ( iPT_TripMap= m_PT_network.m_PT_TripMap.begin() ; iPT_TripMap != m_PT_network.m_PT_TripMap.end(); iPT_TripMap++ )
+		{
+			if(m_pNetwork ==NULL)  // we only build the network once
+			{
+				m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+			}
+
+			count++;
+			if(count>=50)
+				break;
+
+			int stop_time_size  = (*iPT_TripMap).second .m_PT_StopTimeVector.size();
+			if(stop_time_size>=2)
+			{
+				//find OD nodes for each vehicle
+				m_OriginNodeID = FindClosestNode((*iPT_TripMap).second .m_PT_StopTimeVector[0].pt);
+				m_DestinationNodeID = FindClosestNode((*iPT_TripMap).second .m_PT_StopTimeVector[stop_time_size-1].pt);
+				// set new length for links
+
+				if(m_OriginNodeID==-1 || m_DestinationNodeID==-1)
+					continue;
+
+				// pass 0: initialization 
+				for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
+				{
+					(*iLink)->m_StopTimeRecord.stop_id = -1;
+					(*iLink)->m_Length = 999999;
+
+				}
+				int max_link_id = 1;
+
+
+				// first pass: link distance
+
+				for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
+				{
+
+////					if( m_LinkTypeMap[(*iLink)->m_link_type].IsTransit())
+//					{
+//
+//						(*iLink)->m_Length = 999999; // // not using light rail link
+//
+//					}else
+					{
+						double min_p_to_link_distance = 999999;
+
+						GDPoint pfrom = (*iLink)->m_FromPoint;
+						GDPoint pto = (*iLink)->m_ToPoint;
+
+						GDPoint mid_point;
+						mid_point.x = (pfrom.x + pto.x)/2;
+						mid_point.y = (pfrom.y + pto.y)/2;
+
+
+						int Intersection_Count  = 0;
+
+
+
+						for(int i = 0; i < stop_time_size; i++ )
+						{
+
+							GDPoint pt0 = (*iPT_TripMap).second .m_PT_StopTimeVector[i].pt;
+							GDPoint pt1 = (*iPT_TripMap).second .m_PT_StopTimeVector[min(i+1,stop_time_size-1)].pt;
+							GDPoint pt2 = (*iPT_TripMap).second .m_PT_StopTimeVector[min(i+2,stop_time_size-1)].pt;
+
+
+							float distance;
+
+							distance = (g_P2P_Distance(pfrom, pt0) +  g_P2P_Distance(mid_point, pt1) +  g_P2P_Distance(pto, pt2))/3;
+							if(distance < min_p_to_link_distance)
+							{
+								min_p_to_link_distance = distance;
+							}
+
+						} 
+						// determine the distance to GPS traces as length
+
+						double dis_in_feet = min_p_to_link_distance /m_UnitFeet;
+
+						(*iLink)->m_Length = dis_in_feet; // keep the original link length
+					}
+			 }
+
+
+				m_RandomRoutingCoefficient  = 0;  // no random cost
+				//build physical network
+				m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
+				int NodeNodeSum = 0;
+				int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];//save link ids in a path(a path means the trajactory of a vehicle obtained from GPS)
+				float TotalCost;
+				bool distance_flag = true;
+				int  NodeSize;
+				//get the total number of the nodes in the network we build,and give the link ids to PathLinkList
+				NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)    
+				//update m_PathDisplayList
+				if(NodeSize <= 1)
+				{
+					TRACE("error");
+				}
+
+				NodeSize = min(NodeSize, MAX_NODE_SIZE_IN_A_PATH);
+
+				std::vector<int> link_vector;// a vector to save link ids
+				for (int i=0 ; i < NodeSize-1; i++)
+				{
+					link_vector.push_back (PathLinkList[i]);// save the link ids
+					DTALink* pLink = m_LinkNotoLinkMap[PathLinkList[i]];
+					if(pLink!=NULL)
+					{ 
+						//if(i==0)
+						//	(*iPT_TripMap).second .m_PathNodeVector.push_back (pLink->m_FromNodeID );
+						//
+						//(*iPT_TripMap).second .m_PathNodeVector.push_back (pLink->m_ToNodeID );
+
+						fprintf(st,"%d,%d,%d,%d,%d,%s,",(*iPT_TripMap).second.route_id, (*iPT_TripMap).second.trip_id ,
+							i,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber, pLink->m_Name.c_str ());
+
+						for(int s_i = 0; s_i < stop_time_size; s_i++ )
+						{
+							GDPoint pfrom = pLink->m_FromPoint;
+							GDPoint pto = pLink->m_ToPoint;
+
+							float distance = g_DistancePointLine((*iPT_TripMap).second .m_PT_StopTimeVector[s_i].pt, pfrom, pto);  // go through each GPS location point
+
+							if(distance < 90)  // with intersection
+							{
+								PT_StopTime element = (*iPT_TripMap).second .m_PT_StopTimeVector[s_i];
+								fprintf(st,"%d,%d,%s,%s,", element.stop_id, element.stop_sequence ,element.arrival_time.c_str () , element.departure_time.c_str () );
+								break;
+							}
+
+						}
+						fprintf(st,"\n");
+
+					}
+
+				} // for all links
+
+			}
+		}  // for each transit trip
+
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
+		{
+			(*iLink)->m_Length = (*iLink)-> m_OriginalLength;
+		}
+
+		fclose(st);
+	}
+	return true;
+}

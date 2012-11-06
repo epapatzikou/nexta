@@ -77,7 +77,6 @@ BOOL CXLEzAutomation::ReleaseExcel()
 {
 	// Added by Xuesong to avoid alert
 
-	m_pXLServer->EnableAlert(false);
 	return m_pXLServer->ReleaseExcel();
 }
 //Delete line from worksheet
@@ -115,7 +114,11 @@ BOOL CXLEzAutomation::PlacePictureToClipboard(BYTE *pImage)
 //Open Excell file
 BOOL CXLEzAutomation::OpenExcelFile(CString szFileName)
 {
+	m_CurrentFileName = szFileName;
 	return m_pXLServer->OpenExcelFile(szFileName);
+
+	m_pXLServer->EnableAlert(false);
+
 }
 //Insert picture from buffer. If pImage = NULL, the picture from clipboard will be inserted.
 //The picture is placed at (Column, Row) on worksheet

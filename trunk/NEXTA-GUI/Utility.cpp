@@ -31,11 +31,10 @@
 #include "math.h"
 #include "Network.h"
 #include "Utility.h"
-
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
 
 using namespace std;
 
@@ -153,18 +152,21 @@ float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
     float U;
     GDPoint Intersection;
 
-
     float  LineLength = g_P2P_Distance( FromPt, ToPt );
  
     U = (  (pt.x - ToPt.x) * (FromPt.x - ToPt.x ) + ( pt.y - ToPt.y ) * ( FromPt.y - ToPt.y ) ) /(LineLength * LineLength );
  
     if( U < 0.0f || U > 1.0f )
-        return -1;   // intersection does not fall within the segment
+        return 99;   // intersection does not fall within the segment
  
     Intersection.x = ToPt.x + U * ( FromPt.x - ToPt.x );
     Intersection.y = ToPt.y + U * ( FromPt.y - ToPt.y );
     
-    return g_P2P_Distance( pt, Intersection );
+	float distance_1 = g_P2P_Distance( pt, Intersection );
+	float distance_0 = g_P2P_Distance( pt, FromPt );
+	float distance_2 = g_P2P_Distance( pt, ToPt );
+
+	return distance_1;
 }
 float g_GetRandomRatio()
 {

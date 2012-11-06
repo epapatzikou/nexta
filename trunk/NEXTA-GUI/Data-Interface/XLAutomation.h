@@ -74,7 +74,7 @@ protected:
 	void ShowException(LPOLESTR szMember, HRESULT hr, EXCEPINFO *pexcep, unsigned int uiArgErr);
 	void ReleaseDispatch();
 	BOOL SetExcelVisible(BOOL bVisible);
-	void ReleaseVariant(VARIANTARG *pvarg);
+	int ReleaseVariant(VARIANTARG *pvarg);
 	void ClearAllArgs();
 	void ClearVariant(VARIANTARG *pvarg);
 	 

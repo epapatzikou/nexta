@@ -147,8 +147,8 @@ int CGridColumnTraitText::OnSortRows(LPCTSTR pszLeftValue, LPCTSTR pszRightValue
 {
 	if (isNumeric(pszLeftValue) && isNumeric(pszRightValue))
 	{
-		float nLeftValue = atof(pszLeftValue);
-		float nRightValue = atof(pszRightValue);
+		double nLeftValue = atof(pszLeftValue)*10;  // modified by Xuesong to enable sorting on float point values
+		double nRightValue = atof(pszRightValue)*10;
 		if (bAscending)
 			return nLeftValue - nRightValue;
 		else

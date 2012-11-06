@@ -98,6 +98,8 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 // time -dependent label correcting algorithm with deque implementation
 {
 
+	float CostUpperBound = MAX_SPLABEL;
+
     int	temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
 	int i;
 	debug_flag = 1;
@@ -161,7 +163,7 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 			NewTime	 = LabelTimeAry[FromID] + random_cost;  // time-dependent travel times come from simulator
 			NewCost    = LabelCostAry[FromID] +random_cost;       // costs come from time-dependent tolls, VMS, information provisions
 
-			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
+			if(NewCost < LabelCostAry[ToID] &&  NewCost < CostUpperBound) // be careful here: we only compare cost not time
 			{
 
 				TRACE("\n         UPDATE to %f, link travel time %f", NewCost, m_LinkTDCostAry[LinkNo][0]);
@@ -170,6 +172,11 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 				LabelCostAry[ToID] = NewCost;
 				NodePredAry[ToID]   = FromID;
 				LinkNoAry[ToID] = LinkNo;
+
+				if (ToID == destination) // special feature 7.2: update upper bound cost
+				{
+					CostUpperBound = LabelCostAry[ToID];
+				}
 
 				// Dequeue implementation
 				//

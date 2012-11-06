@@ -136,7 +136,7 @@ void CDlg_UnitTestingList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		char str[100];
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
-			m_pDoc->m_SelectedLinkID = LinkNo;
+			m_pDoc->m_SelectedLinkNo = LinkNo;
 			g_LinkDisplayList.push_back(LinkNo);
 
 	}

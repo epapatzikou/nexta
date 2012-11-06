@@ -9,11 +9,11 @@
 using std::vector;
 using std::string;
 
-enum Assignment_Simulation_Settings {SIMULATION = 0,DEMAND_META, MOE, DEMAND_TYPE, PRICING_TYPE, VEHICLE_TYPE, LINK_TYPE, NODE_CONTROL_TYPE, VEHICLE_EMISSIONS, MAX_NUM_OF_SETTINGS};
-static LPTSTR Setting_Element[MAX_NUM_OF_SETTINGS] = {"Simulation", "Demand Meta Setting", "MOE", "Demand Type", "Pricing Type", "Vehicle Type", "Link Type", "Node Control Type", "Vehicle Emissions"};
+enum Assignment_Simulation_Settings {SIMULATION = 0,DEMAND_META, MOE, DEMAND_TYPE, PRICING_TYPE, VEHICLE_TYPE, LINK_TYPE, NODE_CONTROL_TYPE, VEHICLE_EMISSIONS,VOT_DISTRIBUTION, MAX_NUM_OF_SETTINGS};
+static LPTSTR Setting_Element[MAX_NUM_OF_SETTINGS] = {"Simulation", "Demand Meta Database", "MOE Output", "Demand Type", "Pricing Type", "Vehicle Type", "Link Type", "Node Control Type", "Vehicle Emissions", "Value of Time Distribution"};
 static LPTSTR Setting_FileName[MAX_NUM_OF_SETTINGS] = {"input_scenario_settings","input_demand_meta_data", "input_MOE_settings", "input_demand_type",
 														"input_pricing_type", "input_vehicle_type", "input_link_type", "input_node_control_type", 
-														"input_vehicle_emission_rate"
+														"input_vehicle_emission_rate", "input_VOT"
 														};
 
 // CAssignmentSimulationSettingDlg dialog

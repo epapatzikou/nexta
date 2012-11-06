@@ -4,8 +4,12 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "Dlg_VehEmissions.h"
+#include "CGridListCtrlEx\CGridColumnTraitEdit.h"
+#include "CGridListCtrlEx\CGridColumnTraitCombo.h"
+#include "CGridListCtrlEx\CGridRowTraitXP.h"
 #define MAX_STRING_LENGTH  100
 
+extern CDlg_VehPathAnalysis* g_pVehiclePathDlg;
 
 // CDlg_VehPathAnalysis dialog
 
@@ -15,6 +19,11 @@ CDlg_VehPathAnalysis::CDlg_VehPathAnalysis(CWnd* pParent /*=NULL*/)
 : CBaseDialog(CDlg_VehPathAnalysis::IDD, pParent)
 , m_SingleVehicleID(0)
 {
+	m_SelectedOrigin = -1;
+	m_SelectedDestination = -1;
+	m_ZoneNoSize  = 0;
+	m_ODMOEMatrix = NULL;
+
 }
 
 CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
@@ -23,7 +32,7 @@ CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
 	m_pDoc->m_CriticalDestinationZone  = -1;
 
 	if(m_ODMOEMatrix !=NULL)
-		DeallocateDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
+		Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_ProjectSize, m_pDoc->m_ZoneNoSize );
 
 	std::vector<int> LinkVector;
 	// empty vector
@@ -34,24 +43,24 @@ CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
 void CDlg_VehPathAnalysis::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST, m_ListCtrl);
 	DDX_Control(pDX, IDC_LIST_VEHICLE, m_VehicleList);
 	DDX_Control(pDX, IDC_COMBO_Origin, m_OriginBox);
 	DDX_Control(pDX, IDC_COMBO_Destination, m_DestinationBox);
 	DDX_Control(pDX, IDC_COMBO_DepartureTime, m_DepartureTimeBox);
 	DDX_Control(pDX, IDC_COMBO_VehicleType, m_VehicleTypeBox);
-	DDX_Control(pDX, IDC_OpMode_LINK, m_OpModeList);
 	DDX_Control(pDX, IDC_COMBO_InformationClass, m_InformationClassBox);
 	DDX_Control(pDX, IDC_COMBO_Min_Number_of_vehicles, m_MinVehicleSizeBox);
 	DDX_Control(pDX, IDC_COMBO_Min_Travel_Time, m_MinDistanceBox);
-	DDX_Control(pDX, IDC_COMBO_Min_TravelTimeIndex, m_MinTTIBox);
+	DDX_Control(pDX, IDC_COMBO_Min_TravelTimeIndex, m_MaxSpeedBox);
 	DDX_Control(pDX, IDC_COMBO_TimeInterval, m_TimeIntervalBox);
-	DDX_Control(pDX, IDC_LIST_OD, m_ODList);
 	DDX_Control(pDX, IDC_LIST_PATH, m_PathList);
 	DDX_Control(pDX, IDC_COMBO_ImpactLink, m_ImpactLinkBox);
 	DDX_Control(pDX, IDC_SUMMARY_INFO, m_Summary_Info_Edit);
 	DDX_Control(pDX, IDC_COMBO_VOT_LB, m_ComboBox_VOT_LB);
 	DDX_Control(pDX, IDC_COMBO_VOT_UB, m_ComboBox_VOT_UB);
 	DDX_Control(pDX, IDC_COMBO_DemandType, m_DemandTypeBox);
+	DDX_Control(pDX, IDC_COMBO_DayNo, m_DayNo_Combobox);
 }
 
 
@@ -80,6 +89,8 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_BN_CLICKED(ID_EXPORT_VEHICLE_DATA, &CDlg_VehPathAnalysis::OnBnClickedExportVehicleData)
 	ON_BN_CLICKED(ID_FindCriticalOD, &CDlg_VehPathAnalysis::OnBnClickedFindcriticalod)
 	ON_BN_CLICKED(IDOK, &CDlg_VehPathAnalysis::OnBnClickedOk)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST, &CDlg_VehPathAnalysis::OnLvnItemchangedList)
+	ON_CBN_SELCHANGE(IDC_COMBO_DayNo, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDayno)
 END_MESSAGE_MAP()
 
 
@@ -97,7 +108,7 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	{
 		if((*iLink) ->CapacityReductionVector.size()>0)
 		{
-			str.Format ("%d->%d, Incident", (*iLink) ->m_FromNodeNumber,(*iLink) ->m_ToNodeNumber );
+			str.Format ("%d->%d, Incident/Work Zone", (*iLink) ->m_FromNodeNumber,(*iLink) ->m_ToNodeNumber );
 			m_ImpactLinkBox.AddString (str);
 
 		}
@@ -128,16 +139,32 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_DestinationBox.AddString("All");
 
 	int i;
-	for(i=1; i <= m_pDoc->m_ODSize ; i++)
+	for(i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
 	{
-		str.Format ("%d", i);
+		str.Format ("%d", m_pDoc->m_ZoneNumberVector [i]);
+		m_TAZVector.push_back (m_pDoc->m_ZoneNumberVector [i]);
 		m_OriginBox.AddString(str);
 		m_DestinationBox.AddString(str);
 	}
 	m_OriginBox.SetCurSel (0);
 	m_DestinationBox.SetCurSel (0);
 
-	m_ODMOEMatrix = AllocateDynamicArray<VehicleStatistics>(m_pDoc->m_ODSize+1,m_pDoc->m_ODSize+1);
+
+
+	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+	int project_index = 0 ;
+	while (iDoc != g_DocumentList.end())
+	{
+		if((*iDoc)->m_ProjectTitle.GetLength () >0)  
+		{
+
+		project_index++;
+		}
+		iDoc++;
+	}
+
+	m_ProjectSize = max(1,project_index);
+
 
 	m_VehicleTypeBox.AddString ("All");
 	
@@ -169,6 +196,15 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	}
 	m_DepartureTimeBox.SetCurSel (0);
 
+	for(i=0; i<100; i++)
+	{
+		str.Format ("%d", i);
+		m_DayNo_Combobox.AddString(str);
+
+	}
+
+	m_DayNo_Combobox.SetCurSel (0);
+
 	m_TimeIntervalBox.AddString("1440");
 	m_TimeIntervalBox.AddString("15");
 	m_TimeIntervalBox.AddString("30");
@@ -182,13 +218,13 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_MinVehicleSizeBox.AddString ("2");
 	m_MinVehicleSizeBox.AddString ("5");
 	m_MinVehicleSizeBox.AddString ("10");
-	m_MinVehicleSizeBox.AddString ("25");
+	m_MinVehicleSizeBox.AddString ("20");
 	m_MinVehicleSizeBox.AddString ("50");
 	m_MinVehicleSizeBox.AddString ("75");
 	m_MinVehicleSizeBox.AddString ("100");
 	m_MinVehicleSizeBox.AddString ("200");
 	m_MinVehicleSizeBox.AddString ("500");
-	m_MinVehicleSizeBox.SetCurSel (1);
+	m_MinVehicleSizeBox.SetCurSel (4);
 
 	m_MinDistanceBox.AddString ("0");
 	m_MinDistanceBox.AddString ("1");
@@ -204,14 +240,16 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_MinDistanceBox.AddString ("100");
 	m_MinDistanceBox.SetCurSel (0);
 
-	m_MinTTIBox.AddString("1.0"); 
-	m_MinTTIBox.AddString("1.25"); 
-	m_MinTTIBox.AddString("1.5"); 
-	m_MinTTIBox.AddString("1.75"); 
-	m_MinTTIBox.AddString("2.0"); 
-	m_MinTTIBox.AddString("3.0"); 
-	m_MinTTIBox.AddString("4.0"); 
-	m_MinTTIBox.SetCurSel (0);
+	m_MaxSpeedBox.AddString("100"); 
+	m_MaxSpeedBox.AddString("80"); 
+	m_MaxSpeedBox.AddString("60"); 
+	m_MaxSpeedBox.AddString("50"); 
+	m_MaxSpeedBox.AddString("40"); 
+	m_MaxSpeedBox.AddString("30"); 
+	m_MaxSpeedBox.AddString("20"); 
+	m_MaxSpeedBox.AddString("10"); 
+	m_MaxSpeedBox.AddString("5"); 
+	m_MaxSpeedBox.SetCurSel (0);
 
 	for(int vot = 0; vot<=100; vot+=5)
 	{
@@ -225,6 +263,93 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_ComboBox_VOT_LB.SetCurSel (0);
 	m_ComboBox_VOT_UB.SetCurSel (20);
 
+	// initialize List Control
+	m_ListCtrl.SetCellMargin(1.2);
+	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
+	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
+
+	std::vector<std::string> m_Column_names;
+
+	std::vector<CString> ColumnLableVector;
+
+	ColumnLableVector.push_back ("Origin Zone");
+	ColumnLableVector.push_back ("Destination Zone");
+
+	m_GPS_start_day = 3;
+	m_GPS_end_day = 17;
+
+
+	 project_index = 0 ;
+
+	iDoc = g_DocumentList.begin ();
+	while (iDoc != g_DocumentList.end())
+	{
+		if((*iDoc)->m_ProjectTitle.GetLength () >0)  
+		{
+
+			CString str;
+			str.Format ("%s Count:", (*iDoc)->m_ProjectTitle);
+			ColumnLableVector.push_back (str);
+			ColumnLableVector.push_back ("Avg Travel Time");
+			ColumnLableVector.push_back ("Avg Distance");
+			ColumnLableVector.push_back ("Avg Speed");
+			ColumnLableVector.push_back ("TT STD");
+
+			if((*iDoc)-> m_bGPSDataSet)
+			{
+
+				for(int day = m_GPS_start_day; day<= m_GPS_end_day; day++)
+				{
+				
+				CString day_count_str;
+				day_count_str.Format ("day %d:Count", day);
+				ColumnLableVector.push_back (day_count_str);
+
+				}
+
+				ColumnLableVector.push_back ("Count Range/Mean Ratio");
+
+			}
+
+			if(project_index>=1)
+			{
+				ColumnLableVector.push_back ("Diff of Distance");
+				ColumnLableVector.push_back ("Diff of Travel Time");
+			}
+
+			project_index++;
+		}
+		iDoc++;
+	}
+
+
+	//Add Columns and set headers
+	for (unsigned i=0;i< ColumnLableVector.size();i++)
+	{
+		CGridColumnTraitText* pTrait = NULL;
+
+//		pTrait = new CGridColumnTraitEdit();
+		m_ListCtrl.InsertColumnTrait((int)i,ColumnLableVector[i],LVCFMT_LEFT,-1,-1, pTrait);
+//		pTrait->SetSortFormatNumber(true);	
+//		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+		m_ListCtrl.SetColumnWidth((int)i,80);
+	}
+
+	if(m_ODMOEMatrix == NULL  )
+	{
+		m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
+			m_ZoneNoSize  = m_pDoc->m_ZoneNoSize ;
+	}
+	else
+	{
+		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize )
+		{
+			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_ProjectSize, m_ZoneNoSize );
+			m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
+			m_ZoneNoSize  = m_pDoc->m_ZoneNoSize ;
+	
+		}
+	}
 	FilterOriginDestinationPairs();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -232,14 +357,25 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 
 void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 {
+	m_ListCtrl.DeleteAllItems();
+
+	if(m_ZoneNoSize=0)
+		return;
+
+
+	CString SummaryInfoString;
 
 	CWaitCursor wait;
 	int i,j;
-	for(i=1; i <= m_pDoc->m_ODSize ; i++)
-		for(j=1; j<= m_pDoc->m_ODSize ; j++)
+	int p;
+	for(p=0;p<m_ProjectSize; p++)
+	{
+	for(i=0; i < m_pDoc->m_ZoneNoSize  ; i++)
+		for(j=0; j< m_pDoc->m_ZoneNoSize  ; j++)
 		{
-			m_ODMOEMatrix[i][j].Reset ();
+			m_ODMOEMatrix[p][i][j].Reset ();
 		}
+	}
 
 	int ImpactLinkNo = -1;
 	if(m_ImpactLinkBox.GetCurSel()>0)
@@ -254,8 +390,25 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 	}
 
 
-		int Origin = m_OriginBox.GetCurSel();
-		int Destination = m_DestinationBox.GetCurSel();
+		int Origin_Row = m_OriginBox.GetCurSel();
+
+		int Destination_Row = m_DestinationBox.GetCurSel();
+
+		int Origin = 0;
+		int Destination = 0;
+		if(Origin_Row > 0)
+		{
+		Origin = m_TAZVector[Origin_Row-1];
+		}
+
+		if(Destination_Row > 0)
+		{
+		Destination = m_TAZVector[Destination_Row-1];
+		}
+
+		//Origin = 1737;
+		//Destination = 1767;
+
 		int VehicleType = m_VehicleTypeBox.GetCurSel();
 		int DemandType = m_DemandTypeBox.GetCurSel();
 
@@ -274,37 +427,59 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		m_MinDistanceBox.GetLBText(m_MinDistanceBox.GetCurSel(), str);
 		int MinDistance = atoi(str);
 
-		m_MinTTIBox.GetLBText(m_MinTTIBox.GetCurSel(), str);
-		float MinTTI = atof(str);
+		m_MaxSpeedBox.GetLBText(m_MaxSpeedBox.GetCurSel(), str);
+		float MaxSpeed = atof(str);
 
 		int VOT_LB = m_ComboBox_VOT_LB.GetCurSel()*5;
 		int VOT_UB = m_ComboBox_VOT_UB.GetCurSel()*5;
 
+		int DayNo = m_DayNo_Combobox.GetCurSel();
+
 		int count = 0;
 		std::list<DTAVehicle*>::iterator iVehicle;
 
-		for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
+	std::list<CTLiteDoc*>::iterator  iDoc = g_DocumentList.begin ();
+	 p = 0 ;
+	while (iDoc != g_DocumentList.end())
+	{
+		if((*iDoc)->m_ProjectTitle.GetLength () >0)  
+		{
+
+
+		for (iVehicle = (*iDoc)->m_VehicleSet.begin(); iVehicle != (*iDoc)->m_VehicleSet.end(); iVehicle++, count++)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
+
+			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
+			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];
+
 			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
-				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
+				if( 
+					(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+					(pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
 					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
 					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
 					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize+=1;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalDistance += pVehicle->m_Distance;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalCost += pVehicle->m_TollDollarCost;
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize+=1;
+
+					if( (*iDoc)->m_bGPSDataSet )
+					{
+					m_ODMOEMatrix[p][OrgNo][DesNo].day_count[pVehicle->m_DateID ]+=1;
+					}
+
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalDistance += pVehicle->m_Distance;
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalCost += pVehicle->m_TollDollarCost;
 					
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].emissiondata.Energy += pVehicle->m_EmissionData .Energy;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].emissiondata.CO2 += pVehicle->m_EmissionData .CO2;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].emissiondata.CO += pVehicle->m_EmissionData .CO;
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].emissiondata.HC += pVehicle->m_EmissionData .HC;
+					m_ODMOEMatrix[p][OrgNo][DesNo].emissiondata.Energy += pVehicle->m_EmissionData .Energy;
+					m_ODMOEMatrix[p][OrgNo][DesNo].emissiondata.CO2 += pVehicle->m_EmissionData .CO2;
+					m_ODMOEMatrix[p][OrgNo][DesNo].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
+					m_ODMOEMatrix[p][OrgNo][DesNo].emissiondata.CO += pVehicle->m_EmissionData .CO;
+					m_ODMOEMatrix[p][OrgNo][DesNo].emissiondata.HC += pVehicle->m_EmissionData .HC;
 
 					if(ImpactLinkNo>=0)
 					{
@@ -312,150 +487,217 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					{
 						if ( pVehicle->m_NodeAry[link].LinkNo  == ImpactLinkNo)
 						{
-							m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].bImpactFlag = true;
+							m_ODMOEMatrix[p][OrgNo][DesNo].bImpactFlag = true;
 						}
 
 					}
 					}
 				}
 			}
+
 		}
 
 		count = 0;
-		m_ODList.ResetContent ();
+//		m_ODList.ResetContent ();
 
 				// variability measure
-		for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
+		for (iVehicle = (*iDoc)->m_VehicleSet.begin(); iVehicle != (*iDoc)->m_VehicleSet.end(); iVehicle++, count++)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
+			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
+			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];
+
+
 			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
-				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
+				if( 
+					(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+					(pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
 					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
 					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
 					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
-					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
+					float AvgTravelTime = m_ODMOEMatrix[p][OrgNo][DesNo].TotalTravelTime/max(1,m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize );
+
+					m_ODMOEMatrix[p][OrgNo][DesNo].AvgDistance = m_ODMOEMatrix[p][OrgNo][DesNo].TotalDistance /max(1,m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize );;
+					m_ODMOEMatrix[p][OrgNo][DesNo].AvgTravelTime = AvgTravelTime;
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
 				}
 			}
 		}
 
+		p++;
+		}
+		iDoc++;
+	}
+
+
 		VehicleStatistics total_summary;
 		count = 0;
 
-		for(i=1; i <= m_pDoc->m_ODSize ; i++)
-			for(j=1; j<= m_pDoc->m_ODSize ; j++)
-			{
-				if(m_ODMOEMatrix[i][j].TotalVehicleSize>0)
-				{
-					float AvgDistance = m_ODMOEMatrix[i][j].TotalDistance /m_ODMOEMatrix[i][j].TotalVehicleSize;
-					float AvgTravelTime = m_ODMOEMatrix[i][j].TotalTravelTime /m_ODMOEMatrix[i][j].TotalVehicleSize;
-					float AvgCost = m_ODMOEMatrix[i][j].TotalCost  /m_ODMOEMatrix[i][j].TotalVehicleSize;
-					float STDTravelTime = sqrt(m_ODMOEMatrix[i][j].TotalVariance   /m_ODMOEMatrix[i][j].TotalVehicleSize);
 
-					float AvgEnergy = m_ODMOEMatrix[i][j].emissiondata .Energy / m_ODMOEMatrix[i][j].TotalVehicleSize;
-					float AvgCO2 = m_ODMOEMatrix[i][j].emissiondata.CO2  / m_ODMOEMatrix[i][j].TotalVehicleSize;
+		int row_index = 0;
+		for(i=0; i < m_pDoc->m_ZoneNoSize  ; i++)
+			for(j=0; j< m_pDoc->m_ZoneNoSize  ; j++)
+			{
+
+		int Index = 0;
+
+		std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+		 p = 0 ;
+		while (iDoc != g_DocumentList.end())
+		{
+			if((*iDoc)->m_ProjectTitle.GetLength () >0)  
+			{
+
+				if(m_ODMOEMatrix[0][i][j].TotalVehicleSize>0)
+				{
+					float AvgDistance = m_ODMOEMatrix[p][i][j].TotalDistance /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgTravelTime = m_ODMOEMatrix[p][i][j].TotalTravelTime /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgCost = m_ODMOEMatrix[p][i][j].TotalCost  /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float STDTravelTime = sqrt(m_ODMOEMatrix[p][i][j].TotalVariance   /m_ODMOEMatrix[p][i][j].TotalVehicleSize);
+
+					float AvgEnergy = m_ODMOEMatrix[p][i][j].emissiondata .Energy / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgCO2 = m_ODMOEMatrix[p][i][j].emissiondata.CO2  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 
 					float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
-					if(m_ODMOEMatrix[i][j].TotalVehicleSize >= MinVehicleSize && 
-						AvgDistance >= MinDistance && AvgTravelTime> AvgDistance*MinTTI)
+					if(m_ODMOEMatrix[p][i][j].TotalVehicleSize >= MinVehicleSize && 
+						AvgDistance >= MinDistance && AvgSpeed <=MaxSpeed)
 					{
 
 						CString ODInfoString;
 
 						//if(m_pDoc->m_EmissionDataFlag )
-						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed, AvgCost,AvgEnergy, AvgCO2);
+						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g) ",i,j,m_ODMOEMatrix[p][i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed, AvgCost,AvgEnergy, AvgCO2);
 						//else
-						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph, $%4.3f",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgCost);
+						//	ODInfoString.Format ("%d->%d: %d vhc, %3.1f min, %3.1f mile, %.0f mph, $%4.3f",i,j,m_ODMOEMatrix[p][i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgCost);
 
-						ODInfoString.Format ("%d->%d: %d vehicles, %3.1f min, %3.1f mile, STD: %3.1f min",i,j,m_ODMOEMatrix[i][j].TotalVehicleSize, AvgTravelTime,AvgDistance,STDTravelTime);
 
-						if(ImpactLinkNo<0)  // no impact link is selected
-						{
-						if(count<10000)
-						{
-							total_summary.TotalVehicleSize +=m_ODMOEMatrix[i][j].TotalVehicleSize;
-							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
-							total_summary.TotalDistance +=m_ODMOEMatrix[i][j].TotalDistance;
-							total_summary.TotalCost +=m_ODMOEMatrix[i][j].TotalCost;
-							total_summary.emissiondata .Energy += m_ODMOEMatrix[i][j].emissiondata .Energy ;
-							total_summary.emissiondata .CO2  += m_ODMOEMatrix[i][j].emissiondata .CO2  ;
+		int column_index  = 0;
+		char text[100];
 
-							m_ODList.AddString (ODInfoString);
-						}
-
-						count ++;
-						}else
-						{ // ImpactLinkNo>0: impact link is selected
-						
-						if(count<10000 && m_ODMOEMatrix[i][j].bImpactFlag == true)
-						{
-							total_summary.TotalVehicleSize +=m_ODMOEMatrix[i][j].TotalVehicleSize;
-							total_summary.TotalTravelTime +=m_ODMOEMatrix[i][j].TotalTravelTime;
-							total_summary.TotalDistance +=m_ODMOEMatrix[i][j].TotalDistance;
-							total_summary.TotalCost  +=m_ODMOEMatrix[i][j].TotalCost;
-							total_summary.emissiondata .Energy += m_ODMOEMatrix[i][j].emissiondata .Energy ;
-							total_summary.emissiondata .CO2  += m_ODMOEMatrix[i][j].emissiondata .CO2  ;
-
-							m_ODList.AddString (ODInfoString);
-						}
-
-						count ++;
-						
-						}
-					}
-				}
-			}
-
-			// variability measure
-	for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
+		if(p==0)
 		{
-			DTAVehicle* pVehicle = (*iVehicle);
-			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
-			{
-				if( (pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
-					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
-					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
-					(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
-					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
-					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
-				{
-					float AvgTravelTime = m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalTravelTime/max(1,m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVehicleSize );
-					m_ODMOEMatrix[pVehicle->m_OriginZoneID][pVehicle->m_DestinationZoneID].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
-				}
-			}
+		sprintf_s(text, "%d",m_pDoc->m_ZoneNumberVector [i]);
+		Index = m_ListCtrl.InsertItem(LVIF_TEXT,row_index++,text , 0, 0, 0, NULL);
+		column_index++;
+
+		sprintf_s(text, "%d",m_pDoc->m_ZoneNumberVector [j]);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
 		}
 
-				CString SummaryInfoString;
-				float AvgSpeed = total_summary.TotalDistance * 60 / max(0.1,total_summary.TotalTravelTime);  // mph
+		if(p==0)
+			column_index = 2;
+		else
+			column_index = 7 + (p-1)*7 ;  // -1 no diff for base line
 
-				if(m_pDoc->m_EmissionDataFlag )
+		sprintf_s(text, "%d",m_ODMOEMatrix[p][i][j].TotalVehicleSize);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",AvgTravelTime);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",AvgDistance);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+
+		sprintf_s(text, "%3.1f",AvgSpeed);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",STDTravelTime);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+			if((*iDoc)-> m_bGPSDataSet)
+			{
+
+				int min = 10000;
+				int max = 0;
+				int total = 0;
+				for(int day = m_GPS_start_day; day<=m_GPS_end_day; day++)
 				{
-				SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile, %.0f mph,$%4.3f, %5.1f(J), %4.1f(CO2_g)  ",total_summary.TotalVehicleSize, 
-					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
-					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
-					AvgSpeed,
-					total_summary.TotalCost/max(1,total_summary.TotalVehicleSize),
-					total_summary.emissiondata .Energy/max(1,total_summary.TotalVehicleSize),
-					total_summary.emissiondata .CO2/max(1,total_summary.TotalVehicleSize));
-				}else
-				{
-					SummaryInfoString.Format ("%d veh, %3.1f min, %3.1f mile,%.0f mph, STD: %5.1f min",total_summary.TotalVehicleSize, 
-					total_summary.TotalTravelTime/max(1,total_summary.TotalVehicleSize),
-					total_summary.TotalDistance /max(1,total_summary.TotalVehicleSize),
-					AvgSpeed,
-					sqrt(total_summary.TotalVariance/max(1,total_summary.TotalVehicleSize))
-					);
+
+					if(m_ODMOEMatrix[p][i][j].day_count [day] > max)
+						max = m_ODMOEMatrix[p][i][j].day_count [day];
+
+					if(m_ODMOEMatrix[p][i][j].day_count [day] < min)
+						min = m_ODMOEMatrix[p][i][j].day_count [day];
+
+					total +=  m_ODMOEMatrix[p][i][j].day_count [day];
+				
+				sprintf_s(text, "%d",m_ODMOEMatrix[p][i][j].day_count [day]);
+				m_ListCtrl.SetItemText(Index,column_index++,text );
+
 				}
 
+				sprintf_s(text, "%.3f",(max-min)*1.0f/max(1,total)*(m_GPS_end_day+1-m_GPS_start_day));
+				m_ListCtrl.SetItemText(Index,column_index++,text );
+			
+			}
 
-				m_Summary_Info_Edit.SetWindowText (SummaryInfoString);
+		if(p>=1)
+		{
+		sprintf_s(text, "%3.1f",m_ODMOEMatrix[p][i][j].AvgDistance - m_ODMOEMatrix[0][i][j].AvgDistance);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
 
-			if(m_ODList.GetCount ()>0)
-				m_ODList.SetCurSel (0);
+		sprintf_s(text, "%3.1f",m_ODMOEMatrix[p][i][j].AvgTravelTime - m_ODMOEMatrix[0][i][j].AvgTravelTime);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+		}
+
+
+		count ++;
+
+		if(count>=50000)
+			break;
+//
+//						if(ImpactLinkNo<0)  // no impact link is selected
+//						{
+//						if(count<10000)
+//						{
+//							total_summary.TotalVehicleSize +=m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+//							total_summary.TotalTravelTime +=m_ODMOEMatrix[p][i][j].TotalTravelTime;
+//							total_summary.TotalDistance +=m_ODMOEMatrix[p][i][j].TotalDistance;
+//							total_summary.TotalCost +=m_ODMOEMatrix[p][i][j].TotalCost;
+//							total_summary.emissiondata .Energy += m_ODMOEMatrix[p][i][j].emissiondata .Energy ;
+//							total_summary.emissiondata .CO2  += m_ODMOEMatrix[p][i][j].emissiondata .CO2  ;
+//
+////							m_ODList.AddString (ODInfoString);
+//						}
+//
+//						}else
+//						{ // ImpactLinkNo>0: impact link is selected
+//						
+//						if(count<10000 && m_ODMOEMatrix[p][i][j].bImpactFlag == true)
+//						{
+//							total_summary.TotalVehicleSize +=m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+//							total_summary.TotalTravelTime +=m_ODMOEMatrix[p][i][j].TotalTravelTime;
+//							total_summary.TotalDistance +=m_ODMOEMatrix[p][i][j].TotalDistance;
+//							total_summary.TotalCost  +=m_ODMOEMatrix[p][i][j].TotalCost;
+//							total_summary.emissiondata .Energy += m_ODMOEMatrix[p][i][j].emissiondata .Energy ;
+//							total_summary.emissiondata .CO2  += m_ODMOEMatrix[p][i][j].emissiondata .CO2  ;
+//
+////							m_ODList.AddString (ODInfoString);
+//						}
+
+					
+						}
+					} // OD demand > 0 
+			
+		p++;
+		}
+			iDoc++;
+		} //document
+		}
+
+		if(count < 50000)
+		SummaryInfoString.Format("%d OD pairs selected.",count);
+		else
+		SummaryInfoString.Format("Up to %d OD pairs listed.",count);
+
+
+		m_Summary_Info_Edit.SetWindowText (SummaryInfoString);
 
 			FilterPaths();
 			ShowSelectedPath();
@@ -463,20 +705,13 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 }
 void CDlg_VehPathAnalysis::FilterPaths()
 {
+
 	m_PathVector.clear();
 	m_PathList.ResetContent ();
 	m_VehicleList.ResetContent ();
 
-	int ODPairNo = m_ODList.GetCurSel();
-	int Origin, Destination;
-
-	if(ODPairNo>=0)	// if one of "all" options is selected, we need to narrow down to OD pair
-	{
-		char m_Text[MAX_STRING_LENGTH];
-		m_ODList.GetText (ODPairNo, m_Text);
-		sscanf(m_Text, "%d->%d", &Origin, &Destination);
-
-	}
+	int Origin = m_SelectedOrigin;
+	int Destination = m_SelectedDestination;
 
 	int VehicleType = m_VehicleTypeBox.GetCurSel();
 	int DemandType = m_DemandTypeBox.GetCurSel();
@@ -496,11 +731,10 @@ void CDlg_VehPathAnalysis::FilterPaths()
 	m_MinDistanceBox.GetLBText(m_MinDistanceBox.GetCurSel(), str);
 	int MinDistance = atoi(str);
 
-	m_MinTTIBox.GetLBText(m_MinTTIBox.GetCurSel(), str);
-	float MinTTI = atof(str);
 
 		int VOT_LB = m_ComboBox_VOT_LB.GetCurSel()*5;
 		int VOT_UB = m_ComboBox_VOT_UB.GetCurSel()*5;
+		int DayNo = m_DayNo_Combobox.GetCurSel();
 
 	int count = 0;
 	std::list<DTAVehicle*>::iterator iVehicle;
@@ -511,7 +745,9 @@ void CDlg_VehPathAnalysis::FilterPaths()
 
 		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete &&(pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB))  // with physical path in the network
 		{
-			if( (pVehicle->m_OriginZoneID == Origin)&&
+			if( 
+				(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+				(pVehicle->m_OriginZoneID == Origin)&&
 				(pVehicle->m_DestinationZoneID  == Destination)&&
 				(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
 				(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
@@ -523,8 +759,11 @@ void CDlg_VehPathAnalysis::FilterPaths()
 				for(int p = 0; p< m_PathVector.size(); p++)
 				{
 					//existing path
-					if(pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
+					if(pVehicle->m_bGPSVehicle == false && pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
 					{
+						
+						m_PathVector[p].date_id = pVehicle->m_DateID ;
+						m_PathVector[p].departure_time_in_min = pVehicle->m_DepartureTime ;
 						m_PathVector[p].TotalVehicleSize+=1;
 						m_PathVector[p].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 						m_PathVector[p].TotalDistance   += pVehicle->m_Distance;
@@ -548,6 +787,8 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					PathStatistics ps_element;
 					ps_element.NodeNumberSum = pVehicle->m_NodeNumberSum;
 					ps_element.NodeSize = pVehicle->m_NodeSize;
+					ps_element.date_id = pVehicle->m_DateID ;
+					ps_element.departure_time_in_min = pVehicle->m_DepartureTime ;
 					ps_element.TotalVehicleSize = 1;
 					ps_element.TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 					ps_element.TotalDistance   += pVehicle->m_Distance;
@@ -562,9 +803,12 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					ps_element.m_VehicleVector.push_back(pVehicle);
 
 
-					for(int link= 1; link<pVehicle->m_NodeSize; link++)
+					if(pVehicle->m_bGPSVehicle == false)
 					{
-						ps_element.m_LinkVector.push_back(pVehicle->m_NodeAry[link].LinkNo);
+						for(int link= 1; link<pVehicle->m_NodeSize; link++)
+						{
+							ps_element.m_LinkVector.push_back(pVehicle->m_NodeAry[link].LinkNo);
+						}
 					}
 
 					m_PathVector.push_back (ps_element);
@@ -585,21 +829,9 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
 
 		CString PathInfoString;
-		if(AvgTravelCost>=0.001)
-		{
-			if(m_pDoc->m_EmissionDataFlag )
-				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f, %5.1f(J), %4.1f(CO2_g) ",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost,AvgEnergy, AvgCO2);
-			else
-				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost);
-
-		}
-		else
-		{
-			if(m_pDoc->m_EmissionDataFlag )
-				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, %5.1f(J), %4.1f(CO2_g)",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgEnergy, AvgCO2);
-			else
-				PathInfoString.Format ("%d: %d veh, %3.1f min, %3.1f mile, %.0f mph, $%3.2f",p+1, m_PathVector[p].TotalVehicleSize, AvgTravelTime,AvgDistance,AvgSpeed,AvgTravelCost);
-		}
+		PathInfoString.Format ("%d: %d veh, @day%d,%3.1fm, %3.1f min, %3.1f mile, %.0f mph",
+			p+1, m_PathVector[p].TotalVehicleSize,m_PathVector[p].date_id , m_PathVector[p].departure_time_in_min ,
+			AvgTravelTime,AvgDistance,AvgSpeed);
 
 		m_PathList.AddString (PathInfoString);
 	}
@@ -611,6 +843,8 @@ void CDlg_VehPathAnalysis::FilterPaths()
 }
 void CDlg_VehPathAnalysis::ShowVehicles()
 {
+	m_pDoc->m_SelectedVehicleID = -1;
+
 	m_VehicleList.ResetContent ();
 	int PathNo = m_PathList.GetCurSel ();
 	if(PathNo>=0)
@@ -619,6 +853,16 @@ void CDlg_VehPathAnalysis::ShowVehicles()
 		{
 			DTAVehicle* pVehicle = m_PathVector[PathNo].m_VehicleVector[v];
 			CString VehicleInfoString;
+
+			if( v == 0)  // only for the first  vehicle
+			{
+
+			m_pDoc->m_SelectedVehicleID = pVehicle->m_VehicleID ;
+
+
+
+			}
+
 			if(pVehicle->m_TollDollarCost >=0.001)
 			{
 			if(m_pDoc->m_EmissionDataFlag )
@@ -787,19 +1031,31 @@ void CDlg_VehPathAnalysis::OnBnClickedExport()
 bool CDlg_VehPathAnalysis::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
 {
      FILE* st;
-      fopen_s(&st,csv_file,"w");
+     fopen_s(&st,csv_file,"w");
+	 CWaitCursor wc;
 
      if(st!=NULL)
       {
-	 CWaitCursor wc;
-	 fprintf(st,"origin_zone_id->destination_zone_id,total_number_of_vehicles,average_travel_time_in_min,average_distance_in_min,average_cost\n");
-		for(int i=0; i< m_ODList.GetCount (); i++)	// if one of "all" options is selected, we need to narrow down to OD pair
-		{
-			char m_Text[200];
-			m_ODList.GetText (i, m_Text);
-			fprintf(st,"%s\n",m_Text);
-		}
-	 
+			  for(int column = 0; column < m_ListCtrl.GetColumnCount (); column++)
+			  {
+			  fprintf(st,"%s,", m_ListCtrl.GetColumnHeading (column));
+			  }
+				fprintf(st,"\n");
+
+		  for(int row = 0; row < m_ListCtrl.GetItemCount (); row++)
+		  {
+
+			  for(int column = 0; column < m_ListCtrl.GetColumnCount (); column++)
+			  {
+				char str[100];
+				m_ListCtrl.GetItemText (row,column,str,100);
+
+				fprintf(st,"%s,",str);
+			  }
+				fprintf(st,"\n");
+
+		  }
+
 		fclose(st);
 		return true;
 	 }
@@ -860,7 +1116,7 @@ bool CDlg_VehPathAnalysis::ExportPathDataToCSVFile(char csv_file[_MAX_PATH])
      if(st!=NULL)
       {
 	 CWaitCursor wc;
-	 fprintf(st,"path number,total_number_of_vehicles,average_travel_time_in_min,average_distance_in_min\n");
+	 fprintf(st,"path number,total_number_of_vehicles,day no, departure time in min, average_travel_time_in_min,average_distance_in_min\n");
 		for(int i=0; i< m_PathList.GetCount (); i++)	// if one of "all" options is selected, we need to narrow down to OD pair
 		{
 			char m_Text[200];
@@ -918,4 +1174,34 @@ void CDlg_VehPathAnalysis::OnBnClickedFindcriticalod()
 void CDlg_VehPathAnalysis::OnBnClickedOk()
 {
 	OnOK();
+	g_bShowVehiclePathDialog = false;
+}
+
+void CDlg_VehPathAnalysis::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
+{
+
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	POSITION pos = m_ListCtrl.GetFirstSelectedItemPosition();
+	while(pos!=NULL)
+	{
+		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
+		char str[100];
+		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
+
+		m_SelectedOrigin = atoi(str);
+		m_ListCtrl.GetItemText (nSelectedRow,1,str,20);
+		m_SelectedDestination = atoi(str);
+
+			FilterPaths();
+			ShowSelectedPath();
+			ShowVehicles();
+	}
+}
+
+void CDlg_VehPathAnalysis::OnCbnSelchangeComboDayno()
+{
+	FilterOriginDestinationPairs();
 }

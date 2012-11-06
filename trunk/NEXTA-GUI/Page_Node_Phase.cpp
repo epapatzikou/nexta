@@ -34,7 +34,6 @@
 
 #include <string>
 #include <sstream>
-
 // CPage_Node_Phase dialog
 
 
@@ -47,8 +46,6 @@ CPage_Node_Phase::CPage_Node_Phase()
 	m_SelectedMovementIndex = -1;
 	m_SelectedPhaseIndex = -1;
 	m_NumberOfPhases = 0;
-
-	SetPhasePara();
 
 }
 
@@ -68,9 +65,6 @@ BEGIN_MESSAGE_MAP(CPage_Node_Phase, CPropertyPage)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_PAINT()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Phase::OnLvnItemchangedGridlistctrlex)
-	ON_BN_CLICKED(IDC_BUTTON_NEW_PHASE, &CPage_Node_Phase::OnBnClickedButtonNewPhase)
-	ON_BN_CLICKED(IDC_BUTTON_DEL_PHASE, &CPage_Node_Phase::OnBnClickedButtonDelPhase)
-	ON_NOTIFY(LVN_ENDLABELEDIT, IDC_GRIDLISTCTRLEX, &CPage_Node_Phase::OnLvnEndlabeleditGridlistctrlex)
 END_MESSAGE_MAP()
 
 
@@ -86,81 +80,66 @@ BOOL CPage_Node_Phase::OnInitDialog()
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
 	std::vector<std::string> m_Column_names;
-	m_Column_names.push_back ("Phase Index");
-	m_Column_names.push_back ("Phase Name");
-	m_Column_names.push_back ("Light Sequence");  //combo
-	m_Column_names.push_back ("Group No");		  //combo
-	m_Column_names.push_back ("Start Time");      //edit
-	m_Column_names.push_back ("Green Length");    //edit
-	int nWidth[6] = {100,100,100,100,100,100};
 
-	std::vector<CString> m_Sequence_names;
-	m_Sequence_names.push_back("Red-Green");
-	m_Sequence_names.push_back("Red-Yellow-Green");
-	m_Sequence_names.push_back("Flashing-Yellow");
-
-	std::vector<CString> m_GroupNames;
-	m_GroupNames.push_back("1");
-	m_GroupNames.push_back("2");
-	m_GroupNames.push_back("3");
-	m_GroupNames.push_back("4");
-	
+	m_Column_names.push_back ("Movement Index");
 
 	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	m_NumberOfPhases = pNode->m_PhaseVector .size();
+
+	unsigned int p;
+	for(p = 1; p <= m_NumberOfPhases; p++)
+	{
+		char str[100];
+		sprintf(str,"Phase %d",p);
+		m_Column_names.push_back (str);
+	}
+	m_Column_names.push_back ("Incoming Node");
+	m_Column_names.push_back ("Outgoing Node");
+	m_Column_names.push_back ("Turn Type");
+
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
 	{
 		CGridColumnTrait* pTrait = NULL;
-		if (0 == i)
+		if(i>=1 && i <= m_NumberOfPhases) // Phase index
 		{
+		pTrait = new CGridColumnTraitEdit();
 		}
-		if( 1 == i) 
-		{
-		}
-		if( 2 == i) 
-		{
-			CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
-			for(size_t j=0; j < m_Sequence_names.size() ; ++j)
-				pComboTrait->AddItem((DWORD_PTR)j, m_Sequence_names[j]);
-			pTrait = pComboTrait;
-		}
-		if( 3 == i) 
-		{
-			CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
-			for(size_t j=0; j < m_GroupNames.size() ; ++j)
-				pComboTrait->AddItem((DWORD_PTR)j, m_GroupNames[j]);
-			pTrait = pComboTrait;
-		}
-		if( 4 == i) 
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-		if( 5 == i) 
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,nWidth[i],i, pTrait);
+		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
+
 	}
+	m_ListCtrl.SetColumnWidth(0, 80);
 
 	//Add Rows
-	ReadPhaseData(-1);
-	FillPhaseData();
-	//CString str;
-	//str.Format("%d",m_nCycleLength);
-	//GetDlgItem(IDC_EDIT_CYCLE_LENGTH)->SetWindowTextA(str);
-	//CComboBox * pCombo = (CComboBox *)GetDlgItem(IDC_COMBO_SC);
-	//for(int i=1001;i<=1003;i++)
-	//{
-	//   str.Format("%d",i);
-	//   pCombo->AddString(str); 
-	//}
-	//pCombo->SetCurSel(0);
 
-	CButton* pBtnNew = (CButton*)GetDlgItem(IDC_BUTTON_NEW_PHASE);
-	pBtnNew->EnableWindow(FALSE);
-	CButton* pBtnDel = (CButton*)GetDlgItem(IDC_BUTTON_DEL_PHASE);
-	pBtnDel->EnableWindow(FALSE);
+	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	{
+		CString str;
+		str.Format("%d",i+1);
+		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
+
+		DTANodeMovement movement = pNode->m_MovementVector[i];
+
+	for(p = 1; p <= m_NumberOfPhases; p++)
+	{ 
+		if(pNode->m_PhaseVector [p-1].MovementIncluded(i))  // this movement included in this phase
+		{
+			m_ListCtrl.SetItemState (Index, p, LVIS_SELECTED|LVIS_FOCUSED);
+		}
+	}
+
+		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.in_link_from_node_id] );
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+1,str);
+
+		str.Format ("%d", m_pDoc->m_NodeIDtoNameMap[movement.out_link_to_node_id ] );
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+2,str);
+		
+		m_ListCtrl.SetItemText(Index, m_NumberOfPhases+3,m_pDoc->GetTurnString(movement.movement_turn));
+		m_SelectedRowVector.push_back(false);
+
+	}
 
 	UpdateData(0);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -174,13 +153,10 @@ void CPage_Node_Phase::OnPaint()
 	GetClientRect(PlotRect);
 	m_PlotRect = PlotRect;
 
-	m_PlotRect.top += 35;
-	m_PlotRect.bottom -= 35;
-	m_PlotRect.left += 550;
-	m_PlotRect.right -= 50;
-
-	DrawBackground(&dc);
-	// DrawPhase(&dc); // this is code from Peng
+		m_PlotRect.top += 35;
+		m_PlotRect.bottom -= 35;
+		m_PlotRect.left += 450;
+		m_PlotRect.right -= 50;
 
 	DrawMovements(&dc,m_PlotRect,-1);
 
@@ -598,24 +574,26 @@ void CPage_Node_Phase::DrawLink(CPaintDC* pDC,GDPoint pt_from, GDPoint pt_to,int
 
 void CPage_Node_Phase::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	unsigned int i;
+	// TODO: Add your message handler code here and/or call default
+		unsigned int i;
 
-	for ( i=0;i< m_PhaseData.size();i++)
-	{
+		DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+		for ( i=0;i< pNode->m_MovementVector.size();i++)
+		{
 		m_ListCtrl.SelectRow (i,false);
-	}
+		}
 
-	m_nSelectedPhaseNo =  FindClickedPhaseNo(point);
+	m_SelectedMovementIndex =  FindClickedMovement(point);
 	
-	if(m_nSelectedPhaseNo >0)
+	if(m_SelectedMovementIndex >=0)
 	{
-		for ( i=0;i< m_PhaseData.size();i++)
+		for ( i=0;i< pNode->m_MovementVector.size();i++)
 		{
 			char str[100];
 			m_ListCtrl.GetItemText (i,0,str,20);
-			int nPhaseNo = atoi(str);  
+			int MovementIndex = atoi(str)-1; // the movement index has been sorted 
 
-			if(nPhaseNo == m_nSelectedPhaseNo)
+			if(i == m_SelectedMovementIndex)
 			{
 				m_ListCtrl.SelectRow (i,true);
 			}
@@ -633,433 +611,28 @@ void CPage_Node_Phase::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pR
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
+	for(unsigned int i = 0; i < m_SelectedRowVector.size(); i++)
+		m_SelectedRowVector[i] = false;
+
 	POSITION pos = m_ListCtrl.GetFirstSelectedItemPosition();
 	while(pos!=NULL)
 	{
-		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
+	int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
 
-		char str[100];
-		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
-		m_nSelectedPhaseNo = atoi(str);
-	}
-	Invalidate();
-}
-void CPage_Node_Phase::ReadPhaseData(int nSC)
-{
-	if ( -1 == nSC ) //default
+	char str[100];
+	m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
+	m_SelectedMovementIndex = atoi(str)-1;
+
+/*
+	m_ListCtrl.GetItemText (nSelectedRow,1,str,20);
+	m_SelectedPhaseIndex = atoi(str)-1;
+*/
+	if(m_SelectedMovementIndex>=0 && m_SelectedMovementIndex < m_SelectedRowVector.size())
 	{
-		PhaseRecord* p;
-
-		p = new PhaseRecord(1,"WBL",2,  0,3,1, 80,20);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(2,"EBT",1,180,1,1,  0,40);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(3,"NBL",2,270,4,1,100,20);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(4,"SBT",1, 90,2,1, 40,40);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(5,"EBL",2,180,3,1, 80,20);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(6,"WBT",1,  0,1,1,  0,40);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(7,"SBL",2, 90,4,1,100,20);
-		m_PhaseData.push_back(p);
-
-		p = new PhaseRecord(8,"NBT",1,270,2,1, 40,40);
-		m_PhaseData.push_back(p);
-
-
-		m_nCycleLength = 120;
-
-		m_nSelectedPhaseNo = -1;
-	}
-}
-void CPage_Node_Phase::FillPhaseData()
-{
-	for (unsigned int i=0;i<m_PhaseData.size();i++)
-	{
-		PhaseRecord* p=m_PhaseData[i];
-		CString str;
-		str.Format("%d",p->nPhaseNo);
-		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str, 0, 0, 0, NULL);
-
-		m_ListCtrl.SetItemText(Index, 1, p->strName);
-
-		switch (p->nSequenceType)
-		{
-		case 1:
-			str.Format("%s","Red-Green");
-			break;
-		case 2:
-			str.Format("%s","Red-Yellow-Green");
-			break;
-		case 3:
-			str.Format("%s","Flashing-Yellow");
-			break;
-		default:
-			str.Format("%s","default");
-			break;
-		}
-		m_ListCtrl.SetItemText(Index, 2, str);
-
-		str.Format("%d",p->nGroupNo);
-		m_ListCtrl.SetItemText(Index, 3, str);
-
-		str.Format("%d",p->nStartTime);
-		m_ListCtrl.SetItemText(Index, 4, str);
-
-		str.Format("%d",p->nGreenLength);
-		m_ListCtrl.SetItemText(Index, 5, str);
-	}
-}
-void CPage_Node_Phase::OnBnClickedButtonNewPhase()
-{
-	PhaseRecord* p = new PhaseRecord();
-	p->nPhaseNo = m_PhaseData.size()+1;
-	p->nSequenceType = 1;
-	p->nStartTime = 0;
-	p->nGreenLength = 28;
-	p->nYellowLength= 2;
-	p->nRedLength   = 30;
-	m_PhaseData.push_back(p);
-
-	int nCount = m_ListCtrl.GetItemCount();  
-	while (nCount--)  
-	{  
-		m_ListCtrl.DeleteItem(nCount);  
-	}
-	FillPhaseData();
-}
-
-void CPage_Node_Phase::OnBnClickedButtonDelPhase()
-{
-	if ( m_nSelectedPhaseNo < 0 )  return;
-	std::vector<PhaseRecord*> tempData = m_PhaseData;
-	m_PhaseData.clear();
-	PhaseRecord* pDelete = NULL;
-	int nNewPhaseNo = 1;
-
-	for (int i=0;i<tempData.size();i++)
-	{
-		PhaseRecord* p = tempData[i];
-		if ( m_nSelectedPhaseNo == p->nPhaseNo )
-		{
-			pDelete = p;
-			continue;
-		}
-		else
-		{
-			p->nPhaseNo = nNewPhaseNo;
-			m_PhaseData.push_back(p);
-			nNewPhaseNo ++;
-		}
+	m_SelectedRowVector[m_SelectedMovementIndex] = true;
 	}
 
-	if ( pDelete)
-	{
-		delete pDelete;
+
 	}
-
-	int nCount = m_ListCtrl.GetItemCount();  
-	while (nCount--)  
-	{  
-		m_ListCtrl.DeleteItem(nCount);  
-	}
-	FillPhaseData();
-}
-void CPage_Node_Phase::DrawBackground(CPaintDC* pDC)
-{
-	CPen blackPen(PS_SOLID,0,RGB(0,0,0));
-	CBrush  whiteBrush(RGB(255,255,255)); 
-
-	pDC->SetBkMode(TRANSPARENT);
-	CPen *pOldPen = pDC->SelectObject(&blackPen);
-	CBrush* pOldBrush = pDC->SelectObject(&whiteBrush);
-	pDC->Rectangle(m_PlotRect);
-
-	pDC->SelectObject(pOldPen);
-	pDC->SelectObject(pOldBrush);
-}
-void CPage_Node_Phase::DrawPhase(CPaintDC* pDC,int nPhaseNo /*= -1*/,bool bSelected /* = false */)
-{
-	if ( -1 == nPhaseNo )
-	{
-		for(int i=0;i<m_PhaseData.size();i++)
-		{
-			DrawPhase(pDC,m_PhaseData[i]->nPhaseNo);
-		}
-	}
-	else
-	{
-		for(int i=0;i<m_PhaseData.size();i++)
-		{
-			PhaseRecord* p = m_PhaseData[i];
-			if ( p->nPhaseNo == nPhaseNo )
-			{
-				// Draw a phase
-				int nR1 = m_Para.nR1;
-				int nR2 = m_Para.nR2;
-				int nM1 = m_Para.nM1;
-				int nW1 = m_Para.nW1;
-				int nArrow = m_Para.nArrow;
-				double dTheta = (double) (p->nAngle * PI ) / 180.0;
-
-				CPen blackPen(PS_SOLID,0,RGB(0,0,0));
-				CBrush  redBrush(RGB(255,0,0)); 
-				CBrush  blackBrush(RGB(0,0,0)); 
-
-				CPen *pOldPen = pDC->SelectObject(&blackPen);
-				CBrush* pOldBrush;
-				if ( m_nSelectedPhaseNo == p->nPhaseNo )
-					pOldBrush = pDC->SelectObject(&redBrush);
-				else
-					pOldBrush = pDC->SelectObject(&blackBrush);
-				
-				GDPoint p1,p2,p3,p4,p5;
-				CRect colorRect;
-
-				if ( 1 == p->nPhaseType ) //through
-				{
-					p1.x = nR2 * cos(dTheta) - 2.0 * nW1 * cos(dTheta-PI/2.0f);
-					p1.y = nR2 * sin(dTheta) - 2.0 * nW1 * sin(dTheta-PI/2.0f);
-					
-					p2.x = nR1 * cos(dTheta) - 1.5 * nW1 * cos(dTheta-PI/2.0f);
-					p2.y = nR1 * sin(dTheta) - 1.5 * nW1 * sin(dTheta-PI/2.0f);
-
-					p3.x = nR1 * cos(dTheta) - 3 * nW1 * cos(dTheta-PI/2.0f);
-					p3.y = nR1 * sin(dTheta) - 3 * nW1 * sin(dTheta-PI/2.0f);
-
-					p4.x = nR1 * cos(dTheta) - 3.5 * nW1 * cos(dTheta-PI/2.0f);
-					p4.y = nR1 * sin(dTheta) - 3.5 * nW1 * sin(dTheta-PI/2.0f);
-
-					p5.x = (nR1-nArrow) * cos(dTheta) - 2.5 * nW1 * cos(dTheta-PI/2.0f);
-					p5.y = (nR1-nArrow) * sin(dTheta) - 2.5 * nW1 * sin(dTheta-PI/2.0f);
-
-					colorRect = CRect(NPtoSP(p1),NPtoSP(p3));
-					colorRect.NormalizeRect();
-					pDC->Rectangle(colorRect);
-
-					CPoint pt[3];
-					pt[0] = NPtoSP(p2);
-					pt[1] = NPtoSP(p4);
-					pt[2] = NPtoSP(p5);
-
-					pDC->Polygon(pt,3);
-				}
-				else // left turn
-				{
-					p1.x = nR2 * cos(dTheta);
-					p1.y = nR2 * sin(dTheta);
-					
-					p3.x = nM1 * cos(dTheta) - nW1 * cos(dTheta-PI/2.0f);
-					p3.y = nM1 * sin(dTheta) - nW1 * sin(dTheta-PI/2.0f);
-
-					colorRect = CRect(NPtoSP(p1),NPtoSP(p3));
-					colorRect.NormalizeRect();
-					pDC->Rectangle(colorRect);
-
-					p2.x = nM1 * cos(dTheta);
-					p2.y = nM1 * sin(dTheta);
-					
-					p4.x = (nM1-2*nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-					p4.y = (nM1-2*nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-
-					p5.x = (nM1-nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-					p5.y = (nM1-nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-
-
-					CPoint pt[4];
-					pt[0] = NPtoSP(p2);
-					pt[1] = NPtoSP(p3);
-					pt[2] = NPtoSP(p4);
-					pt[3] = NPtoSP(p5);
-
-					pDC->Polygon(pt,4);
-
-					p1.x = nM1* cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-					p1.y = nM1* sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-					p2.x = (nM1-3*nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-					p2.y = (nM1-3*nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-					p3.x = (nM1-1.5*nW1) * cos(dTheta) + 2*nW1 * cos(dTheta-PI/2.0f);
-					p3.y = (nM1-1.5*nW1) * sin(dTheta) + 2*nW1 * sin(dTheta-PI/2.0f);
-
-					pt[0] = NPtoSP(p1);
-					pt[1] = NPtoSP(p2);
-					pt[2] = NPtoSP(p3);
-
-					pDC->Polygon(pt,3);
-				}
-
-				pDC->SelectObject(pOldPen);
-				pDC->SelectObject(pOldBrush);
-			}
-		}
-	}
-}
-void CPage_Node_Phase::SetPhasePara()
-{
-	m_Para.nR1 = 70;
-	m_Para.nR2 = 150;
-	m_Para.nM1 = 110;
-	m_Para.nW1 = 10;
-	m_Para.nArrow = 20;
-}
-int  CPage_Node_Phase::FindClickedPhaseNo(CPoint point)
-{
-	int nPhaseNo = -1;
-
-	for(int i=0;i<m_PhaseData.size();i++)
-	{
-		PhaseRecord* p = m_PhaseData[i];
-		int nR1 = m_Para.nR1;
-		int nR2 = m_Para.nR2;
-		int nM1 = m_Para.nM1;
-		int nW1 = m_Para.nW1;
-		int nArrow = m_Para.nArrow;
-		double dTheta = (double) (p->nAngle * PI ) / 180.0;
-
-		GDPoint p1,p2,p3,p4,p5;
-		CRect colorRect;
-
-		if ( 1 == p->nPhaseType ) //through
-		{
-			p1.x = nR2 * cos(dTheta) - 2.0 * nW1 * cos(dTheta-PI/2.0f);
-			p1.y = nR2 * sin(dTheta) - 2.0 * nW1 * sin(dTheta-PI/2.0f);
-			
-			p2.x = nR1 * cos(dTheta) - 1.5 * nW1 * cos(dTheta-PI/2.0f);
-			p2.y = nR1 * sin(dTheta) - 1.5 * nW1 * sin(dTheta-PI/2.0f);
-
-			p3.x = nR1 * cos(dTheta) - 3 * nW1 * cos(dTheta-PI/2.0f);
-			p3.y = nR1 * sin(dTheta) - 3 * nW1 * sin(dTheta-PI/2.0f);
-
-			p4.x = nR1 * cos(dTheta) - 3.5 * nW1 * cos(dTheta-PI/2.0f);
-			p4.y = nR1 * sin(dTheta) - 3.5 * nW1 * sin(dTheta-PI/2.0f);
-
-			p5.x = (nR1-nArrow) * cos(dTheta) - 2.5 * nW1 * cos(dTheta-PI/2.0f);
-			p5.y = (nR1-nArrow) * sin(dTheta) - 2.5 * nW1 * sin(dTheta-PI/2.0f);
-
-			colorRect = CRect(NPtoSP(p1),NPtoSP(p3));
-			colorRect.NormalizeRect();
-			if ( colorRect.PtInRect(point))
-			{
-				nPhaseNo = p->nPhaseNo;
-				break;
-			}
-
-			CPoint pt[3];
-			pt[0] = NPtoSP(p2);
-			pt[1] = NPtoSP(p4);
-			pt[2] = NPtoSP(p5);
-
-			CRgn rgnA;
-			rgnA.CreatePolygonRgn(pt,3,ALTERNATE);
-			if ( rgnA.PtInRegion(point) )
-			{
-				nPhaseNo = p->nPhaseNo;
-				break;
-			}
-		}
-		else // left turn
-		{
-			p1.x = nR2 * cos(dTheta);
-			p1.y = nR2 * sin(dTheta);
-			
-			p3.x = nM1 * cos(dTheta) - nW1 * cos(dTheta-PI/2.0f);
-			p3.y = nM1 * sin(dTheta) - nW1 * sin(dTheta-PI/2.0f);
-
-			colorRect = CRect(NPtoSP(p1),NPtoSP(p3));
-			colorRect.NormalizeRect();
-			if ( colorRect.PtInRect(point))
-			{
-				nPhaseNo = p->nPhaseNo;
-				break;
-			}
-
-			p2.x = nM1 * cos(dTheta);
-			p2.y = nM1 * sin(dTheta);
-			
-			p4.x = (nM1-2*nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-			p4.y = (nM1-2*nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-
-			p5.x = (nM1-nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-			p5.y = (nM1-nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-
-
-			CPoint pt[4];
-			pt[0] = NPtoSP(p2);
-			pt[1] = NPtoSP(p3);
-			pt[2] = NPtoSP(p4);
-			pt[3] = NPtoSP(p5);
-
-			CRgn rgnA;
-			rgnA.CreatePolygonRgn(pt,4,ALTERNATE);
-			if ( rgnA.PtInRegion(point) )
-			{
-				nPhaseNo = p->nPhaseNo;
-				break;
-			}
-
-			p1.x = nM1* cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-			p1.y = nM1* sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-			p2.x = (nM1-3*nW1) * cos(dTheta) + nW1 * cos(dTheta-PI/2.0f);
-			p2.y = (nM1-3*nW1) * sin(dTheta) + nW1 * sin(dTheta-PI/2.0f);
-			p3.x = (nM1-1.5*nW1) * cos(dTheta) + 2*nW1 * cos(dTheta-PI/2.0f);
-			p3.y = (nM1-1.5*nW1) * sin(dTheta) + 2*nW1 * sin(dTheta-PI/2.0f);
-			
-			CPoint ppt[3];
-			ppt[0] = NPtoSP(p1);
-			ppt[1] = NPtoSP(p2);
-			ppt[2] = NPtoSP(p3);
-
-			CRgn rgnB;
-			rgnB.CreatePolygonRgn(ppt,3,ALTERNATE);
-			if ( rgnB.PtInRegion(point) )
-			{
-				nPhaseNo = p->nPhaseNo;
-				break;
-			}
-		}
-	}
-	return nPhaseNo;
-}
-void CPage_Node_Phase::OnLvnEndlabeleditGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
-	*pResult = 0;
-
-	POSITION pos = m_ListCtrl.GetFirstSelectedItemPosition();
-	int nSelected = -1;
-	CString str,strPhase,strStart,strGT;
-
-	while(pos!=NULL)
-	{
-		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
-		str = m_ListCtrl.GetItemText (nSelectedRow,0);
-		nSelected = atoi(str)-1;
-		strPhase = m_ListCtrl.GetItemText (nSelectedRow,4);
-		strStart = m_ListCtrl.GetItemText (nSelectedRow,1);
-		strGT    = m_ListCtrl.GetItemText (nSelectedRow,1);
-	}
-	if ( nSelected >= 0 )
-	{
-		UpdatePhase(atoi(strPhase),atoi(strStart),atoi(strGT));
-	}
-}
-void CPage_Node_Phase::UpdatePhase(int nPhaseNo, int nStart, int nGT)
-{
-	for(int i=0;i<m_PhaseData.size();i++)
-	{
-		PhaseRecord* pPhaseRecord = m_PhaseData[i];
-		if ( nPhaseNo == pPhaseRecord->nPhaseNo )
-		{
-			pPhaseRecord->nStartTime = nStart;
-			pPhaseRecord->nGreenLength= nGT;
-		}
-	}
+		Invalidate();
 }

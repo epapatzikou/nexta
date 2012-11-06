@@ -56,6 +56,8 @@ public:
 
 	}
 
+	CString m_SelectedFileName;
+	std::vector<CString> DemandFileNameVector;
 	void LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType);
 private:
 	CGridCtrl m_ODMatrixGrid;

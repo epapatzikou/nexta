@@ -14,6 +14,7 @@ public:
 	CDlgScenarioTab(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values, std::vector<std::string> linkstring);
 	BOOL CopyRow();
 	BOOL AddRow();
+	BOOL AddRow(int from_node_name,int to_node_name);
 	BOOL DeleteRow();
 	CString GenerateRecordString();
 	void SetTabText(CString s);

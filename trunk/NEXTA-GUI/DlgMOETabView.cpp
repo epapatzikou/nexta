@@ -34,12 +34,8 @@ BOOL CDlgMOETabView::OnInitDialog()
 
 	std::vector<CString> MOE_FileName_List;
 	
-	MOE_FileName_List.push_back("output_assignment_log.csv");
-	MOE_FileName_List.push_back("output_NetworkMOE.csv");
 	MOE_FileName_List.push_back("output_ODMOE.csv");
 	MOE_FileName_List.push_back("output_LinkMOE.csv");
-	MOE_FileName_List.push_back("output_NetworkTDMOE.csv");
-	MOE_FileName_List.push_back("output_LinkTDMOE.csv");
 
 	for (int i=0;i < MOE_FileName_List.size();i++)
 	{

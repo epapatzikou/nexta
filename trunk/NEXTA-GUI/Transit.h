@@ -26,14 +26,19 @@
 #pragma once
 #include "stdafx.h"
 #include "TLite.h"
-#include "Network.h"
 #include <vector>
 #include <algorithm>
 
 // data field << =   https://developers.google.com/transit/gtfs/reference#stop_times_fields
 class PT_Stop
 {
+
 public:
+	PT_Stop()
+	{
+	mapped_node_id = -1;
+	int stop_id = -1;
+	}
 	int stop_id;
 	int stop_code;
 	string stop_name;
@@ -44,14 +49,20 @@ public:
 	string position;
     GDPoint m_ShapePoint;
 
+	int mapped_node_id;
+
 };
 
 class PT_StopTime
 {
 public:
+	PT_StopTime()
+	{
+	stop_id = -1;
+	}
 	int trip_id;
-	int arrival_time;  // unit: min;
-	int departure_time;
+	string arrival_time;  
+	string departure_time;
 	int stop_id;
 	int stop_sequence;
 	int stop_headsign;
@@ -59,6 +70,8 @@ public:
 	int drop_off_type;
 	float shape_dist_traveled;
 	int timepoint;
+
+	GDPoint pt;
 
 };
 
@@ -74,10 +87,19 @@ public:
 
 	int trip_type;
 
-	//std::vector<PT_StopTime> m_PT_StopTimeVector;
-	//std::vector<GDPoint> m_ShapePoints;
+	 std::vector<PT_StopTime> m_PT_StopTimeVector;
+
+	 std::vector<GDPoint> m_ShapePoints;
+	 std::map<int,int > m_ShapeIDMap;
+
+	 std::vector<int > m_PathNodeVector;
+
+
 
 };
+
+
+
 class PT_shape_feature_point
 {
  public:
@@ -91,7 +113,7 @@ class PT_shapes
 {
  public:
    int shape_id;
-   std::vector<PT_shape_feature_point> feature_point_vector;
+   std::vector<GDPoint> feature_point_vector;
 };
 
 class PT_transfers
@@ -139,10 +161,9 @@ private:
 
 public:
 
-	string m_ProjectDirectory;
+	CString m_ProjectDirectory;
     int TransitOrigin;
 	int TRansitDestination;
-
  
 
 	std::map<int, PT_Route> m_PT_RouteMap;

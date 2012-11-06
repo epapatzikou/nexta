@@ -41,6 +41,7 @@
 
 
 
+
 enum DTA_Approach
 {
 	DTA_North = 0,
@@ -206,6 +207,7 @@ using std::string;
 #define TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL 5
 #define MAX_DAY_SIZE 1 
 
+extern int 	g_MOEAggregationIntervalInMin;
 struct GDPoint
 {
 	double x;
@@ -300,7 +302,7 @@ public:
   int ZoneID;
   int NodeNumber;
   int External_OD_flag;  // 0: land use activity, 1: external origin, -1: external destination
-  
+  GDPoint pt;
 };
 
 class DTATimeDependentemand
@@ -435,15 +437,15 @@ public:
 			m_Center.x = 0;
 			m_Center.y = 0;
 	
-		for(unsigned int i = 0; i< m_ShapePoints.size(); i++)
+		for(unsigned int i = 0; i< m_ActivityLocationVector.size(); i++)
 		{
-			m_Center.x += m_ShapePoints[i].x;
-			m_Center.y += m_ShapePoints[i].y;
+			m_Center.x += m_ActivityLocationVector[i].pt.x;
+			m_Center.y += m_ActivityLocationVector[i].pt.y;
 
 		}
 
-		m_Center.x /= max(1,m_ShapePoints.size());
-		m_Center.y /= max(1,m_ShapePoints.size());
+		m_Center.x /= max(1,m_ActivityLocationVector.size());
+		m_Center.y /= max(1,m_ActivityLocationVector.size());
 
 		bInitialized = true;
 				return m_Center;
@@ -506,6 +508,7 @@ public:
 		m_MedianIncome = 0;
 		m_GrowthFactor = 0;
 		m_CBDFlag = 0;
+		m_bWithinSubarea = true;
 
 	}
 
@@ -630,6 +633,23 @@ public:
 		info_class_percentage[0] = 1.0;
 	}
 
+	void SetDefaultVehicleTypeDistribution()
+	{
+		if(demand_type==1 || demand_type==2) //SOV or HOV
+		{
+		vehicle_type_percentage[1] = 80;
+		vehicle_type_percentage[2] = 20;
+		}
+	
+		if(demand_type== 3) //truck
+		{
+		vehicle_type_percentage[3] = 30;
+		vehicle_type_percentage[4] = 30;
+		vehicle_type_percentage[5] = 40;
+		}
+	
+	}
+
 	CString demand_type_name;
 };
 
@@ -726,23 +746,69 @@ class DTANodeMovement
 public:
 	DTANodeMovement()
 	{
+	pair_key = -1;
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;
-	turnning_percentage = 0;
-	turning_prohibition_flag = 1;
+	turning_percentage = 0;
+	turning_prohibition_flag = 0;
+	turning_protected_flag = 0;
+	turning_permitted_flag = 0;
+
 	signal_control_no = 0;
 	signal_group_no = 0;
 	phase_index = 0;
-	turn_volume = 10;
+	
 	movement_hourly_capacity = 10000;
 
+	for(int h = 0; h<24; h++)
+		HourlyCount[h] = 0;
+
+sim_turn_count = 0;
+sim_turn_hourly_count = 0;
+sim_turn_percentage = 0;
+sim_turn_delay = 0; 
+
+obs_turn_count = 0;
+obs_turn_hourly_count = 0;
+obs_turn_percentage = 0; 
+obs_turn_delay = 0; 
+
+   QEM_TurnVolume = 0;
+   QEM_Lanes = 1;
+   QEM_Shared = 0;
+   QEM_Width = 12; 
+   QEM_Storage = 0;
+   QEM_StLanes = 0;
+   QEM_Grade = 0;
+   QEM_Speed = 40;
+   QEM_IdealFlow = 1900;
+   QEM_LostTime = 4;
+   QEM_Phase1 = 0;
+   QEM_PermPhase1 = 0;
+   QEM_DetectPhase1 = 0;
+
+   QEM_TurnPercentage = 0;
+   QEM_EffectiveGreen = 0;
+   QEM_Capacity = 0;
+   QEM_VOC = 0;
+   QEM_SatFlow = 0;
+   QEM_Delay = 0;
+   QEM_reference_node_number = 0;
+
 	}
+
+int pair_key;
+int HourlyCount[24];
+
 
 int IncomingLinkID;
 int OutgoingLinkID;
 DTA_Turn movement_turn;
 DTA_Approach movement_approach;
 DTA_APPROACH_TURN movement_dir;
+string QEM_dir_string;
+
+int QEM_reference_node_number;
 
 int in_link_from_node_id;
 int in_link_to_node_id;  // this equals to the current node number
@@ -751,12 +817,49 @@ int out_link_to_node_id;
 int movement_hourly_capacity;
 int starting_time_in_min;
 int ending_time_in_min;
-float turnning_percentage;
+float turning_percentage;
 int turning_prohibition_flag;
+int turning_protected_flag;
+int turning_permitted_flag;
+
+
+float sim_turn_count; 
+float sim_turn_hourly_count;
+float sim_turn_percentage; 
+float sim_turn_delay; 
+
+float obs_turn_count; 
+float obs_turn_hourly_count;
+float obs_turn_percentage; 
+float obs_turn_delay; 
+
+   int QEM_TurnVolume;
+   float QEM_TurnPercentage;
+
+   int QEM_Lanes;
+   int QEM_Shared;
+   int QEM_Width;
+   int QEM_Storage;
+   int QEM_StLanes;
+   float QEM_Grade;
+   float QEM_Speed;
+   float QEM_IdealFlow;
+   float QEM_LostTime;
+   int QEM_Phase1;
+   int QEM_PermPhase1;
+   int QEM_DetectPhase1;
+
+   float QEM_EffectiveGreen;
+   float QEM_Capacity;
+   float QEM_VOC;
+   float QEM_SatFlow;
+   float QEM_Delay;
+   CString QEM_LOS;
+
 int phase_index;
 int signal_control_no;  // for meso-scopic, link -based
 int signal_group_no;  // for meso-scopic, link -based
-int turn_volume;
+
 };
 
 class DTANodeLaneTurn
@@ -824,6 +927,7 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_QEM_ReferenceNodeNumber = 0;
 		m_IntermediateDestinationNo = 0;
 		m_NodeProduction =0;
 		m_NodeAttraction =0;
@@ -872,17 +976,95 @@ public:
 	std::vector<int> m_IncomingLinkVector;
 	std::vector <DTANodeMovement> m_MovementVector;
 
-	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
+	int FindMovementIndexFromDirecion(DTA_APPROACH_TURN movement_direction)
+	{
+	
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+			if(m_MovementVector[i].movement_dir == movement_direction)
+				return i;
+
+		}
+
+		return -1;
+	}
+
+	int get_link_pair_key(int in_link_from_node_id, int out_link_to_node_id)
+	{
+	int id_1 = (in_link_from_node_id+1)%10000;  // make it like a short integer
+	int id_2 = (out_link_to_node_id+1)%10000;
+
+	int pair_key  = id_1 *10000+ id_2;
+
+	return pair_key;
+	}
+
+
+	void make_Link_Pair_to_Movement_Map()
+	{
+
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+			int pair_key = get_link_pair_key( m_MovementVector[i].in_link_from_node_id,m_MovementVector[i].out_link_to_node_id);
+
+			m_Link_Pair_to_Movement_Map[pair_key] = i;
+			m_MovementVector[i].pair_key = pair_key;
+
+		}
+
+	}
+
+	void ResetMovementMOE()
 	{
 
 		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
 		{
 
-		if( m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
-		&& m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
-		&& m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
-		return i;
+			m_MovementVector[i].sim_turn_count  = 0;
+			m_MovementVector[i].turning_percentage   = 0;
+			m_MovementVector[i].sim_turn_delay = 0;
 		}
+
+	}
+
+	std::map<int, int > m_Link_Pair_to_Movement_Map;
+
+	void AddMovementCount(int Hour,int in_link_from_node_id, int out_link_to_node_id)
+	{
+	
+		if(m_Link_Pair_to_Movement_Map.size()==0)
+			make_Link_Pair_to_Movement_Map();
+
+		int link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
+		int movement_index = m_Link_Pair_to_Movement_Map[link_pair_key];
+
+		ASSERT(link_pair_key == m_MovementVector[movement_index].pair_key );
+		
+		if(Hour<24)
+		{
+		m_MovementVector[movement_index].HourlyCount [Hour]++;
+		}
+
+		m_MovementVector[movement_index].sim_turn_count++;
+
+	}
+
+
+	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
+	{
+		if(m_Link_Pair_to_Movement_Map.size()==0)
+			make_Link_Pair_to_Movement_Map();
+
+		return get_link_pair_key(in_link_from_node_id, out_link_to_node_id);
+
+		//for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		//{
+
+		//if( m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
+		//&& m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
+		//&& m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
+		//return i;
+		//}
 
 		return -1;  //not found
 
@@ -905,6 +1087,7 @@ public:
 	bool m_bSignalData;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
+	int m_QEM_ReferenceNodeNumber;  //  original node number
 	int m_NodeOriginalNumber;  //  original node number
 	int m_NodeID;  ///id, starting from zero, continuous sequence
 	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
@@ -912,7 +1095,7 @@ public:
 	float m_TotalCapacity;
 	int m_Connections;  // number of connections
 
-	// DTA_NodeMovementSet m_MovementSet;
+	//DTA_NodeMovementSet m_Movementt;
 
 	// signal data
 
@@ -1182,6 +1365,7 @@ int signal_control_no; // signal control number
 int signal_group_no; // group number 
 };
 
+#include "Transit.h"
 class DTALink
 {
 public:
@@ -1210,6 +1394,7 @@ public:
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
 		m_TotalVolume = 0;
+		m_TotalVolumeForMovementCount = 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
 		m_TotalDiffValue = 0;
@@ -1253,12 +1438,31 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
-		m_NumberOfCrashes = 0;
+		m_number_of_crashes = 0;
+		m_num_of_fatal_and_injury_crashes_per_year =0;
+		m_num_of_PDO_crashes_per_year = 0;
+
+		m_number_of_intersection_crashes = 0;
+		m_num_of_intersection_fatal_and_injury_crashes_per_year =0;
+		m_num_of_intersection_PDO_crashes_per_year = 0;
+
+		// safety prediction
+		m_Num_Driveways_Per_Mile = 0;
+		m_volume_proportion_on_minor_leg = 0;
+		m_Num_3SG_Intersections = 0; 
+		m_Num_3ST_Intersections = 0;
+		m_Num_4SG_Intersections = 0;
+		m_Num_4ST_Intersections = 0;
+
 		m_LevelOfService = 'A';
 
-		m_StaticSpeed = 0;
-		m_StaticLinkVolume = 0;
-		m_StaticVOC  = 0;
+		m_avg_simulated_speed = 0;
+		m_total_sensor_link_volume = 0;
+		m_total_link_volume = 0;
+		m_total_link_count_error = 0;
+		m_simulated_AADT = 0;
+		m_volume_over_capacity_ratio  = 0;
+		m_volume_over_capacity_ratio = 0;
 		m_StaticTravelTime = 0;
 		m_Grade = 0;
 
@@ -1274,6 +1478,7 @@ public:
 	};
 
 
+	float m_StaticTravelTime;
 	int m_CentroidUpdateFlag;
 	std::vector<DTALane> m_LaneVector;
 	// end: for micro simulation 
@@ -1287,19 +1492,38 @@ public:
 
 	bool m_bIncludedBySelectedPath;
 	bool m_bIncludedinSubarea;
-	double m_NumberOfCrashes;
-	char m_LevelOfService;
+
 
 	bool m_AVISensorFlag;
 	int m_LayerNo;
 	float m_Grade;
 	string m_Name;
 
+	// overall information
+
+	float m_total_link_volume;
+	float m_volume_over_capacity_ratio;
+	char m_LevelOfService;
+	float m_avg_waiting_time_on_loading_buffer;
+	float m_avg_simulated_speed;
+	float m_total_sensor_link_volume;
+	float m_total_link_count_error;
+	float m_simulated_AADT;
+	double m_number_of_crashes;
+	double m_num_of_fatal_and_injury_crashes_per_year;
+	double m_num_of_PDO_crashes_per_year;
+
+	double m_number_of_intersection_crashes;
+	double m_num_of_intersection_fatal_and_injury_crashes_per_year;
+	double m_num_of_intersection_PDO_crashes_per_year;
+	// end of overall information
+
 	int input_line_no;
-	float m_StaticSpeed, m_StaticLinkVolume;
-	float m_StaticTravelTime, m_StaticVOC;
 
 	std::vector<GDPoint> m_ShapePoints;
+	std::vector<GDPoint> m_Original_ShapePoints;  // original shape points from GIS (without offset)
+
+
 	bool m_bToBeShifted;
 
 	std::vector<GDPoint> m_BandLeftShapePoints;
@@ -1422,6 +1646,7 @@ public:
 		m_SimulationHorizon	= TimeHorizon;
 
 		m_TotalVolume = 0;
+		m_TotalVolumeForMovementCount= 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
 		m_TotalDiffValue = 0;
@@ -1546,6 +1771,9 @@ void AdjustLinkEndpointsWithSetBack()
 
 
 	bool m_bSensorData;
+
+	string m_SensorTypeString;
+
 	int  m_SensorID;
 
 	float m_ObsHourlyLinkVolume;
@@ -1639,6 +1867,7 @@ void AdjustLinkEndpointsWithSetBack()
 
 	float m_Kjam;
 	float m_AADT_conversion_factor;
+
 	float m_Wave_speed_in_mph;
 	int m_EffectiveGreenTimeInSecond;
 	int m_GreenStartTimetInSecond;
@@ -1661,6 +1890,16 @@ void AdjustLinkEndpointsWithSetBack()
 	float	m_OriginalLength;  // in miles
 	float	m_Length;  // in miles
 
+	// safety prediction
+	double m_Num_Driveways_Per_Mile;
+	double m_volume_proportion_on_minor_leg;
+	double m_Num_3SG_Intersections; 
+	double m_Num_3ST_Intersections; 
+	double m_Num_4SG_Intersections;
+	double m_Num_4ST_Intersections;
+
+
+	PT_StopTime m_StopTimeRecord;
 	float   m_AdditionalCost;
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int		m_NumLanes;
@@ -1714,17 +1953,30 @@ void AdjustLinkEndpointsWithSetBack()
 	int CFlowDepartureCount;
 
 	int m_TotalVolume;
+	int m_TotalVolumeForMovementCount;
 	int m_TotalTravelTime;
 	int m_TotalDiffValue;
 
-	float GetObsSpeed(int t)
+	float GetObsSpeed(int current_time)
 	{
+		float total_value = 0;
+		int total_count = 0;
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
+		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
 			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
-				return m_LinkMOEAry[t].ObsSpeed;
+			{
+				total_count++;
+				total_value+= m_LinkMOEAry[t].ObsSpeed;
+			}
 		}
-			return m_StaticSpeed;
+		}
+
+			if(total_count>=1)
+				return total_value/total_count;
+			else
+			return m_avg_simulated_speed;
 	}
 
 	float GetObsSpeedCopy(int t)
@@ -1734,28 +1986,39 @@ void AdjustLinkEndpointsWithSetBack()
 			if(m_LinkMOEAry[t].ObsFlowCopy >=1) // with flow
 				return m_LinkMOEAry[t].ObsSpeedCopy;
 		}
-			return m_StaticSpeed;
+			return m_avg_simulated_speed;
 	}
 
-	float GetObsLaneVolume(int t)
+	float GetObsLaneVolume(int current_time)
 	{
-		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsLinkFlow/m_NumLanes;
-		else
+
+		float total_value = 0;
+		int total_count = 0;
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
 		{
-			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticLinkVolume/m_NumLanes;
-			else
-				return 0;
-	
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
+			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			{
+				total_count++;
+				total_value+= m_LinkMOEAry[t].ObsLinkFlow/m_NumLanes;
+			}
 		}
+		}
+
+			if(total_count>=1)
+				return total_value/total_count;
+			else
+			return m_total_link_volume/m_NumLanes;
+
+
 	}
 
 		float GetAvgLinkVolume(int start_time, int end_time)
 	{
 
 		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticLinkVolume;
+				return m_total_link_volume;
 
 		float total_volume = 0;
 		for(int t= start_time ; t< end_time; t++)
@@ -1772,7 +2035,7 @@ void AdjustLinkEndpointsWithSetBack()
 	{
 
 		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticSpeed;
+				return m_avg_simulated_speed;
 
 		float total_Speed = 0;
 		for(int t= start_time ; t< end_time; t++)
@@ -1797,24 +2060,32 @@ void AdjustLinkEndpointsWithSetBack()
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticLinkVolume/m_NumLanes;
+				return m_total_link_volume/m_NumLanes;
 			else
 				return 0;
 		}
 	}
 
-	float GetObsLinkVolume(int t)
+	float GetObsLinkVolume(int current_time)
 	{
-		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsLinkFlow;
-		else
+		float total_value = 0;
+		int total_count = 0;
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
 		{
-			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticLinkVolume;
-			else
-				return 0;
-	
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
+			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			{
+				total_count++;
+				total_value+= m_LinkMOEAry[t].ObsLinkFlow;
+			}
 		}
+		}
+
+			if(total_count>=1)
+				return total_value/total_count;
+			else
+			return m_total_link_volume;
 	}
 
 	float GetObsLinkVolumeCopy(int t)
@@ -1824,23 +2095,34 @@ void AdjustLinkEndpointsWithSetBack()
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticLinkVolume;
+				return m_total_link_volume;
 			else
 				return 0;
 		}
 	}
 
-	float GetSimulatedTravelTime(int t)
+	float GetSimulatedTravelTime(int current_time)
 	{
-		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].SimulatedTravelTime;
-		else
+
+		float total_value = 0;
+		int total_count = 0;
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
 		{
-			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_StaticTravelTime;
-			else
-				return 0;
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
+			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			{
+				total_count++;
+				total_value+= m_LinkMOEAry[t].SimulatedTravelTime;
+			}
 		}
+		}
+
+			if(total_count>=1)
+				return total_value/total_count;
+			else
+			return m_StaticTravelTime;
+
 	}
 
 	float GetSimulatedTravelTimeCopy(int t)
@@ -1873,7 +2155,7 @@ void AdjustLinkEndpointsWithSetBack()
 
 	void SetDefaultCumulativeFlow()
 	{
-		int ObsCumulativeFlow = 0;
+		float ObsCumulativeFlow = 0;
 		int CumulativeArrivalCount_PricingType[5];
 		
 		int p;
@@ -1924,9 +2206,6 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetTravelTime(int starting_time, int time_interval = 1)
 	{
 
-		if(GetImpactedFlag(120))
-			return 100;
-
 		//if(this->m_bSensorData == false)
 		//	return m_FreeFlowTravelTime;
 
@@ -1949,9 +2228,8 @@ void AdjustLinkEndpointsWithSetBack()
 
 		}
 
-		ASSERT(travel_time>=0.0001);
 
-		return travel_time;
+		return max(0.0001f,travel_time);;
 
 	};
 
@@ -1964,6 +2242,7 @@ class DTAPath
 public:
 	DTAPath()
 	{
+		total_free_flow_travel_time = 0;
 		m_LinkSize = 0;
 		for(int t=0; t<1440; t++)
 		{
@@ -1977,6 +2256,7 @@ public:
 			m_WithinDayMeanTimeDependentFuelConsumption[t] = 0;
 			m_WithinDayMeanTimeDependentEmissions[t] = 0;
 			m_WithinDayMeanGeneralizedCost[t] = 0;
+			m_TimeDependentCount [t] = 0;
 		}
 
 		m_Distance =0;
@@ -1986,6 +2266,10 @@ public:
 		m_Safety = 0;
 		m_Fuel = 0;
 		m_MaxTravelTime = 0;
+		m_NumberOfSensorsPassed= 0;
+		m_NumberOfPassiveSensorsPassed = 0;
+		m_NumberOfActiveSensorsPassed = 0;
+
 
 
 	}
@@ -2024,11 +2308,17 @@ public:
 	{
 	}
 
+	float total_free_flow_travel_time;
+
 	int m_LinkSize;
 	std::vector<int> m_LinkVector;
+	std::vector<CString> m_PathLabelVector;
+
 	int m_NodeNodeSum;
 
 	float m_TimeDependentTravelTime[1440];
+	float m_TimeDependentCount[1440];
+
 	float m_MaxTravelTime;
 
 	float m_WithinDayMeanTimeDependentTravelTime[1440];
@@ -2050,6 +2340,9 @@ public:
 	float m_Emissions;
 	float m_Safety;
 	float m_Fuel;
+	int m_NumberOfSensorsPassed;
+	int m_NumberOfPassiveSensorsPassed;
+	int m_NumberOfActiveSensorsPassed;
 
 
 };
@@ -2067,7 +2360,7 @@ float ArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a lin
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
 {
-	LinkNo = 0;
+	LinkNo = -1;
 	ArrivalTimeOnDSN = 0;
 	//		LinkWaitingTime = 0;
 
@@ -2105,20 +2398,26 @@ public:
 class GPSLocationRecord
 {
 public:
-double x;
-double y;
+float x;
+float y;
+float time_stamp_in_min;
+float distance_in_km;
 
 };
 class DTAVehicle
 {
 public:
 
+	bool m_bGPSVehicle;  // GPS vehicle
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path
 
+	GPSLocationRecord *m_GPSNodeAry; // link list arrary of a vehicle path
+
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
+	int m_DateID;
 
 	string m_VehicleKey;
 	int m_OriginZoneID;  //range 0, 65535
@@ -2169,6 +2468,11 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+		m_NodeNumberSum = 0;
+		m_DateID = 0;
+		m_DemandType = 1;
+		m_VOT = 10;
+		m_bGPSVehicle = false;
 		m_bMarked = false;
 		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
@@ -2762,6 +3066,7 @@ public:
 class VehicleStatistics
 {
 public: 
+	int day_count[21];
 	VehicleStatistics()
 	{
 		TotalVehicleSize = 0;
@@ -2776,6 +3081,9 @@ public:
 
 	void Reset()
 	{
+		for(int d= 0; d<= 20; d++)
+			day_count[d]= 0;
+
 		TotalVehicleSize = 0;
 		TotalTravelTime = 0;
 		TotalVariance = 0;
@@ -2785,6 +3093,8 @@ public:
 		TotalGeneralizedCost = 0;
 		TotalGeneralizedTime = 0;
 		bImpactFlag = false;
+		AvgTravelTime = 0;
+		AvgDistance = 0;
 	}
 
 	CString Label;
@@ -2798,6 +3108,9 @@ public:
 	float TotalGeneralizedTime;
 	float TotalCost;
 	float TotalEmissions;
+	float AvgTravelTime;
+	float AvgDistance;
+
 	CVehicleEmission emissiondata;
 
 };

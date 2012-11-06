@@ -157,8 +157,8 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 
 				// can be also enhanced to edit the real time information percentage
 
-				m_DemandFileGrid.SetItemText(Index,4,m_pDoc->GetTimeStamString(start_time_in_min));
-				m_DemandFileGrid.SetItemText(Index,5,m_pDoc->GetTimeStamString(end_time_in_min));
+				m_DemandFileGrid.SetItemText(Index,4,m_pDoc->GetTimeStampString(start_time_in_min));
+				m_DemandFileGrid.SetItemText(Index,5,m_pDoc->GetTimeStampString(end_time_in_min));
 
 				int apply_additional_time_dependent_profile =0;	
 				parser.GetValueByFieldName("apply_additional_time_dependent_profile",apply_additional_time_dependent_profile);
@@ -604,6 +604,8 @@ void CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT
 		m_SelectedDemandMetaType = atoi(str);
 		//		TRACE("Select %d\n",m_SelectedDemandMetaType);
 		LoadDemandMatrixFromDemandFile(nSelectedRow,1);
+
+		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
 		DisplayDemandMatrix();
 	}
 
@@ -619,7 +621,7 @@ void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase()
 void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType)
 {
 
-	CString SelectedFileName;
+	
 	float total_demand_in_demand_file = 0;
 	float total_number_of_vehicles_to_be_generated = 0;
 
@@ -628,13 +630,15 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 	float DemandLoadingStartTimeInMin = 1440;
 	float DemandLoadingEndTimeInMin = 0;
 
-	char file_name[_MAX_PATH];
-	sprintf(file_name,"%s//input_demand_meta_data.csv",m_pDoc->m_ProjectDirectory);
+	char meta_file_name[_MAX_PATH];
+	sprintf(meta_file_name,"%s//input_demand_meta_data.csv",m_pDoc->m_ProjectDirectory);
 
 	m_ODMatrixMap.clear();
 
+	CString SelectedFileName;
+
 	CCSVParser parser;
-	if (parser.OpenCSVFile(file_name))
+	if (parser.OpenCSVFile(meta_file_name))
 	{
 		int demand_file_seq_no=0;
 		while(parser.ReadRecord())
@@ -666,6 +670,7 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 			parser.GetValueByFieldName("file_name",file_name);
 
 			SelectedFileName = file_name.c_str ();
+			DemandFileNameVector.push_back(SelectedFileName);
 
 			parser.GetValueByFieldName("start_time_in_min",start_time_in_min);
 			parser.GetValueByFieldName("end_time_in_min",end_time_in_min);
@@ -1019,5 +1024,8 @@ void CDlgODDemandGridCtrl::OnBnClickedEditVehicleEmissionsFile()
 
 void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase3()
 {
+	char file_name[_MAX_PATH];
+	sprintf(file_name,"%s\\%s",m_pDoc->m_ProjectDirectory,m_SelectedFileName);
+	m_pDoc->OpenCSVFileInExcel (file_name);
 
 }
