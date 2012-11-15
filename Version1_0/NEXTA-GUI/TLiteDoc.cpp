@@ -552,7 +552,7 @@ static bool DeleteLinkPointer( DTALink * theElement ) { delete theElement; retur
 CTLiteDoc::~CTLiteDoc()
 {
 		if(m_ODMOEMatrix !=NULL)
-		Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,	m_DemandTypeSize, m_ZoneNoSize);
+		Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,	m_PreviousDemandTypeSize, m_PreviousZoneNoSize);
 
 
 	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
@@ -9909,7 +9909,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 void CTLiteDoc::ResetODMOEMatrix()
 {
-	
+	m_ZoneNumberVector.clear();
 	m_ZoneIDVector.clear ();
 
 	for(int i = 0; i<= m_ODSize; i++)
@@ -9932,11 +9932,15 @@ void CTLiteDoc::ResetODMOEMatrix()
 	if(m_ODMOEMatrix == NULL  )
 	{
 		m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_DemandTypeSize,m_ZoneNoSize,m_ZoneNoSize);
+		 m_PreviousDemandTypeSize = m_DemandTypeSize;
+		m_PreviousZoneNoSize = m_ZoneNoSize ;
 	}
 	else
 	{
-			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_DemandTypeSize, m_ZoneNoSize);
+			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_PreviousDemandTypeSize, m_PreviousZoneNoSize);
 			m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_DemandTypeSize,m_ZoneNoSize,m_ZoneNoSize);
+		 m_PreviousDemandTypeSize = m_DemandTypeSize;
+		m_PreviousZoneNoSize = m_ZoneNoSize ;
 	}
 
 	int p, i, j;

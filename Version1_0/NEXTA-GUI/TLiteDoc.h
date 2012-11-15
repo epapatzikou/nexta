@@ -274,6 +274,9 @@ public:
 
 	int m_DemandTypeSize; 
 
+	int m_PreviousDemandTypeSize;
+	int m_PreviousZoneNoSize;
+
 
 	void ResetODMOEMatrix();
 
