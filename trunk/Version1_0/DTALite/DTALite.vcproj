@@ -338,6 +338,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Multi_Scenario.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ODEstimation.cpp"
 				>
 			</File>
@@ -376,10 +380,6 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\Unit_testing.cpp"
-				>
 			</File>
 			<File
 				RelativePath=".\Utility.cpp"
