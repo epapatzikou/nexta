@@ -71,7 +71,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib GLaux.lib gdal_i.lib"
+				AdditionalDependencies="opengl32.lib  gdal_i.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -151,7 +151,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib GLaux.lib gdal_i.lib"
+				AdditionalDependencies="opengl32.lib "
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -233,7 +233,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib GLaux.lib gdal_i.lib"
+				AdditionalDependencies="opengl32.lib gdal_i.lib"
 				OutputFile="$(OutDir)\NEXTA_32.exe"
 				Version=""
 				LinkIncremental="1"
@@ -319,7 +319,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib GLaux.lib gdal_i.lib"
+				AdditionalDependencies="opengl32.lib  gdal_i.lib"
 				OutputFile="$(OutDir)\NEXTA_64.exe"
 				Version=""
 				LinkIncremental="1"
@@ -937,11 +937,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -965,11 +965,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -997,19 +997,19 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 						>
 					</File>
 					<File
