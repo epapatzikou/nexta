@@ -275,6 +275,17 @@ public:
 		HC = 0;
 
 	}
+
+	void Reset()
+	{
+		Energy = 0;
+		CO2 = 0;
+		NOX = 0;
+		CO = 0;
+		HC = 0;
+	
+	
+	}
 };
 
 extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
@@ -2425,6 +2436,7 @@ class DTAVehicle
 {
 public:
 
+	int m_Age;
 	bool m_bGPSVehicle;  // GPS vehicle
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
@@ -2485,6 +2497,7 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+		m_Age = 0;
 		m_NodeNumberSum = 0;
 		m_DateID = 0;
 		m_DemandType = 1;
@@ -3060,6 +3073,17 @@ public:
 
 	}
 
+	void Reset()
+	{
+		meanBaseRate_TotalEnergy = 0;
+		meanBaseRate_CO2 = 0;
+		meanBaseRate_NOX = 0;
+		meanBaseRate_CO = 0;
+		meanBaseRate_HC = 0;
+
+	
+	}
+
 };
 
 class CAVISensorPair
@@ -3112,6 +3136,8 @@ public:
 		bImpactFlag = false;
 		AvgTravelTime = 0;
 		AvgDistance = 0;
+
+		emissiondata.Reset();
 	}
 
 	CString Label;

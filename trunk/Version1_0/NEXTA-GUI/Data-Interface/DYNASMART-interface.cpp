@@ -419,6 +419,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(st);
 	}
 
+	ResetODMOEMatrix();
 	ReadSensorData(directory+"input_sensor.csv");
 
 	// read link xy data
@@ -1307,6 +1308,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 	}
 	}
+
 
 
 

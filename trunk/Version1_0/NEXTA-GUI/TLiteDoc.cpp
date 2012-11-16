@@ -4756,7 +4756,10 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 				fclose(pFile);
 	}
 
+	CString SettingsFile;
+	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 
+	int version_number = (int) g_GetPrivateProfileFloat("output", "version_number",1,SettingsFile);
 	typedef struct  
 	{
 		int vehicle_id;
@@ -4780,7 +4783,21 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 	float NOX;
 	float CO;
 	float HC;
-	} struct_Vehicle_Header;
+
+
+	} struct_Vehicle_Header_version_1;
+
+	typedef struct  
+	{
+		int age;
+		int version_no;
+
+		int reserverd_field1;
+		float reserverd_field2;
+		int reserverd_field3;
+
+
+	} struct_Vehicle_Header_extension_version_2;
 
 	typedef  struct  
 	{
@@ -4796,13 +4813,20 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 		m_Movement3NodeMap.clear();
 
 
-		struct_Vehicle_Header header;
+		struct_Vehicle_Header_version_1 header;
+
+		struct_Vehicle_Header_extension_version_2 header_extension;
 
 		int count =0;
 		while(!feof(st))
 		{
 
-			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
+			size_t result;
+			size_t result_extension;
+
+				result = fread(&header,sizeof(struct_Vehicle_Header_version_1),1,st);
+			if(version_number == 2)
+				result_extension = fread(&header_extension,sizeof(struct_Vehicle_Header_extension_version_2),1,st);
 
 			if( header.vehicle_id < 0)
 				break;
@@ -4838,6 +4862,14 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			pVehicle->m_Emissions = header.emissions;
 			pVehicle->m_Distance = header.distance_in_mile;
 			pVehicle->m_NodeSize	= header.number_of_nodes;
+
+			pVehicle->m_EmissionData .Energy = header.Energy;
+			pVehicle->m_EmissionData .CO2 = header.CO2;
+			pVehicle->m_EmissionData .NOX = header.NOX;
+			pVehicle->m_EmissionData .CO = header.CO;
+			pVehicle->m_EmissionData .HC = header.HC;
+
+			pVehicle->m_Age = header_extension.age;
 
 			if(pVehicle->m_NodeSize>=1)  // in case reading error
 			{
@@ -8209,12 +8241,44 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_avg_travel_distance: 
 			value = m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_total_Energy: 
+			value = m_ClassificationTable[index].emissiondata .Energy     ;
+			break;
+		case CLS_avg_Energy: 
+			value = m_ClassificationTable[index].emissiondata .Energy   /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+
 		case CLS_total_CO2: 
-			value = m_ClassificationTable[index].TotalEmissions   ;
+			value = m_ClassificationTable[index].emissiondata .CO2    ;
 			break;
 		case CLS_avg_CO2: 
-			value = m_ClassificationTable[index].TotalEmissions /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			value = m_ClassificationTable[index].emissiondata .CO2  /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_total_NOx: 
+			value = m_ClassificationTable[index].emissiondata .NOX     ;
+			break;
+		case CLS_avg_Nox: 
+			value = m_ClassificationTable[index].emissiondata .NOX  /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+		case CLS_total_CO: 
+			value = m_ClassificationTable[index].emissiondata .CO     ;
+			break;
+		case CLS_avg_CO: 
+			value = m_ClassificationTable[index].emissiondata .CO  /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+		case CLS_total_HC: 
+			value = m_ClassificationTable[index].emissiondata .HC     ;
+			break;
+		case CLS_avg_HC: 
+			value = m_ClassificationTable[index].emissiondata .HC  /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+		case CLS_total_gallon: 
+			value = m_ClassificationTable[index].emissiondata .Energy/1000/(121.7)     ;
+			break;
+		case CLS_avg_mile_per_gallon: 
+			value = m_ClassificationTable[index].TotalDistance  /max(1,m_ClassificationTable[index].emissiondata .Energy/1000/(121.7));
+			break;
+
 
 		default: 
 			TRACE("ERROR. No classification available!");
@@ -9917,9 +9981,24 @@ void CTLiteDoc::ResetODMOEMatrix()
 			m_ZoneIDVector.push_back(-1);
 	}
 
+		int count = 0;
+
+	if(m_ZoneMap.size () ==0)  // no data
+	{
+		for(int i = 1; i<= m_ODSize; i++)
+		{
+				m_ZoneIDVector[i]=i;
+				m_ZoneNumberVector.push_back (i);
+		}
+
+		m_ZoneNoSize  =  m_ODSize;
+
+
+	}else
+	{
+
 		std::map<int, DTAZone>	:: const_iterator itr;
 
-		int count = 0;
 		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); itr++)
 		{
 			m_ZoneNumberVector.push_back ( itr->first);
@@ -9927,7 +10006,10 @@ void CTLiteDoc::ResetODMOEMatrix()
 			count++;
 		}
 
-	m_ZoneNoSize  = m_ZoneNumberVector.size();
+		m_ZoneNoSize  = m_ZoneNumberVector.size();
+
+	}
+
 
 	if(m_ODMOEMatrix == NULL  )
 	{
