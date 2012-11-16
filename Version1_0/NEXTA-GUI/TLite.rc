@@ -2246,7 +2246,7 @@ BEGIN
     END
     POPUP "MOE"
     BEGIN
-        MENUITEM "Link List Dialog",            ID_SEARCH_LISTTRAINS
+        MENUITEM "Link List Dialog",            ID_SEARCH_LINKLIST
         MENUITEM "Path List Dialog",            ID_MOE_PATHLIST
         MENUITEM "Vehicle Path Dialog (Ctrl+P)", ID_MOE_VEHICLEPATHANALAYSIS
         MENUITEM "Network Statistics Dialog",   ID_TOOLS_VIEWSIMULATIONSUMMARY

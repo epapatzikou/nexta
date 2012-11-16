@@ -302,6 +302,13 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 			ColumnLabelVector.push_back ("Avg Speed");
 			ColumnLabelVector.push_back ("TT STD");
 
+			ColumnLabelVector.push_back ("Energy (KJ)");
+			ColumnLabelVector.push_back ("CO2 (g)");
+			ColumnLabelVector.push_back ("NOx (g)");
+			ColumnLabelVector.push_back ("CO (g)");
+			ColumnLabelVector.push_back ("HC (g)");
+			ColumnLabelVector.push_back ("Miles Per Gallon");
+
 			if((*iDoc)-> m_bGPSDataSet)
 			{
 
@@ -367,8 +374,12 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	ColumnPathLabelVector.push_back ("Distance (mile)");
 	ColumnPathLabelVector.push_back ("Speed (mph)");
 	ColumnPathLabelVector.push_back ("Toll Cost($)");
-	ColumnPathLabelVector.push_back ("Energy (KG)");
-	ColumnPathLabelVector.push_back ("CO2 (KG)");
+	ColumnPathLabelVector.push_back ("Energy (KJ)");
+	ColumnPathLabelVector.push_back ("CO2 (g)");
+	ColumnPathLabelVector.push_back ("NOx (g)");
+	ColumnPathLabelVector.push_back ("CO (g)");
+	ColumnPathLabelVector.push_back ("HC (g)");
+	ColumnPathLabelVector.push_back ("Miles Per Gallon");
 	
 //	ColumnPathLabelVector.push_back ("Day No");
 
@@ -539,7 +550,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];
 
 
-			if(/*pVehicle->m_NodeSize >= 2 && */pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
+			if(OrgNo>=0 && DesNo >=0 /*pVehicle->m_NodeSize >= 2 && */ && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
 				if( 
 					(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
@@ -595,6 +606,12 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 
 					float AvgEnergy = m_ODMOEMatrix[p][i][j].emissiondata .Energy / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 					float AvgCO2 = m_ODMOEMatrix[p][i][j].emissiondata.CO2  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgNOX = m_ODMOEMatrix[p][i][j].emissiondata.NOX  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgCO = m_ODMOEMatrix[p][i][j].emissiondata.CO  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+					float AvgHC = m_ODMOEMatrix[p][i][j].emissiondata.HC  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+
+				double Gasoline = AvgEnergy/1000/(121.7);  // convert energy from KJ to mega joules  then to gasline per gallon
+				double MilesPerGallon = AvgDistance/max(0.1,Gasoline);
 
 					float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
 					if(m_ODMOEMatrix[p][i][j].TotalVehicleSize >= MinVehicleSize && 
@@ -646,7 +663,28 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		sprintf_s(text, "%3.1f",STDTravelTime);
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
-			if((*iDoc)-> m_bGPSDataSet)
+
+		sprintf_s(text, "%3.1f",AvgEnergy);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",AvgCO2);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f",AvgNOX);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f",AvgCO);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f",AvgHC);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",MilesPerGallon);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		
+		
+		if((*iDoc)-> m_bGPSDataSet)
 			{
 
 				int min = 10000;
@@ -865,6 +903,12 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		float AvgTravelCost = m_PathVector[p].TotalCost /m_PathVector[p].TotalVehicleSize;
 		float AvgEnergy = m_PathVector[p].emissiondata .Energy / m_PathVector[p].TotalVehicleSize;
 		float AvgCO2 = m_PathVector[p].emissiondata.CO2  / m_PathVector[p].TotalVehicleSize;
+		float AvgNOX = m_PathVector[p].emissiondata.NOX  / m_PathVector[p].TotalVehicleSize;
+		float AvgCO = m_PathVector[p].emissiondata.CO  / m_PathVector[p].TotalVehicleSize;
+		float AvgHC = m_PathVector[p].emissiondata.HC  / m_PathVector[p].TotalVehicleSize;
+
+		double Gasoline = AvgEnergy/1000/(121.7);  // convert energy from KJ to mega joules  then to gasline per gallon
+		double MilesPerGallon = AvgDistance/max(0.1,Gasoline);
 
 		float AvgSpeed = AvgDistance * 60 / max(0.1,AvgTravelTime);  // mph
 
@@ -899,6 +943,18 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		m_PathListCtrl.SetItemText(Index,column_index++,text );
 
 		sprintf_s(text, "%3.1f", AvgCO2);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f", AvgNOX);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f", AvgCO);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.4f", AvgHC);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.2f", MilesPerGallon);
 		m_PathListCtrl.SetItemText(Index,column_index++,text );
 
 	}
@@ -1059,6 +1115,8 @@ void CDlg_VehPathAnalysis::OnLbnSelchangeListPath()
 void CDlg_VehPathAnalysis::ShowSelectedPath()
 {
 	
+	if(m_PathVector.size()==0)
+		m_SelectedPath = -1;
 
 	if(m_SelectedPath >= 0)
 		m_pDoc->HighlightPath(m_PathVector[m_SelectedPath].m_LinkVector,2);
