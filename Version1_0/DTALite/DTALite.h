@@ -107,7 +107,7 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 void g_ProgramStop();
 void g_ProgramTrace(CString str);
 float g_RNNOF();
-bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT);
+bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT, int &Age);
 
 string GetLinkStringID(int FromNodeName, int ToNodeName);
 
@@ -1522,6 +1522,7 @@ public:
 	}
 	int vehicle_type;
 	string vehicle_type_name;
+	std::vector<float> percentage_age_vector;
 };
 
 
@@ -1753,6 +1754,7 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
+	int m_Age;
 	float m_VOT;        // range 0 to 255
 	float m_TollDollarCost;
 	float m_Emissions;
@@ -1783,6 +1785,7 @@ public:
 
 	DTAVehicle()
 	{
+		m_Age = 0;
 		Energy = CO2 = NOX = CO = HC = 0;
 		m_PrevSpeed = 0;
 		m_TimeToRetrieveInfo = -1;
@@ -1876,6 +1879,7 @@ public:
 	int m_VehicleType;
 	int m_PricingType;
 	int m_InformationClass;
+	int m_Age;
 
 	float    m_DepartureTime;
 	int m_TimeToRetrieveInfo;

@@ -47,7 +47,7 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	result.y_intercept = 0;
 	result.avg_y_to_x_ratio = 0;
 
-	if(DataVector.size()<=1)
+	if(DataVector.size()<=1 && g_ODEstimationFlag ==1)
 	{
 		cout << "No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
 		g_ProgramStop();
@@ -234,7 +234,7 @@ float g_RNNOF()
 }
 
 
-bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT)
+bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT, int &Age)
 {
 
 	if(g_DemandTypeMap.find(demand_type) == g_DemandTypeMap.end())
@@ -276,6 +276,31 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	{
 		VehicleType = 0;  // no vehicle type
 		InformationClass = 0;
+	}
+
+	Age = 0; // default value
+	if(VehicleType>=1) 
+	{
+		RandomPercentage= g_GetRandomRatio() * 100; 
+		float prev_cumulative_percentage = 0;
+		float cumulative_percentage = 0;
+
+		for(i=0; i< g_VehicleTypeVector[VehicleType-1].percentage_age_vector.size(); i++)
+		{
+			cumulative_percentage+=g_VehicleTypeVector[VehicleType-1].percentage_age_vector[i];
+
+			if(RandomPercentage > prev_cumulative_percentage && RandomPercentage <= cumulative_percentage)
+			{
+			Age = i;
+			break;
+			}
+
+			prev_cumulative_percentage = cumulative_percentage;
+		
+		}
+
+
+	
 	}
 
 	RandomPercentage= g_GetRandomRatio() * 100; 

@@ -367,6 +367,9 @@ void g_ReadInputFiles(int scenario_no)
 	// set random number seed
 	g_RandomSeed = g_GetPrivateProfileInt("simulation", "random_number_seed", 100, g_DTASettingFileName);
 
+	// write version number (for agent.bin version control)
+	g_WritePrivateProfileInt("output", "version_number", 2, g_DTASettingFileName);
+
 	unsigned int state[16];
 
 	for (int k = 0; k < 16; ++k)
@@ -1262,13 +1265,12 @@ void g_ReadInputFiles(int scenario_no)
 		VehicleTypeFile.open("input_vehicle_type.csv");
 		if(VehicleTypeFile.is_open ())
 		{
-			VehicleTypeFile << "vehicle_type,vehicle_type_name" << endl;
-			VehicleTypeFile << "vehicle_type,vehicle_type_name" << endl;
-			VehicleTypeFile << "1,passenger car" << endl;
-			VehicleTypeFile << "2,passenger truck" << endl;
-			VehicleTypeFile << "3,light commercial truck" << endl;
-			VehicleTypeFile << "4,single unit long-haul truck" << endl;
-			VehicleTypeFile << "5,combination long-haul truck" << endl;
+			VehicleTypeFile << "vehicle_type,vehicle_type_name,percentage_of_age_0,percentage_of_age_5,percentage_of_age_10,percentage_of_age_15" << endl;
+			VehicleTypeFile << "1,passenger car,25,25,25,25" << endl;
+			VehicleTypeFile << "2,passenger truck,25,25,25,25" << endl;
+			VehicleTypeFile << "3,light commercial truck,25,25,25,25" << endl;
+			VehicleTypeFile << "4,single unit short-haul truck,25,25,25,25" << endl;
+			VehicleTypeFile << "5,combination long-haul truck,25,25,25,25" << endl;
 			VehicleTypeFile.close();
 		}
 	}
@@ -1288,6 +1290,34 @@ void g_ReadInputFiles(int scenario_no)
 			DTAVehicleType element;
 			element.vehicle_type = vehicle_type;
 			element.vehicle_type_name  = vehicle_type_name;
+
+			float percentage_of_age = 0;
+
+			int age =0;
+
+			// initialize age vector from 0 year to 30 year
+			for(age = 0; age <= 30; age++)
+			{
+			element.percentage_age_vector .push_back (0);
+			}
+
+			for(age = 0; age <= 30; age++)
+			{
+				CString str_age;
+				str_age.Format ("percentage_of_age_%d",age);
+
+				CT2CA pszConvertedAnsiString (str_age);
+				// construct a std::string using the LPCSTR input
+				std::string strStd (pszConvertedAnsiString);
+
+				if(parser_vehicle_type.GetValueByFieldName(strStd,percentage_of_age) == true) // with data
+				{
+				element.percentage_age_vector [age] = percentage_of_age;
+				
+				}
+
+			}
+			
 
 			g_VehicleTypeVector.push_back(element);
 
@@ -1661,7 +1691,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 				g_HistDemand.AddValue(origin_zone,destination_zone,time_interval, 1); // to store the initial table as hist database
 		}
 
-		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass , vhc.m_VOT);
+		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass , vhc.m_VOT, vhc.m_Age );
 
 		g_simple_vector_vehicles.push_back(vhc);
 	}
@@ -1947,6 +1977,7 @@ void g_ConvertDemandToVehicles()
 
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
 			pVehicle->m_VOT = kvhc->m_VOT;
+			pVehicle->m_Age  = kvhc->m_Age;
 
 			pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
 			g_VehicleVector.push_back(pVehicle);

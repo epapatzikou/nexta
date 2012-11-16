@@ -144,7 +144,7 @@ using namespace std;
 	}
 
 
-	csv_output.WriteHeader ();
+	csv_output.WriteHeader (true,false);
 
 		int line_no = 1;
 
