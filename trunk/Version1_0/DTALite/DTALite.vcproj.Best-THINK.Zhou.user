@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Clackamas_County_imported_project-complete_sensor_data"
+				WorkingDirectory="C:\DataSets\6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Clackamas_County_imported_project-complete_sensor_data"
+				WorkingDirectory="C:\DataSets\6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\DataSets\6-Node Network"
+				WorkingDirectory="C:\DataSets\Clackamas County Subarea\data\Jeff_modification\Clarkamas_data\Clackamas_County_imported_project-complete_sensor_data"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
