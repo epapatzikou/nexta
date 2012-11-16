@@ -4869,7 +4869,10 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			pVehicle->m_EmissionData .CO = header.CO;
 			pVehicle->m_EmissionData .HC = header.HC;
 
-			pVehicle->m_Age = header_extension.age;
+			if(version_number == 2)
+			{
+				pVehicle->m_Age = header_extension.age;
+			}
 
 			if(pVehicle->m_NodeSize>=1)  // in case reading error
 			{
