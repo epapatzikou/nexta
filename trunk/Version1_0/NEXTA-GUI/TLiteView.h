@@ -666,8 +666,6 @@ public:
 	afx_msg void OnViewDecreatenodesize();
 	afx_msg void OnViewDisplaylanewidth();
 	afx_msg void OnNodeCheckconnectivityfromhere();
-	afx_msg void OnNodeDirectiontohereandvehicleanalaysis();
-	afx_msg void OnNodeDirectionfromhereandvehicleanalasis();
 	afx_msg void OnNodeDirectiontohereandreliabilityanalysis();
 	afx_msg void OnLinkIncreasebandwidth();
 	afx_msg void OnLinkDecreasebandwidth();

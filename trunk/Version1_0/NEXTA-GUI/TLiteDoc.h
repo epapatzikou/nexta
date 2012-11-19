@@ -43,7 +43,7 @@
 #include <afxdb.h>          // MFC database support
 #include <afxdao.h>
 #endif
-
+enum _GIS_DATA_TYPE {GIS_Point_Type=0,GIS_Line_Type, GIS_Polygon_Type}; 
 enum layer_mode
 { 
 	layer_node = 0,
@@ -70,7 +70,7 @@ enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_
 
 enum OD_MOE {odnone,critical_volume};
 
-enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_path,CLS_link,CLS_link_set,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
+enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,CLS_path,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
 enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {
 	CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
@@ -1149,6 +1149,7 @@ public:
 	void GeneratePathFromVehicleData();
 	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkMOEToKMLFiles(CString file_name);
+	void ConvertLinkCSV2ShapeFiles(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString, _GIS_DATA_TYPE GIS_data_type);
 	void SaveAMS_ODTable();
 
 	void ExportPathflowToCSVFiles();
@@ -1596,6 +1597,7 @@ public:
 	afx_msg void OnMoeTableDialog();
 	afx_msg void OnToolsObtaintrafficcontroldatafromreferencenetwork();
 	afx_msg void OnToolsReverseverticalcoordinate();
+	afx_msg void OnGenerategisshapefilesLoadlinkcsvfile();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

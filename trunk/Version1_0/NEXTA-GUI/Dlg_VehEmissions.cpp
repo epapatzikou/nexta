@@ -7,6 +7,7 @@
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
+#include "Dlg_VehicleClassification.h"
 #define MAX_STRING_LENGTH  100
 
 extern CDlg_VehPathAnalysis* g_pVehiclePathDlg;
@@ -93,6 +94,7 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST, &CDlg_VehPathAnalysis::OnLvnItemchangedList)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_PATHLIST, &CDlg_VehPathAnalysis::OnPathLvnItemchangedList)
 	ON_CBN_SELCHANGE(IDC_COMBO_DayNo, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDayno)
+	ON_BN_CLICKED(ID_BarChart, &CDlg_VehPathAnalysis::OnBnClickedBarchart)
 END_MESSAGE_MAP()
 
 
@@ -495,6 +497,8 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
 			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];
 
+			pVehicle->m_bODMarked = false;
+
 			if(OrgNo>=0 && DesNo >=0  && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
 				if( 
@@ -506,6 +510,9 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
+
+					pVehicle->m_bODMarked = true;
+
 					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize+=1;
 
 					if( (*iDoc)->m_bGPSDataSet )
@@ -1374,4 +1381,15 @@ void CDlg_VehPathAnalysis::OnLvnItemchangedList5(NMHDR *pNMHDR, LRESULT *pResult
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedBarchart()
+{
+
+	CDlg_VehicleClassification dlg;
+	dlg.m_pDoc = m_pDoc;
+	m_pDoc->m_VehicleSelectionMode = CLS_OD;
+	dlg.m_VehicleSelectionNo  = CLS_OD;
+	dlg.DoModal ();
+
 }

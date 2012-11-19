@@ -7,6 +7,7 @@
 #define IDOK_FIND_NODE                  2
 #define ID_EXPORT_DATA                  2
 #define ID_VOT_Distribution             2
+#define ID_BarChart                     2
 #define ID_EXPORT                       3
 #define ID_IMPORT                       3
 #define IDOK_FIND_PATH                  3
@@ -14,6 +15,7 @@
 #define ID_EXPORT_DATA2                 3
 #define ID_EDIT_SCENARIO                3
 #define IDOK2                           3
+#define IDDATA_Analysis                 3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
 #define ID_FindCriticalOD               4
@@ -242,13 +244,13 @@
 #define IDC_BUTTON_EDIT_DATA_IN_EXCEL   1058
 #define IDC_COMBO_DayNo                 1058
 #define IDC_EDIT_NodeShapeFile          1059
-#define IDC_EDIT_LinkShapeFile          1060
 #define IDC_EDIT_Demand_CSV_File        1060
+#define IDC_EDIT_LinkShapeFile          1060
 #define IDC_EDIT_ZoneShapeFile          1061
 #define IDC_BUTTON_Find_Node_File       1062
-#define IDC_BUTTON_Find_Link_File       1063
 #define IDC_BUTTON_COPY_VEHICLE_FILE    1063
 #define IDC_BUTTON_Find_Demand_CSV_File 1063
+#define IDC_BUTTON_Find_Link_File       1063
 #define IDC_BUTTON_Find_Zone_File       1064
 #define IDC_COMBO_Min_Number_of_vehicles 1065
 #define IDC_COMBO_Min_Travel_Time       1066
@@ -271,6 +273,7 @@
 #define IDC_SUBAREA_LINK_SIZE           1080
 #define IDC_BUTTON_View_Sample_CSV_File 1080
 #define IDC_BUTTON_View_Sample_File2    1080
+#define IDC_BUTTON_Find_CSF_File        1080
 #define IDC_EDIT_ExcelFile5             1081
 #define IDC_BUTTON_GENERATE_DATA        1081
 #define IDC_BUTTON_Select_Sample_File   1081
@@ -297,9 +300,11 @@
 #define IDC_Back_GroundColorBUTTON      1094
 #define ID_EXPORT_GPS_SHAPE_FILE        1095
 #define IDC_DEMAND_TYPE_LIST            1095
+#define IDC_EDIT_CSV_SHAPE_FILE         1095
 #define ID_EXPORT_KML_FILE              1096
 #define IDC_Toll_Link_LIST              1096
 #define IDC_DISTANCE_BASED_TOLL_CHECK   1097
+#define ID_EXPORT_GIS_Shape_File        1097
 #define IDC_AREA_TOLL_CHECK             1098
 #define IDC_AREA_BUTTON                 1099
 #define IDC_ADD_BUTTON                  1100
@@ -356,6 +361,8 @@
 #define IDC_COMBO_WalkingDistance       1144
 #define IDC_COMBO_MovementTextBoxSize3  1145
 #define IDC_COMBO_TransitTime           1145
+#define IDC_GIS_DATA_TYPE_LIST          1145
+#define IDBARCHARTPIECHART              1146
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -952,14 +959,28 @@
 #define ID_MOETYPE2_QUEUELENGTH         33504
 #define ID_NGSIMMENU_ACTIVATESPACE      33505
 #define ID_TOOLS_REVERSEVERTICALCOORDINATE 33506
+#define ID_TOOLS_GENERATEGISSHAPEFILES  33507
+#define ID_GENERATEGISSHAPEFILES_LOADNODECSVFILE 33508
+#define ID_GENERATEGISSHAPEFILES_LOADLINKCSVFILE 33509
+#define ID_GENERATEGISSHAPEFILES_LOAD   33510
+#define ID_TOOLS_IMPORT                 33511
+#define ID_LINKSELECTION_SHOWSELECTEDLINKSONLY 33512
+#define ID_TOOLS_NETWORKTOOLS           33513
+#define ID_TOOLS_TRAFFICCONTROLTOOLS    33514
+#define ID_TOOLS_GISTOOLS               33515
+#define ID_TOOLS_DEMANDTOOLS            33516
+#define ID_TOOLS_ACCESSI                33517
+#define ID_TOOLS_SAFETYPLANNINGTOOLS    33518
+#define ID_SAFETYPLANNINGTOOLS_RUN      33519
+#define ID_SAFETYPLANNINGTOOLS_GENERATENODE 33520
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33507
-#define _APS_NEXT_CONTROL_VALUE         1145
+#define _APS_NEXT_COMMAND_VALUE         33521
+#define _APS_NEXT_CONTROL_VALUE         1147
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

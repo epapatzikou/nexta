@@ -67,4 +67,5 @@ public:
 	CString m_Message;
 	afx_msg void OnBnClickedHighlightVehicles();
 	CButton m_HighlightVehicleButton;
+	CListBox m_MessageList;
 };

@@ -368,7 +368,20 @@ void g_ReadInputFiles(int scenario_no)
 	g_RandomSeed = g_GetPrivateProfileInt("simulation", "random_number_seed", 100, g_DTASettingFileName);
 
 	// write version number (for agent.bin version control)
-	g_WritePrivateProfileInt("output", "version_number", 2, g_DTASettingFileName);
+
+	int current_revision_number = 2;
+	int previous_revision_number = g_GetPrivateProfileInt("version_control", "revision_number", 1, g_DTASettingFileName);
+	g_WritePrivateProfileInt("version_control", "revision_number", current_revision_number, g_DTASettingFileName);
+
+	if(previous_revision_number< current_revision_number)
+	{
+	 cout << "The file revision number is outdated." << endl;
+	 cout << "	The revision number in this data set = " << previous_revision_number << endl;
+	 cout << " The latest revision number = " << current_revision_number << endl;
+	 cout << "Please follow NEXTA installation folder\\default_data_folder\\version_control_log.csv to update data files accordingly." << endl;
+	 g_ProgramStop();
+	}
+
 
 	unsigned int state[16];
 

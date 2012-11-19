@@ -6,7 +6,7 @@
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
 
 // CDlgLinkList dialog
-enum eLinkSelectionMode {eLinkSelection_AllLinks,eLinkSelection_FreewayOnly,eLinkSelection_RampOnly,eLinkSelection_ArterialOnly,eLinkSelection_NoConnectors};
+enum eLinkSelectionMode {eLinkSelection_AllLinks,eLinkSelection_SelectedLinksOnly,eLinkSelection_FreewayOnly,eLinkSelection_RampOnly,eLinkSelection_ArterialOnly,eLinkSelection_NoConnectors};
 
 class CDlgLinkList : public CBaseDialog
 {
@@ -51,4 +51,7 @@ public:
 	CString m_StrDocTitles;
 
 	afx_msg void OnBnClickedCheckZoomToSelectedLink();
+	afx_msg void OnBnClickedBarchartpiechart();
+	afx_msg void OnLinkselectionShowselectedlinksonly();
+	afx_msg void OnUpdateLinkselectionShowselectedlinksonly(CCmdUI *pCmdUI);
 };

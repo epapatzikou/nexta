@@ -35,6 +35,8 @@
 
 #include "SignalNode.h"
 #include "..//Dlg_SignalDataExchange.h"
+#include "..//CSVParser.h"
+#include "..//Geometry.h"
 
 
 void CTLiteDoc::OnExportAms()
@@ -1958,4 +1960,238 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 			fclose(st);
 		}
 		*/
+}
+
+void CTLiteDoc::ConvertLinkCSV2ShapeFiles(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString, _GIS_DATA_TYPE GIS_data_type)
+{
+#ifndef _WIN64
+
+	CWaitCursor wait;
+	CCSVParser parser;
+	int i= 0;
+
+	// open csv file
+	if (parser.OpenCSVFile(lpszCSVFileName))
+	{
+
+		CString message_str;
+
+		OGRSFDriver *poDriver;
+
+		OGRRegisterAll();
+
+		poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(GISTypeString );
+		if( poDriver == NULL )
+		{
+			message_str.Format ( "%s driver not available.", GISTypeString );
+			return;
+		}
+
+		OGRDataSource *poDS;
+
+		poDS = poDriver->CreateDataSource(lpszShapeFileName, NULL );
+		if( poDS == NULL )
+		{
+			message_str.Format ( "Creation of GIS output file %s failed.\nPlease do not overwrite the exiting file and please select a new file name.", 
+				lpszShapeFileName );
+			return;
+		}
+
+		///// export to link layer
+
+		// link layer 
+
+			OGRLayer *poLayer;
+			poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
+			if( poLayer == NULL )
+			{
+				message_str.Format("link Layer creation failed");
+				return;
+			}
+
+
+
+			vector<string> HeaderVector = parser.GetHeaderVector();
+
+			std::vector <CString> LongFieldVector;
+			for(unsigned int i = 0; i < HeaderVector.size(); i++)
+			{
+					if(HeaderVector[i].find ("geometry") !=  string::npos||  HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
+					{
+						OGRFieldDefn oField (HeaderVector[i].c_str (), OFTString);
+
+						CString str;  
+						if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+						{ 
+							str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+							return; 
+
+						}
+					}else
+					{
+						CString field_string  = HeaderVector[i].c_str ();
+
+						OGRFieldDefn oField (field_string, OFTReal);
+
+						CString str;  
+						if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+						{ 
+							str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+								return; 
+						}
+
+				}
+
+					if(HeaderVector[i].size()>=11)
+					{
+						LongFieldVector.push_back (HeaderVector[i].c_str ());
+					}
+
+			}
+
+			message_str.Format ("%d fields have been created.",HeaderVector.size());
+
+			if(LongFieldVector.size() >=1)
+			{
+				message_str.Format("Warning: Arc GIS file only supports field names with not more than 10 characters.\nThe following fields have long field names. "); 
+				for(unsigned l = 0; l< LongFieldVector.size(); l++)
+				{
+						message_str.Format ("%s",LongFieldVector[l]);
+
+				
+				}
+			}
+
+			int count = 0 ;
+			while(parser.ReadRecord())
+			{
+				//create feature
+				OGRFeature *poFeature;
+				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+
+				//step 1: write all fields except geometry
+				for(unsigned int i = 0; i < HeaderVector.size(); i++)
+				{
+					if(HeaderVector[i]!="geometry")
+					{
+						if(HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
+						{
+
+							std::string str_value;
+
+							parser.GetValueByFieldName(HeaderVector[i],str_value);
+
+//							TRACE("field: %s, value = %s\n",HeaderVector[i].c_str (),str_value.c_str ());
+							poFeature->SetField(i,str_value.c_str ());
+						}else
+						{
+							double value = 0;
+
+							parser.GetValueByFieldName(HeaderVector[i],value);
+
+//							TRACE("field: %s, value = %f\n",HeaderVector[i].c_str (),value);
+
+							CString field_name = HeaderVector[i].c_str ();
+							poFeature->SetField(i,value);
+
+
+
+						}
+
+					}
+				}
+
+					string geo_string;
+					std::vector<CCoordinate> CoordinateVector;
+					if(parser.GetValueByFieldName("geometry",geo_string))
+					{
+						// overwrite when the field "geometry" exists
+						CGeometry geometry(geo_string);
+						CoordinateVector = geometry.GetCoordinateList();
+
+						if( GIS_data_type == GIS_Point_Type && CoordinateVector.size ()==1)
+						{
+								OGRPoint pt;
+								pt.setX( CoordinateVector[0].X );
+								pt.setY( CoordinateVector[0].Y);
+								poFeature->SetGeometry( &pt ); 
+
+						}
+
+
+
+						if( GIS_data_type == GIS_Line_Type)
+						{
+
+						OGRLineString line;
+						for(unsigned int si = 0; si< CoordinateVector.size(); si++)
+						{
+							line.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y);
+						}
+
+						poFeature->SetGeometry( &line ); 
+						}
+
+
+						if( GIS_data_type == GIS_Polygon_Type)
+						{
+
+							OGRPolygon polygon;
+							OGRLinearRing  ring;
+
+							for(unsigned int si = 0; si<  CoordinateVector.size(); si++)
+							{
+								ring.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y,1);
+							}
+
+							polygon.addRing(&ring);
+
+							poFeature->SetGeometry( &polygon ); 
+
+						}
+
+
+					}
+
+
+
+
+					if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+					{
+						AfxMessageBox("Failed to create line feature in shapefile.\n");
+						return;
+
+					}  
+
+					OGRFeature::DestroyFeature( poFeature );
+
+					count++;
+				}
+
+				message_str.Format ("%d records have been created.",count);
+
+
+
+			OGRDataSource::DestroyDataSource( poDS );
+
+			CString ShapeFile = lpszShapeFileName;
+			CString ShapeFileFolder = ShapeFile.Left(ShapeFile.ReverseFind('\\') + 1);
+
+			ShellExecute( NULL,  "explore", ShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+
+		}
+#endif
+
+}
+void CTLiteDoc::OnGenerategisshapefilesLoadlinkcsvfile()
+{
+#ifdef _WIN64
+
+		AfxMessageBox("Please use NEXTA 32 bit version for this function.");
+		return;
+
+#endif
+
 }

@@ -289,6 +289,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_MOE_MOE, &CTLiteDoc::OnMoeTableDialog)
 	ON_COMMAND(ID_TOOLS_OBTAINTRAFFICCONTROLDATAFROMREFERENCENETWORK, &CTLiteDoc::OnToolsObtaintrafficcontroldatafromreferencenetwork)
 	ON_COMMAND(ID_TOOLS_REVERSEVERTICALCOORDINATE, &CTLiteDoc::OnToolsReverseverticalcoordinate)
+	ON_COMMAND(ID_GENERATEGISSHAPEFILES_LOADLINKCSVFILE, &CTLiteDoc::OnGenerategisshapefilesLoadlinkcsvfile)
 	END_MESSAGE_MAP()
 
 
@@ -1091,7 +1092,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	*/
 
 		if(!ReadNodeCSVFile(directory+"input_node.csv")) return false;
-		if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) return false;
+		if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) 
+			return false;
 		if(ReadZoneCSVFile(directory+"input_zone.csv"))
 		{
 			ReadActivityLocationCSVFile(directory+"input_activity_location.csv");
@@ -4759,7 +4761,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 	CString SettingsFile;
 	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 
-	int version_number = (int) g_GetPrivateProfileFloat("output", "version_number",1,SettingsFile);
+	int version_number = (int) g_GetPrivateProfileFloat("version_control", "revision_number",1,SettingsFile);
 	typedef struct  
 	{
 		int vehicle_id;
@@ -7972,19 +7974,8 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		return  true;  // all the vehicles
 
 	if(vehicle_selection == CLS_OD)
-		return  pVehicle->m_bMarked;  // marked by vehicle path dialog
+		return  pVehicle->m_bODMarked;  // marked by vehicle path dialog
 
-	if(vehicle_selection == CLS_link)
-	{
-		for(int link= 1; link<pVehicle->m_NodeSize; link++)
-		{
-			if ( pVehicle->m_NodeAry[link].LinkNo == m_SelectedLinkNo)
-			{
-				return true;		
-			}
-		}
-		return false;
-	}
 
 	if(vehicle_selection == CLS_link_set)
 	{
@@ -8003,6 +7994,9 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		if(m_PathDisplayList.size() == 0)
 			return false;
 
+		if(m_SelectPathNo >= m_PathDisplayList.size())
+			return false;
+
 		int count_of_links_in_selected_path = 0;
 
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
@@ -8013,7 +8007,7 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 			}
 		}
 
-		if(count_of_links_in_selected_path == m_PathDisplayList[0].m_LinkSize && m_PathDisplayList[0].m_LinkSize >0)
+		if(count_of_links_in_selected_path == m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() && m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() >0)
 			return true;
 		else
 			return false;
@@ -8154,11 +8148,9 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 		DTAVehicle* pVehicle = (*iVehicle);
 
 		pVehicle->m_bMarked = false;
-
 		if(SelectVehicleForAnalysis(pVehicle, m_VehicleSelectionMode) == true) 
 		{
 			pVehicle->m_bMarked = true;
-
 			if(bTraceFlag)  // trace single vehicle id
 			{
 				TRACE("vehicle name: %d\n",pVehicle->m_VehicleID+1  );
@@ -8301,11 +8293,11 @@ void CTLiteDoc::OnLinkVehiclestatisticsanalaysis()
 		return;
 	}
 
-	m_VehicleSelectionMode = CLS_link;  // select link analysis
+	m_VehicleSelectionMode = CLS_link_set;  // select link analysis
 
 	CDlg_VehicleClassification dlg;
 
-	dlg.m_VehicleSelectionNo = CLS_link;
+	dlg.m_VehicleSelectionNo = CLS_link_set;
 	dlg.m_pDoc = this;
 	dlg.DoModal ();
 
@@ -9965,7 +9957,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 		}
 		
-		m_SimulationVehicleDataLoadingStatus.Format ("%d GPS are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
+		m_SimulationVehicleDataLoadingStatus.Format ("%d GPS traces are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
 		return true;
 
 	}
@@ -10082,4 +10074,6 @@ void CTLiteDoc::OnToolsObtaintrafficcontroldatafromreferencenetwork()
 {
 	MapSignalDataAcrossProjects();
 }
+
+
 

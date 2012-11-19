@@ -134,8 +134,6 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_VIEW_INCREASENODESIZE, &CTLiteView::OnViewIncreasenodesize)
 	ON_COMMAND(ID_VIEW_DECREATENODESIZE, &CTLiteView::OnViewDecreatenodesize)
 	ON_COMMAND(ID_NODE_CHECKCONNECTIVITYFROMHERE, &CTLiteView::OnNodeCheckconnectivityfromhere)
-	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDVEHICLEANALAYSIS, &CTLiteView::OnNodeDirectiontohereandvehicleanalaysis)
-	ON_COMMAND(ID_NODE_DIRECTIONFROMHEREANDVEHICLEANALASIS, &CTLiteView::OnNodeDirectionfromhereandvehicleanalasis)
 	ON_COMMAND(ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS, &CTLiteView::OnNodeDirectiontohereandreliabilityanalysis)
 	ON_COMMAND(ID_LINK_INCREASEBANDWIDTH, &CTLiteView::OnLinkIncreasebandwidth)
 	ON_COMMAND(ID_LINK_DECREASEBANDWIDTH, &CTLiteView::OnLinkDecreasebandwidth)
@@ -4269,39 +4267,8 @@ void CTLiteView::OnNodeCheckconnectivityfromhere()
 	Invalidate();
 }
 
-void CTLiteView::OnNodeDirectiontohereandvehicleanalaysis()
-{
-	OnNodeDestination();
 
-	CTLiteDoc* pDoc = GetDocument();
 
-	if(pDoc->m_PathDisplayList .size()>0)
-	{
-		pDoc->m_VehicleSelectionMode = CLS_path;  // select path analysis
-		CDlg_VehicleClassification dlg;
-		dlg.m_VehicleSelectionNo = CLS_path;
-		dlg.m_pDoc = pDoc;
-		dlg.DoModal ();
-	}
-
-}
-
-void CTLiteView::OnNodeDirectionfromhereandvehicleanalasis()
-{
-	OnNodeOrigin();
-
-	CTLiteDoc* pDoc = GetDocument();
-
-	if(pDoc->m_PathDisplayList .size()>0)
-	{
-		pDoc->m_VehicleSelectionMode = CLS_path;  // select path analysis
-		CDlg_VehicleClassification dlg;
-		dlg.m_VehicleSelectionNo = CLS_path;
-		dlg.m_pDoc = pDoc;
-		dlg.DoModal ();
-	}
-
-}
 extern void g_RandomCapacity(float* ptr, int num, float mean, float COV,int seed);
 #define MAX_SAMPLE_SIZE 200
 
@@ -4331,7 +4298,7 @@ if(pDoc->m_PathDisplayList.size()>0)
 {
 
 	DTAPath* pPath = &pDoc->m_PathDisplayList[0];  // 0 is the current selected path
-	for (int i=0;i<pPath->m_LinkSize;i++)  // for each pass link
+	for (int i=0;i<pPath->m_LinkVector.size();i++)  // for each pass link
 	{
 		DTALink* pLink = pDoc->m_LinkNoMap[pPath->m_LinkVector[i]];
 
