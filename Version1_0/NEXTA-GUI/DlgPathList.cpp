@@ -8,7 +8,7 @@
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
-
+#include "Dlg_VehicleClassification.h"
 #include <string>
 #include <sstream>
 #include <vector>
@@ -51,6 +51,7 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_DATA_IMPORT_CSV, &CDlgPathList::OnDataImportCsv)
 	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_LINK, &CDlgPathList::OnBnClickedCheckZoomToSelectedLink)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgPathList::OnLbnSelchangeList1)
+	ON_BN_CLICKED(IDDATA_Analysis, &CDlgPathList::OnBnClickedDataAnalysis)
 END_MESSAGE_MAP()
 
 
@@ -675,5 +676,35 @@ void CDlgPathList::OnLbnSelchangeList1()
 	ReloadData();
 
 	m_pDoc->UpdateAllViews (0);
+
+}
+
+void CDlgPathList::OnBnClickedDataAnalysis()
+{
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+	{
+
+		(*iLink)-> m_bIncludedBySelectedPath = false;
+
+	}
+
+	// mark all links in the selected path
+	if(m_pDoc->m_PathDisplayList.size() > m_pDoc->m_SelectPathNo && m_pDoc->m_SelectPathNo!=-1)
+	{
+		for (int i=0 ; i<m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector.size(); i++)
+		{
+
+		DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector[i]];
+		pLink-> m_bIncludedBySelectedPath = true;
+		}
+	}
+
+	CDlg_VehicleClassification dlg;
+	dlg.m_pDoc = m_pDoc;
+	m_pDoc->m_VehicleSelectionMode = CLS_path;
+	dlg.m_VehicleSelectionNo  = CLS_path;
+	dlg.DoModal ();
 
 }

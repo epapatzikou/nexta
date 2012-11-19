@@ -37,8 +37,8 @@ void CDlg_VehicleClassification::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_XAxis, m_ComboX);
 	DDX_Control(pDX, IDC_COMBO_YAxis, m_ComboY);
 	DDX_Control(pDX, IDC_COMBO_VehicleSelection, m_ComboVehicleSelection);
-	DDX_Text(pDX, IDC_STATIC_ERROR_MESSAGE, m_Message);
 	DDX_Control(pDX, ID_HIGHLIGHT_VEHICLES, m_HighlightVehicleButton);
+	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 }
 
 
@@ -89,8 +89,8 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.AddString("SOV, HOV, Truck"); // 0;
 	m_ComboX.AddString("VOT distribution ($10 Interval)"); // 1
 	m_ComboX.AddString("VOT distribution ($15 Interval)"); // 1
-	m_ComboX.AddString("SOV Car VOT distribution ($10 Interval)"); // 1
-	m_ComboX.AddString("HOV Car VOT distribution ($10 Interval)"); // 1
+	m_ComboX.AddString("SOV VOT distribution ($10 Interval)"); // 1
+	m_ComboX.AddString("HOV VOT distribution ($10 Interval)"); // 1
 	m_ComboX.AddString("Truck VOT distribution ($10 Interval)"); // 1
 	m_ComboX.AddString("15-min Time Interval"); //2
 	m_ComboX.AddString("30-min Time Interval"); //2
@@ -136,12 +136,11 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.SetCurSel (m_XSelectionNo);
 	m_ComboY.SetCurSel (m_YSelectionNo);
 
-	// CLS_network=0, CLS_OD,CLS_path,CLS_link,CLS_link_set,CLS_subarea
+	// CLS_network=0, CLS_OD,CLS_link_set,CLS_path,CLS_subarea
 	m_ComboVehicleSelection.AddString("Network-wide");
-	m_ComboVehicleSelection.AddString("Selected OD Pairs");
-	m_ComboVehicleSelection.AddString("Selected Path");
-	m_ComboVehicleSelection.AddString("Selected Link");
-	m_ComboVehicleSelection.AddString("Selected Link Set");
+	m_ComboVehicleSelection.AddString("Selected OD Pairs from Vehicle Path Dialog");
+	m_ComboVehicleSelection.AddString("Passing Selected Link Set from Network View");
+	m_ComboVehicleSelection.AddString("Passing Selected Path from Network View");
 
 //CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,
 	//CLS_subarea_internal_to_internal};
@@ -174,6 +173,48 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 
 void CDlg_VehicleClassification::AddChartData()
 {
+	m_MessageList.ResetContent ();
+
+	if(m_VehicleSelectionNo == CLS_network)
+		m_MessageList.AddString("All vehicles in the network.");
+
+	if(m_VehicleSelectionNo == CLS_OD)
+		m_MessageList.AddString("Selected OD pairs in Vehicle Path Dialog");
+
+	if(m_VehicleSelectionNo == CLS_link_set)
+	{
+			for (std::list<DTALink*>::iterator iLink =  m_pDoc->m_LinkSet.begin(); iLink !=  m_pDoc->m_LinkSet.end(); iLink++)
+			{
+
+			if( (*iLink)->m_DisplayLinkID>=0)  // in one of selected links
+			{
+
+				CString msg;
+				msg.Format("Link %s:%d -> %d",(*iLink)->m_Name .c_str (), (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber);
+				m_MessageList.AddString(msg);
+			}
+			
+			}
+		
+	}
+
+	if(m_VehicleSelectionNo == CLS_path)
+	{
+
+		if(m_pDoc->m_PathDisplayList.size() == 0 || m_pDoc->m_SelectPathNo >= m_pDoc->m_PathDisplayList.size() )
+		{
+			m_MessageList.AddString("No path has been selected");
+			m_MessageList.AddString("Please go to the path dialog to define/select a path.");
+		}else
+		{
+				CString msg;
+				msg.Format("There are %d links along the selected path.", m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector.size());
+				m_MessageList.AddString(msg);
+		}
+
+	}
+
+
 	 m_chart.ResetChart ();
 	std::map<int, VehicleStatistics> ::const_iterator iter;
 
@@ -390,6 +431,8 @@ void CDlg_VehicleClassification::OnCbnSelchangeComboVehicleselection()
 	AddChartData();
 
 	UpdateData(1);
+
+
 
 	Invalidate();
 }

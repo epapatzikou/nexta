@@ -46,4 +46,5 @@ public:
 	afx_msg void OnBnClickedCheckZoomToSelectedLink();
 	CListBox m_PathList;
 	afx_msg void OnLbnSelchangeList1();
+	afx_msg void OnBnClickedDataAnalysis();
 };

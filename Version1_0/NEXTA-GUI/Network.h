@@ -2271,7 +2271,7 @@ public:
 	DTAPath()
 	{
 		total_free_flow_travel_time = 0;
-		m_LinkSize = 0;
+		
 		for(int t=0; t<1440; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
@@ -2305,7 +2305,6 @@ public:
 	void Init(int LinkSize, int TimeHorizon)
 	{
 		m_TimeHorizon = TimeHorizon;
-		m_LinkSize = LinkSize;
 		m_number_of_days = max(1,TimeHorizon/1440);
 	}
 	void UpdateWithinDayStatistics();
@@ -2338,7 +2337,6 @@ public:
 
 	float total_free_flow_travel_time;
 
-	int m_LinkSize;
 	std::vector<int> m_LinkVector;
 	std::vector<CString> m_PathLabelVector;
 
@@ -2473,6 +2471,7 @@ public:
 	bool m_bLoaded; // be loaded into the physical network or not
 	bool m_bComplete;
 
+	bool m_bODMarked;
 	bool m_bMarked;
 
 	DTAVehicleAdditionalData* pVehData;
@@ -2497,13 +2496,14 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+		m_bMarked = false;
 		m_Age = 0;
 		m_NodeNumberSum = 0;
 		m_DateID = 0;
 		m_DemandType = 1;
 		m_VOT = 10;
 		m_bGPSVehicle = false;
-		m_bMarked = false;
+		m_bODMarked = false;
 		pVehData=NULL;
 		m_TimeToRetrieveInfo = -1;
 		m_TollDollarCost = 0;

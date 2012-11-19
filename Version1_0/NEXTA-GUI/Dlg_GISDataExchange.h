@@ -10,12 +10,14 @@
 #include "afxwin.h"
 // CDlg_GISDataExchange dialog
 
+
 class CDlg_GISDataExchange : public CDialog
 {
 	DECLARE_DYNAMIC(CDlg_GISDataExchange)
 
 public:
 
+	_GIS_DATA_TYPE m_GIS_data_type;
 	CDlg_GISDataExchange(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_GISDataExchange();
 
@@ -28,7 +30,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	void ExportToGISFile(CString file_name, CString GISTypeString);
+	void ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString);
 	void ExportDataToCSV(CString string);
 	void ExportLinkLayerToShapeFile(CString string);
 
@@ -46,4 +48,11 @@ public:
 	afx_msg void OnBnClickedButtonImportGisShapeFile();
 	afx_msg void OnBnClickedButtonExporttoCsvFile();
 	afx_msg void OnBnClickedButtonViewExportedKmlFile();
+	afx_msg void OnBnClickedButtonFindCsfFile();
+	CString m_CSV_File;
+	afx_msg void OnBnClickedExportShapeFile();
+	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedExportGisShapeFile();
+	CListBox m_GISDataType_List;
+	virtual BOOL OnInitDialog();
 };

@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\DataSets\6-Node Network"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\TRN_Workzone"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

@@ -40,6 +40,12 @@ private:
 	vector<string> ParseLine(string line);
 
 public:
+
+	vector<string> GetHeaderVector()
+	{
+		return Headers;
+	}
+
 	int m_EmptyLineCount ;
 	bool m_bSynchroSingleCSVFile;
 	string m_SynchroSectionName;

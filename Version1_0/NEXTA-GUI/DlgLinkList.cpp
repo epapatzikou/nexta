@@ -7,6 +7,7 @@
 #include "CGridListCtrlEx\CGridColumnTraitEdit.h"
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
+#include "Dlg_VehicleClassification.h"
 
 #include <string>
 #include <sstream>
@@ -59,6 +60,9 @@ BEGIN_MESSAGE_MAP(CDlgLinkList, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWARTERIALLINKSONLY, &CDlgLinkList::OnUpdateLinkselectionShowarteriallinksonly)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWALLLINKSEXCEPTCONNECTORS, &CDlgLinkList::OnUpdateLinkselectionShowalllinksexceptconnectors)
 	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_LINK, &CDlgLinkList::OnBnClickedCheckZoomToSelectedLink)
+	ON_BN_CLICKED(IDBARCHARTPIECHART, &CDlgLinkList::OnBnClickedBarchartpiechart)
+	ON_COMMAND(ID_LINKSELECTION_SHOWSELECTEDLINKSONLY, &CDlgLinkList::OnLinkselectionShowselectedlinksonly)
+	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWSELECTEDLINKSONLY, &CDlgLinkList::OnUpdateLinkselectionShowselectedlinksonly)
 END_MESSAGE_MAP()
 
 
@@ -149,6 +153,12 @@ void CDlgLinkList::ReloadData()
 	{
 	
 		int type  = (*iLink) ->m_link_type ;
+		if(m_LinkSelectionMode == eLinkSelection_SelectedLinksOnly) 
+		{
+			if((*iLink)->m_DisplayLinkID <0)  // not selected
+			continue; 
+		}
+
 		if(m_LinkSelectionMode == eLinkSelection_FreewayOnly) 
 		{
 			if(m_pDoc->m_LinkTypeMap[type ].IsFreeway () == false) 
@@ -427,4 +437,27 @@ void CDlgLinkList::OnUpdateLinkselectionShowalllinksexceptconnectors(CCmdUI *pCm
 void CDlgLinkList::OnBnClickedCheckZoomToSelectedLink()
 {
 	// TODO: Add your control notification handler code here
+}
+
+void CDlgLinkList::OnBnClickedBarchartpiechart()
+{
+	CDlg_VehicleClassification dlg;
+	dlg.m_pDoc = m_pDoc;
+	m_pDoc->m_VehicleSelectionMode = CLS_link_set;
+
+	dlg.m_VehicleSelectionNo  = CLS_link_set;
+	dlg.DoModal ();
+
+}
+
+void CDlgLinkList::OnLinkselectionShowselectedlinksonly()
+{
+	m_LinkSelectionMode = eLinkSelection_SelectedLinksOnly;
+	ReloadData();
+	
+}
+
+void CDlgLinkList::OnUpdateLinkselectionShowselectedlinksonly(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LinkSelectionMode == eLinkSelection_SelectedLinksOnly);
 }

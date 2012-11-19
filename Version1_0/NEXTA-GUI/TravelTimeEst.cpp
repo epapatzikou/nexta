@@ -1118,7 +1118,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		(*iLink)->m_bIncludedBySelectedPath = false;  // reset all the links are not selected by the path
 		(*iLink)->m_OverlappingCost  = 0;  // randomize link cost to avoid overlapping
 
 			if(m_LinkTypeMap[(*iLink)->m_link_type].IsConnector ())
@@ -1192,7 +1191,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 			for(unsigned int ODSequenceNo = 0; ODSequenceNo < ODNodeSequenceVector.size()-1; ODSequenceNo++)
 			{
 			NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(ODNodeSequenceVector[ODSequenceNo], 0, ODNodeSequenceVector[ODSequenceNo+1], 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)
-			path_element.m_LinkSize += NodeSize;
 			
 			// update m_PathDisplayList
 			if(NodeSize <= 1)
@@ -1218,8 +1216,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 						{ 
 							path_element.m_Distance += m_LinkNotoLinkMap[PathLinkList[i]]->m_Length ;
 							path_element.m_NumberOfSensorsPassed += pLink->m_bSensorData;
-
-							pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
 
 						if(path_element.m_LinkVector.size()==1) // first link
 						{
