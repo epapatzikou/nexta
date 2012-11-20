@@ -937,11 +937,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -965,11 +965,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -997,19 +997,19 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 						>
 					</File>
 					<File
@@ -1055,6 +1055,14 @@
 				</File>
 				<File
 					RelativePath=".\RailNetwork\RailNetwork.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="SafetyPlanning"
+				>
+				<File
+					RelativePath=".\SafetyPlanning\SafetyPlanning.cpp"
 					>
 				</File>
 			</Filter>
@@ -1322,6 +1330,10 @@
 			</File>
 			<File
 				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SafetyPlanning\SafetyPlanning.h"
 				>
 			</File>
 			<File

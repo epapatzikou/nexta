@@ -262,6 +262,7 @@ public:
 	double m_GridXStep;
 	double m_GridYStep;
 
+	bool m_bRunCrashPredictionModel;
 	
 	GridNodeSet m_GridMatrix[100][100];
 	GDRect m_GridRect;
@@ -851,6 +852,7 @@ public:
 	std::vector<DTA_Train*> m_TrainVector;
 
 	CString m_ProjectDirectory;
+	
 
 	GDRect m_NetworkRect;
 
@@ -1598,6 +1600,8 @@ public:
 	afx_msg void OnToolsObtaintrafficcontroldatafromreferencenetwork();
 	afx_msg void OnToolsReverseverticalcoordinate();
 	afx_msg void OnGenerategisshapefilesLoadlinkcsvfile();
+	afx_msg void OnSafetyplanningtoolsRun();
+	afx_msg void OnSafetyplanningtoolsGeneratenode();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

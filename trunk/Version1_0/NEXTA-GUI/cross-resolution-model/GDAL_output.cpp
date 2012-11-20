@@ -2182,6 +2182,9 @@ void CTLiteDoc::ConvertLinkCSV2ShapeFiles(LPCTSTR lpszCSVFileName,LPCTSTR lpszSh
 			ShellExecute( NULL,  "explore", ShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
 
 		}
+#else
+	AfxMessageBox("Please use NEXTA 32 bit version to generate GIS shape files.");
+
 #endif
 
 }
