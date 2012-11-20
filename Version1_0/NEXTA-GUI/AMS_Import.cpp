@@ -132,7 +132,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",1,FileName);
 	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
-	int reserve_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reserve_direction_field",0,FileName);
+	int reverse_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reverse_direction_field",0,FileName);
+
+
+
+
 	int link_type_field_flag = g_GetPrivateProfileInt("model_attributes","link_type_field",1,FileName);
 
 	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
@@ -525,7 +529,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		char r_lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
 		char r_speed_limit_in_mph_name[_MAX_STRING_SIZE];
 		char r_link_type_name[_MAX_STRING_SIZE];
-		if(reserve_direction_field_flag)
+		if(reverse_direction_field_flag)
 		{
 			GetPrivateProfileString("link_table","r_number_of_lanes","number_of_lanes",r_number_of_lanes_name,sizeof(r_number_of_lanes_name),FileName);
 			GetPrivateProfileString("link_table","r_lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",r_lane_capacity_in_vhc_per_hour_name,sizeof(r_lane_capacity_in_vhc_per_hour_name),FileName);
@@ -575,7 +579,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			m_AMSLogFile << endl << endl << "2: link block---" << endl;
 			m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity," << endl;
 
-			if(reserve_direction_field_flag)
+			if(reverse_direction_field_flag)
 			{
 				m_AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
 			}
@@ -586,6 +590,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name);
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
+
+				if(from_node_id ==  58014 && to_node_id ==  60718)
+					TRACE("");
+
+				int link_code_start = 1;
+				int link_code_end = 1;
+
 
 				if(from_node_id == 613)
 					TRACE("");
@@ -602,6 +613,27 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				int direction = 1;
 				if(direction_field_flag) 
 					direction = poFeature->GetFieldAsInteger(direction_name);
+				else
+				{
+						// no direction field, we try to guess the link types
+						if(reverse_direction_field_flag==1)
+						{
+	
+						int type = poFeature->GetFieldAsInteger(link_type_name);
+						int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+
+						if(type >=1 && r_link_type>=1)
+							direction = 2;
+
+						if(type ==0 && r_link_type>=1)
+							direction = -1;  // reverse
+
+						if(type >=1 && r_link_type==0)
+							direction = 1;  //forward
+
+						}
+				
+				}
 
 				float length = poFeature->GetFieldAsDouble(length_name);
 
@@ -612,7 +644,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					number_of_lanes = number_of_lanes/2;
 				}
 
-				if(type==0)  // no type information available
+
+
+				if(type== 0 )  // no type information available
 				{
 
 					if(link_type_field_flag)// if link type information is required, skip this link
@@ -628,7 +662,24 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 							m_AMSLogFile << str;
 
-					continue;
+						if(reverse_direction_field_flag)  // with reserved direction field
+						{
+							int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+
+							// if there is a reverse link, skip the following step only if r_link_type = 0
+							if(r_link_type ==0)
+								continue;
+							else
+							{
+								// continue to the following steps for reverse link
+								link_code_start = 2; link_code_end = 2;
+
+							
+							}
+						}else // no reserve direction; skip the following steps
+							continue;
+
+					
 					}
 					else
 					{// check speed limit to determine type
@@ -671,7 +722,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float r_speed_limit_in_mph = 0; 
 				float r_capacity_in_pcphpl=0; 
 
-				if(reserve_direction_field_flag)  // with reserved direction field
+				if(reverse_direction_field_flag)  // with reserved direction field
 				{
 					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name);
 					if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
@@ -712,7 +763,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
 				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
 
-				if(reserve_direction_field_flag)
+				if(reverse_direction_field_flag)
 				{
 					m_AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
 
@@ -734,9 +785,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 				int m_SimulationHorizon = 1;
-
-				int link_code_start = 1;
-				int link_code_end = 1;
 
 				if (direction == -1) // reversed
 				{
@@ -963,7 +1011,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
 						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-						pLink->m_link_type= type;
+						pLink->m_link_type= max(type,r_link_type);  // commmented by Jeff Taylor. to be safe, so we take the max in case  type or r_link_type is 0
 
 
 

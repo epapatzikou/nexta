@@ -2309,7 +2309,7 @@ BEGIN
         POPUP "Safety Planning Tools"
         BEGIN
             MENUITEM "Run Crash Prediction Models", ID_SAFETYPLANNINGTOOLS_RUN
-            MENUITEM "Generate Node/Link/Zone Shape Files", ID_SAFETYPLANNINGTOOLS_GENERATENODE
+            MENUITEM "Generate Crash Prediction Shape Files", ID_SAFETYPLANNINGTOOLS_GENERATENODE
         END
         POPUP "NGSIM  Tools"
         BEGIN

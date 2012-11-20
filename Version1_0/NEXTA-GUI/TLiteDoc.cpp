@@ -290,6 +290,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TOOLS_OBTAINTRAFFICCONTROLDATAFROMREFERENCENETWORK, &CTLiteDoc::OnToolsObtaintrafficcontroldatafromreferencenetwork)
 	ON_COMMAND(ID_TOOLS_REVERSEVERTICALCOORDINATE, &CTLiteDoc::OnToolsReverseverticalcoordinate)
 	ON_COMMAND(ID_GENERATEGISSHAPEFILES_LOADLINKCSVFILE, &CTLiteDoc::OnGenerategisshapefilesLoadlinkcsvfile)
+	ON_COMMAND(ID_SAFETYPLANNINGTOOLS_RUN, &CTLiteDoc::OnSafetyplanningtoolsRun)
+	ON_COMMAND(ID_SAFETYPLANNINGTOOLS_GENERATENODE, &CTLiteDoc::OnSafetyplanningtoolsGeneratenode)
 	END_MESSAGE_MAP()
 
 
@@ -298,6 +300,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 CTLiteDoc::CTLiteDoc()
 {
 
+	m_bRunCrashPredictionModel = false;
 	m_ZoomToSelectedObject = true;
 	m_max_walking_distance = 0.5;
 	m_max_accessible_transit_time_in_min = 15;
@@ -2285,6 +2288,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				pLink->red_height = red_height;
 				pLink->blue_height = blue_height;
 				pLink->yellow_height = yellow_height;
+
+				pLink->m_geo_string  = geo_string;
 
 
 
@@ -5325,6 +5330,11 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		value =  0;
 		break;
 
+	case MOE_safety:  power = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length ); 
+		value = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length );
+		break;
+
+
 	default: power = 0.0;
 
 	}
@@ -5410,6 +5420,9 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 					break;
 				case MOE_queue_length: 
 					power = value  ; 
+					break;
+				case MOE_safety:  power = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length ); 
+					value = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length );
 					break;
 
 		}
@@ -5574,8 +5587,8 @@ void CTLiteDoc::LoadSimulationOutput()
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
 	g_Simulation_Time_Horizon = 1440;
 	SetStatusText("Loading output link time-dependent data");
-	ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 	ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
+	ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 
 	//SetStatusText("Loading AMS movement data");
 	ReadAMSMovementCSVFile(m_ProjectDirectory+"AMS_movement.csv");
@@ -6909,7 +6922,13 @@ void CTLiteDoc::OnUpdateLinkmoeReliability(CCmdUI *pCmdUI)
 void CTLiteDoc::OnLinkmoeSafety()
 {
 	m_LinkMOEMode = MOE_safety;
-	ShowLegend(false);
+
+	if(m_bRunCrashPredictionModel == false) 
+	{
+		OnSafetyplanningtoolsRun();
+	}
+
+	ShowLegend(true);
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
 }
@@ -10074,6 +10093,9 @@ void CTLiteDoc::OnToolsObtaintrafficcontroldatafromreferencenetwork()
 {
 	MapSignalDataAcrossProjects();
 }
+
+
+
 
 
 

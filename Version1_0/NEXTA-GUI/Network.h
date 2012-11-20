@@ -1488,6 +1488,21 @@ public:
 		m_ReferenceFlowVolume  = 0;
 		m_PeakHourFactor = 0.15f;
 		m_bToBeShifted = true;
+
+	 m_Num_Driveways_Per_Mile = 0;
+	 m_volume_proportion_on_minor_leg = 0;
+	 m_Num_3SG_Intersections = 0; 
+	 m_Num_3ST_Intersections = 0; 
+	 m_Num_4SG_Intersections = 0;
+	 m_Num_4ST_Intersections = 0;
+
+		m_Intersection_NumberOfCrashes = 0;
+		m_Intersection_NumberOfFatalAndInjuryCrashes =0;
+		m_Intersection_NumberOfPDOCrashes = 0;
+
+	 m_NumberOfCrashes = 0;
+	 m_NumberOfFatalAndInjuryCrashes = 0;
+	 m_NumberOfPDOCrashes = 0;
 	};
 
 
@@ -1511,6 +1526,21 @@ public:
 	int m_LayerNo;
 	float m_Grade;
 	string m_Name;
+
+	// safety prediction
+		double m_Intersection_NumberOfCrashes, m_Intersection_NumberOfFatalAndInjuryCrashes,m_Intersection_NumberOfPDOCrashes;
+
+	// safety prediction
+	double m_Num_Driveways_Per_Mile;
+	double m_volume_proportion_on_minor_leg;
+	double m_Num_3SG_Intersections; 
+	double m_Num_3ST_Intersections; 
+	double m_Num_4SG_Intersections;
+	double m_Num_4ST_Intersections;
+
+	double m_NumberOfCrashes;
+	double m_NumberOfFatalAndInjuryCrashes;
+	double m_NumberOfPDOCrashes;
 
 	// overall information
 
@@ -1872,6 +1902,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
 
+	std::string m_geo_string;
 	int green_height;  // for 3D KML
 	int red_height;
 	int blue_height;
@@ -1903,13 +1934,6 @@ void AdjustLinkEndpointsWithSetBack()
 	float	m_OriginalLength;  // in miles
 	float	m_Length;  // in miles
 
-	// safety prediction
-	double m_Num_Driveways_Per_Mile;
-	double m_volume_proportion_on_minor_leg;
-	double m_Num_3SG_Intersections; 
-	double m_Num_3ST_Intersections; 
-	double m_Num_4SG_Intersections;
-	double m_Num_4ST_Intersections;
 
 
 	PT_StopTime m_StopTimeRecord;
