@@ -8,7 +8,7 @@
 //
 
 //////////////////////////////////////////////////
-// CMemDC - memory DC
+// CMemDc - memory DC
 //
 // Author: Keith Rule
 // Email:  keithr@europa.com
@@ -92,7 +92,7 @@ public:
 
 private:
     CBitmap  m_bitmap;      // Offscreen bitmap
-    CBitmap* m_pOldBitmap;  // bitmap originally found in CMemDC
+    CBitmap* m_pOldBitmap;  // bitmap originally found in CMemDc
     CDC*     m_pDC;         // Saves CDC passed in constructor
     CRect    m_rect;        // Rectangle of drawing area.
     BOOL     m_bMemDC;      // TRUE if CDC really is a Memory DC.
