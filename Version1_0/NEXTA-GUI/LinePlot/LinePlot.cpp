@@ -886,7 +886,7 @@ void CLinePlot::OnPaint()
 
 	int nFontHeight = 14;
 	//  create a memory dc for double buffering.
-	CMemDC dcMem(&dc, &rcClient);
+	CMemDc dcMem(&dc, &rcClient);
 
 	dcMem.SaveDC();
 
