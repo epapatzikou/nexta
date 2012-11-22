@@ -108,4 +108,5 @@ public:
 	afx_msg void OnCbnSelchangeComboDayno();
 	afx_msg void OnLvnItemchangedList5(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedBarchart();
+	afx_msg void OnClose();
 };

@@ -55,4 +55,5 @@ public:
 	afx_msg void OnBnClickedExportGisShapeFile();
 	CListBox m_GISDataType_List;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnBnClickedImportGpsLineToLink();
 };

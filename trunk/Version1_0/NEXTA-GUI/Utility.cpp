@@ -65,7 +65,7 @@ void g_ProgramStop()
 };
 
 
-float g_P2P_Distance(GDPoint p1, GDPoint p2)
+float g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2)
 {
 return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 }
@@ -147,12 +147,12 @@ float *X, float *Y)
   return true; 
 }
 
-float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
+float g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
 {
     float U;
     GDPoint Intersection;
 
-    float  LineLength = g_P2P_Distance( FromPt, ToPt );
+    float  LineLength = g_GetPoint2Point_Distance( FromPt, ToPt );
  
     U = (  (pt.x - ToPt.x) * (FromPt.x - ToPt.x ) + ( pt.y - ToPt.y ) * ( FromPt.y - ToPt.y ) ) /(LineLength * LineLength );
  
@@ -162,9 +162,9 @@ float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
     Intersection.x = ToPt.x + U * ( FromPt.x - ToPt.x );
     Intersection.y = ToPt.y + U * ( FromPt.y - ToPt.y );
     
-	float distance_1 = g_P2P_Distance( pt, Intersection );
-	float distance_0 = g_P2P_Distance( pt, FromPt );
-	float distance_2 = g_P2P_Distance( pt, ToPt );
+	float distance_1 = g_GetPoint2Point_Distance( pt, Intersection );
+	float distance_0 = g_GetPoint2Point_Distance( pt, FromPt );
+	float distance_2 = g_GetPoint2Point_Distance( pt, ToPt );
 
 	return distance_1;
 }
