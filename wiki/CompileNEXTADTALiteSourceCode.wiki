@@ -10,8 +10,8 @@ SVN version control
 
 
 Latest version: 
-DTALite simulation engine: \\Version1_0\\DTALite
-NEXTA graphical user interface: \\Version1_0\\NEXTA-GUI
+DTALite simulation engine: \Version1_0\DTALite
+NEXTA graphical user interface: \Version1_0\NEXTA-GUI
 
 = Details =
 
@@ -22,7 +22,7 @@ http://code.google.com/p/nexta/downloads/list
 e.g. Internal_release_10_08.zip.
 
 Unzip the zipped file to a local folder: e.g. 
-C:\\NEXTA_DTALite\\Internal_release.
+C:\NEXTA_DTALite\Internal_release.
 You will find NEXTA_64.exe and NEXTA_32.exe in the installation folder. 
 
 There are many gda_*.dll in the installation folder, which are Geospatial Data Abstraction Library (http://www.gdal.org/)
@@ -55,11 +55,11 @@ NEXTA GUi source code can be found under  C:\NEXTA_OpenSource\Version1_0\NEXTA-G
 
 ==3. Use Visual C++ 2008/2010 to build the NEXTA package ==
 
-1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\\NEXTA-GUI\\TLite.sln to open NEXTA project. 
+1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\NEXTA-GUI\TLite.sln to open NEXTA project. 
 
 2. Go to Visual C++ menu Project -> NEXTA Property -> Configuration Property -> Debugging -> Working Directory. 
 
-Add the installation folder (e.g. C:\\NEXTA_DTALite\\Internal_release) as the Working Directory. Without this directory, the application will exit when it is launched.
+Add the installation folder (e.g. C:\NEXTA_DTALite\Internal_release) as the Working Directory. Without this directory, the application will exit when it is launched.
 
 When you use either release or debug mode, either Win 32 or x64 mode, you need to input this working directory for each configuration individually. 
 
@@ -67,16 +67,13 @@ When you use either release or debug mode, either Win 32 or x64 mode, you need t
 
 ==4. Use Visual C++ 2008/2010 to build the DTALite package ==
 
-1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\\DTALite\\DTALite.sln to open DTALite project. 
+1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\DTALite\DTALite.sln to open DTALite project. 
 
 2. Go to Visual C++ menu Project -> DTALite Property -> Configuration Property -> Debugging -> Working Directory. 
 
-Add a project folder (e.g. C:\\NEXTA_DTALite\\Internal_release\\sample_data_sets\\Salt_Lake_City_West_Jordan\\) as the Working Directory. Without this directory, the DTALite application will exit when it is launched.
+Add a project folder (e.g. C:\NEXTA_DTALite\Internal_release\sample_data_sets\Salt_Lake_City_West_Jordan\) as the Working Directory. Without this directory, the DTALite application will exit when it is launched.
 
 When you use either release or debug mode, either Win 32 or x64 mode, you need to input this working directory for each configuration individually. 
 
 3. Compile the source code, and run the DTALite application.
-
-
-
 
