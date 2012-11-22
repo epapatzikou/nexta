@@ -214,6 +214,7 @@ int g_TravelTimeDifferenceForSwitching = 5;  // min
 
 int g_StochasticCapacityMode = 0;
 float g_MinimumInFlowRatio = 0.1f;
+float g_RelaxInFlowConstraintAfterDemandLoadingTime = 60;
 float g_MaxDensityRatioForVehicleLoading = 0.8f;
 int g_CycleLength_in_seconds;
 float g_DefaultSaturationFlowRate_in_vehphpl;
@@ -1300,9 +1301,18 @@ void g_ReadInputFiles(int scenario_no)
 			string vehicle_type_name;
 			parser_vehicle_type.GetValueByFieldName("vehicle_type_name",vehicle_type_name);
 
+
+
+
 			DTAVehicleType element;
 			element.vehicle_type = vehicle_type;
 			element.vehicle_type_name  = vehicle_type_name;
+
+			parser_vehicle_type.GetValueByFieldName("rolling_term_a",element.rollingTermA);
+			parser_vehicle_type.GetValueByFieldName("rotating_term_b",element.rotatingTermB);
+			parser_vehicle_type.GetValueByFieldName("drag_term_c",element.dragTermC);
+			parser_vehicle_type.GetValueByFieldName("source_mass",element.sourceMass);
+			
 
 			float percentage_of_age = 0;
 
@@ -2890,7 +2900,7 @@ int g_InitializeLogFiles()
 	g_AppStartTime = CTime::GetCurrentTime();
 
 
-	g_LogFile.open ("summary.log", ios::out);
+	g_LogFile.open ("output_simulation.log", ios::out);
 	if (g_LogFile.is_open())
 	{
 		g_LogFile.width(12);
@@ -2898,7 +2908,7 @@ int g_InitializeLogFiles()
 		g_LogFile.setf(ios::fixed);
 	}else
 	{
-		cout << "File summary.log cannot be opened, and it might be locked by another program or the target data folder is read-only." << endl;
+		cout << "File output_simulation.log cannot be opened, and it might be locked by another program or the target data folder is read-only." << endl;
 		cin.get();  // pause
 		return 0;
 	}
@@ -3044,6 +3054,7 @@ void g_ReadDTALiteSettings()
 	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, g_DTASettingFileName);	
 	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);	
 	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, g_DTASettingFileName);
+	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "relax_minimum_link_in_flow_ratio_after_time", 60.0f, g_DTASettingFileName);
 	g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
 	g_CycleLength_in_seconds = g_GetPrivateProfileFloat("simulation", "cycle_length_in_seconds", 120, g_DTASettingFileName);
 	g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, g_DTASettingFileName);

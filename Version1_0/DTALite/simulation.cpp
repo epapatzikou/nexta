@@ -324,6 +324,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			float PerHourCapacity = pLink->GetHourlyPerLaneCapacity(CurrentTime);  // static capacity from BRP function
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
 
+		if(pLink->m_FromNodeNumber == 89902 &&  pLink->m_ToNodeNumber == 53429 && CurrentTime >=1320)
+		{
+ 
+			TRACE("");
+
+		}
 			// freeway 
 
 			if(g_LinkTypeMap [pLink->m_link_type].IsFreeway())  
@@ -429,6 +435,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 				float InflowRate = MaximumFlowRate *g_MinimumInFlowRatio;
+
+				if(CurrentTime >= (g_DemandLoadingEndTimeInMin + g_RelaxInFlowConstraintAfterDemandLoadingTime))  // g_RelaxInFlowConstraintAfterDemandLoadingTime min after demand loading period, do not apply in capacity constraint
+				{
+					InflowRate  = MaximumFlowRate;
+				}
 
 				if(fLinkInCapacity < InflowRate)  // minimum inflow capacity to keep the network flowing
 				{
@@ -581,7 +592,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			int li = g_NodeVector[node].m_IncomingLinkVector[incoming_link_sequence];
 
 			DTALink* pLink = g_LinkVector[li];
-			if(debug_flag && (pLink->m_FromNodeNumber  == 11159 && pLink->m_ToNodeNumber == 5112) && CurrentTime >=990)
+			if(debug_flag && (pLink->m_FromNodeNumber  == 89902 && pLink->m_ToNodeNumber == 53429) && CurrentTime >=1320)
 			{
 				TRACE("Step 3: Time %f, Link: %d -> %d: tracing queue: capacity: %d, queue size %d \n", 
 					CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeName , g_NodeVector[pLink->m_ToNodeID].m_NodeName,
@@ -1181,11 +1192,16 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	//if(TrafficFlowModelFlag ==1) // point queue
 	//	g_VehicularSimulation_BasedOnADCurves(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 	//else // , spatial queue and Newell's model
+
+
+
 		g_VehicularSimulation(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 
 		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_Number_of_GeneratedVehicles)
 		{		
 			cout << "--Simulation completes as all the vehicles are out of the network.--" << endl;
+			output.NetworkClearanceTimeStamp_in_Min = time;
+			output.NetworkClearanceTimePeriod_in_Min = time-g_DemandLoadingStartTimeInMin;
 			bPrintOut = false;
 			break;  // exit from the simulation process
 		}
@@ -1418,13 +1434,13 @@ float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second
 
 	ASSERT(EffectiveGreenTime_in_second>=1);
 
-	float CyclceLength_in_min = CycleLength_in_second/60.0f;
+	float CycleLength_in_min = CycleLength_in_second/60.0f;
 	float GreenEndTime_In_Second = GreenStartTime_in_second + EffectiveGreenTime_in_second/60.0f;
 
-	float offset_in_min = offset_in_second/60;
-	int number_of_cycles = int((CurrentTime-offset_in_min)/CyclceLength_in_min);
+	float offset_in_min = offset_in_second/60.0f;
+	int number_of_cycles = int((CurrentTime-offset_in_min)/CycleLength_in_min);
 
-	float PerCycleTime_StartTime = (CurrentTime-offset_in_min) - number_of_cycles*CyclceLength_in_min - GreenStartTime_in_second;
+	float PerCycleTime_StartTime = (CurrentTime-offset_in_min) - number_of_cycles*CycleLength_in_min - GreenStartTime_in_second;
 	float PerCycleTime_EndTime = PerCycleTime_StartTime + g_DTASimulationInterval;  // unit: min
 
 	// we now find the intersection of two time intervals

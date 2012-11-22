@@ -81,6 +81,7 @@ extern double g_CarFollowingSimulationInterval;
 #define MAX_TIME_INTERVAL_ADCURVE 300  // 300 simulation intervals of data are stored to keep tract Cumulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
+extern float g_RelaxInFlowConstraintAfterDemandLoadingTime;
 extern float g_MaxDensityRatioForVehicleLoading;
 extern int g_CycleLength_in_seconds;
 
@@ -1518,8 +1519,19 @@ public:
 	DTAVehicleType()
 	{
 		vehicle_type = 1;
+		rollingTermA = 0.156461;
+		rotatingTermB = 0.00200193;
+		dragTermC = 0.000492646;
+		sourceMass = 1.4788;
+
 
 	}
+
+	double rollingTermA;
+	double	rotatingTermB;
+	double	dragTermC;
+	double sourceMass;
+
 	int vehicle_type;
 	string vehicle_type_name;
 	std::vector<float> percentage_age_vector;
@@ -2418,7 +2430,13 @@ public:
 		NumberofVehiclesCompleteTrips = 0;
 		NumberofVehiclesGenerated = 0;
 		SwitchPercentage = 0;
+		NetworkClearanceTimeStamp_in_Min = 1440;
+		NetworkClearanceTimePeriod_in_Min = 1440;
 	}
+
+	int   NetworkClearanceTimeStamp_in_Min;
+	int  NetworkClearanceTimePeriod_in_Min;
+
 	float AvgTripTime;
 	float AvgTravelTime;
 	float AvgDelay;
