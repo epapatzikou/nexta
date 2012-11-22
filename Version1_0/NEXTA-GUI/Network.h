@@ -288,11 +288,11 @@ public:
 	}
 };
 
-extern float g_P2P_Distance(GDPoint p1, GDPoint p2);
+extern float g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2);
 
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
-extern float g_DistancePointLine(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
+extern float g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
 extern double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2);
 extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y) ;
 
@@ -1149,6 +1149,9 @@ class DTALine
 {
 public:
 	int LineID;
+	double Shape_Length;
+
+	std::string TMC_code;
 	std::vector<GDPoint> m_ShapePoints;
 };
 // event structure in this "event-basd" traffic simulation
@@ -1505,6 +1508,7 @@ public:
 	 m_NumberOfPDOCrashes = 0;
 	};
 
+	std::string m_TMC_code;
 
 	float m_StaticTravelTime;
 	int m_CentroidUpdateFlag;
@@ -1586,7 +1590,7 @@ public:
 		unsigned int si;
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
 		{
-			total_distance += g_P2P_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
+			total_distance += g_GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
 		}
 
 		if(total_distance < 0.0000001f)
@@ -1597,7 +1601,7 @@ public:
 		m_ShapePointRatios.push_back(0.0f);
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
 		{
-			P2Origin_distance += g_P2P_Distance(m_ShapePoints[si],m_ShapePoints[si+1]);
+			P2Origin_distance += g_GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]);
 			m_ShapePointRatios.push_back(P2Origin_distance/total_distance);
 		}
 	}
@@ -2101,6 +2105,29 @@ void AdjustLinkEndpointsWithSetBack()
 			else
 				return 0;
 		}
+	}
+
+
+	float GetObsLinkOutVolume(int current_time)
+	{
+
+		int total_count = 0;
+		
+		if(current_time>=1 &&	current_time < m_SimulationHorizon && current_time < m_LinkMOEAry.size())
+		{
+
+		
+
+		total_count = m_LinkMOEAry[current_time].ObsDepartureCumulativeFlow - 
+			m_LinkMOEAry[current_time-1].ObsDepartureCumulativeFlow;
+
+		if(total_count<0)
+			total_count = 0;
+		
+		}
+
+		return total_count*60;  // from min volume to hourly volume
+
 	}
 
 	float GetObsLinkVolume(int current_time)

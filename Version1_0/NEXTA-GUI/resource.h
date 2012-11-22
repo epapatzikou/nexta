@@ -303,6 +303,7 @@
 #define IDC_EDIT_CSV_SHAPE_FILE         1095
 #define ID_EXPORT_KML_FILE              1096
 #define IDC_Toll_Link_LIST              1096
+#define ID_IMPORT_GPS_LINE_TO_LINK      1096
 #define IDC_DISTANCE_BASED_TOLL_CHECK   1097
 #define ID_EXPORT_GIS_Shape_File        1097
 #define IDC_AREA_TOLL_CHECK             1098
@@ -973,13 +974,14 @@
 #define ID_TOOLS_SAFETYPLANNINGTOOLS    33518
 #define ID_SAFETYPLANNINGTOOLS_RUN      33519
 #define ID_SAFETYPLANNINGTOOLS_GENERATENODE 33520
+#define ID_MOETYPE1_LINKOUTFLOWVOLUME   33521
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33521
+#define _APS_NEXT_COMMAND_VALUE         33522
 #define _APS_NEXT_CONTROL_VALUE         1147
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

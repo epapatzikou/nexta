@@ -52,6 +52,7 @@ BEGIN_MESSAGE_MAP(CDlg_GISDataExchange, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_CSF_File, &CDlg_GISDataExchange::OnBnClickedButtonFindCsfFile)
 	ON_BN_CLICKED(IDOK, &CDlg_GISDataExchange::OnBnClickedOk)
 	ON_BN_CLICKED(ID_EXPORT_GIS_Shape_File, &CDlg_GISDataExchange::OnBnClickedExportGisShapeFile)
+	ON_BN_CLICKED(ID_IMPORT_GPS_LINE_TO_LINK, &CDlg_GISDataExchange::OnBnClickedImportGpsLineToLink)
 END_MESSAGE_MAP()
 
 
@@ -109,7 +110,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 
 			poGeometry = poFeature->GetGeometryRef();
 			if( poGeometry != NULL 
-				&& wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
+				&& wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )  // point data
 			{
 				OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
@@ -126,10 +127,19 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
 				point_index++;
 			}
-			else if (wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)
+			else if (wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)  // line data
 			{
 				// Create and insert the node
 				DTALine* pDTALine = new DTALine;
+
+				std::string name =  poFeature->GetFieldAsString("Tmc");
+				pDTALine->TMC_code = name;
+
+				double shape_length = poFeature->GetFieldAsDouble("Shape_len");
+
+				 
+				pDTALine->Shape_Length =  shape_length;
+				
 
 				OGRLineString *poLine = (OGRLineString *) poGeometry;
 
@@ -560,6 +570,7 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 						if( m_GIS_data_type == GIS_Line_Type)
 						{
 
+
 						OGRLineString line;
 						for(unsigned int si = 0; si< CoordinateVector.size(); si++)
 						{
@@ -711,3 +722,38 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 		return TRUE;  // return TRUE unless you set the focus to a control
 		// EXCEPTION: OCX Property Pages should return FALSE
 	}
+
+	void CDlg_GISDataExchange::OnBnClickedImportGpsLineToLink()
+	{
+
+		std::list<DTALink*>::iterator iLink;
+
+		//scan all links
+		for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+		{
+		
+
+
+						for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+				{
+					// fprintf(st,"%f,%f,0.0",(*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
+					DTALink* pLink = (*iLink);
+
+					// determine pLink->m_TMC_code
+				}
+
+		}
+
+	for (std::list<DTALine*>::iterator iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
+	{
+		for(unsigned int i = 0; i< (*iLine)->m_ShapePoints .size(); i++)
+		{
+		
+		}
+	}
+
+
+
+}
+
+

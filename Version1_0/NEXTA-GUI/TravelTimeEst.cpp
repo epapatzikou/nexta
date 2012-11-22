@@ -294,10 +294,19 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 				pLink->m_SensorTypeString = sensor.SensorType;
 				if(sensor.SensorType.find("link_count")!= string::npos)
 				{
-					parser.GetValueByFieldName ("count",volume_count );
+					if(parser.GetValueByFieldName ("count",volume_count )==false)
+					{
+						AfxMessageBox("Field count is missing from file input_sensor.csv. Please check.");
+						return false;
+					}
 				}else if(sensor.SensorType.find("lane_count")!= string::npos)
 				{
-					parser.GetValueByFieldName ("count",volume_count );
+					if(parser.GetValueByFieldName ("count",volume_count ) == false)
+					{
+						AfxMessageBox("Field count is missing from file input_sensor.csv.  Please check.");
+						return false;
+					
+					}
 					volume_count = volume_count* pLink->m_NumLanes;
 				} 
 
@@ -1381,7 +1390,7 @@ DTALink* CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orienta
 		if(orientation.MakeUpper().Find('N')>0 && pfrom.y > pto.y)  // North, Yfrom should be < YTo
 			continue;
 
-		float distance = g_DistancePointLine(p0, pfrom, pto);
+		float distance = g_GetPoint2LineDistance(p0, pfrom, pto);
 
 		if(distance >=0 && distance < Min_distance)
 		{

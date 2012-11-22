@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_PATHLIST, &CDlg_VehPathAnalysis::OnPathLvnItemchangedList)
 	ON_CBN_SELCHANGE(IDC_COMBO_DayNo, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDayno)
 	ON_BN_CLICKED(ID_BarChart, &CDlg_VehPathAnalysis::OnBnClickedBarchart)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -351,14 +352,14 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 		m_ListCtrl.SetColumnWidth((int)i,80);
 	}
 
-	if(m_ODMOEMatrix == NULL  )
+	if(m_ODMOEMatrix == NULL  && m_pDoc->m_ZoneNoSize >0)
 	{
 		m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
 			m_ZoneNoSize  = m_pDoc->m_ZoneNoSize ;
 	}
 	else
 	{
-		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize )
+		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize && m_ZoneNoSize >0)
 		{
 			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_ProjectSize, m_ZoneNoSize );
 			m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
@@ -1392,4 +1393,12 @@ void CDlg_VehPathAnalysis::OnBnClickedBarchart()
 	dlg.m_VehicleSelectionNo  = CLS_OD;
 	dlg.DoModal ();
 
+}
+
+void CDlg_VehPathAnalysis::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+
+	OnOK();
+	g_bShowVehiclePathDialog = false;
 }

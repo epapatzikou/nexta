@@ -300,6 +300,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 CTLiteDoc::CTLiteDoc()
 {
 
+	m_ZoneNoSize  = 0;
 	m_bRunCrashPredictionModel = false;
 	m_ZoomToSelectedObject = true;
 	m_max_walking_distance = 0.5;
@@ -3497,7 +3498,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
+		fprintf(st,"name,link_id,TMC_code,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
 		fprintf(st,"KML_green_height,KML_red_height,KML_blue_height,KML_yellow_height,");
 		// ANM output
 		fprintf(st,"number_of_left_turn_bays,length_of_bays_in_feet,left_turn_capacity_in_veh_per_hour,from_approach,to_approach,reversed_link_id,");
@@ -3569,9 +3570,11 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 					
 				std::replace( (*iLink)->m_Name.begin(), (*iLink)->m_Name.end(), ',', ' '); 
 
-				fprintf(st,"%s,%d,%d,%d,%s,%d,%.4f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%.3f,\"%s\",%.1f,",
+				fprintf(st,"%s,%d,%s,%d,%d,%s,%d,%.4f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%.3f,\"%s\",%.1f,",
 					(*iLink)->m_Name.c_str (),
 					(*iLink)->m_LinkID, 
+					(*iLink)->m_TMC_code .c_str (),
+
 					(*iLink)->m_FromNodeNumber*sign_flag, 
 					(*iLink)->m_ToNodeNumber*sign_flag, 
 					link_type_name,
@@ -5014,7 +5017,7 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 	int i = mid;
 	ratio = 0;
 	float link_travel_time;
-	float remaining_time;
+	float traveling_time;
 
 	while(beg<=end)
 	{
@@ -5024,9 +5027,9 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 
 			link_travel_time = pVehicle->m_NodeAry [i].ArrivalTimeOnDSN - pVehicle->m_NodeAry [i-1].ArrivalTimeOnDSN;
 
-			remaining_time = CurrentTime - pVehicle->m_NodeAry [i-1].ArrivalTimeOnDSN;
+			traveling_time = CurrentTime - pVehicle->m_NodeAry [i-1].ArrivalTimeOnDSN;
 
-			ratio = 1-remaining_time/link_travel_time;
+			ratio = traveling_time/link_travel_time;
 
 			if(ratio <0)
 				ratio = 0;
@@ -5355,16 +5358,16 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 
 		}
 		float total_value = 0;
-		int total_flow_count = 0;
+		int total_measurement_count = 0;
 
 
 		for(CurrentTime  = StartTime; CurrentTime < EndTime; CurrentTime ++)
 		{
 			if(pLink->m_SimulationHorizon > CurrentTime && CurrentTime >=1 && CurrentTime < pLink->m_SimulationHorizon)  //DTAoutput
 			{
-				if(pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow>=1)
+				if(pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow>=1 || pLink->m_LinkMOEAry[CurrentTime].ObsDensity >=0.1)
 				{
-					total_flow_count++;
+					total_measurement_count++;
 
 				switch (LinkMOEMode)
 				{
@@ -5395,7 +5398,7 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		}  // end of for loop
 		}
 
-		value = total_value/max(1,total_flow_count);
+		value = total_value/max(1,total_measurement_count);
 
 			switch (LinkMOEMode)
 			{

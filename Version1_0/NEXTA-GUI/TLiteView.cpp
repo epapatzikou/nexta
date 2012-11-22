@@ -841,6 +841,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( pDoc->m_LinkMOEMode != MOE_none) 
 			{
 
+				if ( (*iLink)->m_FromNodeNumber == 78424 && (*iLink)->m_ToNodeNumber == 61158 && g_Simulation_Time_Stamp>=1320) 
+				{
+				
+					TRACE("trace");
+
+				}
+ 
 				// dynamically create LOE mean 
 				float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
 				int LOS = pDoc->GetLOSCode(power);
@@ -1816,6 +1823,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 				int LinkID = pDoc->GetVehilePosition((*iVehicle), g_Simulation_Time_Stamp,ratio);
 
+
+
+
 				DTALink* pLink = pDoc->m_LinkNoMap[LinkID];
 				if(pLink!=NULL)
 				{
@@ -1835,8 +1845,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 							VehPoint.x + vehicle_size, VehPoint.y + vehicle_size);
 
 					}
-
-					if(m_bShowVehicleNumber)
+					if(m_ShowGPSTextMode= GPS_display_vehicle_id)
 					{
 
 						CString str_number;
@@ -2835,7 +2844,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 			pfrom.x  = FromPoint.x; pfrom.y  = FromPoint.y;
 			pto.x  = ToPoint.x; pto.y  = ToPoint.y;
 
-			float distance = g_DistancePointLine(p0, pfrom, pto);
+			float distance = g_GetPoint2LineDistance(p0, pfrom, pto);
 
 			if(distance >0 && distance < Min_distance)
 			{

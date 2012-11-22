@@ -396,7 +396,7 @@ void CTLiteDoc::OnToolsGpsmapmatching()
     //         GDPoint pto = (*iLink)->m_ToPoint;
     //         for(int i = 0; i < pVehicle->m_GPSLocationVector.size(); i++ )
     //         {
-    //           float distance = g_DistancePointLine(pVehicle->m_GPSLocationVector[i], pfrom, pto);  // go through each GPS location point
+    //           float distance = g_GetPoint2LineDistance(pVehicle->m_GPSLocationVector[i], pfrom, pto);  // go through each GPS location point
     //           if(distance < min_distance)
     //           {
  //                 min_distance = distance;
@@ -542,7 +542,7 @@ void CTLiteDoc::OnToolsGpsmapmatching()
              GDPoint pto = (*iLink)->m_ToPoint;
              for(int i = 0; i < pVehicle->m_GPSLocationVector.size(); i++ )
              {
-               float distance = g_DistancePointLine(pVehicle->m_GPSLocationVector[i], pfrom, pto);  // go through each GPS location point
+               float distance = g_GetPoint2LineDistance(pVehicle->m_GPSLocationVector[i], pfrom, pto);  // go through each GPS location point
                if(distance < min_distance)
                {
                   min_distance = distance;
