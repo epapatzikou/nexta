@@ -1392,6 +1392,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
 		g_SummaryStatFile.SetFieldName ("% switching");
 		g_SummaryStatFile.SetFieldName ("% completing trips");
+		g_SummaryStatFile.SetFieldName ("network work clearance time");
 		g_SummaryStatFile.SetFieldName ("Avg UE gap (min)");
 
 //		if(g_ODEstimationFlag == 1)
@@ -1428,6 +1429,9 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_SummaryStatFile.SetValueByFieldName ("Avg Speed (mph)",avg_speed);
 	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
+
+	g_SummaryStatFile.SetValueByFieldName ("network work clearance time",SimuOutput.NetworkClearanceTimeStamp_in_Min);
+
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
 
 	g_PercentageCompleteTrips = PercentageComplete;
