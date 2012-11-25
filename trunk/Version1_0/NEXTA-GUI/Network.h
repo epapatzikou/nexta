@@ -27,6 +27,10 @@
 #pragma	warning(disable: 4305) //  truncation from 'double' to 'float'
 #pragma	warning(disable: 4995) //  'CDaoRecordset': name was marked as #pragma deprecated
 #pragma	warning(disable: 4267) //  'initializing' : conversion from 'size_t' to 'int', possible loss of data
+#pragma warning(disable: 4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
+#pragma warning(disable: 4996)  // Consider using sscanf_s instead
+#pragma warning(disable: 4101)  // unreferenced local variable
+
 
 #include "resource.h"
 #include "Utility.h"
@@ -1454,7 +1458,7 @@ public:
 		m_MaxSpeed = 40;
 
 		m_ResourceAry = NULL;
-		m_number_of_crashes = 0;
+		m_number_of_all_crashes = 0;
 		m_num_of_fatal_and_injury_crashes_per_year =0;
 		m_num_of_PDO_crashes_per_year = 0;
 
@@ -1503,9 +1507,6 @@ public:
 		m_Intersection_NumberOfFatalAndInjuryCrashes =0;
 		m_Intersection_NumberOfPDOCrashes = 0;
 
-	 m_NumberOfCrashes = 0;
-	 m_NumberOfFatalAndInjuryCrashes = 0;
-	 m_NumberOfPDOCrashes = 0;
 	};
 
 	std::string m_TMC_code;
@@ -1542,10 +1543,6 @@ public:
 	double m_Num_4SG_Intersections;
 	double m_Num_4ST_Intersections;
 
-	double m_NumberOfCrashes;
-	double m_NumberOfFatalAndInjuryCrashes;
-	double m_NumberOfPDOCrashes;
-
 	// overall information
 
 	float m_total_link_volume;
@@ -1556,7 +1553,7 @@ public:
 	float m_total_sensor_link_volume;
 	float m_total_link_count_error;
 	float m_simulated_AADT;
-	double m_number_of_crashes;
+	double m_number_of_all_crashes;
 	double m_num_of_fatal_and_injury_crashes_per_year;
 	double m_num_of_PDO_crashes_per_year;
 
@@ -1914,6 +1911,10 @@ void AdjustLinkEndpointsWithSetBack()
 
 
 	float m_Kjam;
+
+	// for crash prediction
+	std::string group_1_code,group_2_code, group_3_code;
+
 	float m_AADT_conversion_factor;
 
 	float m_Wave_speed_in_mph;
@@ -2111,7 +2112,7 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetObsLinkOutVolume(int current_time)
 	{
 
-		int total_count = 0;
+		float total_count = 0;
 		
 		if(current_time>=1 &&	current_time < m_SimulationHorizon && current_time < m_LinkMOEAry.size())
 		{
@@ -2126,7 +2127,7 @@ void AdjustLinkEndpointsWithSetBack()
 		
 		}
 
-		return total_count*60;  // from min volume to hourly volume
+		return total_count*60.0f;  // from min volume to hourly volume
 
 	}
 
@@ -3249,8 +3250,7 @@ public:
 	float CorrelationBetweenObservedAndSimulatedLinkVolume;
 };
 
-#pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
-// Stop bugging me about this, live isn't perfect
+
 
 
 extern float g_RNNOF();

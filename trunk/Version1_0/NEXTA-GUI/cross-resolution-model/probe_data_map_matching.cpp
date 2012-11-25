@@ -342,6 +342,8 @@ bool CTLiteDoc::ReadGPSCSVFile(LPCTSTR lpszFileName)
     parser.CloseCSVFile();
     return true;
     }
+
+	return true;
 }
 
 void CTLiteDoc::OnToolsGpsmapmatching()

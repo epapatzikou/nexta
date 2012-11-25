@@ -126,6 +126,7 @@ int g_ODEstimationFlag = 0;
 int g_Agent_shortest_path_generation_flag = 0;
 int g_ODEstimationMeasurementType = 0; // 0: flow, 1: density, 2, speed
 int g_ODEstimation_StartingIteration = 2;
+float g_ODEstimation_max_percentage_deviation_wrt_hist_demand;
 
 int g_ODEstimationNumberOfIterationsForSequentialAdjustment = 10;
 int g_ODEstimationTimePeriodForSequentialAdjustment = 60; // min
@@ -169,10 +170,8 @@ bool g_ReadLinkMeasurementFile()
 				if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 			{
 			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./ODME_Settings.txt");
-			g_ODEstimation_StepSize = g_GetPrivateProfileFloat("estimation", "adjustment_step_size", 0.15, ODMESettingFileName,true);
-			g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
-			
 
+			g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
 			g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
 			g_ODEstimationNumberOfIterationsForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "number_of_iterations_per_sequential_adjustment", 10, ODMESettingFileName,true);	
 			g_ODEstimationTimePeriodForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "time_period_in_min_per_sequential_adjustment", 60, ODMESettingFileName,true);	
@@ -444,7 +443,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 	// step 3: identify the best path for each destination
 	// calculate the path gap
 
-	for(int DestZoneNumber=1; DestZoneNumber <= g_ODZoneNumberSize; DestZoneNumber++)
+	for(DestZoneNumber=1; DestZoneNumber <= g_ODZoneNumberSize; DestZoneNumber++)
 	{
 
 		if(g_ZoneNumber2NoVector[DestZoneNumber]<0)  // no such zone number
@@ -493,6 +492,8 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 	// step 4: update OD demand flow 
 	for(DestZoneNumber=1; DestZoneNumber <= g_ODZoneNumberSize; DestZoneNumber++)  //  for each OD pair
 	{
+
+
 
 		if(g_ZoneNumber2NoVector[DestZoneNumber]<0)  // no such Zone ID
 			continue;
@@ -683,16 +684,32 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 			// add constraints based on the deviation from historical demand 
 
-			if ( abs(PathArray[DestZoneNo].DeviationNumOfVehicles) >  hist_demand * 0.3) 
+
+ 		int abs_threashold = 0;
+		int bound_for_applying_target_demand_constraint = 5;
+
+
+			if ( hist_demand >= bound_for_applying_target_demand_constraint)  // ;OD demand with sufficiently large volumes
 			{
-				if( PathArray[DestZoneNo].DeviationNumOfVehicles < 0 /* current demand < hist demand * 0.7  */ && FlowAdjustment > 0 /* total simulated > total observed so that we have to further decrease the demand pattern*/)
+
+				if(origin_zone == 1 && DestZoneNumber == 11 )
 				{
-					FlowAdjustment  = 0 ; 
+				TRACE("");
 				}
-			
-				if( PathArray[DestZoneNo].DeviationNumOfVehicles >  0 /* current demand > hist demand * 1.3  */ && FlowAdjustment < 0 /* total simulated < total observed so that we have to further decrease the demand pattern*/)
+				float existing_demand = PathArray[DestZoneNo].NumOfVehicles;
+				float new_demand  =  existing_demand - g_ODEstimation_StepSize*FlowAdjustment;
+				float upper_bound = hist_demand * (1+ g_ODEstimation_max_percentage_deviation_wrt_hist_demand);
+				float lower_bound = hist_demand * (1- g_ODEstimation_max_percentage_deviation_wrt_hist_demand);
+
+					if( new_demand>upper_bound  + abs_threashold && FlowAdjustment < 0) 
+				{ 
+					FlowAdjustment  = -(upper_bound - existing_demand)/ g_ODEstimation_StepSize; 
+				}
+
+				if (  new_demand < lower_bound - abs_threashold && FlowAdjustment > 0) 
 				{
-					FlowAdjustment  = 0 ; 
+					FlowAdjustment  = (existing_demand - lower_bound)/ g_ODEstimation_StepSize; 
+				
 				}
 			}
 
@@ -746,7 +763,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 	}
 
-}
+	}  //  for each OD pair
 
 }
 
@@ -854,10 +871,17 @@ void g_GenerateVehicleData_ODEstimation()
 				pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
 				pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
 				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+				pVehicle->m_VOT = kvhc->m_VOT ;
+				pVehicle->m_Age  = kvhc->m_Age;
+				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
 
 
 				pVehicle->m_DemandType	= kvhc->m_DemandType;
 				pVehicle->m_InformationClass = kvhc->m_InformationClass;
+				pVehicle->m_PricingType 	= kvhc->m_PricingType ;
+				pVehicle->m_VehicleType = kvhc->m_VehicleType;
+
+				
 				
 				if( kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
 				{

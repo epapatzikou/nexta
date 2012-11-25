@@ -138,6 +138,7 @@ std::map<string, DTALink*> g_LinkMap;
 
 std::map<int, DTAZone> g_ZoneMap;
 std::vector<int> g_ZoneNumber2NoVector;
+std::vector<int> g_ZoneNo2NumberVector;
 
 std::vector<DTAVehicleType> g_VehicleTypeVector;
 
@@ -175,6 +176,7 @@ int g_EndIterationsForOutputPath = 2;
 int g_NumberOfIterations = 1;
 int g_ParallelComputingMode = 1;
 int g_AgentBasedAssignmentFlag = 1;
+int g_AccessibilityCalculationMode = 0;  // none, agent-based, od-based, 
 float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
 
@@ -404,6 +406,10 @@ void g_ReadInputFiles(int scenario_no)
 
 		CCSVWriter File_output_ODMOE;
 		File_output_ODMOE.Open ("output_ODMOE.csv");
+
+
+		CCSVWriter File_output_ODME_table;
+		File_output_ODME_table.Open ("output_ODME_table.csv");
 
 		CCSVWriter File_output_MovementMOE;
 		File_output_MovementMOE.Open ("output_MovementMOE.csv");
@@ -1077,7 +1083,7 @@ void g_ReadInputFiles(int scenario_no)
 	// freeway, types
 
 
-	if(g_AgentBasedAssignmentFlag == 2)
+	if(g_AccessibilityCalculationMode == 1)
 	{
 		g_AgentBasedShortestPathGeneration();
 
@@ -1226,6 +1232,7 @@ void g_ReadInputFiles(int scenario_no)
 		g_ProgramStop();
 	}
 
+
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
 		if(iterZone->second.m_OriginActivityVector.size() > 30)
@@ -1237,12 +1244,13 @@ void g_ReadInputFiles(int scenario_no)
 	// after reading input_zone.csv and input_activity_location files
 
 	int max_zone_number = 0;
-
+		
 		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 		{
 			if(max_zone_number < iterZone->first)
 				max_zone_number = iterZone->first;
 	
+			g_ZoneNo2NumberVector.push_back (iterZone->first);
 		}
 
 		g_ODZoneIDSize = g_ZoneMap.size();
@@ -1917,6 +1925,8 @@ void g_ReadDTALiteAgentBinFile(string file_name)
 
 				pVehicle->m_InformationClass = element.information_type ;
 				pVehicle->m_VOT = element.value_of_time ;
+				pVehicle->m_Age  = element.age;
+
 				pVehicle->m_TollDollarCost = 0;
 				pVehicle->m_Emissions  = 0;
 				pVehicle->m_Distance = 0;
@@ -3113,7 +3123,7 @@ void g_ReadDTALiteSettings()
 	g_information_updating_interval_of_VMS_in_min  = g_GetPrivateProfileInt("traveler_information", "information_updating_interval_of_VMS_in_min",60,g_DTASettingFileName);	
 
 
-	if(g_AgentBasedAssignmentFlag == 2) 
+	if(g_AccessibilityCalculationMode >=1) 
 		g_PlanningHorizon = 1;
 
 	srand(g_RandomSeed);
@@ -3714,6 +3724,7 @@ void g_ReadVOTProfile()
 
 
 	g_SummaryStatFile.WriteParameterValue ("# of VOT Records",g_VOTDistributionVector.size());
+
 }
 void g_ReadDemandFileBasedOnMetaDatabase()
 {

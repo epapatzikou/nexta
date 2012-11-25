@@ -123,6 +123,7 @@ BOOL CDlgScenarioTab::OnInitDialog()
 	for (size_t i=0;i<values.size();i++)
 	{
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,values.at(i).at(0).c_str() , 0, 0, 0, NULL);
+
 		for (size_t j=1;j<values.at(i).size();j++)
 		{
 			m_ListCtrl.SetItemText(Index, j,values.at(i).at(j).c_str());
@@ -205,6 +206,83 @@ BOOL CDlgScenarioTab::AddRow()
 	return TRUE;
 }
 
+BOOL CDlgScenarioTab::AddColumn(std::string name, double default_value)
+{
+
+		for (int i=0;i<names.size();i++)
+	{
+		if(name.compare  (names[i].c_str ())==0)  // field name exist in the file
+			return false;
+	}
+
+	  //add column
+		CGridColumnTrait* pTrait = NULL;
+		m_ListCtrl.InsertColumnTrait(m_NumOfCols,name.c_str (),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth(m_NumOfCols,LVSCW_AUTOSIZE_USEHEADER);
+
+		CString default_str;
+		default_str.Format ("%.2f",default_value);
+
+	  //add default value
+		for(int row = 0; row < m_NumOfRows; row++)
+		{
+
+				m_ListCtrl.SetItemText(row,m_NumOfCols,default_str);
+
+		}
+	
+	m_NumOfCols++;
+
+	names.push_back (name);
+
+	return TRUE;
+}
+
+BOOL CDlgScenarioTab::CheckColumn(std::string name, CString message)
+{
+	for (int i=0;i<names.size();i++)
+	{
+		if(name.compare (names[i].c_str ())==0)  // field name exists in the file
+			return true;
+	}
+
+	CString str;
+	str.Format("Please update file %s from NEXTA installation folder\\default_data_folder: %s",message);
+	AfxMessageBox(str, MB_ICONINFORMATION);
+	return false;
+
+}
+BOOL CDlgScenarioTab::AddColumn(std::string name, int default_value)
+{
+
+		for (int i=0;i<names.size();i++)
+	{
+		if(name.compare (names[i].c_str ())==0)  // field name exists in the file
+			return false;
+	}
+
+	  //add column
+		CGridColumnTrait* pTrait = NULL;
+		m_ListCtrl.InsertColumnTrait(m_NumOfCols,name.c_str (),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth(m_NumOfCols,LVSCW_AUTOSIZE_USEHEADER);
+
+		CString default_str;
+		default_str.Format ("%d",default_value);
+
+	  //add default value
+		for(int row = 0; row < m_NumOfRows; row++)
+		{
+
+				m_ListCtrl.SetItemText(row,m_NumOfCols,default_str);
+
+		}
+	
+	m_NumOfCols++;
+
+	names.push_back (name);
+
+	return TRUE;
+}
 int CDlgScenarioTab::ValidityCheck()
 {
 	using std::string;

@@ -1032,11 +1032,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				// show text condition 1: street name
 				// show text condition 2: crash rates
-				if( m_ShowLinkTextMode == link_display_number_of_crashes && (*iLink)->m_number_of_crashes >= 0.0001)
+				if( m_ShowLinkTextMode == link_display_number_of_crashes && (*iLink)->m_number_of_all_crashes >= 0.0001)
 				{
-					str_text.Format ("%6.2f",(*iLink)->m_number_of_crashes );
+					str_text.Format ("%6.2f",(*iLink)->m_number_of_all_crashes );
 					with_text = true;
 				}
+
+
+
 
 				if(m_ShowLinkTextMode == link_display_street_name)
 				{
@@ -1135,17 +1138,33 @@ void CTLiteView::DrawObjects(CDC* pDC)
 							
 							break;
 
+						case link_display_crash_prediction_group_1_code:
+
+							if((*iLink)->group_1_code.size ()>=1)
+							str_text.Format ("%s",(*iLink)->group_1_code.c_str ()  );
+							break;
+				
+						case link_display_crash_prediction_group_2_code:
+							if((*iLink)->group_2_code.size ()>=1)
+							str_text.Format ("%s",(*iLink)->group_2_code.c_str ()  );
+							break;
+
+						case link_display_crash_prediction_group_3_code:
+							if((*iLink)->group_3_code.size ()>=1)
+							str_text.Format ("%s",(*iLink)->group_3_code.c_str ()  );
+							break;
+
 						case link_display_number_of_crashes:
-							if((*iLink)->m_number_of_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_number_of_crashes   );
+							if((*iLink)->m_number_of_all_crashes  >=0.00001)
+							str_text.Format ("%.4f",(*iLink)->m_number_of_all_crashes   );
 							break;
 
 						case link_display_num_of_fatal_and_injury_crashes_per_year:
-							if((*iLink)->m_number_of_crashes  >=0.00001)
+							if((*iLink)->m_number_of_all_crashes  >=0.00001)
 							str_text.Format ("%.4f",(*iLink)->m_num_of_fatal_and_injury_crashes_per_year   ); break;
 
 						case link_display_num_of_PDO_crashes_per_year:
-							if((*iLink)->m_number_of_crashes  >=0.00001)
+							if((*iLink)->m_number_of_all_crashes  >=0.00001)
 							str_text.Format ("%.4f",(*iLink)->m_num_of_PDO_crashes_per_year   ); break;
 
 						case link_display_number_of_intersection_crashes:

@@ -1,4 +1,4 @@
-// AssignmentSimulationSettingDlg.cpp : implementation file
+AssignmentSimulationSettingDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -10,7 +10,7 @@ using std::vector;
 using std::string;
 
 enum Assignment_Simulation_Settings {SIMULATION = 0,DEMAND_META, MOE, DEMAND_TYPE, PRICING_TYPE, VEHICLE_TYPE, LINK_TYPE, NODE_CONTROL_TYPE, VEHICLE_EMISSIONS,VOT_DISTRIBUTION, MAX_NUM_OF_SETTINGS};
-static LPTSTR Setting_Element[MAX_NUM_OF_SETTINGS] = {"Simulation", "Demand Meta Database", "MOE Output", "Demand Type", "Pricing Type", "Vehicle Type", "Link Type", "Node Control Type", "Vehicle Emissions", "Value of Time Distribution"};
+static LPTSTR Setting_Element[MAX_NUM_OF_SETTINGS] = {"Simulation", "Demand Meta Database", "MOE Output", "Demand Type", "Pricing Type", "Vehicle Type", "Link Type", "Node Control Type", "Vehicle Emission Rate", "Value of Time Distribution"};
 static LPTSTR Setting_FileName[MAX_NUM_OF_SETTINGS] = {"input_scenario_settings","input_demand_meta_data", "input_MOE_settings", "input_demand_type",
 														"input_pricing_type", "input_vehicle_type", "input_link_type", "input_node_control_type", 
 														"input_vehicle_emission_rate", "input_VOT"
@@ -59,6 +59,7 @@ BOOL CAssignmentSimulationSettingDlg::OnInitDialog()
 
 		p_SubTabs[i] = new CAssignmentSimulationTabDlg(name_vector, DefaultValue, value_vector);
 		p_SubTabs[i]->SetTabText(Setting_Element[i]);
+		p_SubTabs[i]->m_FileName = Setting_FileName[i];
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 
 	}
@@ -181,6 +182,9 @@ BOOL CAssignmentSimulationSettingDlg::ReadScenarioCSVFile(const char* ElementTyp
 	csvParser.OpenCSVFile(fileName);
 
 	name_vector = csvParser.GetHeaderList();
+
+
+
 
 	while(csvParser.ReadRecord())
 	{

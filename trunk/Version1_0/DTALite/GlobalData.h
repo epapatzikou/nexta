@@ -33,6 +33,7 @@ extern std::vector<DTALink*> g_LinkVector;
 extern std::map<string, DTALink*> g_LinkMap;
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<int> g_ZoneNumber2NoVector;
+extern std::vector<int> g_ZoneNo2NumberVector;
 extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
@@ -80,14 +81,18 @@ public:
 		
 		if(st!=NULL)
 		{
-			fprintf(st, "origin_zone,destination_zone,time_interval,hist,updated,diff\n");
-			for(int i= 0; i<=m_ODZoneSize; i++)
-			for(int j= 0; j<=m_ODZoneSize; j++)
+			fprintf(st, "origin_zone,destination_zone,time_interval,hist_demand_value,updated_demand_value,difference, percentage_difference\n");
+			for(int i= 0; i<m_ODZoneSize; i++)
+			for(int j= 0; j<m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
-					if(m_HistDemand[i][j][t]>0.5f)
+					if(m_HistDemand[i][j][t]>=5.00f)
 					{
-					fprintf(st, "%d,%d,%d,%.2f,%.2f,%.2f\n",i,j,t,m_HistDemand[i][j][t],m_UpdatedDemand[i][j][t],m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t]);
+					fprintf(st, "%d,%d,%d,%.2f,%.2f,%.2f,%.1f\n",
+						g_ZoneNo2NumberVector[i],g_ZoneNo2NumberVector[j],m_StartingTimeInterval/15+t,
+						m_HistDemand[i][j][t],m_UpdatedDemand[i][j][t],m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t],
+						
+						(m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t])*100 / m_HistDemand[i][j][t]);
 					}
 				}
 		fclose(st);
@@ -136,6 +141,10 @@ public:
 	}
 	void AddValue(int origin_zone_number, int destination_zone_number, int AssignmentInterval, float value)
 	{
+
+		if( origin_zone_number ==2 && destination_zone_number == 40)
+			TRACE("");
+
 		int origin_zone = g_ZoneNumber2NoVector[origin_zone_number];
 		int destination_zone = g_ZoneNumber2NoVector[destination_zone_number];
 
@@ -177,7 +186,7 @@ public:
 			for(int j= 0; j<=m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
-				m_HistDemand[i][j][t] = 0;
+				m_UpdatedDemand[i][j][t] = 0;
 				}
 
 	}

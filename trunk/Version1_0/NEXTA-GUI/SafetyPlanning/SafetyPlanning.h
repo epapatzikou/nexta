@@ -1,7 +1,92 @@
 
+
+class CrashPredictionModel
+{
+public:
+
+	CrashPredictionModel()
+	{
+		urban_flag = 1;
+	
+		directional_flag = 1;
+	}
+	
+	int model_id;
+
+	// the reason we use string as the following types is to ensure sufficent flexbility in safety planing model coding
+	std::string facility_type;
+	std::string severity_level;
+	std::string urban_flag;
+
+	std::string group_1_code; 
+	std::string group_2_code; 
+	std::string group_3_code; 
+
+	float coefficient_a;
+	float coefficient_b;
+	float coefficient_c;
+
+	int directional_flag;
+
+
+};
 class DTASafetyPredictionModel
 {
 public:
+
+
+	std::vector<CrashPredictionModel>  CrashModelVector;
+
+	double EstimateCrashRatePerYear(std::string facility_type, std::string severity_level,std::string urban_flag, 
+		std::string group_1_code,
+		std::string group_2_code,
+		std::string group_3_code,
+		float AADT, float link_length)
+	{
+
+		double crash_rate  = 0;
+
+		for(unsigned int i = 0; i< CrashModelVector.size(); i++)
+		{
+		
+			CrashPredictionModel model = CrashModelVector[i];
+
+			if(model.facility_type == facility_type &&
+			   model.severity_level == severity_level && 
+			   model.urban_flag == urban_flag &&
+			   model.group_1_code  == group_1_code && 
+			   model.group_2_code  == group_2_code && 
+			   model.group_3_code  == group_3_code )
+
+			{
+				// find the model
+
+				if(model.directional_flag  == 1)
+				{
+					crash_rate   =  exp(model.coefficient_a ) * pow(AADT,model.coefficient_b ) * pow(link_length, model.coefficient_c );
+					
+				}else
+				{
+					crash_rate   =  0.5 * exp(model.coefficient_a ) * pow(2*AADT,model.coefficient_b ) * pow(link_length, model.coefficient_c );
+		
+				}
+
+				return crash_rate;
+			
+			}
+		
+
+
+		
+		}
+		TRACE("warning: crash prediction model is not found for %s,%s,%s,%s,%s\n", 
+			facility_type.c_str (),severity_level.c_str (),urban_flag.c_str (),
+			group_1_code.c_str (), group_2_code.c_str (), group_3_code.c_str ());
+	
+			// no model has been found
+		return 0;
+	}
+
 
 	int safety_crash_model_id;
 
@@ -81,17 +166,17 @@ public:
 	double EstimateFreewayCrashRatePerYear(double input_upstream_ADT, double input_length_in_miles)
 	{
 		//  	1/3 * [length_in_miles^1.0*upstream_ADT^0.9212*on_ramp_ADT^0.1209*off_ramp_ADT^0.0445*exp(-8.492 + (513.59/spacing_in_feet) – 300.89*(aux_lane/spacing_in_feet) + 0.1638*input_aux_lane)] 
-		num_fi_crashes_per_year  = pow(input_length_in_miles,coeff_length_in_miles)*
+		double total_crash_per_year  = 1.0/3.0*(pow(input_length_in_miles,coeff_length_in_miles)*
 			pow(input_upstream_ADT,coeff_upstream_ADT)*
 			pow(input_on_ramp_ADT,coeff_on_ramp_ADT)*
-			pow(input_off_ramp_ADT,coeff_off_ramp_ADT) /3.0f * 
+			pow(input_off_ramp_ADT,coeff_off_ramp_ADT)  * 
 			exp( coeff_freeway_constant + coeff_inverse_spacing_in_feet/max(0.000001,input_spacing_in_feet) +
 			coeff_aux_lane * input_aux_lane / max(0.000001,input_spacing_in_feet) + 
-			coeff_num_lanes* input_num_lanes);
+			coeff_num_lanes* input_num_lanes));
 
-//		TRACE("crash %f\b",num_fi_crashes_per_year);
+		//		TRACE("crash %f\b",num_fi_crashes_per_year);
 
-		return num_fi_crashes_per_year;
+		return total_crash_per_year;
 
 	}
 
@@ -110,9 +195,12 @@ public:
 
 
 	double EstimateArterialCrashRatePerYear(double crash_ratio_on_this_link, 
-		double &total_fatal_injury_per_year, double &total_PDO_per_year,
-		double &total_intersection_crash_per_year, double &total_intersection_fatal_injury_per_year, double &total_intersection_PDO_per_year,
-		
+		double &total_fatal_injury_per_year, 
+		double &total_PDO_per_year,
+		double &total_intersection_crash_per_year, 
+		double &total_intersection_fatal_injury_per_year, 
+		double &total_intersection_PDO_per_year,
+
 		double AADT = 26000,
 		double Length  = 0.89, 
 		double Num_Driveways_Per_Mile = 20,
@@ -205,7 +293,43 @@ public:
 			Nsv_total_4SG, Nsv_fatal_injury_4SG,Nsv_PDO_4SG,
 			Nsv_total_4ST,Nsv_fatal_injury_4ST,NSv_PDO_4ST);
 
-		double total_crash_per_year = crash_ratio_on_this_link *(
+
+		Nmvnd_total*= crash_ratio_on_this_link;
+
+		Nmvnd_fatal_injury*=crash_ratio_on_this_link;
+		Nmvnd_PDO*=crash_ratio_on_this_link;
+		Nsv_total*=crash_ratio_on_this_link; 
+		Nsv_fatal_injury*=crash_ratio_on_this_link;
+		Nsv_PDO*=crash_ratio_on_this_link;
+		Nmvd_total*=crash_ratio_on_this_link; 
+		Nmvd_fatal_injury*=crash_ratio_on_this_link;
+		Nmvd_PDO*=crash_ratio_on_this_link;
+		Nmv_total_3SG*=crash_ratio_on_this_link;
+		Nmv_fatal_injury_3SG*=crash_ratio_on_this_link;
+		Nmv_PDO_3SG*=crash_ratio_on_this_link;
+		Nmv_total_3ST*=crash_ratio_on_this_link;
+		Nmv_fatal_injury_3ST*=crash_ratio_on_this_link;
+		Nmv_PDO_3ST*=crash_ratio_on_this_link;
+		Nmv_total_4SG*=crash_ratio_on_this_link; 
+		Nmv_fatal_injury_4SG*=crash_ratio_on_this_link;
+		Nmv_PDO_4SG*=crash_ratio_on_this_link;
+		Nmv_total_4ST*=crash_ratio_on_this_link; 
+		Nmv_fatal_injury_4ST*=crash_ratio_on_this_link;
+		Nmv_PDO_4ST*=crash_ratio_on_this_link;
+		Nsv_total_3SG*=crash_ratio_on_this_link; 
+		Nsv_fatal_injury_3SG*=crash_ratio_on_this_link;
+		Nsv_PDO_3SG*=crash_ratio_on_this_link;
+		Nsv_total_3ST*=crash_ratio_on_this_link; 
+		Nsv_fatal_injury_3ST*=crash_ratio_on_this_link; 
+		NSv_PDO_3ST*=crash_ratio_on_this_link;
+		Nsv_total_4SG*=crash_ratio_on_this_link; 
+		Nsv_fatal_injury_4SG*=crash_ratio_on_this_link;
+		Nsv_PDO_4SG*=crash_ratio_on_this_link;
+		Nsv_total_4ST*=crash_ratio_on_this_link;
+		Nsv_fatal_injury_4ST*=crash_ratio_on_this_link;
+		NSv_PDO_4ST*=crash_ratio_on_this_link;
+
+		double total_crash_per_year = (
 			Nmvnd_total +
 			Nsv_total +
 			Nmvd_total + 
@@ -218,7 +342,7 @@ public:
 			Nsv_total_4SG +
 			Nsv_total_4ST);
 
-	total_fatal_injury_per_year =  crash_ratio_on_this_link *(
+		total_fatal_injury_per_year =  (
 			Nmvnd_fatal_injury +
 			Nsv_fatal_injury +
 			Nmvd_fatal_injury + 
@@ -231,7 +355,7 @@ public:
 			Nsv_fatal_injury_4SG +
 			Nsv_fatal_injury_4ST);
 
-	total_PDO_per_year = crash_ratio_on_this_link * (
+		total_PDO_per_year =  (
 			Nmvnd_PDO +
 			Nsv_PDO +
 			Nmvd_PDO + 
@@ -244,7 +368,7 @@ public:
 			Nsv_PDO_4SG +
 			NSv_PDO_4ST );
 
-	total_intersection_crash_per_year = crash_ratio_on_this_link *(
+		total_intersection_crash_per_year = (
 			Nmv_total_3SG +
 			Nmv_total_3ST +
 			Nmv_total_4SG +
@@ -254,7 +378,7 @@ public:
 			Nsv_total_4SG +
 			Nsv_total_4ST);
 
-	total_intersection_fatal_injury_per_year =  crash_ratio_on_this_link *(
+		total_intersection_fatal_injury_per_year =  (
 			Nmv_fatal_injury_3SG +
 			Nmv_fatal_injury_3ST +
 			Nmv_fatal_injury_4SG +
@@ -264,7 +388,7 @@ public:
 			Nsv_fatal_injury_4SG +
 			Nsv_fatal_injury_4ST);
 
-	total_intersection_PDO_per_year = crash_ratio_on_this_link * (
+		total_intersection_PDO_per_year = crash_ratio_on_this_link * (
 			Nmv_PDO_3SG +
 			Nmv_PDO_3ST +
 			Nmv_PDO_4SG +
@@ -275,6 +399,7 @@ public:
 			NSv_PDO_4ST );
 		return total_crash_per_year;
 	}
+
 
 
 

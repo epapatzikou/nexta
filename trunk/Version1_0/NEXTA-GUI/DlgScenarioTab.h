@@ -14,6 +14,9 @@ public:
 	CDlgScenarioTab(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values, std::vector<std::string> linkstring);
 	BOOL CopyRow();
 	BOOL AddRow();
+	BOOL AddColumn(std::string name, int default_value);
+	BOOL AddColumn(std::string name, double default_value);
+	BOOL CheckColumn(std::string name, CString message);
 	BOOL AddRow(int from_node_name,int to_node_name);
 	BOOL DeleteRow();
 	CString GenerateRecordString();
@@ -40,6 +43,7 @@ private:
 	std::vector<std::string> LinkString;
 
 	CString m_TabText;
+	CString m_FileName;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

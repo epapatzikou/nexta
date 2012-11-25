@@ -236,7 +236,7 @@ void CDlgLinkList::ReloadData()
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 
-		sprintf_s(text, "%.4f",(*iLink)->m_number_of_crashes        );
+		sprintf_s(text, "%.4f",(*iLink)->m_number_of_all_crashes        );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		sprintf_s(text, "%.4f",(*iLink)->m_num_of_fatal_and_injury_crashes_per_year        );
@@ -346,7 +346,7 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 
 	}
 
-	if(m_ZoomToSelectedLink == true)
+	if(m_ZoomToSelectedLink == TRUE)
 	{
 
 		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);

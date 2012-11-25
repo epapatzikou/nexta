@@ -2440,7 +2440,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 							TRACE("\n add ->> movement %s, from node %d to node %d, with %d links",
 								lane_Column_name_str[m].c_str (), from_node_id, to_node_id,  LaneDataMap[lane_Column_name_str[m]].Lanes );
 
-							int bToBeShifted = 1;
+							bool bToBeShifted = true;
 							int number_of_lanes = LaneDataMap[lane_Column_name_str[m]].Lanes ;
 							float speed_limit_in_mph = LaneDataMap[lane_Column_name_str[m]].Speed ;
 							float capacity_in_pcphpl =  LaneDataMap[lane_Column_name_str[m]].SatFlow / max(1,number_of_lanes);  // convert per link flow rate to per lane flow rate

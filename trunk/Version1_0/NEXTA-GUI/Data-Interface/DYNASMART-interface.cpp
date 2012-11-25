@@ -1168,9 +1168,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 
 
-	std:map<int, int>	:: const_iterator itr;;
-
-
 	if(bLoadVehicleData)
 	{
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");

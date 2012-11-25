@@ -223,6 +223,28 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 
 	m_NumOfRows = values.size();
 
+	if(m_TabText.Find("Simulation")!=-1)  //scenario settings
+	{
+	AddColumn("ODME_start_iteration",100);
+	AddColumn("ODME_step_size",0.05);
+	AddColumn("ODME_max_percentage_deviation_wrt_hist_demand",70);
+	AddColumn("agent_demand_input_mode",0);
+	AddColumn("calibration_data_start_time_in_min",0);
+	AddColumn("calibration_data_end_time_in_min",1440);
+	AddColumn("accessibility_calculationg_mode",0);
+	AddColumn("routing_movement_delay_mode",0);
+
+	}
+
+	if(m_TabText.Find("Vehicle Type")!=-1)  //scenario settings
+	{
+	CheckColumn("percentage_of_age_0", "Field percentage_of_age_0 is missing.");
+	}
+	if(m_TabText.Find("Vehicle Emission Rate")!=-1)  //scenario settings
+	{
+	CheckColumn("age", "Field age is missing.");
+	}
+
 	return TRUE;
 }
 
@@ -499,8 +521,86 @@ BOOL CAssignmentSimulationTabDlg::DeleteRow()
 }
 
 
+BOOL CAssignmentSimulationTabDlg::AddColumn(std::string name, double default_value)
+{
+
+		for (int i=0;i<names.size();i++)
+	{
+		if(name.compare  (names[i].c_str ())==0)  // field name exist in the file
+			return false;
+	}
+
+	  //add column
+		CGridColumnTrait* pTrait = NULL;
+		m_ListCtrl.InsertColumnTrait(m_NumOfCols,name.c_str (),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth(m_NumOfCols,LVSCW_AUTOSIZE_USEHEADER);
+
+		CString default_str;
+		default_str.Format ("%.2f",default_value);
+
+	  //add default value
+		for(int row = 0; row < m_NumOfRows; row++)
+		{
+
+				m_ListCtrl.SetItemText(row,m_NumOfCols,default_str);
+
+		}
+	
+	m_NumOfCols++;
+
+	names.push_back (name);
+
+	return TRUE;
+}
+BOOL CAssignmentSimulationTabDlg::AddColumn(std::string name, int default_value)
+{
+
+		for (int i=0;i<names.size();i++)
+	{
+		if(name.compare (names[i].c_str ())==0)  // field name exists in the file
+			return false;
+	}
+
+	  //add column
+		CGridColumnTrait* pTrait = NULL;
+		m_ListCtrl.InsertColumnTrait(m_NumOfCols,name.c_str (),LVCFMT_LEFT,-1,-1, pTrait);
+		m_ListCtrl.SetColumnWidth(m_NumOfCols,LVSCW_AUTOSIZE_USEHEADER);
+
+		CString default_str;
+		default_str.Format ("%d",default_value);
+
+	  //add default value
+		for(int row = 0; row < m_NumOfRows; row++)
+		{
+
+				m_ListCtrl.SetItemText(row,m_NumOfCols,default_str);
+
+		}
+	
+	m_NumOfCols++;
+
+	names.push_back (name);
+
+	return TRUE;
+}
+
+BOOL CAssignmentSimulationTabDlg::CheckColumn(std::string name, CString message)
+{
+	for (int i=0;i<names.size();i++)
+	{
+		if(name.compare (names[i].c_str ())==0)  // field name exists in the file
+			return true;
+	}
+
+	CString str;
+	str.Format("Please update file %s from NEXTA installation folder\\default_data_folder: %s",m_FileName,message);
+	AfxMessageBox(str, MB_ICONINFORMATION);
+	return false;
+
+}
 BEGIN_MESSAGE_MAP(CAssignmentSimulationTabDlg, CDialog)
 END_MESSAGE_MAP()
 
 
 // CDlgScenarioTab message handlers
+
