@@ -12,6 +12,9 @@ using std::vector;
 using std::map;
 using std::istringstream;
 template <typename T>
+
+#pragma warning(disable: 4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
+
 string NumberToString ( T Number )
 {
 	ostringstream ss;
@@ -183,7 +186,7 @@ public:
 	}
 	void SetFieldName(string field_name)
 	{ 
-		FieldsIndices[field_name] = LineFieldsName.size();
+		FieldsIndices[field_name] = (int)(LineFieldsName.size());
 		LineFieldsName.push_back (field_name);
 		LineFieldsCategoryName.push_back(" ");
 
@@ -191,7 +194,7 @@ public:
 
 	void SetFieldNameWithCategoryName(string field_name,string category_name)
 	{ 
-		FieldsIndices[field_name] = LineFieldsName.size();
+		FieldsIndices[field_name] = (int)(LineFieldsName.size());
 		LineFieldsName.push_back (field_name);
 		LineFieldsCategoryName.push_back(category_name);
 

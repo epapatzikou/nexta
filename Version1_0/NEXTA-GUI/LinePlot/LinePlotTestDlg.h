@@ -1,5 +1,8 @@
 // LinePlotTestDlg.h : header file
 //
+//A 2D Lite Graph Control with Multiple Plot Support
+//Posted by Paul Grenz on November 23rd, 2004
+//http://www.codeguru.com/cpp/cpp/cpp_mfc/general/article.php/c8535/A-2D-Lite-Graph-Control-with-Multiple-Plot-Support.htm
 
 #if !defined(AFX_LINEPLOTTESTDLG_H__2B7C15E7_EF20_49C5_A59A_100B36A474EA__INCLUDED_)
 #define AFX_LINEPLOTTESTDLG_H__2B7C15E7_EF20_49C5_A59A_100B36A474EA__INCLUDED_

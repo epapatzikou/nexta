@@ -105,6 +105,9 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	{
 		cout << "------- Iteration = "<<  iteration << "--------" << endl;
 
+			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)
+				g_HistDemand.ResetUpdatedValue(); // reset update hist table
+
 
 		//if( iteration >=6)
 		//	g_SimulateSignals = 1;  // enable signal after the path flow has been stabalizied. 
@@ -1178,13 +1181,25 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 
 void g_AgentBasedShortestPathGeneration()
 {
-	// find unique origin node
+	//test if files can be openned
+	{
+		CCSVWriter File_input;
+		File_input.Open ("input_od_pairs.csv");
+	}
+	{
+		CCSVWriter File_output;
+		File_output.Open ("output_shortest_path.txt");
+	}
+
+		// find unique origin node
 	// find unique destination node
 
 	int node_size  = g_NodeVector.size();
 	int link_size  = g_LinkVector.size();
 
 	int line = 0;
+
+
 
 	FILE* st_input = NULL;
 	fopen_s(&st_input,"input_od_pairs.csv","r");
@@ -1323,7 +1338,7 @@ void g_AgentBasedShortestPathGeneration()
 				int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
 				float label = g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label;
 
-				fprintf(st, "%d, %d, %d, %4.4f\n", g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
+				fprintf(st, "%d, %d, %d, %4.2f\n", g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
 					g_NodeVector[node_index].m_NodeName,
 					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_number, label);
 

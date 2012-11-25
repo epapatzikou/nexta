@@ -2590,7 +2590,14 @@ public:
 		Diverted_TotalVehicleSize = 0;
 		Diverted_TotalTravelTime = 0;
 		Diverted_TotalDistance = 0;
+
+		OriginZoneNumber = 0;
+		DestinationZoneNumber = 0;
+
 	}
+
+	int OriginZoneNumber;
+	int DestinationZoneNumber;
 
 	int   TotalVehicleSize;
 	int   TotalCompleteVehicleSize;
@@ -2668,15 +2675,35 @@ public:
 
 typedef struct  
 {
-	int vehicle_id;
-	int from_zone_id;
-	int to_zone_id;
-	float departure_time;
-	int demand_type;
-	int pricing_type;
-	int vehicle_type;
-	int information_type;
-	float value_of_time;
+		int vehicle_id;
+		int from_zone_id;
+		int to_zone_id;
+		float departure_time;
+		float arrival_time;
+		int complete_flag;
+		float trip_time;
+		int demand_type;
+		int pricing_type;
+		int vehicle_type;
+		int information_type;
+		float value_of_time;
+		float toll_cost_in_dollar;
+		float emissions;
+		float distance_in_mile;
+		int number_of_nodes;
+		float Energy;
+		float CO2;
+		float NOX;
+		float CO;
+		float HC;
+
+		int age;
+		int version_no;
+
+		int reserverd_field1;
+		float reserverd_field2;
+		int reserverd_field3;
+
 } struct_VehicleInfo_Header;
 
 class VehicleArrayForOriginDepartrureTimeInterval
@@ -2786,6 +2813,7 @@ extern float    g_ODEstimation_StepSize;
 extern int g_ODEstimationFlag;
 extern int g_ODEstimationMeasurementType;
 extern int g_ODEstimation_StartingIteration;
+extern float g_ODEstimation_max_percentage_deviation_wrt_hist_demand;
 
 extern VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray; // TDO for time-dependent origin;
 extern std::vector<NetworkLoadingOutput>  g_AssignmentMOEVector;
@@ -2806,6 +2834,7 @@ void g_DTALiteMultiScenarioMain();
 extern int g_InitializeLogFiles();
 extern void g_ReadDTALiteSettings();
 extern int g_AgentBasedAssignmentFlag;
+extern int g_AccessibilityCalculationMode;
 extern float g_DemandGlobalMultiplier;
 
 extern void g_TrafficAssignmentSimulation();

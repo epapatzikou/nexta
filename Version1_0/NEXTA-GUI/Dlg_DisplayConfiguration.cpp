@@ -120,6 +120,12 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Total Sensor Link Volume");
 	m_Link_Label.AddString("Total Link Count Error");
 	m_Link_Label.AddString("simulated AADT");
+
+	m_Link_Label.AddString("Group 1 Code");
+	m_Link_Label.AddString("Group 2 Code");
+	m_Link_Label.AddString("Group 3 Code");
+
+
 	m_Link_Label.AddString("Number of Crashes Per Year");
 	m_Link_Label.AddString("Number of Fatal and Injury Crashes Per_Year");
 	m_Link_Label.AddString("Number of PDO Crashes Per Year");

@@ -229,6 +229,15 @@ using namespace std;
 			getchar();
 		}
 
+		g_ShortestPathWithMovementDelayFlag = 0;
+		if(parser_scenario.GetValueByFieldName("routing_movement_delay_mode",g_ShortestPathWithMovementDelayFlag)==false)
+		{
+			//cout << "Field routing_movement_delay_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
+			//getchar();
+		}
+		
+
+
 		g_ValidationDataStartTimeInMin = 0;
 			if(parser_scenario.GetValueByFieldName("calibration_data_start_time_in_min",g_ValidationDataStartTimeInMin)==false)
 		{
@@ -243,7 +252,16 @@ using namespace std;
 			getchar();
 		}
 
+			g_AccessibilityCalculationMode = 0;
+			if(parser_scenario.GetValueByFieldName("accessibility_calculationg_mode",g_AccessibilityCalculationMode)==false)
+		{
+			cout << "Field accessibility_calculationg_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
+			getchar();
+		}
+
+
 		g_ODEstimation_StartingIteration = 1000;
+		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.7;
 
 		g_ODEstimationFlag = 0;
 
@@ -256,6 +274,38 @@ using namespace std;
 			cout << "Field ODME_start_iteration has not been specified in file input_scenario_settings.csv. A default factor of 1000 is used." << endl;
 			getchar();
 		}
+
+		float ODEstimation_max_percentage_deviation_wrt_hist_demand = 70;
+		if(parser_scenario.GetValueByFieldName("ODME_max_percentage_deviation_wrt_hist_demand",ODEstimation_max_percentage_deviation_wrt_hist_demand)==false)
+		{
+			cout << "Field ODME_max_percentage_deviation_wrt_hist_demand has not been specified in file input_scenario_settings.csv. A default value of 30 (%) is used." << endl;
+			getchar();
+		}
+
+		if(ODEstimation_max_percentage_deviation_wrt_hist_demand<1 || ODEstimation_max_percentage_deviation_wrt_hist_demand>=100)
+		{
+			cout << "Field ODME_max_percentage_deviation_wrt_hist_demand =" << ODEstimation_max_percentage_deviation_wrt_hist_demand << ", which should be between 1 and 100%" << endl;
+			getchar();
+			ODEstimation_max_percentage_deviation_wrt_hist_demand = 70;
+	
+		}
+
+
+		g_ODEstimation_StepSize = 0.05;
+		if(parser_scenario.GetValueByFieldName("ODME_step_size",g_ODEstimation_StepSize)==false)
+		{
+			cout << "Field ODME_step_size has not been specified in file input_scenario_settings.csv. A default value of 0.05 is used." << endl;
+			getchar();
+		}
+
+		if(g_ODEstimation_StepSize<0 || g_ODEstimation_StepSize>=0.2)
+		{
+			cout << "Field ODME_step_size =" << g_ODEstimation_StepSize << ", which should be between 0 and 0.2" << endl;
+			getchar();
+			g_ODEstimation_StepSize = 0.05;
+	
+		}
+
 		}
 
 
@@ -295,8 +345,6 @@ using namespace std;
 			cout << "Field emission_data_output cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();
 		}
-
-
 
 		g_ReadInputFiles(scenario_no);
 	

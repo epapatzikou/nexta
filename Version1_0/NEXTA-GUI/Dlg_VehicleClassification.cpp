@@ -405,6 +405,8 @@ void CDlg_VehicleClassification::OnChartSelectedItem(NMHDR* pNMHDR, LRESULT* pRe
 
 void CDlg_VehicleClassification::OnCbnSelchangeComboVehicleselection()
 {
+	CWaitCursor wait;
+
 	m_VehicleSelectionNo = (VEHICLE_CLASSIFICATION_SELECTION)(m_ComboVehicleSelection.GetCurSel ());
 	m_pDoc->m_VehicleSelectionMode = m_VehicleSelectionNo;
 

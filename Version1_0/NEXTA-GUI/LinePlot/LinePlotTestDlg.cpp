@@ -1,6 +1,10 @@
 // LinePlotTestDlg.cpp : implementation file
 //
 
+//A 2D Lite Graph Control with Multiple Plot Support
+//Posted by Paul Grenz on November 23rd, 2004
+//http://www.codeguru.com/cpp/cpp/cpp_mfc/general/article.php/c8535/A-2D-Lite-Graph-Control-with-Multiple-Plot-Support.htm
+
 #include "stdafx.h"
 #include "../TLite.h"
 #include "LinePlotTest.h"

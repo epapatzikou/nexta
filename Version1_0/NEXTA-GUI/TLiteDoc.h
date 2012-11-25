@@ -564,6 +564,17 @@ public:
 
 	bool ReadMultiDaySensorData(LPCTSTR lpszFileName);
 	bool ReadInputEmissionRateFile(LPCTSTR lpszFileName);
+
+
+	std::string CString2StdString(CString str)
+	{	 // Convert a TCHAR string to a LPCSTR
+	  CT2CA pszConvertedAnsiString (str);
+
+	  // construct a std::string using the LPCSTR input
+	  std::string strStd (pszConvertedAnsiString);
+
+	  return strStd;
+	  }
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 
 	int m_import_shape_files_flag;
@@ -1381,14 +1392,27 @@ public:
 
 	}
 
-	void CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString ProjectDirectory, CString FileName)
+	CString m_DefaultDataFolder;
+	void CopyFileFromDefaultDataFolder(CString FileName)
 	{
-		if(CheckIfFileExsits(ProjectDirectory+FileName )==false)
+
+		if(m_ProjectDirectory.GetLength () ==0)
+			return;
+
+		if(CheckIfFileExsits(m_ProjectDirectory+FileName )==false)
+		{
+			CopyFile(m_DefaultDataFolder+FileName, m_ProjectDirectory+FileName, FALSE);
+		}
+	}
+
+	void CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString DestinationProjectDirectory, CString FileName)
+	{
+		if(CheckIfFileExsits(DestinationProjectDirectory+FileName )==false)
 		{
 			if(CheckIfFileExsits(CurrentProjectFolder+FileName )==true)
-				CopyFile(CurrentProjectFolder+FileName, ProjectDirectory+FileName, FALSE);
+				CopyFile(CurrentProjectFolder+FileName, DestinationProjectDirectory+FileName, FALSE);
 			else
-				CopyFile(DefaultDataFolder+FileName, ProjectDirectory+FileName, FALSE);
+				CopyFile(DefaultDataFolder+FileName, DestinationProjectDirectory+FileName, FALSE);
 		}
 	}
 
@@ -1401,6 +1425,7 @@ public:
 	// Implementation
 	void GenerateMovementCountFromVehicleFile();
 	void MapSignalDataAcrossProjects();
+	void IdentifyLinkGroupCode();
 public:
 	virtual ~CTLiteDoc();
 #ifdef _DEBUG

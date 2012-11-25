@@ -14,11 +14,18 @@ public:
 	CAssignmentSimulationTabDlg(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values);
 	BOOL CopyRow();
 	BOOL AddRow();
+
 	BOOL DeleteRow();
+	BOOL AddColumn(std::string name, int default_value);
+	BOOL AddColumn(std::string name, double default_value);
+
+	BOOL CheckColumn(std::string name, CString message);
 	CString GenerateRecordString();
 	void SetTabText(CString s);
 	CString GetTabText();
 	int ValidityCheck();
+		CString m_FileName;
+
 	virtual ~CAssignmentSimulationTabDlg();
 
 // Dialog Data

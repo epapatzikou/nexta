@@ -239,6 +239,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				pVehicle->m_LeavingTimeFromLoadingBuffer = CurrentTime;
 				pLink->m_LoadingBufferWaitingTime+= (CurrentTime - pVehicle->m_DepartureTime );
 
+				if(pLink->m_LoadingBufferWaitingTime > 0.5f)
+				{
+					TRACE("buffer waiting");
+				}
 
 				// add cumulative flow count to vehicle
 

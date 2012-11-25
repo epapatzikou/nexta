@@ -191,7 +191,7 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.SetButtonText(15,"Link");
 		m_MOEToolBar.SetButtonText(16,"Path");
 		m_MOEToolBar.SetButtonText(17,"Vehicle");
-		m_MOEToolBar.SetButtonText(18,"System");
+		m_MOEToolBar.SetButtonText(18,"Summary");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
@@ -616,7 +616,7 @@ CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLA
 	{
 		int nItem = pGISLayerList->GetNextSelectedItem(pos);
 		 m_iSelectedLayer = (layer_mode) nItem;
-		 bool bChecked = pGISLayerList->GetCheck(nItem); 
+		 BOOL bChecked = pGISLayerList->GetCheck(nItem); 
 
 	 	m_bShowLayerMap[m_iSelectedLayer] = bChecked;
 

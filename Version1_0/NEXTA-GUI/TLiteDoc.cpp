@@ -300,6 +300,11 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 CTLiteDoc::CTLiteDoc()
 {
 
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+
+	m_DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
+
 	m_ZoneNoSize  = 0;
 	m_bRunCrashPredictionModel = false;
 	m_ZoomToSelectedObject = true;
@@ -1025,7 +1030,7 @@ void CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 				parser.GetValueByFieldName("measurement_error",pLink->m_total_link_count_error);
 				parser.GetValueByFieldName("simulated_AADT",pLink->m_simulated_AADT);
 		
-				parser.GetValueByFieldName("num_of_crashes_per_year",pLink->m_number_of_crashes);
+				parser.GetValueByFieldName("num_of_crashes_per_year",pLink->m_number_of_all_crashes);
 				parser.GetValueByFieldName("num_of_fatal_and_injury_crashes_per_year",pLink->m_num_of_fatal_and_injury_crashes_per_year);
 				parser.GetValueByFieldName("num_of_PDO_crashes_per_year",pLink->m_num_of_PDO_crashes_per_year);
 
@@ -1754,7 +1759,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 		{
 			if(m_LinkMOEMode == MOE_safety)  // safety
 			{
-				(*iLink)->m_BandWidthValue = (*iLink)->m_number_of_crashes *10*VolumeRatio;   // 10 crashes as 5 lanes. 
+				(*iLink)->m_BandWidthValue = (*iLink)->m_number_of_all_crashes *10*VolumeRatio;   // 10 crashes as 5 lanes. 
 			}else
 			{
 				if(g_Simulation_Time_Stamp>=1) // dynamic traffic assignment mode
@@ -2216,6 +2221,14 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			mode_code = '"' + mode_code + '"' ;
 			}
 
+
+			std::string group_1_code,group_2_code, group_3_code;
+
+			parser.GetValueByFieldName("group_1_code",group_1_code);
+			parser.GetValueByFieldName("group_2_code",group_2_code);
+			parser.GetValueByFieldName("group_3_code",group_3_code);
+
+
 			if(!parser.GetValueByFieldName("link_id",link_id))  // no value
 			{
 				// mark it as 0 first, and we then find a new unique link id after reading all links
@@ -2292,7 +2305,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 				pLink->m_geo_string  = geo_string;
 
-
+				pLink->group_1_code = group_1_code;
+				pLink->group_2_code = group_2_code;
+				pLink->group_3_code = group_3_code;
 
 
 				if(link_code == 1)  //AB link
@@ -3529,7 +3544,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 		}
 
 //		 safety prediction attributes
-			fprintf(st,"num_driveways_per_mile,volume_proportion_on_minor_leg,num_3SG_intersections,num_3ST_intersections,num_4SG_intersections,num_4ST_intersections");
+		fprintf(st,"group_1_code,group_2_code,group_3_code,num_driveways_per_mile,volume_proportion_on_minor_leg,num_3SG_intersections,num_3ST_intersections,num_4SG_intersections,num_4ST_intersections");
 		fprintf(st,"\n");	
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -3623,6 +3638,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 				if(pLine!= NULL)
 					reversed_link_id = pLine -> m_LinkID ;
 			}
+
+			fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
 
 			fprintf(st,"%d,%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_LeftTurnCapacity,
 				GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
@@ -5333,8 +5350,8 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		value =  0;
 		break;
 
-	case MOE_safety:  power = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length ); 
-		value = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length );
+	case MOE_safety:  power = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length ); 
+		value = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length );
 		break;
 
 
@@ -5424,8 +5441,8 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 				case MOE_queue_length: 
 					power = value  ; 
 					break;
-				case MOE_safety:  power = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length ); 
-					value = pLink->m_NumberOfCrashes/ max(0.0001,pLink->m_Length );
+				case MOE_safety:  power = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length ); 
+					value = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length );
 					break;
 
 		}
@@ -8589,7 +8606,7 @@ void CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot()
 void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 {
 
-	CString str = m_ProjectDirectory +"output_LinkMOE.csv";
+	CString str = m_ProjectDirectory +"output_validation_results.csv";
 	CT2CA pszConvertedAnsiString (str);
 	// construct a std::string using the LPCSTR input
 	std::string  strStd (pszConvertedAnsiString);
@@ -8609,13 +8626,13 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 		{
 			FLOATPOINT data;
 
-			if(parser.GetValueByFieldName("sensor_link_volume",data.x) == false)
+			if(parser.GetValueByFieldName("observed_link_count",data.x) == false)
 				break;
 
 			if(data.x >0.1f)   // with sensor data
 			{
 
-				if(parser.GetValueByFieldName("total_link_volume",data.y) == false)  // estimated data
+				if(parser.GetValueByFieldName("simulated_link_count",data.y) == false)  // estimated data
 					break;
 				element_link_volume.vecData.push_back(data);
 
@@ -8629,8 +8646,8 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 			CLinePlotTestDlg dlg;
 
-			dlg.m_XCaption = "Observed Link Volume";
-			dlg.m_YCaption = "Simulated Link Volume";
+			dlg.m_XCaption = "Observed Link Count";
+			dlg.m_YCaption = "Simulated Link Count";
 			CString msg;
 			msg.Format ("%d data points",count);
 			dlg.m_MessageVector.push_back(msg);
@@ -8903,7 +8920,7 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	//DeleteFile(directory+"AMS_node.kmz");
 	//ExportNodeLayerToGISFiles(directory+"AMS_node.kml","KML");
 
-	m_bExport_Link_MOE_in_input_link_CSF_File = true;
+	m_bExport_Link_MOE_in_input_link_CSF_File = false;
 	OnFileSaveProject();  // save time-dependent MOE to input_link MOE file
 
 	DeleteFile(directory+"AMS_link.shp");

@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\2035 Clackamas County\Optimized_Signal -withSignalDataFrom2012"
+				WorkingDirectory="C:\NEXTA_OpenSource\Backup_data_folder\Salt_Lake_City_West_Jordan"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\2035 Clackamas County\Optimized_Signal"
+				WorkingDirectory="C:\NEXTA_OpenSource\Backup_data_folder\Salt_Lake_City_West_Jordan"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
