@@ -146,7 +146,7 @@ bool CTLiteDoc::ReadGPSData(string FileName)
 		//	}
 		//	pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 		//	
-		//	pLink->m_TotalVolume +=1;
+		//	pLink->m_total_link_volume +=1;
 		//}
 
 
@@ -1072,7 +1072,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 			
-				(*iLink)->m_TotalVolume = 0;
+				(*iLink)->m_total_link_volume = 0;
 			}
 
 		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
@@ -1090,13 +1090,11 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				if(t>=1)
 				{
 					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ObsArrivalCumulativeFlow)*60);
-					(*iLink)->m_TotalVolume+= (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
 
 				}
 				}else  // DYNASMART -P 
 				{
 					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  g_read_float(pFile)*60;
-					(*iLink)->m_TotalVolume+= (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
 			
 				}
 			}
@@ -1264,7 +1262,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			}
 			pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 			pVehicle->m_Distance +=pLink->m_Length ;
-			pLink->m_TotalVolume +=1;
+			pLink->m_total_link_volume +=1;
 		}
 
 

@@ -364,6 +364,8 @@
 #define IDC_COMBO_TransitTime           1145
 #define IDC_GIS_DATA_TYPE_LIST          1145
 #define IDBARCHARTPIECHART              1146
+#define IDC_COMBO_Link_Selection        1147
+#define IDBARCHARTPIECHART2             1148
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -975,14 +977,15 @@
 #define ID_SAFETYPLANNINGTOOLS_RUN      33519
 #define ID_SAFETYPLANNINGTOOLS_GENERATENODE 33520
 #define ID_MOETYPE1_LINKOUTFLOWVOLUME   33521
+#define ID_LINKSELECTION_SHOWALLLINKSWITHINSUBAREA 33522
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33522
-#define _APS_NEXT_CONTROL_VALUE         1147
+#define _APS_NEXT_COMMAND_VALUE         33523
+#define _APS_NEXT_CONTROL_VALUE         1148
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -247,6 +247,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// add cumulative flow count to vehicle
 
 
+				if(pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6)
+				{
+				TRACE("");
+				}
 				pVehicle->m_TollDollarCost += pLink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
 
 
@@ -785,6 +789,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 						DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
 
+				
+				
 						pVehicle->m_TollDollarCost += p_Nextlink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
 
 

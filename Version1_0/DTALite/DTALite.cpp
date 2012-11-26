@@ -2185,7 +2185,6 @@ void g_CreateLinkTollVector()
 {
 
 	// transfer toll set to dynamic toll vector (needed for multi-core computation)
-	std::set<DTALink*>::iterator iterLink;
 	int count = 0;
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
@@ -2610,12 +2609,12 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 
 		while(true)
 		{
-			int usn  = g_read_integer(st);
+			int usn  = g_read_integer(st,false);
 
 			if(usn <=0)
 				break;
 
-			int dsn =  g_read_integer(st);
+			int dsn =  g_read_integer(st,false);
 			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
 			{
 				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
@@ -2629,11 +2628,11 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				Toll tc;  // toll collection
-				tc.StartDayNo  = g_read_integer(st);
-				tc.EndDayNo  = g_read_integer(st);
+				tc.StartDayNo  = g_read_integer(st,false);
+				tc.EndDayNo  = g_read_integer(st,false);
 
-				tc.StartTime = g_read_integer(st);
-				tc.EndTime = g_read_integer(st);
+				tc.StartTime = g_read_integer(st,false);
+				tc.EndTime = g_read_integer(st,false);
 
 				for(int vt = 1; vt< MAX_PRICING_TYPE_SIZE; vt++)  // last one is transit fare
 				{

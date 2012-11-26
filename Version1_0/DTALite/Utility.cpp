@@ -365,7 +365,7 @@ void g_ProgramTrace(CString str)
 //	getchar();
 
 };
-int g_read_integer(FILE* f)
+int g_read_integer(FILE* f, bool speicial_char_handling )
 // read an integer from the current pointer of the file, skip all spaces
 {
 	char ch, buf[ 32 ];
@@ -376,7 +376,8 @@ int g_read_integer(FILE* f)
 	while(true)
 	{
 		ch = getc( f );
-		if( ch == EOF || ch == '*' || ch == '$') return -1; // * and $ are special characters for comments
+		if( ch == EOF || (speicial_char_handling && (ch == '*' || ch == '$')))
+			return -1; // * and $ are special characters for comments
 		if (isdigit(ch))
 			break;
 		if (ch == '-')

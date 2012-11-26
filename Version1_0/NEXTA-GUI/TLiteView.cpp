@@ -4996,6 +4996,9 @@ void CTLiteView::SetGlobalViewParameters()
 				(*iView)->m_Resolution  = m_Resolution;
 				(*iView)->m_ScreenOrigin = m_ScreenOrigin;
 				(*iView)->m_Origin  = m_Origin;
+
+				CTLiteDoc * pDoc = (*iView)->GetDocument();
+				pDoc->m_MaxLinkWidthAsLinkVolume = GetDocument()->m_MaxLinkWidthAsLinkVolume;
 				(*iView)->Invalidate ();
 
 			}

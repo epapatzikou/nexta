@@ -605,7 +605,9 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			if((*iDoc)->m_ProjectTitle.GetLength () >0)  
 			{
 
-				if(m_ODMOEMatrix[0][i][j].TotalVehicleSize>0)
+				
+				if(  m_ODMOEMatrix[0][i][j].TotalVehicleSize>0 && 
+					(ImpactLinkNo<0 || (ImpactLinkNo >=0 && m_ODMOEMatrix[0][i][j].bImpactFlag == true)))
 				{
 					float AvgDistance = m_ODMOEMatrix[p][i][j].TotalDistance /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 					float AvgTravelTime = m_ODMOEMatrix[p][i][j].TotalTravelTime /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
