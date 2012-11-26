@@ -68,7 +68,7 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		{
 		//default;
 		pLink->group_1_code = "freeway_to_freeway_ramp";
-		pLink->group_1_code = "directional";
+		pLink->group_2_code = "directional";
 		}
 
 
@@ -236,8 +236,8 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 
 	SafetyPredictionFile.SetFieldName("seg_crash");
 	SafetyPredictionFile.SetFieldName("int_crash");
-	SafetyPredictionFile.SetFieldName("fi_crash");
-	SafetyPredictionFile.SetFieldName("pdo_crash");
+	//SafetyPredictionFile.SetFieldName("fi_crash");
+	//SafetyPredictionFile.SetFieldName("pdo_crash");
 	SafetyPredictionFile.SetFieldName("seg_fi");
 	SafetyPredictionFile.SetFieldName("seg_pdo");
 	SafetyPredictionFile.SetFieldName("seg_sv_fi");
@@ -304,13 +304,13 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 		total_volume+= pLink->m_AADT;
 
 		double CrashRate= 0;
-		if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())  // freeway
-		{
+		//if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())  // freeway
+		//{
 
-				if (pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6)
-				{
-					TRACE("");
-				}
+				//if (pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6)
+				//{
+				//	TRACE("");
+				//}
 
 				std::string facility_type, severity_level, urban_flag,  group_1_code, group_2_code, group_3_code;
 
@@ -340,9 +340,9 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 				pLink->group_1_code , pLink->group_2_code ,pLink->group_3_code ,			
 				pLink->m_AADT , pLink->m_Length );
 
-			pLink->m_num_of_fatal_and_injury_crashes_per_year = pLink->m_number_of_all_crashes - pLink->m_num_of_fatal_and_injury_crashes_per_year;
+			pLink->m_num_of_PDO_crashes_per_year = pLink->m_number_of_all_crashes - pLink->m_num_of_fatal_and_injury_crashes_per_year;
 
-		}
+		//}
 
 		if( m_LinkTypeMap[pLink->m_link_type].IsArterial ())   //arterial
 		{

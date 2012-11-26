@@ -24,7 +24,7 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
-int g_read_integer(FILE* f);
+int g_read_integer(FILE* f, bool speicial_char_handling = true);
 int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);

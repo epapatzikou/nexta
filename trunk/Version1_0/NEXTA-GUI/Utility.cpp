@@ -231,36 +231,40 @@ int g_read_integer_with_char_O(FILE* f)
 }
 
 
-int g_read_integer(FILE* f)
-   // read an integer from the current pointer of the file, skip all spaces
+int g_read_integer(FILE* f, bool speicial_char_handling )
+// read an integer from the current pointer of the file, skip all spaces
 {
-   char ch, buf[ 32 ];
-   int i = 0;
-   int flag = 1;
-   /* returns -1 if end of file is reached */
+	char ch, buf[ 32 ];
+	int i = 0;
+	int flag = 1;
+	/* returns -1 if end of file is reached */
 
-   while(true)
-      {
-      ch = getc( f );
-      if( ch == EOF ) return -1;
-      if (isdigit(ch))
-         break;
-      if (ch == '-')
-         flag = -1;
-      else
-         flag = 1;
-      };
-   if( ch == EOF ) return -1;
-   while( isdigit( ch )) {
-      buf[ i++ ] = ch;
-      ch = fgetc( f );
-      }
-   buf[ i ] = 0;
+	while(true)
+	{
+		ch = getc( f );
+		if( ch == EOF || (speicial_char_handling && (ch == '*' || ch == '$')))
+			return -1; // * and $ are special characters for comments
+		if (isdigit(ch))
+			break;
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+	};
+	if( ch == EOF ) return -1;
+
+	
+	while( isdigit( ch )) {
+		buf[ i++ ] = ch;
+		ch = fgetc( f );
+	}
+	buf[ i ] = 0;
 
 
-   return atoi( buf ) * flag;
+	return atoi( buf ) * flag;
 
 }
+
 
 float g_read_float(FILE *f)
    //read a floating point number from the current pointer of the file,

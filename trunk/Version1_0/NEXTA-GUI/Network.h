@@ -1413,7 +1413,7 @@ public:
 		m_ReversedSpeedLimit  = 10;
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
-		m_TotalVolume = 0;
+		m_total_link_volume = 0;
 		m_TotalVolumeForMovementCount = 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
@@ -1689,7 +1689,7 @@ public:
 	{
 		m_SimulationHorizon	= TimeHorizon;
 
-		m_TotalVolume = 0;
+		m_total_link_volume = 0;
 		m_TotalVolumeForMovementCount= 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
@@ -1994,7 +1994,6 @@ void AdjustLinkEndpointsWithSetBack()
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
 
-	int m_TotalVolume;
 	int m_TotalVolumeForMovementCount;
 	int m_TotalTravelTime;
 	int m_TotalDiffValue;

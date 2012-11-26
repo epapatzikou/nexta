@@ -2392,7 +2392,7 @@ public:
 
 
 
-int g_read_integer(FILE* f);
+int g_read_integer(FILE* f, bool special_char_handling = false);
 int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);

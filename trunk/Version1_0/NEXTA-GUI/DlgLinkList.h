@@ -4,20 +4,28 @@
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
+#include "afxwin.h"
 
 // CDlgLinkList dialog
-enum eLinkSelectionMode {eLinkSelection_AllLinks,eLinkSelection_SelectedLinksOnly,eLinkSelection_FreewayOnly,eLinkSelection_RampOnly,eLinkSelection_ArterialOnly,eLinkSelection_NoConnectors};
+enum eLinkSelectionMode {eLinkSelection_AllLinks = 0,
+eLinkSelection_SelectedLinksOnly,
+eLinkSelection_WithinSubarea,
+eLinkSelection_FreewayOnly,eLinkSelection_HighwayOnly,eLinkSelection_RampOnly,eLinkSelection_ArterialOnly,eLinkSelection_NoConnectors};
 
 class CDlgLinkList : public CBaseDialog
 {
+
 	DECLARE_DYNAMIC(CDlgLinkList)
 	CTLiteDoc* m_pDoc;
 	CTLiteDoc* m_pDoc2;
 	bool m_bDoc2Ready;
 
 
+	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
 
 public:
+
+	std::vector <int> m_ListedLinkNoVector;
 	eLinkSelectionMode m_LinkSelectionMode;
 	bool m_AVISensorFlag;
 	CDlgLinkList(CWnd* pParent = NULL);   // standard constructor
@@ -54,4 +62,7 @@ public:
 	afx_msg void OnBnClickedBarchartpiechart();
 	afx_msg void OnLinkselectionShowselectedlinksonly();
 	afx_msg void OnUpdateLinkselectionShowselectedlinksonly(CCmdUI *pCmdUI);
+	CComboBox m_ComboBox;
+	afx_msg void OnCbnSelchangeComboLinkSelection();
+	afx_msg void OnBnClickedExport();
 };

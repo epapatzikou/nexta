@@ -108,13 +108,15 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboY.AddString ("Avg  Travel Distance (mile)"); 
 
 	m_ComboY.AddString ("Total Toll Revenue ($)");
-	m_ComboY.AddString ("Avg Toll Cost (cents)"); 
+	m_ComboY.AddString ("Avg Toll Cost ($)"); 
 
 	m_ComboY.AddString ("Total Generalized Cost:TT*VOT+Toll ($)"); 
 	m_ComboY.AddString ("Avg Generalized Cost:TT*VOT+Toll ($)"); 
 	
 	m_ComboY.AddString ("Total Generalized Time:TT+Toll/VOT (min)"); 
-		m_ComboY.AddString ("Avg Generalized Travel Time:TT+Toll/VOT (min)"); 
+	
+	m_ComboY.AddString ("Avg Generalized Travel Time:TT+Toll/VOT (min)"); 
+	
 	m_ComboY.AddString ("Total Energy (KJ)");  
 	m_ComboY.AddString ("Avg Energy (KJ)");
 

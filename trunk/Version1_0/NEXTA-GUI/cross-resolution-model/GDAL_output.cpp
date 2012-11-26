@@ -950,16 +950,16 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		if((*iLink)->m_TotalVolume > max_link_volume)
-			max_link_volume = (*iLink)->m_TotalVolume;
+		if((*iLink)->m_total_link_volume > max_link_volume)
+			max_link_volume = (*iLink)->m_total_link_volume;
 	}
 
 	float min_link_volume = 99999;
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		if((*iLink)->m_TotalVolume < min_link_volume)
-			min_link_volume = (*iLink)->m_TotalVolume;
+		if((*iLink)->m_total_link_volume < min_link_volume)
+			min_link_volume = (*iLink)->m_total_link_volume;
 	}
 
 
@@ -972,7 +972,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 		(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *10;
 		}else
 		{
-		(*iLink)->m_BandWidthValue = (*iLink)->m_TotalVolume*250/max_link_volume;
+		(*iLink)->m_BandWidthValue = (*iLink)->m_total_link_volume*250/max_link_volume;
 		
 		}
 
@@ -1064,7 +1064,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if(min_link_volume < 0.1f || (*iLink)->m_TotalVolume >= min_link_volume_threadshold || m_LinkBandWidthMode  == LBW_number_of_lanes)
+			if(min_link_volume < 0.1f || (*iLink)->m_total_link_volume >= min_link_volume_threadshold || m_LinkBandWidthMode  == LBW_number_of_lanes)
 			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
@@ -1118,7 +1118,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height =(*iLink)->m_TotalVolume* max_link_height/max(1,max_link_volume);
+			float height =(*iLink)->m_total_link_volume* max_link_height/max(1,max_link_volume);
 	
 			if(height<=min_link_height)
 				height = min_link_height;
@@ -1357,15 +1357,15 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		if((*iLink)->m_TotalVolume > max_link_volume)
-			max_link_volume = (*iLink)->m_TotalVolume;
+		if((*iLink)->m_total_link_volume > max_link_volume)
+			max_link_volume = (*iLink)->m_total_link_volume;
 	}
 
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
-		(*iLink)->m_BandWidthValue = (*iLink)->m_TotalVolume*250/max_link_volume;
+		(*iLink)->m_BandWidthValue = (*iLink)->m_total_link_volume*250/max_link_volume;
 
 	}
 
@@ -1447,7 +1447,7 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->m_TotalVolume >= min_link_volume_threadshold)
+			if((*iLink)->m_total_link_volume >= min_link_volume_threadshold)
 			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
@@ -1483,7 +1483,7 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height =(*iLink)->m_TotalVolume* max_link_height/max(1,max_link_volume);
+			float height =(*iLink)->m_total_link_volume* max_link_height/max(1,max_link_volume);
 	
 			if(height<=min_link_height)
 				height = min_link_height;

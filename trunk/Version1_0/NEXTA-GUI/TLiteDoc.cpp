@@ -1731,9 +1731,9 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 	float max_total_volume = 1;
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
-		if((*iLink)->m_TotalVolume > max_total_volume)
+		if((*iLink)->m_total_link_volume > max_total_volume)
 		{
-			max_total_volume = (*iLink)->m_TotalVolume;
+			max_total_volume = (*iLink)->m_total_link_volume;
 		}
 	}
 		
@@ -3639,10 +3639,11 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 					reversed_link_id = pLine -> m_LinkID ;
 			}
 
-			fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
-
-			fprintf(st,"%d,%d,%d,%c,%c,%d",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_LeftTurnCapacity,
+			
+			fprintf(st,"%d,%d,%d,%c,%c,%d,",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_LeftTurnCapacity,
 				GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
+
+			fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
 
 		if(m_bExport_Link_MOE_in_input_link_CSF_File)  // save time-dependent MOE
 		{ int hour;
@@ -3665,7 +3666,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 
 
 
-		fprintf(st,"%,5.1f,%5.1f,%5.1f,%5.1f,%5.1f,%5.1f", 
+		fprintf(st,"%5.1f,%5.1f,%5.1f,%5.1f,%5.1f,%5.1f", 
 			(*iLink)->m_Num_Driveways_Per_Mile,
 		(*iLink)->m_volume_proportion_on_minor_leg,
 		(*iLink)->m_Num_3SG_Intersections,
@@ -4356,7 +4357,6 @@ void CTLiteDoc::ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName)
 							return;
 						}
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-						pLink->m_TotalVolume +=1;
 						pLink->m_TotalTravelTime +=  pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
 					}
 
@@ -4522,7 +4522,6 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 							return;
 						}
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-						pLink->m_TotalVolume +=1;
 						pLink->m_TotalTravelTime +=  pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
 					}
 
@@ -4926,7 +4925,6 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 							return false;
 						}
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-						pLink->m_TotalVolume +=1;
 						pLink->m_TotalTravelTime +=  pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
 
 
@@ -7256,11 +7254,11 @@ int CTLiteDoc::ReadLink_basedTollScenarioData()
 
 		while(true)
 		{
-			int usn  = g_read_integer(st);
+			int usn  = g_read_integer(st,false);
 			if(usn == -1)
 				break;
 
-			int dsn =  g_read_integer(st);
+			int dsn =  g_read_integer(st,false);
 
 			DTALink* plink = FindLinkWithNodeNumbers(usn,dsn,toll_file );
 
@@ -8253,7 +8251,7 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 			value = m_ClassificationTable[index].TotalCost ;
 			break;
 		case CLS_avg_toll_cost: 
-			value = m_ClassificationTable[index].TotalCost /max(1,m_ClassificationTable[index].TotalVehicleSize)*100; // *100, $ - cents
+			value = m_ClassificationTable[index].TotalCost /max(1,m_ClassificationTable[index].TotalVehicleSize); // *100, dollar
 			break;
 
 		case CLS_total_generalized_cost: 
