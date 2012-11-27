@@ -270,7 +270,7 @@ public:
 		for(unsigned int i = 0; i< FieldsIndices.size(); i++)
 		{
 			string str ;
-			if(LineFieldsValue.find(i) != LineFieldsValue.end()) // has been initialized
+			if(LineFieldsValue.find(i) != LineFieldsValue.end() && LineFieldsValue[i].size() >=1) // has been initialized
 				outFile << LineFieldsValue[i].c_str () << ",";
 			else
 				outFile << ' ' << ",";

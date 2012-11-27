@@ -1,4 +1,4 @@
-AssignmentSimulationSettingDlg.cpp : implementation file
+//AssignmentSimulationSettingDlg.cpp : implementation file
 //
 
 #include "stdafx.h"

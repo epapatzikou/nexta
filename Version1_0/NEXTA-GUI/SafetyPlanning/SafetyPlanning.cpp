@@ -52,7 +52,10 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		{
 
 		//default;
+		if(pLink->group_1_code.size() ==0)
+		{
 		pLink->group_1_code = "non_interchange";
+		}
 
 		CString number_of_lanes_str;
 
@@ -67,8 +70,15 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		if(m_LinkTypeMap[pLink->m_link_type].IsRamp ())
 		{
 		//default;
-		pLink->group_1_code = "freeway_to_freeway_ramp";
-		pLink->group_2_code = "directional";
+			if(pLink->group_1_code.size() ==0)
+			{
+				pLink->group_1_code = "ramp";
+			}
+
+			if(pLink->group_2_code.size() ==0)
+			{
+			pLink->group_2_code = "diamond";
+			}
 		}
 
 
@@ -85,6 +95,12 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		if(m_LinkTypeMap[pLink->m_link_type].IsFreeway ())  // scan all freeway link
 		{
 
+
+			if(pLink->m_FromNodeNumber == 10307 && pLink->m_ToNodeNumber == 10306)
+			{
+			
+			TRACE("");
+			}
 		for(int incoming_link = 0; incoming_link <  m_NodeIDMap[pLink->m_FromNodeID ]->m_IncomingLinkVector.size(); incoming_link++) // one outgoing link without considering u-turn
 		{
 			int incoming_link_id = m_NodeIDMap[pLink->m_FromNodeID ]->m_IncomingLinkVector[incoming_link];
@@ -94,8 +110,10 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 			if (m_LinkTypeMap[m_LinkNotoLinkMap[incoming_link_id]->m_link_type].IsRamp ())
 				{
 				
-
+//					if(m_LinkNotoLinkMap[incoming_link_id]->group_1_code.size() == 0) // only overwrite fields if they are empty
+//					{
 					m_LinkNotoLinkMap[incoming_link_id]->group_1_code = "onramp";
+//					}
 
 		 // overwrite this code when the existing field is empty, so the user can specify other ramp types in input_link.csv
 					if( m_LinkNotoLinkMap[incoming_link_id]->group_2_code.size()==0) 
@@ -121,8 +139,10 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 				{
 				
 					// outgoing ramp from a freeway link
+//					if(m_LinkNotoLinkMap[outgoing_link_id]->group_1_code.size() == 0) // only overwrite fields if they are empty
+//					{
 					m_LinkNotoLinkMap[outgoing_link_id]->group_1_code = "offramp";
-
+//					}
 
 			 // overwrite this code when the existing field is empty, so the user can specify other ramp types in input_link.csv
 					if(m_LinkNotoLinkMap[outgoing_link_id]->group_2_code.size() == 0)
@@ -172,10 +192,13 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 
 			if(parser.GetValueByFieldName("facility_type",model.facility_type) == false)
 				break;
-
+			
 			parser.GetValueByFieldName("severity_level",model.severity_level );
 			parser.GetValueByFieldName("urban_flag",model.urban_flag);
 			parser.GetValueByFieldName("group_1_code",model.group_1_code);
+
+
+			TRACE("\n id: %d,%s,%s," , model.model_id, model.facility_type.c_str (), model.group_1_code.c_str ());
 			parser.GetValueByFieldName("group_2_code",model.group_2_code);
 			parser.GetValueByFieldName("group_3_code",model.group_3_code);
 			parser.GetValueByFieldName("coefficient_a",model.coefficient_a);
@@ -232,6 +255,10 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 
 	SafetyPredictionFile.SetFieldName("all_crash_pm");
 	SafetyPredictionFile.SetFieldName("pdo_crash_pm");
+
+	SafetyPredictionFile.SetFieldName("coefficient_a");
+	SafetyPredictionFile.SetFieldName("coefficient_b");
+	SafetyPredictionFile.SetFieldName("coefficient_c");
 
 
 	SafetyPredictionFile.SetFieldName("seg_crash");
@@ -297,6 +324,10 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+
+		float coefficient_a=0; 
+		float coefficient_b=0; 
+		float coefficient_c=0;
 		
 		DTALink* pLink = (*iLink);
 
@@ -306,11 +337,12 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 		double CrashRate= 0;
 		//if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())  // freeway
 		//{
+	
 
-				//if (pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6)
-				//{
-				//	TRACE("");
-				//}
+				if (pLink->m_FromNodeNumber == 12352 && pLink->m_ToNodeNumber == 14966)
+				{
+					TRACE("");
+				}
 
 				std::string facility_type, severity_level, urban_flag,  group_1_code, group_2_code, group_3_code;
 
@@ -323,28 +355,17 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 				{
 					facility_type = "ramp";
 				}
-				if(m_LinkTypeMap[pLink->m_link_type].IsArterial ()  ||  m_LinkTypeMap[pLink->m_link_type].IsConnector () )
+				if(m_LinkTypeMap[pLink->m_link_type].IsArterial ()  ||  m_LinkTypeMap[pLink->m_link_type].IsConnector () || m_LinkTypeMap[pLink->m_link_type].IsHighway ())
 				{
 					facility_type = "arterial";
 				}
 
 				urban_flag = "urban";
 
-			std::string severity_level_TOT = "TOT";
-			pLink->m_number_of_all_crashes  = SafePredictionModel.EstimateCrashRatePerYear(facility_type,severity_level_TOT,urban_flag,
-				pLink->group_1_code , pLink->group_2_code ,pLink->group_3_code ,			
-				pLink->m_AADT , pLink->m_Length );
 
-			std::string severity_level_FI = "FI";
-			pLink->m_num_of_fatal_and_injury_crashes_per_year  = SafePredictionModel.EstimateCrashRatePerYear(facility_type,severity_level_FI,urban_flag,
-				pLink->group_1_code , pLink->group_2_code ,pLink->group_3_code ,			
-				pLink->m_AADT , pLink->m_Length );
 
-			pLink->m_num_of_PDO_crashes_per_year = pLink->m_number_of_all_crashes - pLink->m_num_of_fatal_and_injury_crashes_per_year;
 
-		//}
-
-		if( m_LinkTypeMap[pLink->m_link_type].IsArterial ())   //arterial
+		if( m_LinkTypeMap[pLink->m_link_type].IsArterial () || m_LinkTypeMap[pLink->m_link_type].IsHighway ())   //arterial (highway is also arterial)
 		{
 
 		// gather two-way data
@@ -389,6 +410,32 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 				pLink->m_Num_4SG_Intersections,
 				pLink->m_Num_4ST_Intersections);
 
+		}else
+		{
+
+				if (pLink->m_FromNodeNumber == 1 && pLink->m_ToNodeNumber == 2873)
+				{
+					TRACE("");
+				}
+
+			std::string severity_level_FI = "FI";
+			pLink->m_num_of_fatal_and_injury_crashes_per_year  = SafePredictionModel.EstimateCrashRatePerYear(facility_type,severity_level_FI,urban_flag,
+				pLink->group_1_code , pLink->group_2_code ,pLink->group_3_code ,			
+				pLink->m_AADT , pLink->m_Length, coefficient_a, coefficient_b,coefficient_c);
+
+			std::string severity_level_TOT = "TOT";
+			pLink->m_number_of_all_crashes  = SafePredictionModel.EstimateCrashRatePerYear(facility_type,severity_level_TOT,urban_flag,
+				pLink->group_1_code , pLink->group_2_code ,pLink->group_3_code ,			
+				pLink->m_AADT , pLink->m_Length ,coefficient_a, coefficient_b,coefficient_c);
+
+
+
+
+
+			pLink->m_num_of_PDO_crashes_per_year = pLink->m_number_of_all_crashes - pLink->m_num_of_fatal_and_injury_crashes_per_year;
+
+		//}	
+		
 		}
 		
 
@@ -416,6 +463,11 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 	SafetyPredictionFile.SetValueByFieldName("all_crash",pLink->m_number_of_all_crashes);
 	SafetyPredictionFile.SetValueByFieldName("fi_crash", pLink->m_num_of_fatal_and_injury_crashes_per_year);
 	SafetyPredictionFile.SetValueByFieldName("pdo_crash",pLink->m_num_of_PDO_crashes_per_year);
+
+	SafetyPredictionFile.SetValueByFieldName("coefficient_a",coefficient_a);
+	SafetyPredictionFile.SetValueByFieldName("coefficient_b",coefficient_b);
+	SafetyPredictionFile.SetValueByFieldName("coefficient_c",coefficient_c);
+
 
 	double all_crash_pm = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length );
 	SafetyPredictionFile.SetValueByFieldName("all_crash_pm",all_crash_pm);
@@ -543,7 +595,7 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 
 
 		CString message;
-		message.Format("Crash prediction model completes for %d links.",m_LinkSet.size());
+		message.Format("Crash prediction model completes for %d links using %d crash prediction models.",m_LinkSet.size(), SafePredictionModel.CrashModelVector .size());
 
 		AfxMessageBox(message, MB_ICONINFORMATION);
 }
