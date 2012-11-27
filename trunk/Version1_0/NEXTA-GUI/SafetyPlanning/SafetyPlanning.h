@@ -41,7 +41,7 @@ public:
 		std::string group_1_code,
 		std::string group_2_code,
 		std::string group_3_code,
-		float AADT, float link_length)
+		float AADT, float link_length, float &coefficient_a, float &coefficient_b, float &coefficient_c)
 	{
 
 		double crash_rate  = 0;
@@ -65,11 +65,15 @@ public:
 				{
 					crash_rate   =  exp(model.coefficient_a ) * pow(AADT,model.coefficient_b ) * pow(link_length, model.coefficient_c );
 					
-				}else
+				}else  // you can use 0 or 2 to represent bi-directional flow
 				{
 					crash_rate   =  0.5 * exp(model.coefficient_a ) * pow(2*AADT,model.coefficient_b ) * pow(link_length, model.coefficient_c );
 		
 				}
+
+				coefficient_a  = model.coefficient_a ;
+				coefficient_b  = model.coefficient_b ;
+				coefficient_c  = model.coefficient_c ;
 
 				return crash_rate;
 			

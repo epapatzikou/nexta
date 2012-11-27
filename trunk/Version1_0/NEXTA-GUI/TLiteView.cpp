@@ -848,7 +848,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				}
  
-				// dynamically create LOE mean 
+				// dynamically create LOS pen and brush  
 				float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
 				int LOS = pDoc->GetLOSCode(power);
 
@@ -902,7 +902,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 				// special condition for subarea link
-				if((*iLink)->m_LayerNo > 0)
+				if((*iLink)->m_bIncludedinSubarea)
 					pDC->SelectObject(&g_SubareaLinkPen);
 
 			}else  // default arterial model
@@ -923,9 +923,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			// special condition 3: when a link is selected
 
 			//outside subarea
-			if((*iLink)->m_DisplayLinkID>=0 )
+			if((*iLink)->m_bIncludedinSubarea)
 			{
-				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
+				g_SelectThickPenColor(pDC,1);
 				pDC->SetTextColor(RGB(255,0,0));
 			}else if  ((*iLink)->m_LinkNo == pDoc->m_SelectedLinkNo)
 			{
@@ -1156,29 +1156,29 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 						case link_display_number_of_crashes:
 							if((*iLink)->m_number_of_all_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_number_of_all_crashes   );
+							str_text.Format ("%.2f",(*iLink)->m_number_of_all_crashes   );
 							break;
 
 						case link_display_num_of_fatal_and_injury_crashes_per_year:
 							if((*iLink)->m_number_of_all_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_num_of_fatal_and_injury_crashes_per_year   ); break;
+							str_text.Format ("%.2f",(*iLink)->m_num_of_fatal_and_injury_crashes_per_year   ); break;
 
 						case link_display_num_of_PDO_crashes_per_year:
 							if((*iLink)->m_number_of_all_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_num_of_PDO_crashes_per_year   ); break;
+							str_text.Format ("%.2f",(*iLink)->m_num_of_PDO_crashes_per_year   ); break;
 
 						case link_display_number_of_intersection_crashes:
 							if((*iLink)->m_number_of_intersection_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_number_of_intersection_crashes   );
+							str_text.Format ("%.2f",(*iLink)->m_number_of_intersection_crashes   );
 							break;
 
 						case link_display_num_of_intersection_fatal_and_injury_crashes_per_year:
 							if((*iLink)->m_number_of_intersection_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_num_of_intersection_fatal_and_injury_crashes_per_year   ); break;
+							str_text.Format ("%.2f",(*iLink)->m_num_of_intersection_fatal_and_injury_crashes_per_year   ); break;
 
 						case link_display_num_of_intersection_PDO_crashes_per_year:
 							if((*iLink)->m_number_of_intersection_crashes  >=0.00001)
-							str_text.Format ("%.4f",(*iLink)->m_num_of_intersection_PDO_crashes_per_year   ); break;
+							str_text.Format ("%.2f",(*iLink)->m_num_of_intersection_PDO_crashes_per_year   ); break;
 
 						case link_display_total_link_volume:
 							if((*iLink)->m_total_link_volume >=1)
@@ -3486,11 +3486,12 @@ void CTLiteView::CopyLinkSetInSubarea()
 
 	while (iLink != pDoc->m_LinkSet.end())
 	{
+		(*iLink)->m_bIncludedinSubarea = false;
 		if(pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_SubareaNodeIDMap.end() && pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_SubareaNodeIDMap.end()) 
 		{
 			pDoc->m_SubareaLinkSet.push_back (*iLink);
 
-			(*iLink)->m_DisplayLinkID = 1;
+			(*iLink)->m_bIncludedinSubarea = true;
 
 
 		}
