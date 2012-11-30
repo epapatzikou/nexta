@@ -63,7 +63,9 @@ Add the installation folder (e.g. C:\NEXTA_DTALite\Internal_release) as the Work
 
 When you use either release or debug mode, either Win 32 or x64 mode, you need to input this working directory for each configuration individually. 
 
-3. Compile the source code, and run the NEXTA application.
+3. Create a local folder, c:\NEXTA_DTALite_SoftwareRelease, so the compiler/linker can output the DTALite_32.exe, DTALite_64.exe and NEXTA_32.exe and NEXTA_64.exe to this folder. To change the output folder, please go to Visual C++ menu Project -> NEXTA Property -> Configuration Property ->Linker->General->output files
+
+Compile the source code, and run the NEXTA application.
 
 ==4. Use Visual C++ 2008/2010 to build the DTALite package ==
 
@@ -76,4 +78,3 @@ Add a project folder (e.g. C:\NEXTA_DTALite\Internal_release\sample_data_sets\Sa
 When you use either release or debug mode, either Win 32 or x64 mode, you need to input this working directory for each configuration individually. 
 
 3. Compile the source code, and run the DTALite application.
-
