@@ -177,8 +177,7 @@ bool g_ReadLinkMeasurementFile()
 			g_ODEstimationTimePeriodForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "time_period_in_min_per_sequential_adjustment", 60, ODMESettingFileName,true);	
 			}
 
-
-	if (parser.OpenCSVFile("input_sensor.csv"))
+	if (parser.OpenCSVFile("input_sensor.csv",g_ODEstimationFlag==1))
 	{
 		int sensor_count = 0;
 		while(parser.ReadRecord())
@@ -311,18 +310,12 @@ bool g_ReadLinkMeasurementFile()
 
 		}
 
-	}else
-	{
-		cout << "File input_sensor.dat does not exit or cannot be opened."  << endl;
-		g_ProgramStop();
-	
-
+	cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
+	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 	}
 
 
 
-	cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
-	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 
 			//cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
 			//cout << "Please press 'n' if you want to exit and edit files ODME_Settings.txt and input_sensor.csv. Pleaes press the other key to continue." << endl;

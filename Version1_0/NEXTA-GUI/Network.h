@@ -1169,37 +1169,27 @@ typedef struct{
 class SLinkMOE  // time-dependent link MOE
 {
 public:
-	float ObsQueueLength;
+	float SimulationQueueLength;
 	float SimulatedTravelTime;
 
-	float ObsSpeed;  // speed
-	float ObsLinkFlow;   // flow volume
-	float ObsDensity;   // ObsDensity
+	float SimulationSpeed;  // speed
+	float SimulationLinkFlow;   // flow volume
+	float SimulationDensity;   // SimulationDensity
 
 	// these three copies are used to compare simulation results and observed results
-	float ObsSpeedCopy;  // speed
-	float ObsFlowCopy;   // flow volume
-	float ObsDensityCopy;   // ObsDensity
+	float SensorSpeed;  // speed
+	float SensorLinkCount;   // flow volume
+	float SensorDensity;   // SimulationDensity
+	float SensorArrivalCumulativeFlow;   // flow volume
+
 	float SimulatedTravelTimeCopy;
+	float SimuArrivalCumulativeFlow;   // flow volume
+	float SimuDepartureCumulativeFlow;   // flow volume
 
-	float ObsArrivalCumulativeFlow;   // flow volume
-	float ObsDepartureCumulativeFlow;   // flow volume
-	float ObsArrivalCumulativeFlowCopy;   // flow volume
+	//int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
+	//int EpisodeNo;
+	//int EpisoDuration;
 
-	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
-	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
-
-
-	int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
-	int EpisodeNo;
-	int EpisoDuration;
-
-	float PredSpeed;
-
-	float FullCapacity;
-	float ReducedCapacity;
-	float EventStartTiming;
-	float PredTTI15; // predicted travel time for the future 15 min
 
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
@@ -1207,42 +1197,36 @@ public:
 
 	SLinkMOE()
 	{
-		EventCode = 0;
-		EpisoDuration = 0;
-		EpisodeNo = 0;
-		ObsQueueLength = 0;
+		//EventCode = 0;
+		//EpisoDuration = 0;
+		//EpisodeNo = 0;
+		SimulationQueueLength = 0;
 		SimulatedTravelTime = 0;
-		ObsSpeed = 0;
-		ObsLinkFlow = 0;
-		ObsArrivalCumulativeFlow = 0;
-		ObsDepartureCumulativeFlow = 0;
-		ObsDensity = 0;
+		SimulationSpeed = 0;
+		SimulationLinkFlow = 0;
+		SimuArrivalCumulativeFlow = 0;
+		SimuDepartureCumulativeFlow = 0;
+		SimulationDensity = 0;
 
-		PredSpeed = 0;
-		PredTTI15 = 0;
-		FullCapacity = 0;
-		ReducedCapacity = 0;
-		EventStartTiming = 0;
 
 		// these four copies are used to compare simulation results and observed results
-		ObsSpeedCopy = 0;
-		ObsFlowCopy = 0;
-		ObsDensityCopy = 0;
+		SensorSpeed = 0;
+		SensorLinkCount = 0;
+		SensorDensity = 0;
 		SimulatedTravelTimeCopy = 0;
 
 	};
 
 	void SetupMOE(float FreeFlowTravelTime, float SpeedLimit)
 	{
-		ObsQueueLength = 0;
+		SimulationQueueLength = 0;
 		SimulatedTravelTime = FreeFlowTravelTime;
 		SimulatedTravelTimeCopy = FreeFlowTravelTime;
 
-		ObsSpeed = SpeedLimit;
-		ObsLinkFlow = 0;
-		ObsArrivalCumulativeFlow = 0;
-		ObsDensity = 0;
-		PredSpeed = SpeedLimit;
+		SimulationSpeed = SpeedLimit;
+		SimulationLinkFlow = 0;
+		SimuArrivalCumulativeFlow = 0;
+		SimulationDensity = 0;
 
 	}
 
@@ -1659,7 +1643,7 @@ public:
 	{
 		if(time < m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
-			return m_Length/m_HistLinkMOEAry[time].ObsSpeed*60;  // *60: hour to min
+			return m_Length/m_HistLinkMOEAry[time].SimulationSpeed*60;  // *60: hour to min
 		}
 		else
 			return m_FreeFlowTravelTime;
@@ -1669,7 +1653,7 @@ public:
 	{
 		if(time<m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
-			return m_Length*0.1268f*pow( max(1,m_HistLinkMOEAry[time].ObsSpeed),-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
+			return m_Length*0.1268f*pow( max(1,m_HistLinkMOEAry[time].SimulationSpeed),-0.459f);  // Length*fuel per mile(speed), y= 0.1268x-0.459
 		}
 		else
 			return m_Length*0.1268f*pow(m_SpeedLimit,-0.459f);  // Length*fuel per mile(speed_limit), y= 0.1268x-0.459
@@ -1679,7 +1663,7 @@ public:
 	{
 		if(time<m_HistLinkMOEAry.size() && m_bSensorData == true)
 		{
-			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].ObsSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
+			return min(1.4f,m_Length*11.58f*pow(m_HistLinkMOEAry[time].SimulationSpeed,-0.818f));  // Length*fuel per mile(speed), y= 11.58x-0.818
 		}
 		else
 			return m_Length*11.58f*pow(m_SpeedLimit,-0.818f);  // Length*fuel per mile(speed_limit), y= 11.58x-0.818
@@ -1699,7 +1683,6 @@ public:
 		int OldSize = (int)(m_LinkMOEAry.size());
 		m_LinkMOEAry.resize (m_SimulationHorizon+1);
 
-
 		int t;
 		for(t=OldSize; t<= TimeHorizon; t++)
 		{
@@ -1708,8 +1691,6 @@ public:
 	};
 
 	void ComputeHistoricalAvg(int number_of_weekdays);
-
-	void Compute15MinAvg();
 
 	struc_traffic_state GetPredictedState(int CurrentTime, int PredictionHorizon);  // return value is speed
 
@@ -1804,7 +1785,6 @@ void AdjustLinkEndpointsWithSetBack()
 	}
 
 	std::vector<SLinkMOE> m_LinkMOEAry;
-	std::vector<SLinkMOE> m_LinkMOEAry_15min;
 
 	std::vector<SLinkMOE> m_HistLinkMOEAry;
 
@@ -1998,7 +1978,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_TotalTravelTime;
 	int m_TotalDiffValue;
 
-	float GetObsSpeed(int current_time)
+	float GetSimulationSpeed(int current_time)
 	{
 		float total_value = 0;
 		int total_count = 0;
@@ -2006,10 +1986,10 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
 			{
 				total_count++;
-				total_value+= m_LinkMOEAry[t].ObsSpeed;
+				total_value+= m_LinkMOEAry[t].SimulationSpeed;
 			}
 		}
 		}
@@ -2020,12 +2000,12 @@ void AdjustLinkEndpointsWithSetBack()
 			return m_avg_simulated_speed;
 	}
 
-	float GetObsSpeedCopy(int t)
+	float GetSensorSpeed(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].ObsFlowCopy >=1) // with flow
-				return m_LinkMOEAry[t].ObsSpeedCopy;
+			if(m_LinkMOEAry[t].SensorLinkCount >=1) // with flow
+				return m_LinkMOEAry[t].SensorSpeed;
 		}
 			return m_avg_simulated_speed;
 	}
@@ -2039,10 +2019,10 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
 			{
 				total_count++;
-				total_value+= m_LinkMOEAry[t].ObsLinkFlow/m_NumLanes;
+				total_value+= m_LinkMOEAry[t].SimulationLinkFlow/m_NumLanes;
 			}
 		}
 		}
@@ -2055,7 +2035,24 @@ void AdjustLinkEndpointsWithSetBack()
 
 	}
 
-		float GetAvgLinkVolume(int start_time, int end_time)
+		float GetSensorLinkHourlyVolume(int start_time, int end_time)
+	{
+
+		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return 0;
+
+		float total_volume = 0;
+		for(int t= start_time ; t< end_time; t++)
+		{
+		
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			total_volume += m_LinkMOEAry[t].SensorLinkCount;
+		}
+		return total_volume*60/max(1,end_time - start_time);
+	}
+
+
+		float GetAvgLinkHourlyVolume(int start_time, int end_time)
 	{
 
 		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -2066,7 +2063,7 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			total_volume += m_LinkMOEAry[t].ObsLinkFlow;
+			total_volume += m_LinkMOEAry[t].SimulationLinkFlow;
 		}
 		return total_volume/max(1, end_time-start_time);
 	}
@@ -2083,7 +2080,7 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			total_Speed += m_LinkMOEAry[t].ObsSpeed;
+			total_Speed += m_LinkMOEAry[t].SimulationSpeed;
 		}
 		return total_Speed/max(1, end_time-start_time);
 	}
@@ -2094,10 +2091,10 @@ void AdjustLinkEndpointsWithSetBack()
 		//to do
 		return 0;
 	}
-	float GetObsLaneVolumeCopy(int t)
+	float GetSensorLaneVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsFlowCopy/m_NumLanes;
+			return m_LinkMOEAry[t].SensorLinkCount/m_NumLanes;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -2108,7 +2105,7 @@ void AdjustLinkEndpointsWithSetBack()
 	}
 
 
-	float GetObsLinkOutVolume(int current_time)
+	float GetSimulatedLinkOutVolume(int current_time)
 	{
 
 		float total_count = 0;
@@ -2118,8 +2115,8 @@ void AdjustLinkEndpointsWithSetBack()
 
 		
 
-		total_count = m_LinkMOEAry[current_time].ObsDepartureCumulativeFlow - 
-			m_LinkMOEAry[current_time-1].ObsDepartureCumulativeFlow;
+		total_count = m_LinkMOEAry[current_time].SimuDepartureCumulativeFlow - 
+			m_LinkMOEAry[current_time-1].SimuDepartureCumulativeFlow;
 
 		if(total_count<0)
 			total_count = 0;
@@ -2130,7 +2127,7 @@ void AdjustLinkEndpointsWithSetBack()
 
 	}
 
-	float GetObsLinkVolume(int current_time)
+	float GetSimulatedLinkVolume(int current_time)
 	{
 		float total_value = 0;
 		int total_count = 0;
@@ -2138,10 +2135,10 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
 			{
 				total_count++;
-				total_value+= m_LinkMOEAry[t].ObsLinkFlow;
+				total_value+= m_LinkMOEAry[t].SimulationLinkFlow;
 			}
 		}
 		}
@@ -2152,10 +2149,10 @@ void AdjustLinkEndpointsWithSetBack()
 			return m_total_link_volume;
 	}
 
-	float GetObsLinkVolumeCopy(int t)
+	float GetSensorLinkHourlyVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsFlowCopy;
+			return m_LinkMOEAry[t].SensorLinkCount*60;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
@@ -2174,7 +2171,7 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].ObsLinkFlow >=1) // with flow
+			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
 			{
 				total_count++;
 				total_value+= m_LinkMOEAry[t].SimulatedTravelTime;
@@ -2204,74 +2201,64 @@ void AdjustLinkEndpointsWithSetBack()
 
 	int GetEventCode(int t)
 	{
+		//if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		//	return m_LinkMOEAry[t].EventCode;  
+		//else
+			return 0;
+	}
+	float GetSimuArrivalCumulativeFlow(int t)
+	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].EventCode;  
+			return m_LinkMOEAry[t].SimuArrivalCumulativeFlow;  
 		else
 			return 0;
 	}
-	float GetObsArrivalCumulativeFlow(int t)
+	float GetSimuDepartureCumulativeFlow(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsArrivalCumulativeFlow;  
-		else
-			return 0;
-	}
-	float GetObsDepartureCumulativeFlow(int t)
-	{
-		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].ObsDepartureCumulativeFlow ;  
+			return m_LinkMOEAry[t].SimuDepartureCumulativeFlow ;  
 		else
 			return 0;
 	}
 	void SetDefaultCumulativeFlow()
 	{
-		float ObsArrivalCumulativeFlow = 0;
-		int CumulativeArrivalCount_PricingType[5];
-		
-		int p;
-		for(p = 1;  p<=4; p++)
-			CumulativeArrivalCount_PricingType[p] = 0;
+		float SimuArrivalCumulativeFlow = 0;
 
 		for(int t =0; t< m_LinkMOEAry.size(); t++)
 		{
 			if(t>=1)
 			{
-				m_LinkMOEAry[t].ObsArrivalCumulativeFlow = max(ObsArrivalCumulativeFlow, m_LinkMOEAry[t].ObsArrivalCumulativeFlow); // in case there are empty flow volumes
-
-				for(p = 1;  p<=4; p++)
-					m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p] =  max(CumulativeArrivalCount_PricingType[p], m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p]);
+				m_LinkMOEAry[t].SimuArrivalCumulativeFlow = max(SimuArrivalCumulativeFlow, m_LinkMOEAry[t].SimuArrivalCumulativeFlow); // in case there are empty flow volumes
 
 			}
 
-			ObsArrivalCumulativeFlow = m_LinkMOEAry[t].ObsArrivalCumulativeFlow;  
+			SimuArrivalCumulativeFlow = m_LinkMOEAry[t].SimuArrivalCumulativeFlow;  
 
-			for(p = 1;  p<=4; p++)
-				CumulativeArrivalCount_PricingType[p] = m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[p];
 		}
 
 	}
 
-	float GetObsDensity(int t)
+	float GetSimulationDensity(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(0, m_LinkMOEAry[t].ObsDensity);  
+			return max(0, m_LinkMOEAry[t].SimulationDensity);  
 		else
 			return 0;
 	}		
 
-	float GetObsQueueLength(int t)
+	float GetSimulationQueueLength(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(0, m_LinkMOEAry[t].ObsQueueLength*100);  
+			return max(0, m_LinkMOEAry[t].SimulationQueueLength*100);  
 		else
 			return 0;
 	}		
 
 
-	float GetObsDensityCopy(int t)
+	float GetSensorDensity(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(0, m_LinkMOEAry[t].ObsDensityCopy);  
+			return max(0, m_LinkMOEAry[t].SensorDensity);  
 		else
 			return 0;
 	}		
@@ -2295,7 +2282,7 @@ void AdjustLinkEndpointsWithSetBack()
 			float total_travel_time = 0;
 			for(int t=starting_time; t< starting_time + time_interval && (unsigned int)t < m_LinkMOEAry.size(); t++)
 			{
-				total_travel_time +=  ( m_Length * 60/ max(1,m_LinkMOEAry[t].ObsSpeed));
+				total_travel_time +=  ( m_Length * 60/ max(1,m_LinkMOEAry[t].SimulationSpeed));
 
 				
 			}

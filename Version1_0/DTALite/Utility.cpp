@@ -49,7 +49,7 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 
 	if(DataVector.size()<=1 && g_ODEstimationFlag ==1)
 	{
-		cout << "No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
+		cout << "OD demand estiation mode: No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
 		g_ProgramStop();
 		return result;
 	}

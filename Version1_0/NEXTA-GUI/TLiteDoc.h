@@ -259,6 +259,9 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	int m_calibration_data_start_time_in_min;
+	int m_calibration_data_end_time_in_min;
+
 	double m_GridXStep;
 	double m_GridYStep;
 
@@ -590,7 +593,7 @@ public:
 	CString m_LinkTrainTravelTimeDataLoadingStatus;
 	CString m_TimetableDataLoadingStatus;
 
-	CString m_ObsLinkVolumeStatus;
+	CString m_SimulatedLinkVolumeStatus;
 	CString m_BackgroundImageFileLoadingStatus;
 
 	CString m_SimulationLinkMOEDataLoadingStatus;
@@ -1627,6 +1630,7 @@ public:
 	afx_msg void OnGenerategisshapefilesLoadlinkcsvfile();
 	afx_msg void OnSafetyplanningtoolsRun();
 	afx_msg void OnSafetyplanningtoolsGeneratenode();
+	afx_msg void OnSensortoolsConverttoHourlyVolume();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

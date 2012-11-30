@@ -225,6 +225,7 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 
 	if(m_TabText.Find("Simulation")!=-1)  //scenario settings
 	{
+	AddColumn("ue_gap_calculation_method",0);
 	AddColumn("ODME_start_iteration",100);
 	AddColumn("ODME_step_size",0.05);
 	AddColumn("ODME_max_percentage_deviation_wrt_hist_demand",70);
@@ -233,6 +234,7 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 	AddColumn("calibration_data_end_time_in_min",1440);
 	AddColumn("accessibility_calculationg_mode",0);
 	AddColumn("routing_movement_delay_mode",0);
+
 
 	}
 

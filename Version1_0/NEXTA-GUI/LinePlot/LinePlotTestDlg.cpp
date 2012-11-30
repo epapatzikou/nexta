@@ -1,5 +1,5 @@
 // LinePlotTestDlg.cpp : implementation file
-//
+/
 
 //A 2D Lite Graph Control with Multiple Plot Support
 //Posted by Paul Grenz on November 23rd, 2004
@@ -17,10 +17,13 @@ static char THIS_FILE[] = __FILE__;
 #endif
 /////////////////////////////////////////////////////////////////////////////
 // CLinePlotTestDlg dialog
-
+extern std::list<int>	g_LinkDisplayList;
 CLinePlotTestDlg::CLinePlotTestDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CLinePlotTestDlg::IDD, pParent)
+	, m_bZoomToLink(FALSE)
 {
+	m_pDoc = NULL;
+	m_AggregationTimeIntervalInMin = 60;
 	//{{AFX_DATA_INIT(CLinePlotTestDlg)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
@@ -33,9 +36,12 @@ void CLinePlotTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CLinePlotTestDlg)
-	DDX_Control(pDX, ID_CMB_STYLE, m_cmbStyle);
 	DDX_Control(pDX, IDC_LIST1, m_InfoList);
 	//}}AFX_DATA_MAP
+	DDX_Check(pDX, IDC_CHECK_ZOOM_TO_LINK, m_bZoomToLink);
+	DDX_Control(pDX, IDC_LIST_TimeWindow, m_TimeWindowList);
+	DDX_Control(pDX, IDC_LIST_DataSource, m_ListDataSource);
+	DDX_Control(pDX, IDC_LIST_StartHour, m_ListStartHour);
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -46,25 +52,50 @@ BEGIN_MESSAGE_MAP(CLinePlotTestDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
 	ON_WM_RBUTTONDOWN()
-	ON_BN_CLICKED(ID_BTN_CURR_COLOR, OnBtnCurrColor)
-	ON_BN_CLICKED(ID_BTN_CURR_REMOVE, OnBtnCurrRemove)
-	ON_BN_CLICKED(ID_BTN_Resize_Plot, OnResizePlot)
-	ON_CBN_CLOSEUP(ID_CMB_STYLE, OnCloseupCmbStyle)
-  ON_NOTIFY(NM_PLOT_SEL_CHANGE, ID_CTRL_LINE_PLOT, OnPlotSelChange)
-  ON_NOTIFY(NM_PLOT_LIMITS_CHANGE, ID_CTRL_LINE_PLOT, OnPlotLimitsChange)
-  ON_NOTIFY(NM_PLOT_MOUSE_MOVE, ID_CTRL_LINE_PLOT, OnPlotMouseMove)
-	ON_BN_CLICKED(ID_BTN_PRINT, OnBtnPrint)
-	ON_BN_CLICKED(ID_BTN_SAVE_TO_FILE, OnBtnSaveToFile)
+	  ON_NOTIFY(NM_PLOT_SEL_CHANGE, ID_CTRL_LINE_PLOT, OnPlotSelChange)
+	  ON_NOTIFY(NM_PLOT_LIMITS_CHANGE, ID_CTRL_LINE_PLOT, OnPlotLimitsChange)
+	  ON_NOTIFY(NM_PLOT_MOUSE_MOVE, ID_CTRL_LINE_PLOT, OnPlotMouseMove)
 	//}}AFX_MSG_MAP
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONDBLCLK()
+	ON_LBN_SELCHANGE(IDC_LIST_TimeWindow, &CLinePlotTestDlg::OnLbnSelchangeListTimewindow)
+	ON_LBN_SELCHANGE(IDC_LIST_DataSource, &CLinePlotTestDlg::OnLbnSelchangeListDatasource)
+	ON_LBN_SELCHANGE(IDC_LIST_StartHour, &CLinePlotTestDlg::OnLbnSelchangeListStarthour)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CLinePlotTestDlg message handlers
 /////////////////////////////////////////////////////////////////////////////
+void CLinePlotTestDlg::RegenerateData()
+{
 
+
+
+}
 BOOL CLinePlotTestDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+
+	for(int hour = m_pDoc->m_calibration_data_start_time_in_min/60; hour <=m_pDoc->m_calibration_data_end_time_in_min/60; hour++)
+	{
+	CString str_hour;
+	str_hour.Format ("%d", hour);
+	m_ListStartHour .AddString (str_hour);
+	
+	}
+
+	m_TimeWindowList .AddString ("24");
+	m_TimeWindowList .AddString ("1");
+	m_TimeWindowList .AddString ("2");
+
+	m_TimeWindowList.SetCurSel (0);
+	m_ListStartHour.SetCurSel (0);
+	
+	CString str;
+	m_ListStartHour.GetText (m_ListStartHour.GetCurSel(),str);
+	m_LinePlot.m_StartHour  = atoi(str);
+	m_TimeWindowList.GetText (m_TimeWindowList.GetCurSel(),str);
+	m_LinePlot.m_AggregationWindow  = atoi(str);
 
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
@@ -88,17 +119,18 @@ BOOL CLinePlotTestDlg::OnInitDialog()
   //  size all controls correctly;
 	SizeControls();
 
-	unsigned int i;
+		unsigned int i;
 	for(i = 0; i < m_PlotDataVector.size(); i++)
 	{
-
 		CLinePlotData element = m_PlotDataVector[i];
+		m_ListDataSource.AddString(element.szName);
 		m_LinePlot.Add(element.szName, element.crPlot, element.lineType,  &(element.vecData));
 	}
 
-	for(i = 0; i< m_MessageVector.size(); i++)
+	if(m_PlotDataVector.size() >0)
 	{
-	m_InfoList.AddString(m_MessageVector[i]);
+	m_ListDataSource.SetCurSel(0);
+	m_LinePlot.m_nSelected = 0;
 	}
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -153,10 +185,11 @@ void CLinePlotTestDlg::SizeControls()
 {
   CRect rcClient;
   GetClientRect(&rcClient);
-  rcClient.left += 200;
+  int left_boarder = 0;
+  int upper_boarder = 80;
 
   if (m_LinePlot.m_hWnd!=NULL)
-    m_LinePlot.MoveWindow(200, 0, rcClient.Width(), rcClient.Height());
+    m_LinePlot.MoveWindow(left_boarder, upper_boarder, rcClient.Width(), rcClient.Height()-upper_boarder);
 
     CRect rcArea;
     ScreenToClient(&rcArea);
@@ -257,21 +290,38 @@ void CLinePlotTestDlg::OnPlotSelChange(NMHDR* pNMHDR, LRESULT* pResult)
 {
   //  add this message to the notification list.
   //  get the current plot index.
-  int nIndex = m_LinePlot.Selected();
 
-  if (nIndex<0 || nIndex>=m_LinePlot.Count())
-    ;  //AfxMessageBox("There is no plot selected.");
-  else
-  {
-    //  change enum type to index.
-    int nComboIndex = (int)(m_LinePlot.GetStyle(nIndex));
+	
+	int SelDataItemNo = m_LinePlot.m_SelectedDataItemNo;
 
-    if (nComboIndex>=0 && nComboIndex<m_cmbStyle.GetCount())
-    {
-      //  set the combo selection.
-      m_cmbStyle.SetCurSel(nComboIndex);
-    }
-  }
+	UpdateData(1);
+
+	if(m_bZoomToLink && SelDataItemNo>=0) 
+	{
+		int LinkNo = m_PlotDataVector[0].vecData[SelDataItemNo].LinkNo ;
+		if(LinkNo>=0)
+		{
+		m_pDoc->m_SelectedLinkNo = LinkNo;
+		g_LinkDisplayList.push_back(LinkNo);
+		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
+
+		m_InfoList.ResetContent ();
+
+		DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
+		CString str;
+		str.Format("Link %d->%d is selected.", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
+
+		m_InfoList.AddString (str);
+
+		m_LinePlot.Invalidate (1);
+		}
+
+	}
+
+
+	
+
+
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -280,20 +330,6 @@ void CLinePlotTestDlg::OnCloseupCmbStyle()
   //  get the current plot index.
   int nIndex = m_LinePlot.Selected();
 
-  if (nIndex<0 || nIndex>=m_LinePlot.Count())
-    AfxMessageBox("There is no plot selected.");
-  else
-  {
-    int nComboIndex = m_cmbStyle.GetCurSel();
-
-    if (nComboIndex>=0 && nComboIndex<m_cmbStyle.GetCount())
-    {
-      //  change to the enum type.
-      enumPlotStyle enumStyle = (enumPlotStyle)(nComboIndex);
-      //  set the plot type.
-      m_LinePlot.SetStyle(nIndex, enumStyle);
-    }
-  }
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -381,4 +417,50 @@ void CLinePlotTestDlg::OnBtnSaveToFile()
 void CLinePlotTestDlg::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	OnResizePlot();
+}
+void CLinePlotTestDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	CDialog::OnLButtonDown(nFlags, point);
+}
+
+void CLinePlotTestDlg::ShowSelection(int SelNo)
+{
+
+	TRACE("Sel: %d,", SelNo);
+}
+
+void CLinePlotTestDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	m_LinePlot.OnLButtonDblClk(nFlags,point);
+	int SelDataItemNo = m_LinePlot.m_SelectedDataItemNo;
+	CDialog::OnLButtonDblClk(nFlags, point);
+
+	TRACE("SelDataItemNo = %d\ n", SelDataItemNo);
+}
+
+
+void CLinePlotTestDlg::OnLbnSelchangeListTimewindow()
+{
+	CString str;
+	m_TimeWindowList.GetText (m_TimeWindowList.GetCurSel(),str);
+	m_LinePlot.m_AggregationWindow  = atoi(str);
+	m_LinePlot.Invalidate ();
+
+}
+
+void CLinePlotTestDlg::OnLbnSelchangeListDatasource()
+{
+	m_LinePlot.m_nSelected = m_ListDataSource.GetCurSel ();
+	m_LinePlot.Invalidate ();
+
+}
+
+void CLinePlotTestDlg::OnLbnSelchangeListStarthour()
+{
+	CString str;
+	m_ListStartHour.GetText (m_ListStartHour.GetCurSel(),str);
+	m_LinePlot.m_StartHour  = atoi(str);
+	m_LinePlot.Invalidate ();
 }

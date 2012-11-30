@@ -198,8 +198,8 @@ void CDlgPathList::ReloadData()
 
 		if(pLink->m_bSensorData == true)
 		{
-			sprintf_s(text, "%.3f",pLink->GetObsLaneVolumeCopy(g_Simulation_Time_Stamp));
-			total_count+= pLink->GetObsLaneVolumeCopy(g_Simulation_Time_Stamp);
+			sprintf_s(text, "%.3f",pLink->GetSensorLaneVolume(g_Simulation_Time_Stamp));
+			total_count+= pLink->GetSensorLaneVolume(g_Simulation_Time_Stamp);
 		}else
 			sprintf_s(text, "");
 
@@ -375,7 +375,7 @@ void CDlgPathList::OnPathDataExportCSV()
 							for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f,", pLink->GetObsSpeed (t));
+								fprintf(st, "%.1f,", pLink->GetSimulationSpeed (t));
 
 							}
 							fprintf(st,"\n");
@@ -438,9 +438,9 @@ void CDlgPathList::OnPathDataExportCSV()
 					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
 
 					if(i==0)// first link
-						path_element.m_TimeDependentCount[t] +=  pLink->GetObsLaneVolumeCopy(t);
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
 					else
-						path_element.m_TimeDependentCount[t] +=  pLink->GetObsLaneVolumeCopy(path_element.m_TimeDependentTravelTime[t]);
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(path_element.m_TimeDependentTravelTime[t]);
 
 
 					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
@@ -516,9 +516,9 @@ void CDlgPathList::OnPathDataExportCSV()
 					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
 
 					if(i==0)// first link
-						path_element.m_TimeDependentCount[t] +=  pLink->GetObsLaneVolumeCopy(t);
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
 					else
-						path_element.m_TimeDependentCount[t] +=  pLink->GetObsLaneVolumeCopy(path_element.m_TimeDependentTravelTime[t]);
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(path_element.m_TimeDependentTravelTime[t]);
 
 
 					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days

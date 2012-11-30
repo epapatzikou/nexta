@@ -621,7 +621,7 @@ void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase()
 void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequenceNo, int SelectedDemandMetaType)
 {
 
-	
+	DemandFileNameVector.clear();
 	float total_demand_in_demand_file = 0;
 	float total_number_of_vehicles_to_be_generated = 0;
 
@@ -664,8 +664,6 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 			if(file_sequence_no <=-1)  // skip negative sequence no 
 				continue;
 
-			if(demand_file_seq_no != DemandFileSequenceNo)  // not the selected matrix 
-				continue;
 
 			parser.GetValueByFieldName("file_name",file_name);
 
@@ -739,6 +737,9 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 			}
 
 			parser.GetValueByFieldName("number_of_demand_types",number_of_demand_types);
+
+			if(demand_file_seq_no != DemandFileSequenceNo)  // not the selected matrix 
+				continue;
 
 			m_DemandTypeGrid.DeleteAllItems ();
 

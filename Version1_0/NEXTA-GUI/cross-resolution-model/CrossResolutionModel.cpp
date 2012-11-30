@@ -884,10 +884,10 @@ void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part 
 void CTLiteDoc::ConstructMovementVector(bool flag_Template) 
 // this function has 8 directions
 {
-	if(m_bMovementAvailableFlag == true)
-		return;
+	//if(m_bMovementAvailableFlag == true)
+	//	return;
 
-	m_bMovementAvailableFlag = true; // executed once only
+	//m_bMovementAvailableFlag = true; // executed once only
 
 	m_OpposingDirectionMap[DTA_North] = DTA_South;
 	m_OpposingDirectionMap[DTA_South] = DTA_North;

@@ -1495,20 +1495,20 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	if(m_pDoc->m_bSimulationDataLoaded == false)  // simulation data not loaded
 	{
 
-	pLink->m_LinkMOEAry[ t].ObsLinkFlow = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-	pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
+	pLink->m_LinkMOEAry[ t].SimulationLinkFlow = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].SimulationSpeed = AvgLinkSpeed; 
 	pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
-	pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
+	pLink->m_LinkMOEAry[t].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].SimulationSpeed);
 
 	// copy data to other intervals
 	for(int tt = 1; tt<m_pDoc->m_AVISamplingTimeInterval; tt++)
 	{
 	if(tt < pLink->m_LinkMOEAry.size())
 	{
-	pLink->m_LinkMOEAry[ t+tt].ObsLinkFlow = pLink->m_LinkMOEAry[t].ObsLinkFlow ;
-	pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
-	pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
+	pLink->m_LinkMOEAry[ t+tt].SimulationLinkFlow = pLink->m_LinkMOEAry[t].SimulationLinkFlow ;
+	pLink->m_LinkMOEAry[t+tt].SimulationSpeed = pLink->m_LinkMOEAry[t].SimulationSpeed;
+	pLink->m_LinkMOEAry[t+tt].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationDensity;
 	pLink->m_LinkMOEAry[t+tt].SimulatedTravelTime = pLink->m_LinkMOEAry[t].SimulatedTravelTime;
 	}
 
@@ -1516,21 +1516,21 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	}else // simulation data loaded
 	{
 
-	pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-	pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
+	pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
 	pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
-	pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
+	pLink->m_LinkMOEAry[t].SensorDensity = pLink->m_LinkMOEAry[t].SensorLinkCount / max(1.0f,pLink->m_LinkMOEAry[t].SensorSpeed);
 
 	// copy data to other intervals
 	for(int tt = 1; tt<m_pDoc->m_AVISamplingTimeInterval; tt++)
 	{
 	if(tt < pLink->m_LinkMOEAry.size())
 	{
-	pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
-	pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
-	pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
+	pLink->m_LinkMOEAry[ t+tt].SensorLinkCount = pLink->m_LinkMOEAry[t].SensorLinkCount ;
+	pLink->m_LinkMOEAry[t+tt].SensorSpeed = pLink->m_LinkMOEAry[t].SensorSpeed;
+	pLink->m_LinkMOEAry[t+tt].SensorDensity = pLink->m_LinkMOEAry[t].SensorDensity;
 	pLink->m_LinkMOEAry[t+tt].SimulatedTravelTimeCopy = pLink->m_LinkMOEAry[t].SimulatedTravelTimeCopy;
 	}
 

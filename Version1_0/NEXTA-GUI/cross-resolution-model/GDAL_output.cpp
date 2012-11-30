@@ -617,28 +617,28 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				int hour = 0;
 
 				
-				poFeature->SetField("vol_0", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_1", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_2", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_3", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_4", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_5", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_6", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_7", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_8", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_9", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_0", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_1", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_2", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_3", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_4", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_5", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_6", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_7", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_8", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_9", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
 				
-				poFeature->SetField("vol_10", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_11", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_12", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_13", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_14", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_15", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_16", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_17", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_18", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_19", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_20", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_10", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_11", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_12", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_13", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_14", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_15", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_16", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_17", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_18", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_19", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
+				poFeature->SetField("vol_20", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
 
 				hour= 0;
 				poFeature->SetField("spd_0", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
@@ -1094,7 +1094,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 			for(int t = start_time_in_min; t<end_time_in_min ; t++)
 			{
-			total_speed += (*iLink)->m_LinkMOEAry[t].ObsSpeed ;
+			total_speed += (*iLink)->m_LinkMOEAry[t].SimulationSpeed ;
 			}
 			float avg_speed = total_speed/max(1,end_time_in_min-start_time_in_min);
 			float speed_limit_ratio =  avg_speed/max(1,(*iLink)->m_SpeedLimit);

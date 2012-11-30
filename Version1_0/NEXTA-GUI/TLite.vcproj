@@ -234,7 +234,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="opengl32.lib gdal_i.lib"
-				OutputFile="$(OutDir)\NEXTA_32.exe"
+				OutputFile="C:\NEXTA_DTALite_SoftwareRelease\NEXTA_32.exe"
 				Version=""
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -320,7 +320,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="opengl32.lib  gdal_i.lib"
-				OutputFile="$(OutDir)\NEXTA_64.exe"
+				OutputFile="C:\NEXTA_DTALite_SoftwareRelease\NEXTA_64.exe"
 				Version=""
 				LinkIncremental="1"
 				GenerateDebugInformation="true"

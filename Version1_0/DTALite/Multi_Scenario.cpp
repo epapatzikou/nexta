@@ -261,7 +261,7 @@ using namespace std;
 
 
 		g_ODEstimation_StartingIteration = 1000;
-		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.7;
+		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.7f;
 
 		g_ODEstimationFlag = 0;
 

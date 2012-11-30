@@ -94,12 +94,10 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 
 		for(int day =0; day <number_of_weekdays; day ++)
 		{
-			if( m_LinkMOEAry[day*1440+t].EventCode ==0)  // no event
-			{
-				m_HistLinkMOEAry[t].ObsSpeed +=m_LinkMOEAry[day*1440+t].ObsSpeedCopy;
-				m_HistLinkMOEAry[t].ObsLinkFlow +=m_LinkMOEAry[day*1440+t].ObsFlowCopy;
-				m_HistLinkMOEAry[t].ObsArrivalCumulativeFlow +=m_LinkMOEAry[day*1440+t].ObsArrivalCumulativeFlowCopy;
-				m_HistLinkMOEAry[t].ObsDensity += m_LinkMOEAry[day*1440+t].ObsDensityCopy;
+				m_HistLinkMOEAry[t].SimulationSpeed +=m_LinkMOEAry[day*1440+t].SensorSpeed;
+				m_HistLinkMOEAry[t].SimulationLinkFlow +=m_LinkMOEAry[day*1440+t].SensorLinkCount;
+				m_HistLinkMOEAry[t].SimuArrivalCumulativeFlow +=m_LinkMOEAry[day*1440+t].SensorArrivalCumulativeFlow;
+				m_HistLinkMOEAry[t].SimulationDensity += m_LinkMOEAry[day*1440+t].SensorDensity;
 				m_HistLinkMOEAry[t].SimulatedTravelTime += m_LinkMOEAry[day*1440+t].SimulatedTravelTimeCopy;
 
 				count++;
@@ -109,81 +107,30 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 				if((t>=8*60 && t<9*60)) //8-9AM
 				{
 					// update link-specific min and max speed
-					if(m_LinkMOEAry[day*1440+t].ObsSpeed < m_MinSpeed)
-						m_MinSpeed = m_LinkMOEAry[day*1440+t].ObsSpeedCopy;
+					if(m_LinkMOEAry[day*1440+t].SimulationSpeed < m_MinSpeed)
+						m_MinSpeed = m_LinkMOEAry[day*1440+t].SensorSpeed;
 
-					if(m_LinkMOEAry[day*1440+t].ObsSpeed > m_MaxSpeed)
-						m_MaxSpeed = m_LinkMOEAry[day*1440+t].ObsSpeedCopy;
+					if(m_LinkMOEAry[day*1440+t].SimulationSpeed > m_MaxSpeed)
+						m_MaxSpeed = m_LinkMOEAry[day*1440+t].SensorSpeed;
 
 
 				}
-			}
-
 
 		}
 
 		if(count>=1) 
 		{
 			// calculate final mean statistics
-			m_HistLinkMOEAry[t].ObsSpeed /=count;
-			m_HistLinkMOEAry[t].ObsLinkFlow /=count;
-			m_HistLinkMOEAry[t].ObsArrivalCumulativeFlow /=count;
-			m_HistLinkMOEAry[t].ObsDensity /=count;
+			m_HistLinkMOEAry[t].SimulationSpeed /=count;
+			m_HistLinkMOEAry[t].SimulationLinkFlow /=count;
+			m_HistLinkMOEAry[t].SimuArrivalCumulativeFlow /=count;
+			m_HistLinkMOEAry[t].SimulationDensity /=count;
 			m_HistLinkMOEAry[t].SimulatedTravelTime /=count;
 		}
 
 
 	}
 
-}
-
-
-void DTALink::Compute15MinAvg()
-{
-
-	m_MinSpeed = 200;
-	m_MaxSpeed = 0;
-
-	m_LinkMOEAry_15min.reserve(m_SimulationHorizon/15+1);
-
-	int t;
-	float VolumeSum = 0;
-	float SpeedSum = 0;
-
-	int count = 0;
-
-	for( t=0; t< m_SimulationHorizon; t++)
-	{
-		SLinkMOE element; 
-		if(t%15 == 0)
-		{
-		m_LinkMOEAry_15min.push_back(element);  // initialization 
-		count = 0;
-		}
-
-		// start counting
-
-
-		m_LinkMOEAry_15min[t/15].ObsSpeed +=m_LinkMOEAry[t].ObsSpeedCopy;
-		m_LinkMOEAry_15min[t/15].ObsLinkFlow +=m_LinkMOEAry[t].ObsFlowCopy;
-		m_LinkMOEAry_15min[t/15].ObsArrivalCumulativeFlow +=m_LinkMOEAry[t].ObsArrivalCumulativeFlowCopy;
-		m_LinkMOEAry_15min[t/15].ObsDensity += m_LinkMOEAry[t].ObsDensityCopy;
-		m_LinkMOEAry_15min[t/15].SimulatedTravelTime += m_LinkMOEAry[t].SimulatedTravelTimeCopy;
-
-
-		if(t%15 == 0 && count>=1) // every 15 min
-		{
-			// calculate final mean statistics
-			m_LinkMOEAry_15min[t/15].ObsSpeed /=count;
-			m_LinkMOEAry_15min[t/15].ObsLinkFlow /=count;
-			m_LinkMOEAry_15min[t/15].ObsArrivalCumulativeFlow /=count;
-			m_LinkMOEAry_15min[t/15].ObsDensity /=count;
-			m_LinkMOEAry_15min[t/15].SimulatedTravelTime /=count;
-		}
-
-		count++;
-
-	}
 }
 
 
@@ -234,7 +181,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 	if (parser.OpenCSVFile(lpszFileName))
 	{
 
-					std::list<DTALink*>::iterator iLink;
+			std::list<DTALink*>::iterator iLink;
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 			(*iLink)->m_bSensorData = false;
@@ -348,7 +295,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 //						if(!sensor.SensorType.empty () && sensor.SensorType.find("count")!= string::npos)
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = volume_count/(max(1.0,end_time_in_min-start_time_in_min)/60);  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
 						}
 
 
@@ -499,44 +446,44 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
- 							pLink->m_LinkMOEAry[ t].ObsLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-							pLink->m_LinkMOEAry[ t].ObsSpeed = AvgLinkSpeed; 
+ 							pLink->m_LinkMOEAry[ t].SimulationLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].SimulationSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
-								pLink->m_LinkMOEAry[t].ObsDensity = pLink->m_LinkMOEAry[t].ObsLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeed);
+								pLink->m_LinkMOEAry[t].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].SimulationSpeed);
 							else
-								pLink->m_LinkMOEAry[t].ObsDensity = Occupancy * Occ_to_Density_Coef;
+								pLink->m_LinkMOEAry[t].SimulationDensity = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
 							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
-								pLink->m_LinkMOEAry[ t+tt].ObsLinkFlow = pLink->m_LinkMOEAry[t].ObsLinkFlow ;
-								pLink->m_LinkMOEAry[t+tt].ObsSpeed = pLink->m_LinkMOEAry[t].ObsSpeed;
-								pLink->m_LinkMOEAry[t+tt].ObsDensity = pLink->m_LinkMOEAry[t].ObsDensity;
+								pLink->m_LinkMOEAry[ t+tt].SimulationLinkFlow = pLink->m_LinkMOEAry[t].SimulationLinkFlow ;
+								pLink->m_LinkMOEAry[t+tt].SimulationSpeed = pLink->m_LinkMOEAry[t].SimulationSpeed;
+								pLink->m_LinkMOEAry[t+tt].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationDensity;
 								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTime = pLink->m_LinkMOEAry[t].SimulatedTravelTime;
 
 							}
 						}else // simulation data loaded
 						{
 
-							pLink->m_LinkMOEAry[ t].ObsFlowCopy = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
-							pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
+							pLink->m_LinkMOEAry[ t].SensorLinkCount = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
-								pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
+								pLink->m_LinkMOEAry[t].SensorDensity = pLink->m_LinkMOEAry[t].SensorLinkCount / max(1.0f,pLink->m_LinkMOEAry[t].SensorSpeed);
 							else
-								pLink->m_LinkMOEAry[t].ObsDensityCopy = Occupancy * Occ_to_Density_Coef;
+								pLink->m_LinkMOEAry[t].SensorDensity = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
 							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
-								pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
-								pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
-								pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
+								pLink->m_LinkMOEAry[ t+tt].SensorLinkCount = pLink->m_LinkMOEAry[t].SensorLinkCount ;
+								pLink->m_LinkMOEAry[t+tt].SensorSpeed = pLink->m_LinkMOEAry[t].SensorSpeed;
+								pLink->m_LinkMOEAry[t+tt].SensorDensity = pLink->m_LinkMOEAry[t].SensorDensity;
 								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTimeCopy = pLink->m_LinkMOEAry[t].SimulatedTravelTimeCopy;
 
 							}
@@ -566,72 +513,72 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 void CTLiteDoc::ReadEventData(CString directory)
 {
-	CWaitCursor wc;
-	FILE* st = NULL;
+	//CWaitCursor wc;
+	//FILE* st = NULL;
 
-	fopen_s(&st,directory+"event.csv","r");
+	//fopen_s(&st,directory+"event.csv","r");
 
-	if(st!=NULL)
-	{
+	//if(st!=NULL)
+	//{
 
-		int number_of_samples = 0;
-		int episode_no =1;
-		while(!feof(st))
-		{
+	//	int number_of_samples = 0;
+	//	int episode_no =1;
+	//	while(!feof(st))
+	//	{
 
-			int DayNo =  g_read_integer(st);
-			if(DayNo == -1)  // reach end of file
-				break;
+	//		int DayNo =  g_read_integer(st);
+	//		if(DayNo == -1)  // reach end of file
+	//			break;
 
-			int Month = g_read_integer(st);
+	//		int Month = g_read_integer(st);
 
-			int DayOfMonth   = g_read_integer(st);
-			int Year  = g_read_integer(st);
-			int Hour   = g_read_integer(st);
-			int Min   = g_read_integer(st);
+	//		int DayOfMonth   = g_read_integer(st);
+	//		int Year  = g_read_integer(st);
+	//		int Hour   = g_read_integer(st);
+	//		int Min   = g_read_integer(st);
 
-			int start_t  = ((DayNo - 1)*1440+ Hour*60+Min);
+	//		int start_t  = ((DayNo - 1)*1440+ Hour*60+Min);
 
-			Month = g_read_integer(st);
+	//		Month = g_read_integer(st);
 
-			DayOfMonth   = g_read_integer(st);
-			Year  = g_read_integer(st);
-			Hour   = g_read_integer(st);
-			Min   = g_read_integer(st);
+	//		DayOfMonth   = g_read_integer(st);
+	//		Year  = g_read_integer(st);
+	//		Hour   = g_read_integer(st);
+	//		Min   = g_read_integer(st);
 
-			int end_t  = ((DayNo - 1)*1440+ Hour*60+Min);
+	//		int end_t  = ((DayNo - 1)*1440+ Hour*60+Min);
 
-			int EventCode   = g_read_integer(st);
+	//		int EventCode   = g_read_integer(st);
 
-			std::list<DTALink*>::iterator iLink;
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
+	//		std::list<DTALink*>::iterator iLink;
+	//		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	//		{
 
-				int episode_duration  = end_t - start_t;
-				for(int t = start_t; t<end_t; t+= 1)
-				{
+	//			int episode_duration  = end_t - start_t;
+	//			for(int t = start_t; t<end_t; t+= 1)
+	//			{
 
-					if(t<(*iLink)->m_SimulationHorizon)
-					{
-						(*iLink)->m_LinkMOEAry[t].EventCode  = EventCode;
-						(*iLink)->m_LinkMOEAry[t].EpisodeNo = episode_no;
-						(*iLink)->m_LinkMOEAry[t].EpisoDuration = episode_duration;
+	//				if(t<(*iLink)->m_SimulationHorizon)
+	//				{
+	//					(*iLink)->m_LinkMOEAry[t].EventCode  = EventCode;
+	//					(*iLink)->m_LinkMOEAry[t].EpisodeNo = episode_no;
+	//					(*iLink)->m_LinkMOEAry[t].EpisoDuration = episode_duration;
 
-						number_of_samples++;
+	//					number_of_samples++;
 
-					}
+	//				}
 
-				}
-			}
+	//			}
+	//		}
 
 
-			episode_no++;
-		}	
+	//		episode_no++;
+	//	}	
 
-		m_EventDataLoadingStatus.Format("%d event data records are loaded from file event.csv.",number_of_samples);
+	//	m_EventDataLoadingStatus.Format("%d event data records are loaded from file event.csv.",number_of_samples);
 
-		fclose(st);
-	}
+	//	fclose(st);
+	//}
 }
 
 
@@ -647,16 +594,16 @@ void CTLiteDoc::BuildHistoricalDatabase()
 			{
 				if(t%1440 ==0)
 				{  // reset at the begining of day
-					(*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t].ObsLinkFlow;
+					(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t].SimulationLinkFlow;
 				}else
 				{
-					(*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].ObsArrivalCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].ObsLinkFlow ;
+					(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].SimuArrivalCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].SimulationLinkFlow ;
 
 				}
 
 				for(int tt= 1; tt<m_SamplingTimeInterval;tt++)
 				{
-					(*iLink)->m_LinkMOEAry[t+tt].ObsArrivalCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow;
+					(*iLink)->m_LinkMOEAry[t+tt].SimuArrivalCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow;
 				}
 
 			}

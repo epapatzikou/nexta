@@ -292,7 +292,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_GENERATEGISSHAPEFILES_LOADLINKCSVFILE, &CTLiteDoc::OnGenerategisshapefilesLoadlinkcsvfile)
 	ON_COMMAND(ID_SAFETYPLANNINGTOOLS_RUN, &CTLiteDoc::OnSafetyplanningtoolsRun)
 	ON_COMMAND(ID_SAFETYPLANNINGTOOLS_GENERATENODE, &CTLiteDoc::OnSafetyplanningtoolsGeneratenode)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_SENSORTOOLS_CONVERTTOHOURCOUNT, &CTLiteDoc::OnSensortoolsConverttoHourlyVolume)
+	END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
@@ -301,7 +302,6 @@ CTLiteDoc::CTLiteDoc()
 {
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-
 
 	m_DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
 
@@ -694,16 +694,12 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName)
 					//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
 					parser.GetValueByFieldName("travel_time_in_min",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
 					//				parser.GetValueByFieldName("delay_in_min",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
-					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].ObsLinkFlow);
-					parser.GetValueByFieldName("link_volume_in_veh_per_hour_for_all_lanes",pLink->m_LinkMOEAry[t].ObsLinkFlow);
-					parser.GetValueByFieldName("density_in_veh_per_mile_per_lane",pLink->m_LinkMOEAry[t].ObsDensity );
-					parser.GetValueByFieldName("speed_in_mph",pLink->m_LinkMOEAry[t].ObsSpeed);
-					parser.GetValueByFieldName("exit_queue_length",pLink->m_LinkMOEAry[t].ObsQueueLength );
-					parser.GetValueByFieldName("cumulative_arrival_count",pLink->m_LinkMOEAry[t].ObsArrivalCumulativeFlow);
-
-					parser.GetValueByFieldName("cumulative_SOV_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[1]);
-					parser.GetValueByFieldName("cumulative_HOV_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[2]);
-					parser.GetValueByFieldName("cumulative_truck_count",pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[3]);
+					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].SimulationLinkFlow);
+					parser.GetValueByFieldName("link_volume_in_veh_per_hour_for_all_lanes",pLink->m_LinkMOEAry[t].SimulationLinkFlow);
+					parser.GetValueByFieldName("density_in_veh_per_mile_per_lane",pLink->m_LinkMOEAry[t].SimulationDensity );
+					parser.GetValueByFieldName("speed_in_mph",pLink->m_LinkMOEAry[t].SimulationSpeed);
+					parser.GetValueByFieldName("exit_queue_length",pLink->m_LinkMOEAry[t].SimulationQueueLength );
+					parser.GetValueByFieldName("cumulative_arrival_count",pLink->m_LinkMOEAry[t].SimuArrivalCumulativeFlow);
 
 					//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
 				}
@@ -723,11 +719,6 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName)
 		g_Simulation_Time_Stamp = 0; // reset starting time
 		g_SimulationStartTime_in_min = 0;
 
-		/*		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-		(*iLink)->Compute15MinAvg();  // calculate aggregation value
-		}
-		*/
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
 	}
 }
@@ -834,9 +825,9 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
 					pLink->m_LinkMOEAry[t].SimulatedTravelTime = element.travel_time_in_min;
 					//				parser.GetValueByFieldName("delay_in_min",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
-					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].ObsLinkFlow);
-					pLink->m_LinkMOEAry[t].ObsLinkFlow = element.link_volume_in_veh_per_hour_for_all_lanes;
-					pLink->m_LinkMOEAry[t].ObsDensity  = element.density_in_veh_per_mile_per_lane;
+					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].SimulationLinkFlow);
+					pLink->m_LinkMOEAry[t].SimulationLinkFlow = element.link_volume_in_veh_per_hour_for_all_lanes;
+					pLink->m_LinkMOEAry[t].SimulationDensity  = element.density_in_veh_per_mile_per_lane;
 
 
 					//if(pLink->m_FromNodeNumber == 199 && pLink->m_ToNodeNumber == 116)
@@ -844,16 +835,12 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					//TRACE("%d, speed = %s\n",t, element.speed_in_mph);
 					//}
 
-					pLink->m_LinkMOEAry[t].ObsSpeed = element.speed_in_mph;
-					pLink->m_LinkMOEAry[t].ObsQueueLength = element.exit_queue_length;
-					pLink->m_LinkMOEAry[t].ObsArrivalCumulativeFlow = element.cumulative_arrival_count;
-					pLink->m_LinkMOEAry[t].ObsDepartureCumulativeFlow = element.cumulative_departure_count;
+					pLink->m_LinkMOEAry[t].SimulationSpeed = element.speed_in_mph;
+					pLink->m_LinkMOEAry[t].SimulationQueueLength = element.exit_queue_length;
+					pLink->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = element.cumulative_arrival_count;
+					pLink->m_LinkMOEAry[t].SimuDepartureCumulativeFlow = element.cumulative_departure_count;
 
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[1] = element.cumulative_SOV_count;
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[2] = element.cumulative_HOV_count;
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[3] = element.cumulative_truck_count;
-
-					//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
+				//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
 				}
 				i++;
 			}else
@@ -948,18 +935,14 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 					//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
 					pLink->m_LinkMOEAry[t].SimulatedTravelTime = travel_time_in_min;
 					//				parser.GetValueByFieldName("delay_in_min",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
-					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].ObsLinkFlow);
-					pLink->m_LinkMOEAry[t].ObsLinkFlow = link_volume_in_veh_per_hour_for_all_lanes;
-					pLink->m_LinkMOEAry[t].ObsDensity = density_in_veh_per_mile_per_lane;
-					pLink->m_LinkMOEAry[t].ObsSpeed = speed_in_mph;
-					pLink->m_LinkMOEAry[t].ObsQueueLength = exit_queue_length;
-					pLink->m_LinkMOEAry[t].ObsArrivalCumulativeFlow = cumulative_arrival_count;
+					//parser.GetValueByFieldName("link_volume_in_veh_per_hour_per_lane",pLink->m_LinkMOEAry[t].SimulationLinkFlow);
+					pLink->m_LinkMOEAry[t].SimulationLinkFlow = link_volume_in_veh_per_hour_for_all_lanes;
+					pLink->m_LinkMOEAry[t].SimulationDensity = density_in_veh_per_mile_per_lane;
+					pLink->m_LinkMOEAry[t].SimulationSpeed = speed_in_mph;
+					pLink->m_LinkMOEAry[t].SimulationQueueLength = exit_queue_length;
+					pLink->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = cumulative_arrival_count;
 
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[1] = cumulative_SOV_count;
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[2] = cumulative_HOV_count;
-					pLink->m_LinkMOEAry[t].CumulativeArrivalCount_PricingType[3] = cumulative_truck_count;
-
-					//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
+				//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
 				}
 				i++;
 			}else
@@ -1784,7 +1767,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 
 			if(m_LinkMOEMode == MOE_volume && (*iLink)->m_bSensorData)  // reference volume
 			{
-				(*iLink)->m_ReferenceBandWidthValue = (*iLink)->GetObsLinkVolumeCopy(g_Simulation_Time_Stamp)*VolumeRatio; 
+				(*iLink)->m_ReferenceBandWidthValue = (*iLink)->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp)*VolumeRatio; 
 			}
 
 		}else if (m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
@@ -3678,7 +3661,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 				{ int hour;
 				for(hour =0; hour <= 23; hour++)
 				{ 
-					fprintf(st,"%f,", (*iLink)->GetAvgLinkVolume(hour*60,(hour+1)*60));
+					fprintf(st,"%f,", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60));
 				}
 
 				for(hour =0; hour <= 23; hour++)
@@ -4814,7 +4797,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 	CString SettingsFile;
 	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 
-	int version_number = (int) g_GetPrivateProfileFloat("version_control", "revision_number",1,SettingsFile);
+	int version_number = (int) g_GetPrivateProfileFloat("version_control", "revision_number",2,SettingsFile);
 	typedef struct  
 	{
 		int vehicle_id;
@@ -5409,7 +5392,7 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		{
 			if(pLink->m_SimulationHorizon > CurrentTime && CurrentTime >=1 && CurrentTime < pLink->m_SimulationHorizon)  //DTAoutput
 			{
-				if(pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow>=1 || pLink->m_LinkMOEAry[CurrentTime].ObsDensity >=0.1)
+				if(pLink->m_LinkMOEAry[CurrentTime].SimulationLinkFlow>=1 || pLink->m_LinkMOEAry[CurrentTime].SimulationDensity >=0.1)
 				{
 					total_measurement_count++;
 
@@ -5417,23 +5400,23 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 					{
 					case MOE_volume:  
 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].ObsLinkFlow;
+						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationLinkFlow;
 
 						break;
 					case MOE_speed: 
 					case MOE_reliability: 
 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].ObsSpeed;
+						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationSpeed;
 
 						break;
 					case MOE_traveltime:
 						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulatedTravelTime;
 						break;
 					case MOE_density:
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].ObsDensity;
+						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationDensity;
 						break;
 					case MOE_queue_length: 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].ObsQueueLength;
+						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationQueueLength;
 						break;
 
 					}
@@ -6389,7 +6372,7 @@ void CTLiteDoc::OnResearchtoolsExporttodtalitesensordataformat()
 						int hour = (t-day*1440)/60;
 						int min =  (t-day*1440-hour*60);
 						fprintf(st,"07/%02d/2010 %02d:%02d, %d %4.1f, 0, %4.1f\n", day, hour, min, (*iLink)->m_LinkNo+1,
-							(*iLink)->m_LinkMOEAry[ t].ObsLinkFlow/12, (*iLink)->m_LinkMOEAry[t].ObsSpeed);
+							(*iLink)->m_LinkMOEAry[ t].SimulationLinkFlow/12, (*iLink)->m_LinkMOEAry[t].SimulationSpeed);
 					}
 
 
@@ -7741,14 +7724,23 @@ void CTLiteDoc::ChangeNetworkCoordinates(int LayerNo, float XScale, float YScale
 }
 void CTLiteDoc::OnFileOpenNetworkOnly()
 {
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Transportation Network Project (*.tn)|*.tnp|"));
+	static char BASED_CODE szFilter[] = "NEXTA Data Files (*.dws;*.tnp)|*.dws; *.tnp|DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|All Files (*.*)|*.*||";
+
+   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
+
 	if(dlg.DoModal() == IDOK)
 	{
 		CWaitCursor wait;
 
-		OnOpenTrafficNetworkDocument(dlg.GetPathName(),true);
+	CString ProjectFileName = dlg.GetPathName ();
 
+	if(ProjectFileName.Find("tnp")>=0)  //Transportation network project format
+	{
+		OnOpenTrafficNetworkDocument(ProjectFileName,true);
+	}else if(ProjectFileName.Find("dws")>=0)  //DYNASMART-P format
+	{
+		OnOpenDYNASMARTProject(ProjectFileName,true);
+	}
 		CDlgFileLoading dlg;
 		dlg.m_pDoc = this;
 		dlg.DoModal ();
@@ -8611,6 +8603,7 @@ void CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot()
 		{
 
 			CLinePlotTestDlg dlg;
+			dlg.m_pDoc  = this;
 
 			dlg.m_XCaption = "Iteration";
 			dlg.m_YCaption = "Traffic Assignment MOE";
@@ -8632,6 +8625,11 @@ void CTLiteDoc::OnMoeViewtrafficassignmentsummaryplot()
 
 void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 {
+		CLinePlotTestDlg dlg;
+		dlg.m_pDoc  = this;
+
+		dlg.m_XCaption = "Observed Link Volume";
+		dlg.m_YCaption = "Simulated Link Volume";
 
 	CString str = m_ProjectDirectory +"output_validation_results.csv";
 	CT2CA pszConvertedAnsiString (str);
@@ -8641,7 +8639,7 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 	if (parser.OpenCSVFile(strStd))
 	{
-		COLORREF crColor1 = RGB (255, 0, 0);
+		COLORREF crColor1 = RGB (100, 149, 237);
 
 		CLinePlotData element_link_volume;
 		element_link_volume.crPlot = crColor1;
@@ -8655,6 +8653,40 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 			if(parser.GetValueByFieldName("observed_link_count",data.x) == false)
 				break;
+
+			int from_node_id, to_node_id;
+
+			parser.GetValueByFieldName("from_node_id",from_node_id);
+			parser.GetValueByFieldName("to_node_id",to_node_id);
+
+			DTALink* pLink  = FindLinkWithNodeNumbers(from_node_id , to_node_id, str );
+
+			
+			if(pLink!=NULL)
+			{
+				data.LinkNo = pLink->m_LinkNo ;
+				if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())
+				{   
+						data.LinkType = _lp_freeway;
+						data.crColor  = m_FreewayColor;
+
+				}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsArterial  ())
+				{
+						data.LinkType = _lp_arterial;
+						data.crColor = m_ArterialColor;
+				}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsHighway   ())
+				{
+						data.LinkType = _lp_ramp;
+						data.crColor = m_ArterialColor;
+				}
+
+				data.Hour  = -1;
+			}
+
 
 			if(data.x >0.1f)   // with sensor data
 			{
@@ -8671,23 +8703,13 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 		if(count >=1)
 		{
 
-			CLinePlotTestDlg dlg;
 
-			dlg.m_XCaption = "Observed Link Count";
-			dlg.m_YCaption = "Simulated Link Count";
-			CString msg;
-			msg.Format ("%d data points",count);
-			dlg.m_MessageVector.push_back(msg);
-
-			float r2 = 0.91f;
-			msg.Format ("R2 = %.3f",r2);
-			dlg.m_MessageVector.push_back(msg);
-
-
+			//float r2 = 0.91f;
+			//msg.Format ("R2 = %.3f",r2);
+			//dlg.m_MessageVector.push_back(msg);
 
 			dlg.m_PlotDataVector.push_back(element_link_volume);
 
-			dlg.DoModal();
 		}else
 		{
 			AfxMessageBox("No sensor data are available. Please first input link volume data in file input_sensor.csv.");
@@ -8696,6 +8718,110 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 	{
 		AfxMessageBox("File output_LinkMOE.csv does not exist. Please first run traffic assignment.");
 	}
+
+	// aggregated result
+	OnSensortoolsConverttoHourlyVolume();
+	{
+
+
+	CCSVParser SettingFile;
+
+	if(SettingFile.OpenCSVFile (CString2StdString(m_ProjectDirectory+"input_scenario_settings.csv")))
+	{
+		while(SettingFile.ReadRecord())
+		{
+			SettingFile.GetValueByFieldName("calibration_data_start_time_in_min",m_calibration_data_start_time_in_min);
+			SettingFile.GetValueByFieldName("calibration_data_end_time_in_min",m_calibration_data_end_time_in_min);
+		
+		}
+
+	}
+	
+
+
+	CCSVParser parser;
+
+	if (parser.OpenCSVFile( CString2StdString(m_ProjectDirectory +"output_validation_results_aggregated.csv")))
+	{
+		COLORREF crColor1 = RGB (100, 149, 237);
+
+		CLinePlotData element_link_volume;
+		element_link_volume.crPlot = crColor1;
+		element_link_volume.szName  = "aggregated hourly volume";
+		element_link_volume.lineType = enum_LpScatter;
+
+		int count =0;
+		while(parser.ReadRecord())
+		{
+			FLOATPOINT data;
+
+			if(parser.GetValueByFieldName("observed_link_count",data.x) == false)
+				break;
+
+			int from_node_id, to_node_id;
+
+			parser.GetValueByFieldName("from_node_id",from_node_id);
+			parser.GetValueByFieldName("to_node_id",to_node_id);
+
+			DTALink* pLink  = FindLinkWithNodeNumbers(from_node_id , to_node_id, str );
+
+			if(pLink!=NULL)
+			{
+				data.LinkNo = pLink->m_LinkNo ;
+				if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())
+				{   
+						data.LinkType = _lp_freeway;
+						data.crColor  = m_FreewayColor;
+
+				}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsArterial  ())
+				{
+						data.LinkType = _lp_arterial;
+						data.crColor = m_ArterialColor;
+				}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsHighway   ())
+				{
+						data.LinkType = _lp_ramp;
+						data.crColor = m_ArterialColor;
+				}
+
+				int start_time_in_min;
+				parser.GetValueByFieldName("start_time_in_min",start_time_in_min);
+				data.Hour = start_time_in_min/60;
+
+			}
+
+
+			if(data.x >0.1f)   // with sensor data
+			{
+
+				if(parser.GetValueByFieldName("simulated_link_count",data.y) == false)  // estimated data
+					break;
+				element_link_volume.vecData.push_back(data);
+
+				count++;
+
+			}
+		}
+
+		if(count >=1)
+		{
+
+
+			//float r2 = 0.91f;
+			//msg.Format ("R2 = %.3f",r2);
+			//dlg.m_MessageVector.push_back(msg);
+
+			dlg.m_PlotDataVector.push_back(element_link_volume);
+
+		}
+	}
+	}
+
+	dlg.DoModal();
+
 }
 
 void CTLiteDoc::OnProjectEditpricingscenariodata()
@@ -9015,7 +9141,10 @@ void CTLiteDoc::ZoomToSelectedNode(int SelectedNodeNumber)
 		{
 			pView = (CTLiteView*) GetNextView(pos);
 			if(pView!=NULL)
+			{
 				pView->m_Origin = m_Origin;
+				pView->Invalidate ();
+			}
 		}
 
 	}
@@ -9037,7 +9166,10 @@ void CTLiteDoc::ZoomToSelectedLink(int SelectedLinkNo)
 		{
 			pView = (CTLiteView*) GetNextView(pos);
 			if(pView!=NULL)
+			{
 				pView->m_Origin = m_Origin;
+				pView->Invalidate ();
+			}
 		}
 
 	}
@@ -10146,3 +10278,93 @@ void CTLiteDoc::OnToolsObtaintrafficcontroldatafromreferencenetwork()
 
 
 
+
+void CTLiteDoc::OnSensortoolsConverttoHourlyVolume()
+{
+	if( m_SimulationStartTime_in_min > m_SimulationEndTime_in_min)
+	{
+	AfxMessageBox("Please reload time-dependent simulation data.");
+	}
+
+	int calibration_data_start_time_in_min=0;
+	int calibration_data_end_time_in_min= 1440;
+
+	CCSVParser SettingFile;
+
+	if(SettingFile.OpenCSVFile (CString2StdString(m_ProjectDirectory+"input_scenario_settings.csv")))
+	{
+		while(SettingFile.ReadRecord())
+		{
+			SettingFile.GetValueByFieldName("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
+			SettingFile.GetValueByFieldName("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
+		
+		}
+
+	}
+	
+	
+	CCSVWriter DataFile;
+
+	CString data_str = m_ProjectDirectory +"output_validation_results_aggregated.csv";
+
+	// Convert a TCHAR string to a LPCSTR
+	if(DataFile.Open(CString2StdString(data_str)))
+	{
+
+		DataFile.SetFieldName ("from_node_id");
+		DataFile.SetFieldName ("to_node_id");
+		DataFile.SetFieldName ("name");
+		DataFile.SetFieldName ("link_type_name");
+		DataFile.SetFieldName ("observed_link_count");
+		DataFile.SetFieldName ("simulated_link_count");
+		DataFile.SetFieldName ("start_time_in_min");
+		DataFile.SetFieldName ("end_time_in_min");
+		DataFile.SetFieldName ("aggregation_interval");
+		DataFile.SetFieldName ("start_time_in_hour");
+		DataFile.SetFieldName ("end_time_in_hour");
+		DataFile.WriteHeader ();
+
+		int AggregationTimeIntervalInMin = 60;
+for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink* pLink = (*iLink);
+
+		if(pLink->m_bSensorData )
+		{
+		
+			for(int t = max(calibration_data_start_time_in_min, m_SimulationStartTime_in_min);  
+				t < min(calibration_data_end_time_in_min,m_SimulationEndTime_in_min); t+=AggregationTimeIntervalInMin)
+			{
+				float SensorCount  = pLink->GetSensorLinkHourlyVolume(t, t+AggregationTimeIntervalInMin)/60*AggregationTimeIntervalInMin;
+				if( SensorCount>1)
+				{
+					float SimulatedCount = pLink->GetAvgLinkHourlyVolume (t, t+AggregationTimeIntervalInMin)/60*AggregationTimeIntervalInMin;
+
+					DataFile.SetValueByFieldName ("from_node_id", pLink->m_FromNodeNumber);
+					DataFile.SetValueByFieldName ("to_node_id", pLink->m_ToNodeNumber);
+					DataFile.SetValueByFieldName ("name", pLink->m_Name);
+					DataFile.SetValueByFieldName ("link_type_name", m_LinkTypeMap[pLink->m_link_type].link_type_name);
+
+					DataFile.SetValueByFieldName ("start_time_in_min", t);
+
+					int end_time = t+AggregationTimeIntervalInMin;
+					DataFile.SetValueByFieldName ("end_time_in_min", end_time);
+					int start_time_in_hour = t/60;
+					DataFile.SetValueByFieldName ("start_time_in_hour", start_time_in_hour);
+
+					int end_time_in_hour = end_time/60;
+					DataFile.SetValueByFieldName ("end_time_in_hour", end_time_in_hour);
+					DataFile.SetValueByFieldName ("aggregation_interval", AggregationTimeIntervalInMin);
+					DataFile.SetValueByFieldName ("observed_link_count", SensorCount);
+					DataFile.SetValueByFieldName ("simulated_link_count", SimulatedCount);
+					DataFile.WriteRecord ();
+
+
+				}
+			
+			}
+		
+		}
+	}
+	}
+}

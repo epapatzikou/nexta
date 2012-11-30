@@ -209,7 +209,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_32.exe"
+				OutputFile="C:\NEXTA_DTALite_SoftwareRelease\DTALite_32.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -279,7 +279,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_64.exe"
+				OutputFile="C:\NEXTA_DTALite_SoftwareRelease\DTALite_64.exe"
 				LinkIncremental="2"
 			/>
 			<Tool

@@ -25,11 +25,29 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+enum _LinePlotLinkType {_lp_default,_lp_freeway, _lp_arterial,_lp_highway,_lp_ramp};
+
 //  the basic data type for the plot.
 typedef struct t_FLOATPOINT
 {
+public:
   float x;
   float y;
+  COLORREF     crColor;
+  int LinkNo;
+  int Hour;
+
+  _LinePlotLinkType LinkType ;
+
+  t_FLOATPOINT()
+  {
+	  Hour = -1;
+
+	 LinkNo= -1;
+  
+  crColor =  RGB (100, 149, 237);
+  };
+
 }
 FLOATPOINT;
 
@@ -94,7 +112,7 @@ class CPlotData
 
 	  CString           m_szName;
     int               m_nStyle;
-    FLOATPOINT        *m_pptData;
+    FLOATPOINT        *m_PointData;
     //  store screen data as an array of float for "polyline" function.
     POINT             *m_pptScreen;
     UINT              m_uiPointCount;
@@ -136,7 +154,9 @@ class CLinePlot : public CWnd
   //  constants.
   public:
 
-
+	  int              m_SelectedDataItemNo;
+	  int                m_nSelected;
+	  int m_StartHour, m_AggregationWindow;
   // Construction/Destruction
   public:
     CLinePlot();
@@ -163,7 +183,7 @@ class CLinePlot : public CWnd
     int               m_nCursor;
     UINT              m_uiMouseOver;
     CEdit             m_edtDataEntry;
-    int               m_nSelected;
+
     int               m_nMouseOverKey;
     CRect             m_rcZoom;
     bool              m_oIsMouseDown;
@@ -265,13 +285,15 @@ class CLinePlot : public CWnd
     //{{AFX_MSG(CLinePlot)
 	  afx_msg void OnPaint();
 	  afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-	  afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	  //afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	  afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-	  afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	  //afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	  afx_msg void OnSize(UINT nType, int cx, int cy);
 	  //}}AFX_MSG
 
   DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -965,9 +965,20 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
+
+	if(m_bLoadNetworkDataOnly)
+		return true;
+
+		if(g_Simulation_Time_Horizon>=240 && m_LinkSet.size()>= 10000)
+		{
+			if(AfxMessageBox("There are more than 10,000 links.\nIt could take quite a while to load this file.\nWould you like to load the vehicle trajector files?",MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				return true;
+		}
+
 	// read speed data
 	fopen_s(&pFile,directory+"fort.900","r");
 	std::list<DTALink*>::iterator iLink;
+
 
 	if(pFile!=NULL)
 	{
@@ -987,9 +998,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-				(*iLink)->m_LinkMOEAry[t+1].ObsSpeed = g_read_float(pFile);  // speed;
+				(*iLink)->m_LinkMOEAry[t+1].SimulationSpeed = g_read_float(pFile);  // speed;
 
-				(*iLink)->m_LinkMOEAry[t+1].SimulatedTravelTime = (*iLink)->m_Length * 60/ max(1,(*iLink)->m_LinkMOEAry[t+1].ObsSpeed);
+				(*iLink)->m_LinkMOEAry[t+1].SimulatedTravelTime = (*iLink)->m_Length * 60/ max(1,(*iLink)->m_LinkMOEAry[t+1].SimulationSpeed);
 			}
 
 		}
@@ -1016,7 +1027,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				if(value < -0.5f)
 					break;
 				else
-				(*iLink)->m_LinkMOEAry[t+1].ObsQueueLength = value;
+				(*iLink)->m_LinkMOEAry[t+1].SimulationQueueLength = value;
 			}
 
 		}
@@ -1044,7 +1055,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					break;
 				else
 				{
-				(*iLink)->m_LinkMOEAry[t+1].ObsDensity  = value;
+				(*iLink)->m_LinkMOEAry[t+1].SimulationDensity  = value;
 				}
 			}
 
@@ -1085,16 +1096,16 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			{
 				if(CumulativeFlag)  // DSP 
 				{
-				(*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow = g_read_float(pFile);  // cumulative flow;
+				(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = g_read_float(pFile);  // cumulative flow;
 
 				if(t>=1)
 				{
-					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].ObsArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ObsArrivalCumulativeFlow)*60);
+					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow)*60);
 
 				}
 				}else  // DYNASMART -P 
 				{
-					(*iLink)->m_LinkMOEAry[t].ObsLinkFlow =  g_read_float(pFile)*60;
+					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  g_read_float(pFile)*60;
 			
 				}
 			}

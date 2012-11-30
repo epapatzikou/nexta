@@ -290,23 +290,23 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 
 	//					ASSERT(pLink->m_NumLanes > 0);
 
-	//					pLink->m_LinkMOEAry[ t].ObsFlowCopy = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
-	//					pLink->m_LinkMOEAry[ t].ObsSpeedCopy = AvgLinkSpeed; 
+	//					pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	//					pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
 	//					pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 	//					if(occupancy <=0.001)
-	//						pLink->m_LinkMOEAry[t].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy / max(1.0f,pLink->m_LinkMOEAry[t].ObsSpeedCopy);
+	//						pLink->m_LinkMOEAry[t].SensorDensity = pLink->m_LinkMOEAry[t].SensorLinkCount / max(1.0f,pLink->m_LinkMOEAry[t].SensorSpeed);
 	//					else
-	//						pLink->m_LinkMOEAry[t].ObsDensityCopy = occupancy * Occ_to_Density_Coef;
+	//						pLink->m_LinkMOEAry[t].SensorDensity = occupancy * Occ_to_Density_Coef;
 
 	//					// copy data to other intervals
 	//					for(int tt = 1; tt<m_pDoc->m_SamplingTimeInterval; tt++)
 	//					{
 	//						if(tt < pLink->m_LinkMOEAry.size())
 	//						{
-	//							pLink->m_LinkMOEAry[ t+tt].ObsFlowCopy = pLink->m_LinkMOEAry[t].ObsFlowCopy ;
-	//							pLink->m_LinkMOEAry[t+tt].ObsSpeedCopy = pLink->m_LinkMOEAry[t].ObsSpeedCopy;
-	//							pLink->m_LinkMOEAry[t+tt].ObsDensityCopy = pLink->m_LinkMOEAry[t].ObsDensityCopy;
+	//							pLink->m_LinkMOEAry[ t+tt].SensorLinkCount = pLink->m_LinkMOEAry[t].SensorLinkCount ;
+	//							pLink->m_LinkMOEAry[t+tt].SensorSpeed = pLink->m_LinkMOEAry[t].SensorSpeed;
+	//							pLink->m_LinkMOEAry[t+tt].SensorDensity = pLink->m_LinkMOEAry[t].SensorDensity;
 	//							pLink->m_LinkMOEAry[t+tt].ObsTravelTimeIndexCopy = pLink->m_LinkMOEAry[t].ObsTravelTimeIndexCopy;
 	//						}
 
