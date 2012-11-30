@@ -102,6 +102,7 @@
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDD_DIALOG_Legend               196
 #define IDD_LINEPLOT_DIALOG             197
+#define IDD_XYPLOT_DIALOG               197
 #define IDD_NSCHART_TOLL_DIALOG         198
 #define IDD_DIALOG_EXCEL_DATA_IMPORT    199
 #define IDD_DIALOG_NODE_MOVEMENT        200
@@ -127,6 +128,7 @@
 #define IDD_DIALOG_DISPLAY_CONFIG       227
 #define IDD_DIALOG_NodeProperties       228
 #define IDD_DIALOG_NODE_MOVEMENTS       229
+#define IDD_LINEPLOT_DIALOG1            230
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -201,8 +203,12 @@
 #define IDC_LIST4                       1039
 #define IDC_EDIT_NODEB                  1040
 #define IDC_EDIT_A_Lat                  1041
+#define IDC_LIST_TimeWindow             1041
 #define IDC_EDIT_B_Lat                  1042
+#define IDC_LIST_DataSource             1042
 #define IDC_EDIT_A_Long                 1043
+#define IDC_LIST_TimeWindow2            1043
+#define IDC_LIST_StartHour              1043
 #define IDC_EDIT_B_Long                 1044
 #define IDC_COMBO_Origin                1045
 #define IDC_COMBO_Destination           1046
@@ -365,7 +371,7 @@
 #define IDC_GIS_DATA_TYPE_LIST          1145
 #define IDBARCHARTPIECHART              1146
 #define IDC_COMBO_Link_Selection        1147
-#define IDBARCHARTPIECHART2             1148
+#define IDC_CHECK_ZOOM_TO_LINK          1148
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -978,14 +984,17 @@
 #define ID_SAFETYPLANNINGTOOLS_GENERATENODE 33520
 #define ID_MOETYPE1_LINKOUTFLOWVOLUME   33521
 #define ID_LINKSELECTION_SHOWALLLINKSWITHINSUBAREA 33522
+#define ID_TOOLS_SENSORTOOLS            33523
+#define ID_SENSORTOOLS_CONVERTTO        33524
+#define ID_SENSORTOOLS_CONVERTTOHOURCOUNT 33525
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33523
-#define _APS_NEXT_CONTROL_VALUE         1148
+#define _APS_NEXT_COMMAND_VALUE         33526
+#define _APS_NEXT_CONTROL_VALUE         1150
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -16,8 +16,12 @@
 
 #include "LinePlot.h"
 #include <math.h>
-
+#include "..\\TLite.h"
+#include "..\\Network.h"
+#include "..\\TLiteDoc.h"
+#include "afxwin.h"
 #define ID_CTRL_LINE_PLOT (WM_USER+1001)
+
 
 
 class CLinePlotData
@@ -32,8 +36,12 @@ class CLinePlotData
     BYTE yGreen = (BYTE)(rand() / (RAND_MAX / 256) + 1);
     BYTE yBlue = (BYTE)(rand() / (RAND_MAX / 256) + 1);
     crPlot = RGB(yRed, yGreen, yBlue);	
+	
+	LinkType = _lp_default;
 	}
 
+	_LinePlotLinkType  LinkType;
+	 
 	 CString szName;
 	 enumPlotStyle lineType;
      std::vector<FLOATPOINT> vecData;
@@ -44,24 +52,31 @@ class CLinePlotTestDlg : public CDialog
 {
   // Construction/Destruction
   public:
+
 	  CLinePlotTestDlg(CWnd* pParent = NULL);	// standard constructor
 
+	  	CTLiteDoc* m_pDoc;
+	  void ShowSelection(int SelNo);
   private:
     void SizeControls();
 
   // Dialog Data
   public:
 	  //{{AFX_DATA(CLinePlotTestDlg)
-	  enum { IDD = IDD_LINEPLOT_DIALOG };
+	  enum { IDD = IDD_XYPLOT_DIALOG };
       CLinePlot m_LinePlot;
-	  CComboBox	m_cmbStyle;
 	  CListBox m_InfoList;
 
 	  CString m_XCaption, m_YCaption;
 
+
+	CListBox m_TimeWindowList;
+
 	  std::vector<CLinePlotData> m_PlotDataVector;
 	  std::vector<CString> m_MessageVector;
 
+	  int m_AggregationTimeIntervalInMin;
+	  void RegenerateData();
 	  //}}AFX_DATA
 
 	  // ClassWizard generated virtual function overrides
@@ -96,6 +111,15 @@ class CLinePlotTestDlg : public CDialog
 	afx_msg void OnBtnSaveToFile();
 	//}}AFX_MSG
 	  DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	BOOL m_bZoomToLink;
+	afx_msg void OnLbnSelchangeListTimewindow();
+	afx_msg void OnLbnSelchangeListDatasource();
+	CListBox m_ListDataSource;
+	CListBox m_ListStartHour;
+	afx_msg void OnLbnSelchangeListStarthour();
 };
 
 //{{AFX_INSERT_LOCATION}}

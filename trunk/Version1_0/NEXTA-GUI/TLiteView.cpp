@@ -978,7 +978,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			}
 
-			if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->GetObsLinkVolumeCopy(g_Simulation_Time_Stamp) > 1)   // draw provided AADT
+			if (pDoc->m_LinkMOEMode == MOE_volume && (*iLink)->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp) > 1)   // draw provided AADT
 			{
 				pDC->SelectObject(&g_BrushLinkReference);   //reference brush
 				pDC->SelectObject(&g_PenLinkReference);   //reference pen
@@ -4332,8 +4332,8 @@ if(pDoc->m_PathDisplayList.size()>0)
 		DTALink* pLink = pDoc->m_LinkNoMap[pPath->m_LinkVector[i]];
 
 		float linkcapacity = pLink->m_LaneCapacity;
-		float linktraveltime = pLink->m_Length/pLink->GetObsSpeed(CurrentTime)*60;
-		float density = pLink->GetObsDensity(CurrentTime);
+		float linktraveltime = pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime)*60;
+		float density = pLink->GetSimulationDensity(CurrentTime);
 
 		if (density > max_density) BottleneckIdx = i;
 
@@ -4366,7 +4366,7 @@ if(pDoc->m_PathDisplayList.size()>0)
 			}
 		}
 
-		CurrentTime += (pLink->m_Length/pLink->GetObsSpeed(CurrentTime))*60;
+		CurrentTime += (pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime))*60;
 	}
 }
 

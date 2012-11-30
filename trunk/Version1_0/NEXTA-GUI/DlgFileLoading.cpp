@@ -85,9 +85,9 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_OptimizationData.AddString (m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus);	
 	}
 
-	if(m_pDoc->m_ObsLinkVolumeStatus.GetLength () >0) // there are data being loaded
+	if(m_pDoc->m_SimulatedLinkVolumeStatus.GetLength () >0) // there are data being loaded
 	{
-		m_ListBox_OptimizationData.AddString (m_pDoc->m_ObsLinkVolumeStatus);	
+		m_ListBox_OptimizationData.AddString (m_pDoc->m_SimulatedLinkVolumeStatus);	
 	}
 	
 

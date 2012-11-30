@@ -21,7 +21,7 @@
 #include "stdafx.h"
 #include "LinePlotTest.h"
 #include "LinePlot.h"
-
+#include "math.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -44,7 +44,7 @@ CPlotData::CPlotData(CString szName, COLORREF crColor, int nStyle, std::vector<F
 	m_eYDataMin = 0.0f;
 	m_eYDataMax = 0.0f;
 	m_eYDataMean = 0.0f;
-	m_pptData = NULL;
+	m_PointData = NULL;
 	m_pptScreen = NULL;
 	m_uiPointCount = 0;
 
@@ -52,10 +52,10 @@ CPlotData::CPlotData(CString szName, COLORREF crColor, int nStyle, std::vector<F
 	UINT uiPointCount = pvecData->size();
 	if (uiPointCount>0)
 	{
-		m_pptData = new FLOATPOINT[uiPointCount];
+		m_PointData = new FLOATPOINT[uiPointCount];
 		m_pptScreen = new POINT[uiPointCount];
 		m_uiPointCount = uiPointCount;
-		if (m_pptData!=NULL && m_pptScreen!=NULL)
+		if (m_PointData!=NULL && m_pptScreen!=NULL)
 		{
 			UpdateData(pvecData);
 		}
@@ -76,17 +76,17 @@ CPlotData::CPlotData(CString szName, COLORREF crColor, int nStyle, FLOATPOINT *p
 	m_eYDataMin = 0.0f;
 	m_eYDataMax = 0.0f;
 	m_eYDataMean = 0.0f;
-	m_pptData = NULL;
+	m_PointData = NULL;
 	m_pptScreen = NULL;
 	m_uiPointCount = 0;
 
 	//  copy the point data over, calculating max & min.
 	if (uiPointCount>0)
 	{
-		m_pptData = new FLOATPOINT[uiPointCount];
+		m_PointData = new FLOATPOINT[uiPointCount];
 		m_pptScreen = new POINT[uiPointCount];
 		m_uiPointCount = uiPointCount;
-		if (m_pptData!=NULL && m_pptScreen!=NULL)
+		if (m_PointData!=NULL && m_pptScreen!=NULL)
 		{
 			UpdateData(pptData);
 		}
@@ -106,19 +106,19 @@ CPlotData::CPlotData(const CPlotData &pd)
 	m_eYDataMin = pd.m_eYDataMin;
 	m_eYDataMax = pd.m_eYDataMax;
 	m_eYDataMean = pd.m_eYDataMean;
-	m_pptData = NULL;
+	m_PointData = NULL;
 	m_pptScreen = NULL;
 	m_uiPointCount = 0;
 
 	//  copy the point data over, calculating max & min.
 	if (pd.m_uiPointCount>0)
 	{
-		m_pptData = new FLOATPOINT[pd.m_uiPointCount];
+		m_PointData = new FLOATPOINT[pd.m_uiPointCount];
 		m_pptScreen = new POINT[pd.m_uiPointCount];
 		m_uiPointCount = pd.m_uiPointCount;
-		if (m_pptData!=NULL && m_pptScreen!=NULL)
+		if (m_PointData!=NULL && m_pptScreen!=NULL)
 		{
-			UpdateData(pd.m_pptData);
+			UpdateData(pd.m_PointData);
 		}
 	}
 }
@@ -136,8 +136,8 @@ CPlotData& CPlotData::operator=(const CPlotData& pd)
 	m_eYDataMin = pd.m_eYDataMin;
 	m_eYDataMax = pd.m_eYDataMax;
 	m_eYDataMean = pd.m_eYDataMean;
-	if (m_pptData!=NULL)
-		delete[] m_pptData;
+	if (m_PointData!=NULL)
+		delete[] m_PointData;
 	if (m_pptScreen !=NULL)
 		delete[] m_pptScreen;
 	m_uiPointCount = 0;
@@ -145,12 +145,12 @@ CPlotData& CPlotData::operator=(const CPlotData& pd)
 	//  copy the point data over, calculating max & min.
 	if (pd.m_uiPointCount>0)
 	{
-		m_pptData = new FLOATPOINT[pd.m_uiPointCount];
+		m_PointData = new FLOATPOINT[pd.m_uiPointCount];
 		m_pptScreen = new POINT[pd.m_uiPointCount];
 		m_uiPointCount = pd.m_uiPointCount;
-		if (m_pptData!=NULL && m_pptScreen!=NULL)
+		if (m_PointData!=NULL && m_pptScreen!=NULL)
 		{
-			UpdateData(pd.m_pptData);
+			UpdateData(pd.m_PointData);
 		}
 	}
 	return *this;
@@ -169,8 +169,8 @@ bool CPlotData::UpdateData(FLOATPOINT *pptData)
 	//  calc the min and max.
 	for (UINT ii=0; ii<m_uiPointCount; ii++)
 	{
-		m_pptData[ii] = pptData[ii];
-		xAccum += m_pptData[ii].y;
+		m_PointData[ii] = pptData[ii];
+		xAccum += m_PointData[ii].y;
 		m_eXDataMin = (pptData[ii].x<m_eXDataMin) ? (pptData[ii].x) : (m_eXDataMin);
 		m_eXDataMax = (pptData[ii].x>m_eXDataMax) ? (pptData[ii].x) : (m_eXDataMax);
 		m_eYDataMin = (pptData[ii].y<m_eYDataMin) ? (pptData[ii].y) : (m_eYDataMin);
@@ -196,8 +196,8 @@ bool CPlotData::UpdateData(std::vector<FLOATPOINT> *pvecData)
 	//  calc the min and max.
 	for (UINT ii=0; ii<m_uiPointCount; ii++)
 	{
-		m_pptData[ii] = pvecData->at(ii);
-		xAccum += m_pptData[ii].y;
+		m_PointData[ii] = pvecData->at(ii);
+		xAccum += m_PointData[ii].y;
 		m_eXDataMin = (pvecData->at(ii).x<m_eXDataMin) ? (pvecData->at(ii).x) : (m_eXDataMin);
 		m_eXDataMax = (pvecData->at(ii).x>m_eXDataMax) ? (pvecData->at(ii).x) : (m_eXDataMax);
 		m_eYDataMin = (pvecData->at(ii).y<m_eYDataMin) ? (pvecData->at(ii).y) : (m_eYDataMin);
@@ -220,9 +220,9 @@ CPlotData::~CPlotData()
 void CPlotData::Clear()
 {
 	//  clean up the memory.
-	if (m_pptData!=NULL)
+	if (m_PointData!=NULL)
 	{
-		delete m_pptData;
+		delete m_PointData;
 	}
 	if (m_pptScreen!=NULL)
 	{
@@ -244,12 +244,14 @@ BEGIN_MESSAGE_MAP(CLinePlot, CWnd)
 	ON_WM_LBUTTONUP()
 	ON_WM_SIZE()
 	//}}AFX_MSG_MAP
+	ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 
 CLinePlot::CLinePlot()
 {
+	m_SelectedDataItemNo = -1;
 
 	m_XScaleInterval = 1;
 
@@ -340,10 +342,10 @@ void CLinePlot::DrawPlotData(CDC* pDC, UINT uiIndex, CRect &rcBounds)
 		for (UINT jj=0; jj < m_lstPlotData[uiIndex].m_uiPointCount; jj++)
 		{
 			m_lstPlotData[uiIndex].m_pptScreen[jj].x = rcBounds.left +
-				(int)( ( m_lstPlotData[uiIndex].m_pptData[jj].x - m_eXMin ) 
+				(int)( ( m_lstPlotData[uiIndex].m_PointData[jj].x - m_eXMin ) 
 				* xXScreenRatio );
 			m_lstPlotData[uiIndex].m_pptScreen[jj].y = rcBounds.bottom - 
-				(int)( ( m_lstPlotData[uiIndex].m_pptData[jj].y  - m_eYMin ) 
+				(int)( ( m_lstPlotData[uiIndex].m_PointData[jj].y  - m_eYMin ) 
 				* xYScreenRatio );
 		}
 		//  the screen points are up-to-date.
@@ -368,20 +370,76 @@ void CLinePlot::DrawPlotData(CDC* pDC, UINT uiIndex, CRect &rcBounds)
 		}
 	case enum_LpScatter:
 		{
-			//  create a pen to draw with.
-			CPen penPlot(PS_SOLID, 1, m_lstPlotData[uiIndex].m_crColor);
-			CPen *ppenOld = pDC->SelectObject(&penPlot);
 			//  draw the dots
 
-			for(int p = 0; p< m_lstPlotData[uiIndex].m_uiPointCount; p++)
+			int p;
+			for(p = 0; p< m_lstPlotData[uiIndex].m_uiPointCount; p++)
 			{
 			int x = m_lstPlotData[uiIndex].m_pptScreen[p].x;
 			int y = m_lstPlotData[uiIndex].m_pptScreen[p].y;
-			int size = 1;
-			pDC->Rectangle(x-size,y-size,x+size,y+size);
 
-		  }
+			CPen penPlot(PS_SOLID, 1, m_lstPlotData[uiIndex].m_PointData[p].crColor);
+			CPen *ppenOld = pDC->SelectObject(&penPlot);
+
+			int size = 2;
+			
+			int hour  = m_lstPlotData[uiIndex].m_PointData[p].Hour;
+			if( hour == -1 || hour <  m_StartHour ||  hour > m_StartHour  + m_AggregationWindow)
+			{
+			CPen penPlot(PS_SOLID, 1, m_lstPlotData[uiIndex].m_PointData[p].crColor);
+			CPen *ppenOld = pDC->SelectObject(&penPlot);
+			pDC->Rectangle(x-size,y-size,x+size,y+size);
 			pDC->SelectObject(ppenOld);
+			}
+			//else
+			//{
+			//CPen penPlot(PS_SOLID, 2, m_lstPlotData[uiIndex].m_PointData[p].crColor);
+			//CPen *ppenOld = pDC->SelectObject(&penPlot);
+			//pDC->Rectangle(x-size,y-size,x+size,y+size);
+			//pDC->SelectObject(ppenOld);
+			//}
+
+
+		   }
+
+			if (m_SelectedDataItemNo >=0)
+			{
+			p = m_SelectedDataItemNo;
+			int x = m_lstPlotData[uiIndex].m_pptScreen[p].x;
+			int y = m_lstPlotData[uiIndex].m_pptScreen[p].y;
+
+			CPen penSelectPlot(PS_SOLID, 2, RGB(255,0,0));
+			CPen *ppenOld = pDC->SelectObject(&penSelectPlot);
+		
+			int size = 4;
+			pDC->Rectangle(x-size,y-size,x+size,y+size);
+			pDC->SelectObject(ppenOld);
+			}
+
+			// diag  line
+			CPen penBlack(PS_SOLID, 1, RGB(0,0,0));
+			pDC->SelectObject(&penBlack);
+
+		double xXScreenRatio = rcBounds.Width() / (m_eXMax - m_eXMin);
+		double xYScreenRatio = rcBounds.Height() / (m_eYMax - m_eYMin);
+
+		float Max_value  = min(m_eXMax, m_eYMax);
+
+			pDC->MoveTo(rcBounds.left,rcBounds.bottom);
+
+			float Max_value_screen_x = rcBounds.left +
+				(int)( Max_value - m_eXMin ) 
+				* xXScreenRatio ;
+
+			float Max_value_screen_y = rcBounds.bottom - 
+				(int)( Max_value - m_eYMin ) 
+				* xYScreenRatio ;
+
+			pDC->LineTo(Max_value_screen_x, Max_value_screen_y);
+		
+			
+
+
 			break;
 		}
 	case enum_LpBar:
@@ -501,32 +559,32 @@ CRect CLinePlot::DrawFramework(CDC *pDC, CRect rcBounds, int nFontHeight, bool o
 	//  shrink the client rect away from the stats rect.
 	rcPlotArea.top += siScale.cy;
 
-	//  should we calculate a key rect?
-	if (m_lstPlotData.size()>=1)
-	{
-		//  what is the longest key?
-		int nMaxKey = 5;
-		for (int ii=0; ii<m_lstPlotData.size(); ii++)
-		{
-			nMaxKey = (m_lstPlotData[ii].m_szName.GetLength() > nMaxKey) ?
-				(m_lstPlotData[ii].m_szName.GetLength()) : (nMaxKey);
-		}
-		int nKeyWidth = (nFontHeight*nMaxKey)/2;
-		//  create a rect to hold the key
-		m_rcKeyArea = rcPlotArea;
-		m_rcKeyArea.left = m_rcKeyArea.right-nKeyWidth;
-		m_rcKeyArea.right = m_rcKeyArea.right+10;
+	////  should we calculate a key rect?
+	//if (m_lstPlotData.size()>=1)
+	//{
+	//	//  what is the longest key?
+	//	int nMaxKey = 5;
+	//	for (int ii=0; ii<m_lstPlotData.size(); ii++)
+	//	{
+	//		nMaxKey = (m_lstPlotData[ii].m_szName.GetLength() > nMaxKey) ?
+	//			(m_lstPlotData[ii].m_szName.GetLength()) : (nMaxKey);
+	//	}
+	//	int nKeyWidth = (nFontHeight*nMaxKey)/2;
+	//	//  create a rect to hold the key
+	//	m_rcKeyArea = rcPlotArea;
+	//	m_rcKeyArea.left = m_rcKeyArea.right-nKeyWidth;
+	//	m_rcKeyArea.right = m_rcKeyArea.right+10;
 
-		//  center & shrink the key rect to hold only the number of plots.
-		int nYCenter = (m_rcKeyArea.top + m_rcKeyArea.bottom) / 2;
-		m_rcKeyArea.top = nYCenter - ((siScale.cy+4) * m_lstPlotData.size()) / 2;
-		m_rcKeyArea.bottom = nYCenter + ((siScale.cy+4) * m_lstPlotData.size()) / 2;
+	//	//  center & shrink the key rect to hold only the number of plots.
+	//	int nYCenter = (m_rcKeyArea.top + m_rcKeyArea.bottom) / 2;
+	//	m_rcKeyArea.top = nYCenter - ((siScale.cy+4) * m_lstPlotData.size()) / 2;
+	//	m_rcKeyArea.bottom = nYCenter + ((siScale.cy+4) * m_lstPlotData.size()) / 2;
 
-		//  shrink the client rect away from the key rect.
-		rcPlotArea.right -= (nKeyWidth+10);
-		//  shrink the stats rect away from the key rect.
-		rcStats.right -= (nKeyWidth+10);
-	}
+	//	//  shrink the client rect away from the key rect.
+	//	rcPlotArea.right -= (nKeyWidth+10);
+	//	//  shrink the stats rect away from the key rect.
+	//	rcStats.right -= (nKeyWidth+10);
+	//}
 
 	//  adjust the space for the x caption so that it is centered.
 	rcXCaption.left = rcPlotArea.left;
@@ -687,101 +745,101 @@ CRect CLinePlot::DrawFramework(CDC *pDC, CRect rcBounds, int nFontHeight, bool o
 		}
 
 		//  get the center of the x-lock area.
-		POINT ptXLock = m_rcXLock.CenterPoint();
-		//  draw the bottom of the lock.
-		CRect rcXLockBottom;
-		rcXLockBottom.left = ptXLock.x - 5;
-		rcXLockBottom.right = ptXLock.x + 6;
-		rcXLockBottom.top = ptXLock.y - 2;
-		rcXLockBottom.bottom = ptXLock.y + 7;
-		pDC->FillSolidRect(rcXLockBottom, RGB(0, 0, 0));
-		pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
-		//  draw the lock top.
-		pDC->MoveTo(ptXLock.x - 4, ptXLock.y);
-		pDC->LineTo(ptXLock.x - 2, ptXLock.y - 7);
-		pDC->LineTo(ptXLock.x + 2, ptXLock.y - 7);
-		if (m_oIsXLocked==true)
-			pDC->LineTo(ptXLock.x + 4, ptXLock.y);
-		else
-			pDC->LineTo(ptXLock.x + 4, ptXLock.y-6);
+		//POINT ptXLock = m_rcXLock.CenterPoint();
+		////  draw the bottom of the lock.
+		//CRect rcXLockBottom;
+		//rcXLockBottom.left = ptXLock.x - 5;
+		//rcXLockBottom.right = ptXLock.x + 6;
+		//rcXLockBottom.top = ptXLock.y - 2;
+		//rcXLockBottom.bottom = ptXLock.y + 7;
+		//pDC->FillSolidRect(rcXLockBottom, RGB(0, 0, 0));
+		//pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
+		////  draw the lock top.
+		//pDC->MoveTo(ptXLock.x - 4, ptXLock.y);
+		//pDC->LineTo(ptXLock.x - 2, ptXLock.y - 7);
+		//pDC->LineTo(ptXLock.x + 2, ptXLock.y - 7);
+		//if (m_oIsXLocked==true)
+		//	pDC->LineTo(ptXLock.x + 4, ptXLock.y);
+		//else
+		//	pDC->LineTo(ptXLock.x + 4, ptXLock.y-6);
 
-		//  is the mouse over the y-lock area?
-		if (m_uiMouseOver&PLOT_OVER_Y_LOCK && oIsPrinting==false)
-		{
-			if (m_oIsMouseDown==true)
-				pDC->DrawEdge(m_rcYLock, BDR_SUNKENINNER, BF_RECT);
-			else
-				pDC->DrawEdge(m_rcYLock, BDR_RAISEDOUTER, BF_RECT);
-		}
+		////  is the mouse over the y-lock area?
+		//if (m_uiMouseOver&PLOT_OVER_Y_LOCK && oIsPrinting==false)
+		//{
+		//	if (m_oIsMouseDown==true)
+		//		pDC->DrawEdge(m_rcYLock, BDR_SUNKENINNER, BF_RECT);
+		//	else
+		//		pDC->DrawEdge(m_rcYLock, BDR_RAISEDOUTER, BF_RECT);
+		//}
 
-		//  get the center of the y-lock area.
-		POINT ptYLock = m_rcYLock.CenterPoint();
-		//  draw the bottom of the lock.
-		CRect rcYLockBottom;
-		rcYLockBottom.left = ptYLock.x - 5;
-		rcYLockBottom.right = ptYLock.x + 6;
-		rcYLockBottom.top = ptYLock.y - 2;
-		rcYLockBottom.bottom = ptYLock.y + 7;
-		pDC->FillSolidRect(rcYLockBottom, RGB(0, 0, 0));
-		pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
-		//  draw the lock top.
-		pDC->MoveTo(ptYLock.x - 4, ptYLock.y);
-		pDC->LineTo(ptYLock.x - 2, ptYLock.y - 7);
-		pDC->LineTo(ptYLock.x + 2, ptYLock.y - 7);
-		if (m_oIsYLocked==true)
-			pDC->LineTo(ptYLock.x + 4, ptYLock.y);
-		else
-			pDC->LineTo(ptYLock.x + 4, ptYLock.y-6);
+		////  get the center of the y-lock area.
+		//POINT ptYLock = m_rcYLock.CenterPoint();
+		////  draw the bottom of the lock.
+		//CRect rcYLockBottom;
+		//rcYLockBottom.left = ptYLock.x - 5;
+		//rcYLockBottom.right = ptYLock.x + 6;
+		//rcYLockBottom.top = ptYLock.y - 2;
+		//rcYLockBottom.bottom = ptYLock.y + 7;
+		//pDC->FillSolidRect(rcYLockBottom, RGB(0, 0, 0));
+		//pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
+		////  draw the lock top.
+		//pDC->MoveTo(ptYLock.x - 4, ptYLock.y);
+		//pDC->LineTo(ptYLock.x - 2, ptYLock.y - 7);
+		//pDC->LineTo(ptYLock.x + 2, ptYLock.y - 7);
+		//if (m_oIsYLocked==true)
+		//	pDC->LineTo(ptYLock.x + 4, ptYLock.y);
+		//else
+		//	pDC->LineTo(ptYLock.x + 4, ptYLock.y-6);
 
-		//  should we draw a key?
-		if (m_lstPlotData.size()>1)
-		{
-			//  setup to draw the keys.
-			POINT ptLeftBottom;
-			CString szName;
-			pDC->SetTextAlign(TA_LEFT | TA_BOTTOM);
-			CRect rcKey;
-			CRect rcColor;
-			//  draw all the keys
-			for (int ii=0; ii<m_lstPlotData.size(); ii++)
-			{
-				//  get the color.
-				COLORREF crKey = m_lstPlotData[ii].m_crColor;
-				//  get the name.
-				szName = m_lstPlotData[ii].m_szName;
-				//  calculate the bottom corner of the text.
-				ptLeftBottom.x = m_rcKeyArea.left + siScale.cy + 4;
-				ptLeftBottom.y = m_rcKeyArea.top + (ii+1)*(siScale.cy+4) - 2;
-				//  calculate a rect around the text.
-				rcKey.left = m_rcKeyArea.left;
-				rcKey.right = m_rcKeyArea.right;
-				rcKey.top = m_rcKeyArea.top + (ii)*(siScale.cy+4);
-				rcKey.bottom = m_rcKeyArea.top + (ii+1)*(siScale.cy+4) - 1;
-				m_lstPlotData[ii].m_rcKeyArea = rcKey;
-				//  get a rect for the color.
-				rcColor = rcKey;
-				rcColor.right = rcKey.left + siScale.cy+4;
-				rcColor.DeflateRect(4, 4, 4, 4);
-				//  draw the color;
-				pDC->FillSolidRect(&rcColor, crKey);
-				pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
-				//  draw the key text.
-				pDC->TextOut(ptLeftBottom.x, ptLeftBottom.y, szName);
-				//  is this one selected?
-				if (ii==m_nSelected && oIsPrinting==false)
-				{
-					//  draw a rect around the key.
-					pDC->DrawEdge(rcKey, BDR_SUNKENINNER, BF_RECT);
-				}
-				//  is the mouse over a key?
-				else if (ii==m_nMouseOverKey && 
-					(m_uiMouseOver&PLOT_OVER_KEY) && oIsPrinting==false)
-				{
-					//  draw a rect around the key.
-					pDC->DrawEdge(rcKey, BDR_RAISEDOUTER, BF_RECT);
-				}
-			}
-		}
+		////  should we draw a key?
+		//if (m_lstPlotData.size()>1)
+		//{
+		//	//  setup to draw the keys.
+		//	POINT ptLeftBottom;
+		//	CString szName;
+		//	pDC->SetTextAlign(TA_LEFT | TA_BOTTOM);
+		//	CRect rcKey;
+		//	CRect rcColor;
+		//	//  draw all the keys
+		//	for (int ii=0; ii<m_lstPlotData.size(); ii++)
+		//	{
+		//		//  get the color.
+		//		COLORREF crKey = m_lstPlotData[ii].m_crColor;
+		//		//  get the name.
+		//		szName = m_lstPlotData[ii].m_szName;
+		//		//  calculate the bottom corner of the text.
+		//		ptLeftBottom.x = m_rcKeyArea.left + siScale.cy + 4;
+		//		ptLeftBottom.y = m_rcKeyArea.top + (ii+1)*(siScale.cy+4) - 2;
+		//		//  calculate a rect around the text.
+		//		rcKey.left = m_rcKeyArea.left;
+		//		rcKey.right = m_rcKeyArea.right;
+		//		rcKey.top = m_rcKeyArea.top + (ii)*(siScale.cy+4);
+		//		rcKey.bottom = m_rcKeyArea.top + (ii+1)*(siScale.cy+4) - 1;
+		//		m_lstPlotData[ii].m_rcKeyArea = rcKey;
+		//		//  get a rect for the color.
+		//		rcColor = rcKey;
+		//		rcColor.right = rcKey.left + siScale.cy+4;
+		//		rcColor.DeflateRect(4, 4, 4, 4);
+		//		//  draw the color;
+		//		pDC->FillSolidRect(&rcColor, crKey);
+		//		pDC->SetBkColor(GetSysColor(COLOR_WINDOW));
+		//		//  draw the key text.
+		//		pDC->TextOut(ptLeftBottom.x, ptLeftBottom.y, szName);
+		//		//  is this one selected?
+		//		if (ii==m_nSelected && oIsPrinting==false)
+		//		{
+		//			//  draw a rect around the key.
+		//			pDC->DrawEdge(rcKey, BDR_SUNKENINNER, BF_RECT);
+		//		}
+		//		//  is the mouse over a key?
+		//		else if (ii==m_nMouseOverKey && 
+		//			(m_uiMouseOver&PLOT_OVER_KEY) && oIsPrinting==false)
+		//		{
+		//			//  draw a rect around the key.
+		//			pDC->DrawEdge(rcKey, BDR_RAISEDOUTER, BF_RECT);
+		//		}
+		//	}
+		//}
 
 		//  draw the position & stats.
 		/*
@@ -792,8 +850,8 @@ CRect CLinePlot::DrawFramework(CDC *pDC, CRect rcBounds, int nFontHeight, bool o
 		if (m_nCursor >= 0 && (UINT)(m_nCursor) < m_lstPlotData[m_nSelected].m_uiPointCount)
 		{
 		FLOATPOINT ptDisplay;
-		ptDisplay.x = m_lstPlotData[m_nSelected].m_pptData[m_nCursor].x;
-		ptDisplay.y = m_lstPlotData[m_nSelected].m_pptData[m_nCursor].y;
+		ptDisplay.x = m_lstPlotData[m_nSelected].m_PointData[m_nCursor].x;
+		ptDisplay.y = m_lstPlotData[m_nSelected].m_PointData[m_nCursor].y;
 		szPosition.Format("Position: %0.3f    Value: %0.3f",
 		ptDisplay.x, ptDisplay.y);
 		pDC->SetTextAlign(TA_LEFT | TA_BOTTOM);
@@ -833,7 +891,11 @@ void CLinePlot::DrawData(CDC *pDC, CRect rcBounds, bool oIsPrinting)
 		//  if we are printing, force a recalc of the screen plot data.
 		if (oIsPrinting==true)
 			m_lstPlotData[ii].m_oIsDirty = true;
-		DrawPlotData(pDC, (UINT)(ii), rcBounds);
+
+		if(ii==m_nSelected)
+		{
+			DrawPlotData(pDC, (UINT)(ii), rcBounds);
+		}
 		//  if we are printing, force a recalc of the screen plot data.
 		if (oIsPrinting==true)
 			m_lstPlotData[ii].m_oIsDirty = true;
@@ -853,22 +915,22 @@ void CLinePlot::DrawData(CDC *pDC, CRect rcBounds, bool oIsPrinting)
 		pDC->LineTo(m_rcZoom.left, m_rcZoom.top);
 	}
 
-	//  draw the cursor position.
-	else if (nCount>0 && m_nSelected>=0 && 
-		m_nSelected<nCount && oIsPrinting==false)
-	{
-		if (m_nCursor>=0 && (UINT)(m_nCursor) < m_lstPlotData[m_nSelected].m_uiPointCount)
-		{
-			//  set the cursor position on the plot.
-			POINT ptCursor;
-			ptCursor.x = m_lstPlotData[m_nSelected].m_pptScreen[m_nCursor].x;
-			ptCursor.y = m_lstPlotData[m_nSelected].m_pptScreen[m_nCursor].y;
-			pDC->MoveTo(m_rcPlotArea.left, ptCursor.y);
-			pDC->LineTo(m_rcPlotArea.right, ptCursor.y);
-			pDC->MoveTo(ptCursor.x, rcBounds.top);
-			pDC->LineTo(ptCursor.x, rcBounds.bottom);
-		}
-	}
+	////  draw the cursor position.
+	//else if (nCount>0 && m_nSelected>=0 && 
+	//	m_nSelected<nCount && oIsPrinting==false)
+	//{
+	//	if (m_nCursor>=0 && (UINT)(m_nCursor) < m_lstPlotData[m_nSelected].m_uiPointCount)
+	//	{
+	//		//  set the cursor position on the plot.
+	//		POINT ptCursor;
+	//		ptCursor.x = m_lstPlotData[m_nSelected].m_pptScreen[m_nCursor].x;
+	//		ptCursor.y = m_lstPlotData[m_nSelected].m_pptScreen[m_nCursor].y;
+	//		pDC->MoveTo(m_rcPlotArea.left, ptCursor.y);
+	//		pDC->LineTo(m_rcPlotArea.right, ptCursor.y);
+	//		pDC->MoveTo(ptCursor.x, rcBounds.top);
+	//		pDC->LineTo(ptCursor.x, rcBounds.bottom);
+	//	}
+	//}
 	pDC->SelectObject(ppenOld);
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -1204,209 +1266,209 @@ void CLinePlot::OnMouseMove(UINT nFlags, CPoint point)
 }
 /////////////////////////////////////////////////////////////////////////////
 
-void CLinePlot::OnLButtonDown(UINT nFlags, CPoint point) 
-{
-	//  setup to draw the zoom rect.
-	m_rcZoom.left = point.x;
-	m_rcZoom.top = point.y;
-	m_oIsMouseDown = true;
-
-	//  is the mouse over a key?
-	if (m_nMouseOverKey>=0 && (m_uiMouseOver&PLOT_OVER_KEY))
-	{
-		if (m_nSelected!=m_nMouseOverKey)
-		{
-			m_nSelected = m_nMouseOverKey;
-			if (m_hWnd!=NULL)
-				Invalidate();
-			// let the parent know that the selection changed.
-			EmitSelectionChanged();
-		}
-	}
-
-	//  is the mouse over the x-lock button?
-	else if (m_uiMouseOver&PLOT_OVER_X_LOCK)
-	{
-		if (m_hWnd!=NULL)
-			Invalidate();
-	}
-	//  is the mouse over the y-lock button?
-	else if (m_uiMouseOver&PLOT_OVER_Y_LOCK)
-	{
-		if (m_hWnd!=NULL)
-			Invalidate();
-	}
-
-	CWnd::OnLButtonDown(nFlags, point);
-}
-/////////////////////////////////////////////////////////////////////////////
-
-void CLinePlot::OnLButtonUp(UINT nFlags, CPoint point) 
-{
-	CString szFormat;
-	CString szData;
-
-	//  are we drawing a zoom rect?
-	if (m_oIsMouseDown==true && m_oHasPassedOverPlot==true)
-	{
-		//  we are no longer drawing a zoom rect.
-		m_rcZoom.right = point.x;
-		m_rcZoom.bottom = point.y;
-
-		//  was it drawn backwards or forwards?
-		if (m_rcZoom.bottom<m_rcZoom.top)
-		{
-			FLOATRECT rcLimits = GetLastZoomUndo();
-			m_eXMin = rcLimits.left;
-			m_eYMax = rcLimits.top;
-			m_eXMax = rcLimits.right;
-			m_eYMin = rcLimits.bottom;
-
-			//  force a recalculation of all the plots next repaint.
-			Refresh();
-			//  tell the parent that the limits are different.
-			EmitLimitsChanged();
-
-		}
-		else
-		{
-			//  save the current limits to the undo list.
-			FLOATRECT rcLimits;
-			rcLimits.left = m_eXMin;
-			rcLimits.top = m_eYMax;
-			rcLimits.right = m_eXMax;
-			rcLimits.bottom = m_eYMin;
-			AddToZoomUndo(rcLimits);
-
-			//  if the x-axis is locked, do nothing.
-			if (m_oIsXLocked==false)
-			{
-				//  determine the ratio of the ranges.
-				//  assume the inside dimensions are correct.
-				float eXDataRange = m_eXMax - m_eXMin + 1.0f;
-				float eXPixelRange = (float)(m_rcPlotArea.Width());
-				float eXRatio = eXDataRange / eXPixelRange;
-
-				//  get distance of left edge of rect from inside left edge.
-				float eXNewMin = m_eXMin + (m_rcZoom.left - m_rcPlotArea.left) * eXRatio;
-				//  make sure the new min is not less than the current min.
-				eXNewMin = (eXNewMin<m_eXMin) ? (m_eXMin) : (eXNewMin);
-
-				//  get distance of right edge of rect from inside left edge.
-				float eXNewMax = m_eXMin + (m_rcZoom.right - m_rcPlotArea.left) * eXRatio;
-				//  make sure the new max is not greater than the current min.
-				eXNewMax = (eXNewMax>m_eXMax) ? (m_eXMax) : (eXNewMax);
-
-				//  assign to variables
-				m_eXMin = eXNewMin;
-				m_eXMax = eXNewMax;
-			}
-
-			//  if the y-axis is locked, do nothing.
-			if (m_oIsYLocked==false)
-			{
-				//  determine the ratio of the ranges.
-				//  assume the inside dimensions are correct.
-				float eYDataRange = m_eYMax - m_eYMin + 1.0f;
-				float eYPixelRange = (float)(m_rcPlotArea.Height());
-				float eYRatio = eYDataRange / eYPixelRange;
-
-				//  get distance of bottom edge of rect from inside bottom edge.
-				float eYNewMin = m_eYMin + (m_rcPlotArea.bottom - m_rcZoom.bottom) * eYRatio;
-				//  make sure the new min is not less than the current min.
-				eYNewMin = (eYNewMin<m_eYMin) ? (m_eYMin) : (eYNewMin);
-
-				//  get distance of right edge of rect from inside left edge.
-				float eYNewMax = m_eYMin + (m_rcPlotArea.bottom - m_rcZoom.top) * eYRatio;
-				//  make sure the new max is not greater than the current min.
-				eYNewMax = (eYNewMax>m_eYMax) ? (m_eYMax) : (eYNewMax);
-
-				//  assign to variables
-				m_eYMin = eYNewMin;
-				m_eYMax = eYNewMax;
-			}
-
-			//  force a recalculation all the plots next time.
-			Refresh();
-			//  tell the parent that the limits are different.
-			EmitLimitsChanged();
-		}
-	}
-
-	//  not drawing a zoom rect now.
-	m_oIsMouseDown = false;
-	m_oHasPassedOverPlot = false;
-
-	//  is the mouse over the x min?
-	if ((m_uiMouseOver & PLOT_OVER_X_MIN) && m_oIsXLocked!=true)
-	{
-		szFormat.Format("%%0.%uf", m_uiXPrecision);
-		szData.Format(szFormat, m_eXMin);
-		m_edtDataEntry.SetWindowText(szData);
-		m_edtDataEntry.MoveWindow(m_rcXMin);
-		m_edtDataEntry.ShowWindow(TRUE);
-		m_edtDataEntry.SetFocus();
-	}
-
-	//  is the mouse over the x max?
-	else if ((m_uiMouseOver & PLOT_OVER_X_MAX) && m_oIsXLocked!=true)
-	{
-		szFormat.Format("%%0.%uf", m_uiXPrecision);
-		szData.Format(szFormat, m_eXMax);
-		m_edtDataEntry.SetWindowText(szData);
-		m_edtDataEntry.MoveWindow(m_rcXMax);
-		m_edtDataEntry.ShowWindow(TRUE);
-		m_edtDataEntry.SetFocus();
-	}
-
-	//  is the mouse over the y min?
-	else if ((m_uiMouseOver & PLOT_OVER_Y_MIN) && m_oIsYLocked!=true)
-	{
-		szFormat.Format("%%0.%uf", m_uiYPrecision);
-		szData.Format(szFormat, m_eYMin);
-		m_edtDataEntry.SetWindowText(szData);
-		m_edtDataEntry.MoveWindow(m_rcYMin);
-		m_edtDataEntry.ShowWindow(TRUE);
-		m_edtDataEntry.SetFocus();
-	}
-
-	//  is the mouse over the y max?
-	else if ((m_uiMouseOver & PLOT_OVER_Y_MAX) && m_oIsYLocked!=true)
-	{
-		szFormat.Format("%%0.%uf", m_uiYPrecision);
-		szData.Format(szFormat, m_eYMax);
-		m_edtDataEntry.SetWindowText(szData);
-		m_edtDataEntry.MoveWindow(m_rcYMax);
-		m_edtDataEntry.ShowWindow(TRUE);
-		m_edtDataEntry.SetFocus();
-	}
-
-	//  is the mouse over the x-lock button?
-	else if (m_uiMouseOver&PLOT_OVER_X_LOCK)
-	{
-		m_oIsXLocked = !m_oIsXLocked;
-		if (m_hWnd!=NULL)
-			Invalidate();
-	}
-	//  is the mouse over the y-lock button?
-	else if (m_uiMouseOver&PLOT_OVER_Y_LOCK)
-	{
-		m_oIsYLocked = !m_oIsYLocked;
-		if (m_hWnd!=NULL)
-			Invalidate();
-	}
-
-	else
-	{
-		//  if there is an edit window visible, hide it
-		HideEditWindow();
-		if (m_hWnd!=NULL)
-			Invalidate();
-	}
-
-	CWnd::OnLButtonUp(nFlags, point);
-}
-/////////////////////////////////////////////////////////////////////////////
+//void CLinePlot::OnLButtonDown(UINT nFlags, CPoint point) 
+//{
+//	//  setup to draw the zoom rect.
+//	m_rcZoom.left = point.x;
+//	m_rcZoom.top = point.y;
+//	m_oIsMouseDown = true;
+//
+//	//  is the mouse over a key?
+//	if (m_nMouseOverKey>=0 && (m_uiMouseOver&PLOT_OVER_KEY))
+//	{
+//		if (m_nSelected!=m_nMouseOverKey)
+//		{
+//			m_nSelected = m_nMouseOverKey;
+//			if (m_hWnd!=NULL)
+//				Invalidate();
+//			// let the parent know that the selection changed.
+//			EmitSelectionChanged();
+//		}
+//	}
+//
+//	//  is the mouse over the x-lock button?
+//	else if (m_uiMouseOver&PLOT_OVER_X_LOCK)
+//	{
+//		if (m_hWnd!=NULL)
+//			Invalidate();
+//	}
+//	//  is the mouse over the y-lock button?
+//	else if (m_uiMouseOver&PLOT_OVER_Y_LOCK)
+//	{
+//		if (m_hWnd!=NULL)
+//			Invalidate();
+//	}
+//
+//	CWnd::OnLButtonDown(nFlags, point);
+//}
+///////////////////////////////////////////////////////////////////////////////
+//
+//void CLinePlot::OnLButtonUp(UINT nFlags, CPoint point) 
+//{
+//	CString szFormat;
+//	CString szData;
+//
+//	//  are we drawing a zoom rect?
+//	if (m_oIsMouseDown==true && m_oHasPassedOverPlot==true)
+//	{
+//		//  we are no longer drawing a zoom rect.
+//		m_rcZoom.right = point.x;
+//		m_rcZoom.bottom = point.y;
+//
+//		//  was it drawn backwards or forwards?
+//		if (m_rcZoom.bottom<m_rcZoom.top)
+//		{
+//			FLOATRECT rcLimits = GetLastZoomUndo();
+//			m_eXMin = rcLimits.left;
+//			m_eYMax = rcLimits.top;
+//			m_eXMax = rcLimits.right;
+//			m_eYMin = rcLimits.bottom;
+//
+//			//  force a recalculation of all the plots next repaint.
+//			Refresh();
+//			//  tell the parent that the limits are different.
+//			EmitLimitsChanged();
+//
+//		}
+//		else
+//		{
+//			//  save the current limits to the undo list.
+//			FLOATRECT rcLimits;
+//			rcLimits.left = m_eXMin;
+//			rcLimits.top = m_eYMax;
+//			rcLimits.right = m_eXMax;
+//			rcLimits.bottom = m_eYMin;
+//			AddToZoomUndo(rcLimits);
+//
+//			//  if the x-axis is locked, do nothing.
+//			if (m_oIsXLocked==false)
+//			{
+//				//  determine the ratio of the ranges.
+//				//  assume the inside dimensions are correct.
+//				float eXDataRange = m_eXMax - m_eXMin + 1.0f;
+//				float eXPixelRange = (float)(m_rcPlotArea.Width());
+//				float eXRatio = eXDataRange / eXPixelRange;
+//
+//				//  get distance of left edge of rect from inside left edge.
+//				float eXNewMin = m_eXMin + (m_rcZoom.left - m_rcPlotArea.left) * eXRatio;
+//				//  make sure the new min is not less than the current min.
+//				eXNewMin = (eXNewMin<m_eXMin) ? (m_eXMin) : (eXNewMin);
+//
+//				//  get distance of right edge of rect from inside left edge.
+//				float eXNewMax = m_eXMin + (m_rcZoom.right - m_rcPlotArea.left) * eXRatio;
+//				//  make sure the new max is not greater than the current min.
+//				eXNewMax = (eXNewMax>m_eXMax) ? (m_eXMax) : (eXNewMax);
+//
+//				//  assign to variables
+//				m_eXMin = eXNewMin;
+//				m_eXMax = eXNewMax;
+//			}
+//
+//			//  if the y-axis is locked, do nothing.
+//			if (m_oIsYLocked==false)
+//			{
+//				//  determine the ratio of the ranges.
+//				//  assume the inside dimensions are correct.
+//				float eYDataRange = m_eYMax - m_eYMin + 1.0f;
+//				float eYPixelRange = (float)(m_rcPlotArea.Height());
+//				float eYRatio = eYDataRange / eYPixelRange;
+//
+//				//  get distance of bottom edge of rect from inside bottom edge.
+//				float eYNewMin = m_eYMin + (m_rcPlotArea.bottom - m_rcZoom.bottom) * eYRatio;
+//				//  make sure the new min is not less than the current min.
+//				eYNewMin = (eYNewMin<m_eYMin) ? (m_eYMin) : (eYNewMin);
+//
+//				//  get distance of right edge of rect from inside left edge.
+//				float eYNewMax = m_eYMin + (m_rcPlotArea.bottom - m_rcZoom.top) * eYRatio;
+//				//  make sure the new max is not greater than the current min.
+//				eYNewMax = (eYNewMax>m_eYMax) ? (m_eYMax) : (eYNewMax);
+//
+//				//  assign to variables
+//				m_eYMin = eYNewMin;
+//				m_eYMax = eYNewMax;
+//			}
+//
+//			//  force a recalculation all the plots next time.
+//			Refresh();
+//			//  tell the parent that the limits are different.
+//			EmitLimitsChanged();
+//		}
+//	}
+//
+//	//  not drawing a zoom rect now.
+//	m_oIsMouseDown = false;
+//	m_oHasPassedOverPlot = false;
+//
+//	//  is the mouse over the x min?
+//	if ((m_uiMouseOver & PLOT_OVER_X_MIN) && m_oIsXLocked!=true)
+//	{
+//		szFormat.Format("%%0.%uf", m_uiXPrecision);
+//		szData.Format(szFormat, m_eXMin);
+//		m_edtDataEntry.SetWindowText(szData);
+//		m_edtDataEntry.MoveWindow(m_rcXMin);
+//		m_edtDataEntry.ShowWindow(TRUE);
+//		m_edtDataEntry.SetFocus();
+//	}
+//
+//	//  is the mouse over the x max?
+//	else if ((m_uiMouseOver & PLOT_OVER_X_MAX) && m_oIsXLocked!=true)
+//	{
+//		szFormat.Format("%%0.%uf", m_uiXPrecision);
+//		szData.Format(szFormat, m_eXMax);
+//		m_edtDataEntry.SetWindowText(szData);
+//		m_edtDataEntry.MoveWindow(m_rcXMax);
+//		m_edtDataEntry.ShowWindow(TRUE);
+//		m_edtDataEntry.SetFocus();
+//	}
+//
+//	//  is the mouse over the y min?
+//	else if ((m_uiMouseOver & PLOT_OVER_Y_MIN) && m_oIsYLocked!=true)
+//	{
+//		szFormat.Format("%%0.%uf", m_uiYPrecision);
+//		szData.Format(szFormat, m_eYMin);
+//		m_edtDataEntry.SetWindowText(szData);
+//		m_edtDataEntry.MoveWindow(m_rcYMin);
+//		m_edtDataEntry.ShowWindow(TRUE);
+//		m_edtDataEntry.SetFocus();
+//	}
+//
+//	//  is the mouse over the y max?
+//	else if ((m_uiMouseOver & PLOT_OVER_Y_MAX) && m_oIsYLocked!=true)
+//	{
+//		szFormat.Format("%%0.%uf", m_uiYPrecision);
+//		szData.Format(szFormat, m_eYMax);
+//		m_edtDataEntry.SetWindowText(szData);
+//		m_edtDataEntry.MoveWindow(m_rcYMax);
+//		m_edtDataEntry.ShowWindow(TRUE);
+//		m_edtDataEntry.SetFocus();
+//	}
+//
+//	//  is the mouse over the x-lock button?
+//	else if (m_uiMouseOver&PLOT_OVER_X_LOCK)
+//	{
+//		m_oIsXLocked = !m_oIsXLocked;
+//		if (m_hWnd!=NULL)
+//			Invalidate();
+//	}
+//	//  is the mouse over the y-lock button?
+//	else if (m_uiMouseOver&PLOT_OVER_Y_LOCK)
+//	{
+//		m_oIsYLocked = !m_oIsYLocked;
+//		if (m_hWnd!=NULL)
+//			Invalidate();
+//	}
+//
+//	else
+//	{
+//		//  if there is an edit window visible, hide it
+//		HideEditWindow();
+//		if (m_hWnd!=NULL)
+//			Invalidate();
+//	}
+//
+//	CWnd::OnLButtonUp(nFlags, point);
+//}
+///////////////////////////////////////////////////////////////////////////////
 
 void CLinePlot::EmitSelectionChanged()
 {
@@ -1565,7 +1627,7 @@ bool CLinePlot::SetColor(int nIndex, COLORREF crColor)
 
 FLOATPOINT *CLinePlot::GetData(int nIndex)
 {
-	return m_lstPlotData[nIndex].m_pptData;
+	return m_lstPlotData[nIndex].m_PointData;
 }
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1679,3 +1741,49 @@ bool CLinePlot::SetIsYLocked(bool &oLock)
 	return true;
 }
 /////////////////////////////////////////////////////////////////////////////
+
+void CLinePlot::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+
+	m_SelectedDataItemNo = -1;
+	double screen_distance = 99999;
+	for (int ii=0; ii<m_lstPlotData.size(); ii++)
+	{
+	if (m_lstPlotData[ii].m_nStyle == enum_LpScatter && ii == m_nSelected)
+		{
+			for(int p = 0; p< m_lstPlotData[ii].m_uiPointCount; p++)
+			{
+			int hour  = m_lstPlotData[ii].m_PointData[p].Hour;
+				if( hour == -1 || hour <  m_StartHour ||  hour > m_StartHour  + m_AggregationWindow)
+				{
+
+				int x = m_lstPlotData[ii].m_pptScreen[p].x;
+				int y = m_lstPlotData[ii].m_pptScreen[p].y;
+				
+				double dis = (x - point.x)*(x - point.x) + (y - point.y)*(y - point.y);
+				double distance  = sqrt(dis);
+
+				if( distance < screen_distance && distance < 50)
+				{
+					screen_distance = distance;
+					m_SelectedDataItemNo = p;
+				}
+				}
+			}
+
+	  }
+	}
+	if(screen_distance< 50)
+	{
+
+	CWnd *pwndParent = GetParent();
+	NMHDR msgNotif;
+	msgNotif.code = NM_PLOT_SEL_CHANGE;
+	msgNotif.hwndFrom = this->GetSafeHwnd();
+	msgNotif.idFrom = this->GetDlgCtrlID();
+	pwndParent->SendMessage(WM_NOTIFY, 0, (UINT)&msgNotif);	
+	Invalidate();	
+	}
+
+	CWnd::OnLButtonDblClk(nFlags, point);
+}
