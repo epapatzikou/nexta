@@ -30,7 +30,26 @@
 #endif
 #pragma once
 #include "resource.h"       // main symbols
+#include "resource.h"       // main symbols
+#include <list>
+struct s_link_selection
+{
+public:
+	int link_no;
+	int document_no;
 
+	s_link_selection()
+	{
+		link_no = -1;
+		document_no = -1;
+
+	}
+
+};
+
+extern std::list<s_link_selection>	g_LinkDisplayList;
+extern void g_AddLinkIntoSelectionList(int link_no, int document_no, bool b_SelectOtherDocuments = false, double x = 0, double y = 0);
+extern void g_ClearLinkSelectionList();
 
 
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
@@ -58,6 +77,8 @@ CTLiteApp();
 	CMultiDocTemplate* m_pTemplateTimeTableView;
 // Overrides
 public:
+
+	bool m_bLoadNetworkOnly;
 	virtual BOOL InitInstance();
 
 // Implementation
@@ -69,6 +90,7 @@ public:
 	afx_msg void OnResearchtoolsExporttodtalitesensordataformat();
 	afx_msg void OnFileOpenmultipletrafficdataprojects();
 	afx_msg void OnAppExit();
+	afx_msg void OnFileOpenNetworkOnly();
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6

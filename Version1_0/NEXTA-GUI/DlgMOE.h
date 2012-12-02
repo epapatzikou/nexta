@@ -27,6 +27,7 @@
 #include <vector>
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
+#include "afxwin.h"
 
 enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,link_outflow_volume,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count};
 
@@ -72,6 +73,7 @@ public:
 	: CBaseDialog(CDlgMOE::IDD, pParent)
 {
 
+	m_bFixYRange = false;
 	m_NumberOfVehicles = 0;
 	m_pDoc = NULL;
 	m_pDoc2 = NULL; // alternative document
@@ -86,9 +88,9 @@ public:
 
 	m_YUpperBound = 100;
 	m_YLowerBound = 0;
-	m_TmLeft = 0;
+	m_TimeLeft = 0;
 	m_Range = g_Simulation_Time_Horizon;
-	m_TmRight = m_Range;  // use 5 days as starting show
+	m_TimeRight = m_Range;  // use 5 days as starting show
 	Cur_MOE_type1 = lane_volume;
 	Cur_MOE_type2 = no_display;
 
@@ -137,7 +139,8 @@ public:
    bool m_bShowWeatherLabel;
    float m_UnitData, m_UnitTime;
    int m_Range;
-   int m_TmLeft, m_TmRight;
+   bool m_bFirstLoadingFlag;
+   int m_TimeLeft, m_TimeRight;
    float m_YUpperBound;
    float m_YLowerBound;
 
@@ -152,7 +155,7 @@ public:
 	bool ExportDataToCSVFile(char csv_file[_MAX_PATH], int EventDataFlag);
     int GetMaxYValue(eLinkMOEMode MOEType);
 
-
+	bool m_bFixYRange;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_MOE };
 
@@ -219,4 +222,10 @@ public:
 	afx_msg void OnMoetype1Queuelength();
 	afx_msg void OnMoetype2Queuelength();
 	afx_msg void OnMoetype1Linkoutflowvolume();
+	afx_msg void OnDataFixyrange();
+	afx_msg void OnUpdateDataFixyrange(CCmdUI *pCmdUI);
+	CComboBox m_StartHour;
+	CComboBox m_EndHour;
+	afx_msg void OnCbnSelchangeComboStarttime();
+	afx_msg void OnCbnSelchangeComboEndtime();
 };

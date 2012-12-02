@@ -17,7 +17,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 /////////////////////////////////////////////////////////////////////////////
 // CLinePlotTestDlg dialog
-extern std::list<int>	g_LinkDisplayList;
+;
 CLinePlotTestDlg::CLinePlotTestDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CLinePlotTestDlg::IDD, pParent)
 	, m_bZoomToLink(FALSE)
@@ -302,7 +302,7 @@ void CLinePlotTestDlg::OnPlotSelChange(NMHDR* pNMHDR, LRESULT* pResult)
 		if(LinkNo>=0)
 		{
 		m_pDoc->m_SelectedLinkNo = LinkNo;
-		g_LinkDisplayList.push_back(LinkNo);
+		g_AddLinkIntoSelectionList(LinkNo,m_pDoc->m_DocumentNo );
 		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 
 		m_InfoList.ResetContent ();
@@ -317,10 +317,6 @@ void CLinePlotTestDlg::OnPlotSelChange(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 
 	}
-
-
-	
-
 
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -437,7 +433,6 @@ void CLinePlotTestDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
 	int SelDataItemNo = m_LinePlot.m_SelectedDataItemNo;
 	CDialog::OnLButtonDblClk(nFlags, point);
 
-	TRACE("SelDataItemNo = %d\ n", SelDataItemNo);
 }
 
 

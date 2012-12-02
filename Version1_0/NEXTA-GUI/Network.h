@@ -1152,8 +1152,18 @@ public:
 class DTALine
 {
 public:
+
+	DTALine ()
+	{
+	m_FromNodeNumber = 0;
+	m_ToNodeNumber = 0;
+	
+	}
 	int LineID;
-	double Shape_Length;
+	double Miles;
+
+	int m_FromNodeNumber;
+	int m_ToNodeNumber;
 
 	std::string TMC_code;
 	std::vector<GDPoint> m_ShapePoints;
@@ -1393,8 +1403,8 @@ public:
 		m_ReferenceBandWidthValue = 0;
 		m_SetBackStart = 0;
 		m_SetBackEnd = 0;
-		m_SpeedLimit  = 10;
-		m_ReversedSpeedLimit  = 10;
+		m_SpeedLimit  = 50;
+		m_ReversedSpeedLimit  = 50;
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
 
 		m_total_link_volume = 0;
@@ -2377,6 +2387,7 @@ public:
 
 	std::vector<int> m_LinkVector;
 	std::vector<CString> m_PathLabelVector;
+	std::string m_path_name;
 
 	int m_NodeNodeSum;
 

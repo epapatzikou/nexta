@@ -85,7 +85,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Node_Label.SetCurSel ((int)(m_ShowNodeTextMode));
 
 	m_Link_Label.AddString("None");
-	m_Link_Label.AddString("Link MOE");
+	m_Link_Label.AddString("Time-dependent Link MOE");
+	m_Link_Label.AddString("Time-dependent Link LOS Value");
 	m_Link_Label.AddString("Street Name");
 	m_Link_Label.AddString("From ID -> To ID");
 	m_Link_Label.AddString("Speed Limit (mph)");

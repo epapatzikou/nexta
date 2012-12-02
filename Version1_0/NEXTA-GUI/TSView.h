@@ -467,7 +467,7 @@ public:
 
    float m_UnitDistance, m_UnitTime;
    int m_Range;
-   int m_TmLeft, m_TmRight;
+   int m_TimeLeft, m_TimeRight;
    float m_LocalYUpperBound;
    float m_LocalYLowerBound;
 
@@ -487,10 +487,10 @@ public:
 	int GetTimestampFromPointX (int TimeXPosition, CRect PlotRect)
 	{
 		int timestamp = 0;
-		timestamp = (TimeXPosition - PlotRect.left) /m_UnitTime + m_TmLeft;
+		timestamp = (TimeXPosition - PlotRect.left) /m_UnitTime + m_TimeLeft;
 		
-		if( timestamp < m_TmLeft) timestamp = m_TmLeft;
-		if( timestamp > m_TmRight) timestamp = m_TmRight;
+		if( timestamp < m_TimeLeft) timestamp = m_TimeLeft;
+		if( timestamp > m_TimeRight) timestamp = m_TimeRight;
 
 		return max(0,timestamp);
 	}

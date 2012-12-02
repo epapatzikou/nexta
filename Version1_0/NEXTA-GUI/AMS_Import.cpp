@@ -2982,8 +2982,6 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 
 	m_AMSLogFile << "Step 1: Read control type definition data" << endl;
 
-
-
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	CString DefaultDataFolder;
@@ -3635,15 +3633,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 		}  // Lane attribute
 			
-
-		// Lanes
-			
-			//
-			
-			
-			
-			
-			
+	
 
 			if(parser.m_SynchroSectionName.find ("Timeplans")!=  string::npos) 
 			{
@@ -4001,4 +3991,8 @@ if(dlg.DoModal() == IDOK)
 	AfxMessageBox(str, MB_ICONINFORMATION);
 
 	}
+}
+
+void CTLiteDoc::OnImportInrixshapefileandspeeddata()
+{
 }

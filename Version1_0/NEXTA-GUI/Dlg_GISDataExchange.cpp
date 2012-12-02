@@ -19,8 +19,9 @@ CDlg_GISDataExchange::CDlg_GISDataExchange(CWnd* pParent /*=NULL*/)
 : CDialog(CDlg_GISDataExchange::IDD, pParent)
 , m_GIS_ShapeFile(_T(""))
 , m_CSV_File(_T(""))
+, m_bCreateNodeFromLink(FALSE)
+, m_SaveInputNodeLinkFiles(FALSE)
 {
-
 }
 
 CDlg_GISDataExchange::~CDlg_GISDataExchange()
@@ -34,6 +35,8 @@ void CDlg_GISDataExchange::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 	DDX_Text(pDX, IDC_EDIT_CSV_SHAPE_FILE, m_CSV_File);
 	DDX_Control(pDX, IDC_GIS_DATA_TYPE_LIST, m_GISDataType_List);
+	DDX_Check(pDX, IDC_CHECK1, m_bCreateNodeFromLink);
+	DDX_Check(pDX, IDC_CHECK2, m_SaveInputNodeLinkFiles);
 }
 
 
@@ -52,7 +55,8 @@ BEGIN_MESSAGE_MAP(CDlg_GISDataExchange, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_CSF_File, &CDlg_GISDataExchange::OnBnClickedButtonFindCsfFile)
 	ON_BN_CLICKED(IDOK, &CDlg_GISDataExchange::OnBnClickedOk)
 	ON_BN_CLICKED(ID_EXPORT_GIS_Shape_File, &CDlg_GISDataExchange::OnBnClickedExportGisShapeFile)
-	ON_BN_CLICKED(ID_IMPORT_GPS_LINE_TO_LINK, &CDlg_GISDataExchange::OnBnClickedImportGpsLineToLink)
+
+
 END_MESSAGE_MAP()
 
 
@@ -61,6 +65,8 @@ END_MESSAGE_MAP()
 void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 {
 #ifndef _WIN64
+
+	UpdateData(1);
 	if(m_GIS_ShapeFile.GetLength () == 0 )
 	{
 		AfxMessageBox("Please select a file first.");
@@ -71,6 +77,8 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 	CString message_str;
 	OGRRegisterAll();
 	OGRDataSource       *poDS;
+
+	bool bFindOverlappingNode = false;
 
 	poDS = OGRSFDriverRegistrar::Open(m_GIS_ShapeFile, FALSE );
 	if( poDS == NULL )
@@ -98,6 +106,11 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 		OGRFeature *poFeature;
 
 		int feature_count = 0;
+
+		// 0.03 miles
+		// 0.02: shape length / miles
+		double threashold = 0.02*0.001;
+
 		poLayer->ResetReading();
 
 		while( (poFeature = poLayer->GetNextFeature()) != NULL )
@@ -135,35 +148,152 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				std::string name =  poFeature->GetFieldAsString("Tmc");
 				pDTALine->TMC_code = name;
 
-				double shape_length = poFeature->GetFieldAsDouble("Shape_len");
+				double Miles = poFeature->GetFieldAsDouble("Miles");
 
-				 
-				pDTALine->Shape_Length =  shape_length;
+				 pDTALine->Miles =  Miles;
 				
 
 				OGRLineString *poLine = (OGRLineString *) poGeometry;
 
-				for(unsigned int si = 0; si< poLine->getNumPoints(); si++)
+				double shape_len = 0;
+ 
+				int step = 1;
+
+				// in case there are too many points
+				if(poLine->getNumPoints()>=900)
+					step = (int)(poLine->getNumPoints()/900)+1;
+
+				for(unsigned int si = 0; si< poLine->getNumPoints(); si+= step)
 				{
 					GDPoint pt;
 					pt.x  =  poLine->getX(si);
 					pt.y  =  poLine->getY(si);
 					pDTALine->m_ShapePoints .push_back(pt);
-
+				
 				}
+
+				if(m_bCreateNodeFromLink)
+				{
+
+				GDPoint start_pt = pDTALine->m_ShapePoints[0];
+				GDPoint end_pt = pDTALine->m_ShapePoints[pDTALine->m_ShapePoints.size()-1];
+				
+
+				//find or create from node number
+
+
+				int Node_Number  =  0;
+				
+				if( bFindOverlappingNode ) 
+					Node_Number = m_pDoc->FindCloseDTAPoint_NodeNumber(start_pt,threashold);
+				if(Node_Number ==0)
+				{
+				DTAPoint* pDTAPoint = new DTAPoint;
+				pDTAPoint->pt = start_pt;
+
+				pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
+				pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
+				pDTAPoint->m_ZoneID = 0;
+				pDTAPoint->m_ControlType = 0;
+
+				m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+				Node_Number = pDTAPoint->m_NodeNumber;
+				}
+				pDTALine->m_FromNodeNumber = Node_Number;
+
+
+				//find or create to node number
+				Node_Number  = 0;
+
+				if( bFindOverlappingNode ) 
+						Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber(end_pt,threashold);
+
+				if(Node_Number ==0)
+				{
+				DTAPoint* pDTAPoint = new DTAPoint;
+				pDTAPoint->pt = end_pt;
+
+				pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
+				pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
+				pDTAPoint->m_ZoneID = 0;
+				pDTAPoint->m_ControlType = 0;
+
+				m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+				Node_Number = pDTAPoint->m_NodeNumber;
+				}
+
+				pDTALine->m_ToNodeNumber = Node_Number;
+				}
+
+				pDTALine->LineID = m_pDoc->m_DTALineSet.size()+1;
+				//create link
 				m_pDoc->m_DTALineSet.push_back(pDTALine);
+
+				if(m_pDoc->m_DTALineSet.size()%1000 ==0)
+				{
+				message_str.Format("Processing %d link records.", m_pDoc->m_DTALineSet.size());
+				m_MessageList.AddString(message_str);
+				}
+			}
+
+
 
 
 			}
 
-			OGRFeature::DestroyFeature( poFeature );
+			// finish reading
+
+				if(m_bCreateNodeFromLink)
+				{
+					m_pDoc->m_UnitMile  = 0.02;
+
+					m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
+
+					
+					for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
+						iPoint != m_pDoc->m_DTAPointSet.end(); iPoint++)
+					{
+						int ThisNodeNumber = (*iPoint)->m_NodeNumber;
+							int Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber((*iPoint)->pt ,threashold, ThisNodeNumber );
+							if(Node_Number != ThisNodeNumber && Node_Number!=0)
+							{
+							 // find a close node, create a dummy link 
+								m_pDoc->AddNewLinkWithNodeNumbers (ThisNodeNumber,Node_Number);
+						
+							}
+
+							if(ThisNodeNumber %1000 == 0)
+							{
+								message_str.Format("processing %d nodes.", ThisNodeNumber);
+								m_MessageList.AddString(message_str);
+							}
+
+					}
+	
+				}
+				message_str.Format("Import %d link records from layer %d.", m_pDoc->m_DTALineSet.size(),i+1);
+				m_MessageList.AddString(message_str);
+
+
+				if(m_bCreateNodeFromLink)
+				{
+				message_str.Format("Create %d nodes from link shape points", m_pDoc->m_DTAPointSet.size());
+				m_MessageList.AddString(message_str);
+			
+				
+				}
+
+
+				OGRFeature::DestroyFeature( poFeature );
 			feature_count ++;
 		}
-		message_str.Format("Import %d point records from layer %d.", feature_count,i+1);
-		m_MessageList.AddString(message_str);
-	}
+		OGRDataSource::DestroyDataSource( poDS );
+				if(m_SaveInputNodeLinkFiles)
+				{
+				SaveTNPProject();
+				
+				}
 
-	OGRDataSource::DestroyDataSource( poDS );
 #endif
 }
 
@@ -373,6 +503,7 @@ void CDlg_GISDataExchange::OnBnClickedExportCsvFile()
 
 void CDlg_GISDataExchange::OnBnClickedExportGpsShapeFile()
 {
+	m_MessageList.ResetContent ();
 	CString m_CSV_FileName;
 	CFileDialog dlg (FALSE, "*.shp", "*.shp",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
 		"(*.shp)|*.shp||", NULL);
@@ -403,6 +534,8 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 {
 
 #ifndef _WIN64
+
+	m_MessageList.ResetContent ();
 
 	CWaitCursor wait;
 	CCSVParser parser;
@@ -721,39 +854,91 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 
 		return TRUE;  // return TRUE unless you set the focus to a control
 		// EXCEPTION: OCX Property Pages should return FALSE
-	}
-
-	void CDlg_GISDataExchange::OnBnClickedImportGpsLineToLink()
-	{
-
-		std::list<DTALink*>::iterator iLink;
-
-		//scan all links
-		for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
-		{
-		
-
-
-						for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
-				{
-					// fprintf(st,"%f,%f,0.0",(*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y);
-					DTALink* pLink = (*iLink);
-
-					// determine pLink->m_TMC_code
-				}
-
-		}
-
-	for (std::list<DTALine*>::iterator iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
-	{
-		for(unsigned int i = 0; i< (*iLine)->m_ShapePoints .size(); i++)
-		{
-		
-		}
-	}
-
-
-
 }
 
+void CDlg_GISDataExchange::SaveTNPProject()
+{
+	CString directory;
+	directory = m_GIS_ShapeFile.Left(m_GIS_ShapeFile.ReverseFind('\\') + 1);
+	CString ProjectFileName = m_GIS_ShapeFile.Left(m_GIS_ShapeFile.ReverseFind('.') + 1);
 
+	DeleteFile(ProjectFileName+"tnp");
+	DeleteFile(directory+"input_node.csv");
+	DeleteFile(directory+"input_link.csv");
+
+
+	FILE* st =NULL;
+	fopen_s(&st,ProjectFileName+"tnp","w");
+	if(st!=NULL)
+	{
+	fprintf(st,"Imported from shape file %s.", ProjectFileName);
+	
+	fclose(st);
+	}
+
+	fopen_s(&st,directory+"input_node.csv","w");
+	if(st!=NULL)
+	{
+		std::list<DTANode*>::iterator iNode;
+		fprintf(st, "name,node_id,x,y,geometry\n");
+			for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
+				iPoint !=m_pDoc-> m_DTAPointSet.end(); iPoint++)
+			{
+
+//				std::replace( (*iNode)->m_Name.begin(), (*iNode)->m_Name.end(), ',', ' '); 
+
+				fprintf(st, "%s,%d,%f,%f,\"<Point><coordinates>%f,%f</coordinates></Point>\"\n", 
+				(*iPoint)->m_Name .c_str (),
+				(*iPoint)->m_NodeNumber ,
+				(*iPoint)->pt .x ,(*iPoint)->pt .y,(*iPoint)->pt .x ,(*iPoint)->pt .y);
+
+			}
+
+		fclose(st);
+	}else
+	{
+		AfxMessageBox("Error: File input_node.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+		return;
+	}
+
+	fopen_s(&st,directory+"input_link.csv","w");
+	if(st!=NULL)
+	{
+		std::list<DTALink*>::iterator iLink;
+		fprintf(st,"link_id,TMC,from_node_id,to_node_id,length_in_mile,link_type,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,geometry\n");
+
+	std::list<DTALine*>::iterator iLine;
+
+	for (iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
+		{
+
+				fprintf(st,"%d,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
+					(*iLine)->LineID , 
+					(*iLine)->TMC_code.c_str (), 
+					(*iLine)->m_FromNodeNumber ,
+					(*iLine)->m_ToNodeNumber ,(*iLine)->Miles);
+
+				// geometry
+				fprintf(st,"\"<LineString><coordinates>");
+
+				for(unsigned int si = 0; si< (*iLine)->m_ShapePoints.size(); si++)
+				{
+					fprintf(st,"%f,%f,0.0",(*iLine)->m_ShapePoints[si].x, (*iLine)->m_ShapePoints[si].y);
+
+					if(si!=(*iLine)->m_ShapePoints.size()-1)
+						fprintf(st," ");
+				}
+
+				fprintf(st,"</coordinates></LineString>\",");
+			fprintf(st,"\n");
+
+	}
+
+
+	fclose(st);
+	}else
+	{
+		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
+		return;
+	}
+}

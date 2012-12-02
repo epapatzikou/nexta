@@ -118,7 +118,7 @@ public:
 				return false;
 			}
 
-			int index  = FieldsIndices[field_name];
+			unsigned int index  = FieldsIndices[field_name];
 			if(index >=LineFieldsValue.size())
 			{
 				return false;

@@ -8,6 +8,7 @@
 #define ID_EXPORT_DATA                  2
 #define ID_VOT_Distribution             2
 #define ID_BarChart                     2
+#define IDOK3                           2
 #define ID_EXPORT                       3
 #define ID_IMPORT                       3
 #define IDOK_FIND_PATH                  3
@@ -16,10 +17,12 @@
 #define ID_EDIT_SCENARIO                3
 #define IDOK2                           3
 #define IDDATA_Analysis                 3
+#define IDOK4                           3
 #define ID_IMPORT_Network_Only          4
 #define IDOK_FIND_VEHICLE               4
 #define ID_FindCriticalOD               4
 #define ID_FIND_RANDOM_ROUTE            4
+#define IDOK5                           4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
 #define ID_EXPORT_DATA3                 5
@@ -207,7 +210,6 @@
 #define IDC_EDIT_B_Lat                  1042
 #define IDC_LIST_DataSource             1042
 #define IDC_EDIT_A_Long                 1043
-#define IDC_LIST_TimeWindow2            1043
 #define IDC_LIST_StartHour              1043
 #define IDC_EDIT_B_Long                 1044
 #define IDC_COMBO_Origin                1045
@@ -309,7 +311,6 @@
 #define IDC_EDIT_CSV_SHAPE_FILE         1095
 #define ID_EXPORT_KML_FILE              1096
 #define IDC_Toll_Link_LIST              1096
-#define ID_IMPORT_GPS_LINE_TO_LINK      1096
 #define IDC_DISTANCE_BASED_TOLL_CHECK   1097
 #define ID_EXPORT_GIS_Shape_File        1097
 #define IDC_AREA_TOLL_CHECK             1098
@@ -372,6 +373,11 @@
 #define IDBARCHARTPIECHART              1146
 #define IDC_COMBO_Link_Selection        1147
 #define IDC_CHECK_ZOOM_TO_LINK          1148
+#define IDC_CHECK1                      1150
+#define IDC_CHECK2                      1151
+#define IDC_COMBO_StartTime             1151
+#define IDC_COMBO_StartTime2            1152
+#define IDC_COMBO_EndTime               1152
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -987,14 +993,18 @@
 #define ID_TOOLS_SENSORTOOLS            33523
 #define ID_SENSORTOOLS_CONVERTTO        33524
 #define ID_SENSORTOOLS_CONVERTTOHOURCOUNT 33525
+#define ID_DATA_GENERATESAMPLEINPUTPATHCSV 33526
+#define ID_DATA_CLEANALLPATHS           33527
+#define ID_IMPORT_INRIXSHAPEFILEANDSPEEDDATA 33528
+#define ID_DATA_FIXYRANGE               33529
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33526
-#define _APS_NEXT_CONTROL_VALUE         1150
+#define _APS_NEXT_COMMAND_VALUE         33530
+#define _APS_NEXT_CONTROL_VALUE         1152
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -102,8 +102,8 @@ CDlgPathMOE::CDlgPathMOE(CWnd* pParent /*=NULL*/)
 {
 	Cur_MOE_type1 = -1; 
 	Cur_MOE_type2 = -1;
-	m_TmLeft = 0;
-	m_TmRight = 1440; 
+	m_TimeLeft = 0;
+	m_TimeRight = 1440; 
 	m_YLowerBound = 0;
 	m_bShowMaxTravelTime = false;
 }
@@ -229,11 +229,11 @@ void CDlgPathMOE::OnPaint()
 
 	CRect PlotRectOrg = PlotRect;
 
-	if(m_TmLeft<0)
-		m_TmLeft = 0;
+	if(m_TimeLeft<0)
+		m_TimeLeft = 0;
 
-	if(m_TmRight< m_TmLeft+30)
-		m_TmRight= m_TmLeft+30;
+	if(m_TimeRight< m_TimeLeft+30)
+		m_TimeRight= m_TimeLeft+30;
 
 
 	if(Cur_MOE_type1>=0)
@@ -317,12 +317,12 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	// step 3: time interval
 	int TimeXPosition;
 
-	int TimeInterval = g_FindClosestTimeResolution(m_TmRight - m_TmLeft);
+	int TimeInterval = g_FindClosestTimeResolution(m_TimeRight - m_TimeLeft);
 
 	// time unit
 	m_UnitTime = 1;
-	if((m_TmRight - m_TmLeft)>0)
-		m_UnitTime = (float)(PlotRect.right - PlotRect.left)/(m_TmRight - m_TmLeft);
+	if((m_TimeRight - m_TimeLeft)>0)
+		m_UnitTime = (float)(PlotRect.right - PlotRect.left)/(m_TimeRight - m_TimeLeft);
 
 
 	// step 4: draw time axis
@@ -332,20 +332,20 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 
 	char buff[20];
-	for(i=m_TmLeft;i<=m_TmRight;i+=TimeInterval)
+	for(i=m_TimeLeft;i<=m_TimeRight;i+=TimeInterval)
 	{
-		if(i == m_TmLeft || i==m_TmRight)
+		if(i == m_TimeLeft || i==m_TimeRight)
 		{
 			pDC->SelectObject(&NormalPen);
 
-			//			i = int((m_TmLeft/TimeInterval)+0.5)*TimeInterval; // reset time starting point
+			//			i = int((m_TimeLeft/TimeInterval)+0.5)*TimeInterval; // reset time starting point
 		}
 		else
 			pDC->SelectObject(&DataPen);
 
-		TimeXPosition=(long)(PlotRect.left+(i-m_TmLeft)*m_UnitTime);
+		TimeXPosition=(long)(PlotRect.left+(i-m_TimeLeft)*m_UnitTime);
 
-		if(i>= m_TmLeft)
+		if(i>= m_TimeLeft)
 		{
 			pDC->MoveTo(TimeXPosition,PlotRect.bottom+2);
 			pDC->LineTo(TimeXPosition,PlotRect.top);
@@ -374,9 +374,9 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 	}
 
 	pDC->SelectObject(&s_PenSimulationClock);
-	if(g_Simulation_Time_Stamp >=m_TmLeft && g_Simulation_Time_Stamp <= m_TmRight )
+	if(g_Simulation_Time_Stamp >=m_TimeLeft && g_Simulation_Time_Stamp <= m_TimeRight )
 	{
-		TimeXPosition=(long)(PlotRect.left+(g_Simulation_Time_Stamp -m_TmLeft)*m_UnitTime);
+		TimeXPosition=(long)(PlotRect.left+(g_Simulation_Time_Stamp -m_TimeLeft)*m_UnitTime);
 		pDC->MoveTo(TimeXPosition,PlotRect.bottom+2);
 		pDC->LineTo(TimeXPosition,PlotRect.top);
 	}
@@ -392,7 +392,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 
 	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++)
 	{
-		for(int t=m_TmLeft;t<m_TmRight;t+=TimeInterval)
+		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
 			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type) )
 				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type);
@@ -473,13 +473,13 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		else
 			g_SelectThickPenColor(pDC,p);
 
-		for(int t=m_TmLeft;t<m_TmRight;t+=TimeInterval)
+		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
 			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, MOEType)*m_UnitData)+0.50);
-			TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
+			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
 
-			if(t==m_TmLeft)
+			if(t==m_TimeLeft)
 				pDC->MoveTo(TimeXPosition,TimeYPosition);
 			else
 				pDC->LineTo(TimeXPosition,TimeYPosition);
@@ -510,7 +510,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		for(t=0;t<1440;t+=15)
 			{
 			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 1)*m_UnitData)+0.50);
-				TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
+				TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
 			pt[pt_count].x =TimeXPosition;
 			pt[pt_count].y =TimeYPosition;
@@ -522,7 +522,7 @@ void CDlgPathMOE::DrawPlot(CPaintDC* pDC,int MOEType, CRect PlotRect)
 		for(t=1440-15;t>=0;t-=15)
 			{
 			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 0)*m_UnitData)+0.50);
-			TimeXPosition=(long)(PlotRect.left+(t-m_TmLeft)*m_UnitTime);
+			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
 			pt[pt_count].x =TimeXPosition;
 			pt[pt_count].y =TimeYPosition;
