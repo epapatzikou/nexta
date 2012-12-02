@@ -13,7 +13,7 @@
 #include <sstream>
 #include <vector>
 
-extern std::list<int>	g_LinkDisplayList;
+;
 extern CDlgPathList* g_pPathListDlg;
 // CDlgPathList dialog
 
@@ -52,6 +52,8 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_LINK, &CDlgPathList::OnBnClickedCheckZoomToSelectedLink)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgPathList::OnLbnSelchangeList1)
 	ON_BN_CLICKED(IDDATA_Analysis, &CDlgPathList::OnBnClickedDataAnalysis)
+	ON_COMMAND(ID_DATA_GENERATESAMPLEINPUTPATHCSV, &CDlgPathList::OnDataGeneratesampleinputpathcsv)
+	ON_COMMAND(ID_DATA_CLEANALLPATHS, &CDlgPathList::OnDataCleanallpaths)
 END_MESSAGE_MAP()
 
 
@@ -106,9 +108,8 @@ void CDlgPathList::ReloadData()
 
 	for(unsigned int i= 0; i< m_pDoc->m_PathDisplayList.size(); i++)
 	{
-	
 		CString str;
-		str.Format("Path Id.%d: %d links",i+1, m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+		str.Format("Path ID.%d: %s, %d links",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
 		m_PathList.AddString (str);
 	
 	}
@@ -181,8 +182,17 @@ void CDlgPathList::ReloadData()
 
 		if(m_pDoc->m_LinkTypeMap.find(pLink->m_link_type) != m_pDoc->m_LinkTypeMap.end())
 		{
-		sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
-		m_ListCtrl.SetItemText(Index,column_count++,text);
+
+			if(m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.size()>=1)
+			{
+				sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
+				m_ListCtrl.SetItemText(Index,column_count++,text);
+			}
+			else
+			{
+				sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
+				m_ListCtrl.SetItemText(Index,column_count++,text);
+			}
 
 		}
 
@@ -219,7 +229,7 @@ void CDlgPathList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 	UpdateData(1);
 	
 	m_pDoc->m_SelectedLinkNo = -1;
-	g_LinkDisplayList.clear ();
+	g_ClearLinkSelectionList();
 
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 	// TODO: Add your control notification handler code here
@@ -233,7 +243,7 @@ void CDlgPathList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,2,str,20);
 		int LinkNo = atoi(str);
 			m_pDoc->m_SelectedLinkNo = LinkNo;
-			g_LinkDisplayList.push_back(LinkNo);
+			g_AddLinkIntoSelectionList(LinkNo, m_pDoc->m_DocumentNo );
 
 	}
 	if(m_ZoomToSelectedLink == true)
@@ -299,8 +309,100 @@ void CDlgPathList::OnPathDataExportCSV()
 	if(st!=NULL)
 	{
 
-		fprintf(st,"Part I,link sequence\n\n");
-		fprintf(st,"path_id,link_sequence_no,from_node_id->to_node_id,name,length (ml),speed_limit,free-flow travel_time,# of lanes,Lane Saturation Flow Rate,Lane Capacity,Link Type\n");
+
+		fprintf(st,"\n\nPart I,time-dependent travel time");
+		// 
+
+		time_step= 15;
+
+			fprintf(st,"\n\nTime,,");
+
+			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
+			{
+			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+			}
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			
+		
+			fprintf(st,"\nPath %d, %s,",p+1,path_element.m_path_name .c_str ());
+
+			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
+			{
+				path_element.m_TimeDependentCount[t] = 0;
+				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
+
+				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+					if(pLink == NULL)
+						break;
+
+					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
+
+					if(i==0)// first link
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
+					else
+						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(path_element.m_TimeDependentTravelTime[t]);
+
+
+					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
+
+					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
+
+				}
+
+				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
+
+				fprintf(st,"%.2f,", path_element.m_TimeDependentTravelTime[t]);
+
+
+			}  // for each time
+
+		}
+
+		// travel time index
+
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			float total_free_flow_travel_time = 0;
+				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+					total_free_flow_travel_time += pLink->m_FreeFlowTravelTime ;
+				}
+				m_pDoc->m_PathDisplayList[p].total_free_flow_travel_time = total_free_flow_travel_time;
+		}
+
+		fprintf(st,"\n\nTravel Time Tndex,,");
+
+			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
+			{
+			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+			}
+
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			
+		
+			fprintf(st,"\nPath %d, %s,",p+1, path_element.m_path_name .c_str ());
+			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
+			{
+			fprintf(st,"%.2f,", path_element.m_TimeDependentTravelTime[t]/max(1,path_element.total_free_flow_travel_time));
+
+			}  // for each time
+
+		}
+
+		fprintf(st,"Part II,link sequence\n\n");
+		fprintf(st,"path_id,link_sequence_no,from_node_id->to_node_id,from_node_id,to_node_id,name,length (ml),speed_limit,free-flow travel_time,# of lanes,Lane Saturation Flow Rate,Lane Capacity,Link Type\n");
 
 				for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 		{
@@ -311,13 +413,14 @@ void CDlgPathList::OnPathDataExportCSV()
 					if(pLink != NULL)
 					{
 
-						fprintf(st,"%d,%d,\"[%d,%d]\",%s,%5.3f,%5.0f,%5.3f,%d,%5.0f,%5.1f,", p+1,i+1,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,  pLink->m_Name.c_str (), pLink->m_Length ,
+						fprintf(st,"%d,%d,\"[%d,%d]\",%d,%d,%s,%5.3f,%5.0f,%5.3f,%d,%5.0f,%5.1f,",
+							p+1,i+1,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber, pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,   pLink->m_Name.c_str (), pLink->m_Length ,
 				pLink->m_SpeedLimit, pLink->m_FreeFlowTravelTime , pLink->m_NumLanes,  pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ,pLink->m_LaneCapacity );
 
-				if(m_pDoc->m_LinkTypeMap.find(pLink->m_link_type) != m_pDoc->m_LinkTypeMap.end())
-				{
-				fprintf(st, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
-				}
+						if(m_pDoc->m_LinkTypeMap.find(pLink->m_link_type) != m_pDoc->m_LinkTypeMap.end())
+						{
+						fprintf(st, "%s", m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str ());
+						}
 					}
 
 				fprintf(st,"\n");
@@ -348,9 +451,9 @@ void CDlgPathList::OnPathDataExportCSV()
 
 			for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 		{
-		fprintf(st,"\n\nPart II,time-dependent speed contour for path (%d min) %d\n\n", p+1,step_size);
-
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+		fprintf(st,"\n\nPart III,time-dependent speed contour for path %d, %s,(%d min)\n\n", p+1, path_element.m_path_name .c_str (),step_size);
+
 
 
 				for (int i=path_element.m_LinkVector.size()-1 ; i >=0 ; i--)  // for each pass link
@@ -405,98 +508,8 @@ void CDlgPathList::OnPathDataExportCSV()
 		g_MOEAggregationIntervalInMin = previous_MOEAggregationIntervalInMin;
 		}
 
-		fprintf(st,"\n\nPart III,time-dependent travel time");
-		// 
 
-		time_step= 15;
-
-			fprintf(st,"\n\nTime,");
-
-			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
-			{
-			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
-			}
-
-		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
-		{
-			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
-			
-		
-			fprintf(st,"\nPath %d,",p+1);
-
-			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
-			{
-				path_element.m_TimeDependentCount[t] = 0;
-				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
-
-				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
-				{
-					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
-					if(pLink == NULL)
-						break;
-
-					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
-
-					if(i==0)// first link
-						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
-					else
-						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(path_element.m_TimeDependentTravelTime[t]);
-
-
-					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
-
-					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
-
-				}
-
-				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
-
-				fprintf(st,"%.2f,", path_element.m_TimeDependentTravelTime[t]);
-
-
-			}  // for each time
-
-		}
-
-		// travel time index
-
-
-		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
-		{
-			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
-			float total_free_flow_travel_time = 0;
-				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
-				{
-					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
-					total_free_flow_travel_time += pLink->m_FreeFlowTravelTime ;
-				}
-				m_pDoc->m_PathDisplayList[p].total_free_flow_travel_time = total_free_flow_travel_time;
-		}
-
-		fprintf(st,"\n\nTravel Time Tndex,");
-
-			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
-			{
-			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
-			}
-
-
-		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
-		{
-			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
-			
-		
-			fprintf(st,"\nPath %d,",p+1);
-			for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
-			{
-			fprintf(st,"%.2f,", path_element.m_TimeDependentTravelTime[t]/max(1,path_element.total_free_flow_travel_time));
-
-			}  // for each time
-
-		}
-
-
+		fprintf(st,"\n\nPart IV");
 		fprintf(st,"\n\npath_no,departure time,travel_time_in_min,travel_time_index,total observed count on passing links\n");
 		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 		{
@@ -592,12 +605,43 @@ void CDlgPathList::OnDataImportCsv()
 		m_pDoc->m_DestinationNodeID = -1;
 
 		int count = 0;
-		DTALink* pLink ;
+		DTALink* pLink =NULL;
 		while(parser.ReadRecord())
 		{
 			int link_id = 0;
 			int from_node_id;
 			int to_node_id;
+
+			int path_id = 0;
+			if(!parser.GetValueByFieldName("path_id",path_id))
+			{
+				AfxMessageBox("Field path_id has not been defined in file input_path.csv. Please check.");
+				break;
+			}
+
+			string path_name;
+			parser.GetValueByFieldName("path_name",path_name);
+
+			std::string TMC;
+			parser.GetValueByFieldName("TMC",TMC);
+
+			if(TMC.size () >=1)
+			{
+
+				if( m_pDoc->m_TMC2LinkMap.find (TMC) != m_pDoc->m_TMC2LinkMap.end())
+				{
+				pLink = m_pDoc->m_TMC2LinkMap[TMC];
+				}else
+				{
+				CString str;
+				str.Format ("TMC %s cannot be found in the current data set.",TMC.c_str () );
+				AfxMessageBox(str);
+				return;
+				}
+
+			}
+			else
+			{
 
 			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
 			{
@@ -610,20 +654,13 @@ void CDlgPathList::OnDataImportCsv()
 				break;
 			}
 
-			int path_id = 0;
-			if(!parser.GetValueByFieldName("path_id",path_id))
-			{
-				AfxMessageBox("Field path_id has not been defined in file input_path.csv. Please check.");
-				break;
+			pLink = m_pDoc->FindLinkWithNodeNumbers(from_node_id,to_node_id,lpszFileName,true);
 			}
 
-			string path_label;
-			parser.GetValueByFieldName("label",path_label);
-
-			pLink = m_pDoc->FindLinkWithNodeNumbers(from_node_id,to_node_id,lpszFileName,true);
-
 			if(pLink==NULL)
+			{
 				return;
+			}
 
 			if(count==0)
 			{
@@ -641,11 +678,22 @@ void CDlgPathList::OnDataImportCsv()
 			int route_no = m_pDoc->m_PathDisplayList.size()-1;
 			m_pDoc->m_PathDisplayList[route_no].m_LinkVector.push_back (pLink->m_LinkNo );
 
-			CString Path_Label;
-			Path_Label.Format("%d",route_no+1);
+			CString c_path_name;
+			c_path_name.Format("%d",route_no+1);
 
-			m_pDoc->m_PathDisplayList[route_no].m_PathLabelVector.push_back (Path_Label);
-			
+
+			m_pDoc->m_PathDisplayList[route_no].m_PathLabelVector.push_back (c_path_name);
+
+			if(m_pDoc->m_PathDisplayList[route_no].m_path_name.size() ==0)  // no value yet
+			{
+				if(path_name.size()>=1)
+				{
+					m_pDoc->m_PathDisplayList[route_no].m_path_name = path_name;
+				}else
+				{
+					m_pDoc->m_PathDisplayList[route_no].m_path_name = m_pDoc->CString2StdString (c_path_name);
+				}
+			}
 
 			count++;
 		}
@@ -706,5 +754,82 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 	m_pDoc->m_VehicleSelectionMode = CLS_path;
 	dlg.m_VehicleSelectionNo  = CLS_path;
 	dlg.DoModal ();
+
+}
+
+void CDlgPathList::OnDataGeneratesampleinputpathcsv()
+{
+	// calculate time-dependent travel time
+
+	int time_step = 1;
+
+	CString input_sample_file_name;
+
+	input_sample_file_name = m_pDoc->m_ProjectDirectory +"input_path_sample.csv";
+		// save demand here
+
+	FILE* st;
+	fopen_s(&st,input_sample_file_name,"w");
+	if(st==NULL)
+	{
+		//the file has exists.
+		m_pDoc->OpenCSVFileInExcel (input_sample_file_name);
+
+		return;
+		
+	}
+
+	if(m_pDoc->m_PathDisplayList.size()==0)
+	{
+		AfxMessageBox("To generate the file input_path_sample.csv, Please first define one or two paths by selecting the origin and destination nodes.", MB_ICONINFORMATION);
+		return;
+	}
+
+	if(st!=NULL)
+	{
+
+
+		fprintf(st,"path_id,path_name,link_sequence_no,from_node_id,to_node_id,link_id,link_name\n");
+
+				for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+					if(pLink != NULL)
+					{
+
+						fprintf(st,"%d,path %d,%d,%d,%d,%d-%d,%s\n",
+							p+1,p+1,i+1,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber, pLink->m_Name .c_str ());
+
+					}
+				}
+
+
+		} //for each path
+
+		fclose(st);
+		m_pDoc->OpenCSVFileInExcel (input_sample_file_name);
+	}
+}
+
+void CDlgPathList::OnDataCleanallpaths()
+{
+			for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			m_pDoc->m_PathDisplayList[p].m_LinkVector.clear ();
+		}
+		m_pDoc->m_PathDisplayList.clear ();
+
+		m_PathList.ResetContent ();
+
+		m_ListCtrl.DeleteAllItems();
+
+		m_pDoc->m_OriginNodeID = -1;
+		m_pDoc->m_DestinationNodeID = -1;
+		m_StrPathMOE.Format ("");
+		UpdateData(0);
+		m_pDoc->UpdateAllViews(0);
 
 }

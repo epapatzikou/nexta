@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_RESEARCHTOOLS_EXPORTTODTALITESENSORDATAFORMAT, &CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat)
 	ON_COMMAND(ID_FILE_OPENMULTIPLETRAFFICDATAPROJECTS, &CTLiteApp::OnFileOpenmultipletrafficdataprojects)
 	ON_COMMAND(ID_APP_EXIT, &CTLiteApp::OnAppExit)
+	ON_COMMAND(ID_FILE_OPEN_NETWORK_ONLY, &CTLiteApp::OnFileOpenNetworkOnly)
 END_MESSAGE_MAP()
 
 
@@ -77,6 +78,7 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
+	m_bLoadNetworkOnly = false;
 	//m_pTemplateGLView = false;
 	m_pTemplateTimeTableView = false;
 	m_pDocTemplate2DView = NULL;
@@ -216,20 +218,22 @@ void CTLiteApp::OnFileOpen()
 	static char BASED_CODE szFilter[] = "NEXTA Data Files (*.dws;*.tnp)|*.dws; *.tnp|DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|All Files (*.*)|*.*||";
 
 	 
-
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter);
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();
       CDocTemplate* pTemplate = m_pDocManager->GetNextDocTemplate(p);
       CTLiteDoc* pDoc = (CTLiteDoc*)pTemplate->OpenDocumentFile(0);
-      pDoc->OnOpenDocument(dlg.GetPathName());
+	  pDoc->m_bLoadNetworkDataOnly = m_bLoadNetworkOnly;
+      pDoc->OnOpenDocument(dlg.GetPathName(),m_bLoadNetworkOnly );
    }
 }
 
 void CTLiteApp::OnFileOpenNewDoc()
 {
+	m_bLoadNetworkOnly = false;
 	OnFileOpen();
+	//reset back
 }
 
 
@@ -392,3 +396,10 @@ void CTLiteApp::OnAppExit()
 {
 	exit(0);
 }
+
+void CTLiteApp::OnFileOpenNetworkOnly()
+{
+	m_bLoadNetworkOnly = true;
+	OnFileOpen();
+	//reset back
+	m_bLoadNetworkOnly = false;}

@@ -65,7 +65,7 @@ protected:
 
    float m_UnitDistance, m_UnitTime, m_UnitData;
    int m_Range;
-   int m_TmLeft, m_TmRight;
+   int m_TimeLeft, m_TimeRight;
    float m_YUpperBound;
    float m_YLowerBound;
    std::vector<double> m_SegmentDistanceVector;

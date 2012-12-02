@@ -35,7 +35,7 @@
 
 #include <string>
 #include <sstream>
-extern std::list<int>	g_LinkDisplayList;
+;
 // CNetworkDataTabDlg dialog
 IMPLEMENT_DYNAMIC(CNetworkDataTabDlg, CDialog)
 
@@ -351,7 +351,7 @@ void CNetworkDataTabDlg::ZoomToSelectedObject()
 
 	if(TabText == "Link")
 	{
-	g_LinkDisplayList.clear ();
+	g_ClearLinkSelectionList();
 
 	int nSelectedRow = m_ListCtrl.GetSelectionMark();
 	if (nSelectedRow == -1)
@@ -383,7 +383,7 @@ void CNetworkDataTabDlg::ZoomToSelectedObject()
 		if(pLink!=NULL)
 		{
 			m_pDoc->m_SelectedLinkNo = pLink->m_LinkNo;
-			g_LinkDisplayList.push_back(pLink->m_LinkNo);
+			g_AddLinkIntoSelectionList(pLink->m_LinkNo,m_pDoc->m_DocumentNo );
 		}
 
 	
@@ -406,7 +406,7 @@ void CNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 
 	if(TabText == "Link" || TabText == "Calibration Data")
 	{
-	g_LinkDisplayList.clear ();
+	g_ClearLinkSelectionList();
 
 	}
 
@@ -444,7 +444,7 @@ void CNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		if(pLink!=NULL)
 		{
 			m_pDoc->m_SelectedLinkNo = pLink->m_LinkNo;
-			g_LinkDisplayList.push_back(pLink->m_LinkNo);
+			g_AddLinkIntoSelectionList(pLink->m_LinkNo,m_pDoc->m_DocumentNo );
 		}
 			m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 

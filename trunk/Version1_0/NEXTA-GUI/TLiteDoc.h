@@ -259,6 +259,7 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	int m_DocumentNo;
 	int m_calibration_data_start_time_in_min;
 	int m_calibration_data_end_time_in_min;
 
@@ -404,7 +405,7 @@ public:
 
 	ofstream m_AMSLogFile;
 
-	BOOL OnOpenDocument(CString FileName);
+	BOOL OnOpenDocument(CString FileName, bool bLoadNetworkOnly =false);
 	BOOL OnOpenAMSDocument(CString FileName);
 	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
 	bool ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int start_time_in_min,int end_time_in_min);
@@ -548,6 +549,7 @@ public:
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
+	void ReadTMCSpeedData(LPCTSTR lpszFileName); 
 	void ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
@@ -880,7 +882,30 @@ public:
 	int m_LaneWidthInFeet;
 
 	void ShowLegend(bool ShowLegendStatus);
-	DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
+	DTALink* AddNewLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, bool bOffset = false, bool bAVIFlag = false)	
+	{
+		int FromNodeID =  -1;
+			if (m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
+			{
+			FromNodeID = m_NodeNumberMap[FromNodeNumber]->m_NodeID ;
+			}
+
+		int ToNodeID = -1;
+			if (m_NodeNumberMap.find(ToNodeNumber)!= m_NodeNumberMap.end())
+			{
+			ToNodeID = m_NodeNumberMap[ToNodeNumber]->m_NodeID ;
+			}
+
+			if(FromNodeID>=0 && ToNodeID>=0)
+			{
+				return AddNewLink(FromNodeID,ToNodeID,bOffset,bAVIFlag);
+			}else
+
+				return NULL;
+			 
+	}
+
+		DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bAVIFlag = false)
 	{
 		DTALink* pLink = 0;
 
@@ -918,7 +943,9 @@ public:
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
 		pLink->m_ReversedSpeedLimit = m_DefaultSpeedLimit;
 		pLink->m_avg_simulated_speed = m_DefaultSpeedLimit;
-		pLink->m_Length= pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
+
+		float length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
+		pLink->m_Length = max(0.0001,length);  // alllow mimum link length
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
@@ -1169,7 +1196,7 @@ public:
 	void SaveAMS_ODTable();
 
 	void ExportPathflowToCSVFiles();
-
+	std::map<std::string, DTALink*>  m_TMC2LinkMap;
 	CString m_GISMessage;
 
 	void ExportSynchroVersion6Files();
@@ -1187,6 +1214,7 @@ public:
 	std::map<CString,DTA_Approach> m_PredefinedApproachMap;
 
 	int Find_P2P_Angle(GDPoint p1, GDPoint p2);
+	double Find_P2P_Distance(GDPoint p1, GDPoint p2);
 	DTA_Turn Find_RelativeAngle_to_Left_OR_Right_Turn(int relative_angle);
 	DTA_Turn Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(int relative_angle);
 
@@ -1268,6 +1296,8 @@ public:
 		return pNode;
 	}
 
+
+
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
 		int FromNodeID = m_NodeNametoIDMap[FromNodeNumber];
@@ -1330,9 +1360,7 @@ public:
 	float m_ImageMoveSize;
 	bool m_BackgroundBitmapImportedButnotSaved;
 
-#ifndef _WIN64
-	CDaoDatabase m_Database;
-#endif
+
 
 	// Operations
 public:
@@ -1419,6 +1447,29 @@ public:
 		}
 	}
 
+	int FindCloseDTAPoint_NodeNumber(GDPoint pt, double threadshold, int this_node_number = -1)
+	{
+		 double min_distance  = 99999;
+		 int NodeNumber = 0;
+		for (std::list<DTAPoint*>::iterator iPoint = m_DTAPointSet.begin(); iPoint != m_DTAPointSet.end(); iPoint++)
+		{
+
+				double distance = Find_P2P_Distance((*iPoint)->pt,pt);
+				if(min_distance > distance && (*iPoint)->m_NodeNumber != this_node_number )
+				{
+					min_distance = distance;
+					NodeNumber = (*iPoint)->m_NodeNumber;
+				}
+		}
+	
+		if(min_distance < threadshold)
+			return NodeNumber;
+		else 
+			return 0;
+	}
+
+	
+	int SelectLink(GDPoint point);
 	// For demonstration
 	CString m_SampleExcelNetworkFile;
 	CString m_SampleOutputProjectFile;
@@ -1631,6 +1682,11 @@ public:
 	afx_msg void OnSafetyplanningtoolsRun();
 	afx_msg void OnSafetyplanningtoolsGeneratenode();
 	afx_msg void OnSensortoolsConverttoHourlyVolume();
+	afx_msg void OnImportInrixshapefileandspeeddata();
+
+#ifndef _WIN64
+	CDaoDatabase m_Database;
+#endif
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

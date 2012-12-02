@@ -75,7 +75,7 @@ public:
 
    float m_UnitDistance, m_UnitTime;
    int m_Range;
-   int m_TmLeft, m_TmRight;
+   int m_TimeLeft, m_TimeRight;
    float m_YUpperBound;
    float m_YLowerBound;
    int m_NumberOfLanes;

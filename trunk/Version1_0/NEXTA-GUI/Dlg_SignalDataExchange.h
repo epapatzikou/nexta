@@ -30,4 +30,5 @@ public:
 	afx_msg void OnBnClickedOk();
 	CListBox m_InfoList;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnLbnSelchangeListInfo();
 };

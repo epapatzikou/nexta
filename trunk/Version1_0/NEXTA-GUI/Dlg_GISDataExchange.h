@@ -30,6 +30,8 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+
+	void SaveTNPProject();
 	void ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString);
 	void ExportDataToCSV(CString string);
 	void ExportLinkLayerToShapeFile(CString string);
@@ -55,5 +57,7 @@ public:
 	afx_msg void OnBnClickedExportGisShapeFile();
 	CListBox m_GISDataType_List;
 	virtual BOOL OnInitDialog();
-	afx_msg void OnBnClickedImportGpsLineToLink();
+
+	BOOL m_bCreateNodeFromLink;
+	BOOL m_SaveInputNodeLinkFiles;
 };

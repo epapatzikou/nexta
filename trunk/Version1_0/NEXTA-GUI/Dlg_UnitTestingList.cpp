@@ -13,7 +13,7 @@
 #include <string>
 #include <sstream>
 
-extern std::list<int>	g_LinkDisplayList;
+
 // CDlg_UnitTestingList dialog
 extern CDlg_UnitTestingList* g_pUnitTestingListDlg;
 
@@ -137,7 +137,7 @@ void CDlg_UnitTestingList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
 			m_pDoc->m_SelectedLinkNo = LinkNo;
-			g_LinkDisplayList.push_back(LinkNo);
+			g_AddLinkIntoSelectionList(LinkNo, m_pDoc->m_DocumentNo);
 
 	}
 

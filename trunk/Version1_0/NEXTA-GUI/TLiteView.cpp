@@ -57,7 +57,7 @@
 GDPoint g_Origin;
 float g_Resolution;
 
-extern std::list<int>	g_LinkDisplayList;
+;
 
 extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
 extern float g_Simulation_Time_Stamp;
@@ -923,7 +923,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			// special condition 3: when a link is selected
 
 			//outside subarea
-			if((*iLink)->m_bIncludedinSubarea)
+			if((*iLink)->m_DisplayLinkID>=0 )
+			{
+				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
+				pDC->SetTextColor(RGB(255,0,0));
+						}
+			else if((*iLink)->m_bIncludedinSubarea)
 			{
 				g_SelectThickPenColor(pDC,1);
 				pDC->SetTextColor(RGB(255,0,0));
@@ -931,7 +936,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 				g_SelectThickPenColor(pDC,0);
 				pDC->SetTextColor(RGB(255,0,0));
-			}else
+			}else 
 				pDC->SetTextColor(RGB(255,228,181));
 
 			//step 6: draw link as line or band/bar
@@ -1205,7 +1210,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 
 				// show text condition 3: other statistics
-				if((m_ShowLinkTextMode == link_display_link_MOE) && (screen_distance > 20 && (
+				if((m_ShowLinkTextMode == link_display_link_MOE || m_ShowLinkTextMode == link_display_link_LOS) && (screen_distance > 20 && (
 					pDoc->m_LinkMOEMode == MOE_queue_length 
 					|| pDoc->m_LinkMOEMode == MOE_speed 
 					|| pDoc->m_LinkMOEMode == MOE_volume 
@@ -1214,8 +1219,20 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					|| pDoc->m_LinkMOEMode == MOE_safety)))
 				{
 
-					pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+					float power  = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+					int LOS = pDoc->GetLOSCode(power);
 
+					if( m_ShowLinkTextMode == link_display_link_MOE )
+						str_reference_text.Format ("%.1f",value);
+
+					if( m_ShowLinkTextMode == link_display_link_LOS )
+					{
+						str_reference_text.Format ("%d",LOS);
+					}
+
+
+					with_text = true;
+				
 						if(pDoc->m_bShowCalibrationResults && pDoc->m_LinkMOEMode == MOE_volume)  // special conditions with calibration mode
 						{
 							if((*iLink)->m_bSensorData )
@@ -2848,7 +2865,6 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 	double Min_distance = 1000;
 
 
-
 	for (std::list<DTALink*>::iterator iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
 
@@ -2872,34 +2888,37 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 				Min_distance = distance;
 			}
 		}
-	}		
+	}
 
 	if(Min_distance > pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution*20)
 	{
 		pDoc->m_SelectedLinkNo = -1;
-		g_LinkDisplayList.clear ();
+		g_ClearLinkSelectionList();
 	}else
 	{
 		// if the control key is not pressed 
 		if ( (nFlags & MK_CONTROL) ==false)
 		{
-			g_LinkDisplayList.clear ();
+			g_ClearLinkSelectionList();
 		}
 
 		int bFoundFlag = false;
 
-		for (std::list<int>::iterator iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
+		for (std::list<s_link_selection>::iterator iLink = g_LinkDisplayList.begin(); iLink != g_LinkDisplayList.end(); iLink++)
 		{
-			DTALink* pLink = pDoc->m_LinkNoMap [(*iLink)];
-			if(pLink->m_LinkNo  == pDoc->m_SelectedLinkNo)
+			if( (*iLink).link_no == pDoc->m_SelectedLinkNo &&  (*iLink).document_no == pDoc->m_DocumentNo )
 			{ 
 				bFoundFlag = true; 
 				break;
 			}
 
 		}
-		if(!bFoundFlag)
-			g_LinkDisplayList.push_back(pDoc->m_SelectedLinkNo);
+		if(!bFoundFlag)  //has not been selected;
+		{
+			GDPoint pt  = SPtoNP(point);
+
+			g_AddLinkIntoSelectionList(pDoc->m_SelectedLinkNo, pDoc->m_DocumentNo, true, pt.x, pt.y);
+		}
 	}
 
 
@@ -2911,9 +2930,13 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 	}
 
 	int LinkCount=0;
-	for (std::list<int>::iterator iLinkDisplay = g_LinkDisplayList.begin(); iLinkDisplay != g_LinkDisplayList.end(); iLinkDisplay++, LinkCount++)
+	for (std::list<s_link_selection>::iterator iLinkDisplay = g_LinkDisplayList.begin(); iLinkDisplay != g_LinkDisplayList.end(); iLinkDisplay++, LinkCount++)
 	{
-		pDoc->m_LinkNoMap[(*iLinkDisplay)]->m_DisplayLinkID = LinkCount;
+
+		if(pDoc->m_DocumentNo == (*iLinkDisplay).document_no )
+		{
+			pDoc->m_LinkNoMap[(*iLinkDisplay).link_no ]->m_DisplayLinkID = LinkCount;
+		}
 
 	}
 

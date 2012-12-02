@@ -47,4 +47,6 @@ public:
 	CListBox m_PathList;
 	afx_msg void OnLbnSelchangeList1();
 	afx_msg void OnBnClickedDataAnalysis();
+	afx_msg void OnDataGeneratesampleinputpathcsv();
+	afx_msg void OnDataCleanallpaths();
 };
