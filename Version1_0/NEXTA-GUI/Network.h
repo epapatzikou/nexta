@@ -1179,6 +1179,8 @@ typedef struct{
 class SLinkMOE  // time-dependent link MOE
 {
 public:
+
+
 	float SimulationQueueLength;
 	float SimulatedTravelTime;
 
@@ -1196,10 +1198,12 @@ public:
 	float SimuArrivalCumulativeFlow;   // flow volume
 	float SimuDepartureCumulativeFlow;   // flow volume
 
-	//int EventCode; // 0, 1: weather, 2: demand, 3: incident, 4: special events
-	//int EpisodeNo;
-	//int EpisoDuration;
 
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
 
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
@@ -1218,12 +1222,18 @@ public:
 		SimuDepartureCumulativeFlow = 0;
 		SimulationDensity = 0;
 
-
+				
 		// these four copies are used to compare simulation results and observed results
 		SensorSpeed = 0;
 		SensorLinkCount = 0;
 		SensorDensity = 0;
 		SimulatedTravelTimeCopy = 0;
+
+		Energy = 0;
+		CO2  = 0;
+		NOX  = 0;
+		CO  = 0;
+		HC  = 0;
 
 	};
 
@@ -1237,6 +1247,12 @@ public:
 		SimulationLinkFlow = 0;
 		SimuArrivalCumulativeFlow = 0;
 		SimulationDensity = 0;
+
+		Energy = 0;
+		CO2  = 0;
+		NOX  = 0;
+		CO  = 0;
+		HC  = 0;
 
 	}
 
@@ -2338,6 +2354,11 @@ public:
 		{
 			m_TimeDependentTravelTime[t] = 0;
 			m_SensorTimeDependentTravelTime[t] = 0;
+			m_TimeDependentEnergy[t]= 0;
+			m_TimeDependentCO2[t]= 0;
+			m_TimeDependentCO[t]= 0;
+			m_TimeDependentHC[t]=0;
+			m_TimeDependentNOX[t] = 0;
 		}
 
 		for(int t=0; t<1440; t++)
@@ -2371,7 +2392,7 @@ public:
 	}
 	void UpdateWithinDayStatistics();
 
-	float GetTravelTimeMOE(int time, int MOEType, int MOEAggregationIntervalInMin = 1)
+	float GetTimeDependentMOE(int time, int MOEType, int MOEAggregationIntervalInMin = 1)
 	{
 		float total_value = 0;
 		int total_count = 0;
@@ -2383,7 +2404,7 @@ public:
 
 		for(int t = time; t< min(1440,time+agg_interval); t++)
 		{
-			float value = GetTravelTimeMOEBy1Min(t,MOEType);
+			float value = GetTimeDependentMOEBy1Min(t,MOEType);
 			if(value>0.00001f) // with value
 			{
 				total_count++;
@@ -2404,9 +2425,9 @@ public:
 		{
 			if(m_SensorTimeDependentTravelTime[t]>0.01f && m_TimeDependentTravelTime[t]>0.01f)   // with data
 			{
-			float sensor_value = GetTravelTimeMOEBy1Min(t,1);
+			float sensor_value = GetTimeDependentMOEBy1Min(t,1);
 
-			float simulation_value = GetTravelTimeMOE(t,0,MOEAggregationIntervalInMin);
+			float simulation_value = GetTimeDependentMOE(t,0,MOEAggregationIntervalInMin);
 			total_error += fabs(sensor_value- simulation_value);
 
 			count++;
@@ -2427,9 +2448,9 @@ public:
 		{
 			if(m_SensorTimeDependentTravelTime[t]>0.01f && m_TimeDependentTravelTime[t]>0.01f)   // with data
 			{
-			float sensor_value = GetTravelTimeMOEBy1Min(t,1);
+			float sensor_value = GetTimeDependentMOEBy1Min(t,1);
 
-			float simulation_value = GetTravelTimeMOE(t,0,MOEAggregationIntervalInMin);
+			float simulation_value = GetTimeDependentMOE(t,0,MOEAggregationIntervalInMin);
 			total_error += fabs(sensor_value- simulation_value)/max(0.1,sensor_value)*100;
 
 			count++;
@@ -2441,13 +2462,22 @@ public:
 	}
 
 
-	float GetTravelTimeMOEBy1Min(int time, int MOEType)
+	float GetTimeDependentMOEBy1Min(int time, int MOEType)
 	{
 
 		switch(MOEType)
 		{
 		case 0: return m_TimeDependentTravelTime[time];
 		case 1: return m_SensorTimeDependentTravelTime[time];
+
+		case 2: return m_TimeDependentEnergy[time];
+		case 3: return m_TimeDependentCO2[time];
+		case 4: return m_TimeDependentNOX[time];
+		case 5: return m_TimeDependentCO[time];
+		case 6: return m_TimeDependentHC[time];
+		case 7: return m_TimeDependentEnergy[time]/1000/(121.7);  // gallon
+		case 8: return total_distance/max(0.01,m_TimeDependentEnergy[time]/1000/121.7);  // gallon
+
 		//case 1: return m_WithinDayMaxTimeDependentTravelTime[time];
 		//case 2: return m_WithinDayMeanTimeDependentTravelTime[time]+1.67f/3.0f*(m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time]);  // max-mean --> 3 sigma, use mean+ 1.67 sigma as utility,
 		//case 3: return (m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time])/3.0f;
@@ -2477,6 +2507,13 @@ public:
 
 	float m_TimeDependentTravelTime[1440];
 	float m_SensorTimeDependentTravelTime[1440];
+
+	float m_TimeDependentEnergy[1440];
+	float m_TimeDependentCO2[1440];
+	float m_TimeDependentCO[1440];
+	float m_TimeDependentHC[1440];
+	float m_TimeDependentNOX[1440];
+
 	float m_TimeDependentCount[1440];
 
 	float m_MaxTravelTime;

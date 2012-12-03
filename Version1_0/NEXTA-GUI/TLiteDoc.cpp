@@ -570,8 +570,8 @@ CTLiteDoc::CTLiteDoc()
 
 	// speed LOS bound
 	m_LOSBound[MOE_speed][1] = 100;
-	m_LOSBound[MOE_speed][2] = 90;
-	m_LOSBound[MOE_speed][3] = 70;
+	m_LOSBound[MOE_speed][2] = 80;
+	m_LOSBound[MOE_speed][3] = 65;
 	m_LOSBound[MOE_speed][4] = 50;
 	m_LOSBound[MOE_speed][5] = 40;
 	m_LOSBound[MOE_speed][6] = 33;
@@ -776,6 +776,8 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName)
 void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 {
 
+	float max_engergy_per_mile = 0;
+
 	typedef struct 
 	{
 		int from_node_id;
@@ -891,6 +893,18 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					pLink->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = element.cumulative_arrival_count;
 					pLink->m_LinkMOEAry[t].SimuDepartureCumulativeFlow = element.cumulative_departure_count;
 
+					float per_min_in_flow_count = max(1,element.link_volume_in_veh_per_hour_for_all_lanes/60);
+					pLink->m_LinkMOEAry[t].Energy = element.Energy/per_min_in_flow_count; /*  *60   to convert it to per min data */
+					pLink->m_LinkMOEAry[t].CO2 = element.CO2*60/per_min_in_flow_count;
+					pLink->m_LinkMOEAry[t].NOX = element.NOX*60/per_min_in_flow_count;
+					pLink->m_LinkMOEAry[t].CO = element.CO*60/per_min_in_flow_count;
+					pLink->m_LinkMOEAry[t].HC = element.HC*60/per_min_in_flow_count;
+
+					if(max_engergy_per_mile < pLink->m_LinkMOEAry[t].Energy )
+					{
+					max_engergy_per_mile = pLink->m_LinkMOEAry[t].Energy;
+					}
+
 				//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].SimulatedTravelTime);
 				}
 				i++;
@@ -903,6 +917,15 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 			}
 
 		}
+
+	m_LOSBound[MOE_emissions][1] = max_engergy_per_mile*1/7.0;
+	m_LOSBound[MOE_emissions][2] =  max_engergy_per_mile*2/7.0;
+	m_LOSBound[MOE_emissions][3] = max_engergy_per_mile*3/7.0;;
+	m_LOSBound[MOE_emissions][4] = max_engergy_per_mile*4/7.0;;
+	m_LOSBound[MOE_emissions][5] = max_engergy_per_mile*5/7.0;;
+	m_LOSBound[MOE_emissions][6] = max_engergy_per_mile*6/7.0;;
+	m_LOSBound[MOE_emissions][7] =  max_engergy_per_mile*7/7.0;
+
 
 		fclose(pFile);
 
@@ -5485,6 +5508,10 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationQueueLength;
 						break;
 
+					case MOE_emissions:
+						total_value+= pLink->m_LinkMOEAry[CurrentTime].Energy ;
+						break;
+
 					}
 
 				}
@@ -5520,6 +5547,11 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		case MOE_safety:  power = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length ); 
 			value = pLink->m_number_of_all_crashes/ max(0.0001,pLink->m_Length );
 			break;
+
+		case MOE_emissions:
+			 power = value;
+			break;
+
 
 		}
 
@@ -8369,6 +8401,9 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_avg_Energy: 
 			value = m_ClassificationTable[index].emissiondata .Energy   /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_avg_Energy_per_mile: 
+			value = m_ClassificationTable[index].emissiondata .Energy   /max(1,m_ClassificationTable[index].TotalDistance);
+			break;
 
 		case CLS_total_CO2: 
 			value = m_ClassificationTable[index].emissiondata .CO2    ;
@@ -8376,11 +8411,17 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_avg_CO2: 
 			value = m_ClassificationTable[index].emissiondata .CO2  /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_avg_CO2_per_mile: 
+			value = m_ClassificationTable[index].emissiondata .CO2  /max(1,m_ClassificationTable[index].TotalDistance);
+			break;
 		case CLS_total_NOx: 
 			value = m_ClassificationTable[index].emissiondata .NOX     ;
 			break;
 		case CLS_avg_Nox: 
 			value = m_ClassificationTable[index].emissiondata .NOX  /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+		case CLS_avg_Nox_per_mile: 
+			value = m_ClassificationTable[index].emissiondata .NOX  /max(1,m_ClassificationTable[index].TotalDistance);
 			break;
 		case CLS_total_CO: 
 			value = m_ClassificationTable[index].emissiondata .CO     ;
@@ -8388,11 +8429,17 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_avg_CO: 
 			value = m_ClassificationTable[index].emissiondata .CO  /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_avg_CO_per_mile: 
+			value = m_ClassificationTable[index].emissiondata .CO 	/max(1,m_ClassificationTable[index].TotalDistance);
+		break;
 		case CLS_total_HC: 
 			value = m_ClassificationTable[index].emissiondata .HC     ;
 			break;
 		case CLS_avg_HC: 
 			value = m_ClassificationTable[index].emissiondata .HC  /max(1,m_ClassificationTable[index].TotalVehicleSize);
+			break;
+		case CLS_avg_HC_per_mile: 
+			value = m_ClassificationTable[index].emissiondata .HC  /max(1,m_ClassificationTable[index].TotalDistance);
 			break;
 		case CLS_total_gallon: 
 			value = m_ClassificationTable[index].emissiondata .Energy/1000/(121.7)     ;

@@ -68,6 +68,7 @@ void CDlg_Legend::OnPaint()
  case MOE_speed: SetWindowText("% of Speed Limit"); break;
  case MOE_density: SetWindowText("Density (vhc/mile/ln)"); break;
  case MOE_reliability: SetWindowText("Variability Ratio"); break;
+ case MOE_emissions: SetWindowText("Avg Energy Per Mile"); break;
  case MOE_safety: SetWindowText("Annual Crash Frequency (per mile)"); break;
  default:  SetWindowText("Default Legend");
 

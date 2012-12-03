@@ -89,8 +89,14 @@ BOOL CDlgPathList::OnInitDialog()
 	CDialog::OnInitDialog();
 	
 	m_PlotType.AddString ("Simulated Travel Time (min)");
-	
 	m_PlotType.AddString ("Simulated and Observed Travel Time (min)");
+	m_PlotType.AddString ("Energy (KJ)");
+	m_PlotType.AddString ("CO2 (g)");
+	m_PlotType.AddString ("NOX (g)");
+	m_PlotType.AddString ("CO (g)");
+	m_PlotType.AddString ("HC (g)");
+	m_PlotType.AddString ("Gasline (Gallon)");
+	m_PlotType.AddString ("Miles Per Gallon");
 	m_PlotType.SetCurSel (0);
 
 	m_TimeLeft = int(m_pDoc->m_SimulationStartTime_in_min/30)*30 ;
@@ -404,8 +410,8 @@ void CDlgPathList::OnPathDataExportCSV()
 
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
 
-			float avg_simulated_travel_time = path_element.GetTravelTimeMOE (m_TimeLeft,0,m_TimeRight-m_TimeLeft);
-			float avg_sensor_travel_time = path_element.GetTravelTimeMOE (m_TimeLeft,1,m_TimeRight-m_TimeLeft);
+			float avg_simulated_travel_time = path_element.GetTimeDependentMOE (m_TimeLeft,0,m_TimeRight-m_TimeLeft);
+			float avg_sensor_travel_time = path_element.GetTimeDependentMOE (m_TimeLeft,1,m_TimeRight-m_TimeLeft);
 
 			fprintf(st,"\nPath %d,%s,%.2f,%.2f,%s,%.2f,%.2f,%.1f,%.2f,%.2f",
 				p+1,path_element.m_path_name .c_str (), path_element.total_distance,path_element.total_free_flow_travel_time,
@@ -437,41 +443,14 @@ void CDlgPathList::OnPathDataExportCSV()
 
 			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
 			{
-				path_element.m_TimeDependentCount[t] = 0;
-				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
-
-				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
-				{
-					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
-					if(pLink == NULL)
-						break;
-
-					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
-
-					if(i==0)// first link
-						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
-					else
-						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(path_element.m_TimeDependentTravelTime[t]);
-
-
-					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
-
-					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
-
-				}
-
-				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
-
 				fprintf(st,"%.2f,", path_element.m_TimeDependentTravelTime[t]);
-
 
 			}  // for each time
 
 
 			if(path_element.m_bWithSensorTravelTime  == true);
 			{
-			fprintf(st,"\n,,observed travel time,",p+1,path_element.m_path_name .c_str ());
+			fprintf(st,"\n,,observed travel time,");
 
 				for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
 				{
@@ -675,7 +654,7 @@ void CDlgPathList::OnPathDataExportCSV()
 				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
 
 				fprintf(st,"%d,%s,%.2f,%.2f,%.2f,%.2f\n",p+1, m_pDoc->GetTimeStampString(t),
-					path_element.GetTravelTimeMOE (t,0,15),path_element.GetTravelTimeMOE (t,1,1),
+					path_element.GetTimeDependentMOE (t,0,15),path_element.GetTimeDependentMOE (t,1,1),
 					path_element.m_TimeDependentTravelTime[t]/max(1,path_element.total_free_flow_travel_time), path_element.m_TimeDependentCount [t]);
 
 
@@ -695,7 +674,110 @@ void CDlgPathList::OnPathDataExportCSV()
 
 		} // for each path
 
-				fclose(st);
+		fprintf(st,"\n\nPart V,time-dependent emission data");
+		// 
+
+		time_step= 15;
+
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+					
+			fprintf(st,"\nTime,,,");
+
+			for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
+			{
+			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+			}
+
+			fprintf(st,"\nPath %d, %s,path engery,",p+1,path_element.m_path_name .c_str ());
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentEnergy [t]);
+			} 
+			
+			fprintf(st,"\nPath,,path CO2,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentCO2 [t]);
+			} 
+
+			fprintf(st,"\nPath,,path NOX,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentNOX [t]);
+			} 
+			
+			fprintf(st,"\nPath,,path CO,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentCO [t]);
+			} 
+
+			
+			fprintf(st,"\nPath,,path HC,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentHC[t]);
+			} 
+			// for each time
+
+			fprintf(st,"\nPath %d, %s,path engery per mile,",p+1,path_element.m_path_name .c_str ());
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentEnergy [t]/max(0.1,path_element.total_distance ));
+
+			} 
+
+			fprintf(st,"\nPath %d, %s,path mile per gallon,",p+1,path_element.m_path_name .c_str ());
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.total_distance /max(0.01,path_element.m_TimeDependentEnergy [t]/1000/121.7));
+
+			} 
+			fprintf(st,"\nPath,,path CO2 per mile,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentCO2 [t]/max(0.1,path_element.total_distance ));
+			} 
+
+			fprintf(st,"\nPath,,path NOX  per mile,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentNOX [t]/max(0.1,path_element.total_distance ));
+			} 
+			
+			fprintf(st,"\nPath,,path CO  per mile,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentCO [t]/max(0.1,path_element.total_distance ));
+			} 
+
+			
+			fprintf(st,"\nPath,,path HC  per mile,");
+
+			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
+			{
+				fprintf(st,"%.2f,", path_element.m_TimeDependentHC[t]/max(0.1,path_element.total_distance ));
+			} 
+			// for each time
+			fprintf(st,"\n");
+
+			}
+
+
+		fclose(st);
 	}else
 	{
 		AfxMessageBox("File cannot be opened.");
@@ -1023,7 +1105,7 @@ void CDlgPathList::OnPaint()
 
 		PlotRect.top += 70;
 		PlotRect.bottom = PlotRect.top + 160;
-		PlotRect.left += 360;
+		PlotRect.left += 375;
 		PlotRect.right -= 20;
 
 		DrawPlot(&dc, PlotRect);
@@ -1047,20 +1129,6 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 	pDC->SetBkMode(TRANSPARENT);
 	pDC->SelectObject(&NormalPen);
 
-// draw title
-	int MOEType = 0;
-	switch (MOEType)
-	{
-	case 0: str_MOE.Format ("Mean Time-dependent Travel Time (min)"); break;
-	case 1: str_MOE.Format ("Max Travel Time (min)"); break;
-	case 2: str_MOE.Format ("Travel Time Utility: Mean + 1.67*STD (min)"); break;
-	case 3: str_MOE.Format ("Travel Time Band [Mean, Max] (min)"); break;
-	case 4: str_MOE.Format ("Fuel Consumptions (gallon)"); break;
-	case 5: str_MOE.Format ("CO2 Emissions (pound)"); break;
-	case 6: str_MOE.Format ("Generalized Cost ($)"); break;
-
-	}
-	pDC->TextOut(PlotRect.right/2,PlotRect.top-20,str_MOE);
 
 	// step 1: calculate m_YUpperBound;
 	m_YUpperBound = 0;
@@ -1146,28 +1214,24 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 	m_YLowerBound = 0;
 	TimeInterval = 1;
 
-	int value_type = MOEType;
+	int value_type = m_PlotType.GetCurSel ();
 
-	if(m_PlotType.GetCurSel () == 0)
-	{
 		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
-			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type, m_MOEAggregationIntervalInMin) )
-				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, value_type,m_MOEAggregationIntervalInMin);
+			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, value_type, m_MOEAggregationIntervalInMin) )
+				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, value_type,m_MOEAggregationIntervalInMin);
 
 		}
-	
-	
-	}
-	if(m_PlotType.GetCurSel () == 1)
+
+		if(m_PlotType.GetCurSel () == 1)  //additional data
 	{
 		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
-			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 0,m_MOEAggregationIntervalInMin) )
-				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 0,m_MOEAggregationIntervalInMin);
+			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 0,m_MOEAggregationIntervalInMin) )
+				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 0,m_MOEAggregationIntervalInMin);
 
-			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 1,m_MOEAggregationIntervalInMin) )
-				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 1,m_MOEAggregationIntervalInMin);
+			if( m_YUpperBound < m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 1,m_MOEAggregationIntervalInMin) )
+				m_YUpperBound =  m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 1,m_MOEAggregationIntervalInMin);
 
 		}
 	
@@ -1203,6 +1267,8 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 	if(m_YUpperBound>=150.f)
 		YInterval = 30.f;
 
+	if(m_YUpperBound>=500.f)
+		YInterval = int(m_YUpperBound/5);
 
 	// data unit
 	m_UnitData = 1.f;
@@ -1233,14 +1299,15 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 			else
 			sprintf_s(buff,"%3.1f",ii);
 
-			pDC->TextOut(PlotRect.left-30,TimeYPosition-5,buff);
+			pDC->TextOut(PlotRect.left-45,TimeYPosition-5,buff);
 		}
 	}
+	
+	int MOEType = m_PlotType.GetCurSel ();
 
 
-	if(m_PlotType.GetCurSel () <=1)
+	if(m_PlotType.GetCurSel ()!=1)
 	{
-		MOEType = 0;
 
 		CPen BluePen(PS_SOLID,1,RGB(0,0,255));
 
@@ -1249,7 +1316,7 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 
 		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, MOEType, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, MOEType, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
 			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
 
@@ -1263,16 +1330,36 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 	}
 
 
-	if(m_PlotType.GetCurSel () ==1)  // draw sensor travelt ime
+	if(m_PlotType.GetCurSel () ==1)  // draw sensor travel time
 	{
-			MOEType = 1;  // observatiion
+
+			MOEType = 0;  // simulation
+		CPen BluePen(PS_SOLID,1,RGB(0,0,255));
+
+		pDC->SelectObject(&BluePen);
+
+	
+		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
+		{
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, MOEType, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
+			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
+
+
+			if(t==m_TimeLeft)
+				pDC->MoveTo(TimeXPosition,TimeYPosition);
+			else
+				pDC->LineTo(TimeXPosition,TimeYPosition);
+
+		}
+
+		MOEType = 1;  // observation
 		CPen SensorPen(PS_SOLID,1,RGB(255,64,64));	 // brown
 		pDC->SelectObject(&SensorPen);
 
 	
 		for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 		{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, MOEType, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
+			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, MOEType, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
 			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
 
@@ -1285,46 +1372,46 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 
 	}
 
-	// max travel time  // draw band (mean, max) for selected paths
-	if(MOEType==3)  
-	{
-		
-		g_SelectSuperThickPenColor(pDC,p);
+	//// max travel time  // draw band (mean, max) for selected paths
+	//if(MOEType==3)  
+	//{
+	//	
+	//	g_SelectSuperThickPenColor(pDC,p);
 
 
-		CPoint pt[192];
+	//	CPoint pt[192];
 
-		int pt_count = 0;
-		int t;
-		for(t=0;t<1440;t+=15)
-			{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 1, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
-				TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
+	//	int pt_count = 0;
+	//	int t;
+	//	for(t=0;t<1440;t+=15)
+	//		{
+	//		int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 1, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
+	//			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
-			pt[pt_count].x =TimeXPosition;
-			pt[pt_count].y =TimeYPosition;
-			
-			pt_count++;
+	//		pt[pt_count].x =TimeXPosition;
+	//		pt[pt_count].y =TimeYPosition;
+	//		
+	//		pt_count++;
 
-			}
+	//		}
 
-		for(t=1440-15;t>=0;t-=15)
-			{
-			int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTravelTimeMOE(t, 0, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
-			TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
+	//	for(t=1440-15;t>=0;t-=15)
+	//		{
+	//		int TimeYPosition= PlotRect.bottom - (int)((m_pDoc->m_PathDisplayList[p].GetTimeDependentMOE(t, 0, m_MOEAggregationIntervalInMin)*m_UnitData)+0.50);
+	//		TimeXPosition=(long)(PlotRect.left+(t-m_TimeLeft)*m_UnitTime);
 
-			pt[pt_count].x =TimeXPosition;
-			pt[pt_count].y =TimeYPosition;
-			
-			pt_count++;
+	//		pt[pt_count].x =TimeXPosition;
+	//		pt[pt_count].y =TimeYPosition;
+	//		
+	//		pt_count++;
 
-			}
+	//		}
 
-		g_SelectThickPenColor(pDC,p);
-		g_SelectBrushColor(pDC, p);
-		pDC->Polygon (pt,192);
+	//	g_SelectThickPenColor(pDC,p);
+	//	g_SelectBrushColor(pDC, p);
+	//	pDC->Polygon (pt,192);
 
-	}
+	//}
 
 
 /*
@@ -1428,6 +1515,11 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 			{
 				path_element.m_TimeDependentCount[t] = 0;
 				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
+				path_element.m_TimeDependentEnergy[t]= 0;
+				path_element.m_TimeDependentCO2[t]= 0;
+				path_element.m_TimeDependentCO[t]= 0;
+				path_element.m_TimeDependentHC[t]=0;
+				path_element.m_TimeDependentNOX[t] =0;
 
 				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 				{
@@ -1437,6 +1529,17 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
 
+					int current_time = path_element.m_TimeDependentTravelTime[t];
+					if(current_time >=1440)
+						current_time = 1439;
+
+					path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
+					path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
+					path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
+					path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
+					path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
+
+
 					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
 
 					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
@@ -1445,6 +1548,12 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
 				m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentEnergy[t] =   path_element.m_TimeDependentEnergy[t] ;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentCO2[t] =   path_element.m_TimeDependentCO2[t] ;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentCO[t] =   path_element.m_TimeDependentCO[t] ;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentHC[t] =   path_element.m_TimeDependentHC[t] ;
+				m_pDoc->m_PathDisplayList[p].m_TimeDependentNOX[t] =   path_element.m_TimeDependentNOX[t] ;
+
 
 
 			}  // for each time
