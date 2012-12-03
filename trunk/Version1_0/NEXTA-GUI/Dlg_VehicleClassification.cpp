@@ -118,19 +118,24 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboY.AddString ("Avg Generalized Travel Time:TT+Toll/VOT (min)"); 
 	
 	m_ComboY.AddString ("Total Energy (KJ)");  
-	m_ComboY.AddString ("Avg Energy (KJ)");
+	m_ComboY.AddString ("Avg Energy per vehicle (KJ)");
+	m_ComboY.AddString ("Avg Energy (KJ/mile)");
 
 	m_ComboY.AddString ("Total CO2 (g)");  
-	m_ComboY.AddString ("Avg CO2 (g)");
+	m_ComboY.AddString ("Avg CO2  per vehicle(g)");
+	m_ComboY.AddString ("Avg CO2 (g/mile)");
 
 	m_ComboY.AddString ("Total NOx (g)");  
-	m_ComboY.AddString ("Avg NOx (g)");
+	m_ComboY.AddString ("Avg NOx per vehicle(g)");
+	m_ComboY.AddString ("Avg NOx (g/mile)");
 
 	m_ComboY.AddString ("Total CO (g)");  
-	m_ComboY.AddString ("Avg CO (g)");
+	m_ComboY.AddString ("Avg CO per vehicle (g)");
+	m_ComboY.AddString ("Avg CO (g/mile)");
 
 	m_ComboY.AddString ("Total HC (g)");  
-	m_ComboY.AddString ("Avg HC (g)");
+	m_ComboY.AddString ("Avg HC per vehicle (g) ");
+	m_ComboY.AddString ("Avg HC (g/mile)");
 
 	m_ComboY.AddString ("Total Gallon");  
 	m_ComboY.AddString ("Avg Miles per Gallon");

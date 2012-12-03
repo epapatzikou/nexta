@@ -1019,7 +1019,7 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 					float value_of_fuel = 3.0f;  // per gallon
 					float value_of_emissions = 0.24f;  // per pounds
 
-					pdp->m_WithinDayMeanGeneralizedCost[t] = value_of_time* pdp->GetTravelTimeMOE(t,2)
+					pdp->m_WithinDayMeanGeneralizedCost[t] = value_of_time* pdp->GetTimeDependentMOE(t,2)
 						+ value_of_fuel* pdp->m_WithinDayMeanTimeDependentFuelConsumption[t]
 					+ value_of_emissions*pdp->m_WithinDayMeanTimeDependentEmissions[t];
 
@@ -1269,7 +1269,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 					float value_of_fuel = 3.0f;  // per gallon
 					float value_of_emissions = 0.24f;  // per pounds
 
-					path_element.m_WithinDayMeanGeneralizedCost[t] = value_of_time* path_element.GetTravelTimeMOE(t,2)
+					path_element.m_WithinDayMeanGeneralizedCost[t] = value_of_time* path_element.GetTimeDependentMOE(t,2)
 						+ value_of_fuel* path_element.m_WithinDayMeanTimeDependentFuelConsumption[t]
 					+ value_of_emissions*path_element.m_WithinDayMeanTimeDependentEmissions[t];
 

@@ -74,11 +74,11 @@ enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,CLS_pa
 enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {
 	CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
-	CLS_total_Energy,CLS_avg_Energy,
-	CLS_total_CO2,CLS_avg_CO2,
-	CLS_total_NOx,CLS_avg_Nox,
-	CLS_total_CO,CLS_avg_CO,
-	CLS_total_HC,CLS_avg_HC,
+	CLS_total_Energy,CLS_avg_Energy,CLS_avg_Energy_per_mile,
+	CLS_total_CO2,CLS_avg_CO2,CLS_avg_CO2_per_mile,
+	CLS_total_NOx,CLS_avg_Nox,CLS_avg_Nox_per_mile,
+	CLS_total_CO,CLS_avg_CO,CLS_avg_CO_per_mile,
+	CLS_total_HC,CLS_avg_HC,CLS_avg_HC_per_mile,
 	CLS_total_gallon,CLS_avg_mile_per_gallon
 };
 enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
