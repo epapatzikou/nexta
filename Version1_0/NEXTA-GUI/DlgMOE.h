@@ -50,6 +50,7 @@ class CDlgMOE : public CBaseDialog
 	DECLARE_DYNAMIC(CDlgMOE)
 	
 public:
+	std::vector<int> m_AggregationValueVector;
 	float m_HourlyBackgroundFlow;
 	int m_CarFollowingTimeResolutionPerMin;  // unit: x intervals per min
 	CTLiteDoc* m_pDoc;  // main document
@@ -152,7 +153,7 @@ public:
 	void DrawVehicleTrajectory(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);
-	bool ExportDataToCSVFile(char csv_file[_MAX_PATH], int EventDataFlag);
+	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
     int GetMaxYValue(eLinkMOEMode MOEType);
 
 	bool m_bFixYRange;
@@ -228,4 +229,6 @@ public:
 	CComboBox m_EndHour;
 	afx_msg void OnCbnSelchangeComboStarttime();
 	afx_msg void OnCbnSelchangeComboEndtime();
+	CComboBox m_AggregationIntervalList;
+	afx_msg void OnCbnSelchangeComboAgginterval();
 };

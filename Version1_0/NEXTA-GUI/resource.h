@@ -376,8 +376,13 @@
 #define IDC_CHECK1                      1150
 #define IDC_CHECK2                      1151
 #define IDC_COMBO_StartTime             1151
-#define IDC_COMBO_StartTime2            1152
 #define IDC_COMBO_EndTime               1152
+#define IDC_COMBO_StartHour             1152
+#define IDC_COMBO_AggInterval           1153
+#define IDC_COMBO_EndHour               1153
+#define IDC_COMBO_AggIntrevalList       1154
+#define IDC_COMBO3                      1155
+#define IDC_COMBO_PLOT_TYPE             1155
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1004,7 +1009,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
 #define _APS_NEXT_COMMAND_VALUE         33530
-#define _APS_NEXT_CONTROL_VALUE         1152
+#define _APS_NEXT_CONTROL_VALUE         1156
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

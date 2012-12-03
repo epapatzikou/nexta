@@ -2114,6 +2114,18 @@ void AdjustLinkEndpointsWithSetBack()
 		}
 	}
 
+	float GetSensorLaneHourlyVolume(int t)
+	{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			return m_LinkMOEAry[t].SensorLinkCount/m_NumLanes*60;
+		else
+		{
+			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return m_total_link_volume/m_NumLanes;
+			else
+				return 0;
+		}
+	}
 
 	float GetSimulatedLinkOutVolume(int current_time)
 	{
@@ -2318,11 +2330,14 @@ class DTAPath
 public:
 	DTAPath()
 	{
+		m_bWithSensorTravelTime = false;
 		total_free_flow_travel_time = 0;
+		total_distance = 0;
 		
 		for(int t=0; t<1440; t++)
 		{
 			m_TimeDependentTravelTime[t] = 0;
+			m_SensorTimeDependentTravelTime[t] = 0;
 		}
 
 		for(int t=0; t<1440; t++)
@@ -2352,29 +2367,96 @@ public:
 
 	void Init(int LinkSize, int TimeHorizon)
 	{
-		m_TimeHorizon = TimeHorizon;
 		m_number_of_days = max(1,TimeHorizon/1440);
 	}
 	void UpdateWithinDayStatistics();
 
-
-	float GetTravelTimeMOE(int time, int MOEType)
+	float GetTravelTimeMOE(int time, int MOEType, int MOEAggregationIntervalInMin = 1)
 	{
-		if(m_TimeHorizon==0)
-			return 0;
+		float total_value = 0;
+		int total_count = 0;
+
+		int agg_interval = MOEAggregationIntervalInMin;
+
+		if(MOEType == 1)  //sensor data
+			agg_interval = 1;
+
+		for(int t = time; t< min(1440,time+agg_interval); t++)
+		{
+			float value = GetTravelTimeMOEBy1Min(t,MOEType);
+			if(value>0.00001f) // with value
+			{
+				total_count++;
+				total_value+= value;
+			}
+		}
+
+		return total_value/max(1,total_count);
+	}
+
+	float GetErrorStatistics(int StartTime, int EndTime, int MOEAggregationIntervalInMin = 1)
+	{
+
+		int count = 0;
+		float total_error = 0;
+
+		for(int t = StartTime; t< min(1440,EndTime); t++)
+		{
+			if(m_SensorTimeDependentTravelTime[t]>0.01f && m_TimeDependentTravelTime[t]>0.01f)   // with data
+			{
+			float sensor_value = GetTravelTimeMOEBy1Min(t,1);
+
+			float simulation_value = GetTravelTimeMOE(t,0,MOEAggregationIntervalInMin);
+			total_error += fabs(sensor_value- simulation_value);
+
+			count++;
+			}
+		}
+
+	
+		return total_error/max(1,count);
+	}
+
+	float GetRelativeErrorStatistics(int StartTime, int EndTime, int MOEAggregationIntervalInMin = 1)
+	{
+
+		int count = 0;
+		float total_error = 0;
+
+		for(int t = StartTime; t< min(1440,EndTime); t++)
+		{
+			if(m_SensorTimeDependentTravelTime[t]>0.01f && m_TimeDependentTravelTime[t]>0.01f)   // with data
+			{
+			float sensor_value = GetTravelTimeMOEBy1Min(t,1);
+
+			float simulation_value = GetTravelTimeMOE(t,0,MOEAggregationIntervalInMin);
+			total_error += fabs(sensor_value- simulation_value)/max(0.1,sensor_value)*100;
+
+			count++;
+			}
+		}
+
+	
+		return total_error/max(1,count);
+	}
+
+
+	float GetTravelTimeMOEBy1Min(int time, int MOEType)
+	{
 
 		switch(MOEType)
 		{
-		case 0: return m_WithinDayMeanTimeDependentTravelTime[time];
-		case 1: return m_WithinDayMaxTimeDependentTravelTime[time];
-		case 2: return m_WithinDayMeanTimeDependentTravelTime[time]+1.67f/3.0f*(m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time]);  // max-mean --> 3 sigma, use mean+ 1.67 sigma as utility,
-		case 3: return (m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time])/3.0f;
-		case 4: return m_WithinDayMeanTimeDependentFuelConsumption[time];
-		case 5: return m_WithinDayMeanTimeDependentEmissions[time];
-		case 6: return m_WithinDayMeanGeneralizedCost[time];
+		case 0: return m_TimeDependentTravelTime[time];
+		case 1: return m_SensorTimeDependentTravelTime[time];
+		//case 1: return m_WithinDayMaxTimeDependentTravelTime[time];
+		//case 2: return m_WithinDayMeanTimeDependentTravelTime[time]+1.67f/3.0f*(m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time]);  // max-mean --> 3 sigma, use mean+ 1.67 sigma as utility,
+		//case 3: return (m_WithinDayMaxTimeDependentTravelTime[time]-m_WithinDayMeanTimeDependentTravelTime[time])/3.0f;
+		//case 4: return m_WithinDayMeanTimeDependentFuelConsumption[time];
+		//case 5: return m_WithinDayMeanTimeDependentEmissions[time];
+		//case 6: return m_WithinDayMeanGeneralizedCost[time];
 
 
-		default: return m_WithinDayMeanTimeDependentTravelTime[time];
+		default: return m_TimeDependentTravelTime[time];
 		}
 
 	}
@@ -2383,7 +2465,9 @@ public:
 	{
 	}
 
+	bool m_bWithSensorTravelTime;
 	float total_free_flow_travel_time;
+	float total_distance;
 
 	std::vector<int> m_LinkVector;
 	std::vector<CString> m_PathLabelVector;
@@ -2392,6 +2476,7 @@ public:
 	int m_NodeNodeSum;
 
 	float m_TimeDependentTravelTime[1440];
+	float m_SensorTimeDependentTravelTime[1440];
 	float m_TimeDependentCount[1440];
 
 	float m_MaxTravelTime;
@@ -2405,8 +2490,6 @@ public:
 	float m_WithinDayMeanGeneralizedCost[1440];  // unit: pounds
 
 	int m_number_of_days;
-	int m_TimeHorizon;
-
 
 	float m_Distance;
 
