@@ -294,6 +294,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 void CDlg_DisplayConfiguration::OnLbnSelchangeMoeAggregationIntervalList()
 {
 	g_MOEAggregationIntervalInMin = m_AggregationValueVector [ m_AggregationIntervalList.GetCurSel()];
+
+//
 	pView->Invalidate ();
 }
 
