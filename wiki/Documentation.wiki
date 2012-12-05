@@ -1,5 +1,3 @@
 #summary One-sentence summary of this page.
 
-<wiki:gadget url="http://nexta.googlecode.com/svn/wiki/user_guide_display_gadget.xml" height="800" width = "800" /> 
-
-http://code.google.com/p/<project-name>/source
+<wiki:gadget url="http://nexta.googlecode.com/svn/wiki/user_guide_display_gadget.xml" height="800" width = "100%" /> 
