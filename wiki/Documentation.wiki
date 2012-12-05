@@ -1,7 +1,5 @@
 #summary One-sentence summary of this page.
 
-= Introduction =
+<wiki:gadget url="http://nexta.googlecode.com/svn/wiki/user_guide_display_gadget.xml" height="800" width = "800" /> 
 
-Documentation
-
-<wiki:gadget url="https://docs.google.com/document/pub?id=1ErfP4Dwoj1PuW4ldMuV7Ctys3C41LOyfBqur5k3jKDk" height="800" border="0" /> 
+http://code.google.com/p/<project-name>/source
