@@ -34,6 +34,8 @@
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
+#define IDR_MAINFRAME3                  130
+#define IDR_MAINFRAME32                 130
 #define IDD_PLAYERSEEKBAR               131
 #define IDC_MOVENETWORK                 132
 #define IDR_MENU1                       133
@@ -383,6 +385,7 @@
 #define IDC_COMBO_AggIntrevalList       1154
 #define IDC_COMBO3                      1155
 #define IDC_COMBO_PLOT_TYPE             1155
+#define IDC_PLOT_AREA                   1156
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1009,7 +1012,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
 #define _APS_NEXT_COMMAND_VALUE         33530
-#define _APS_NEXT_CONTROL_VALUE         1156
+#define _APS_NEXT_CONTROL_VALUE         1157
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

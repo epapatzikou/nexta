@@ -435,6 +435,9 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo=0);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
+	bool ReadCoordinateInfoFromNodeCSVFile(LPCTSTR lpszFileName);   // for road network 
+	bool ReadCoordinateInfoFromLinkCSVFile(LPCTSTR lpszFileName);   // for road network 
+	
 	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadGPSDataFile(LPCTSTR lpszFileName);   // for road network
 
@@ -501,7 +504,7 @@ public:
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadMetaDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 
-	
+	BOOL ReadDYNASMARTSimulationResults();
 	bool ReadSubareaCSVFile(LPCTSTR lpszFileName);
 	bool ReadVOTCSVFile(LPCTSTR lpszFileName);  
 	bool ReadTemporalDemandProfileCSVFile(LPCTSTR lpszFileName);  
@@ -548,7 +551,7 @@ public:
 	void LoadSimulationOutput();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
-	void ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
+	bool ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
 	void ReadTMCSpeedData(LPCTSTR lpszFileName); 
 	void ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
@@ -582,7 +585,6 @@ public:
 	  }
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 
-	int m_import_shape_files_flag;
 
 	std::vector <CString> m_MessageStringVector;
 
@@ -1404,6 +1406,7 @@ public:
 	virtual void Serialize(CArchive& ar);
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
 	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo);
+	void CopyDefaultFiles();
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
 	{

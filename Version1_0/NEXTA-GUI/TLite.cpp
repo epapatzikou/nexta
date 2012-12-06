@@ -144,7 +144,9 @@ BOOL CTLiteApp::InitInstance()
 
         // create main MDI Frame window
         CMainFrame* pMainFrame = new CMainFrame;
-        if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))
+		
+
+		if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))
         {
                 delete pMainFrame;
                 return FALSE;
@@ -164,9 +166,16 @@ BOOL CTLiteApp::InitInstance()
                 return FALSE;
 
         GetCurrentDirectory(MAX_PATH,pMainFrame->m_CurrentDirectory);
+#ifndef _WIN64
+	pMainFrame->SetTitle ("NeXTA Version 3 Beta (32-bit)");
+#else
+	pMainFrame->SetTitle ("NeXTA Version 3 Beta (64-bit)");
+#endif
+
         // The main window has been initialized, so show and update it
         pMainFrame->ShowWindow(SW_SHOWMAXIMIZED);
         pMainFrame->UpdateWindow();
+
         return TRUE;
 }
 

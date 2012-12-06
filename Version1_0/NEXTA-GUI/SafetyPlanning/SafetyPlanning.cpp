@@ -609,4 +609,6 @@ void CTLiteDoc::OnSafetyplanningtoolsGeneratenode()
 	DeleteFile(shape_file_str);
 	ConvertLinkCSV2ShapeFiles(csv_file_str,shape_file_str, "ESRI Shapefile",GIS_Line_Type);
 
+	AfxMessageBox("output_crash_prediction.shp is generated.",MB_ICONINFORMATION);
+
 }

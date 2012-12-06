@@ -512,7 +512,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 		}
 
-		fprintf(st,"Part II,link sequence\n\n");
+		fprintf(st,"\n\nPart II,link sequence\n\n");
 		fprintf(st,"path_id,link_sequence_no,from_node_id->to_node_id,from_node_id,to_node_id,name,length (ml),speed_limit,free-flow travel_time,# of lanes,Lane Saturation Flow Rate,Lane Capacity,Link Type\n");
 
 				for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
@@ -1095,6 +1095,11 @@ void CDlgPathList::OnPaint()
 	CRect PlotRect;
 	GetClientRect(PlotRect);
 
+		CRect rect;
+		CWnd *pWnd = GetDlgItem(IDC_LIST1);
+		pWnd->GetWindowRect(&rect);
+		ScreenToClient(&rect); 
+
 	CRect PlotRectOrg = PlotRect;
 
 	if(m_TimeLeft<0)
@@ -1105,8 +1110,9 @@ void CDlgPathList::OnPaint()
 
 		PlotRect.top += 70;
 		PlotRect.bottom = PlotRect.top + 160;
-		PlotRect.left += 375;
-		PlotRect.right -= 20;
+		PlotRect.left = rect.right +50 ;
+
+		PlotRect.right -= 40;
 
 		DrawPlot(&dc, PlotRect);
 	
@@ -1533,11 +1539,11 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 					if(current_time >=1440)
 						current_time = 1439;
 
-					path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
-					path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
-					path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
-					path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
-					path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
+					//path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
+					//path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
+					//path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
+					//path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
+					//path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
 
 
 					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
@@ -1548,11 +1554,11 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
 				m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentEnergy[t] =   path_element.m_TimeDependentEnergy[t] ;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentCO2[t] =   path_element.m_TimeDependentCO2[t] ;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentCO[t] =   path_element.m_TimeDependentCO[t] ;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentHC[t] =   path_element.m_TimeDependentHC[t] ;
-				m_pDoc->m_PathDisplayList[p].m_TimeDependentNOX[t] =   path_element.m_TimeDependentNOX[t] ;
+				//m_pDoc->m_PathDisplayList[p].m_TimeDependentEnergy[t] =   path_element.m_TimeDependentEnergy[t] ;
+				//m_pDoc->m_PathDisplayList[p].m_TimeDependentCO2[t] =   path_element.m_TimeDependentCO2[t] ;
+				//m_pDoc->m_PathDisplayList[p].m_TimeDependentCO[t] =   path_element.m_TimeDependentCO[t] ;
+				//m_pDoc->m_PathDisplayList[p].m_TimeDependentHC[t] =   path_element.m_TimeDependentHC[t] ;
+				//m_pDoc->m_PathDisplayList[p].m_TimeDependentNOX[t] =   path_element.m_TimeDependentNOX[t] ;
 
 
 

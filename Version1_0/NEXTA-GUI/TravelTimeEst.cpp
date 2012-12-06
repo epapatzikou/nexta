@@ -289,6 +289,11 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 			
 				for(int t = start_time_in_min; t< end_time_in_min; t++)
 				{
+					if(pLink->m_FromNodeNumber == 54656 && pLink->m_ToNodeNumber == 56154 && t>=720)
+					{
+						TRACE("");
+					}
+
 					if((unsigned int)t < pLink->m_LinkMOEAry.size())
 					{
 

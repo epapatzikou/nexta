@@ -150,13 +150,13 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 
 				double Miles = poFeature->GetFieldAsDouble("Miles");
 
-				 pDTALine->Miles =  Miles;
-				
+				pDTALine->Miles =  Miles;
+
 
 				OGRLineString *poLine = (OGRLineString *) poGeometry;
 
 				double shape_len = 0;
- 
+
 				int step = 1;
 
 				// in case there are too many points
@@ -169,60 +169,60 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 					pt.x  =  poLine->getX(si);
 					pt.y  =  poLine->getY(si);
 					pDTALine->m_ShapePoints .push_back(pt);
-				
+
 				}
 
 				if(m_bCreateNodeFromLink)
 				{
 
-				GDPoint start_pt = pDTALine->m_ShapePoints[0];
-				GDPoint end_pt = pDTALine->m_ShapePoints[pDTALine->m_ShapePoints.size()-1];
-				
-
-				//find or create from node number
+					GDPoint start_pt = pDTALine->m_ShapePoints[0];
+					GDPoint end_pt = pDTALine->m_ShapePoints[pDTALine->m_ShapePoints.size()-1];
 
 
-				int Node_Number  =  0;
-				
-				if( bFindOverlappingNode ) 
-					Node_Number = m_pDoc->FindCloseDTAPoint_NodeNumber(start_pt,threashold);
-				if(Node_Number ==0)
-				{
-				DTAPoint* pDTAPoint = new DTAPoint;
-				pDTAPoint->pt = start_pt;
-
-				pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
-				pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
-				pDTAPoint->m_ZoneID = 0;
-				pDTAPoint->m_ControlType = 0;
-
-				m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
-				Node_Number = pDTAPoint->m_NodeNumber;
-				}
-				pDTALine->m_FromNodeNumber = Node_Number;
+					//find or create from node number
 
 
-				//find or create to node number
-				Node_Number  = 0;
+					int Node_Number  =  0;
 
-				if( bFindOverlappingNode ) 
+					if( bFindOverlappingNode ) 
+						Node_Number = m_pDoc->FindCloseDTAPoint_NodeNumber(start_pt,threashold);
+					if(Node_Number ==0)
+					{
+						DTAPoint* pDTAPoint = new DTAPoint;
+						pDTAPoint->pt = start_pt;
+
+						pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
+						pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
+						pDTAPoint->m_ZoneID = 0;
+						pDTAPoint->m_ControlType = 0;
+
+						m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+						Node_Number = pDTAPoint->m_NodeNumber;
+					}
+					pDTALine->m_FromNodeNumber = Node_Number;
+
+
+					//find or create to node number
+					Node_Number  = 0;
+
+					if( bFindOverlappingNode ) 
 						Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber(end_pt,threashold);
 
-				if(Node_Number ==0)
-				{
-				DTAPoint* pDTAPoint = new DTAPoint;
-				pDTAPoint->pt = end_pt;
+					if(Node_Number ==0)
+					{
+						DTAPoint* pDTAPoint = new DTAPoint;
+						pDTAPoint->pt = end_pt;
 
-				pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
-				pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
-				pDTAPoint->m_ZoneID = 0;
-				pDTAPoint->m_ControlType = 0;
+						pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
+						pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
+						pDTAPoint->m_ZoneID = 0;
+						pDTAPoint->m_ControlType = 0;
 
-				m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
-				Node_Number = pDTAPoint->m_NodeNumber;
-				}
+						m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+						Node_Number = pDTAPoint->m_NodeNumber;
+					}
 
-				pDTALine->m_ToNodeNumber = Node_Number;
+					pDTALine->m_ToNodeNumber = Node_Number;
 				}
 
 				pDTALine->LineID = m_pDoc->m_DTALineSet.size()+1;
@@ -231,68 +231,68 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 
 				if(m_pDoc->m_DTALineSet.size()%1000 ==0)
 				{
-				message_str.Format("Processing %d link records.", m_pDoc->m_DTALineSet.size());
-				m_MessageList.AddString(message_str);
+					message_str.Format("Processing %d link records.", m_pDoc->m_DTALineSet.size());
+					m_MessageList.AddString(message_str);
 				}
 			}
 
 
 
 
-			}
-
-			// finish reading
-
-				if(m_bCreateNodeFromLink)
-				{
-					m_pDoc->m_UnitMile  = 0.02;
-
-					m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
-
-					
-					for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
-						iPoint != m_pDoc->m_DTAPointSet.end(); iPoint++)
-					{
-						int ThisNodeNumber = (*iPoint)->m_NodeNumber;
-							int Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber((*iPoint)->pt ,threashold, ThisNodeNumber );
-							if(Node_Number != ThisNodeNumber && Node_Number!=0)
-							{
-							 // find a close node, create a dummy link 
-								m_pDoc->AddNewLinkWithNodeNumbers (ThisNodeNumber,Node_Number);
-						
-							}
-
-							if(ThisNodeNumber %1000 == 0)
-							{
-								message_str.Format("processing %d nodes.", ThisNodeNumber);
-								m_MessageList.AddString(message_str);
-							}
-
-					}
-	
-				}
-				message_str.Format("Import %d link records from layer %d.", m_pDoc->m_DTALineSet.size(),i+1);
-				m_MessageList.AddString(message_str);
-
-
-				if(m_bCreateNodeFromLink)
-				{
-				message_str.Format("Create %d nodes from link shape points", m_pDoc->m_DTAPointSet.size());
-				m_MessageList.AddString(message_str);
-			
-				
-				}
-
-
-				OGRFeature::DestroyFeature( poFeature );
-			feature_count ++;
 		}
-		OGRDataSource::DestroyDataSource( poDS );
-				if(m_SaveInputNodeLinkFiles)
+
+		// finish reading
+
+		if(m_bCreateNodeFromLink)
+		{
+			m_pDoc->m_UnitMile  = 0.02;
+
+			m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
+
+
+			for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
+				iPoint != m_pDoc->m_DTAPointSet.end(); iPoint++)
+			{
+				int ThisNodeNumber = (*iPoint)->m_NodeNumber;
+				int Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber((*iPoint)->pt ,threashold, ThisNodeNumber );
+				if(Node_Number != ThisNodeNumber && Node_Number!=0)
 				{
-				SaveTNPProject();
-				
+					// find a close node, create a dummy link 
+					m_pDoc->AddNewLinkWithNodeNumbers (ThisNodeNumber,Node_Number);
+
 				}
+
+				if(ThisNodeNumber %1000 == 0)
+				{
+					message_str.Format("processing %d nodes.", ThisNodeNumber);
+					m_MessageList.AddString(message_str);
+				}
+
+			}
+
+		}
+		message_str.Format("Import %d link records from layer %d.", m_pDoc->m_DTALineSet.size(),i+1);
+		m_MessageList.AddString(message_str);
+
+
+		if(m_bCreateNodeFromLink)
+		{
+			message_str.Format("Create %d nodes from link shape points", m_pDoc->m_DTAPointSet.size());
+			m_MessageList.AddString(message_str);
+
+
+		}
+
+
+		OGRFeature::DestroyFeature( poFeature );
+		feature_count ++;
+	}
+	OGRDataSource::DestroyDataSource( poDS );
+	if(m_SaveInputNodeLinkFiles)
+	{
+		SaveTNPProject();
+
+	}
 
 #endif
 }
@@ -541,6 +541,7 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 	CCSVParser parser;
 	int i= 0;
 
+
 	// open csv file
 	if (parser.OpenCSVFile(lpszCSVFileName))
 	{
@@ -574,157 +575,282 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 
 		// link layer 
 
-			OGRLayer *poLayer;
-			poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
-			if( poLayer == NULL )
+		OGRLayer *poLayer;
+		poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
+		if( poLayer == NULL )
+		{
+			m_MessageList.AddString ("link Layer creation failed");
+			return;
+		}
+
+
+
+		vector<string> HeaderVector = parser.GetHeaderVector();
+
+		std::vector <CString> LongFieldVector;
+		for(unsigned int i = 0; i < HeaderVector.size(); i++)
+		{
+			if(HeaderVector[i].find ("geometry") !=  string::npos||  HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
 			{
-				m_MessageList.AddString ("link Layer creation failed");
-				return;
+				OGRFieldDefn oField (HeaderVector[i].c_str (), OFTString);
+
+				CString str;  
+				if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+				{ 
+					str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+					m_MessageList.AddString (str);
+					return; 
+
+				}
+			}else
+			{
+				CString field_string  = HeaderVector[i].c_str ();
+
+				OGRFieldDefn oField (field_string, OFTReal);
+
+				CString str;  
+				if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+				{ 
+					str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+					m_MessageList.AddString (str);
+					return; 
+				}
+
 			}
 
+			if(HeaderVector[i].size()>=11)
+			{
+				LongFieldVector.push_back (HeaderVector[i].c_str ());
+			}
+
+		}
+
+		message_str.Format ("%d fields have been created.",HeaderVector.size());
+		m_MessageList.AddString (message_str);
+
+		if(LongFieldVector.size() >=1)
+		{
+			message_str.Format("Warning: Arc GIS file only supports field names with not more than 10 characters.\nThe following fields have long field names. "); 
+			m_MessageList.AddString (message_str);
+			for(unsigned l = 0; l< LongFieldVector.size(); l++)
+			{
+				message_str.Format ("%s",LongFieldVector[l]);
+				m_MessageList.AddString (message_str);
 
 
-			vector<string> HeaderVector = parser.GetHeaderVector();
+			}
+		}
 
-			std::vector <CString> LongFieldVector;
+		int count = 0 ;
+		while(parser.ReadRecord())
+		{
+			//create feature
+			OGRFeature *poFeature;
+			poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+
+			//step 1: write all fields except geometry
 			for(unsigned int i = 0; i < HeaderVector.size(); i++)
 			{
-					if(HeaderVector[i].find ("geometry") !=  string::npos||  HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
+				if(HeaderVector[i]!="geometry")
+				{
+					if(HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
 					{
-						OGRFieldDefn oField (HeaderVector[i].c_str (), OFTString);
 
-						CString str;  
-						if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
-						{ 
-							str.Format("Creating field %s failed", oField.GetNameRef()); 
+						std::string str_value;
 
-							m_MessageList.AddString (str);
-							return; 
+						parser.GetValueByFieldName(HeaderVector[i],str_value);
 
-						}
+						//							TRACE("field: %s, value = %s\n",HeaderVector[i].c_str (),str_value.c_str ());
+						poFeature->SetField(i,str_value.c_str ());
 					}else
 					{
-						CString field_string  = HeaderVector[i].c_str ();
+						double value = 0;
 
-						OGRFieldDefn oField (field_string, OFTReal);
+						parser.GetValueByFieldName(HeaderVector[i],value);
 
-						CString str;  
-						if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
-						{ 
-							str.Format("Creating field %s failed", oField.GetNameRef()); 
+						//							TRACE("field: %s, value = %f\n",HeaderVector[i].c_str (),value);
 
-							m_MessageList.AddString (str);
-							return; 
-						}
+						CString field_name = HeaderVector[i].c_str ();
+						poFeature->SetField(i,value);
 
-				}
 
-					if(HeaderVector[i].size()>=11)
-					{
-						LongFieldVector.push_back (HeaderVector[i].c_str ());
+
 					}
 
-			}
-
-			message_str.Format ("%d fields have been created.",HeaderVector.size());
-			m_MessageList.AddString (message_str);
-
-			if(LongFieldVector.size() >=1)
-			{
-				message_str.Format("Warning: Arc GIS file only supports field names with not more than 10 characters.\nThe following fields have long field names. "); 
-				m_MessageList.AddString (message_str);
-				for(unsigned l = 0; l< LongFieldVector.size(); l++)
-				{
-						message_str.Format ("%s",LongFieldVector[l]);
-						m_MessageList.AddString (message_str);
-
-				
 				}
 			}
 
-			int count = 0 ;
-			while(parser.ReadRecord())
+			string geo_string;
+			std::vector<CCoordinate> CoordinateVector;
+			if(parser.GetValueByFieldName("geometry",geo_string))
 			{
-				//create feature
-				OGRFeature *poFeature;
-				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+				// overwrite when the field "geometry" exists
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
 
-				//step 1: write all fields except geometry
-				for(unsigned int i = 0; i < HeaderVector.size(); i++)
+				if( m_GIS_data_type == GIS_Point_Type && CoordinateVector.size ()==1)
 				{
-					if(HeaderVector[i]!="geometry")
-					{
-						if(HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
-						{
+					OGRPoint pt;
+					pt.setX( CoordinateVector[0].X );
+					pt.setY( CoordinateVector[0].Y);
+					poFeature->SetGeometry( &pt ); 
 
-							std::string str_value;
-
-							parser.GetValueByFieldName(HeaderVector[i],str_value);
-
-//							TRACE("field: %s, value = %s\n",HeaderVector[i].c_str (),str_value.c_str ());
-							poFeature->SetField(i,str_value.c_str ());
-						}else
-						{
-							double value = 0;
-
-							parser.GetValueByFieldName(HeaderVector[i],value);
-
-//							TRACE("field: %s, value = %f\n",HeaderVector[i].c_str (),value);
-
-							CString field_name = HeaderVector[i].c_str ();
-							poFeature->SetField(i,value);
-
-
-
-						}
-
-					}
 				}
 
-					string geo_string;
-					std::vector<CCoordinate> CoordinateVector;
-					if(parser.GetValueByFieldName("geometry",geo_string))
+
+
+				if( m_GIS_data_type == GIS_Line_Type)
+				{
+
+
+					OGRLineString line;
+					for(unsigned int si = 0; si< CoordinateVector.size(); si++)
 					{
-						// overwrite when the field "geometry" exists
-						CGeometry geometry(geo_string);
-						CoordinateVector = geometry.GetCoordinateList();
+						line.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y);
+					}
 
-						if( m_GIS_data_type == GIS_Point_Type && CoordinateVector.size ()==1)
+					poFeature->SetGeometry( &line ); 
+				}
+
+
+				if( m_GIS_data_type == GIS_Polygon_Type)
+				{
+
+					OGRPolygon polygon;
+					OGRLinearRing  ring;
+
+					for(unsigned int si = 0; si<  CoordinateVector.size(); si++)
+					{
+						ring.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y,1);
+					}
+
+					polygon.addRing(&ring);
+
+					poFeature->SetGeometry( &polygon ); 
+
+				}
+
+
+			} else
+			{ // no geometry field
+
+
+				/// create geometry data from m_GIS_data_type == GIS_Point_Type
+
+				if( m_GIS_data_type == GIS_Point_Type )
+				{
+
+					double x, y;
+					if(parser.GetValueByFieldName("x",x) && parser.GetValueByFieldName("y",y) )
+					{
+						OGRPoint pt;
+						pt.setX( CoordinateVector[0].X );
+						pt.setY( CoordinateVector[0].Y);
+						poFeature->SetGeometry( &pt ); 
+
+					}else
+					{
+						AfxMessageBox("Pleaes prepare fields x and y in the csv file in order to create a node GIS layer.", MB_ICONINFORMATION);
+						return;
+
+					}
+
+				}
+
+				///create geometry
+
+				if( m_GIS_data_type == GIS_Line_Type)
+				{
+
+					int number_of_shape_points = 0;
+					if(parser.GetValueByFieldName("number_of_shape_points", number_of_shape_points))
+					{
+
+						if(number_of_shape_points>=2)
 						{
-								OGRPoint pt;
-								pt.setX( CoordinateVector[0].X );
-								pt.setY( CoordinateVector[0].Y);
-								poFeature->SetGeometry( &pt ); 
 
-						}
+							OGRLineString line;
 
-
-
-						if( m_GIS_data_type == GIS_Line_Type)
-						{
-
-
-						OGRLineString line;
-						for(unsigned int si = 0; si< CoordinateVector.size(); si++)
-						{
-							line.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y);
-						}
-
-						poFeature->SetGeometry( &line ); 
-						}
-
-
-						if( m_GIS_data_type == GIS_Polygon_Type)
-						{
-
-							OGRPolygon polygon;
-							OGRLinearRing  ring;
-
-							for(unsigned int si = 0; si<  CoordinateVector.size(); si++)
+							for(int s= 1; s<= number_of_shape_points; s++)
 							{
-								ring.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y,1);
-							}
+								CString str_x, str_y;
+								str_x.Format ("x%d",s);
+								str_y.Format ("y%d",s);
+								double x = 0;
+								double y = 0;
 
+								string string_x, string_y;
+								string_x  = m_pDoc->CString2StdString (str_x);
+								string_y  = m_pDoc->CString2StdString (str_y);
+
+								if(parser.GetValueByFieldName(string_x, x) && parser.GetValueByFieldName(string_y, y))
+								{
+									line.addPoint(x,y);
+								}else
+								{
+									AfxMessageBox("Pleaes prepare fields x1,y1,x2,y2,...,xn,yn in the csv file in order to create a link GIS layer.", MB_ICONINFORMATION);
+
+									return; 
+								}
+
+
+							}
+							poFeature->SetGeometry( &line ); 
+
+						}
+
+					}else
+					{ 
+						AfxMessageBox("Pleaes prepare fields number_of_shape_points, x1,y1,x2,y2,...,xn,yn in the csv file in order to create a link GIS layer.", MB_ICONINFORMATION);
+						return;
+					}
+
+
+				}
+
+				// 
+
+
+				if( m_GIS_data_type == GIS_Polygon_Type)
+				{
+
+					OGRPolygon polygon;
+					OGRLinearRing  ring;
+
+					int number_of_shape_points = 0;
+					if(parser.GetValueByFieldName("number_of_shape_points", number_of_shape_points))
+					{
+
+						if(number_of_shape_points>=2)
+						{
+
+							OGRLineString line;
+
+							for(int s= 0; s< number_of_shape_points; s++)
+							{
+								CString str_x, str_y;
+								str_x.Format ("x%d",str_x);
+								str_y.Format ("y%d",str_y);
+								double x = 0;
+								double y = 0;
+
+								string string_x, string_y;
+								string_x  = m_pDoc->CString2StdString (str_x);
+								string_y  = m_pDoc->CString2StdString (str_y);
+
+								if(parser.GetValueByFieldName(string_x, x) && parser.GetValueByFieldName(string_y, y))
+								{
+									ring.addPoint (x,y,1);
+								}else
+								{
+									AfxMessageBox("Pleaes prepare fields x1,y1,x2,y2,...,xn,yn in the csv file in order to create a zone GIS layer.", MB_ICONINFORMATION);
+
+									return; 
+								}
+
+							}
 							polygon.addRing(&ring);
 
 							poFeature->SetGeometry( &polygon ); 
@@ -735,125 +861,128 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 					}
 
 
-
-
-					if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
-					{
-						AfxMessageBox("Failed to create line feature in shapefile.\n");
-						return;
-
-					}  
-
-					OGRFeature::DestroyFeature( poFeature );
-
-					count++;
 				}
 
-				message_str.Format ("%d records have been created.",count);
-				m_MessageList.AddString (message_str);
+			}
 
 
-			OGRDataSource::DestroyDataSource( poDS );
+			if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+			{
+				AfxMessageBox("Failed to create line feature in shapefile.\n");
+				return;
 
-			CString ShapeFile = lpszShapeFileName;
-			CString ShapeFileFolder = ShapeFile.Left(ShapeFile.ReverseFind('\\') + 1);
+			}  
 
-			ShellExecute( NULL,  "explore", ShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+			OGRFeature::DestroyFeature( poFeature );
 
+			count++;
 		}
+
+		message_str.Format ("%d records have been created.",count);
+		m_MessageList.AddString (message_str);
+
+
+		OGRDataSource::DestroyDataSource( poDS );
+
+		CString ShapeFile = lpszShapeFileName;
+		CString ShapeFileFolder = ShapeFile.Left(ShapeFile.ReverseFind('\\') + 1);
+
+		ShellExecute( NULL,  "explore", ShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+
+	}
 #endif
 
 }
 
-	void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
-	{
-		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-		CString SampleShapeFileFolder = "\\importing_sample_data_sets\\Utah_90th_South_Network\\";
-		SampleShapeFileFolder = pMainFrame->m_CurrentDirectory + SampleShapeFileFolder;
-		ShellExecute( NULL,  "explore", SampleShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
-	}
+void CDlg_GISDataExchange::OnBnClickedButtonViewSampleFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeFileFolder = "\\importing_sample_data_sets\\Utah_90th_South_Network\\";
+	SampleShapeFileFolder = pMainFrame->m_CurrentDirectory + SampleShapeFileFolder;
+	ShellExecute( NULL,  "explore", SampleShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+}
 
-	void CDlg_GISDataExchange::OnBnClickedButtonLoadSampleShapeFile()
+void CDlg_GISDataExchange::OnBnClickedButtonLoadSampleShapeFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_90_Work_Zone_Network_Link.shp";
+	SampleShapeFile = pMainFrame->m_CurrentDirectory + SampleShapeFile;
+	m_GIS_ShapeFile = SampleShapeFile;
+	UpdateData(false);
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonImportGisShapeFile()
+{
+	OnBnClickedImportGpsShapeFile();
+
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.csv";
+	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
+	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
+
+}
+void CDlg_GISDataExchange::OnBnClickedButtonViewExportedKmlFile()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.KML";
+	SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
+	m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
+}
+
+void CDlg_GISDataExchange::OnBnClickedButtonFindCsfFile()
+{
+	CString str;
+
+	static char BASED_CODE szFilter[] = "CSV File (*.csv)|*.csv||";
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		szFilter);
+	if(dlg.DoModal() == IDOK)
 	{
-		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-		CString SampleShapeFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_90_Work_Zone_Network_Link.shp";
-		SampleShapeFile = pMainFrame->m_CurrentDirectory + SampleShapeFile;
-		m_GIS_ShapeFile = SampleShapeFile;
+
+		m_CSV_File = dlg.GetPathName();
 		UpdateData(false);
-	}
-
-	void CDlg_GISDataExchange::OnBnClickedButtonImportGisShapeFile()
-	{
-		OnBnClickedImportGpsShapeFile();
 
 	}
+}
 
-	void CDlg_GISDataExchange::OnBnClickedButtonExporttoCsvFile()
+void CDlg_GISDataExchange::OnBnClickedExportShapeFile()
+{
+}
+
+void CDlg_GISDataExchange::OnBnClickedOk()
+{
+	// TODO: Add your control notification handler code here
+	OnOK();
+}
+
+void CDlg_GISDataExchange::OnBnClickedExportGisShapeFile()
+{
+	m_MessageList.ResetContent ();
+	CString m_CSV_FileName;
+	CFileDialog dlg (FALSE, "*.shp", "*.shp",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"(*.shp)|*.shp||", NULL);
+	if(dlg.DoModal() == IDOK)
 	{
-		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-		CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.csv";
-		SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
-		m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
-
+		m_GIS_data_type = (_GIS_DATA_TYPE)(m_GISDataType_List.GetCurSel ());
+		ExportToGISFile(m_CSV_File,dlg.GetPathName(), "ESRI Shapefile");
 	}
-	void CDlg_GISDataExchange::OnBnClickedButtonViewExportedKmlFile()
-	{
-		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-		CString SampleShapeCSVFile = "\\importing_sample_data_sets\\Utah_90th_South_Network\\SLC_Link.KML";
-		SampleShapeCSVFile = pMainFrame->m_CurrentDirectory + SampleShapeCSVFile;
-		m_pDoc->OpenCSVFileInExcel (SampleShapeCSVFile);
-	}
+}
 
-	void CDlg_GISDataExchange::OnBnClickedButtonFindCsfFile()
-	{
-		CString str;
+BOOL CDlg_GISDataExchange::OnInitDialog()
+{
+	CDialog::OnInitDialog();
 
-		static char BASED_CODE szFilter[] = "CSV File (*.csv)|*.csv||";
-		CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-			szFilter);
-		if(dlg.DoModal() == IDOK)
-		{
+	m_GISDataType_List.AddString ("Point");
+	m_GISDataType_List.AddString ("Line");
+	m_GISDataType_List.AddString ("Polygon");
+	m_GISDataType_List.SetCurSel (1);  // default line type
 
-			m_CSV_File = dlg.GetPathName();
-			UpdateData(false);
-
-		}
-	}
-
-	void CDlg_GISDataExchange::OnBnClickedExportShapeFile()
-	{
-	}
-
-	void CDlg_GISDataExchange::OnBnClickedOk()
-	{
-		// TODO: Add your control notification handler code here
-		OnOK();
-	}
-
-	void CDlg_GISDataExchange::OnBnClickedExportGisShapeFile()
-	{
-		m_MessageList.ResetContent ();
-		CString m_CSV_FileName;
-		CFileDialog dlg (FALSE, "*.shp", "*.shp",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-			"(*.shp)|*.shp||", NULL);
-		if(dlg.DoModal() == IDOK)
-		{
-			m_GIS_data_type = (_GIS_DATA_TYPE)(m_GISDataType_List.GetCurSel ());
-			ExportToGISFile(m_CSV_File,dlg.GetPathName(), "ESRI Shapefile");
-		}
-	}
-
-	BOOL CDlg_GISDataExchange::OnInitDialog()
-	{
-		CDialog::OnInitDialog();
-
-		m_GISDataType_List.AddString ("Point");
-		m_GISDataType_List.AddString ("Line");
-		m_GISDataType_List.AddString ("Polygon");
-		m_GISDataType_List.SetCurSel (1);  // default line type
-
-		return TRUE;  // return TRUE unless you set the focus to a control
-		// EXCEPTION: OCX Property Pages should return FALSE
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 void CDlg_GISDataExchange::SaveTNPProject()
@@ -871,9 +1000,9 @@ void CDlg_GISDataExchange::SaveTNPProject()
 	fopen_s(&st,ProjectFileName+"tnp","w");
 	if(st!=NULL)
 	{
-	fprintf(st,"Imported from shape file %s.", ProjectFileName);
-	
-	fclose(st);
+		fprintf(st,"Imported from shape file %s.", ProjectFileName);
+
+		fclose(st);
 	}
 
 	fopen_s(&st,directory+"input_node.csv","w");
@@ -881,18 +1010,18 @@ void CDlg_GISDataExchange::SaveTNPProject()
 	{
 		std::list<DTANode*>::iterator iNode;
 		fprintf(st, "name,node_id,x,y,geometry\n");
-			for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
-				iPoint !=m_pDoc-> m_DTAPointSet.end(); iPoint++)
-			{
+		for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
+			iPoint !=m_pDoc-> m_DTAPointSet.end(); iPoint++)
+		{
 
-//				std::replace( (*iNode)->m_Name.begin(), (*iNode)->m_Name.end(), ',', ' '); 
+			//				std::replace( (*iNode)->m_Name.begin(), (*iNode)->m_Name.end(), ',', ' '); 
 
-				fprintf(st, "%s,%d,%f,%f,\"<Point><coordinates>%f,%f</coordinates></Point>\"\n", 
+			fprintf(st, "%s,%d,%f,%f,\"<Point><coordinates>%f,%f</coordinates></Point>\"\n", 
 				(*iPoint)->m_Name .c_str (),
 				(*iPoint)->m_NodeNumber ,
 				(*iPoint)->pt .x ,(*iPoint)->pt .y,(*iPoint)->pt .x ,(*iPoint)->pt .y);
 
-			}
+		}
 
 		fclose(st);
 	}else
@@ -907,35 +1036,35 @@ void CDlg_GISDataExchange::SaveTNPProject()
 		std::list<DTALink*>::iterator iLink;
 		fprintf(st,"link_id,TMC,from_node_id,to_node_id,length_in_mile,link_type,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,geometry\n");
 
-	std::list<DTALine*>::iterator iLine;
+		std::list<DTALine*>::iterator iLine;
 
-	for (iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
+		for (iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
 		{
 
-				fprintf(st,"%d,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
-					(*iLine)->LineID , 
-					(*iLine)->TMC_code.c_str (), 
-					(*iLine)->m_FromNodeNumber ,
-					(*iLine)->m_ToNodeNumber ,(*iLine)->Miles);
+			fprintf(st,"%d,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
+				(*iLine)->LineID , 
+				(*iLine)->TMC_code.c_str (), 
+				(*iLine)->m_FromNodeNumber ,
+				(*iLine)->m_ToNodeNumber ,(*iLine)->Miles);
 
-				// geometry
-				fprintf(st,"\"<LineString><coordinates>");
+			// geometry
+			fprintf(st,"\"<LineString><coordinates>");
 
-				for(unsigned int si = 0; si< (*iLine)->m_ShapePoints.size(); si++)
-				{
-					fprintf(st,"%f,%f,0.0",(*iLine)->m_ShapePoints[si].x, (*iLine)->m_ShapePoints[si].y);
+			for(unsigned int si = 0; si< (*iLine)->m_ShapePoints.size(); si++)
+			{
+				fprintf(st,"%f,%f,0.0",(*iLine)->m_ShapePoints[si].x, (*iLine)->m_ShapePoints[si].y);
 
-					if(si!=(*iLine)->m_ShapePoints.size()-1)
-						fprintf(st," ");
-				}
+				if(si!=(*iLine)->m_ShapePoints.size()-1)
+					fprintf(st," ");
+			}
 
-				fprintf(st,"</coordinates></LineString>\",");
+			fprintf(st,"</coordinates></LineString>\",");
 			fprintf(st,"\n");
 
-	}
+		}
 
 
-	fclose(st);
+		fclose(st);
 	}else
 	{
 		AfxMessageBox("Error: File input_link.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");

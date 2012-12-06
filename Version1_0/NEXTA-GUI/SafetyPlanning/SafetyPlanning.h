@@ -118,7 +118,7 @@ public:
 	double peak_hour_time_of_day_ratio;
 
 
-	double num_pto_crashes_per_year;
+	double num_pdo_crashes_per_year;
 	double add_delay_per_period;
 	double AADT;
 	double minor_leg_AADT;
