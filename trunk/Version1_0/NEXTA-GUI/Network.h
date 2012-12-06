@@ -623,6 +623,7 @@ class DTAVehicleType
 public:
 	int vehicle_type;
 	CString vehicle_type_name;
+
 };
 
 
@@ -1421,7 +1422,7 @@ public:
 		m_SetBackEnd = 0;
 		m_SpeedLimit  = 50;
 		m_ReversedSpeedLimit  = 50;
-		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
+		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
 		m_total_link_volume = 0;
 		m_TotalVolumeForMovementCount = 0;

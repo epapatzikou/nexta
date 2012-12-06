@@ -159,7 +159,10 @@ public:
 	}
 
 	bool OpenCSVFile(string fileName, bool b_required=true);
-	void CloseCSVFile(void);
+	void CloseCSVFile(void)
+	{
+	outFile.close();
+	}
 	template <class T> bool SetValueByFieldName(string field_name, T& value)  // by doing so, we do not need to exactly follow the sequence of field names
 	{
 		if (FieldsIndices.find(field_name) == FieldsIndices.end())

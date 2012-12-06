@@ -677,7 +677,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 						DTANodeMovement movement_element = g_NodeVector[node].m_MovementMap[movement_id];
 						if(movement_element.movement_vehicle_counter >= movement_element.movement_capacity_per_simulation_interval)
-						{ // capacity are unavailable
+						{ // capacity are available
 
 							vehicle_out_count--;
 

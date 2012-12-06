@@ -42,7 +42,7 @@ using namespace std;
 // Important References:
 // Jayakrishnan, R., Mahmassani, H. S., and Hu, T.-Y., 1994a. An evaluation tool for advanced traffic information and management systems in urban networks. Transportation Research Part C, Vol. 2, No. 3, pp. 129-147.
 // 
-	int NodeIDtoZoneNameMap[50000];
+std::map<int, int> NodeIDtoZoneNameMap;
 
 
 bool CTLiteDoc::ReadGPSData(string FileName)
@@ -190,6 +190,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_YCorridonateFlag = -1;
 
 	m_YCorridonateFlag = (int)(g_GetPrivateProfileFloat("coordinate", "y_coordinate_flag",-1.0f,ProjectFileName));	
+	int bRead_long_lat_coordinate_flag= (int)(g_GetPrivateProfileFloat("coordinate", "read_AMS_files",0,ProjectFileName));	
 
 	CString directory;
 	m_ProjectFile = ProjectFileName;
@@ -257,6 +258,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			m_NodeSet.push_back(pNode);
 			m_NodeIDMap[i] = pNode;
 			m_NodeIDtoNameMap[i] = node_id;
+			m_NodeNumberMap[node_id] = pNode;
 			m_NodeNametoIDMap[node_id] = i;
 		}
 
@@ -382,6 +384,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		return false;
 		//		g_ProgramStop();
 	}
+
 	
 	FILE *st;
 	fopen_s(&st,directory+"workzone.dat","r");
@@ -523,6 +526,15 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 		fclose(pZoneXY);
 	}
+
+		if(bRead_long_lat_coordinate_flag)
+		{
+			ReadCoordinateInfoFromNodeCSVFile(directory+"input_node.csv");
+			ReadCoordinateInfoFromLinkCSVFile(directory+"input_link.csv");
+			ReadZoneCSVFile(directory+"input_zone.csv");
+		}
+
+
 
 	// read destination.dat
 
@@ -975,6 +987,20 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				return true;
 		}
 
+	ReadDYNASMARTSimulationResults();
+	return true;
+}
+
+
+BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
+{
+	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "m_SimulationStartTime_in_min_in_min",720,m_ProjectFile));	
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	FILE* pFile = NULL;
+
 	// read speed data
 	fopen_s(&pFile,directory+"fort.900","r");
 	std::list<DTALink*>::iterator iLink;
@@ -986,10 +1012,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		// read data every min
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
+			(*iLink)->ResetMOEAry(m_SimulationStartTime_in_min + g_Simulation_Time_Horizon);  // use one day horizon as the default value
 		}
 
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
 
@@ -1013,7 +1039,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	{
 		// read data every min
 
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
 
@@ -1040,7 +1066,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	{
 		// read data every min
 
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
 
@@ -1086,7 +1112,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				(*iLink)->m_total_link_volume = 0;
 			}
 
-		for(int t = 0; t < g_Simulation_Time_Horizon; t++)
+		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
 
@@ -1100,12 +1126,12 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				if(t>=1)
 				{
-					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow)*60);
+					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow));
 
 				}
 				}else  // DYNASMART -P 
 				{
-					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  g_read_float(pFile)*60;
+					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  g_read_float(pFile);
 			
 				}
 			}
@@ -1150,11 +1176,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	// read vehicle trajectory file
 
 
-	int ReadVehicleTrajectoryFile = g_GetPrivateProfileInt("display","read_trajectory",0,ProjectFileName);
-
-	ReadVehicleTrajectoryFile = 1;
-	if(ReadVehicleTrajectoryFile)
-	{
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
 	float LengthinMB;
@@ -1310,17 +1331,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	fclose(pFile);
 
-	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded.",m_VehicleSet.size());
+	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded from VehTrajectory.dat .",m_VehicleSet.size());
 	}
 	}
-	}
-
-
-
-
-	return true;
 }
-
 
 void CTLiteDoc::OnToolsReverseverticalcoordinate()
 {
@@ -1335,7 +1349,7 @@ void CTLiteDoc::OnToolsReverseverticalcoordinate()
 
 	char lpbuffer[64];
 
-	sprintf_s(lpbuffer,"%f",m_YCorridonateFlag*(-1));
+	sprintf_s(lpbuffer,"%d",m_YCorridonateFlag*(-1));
 
 	WritePrivateProfileString("coordinate", "y_coordinate_flag",lpbuffer,m_ProjectFile);
 

@@ -125,8 +125,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(b_long_lat_conversion_with_decimal_degree_flag == 0)
 		long_lat_unit = 0.00001f;
 
-	int addional_sign_of_latitude =  g_GetPrivateProfileInt("model_attributes","addional_sign_of_latitude",1,FileName);
-
 	bool bMileFlag = false;
 	if(strcmp(model_units,"MI")== 0 )
 		bMileFlag = true;

@@ -968,7 +968,7 @@ BEGIN
     COMBOBOX        IDC_COMBO_TransitTime,197,177,56,126,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG_NodeProperties DIALOGEX 0, 0, 238, 137
+IDD_DIALOG_NodeProperties DIALOGEX 0, 0, 238, 161
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Node Properties"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -1501,7 +1501,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 231
         TOPMARGIN, 7
-        BOTTOMMARGIN, 130
+        BOTTOMMARGIN, 154
     END
 
     IDD_DIALOG_NODE_MOVEMENTS, DIALOG
@@ -1579,6 +1579,7 @@ END
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\TLite.ico"
 IDR_TLiteTYPE           ICON                    "res\\TLiteDoc.ico"
+IDR_MAINFRAME32         ICON                    "res\\idr_main.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2195,7 +2196,6 @@ BEGIN
         POPUP "Import"
         BEGIN
             MENUITEM "Transportation GIS Network Data Set", ID_IMPORT_AMSDATASET
-            MENUITEM "Inrix Shape File and Speed Data", ID_IMPORT_INRIXSHAPEFILEANDSPEEDDATA
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
             MENUITEM "Synchro Combined CSV File",   ID_IMPORT_SYNCHROCOMBINEDCSVFILE
             POPUP "Background Image"
@@ -2209,7 +2209,6 @@ BEGIN
         END
         POPUP "Export"
         BEGIN
-            MENUITEM "Network as KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Microscopic Network and Traffic Control Data", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
         END
         MENUITEM SEPARATOR
@@ -2302,20 +2301,18 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Network Time-Dependent MOE",  ID_2_VIEWNETWORKDATA
         MENUITEM "Origin-Destination MOE",      ID_3_VIEWODDATAINEXCEL
-        MENUITEM "Path MOE",                    ID_PROJECT_12
         POPUP "Link MOE"
         BEGIN
             MENUITEM "Static Link MOE",             ID_MOE_VIEWLINKMOESUMMARYFILE
             MENUITEM "Time-dependent Link MOE",     ID_PROJECT_TIME_DEPENDENT_LINK_MOE
         END
-        MENUITEM "Movement MOE",                ID_VIEW_MOVEMENT_MOE
-        MENUITEM "Agent MOE",                   ID_PROJECT_VIEW_AGENT_MOE
     END
     POPUP "Tools"
     BEGIN
         POPUP "GIS Tools"
         BEGIN
             MENUITEM "Import/Export GIS Shape Files", ID_IMPORT_ARCGISSHAPEFILE
+            MENUITEM "Export Network as 3D KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
         END
         POPUP "Network Tools"
         BEGIN
@@ -2324,15 +2321,15 @@ BEGIN
             MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
             MENUITEM "Reverse Vertical Coordinate", ID_TOOLS_REVERSEVERTICALCOORDINATE
             MENUITEM SEPARATOR
-            MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
-            MENUITEM "Save External Layer After Coordinate Modification", ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER
         END
         POPUP "Traffic Control Tools"
         BEGIN
             MENUITEM "Generate Signal Control Locations", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
             MENUITEM "Update Link Effective Green Time  Based on Cycle Length", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+            MENUITEM SEPARATOR
+            MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
+            MENUITEM "Save External Layer After Coordinate Modification", ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER
             MENUITEM "Node Mapping to Obtain Traffic Control  Information", ID_TOOLS_OBTAINCYCLELENGTHFROM
-            MENUITEM "Obtain Traffic Control Data from Reference Network", ID_TOOLS_OBTAINTRAFFICCONTROLDATAFROMREFERENCENETWORK
         END
         POPUP "Demand Tools"
         BEGIN
@@ -2376,7 +2373,7 @@ BEGIN
         POPUP "Sensor Tools"
         BEGIN
             MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
-            MENUITEM "Generate Aggregated Validation Results", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+            MENUITEM "View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
         END
     END
     POPUP "&Window"
@@ -3037,6 +3034,7 @@ STRINGTABLE
 BEGIN
     IDR_MAINFRAME           "NeXTA Version 3 Beta"
     IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
+    IDR_MAINFRAME32         "NeXTA Version 3 Beta (32-bit)"
 END
 
 STRINGTABLE 
