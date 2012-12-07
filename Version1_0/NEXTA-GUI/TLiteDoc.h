@@ -435,9 +435,7 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo=0);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
-	bool ReadCoordinateInfoFromNodeCSVFile(LPCTSTR lpszFileName);   // for road network 
-	bool ReadCoordinateInfoFromLinkCSVFile(LPCTSTR lpszFileName);   // for road network 
-	
+
 	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadGPSDataFile(LPCTSTR lpszFileName);   // for road network
 
@@ -566,7 +564,7 @@ public:
 	int m_SimulationEndTime_in_min;
 
 
-	bool ReadSensorData(LPCTSTR lpszFileName);
+	bool ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_in_min = 0);
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
 

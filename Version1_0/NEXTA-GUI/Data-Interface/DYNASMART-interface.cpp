@@ -1,4 +1,4 @@
-//  Portions Copyright 2012 Xuesong Zhou.
+Portions Copyright 2012 Xuesong Zhou.
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -187,10 +187,39 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	m_bDYNASMARTDataSet = true;
 
-	m_YCorridonateFlag = -1;
+	m_YCorridonateFlag = 1;
 
-	m_YCorridonateFlag = (int)(g_GetPrivateProfileFloat("coordinate", "y_coordinate_flag",-1.0f,ProjectFileName));	
-	int bRead_long_lat_coordinate_flag= (int)(g_GetPrivateProfileFloat("coordinate", "read_AMS_files",0,ProjectFileName));	
+	FILE* pProjectFile = NULL;
+
+
+	fopen_s(&pProjectFile,ProjectFileName,"r");
+	if(pProjectFile!=NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(pProjectFile,str_line, str_line_size); //  skip the first line
+		g_read_a_line(pProjectFile,str_line, str_line_size); //  skip the first line
+
+		CString str_origin;
+		str_origin.Format("%s", str_line,str_line_size);
+
+		if(str_origin.Find("top") != -1)
+		{
+			m_YCorridonateFlag = -1;
+
+		}
+
+		if(str_origin.Find("bottom") != -1)
+		{
+			m_YCorridonateFlag = 1;
+
+		}
+
+		fclose(pProjectFile);
+	}
+
+
+	int bRead_long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("coordinate", "read_AMS_files",0,ProjectFileName));	
 
 	CString directory;
 	m_ProjectFile = ProjectFileName;
@@ -373,7 +402,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		m_LinkDataLoadingStatus.Format ("%d links are loaded.",m_LinkSet.size());
 		Construct4DirectionMovementVector();
 
-		GenerateOffsetLinkBand();
 
 
 		fclose(pFile);
@@ -527,12 +555,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pZoneXY);
 	}
 
-		if(bRead_long_lat_coordinate_flag)
-		{
-			ReadCoordinateInfoFromNodeCSVFile(directory+"input_node.csv");
-			ReadCoordinateInfoFromLinkCSVFile(directory+"input_link.csv");
-			ReadZoneCSVFile(directory+"input_zone.csv");
-		}
+
 
 
 
@@ -828,7 +851,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	element.link_type_name = "FreewayHOV";
 	m_LinkTypeMap[10] = element;
 
+	m_OffsetInFeet=15;
 	OffsetLink();
+	GenerateOffsetLinkBand();
 
 	CalculateDrawingRectangle();
 
@@ -994,8 +1019,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 {
-	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "m_SimulationStartTime_in_min_in_min",720,m_ProjectFile));	
+//	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "simulation_start_time_in_min",720,m_ProjectFile));	
 
+	m_SimulationStartTime_in_min = 0;
 	CString directory;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
@@ -1115,6 +1141,8 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
+			
+			TRACE("timestamp = %f\n",timestamp);
 
 			if(timestamp < 0)  // end of file
 				break;
@@ -1124,9 +1152,16 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 				{
 				(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = g_read_float(pFile);  // cumulative flow;
 
-				if(t>=1)
+				if(t>=m_SimulationStartTime_in_min+1)
 				{
-					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow));
+					float value =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow));
+
+					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow = value *60;  //convert to hourly count
+					if((*iLink)->m_FromNodeNumber == 58730 && (*iLink)->m_ToNodeNumber == 80639)
+					{
+						TRACE("%d,%f\n",t,value);
+					
+					}
 
 				}
 				}else  // DYNASMART -P 
@@ -1175,6 +1210,10 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	*/
 	// read vehicle trajectory file
 
+	// read additional data from sensor (AMS format)
+
+	int simulation_start_time_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "simulation_start_time_in_min",720,m_ProjectFile));	
+	ReadSensorData(directory+"input_sensor.csv",simulation_start_time_in_min);
 
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
@@ -1351,10 +1390,10 @@ void CTLiteDoc::OnToolsReverseverticalcoordinate()
 
 	sprintf_s(lpbuffer,"%d",m_YCorridonateFlag*(-1));
 
-	WritePrivateProfileString("coordinate", "y_coordinate_flag",lpbuffer,m_ProjectFile);
+	WritePrivateProfileString("coordinate", "origin",lpbuffer,m_ProjectFile);
 
 	CString str;
-	str.Format("The horizional coordinate flag (y_coordinate_flag) has been reset in project file %s.\nPlease close NEXTA and reload the project.",m_ProjectFile );
+	str.Format("The horizional coordinate flag (y_coordinate_flag) has been reset to %s in project file %s.\nPlease close NEXTA and reload the project.",m_ProjectFile, lpbuffer );
 	AfxMessageBox(str,MB_ICONINFORMATION);
 
 }

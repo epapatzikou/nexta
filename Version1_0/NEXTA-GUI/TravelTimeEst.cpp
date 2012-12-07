@@ -172,7 +172,7 @@ void DTAPath::UpdateWithinDayStatistics()
 	}
 }
 
-bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_in_min)
 {
 	CCSVParser parser;
 	int error_count = 0;
@@ -294,13 +294,14 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName)
 						TRACE("");
 					}
 
-					if((unsigned int)t < pLink->m_LinkMOEAry.size())
+					int time = t - simulation_start_time_in_min;  // allow shift of start time
+					if(time>=0 && (unsigned int)time < pLink->m_LinkMOEAry.size())
 					{
 
 //						if(!sensor.SensorType.empty () && sensor.SensorType.find("count")!= string::npos)
 						{
 
-							pLink->m_LinkMOEAry[ t].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ time].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
 						}
 
 
