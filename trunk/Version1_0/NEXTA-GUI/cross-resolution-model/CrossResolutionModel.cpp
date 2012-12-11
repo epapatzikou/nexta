@@ -46,7 +46,7 @@
 
 
 
-DTA_Approach CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
+DTA_Direction CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
 {
 	if(angle < 23)
 	{
@@ -116,7 +116,7 @@ DTA_Approach CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
 	else
 		return DTA_East;
 }
-DTA_Approach CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
+DTA_Direction CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
 {
 	if(angle < 23)
 	{
@@ -154,7 +154,7 @@ DTA_Approach CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
 		return DTA_East;
 }
 
-DTA_Approach CTLiteDoc::g_Angle_to_Approach_4_direction(int angle)
+DTA_Direction CTLiteDoc::g_Angle_to_Approach_4_direction(int angle)
 {
 	if(angle < 45)
 	{
@@ -275,7 +275,7 @@ DTA_Turn CTLiteDoc::Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3)
 }
 
 
-DTA_Turn CTLiteDoc::Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2)
+DTA_Turn CTLiteDoc::Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2)
 {
 	if(approach2 == m_OpposingDirectionMap[approach1])
 		return DTA_Through;
@@ -288,7 +288,7 @@ DTA_Turn CTLiteDoc::Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p
 }
 
 
-DTA_Turn CTLiteDoc::Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2)
+DTA_Turn CTLiteDoc::Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2)
 {
 	if(approach2 == m_OpposingDirectionMap[approach1])
 		return DTA_Through;
@@ -696,7 +696,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 								str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
 
-								DTA_Approach approach2= m_PredefinedApproachMap[str_key];
+								DTA_Direction approach2= m_PredefinedApproachMap[str_key];
 
 								element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
 								MovementCount[element.movement_turn]+=1;
@@ -761,7 +761,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 							str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
 
-							DTA_Approach approach2= m_PredefinedApproachMap[str_key];
+							DTA_Direction approach2= m_PredefinedApproachMap[str_key];
 
 							element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
 
@@ -1315,7 +1315,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 	}
 
 	// write layout file
-	DTA_Approach incoming_approach, out_approach;
+	DTA_Direction incoming_approach, out_approach;
 	GDPoint p1, p2;
 	int current_node_id, up_node_id, down_node_id;
 	long LinkID;
@@ -1625,7 +1625,7 @@ bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
 	string approach_column_name_str[approach_size] = { "NID","SID",	"EID","WID","NEID","NWID","SEID","SWID"};
 
 	// we need to use the opposite direction
-	DTA_Approach approach_vector[approach_size] = { 
+	DTA_Direction approach_vector[approach_size] = { 
 		DTA_South,
 		DTA_North,
 		DTA_West,

@@ -159,7 +159,7 @@ public:
 		nodeID = node_id;
 	}
 
-	void LoadLink(DTALink * link, DTA_Approach approach)
+	void LoadLink(DTALink * link, DTA_Direction approach)
 	{
 		link_flag[approach] = true;
 		Up_ID[approach] = link->m_FromNodeID;
@@ -190,7 +190,7 @@ class DTA_Movement
 public:
 	int CurrentNodeID; int InboundLinkID;
     DTA_APPROACH_TURN movement_dir;
-	DTA_Approach movement_approach;
+	DTA_Direction movement_approach;
 	DTA_Turn movement_turn;
 	int UpNodeID,  DestNodeID;
 	int Lanes, Shared, Width, Storage, StLanes, Grade, Speed, FirstDetect, LastDetect, Phase1, PermPhase1, DetectPhase1, IdealFlow, LostTime; 

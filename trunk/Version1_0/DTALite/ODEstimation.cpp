@@ -183,7 +183,16 @@ bool g_ReadLinkMeasurementFile()
 		while(parser.ReadRecord())
 		{
 
-			int FromNodeNumber = 0; int ToNodeNumber = 0; 
+			int record_no= 0;
+			parser.GetValueByFieldName("record_no",record_no );
+
+			if(record_no == 2497)
+			{
+			TRACE("");
+			}
+
+
+				int FromNodeNumber = 0; int ToNodeNumber = 0; 
 
 			if(!parser.GetValueByFieldName("from_node_id",FromNodeNumber )) 
 				continue;
@@ -239,7 +248,6 @@ bool g_ReadLinkMeasurementFile()
 			TRACE("\n%d->%d,%s",FromNodeNumber,ToNodeNumber,name.c_str());
 
 
-					
 
 				int dest_node_id = -1;
 				if(sensor_type.find("link_count")!= string::npos)
@@ -257,7 +265,18 @@ bool g_ReadLinkMeasurementFile()
 					cout << "missing dest_node_id for link " << name <<":" << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check." << endl;
 					getchar();
 					}
-				}else
+				}else if(sensor_type.find("avg_speed")!= string::npos)
+				{
+					float avg_speed = 0;
+					parser.GetValueByFieldName ("avg_speed",avg_speed );
+
+					for(int t = start_time_in_min;  t< end_time_in_min; t+=g_AggregationTimetInterval)
+					{
+						pLink->UpdateSpeedMeasurement(avg_speed, t);
+					}
+					continue;
+
+				}else 
 				{
 					// do not accept other types yets
 				 continue;
@@ -293,7 +312,10 @@ bool g_ReadLinkMeasurementFile()
 				element.ObsNumberOfVehicles = occupancy*100* pLink->m_Length * pLink->m_NumLanes;  // convert occupancy to density
 				element.ObsTravelTime =  pLink->m_Length / max(1,avg_speed)*60;
 
+				
+
 				pLink->m_LinkMeasurementAry.push_back (element);
+				
 				count++;
 
 
@@ -560,7 +582,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if( pLink->SimultedHourlySpeed[arrival_time_in_hour] < pLink->m_SpeedLimit *0.15) // 15% of speed limit
 							number_of_links_with_extremely_heavy_congestion++;
 
-				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,15);  // update travel time 
+				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,g_AggregationTimetInterval);  // update travel time 
 
 				if(ArrivalTime >= pLink->m_LinkMOEAry.size() || ArrivalTime >= g_PlanningHorizon) // time of interest exceeds the simulation horizon
 					break;
@@ -571,7 +593,8 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 					
 					if(g_GetSequentialEstimationTimePeriod(iteration,ArrivalTime) && pLink->ContainFlowCount(ArrivalTime)) // with flow measurement
 					{
-						PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p]+= pLink->GetDeviationOfFlowCount(ArrivalTime);
+						PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p]+= 
+							pLink->GetDeviationOfFlowCount(ArrivalTime);
 
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
@@ -597,7 +620,13 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 					if(pLink->ContainFlowCount(ArrivalTime)) // with flow measurement
 					{
 						// flow rate gradient  // we assume the sensor is located upstream of the link, so we do not consider the departure flow rate increase at the downstream of the link
-						PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p]+= pLink->GetDeviationOfFlowCount(ArrivalTime);
+						PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p]+= 
+							pLink->GetDeviationOfFlowCount(ArrivalTime)
+							+ pLink->GetDeviationOfTravelTime(ArrivalTime)*(timestamp_end_of_congestion-ArrivalTime)*13.3;
+
+						//weight of 5: (0.5 miles/30mph*60 - 0.5miles/40mph*60) = 7.5, 100/7.5 = 13.3
+						//prevent overadjustment
+						//0.5 miles, avg link length
 
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
@@ -997,6 +1026,15 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
 
+				if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
+				{
+				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
+				}else
+				{
+				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
+				}
+					
+
 				if(ObsFlowCount >= 1)  // flow count
 				{
 					int time_interval = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
@@ -1116,6 +1154,15 @@ void g_OutputODMEResults()
 
 				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
 
+				if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
+				{
+				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
+				}else
+				{
+				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
+				}
+					
+				
 				if(ObsFlowCount >= 1)  // flow count
 				{
 					int time_interval_in_min = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;

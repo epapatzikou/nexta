@@ -1246,7 +1246,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	int good_vehicle_id = 1;
 	while(!feof(pFile) )
 	{
-		int m_VehicleID= g_read_integer(pFile);
+		int m_VehicleID= g_read_integer(pFile, false);
 		if(m_VehicleID == -1)
 			break;
 		// Veh #    144 Tag= 3 OrigZ=  10 DestZ=  11 Class= 3 UstmN=    150 DownN=     14 DestN=     13 STime=   0.50 

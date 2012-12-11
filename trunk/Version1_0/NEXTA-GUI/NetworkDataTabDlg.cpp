@@ -421,8 +421,29 @@ void CNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
 	CString str;
 
-			if(TabText.Find("Link")>=0 || TabText == "Calibration Data")
-			{
+///////////////////////////////////////////////
+		if(TabText.Find("Node")>=0 || TabText.Find("Activity Location")>=0  ||  TabText.Find("Movement")>=0)
+		{
+		int node_id = -1;
+
+		for (int i=0;i< m_ListCtrl.GetColumnCount() ;i++)
+		{
+			if(strcmp(names[i].c_str (),"node_id")==0)
+			{   
+				str = m_ListCtrl.GetItemText(nSelectedRow,i);
+				node_id = atoi(str);
+
+			}
+		}
+
+			m_pDoc->ZoomToSelectedNode(node_id);
+
+
+		}
+
+///////////////////////////////////////////////
+		if(TabText.Find("Link")>=0 || TabText == "Calibration Data" || TabText.Find("Sensor")>=0 )
+		{
 		int from_node_id = -1;
 		int to_node_id = -1;
 
@@ -451,6 +472,29 @@ void CNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 
 		}
 
+///////////////////////////////////////////////
+///////////////////////////////////////////////
+		if(TabText.Find("Zone")>=0)
+		{
+		int zone_id = -1;
+
+		for (int i=0;i< m_ListCtrl.GetColumnCount() ;i++)
+		{
+			if(strcmp(names[i].c_str (),"zone_id")==0)
+			{   
+				str = m_ListCtrl.GetItemText(nSelectedRow,i);
+				zone_id = atoi(str);
+
+			}
+		}
+
+			if(m_pDoc->m_ZoneMap[zone_id].m_ActivityLocationVector.size() >=1)
+			{
+				int node_id =  m_pDoc->m_ZoneMap[zone_id].m_ActivityLocationVector[0].NodeNumber ; 
+				m_pDoc->ZoomToSelectedNode(node_id);
+			}
+	
+		}
 	}
 
 	Invalidate();

@@ -3988,6 +3988,12 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 		if(queue_ratio<0)
 			queue_ratio = 0;
 
+
+		if(pLink->m_FromNodeNumber == 139 && pLink->m_ToNodeNumber == 136)
+		{
+			TRACE("");
+		
+		}
 		for(int si = 0; si < pLink->m_ShapePoints.size()-1; si++)
 		{
 			bool bDrawQueueCell = false;
@@ -3998,6 +4004,10 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 			if(FromPoint.x==ToPoint.x && FromPoint.y==ToPoint.y)  // same node
 				continue; 
 
+
+				if(queue_ratio < 0.005f)
+					break;
+
 			
 			GDPoint pt;
 
@@ -4005,8 +4015,6 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 			{  // simple straight line
 
 
-				if(queue_ratio < 0.01f)
-					break;
 
 				pt.x =  pLink->m_ShapePoints[0].x + (1-queue_ratio) * (pLink->m_ShapePoints[1].x - pLink->m_ShapePoints[0].x);
 				pt.y =  pLink->m_ShapePoints[0].y + (1-queue_ratio) * (pLink->m_ShapePoints[1].y - pLink->m_ShapePoints[0].y);
@@ -4030,7 +4038,8 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 					pt.x =  pLink->m_ShapePoints[si-1].x + (1-ratio) * (pLink->m_ShapePoints[si].x - pLink->m_ShapePoints[si-1].x);
 					pt.y =  pLink->m_ShapePoints[si-1].y + (1-ratio) * (pLink->m_ShapePoints[si].y - pLink->m_ShapePoints[si-1].y);
 
-					FromPoint = NPtoSP(pt);  // new to point as the end of queue line
+					FromPoint = NPtoSP(pt);  // new from point as the end of queue line
+					ToPoint = NPtoSP(pLink->m_ShapePoints[si]);  // to point as the beginning of queue line
 					
 					}
 
@@ -4120,6 +4129,8 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 		if(queue_ratio<0)
 			queue_ratio = 0;
 
+
+
 		for(int si = 0; si < pLink->m_ShapePoints.size()-1; si++)
 		{
 			bool bDrawQueueCell = false;
@@ -4163,6 +4174,8 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 					pt.y =  pLink->m_ShapePoints[si-1].y + (1-ratio) * (pLink->m_ShapePoints[si].y - pLink->m_ShapePoints[si-1].y);
 
 					FromPoint = NPtoSP(pt);  // new to point as the end of queue line
+					
+					ToPoint = NPtoSP(pLink->m_ShapePoints[si]);  // end of queue line
 					
 					}
 
@@ -5302,8 +5315,8 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 	if( !pMainFrame->m_bShowLayerMap[layer_connector] &&  pDoc->m_LinkTypeMap[pInLink->m_link_type  ].IsConnector ())
 		continue;
 
-	if( pDoc->m_LinkTypeMap[pInLink->m_link_type  ].IsRamp  ())  //always one way
-		continue;
+	//if( pDoc->m_LinkTypeMap[pInLink->m_link_type  ].IsRamp  ())  //always one way
+	//	continue;
 
 		GDPoint p1, p2, p3, p_text;
 		// 1: fetch all data

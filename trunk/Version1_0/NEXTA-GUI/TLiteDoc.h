@@ -1143,7 +1143,7 @@ public:
 
 	}
 
-	char GetApproachChar(DTA_Approach approach)
+	char GetApproachChar(DTA_Direction approach)
 	{
 		char c;
 		switch (approach) 
@@ -1211,7 +1211,7 @@ public:
 	void ImportOGRShapeFile(CString FileName);
 
 
-	std::map<CString,DTA_Approach> m_PredefinedApproachMap;
+	std::map<CString,DTA_Direction> m_PredefinedApproachMap;
 
 	int Find_P2P_Angle(GDPoint p1, GDPoint p2);
 	double Find_P2P_Distance(GDPoint p1, GDPoint p2);
@@ -1221,14 +1221,14 @@ public:
 
 	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
 
-	DTA_Approach g_Angle_to_Approach_8_direction(int angle);
-	DTA_Approach g_Angle_to_Approach_4_direction(int angle);
+	DTA_Direction g_Angle_to_Approach_8_direction(int angle);
+	DTA_Direction g_Angle_to_Approach_4_direction(int angle);
 	
-	DTA_Approach Find_Closest_Angle_to_Approach(int angle);
+	DTA_Direction Find_Closest_Angle_to_Approach(int angle);
 
-	std::map<DTA_Approach,int> m_ApproachMap;
+	std::map<DTA_Direction,int> m_ApproachMap;
 
-	std::map<DTA_Approach,DTA_Approach> m_OpposingDirectionMap;
+	std::map<DTA_Direction,DTA_Direction> m_OpposingDirectionMap;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1244,9 +1244,9 @@ public:
 	int Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
 	DTA_Turn Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
-	DTA_Turn Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2);
+	DTA_Turn Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2);
 
-	DTA_Turn Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Approach approach1, DTA_Approach approach2);
+	DTA_Turn Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2);
 
 
 	int MaxNodeKey;
@@ -1470,7 +1470,7 @@ public:
 	}
 
 	
-	int SelectLink(GDPoint point);
+	int SelectLink(GDPoint point, double& final_matching_distance);
 	// For demonstration
 	CString m_SampleExcelNetworkFile;
 	CString m_SampleOutputProjectFile;
@@ -1677,7 +1677,6 @@ public:
 	afx_msg void OnToolsSaveprojectforexternallayer();
 	afx_msg void OnToolsUpdateeffectivegreentimebasedoncyclelength();
 	afx_msg void OnMoeTableDialog();
-	afx_msg void OnToolsObtaintrafficcontroldatafromreferencenetwork();
 	afx_msg void OnToolsReverseverticalcoordinate();
 	afx_msg void OnGenerategisshapefilesLoadlinkcsvfile();
 	afx_msg void OnSafetyplanningtoolsRun();
@@ -1688,6 +1687,7 @@ public:
 #ifndef _WIN64
 	CDaoDatabase m_Database;
 #endif
+	afx_msg void OnTrafficcontroltoolsTransfermovementdatafromreferencenetworktocurrentnetwork();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

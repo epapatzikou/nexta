@@ -837,7 +837,7 @@ IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 358
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,103,206,WS_EX_LEFTSCROLLBAR
+    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,103,206,WS_EX_LEFTSCROLLBAR
     CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,232,103,120,WS_EX_LEFTSCROLLBAR
     PUSHBUTTON      "Config",IDC_BUTTON_Configuration,74,7,36,14
 END
@@ -2329,7 +2329,8 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
             MENUITEM "Save External Layer After Coordinate Modification", ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER
-            MENUITEM "Node Mapping to Obtain Traffic Control  Information", ID_TOOLS_OBTAINCYCLELENGTHFROM
+            MENUITEM "Create Node Mapping to Obtain Traffic Control  Information", ID_TOOLS_OBTAINCYCLELENGTHFROM
+            MENUITEM "Transfer Movement Data from Reference Network to Current Network", ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK
         END
         POPUP "Demand Tools"
         BEGIN
@@ -2373,7 +2374,7 @@ BEGIN
         POPUP "Sensor Tools"
         BEGIN
             MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
-            MENUITEM "View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+            MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
         END
     END
     POPUP "&Window"

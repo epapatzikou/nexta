@@ -46,7 +46,7 @@
 
 
 
-enum DTA_Approach
+enum DTA_Direction
 {
 	DTA_North = 0,
 	DTA_South,
@@ -790,6 +790,7 @@ obs_turn_percentage = 0;
 obs_turn_delay = 0; 
 
    QEM_TurnVolume = 0;
+   QEM_LinkVolume = 0;
    QEM_Lanes = 1;
    QEM_Shared = 0;
    QEM_Width = 12; 
@@ -820,7 +821,7 @@ int HourlyCount[24];
 int IncomingLinkID;
 int OutgoingLinkID;
 DTA_Turn movement_turn;
-DTA_Approach movement_approach;
+DTA_Direction movement_approach;
 DTA_APPROACH_TURN movement_dir;
 string QEM_dir_string;
 
@@ -850,6 +851,7 @@ float obs_turn_percentage;
 float obs_turn_delay; 
 
    int QEM_TurnVolume;
+   int QEM_LinkVolume;
    float QEM_TurnPercentage;
 
    int QEM_Lanes;
@@ -1003,6 +1005,21 @@ public:
 		}
 
 		return -1;
+	}
+
+	int FindHourlyCountFromDirection(DTA_Direction movement_approach)
+	{
+	
+		int link_count = 0;
+		// sum up all movement along the same approach
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+			if(m_MovementVector[i].movement_approach  == movement_approach)
+				link_count+= m_MovementVector[i].QEM_TurnVolume;
+
+		}
+
+		return link_count;
 	}
 
 	int get_link_pair_key(int in_link_from_node_id, int out_link_to_node_id)
@@ -1486,6 +1503,7 @@ public:
 		m_Num_4ST_Intersections = 0;
 
 		m_LevelOfService = 'A';
+		m_avg_waiting_time_on_loading_buffer = 0;
 
 		m_avg_simulated_speed = 0;
 		m_total_sensor_link_volume = 0;
@@ -1711,7 +1729,7 @@ public:
 		m_LinkMOEAry.resize (m_SimulationHorizon+1);
 
 		int t;
-		for(t=OldSize; t<= TimeHorizon; t++)
+		for(t=0; t<= TimeHorizon; t++)
 		{
 			m_LinkMOEAry[t].SetupMOE(m_FreeFlowTravelTime,m_SpeedLimit);
 		}	
@@ -1939,8 +1957,8 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_LeftTurnBayLengthInFeet;	
 	int m_LeftTurnCapacity;
 
-	DTA_Approach m_FromApproach;
-	DTA_Approach m_ToApproach;
+	DTA_Direction m_FromApproach;
+	DTA_Direction m_ToApproach;
 	int m_ReverseLinkId;
 
 	float	m_OriginalLength;  // in miles

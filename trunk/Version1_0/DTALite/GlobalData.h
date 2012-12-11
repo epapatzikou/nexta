@@ -47,6 +47,7 @@ extern	std::vector<VOTDistribution> g_VOTDistributionVector;
 
 extern int g_DemandLoadingStartTimeInMin;
 extern int g_DemandLoadingEndTimeInMin;
+extern float g_UpdatedDemandPrintOutThreshold;
 
 class HistoricalDemand
 {
@@ -86,10 +87,10 @@ public:
 			for(int j= 0; j<m_ODZoneSize; j++)
 				for(int t= 0; t<=m_StatisticsIntervalSize; t++)
 				{
-					if(m_HistDemand[i][j][t]>=5.00f)
+					if(m_HistDemand[i][j][t]>= g_UpdatedDemandPrintOutThreshold)
 					{
 					fprintf(st, "%d,%d,%d,%.2f,%.2f,%.2f,%.1f\n",
-						g_ZoneNo2NumberVector[i],g_ZoneNo2NumberVector[j],m_StartingTimeInterval/15+t,
+						g_ZoneNo2NumberVector[i],g_ZoneNo2NumberVector[j],m_StartingTimeInterval/g_AggregationTimetInterval+t,
 						m_HistDemand[i][j][t],m_UpdatedDemand[i][j][t],m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t],
 						
 						(m_UpdatedDemand[i][j][t]-m_HistDemand[i][j][t])*100 / m_HistDemand[i][j][t]);
@@ -130,8 +131,8 @@ public:
 		Deallocate3DDynamicArray(m_UpdatedDemand,m_ODZoneSize+1,m_ODZoneSize+1);
 		}
 
-		m_StatisticsIntervalSize = (g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/15;  // 15 min: department_time_intreval
-		m_StartingTimeInterval = g_DemandLoadingStartTimeInMin/15;
+		m_StatisticsIntervalSize = (g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin)/g_AggregationTimetInterval;  // 15 min: department_time_intreval
+		m_StartingTimeInterval = g_DemandLoadingStartTimeInMin/g_AggregationTimetInterval;
 
 		m_HistDemand = Allocate3DDynamicArray<float>(m_ODZoneSize+1,m_ODZoneSize+1,m_StatisticsIntervalSize+2);
 		m_UpdatedDemand = Allocate3DDynamicArray<float>(m_ODZoneSize+1,m_ODZoneSize+1,m_StatisticsIntervalSize+2);
@@ -238,6 +239,7 @@ extern int g_InfoTypeSize;  // for shortest path with generalized costs dependin
 // parameters for day-to-day learning
 extern int g_MinSwitchingRate;   // percentage
 extern int g_LearningPercentage;
+
 extern int g_TravelTimeDifferenceForSwitching;  // min
 
 extern int g_StochasticCapacityMode ;
@@ -281,6 +283,7 @@ extern int g_ValidationDataEndTimeInMin;
 
 extern float g_TotalDemandDeviation; 
 extern float g_TotalMeasurementDeviation; 
+
 
 extern ofstream g_scenario_short_description;
 extern void OutputMovementMOEData(ofstream &output_MovementMOE_file);

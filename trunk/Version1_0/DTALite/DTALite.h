@@ -937,6 +937,25 @@ public:
 
 	}
 
+	float GetDeviationOfTravelTime(float timestamp)
+	{
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 &&  m_LinkMeasurementAry[i].ObsTravelTime>=0.001 )
+			{
+
+				return m_LinkMeasurementAry[i].DeviationOfTravelTime  ;
+
+			}
+
+		}
+		return 0;
+
+	}
+
+
+
+
 	int GetObsFlowCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
@@ -970,6 +989,39 @@ public:
 
 	}
 
+	bool UpdateSpeedMeasurement(float speed, int timestamp)
+	{
+		
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
+			{
+
+
+				m_LinkMeasurementAry[i].ObsTravelTime = this->m_Length / max(1,speed)*60 ;
+
+				return 1;
+			}
+
+		}
+		return 0;
+
+	}
+	
+		float GetSimulatedTravelTime(float timestamp)
+		{
+			for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+			{
+				if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
+				{
+	
+					return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval); 
+				}
+	
+			}
+			return m_FreeFlowTravelTime;
+	
+		}
 	std::vector<Day2DayLinkMOE> m_Day2DayLinkMOEVector;
 	std::vector <int> m_CumuArrivalFlow;
 	std::vector <int> m_CumuDeparturelFlow;

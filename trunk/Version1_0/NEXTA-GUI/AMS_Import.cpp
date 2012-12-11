@@ -3925,6 +3925,12 @@ if(dlg.DoModal() == IDOK)
 									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementVector[m]);
 									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
 									pThisMovement->QEM_TurnVolume = reference_movement.QEM_TurnVolume;
+									
+
+									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
+									pThisMovement->QEM_LinkVolume  =
+										pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_approach);
+
 									pThisMovement->QEM_Lanes = reference_movement.QEM_Lanes;
 									pThisMovement->QEM_Shared = reference_movement.QEM_Shared;
 									pThisMovement->QEM_Width = reference_movement.QEM_Width;

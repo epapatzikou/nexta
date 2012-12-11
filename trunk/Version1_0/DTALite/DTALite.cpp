@@ -202,6 +202,7 @@ int g_VehicleExperiencedTimeGap = 1; // 1: Vehicle experienced time gap; 0: Avg 
 int g_NewPathWithSwitchedVehicles = 0; // number of new paths with vehicles switched to them
 
 float g_TotalDemandDeviation = 0;
+float g_UpdatedDemandPrintOutThreshold = 5;
 float g_TotalMeasurementDeviation = 0; 
 
 float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
@@ -1716,7 +1717,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 
 		if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 		{
-			int time_interval = vhc.m_DepartureTime/15;
+			int time_interval = vhc.m_DepartureTime/g_AggregationTimetInterval;
 
 			if(bChangeHistDemandTable ==true)
 				g_HistDemand.AddValue(origin_zone,destination_zone,time_interval, 1); // to store the initial table as hist database
@@ -2975,11 +2976,11 @@ int g_InitializeLogFiles()
 	g_LogFile << "--- Current Directory: " << szBuffer << " ---" << endl << endl;
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
-	cout << "Version 1.000, Release Date 07/20/2012."<< endl;
+	cout << "Version 1.002, Release Date 12/10/2012."<< endl;
 
 
 	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
-	g_LogFile << "Version 1.0.0, Release Date 07/20/2012."<< endl;
+	g_LogFile << "Version 1.0.2, Release Date 12/10/2012."<< endl;
 
 
 	CCSVParser parser_MOE_settings;
@@ -3034,6 +3035,8 @@ void g_ReadDTALiteSettings()
 	//
 
 	//	g_ShortestPathWithMovementDelayFlag = g_GetPrivateProfileInt("simulation", "movement_delay_flag", 1, g_DTASettingFileName);	
+
+
 	g_UseDefaultLaneCapacityFlag = g_GetPrivateProfileInt("simulation", "use_default_lane_capacity", 0, g_DTASettingFileName);	
 
 	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
@@ -3070,9 +3073,12 @@ void g_ReadDTALiteSettings()
 
 	//	g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, g_DTASettingFileName);	
 	g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, g_DTASettingFileName);
-	g_AggregationTimetInterval = 15;	
+	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "agregation_time_interval_in_min", 15, g_DTASettingFileName);	
+
 	g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, g_DTASettingFileName);	
 	g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, g_DTASettingFileName);	
+	g_UpdatedDemandPrintOutThreshold  = g_GetPrivateProfileFloat("estimation", "updated_demand_print_out_threshold", 5, g_DTASettingFileName);	
+
 	//g_StartIterationsForOutputPath = g_GetPrivateProfileInt("output", "start_iteration_output_path", g_NumberOfIterations, g_DTASettingFileName);	
 	//g_EndIterationsForOutputPath = g_GetPrivateProfileInt("output", "end_iteration_output_path", g_NumberOfIterations, g_DTASettingFileName);	
 
@@ -3091,6 +3097,7 @@ void g_ReadDTALiteSettings()
 
 	// parameters for day-to-day learning mode
 	g_LearningPercentage = g_GetPrivateProfileInt("assignment", "learning_percentage", 15, g_DTASettingFileName);
+	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileInt("assignment", "travel_time_difference_for_switching_in_min", 5, g_DTASettingFileName);
 	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileInt("assignment", "travel_time_difference_for_switching_in_min", 5, g_DTASettingFileName);
 	//	g_DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,g_DTASettingFileName);	
 
@@ -4079,7 +4086,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 										}
 									}else // do not use time-dependent profile
 									{
-										float number_of_time_dependent_intervals= max(1,(end_time_in_min-start_time_in_min)/15);
+										float number_of_time_dependent_intervals= max(1,(end_time_in_min-start_time_in_min)/g_AggregationTimetInterval);
 										CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],start_time_in_min,end_time_in_min);
 
 									}
