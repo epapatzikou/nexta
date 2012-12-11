@@ -253,15 +253,15 @@ using namespace std;
 		}
 
 			g_AccessibilityCalculationMode = 0;
-			if(parser_scenario.GetValueByFieldName("accessibility_calculationg_mode",g_AccessibilityCalculationMode)==false)
+			if(parser_scenario.GetValueByFieldName("accessibility_calculation_mode",g_AccessibilityCalculationMode)==false)
 		{
-			cout << "Field accessibility_calculationg_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
+			cout << "Field accessibility_calculation_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
 			getchar();
 		}
 
 
 		g_ODEstimation_StartingIteration = 1000;
-		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.7f;
+		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.20f;
 
 		g_ODEstimationFlag = 0;
 
@@ -275,7 +275,7 @@ using namespace std;
 			getchar();
 		}
 
-		float ODEstimation_max_percentage_deviation_wrt_hist_demand = 70;
+		float ODEstimation_max_percentage_deviation_wrt_hist_demand = 20;
 		if(parser_scenario.GetValueByFieldName("ODME_max_percentage_deviation_wrt_hist_demand",ODEstimation_max_percentage_deviation_wrt_hist_demand)==false)
 		{
 			cout << "Field ODME_max_percentage_deviation_wrt_hist_demand has not been specified in file input_scenario_settings.csv. A default value of 30 (%) is used." << endl;
@@ -286,7 +286,7 @@ using namespace std;
 		{
 			cout << "Field ODME_max_percentage_deviation_wrt_hist_demand =" << ODEstimation_max_percentage_deviation_wrt_hist_demand << ", which should be between 1 and 100%" << endl;
 			getchar();
-			ODEstimation_max_percentage_deviation_wrt_hist_demand = 70;
+			ODEstimation_max_percentage_deviation_wrt_hist_demand = 20;
 	
 		}
 

@@ -385,7 +385,6 @@
 #define IDC_COMBO_AggIntrevalList       1154
 #define IDC_COMBO3                      1155
 #define IDC_COMBO_PLOT_TYPE             1155
-#define IDC_PLOT_AREA                   1156
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1005,13 +1004,14 @@
 #define ID_DATA_CLEANALLPATHS           33527
 #define ID_IMPORT_INRIXSHAPEFILEANDSPEEDDATA 33528
 #define ID_DATA_FIXYRANGE               33529
+#define ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK 33530
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33530
+#define _APS_NEXT_COMMAND_VALUE         33531
 #define _APS_NEXT_CONTROL_VALUE         1157
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

@@ -1121,7 +1121,16 @@ void CDlgPathList::OnPaint()
 void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 {
 	if(m_PathList.GetCount () ==0)
+	{
+			
+		pDC->TextOut(PlotRect.left,PlotRect.top+0 ,"No path has been defined.");
+		pDC->TextOut(PlotRect.left,PlotRect.top+30 ,"Two methods for generating paths:");
+		pDC->TextOut(PlotRect.left,PlotRect.top+50 ,"select GIS node layer and right click origin/destination nodes.");
+		pDC->TextOut(PlotRect.left,PlotRect.top+70 ,"load path csv file from the menu Data->Import CSV.");
+		
 		return;
+
+	}
 	int p = 	m_PathList.GetCurSel();
 
 	CalculateTimeDependentTravelTime();

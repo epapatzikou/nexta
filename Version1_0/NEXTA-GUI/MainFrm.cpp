@@ -611,17 +611,30 @@ void CMainFrame::OnLvnItemchangedListGislayer(NMHDR *pNMHDR, LRESULT *pResult)
 
 CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
 
+// determine which layer is active
 	POSITION pos = pGISLayerList->GetFirstSelectedItemPosition();
 	if (pos != NULL)
 	{
 		int nItem = pGISLayerList->GetNextSelectedItem(pos);
 		 m_iSelectedLayer = (layer_mode) nItem;
 		 BOOL bChecked = pGISLayerList->GetCheck(nItem); 
+	 	 m_bShowLayerMap[m_iSelectedLayer] = bChecked;
 
-	 	m_bShowLayerMap[m_iSelectedLayer] = bChecked;
-
- 		 TRACE("%d: %s, %d\n",nItem,_gLayerLabel[nItem],bChecked);
 	}
+
+	//// detemine the selection status
+ //int nItem = 0; //Represents the row number inside CListCtrl
+ //     for(nItem =0 ; nItem <  pGISLayerList->GetItemCount(); nItem++)
+ //     {
+ //        BOOL bChecked =  pGISLayerList->GetCheck(nItem);
+
+	//	 layer_mode iSelectedLayer = (layer_mode) nItem;
+	//	 BOOL bChecked = pGISLayerList->GetCheck(nItem); 
+
+	// 	m_bShowLayerMap[iSelectedLayer] = bChecked;
+
+ //     }
+
 
 	pGISLayerList->Invalidate (1);
 	UpdateAllViews();
