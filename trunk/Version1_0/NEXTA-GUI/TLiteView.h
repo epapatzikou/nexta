@@ -709,6 +709,8 @@ public:
 	afx_msg void OnLinkAvoidusingthislinkinrouting();
 	afx_msg void OnBnClickedButtonConfiguration();
 	afx_msg void OnNodeNodeproperties();
+	afx_msg void OnNodeAvoidthisnode();
+	afx_msg void OnNodeRemovenodeavoidanceconstraint();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

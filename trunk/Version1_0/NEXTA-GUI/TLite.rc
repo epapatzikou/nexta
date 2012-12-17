@@ -1603,6 +1603,7 @@ IDR_AMS_TOOLBAR1        BITMAP                  "res\\ams_tool.bmp"
 IDR_TOOLBARLAYER        BITMAP                  "res\\toolbar2.bmp"
 IDR_MAINFRAME_RAIL      BITMAP                  "res\\bmp00004.bmp"
 IDR_VIEW_TOOLBAR_NU     BITMAP                  "res\\view_too.bmp"
+IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2087,7 +2088,9 @@ BEGIN
         MENUITEM "Direction from here",         ID_NODE_ORIGIN
         MENUITEM "Direction to here ",          ID_NODE_DESTINATION
         MENUITEM "Add Intermediate Destination here", ID_NODE_ADDINTERMEDIATEDESTINATIONHERE
+        MENUITEM "Avoid this Node",             ID_NODE_AVOIDTHISNODE
         MENUITEM "Remove All Intermediate Destination(s)", ID_NODE_REMOVEALLINTERMEDIATEDESTINATION
+        MENUITEM "Remove Node Avoidance Constraint(s)", ID_NODE_REMOVENODEAVOIDANCECONSTRAINT
         MENUITEM SEPARATOR
         MENUITEM "Check Connectivity from here", ID_NODE_CHECKCONNECTIVITYFROMHERE
         MENUITEM "Direction to here and Reliability Analysis", ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS

@@ -191,9 +191,9 @@ int g_Day2DayAgentLearningMethod  =0;
 float g_DepartureTimeChoiceEarlyDelayPenalty = 1;
 float g_DepartureTimeChoiceLateDelayPenalty = 1;
 float g_CurrentGapValue = 0.0; // total network gap value in the current iteration
+float g_CurrentRelativeGapValue = 0.0;
+float g_PrevRelativeGapValue = 0.0;
 float g_PercentageCompleteTrips = 100.0;
-float g_PrevGapValue = 0.0; // total network gap value in last iteration
-float g_RelativeGap = 0.0; // = abs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue 
 int g_CurrentNumOfVehiclesSwitched = 0; // total number of vehicles switching paths in the current iteration; for MSA, g_UEAssignmentMethod = 0
 int g_CurrentNumOfVehiclesForUEGapCalculation = 0;
 int g_PrevNumOfVehiclesSwitched = 0; // // total number of vehicles switching paths in last iteration; for MSA, g_UEAssignmentMethod = 0
@@ -213,13 +213,15 @@ int g_information_updating_interval_of_VMS_in_min = 60;
 
 
 int g_LearningPercentage = 15;
-int g_TravelTimeDifferenceForSwitching = 5;  // min
+float g_TravelTimeDifferenceForSwitching = 1.0;  // min
+float g_RelativeTravelTimePercentageDifferenceForSwitching = 15;  // min
+
+
 
 int g_StochasticCapacityMode = 0;
 float g_MinimumInFlowRatio = 0.1f;
 float g_RelaxInFlowConstraintAfterDemandLoadingTime = 60;
 float g_MaxDensityRatioForVehicleLoading = 0.8f;
-int g_CycleLength_in_seconds;
 float g_DefaultSaturationFlowRate_in_vehphpl;
 
 std::vector<VOTDistribution> g_VOTDistributionVector;
@@ -369,8 +371,6 @@ int FindNodeControlType(string control_type)
 void g_ReadInputFiles(int scenario_no)
 {
 	// set random number seed
-	g_RandomSeed = g_GetPrivateProfileInt("simulation", "random_number_seed", 100, g_DTASettingFileName);
-
 	// write version number (for agent.bin version control)
 
 	//int current_revision_number = 2;
@@ -3066,14 +3066,13 @@ void g_ReadDTALiteSettings()
 	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, g_DTASettingFileName);	
 	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);	
 	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, g_DTASettingFileName);
-	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "relax_minimum_link_in_flow_ratio_after_time", 60.0f, g_DTASettingFileName);
+	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "point_queue_model_after_time", 60.0f, g_DTASettingFileName);
 	g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
-	g_CycleLength_in_seconds = g_GetPrivateProfileFloat("simulation", "cycle_length_in_seconds", 120, g_DTASettingFileName);
 	g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, g_DTASettingFileName);
 
 	//	g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, g_DTASettingFileName);	
 	g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, g_DTASettingFileName);
-	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "agregation_time_interval_in_min", 15, g_DTASettingFileName);	
+	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "aggregation_time_interval_in_min", 15, g_DTASettingFileName);	
 
 	g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, g_DTASettingFileName);	
 	g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, g_DTASettingFileName);	
@@ -3090,15 +3089,15 @@ void g_ReadDTALiteSettings()
 
 	g_StartIterationsForOutputPath = g_EndIterationsForOutputPath = g_NumberOfIterations -1;
 
-	g_UEAssignmentMethod = g_GetPrivateProfileInt("assignment", "UE_assignment_method", 1, g_DTASettingFileName); // default is MSA
+	g_UEAssignmentMethod = g_GetPrivateProfileInt("assignment", "UE_assignment_method", 1, g_DTASettingFileName); // default is day-to-day learning
 	g_Day2DayAgentLearningMethod = g_GetPrivateProfileInt("assignment", "day_to_day_agent_learning_method", 0, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceEarlyDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_early_delay_penalty", 0.969387755f, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceLateDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_late_delay_penalty", 1.306122449f, g_DTASettingFileName); // default is non learning
 
 	// parameters for day-to-day learning mode
 	g_LearningPercentage = g_GetPrivateProfileInt("assignment", "learning_percentage", 15, g_DTASettingFileName);
-	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileInt("assignment", "travel_time_difference_for_switching_in_min", 5, g_DTASettingFileName);
-	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileInt("assignment", "travel_time_difference_for_switching_in_min", 5, g_DTASettingFileName);
+	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileFloat("assignment", "travel_time_difference_for_switching_in_min", 1, g_DTASettingFileName);
+	g_RelativeTravelTimePercentageDifferenceForSwitching = g_GetPrivateProfileFloat("assignment", "relative_travel_time_difference_in_percentage_for_switching_in_min", 15, g_DTASettingFileName);
 	//	g_DemandGlobalMultiplier = g_GetPrivateProfileFloat("demand", "global_multiplier",1.0,g_DTASettingFileName);	
 
 	//	g_DemandLoadingStartTimeInMin = ((int) g_GetPrivateProfileFloat("demand", "loading_start_hour",6,g_DTASettingFileName)*60);	

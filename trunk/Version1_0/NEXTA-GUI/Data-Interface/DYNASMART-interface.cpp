@@ -1,4 +1,4 @@
-Portions Copyright 2012 Xuesong Zhou.
+//Portions Copyright 2012 Xuesong Zhou.
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -203,13 +203,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		CString str_origin;
 		str_origin.Format("%s", str_line,str_line_size);
 
-		if(str_origin.Find("top") != -1)
+		if(str_origin.Find("top") != -1 || str_origin.Find("TOP") != -1)
 		{
 			m_YCorridonateFlag = -1;
 
 		}
 
-		if(str_origin.Find("bottom") != -1)
+		if(str_origin.Find("bottom") != -1 || str_origin.Find("BOTTOM") != -1)
 		{
 			m_YCorridonateFlag = 1;
 

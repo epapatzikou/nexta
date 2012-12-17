@@ -179,6 +179,9 @@ using namespace std;
 			g_ProgramStop();
 		}
 
+		parser_scenario.GetValueByFieldNameWithPrintOut("random_seed",g_RandomSeed);
+		
+
 		g_SummaryStatFile.WriteTextLabel ("----------------------");
 		g_SummaryStatFile.WriteTextLabel (scenario_name.c_str ());
 		g_SummaryStatFile.WriteTextLabel ("----------------------\n");

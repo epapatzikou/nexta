@@ -1069,7 +1069,7 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 }
 
 
-int CTLiteDoc::Routing(bool bCheckConnectivity)
+int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 {
 	CWaitCursor cws;
 	m_NodeSizeSP = 0;  // reset 
@@ -1110,6 +1110,12 @@ int CTLiteDoc::Routing(bool bCheckConnectivity)
 		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
 
 		}
+
+	if(bRebuildNetwork)  // link cost changed
+	{
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
+
+	}
 		int NodeNodeSum = 0;
 
 		int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];

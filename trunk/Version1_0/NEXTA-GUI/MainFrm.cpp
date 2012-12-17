@@ -64,7 +64,7 @@ static UINT indicators[] =
 
 
 // CMainFrame construction/destruction
-#define _NUM_OF_GIS_LAYERS  17 
+#define _NUM_OF_GIS_LAYERS  18 
 static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
@@ -76,6 +76,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("OD Matrix"),
 	_T("Detector"),
 	_T("Subarea"), 
+	_T("Path"), 
 	_T("Workzone"),
 	_T("Crash"),
 	_T("VMS"),
@@ -243,6 +244,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	m_bShowLayerMap[layer_link] = true;
 	m_bShowLayerMap[layer_link_MOE] = true;
 	m_bShowLayerMap[layer_zone] = true;
+	m_bShowLayerMap[layer_path] = true;
 	m_bShowLayerMap[layer_detector] = true;
 	m_bShowLayerMap[layer_workzone] = true;
 	m_bShowLayerMap[layer_VMS] = true;

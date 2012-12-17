@@ -95,17 +95,29 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.AddString("15-min Time Interval"); //2
 	m_ComboX.AddString("30-min Time Interval"); //2
 	m_ComboX.AddString("1-hour Time Interval"); //2
+	m_ComboX.AddString("Distance Bin (0.2 ml Interval)"); //2
+	m_ComboX.AddString("Distance Bin (2 ml Interval)"); //2
+	m_ComboX.AddString("Distance Bin (5 ml Interval)"); //2
+	m_ComboX.AddString("Distance Bin (10 ml Interval)"); //2
+	m_ComboX.AddString("Travel Time Bin (2 min Interval)"); //2
+	m_ComboX.AddString("Travel Time Bin (5 min Interval)"); //2
+	m_ComboX.AddString("Travel Time Bin (10 min Interval)"); //2
+
 	m_ComboX.AddString("Traveler Information Class"); // 3
 	m_ComboX.AddString("Vehicle Type"); //4
 
 // enum VEHICLE_Y_CLASSIFICATION {CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_CO2,CLS_avg_CO2};
 
 	m_ComboY.AddString ("Number of Vehicles");
+	m_ComboY.AddString ("Cumulative Number of Vehicles");
 	m_ComboY.AddString ("Total Travel Time (min)"); 
 	m_ComboY.AddString ("Avg Travel Time (min)"); 
 
 	m_ComboY.AddString ("Total Travel Distance (mile)"); 
-	m_ComboY.AddString ("Avg  Travel Distance (mile)"); 
+	m_ComboY.AddString ("Avg Travel Distance (mile)"); 
+
+	m_ComboY.AddString ("Avg Travel Time STD (min)"); 
+	m_ComboY.AddString ("Avg Travel Time Per Mile STD (min/mile)");
 
 	m_ComboY.AddString ("Total Toll Revenue ($)");
 	m_ComboY.AddString ("Avg Toll Cost ($)"); 

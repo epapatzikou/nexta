@@ -78,6 +78,27 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
 
 	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
+
+	switch (g_UEAssignmentMethod)
+	{
+	case 0: 
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Method of Successive Average");
+	break;
+	case 1:
+		g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to Day Learning");
+		g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+		g_SummaryStatFile.WriteParameterValue ("Travel time difference for route switching",g_TravelTimeDifferenceForSwitching);
+		g_SummaryStatFile.WriteParameterValue ("Relative Travel Time Indifference Band (%) for route switching",g_RelativeTravelTimePercentageDifferenceForSwitching);
+
+	break;
+	case 2:
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap function based adjustment");
+	g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+	break;
+
+	}
+
+
 	g_SummaryStatFile.WriteTextString(" ");
 
 
@@ -114,6 +135,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		// initialize for each iteration
 		g_CurrentGapValue = 0.0;
+		g_CurrentRelativeGapValue  = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0;
@@ -206,7 +228,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 
-		pVeh->m_bSwitched = false;
+		pVeh->m_bConsiderToSwitch = false;
+		pVeh->m_bSwitch = false;
+		
 
 		/// finding optimal path 
 		bool bDebugFlag  = false;
@@ -227,17 +251,22 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
 
-		if(g_UEAssignmentMethod==0)
+		if(g_UEAssignmentMethod==0)  // MSA
 		{
 			switching_rate = 1.0f/(iteration+1);
 		}
-		else
+		if(g_UEAssignmentMethod==1) // day to day learning
 		{
 			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 		}
+		if(g_UEAssignmentMethod==2) // gap function based method,
+		{
+			switching_rate =  1.0f/(iteration+1) + 0.05; //additonal switch
+
+		}
 
 
-			double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
+		double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 
 
 			bool bSwitchFlag = false;
@@ -261,6 +290,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			// get the first feasible solution
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+			pVeh-> m_bSwitch = true;
 			}else
 			{
 			
@@ -304,7 +334,6 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					TotalCost+= fabs(departuret_time_shift*g_DepartureTimeChoiceEarlyDelayPenalty);
 					min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, departuret_time_shift, TempNodeSize, TempPathLinkList);
 
-
 					departuret_time_shift = 5; //leave later
 					// leaving option: +5*
 					TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime+departuret_time_shift , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, TempPathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
@@ -332,9 +361,17 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
-					if(RandomNumber < switching_rate )
+			float relative_gap = 0.0f;
+				if(g_UEAssignmentMethod==2) // gap function based method: the final switching rate is proportaitonal to relative gap
+				{
+					relative_gap = max(0,ExperiencedGeneralizedTravelTime - TotalCost)/max(0.1,ExperiencedGeneralizedTravelTime);
+
+					
+				}
+
+				if(RandomNumber < 1.0f/(iteration+1) || relative_gap > g_PrevRelativeGapValue)
 					{
-								bSwitchFlag = true;
+						bSwitchFlag = true;
 					}
 
 
@@ -353,6 +390,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			if(m_gap < 0) m_gap = 0.0;			
 
 			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedGeneralizedTravelTime);
 			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
 
 		}
@@ -362,7 +400,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			// Jason : accumulate number of vehicles switching paths
 			g_CurrentNumOfVehiclesSwitched += 1; 
 
-			pVeh->m_bSwitched = true;
+			pVeh->m_bConsiderToSwitch = true;
 
 			if( pVeh->m_NodeAry !=NULL)  // delete the old path
 			{
@@ -374,7 +412,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			if(pVeh->m_NodeSize>=2)  // for feasible path
 			{
-				pVeh->m_bSwitched = true;
+				pVeh->m_bConsiderToSwitch = true;
 
 				if(NodeSize>=900)
 				{
@@ -390,13 +428,13 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					g_ProgramStop();
 				}
 
-				pVeh->m_NodeNumberSum =0;
-				pVeh->m_Distance =0;
+				int NodeNumberSum =0;
+				float Distance =0;
 
 				for(int i = 0; i< NodeSize-1; i++)
 				{
 					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
-					pVeh->m_NodeNumberSum += PathLinkList[i];
+					NodeNumberSum += PathLinkList[i];
 
 					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
 					{
@@ -406,10 +444,16 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					}
 					*/
 					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
-
-					pVeh->m_Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
+					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 
 				}
+				if(fabs(pVeh->m_Distance - Distance) >0.1 && NodeNumberSum != pVeh->m_NodeNumberSum)
+				{  //different  path 
+					pVeh->m_bSwitch = true;
+				}
+					
+				pVeh->m_Distance  = Distance;
+				pVeh->m_NodeNumberSum = NodeNumberSum;
 
 
 				if(pVeh->m_PricingType ==4)  //assign travel time for transit users
@@ -516,6 +560,7 @@ void g_ODBasedDynamicTrafficAssignment()
 			TRACE("");
 		// initialize for each iteration
 		g_CurrentGapValue = 0.0;
+		g_CurrentRelativeGapValue = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0; 
@@ -648,7 +693,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 		}
 
 		bool bSwitchFlag = false;
-		pVeh->m_bSwitched = false;
+		pVeh->m_bConsiderToSwitch = false;
 
 		if(iteration > 0) // update path assignments -> determine whether or not the vehicle will switch
 		{
@@ -687,18 +732,19 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			if(m_gap < 0) m_gap = 0.0;			
 
 			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
 
 			float switching_rate;
 			// switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
 
-			// Jason
+
 			switch (g_UEAssignmentMethod)
 			{
 			case 0: switching_rate = 1.0f/(iteration+1); // 0: MSA 
 				break;
 			case 1: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 
-				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching)
+				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching || pVeh->m_TripTime > TotalCost*(1+g_RelativeTravelTimePercentageDifferenceForSwitching/100))
 				{
 					switching_rate = 1.0f;
 				}
@@ -765,7 +811,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			// Jason : accumulate number of vehicles switching paths
 			g_CurrentNumOfVehiclesSwitched += 1; 
 
-			pVeh->m_bSwitched = true;
+			pVeh->m_bConsiderToSwitch = true;
 			pVeh->m_NodeSize = NodeSize;
 
 			if( pVeh->m_NodeAry !=NULL)
@@ -775,7 +821,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 			if(pVeh->m_NodeSize>=2)
 			{
-				pVeh->m_bSwitched = true;
+				pVeh->m_bConsiderToSwitch = true;
 
 				if(NodeSize>=900)
 				{
@@ -944,6 +990,8 @@ void g_ComputeFinalGapValue()
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	g_CurrentGapValue = 0.0;
+	g_CurrentRelativeGapValue = 0.0;
+
 	g_CurrentNumOfVehiclesForUEGapCalculation = 0;
 	g_CurrentNumOfVehiclesSwitched = 0;
 
@@ -1042,6 +1090,8 @@ void g_ComputeFinalGapValue()
 						if(m_gap < 0) m_gap = 0.0;
 
 						g_CurrentGapValue += m_gap;
+						g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
+
 					}
 
 					// delete LeastExperiencedTimes; // Jason : release memory
@@ -1362,21 +1412,12 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_AssignmentMOEVector[iteration]  = SimuOutput;
 
-	if(iteration <= 1) // compute relative gap after iteration 1
-	{
-		g_RelativeGap = 100; // 100%
-	}else
-	{
-		g_RelativeGap = (fabs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue)*100;
-
-		// comments: misleading statistics, especially when g_PrevGapValue is small. 
-	}
-	g_PrevGapValue = g_CurrentGapValue; // update g_PrevGapValue
-
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
 			//agent based, we record gaps only for vehicles switched (after they find the paths)
 			SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
+			SimuOutput.AvgRelativeUEGap  = g_CurrentRelativeGapValue *100 / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
+			g_PrevRelativeGapValue = SimuOutput.AvgRelativeUEGap;
 
 	}
 
@@ -1405,10 +1446,12 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("Avg Trip Time Index");
 		g_SummaryStatFile.SetFieldName ("Avg Speed (mph)");
 		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
-		g_SummaryStatFile.SetFieldName ("% switching");
+		g_SummaryStatFile.SetFieldName ("% considering to switch");
+		g_SummaryStatFile.SetFieldName ("% switched");
 		g_SummaryStatFile.SetFieldName ("% completing trips");
-		g_SummaryStatFile.SetFieldName ("network work clearance time");
+		g_SummaryStatFile.SetFieldName ("network clearance time (in min)");
 		g_SummaryStatFile.SetFieldName ("Avg UE gap (min)");
+		g_SummaryStatFile.SetFieldName ("Relative UE gap (%)");
 
 //		if(g_ODEstimationFlag == 1)
 //		{
@@ -1443,9 +1486,10 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	float avg_speed = SimuOutput.AvgDistance/max(0.1,SimuOutput.AvgTravelTime)*60;
 
 	g_SummaryStatFile.SetValueByFieldName ("Avg Speed (mph)",avg_speed);
-	g_SummaryStatFile.SetValueByFieldName ("% switching",SimuOutput.SwitchPercentage);
+	g_SummaryStatFile.SetValueByFieldName ("% switched",SimuOutput.SwitchPercentage);
+	g_SummaryStatFile.SetValueByFieldName ("% considering to switch",SimuOutput.ConsideringSwitchPercentage);
 
-	g_SummaryStatFile.SetValueByFieldName ("network work clearance time",SimuOutput.NetworkClearanceTimeStamp_in_Min);
+	g_SummaryStatFile.SetValueByFieldName ("network clearance time (in min)",SimuOutput.NetworkClearanceTimeStamp_in_Min);
 
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
 
@@ -1454,6 +1498,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
 		{
 		SimuOutput.AvgUEGap = 0;
+		SimuOutput.AvgRelativeUEGap = 0;
 		
 		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",SimuOutput.ODME_result .data_size );
 		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",SimuOutput.LinkVolumeAvgAbsError);
@@ -1464,7 +1509,22 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",SimuOutput.ODME_result.avg_y_to_x_ratio  );
 		}
 
-	g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
+	if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
+	{
+		//ODME gap results
+		float AvgUEGap = g_CurrentGapValue / max(1, SimuOutput.NumberofVehiclesGenerated);
+		float AvgRelativeUEGap = g_CurrentRelativeGapValue / max(1, SimuOutput.NumberofVehiclesGenerated);
+		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",AvgUEGap);
+		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",AvgRelativeUEGap);
+
+
+	}else  // simulation gap
+	{
+		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
+		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",SimuOutput.AvgRelativeUEGap);
+	
+	}
+	
 
 	g_SummaryStatFile.WriteRecord ();
 
@@ -1509,8 +1569,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 				NotConverged = false; // converged!
 		}else // gap-based approaches
 		{	
-			if(g_RelativeGap < g_ConvergencyRelativeGapThreshold_in_perc && !g_ODEstimationFlag )
-				NotConverged = false; // converged! 
+			//if(g_RelativeGap < g_ConvergencyRelativeGapThreshold_in_perc && !g_ODEstimationFlag )
+			//	NotConverged = false; // converged! 
 		}			
 	}else // ----------* with inner loop *----------
 	{			
