@@ -945,6 +945,7 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_bNodeAvoidance  = false;
 		m_QEM_ReferenceNodeNumber = 0;
 		m_IntermediateDestinationNo = 0;
 		m_NodeProduction =0;
@@ -980,6 +981,7 @@ public:
 
 	~DTANode(){};
 
+	bool m_bNodeAvoidance;
 	float m_NodeProduction;
 	float m_NodeAttraction;
 
@@ -2609,7 +2611,7 @@ public:
 
 };
 
-class GPSLocationRecord
+class VehicleLocationRecord
 {
 public:
 float x;
@@ -2628,7 +2630,8 @@ public:
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path
 
-	GPSLocationRecord *m_GPSNodeAry; // link list arrary of a vehicle path
+	int m_VehicleLocationSize;
+	VehicleLocationRecord *m_LocationRecordAry; // link list arrary of a vehicle path
 
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
@@ -2684,6 +2687,7 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+		m_VehicleLocationSize = 0;
 		m_bMarked = false;
 		m_Age = 0;
 		m_NodeNumberSum = 0;
@@ -2722,6 +2726,9 @@ public:
 
 		if(pVehData!=NULL)
 			delete pVehData;
+
+		if(m_LocationRecordAry!=NULL)
+			delete m_LocationRecordAry;
 	};
 
 

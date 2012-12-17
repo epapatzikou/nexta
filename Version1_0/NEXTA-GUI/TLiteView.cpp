@@ -172,6 +172,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_LINK_AVOIDUSINGTHISLINKINROUTING, &CTLiteView::OnLinkAvoidusingthislinkinrouting)
 	ON_BN_CLICKED(IDC_BUTTON_Configuration, &CTLiteView::OnBnClickedButtonConfiguration)
 	ON_COMMAND(ID_NODE_NODEPROPERTIES, &CTLiteView::OnNodeNodeproperties)
+	ON_COMMAND(ID_NODE_AVOIDTHISNODE, &CTLiteView::OnNodeAvoidthisnode)
+	ON_COMMAND(ID_NODE_REMOVENODEAVOIDANCECONSTRAINT, &CTLiteView::OnNodeRemovenodeavoidanceconstraint)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -965,6 +967,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( pMainFrame->m_bShowLayerMap[layer_toll] == true &&  ((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
 
+			if( (*iLink)->m_AdditionalCost>=1)
+				DrawBitmap(pDC, ScenarioPoint, IDB_LINK_CLOSURE);
+			
 
 			if(pMainFrame->m_bShowLayerMap[layer_detector] == true  && (*iLink)->m_bSensorData)  // only during non display mode
 			{
@@ -1326,7 +1331,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//draw select path
 
 
-	if(pDoc->m_PathDisplayList.size() > pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
+	if(pMainFrame->m_bShowLayerMap[layer_detector] && pDoc->m_PathDisplayList.size() > pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
 	{
 
 		pDC->SelectObject(&g_PenSelectPath);
@@ -1626,15 +1631,15 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		if(pVehicle->m_NodeSize >1)  // initialization
 		{
 		
-		previous_timestamp = pVehicle->m_GPSNodeAry [0].time_stamp_in_min ;
+		previous_timestamp = pVehicle->m_LocationRecordAry [0].time_stamp_in_min ;
 		}
 
 		for (int i =0; i < pVehicle->m_NodeSize ; i++)
 		{
 
 			GDPoint pt;
-			pt.x = pVehicle->m_GPSNodeAry [i].x ;
-			pt.y = pVehicle->m_GPSNodeAry [i].y ;
+			pt.x = pVehicle->m_LocationRecordAry [i].x ;
+			pt.y = pVehicle->m_LocationRecordAry [i].y ;
 
 			CPoint point = NPtoSP(pt);
 
@@ -1658,8 +1663,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				switch (m_ShowGPSTextMode)
 				{
 				case GPS_display_vehicle_id: str_text.Format ("%d", pVehicle->m_VehicleID ); break;
-				case GPS_display_timestamp_in_min:   str_text.Format ("%.2f",pVehicle->m_GPSNodeAry [i].time_stamp_in_min  ); break;
-				case GPS_display_timegap_in_min:  str_text.Format ("%.2f",pVehicle->m_GPSNodeAry [i].time_stamp_in_min -  previous_timestamp); break;
+				case GPS_display_timestamp_in_min:   str_text.Format ("%.2f",pVehicle->m_LocationRecordAry [i].time_stamp_in_min  ); break;
+				case GPS_display_timegap_in_min:  str_text.Format ("%.2f",pVehicle->m_LocationRecordAry [i].time_stamp_in_min -  previous_timestamp); break;
 //				case GPS_display_speed: 
 			
 				}
@@ -1673,7 +1678,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			pDC->Ellipse(point.x - node_size, point.y + node_size,
 				point.x + node_size, point.y - node_size);
 
-					previous_timestamp = pVehicle->m_GPSNodeAry [i].time_stamp_in_min ;
+					previous_timestamp = pVehicle->m_LocationRecordAry [i].time_stamp_in_min ;
 
 			}
 			}
@@ -5201,7 +5206,7 @@ void CTLiteView::OnLinkAvoidusingthislinkinrouting()
 
 	DTALink* pLink = pDoc->m_LinkNoMap [pDoc->m_SelectedLinkNo ];
 	pLink -> m_AdditionalCost = 10000;
-	pDoc->Routing(false);
+	pDoc->Routing(false,true);
 
 	if(pDoc->m_bShowPathList)
 		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
@@ -5544,5 +5549,53 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 }
 
+
+}
+
+void CTLiteView::OnNodeAvoidthisnode()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_ToNodeID == pDoc->m_SelectedNodeID)
+		{
+			(*iLink)->m_AdditionalCost = 10000;
+		}
+	}
+
+	pDoc->Routing(false, true);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	m_ShowAllPaths = true;
+	Invalidate();
+}
+
+void CTLiteView::OnNodeRemovenodeavoidanceconstraint()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+	{
+			(*iLink)->m_AdditionalCost = 0;
+	}
+
+	pDoc->Routing(false, true);
+
+	if(pDoc->m_bShowPathList)
+		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
+
+	m_ShowAllPaths = true;
+	Invalidate();
 
 }

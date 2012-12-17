@@ -49,6 +49,8 @@ extern int g_DemandLoadingStartTimeInMin;
 extern int g_DemandLoadingEndTimeInMin;
 extern float g_UpdatedDemandPrintOutThreshold;
 
+extern unsigned int g_RandomSeed;
+
 class HistoricalDemand
 {
 
@@ -240,7 +242,9 @@ extern int g_InfoTypeSize;  // for shortest path with generalized costs dependin
 extern int g_MinSwitchingRate;   // percentage
 extern int g_LearningPercentage;
 
-extern int g_TravelTimeDifferenceForSwitching;  // min
+extern float g_TravelTimeDifferenceForSwitching;  // min
+extern float g_RelativeTravelTimePercentageDifferenceForSwitching; // percentage
+
 
 extern int g_StochasticCapacityMode ;
 extern int g_VehicleLoadingMode;
@@ -267,10 +271,10 @@ extern float g_FreewayBiasFactor; // 1: default value, 0.9 travel time on freewa
 extern int g_Day2DayAgentLearningMethod; // 0: no learning (use previous day), 1: route choice learning only, 2: route choice and departure time learning
 extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration
+extern float g_CurrentRelativeGapValue; // total  network relative gap value in the current iteration
 extern float g_PercentageCompleteTrips; // total network gap value in the current iteration
+extern float g_PrevRelativeGapValue; // total  network relative gap value in the current iteration
 
-extern float g_PrevGapValue; // total network gap value in last iteration
-extern float g_RelativeGap; // = abs(g_CurrentGapValue - g_PrevGapValue) / g_PrevGapValue 
 extern int g_CurrentNumOfVehiclesSwitched; // total number of vehicles switching paths in the current iteration; for MSA, g_UEAssignmentMethod = 0
 extern int g_CurrentNumOfVehiclesForUEGapCalculation; // total number of vehicles for gap functions in the current iteration; for MSA, g_UEAssignmentMethod = 0
 extern int g_PrevNumOfVehiclesSwitched; // // total number of vehicles switching paths in last iteration; for MSA, g_UEAssignmentMethod = 0

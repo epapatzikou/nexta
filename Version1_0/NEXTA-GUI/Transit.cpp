@@ -378,7 +378,7 @@ bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
 			y_key = max(0,y_key);
 			y_key = min(99,y_key);
 
-				m_GridMatrix[x_key][y_key].m_TripIDVector.push_back ((*iPT_TripMap).second. trip_id);
+			m_GridMatrix[x_key][y_key].m_TripIDVector.push_back ((*iPT_TripMap).second. trip_id);
 			}
 	}
 

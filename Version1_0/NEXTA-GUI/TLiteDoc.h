@@ -55,6 +55,7 @@ enum layer_mode
 	layer_ODMatrix,
 	layer_detector,
 	layer_subarea, 
+	layer_path, 
 	layer_workzone,
 	layer_crash,
 	layer_VMS,
@@ -71,9 +72,9 @@ enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_
 enum OD_MOE {odnone,critical_volume};
 
 enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,CLS_path,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
-enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_information_class,CLS_vehicle_type};
+enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_distance_bin_0_2,CLS_distance_bin_2,CLS_distance_bin_5,CLS_distance_bin_10,CLS_travel_time_bin_2,CLS_travel_time_bin_5,CLS_travel_time_bin_10,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {
-	CLS_vehicle_count=0,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
+	CLS_vehicle_count=0,CLS_cumulative_vehicle_count,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_travel_time_STD,CLS_travel_time_per_mile_STD,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
 	CLS_total_Energy,CLS_avg_Energy,CLS_avg_Energy_per_mile,
 	CLS_total_CO2,CLS_avg_CO2,CLS_avg_CO2_per_mile,
 	CLS_total_NOx,CLS_avg_Nox,CLS_avg_Nox_per_mile,
@@ -136,8 +137,8 @@ public:
 	int y_int;
 
 	std::vector<int> m_NodeVector;
-	std::vector<int> m_NodeX;
-	std::vector<int> m_NodeY;
+	std::vector<float> m_NodeX;
+	std::vector<float> m_NodeY;
 
 	//for transit
 	std::vector<int> m_TripIDVector;
@@ -277,7 +278,7 @@ public:
 	double m_max_accessible_transit_time_in_min;
 
 	void FindAccessibleTripID(double x, double y);
-	int FindClosestNode(double x, double y);
+	int FindClosestNode(double x, double y, double min_distance = 99999);
 
 
 	std::vector <int> m_ZoneIDVector;
@@ -420,6 +421,7 @@ public:
 	bool m_bDYNASMARTDataSet;
 	int m_YCorridonateFlag;
 	bool m_bGPSDataSet;
+	bool m_bEmissionDataAvailable;
 
 	BOOL OnOpenRailNetworkDocument(LPCTSTR lpszPathName);
 
@@ -774,7 +776,7 @@ public:
 
 	std::vector<int> m_IntermediateDestinationVector;
 
-	int Routing(bool bCheckConnectivity);
+	int Routing(bool bCheckConnectivity, bool bRebuildNetwork = false);
 	int AlternativeRouting(int NumberOfRoutes);
 
 	CString GetWorkspaceTitleName(CString strFullPath);
@@ -790,7 +792,7 @@ public:
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
-	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id);
+	bool ReadTraceBinFile(LPCTSTR lpszFileName, int date_id);
 
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 

@@ -26,6 +26,9 @@ CDlg_VehPathAnalysis::CDlg_VehPathAnalysis(CWnd* pParent /*=NULL*/)
 	m_ZoneNoSize  = 0;
 	m_ODMOEMatrix = NULL;
 
+	m_ProjectSize =  0;
+	m_OldProjectSize = 0;
+
 }
 
 CDlg_VehPathAnalysis::~CDlg_VehPathAnalysis()
@@ -171,6 +174,7 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_ProjectSize = max(1,project_index);
 
 
+
 	m_VehicleTypeBox.AddString ("All");
 	
 	for(i = 0; i< m_pDoc->m_VehicleTypeVector.size(); i++)
@@ -289,7 +293,7 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_GPS_end_day = 17;
 
 
-	 project_index = 0 ;
+	project_index = 0 ;
 
 	iDoc = g_DocumentList.begin ();
 	while (iDoc != g_DocumentList.end())
@@ -305,12 +309,15 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 			ColumnLabelVector.push_back ("Avg Speed");
 			ColumnLabelVector.push_back ("TT STD");
 
+			if((*iDoc)-> m_bEmissionDataAvailable)
+			{
 			ColumnLabelVector.push_back ("Energy (KJ)");
 			ColumnLabelVector.push_back ("CO2 (g)");
 			ColumnLabelVector.push_back ("NOx (g)");
 			ColumnLabelVector.push_back ("CO (g)");
 			ColumnLabelVector.push_back ("HC (g)");
 			ColumnLabelVector.push_back ("Miles Per Gallon");
+			}
 
 			if((*iDoc)-> m_bGPSDataSet)
 			{
@@ -352,17 +359,20 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 		m_ListCtrl.SetColumnWidth((int)i,80);
 	}
 
-	if(m_ODMOEMatrix == NULL  && m_pDoc->m_ZoneNoSize >0)
+	if(m_ODMOEMatrix == NULL  && m_pDoc->m_ZoneNoSize >0 )
 	{
 		m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
 			m_ZoneNoSize  = m_pDoc->m_ZoneNoSize ;
+			m_OldProjectSize = m_ProjectSize;
+
 	}
 	else
 	{
-		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize && m_ZoneNoSize >0)
+		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize && m_ZoneNoSize >0  || m_OldProjectSize != m_ProjectSize)
 		{
-			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_ProjectSize, m_ZoneNoSize );
+			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_OldProjectSize, m_ZoneNoSize );
 			m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
+			m_OldProjectSize = m_ProjectSize;
 			m_ZoneNoSize  = m_pDoc->m_ZoneNoSize ;
 	
 		}
@@ -377,12 +387,17 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	ColumnPathLabelVector.push_back ("Distance (mile)");
 	ColumnPathLabelVector.push_back ("Speed (mph)");
 	ColumnPathLabelVector.push_back ("Toll Cost($)");
+
+
+	if(m_pDoc-> m_bEmissionDataAvailable)
+	{
 	ColumnPathLabelVector.push_back ("Energy (KJ)");
 	ColumnPathLabelVector.push_back ("CO2 (g)");
 	ColumnPathLabelVector.push_back ("NOx (g)");
 	ColumnPathLabelVector.push_back ("CO (g)");
 	ColumnPathLabelVector.push_back ("HC (g)");
 	ColumnPathLabelVector.push_back ("Miles Per Gallon");
+	}
 	
 //	ColumnPathLabelVector.push_back ("Day No");
 
@@ -406,7 +421,6 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 
 	if(m_ZoneNoSize=0)
 		return;
-
 
 	CString SummaryInfoString;
 
@@ -483,13 +497,18 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		int count = 0;
 		std::list<DTAVehicle*>::iterator iVehicle;
 
+
+
 	std::list<CTLiteDoc*>::iterator  iDoc = g_DocumentList.begin ();
+
 	 p = 0 ;
 	while (iDoc != g_DocumentList.end())
 	{
 		if((*iDoc)->m_ProjectTitle.GetLength () >0)  
 		{
 
+			if(p >=m_ProjectSize)  // additional project loaded. 
+				continue; 
 
 		for (iVehicle = (*iDoc)->m_VehicleSet.begin(); iVehicle != (*iDoc)->m_VehicleSet.end(); iVehicle++, count++)
 		{
@@ -498,7 +517,6 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
 			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];
 
-			pVehicle->m_bODMarked = false;
 
 			if(OrgNo>=0 && DesNo >=0  && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
@@ -512,7 +530,11 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
 
-					pVehicle->m_bODMarked = true;
+
+
+					
+
+
 
 					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize+=1;
 
@@ -674,6 +696,9 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
 
+	if(m_pDoc-> m_bEmissionDataAvailable)
+	{
+
 		sprintf_s(text, "%3.1f",AvgEnergy);
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
@@ -692,7 +717,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		sprintf_s(text, "%3.1f",MilesPerGallon);
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
-		
+	}	
 		
 		if((*iDoc)-> m_bGPSDataSet)
 			{
@@ -827,6 +852,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 	for (iVehicle = m_pDoc->m_VehicleSet.begin(); iVehicle != m_pDoc->m_VehicleSet.end(); iVehicle++, count++)
 	{
 		DTAVehicle* pVehicle = (*iVehicle);
+			pVehicle->m_bODMarked = false;
 
 		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete &&(pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB))  // with physical path in the network
 		{
@@ -841,8 +867,12 @@ void CDlg_VehPathAnalysis::FilterPaths()
 			{
 				bool bFingFlag =  false;
 
+			pVehicle->m_bODMarked = true;
+
 				for(int p = 0; p< m_PathVector.size(); p++)
 				{
+					
+
 					//existing path
 					if(pVehicle->m_bGPSVehicle == false && pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
 					{

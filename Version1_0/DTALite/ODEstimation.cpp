@@ -169,7 +169,7 @@ bool g_ReadLinkMeasurementFile()
 
 				if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 			{
-			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./ODME_Settings.txt");
+			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./DTASettings.txt");
 
 			g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
 			g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
@@ -490,6 +490,10 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 			{
 
 				PathArray[DestZoneNo].AvgPathGap[p] =  PathArray[DestZoneNo].AvgPathTimes[p] -  LeastTime;
+
+				g_CurrentGapValue +=  PathArray[DestZoneNo].NumOfVehsOnEachPath[p] * PathArray[DestZoneNo].AvgPathGap[p];
+				g_CurrentRelativeGapValue += PathArray[DestZoneNo].NumOfVehsOnEachPath[p] * (PathArray[DestZoneNo].AvgPathGap[p] - max(0.1,PathArray[DestZoneNo].AvgPathTimes[p]));
+
 
 				if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 				{

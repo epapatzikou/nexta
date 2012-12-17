@@ -83,8 +83,6 @@ extern int g_AggregationTimetInterval;
 extern float g_MinimumInFlowRatio;
 extern float g_RelaxInFlowConstraintAfterDemandLoadingTime;
 extern float g_MaxDensityRatioForVehicleLoading;
-extern int g_CycleLength_in_seconds;
-
 extern float g_DefaultSaturationFlowRate_in_vehphpl;
 
 
@@ -115,6 +113,9 @@ string GetLinkStringID(int FromNodeName, int ToNodeName);
 ///////////////////////////
 // linear regression
 //////////////////
+
+
+
 struct SensorDataPoint
 {
 
@@ -1800,7 +1801,8 @@ public:
 	float m_EstimatedTravelTime;
 	float m_Delay;
 
-	bool m_bSwitched;  // switch route in assignment
+	bool m_bSwitch;  // switch route in assignment
+	bool m_bConsiderToSwitch;  //consider to switch route in assignment
 
 	// used for simulation
 	bool m_bLoaded; // be loaded into the physical network or not
@@ -1873,7 +1875,8 @@ public:
 		m_ArrivalTime = 0;
 		//      m_FinalArrivalTime = 0;
 		m_bLoaded = false;
-		m_bSwitched = false;
+		m_bSwitch = false;
+		m_bConsiderToSwitch = false;
 		m_bComplete = false;
 		m_TripTime = 900;  // default: for incomplete vehicles, they have an extremey long trip time
 		m_TravelTime = 900;
@@ -2468,6 +2471,7 @@ public:
 	void ResetStatistics ()
 	{
 		AvgUEGap = 0;
+		AvgRelativeUEGap = 0;
 		TotalDemandDeviation = 0;
 		LinkVolumeAvgAbsError  =0 ;
 		LinkVolumeAvgAbsPercentageError  =0 ;
@@ -2482,6 +2486,7 @@ public:
 		NumberofVehiclesCompleteTrips = 0;
 		NumberofVehiclesGenerated = 0;
 		SwitchPercentage = 0;
+		ConsideringSwitchPercentage = 0;
 		NetworkClearanceTimeStamp_in_Min = 1440;
 		NetworkClearanceTimePeriod_in_Min = 1440;
 	}
@@ -2497,7 +2502,9 @@ public:
 	int   NumberofVehiclesCompleteTrips;
 	int   NumberofVehiclesGenerated;
 	float SwitchPercentage;
+	float ConsideringSwitchPercentage; 
 	float AvgUEGap;
+	float AvgRelativeUEGap;
 	float TotalDemandDeviation;
 	float LinkVolumeAvgAbsError;
 	float LinkVolumeAvgAbsPercentageError;

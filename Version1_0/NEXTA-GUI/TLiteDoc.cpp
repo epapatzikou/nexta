@@ -104,12 +104,12 @@ extern float g_Simulation_Time_Stamp;
 bool g_LinkMOEDlgShowFlag = false;
 std::list<s_link_selection>	g_LinkDisplayList;
 std::list<CTLiteDoc*>	g_DocumentList;
+bool g_bValidDocumentChanged = false;
 std::list<CTLiteView*>	g_ViewList;
 
 void g_ClearLinkSelectionList()
 {
-
-		std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
 	while (iDoc != g_DocumentList.end())
 	{
 		for (std::list<DTALink*>::iterator iLink = (*iDoc)->m_LinkSet.begin(); iLink != (*iDoc)->m_LinkSet.end(); iLink++)
@@ -351,6 +351,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	g_bValidDocumentChanged = true;
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
@@ -457,6 +458,7 @@ CTLiteDoc::CTLiteDoc()
 	m_RandomRoutingCoefficient = 0.0f;
 	m_bDYNASMARTDataSet = false;
 	m_bGPSDataSet = false;
+	m_bEmissionDataAvailable = false;
 	m_AdjLinkSize = 20;  // initial value
 	m_colorLOS[0] = RGB(190,190,190);
 	m_colorLOS[1] = RGB(0,255,0);
@@ -597,9 +599,6 @@ CTLiteDoc::CTLiteDoc()
 	m_LOSBound[MOE_density][7] = 999;
 
 
-
-
-
 	m_TrafficFlowModelFlag = 1;  // static traffic assignment as default
 	m_Doc_Resolution = 1;
 	m_bShowCalibrationResults = false;
@@ -614,6 +613,7 @@ static bool DeleteLinkPointer( DTALink * theElement ) { delete theElement; retur
 
 CTLiteDoc::~CTLiteDoc()
 {
+	g_bValidDocumentChanged = true;
 	CWaitCursor wait;
 	if(m_ODMOEMatrix !=NULL)
 		Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,	m_PreviousDemandTypeSize, m_PreviousZoneNoSize);
@@ -1741,8 +1741,8 @@ bool CTLiteDoc::ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo)
 			y_key = min(99,y_key);
 
 			m_GridMatrix[x_key][y_key].m_NodeVector .push_back ((*iNode)->m_NodeID );
-			m_GridMatrix[x_key][y_key].m_NodeVector .push_back ((*iNode)->pt.x );
-			m_GridMatrix[x_key][y_key].m_NodeVector .push_back ((*iNode)->pt.y );
+			m_GridMatrix[x_key][y_key].m_NodeX .push_back ((*iNode)->pt.x );
+			m_GridMatrix[x_key][y_key].m_NodeY .push_back ((*iNode)->pt.y );
 
 		}
 
@@ -1793,7 +1793,7 @@ void CTLiteDoc::FindAccessibleTripID(double x, double y)
 
 
 }
-int CTLiteDoc::FindClosestNode(double x, double y)
+int CTLiteDoc::FindClosestNode(double x, double y, double min_distance)
 {
 	int x_key = (x - m_GridRect.left)/ m_GridXStep;
 	int y_key = (y -m_GridRect.bottom)/ m_GridYStep;
@@ -1807,7 +1807,6 @@ int CTLiteDoc::FindClosestNode(double x, double y)
 
 	int NodeId = -1;
 
-	double min_distance = 99999;
 
 	for(int x_i = max(0,x_key-1); x_i <= min(99,x_key+1); x_i++)
 		for(int y_i = max(0,y_key-1); y_i <= min(99,y_key+1); y_i++)
@@ -1818,7 +1817,7 @@ int CTLiteDoc::FindClosestNode(double x, double y)
 			for(unsigned int i = 0; i < element.m_NodeVector.size(); i++)
 			{
 
-				double distance = sqrt( (x-element.m_NodeX[i])*(x-element.m_NodeX[i]) + (y-element.m_NodeX[i])*(y-element.m_NodeX[i]));
+				double distance = sqrt( (x-element.m_NodeX[i])*(x-element.m_NodeX[i]) + (y-element.m_NodeY[i])*(y-element.m_NodeY[i]));
 
 				if(distance < min_distance)
 				{
@@ -5071,6 +5070,10 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			pVehicle->m_NodeSize	= header.number_of_nodes;
 
 			pVehicle->m_EmissionData .Energy = header.Energy;
+
+			if(header.Energy >1)
+				m_bEmissionDataAvailable =true;
+
 			pVehicle->m_EmissionData .CO2 = header.CO2;
 			pVehicle->m_EmissionData .NOX = header.NOX;
 			pVehicle->m_EmissionData .CO = header.CO;
@@ -5273,8 +5276,8 @@ int CTLiteDoc::GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float
 bool CTLiteDoc::GetGPSVehilePosition(DTAVehicle* pVehicle, double CurrentTime, GDPoint& pt)
 {
 
-	pt.x = pVehicle->m_GPSNodeAry[0].x;
-	pt.y = pVehicle->m_GPSNodeAry[0].y;
+	pt.x = pVehicle->m_LocationRecordAry[0].x;
+	pt.y = pVehicle->m_LocationRecordAry[0].y;
 
 	int search_counter = 0;
 	int beg, end, mid;
@@ -5288,13 +5291,13 @@ bool CTLiteDoc::GetGPSVehilePosition(DTAVehicle* pVehicle, double CurrentTime, G
 
 	while(beg<=end)
 	{
-		if(CurrentTime >= pVehicle->m_GPSNodeAry [i-1].time_stamp_in_min &&
-			CurrentTime <= pVehicle->m_GPSNodeAry [i].time_stamp_in_min )	// find the link between the time interval
+		if(CurrentTime >= pVehicle->m_LocationRecordAry [i-1].time_stamp_in_min &&
+			CurrentTime <= pVehicle->m_LocationRecordAry [i].time_stamp_in_min )	// find the link between the time interval
 		{
 
-			link_travel_time = pVehicle->m_GPSNodeAry [i].time_stamp_in_min - pVehicle->m_GPSNodeAry [i-1].time_stamp_in_min;
+			link_travel_time = pVehicle->m_LocationRecordAry [i].time_stamp_in_min - pVehicle->m_LocationRecordAry [i-1].time_stamp_in_min;
 
-			remaining_time = CurrentTime - pVehicle->m_GPSNodeAry [i-1].time_stamp_in_min;
+			remaining_time = CurrentTime - pVehicle->m_LocationRecordAry [i-1].time_stamp_in_min;
 
 			ratio = 1-remaining_time/link_travel_time;
 
@@ -5304,14 +5307,14 @@ bool CTLiteDoc::GetGPSVehilePosition(DTAVehicle* pVehicle, double CurrentTime, G
 			if(ratio >1)
 				ratio = 1;
 
-			pt.x = ratio * pVehicle->m_GPSNodeAry [i-1].x + (1- ratio)* pVehicle->m_GPSNodeAry [i].x ;
-			pt.y = ratio * pVehicle->m_GPSNodeAry [i-1].y + (1- ratio)* pVehicle->m_GPSNodeAry [i].y ;
+			pt.x = ratio * pVehicle->m_LocationRecordAry [i-1].x + (1- ratio)* pVehicle->m_LocationRecordAry [i].x ;
+			pt.y = ratio * pVehicle->m_LocationRecordAry [i-1].y + (1- ratio)* pVehicle->m_LocationRecordAry [i].y ;
 
 			return true ;
 
 		}else  // not found
 		{
-			if( CurrentTime>= pVehicle->m_GPSNodeAry [i].time_stamp_in_min)  // time stamp is after i
+			if( CurrentTime>= pVehicle->m_LocationRecordAry [i].time_stamp_in_min)  // time stamp is after i
 			{
 				// shift to the right
 				beg=mid+1;
@@ -5806,8 +5809,18 @@ void CTLiteDoc::LoadSimulationOutput()
 		ReadVehicleCSVFile(m_ProjectDirectory+"output_agent.csv");
 	}
 	
+	char microsimulation_file_name[_MAX_STRING_SIZE];
+	g_GetProfileString("microsimulation_data","file_name","",microsimulation_file_name,sizeof(microsimulation_file_name),m_ProjectFile);
 
-	ReadGPSBinFile(m_ProjectDirectory+"input_GPS.bin",0);
+	CString microsimulation_file_str;
+
+	microsimulation_file_str.Format("%s",microsimulation_file_name);
+
+	if(microsimulation_file_str.Find("bin") >=0)
+	{
+		ReadTraceBinFile(m_ProjectDirectory+microsimulation_file_name,0);
+	}
+
 
 	SetStatusText("Loading AMS path flow data");
 
@@ -6901,6 +6914,12 @@ bool CTLiteDoc::ReadLinkGeoFile(LPCTSTR lpszFileName)
 
 void CTLiteDoc::OnMoeVehiclepathanalaysis()
 {
+	if(g_bValidDocumentChanged && g_pVehiclePathDlg!=NULL)  // either a new document is added or an old document is delete. 
+	{
+	//	delete g_pVehiclePathDlg; potential memory leak, but operator delete is problematic for gridlist
+		g_pVehiclePathDlg= NULL;
+		g_bValidDocumentChanged = false;
+	}
 
 	g_bShowVehiclePathDialog = !g_bShowVehiclePathDialog;
 
@@ -8141,6 +8160,16 @@ int CTLiteDoc::FindClassificationNo(DTAVehicle* pVehicle, VEHICLE_X_CLASSIFICATI
 	case CLS_time_interval_15_min: index = pVehicle->m_DepartureTime /15; break;
 	case CLS_time_interval_30_min: index = pVehicle->m_DepartureTime /30; break;
 	case CLS_time_interval_60_min: index = pVehicle->m_DepartureTime /60; break;
+
+	case CLS_distance_bin_0_2: index = pVehicle->m_Distance /0.2; break;
+
+	case CLS_distance_bin_2: index = pVehicle->m_Distance /2; break;
+	case CLS_distance_bin_5: index = pVehicle->m_Distance /5; break;
+	case CLS_distance_bin_10: index = pVehicle->m_Distance /10; break;
+	case CLS_travel_time_bin_2: index = pVehicle->m_TripTime /2; break;
+	case CLS_travel_time_bin_5: index = pVehicle->m_TripTime /5; break;
+	case CLS_travel_time_bin_10: index = pVehicle->m_TripTime /10; break;
+
 	case CLS_information_class: index = pVehicle->m_InformationClass ; break;
 	case CLS_vehicle_type: index = pVehicle->m_VehicleType  ; break;
 	default: 
@@ -8185,6 +8214,28 @@ CString CTLiteDoc::FindClassificationLabel(VEHICLE_X_CLASSIFICATION x_classficat
 		label.Format ("%s-%s",GetTimeStampStrFromIntervalNo(index*4,false),GetTimeStampStrFromIntervalNo((index+1)*4,false));
 		break;
 
+	case CLS_distance_bin_0_2: 
+		label.Format ("%.1f-%.1f",index*0.2,(index+1)*0.2);
+		break;
+	case CLS_distance_bin_2: 
+		label.Format ("%d-%d",index*2,(index+1)*2);
+		break;
+
+	case CLS_distance_bin_5: 
+		label.Format ("%d-%d",index*5,(index+1)*5);
+		break;
+	case CLS_distance_bin_10: 
+		label.Format ("%d-%d",index*10,(index+1)*10);
+		break;
+	case CLS_travel_time_bin_2: 
+		label.Format ("%d-%d",index*2,(index+1)*2);
+		break;
+	case CLS_travel_time_bin_5: 
+		label.Format ("%d-%d",index*5,(index+1)*5);
+		break;
+	case CLS_travel_time_bin_10: 
+		label.Format ("%d-%d",index*10,(index+1)*10);
+		break;
 	case CLS_information_class: 
 		label = "UE";
 		if(index == 1) label = "Historical info";
@@ -8415,6 +8466,28 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 		}
 
 	}
+
+	//variability
+	for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
+	{
+		DTAVehicle* pVehicle = (*iVehicle);
+
+
+		if(SelectVehicleForAnalysis(pVehicle, m_VehicleSelectionMode) == true) 
+		{
+			int index = FindClassificationNo(pVehicle,x_classfication);
+
+			if(index>=0)  // -1 will not be consideded
+			{
+				float deviation = (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)- 
+					(m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize));
+			m_ClassificationTable[index].TotalVariance   +=  deviation*deviation;
+				
+			}
+
+		}
+
+	}
 }
 
 
@@ -8440,6 +8513,16 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_vehicle_count: 
 			value = m_ClassificationTable[index].TotalVehicleSize;
 			break;
+		case CLS_cumulative_vehicle_count: 
+
+			value  = 0;
+			for(int ii = 0; ii <= index; ii++)
+				if(m_ClassificationTable.find(ii) != m_ClassificationTable.end())
+				{
+					value += m_ClassificationTable[ii].TotalVehicleSize;
+				}
+			break;
+
 		case CLS_total_travel_time: 
 			value = m_ClassificationTable[index].TotalTravelTime ;
 			break;
@@ -8473,6 +8556,14 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 		case CLS_avg_travel_distance: 
 			value = m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
+		case CLS_travel_time_STD: 
+			value = sqrt(m_ClassificationTable[index].TotalVariance /max(1,m_ClassificationTable[index].TotalVehicleSize));
+			break;
+		case CLS_travel_time_per_mile_STD: 
+			value = sqrt(m_ClassificationTable[index].TotalVariance /max(1,m_ClassificationTable[index].TotalVehicleSize))/( m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize));
+			break;
+
+
 		case CLS_total_Energy: 
 			value = m_ClassificationTable[index].emissiondata .Energy     ;
 			break;
@@ -10236,7 +10327,7 @@ void CTLiteDoc::OnMoeTableDialog()
 
 }
 
-bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
+bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 {
 	//   cout << "Read vehicle file... "  << endl;
 	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
@@ -10257,7 +10348,12 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 		float departure_time;
 		float arrival_time;
 		float trip_time;
+        float total_distance_in_km;
 		int number_of_nodes;
+        float reserved_field1;
+        float reserved_field2;
+        float reserved_field3;
+
 	} struct_Vehicle_Header;
 
 
@@ -10266,8 +10362,8 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 	if(st!=NULL)
 	{
 
-		m_VehicleSet.clear();
 
+		m_VehicleSet.clear();
 
 		struct_Vehicle_Header header;
 
@@ -10283,9 +10379,14 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 			if(result!=1)  // read end of file
 				break;
 
+			int PathNodeVector[MAX_NODE_SIZE_IN_A_PATH];
+			int PathNodeArrivalTimeVector[MAX_NODE_SIZE_IN_A_PATH];
+			int PathNodeVectorNo = 0;
+			int NetworkNodeNo = -1;
+	
 			DTAVehicle* pVehicle = 0;
 			pVehicle = new DTAVehicle;
-			pVehicle->m_bGPSVehicle = true;
+//			pVehicle->m_bGPSVehicle = true;
 			pVehicle->m_DateID 		= header.date_id;
 
 			pVehicle->m_VehicleID		= m_VehicleSet.size();
@@ -10305,34 +10406,90 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
 
 			pVehicle->m_bComplete = true;
+			pVehicle->m_DemandType = 1;
+		
+			pVehicle->m_PricingType = 1;
+
+			//pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
+
+			pVehicle->m_VOT = 10;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+
 
 			pVehicle->m_TripTime  = header.trip_time;
 
-			pVehicle->m_NodeSize	= header.number_of_nodes;
+			pVehicle->m_VehicleLocationSize	= header.number_of_nodes;
 
-			if(pVehicle->m_NodeSize==0 )
+			if(pVehicle->m_VehicleLocationSize==0 )
 			{
 				CString error_msg;
 				error_msg.Format("reading error in file %s: vehicle id =%d",lpszFileName, header.vehicle_id);
 
 			}
 
-			if(pVehicle->m_NodeSize>=1)  // in case reading error
+			if(pVehicle->m_VehicleLocationSize>=1)  // in case reading error
 			{
 
 				float total_distance = 0;
-				pVehicle->m_GPSNodeAry = new GPSLocationRecord[pVehicle->m_NodeSize];
+				pVehicle->m_LocationRecordAry = new VehicleLocationRecord[pVehicle->m_VehicleLocationSize];
 
 				pVehicle->m_NodeNumberSum = 0;
-				for(int i=0; i< pVehicle->m_NodeSize; i++)
+				for(int i=0; i< pVehicle->m_VehicleLocationSize; i++)
 				{
-					GPSLocationRecord node_element;
-					fread(&pVehicle->m_GPSNodeAry[i],sizeof(GPSLocationRecord),1,st);
-					total_distance +=  pVehicle->m_GPSNodeAry[i].distance_in_km;
+					VehicleLocationRecord node_element;
+					fread(&pVehicle->m_LocationRecordAry[i],sizeof(VehicleLocationRecord),1,st);
+
+
+					double min_distance = m_UnitMile*0.5;
+					int NodeNo  = FindClosestNode( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+
+					if(NodeNo != -1  && NodeNo != NetworkNodeNo) 
+					{
+						PathNodeVector[PathNodeVectorNo] = NodeNo;
+						PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
+						pVehicle->m_NodeNumberSum += NodeNo;
+						PathNodeVectorNo ++;
+						NetworkNodeNo = NodeNo;
+
+					}
+				}
+
+				pVehicle->m_Distance  = 0;
+
+				if(PathNodeVectorNo>=1)
+				{
+
+					pVehicle->m_NodeSize = PathNodeVectorNo;
+					pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[0];
+					for(int i = 1; i< PathNodeVectorNo; i++)
+					{
+
+						int node_from = PathNodeVector[i-1];
+						int node_to = PathNodeVector[i];
+
+						DTALink* pLink = FindLinkWithNodeIDs(node_from,node_to);
+						if(pLink!=NULL)
+						{
+						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+						pVehicle->m_Distance +=pLink->m_Length ;
+						pLink->m_total_link_volume +=1;
+
+						pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
+
+						}else
+						{
+						pVehicle->m_NodeAry[i].LinkNo = -1;
+						
+//						TRACE("cannot find nodes %d, %d\n", m_NodeIDtoNameMap[node_from], m_NodeIDtoNameMap[node_to]);
+						}
+					}
 
 				}
 
-				pVehicle->m_Distance = total_distance *0.621371; // km to mile 
+
 
 				// movement count
 
@@ -10362,11 +10519,17 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 		}
 
-		m_SimulationVehicleDataLoadingStatus.Format ("%d GPS traces are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
+		m_SimulationVehicleDataLoadingStatus.Format ("%d traces are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
 		return true;
 
 	}
+	else
+	{
+	 CString msg;
+	 msg.Format("File %s cannot be opened.", lpszFileName);
+	 AfxMessageBox(msg);
 	return false;
+	}
 }
 
 

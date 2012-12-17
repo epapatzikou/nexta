@@ -25,6 +25,7 @@ public:
 	VehicleStatistics*** m_ODMOEMatrix;
 
 	int m_ProjectSize;
+	int m_OldProjectSize;
 
 	std::vector<int> m_TAZVector;
 	int m_SelectedOrigin;

@@ -913,6 +913,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\bmp00005.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\cur00001.cur"
 						>
 					</File>
@@ -941,11 +945,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -969,11 +973,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1001,11 +1005,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File

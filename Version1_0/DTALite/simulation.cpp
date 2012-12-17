@@ -1310,6 +1310,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	int VehicleSizeComplete = 0;
 	float TotalDistance =0;
 	int NumberofVehiclesSwitched  = 0;
+	int NumberofVehiclesConsideringToSwitch  = 0;
 
 	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
 	{
@@ -1321,10 +1322,17 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 			TotalDistance+= (*iterVehicle)->m_Distance ;
 			VehicleSizeComplete +=1;
 
-			if((*iterVehicle)->m_bSwitched )
+			if((*iterVehicle)->m_bConsiderToSwitch )
+			{
+				NumberofVehiclesConsideringToSwitch+=1;
+			}
+
+			if((*iterVehicle)->m_bSwitch )
 			{
 				NumberofVehiclesSwitched+=1;
 			}
+			
+
 		}
 	}
 
@@ -1333,6 +1341,8 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 	float AvgDelay = 0;
 	float AvgDistance = 0;
 	float SwitchPercentage = 0;
+	float ConsideringSwitchPercentage = 0;
+
 	if(VehicleSizeComplete>0)
 	{
 		AvgTripTime = TotalTripTime /VehicleSizeComplete;
@@ -1340,6 +1350,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		AvgDelay = TotalDelay /VehicleSizeComplete;
 		AvgDistance = TotalDistance /VehicleSizeComplete;
 		SwitchPercentage = (float)NumberofVehiclesSwitched*100.0f/VehicleSizeComplete;
+		ConsideringSwitchPercentage = (float)NumberofVehiclesConsideringToSwitch*100.0f/VehicleSizeComplete;
 	}
 
 	output.NumberofVehiclesCompleteTrips = VehicleSizeComplete;
@@ -1352,6 +1363,8 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		output.AvgTTI = AvgTripTime/(AvgTripTime - AvgDelay);  // (AvgTripTime - AvgDelay) is the free flow travel time
 		output.AvgDistance = AvgDistance;
 		output.SwitchPercentage = SwitchPercentage;
+		output.ConsideringSwitchPercentage = ConsideringSwitchPercentage;
+
 		output.AvgTravelTime  = AvgTravelTime;
 	}else
 	{
@@ -1361,6 +1374,7 @@ NetworkLoadingOutput g_NetworkLoading(int TrafficFlowModelFlag=2, int Simulation
 		output.AvgTTI = 1;
 		output.AvgDistance = 0;
 		output.SwitchPercentage = 0;
+		output.ConsideringSwitchPercentage = 0;
 	}
 
 	if( Iteration == g_NumberOfIterations)  // output results at the last iteration
