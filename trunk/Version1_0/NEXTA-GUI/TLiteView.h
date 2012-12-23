@@ -49,6 +49,8 @@ enum link_text_display_mode
    link_display_link_MOE,
    link_display_link_LOS,
    link_display_street_name, 
+   link_display_link_id, 
+   link_display_TMC_code, 
    link_display_from_id_to_id, 
    link_display_speed_limit, 
    link_display_length, 

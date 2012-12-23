@@ -288,9 +288,9 @@ void CDlg_ImportPointSensor::OnBnClickedImportPointSensorLocationandData()
 	//					if(AvgLinkSpeed<=1)  // 0 or negative values means missing speed
 	//						AvgLinkSpeed = pLink->m_SpeedLimit ;
 
-	//					ASSERT(pLink->m_NumLanes > 0);
+	//					ASSERT(pLink->m_NumberOfLanes > 0);
 
-	//					pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	//					pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
 	//					pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
 	//					pLink->m_LinkMOEAry[ t].ObsTravelTimeIndexCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 

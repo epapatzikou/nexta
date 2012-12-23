@@ -408,6 +408,12 @@ public:
 	float m_GrowthFactor;
 	int m_CBDFlag;
 
+	float m_OriginTotalTravelDistance;
+	int m_OriginTotalNumberOfVehicles;
+
+	float m_DestinationTotalTravelDistance;
+	int m_DestinationTotalNumberOfVehicles;
+
 	bool m_bWithinSubarea;
 
 	float GetTotalZonalDemand()
@@ -492,12 +498,12 @@ public:
 
 
 
-	bool FindANode(int NodeNumber)
+	bool FindANode(int NodeNumber, int External_OD_flag =0)
 	{
 
 		for(unsigned int i = 0; i< m_ActivityLocationVector.size(); i++)
 		{
-		 if(m_ActivityLocationVector[i].NodeNumber ==NodeNumber)
+		 if(m_ActivityLocationVector[i].NodeNumber ==NodeNumber && m_ActivityLocationVector[i].External_OD_flag == External_OD_flag)
 			 return true;
 		}
 	
@@ -507,6 +513,12 @@ public:
 
 	DTAZone()
 	{
+		m_OriginTotalTravelDistance = 0;
+		m_OriginTotalNumberOfVehicles = 0;
+
+		m_DestinationTotalTravelDistance = 0;
+		m_DestinationTotalNumberOfVehicles = 0;
+
 
 		m_Height = 0;
 		color_code = "red";
@@ -1218,6 +1230,10 @@ public:
 	float SimuArrivalCumulativeFlow;   // flow volume
 	float SimuDepartureCumulativeFlow;   // flow volume
 
+	float VehicleInflowCount;
+	float VehicleOutflowCount;
+
+
 
 	float Energy;
 	float CO2;
@@ -1234,6 +1250,9 @@ public:
 		//EventCode = 0;
 		//EpisoDuration = 0;
 		//EpisodeNo = 0;
+		VehicleInflowCount = 0;
+		VehicleOutflowCount = 0;
+
 		SimulationQueueLength = 0;
 		SimulatedTravelTime = 0;
 		SimulationSpeed = 0;
@@ -1288,7 +1307,7 @@ public:
 	};
 	long m_LinkNo;
 	int m_link_type;
-	int m_NumLanes;
+	int m_NumberOfLanes;
 	float m_LinkInCapacityRatio;
 };
 
@@ -1430,7 +1449,8 @@ public:
 		m_bTrainToTerminal = false;
 		m_bConnector = false;
 		m_ConnectorZoneID = 0;
-		m_NumberOfLeftTurnBay = 0;
+		m_NumberOfLeftTurnLanes = 0;
+		m_NumberOfRightTurnLanes = 0;
 		m_LeftTurnBayLengthInFeet = 0;	
 		m_LeftTurnCapacity = 0;
 
@@ -1522,6 +1542,10 @@ public:
 		m_bIncludedBySelectedPath = false;
 		m_bIncludedinSubarea = false;
 
+		m_bFirstPathLink = false;
+		m_bLastPathLink = false;
+
+
 		m_AADT = 0;
 		m_ReferenceFlowVolume  = 0;
 		m_PeakHourFactor = 0.15f;
@@ -1556,6 +1580,10 @@ public:
 
 	bool m_bIncludedBySelectedPath;
 	bool m_bIncludedinSubarea;
+	
+
+	bool m_bFirstPathLink;
+	bool m_bLastPathLink;
 
 
 	bool m_AVISensorFlag;
@@ -1833,6 +1861,8 @@ void AdjustLinkEndpointsWithSetBack()
 
 	std::vector<SLinkMOE> m_LinkMOEAry;
 
+	std::vector<int> m_HighResoltionLinkOutCount;  //0.1 min resolution
+
 	std::vector<SLinkMOE> m_HistLinkMOEAry;
 
 	int m_ReliabilityIndex;
@@ -1955,8 +1985,9 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_FromNodeNumber;
 	int m_ToNodeNumber;
 
-	int m_NumberOfLeftTurnBay;
+	int m_NumberOfLeftTurnLanes;
 	int m_LeftTurnBayLengthInFeet;	
+	int m_NumberOfRightTurnLanes;
 	int m_LeftTurnCapacity;
 
 	DTA_Direction m_FromApproach;
@@ -1971,7 +2002,7 @@ void AdjustLinkEndpointsWithSetBack()
 	PT_StopTime m_StopTimeRecord;
 	float   m_AdditionalCost;
 	float    m_VehicleSpaceCapacity; // in vehicles
-	int		m_NumLanes;
+	int		m_NumberOfLanes;
 	float	m_SpeedLimit;
 	float	m_ReversedSpeedLimit;
 
@@ -2069,7 +2100,7 @@ void AdjustLinkEndpointsWithSetBack()
 			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
 			{
 				total_count++;
-				total_value+= m_LinkMOEAry[t].SimulationLinkFlow/m_NumLanes;
+				total_value+= m_LinkMOEAry[t].SimulationLinkFlow/m_NumberOfLanes;
 			}
 		}
 		}
@@ -2077,7 +2108,7 @@ void AdjustLinkEndpointsWithSetBack()
 			if(total_count>=1)
 				return total_value/total_count;
 			else
-			return m_total_link_volume/m_NumLanes;
+			return 0;
 
 
 	}
@@ -2141,11 +2172,11 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetSensorLaneVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].SensorLinkCount/m_NumLanes;
+			return m_LinkMOEAry[t].SensorLinkCount/m_NumberOfLanes;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_total_link_volume/m_NumLanes;
+				return m_total_link_volume/m_NumberOfLanes;
 			else
 				return 0;
 		}
@@ -2154,11 +2185,11 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetSensorLaneHourlyVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return m_LinkMOEAry[t].SensorLinkCount/m_NumLanes*60;
+			return m_LinkMOEAry[t].SensorLinkCount/m_NumberOfLanes*60;
 		else
 		{
 			if(m_LinkMOEAry.size() == 0) // no time-dependent data 
-				return m_total_link_volume/m_NumLanes;
+				return m_total_link_volume/m_NumberOfLanes;
 			else
 				return 0;
 		}
@@ -2167,22 +2198,30 @@ void AdjustLinkEndpointsWithSetBack()
 	float GetSimulatedLinkOutVolume(int current_time)
 	{
 
-		float total_count = 0;
+		int total_count = 0;
+		float total_value = 0;
 		
 		if(current_time>=1 &&	current_time < m_SimulationHorizon && current_time < m_LinkMOEAry.size())
 		{
 
-		
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
+		{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
 
-		total_count = m_LinkMOEAry[current_time].SimuDepartureCumulativeFlow - 
-			m_LinkMOEAry[current_time-1].SimuDepartureCumulativeFlow;
+			total_value += m_LinkMOEAry[t].SimuDepartureCumulativeFlow - 
+				m_LinkMOEAry[t-1].SimuDepartureCumulativeFlow;
 
-		if(total_count<0)
-			total_count = 0;
+				total_count++;
+			}
+		}
 		
 		}
 
-		return total_count*60.0f;  // from min volume to hourly volume
+			if(total_count>=1)
+				return total_value/total_count*60; // from min volume to hourly volume
+			else
+			return 0;  
 
 	}
 
@@ -2205,7 +2244,7 @@ void AdjustLinkEndpointsWithSetBack()
 			if(total_count>=1)
 				return total_value/total_count;
 			else
-			return m_total_link_volume;
+			return 0;
 	}
 
 	float GetSensorLinkHourlyVolume(int t)
@@ -2282,21 +2321,88 @@ void AdjustLinkEndpointsWithSetBack()
 	void SetDefaultCumulativeFlow()
 	{
 		float SimuArrivalCumulativeFlow = 0;
+		float SimuDepartureCumulativeFlow = 0;
 
 		for(int t =0; t< m_LinkMOEAry.size(); t++)
 		{
 			if(t>=1)
 			{
 				m_LinkMOEAry[t].SimuArrivalCumulativeFlow = max(SimuArrivalCumulativeFlow, m_LinkMOEAry[t].SimuArrivalCumulativeFlow); // in case there are empty flow volumes
+				m_LinkMOEAry[t].SimuDepartureCumulativeFlow = max(SimuDepartureCumulativeFlow, m_LinkMOEAry[t].SimuDepartureCumulativeFlow); // in case there are empty flow volumes
 
 			}
 
 			SimuArrivalCumulativeFlow = m_LinkMOEAry[t].SimuArrivalCumulativeFlow;  
+			SimuDepartureCumulativeFlow = m_LinkMOEAry[t].SimuDepartureCumulativeFlow;  
 
 		}
 
 	}
 
+
+	void RecalculateLinkMOEBasedOnVehicleCount()
+	{
+		float SimuArrivalCumulativeFlow = 0;
+		float SimuDepartureCumulativeFlow = 0;
+
+
+
+		//cumulative arrival and deparutre counts
+		for(int t =0; t< m_LinkMOEAry.size(); t++)
+		{
+
+
+			SimuArrivalCumulativeFlow = max(SimuArrivalCumulativeFlow, SimuArrivalCumulativeFlow + m_LinkMOEAry[t].VehicleInflowCount ); // in case there are empty flow volumes
+			SimuDepartureCumulativeFlow = max(SimuDepartureCumulativeFlow, SimuDepartureCumulativeFlow + m_LinkMOEAry[t].VehicleOutflowCount ); // in case there are empty flow volumes
+
+			m_LinkMOEAry[t].SimuArrivalCumulativeFlow = SimuArrivalCumulativeFlow;
+			m_LinkMOEAry[t].SimuDepartureCumulativeFlow = SimuDepartureCumulativeFlow;
+
+			if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
+			{
+
+				TRACE("\ntime t= %d, inflow  = %.1f,cumulative arrival count =%.1f, dep = %f, cd = %f ",t, m_LinkMOEAry[t].VehicleInflowCount,SimuArrivalCumulativeFlow,m_LinkMOEAry[t].VehicleOutflowCount, SimuDepartureCumulativeFlow);
+			
+			}
+
+		}
+		//Link inflow count
+
+		for(int t =0; t< m_LinkMOEAry.size(); t++)
+		{
+			m_LinkMOEAry[t].SimulationLinkFlow =  m_LinkMOEAry[t].VehicleInflowCount* 60;  //* 60 to convert from min to hourly counts
+
+					if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
+			{
+
+				TRACE("\ntime t= %d, final inflow  = %.1f",t, m_LinkMOEAry[t].SimulationLinkFlow );
+			
+			}
+
+
+		}
+
+		//density
+		for(int t =0; t< m_LinkMOEAry.size(); t++)
+		{
+			int number_of_vehicles_on_the_link = m_LinkMOEAry[t].SimuArrivalCumulativeFlow- m_LinkMOEAry[t].SimuDepartureCumulativeFlow;
+
+			m_LinkMOEAry[t].SimulationDensity = number_of_vehicles_on_the_link / (max(0.0001,m_Length * m_NumberOfLanes)); 
+
+					if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
+			{
+
+				TRACE("\ntime t= %d, v_count =%d,  den = %.1f",t, number_of_vehicles_on_the_link, m_LinkMOEAry[t].SimulationDensity  );
+			
+			}
+
+
+
+			//ratio between 0 and 1
+			m_LinkMOEAry[t].SimulationQueueLength = number_of_vehicles_on_the_link/(max(0.0001, m_Length * m_NumberOfLanes * m_Kjam ));
+		}
+
+	}
 	float GetSimulationDensity(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
@@ -2305,11 +2411,89 @@ void AdjustLinkEndpointsWithSetBack()
 			return 0;
 	}		
 
-	float GetSimulationQueueLength(int t)
+	float GetSimulationDensityMOE(int start_time, int end_time, float &maximum)
 	{
+		maximum = 0;
+		float average = 0;
+		float total = 0;
+		int count = 0;
+		for(int t = start_time; t<= end_time; t++)
+		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-			return max(0, m_LinkMOEAry[t].SimulationQueueLength*100);  
+		{
+			if( m_LinkMOEAry[t].SimulationDensity>0.01)
+			{
+				total+= m_LinkMOEAry[t].SimulationDensity;
+				count++;
+
+			if( maximum < m_LinkMOEAry[t].SimulationDensity)
+					maximum = m_LinkMOEAry[t].SimulationDensity;
+			}
+
+			
+		}
+		}
+
+		average = total/max(1,count);
+		return average;
+
+	}		
+
+	float GetSimulationVolumeMOE(int start_time, int end_time, float &maximum)
+	{
+		maximum = 0;
+		float average = 0;
+		float total = 0;
+		int count = 0;
+		for(int t = start_time; t<= end_time; t++)
+		{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
+			if( m_LinkMOEAry[t].SimulationDensity>0.01)
+			{
+				total+= m_LinkMOEAry[t].SimulationLinkFlow;
+				count++;
+
+			if( maximum < m_LinkMOEAry[t].SimulationLinkFlow)
+					maximum = m_LinkMOEAry[t].SimulationLinkFlow;
+			}
+
+			
+		}
+		}
+
+		average = total/max(1,count);
+		return average;
+
+	}		
+
+
+	float GetSimulationQueueLength(int current_time)
+	{
+		int total_count = 0;
+		float total_value = 0;
+
+		if(current_time < m_SimulationHorizon && current_time < m_LinkMOEAry.size())
+		{
+
+		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
+		{
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+		{
+
+			total_value +=max(0, m_LinkMOEAry[t].SimulationQueueLength*100);
+
+			total_count++;
+			}
+		}
+		}
+	
+		if(total_count>=1)
+			return total_value/total_count;
 		else
+			return m_StaticTravelTime;
+
+
 			return 0;
 	}		
 
@@ -2618,7 +2802,7 @@ float x;
 float y;
 float time_stamp_in_min;
 float distance_in_km;
-
+int linkid;
 };
 class DTAVehicle
 {
@@ -2654,8 +2838,22 @@ public:
 	float m_DepartureTime;
 	float m_ArrivalTime;
 	float m_TripTime;
+
+
+	float m_path_start_node_departure_time;
+	float m_path_end_node_arrival_time;
+	float m_path_travel_time;
+	float m_path_distance;
+
+	float m_subarea_start_node_departure_time;
+	float m_subarea_end_node_arrival_time;
+	float m_subarea_travel_time;
+	float m_subarea_distance;
+	
+
 	float m_Delay;
 	float m_Distance;
+
 	bool m_bSwitched;  // switch route in assignment
 
 	// used for simulation
@@ -2664,6 +2862,8 @@ public:
 
 	bool m_bODMarked;
 	bool m_bMarked;
+
+
 
 	DTAVehicleAdditionalData* pVehData;
 
@@ -2687,6 +2887,18 @@ public:
 	float m_Emissions;
 	DTAVehicle()
 	{
+
+		m_subarea_start_node_departure_time = 0;
+		m_subarea_end_node_arrival_time = 0;
+		m_subarea_travel_time = 0;
+		m_subarea_distance = 0;
+
+		m_path_distance = 0;
+		m_path_start_node_departure_time = 0;
+		m_path_end_node_arrival_time = 0;
+		m_path_travel_time = 0;
+
+
 		m_VehicleLocationSize = 0;
 		m_bMarked = false;
 		m_Age = 0;
@@ -3299,30 +3511,101 @@ public:
 };
 
 
+class CDataVector
+{
+public: 
+	std::vector<float> m_data_vector;
+
+	
+	void AddData(float value)
+	{
+	m_data_vector.push_back(value);
+
+	if(value<-0.1)
+		TRACE("");
+
+	
+	}
+
+	float GetDataVectorMean()
+	{
+		if(m_data_vector.size() == 0) 
+			return 0;
+		float total_travel_time = 0; 
+		for(unsigned int i = 0; i< m_data_vector.size(); i++)
+		{
+		total_travel_time+= m_data_vector[i];
+		}
+
+		return total_travel_time/m_data_vector.size();
+	
+	
+	}
+	float GetDataVectorPercentage(float Percentage)
+	{
+		if(m_data_vector.size() == 0) 
+			return 0;
+
+		sort(m_data_vector.begin(), m_data_vector.end());
+
+		int index = min(m_data_vector.size()-1, m_data_vector.size()*Percentage/100);
+		return m_data_vector[index];
+	}
+
+	void Reset()
+	{
+	m_data_vector.clear();
+	
+	}
+	
+};
+
 class VehicleStatistics
 {
 public: 
+
+	CDataVector m_data_vector_travel_time;
+	CDataVector m_data_vector_travel_time_per_mile;
+
+
+
+
+
+
 	int day_count[21];
 	VehicleStatistics()
 	{
+
 		TotalVehicleSize = 0;
 		TotalTravelTime = 0;
+		TotalTravelTimePerMile = 0;
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
 		TotalGeneralizedCost = 0;
 		TotalGeneralizedTime = 0;
 		DisplayValue = 0;
+
+		TotalTravelTimeVariance = 0;
+		TotalTravelTimePerMileVariance = 0;
+
+
 	}
 
 	void Reset()
 	{
+
+	m_data_vector_travel_time.Reset();
+	m_data_vector_travel_time_per_mile.Reset();
+
 		for(int d= 0; d<= 20; d++)
 			day_count[d]= 0;
 
 		TotalVehicleSize = 0;
 		TotalTravelTime = 0;
-		TotalVariance = 0;
+		TotalTravelTimePerMile = 0;
+		TotalTravelTimeVariance = 0;
+		TotalTravelTimePerMileVariance = 0;
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
@@ -3332,6 +3615,8 @@ public:
 		AvgTravelTime = 0;
 		AvgDistance = 0;
 
+
+		
 		emissiondata.Reset();
 	}
 
@@ -3340,8 +3625,12 @@ public:
 	bool bImpactFlag;
 	int   TotalVehicleSize;
 	float TotalTravelTime;
-	float TotalVariance;
-	float TotalDistance;
+	float TotalTravelTimePerMile;
+	
+	float TotalTravelTimePerMileVariance;
+	float TotalTravelTimeVariance;
+
+		float TotalDistance;
 	float TotalGeneralizedCost;
 	float TotalGeneralizedTime;
 	float TotalCost;

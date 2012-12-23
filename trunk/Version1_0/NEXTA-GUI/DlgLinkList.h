@@ -14,7 +14,6 @@ eLinkSelection_FreewayOnly,eLinkSelection_HighwayOnly,eLinkSelection_RampOnly,eL
 
 class CDlgLinkList : public CBaseDialog
 {
-
 	DECLARE_DYNAMIC(CDlgLinkList)
 	CTLiteDoc* m_pDoc;
 	CTLiteDoc* m_pDoc2;
@@ -65,4 +64,9 @@ public:
 	CComboBox m_ComboBox;
 	afx_msg void OnCbnSelchangeComboLinkSelection();
 	afx_msg void OnBnClickedExport();
+	CComboBox m_StartHour;
+	CComboBox m_EndHour;
+	afx_msg void OnCbnSelchangeComboStarttime();
+	afx_msg void OnCbnSelchangeComboEndtime();
+	afx_msg void OnStnClickedDocTitle();
 };

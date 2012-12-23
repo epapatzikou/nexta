@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_EndHour, &CDlgPathList::OnCbnSelchangeComboEndhour)
 	ON_CBN_SELCHANGE(IDC_COMBO_AggIntrevalList, &CDlgPathList::OnCbnSelchangeComboAggintrevallist)
 	ON_CBN_SELCHANGE(IDC_COMBO_PLOT_TYPE, &CDlgPathList::OnCbnSelchangeComboPlotType)
+	ON_BN_CLICKED(IDDATA_Analysis2, &CDlgPathList::OnBnClickedAnalysis2)
 END_MESSAGE_MAP()
 
 
@@ -243,7 +244,7 @@ void CDlgPathList::ReloadData()
 		total_travel_time+=pLink->m_FreeFlowTravelTime;
 
 		//# of lanes
-		sprintf_s(text, "%d",pLink->m_NumLanes );
+		sprintf_s(text, "%d",pLink->m_NumberOfLanes );
 		m_ListCtrl.SetItemText(Index,column_count++,text);
 
 		//saturation flow rate
@@ -526,7 +527,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 						fprintf(st,"%d,%d,\"[%d,%d]\",%d,%d,%s,%5.3f,%5.0f,%5.3f,%d,%5.0f,%5.1f,",
 							p+1,i+1,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber, pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,   pLink->m_Name.c_str (), pLink->m_Length ,
-				pLink->m_SpeedLimit, pLink->m_FreeFlowTravelTime , pLink->m_NumLanes,  pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ,pLink->m_LaneCapacity );
+				pLink->m_SpeedLimit, pLink->m_FreeFlowTravelTime , pLink->m_NumberOfLanes,  pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ,pLink->m_LaneCapacity );
 
 						if(m_pDoc->m_LinkTypeMap.find(pLink->m_link_type) != m_pDoc->m_LinkTypeMap.end())
 						{
@@ -990,7 +991,8 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 	{
 
 		(*iLink)-> m_bIncludedBySelectedPath = false;
-
+		(*iLink)-> m_bFirstPathLink = false;
+		(*iLink)-> m_bLastPathLink = false;
 	}
 
 	// mark all links in the selected path
@@ -1001,13 +1003,22 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 
 		DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector[i]];
 		pLink-> m_bIncludedBySelectedPath = true;
+
+		if(i==0)
+		{
+			pLink-> m_bFirstPathLink = true;
+		}
+		if(i== m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector.size()-1)
+		{
+			pLink-> m_bLastPathLink = true;
+		}
 		}
 	}
 
 	CDlg_VehicleClassification dlg;
 	dlg.m_pDoc = m_pDoc;
-	m_pDoc->m_VehicleSelectionMode = CLS_path;
-	dlg.m_VehicleSelectionNo  = CLS_path;
+	m_pDoc->m_VehicleSelectionMode = CLS_path_trip;
+	dlg.m_VehicleSelectionNo  = CLS_path_trip;
 	dlg.DoModal ();
 
 }
@@ -1626,3 +1637,44 @@ void CDlgPathList::OnSize(UINT nType, int cx, int cy)
 	// TODO: Add your message handler code here
 }
 
+
+void CDlgPathList::OnBnClickedAnalysis2()
+{
+	std::list<DTALink*>::iterator iLink;
+
+	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+	{
+
+		(*iLink)-> m_bIncludedBySelectedPath = false;
+		(*iLink)-> m_bFirstPathLink = false;
+		(*iLink)-> m_bLastPathLink = false;
+
+	}
+
+	// mark all links in the selected path
+	if(m_pDoc->m_PathDisplayList.size() > m_pDoc->m_SelectPathNo && m_pDoc->m_SelectPathNo!=-1)
+	{
+		for (int i=0 ; i<m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector.size(); i++)
+		{
+
+		DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector[i]];
+		pLink-> m_bIncludedBySelectedPath = true;
+
+		if(i==0)
+		{
+			pLink-> m_bFirstPathLink = true;
+		}
+		if(i== m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_LinkVector.size()-1)
+		{
+			pLink-> m_bLastPathLink = true;
+		}
+
+		}
+	}
+
+	CDlg_VehicleClassification dlg;
+	dlg.m_pDoc = m_pDoc;
+	m_pDoc->m_VehicleSelectionMode = CLS_path_partial_trip;
+	dlg.m_VehicleSelectionNo  = CLS_path_partial_trip;
+	dlg.DoModal ();
+}

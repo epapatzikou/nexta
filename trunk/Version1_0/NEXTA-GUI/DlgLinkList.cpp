@@ -44,6 +44,8 @@ void CDlgLinkList::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_ZOOM_TO_SELECTED_LINK, m_ZoomToSelectedLink);
 	DDX_Text(pDX, IDC_DOC_TITLE, m_StrDocTitles);
 	DDX_Control(pDX, IDC_COMBO_Link_Selection, m_ComboBox);
+	DDX_Control(pDX, IDC_COMBO_StartTime, m_StartHour);
+	DDX_Control(pDX, IDC_COMBO_EndTime, m_EndHour);
 }
 
 
@@ -67,6 +69,9 @@ BEGIN_MESSAGE_MAP(CDlgLinkList, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_LINKSELECTION_SHOWSELECTEDLINKSONLY, &CDlgLinkList::OnUpdateLinkselectionShowselectedlinksonly)
 	ON_CBN_SELCHANGE(IDC_COMBO_Link_Selection, &CDlgLinkList::OnCbnSelchangeComboLinkSelection)
 	ON_BN_CLICKED(ID_EXPORT, &CDlgLinkList::OnBnClickedExport)
+	ON_CBN_SELCHANGE(IDC_COMBO_StartTime, &CDlgLinkList::OnCbnSelchangeComboStarttime)
+	ON_CBN_SELCHANGE(IDC_COMBO_EndTime, &CDlgLinkList::OnCbnSelchangeComboEndtime)
+	ON_STN_CLICKED(IDC_DOC_TITLE, &CDlgLinkList::OnStnClickedDocTitle)
 END_MESSAGE_MAP()
 
 
@@ -87,6 +92,19 @@ BOOL CDlgLinkList::OnInitDialog()
 	m_ComboBox.AddString ("Ramp");
 	m_ComboBox.AddString ("Connectors");
 	m_ComboBox.AddString ("All Links Except Connectors");
+
+
+	for (int i = 0; i<= 24; i++)
+	{
+		CString str;
+		str.Format("%d",i);
+	
+		m_StartHour.AddString (str);
+		m_EndHour.AddString (str);
+	}
+
+	m_StartHour.SetCurSel(0);
+	m_EndHour.SetCurSel(24);
 
 	m_ComboBox.SetCurSel (0);
 
@@ -134,9 +152,15 @@ void CDlgLinkList::ReloadData()
 	m_Column_names.push_back ("Link Type");
 
 	m_Column_names.push_back ("VOC");
-	m_Column_names.push_back ("Speed");
-	m_Column_names.push_back ("SimuVolume");
 	m_Column_names.push_back ("LOS");
+	m_Column_names.push_back ("Speed");
+	m_Column_names.push_back ("Simu Total Volume");
+	m_Column_names.push_back ("Simu Hourly Volume");
+	m_Column_names.push_back ("Simu Hourly Lane Volume");
+
+	m_Column_names.push_back ("Avg Simu Density");
+	m_Column_names.push_back ("Max Simu Density");
+
 
 	m_Column_names.push_back ("Waiting Time at Origin");
 	m_Column_names.push_back ("AADT Factor");
@@ -191,6 +215,9 @@ void CDlgLinkList::ReloadData()
 		m_ListCtrl.SetColumnWidth((int)i,LVSCW_AUTOSIZE_USEHEADER);
 	}
 	m_ListCtrl.SetColumnWidth(0, 80);
+
+	int MOE_start_time_in_min = m_StartHour.GetCurSel()*60;
+	int MOE_end_time_in_min =  m_EndHour.GetCurSel()*60;
 
 	std::list<DTALink*>::iterator iLink;
 	int i = 0;
@@ -259,7 +286,7 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%5.2f",pLink1->m_Length);
 		m_ListCtrl.SetItemText(Index,4,text);
 
-		sprintf_s(text, "%d",pLink1->m_NumLanes );
+		sprintf_s(text, "%d",pLink1->m_NumberOfLanes );
 		m_ListCtrl.SetItemText(Index,5,text);
 
 		sprintf_s(text, "%4.0f",pLink1->m_SpeedLimit  );
@@ -278,13 +305,34 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%5.2f",pLink1->m_volume_over_capacity_ratio    );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
+
+		sprintf_s(text, "%c",pLink1->m_LevelOfService      );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
 		sprintf_s(text, "%5.2f",pLink1->m_avg_simulated_speed    );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		float max_volume , avg_volume, avg_lane_volume;
+
+		avg_volume = pLink1->GetSimulationVolumeMOE(MOE_start_time_in_min,MOE_end_time_in_min,max_volume);
 
 		sprintf_s(text, "%.0f",pLink1->m_total_link_volume     );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%c",pLink1->m_LevelOfService      );
+		sprintf_s(text, "%.0f",avg_volume    );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.0f",avg_volume/max(1,pLink1->m_NumberOfLanes) );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		float max_density , avg_density;
+
+		avg_density = pLink1->GetSimulationDensityMOE(MOE_start_time_in_min,MOE_end_time_in_min,max_density);
+
+		sprintf_s(text, "%.1f",avg_density );
+		m_ListCtrl.SetItemText(Index,column_index++,text);
+
+		sprintf_s(text, "%.1f",max_density );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		sprintf_s(text, "%.1f",pLink1->m_avg_waiting_time_on_loading_buffer       );
@@ -627,3 +675,26 @@ bool CDlgLinkList::ExportDataToCSVFile(char csv_file[_MAX_PATH])
 	return false;
 }
 
+
+void CDlgLinkList::OnCbnSelchangeComboStarttime()
+{
+
+	if(m_StartHour.GetCurSel() >= m_EndHour.GetCurSel())
+		m_EndHour.SetCurSel(min(24,m_StartHour.GetCurSel()+1));
+
+	ReloadData();
+
+}
+
+void CDlgLinkList::OnCbnSelchangeComboEndtime()
+{
+	if(m_StartHour.GetCurSel() >= m_EndHour.GetCurSel())
+		m_EndHour.SetCurSel(min(24,m_StartHour.GetCurSel()+1));
+
+	ReloadData();
+}
+
+void CDlgLinkList::OnStnClickedDocTitle()
+{
+	// TODO: Add your control notification handler code here
+}

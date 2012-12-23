@@ -294,7 +294,11 @@ void CNSChartCtrl::DrawPieChart(CDC *pDC)
 }
 void CNSChartCtrl::DrawBarChart(CDC *pDC)
 {
-	ASSERT(m_dTotal > 0.0L);
+	if(m_dTotal < 0.000001)
+	{
+	AfxMessageBox("error in drawing bar chart.");
+	return;
+	}
 
 	int iValues	= m_ChartValues.GetSize();
 	int iColors	= m_BrushArray.GetSize();

@@ -71,10 +71,19 @@ enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_
 
 enum OD_MOE {odnone,critical_volume};
 
-enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,CLS_path,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal};
+enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,CLS_path_trip,CLS_path_partial_trip,CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal_trip,CLS_subarea_internal_to_internal_subtrip,CLS_subarea_boundary_to_bounary_subtrip};
 enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_distance_bin_0_2,CLS_distance_bin_2,CLS_distance_bin_5,CLS_distance_bin_10,CLS_travel_time_bin_2,CLS_travel_time_bin_5,CLS_travel_time_bin_10,CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {
-	CLS_vehicle_count=0,CLS_cumulative_vehicle_count,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_travel_time_STD,CLS_travel_time_per_mile_STD,CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
+	CLS_vehicle_count=0,CLS_cumulative_vehicle_count,CLS_total_travel_time,CLS_avg_travel_time,CLS_total_travel_distance, CLS_avg_travel_distance,CLS_travel_time_STD,CLS_travel_time_per_mile_STD,
+	CLS_travel_time_95_percentile,
+	CLS_travel_time_90_percentile,
+	CLS_travel_time_80_percentile,
+	CLS_travel_time_Buffer_Index,
+	CLS_travel_time_Skew_Index,
+	CLS_travel_time_per_mile_95_percentile,
+	CLS_travel_time_per_mile_90_percentile,
+	CLS_travel_time_per_mile_80_percentile,
+	CLS_total_toll_cost,CLS_avg_toll_cost,CLS_total_generalized_cost,CLS_avg_generalized_cost,CLS_total_generalized_travel_time,CLS_avg_generalized_travel_time,
 	CLS_total_Energy,CLS_avg_Energy,CLS_avg_Energy_per_mile,
 	CLS_total_CO2,CLS_avg_CO2,CLS_avg_CO2_per_mile,
 	CLS_total_NOx,CLS_avg_Nox,CLS_avg_Nox_per_mile,
@@ -149,11 +158,65 @@ public:
 class PathStatistics
 {
 public: 
+
+	std::vector<float> m_TravelTimeVector;
+	std::vector<float> m_TravelTimePerMileVector;
+
+	float GetTravelTimeStandardDeviation()
+	{
+		if( m_TravelTimeVector.size() ==0)
+			return 0;
+
+		float total_travel_time = 0 ;
+		for(unsigned int i=0; i< m_TravelTimeVector.size(); i++)
+		{
+		total_travel_time+= m_TravelTimeVector[i];
+		}
+
+		float avg_travel_time  = total_travel_time /  m_TravelTimeVector.size();
+
+		float total_variance = 0 ;
+		for(unsigned int i=0; i< m_TravelTimeVector.size(); i++)
+		{
+		total_variance+= (m_TravelTimeVector[i]-avg_travel_time)* (m_TravelTimeVector[i]-avg_travel_time);
+		}
+
+		return sqrt(total_variance/m_TravelTimeVector.size());
+
+	}
+
+	float GetTravelTimePerMileStandardDeviation()
+	{
+		if( m_TravelTimePerMileVector.size() ==0)
+			return 0;
+
+		float total_travel_time_per_mile = 0 ;
+		for(unsigned int i=0; i< m_TravelTimePerMileVector.size(); i++)
+		{
+		total_travel_time_per_mile+= m_TravelTimePerMileVector[i];
+		}
+
+		float avg_travel_time_per_mile  = total_travel_time_per_mile /  m_TravelTimePerMileVector.size();
+
+		float total_variance = 0 ;
+		for(unsigned int i=0; i< m_TravelTimePerMileVector.size(); i++)
+		{
+		total_variance+= (m_TravelTimePerMileVector[i]-avg_travel_time_per_mile)* (m_TravelTimePerMileVector[i]-avg_travel_time_per_mile);
+		}
+
+		return sqrt(total_variance/m_TravelTimePerMileVector.size());
+
+	}
+
+
 	PathStatistics()
 	{
 		TotalVehicleSize = 0;
 		TotalTravelTime = 0;
 		TotalDistance = 0;
+		TotalTravelTimeVariance = 0;
+		TotalTravelTimePerMileVariance = 0;
+
 		TotalCost = 0;
 		TotalEmissions = 0;
 
@@ -196,6 +259,9 @@ public:
 
 	int   TotalVehicleSize;
 	float TotalTravelTime;
+	float	TotalTravelTimeVariance;
+	float	TotalTravelTimePerMileVariance;
+
 	float TotalDistance;
 	float TotalCost;
 	float TotalEmissions;
@@ -278,7 +344,8 @@ public:
 	double m_max_accessible_transit_time_in_min;
 
 	void FindAccessibleTripID(double x, double y);
-	int FindClosestNode(double x, double y, double min_distance = 99999);
+	int FindClosestNode(double x, double y, double min_distance = 99999, int step_size = 1);
+	int FindClosestZone(double x, double y, double min_distance = 99999, int step_size = 1);
 
 
 	std::vector <int> m_ZoneIDVector;
@@ -793,7 +860,9 @@ public:
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
 	bool ReadTraceBinFile(LPCTSTR lpszFileName, int date_id);
-
+	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
+	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id);
+	bool ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int date_id);
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 
 	CString GetPricingTypeStr(int PricingType)
@@ -941,7 +1010,7 @@ public:
 		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
-		pLink->m_NumLanes= m_DefaultNumLanes;
+		pLink->m_NumberOfLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
 		pLink->m_ReversedSpeedLimit = m_DefaultSpeedLimit;
 		pLink->m_avg_simulated_speed = m_DefaultSpeedLimit;
@@ -955,7 +1024,7 @@ public:
 		pLink->m_LaneCapacity  = m_DefaultCapacity;
 		pLink->m_link_type= m_DefaultLinkType;
 
-		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
 		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
 
@@ -994,8 +1063,8 @@ public:
 
 			pLink->m_BandLeftShapePoints.push_back (pt);
 
-			pt.x  = pLink->m_ShapePoints[si].x + max(1,pLink->m_NumLanes - 1)*lane_offset* cos(theta-PI/2.0f);
-			pt.y = pLink->m_ShapePoints[si].y + max(1,pLink->m_NumLanes - 1)*lane_offset* sin(theta-PI/2.0f);
+			pt.x  = pLink->m_ShapePoints[si].x + max(1,pLink->m_NumberOfLanes - 1)*lane_offset* cos(theta-PI/2.0f);
+			pt.y = pLink->m_ShapePoints[si].y + max(1,pLink->m_NumberOfLanes - 1)*lane_offset* sin(theta-PI/2.0f);
 
 			pLink->m_BandRightShapePoints.push_back (pt);
 		}
@@ -1239,6 +1308,8 @@ public:
 	std::map<__int64, DTALink*> m_NodeNumbertoLinkMap;
 
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
+	std::map<long, DTALink*> m_LinkIDtoLinkMap;
+
 	std::map<long, DTALink*> m_SensorIDtoLinkMap;
 	std::map<long, int> m_AVISensorIDtoNodeIDMap;
 
@@ -1337,11 +1408,16 @@ public:
 	}
 
 
-	DTALink* FindLinkWithLinkNo(int LinkID)
+	DTALink* FindLinkWithLinkNo(int LinkNo)
 	{
-		return m_LinkNotoLinkMap[LinkID];
+		return m_LinkNotoLinkMap[LinkNo];
 	}
 
+
+	DTALink* FindLinkWithLinkID(int LinkID)
+	{
+		return m_LinkIDtoLinkMap[LinkID];
+	}
 	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote);
 	CString GetTimeStampFloatingPointStrFromIntervalNo(int time_interval);
 
@@ -1439,15 +1515,22 @@ public:
 		}
 	}
 
-	void CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString DestinationProjectDirectory, CString FileName)
+	bool CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString DestinationProjectDirectory, CString FileName, CString TargetFileName = "")
 	{
+		if(TargetFileName.IsEmpty ())
+			TargetFileName = FileName;
+
 		if(CheckIfFileExsits(DestinationProjectDirectory+FileName )==false)
 		{
+			int succeed_return;
 			if(CheckIfFileExsits(CurrentProjectFolder+FileName )==true)
-				CopyFile(CurrentProjectFolder+FileName, DestinationProjectDirectory+FileName, FALSE);
+				succeed_return = CopyFile(CurrentProjectFolder+FileName, DestinationProjectDirectory+TargetFileName, FALSE);
 			else
-				CopyFile(DefaultDataFolder+FileName, DestinationProjectDirectory+FileName, FALSE);
+				succeed_return = CopyFile(DefaultDataFolder+FileName, DestinationProjectDirectory+TargetFileName, FALSE);
+
+			return true; // copy success 
 		}
+		return false;  // file exits 
 	}
 
 	int FindCloseDTAPoint_NodeNumber(GDPoint pt, double threadshold, int this_node_number = -1)
@@ -1690,6 +1773,7 @@ public:
 	CDaoDatabase m_Database;
 #endif
 	afx_msg void OnTrafficcontroltoolsTransfermovementdatafromreferencenetworktocurrentnetwork();
+	afx_msg void OnDemandtoolsGenerateinput();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

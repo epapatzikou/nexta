@@ -308,6 +308,8 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 			ColumnLabelVector.push_back ("Avg Distance");
 			ColumnLabelVector.push_back ("Avg Speed");
 			ColumnLabelVector.push_back ("TT STD");
+			ColumnLabelVector.push_back ("Travel Time Per Mile STD");
+
 
 			if((*iDoc)-> m_bEmissionDataAvailable)
 			{
@@ -387,6 +389,8 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	ColumnPathLabelVector.push_back ("Distance (mile)");
 	ColumnPathLabelVector.push_back ("Speed (mph)");
 	ColumnPathLabelVector.push_back ("Toll Cost($)");
+	ColumnPathLabelVector.push_back ("Travel Time STD (min)");
+	ColumnPathLabelVector.push_back ("Travel Time Per Mile STD (min/mile)");
 
 
 	if(m_pDoc-> m_bEmissionDataAvailable)
@@ -572,7 +576,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		count = 0;
 //		m_ODList.ResetContent ();
 
-				// variability measure
+		// variability measure
 		for (iVehicle = (*iDoc)->m_VehicleSet.begin(); iVehicle != (*iDoc)->m_VehicleSet.end(); iVehicle++, count++)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
@@ -595,7 +599,8 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 
 					m_ODMOEMatrix[p][OrgNo][DesNo].AvgDistance = m_ODMOEMatrix[p][OrgNo][DesNo].TotalDistance /max(1,m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize );;
 					m_ODMOEMatrix[p][OrgNo][DesNo].AvgTravelTime = AvgTravelTime;
-					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalTravelTimeVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime);
+					m_ODMOEMatrix[p][OrgNo][DesNo].TotalTravelTimePerMileVariance  += (pVehicle->m_TripTime - AvgTravelTime)*(pVehicle->m_TripTime- AvgTravelTime)/max(0.01,pVehicle->m_Distance * pVehicle->m_Distance);
 				}
 			}
 		}
@@ -634,7 +639,8 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					float AvgDistance = m_ODMOEMatrix[p][i][j].TotalDistance /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 					float AvgTravelTime = m_ODMOEMatrix[p][i][j].TotalTravelTime /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 					float AvgCost = m_ODMOEMatrix[p][i][j].TotalCost  /m_ODMOEMatrix[p][i][j].TotalVehicleSize;
-					float STDTravelTime = sqrt(m_ODMOEMatrix[p][i][j].TotalVariance   /m_ODMOEMatrix[p][i][j].TotalVehicleSize);
+					float STDTravelTime = sqrt(m_ODMOEMatrix[p][i][j].TotalTravelTimeVariance   /m_ODMOEMatrix[p][i][j].TotalVehicleSize);
+					float STDTravelTimePerMile = sqrt(m_ODMOEMatrix[p][i][j].TotalTravelTimePerMileVariance   /m_ODMOEMatrix[p][i][j].TotalVehicleSize);
 
 					float AvgEnergy = m_ODMOEMatrix[p][i][j].emissiondata .Energy / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 					float AvgCO2 = m_ODMOEMatrix[p][i][j].emissiondata.CO2  / m_ODMOEMatrix[p][i][j].TotalVehicleSize;
@@ -677,7 +683,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		if(p==0)
 			column_index = 2;
 		else
-			column_index = 7 + (p-1)*7 ;  // -1 no diff for base line
+			column_index = 8 + (p-1)*8 ;  // -1 no diff for base line
 
 		sprintf_s(text, "%d",m_ODMOEMatrix[p][i][j].TotalVehicleSize);
 		m_ListCtrl.SetItemText(Index,column_index++,text );
@@ -693,6 +699,9 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
 		sprintf_s(text, "%3.1f",STDTravelTime);
+		m_ListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.1f",STDTravelTimePerMile);
 		m_ListCtrl.SetItemText(Index,column_index++,text );
 
 
@@ -882,6 +891,10 @@ void CDlg_VehPathAnalysis::FilterPaths()
 						m_PathVector[p].TotalVehicleSize+=1;
 						m_PathVector[p].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 						m_PathVector[p].TotalDistance   += pVehicle->m_Distance;
+
+						m_PathVector[p].m_TravelTimeVector.push_back(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+						m_PathVector[p].m_TravelTimePerMileVector.push_back((pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)/max(0.01,pVehicle->m_Distance));
+
 						m_PathVector[p].TotalCost   += pVehicle->m_TollDollarCost;
 						m_PathVector[p].TotalEmissions   += pVehicle->m_Emissions;
 					
@@ -910,6 +923,10 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					ps_element.TotalDistance   += pVehicle->m_Distance;
 					ps_element.TotalCost    += pVehicle->m_TollDollarCost ;
 					ps_element.TotalEmissions    += pVehicle->m_Emissions ;
+
+					ps_element.m_TravelTimeVector.push_back((pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime));
+					ps_element.m_TravelTimeVector.push_back((pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)/max(0.01,pVehicle->m_Distance));
+
 						ps_element.emissiondata.Energy += pVehicle->m_EmissionData .Energy;
 						ps_element.emissiondata.CO2 += pVehicle->m_EmissionData .CO2;
 						ps_element.emissiondata.NOX += pVehicle->m_EmissionData .NOX;
@@ -941,6 +958,10 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		float AvgDistance = m_PathVector[p].TotalDistance /m_PathVector[p].TotalVehicleSize;
 		float AvgTravelTime = m_PathVector[p].TotalTravelTime /m_PathVector[p].TotalVehicleSize;
 		float AvgTravelCost = m_PathVector[p].TotalCost /m_PathVector[p].TotalVehicleSize;
+
+		float TravelTimeSTD = m_PathVector[p].GetTravelTimeStandardDeviation();
+		float TravelTimePerMileSTD = m_PathVector[p].GetTravelTimePerMileStandardDeviation();
+
 		float AvgEnergy = m_PathVector[p].emissiondata .Energy / m_PathVector[p].TotalVehicleSize;
 		float AvgCO2 = m_PathVector[p].emissiondata.CO2  / m_PathVector[p].TotalVehicleSize;
 		float AvgNOX = m_PathVector[p].emissiondata.NOX  / m_PathVector[p].TotalVehicleSize;
@@ -973,11 +994,18 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		sprintf_s(text, "%3.1f", AvgDistance);
 		m_PathListCtrl.SetItemText(Index,column_index++,text );
 
-		sprintf_s(text, "%3.0f", AvgSpeed);
+		sprintf_s(text, "%3.1f", AvgSpeed);
 		m_PathListCtrl.SetItemText(Index,column_index++,text );
 
 		sprintf_s(text, "%3.2f", AvgTravelCost);
 		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
+		sprintf_s(text, "%3.2f", TravelTimeSTD);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+		
+		sprintf_s(text, "%3.2f", TravelTimePerMileSTD);
+		m_PathListCtrl.SetItemText(Index,column_index++,text );
+
 
 		sprintf_s(text, "%3.1f", AvgEnergy);
 		m_PathListCtrl.SetItemText(Index,column_index++,text );

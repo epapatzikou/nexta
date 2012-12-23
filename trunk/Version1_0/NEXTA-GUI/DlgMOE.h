@@ -29,7 +29,7 @@
 #include "BaseDialog.h"
 #include "afxwin.h"
 
-enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,link_outflow_volume,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count};
+enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_volume,link_outflow_volume,link_in_and_outflow_volume,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count};
 
 // CDlgMOE dialog
 
@@ -231,4 +231,7 @@ public:
 	afx_msg void OnCbnSelchangeComboEndtime();
 	CComboBox m_AggregationIntervalList;
 	afx_msg void OnCbnSelchangeComboAgginterval();
+	afx_msg void OnMoetype2Linkoutflowvolume();
+	afx_msg void OnMoetype1Linkinandoutflow();
+	afx_msg void OnMoetype2Linkinandoutflow();
 };

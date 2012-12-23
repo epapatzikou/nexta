@@ -73,4 +73,5 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 	CComboBox m_PlotType;
+	afx_msg void OnBnClickedAnalysis2();
 };

@@ -207,7 +207,7 @@ CPen g_GPSTrajectoryColor(PS_SOLID, 1, RGB(255,105,180));
 CPen g_PenConnectorColor(PS_DASH,1,RGB(0,0,255));
 CPen g_PenCentroidColor(PS_SOLID,1,RGB(0,255,255));
 
-CPen g_PenQueueColor(PS_SOLID,3,RGB(255,0,0));
+CPen g_PenQueueColor(PS_SOLID,2,RGB(255,0,0));
 
 CPen g_PenQueueBandColor(PS_SOLID,1,RGB(255,0,0));
 CBrush g_BrushQueueBandColor(RGB(255,0,0));
@@ -1069,6 +1069,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						case link_display_from_id_to_id: 
 							str_text.Format ("%d->%d", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ); break;
 
+						case link_display_link_id: 
+							str_text.Format ("%d", (*iLink)->m_LinkID  ); break;
+
+						case link_display_TMC_code: 
+							str_text.Format ("%s", (*iLink)->m_TMC_code.c_str ()); break;
+
 						case  link_display_speed_limit:
 							str_text.Format ("%.1f",(*iLink)->m_SpeedLimit ); break;
 						case link_display_length:
@@ -1079,12 +1085,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						case link_display_saturation_flow_rate:
 							str_text.Format ("%.0f",(*iLink)->m_MaximumServiceFlowRatePHPL); break;
 						case link_display_number_of_lanes:
-							str_text.Format ("%d",(*iLink)->m_NumLanes ); break;						
+							str_text.Format ("%d",(*iLink)->m_NumberOfLanes ); break;						
 						case link_display_lane_capacity_per_hour:
 							str_text.Format ("%.0f",(*iLink)->m_LaneCapacity); break;
 
 						case link_display_link_capacity_per_hour:
-							str_text.Format ("%.0f",(*iLink)->m_LaneCapacity*(*iLink)->m_NumLanes  ); break;
+							str_text.Format ("%.0f",(*iLink)->m_LaneCapacity*(*iLink)->m_NumberOfLanes  ); break;
 
  						case link_display_effective_green_time_length_in_second:
 							str_text.Format ("%d",(*iLink)->m_EffectiveGreenTimeInSecond  ); break;
@@ -1619,7 +1625,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
 
-		if(pVehicle ->m_bGPSVehicle == true)
+		if(pVehicle->m_VehicleLocationSize> 1)
 		{
 
 
@@ -1628,13 +1634,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		float previous_timestamp = 0;
 
-		if(pVehicle->m_NodeSize >1)  // initialization
-		{
-		
+	
 		previous_timestamp = pVehicle->m_LocationRecordAry [0].time_stamp_in_min ;
-		}
 
-		for (int i =0; i < pVehicle->m_NodeSize ; i++)
+		for (int i =0; i < pVehicle->m_VehicleLocationSize ; i++)
 		{
 
 			GDPoint pt;
@@ -2486,7 +2489,11 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 					DTALink* pLink = pDoc->m_LinkNoMap [pDoc->m_SelectedLinkNo ];
 					CFeatureInfo element;
 					element.Attribute = "Link ID";
-					element.Data.Format ("%d",pLink->m_LinkNo );
+					element.Data.Format ("%d",pLink->m_LinkID  );
+					pMainFrame->m_FeatureInfoVector.push_back (element);
+
+					element.Attribute = "name";
+					element.Data.Format ("%s",pLink->m_Name.c_str ()  );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
 
 					element.Attribute = "From Node ID";
@@ -2516,13 +2523,21 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 					element.Data.Format ("%4.3f",pLink->m_FreeFlowTravelTime    );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
 
-					element.Attribute = "# of lanes";
-					element.Data.Format ("%d",pLink->m_NumLanes );
+					element.Attribute = "# of Lanes";
+					element.Data.Format ("%d",pLink->m_NumberOfLanes );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
 
 					element.Attribute = "Lane Capacity";
 					element.Data.Format ("%4.0f",pLink->m_MaximumServiceFlowRatePHPL  );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
+
+					if(pLink->m_EffectiveGreenTimeInSecond >=1)
+					{
+					element.Attribute = "Effective Green Time";
+					element.Data.Format ("%d sec",pLink->m_EffectiveGreenTimeInSecond );
+					pMainFrame->m_FeatureInfoVector.push_back (element);
+
+					}
 
 					pMainFrame->FillFeatureInfo ();
 
@@ -3289,6 +3304,12 @@ void CTLiteView::OnUpdateShowGrid(CCmdUI *pCmdUI)
 void CTLiteView::OnShowLinkarrow()
 {
 	m_bShowLinkArrow = !m_bShowLinkArrow;
+
+	if(m_bShowLinkArrow)
+	{
+		m_link_display_mode = link_display_mode_line;
+		m_bLineDisplayConditionalMode = true;
+	}
 	Invalidate();
 }
 
@@ -3357,7 +3378,7 @@ void CTLiteView::OnLinkEditlink()
 		dlg.SpeedLimit = pLink->m_SpeedLimit ;
 		dlg.FreeFlowTravelTime = pLink->m_FreeFlowTravelTime ;
 		dlg.LaneCapacity  = pLink->m_LaneCapacity ;
-		dlg.nLane = pLink->m_NumLanes ;
+		dlg.nLane = pLink->m_NumberOfLanes ;
 		dlg.LinkType = pLink->m_link_type;
 
 		dlg.SaturationFlowRate = pLink ->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ;
@@ -3385,9 +3406,9 @@ void CTLiteView::OnLinkEditlink()
 			pLink ->m_EffectiveGreenTimeInSecond  = dlg.EffectiveGreenTime;
 
 
-			if(pLink->m_NumLanes  != dlg.nLane)
+			if(pLink->m_NumberOfLanes  != dlg.nLane)
 			{
-				pLink->m_NumLanes  = dlg.nLane;
+				pLink->m_NumberOfLanes  = dlg.nLane;
 				pDoc->GenerateOffsetLinkBand();  // update width of band
 			}
 			pLink->m_link_type = dlg.LinkType ;
@@ -4254,8 +4275,8 @@ bool CTLiteView::DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC)
 
 		pLink->m_BandLeftShapePoints.push_back (pt);
 
-		pt.x  = OrgShapepoint.x + pLink->m_NumLanes *lane_offset* cos(theta-PI/2.0f);
-		pt.y = OrgShapepoint.y + pLink->m_NumLanes*lane_offset* sin(theta-PI/2.0f);
+		pt.x  = OrgShapepoint.x + pLink->m_NumberOfLanes *lane_offset* cos(theta-PI/2.0f);
+		pt.y = OrgShapepoint.y + pLink->m_NumberOfLanes*lane_offset* sin(theta-PI/2.0f);
 
 		pLink->m_BandRightShapePoints.push_back (pt);
 	}
@@ -4285,7 +4306,7 @@ bool CTLiteView::DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC)
 
 	CPen* OldPen = pDC->SelectObject(&g_LaneMarkingPen);
 
-	for(int lane = 1; lane < pLink->m_NumLanes ; lane++)
+	for(int lane = 1; lane < pLink->m_NumberOfLanes ; lane++)
 	{
 	for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
 	{
@@ -5357,7 +5378,7 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		double lane_width =  size_ratio*3*pDoc->m_LaneWidthInFeet * pDoc->m_UnitFeet;
 		double movement_offset = 0;
 		double text_offset = 0.3*lane_width;
-		int mid_lane_number = 4+ pInLink->m_NumLanes / 2;
+		int mid_lane_number = 4+ pInLink->m_NumberOfLanes / 2;
 		float control_point_ratio = 0;
 
 		CString movement_direction_label;

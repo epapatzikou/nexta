@@ -474,7 +474,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			pLink->m_FreeFlowTravelTime = pLink->m_Length/pLink->m_SpeedLimit*60.0f;  // convert from hour to min
 			pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
-			pLink->m_NumLanes = 1;
+			pLink->m_NumberOfLanes = 1;
 			pLink->m_TrackType = track_type;
 
 			m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
@@ -490,8 +490,9 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 
 
 			m_LinkNotoLinkMap[i] = pLink;
+			m_LinkIDtoLinkMap[i] = pLink;
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 			pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 			pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;

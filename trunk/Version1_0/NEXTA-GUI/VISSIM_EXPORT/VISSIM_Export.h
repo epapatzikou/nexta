@@ -187,7 +187,7 @@ public:
 	int			m_ToNodeNumber;
 	int			m_FromNodeID;
 	int			m_ToNodeID;
-	int			m_NumLanes;
+	int			m_NumberOfLanes;
 	int			m_LinkType;
 	float		m_LaneWidth;
 	float		m_SpeedLimit;

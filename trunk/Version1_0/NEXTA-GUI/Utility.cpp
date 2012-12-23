@@ -355,7 +355,7 @@ void ReadDSm_pNetworkData(char fname[_MAX_PATH])
          int m_RightBays= g_read_integer(st);
 
          pLink->m_Length= g_read_float(st);
-         pLink->m_NumLanes= g_read_integer(st);
+         pLink->m_NumberOfLanes= g_read_integer(st);
 
          int m_FlowModel= g_read_integer(st);
          int m_SpeedAdjustment= g_read_integer(st);

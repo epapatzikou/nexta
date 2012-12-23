@@ -26,6 +26,7 @@
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
 #define ID_EXPORT_DATA3                 5
+#define IDDATA_Analysis2                5
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
@@ -104,7 +105,6 @@
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDR_VIEW_TOOLBAR_NU             193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
-#define IDB_WORKZONE1                   194
 #define IDB_LINK_CLOSURE                194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDD_DIALOG_Legend               196
@@ -1009,13 +1009,19 @@
 #define ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK 33530
 #define ID_NODE_AVOIDTHISNODE           33531
 #define ID_NODE_REMOVENODEAVOIDANCECONSTRAINT 33532
+#define ID_LINK_SHOW                    33533
+#define ID_DEMANDTOOLS_GENERATEINPUT    33534
+#define ID_MOETYPE2_LINKOUTFLOWVOLUME   33535
+#define ID_MOETYPE1_LINKINFLOW          33536
+#define ID_MOETYPE1_LINKINANDOUTFLOW    33537
+#define ID_MOETYPE2_LINKINANDOUTFLOW    33538
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33533
+#define _APS_NEXT_COMMAND_VALUE         33539
 #define _APS_NEXT_CONTROL_VALUE         1157
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

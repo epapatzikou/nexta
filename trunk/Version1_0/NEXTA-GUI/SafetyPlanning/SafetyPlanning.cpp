@@ -59,7 +59,7 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 
 		CString number_of_lanes_str;
 
-		int number_of_lanes = min(4,max(2,pLink->m_NumLanes));  // the lookup table has values available between 2 and 4 lanes
+		int number_of_lanes = min(4,max(2,pLink->m_NumberOfLanes));  // the lookup table has values available between 2 and 4 lanes
 		
 		number_of_lanes_str.Format ("%d", number_of_lanes);
 

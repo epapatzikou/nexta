@@ -88,6 +88,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Time-dependent Link MOE");
 	m_Link_Label.AddString("Time-dependent Link LOS Value");
 	m_Link_Label.AddString("Street Name");
+	m_Link_Label.AddString("Link ID");
+	m_Link_Label.AddString("TMC Code");
 	m_Link_Label.AddString("From ID -> To ID");
 	m_Link_Label.AddString("Speed Limit (mph)");
 	m_Link_Label.AddString("Length (mile)");
