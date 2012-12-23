@@ -36,7 +36,8 @@
 #include <algorithm>
 
 using namespace std;
-	void g_MultiScenarioTrafficAssignment() 
+
+void g_MultiScenarioTrafficAssignment() 
 {
 
 	g_SummaryStatFile.Open("output_summary.csv");
@@ -323,14 +324,20 @@ using namespace std;
 
 		g_DefaultArterialKJam = 250;
 		parser_scenario.GetValueByFieldNameWithPrintOut("default_arterial_k_jam",g_DefaultArterialKJam);
-				
+		
+		
+		if(g_DefaultArterialKJam <=100)
+		{
+			cout << "g_DefaultArterialKJam = " << g_DefaultArterialKJam << "which is too small. Please check  file input_scenario_settings.csv." << endl;
+			g_ProgramStop();
+		}
+
 		g_DefaultCycleLength = 110;
 		parser_scenario.GetValueByFieldNameWithPrintOut("default_cycle_length",g_DefaultCycleLength);
 
-		if(g_DefaultCycleLength==0) 
-			g_SimulateSignals = 0;  // no signal simulation logic
 
-		if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false)
+
+		if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false )
 		{
 			cout << "Field demand_multiplier cannot be found in file input_scenario_settings.csv. Please check." << endl;
 			g_ProgramStop();

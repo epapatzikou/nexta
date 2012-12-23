@@ -354,6 +354,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SignalOptimization.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\simulation.cpp"
 				>
 			</File>
@@ -401,6 +405,10 @@
 			</File>
 			<File
 				RelativePath=".\DTALite.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DTASettings.h"
 				>
 			</File>
 			<File

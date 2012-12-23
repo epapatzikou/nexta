@@ -298,18 +298,22 @@ public:
 	{
 		int ArraySize  = m_OriginActivityVector.size();
 
+		if(ArraySize ==0)
+			return -1;
+
 		int node_index = int(random_ratio*ArraySize);
 
 		if(node_index >= ArraySize)
 			node_index = ArraySize -1;
 
-		ASSERT(node_index < ArraySize && ArraySize != 0);
 		return m_OriginActivityVector[node_index];
 	}
 
 	int GetRandomDestinationIDInZone(float random_ratio)
 	{
 		int ArraySize  = m_DestinationActivityVector.size();
+		if(ArraySize ==0)
+			return -1;
 
 		int node_index = int(random_ratio*ArraySize);
 
@@ -370,6 +374,7 @@ public:
 	movement_capacity_per_simulation_interval = 0;
 	movement_vehicle_counter = 0 ;
 	movement_hourly_capacity = 100;
+	movement_effective_green_time_in_min = 0;
 	}
 
 	float GetAvgDelay_In_Min()
@@ -392,6 +397,8 @@ int out_link_to_node_id;
 
 int total_vehicle_count;
 float total_vehicle_delay;
+
+float movement_effective_green_time_in_min;
 
 float movement_hourly_capacity;
 float movement_capacity_per_simulation_interval;
@@ -427,7 +434,7 @@ public:
 		m_DestinationVector.clear();
 	};
 	int m_NodeID;
-	int m_NodeName;
+	int m_NodeNumber;
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int m_ControlType; // Type:
 	int m_SignalOffset_In_Second;
@@ -443,6 +450,7 @@ public:
 	bool m_bOriginFlag;
 	bool m_bDestinationFlag;
 
+	void QuickSignalOptimization();
 
 };
 
@@ -711,14 +719,20 @@ public:
 class DTALinkOutCapacity
 {
 public:
-	DTALinkOutCapacity(double time_stamp, float out_capacity)	
+	DTALinkOutCapacity(double time_stamp, float out_capacity, int queue_size, int i_blocking_count, int i_blocking_node_number)	
 	{
 		time_stamp_in_min = time_stamp;
-		hourly_out_capacity = out_capacity; // per lane
-
+		out_capacity_in_vehicle_number = out_capacity;
+		link_queue_size = queue_size;
+		blocking_count = i_blocking_count;
+		blocking_node_number = i_blocking_node_number;
 	}
 	double time_stamp_in_min;
-	float hourly_out_capacity;
+	float out_capacity_in_vehicle_number;
+	int link_queue_size;
+	int blocking_count;
+	int blocking_node_number;
+
 
 };
 
@@ -727,6 +741,10 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+		m_Direction;
+		m_NumberOfLeftTurnBays = 0;
+		m_NumberOfRightTurnBays = 0;
+
 		m_bOnRampType  = false;
 		m_bOffRampType = false;
 		m_EffectiveGreenTime_In_Second = 0;
@@ -824,13 +842,16 @@ public:
 		return m_LaneCapacity;
 	}
 
-	float GetNumLanes(int DayNo=0, int Time=-1)  // with lane closure
+	float GetNumberOfLanes(int DayNo=0, int Time=-1)  // with lane closure
 	{
+
+		int NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
+			
 		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 		{
 			if( (WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (Time>= WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
 			{
-				return (1-WorkZoneCapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
+				return (1-WorkZoneCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
 			}
 		}
 
@@ -838,11 +859,11 @@ public:
 		{
 			if( (IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (Time>= IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime))
 			{
-				return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*m_NumLanes;
+				return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
 			}
 		}
 
-		return (float)m_NumLanes;
+		return (float)NumLanes;
 
 	}
 
@@ -880,6 +901,24 @@ public:
 
 		return float(m_RandomSeed)/LCG_M;
 	}
+
+	int m_FromNodeNumber;
+	int m_ToNodeNumber;
+
+	float	m_Length;  // in miles
+	float   m_VehicleSpaceCapacity; // in vehicles
+	int	m_NumLanes;
+	float	m_SpeedLimit;
+	float m_KJam;
+	float m_AADTConversionFactor;
+	float m_BackwardWaveSpeed; // unit: mile/ hour
+	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
+	float m_LoadingBufferWaitingTime;
+
+	int m_NumberOfLeftTurnBays;
+	int m_NumberOfRightTurnBays;
+	char m_Direction;
+
 
 		std::string m_geometry_string, m_original_geometry_string;
 		double m_Intersection_NumberOfCrashes, m_Intersection_NumberOfFatalAndInjuryCrashes,m_Intersection_NumberOfPDOCrashes;
@@ -1165,18 +1204,6 @@ public:
 	std::vector <int> m_OutboundLinkWithoutUTurnVector;
 
 
-	int m_FromNodeNumber;
-	int m_ToNodeNumber;
-
-	float	m_Length;  // in miles
-	float   m_VehicleSpaceCapacity; // in vehicles
-	int	m_NumLanes;
-	float	m_SpeedLimit;
-	float m_KJam;
-	float m_AADTConversionFactor;
-	float m_BackwardWaveSpeed; // unit: mile/ hour
-	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
-	float m_LoadingBufferWaitingTime;
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
@@ -1442,7 +1469,7 @@ public:
 
 	float GetPrevailingTravelTime(int DayNo,int CurrentTime)
 	{
-		if(GetNumLanes(DayNo,CurrentTime)<=0.1)   // road blockage, less than 0.1 lanes, or about 2000 capacity
+		if(GetNumberOfLanes(DayNo,CurrentTime)<=0.1)   // road blockage, less than 0.1 lanes, or about 2000 capacity
 			return 1440; // unit min
 
 		if(departure_count >= 1 && CurrentTime >0)
@@ -1475,7 +1502,7 @@ public:
 	{
 		float travel_time  = 0.0f;
 
-		if(GetNumLanes(DayNo,starting_time)<=0.1)   // road blockage
+		if(GetNumberOfLanes(DayNo,starting_time)<=0.1)   // road blockage
 			return 9999; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
@@ -2695,7 +2722,7 @@ public:
 
 	int m_LinkSize;
 	std::vector<int> m_LinkNoArray;
-	std::vector<int> m_NodeNameArray;
+	std::vector<int> m_NodeNumberArray;
 
 	int   TotalVehicleSize;
 	float TotalTravelTime;
@@ -2785,6 +2812,39 @@ public:
 	}
 };
 
+class DTASettings
+{
+public:
+	int AdditionalYellowTimeForSignals;
+	int IteraitonNoStartSignalOptimization;
+	int IteraitonStepSizeSignalOptimization;
+	int DefaultCycleTimeSignalOptimization;
+
+	int pretimed_signal_control_type_code;
+	int actuated_signal_control_type_code;
+
+	int no_signal_control_type_code;
+
+	int use_point_queue_model_for_on_ramps;  // no queue spillback
+	int use_point_queue_model_for_off_ramps; //
+	DTASettings()
+	{
+	
+	AdditionalYellowTimeForSignals = 4;
+	IteraitonNoStartSignalOptimization = 100;
+	IteraitonStepSizeSignalOptimization = 5;
+	DefaultCycleTimeSignalOptimization = 60;
+
+	pretimed_signal_control_type_code = 5;
+	actuated_signal_control_type_code = 6;
+	no_signal_control_type_code = 1;
+	use_point_queue_model_for_on_ramps = 1;
+	use_point_queue_model_for_off_ramps = 1;
+
+	}
+
+};
+extern DTASettings g_settings;
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
 void g_OutputMOEData(int iteration);

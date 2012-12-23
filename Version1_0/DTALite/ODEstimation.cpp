@@ -29,6 +29,7 @@
 #include <algorithm>
 
 using namespace std;
+
 std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 /***************
 to do list:
@@ -1048,7 +1049,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 					float obs_v_over_c_ratio = 0;
 					float simu_over_c_ratio = 0;
-					float link_capacity = pLink->GetNumLanes ()* pLink->m_LaneCapacity;
+					float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
 
 					if(link_capacity>1)
 					{
@@ -1057,7 +1058,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 					}
 					g_EstimationLogFile << "Iteration," << Iteration << "," << pLink->m_LinkMeasurementAry[i].name << "," << pLink->m_LinkMeasurementAry[i].direction << "," << pLink->m_LinkTypeName << ",Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
 						<< ",time "<<  g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime) << "->" << g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) <<  ",Observed and simulated link count,"<< ObsFlowCount << "," << SimulatedFlowCount <<", Error:, " << SimulatedFlowCount -  ObsFlowCount << 
-						"," << AbosolutePercentageError << " %" << ",Lane Flow Error /h=, " << LaneFlowError << "," << pLink->GetNumLanes ()* pLink->m_LaneCapacity << "," << obs_v_over_c_ratio << "," << simu_over_c_ratio << endl;
+						"," << AbosolutePercentageError << " %" << ",Lane Flow Error /h=, " << LaneFlowError << "," << pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity << "," << obs_v_over_c_ratio << "," << simu_over_c_ratio << endl;
 
 					TotalMOEPercentageError +=AbosolutePercentageError ; 
 					TotalMOEAbsError += fabs(LaneFlowError) ;
@@ -1176,7 +1177,7 @@ void g_OutputODMEResults()
 
 					float obs_v_over_c_ratio = 0;
 					float simu_over_c_ratio = 0;
-					float link_capacity = pLink->GetNumLanes ()* pLink->m_LaneCapacity;
+					float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
 
 					if(link_capacity>1)
 					{
@@ -1222,7 +1223,7 @@ void g_OutputODMEResults()
 					validation_result_file.SetValueByFieldName ("simulated_voc_ratio",simu_over_c_ratio);
 					validation_result_file.SetValueByFieldName ("observed_voc_ratio",obs_v_over_c_ratio);
 
-					int number_of_lanes = pLink->GetNumLanes ();
+					int number_of_lanes = pLink->GetNumberOfLanes ();
 					validation_result_file.SetValueByFieldName ("number_of_lanes",number_of_lanes);
 					validation_result_file.SetValueByFieldName ("lane_capacity_per_hour",pLink->m_LaneCapacity);
 					int link_capacity_per_hour = number_of_lanes * pLink->m_LaneCapacity;

@@ -231,7 +231,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo)  // for
 
 			if(bDebug) 
 			{
-				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeName, g_NodeVector[ToID].m_NodeName, t,AvgTripTime );
+				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeNumber, g_NodeVector[ToID].m_NodeNumber, t,AvgTripTime );
 			}
 
 			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTripTime;
@@ -463,7 +463,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 		if(debug_flag && FromID < m_PhysicalNodeSize)  // physical nodes
 		{
-			TRACE("\nScan from node %d",g_NodeVector[FromID].m_NodeName);
+			TRACE("\nScan from node %d",g_NodeVector[FromID].m_NodeNumber);
 		}
 
 		NodeStatusAry[FromID] = 2;        //scaned
@@ -560,8 +560,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(origin_zone ==8 && destination_zone==11 && origin==163)
 	{
 		debug_flag = true;
-			TRACE("\nScan from root node %d,",g_NodeVector[origin].m_NodeName);
-			TRACE("\ndestination node %d,",g_NodeVector[destination].m_NodeName);
+			TRACE("\nScan from root node %d,",g_NodeVector[origin].m_NodeNumber);
+			TRACE("\ndestination node %d,",g_NodeVector[destination].m_NodeNumber);
 	}
 
 	// checking boundary condition for departure time changes
@@ -603,7 +603,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 
 		if(debug_flag)
-			TRACE("\nScan from node %d,",g_NodeVector[FromID].m_NodeName);
+			TRACE("\nScan from node %d,",g_NodeVector[FromID].m_NodeNumber);
 
 		NodeStatusAry[FromID] = 2;        //scaned
 
@@ -664,7 +664,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				if( g_floating_point_value_less_than(NewCost, LabelCostAry[ToID])  && NewCost < CostUpperBound) // special feature 7.1  we only compare cost not time
 				{
 					if(debug_flag && ( ToID== 9))
-						TRACE("\n         UPDATE to node %d, cost: %f, link travel time %f", g_NodeVector[ToID].m_NodeName, NewCost, m_LinkTDTimeAry[LinkID][link_entering_time_interval]);
+						TRACE("\n         UPDATE to node %d, cost: %f, link travel time %f", g_NodeVector[ToID].m_NodeNumber, NewCost, m_LinkTDTimeAry[LinkID][link_entering_time_interval]);
 
 					if(NewTime > m_PlanningHorizonInMin -1)
 						NewTime = m_PlanningHorizonInMin-1;
@@ -714,7 +714,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if(debug_flag)
 			{
-			TRACE("\nTrace from node %d,",g_NodeVector[PredNode].m_NodeName);
+			TRACE("\nTrace from node %d,",g_NodeVector[PredNode].m_NodeNumber);
 			}
 
 		}

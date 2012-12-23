@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Clean_Data_Set\New_Clackamas_Networks_Dec_05\2010_ClackCo_Dec7 - ODME"
+				WorkingDirectory="C:\Clean_Data_Set\dst_01_2035"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Clean_Data_Set\New_Clackamas_Networks_Dec_10\2010_ClackCo_Dec7 - ODME"
+				WorkingDirectory="C:\Clean_Data_Set\2035_network\2035_ClackCounty_Baseline_adjustedDemand_12-12-12"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
