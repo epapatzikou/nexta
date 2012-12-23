@@ -12,6 +12,7 @@
 #include <functional>
 
 using namespace std;
+
 extern CTime g_AppStartTime;
 // polar form of the Box-Muller transformation to get two random numbers that follow a standard normal distribution 
 unsigned int g_RandomSeedForVehicleGeneration = 101;
@@ -28,6 +29,7 @@ extern float g_DemandGlobalMultiplier;
 #include<iostream>
 #include<cmath>
 using namespace std;
+
 
 
 //******************************************************************************
@@ -679,7 +681,7 @@ int  DTANetworkForSP:: GetLinkNoByNodeIndex(int usn_index, int dsn_index)
 		}
 	}
 
-	cout << " Error in GetLinkNoByNodeIndex " << g_NodeVector[usn_index].m_NodeName  << "-> " << g_NodeVector[dsn_index].m_NodeName ;
+	cout << " Error in GetLinkNoByNodeIndex " << g_NodeVector[usn_index].m_NodeNumber  << "-> " << g_NodeVector[dsn_index].m_NodeNumber ;
 
 	g_ProgramStop();
 
@@ -722,13 +724,13 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 
 	if(g_NodeVector[i].m_ZoneID > 0)
 	{
-	cout << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
-	g_WarningFile << "Centroid "<<  g_NodeVector[i].m_NodeName  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
+	cout << "Centroid "<<  g_NodeVector[i].m_NodeNumber  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
+	g_WarningFile << "Centroid "<<  g_NodeVector[i].m_NodeNumber  << " of zone " << g_NodeVector[i].m_ZoneID << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
 	centroid_count ++;
 	}else
 	{
-	cout << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  << endl;
-	g_WarningFile << "Node "<<  g_NodeVector[i].m_NodeName  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeName  <<", Cost: "  << endl;
+	cout << "Node "<<  g_NodeVector[i].m_NodeNumber  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
+	g_WarningFile << "Node "<<  g_NodeVector[i].m_NodeNumber  << " is not connected to node " << g_NodeVector[OriginForTesting].m_NodeNumber  <<", Cost: "  << endl;
 	}
 	count++;
 
@@ -742,13 +744,13 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	//	}
 	if(count > 0)
 	{
-		cout << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
-		g_WarningFile << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+		cout << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
+		g_WarningFile << count << " nodes are not connected to "<< g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
 
 		if(centroid_count > 0 )
 		{
-			cout << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
-			g_WarningFile << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeName  << endl;
+			cout << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
+			g_WarningFile << centroid_count << " controids are not connected to "<< g_NodeVector[OriginForTesting].m_NodeNumber  << endl;
 			//			cout << "Please check file warning.log later. Press any key to continue..."<< endl;
 			//getchar();
 		}

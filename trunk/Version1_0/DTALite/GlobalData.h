@@ -247,6 +247,10 @@ extern float g_RelativeTravelTimePercentageDifferenceForSwitching; // percentage
 
 
 extern int g_StochasticCapacityMode ;
+extern int g_UseFreevalRampMergeModelFlag;
+extern int g_OutputLinkCapacityFlag;
+extern int g_OutputLinkCapacityStarting_Time;
+extern int g_OutputLinkCapacityEnding_Time;
 extern int g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_FIFOConditionAcrossDifferentMovementFlag;

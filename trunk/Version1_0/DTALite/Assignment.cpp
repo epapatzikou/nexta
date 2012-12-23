@@ -803,7 +803,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			{
 				for(i = 0; i < NodeSize; i++)
 				{
-					TRACE("\nNode sequence of vehicle path no.%d, node %d\n",i, g_NodeVector[PathNodeList[i]].m_NodeName);
+					TRACE("\nNode sequence of vehicle path no.%d, node %d\n",i, g_NodeVector[PathNodeList[i]].m_NodeNumber);
 				}
 				TRACE("\nPath sequence end, cost = ..%f\n",TotalCost);
 			}
@@ -1389,7 +1389,7 @@ void g_AgentBasedShortestPathGeneration()
 				float label = g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label;
 
 				fprintf(st, "%d, %d, %d, %4.2f\n", g_NodeVector[node_index].m_DestinationVector[dest_no].record_id, 
-					g_NodeVector[node_index].m_NodeName,
+					g_NodeVector[node_index].m_NodeNumber,
 					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_number, label);
 
 			}
