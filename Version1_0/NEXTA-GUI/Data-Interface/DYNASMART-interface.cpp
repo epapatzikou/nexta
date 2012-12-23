@@ -316,10 +316,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			pLink->m_ToNodeID= m_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
 			int m_LeftBays= g_read_integer(pFile);
+
+			pLink->m_NumberOfLeftTurnLanes = m_LeftBays;
 			int m_RightBays= g_read_integer(pFile);
+			pLink->m_NumberOfRightTurnLanes = m_RightBays;
 
 			pLink->m_Length = g_read_float(pFile)/5280;   // 5280 feet per mile, NEXTA use mile as default length unit
-			pLink->m_NumLanes= g_read_integer(pFile);
+			pLink->m_NumberOfLanes= g_read_integer(pFile);
 
 			int m_FlowModel= g_read_integer(pFile);
 			int m_SpeedAdjustment= g_read_integer(pFile);
@@ -337,11 +340,11 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int DSP_link_type = g_read_integer(pFile);
 			pLink->m_link_type = DSP_link_type;
 
-			if(DSP_link_type == 3 || DSP_link_type == 4) 
-				pLink->m_LaneCapacity  = 1400;
+			//if(DSP_link_type == 3 || DSP_link_type == 4) 
+			//	pLink->m_LaneCapacity  = 1400;
 
-			if(DSP_link_type == 5) 
-				pLink->m_LaneCapacity  = 1000;
+			//if(DSP_link_type == 5) 
+			//	pLink->m_LaneCapacity  = 1000;
 
 			int m_grade= g_read_integer(pFile);
 
@@ -354,7 +357,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			m_NodeIDtoLinkMap[LinkKey] = pLink;
 			m_LinkNotoLinkMap[i] = pLink;
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 			pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 			pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
@@ -574,7 +577,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			{
 				int destination_node = g_read_integer(pFile);
 
-				map <int, int> :: const_iterator m_Iter = m_NodeNametoIDMap.find(destination_node);
+				map <int, int> :: iterator m_Iter = m_NodeNametoIDMap.find(destination_node);
 
 				if(m_Iter == m_NodeNametoIDMap.end( ))
 				{
@@ -591,14 +594,20 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
+				if(m_ZoneMap [zone_number].FindANode(node_id,-1) == false)
+				{
+
 				DTAActivityLocation element;
 				element.ZoneID  = zone_number;
 				element.NodeNumber = destination_node;
+
+				element.External_OD_flag = -1;
 				element.pt = m_NodeIDMap [node_id ]  ->pt;
 
 
 				m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
 				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+				}
 			}
 
 
@@ -624,34 +633,35 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			{
 				int from_node = g_read_integer(pFile);
 				int to_node = g_read_integer(pFile);
+
+				int node_id  = m_NodeNametoIDMap[to_node];
+				m_NodeIDtoZoneNameMap[node_id] = zone_number;
+				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
+
+				// if there are multiple nodes for a zone, the last node id is recorded.
+
+				if(m_ZoneMap [zone_number].FindANode(to_node,1) == false)
+				{
+				DTAActivityLocation element;
+				element.ZoneID  = zone_number;
+				element.NodeNumber = to_node;
+				element.External_OD_flag = 1;
+
+				m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+				}
+
 				float loading_ratio = g_read_float(pFile);
 
-				map <int, int> :: const_iterator m_Iter = m_NodeNametoIDMap.find(to_node);
+				map <int, int> :: iterator m_Iter = m_NodeNametoIDMap.find(to_node);
 
 				if(m_Iter == m_NodeNametoIDMap.end( ))
 				{
-					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.csv"  << endl; 
+					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
 					fclose(pFile);
 					return false;
 				}
 
-				// To do: need to record generation link, so that we can save the data to DSP format
 
-				//int node_id  = m_NodeNametoIDMap[to_node];
-				//m_NodeIDtoZoneNameMap[node_id] = zone_number;
-
-				//m_NodeIDMap[node_id]->m_ZoneID = zone_number;
-
-				//// if there are multiple nodes for a zone, the last node id is recorded.
-
-				//if(m_ZoneMap [zone_number].FindANode(to_node) == false)
-				//{
-				//DTAActivityLocation element;
-				//element.ZoneID  = zone_number;
-				//element.NodeNumber = to_node;
-
-				//m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-				//}
 
 			}
 
@@ -660,7 +670,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
-	ReadZoneCSVFile(directory+"input_zone.csv");
+		 //	ReadZoneCSVFile(directory+"input_zone.csv");
 
 			DTADemandType demand_type_element;
 			demand_type_element.demand_type =1;
@@ -874,7 +884,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			fclose(st);
 		}
 
-		double start_time = g_read_float(st);
+//		double start_time = g_read_float(st);
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the second line
 
 		// read the first block: Node - Control Type
 		std::list<DTANode*>::iterator iNode;
@@ -929,6 +942,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			int phase_ID = g_read_integer(st);
 
+
+			if(node_name == 54154)
+			{
+			TRACE("");
+			
+			}
+
 			DTANodePhase phase;
 				phase.max_green  = g_read_integer(st);
 				phase.min_green   = g_read_integer(st);
@@ -947,8 +967,19 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					for(int i=0; i< approach; i++)
 					{
 
-						int in_link_from_node_id = m_NodeNametoIDMap[g_read_integer(st)];
-						int in_link_to_node_id = m_NodeNametoIDMap[g_read_integer(st)];
+						int in_link_from_node_number = g_read_integer(st);
+						int in_link_to_node_number = g_read_integer(st);
+						int in_link_from_node_id = m_NodeNametoIDMap[in_link_from_node_number];
+						int in_link_to_node_id = m_NodeNametoIDMap[in_link_to_node_number];
+
+						DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
+						if(pLink!=NULL)
+						{
+						pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
+						}
+						
+						
+
 						int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
 
 						int movement_size  = g_read_integer(st);
@@ -1019,9 +1050,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 {
-//	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "simulation_start_time_in_min",720,m_ProjectFile));	
 
-	m_SimulationStartTime_in_min = 0;
+
 	CString directory;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
@@ -1175,7 +1205,6 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		fclose(pFile);
 	}
 
-		m_SimulationLinkMOEDataLoadingStatus.Format("DYNASMART-P simulation data have been loaded. Simulation horizon = %d min", g_Simulation_Time_Horizon );
 
 	// density_in_veh_per_mile_per_lane
 
@@ -1212,8 +1241,31 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 	// read additional data from sensor (AMS format)
 
-	int simulation_start_time_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "simulation_start_time_in_min",720,m_ProjectFile));	
-	ReadSensorData(directory+"input_sensor.csv",simulation_start_time_in_min);
+	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileFloat("simulation_result", "simulation_start_time_in_min",0,m_ProjectFile));	
+//	ReadSensorData(directory+"input_sensor.csv",simulation_start_time_in_min);
+
+	int bRecaclulateLinkMOE =  (int)(g_GetPrivateProfileFloat("simulation_result", "recalculate_link_MOE",1,m_ProjectFile));	
+
+	if(bRecaclulateLinkMOE==1)  // recalculate link moe based vehicle counts
+	{
+//			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+//			{
+//
+////			(*iLink)->ResetMOEAry(m_SimulationStartTime_in_min + g_Simulation_Time_Horizon);  // use one day horizon as the default value
+//			}
+		
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+			(*iLink)->m_HighResoltionLinkOutCount.resize(1200);  // 0.1 min, 2 hours
+
+				for(int t=0; t< (*iLink)->m_HighResoltionLinkOutCount.size(); t++)
+				{
+					(*iLink)->m_HighResoltionLinkOutCount[t] = 0;  // reset 
+				}
+			}
+		
+	}
+
 
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
@@ -1240,6 +1292,332 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	if(bLoadVehicleData)
 	{
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
+
+	if(pFile != NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(pFile,str_line, str_line_size); //  skip the two line
+		g_read_a_line(pFile,str_line, str_line_size); //  skip the two line
+
+	bool bformat_b_flag = false;
+		CString Cstr_line;
+		Cstr_line.Format("%s", str_line);
+		if(Cstr_line.Find (" B")!=-1)
+		{
+		bformat_b_flag = true;	
+		}
+
+
+
+	int good_vehicle_id = 1;
+
+
+	DTALink* m_pPathLinkVector[MAX_NODE_SIZE_IN_A_PATH];
+
+	while(!feof(pFile) )
+	{
+
+		int m_VehicleID= g_read_integer(pFile, false);
+		if(m_VehicleID == -1)
+			break;
+		// Veh #    144 Tag= 3 OrigZ=  10 DestZ=  11 Class= 3 UstmN=    150 DownN=     14 DestN=     13 STime=   0.50 
+
+		DTAVehicle* pVehicle = 0;
+		pVehicle = new DTAVehicle;
+		pVehicle->m_VehicleID		= m_VehicleID;
+
+		int CompleteFlag = g_read_integer(pFile);
+		int NodeSizeOffset = 0;
+		if(CompleteFlag==0 || CompleteFlag==1) 
+		{
+			pVehicle->m_bComplete = false;
+			NodeSizeOffset = -1;
+		}
+		else 
+		{
+			pVehicle->m_bComplete = true;
+			NodeSizeOffset = 0; 
+		}
+
+		pVehicle->m_OriginZoneID	= g_read_integer(pFile);
+		pVehicle->m_DestinationZoneID = g_read_integer(pFile);
+
+		pVehicle->m_InformationClass = (unsigned char)g_read_integer(pFile);
+
+		int FirstNodeID = g_read_integer(pFile); 
+		int SecondNodeID = g_read_integer(pFile);    // (4) first node
+		int DestinationNodeID = g_read_integer(pFile);    // last node
+
+		 pVehicle->m_OriginZoneID = NodeIDtoZoneNameMap[FirstNodeID];
+		 pVehicle->m_DestinationZoneID = NodeIDtoZoneNameMap[DestinationNodeID];
+
+		if( pVehicle->m_OriginZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_OriginZoneID ;
+
+		if( pVehicle->m_DestinationZoneID > m_ODSize )
+			m_ODSize = pVehicle->m_DestinationZoneID ;
+
+
+		pVehicle->m_DepartureTime	= m_SimulationStartTime_in_min + g_read_float(pFile);
+
+		if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
+			g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
+
+		// Total Travel Time=   0.34 # of Nodes=   2 VehType 1 LOO 1
+		pVehicle->m_TripTime  = g_read_float(pFile);
+		pVehicle->m_ArrivalTime = pVehicle->m_DepartureTime + pVehicle->m_TripTime;
+
+		pVehicle->m_NodeSize	= g_read_integer(pFile) +1;  // +1 as we need to allocate one more node for the first node
+		pVehicle->m_DemandType = (unsigned char)g_read_integer(pFile);
+		if(bformat_b_flag==false)
+		{
+		pVehicle->m_PricingType = (unsigned char)g_read_integer(pFile);
+		}
+
+		pVehicle->m_TollDollarCost = 0;
+		pVehicle->m_Emissions = 0;
+
+		pVehicle->m_Distance = 0;
+
+		pVehicle->m_VOT = 10;
+		if(bformat_b_flag)
+		{
+			g_read_float(pFile);
+			pVehicle->m_VOT =  g_read_float(pFile);
+			g_read_float(pFile);
+			g_read_float(pFile);
+			g_read_float(pFile);
+			g_read_float(pFile);
+		}
+
+		//			pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
+
+
+		pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+		pVehicle->m_NodeNumberSum = 0;
+
+		m_PathNodeVectorSP[0] =  FirstNodeID;
+
+		int i;
+		for(i=1; i< pVehicle->m_NodeSize; i++)
+		{
+			m_PathNodeVectorSP[i] = g_read_integer(pFile);
+
+			//// update origin destination data based on TAZ
+			//		if(i==0 && m_NodeIDMap.find(m_PathNodeVectorSP[i]) != m_NodeIDMap.end())
+			//		{
+			//			pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+			//		
+			//		}
+
+			//		if(i== pVehicle->m_NodeSize -1 && m_NodeIDMap.find(m_PathNodeVectorSP[i]) != m_NodeIDMap.end())
+			//		{
+			//			pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+			//		
+			//		}
+
+			pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
+			DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i],directory+"VehTrajectory.dat");
+			if(pLink==NULL)
+			{
+				CString str;
+				str.Format ("Error in reading file Vehicle.csv, good vehicle id: %d",good_vehicle_id);
+				AfxMessageBox(str);
+				fclose(pFile);
+
+				return false;
+			}
+			pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+			m_pPathLinkVector[i] = pLink;
+			pVehicle->m_Distance +=pLink->m_Length ;
+			pLink->m_total_link_volume +=1;
+		}
+
+
+		// ==>Node Exit Time Point
+		for(i=1; i< pVehicle->m_NodeSize + NodeSizeOffset; i++)
+		{
+			pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = m_SimulationStartTime_in_min + pVehicle->m_DepartureTime + g_read_float(pFile);
+
+			if(bRecaclulateLinkMOE ==1)
+			{
+				DTALink* pLinkCurrent = m_pPathLinkVector[i];
+				int t = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN;
+
+				// timt t is the timestamp from the current link to the next link, in min 
+				if(pLinkCurrent!=NULL && t< pLinkCurrent->m_LinkMOEAry.size())
+				{
+				pLinkCurrent->m_LinkMOEAry[t].VehicleOutflowCount+=1;
+
+				int time_interval = int(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN*10); // convert min to 0.1 min
+
+					if(time_interval< pLinkCurrent->m_HighResoltionLinkOutCount.size())
+					{
+
+						pLinkCurrent->m_HighResoltionLinkOutCount[time_interval]+=1;
+					
+					}
+
+				}
+
+				
+				if(i==1)  // first link
+				{
+					int dep_t = pVehicle->m_DepartureTime;
+				if(pLinkCurrent!=NULL && dep_t< pLinkCurrent->m_LinkMOEAry.size())
+				{
+					pLinkCurrent->m_LinkMOEAry[dep_t].VehicleInflowCount+=1;
+
+					if(dep_t == 2&&  pLinkCurrent->m_FromNodeNumber == 48 && pLinkCurrent->m_ToNodeNumber == 41)
+					{
+					TRACE("time 2, vid = %d\n",pVehicle->m_VehicleID );
+					}
+
+				}
+				
+				}else if(i< (pVehicle->m_NodeSize +NodeSizeOffset -1)) // next link
+				{
+				
+					DTALink* pLinkNext = m_pPathLinkVector[i+1];
+
+					if(pLinkNext!=NULL && t< pLinkNext->m_LinkMOEAry.size())
+					{
+						pLinkNext->m_LinkMOEAry[t].VehicleInflowCount+=1;
+
+						if(t == 2&&  pLinkNext->m_FromNodeNumber == 48 && pLinkNext->m_ToNodeNumber == 41)
+						{
+						TRACE("time 2, vid = %d\n",pVehicle->m_VehicleID );
+						}
+
+					}
+				}
+
+			}
+
+		}
+
+
+		// ==>Link Travel Time
+		for(i=1; i< pVehicle->m_NodeSize + NodeSizeOffset; i++)
+		{
+			g_read_float(pFile);  // // travel time
+		}
+		// ==>Accumulated Stop Time
+		for(i=1; i< pVehicle->m_NodeSize +NodeSizeOffset; i++)
+		{
+			g_read_float(pFile);  // stop time
+		}
+
+		m_VehicleSet.push_back (pVehicle);
+		m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
+
+		if(m_VehicleSet.size()%10000==0)
+		{
+			CString str;
+			str.Format ("loading %d vehicles",m_VehicleSet.size());
+				SetStatusText(str);
+		}
+
+		good_vehicle_id = m_VehicleID;
+	}
+
+	fclose(pFile);
+
+	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded from VehTrajectory.dat .",m_VehicleSet.size());
+
+	if(bRecaclulateLinkMOE==1)  // recalculate link moe based vehicle counts
+	{
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+
+				(*iLink)->RecalculateLinkMOEBasedOnVehicleCount();
+			}
+
+	
+			// output high resolution link out count file
+
+			bool bLinkOutCapcaityFile = 0;
+			if(bLinkOutCapcaityFile)
+			{
+		ofstream LinkOutCapcaityFile;
+
+	LinkOutCapcaityFile.open (directory+"output_hr_link_out_count.csv", ios::out);
+
+	LinkOutCapcaityFile.precision(1) ;
+	LinkOutCapcaityFile.setf(ios::fixed);
+
+	std::set<DTALink*>::iterator iterLink;
+	bool bTitlePrintOut = false;
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+
+		unsigned int t;
+
+		DTALink* pLink = (*iLink);
+
+			if(!bTitlePrintOut)
+			{
+			LinkOutCapcaityFile << "time_stamp_in_0.1_min" << "," ;
+
+			for(t = 0; t < pLink->m_HighResoltionLinkOutCount.size(); t++)
+			{
+				float time_stamp = t*0.1f;
+			LinkOutCapcaityFile << time_stamp << "," ;
+			}
+			bTitlePrintOut = true;
+			LinkOutCapcaityFile << endl;	
+			}
+
+			LinkOutCapcaityFile << "link out count " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ",";
+			for( t = 0; t < pLink->m_HighResoltionLinkOutCount.size(); t++)
+			{
+			LinkOutCapcaityFile << pLink->m_HighResoltionLinkOutCount[t] << "," ;
+			}
+			LinkOutCapcaityFile << endl;	
+
+			LinkOutCapcaityFile << endl;	
+		}
+	
+
+	LinkOutCapcaityFile.close();
+			}
+		
+	}
+
+}
+	}
+}
+
+void CTLiteDoc::OnToolsReverseverticalcoordinate()
+{
+
+	if(m_bDYNASMARTDataSet== false)
+	{
+	
+	AfxMessageBox("This memu/function is used for DYNASMARAT data sets.",MB_ICONINFORMATION);
+	
+	return;
+	}
+
+	char lpbuffer[64];
+
+	sprintf_s(lpbuffer,"%d",m_YCorridonateFlag*(-1));
+
+	WritePrivateProfileString("coordinate", "origin",lpbuffer,m_ProjectFile);
+
+	CString str;
+	str.Format("The horizional coordinate flag (y_coordinate_flag) has been reset to %s in project file %s.\nPlease close NEXTA and reload the project.",m_ProjectFile, lpbuffer );
+	AfxMessageBox(str,MB_ICONINFORMATION);
+
+}
+
+bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int date_id)
+{
+	FILE* pFile;
+	fopen_s(&pFile,lpszFileName,"r");
 
 	if(pFile != NULL)
 	{
@@ -1320,8 +1698,21 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		{
 			m_PathNodeVectorSP[i] = g_read_integer(pFile);
 
+			// update origin destination data based on TAZ
+					if(i==0 )
+					{
+						pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+					
+					}
+
+					if(i== pVehicle->m_NodeSize -1 )
+					{
+						pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+					
+					}
+
 			pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
-			DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i],directory+"VehTrajectory.dat");
+			DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i]);
 			if(pLink==NULL)
 			{
 				CString str;
@@ -1372,28 +1763,5 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 	m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded from VehTrajectory.dat .",m_VehicleSet.size());
 	}
-	}
-}
-
-void CTLiteDoc::OnToolsReverseverticalcoordinate()
-{
-
-	if(m_bDYNASMARTDataSet== false)
-	{
-	
-	AfxMessageBox("This memu/function is used for DYNASMARAT data sets.",MB_ICONINFORMATION);
-	
-	return;
-	}
-
-	char lpbuffer[64];
-
-	sprintf_s(lpbuffer,"%d",m_YCorridonateFlag*(-1));
-
-	WritePrivateProfileString("coordinate", "origin",lpbuffer,m_ProjectFile);
-
-	CString str;
-	str.Format("The horizional coordinate flag (y_coordinate_flag) has been reset to %s in project file %s.\nPlease close NEXTA and reload the project.",m_ProjectFile, lpbuffer );
-	AfxMessageBox(str,MB_ICONINFORMATION);
-
+	return true;
 }

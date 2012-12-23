@@ -163,7 +163,7 @@ public:
 	{
 		link_flag[approach] = true;
 		Up_ID[approach] = link->m_FromNodeID;
-		Lanes[approach] = link->m_NumLanes;
+		Lanes[approach] = link->m_NumberOfLanes;
 		Name[approach] = link->m_Name;
 		DataMatrix[Distance][approach] = link->m_Length;
 		DataMatrix[Speed][approach] = link->m_SpeedLimit;

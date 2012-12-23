@@ -300,7 +300,7 @@ void CTLiteDoc::OnExportAms()
 							(*iLink)->m_Name.c_str (),
 							(*iLink)->m_link_type ,
 							(*iLink)->m_Length*5280 ,  // mile -> feet
-							(*iLink)->m_NumLanes ,
+							(*iLink)->m_NumberOfLanes ,
 							(*iLink)->m_SpeedLimit,
 							(*iLink)->m_SpeedLimit,
 							(*iLink)->m_Grade);
@@ -607,7 +607,7 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				poFeature->SetField("A_Node", (*iLink)->m_FromNodeNumber );
 				poFeature->SetField("B_Node", (*iLink)->m_ToNodeNumber );
 				poFeature->SetField("Length", (*iLink)->m_Length  );
-				poFeature->SetField("nLanes", (*iLink)->m_NumLanes );
+				poFeature->SetField("nLanes", (*iLink)->m_NumberOfLanes );
 				poFeature->SetField("SpeedLimit", (*iLink)->m_SpeedLimit );
 				poFeature->SetField("LaneCap", (*iLink)->m_LaneCapacity );
 				poFeature->SetField("FunctClass", (*iLink)->m_link_type );
@@ -673,7 +673,7 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				OGRLineString line;
 				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
 				{
-					line.addPoint ((*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y,(*iLink)->m_NumLanes);
+					line.addPoint ((*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y,(*iLink)->m_NumberOfLanes);
 				}
 
 				poFeature->SetGeometry( &line ); 
@@ -969,7 +969,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 		if(m_LinkBandWidthMode  == LBW_number_of_lanes)
 		{
-		(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *10;
+		(*iLink)->m_BandWidthValue = (*iLink)->m_NumberOfLanes *10;
 		}else
 		{
 		(*iLink)->m_BandWidthValue = (*iLink)->m_total_link_volume*250/max_link_volume;
@@ -1172,10 +1172,10 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 	{
 
 		if(ColorCode==0)
-			(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *10;
+			(*iLink)->m_BandWidthValue = (*iLink)->m_NumberOfLanes *10;
 
 		if(ColorCode==1)
-			(*iLink)->m_BandWidthValue = (*iLink)->m_NumLanes *30;
+			(*iLink)->m_BandWidthValue = (*iLink)->m_NumberOfLanes *30;
 	}
 	GenerateOffsetLinkBand();
 
@@ -1468,10 +1468,10 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 
 			string color_code = "red";
 
-			if((*iLink)->m_NumLanes == 2)
+			if((*iLink)->m_NumberOfLanes == 2)
 				color_code = "green";
 
-			if((*iLink)->m_NumLanes == 1)
+			if((*iLink)->m_NumberOfLanes == 1)
 				color_code = "yellow";
 
 
@@ -1918,7 +1918,7 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 				poFeature->SetField("A_Node", (*iLink)->m_FromNodeNumber );
 				poFeature->SetField("B_Node", (*iLink)->m_ToNodeNumber );
 				poFeature->SetField("IsOneWay", (*iLink)->m_Direction );
-				poFeature->SetField("NumberOfLanes", (*iLink)->m_NumLanes );
+				poFeature->SetField("NumberOfLanes", (*iLink)->m_NumberOfLanes );
 				poFeature->SetField("SpeedLimit", (*iLink)->m_SpeedLimit );
 				poFeature->SetField("LaneCapacity", (*iLink)->m_LaneCapacity );
 				poFeature->SetField("FunctionalClass", (*iLink)->m_link_type );
@@ -1933,7 +1933,7 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 				OGRLineString line;
 				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
 				{
-					line.addPoint ((*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y,(*iLink)->m_NumLanes);
+					line.addPoint ((*iLink)->m_ShapePoints[si].x, (*iLink)->m_ShapePoints[si].y,(*iLink)->m_NumberOfLanes);
 				}
 			fprintf(st,"\t\t<Polygon>\n");
 			fprintf(st,"\t\t<extrude>1</extrude>\n");

@@ -119,6 +119,16 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboY.AddString ("Avg Travel Time STD (min)"); 
 	m_ComboY.AddString ("Avg Travel Time Per Mile STD (min/mile)");
 
+	m_ComboY.AddString ("95th Percentile Travel Time (min)");
+	m_ComboY.AddString ("90th Percentile Travel Time (min)");
+	m_ComboY.AddString ("80th Percentile Travel Time (min)");
+	m_ComboY.AddString ("Buffer Index");
+	m_ComboY.AddString ("Skew Index");
+
+	m_ComboY.AddString ("95th Percentile Travel Time Per Mile (min/mile)");
+	m_ComboY.AddString ("90th Percentile Travel Time Per Mile (min/mile)");
+	m_ComboY.AddString ("80th Percentile Travel Time Per Mile (min/mile)");
+
 	m_ComboY.AddString ("Total Toll Revenue ($)");
 	m_ComboY.AddString ("Avg Toll Cost ($)"); 
 
@@ -155,20 +165,24 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.SetCurSel (m_XSelectionNo);
 	m_ComboY.SetCurSel (m_YSelectionNo);
 
-	// CLS_network=0, CLS_OD,CLS_link_set,CLS_path,CLS_subarea
+	// CLS_network=0, CLS_OD,CLS_link_set,CLS_path_trip,CLS_subarea
 	m_ComboVehicleSelection.AddString("Network-wide");
 	m_ComboVehicleSelection.AddString("Selected OD Pairs from Vehicle Path Dialog");
-	m_ComboVehicleSelection.AddString("Passing Selected Link Set from Network View");
-	m_ComboVehicleSelection.AddString("Passing Selected Path from Network View");
+	m_ComboVehicleSelection.AddString("Passing Selected Link Set");
+	m_ComboVehicleSelection.AddString("Trips Passing Selected Path");
+	m_ComboVehicleSelection.AddString("Partial Trips Passing Selected Path");
 
 //CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,
-	//CLS_subarea_internal_to_internal};
+	//CLS_subarea_internal_to_internal_trip};
 
 	m_ComboVehicleSelection.AddString("Originating from Subarea");
 	m_ComboVehicleSelection.AddString("Traversing through Subarea");
 	m_ComboVehicleSelection.AddString("Subarea Internal-to-External Trips");
 	m_ComboVehicleSelection.AddString("Subarea External-to-Internal Trips");
 	m_ComboVehicleSelection.AddString("Subarea Internal-to-Internal Trips");
+	m_ComboVehicleSelection.AddString("Complete and Partial Trips inside Subarea ");
+	m_ComboVehicleSelection.AddString("Subarea Boundary-to-Boundary Trips");
+
 
 	m_ComboVehicleSelection.SetCurSel (m_VehicleSelectionNo);
 
@@ -217,7 +231,7 @@ void CDlg_VehicleClassification::AddChartData()
 		
 	}
 
-	if(m_VehicleSelectionNo == CLS_path)
+	if(m_VehicleSelectionNo == CLS_path_trip)
 	{
 
 		if(m_pDoc->m_PathDisplayList.size() == 0 || m_pDoc->m_SelectPathNo >= m_pDoc->m_PathDisplayList.size() )
@@ -432,7 +446,7 @@ void CDlg_VehicleClassification::OnCbnSelchangeComboVehicleselection()
 	m_Message = "";
     //test vehicle selection mode here
 	// subarea
-	if(m_pDoc->m_VehicleSelectionMode >= CLS_subarea_generated && m_pDoc->m_VehicleSelectionMode <=CLS_subarea_internal_to_internal)
+	if(m_pDoc->m_VehicleSelectionMode >= CLS_subarea_generated && m_pDoc->m_VehicleSelectionMode <=CLS_subarea_internal_to_internal_trip)
 	{
 			if(m_pDoc->m_SubareaLinkSet.size() == 0)
 			{

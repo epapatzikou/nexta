@@ -344,6 +344,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SENSORTOOLS_CONVERTTOHOURCOUNT, &CTLiteDoc::OnSensortoolsConverttoHourlyVolume)
 	ON_COMMAND(ID_IMPORT_INRIXSHAPEFILEANDSPEEDDATA, &CTLiteDoc::OnImportInrixshapefileandspeeddata)
 	ON_COMMAND(ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK, &CTLiteDoc::OnTrafficcontroltoolsTransfermovementdatafromreferencenetworktocurrentnetwork)
+	ON_COMMAND(ID_DEMANDTOOLS_GENERATEINPUT, &CTLiteDoc::OnDemandtoolsGenerateinput)
 	END_MESSAGE_MAP()
 
 
@@ -934,14 +935,15 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					pLink->m_LinkMOEAry[t].SimulationLinkFlow = element.link_volume_in_veh_per_hour_for_all_lanes;
 					pLink->m_LinkMOEAry[t].SimulationDensity  = element.density_in_veh_per_mile_per_lane;
 
-
-					//if(pLink->m_FromNodeNumber == 199 && pLink->m_ToNodeNumber == 116)
-					//{
-					//TRACE("%d, speed = %s\n",t, element.speed_in_mph);
-					//}
+	
+					if(pLink->m_FromNodeNumber == 60306 && pLink->m_ToNodeNumber == 54256)
+					{
+					TRACE("%d, density = %f\n",t, element.density_in_veh_per_mile_per_lane);
+					}
 
 					pLink->m_LinkMOEAry[t].SimulationSpeed = element.speed_in_mph;
 					pLink->m_LinkMOEAry[t].SimulationQueueLength = element.exit_queue_length;
+
 					pLink->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = element.cumulative_arrival_count;
 					pLink->m_LinkMOEAry[t].SimuDepartureCumulativeFlow = element.cumulative_departure_count;
 
@@ -1793,8 +1795,11 @@ void CTLiteDoc::FindAccessibleTripID(double x, double y)
 
 
 }
-int CTLiteDoc::FindClosestNode(double x, double y, double min_distance)
+int CTLiteDoc::FindClosestNode(double x, double y, double min_distance,  int step_size)
 {
+
+	step_size = int(min_distance/m_GridXStep+1);
+
 	int x_key = (x - m_GridRect.left)/ m_GridXStep;
 	int y_key = (y -m_GridRect.bottom)/ m_GridYStep;
 
@@ -1808,8 +1813,8 @@ int CTLiteDoc::FindClosestNode(double x, double y, double min_distance)
 	int NodeId = -1;
 
 
-	for(int x_i = max(0,x_key-1); x_i <= min(99,x_key+1); x_i++)
-		for(int y_i = max(0,y_key-1); y_i <= min(99,y_key+1); y_i++)
+	for(int x_i = max(0,x_key- step_size); x_i <= min(99,x_key+ step_size); x_i++)
+		for(int y_i = max(0,y_key-step_size); y_i <= min(99,y_key+step_size ); y_i++)
 		{
 
 			GridNodeSet element = m_GridMatrix[x_i][y_i];
@@ -1836,6 +1841,56 @@ int CTLiteDoc::FindClosestNode(double x, double y, double min_distance)
 		return NodeId;
 }
 
+int CTLiteDoc::FindClosestZone(double x, double y, double min_distance,  int step_size)
+{
+
+	step_size = int(min_distance/m_GridXStep+1);
+
+	int x_key = (x - m_GridRect.left)/ m_GridXStep;
+	int y_key = (y -m_GridRect.bottom)/ m_GridYStep;
+
+	//feasible region
+	x_key = max(0,x_key);
+	x_key = min(99,x_key);
+
+	y_key = max(0,y_key);
+	y_key = min(99,y_key);
+
+	int NodeId = -1;
+	int ZoneNumber = -1;
+
+
+	for(int x_i = max(0,x_key- step_size); x_i <= min(99,x_key+ step_size); x_i++)
+		for(int y_i = max(0,y_key-step_size); y_i <= min(99,y_key+step_size ); y_i++)
+		{
+
+			GridNodeSet element = m_GridMatrix[x_i][y_i];
+
+			for(unsigned int i = 0; i < element.m_NodeVector.size(); i++)
+			{
+				if( m_NodeIDMap[element.m_NodeVector[i]]->m_ZoneID >0)
+
+				{
+				double distance = sqrt( (x-element.m_NodeX[i])*(x-element.m_NodeX[i]) + (y-element.m_NodeY[i])*(y-element.m_NodeY[i]));
+
+				if(distance < min_distance)
+				{
+
+					min_distance = distance;
+
+					NodeId =  element.m_NodeVector[i];
+					ZoneNumber  = m_NodeIDMap[NodeId]->m_ZoneID;
+				}
+				}
+
+
+
+			}	// per node in a grid cell
+
+		} // for nearby cell
+
+		return ZoneNumber;
+}
 
 void CTLiteDoc::ReCalculateLinkBandWidth()
 { //output: m_BandWidthValue for each link
@@ -1863,14 +1918,14 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 	{
 
 		// default mode
-		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
+		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
 			if(m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // 1 lane as connector
-				(*iLink)->m_BandWidthValue =  min(1,(*iLink)->m_NumLanes)*LaneVolumeEquivalent*VolumeRatio;
+				(*iLink)->m_BandWidthValue =  min(1,(*iLink)->m_NumberOfLanes)*LaneVolumeEquivalent*VolumeRatio;
 			else
-				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
+				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 
 
 		}else if(m_LinkBandWidthMode == LBW_link_volume)
@@ -1908,7 +1963,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 		}else
 			// default value
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumLanes*LaneVolumeEquivalent*VolumeRatio;
+			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 		}
 
 	}
@@ -2202,7 +2257,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				if(bCreateNewNodeFlag == false)  // not create new node
 				{
 					CString warning;
-					warning.Format ("from_node_id %d in input_link.csv has not been defined in input_node.csv\n.",from_node_id);
+					warning.Format ("to_node_id %d in input_link.csv has not been defined in input_node.csv\n",to_node_id);
 					bNodeNonExistError = true;
 
 					if(warning_message.GetLength () < 3000)  // not adding and showing too many links
@@ -2277,6 +2332,13 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				AfxMessageBox("Field number_of_lanes has not been defined in file input_link.csv. Please check.");
 				break;
 			}
+			int length_of_bays_in_feet = 3000;
+			int number_of_left_turn_lanes= 0;
+			parser.GetValueByFieldName("number_of_left_turn_lanes",number_of_left_turn_lanes);
+			int number_of_right_turn_lanes = 0;
+			parser.GetValueByFieldName("number_of_right_turn_lanes",number_of_right_turn_lanes);
+
+
 
 			if(!parser.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
 			{
@@ -2437,6 +2499,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				pLink->m_LinkID = link_id;
 				pLink->m_Mode_code = mode_code;
 
+				pLink->m_NumberOfLeftTurnLanes =  number_of_left_turn_lanes ;
+				pLink->m_NumberOfRightTurnLanes =  number_of_right_turn_lanes ;
+
 				pLink->green_height = green_height;
 				pLink->red_height = red_height;
 				pLink->blue_height = blue_height;
@@ -2516,7 +2581,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 					m_OffsetInFeet = 0;
 
 				}
-				pLink->m_NumLanes= number_of_lanes;
+				pLink->m_NumberOfLanes= number_of_lanes;
 				pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
 				pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 
@@ -2553,8 +2618,8 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(pLink->m_LinkNo);
 
 				//estimation node level production and attraction
-				m_NodeIDMap[pLink->m_FromNodeID ]->m_NodeProduction += min(pLink->m_LaneCapacity,pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane) * min(4,pLink->m_NumLanes )/2.0f; // min() is used to avoid artefial large capacity and lare number of lanes
-				m_NodeIDMap[pLink->m_ToNodeID ]->m_NodeAttraction += min(pLink->m_LaneCapacity,pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane) * min(4,pLink->m_NumLanes )/2.0f;  // /2 is used to get reasonable demand
+				m_NodeIDMap[pLink->m_FromNodeID ]->m_NodeProduction += min(pLink->m_LaneCapacity,pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane) * min(4,pLink->m_NumberOfLanes )/2.0f; // min() is used to avoid artefial large capacity and lare number of lanes
+				m_NodeIDMap[pLink->m_ToNodeID ]->m_NodeAttraction += min(pLink->m_LaneCapacity,pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane) * min(4,pLink->m_NumberOfLanes )/2.0f;  // /2 is used to get reasonable demand
 
 
 
@@ -2567,12 +2632,19 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 				m_LinkNotoLinkMap[i] = pLink;
 
-				m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+				m_LinkIDtoLinkMap[link_id] = pLink;
+				
+
+				m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 				pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 				pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+
+				if(pLink->m_Length>=0.00001)
+				{
 				default_coordinate_distance_sum+= pLink->DefaultDistance();
 				length_sum_in_mile += pLink ->m_Length;
+				}
 				//			pLink->SetupMOE();
 
 
@@ -2589,7 +2661,27 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 		}
 
 		if(bNodeNonExistError)
-			AfxMessageBox("Some nodes in input_link.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
+		{
+			ofstream m_WarningLogFile;
+
+	m_WarningLogFile.open ( m_ProjectDirectory + "warning.log", ios::out);
+	if (m_WarningLogFile.is_open())
+	{
+		m_WarningLogFile.width(12);
+		m_WarningLogFile.precision(3) ;
+		m_WarningLogFile.setf(ios::fixed);
+		m_WarningLogFile << warning_message << endl;
+
+	}
+
+
+		m_WarningLogFile.close ();
+
+		if(AfxMessageBox("Some nodes in input_link.csv have not been defined in input_node.csv. Do you want to view warning.log?",  MB_YESNO) == IDYES )
+		{
+			OpenCSVFileInExcel(m_ProjectDirectory + "warning.log");
+		}
+	}
 
 		m_UnitMile  = 1.0f;
 
@@ -2598,7 +2690,16 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)-> m_Length <=0.00001)  //reset zero length link
+		{
+			(*iLink)-> m_Length = pLink->DefaultDistance()/m_UnitMile;
+		
+		}
 
+	}
+		
 		CString SettingsFile;
 		SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 		int long_lat_coordinate_flag = (int)(g_GetPrivateProfileFloat("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
@@ -2693,7 +2794,10 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
 			{
+				if(lineno == 0)
+				{
 				AfxMessageBox("Field zone_id has not been defined in file input_activity_location.csv. Please check.");
+				}
 				return false;
 			}
 
@@ -2771,7 +2875,10 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("zone_id",zone_number) == false)
 			{
-				AfxMessageBox("Field zone_id has not been defined in file input_activity_location.csv. Please check.");
+				if(i==0) // first line
+				{
+					AfxMessageBox("Field zone_id has not been defined in file input_activity_location.csv. Please check.");
+				}
 				return false;
 			}
 
@@ -3170,7 +3277,7 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 
 bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 {
-	long lineno = 1;
+	long lineno = 0;
 	CCSVParser parser;
 
 	if (parser.OpenCSVFile(lpszFileName))
@@ -3182,7 +3289,10 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("link_type",element.link_type ) == false)
 			{
+				if(lineno==0)
+				{
 				AfxMessageBox("Field link_type cannot be found in input_link_type.csv.");
+				}
 				break;
 			}
 
@@ -3543,13 +3653,25 @@ void  CTLiteDoc::CopyDefaultFiles()
 	CString directory = m_ProjectDirectory;
 
 
+	if(m_bDYNASMARTDataSet)
+	{
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_node_control_type_dsp.csv","input_node_control_type.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_link_type_dsp.csv","input_link_type.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data_dsp.csv","input_demand_meta_data.csv");
+	
+	}else
+	{
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_node_control_type.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_link_type.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data.csv");
+	}
+
+
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_type.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_pricing_type.csv");
 
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_emission_rate.csv");
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data.csv");
+
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_scenario_settings.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_type.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_VOT.csv");
@@ -3594,7 +3716,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 	char lpbuffer[64];
 
 	sprintf_s(IniFilePath,"%sDTASettings.txt", m_ProjectDirectory);
-	sprintf_s(lpbuffer,"%d",m_NodeDisplaySize);
+	sprintf_s(lpbuffer,"%f",m_NodeDisplaySize);
 
 	WritePrivateProfileString("GUI", "node_display_size",lpbuffer,lpszPathName);
 	WritePrivateProfileString("Version", "1.0",lpbuffer,lpszPathName);
@@ -3681,7 +3803,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 		fprintf(st,"name,link_id,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
 		fprintf(st,"KML_green_height,KML_red_height,KML_blue_height,KML_yellow_height,");
 		// ANM output
-		fprintf(st,"number_of_left_turn_bays,length_of_bays_in_feet,left_turn_capacity_in_veh_per_hour,from_approach,to_approach,reversed_link_id,");
+		fprintf(st,"number_of_left_turn_lanes,length_of_bays_in_feet,number_of_right_turn_lanes,from_approach,to_approach,reversed_link_id,");
 
 		if(m_bExport_Link_MOE_in_input_link_CSF_File)  // save time-dependent MOE
 		{
@@ -3750,7 +3872,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 
 				std::replace( (*iLink)->m_Name.begin(), (*iLink)->m_Name.end(), ',', ' '); 
 
-				fprintf(st,"%s,%d,%s,%d,%d,%s,%d,%.4f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%.3f,\"%s\",%.1f,",
+				fprintf(st,"%s,%d,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%.3f,\"%s\",%.1f,",
 					(*iLink)->m_Name.c_str (),
 					(*iLink)->m_LinkID, 
 					(*iLink)->m_TMC_code .c_str (),
@@ -3758,7 +3880,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 					(*iLink)->m_FromNodeNumber*sign_flag, 
 					(*iLink)->m_ToNodeNumber*sign_flag, 
 					link_type_name,
-					(*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,
+					(*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumberOfLanes ,
 					(*iLink)->m_SpeedLimit,
 					(*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane,
 					(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph, 
@@ -3805,7 +3927,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 				}
 
 
-				fprintf(st,"%d,%d,%d,%c,%c,%d,",(*iLink)->m_NumberOfLeftTurnBay,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_LeftTurnCapacity,
+				fprintf(st,"%d,%d,%d,%c,%c,%d,",(*iLink)->m_NumberOfLeftTurnLanes,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_NumberOfRightTurnLanes,
 					GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
 
 				fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
@@ -4042,7 +4164,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 	fopen_s(&st,directory+"input_zone.csv","w");
 	if(st!=NULL)
 	{
-		fprintf(st,"zone_id,production,attraction,color_code,height,notes,geometry\n");
+		fprintf(st,"zone_id,production,attraction,origin_num_of_veh,origin_avg_distance,destination_num_of_veh,destination_avg_distance,color_code,height,notes,geometry\n");
 
 		std::map<int, DTAZone>	:: const_iterator itr;
 
@@ -4050,10 +4172,12 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 		{
 			if(itr->second.m_bWithinSubarea)
 			{
-				fprintf(st, "%d,%f,%f,%s,%f,%s,", 
+				fprintf(st, "%d,%f,%f,%d,%f,%d,%f,%s,%f,%s,", 
 					itr->first,
 					itr->second .m_Production ,
 					itr->second .m_Attraction, 
+					itr->second .m_OriginTotalNumberOfVehicles , itr->second .m_OriginTotalTravelDistance /max(1,itr->second .m_OriginTotalNumberOfVehicles),
+					itr->second .m_DestinationTotalNumberOfVehicles , itr->second .m_DestinationTotalTravelDistance /max(1,itr->second .m_DestinationTotalNumberOfVehicles),
 					itr->second .color_code.c_str () , 
 					itr->second.m_Height,
 					itr->second .notes.c_str ());
@@ -4066,7 +4190,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 					if(si!=itr->second.m_ShapePoints.size()-1)
 						fprintf(st," ");
 				}
-				fprintf(st,"\"<coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
+				fprintf(st,"\"</coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
 				fprintf(st, "\n");
 			}
 		}
@@ -4084,7 +4208,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 	{
 		fprintf(st,"zone_id,node_id,external_OD_flag\n");
 
-		std::map<int, DTAZone>	:: const_iterator itr;
+		std::map<int, DTAZone>	:: iterator itr;
 
 		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
 		{
@@ -4429,18 +4553,23 @@ bool CTLiteDoc::WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vecto
 				VehicleDataFile << pVehicle->m_Distance << ",";
 				VehicleDataFile << pVehicle->m_NodeSize << ",\"";
 
-				for(int i=0; i< pVehicle->m_NodeSize-1; i++)
-				{
-					VehicleDataFile << "<"; 
-					DTALink* pLink = m_LinkNoMap[pVehicle->m_NodeAry[i].LinkNo];
-					VehicleDataFile << pLink->m_FromNodeNumber << ";";
-					VehicleDataFile << pVehicle->m_NodeAry[i].ArrivalTimeOnDSN << ">";
-				}
-				VehicleDataFile << pVehicle->m_NodeSize << "\"";
+				//for(int i=0; i< pVehicle->m_NodeSize-1; i++)
+				//{
+				//	VehicleDataFile << "<"; 
+
+				//	if(pVehicle->m_NodeAry[i].LinkNo!=-1 && m_LinkNoMap.find (pVehicle->m_NodeAry[i].LinkNo) != m_LinkNoMap.end())
+				//	{
+				//	DTALink* pLink = m_LinkNoMap[pVehicle->m_NodeAry[i].LinkNo];
+				//
+				//	VehicleDataFile << pLink->m_FromNodeNumber << ";";
+				//	VehicleDataFile << pVehicle->m_NodeAry[i].ArrivalTimeOnDSN << ">";
+				//	}
+				//}
+				//VehicleDataFile << pVehicle->m_NodeSize << "\"";
 				VehicleDataFile << endl;
 			}
 		}
-		VehicleDataFile.close();
+			VehicleDataFile.close();
 		return true;
 	}
 
@@ -4830,7 +4959,7 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 					if(pLink !=NULL)
 					{
 
-						(*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumLanes;
+						(*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLanes;
 						(*iNode)->m_MovementVector[m].QEM_Speed  = pLink->m_SpeedLimit ;
 
 					}
@@ -5068,6 +5197,13 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 			pVehicle->m_Emissions = header.emissions;
 			pVehicle->m_Distance = header.distance_in_mile;
 			pVehicle->m_NodeSize	= header.number_of_nodes;
+
+			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalNumberOfVehicles += 1;
+			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalTravelDistance  += pVehicle->m_Distance ;
+
+			m_ZoneMap[pVehicle->m_DestinationZoneID].m_DestinationTotalNumberOfVehicles += 1;
+			m_ZoneMap[pVehicle->m_DestinationZoneID].m_DestinationTotalTravelDistance  += pVehicle->m_Distance ;
+
 
 			pVehicle->m_EmissionData .Energy = header.Energy;
 
@@ -5513,7 +5649,7 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 		break;
 
 	case MOE_capacity:  
-		value = pLink->m_LaneCapacity * pLink->m_NumLanes ;
+		value = pLink->m_LaneCapacity * pLink->m_NumberOfLanes ;
 		break;
 
 	case MOE_speedlimit:  
@@ -5661,7 +5797,7 @@ void CTLiteDoc::OnToolsCarfollowingsimulation()
 		dlg.m_SelectedLinkNo = m_SelectedLinkNo;
 		dlg.m_YUpperBound = pLink->m_Length * 1609.344f;  // mile to meters
 		dlg.m_FreeflowSpeed = pLink->m_SpeedLimit * 1609.344f / 3600; // mph to meter per second
-		dlg.m_NumberOfLanes = pLink->m_NumLanes;
+		dlg.m_NumberOfLanes = pLink->m_NumberOfLanes;
 		dlg.DoModal ();
 	}
 }
@@ -5819,6 +5955,23 @@ void CTLiteDoc::LoadSimulationOutput()
 	if(microsimulation_file_str.Find("bin") >=0)
 	{
 		ReadTraceBinFile(m_ProjectDirectory+microsimulation_file_name,0);
+	}
+
+	if(microsimulation_file_str.Find("csv") >=0)
+	{
+		ReadAimCSVFiles(m_ProjectDirectory+microsimulation_file_name,0);
+	}
+
+	char GPS_file_name[_MAX_STRING_SIZE];
+	g_GetProfileString("GPS_data","file_name","",GPS_file_name,sizeof(GPS_file_name),m_ProjectFile);
+
+	CString GPS_file_str;
+
+	GPS_file_str.Format("%s",GPS_file_name);
+
+	if(GPS_file_str.Find("bin") >=0)
+	{
+		ReadGPSBinFile(m_ProjectDirectory+microsimulation_file_name,0);
 	}
 
 
@@ -6996,9 +7149,11 @@ void CTLiteDoc::HighlightSelectedVehicles(bool bSelectionFlag)
 			{
 				for(int link= 1; link<pVehicle->m_NodeSize; link++)
 				{
+					if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end())
+					{
 					m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo ]->m_DisplayLinkID = 1;
-
 					m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo ]->m_NumberOfMarkedVehicles++;
+					}
 				}
 			}		
 		}
@@ -7233,8 +7388,8 @@ bool CTLiteDoc::WriteSubareaFiles()
 			if((*iLink)->m_AVISensorFlag == false)
 			{
 
-				(*iLink)->m_ReliabilityIndex  = (*iLink)->m_Length * (*iLink)->m_NumLanes;
-				(*iLink)->m_SafetyIndex   = (*iLink)->m_link_type * (*iLink)->m_NumLanes;
+				(*iLink)->m_ReliabilityIndex  = (*iLink)->m_Length * (*iLink)->m_NumberOfLanes;
+				(*iLink)->m_SafetyIndex   = (*iLink)->m_link_type * (*iLink)->m_NumberOfLanes;
 				(*iLink)->m_MobilityIndex = (*iLink)->m_SpeedLimit+10*g_GetRandomRatio();
 				(*iLink)->m_EmissionsIndex = (*iLink)->ObtainHistCO2Emissions(0);
 				float predicted_speed  = (*iLink)->m_SpeedLimit * g_GetRandomRatio();
@@ -7251,7 +7406,7 @@ bool CTLiteDoc::WriteSubareaFiles()
 					(*iLink)->m_MobilityIndex,
 					(*iLink)->m_LinkID, 
 					(*iLink)->m_FromNodeNumber, 
-					(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
+					(*iLink)->m_ToNodeNumber , (*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumberOfLanes ,(*iLink)->m_SpeedLimit,(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
 				fprintf(st,"\"<LineString><coordinates>");
 
 				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
@@ -8269,7 +8424,8 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 	{
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
 		{
-			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_DisplayLinkID>=0)  // in one of selected links
+
+			if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_DisplayLinkID>=0)  // in one of selected links
 			{
 				return true;		
 			}
@@ -8277,7 +8433,7 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		return false;
 	}
 
-	if(vehicle_selection == CLS_path)
+	if(vehicle_selection == CLS_path_trip)
 	{
 		if(m_PathDisplayList.size() == 0)
 			return false;
@@ -8289,14 +8445,73 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
 		{
-			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedBySelectedPath )
-			{
-				count_of_links_in_selected_path++;	
-			}
+			if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() &&  m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedBySelectedPath )
+				{
+					count_of_links_in_selected_path++;	
+				}
 		}
 
 		if(count_of_links_in_selected_path == m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() && m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() >0)
 			return true;
+		else
+			return false;
+	}
+
+	if(vehicle_selection == CLS_path_partial_trip)
+	{
+		if(m_PathDisplayList.size() == 0)
+			return false;
+
+		if(m_SelectPathNo >= m_PathDisplayList.size())
+			return false;
+
+		int count_of_links_in_selected_path = 0;
+
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() &&  m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedBySelectedPath )
+				{
+					count_of_links_in_selected_path++;	
+				}
+		}
+
+		if(count_of_links_in_selected_path == m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() && m_PathDisplayList[m_SelectPathNo].m_LinkVector.size() >0)
+		{
+			//update subtrip travel time
+
+			float subtrip_distance = 0;
+			bool b_distance_counting_flag = false;
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+
+				if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() &&  m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bFirstPathLink  )
+				{
+					pVehicle->m_path_start_node_departure_time = pVehicle->m_NodeAry[link-1].ArrivalTimeOnDSN;
+					b_distance_counting_flag = true;
+				}
+
+				if(b_distance_counting_flag)  // count from the first link to the last link
+				subtrip_distance += m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo] ->m_Length ;
+
+
+				if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() &&  m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bLastPathLink  )
+				{
+					pVehicle->m_path_end_node_arrival_time  = pVehicle->m_NodeAry[link].ArrivalTimeOnDSN;
+
+					pVehicle->m_path_travel_time = pVehicle->m_path_end_node_arrival_time - pVehicle->m_path_start_node_departure_time;
+					b_distance_counting_flag = false;
+
+					break;
+
+				}
+
+
+		}
+
+		pVehicle->m_path_distance  = subtrip_distance;
+
+			return true;
+		}
 		else
 			return false;
 	}
@@ -8307,7 +8522,8 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 
 		if(pVehicle->m_NodeSize>2)
 		{
-			if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+		
+			if(m_LinkNoMap.find(pVehicle->m_NodeAry[1].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
 				return true;
 		}
 		return false;
@@ -8321,15 +8537,19 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		// now pVehicle->m_NodeSize>=3;
 
 		// condition 1: if the first link of a vehicle is marked (in the subarea), then return false
-		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
-			return false;
+		if(m_LinkNoMap.find(pVehicle->m_NodeAry[1].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap.find(pVehicle->m_NodeAry[1].LinkNo) != m_LinkNoMap.end())
+		{
+			if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+				return false;
+		}
 
 		// now the first link is not in subarea
 		// condition 2: a link is in subarea
 		bool bPassingSubareaFlag = false;
 		for(int link= 2; link<pVehicle->m_NodeSize-1; link++)
 		{
-			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea )
+
+			if( m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea )
 			{
 				bPassingSubareaFlag = true;	
 				break;
@@ -8342,7 +8562,7 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		// condition 3: test if the last link is out of subarea
 
 		int last_link  = pVehicle->m_NodeSize-1;
-		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea == false)
+		if(m_LinkNoMap.find(pVehicle->m_NodeAry[last_link].LinkNo) != m_LinkNoMap.end() &&  m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea == false)
 			return true;  // last link is outside of the subarea area, yes!
 		else
 			return false;
@@ -8356,14 +8576,14 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		// now pVehicle->m_NodeSize>=2;
 
 		// condition 1: if the first link of a vehicle is not marked (not in the subarea), then return false
-		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == false)
+		if( m_LinkNoMap.find(pVehicle->m_NodeAry[1].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == false)
 			return false;
 
 		// now the first link is in subarea
 		// condition 2: test if the last link is out of subarea
 
 		int last_link  = pVehicle->m_NodeSize-1;
-		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == false)
+		if(m_LinkNoMap.find(pVehicle->m_NodeAry[last_link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == false)
 			return true;  // outside, yes,
 		else
 			return false;
@@ -8377,19 +8597,19 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		// now pVehicle->m_NodeSize>=2;
 
 		// condition 1: if the first link of a vehicle is marked (in the subarea), then return false
-		if( m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
+		if(m_LinkNoMap.find(pVehicle->m_NodeAry[1].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[1].LinkNo]->m_bIncludedinSubarea == true)
 			return false;
 
 		// now the first link is not in the subarea
 		// condition 2: test if the last link is in subarea
 
 		int last_link  = pVehicle->m_NodeSize-1;
-		if( m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == true)
+		if( m_LinkNoMap.find(pVehicle->m_NodeAry[last_link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[last_link].LinkNo]->m_bIncludedinSubarea  == true)
 			return true;  // inside, yes!
 		else
 			return false;
 	}
-	if(vehicle_selection == CLS_subarea_internal_to_internal)
+	if(vehicle_selection == CLS_subarea_internal_to_internal_trip)
 	{
 
 		if(pVehicle->m_NodeSize<2)  
@@ -8398,7 +8618,7 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
 		{
-			if( m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == false )
+			if( m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == false )
 				return false; // this is a link outside of the subarea
 		}
 
@@ -8406,6 +8626,93 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		return true;
 	}
 
+
+	if(vehicle_selection == CLS_subarea_internal_to_internal_subtrip)
+	{
+
+		if(pVehicle->m_NodeSize<2)  
+			return false;
+		// now pVehicle->m_NodeSize>=2;
+
+			float subtrip_distance = 0;
+			int distance_counting_flag = 0;
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if( m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == true )
+			{
+				if(distance_counting_flag==0)
+				{
+					distance_counting_flag = 1;
+					pVehicle->m_subarea_start_node_departure_time = pVehicle->m_NodeAry [link-1].ArrivalTimeOnDSN ;
+					
+				}
+
+				if(distance_counting_flag==1)
+					subtrip_distance+= m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_Length ;
+
+				pVehicle->m_subarea_distance = subtrip_distance; // for inside path
+				pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
+				pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
+
+			}else if(distance_counting_flag == 1) 
+			{  //leaving subarea
+
+				distance_counting_flag = 2;
+
+				break;
+			
+			
+			}
+
+		}
+
+		// pass all the tests
+		if(distance_counting_flag>=1)
+			return true;
+	}
+	if(vehicle_selection == CLS_subarea_boundary_to_bounary_subtrip)
+	{
+
+		if(pVehicle->m_NodeSize<2)  
+			return false;
+		// now pVehicle->m_NodeSize>=2;
+
+			float subtrip_distance = 0;
+			int distance_counting_flag = 0;
+		for(int link= 1; link<pVehicle->m_NodeSize; link++)
+		{
+			if( m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == true )
+			{
+				if(distance_counting_flag==0)
+				{
+					distance_counting_flag = 1;
+					pVehicle->m_subarea_start_node_departure_time = pVehicle->m_NodeAry [link-1].ArrivalTimeOnDSN ;
+					
+				}
+
+				if(distance_counting_flag==1)
+					subtrip_distance+= m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_Length ;
+
+				pVehicle->m_subarea_distance = subtrip_distance; // for inside path
+				pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
+				pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
+
+			}else if(distance_counting_flag == 1) 
+			{  //leaving subarea
+
+				distance_counting_flag = 2;
+
+				break;
+			
+			
+			}
+
+		}
+
+		// pass all the tests
+		if(distance_counting_flag==2)
+			return true;
+	}
 	return false;
 }
 void CTLiteDoc::MarkLinksInSubarea()
@@ -8436,7 +8743,7 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 		DTAVehicle* pVehicle = (*iVehicle);
 
 		pVehicle->m_bMarked = false;
-		if(SelectVehicleForAnalysis(pVehicle, m_VehicleSelectionMode) == true) 
+		if(SelectVehicleForAnalysis(pVehicle, m_VehicleSelectionMode) == true)  // belong this classification 
 		{
 			pVehicle->m_bMarked = true;
 			if(bTraceFlag)  // trace single vehicle id
@@ -8449,8 +8756,38 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 			if(index>=0)  // -1 will not be consideded
 			{
 				m_ClassificationTable[index].TotalVehicleSize+=1;
+
+
+				if(vehicle_selection== CLS_path_partial_trip)  // subpath
+				{
+				m_ClassificationTable[index].TotalTravelTime  +=  pVehicle->m_path_travel_time;
+				m_ClassificationTable[index].TotalDistance   += pVehicle->m_path_distance;				
+				m_ClassificationTable[index].TotalTravelTimePerMile += ( pVehicle->m_path_travel_time /max(0.01,pVehicle->m_path_distance));
+
+				m_ClassificationTable[index].m_data_vector_travel_time .AddData (pVehicle->m_path_travel_time);
+				m_ClassificationTable[index].m_data_vector_travel_time_per_mile .AddData ( pVehicle->m_path_travel_time /max(0.01,pVehicle->m_path_distance));
+
+
+				}else if (vehicle_selection == CLS_subarea_internal_to_internal_subtrip || vehicle_selection == CLS_subarea_boundary_to_bounary_subtrip)
+				{
+				m_ClassificationTable[index].TotalTravelTime  += pVehicle->m_subarea_travel_time ;
+				m_ClassificationTable[index].TotalDistance   += pVehicle->m_subarea_distance;				
+				m_ClassificationTable[index].TotalTravelTimePerMile += (pVehicle->m_subarea_travel_time)/max(0.01,pVehicle->m_subarea_distance);
+
+				m_ClassificationTable[index].m_data_vector_travel_time .AddData (pVehicle->m_subarea_travel_time);
+				m_ClassificationTable[index].m_data_vector_travel_time_per_mile .AddData (( pVehicle->m_subarea_travel_time) /max(0.01,pVehicle->m_subarea_distance));
+				}
+				else  //
+				{
 				m_ClassificationTable[index].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
-				m_ClassificationTable[index].TotalDistance   += pVehicle->m_Distance;
+				m_ClassificationTable[index].TotalDistance   += pVehicle->m_Distance;				
+				m_ClassificationTable[index].TotalTravelTimePerMile += ( (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)/pVehicle->m_Distance);
+
+				m_ClassificationTable[index].m_data_vector_travel_time .AddData (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+				m_ClassificationTable[index].m_data_vector_travel_time_per_mile .AddData (
+					( pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime) /max(0.01,pVehicle->m_Distance));
+				}
+
 				m_ClassificationTable[index].TotalCost   += pVehicle->m_TollDollarCost;
 				m_ClassificationTable[index].TotalGeneralizedCost += ( pVehicle->m_TollDollarCost + pVehicle->m_TripTime /60.0f* pVehicle->m_VOT );
 				m_ClassificationTable[index].TotalGeneralizedTime += pVehicle->m_TollDollarCost/max(1,pVehicle->m_VOT)*60.0f + pVehicle->m_TripTime ;
@@ -8461,6 +8798,8 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 				m_ClassificationTable[index].emissiondata.NOX += pVehicle->m_EmissionData .NOX;
 				m_ClassificationTable[index].emissiondata.CO += pVehicle->m_EmissionData .CO;
 				m_ClassificationTable[index].emissiondata.HC += pVehicle->m_EmissionData .HC;
+
+
 			}
 
 		}
@@ -8479,10 +8818,42 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 
 			if(index>=0)  // -1 will not be consideded
 			{
-				float deviation = (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)- 
+				float deviation = 0;
+				float travel_time_per_mile_deviation = 0;
+
+
+				if(vehicle_selection== CLS_path_partial_trip)  //  subpath
+				{
+				deviation = (pVehicle->m_path_travel_time)- 
 					(m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize));
-			m_ClassificationTable[index].TotalVariance   +=  deviation*deviation;
-				
+			
+
+				travel_time_per_mile_deviation = 
+					(pVehicle->m_path_travel_time )/max(0.001,pVehicle->m_path_distance  ) -  
+					(m_ClassificationTable[index].TotalTravelTimePerMile/max(1,m_ClassificationTable[index].TotalVehicleSize));
+				}else if(vehicle_selection== CLS_subarea_internal_to_internal_subtrip || vehicle_selection == CLS_subarea_boundary_to_bounary_subtrip)  // subarea partial path
+				{
+				deviation = (pVehicle->m_subarea_travel_time )- 
+					(m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize));
+			
+
+				travel_time_per_mile_deviation = 
+					(pVehicle->m_subarea_travel_time )/max(0.001,pVehicle->m_subarea_distance  ) -  
+					(m_ClassificationTable[index].TotalTravelTimePerMile/max(1,m_ClassificationTable[index].TotalVehicleSize));
+
+				}else
+				{
+				deviation = (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)- 
+					(m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize));
+
+				travel_time_per_mile_deviation = 
+					(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime)/max(0.001,pVehicle->m_Distance ) -  
+					(m_ClassificationTable[index].TotalTravelTimePerMile/max(1,m_ClassificationTable[index].TotalVehicleSize));
+				}
+			
+				m_ClassificationTable[index].TotalTravelTimeVariance   +=  deviation*deviation;
+				m_ClassificationTable[index].TotalTravelTimePerMileVariance   +=  travel_time_per_mile_deviation*travel_time_per_mile_deviation;
+
 			}
 
 		}
@@ -8530,6 +8901,38 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 			value = m_ClassificationTable[index].TotalTravelTime/max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
 
+		case CLS_travel_time_95_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time .GetDataVectorPercentage (95);
+			break;
+
+		case CLS_travel_time_90_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time .GetDataVectorPercentage (90);
+			break;
+
+		case CLS_travel_time_80_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time .GetDataVectorPercentage (80);
+			break;
+
+		case CLS_travel_time_per_mile_95_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time_per_mile .GetDataVectorPercentage (95);
+			break;
+
+		case CLS_travel_time_per_mile_90_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time_per_mile .GetDataVectorPercentage (90);
+			break;
+
+		case CLS_travel_time_per_mile_80_percentile: 
+			value = m_ClassificationTable[index].m_data_vector_travel_time_per_mile .GetDataVectorPercentage (80);
+			break;
+//Buffer Index = (95th percentile travel time – mean travel time) / mean travel time
+		case CLS_travel_time_Buffer_Index: 
+			value = (m_ClassificationTable[index].m_data_vector_travel_time .GetDataVectorPercentage (95)- m_ClassificationTable[index].m_data_vector_travel_time.GetDataVectorMean ())/max(0.01,m_ClassificationTable[index].m_data_vector_travel_time.GetDataVectorMean ());
+			break;
+//Skew Index = (90th percentile travel time – median travel time) / (median travel time – 10th percentile travel time)
+		case CLS_travel_time_Skew_Index: 
+			value = (m_ClassificationTable[index].m_data_vector_travel_time .GetDataVectorPercentage (90)- m_ClassificationTable[index].m_data_vector_travel_time.GetDataVectorPercentage(50))/
+				max(0.01,m_ClassificationTable[index].m_data_vector_travel_time.GetDataVectorPercentage (50) -m_ClassificationTable[index].m_data_vector_travel_time.GetDataVectorPercentage (10) );
+			break;
 		case CLS_total_toll_cost: 
 			value = m_ClassificationTable[index].TotalCost ;
 			break;
@@ -8557,11 +8960,12 @@ void CTLiteDoc::GenerateClassificationForDisplay(VEHICLE_X_CLASSIFICATION x_clas
 			value = m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize);
 			break;
 		case CLS_travel_time_STD: 
-			value = sqrt(m_ClassificationTable[index].TotalVariance /max(1,m_ClassificationTable[index].TotalVehicleSize));
+			value = sqrt(m_ClassificationTable[index].TotalTravelTimeVariance /max(1,m_ClassificationTable[index].TotalVehicleSize));
 			break;
 		case CLS_travel_time_per_mile_STD: 
-			value = sqrt(m_ClassificationTable[index].TotalVariance /max(1,m_ClassificationTable[index].TotalVehicleSize))/( m_ClassificationTable[index].TotalDistance /max(1,m_ClassificationTable[index].TotalVehicleSize));
+			value = sqrt(m_ClassificationTable[index].TotalTravelTimePerMileVariance /max(1,m_ClassificationTable[index].TotalVehicleSize));
 			break;
+
 
 
 		case CLS_total_Energy: 
@@ -10383,6 +10787,7 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 			int PathNodeArrivalTimeVector[MAX_NODE_SIZE_IN_A_PATH];
 			int PathNodeVectorNo = 0;
 			int NetworkNodeNo = -1;
+			int NetworkLinkID = -1;
 	
 			DTAVehicle* pVehicle = 0;
 			pVehicle = new DTAVehicle;
@@ -10391,15 +10796,13 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 
 			pVehicle->m_VehicleID		= m_VehicleSet.size();
 
-
 			pVehicle->m_OriginZoneID	= header.from_zone_id;
 			pVehicle->m_DestinationZoneID= header.to_zone_id;
 
-			if(header.from_zone_id==0 || header.to_zone_id ==0)
-			{
-				TRACE("\nvehicle id: %d, O: %d, D: %d", header.vehicle_id, header.from_zone_id,header.to_zone_id );
-			}
-			pVehicle->m_DepartureTime	=  header.departure_time;
+			pVehicle->m_Distance = header.total_distance_in_km * 0.621371; // km to miles
+
+
+		pVehicle->m_DepartureTime	=  header.departure_time;
 			pVehicle->m_ArrivalTime =  header.arrival_time;
 
 			if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
@@ -10440,22 +10843,42 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 					VehicleLocationRecord node_element;
 					fread(&pVehicle->m_LocationRecordAry[i],sizeof(VehicleLocationRecord),1,st);
 
-
 					double min_distance = m_UnitMile*0.5;
-					int NodeNo  = FindClosestNode( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
 
-					if(NodeNo != -1  && NodeNo != NetworkNodeNo) 
+					// update origin and destination zone ids
+
+					if(i==0 && pVehicle->m_OriginZoneID == 0)
 					{
-						PathNodeVector[PathNodeVectorNo] = NodeNo;
-						PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
-						pVehicle->m_NodeNumberSum += NodeNo;
-						PathNodeVectorNo ++;
-						NetworkNodeNo = NodeNo;
-
+					int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+					
+					if(ZoneNumber!=-1)
+					pVehicle->m_OriginZoneID = ZoneNumber;
+					
 					}
+
+//					if(i== pVehicle->m_VehicleLocationSize -1 && pVehicle->m_DestinationZoneID == 0)
+//					{
+//					int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+//					if(ZoneNumber!=-1)
+//					pVehicle->m_DestinationZoneID = ZoneNumber;
+//
+//					}
+//
+//					int LinkID = pVehicle->m_LocationRecordAry[i].linkid;
+//
+//					if(LinkID != -1  && LinkID != NetworkLinkID) 
+//					{
+//						PathNodeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].linkid ;
+//
+////						TRACE("no. %d,link id = %,\n",i,pVehicle->m_LocationRecordAry[i].linkid);
+//						PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
+//						//pVehicle->m_NodeNumberSum += NodeNo;
+//						PathNodeVectorNo ++;
+//						NetworkLinkID = LinkID;
+//
+//					}
 				}
 
-				pVehicle->m_Distance  = 0;
 
 				if(PathNodeVectorNo>=1)
 				{
@@ -10466,30 +10889,44 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[0];
 					for(int i = 1; i< PathNodeVectorNo; i++)
 					{
-
-						int node_from = PathNodeVector[i-1];
-						int node_to = PathNodeVector[i];
-
-						DTALink* pLink = FindLinkWithNodeIDs(node_from,node_to);
+						DTALink* pLink = FindLinkWithLinkID(PathNodeVector[i]);
 						if(pLink!=NULL)
 						{
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-						pVehicle->m_Distance +=pLink->m_Length ;
 						pLink->m_total_link_volume +=1;
 
 						pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
+						pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
+
+					//	//overwrite zone id for nodes
+					//	if(i==1 && pVehicle->m_OriginZoneID !=0 )
+					//	{
+
+					//DTAActivityLocation element;
+					//element.ZoneID  = pVehicle->m_OriginZoneID;
+					//element.NodeNumber = pLink->m_FromNodeNumber;
+					//element.External_OD_flag = 0;
+
+					//m_NodeIDMap[pLink->m_FromNodeID ] ->m_ZoneID = pVehicle->m_OriginZoneID;
+					//m_ZoneMap [element.ZoneID ].m_ActivityLocationVector .push_back (element);
+					//	
+					//	}
 
 						}else
 						{
 						pVehicle->m_NodeAry[i].LinkNo = -1;
 						
-//						TRACE("cannot find nodes %d, %d\n", m_NodeIDtoNameMap[node_from], m_NodeIDtoNameMap[node_to]);
+//						TRACE("cannot find link %d\n", PathLinkVector[i]);
 						}
 					}
 
 				}
 
-
+			if(pVehicle->m_OriginZoneID ==0 || pVehicle->m_DestinationZoneID ==0)
+			{
+				TRACE("\nvehicle id: %d, O: %d, D: %d", header.vehicle_id, header.from_zone_id,header.to_zone_id );
+			}
+	
 
 				// movement count
 
@@ -10515,7 +10952,7 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 		{
 			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 			pMainFrame->m_bShowLayerMap[layer_GPS]  = true;
-			m_bGPSDataSet  = true;
+//			m_bGPSDataSet  = true;
 
 		}
 
@@ -10532,6 +10969,244 @@ bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
 	}
 }
 
+
+bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
+{
+	//   cout << "Read vehicle file... "  << endl;
+	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
+	//	arrival_time, complete_flag, trip_time, demand_type, occupancy, information_type,
+	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
+	//	node id, node arrival time
+
+
+
+
+	typedef struct  
+	{
+		int original_vehicle_id;
+		int date_id;
+		int vehicle_id;
+		int from_zone_id;
+		int to_zone_id;
+		float departure_time;
+		float arrival_time;
+		float trip_time;
+        float total_distance_in_km;
+		int number_of_nodes;
+        float reserved_field1;
+        float reserved_field2;
+        float reserved_field3;
+
+	} struct_Vehicle_Header;
+
+
+	FILE* st = NULL;
+	fopen_s(&st,lpszFileName,"rb");
+	if(st!=NULL)
+	{
+
+
+		m_VehicleSet.clear();
+
+		struct_Vehicle_Header header;
+
+		int count =0;
+		while(!feof(st))
+		{
+
+			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
+
+			if( header.vehicle_id < 0)
+				break;
+
+			if(result!=1)  // read end of file
+				break;
+
+			int PathLinkVector[MAX_NODE_SIZE_IN_A_PATH];
+			int PathNodeArrivalTimeVector[MAX_NODE_SIZE_IN_A_PATH];
+			int PathNodeVectorNo = 0;
+			int NetworkNodeNo = -1;
+			int NetworkLinkID = -1;
+	
+			DTAVehicle* pVehicle = 0;
+			pVehicle = new DTAVehicle;
+			pVehicle->m_bGPSVehicle = true;
+			pVehicle->m_DateID 		= header.date_id;
+
+			pVehicle->m_VehicleID		= m_VehicleSet.size();
+
+			pVehicle->m_OriginZoneID	= header.from_zone_id;
+			pVehicle->m_DestinationZoneID= header.to_zone_id;
+
+			pVehicle->m_Distance = header.total_distance_in_km * 0.621371; // km to miles
+
+
+		pVehicle->m_DepartureTime	=  header.departure_time;
+			pVehicle->m_ArrivalTime =  header.arrival_time;
+
+			if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
+				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
+
+			pVehicle->m_bComplete = true;
+			pVehicle->m_DemandType = 1;
+		
+			pVehicle->m_PricingType = 1;
+
+			//pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
+
+			pVehicle->m_VOT = 10;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+
+
+			pVehicle->m_TripTime  = header.trip_time;
+
+			pVehicle->m_VehicleLocationSize	= header.number_of_nodes;
+
+			if(pVehicle->m_VehicleLocationSize==0 )
+			{
+				CString error_msg;
+				error_msg.Format("reading error in file %s: vehicle id =%d",lpszFileName, header.vehicle_id);
+
+			}
+
+			if(pVehicle->m_VehicleLocationSize>=1)  // in case reading error
+			{
+
+				float total_distance = 0;
+				pVehicle->m_LocationRecordAry = new VehicleLocationRecord[pVehicle->m_VehicleLocationSize];
+
+				pVehicle->m_NodeNumberSum = 0;
+				for(int i=0; i< pVehicle->m_VehicleLocationSize; i++)
+				{
+					VehicleLocationRecord node_element;
+					fread(&pVehicle->m_LocationRecordAry[i],sizeof(VehicleLocationRecord),1,st);
+
+					double min_distance = m_UnitMile*0.5;
+
+					// update origin and destination zone ids
+
+					if(i==0 && pVehicle->m_OriginZoneID == 0)
+					{
+					int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+					
+					if(ZoneNumber!=-1)
+					pVehicle->m_OriginZoneID = ZoneNumber;
+					
+					}
+
+					if(i== pVehicle->m_VehicleLocationSize -1 && pVehicle->m_DestinationZoneID == 0)
+					{
+					int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+					if(ZoneNumber!=-1)
+					pVehicle->m_DestinationZoneID = ZoneNumber;
+
+					}
+
+					int LinkID = pVehicle->m_LocationRecordAry[i].linkid;
+
+					if(LinkID != -1  && LinkID != NetworkLinkID) 
+					{
+						PathLinkVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].linkid ;
+
+//						TRACE("no. %d,link id = %,\n",i,pVehicle->m_LocationRecordAry[i].linkid);
+						PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
+						//pVehicle->m_NodeNumberSum += NodeNo;
+						PathNodeVectorNo ++;
+						NetworkLinkID = LinkID;
+
+					}
+				}
+
+
+				if(PathNodeVectorNo>=1)
+				{
+
+					pVehicle->m_NodeSize = PathNodeVectorNo;
+					pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[0];
+					for(int i = 1; i< PathNodeVectorNo; i++)
+					{
+						DTALink* pLink = FindLinkWithLinkID(PathLinkVector[i]);
+						if(pLink!=NULL)
+						{
+						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+						pLink->m_total_link_volume +=1;
+
+						pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
+						pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
+
+					//	//overwrite zone id for nodes
+					//	if(i==1 && pVehicle->m_OriginZoneID !=0 )
+					//	{
+
+					//DTAActivityLocation element;
+					//element.ZoneID  = pVehicle->m_OriginZoneID;
+					//element.NodeNumber = pLink->m_FromNodeNumber;
+					//element.External_OD_flag = 0;
+
+					//m_NodeIDMap[pLink->m_FromNodeID ] ->m_ZoneID = pVehicle->m_OriginZoneID;
+					//m_ZoneMap [element.ZoneID ].m_ActivityLocationVector .push_back (element);
+					//	
+					//	}
+
+						}else
+						{
+						pVehicle->m_NodeAry[i].LinkNo = -1;
+						
+//						TRACE("cannot find link %d\n", PathLinkVector[i]);
+						}
+					}
+
+				}
+
+			if(pVehicle->m_OriginZoneID ==0 || pVehicle->m_DestinationZoneID ==0)
+			{
+				TRACE("\nvehicle id: %d, O: %d, D: %d", header.vehicle_id, header.from_zone_id,header.to_zone_id );
+			}
+	
+
+				// movement count
+
+				m_VehicleSet.push_back (pVehicle);
+				m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
+
+
+				if(count%100 == 0 && count >=1)
+				{
+					CString str;
+					str.Format ("Loading %d GPS records...", count);
+					SetStatusText(str);
+				}
+
+				count++;
+			} 
+		}
+
+
+		fclose(st);
+
+		if(count >=1 ) //with GPS data
+		{
+			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+			pMainFrame->m_bShowLayerMap[layer_GPS]  = true;
+//			m_bGPSDataSet  = true;
+
+		}
+
+		m_SimulationVehicleDataLoadingStatus.Format ("%d traces are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
+		return true;
+
+	}
+	else
+	{
+	 CString msg;
+	 msg.Format("File %s cannot be opened.", lpszFileName);
+	 AfxMessageBox(msg);
+	return false;
+	}
+}
 
 
 void CTLiteDoc::ResetODMOEMatrix()
@@ -10615,6 +11290,15 @@ void CTLiteDoc::ResetODMOEMatrix()
 		{
 			int p = pVehicle->m_DemandType ;
 			p = 0;
+
+			if(pVehicle->m_OriginZoneID >m_ZoneIDVector.size())
+			{
+			
+			CString msg;
+			msg.Format("Zone ID %d for vehicle %d has not been defined in the input_zone.csv file. Please check.",pVehicle->m_OriginZoneID , pVehicle->m_VehicleID );
+			AfxMessageBox(msg);
+			return;
+			}
 
 			int OrgNo = m_ZoneIDVector[pVehicle->m_OriginZoneID];
 			int DesNo = m_ZoneIDVector[pVehicle->m_DestinationZoneID];
@@ -10956,3 +11640,537 @@ void CTLiteDoc::OnTrafficcontroltoolsTransfermovementdatafromreferencenetworktoc
 
 	MapSignalDataAcrossProjects();
 }
+
+void CTLiteDoc::OnDemandtoolsGenerateinput()
+{
+
+typedef struct  
+{
+		int vehicle_id;
+		int from_zone_id;
+		int to_zone_id;
+		float departure_time;
+		float arrival_time;
+		int complete_flag;
+		float trip_time;
+		int demand_type;
+		int pricing_type;
+		int vehicle_type;
+		int information_type;
+		float value_of_time;
+		float toll_cost_in_dollar;
+		float emissions;
+		float distance_in_mile;
+		int number_of_nodes;
+		float Energy;
+		float CO2;
+		float NOX;
+		float CO;
+		float HC;
+
+		int age;
+		int version_no;
+
+		int reserverd_field1;
+		float reserverd_field2;
+		int reserverd_field3;
+
+} struct_VehicleInfo_Header;
+
+	FILE* st_struct = NULL;
+
+	fopen_s(&st_struct,m_ProjectDirectory+"input_agent.bin","wb");
+
+
+	typedef  struct  
+	{
+		int NodeName;
+		float AbsArrivalTimeOnDSN;
+	} struct_Vehicle_Node;
+
+	if(st_struct!=NULL)
+	{
+	std::list<DTAVehicle*>::iterator iVehicle;
+
+ //   int vehicle_id=0;//index for every vehicle 
+
+   for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
+		{
+
+			DTAVehicle* pVehicle = (*iVehicle);
+
+			if(pVehicle->m_NodeSize >= 2)  // with physical path in the network
+			{
+				int UpstreamNodeID = 0;
+				int DownstreamNodeID = 0;
+
+				float TripTime = 0;
+
+				if(pVehicle->m_bComplete)
+					TripTime = pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime;
+
+
+				float m_gap = 0;
+
+				struct_VehicleInfo_Header header;
+				header.vehicle_id = pVehicle->m_VehicleID-1; //start from 0
+				header.from_zone_id = pVehicle->m_OriginZoneID;
+				header. to_zone_id = pVehicle->m_DestinationZoneID;
+				header. departure_time = pVehicle->m_DepartureTime;
+				header. arrival_time = pVehicle->m_ArrivalTime;
+				header. complete_flag = pVehicle->m_bComplete;
+				header. trip_time = TripTime;
+				header. demand_type = pVehicle->m_DemandType;
+				header. pricing_type = pVehicle->m_PricingType;
+				header. vehicle_type =pVehicle->m_VehicleType;
+				header. information_type = pVehicle->m_InformationClass;
+				header. value_of_time =pVehicle->m_VOT;
+				header. toll_cost_in_dollar = pVehicle->m_TollDollarCost;
+				header. distance_in_mile = pVehicle->m_Distance;
+				header. number_of_nodes = pVehicle->m_NodeSize;
+
+				struct_VehicleInfo_Header InfoHeaderAsVehicleInput;
+				InfoHeaderAsVehicleInput.vehicle_id = pVehicle->m_VehicleID;
+				InfoHeaderAsVehicleInput.from_zone_id = pVehicle->m_OriginZoneID;
+				InfoHeaderAsVehicleInput. to_zone_id = pVehicle->m_DestinationZoneID;
+				InfoHeaderAsVehicleInput. departure_time = pVehicle->m_DepartureTime;
+				InfoHeaderAsVehicleInput. demand_type = pVehicle->m_DemandType;
+				InfoHeaderAsVehicleInput. pricing_type = pVehicle->m_PricingType;
+				InfoHeaderAsVehicleInput. vehicle_type =pVehicle->m_VehicleType;
+				InfoHeaderAsVehicleInput. information_type = pVehicle->m_InformationClass;
+				InfoHeaderAsVehicleInput. value_of_time =pVehicle->m_VOT;
+
+				fwrite(&header, sizeof(struct_VehicleInfo_Header), 1, st_struct);
+
+
+				int j = 0;
+
+
+				struct_Vehicle_Node node_element;
+
+				float LinkWaitingTime = 0;
+				for(j = 1; j< pVehicle->m_NodeSize; j++)  // for all nodes
+				{
+					int LinkID = pVehicle->m_NodeAry [j].LinkNo;
+					
+							node_element. NodeName = m_LinkNoMap[LinkID]->m_FromNodeNumber ;
+							node_element. AbsArrivalTimeOnDSN = 0;
+							fwrite(&node_element, sizeof(node_element), 1, st_struct);
+
+							if(j== pVehicle->m_NodeSize-1)
+							{
+							node_element. NodeName = m_LinkNoMap[LinkID]->m_ToNodeNumber ;
+							node_element. AbsArrivalTimeOnDSN = 0;
+							fwrite(&node_element, sizeof(node_element), 1, st_struct);
+							}
+				
+				} //for all nodes in path
+
+			}
+		} // for all paths
+
+		// not loaded in simulation
+
+
+		fclose(st_struct);
+	}
+
+}
+
+
+bool CTLiteDoc::ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id)
+{
+
+
+	//   cout << "Read vehicle file... "  << endl;
+	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
+	//	arrival_time, complete_flag, trip_time, demand_type, occupancy, information_type,
+	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
+	//	node id, node arrival time
+
+	// step 1: read zone mapping files
+
+	CString error_message_list;
+
+	if(AfxMessageBox("Do you want to load Aimsun trajector and trip files?", MB_YESNO) == IDNO)
+		return false;
+
+	// coordinate conversion
+
+	double m_XScale = 1;
+	double m_YScale = 1;
+
+double Original_Point1_x=990312.078783;
+double Original_Point1_y=215179.584433;
+double Original_Point2_x=997335.415388;
+double Original_Point2_y=219143.052253;
+double Changed_Point1_x=-73.978119;
+double Changed_Point1_y=40.757293;
+double Changed_Point2_x=-73.95276;
+double Changed_Point2_y=40.768164;
+
+
+
+
+	m_XScale = (Changed_Point2_x - Changed_Point1_x)/(Original_Point2_x - Original_Point1_x);
+	m_YScale = (Changed_Point2_y - Changed_Point1_y)/(Original_Point2_y - Original_Point1_y);
+
+	double m_XOrigin = Original_Point1_x - Changed_Point1_x /m_XScale;
+
+	double m_YOrigin =  Original_Point1_y - Changed_Point1_y /m_YScale;
+
+
+
+	std::map<int,int> AimsunZone2TAZMapping;
+
+	CString taz_mapping_file = m_ProjectDirectory + "input_microsimulation_zone_to_TAZ_mapping.csv";
+	CCSVParser parser;
+	int i= 0;
+	if (parser.OpenCSVFile(CString2StdString(taz_mapping_file)))
+	{
+
+		while(parser.ReadRecord())
+		{
+
+			int AimsunZone;
+			if(parser.GetValueByFieldName("AimsunZone",AimsunZone) == false)
+				break;
+			int TAZ ;
+			if(parser.GetValueByFieldName("TAZ",TAZ) == false)
+				break;
+
+			AimsunZone2TAZMapping[AimsunZone]= TAZ;
+	
+		}
+	}else
+	{
+		CString msg;
+		msg.Format ("Please check if file %s exists.", taz_mapping_file);  // +2 for the first field name line
+		AfxMessageBox(msg);
+		return false;
+
+	}
+
+	// step 2: read trip file
+	
+	CString trip_file = m_ProjectDirectory + "input_microsimulation_trip_data.csv";
+
+
+	FILE* st = NULL;
+	fopen_s(&st,trip_file,"r");
+
+	long lineno = 1;
+	if(st!=NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the first line
+
+
+		while(!feof(st))
+		{
+
+		int oid = -1;
+		int origin= -1;
+		int destination = -1;
+		float entranceTime = 0;
+		float exitTime = 0;
+		float travelTime = 0;
+		float delayTime = 0;
+
+		fscanf(st,"%d,%d,%d,%f,%f,%f,%f\n", &oid, &origin, &destination, &entranceTime, &exitTime, &travelTime, &delayTime);
+
+		if(oid<=0)  // invalid record;
+			break;
+
+			DTAVehicle* pVehicle = 0;
+			pVehicle = new DTAVehicle;
+//			pVehicle->m_bGPSVehicle = true;
+			pVehicle->m_DateID 		= 0;
+
+			pVehicle->m_VehicleID		= oid;
+
+			int from_zone_id, to_zone_id;
+			if(AimsunZone2TAZMapping.find(origin)!= AimsunZone2TAZMapping.end())
+			{
+			from_zone_id = AimsunZone2TAZMapping[origin];
+			}else
+			{
+
+			CString error_message;
+			error_message.Format("Error: origin = %d does not have a TAZ mapping record. Line %d in file %s.",origin, lineno,  trip_file);
+
+			AfxMessageBox(error_message);
+
+			fclose(st);
+			return false;
+			}
+
+			if(AimsunZone2TAZMapping.find(destination)!= AimsunZone2TAZMapping.end())
+			{
+			to_zone_id = AimsunZone2TAZMapping[destination];
+			}else
+			{
+
+			CString error_message;
+			error_message.Format("Error: destination = %d does not have a TAZ mapping record. Line %d in file %s.",origin, lineno,  trip_file);
+
+			AfxMessageBox(error_message);
+
+			fclose(st);
+			return false;
+			}
+
+
+			pVehicle->m_OriginZoneID	= from_zone_id;
+			pVehicle->m_DestinationZoneID= to_zone_id;
+			
+			pVehicle->m_Distance = 0;
+
+
+			pVehicle->m_DepartureTime	=  entranceTime/60;  // second -> min
+			pVehicle->m_ArrivalTime =  exitTime/60; // second -> min
+
+			if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
+				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
+
+			pVehicle->m_bComplete = true;
+			pVehicle->m_DemandType = 1;
+		
+			pVehicle->m_PricingType = 1;
+
+			pVehicle->m_VOT = 10;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+
+
+			pVehicle->m_TripTime  = travelTime/60; // second -> min
+
+			pVehicle->m_VehicleLocationSize	= 0;
+
+
+				m_VehicleSet.push_back (pVehicle);
+				m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
+
+
+				if(lineno%100 == 0 && lineno >=1)
+				{
+					CString str;
+					str.Format ("Loading %d Aimsum trip records...", lineno);
+					SetStatusText(str);
+				}
+		lineno++;
+		}
+
+	}else
+	{
+		CString msg;
+		msg.Format ("Please check if file %s exists.", taz_mapping_file);  // +2 for the first field name line
+		AfxMessageBox(msg);
+		return false;
+
+	}
+
+	std::string trajectory_file = m_ProjectDirectory + "input_microsimulation_trajectory.csv";
+
+	typedef struct 
+	{
+		int oid;
+		int sectionId;
+		float xCoord;
+		float yCoord;
+		float timeSta;
+	} section_struc;
+
+	std::vector<section_struc> section_vector; 
+	std::vector<section_struc> location_vector; 
+
+	CString LogFile_str = m_ProjectDirectory+"converted_microsimulation_vehicle.csv";
+	FILE * st_log;
+	st_log = fopen(LogFile_str,"w");
+
+			if(st_log!=NULL)
+			{
+			fprintf(st_log, "vehicle id, origin TAZ, destination TAZ, distance\n");
+			}
+
+	fopen_s(&st,lpszFileName,"r");
+
+	lineno = 1;
+	if(st!=NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the first line
+
+		int last_valid_oid= 0;
+		int last_valid_sectionId= 0;
+
+
+		while(!feof(st))
+		{
+
+		int oid= 0;
+		int sectionId = 0;
+		float xCoord = 0;
+		float yCoord = 0;
+		float timeSta = 0;
+
+		section_struc element;
+
+		fscanf(st,"%d,%d,%f,%f,%f\n", &oid, &sectionId, &xCoord, &yCoord, &timeSta);
+
+
+		if(oid<=0)
+			break;
+		element.oid = oid;
+		element.sectionId = sectionId;
+		element.xCoord = xCoord;
+		element.yCoord = yCoord;
+		element.timeSta = timeSta/60;
+
+
+		if(last_valid_oid==0)  //initial condition 
+		{
+		last_valid_oid = oid;
+
+		}
+
+		element.oid = oid;
+		element.sectionId = sectionId;
+		element.xCoord = xCoord;
+		element.yCoord = yCoord;
+
+		if(oid!=last_valid_oid)  //finish all records
+		{
+			//add section id sequence 
+
+			if( m_VehicleIDMap.find(last_valid_oid)  != m_VehicleIDMap.end() && section_vector.size()>=2)  // find vehicle id
+			{
+		
+		DTAVehicle* pVehicle = m_VehicleIDMap[last_valid_oid];
+					pVehicle->m_NodeSize = section_vector.size()+1;
+					pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+					pVehicle->m_NodeNumberSum = 0;
+
+					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = section_vector[0].timeSta;
+					for(int i = 1; i< section_vector.size(); i++)
+					{
+						DTALink* pLink = FindLinkWithLinkID(section_vector[i-1].sectionId);
+						if(pLink!=NULL)
+						{
+						pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo ;
+						pLink->m_total_link_volume +=1;
+
+						pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = section_vector[i].timeSta;
+						pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
+
+						pVehicle->m_Distance += pLink->m_Length ;
+
+						}else
+						{
+						TRACE("error in section id : %d\n", section_vector[i-1].sectionId) ;
+
+						CString msg;
+						msg.Format("sectionid has not defined: %d\n", section_vector[i-1].sectionId);
+						
+						if(error_message_list.GetLength ()<1000)
+						error_message_list+= msg;
+						
+						}
+					}
+
+					DTALink* pLastLink = FindLinkWithLinkID(section_vector[section_vector.size()-1].sectionId);
+					if(pLastLink!=NULL)
+					{
+					pVehicle->m_NodeAry[section_vector.size()].LinkNo  = pLastLink->m_LinkNo ;
+					pVehicle->m_NodeNumberSum += pLastLink->m_FromNodeNumber ;
+					pVehicle->m_Distance += pLastLink->m_Length ;
+
+					if(st_log!=NULL)
+					{
+					fprintf(st_log, "%d,%d,%d,%.2f\n", pVehicle->m_VehicleID , pVehicle->m_OriginZoneID , pVehicle->m_DestinationZoneID , pVehicle->m_Distance );
+					}
+
+					}else
+					{
+					// error 
+
+						TRACE("error in section id : %d\n", section_vector[section_vector.size()-1].sectionId) ;
+						CString msg;
+						msg.Format("sectionid has not defined: %d\n", section_vector[section_vector.size()-1].sectionId);
+						
+						if(error_message_list.GetLength ()<1000)
+						error_message_list+= msg;
+
+					
+					}
+
+
+				pVehicle->m_VehicleLocationSize = location_vector.size();
+				pVehicle->m_LocationRecordAry = new VehicleLocationRecord[location_vector.size()];
+
+
+				for(int i=0; i< pVehicle->m_VehicleLocationSize; i++)
+				{
+					VehicleLocationRecord location_element;
+
+						location_element.x = (location_vector[i].xCoord - m_XOrigin)*m_XScale;
+						location_element.y = (location_vector[i].yCoord - m_YOrigin)*m_YScale;
+						location_element.time_stamp_in_min = location_vector[i].timeSta;
+						location_element.distance_in_km = 0.0001;
+						location_element.linkid = location_vector[i].sectionId;
+
+					pVehicle->m_LocationRecordAry[i] = location_element;
+				}
+
+
+
+			last_valid_oid = oid;
+			section_vector.clear();
+			section_vector.push_back (element);  // first section of the next vehicle
+			location_vector.clear();
+			location_vector.push_back (element);  // first section of the next vehicle
+			}
+
+		}else if(last_valid_sectionId!= sectionId) 
+		{
+		last_valid_sectionId = sectionId;
+		section_vector.push_back (element);
+		}
+
+		location_vector.push_back(element);
+
+				if(lineno%1000 == 0 && lineno >=1)
+				{
+					CString str;
+					str.Format ("Loading %d K Aimsum section records...", lineno/1000);
+					SetStatusText(str);
+				}
+
+		lineno++;
+		}
+
+		m_SimulationVehicleDataLoadingStatus.Format ("%d section records are loaded from files %s...", lineno,trajectory_file.c_str ());
+
+		//if(error_message_list.GetLength ()>=1)
+		//	AfxMessageBox(error_message_list);
+
+		return true;
+
+		
+	}
+	else
+	{
+	 CString msg;
+	 msg.Format("File %s cannot be opened.", trajectory_file.c_str());
+	 AfxMessageBox(msg);
+	return false;
+	}
+
+	if(st_log!=NULL)
+		fclose(st_log);
+
+	
+}
+

@@ -591,7 +591,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 
-					pLink->m_NumLanes= number_of_lanes;
+					pLink->m_NumberOfLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
@@ -620,7 +620,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 						float R_lane_capacity_in_vhc_per_hour= capacity_in_pcphpl;
 						float R_grade= grade;
-						pLink->m_NumLanes= R_number_of_lanes;
+						pLink->m_NumberOfLanes= R_number_of_lanes;
 						pLink->m_SpeedLimit= R_speed_limit_in_mph;
 						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_Grade = R_grade;
@@ -640,7 +640,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 					pLink->m_FromPoint = m_pDoc->m_NodeIDMap[pLink->m_FromNodeID]->pt;
 					pLink->m_ToPoint = m_pDoc->m_NodeIDMap[pLink->m_ToNodeID]->pt;
@@ -1495,7 +1495,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	if(m_pDoc->m_bSimulationDataLoaded == false)  // simulation data not loaded
 	{
 
-	pLink->m_LinkMOEAry[ t].SimulationLinkFlow = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].SimulationLinkFlow = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
 	pLink->m_LinkMOEAry[ t].SimulationSpeed = AvgLinkSpeed; 
 	pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
@@ -1516,7 +1516,7 @@ void CDlg_ImportNetwork::OnBnClickedImportSensorData()
 	}else // simulation data loaded
 	{
 
-	pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+	pLink->m_LinkMOEAry[ t].SensorLinkCount = total_link_flow_per_interval*60/m_pDoc->m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
 	pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
 	pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 

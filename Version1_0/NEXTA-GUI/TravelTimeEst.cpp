@@ -254,7 +254,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 						return false;
 					
 					}
-					volume_count = volume_count* pLink->m_NumLanes;
+					volume_count = volume_count* pLink->m_NumberOfLanes;
 				} 
 
 
@@ -448,11 +448,11 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 							AvgLinkSpeed = pLink->m_SpeedLimit ;
 
 
-						ASSERT(pLink->m_NumLanes > 0);
+						ASSERT(pLink->m_NumberOfLanes > 0);
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
- 							pLink->m_LinkMOEAry[ t].SimulationLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumLanes;  // convert to per hour link flow
+ 							pLink->m_LinkMOEAry[ t].SimulationLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
 							pLink->m_LinkMOEAry[ t].SimulationSpeed = AvgLinkSpeed; 
 							pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 

@@ -700,7 +700,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 							{
 
 								if(lane_Column_name_str[j].find("T")!= string::npos ) // through
-									text = pLink->m_NumLanes;
+									text = pLink->m_NumberOfLanes;
 								else
 								{
 									text = 1; // left and right: to do list: input left-turn and right turn data fr # of lanes

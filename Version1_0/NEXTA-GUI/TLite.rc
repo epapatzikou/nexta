@@ -214,10 +214,14 @@ BEGIN
     PUSHBUTTON      "Exit",IDCANCEL,574,185,50,14
     CONTROL         "Zoom To Selected Link",IDC_CHECK_ZOOM_TO_SELECTED_LINK,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,178,87,10
-    LTEXT           "",IDC_DOC_TITLE,273,7,351,8
+    LTEXT           "",IDC_DOC_TITLE,7,23,351,8
     PUSHBUTTON      "Vehicle Data Analysis for Selected Link(s)",IDBARCHARTPIECHART,109,176,146,14
     COMBOBOX        IDC_COMBO_Link_Selection,7,7,255,218,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Export to CSV/GIS",ID_EXPORT,261,176,65,14
+    COMBOBOX        IDC_COMBO_StartTime,374,7,48,166,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Start Hour:",IDC_STATIC,332,7,37,8
+    LTEXT           "End Hour:",IDC_STATIC,432,7,33,8
+    COMBOBOX        IDC_COMBO_EndTime,473,7,48,166,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_ODDEMAND_GRID_DIALOG DIALOGEX 0, 0, 715, 385
@@ -823,7 +827,7 @@ BEGIN
     PUSHBUTTON      "Find Alternative Route through Random Routing",ID_FIND_RANDOM_ROUTE,103,253,165,14
     LISTBOX         IDC_LIST1,7,22,208,76,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Path List:",IDC_STATIC,7,7,31,8
-    PUSHBUTTON      "Vehicle Data Analysis for Selected Path",IDDATA_Analysis,7,225,136,14
+    PUSHBUTTON      "Trip Data Analysis for Selected Path",IDDATA_Analysis,7,225,136,14
     COMBOBOX        IDC_COMBO_StartHour,359,7,34,149,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Start Hour:",IDC_STATIC,319,7,37,8
     COMBOBOX        IDC_COMBO_EndHour,437,7,31,153,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -831,6 +835,7 @@ BEGIN
     COMBOBOX        IDC_COMBO_AggIntrevalList,517,7,37,162,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_COMBO_PLOT_TYPE,165,7,149,145,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Agg Interval:",IDC_STATIC,471,7,44,8
+    PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,152,225,154,14
 END
 
 IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 358
@@ -2130,7 +2135,9 @@ BEGIN
         MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE_LINKVOLUME
         MENUITEM "Link Inflow Volume (vph)",    ID_MOETYPE1_LINKVOLUME
         MENUITEM "Link Outflow Volume (vph)",   ID_MOETYPE1_LINKOUTFLOWVOLUME
+        MENUITEM "Link Inflow and Outflow Volume (solid line)", ID_MOETYPE1_LINKINANDOUTFLOW
         MENUITEM "Cumulative Arrival and Departure Counts", ID_MOETYPE_CUMULATIVEVOLUME
+        MENUITEM "Oblique Cumulative Arrival and Departure Counts", ID_MOETYPE_CUMULATIVEVOLUME_Oblique
         MENUITEM "Speed (mph)",                 ID_MOETYPE1_SPEED
         MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
@@ -2140,6 +2147,8 @@ BEGIN
     BEGIN
         MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE2_LINKVOLUME
         MENUITEM "Link Inflow Volume (vph)",    ID_MOETYPE2_LINKVOLUME_VPH
+        MENUITEM "Link Outflow Volume (vph)",   ID_MOETYPE2_LINKOUTFLOWVOLUME
+        MENUITEM "Link Inflow and Outflow Volume (solid line)", ID_MOETYPE2_LINKINANDOUTFLOW
         MENUITEM "Cumulative Arrival and Departure Counts", ID_MOETYPE2_CUMULATIVEVOLUME
         MENUITEM "Speed (mph)",                 ID_MOETYPE2_SPEED_MPH
         MENUITEM "Speed (km/h)",                ID_MOETYPE2_SPEED
@@ -2245,6 +2254,7 @@ BEGIN
         BEGIN
             MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
             MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+            MENUITEM "Show/Hide Link Direction Arrow", ID_SHOW_LINKARROW
         END
         POPUP "Zone"
         BEGIN
@@ -2344,6 +2354,7 @@ BEGIN
                 MENUITEM "3. View OD Matrix Estimation Log", ID_VIEW_ODME_Result
             END
             MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+            MENUITEM "Generate input_agent.bin File", ID_DEMANDTOOLS_GENERATEINPUT
         END
         POPUP "Accessibility Tools"
         BEGIN

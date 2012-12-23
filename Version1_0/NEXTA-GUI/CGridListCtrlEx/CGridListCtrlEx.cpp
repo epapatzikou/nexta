@@ -180,8 +180,9 @@ CGridListCtrlEx::~CGridListCtrlEx()
 	delete m_pColumnConfig;
 	m_pColumnConfig = NULL;
 
-	delete m_pOleDropTarget;
-	m_pOleDropTarget = NULL;
+	//Xuesong: remove this line to prevent errors
+	//delete m_pOleDropTarget;
+	//m_pOleDropTarget = NULL;
 }
 
 //------------------------------------------------------------------------

@@ -502,7 +502,7 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 				}
 			}
 
-			pLink->m_NumLanes= max(1,number_of_lanes);
+			pLink->m_NumberOfLanes= max(1,number_of_lanes);
 			pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
 			pLink->m_LinkType= type; //type, default = 100;
 
@@ -1374,7 +1374,7 @@ bool Mustang::CreateDefaultLanes(void)
 			for(iLink=pNode->inLinks.begin();iLink!=pNode->inLinks.end();iLink++)
 			{
 				pLink = (*iLink);				 
-				for(i=1;i<=pLink->m_NumLanes;i++)
+				for(i=1;i<=pLink->m_NumberOfLanes;i++)
 				{
 					pLane = new MLane();
 					pLink->inLanes.push_back(pLane);
@@ -1403,7 +1403,7 @@ bool Mustang::CreateDefaultLanes(void)
 			for( iLink = pNode->outLinks.begin(); iLink != pNode->outLinks.end(); iLink++)// out lane
 			{
 				pLink = (*iLink);				 
-				for(int i=1;i<=pLink->m_NumLanes;i++)
+				for(int i=1;i<=pLink->m_NumberOfLanes;i++)
 				{
 					pLane = new MLane();
 					pLink->outLanes.push_back(pLane);
@@ -1441,7 +1441,7 @@ bool Mustang::CreateDefaultLanes(void)
 			MLink* poRLink = pNode->outLinkMap[rightAppr];
 
 			// 产生所有的车道
-			for(i=1;i<=piBLink->m_NumLanes;i++) // branch in, all lanes right turn, extra left turn pocket
+			for(i=1;i<=piBLink->m_NumberOfLanes;i++) // branch in, all lanes right turn, extra left turn pocket
 			{
 				pLane = new MLane();
 				piBLink->inLanes.push_back(pLane);
@@ -1466,7 +1466,7 @@ bool Mustang::CreateDefaultLanes(void)
 			pLane->rightTurn = 0; 
 			m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNameMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 				<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
-			for(i=1;i<=poBLink->m_NumLanes;i++)// branch out
+			for(i=1;i<=poBLink->m_NumberOfLanes;i++)// branch out
 			{
 				pLane = new MLane();
 				poBLink->outLanes.push_back(pLane);
@@ -1481,7 +1481,7 @@ bool Mustang::CreateDefaultLanes(void)
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 
-			for(i=1;i<=piRLink->m_NumLanes;i++) // right in, all lanes through, extra left turn pocket
+			for(i=1;i<=piRLink->m_NumberOfLanes;i++) // right in, all lanes through, extra left turn pocket
 			{
 				pLane = new MLane();
 				piRLink->inLanes.push_back(pLane);
@@ -1507,7 +1507,7 @@ bool Mustang::CreateDefaultLanes(void)
 			m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNameMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 				<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 
-			for(i=1;i<=poRLink->m_NumLanes;i++)// right out
+			for(i=1;i<=poRLink->m_NumberOfLanes;i++)// right out
 			{
 				pLane = new MLane();
 				poRLink->outLanes.push_back(pLane);
@@ -1522,7 +1522,7 @@ bool Mustang::CreateDefaultLanes(void)
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}	
 
-			for(i=1;i<=piLLink->m_NumLanes;i++) // left in, all lanes through, first lane share right turn
+			for(i=1;i<=piLLink->m_NumberOfLanes;i++) // left in, all lanes through, first lane share right turn
 			{
 				pLane = new MLane();
 				piLLink->inLanes.push_back(pLane);
@@ -1536,7 +1536,7 @@ bool Mustang::CreateDefaultLanes(void)
 				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNameMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
-			for(i=1;i<=poLLink->m_NumLanes;i++)// right out
+			for(i=1;i<=poLLink->m_NumberOfLanes;i++)// right out
 			{
 				pLane = new MLane();
 				poLLink->outLanes.push_back(pLane);
@@ -1556,7 +1556,7 @@ bool Mustang::CreateDefaultLanes(void)
 			for(iLink=pNode->inLinks.begin();iLink!=pNode->inLinks.end();iLink++)
 			{
 				pLink = (*iLink);
-				for(i=1;i<=pLink->m_NumLanes;i++)
+				for(i=1;i<=pLink->m_NumberOfLanes;i++)
 				{
 					pLane = new MLane();
 					pLink->inLanes.push_back(pLane);
@@ -1565,7 +1565,7 @@ bool Mustang::CreateDefaultLanes(void)
 					pLane->m_NodeID = pNode->m_NodeID;
 					pLane->through = 1;
 					pLane->m_PocketLength = 0.0;
-					pLane->leftTurn = (i==pLink->m_NumLanes)?1:0; //最后一条准左转
+					pLane->leftTurn = (i==pLink->m_NumberOfLanes)?1:0; //最后一条准左转
 					pLane->rightTurn = (1==i)?1:0; // 第一条lane准右转
 					m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNameMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 						<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
@@ -1574,7 +1574,7 @@ bool Mustang::CreateDefaultLanes(void)
 			for(iLink=pNode->outLinks.begin();iLink!=pNode->outLinks.end();iLink++)
 			{
 				pLink = (*iLink);
-				for(i=1;i<=pLink->m_NumLanes;i++)
+				for(i=1;i<=pLink->m_NumberOfLanes;i++)
 				{
 					pLane = new MLane();
 					pLink->outLanes.push_back(pLane);
@@ -1903,7 +1903,7 @@ bool Mustang::ProcessLanes(void)
 					MLink *poLink = (*ioLink);
 					if (pLink->m_ReverseLinkID == poLink->m_LinkID )
 						continue;
-					int nTurnCount = min(pLink->m_NumLanes,poLink->m_NumLanes);
+					int nTurnCount = min(pLink->m_NumberOfLanes,poLink->m_NumberOfLanes);
 					for(i=1;i<=nTurnCount;i++)
 					{
 						MLaneTurn* pLaneTurn = new MLaneTurn();
@@ -1934,7 +1934,7 @@ bool Mustang::ProcessLanes(void)
 					MLink *poLink = (*ioLink);
 					if (pLink->m_ReverseLinkID == poLink->m_LinkID )
 						continue;
-					int nTurnCount = min(pLink->m_NumLanes,poLink->m_NumLanes);
+					int nTurnCount = min(pLink->m_NumberOfLanes,poLink->m_NumberOfLanes);
 					for(i=1;i<=nTurnCount;i++)
 					{
 						MLaneTurn* pLaneTurn = new MLaneTurn();
@@ -2264,13 +2264,13 @@ bool Mustang::WriteLinks()
 			if ( pLink->m_ShapePoints.size() == 2 )
 			{
 				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" />\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes);
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes);
 				m_rf<<strLine;
 			}
 			else
 			{
 				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" >\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes);
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes);
 				m_rf<<strLine;
 				strLine.Format("\t\t\t\t<LINKPOLY>\n");
 				m_rf<<strLine;
@@ -2307,13 +2307,13 @@ bool Mustang::WriteLinks()
 			if ( pLink->m_ShapePoints.size() == 2 )
 			{
 				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" />\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->m_ReverseLinkID );
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID );
 				m_rf<<strLine;
 			}
 			else
 			{
 				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" >\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumLanes,pLink->m_ReverseLinkID);
+					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID);
 				m_rf<<strLine;
 				strLine.Format("\t\t\t\t<LINKPOLY>\n");
 				m_rf<<strLine;
@@ -3204,7 +3204,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 					pLane->m_PocketLength = fPocketLength;
 					pLane->through = false;
 					pLane->rightTurn = false;
-					pLane->m_Index = pLink->m_NumLanes + 1;
+					pLane->m_Index = pLink->m_NumberOfLanes + 1;
 				}
 			}
 		}
@@ -3212,7 +3212,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 		for(int i=0;i<p->inLinks.size();i++)
 		{
 			MLink* pLink = p->inLinks[i];
-			for(int j=1;j<=pLink->m_NumLanes;j++)
+			for(int j=1;j<=pLink->m_NumberOfLanes;j++)
 			{
 				MLane * pLane = new MLane();
 				pLink->inLanes.push_back(pLane);
@@ -3222,14 +3222,14 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 				pLane->m_NodeID = p->m_NodeID;
 				pLane->m_PocketLength = 0;
 				pLane->through = true;
-				pLane->rightTurn = j==pLink->m_NumLanes ? true : false;
+				pLane->rightTurn = j==pLink->m_NumberOfLanes ? true : false;
 				pLane->m_Index = j;
 			}
 		}		
 		for(int i=0;i<p->outLinks.size();i++)
 		{
 			MLink* pLink = p->outLinks[i];
-			for(int j=1;j<=pLink->m_NumLanes;j++)
+			for(int j=1;j<=pLink->m_NumberOfLanes;j++)
 			{
 				MLane * pLane = new MLane();
 				pLink->outLanes.push_back(pLane);

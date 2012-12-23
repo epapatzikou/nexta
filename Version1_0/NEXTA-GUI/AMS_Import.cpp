@@ -972,7 +972,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						}
 					}
 
-					pLink->m_NumLanes= number_of_lanes;
+					pLink->m_NumberOfLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
@@ -1001,7 +1001,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 						float R_lane_capacity_in_vhc_per_hour= r_capacity_in_pcphpl;
 						float R_grade= grade;
-						pLink->m_NumLanes= R_number_of_lanes;
+						pLink->m_NumberOfLanes= R_number_of_lanes;
 						pLink->m_SpeedLimit= R_speed_limit_in_mph;
 						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_Grade = R_grade;
@@ -1020,7 +1020,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 					pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
@@ -1345,7 +1345,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						}
 					}
 
-					pLink->m_NumLanes= number_of_lanes;
+					pLink->m_NumberOfLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 					pLink->m_Length= length;  // minimum distance
@@ -1368,7 +1368,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 						float R_lane_capacity_in_vhc_per_hour= capacity_in_pcphpl;
 						float R_grade= grade;
-						pLink->m_NumLanes= number_of_lanes;
+						pLink->m_NumberOfLanes= number_of_lanes;
 						pLink->m_SpeedLimit= speed_limit_in_mph;
 						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
 						pLink->m_Grade = R_grade;
@@ -1385,7 +1385,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 					pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
@@ -1515,7 +1515,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				{
 				
 				CString str;
-				str.Format ("Reading field %s = 0 at record No. %d",zone_id_name, zone_record_count);
+				str.Format ("Reading field %s = 0 at record No. %d for field %s. This field might not exist.",zone_id_name, zone_record_count,zone_id_name);
 				
 				AfxMessageBox(str);
 				return false;
@@ -2468,7 +2468,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 							pLink->m_bToBeShifted = bToBeShifted; 
 
-							pLink->m_NumLanes= number_of_lanes;
+							pLink->m_NumberOfLanes= number_of_lanes;
 							pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
 							pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 
@@ -2501,7 +2501,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 							m_LinkNotoLinkMap[m_LinkSet.size()] = pLink;
 
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumLanes);
+							m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 
 							default_distance_sum+= pLink->DefaultDistance();
@@ -2985,11 +2985,17 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	CString DefaultDataFolder;
 	DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
 
+	bool bNodeControlFile = false;
+	bool bLinkTypeFile = false;
+	bNodeControlFile = CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,m_ProjectDirectory,"input_node_control_type.csv");
+	bLinkTypeFile = CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,m_ProjectDirectory,"input_link_type.csv");
+
+
+
 	if(ReadNodeControlTypeCSVFile(directory+"input_node_control_type.csv") == false)
 	{
 		CString msg;
-		msg.Format ("Please prepare node control type definition file input_node_control_type.csv and place it at folder %s.",
-			directory);
+		msg.Format ("Please prepare node control type definition file input_link_type.csv and place it at folder %s.",directory);
 			AfxMessageBox(msg);
 		return false;
 	}
@@ -3002,6 +3008,18 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 			AfxMessageBox(msg);
 		return false;
 	}
+
+	if(bNodeControlFile || bNodeControlFile)
+	{
+		CString msg;
+		msg.Format ("Please use Excel to review files input_node_control_type.csv and input_link_type.csv, as default files are used.");
+
+			AfxMessageBox(msg, MB_ICONINFORMATION);
+
+			OpenCSVFileInExcel(m_ProjectDirectory+"input_node_control_type.csv");
+			OpenCSVFileInExcel(m_ProjectDirectory+"input_link_type.csv");
+	}
+
 
 	char pricing_type_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);

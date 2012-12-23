@@ -251,7 +251,7 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentP
 		p2_new.y = (-1)*node_set_back*sin(theta);
 
 
-		int link_mid_offset  = (pInLink->m_NumLanes/2 +1)*lane_width;  // mid
+		int link_mid_offset  = (pInLink->m_NumberOfLanes/2 +1)*lane_width;  // mid
 		
 		pt_movement[0].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
 		pt_movement[0].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
@@ -286,7 +286,7 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentP
 
 		pDC->TextOutA(pt_text.x-10,pt_text.y,str);
 
-		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumLanes,theta,lane_width);
+		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumberOfLanes,theta,lane_width);
 
 ////////////////////////////////////////////
 		//5: outgoing link
@@ -298,7 +298,7 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentP
 		p2_new.x = node_set_back*cos(theta);  
 		p2_new.y = node_set_back*sin(theta);
 
-		link_mid_offset  = (pOutLink->m_NumLanes/2+1)*lane_width;
+		link_mid_offset  = (pOutLink->m_NumberOfLanes/2+1)*lane_width;
 		pt_movement[2].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
 		pt_movement[2].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
 
@@ -321,7 +321,7 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentP
 
 		pDC->TextOutA(pt_text.x-10 ,pt_text.y,str);
 
-		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumLanes,theta,lane_width);
+		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumberOfLanes,theta,lane_width);
 
 
 		// draw movement 
@@ -430,7 +430,7 @@ void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int Cur
 		p2_new.y = (-1)*node_set_back*sin(theta);
 
 
-		int link_mid_offset  = (pInLink->m_NumLanes/2 +1)*lane_width;  // mid
+		int link_mid_offset  = (pInLink->m_NumberOfLanes/2 +1)*lane_width;  // mid
 		
 		pt_movement[0].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
 		pt_movement[0].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
@@ -465,7 +465,7 @@ void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int Cur
 
 //		pDC->TextOutA(pt_text.x-10,pt_text.y,str);
 
-		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumLanes,theta,lane_width);
+		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumberOfLanes,theta,lane_width);
 
 ////////////////////////////////////////////
 		//5: outgoing link
@@ -477,7 +477,7 @@ void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int Cur
 		p2_new.x = node_set_back*cos(theta);  
 		p2_new.y = node_set_back*sin(theta);
 
-		link_mid_offset  = (pOutLink->m_NumLanes/2+1)*lane_width;
+		link_mid_offset  = (pOutLink->m_NumberOfLanes/2+1)*lane_width;
 		pt_movement[2].x = p2_new.x + link_mid_offset* cos(theta-PI/2.0f);
 		pt_movement[2].y = p2_new.y + link_mid_offset* sin(theta-PI/2.0f);
 
@@ -500,7 +500,7 @@ void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int Cur
 
 //		pDC->TextOutA(pt_text.x-10 ,pt_text.y,str);
 
-		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumLanes,theta,lane_width);
+		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumberOfLanes,theta,lane_width);
 
 
 		// draw movement 
