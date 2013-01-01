@@ -176,7 +176,6 @@ int g_EndIterationsForOutputPath = 2;
 int g_NumberOfIterations = 1;
 int g_ParallelComputingMode = 1;
 int g_AgentBasedAssignmentFlag = 1;
-int g_AccessibilityCalculationMode = 0;  // none, agent-based, od-based, 
 float g_ConvergencyRelativeGapThreshold_in_perc;
 int g_NumberOfInnerIterations;
 
@@ -184,7 +183,7 @@ int g_VehicleLoadingMode = 2; // not load from vehicle file by default, 1: load 
 int g_PlanningHorizon = 120;  // short horizon for saving memory
 
 // assignment
-int g_UEAssignmentMethod = 1; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
+e_assignment_method g_UEAssignmentMethod = assignment_day_to_day; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
 float g_FreewayBiasFactor = 1.0f;
 int g_AgentBinInputMode = 0;
 int g_Day2DayAgentLearningMethod  =0; 
@@ -941,7 +940,7 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->m_NumberOfRightTurnBays = NumberOfRightTurnBays;
 				pLink->m_Direction = link_direction;
 
-				if(g_AgentBasedAssignmentFlag != 2)
+				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distanance)
 					pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
 				else
 					pLink->m_Length= length;
@@ -1105,7 +1104,7 @@ void g_ReadInputFiles(int scenario_no)
 					cout << " loading " << i/1000 << "K links..." << endl;
 				}
 
-				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != 2) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
+				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != assignment_accessibility_distanance) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
 				{
 					cout << "The network has more than "<< MAX_LINK_NO << " links."<< endl <<"Please contact the developers for a new 64 bit version for this large-scale network." << endl;
 					getchar();
@@ -1135,14 +1134,14 @@ void g_ReadInputFiles(int scenario_no)
 	// freeway, types
 
 
-	if(g_AccessibilityCalculationMode == 1)
+	if(g_UEAssignmentMethod == assignment_accessibility_distanance)
 	{
 		g_AgentBasedAccessibilityMatrixGeneration();
 
 		exit(0);
 	}
 
-	if(g_AccessibilityCalculationMode == 2)
+	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
 	{
 		g_AgentBasedShortestPathGeneration();
 
@@ -3227,7 +3226,6 @@ void g_ReadDTALiteSettings()
 
 	g_StartIterationsForOutputPath = g_EndIterationsForOutputPath = g_NumberOfIterations -1;
 
-	g_UEAssignmentMethod = g_GetPrivateProfileInt("assignment", "UE_assignment_method", 1, g_DTASettingFileName); // default is day-to-day learning
 	g_Day2DayAgentLearningMethod = g_GetPrivateProfileInt("assignment", "day_to_day_agent_learning_method", 0, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceEarlyDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_early_delay_penalty", 0.969387755f, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceLateDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_late_delay_penalty", 1.306122449f, g_DTASettingFileName); // default is non learning
@@ -3267,7 +3265,7 @@ void g_ReadDTALiteSettings()
 	g_information_updating_interval_of_VMS_in_min  = g_GetPrivateProfileInt("traveler_information", "information_updating_interval_of_VMS_in_min",60,g_DTASettingFileName);	
 
 
-	if(g_AccessibilityCalculationMode >=1) 
+	if(g_UEAssignmentMethod == assignment_accessibility_distanance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 
 		g_PlanningHorizon = 1;
 
 	srand(g_RandomSeed);

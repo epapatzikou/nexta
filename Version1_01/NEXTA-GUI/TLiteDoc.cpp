@@ -356,6 +356,15 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_agent_demand_input_mode = 0;
+	m_ODME_mode = 0;
+	m_demand_multiplier = 1;
+
+	m_number_of_assignment_days = 20;
+	m_traffic_flow_model = 3;
+	m_traffic_assignment_method = 1;
+
+	m_ActivityLocationCount = 0;
 	m_SearchMode= efind_node;
 	m_LongLatFlag = false; // default, we do not know if the coordinate system is long or lat
 	m_bUnitMileInitialized = false;
@@ -1241,6 +1250,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 
 	ReadMetaDemandCSVFile(directory+"input_demand_meta_data.csv");
+	ReadScenarioSettingCSVFile(directory+"input_scenario_settings.csv");
 
 	LoadSimulationOutput();
 
@@ -2839,6 +2849,7 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 	if (parser.OpenCSVFile(lpszFileName))
 	{
 		int lineno =0;
+		m_ActivityLocationCount = 0;
 		while(parser.ReadRecord())
 		{
 			int zone_number;
@@ -2892,6 +2903,7 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 				m_ODSize = zone_number;
 
 			lineno++;
+			m_ActivityLocationCount++;
 		}
 
 		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",lineno,lpszFileName);
@@ -3000,6 +3012,146 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 
 }
 
+bool CTLiteDoc::ReadScenarioSettingCSVFile(LPCTSTR lpszFileName)
+{
+		CCSVParser parser_scenario;
+	if (parser_scenario.OpenCSVFile(lpszFileName))
+	{
+
+		m_NumberOfSecenarioSettings = 0;
+		while(parser_scenario.ReadRecord())
+		{
+		parser_scenario.GetValueByFieldName("number_of_assignment_days",m_number_of_assignment_days);
+
+		parser_scenario.GetValueByFieldName("traffic_flow_model",m_traffic_flow_model);
+
+		parser_scenario.GetValueByFieldName("traffic_assignment_method",m_traffic_assignment_method);
+		parser_scenario.GetValueByFieldName("agent_demand_input_mode",m_agent_demand_input_mode);
+		parser_scenario.GetValueByFieldName("ODME_mode",m_ODME_mode);
+		parser_scenario.GetValueByFieldName("emission_data_output",m_emission_data_output);
+		parser_scenario.GetValueByFieldName("demand_multiplier",m_demand_multiplier);
+		m_NumberOfSecenarioSettings++;
+		}
+		
+	}
+	return true;
+}
+
+
+bool CTLiteDoc::WriteScenarioSettingCSVFile(LPCTSTR lpszFileName)
+{
+int scenario_no;
+string scenario_name;
+int random_seed;
+int default_arterial_k_jam;
+int default_cycle_length;
+int ODME_start_iteration;
+
+float ODME_max_percentage_deviation_wrt_hist_demand;
+float ODME_step_size;
+float freeway_bias_factor;
+int ue_gap_calculation_method;
+int agent_demand_input_mode;
+int calibration_data_start_time_in_min;
+int calibration_data_end_time_in_min;
+int routing_movement_delay_mode;
+
+int accessibility_mode;
+
+		CCSVParser parser_scenario;
+	if (parser_scenario.OpenCSVFile(lpszFileName))
+	{
+		m_NumberOfSecenarioSettings = 0;
+
+		while(parser_scenario.ReadRecord())
+		{
+		parser_scenario.GetValueByFieldName("scenario_no",scenario_no);
+		parser_scenario.GetValueByFieldName("scenario_name",scenario_name);
+
+		// the following parameters can be changed through dialog
+		//parser_scenario.GetValueByFieldName("number_of_assignment_days",m_number_of_assignment_days);//
+		//parser_scenario.GetValueByFieldName("traffic_flow_model",m_traffic_flow_model);
+		//parser_scenario.GetValueByFieldName("traffic_assignment_method",m_traffic_assignment_method);
+		//parser_scenario.GetValueByFieldName("demand_multiplier",m_demand_multiplier);
+		//parser_scenario.GetValueByFieldName("emission_data_output",m_emission_data_output);
+
+		parser_scenario.GetValueByFieldName("agent_demand_input_mode",m_agent_demand_input_mode);
+		parser_scenario.GetValueByFieldName("ODME_mode",m_ODME_mode);
+
+		parser_scenario.GetValueByFieldName("random_seed",random_seed);
+		parser_scenario.GetValueByFieldName("default_arterial_k_jam",default_arterial_k_jam);
+		parser_scenario.GetValueByFieldName("default_cycle_length",default_cycle_length);
+
+		parser_scenario.GetValueByFieldName("ODME_start_iteration",ODME_start_iteration);
+		parser_scenario.GetValueByFieldName("ODME_max_percentage_deviation_wrt_hist_demand",ODME_max_percentage_deviation_wrt_hist_demand);
+		parser_scenario.GetValueByFieldName("ODME_step_size",ODME_step_size);
+		parser_scenario.GetValueByFieldName("freeway_bias_factor",freeway_bias_factor);
+		parser_scenario.GetValueByFieldName("ue_gap_calculation_method",ue_gap_calculation_method);
+		parser_scenario.GetValueByFieldName("agent_demand_input_mode",agent_demand_input_mode);
+		parser_scenario.GetValueByFieldName("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
+		parser_scenario.GetValueByFieldName("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
+		parser_scenario.GetValueByFieldName("routing_movement_delay_mode",routing_movement_delay_mode);
+//	parser_scenario.GetValueByFieldName("accessibility_calculation_mode",accessibility_mode);
+		
+		m_NumberOfSecenarioSettings++;
+		}
+	
+	parser_scenario.CloseCSVFile ();
+
+
+	}
+
+
+	if(m_NumberOfSecenarioSettings==1)
+	{
+	CCSVWriter ScenarioFile;
+
+	if(ScenarioFile.Open(lpszFileName))
+	{
+
+
+		ScenarioFile.SetFieldNameAndValue("scenario_no",scenario_no);
+		ScenarioFile.SetFieldNameAndValue("scenario_name",scenario_name);
+		ScenarioFile.SetFieldNameAndValue("number_of_assignment_days",m_number_of_assignment_days);//
+		ScenarioFile.SetFieldNameAndValue("traffic_flow_model",m_traffic_flow_model);
+		ScenarioFile.SetFieldNameAndValue("traffic_assignment_method",m_traffic_assignment_method);
+		ScenarioFile.SetFieldNameAndValue("agent_demand_input_mode",m_agent_demand_input_mode);
+		ScenarioFile.SetFieldNameAndValue("ODME_mode",m_ODME_mode);
+		ScenarioFile.SetFieldNameAndValue("emission_data_output",m_emission_data_output);
+		ScenarioFile.SetFieldNameAndValue("demand_multiplier",m_demand_multiplier);
+
+		ScenarioFile.SetFieldNameAndValue("random_seed",random_seed);
+		ScenarioFile.SetFieldNameAndValue("default_arterial_k_jam",default_arterial_k_jam);
+		ScenarioFile.SetFieldNameAndValue("default_cycle_length",default_cycle_length);
+
+		ScenarioFile.SetFieldNameAndValue("ODME_start_iteration",ODME_start_iteration);
+		ScenarioFile.SetFieldNameAndValue("ODME_max_percentage_deviation_wrt_hist_demand",ODME_max_percentage_deviation_wrt_hist_demand);
+		ScenarioFile.SetFieldNameAndValue("ODME_step_size",ODME_step_size);
+		ScenarioFile.SetFieldNameAndValue("freeway_bias_factor",freeway_bias_factor);
+		ScenarioFile.SetFieldNameAndValue("ue_gap_calculation_method",ue_gap_calculation_method);
+		ScenarioFile.SetFieldNameAndValue("agent_demand_input_mode",agent_demand_input_mode);
+		ScenarioFile.SetFieldNameAndValue("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
+		ScenarioFile.SetFieldNameAndValue("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
+		ScenarioFile.SetFieldNameAndValue("routing_movement_delay_mode",routing_movement_delay_mode);
+//		ScenarioFile.SetFieldNameAndValue("accessibility_calculation_mode",accessibility_mode);
+
+
+		ScenarioFile.WriteHeader ();
+		ScenarioFile.WriteRecord ();
+
+	}
+	}else if (m_NumberOfSecenarioSettings >=2)
+	{
+	AfxMessageBox("There are multiple scenarios in input_scenario_settings.csv. Please use Excel to make changes.", MB_ICONINFORMATION);
+
+	OpenCSVFileInExcel(lpszFileName);
+	
+	}
+
+	return true;
+}
+
+
 bool CTLiteDoc::ReadMetaDemandCSVFile(LPCTSTR lpszFileName)
 {
 	CString directory;
@@ -3030,6 +3182,8 @@ bool CTLiteDoc::ReadMetaDemandCSVFile(LPCTSTR lpszFileName)
 			float subtotal_demand_volume;
 
 			parser.GetValueByFieldName("file_name",file_name);
+
+			m_DemandFileVector.push_back (file_name.c_str ());
 			parser.GetValueByFieldName("format_type",format_type);
 			parser.GetValueByFieldName("demand_type",demand_type);
 
@@ -6465,66 +6619,17 @@ void CTLiteDoc::OnHelpVisitdevelopmentwebsite()
 
 bool CTLiteDoc::EditTrafficAssignmentOptions()
 {
-	OpenCSVFileInExcel(m_ProjectDirectory+"input_scenario_settings.csv");
-	return true;
-
-	bool bOKFlag = false;
-
-	CString SettingsFile;
-	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
-	float DemandGlobalMultiplier = g_GetPrivateProfileDouble("demand", "global_multiplier",1.0,SettingsFile);	
-	int DemandLoadingFlag = (int)g_GetPrivateProfileDouble("demand", "load_vehicle_file_mode", 0, SettingsFile);	
-
-	int NumberOfIterations = (int)(g_GetPrivateProfileDouble("assignment", "number_of_iterations", 10, SettingsFile));	
-	int TrafficFlowModelFlag = (int)g_GetPrivateProfileDouble("simulation", "traffic_flow_model", 3, SettingsFile);	
-	int simulation_horizon_in_min = (int)g_GetPrivateProfileDouble("simulation", "simulation_horizon_in_min", 800, SettingsFile);	
-	int agent_based_assignment = (int)g_GetPrivateProfileDouble("assignment", "agent_based_assignment", 1, SettingsFile);	
 
 	CDlgAssignmentSettings dlg;
-	dlg.m_ProjectDirectory = m_ProjectDirectory;
-	dlg.m_NumberOfIterations = NumberOfIterations;
-	dlg.m_DemandGlobalMultiplier = DemandGlobalMultiplier;
-	dlg.m_SimultionMethod  = TrafficFlowModelFlag;
-	dlg.m_DemandLoadingMode = DemandLoadingFlag;
-	dlg.m_SimulationHorizon = simulation_horizon_in_min;
-	dlg.m_agent_based_assignment_flag = agent_based_assignment;
+	dlg.m_pDoc = this;
 
-	dlg.m_EmissionDataOutput = (int)g_GetPrivateProfileDouble("emission", "emission_data_output", 0, SettingsFile);	
 	if(dlg.DoModal() ==IDOK)
 	{
-		char lpbuffer[64];
-		NumberOfIterations = dlg.m_NumberOfIterations;
-		DemandGlobalMultiplier = dlg.m_DemandGlobalMultiplier;
-		TrafficFlowModelFlag = dlg.m_SimultionMethod;
-		simulation_horizon_in_min = dlg.m_SimulationHorizon;
-
-		sprintf_s(lpbuffer,"%d",TrafficFlowModelFlag);
-		WritePrivateProfileString("simulation","traffic_flow_model",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",simulation_horizon_in_min);
-		WritePrivateProfileString("simulation","simulation_horizon_in_min",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",NumberOfIterations);
-		WritePrivateProfileString("assignment","number_of_iterations",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%5.4f",DemandGlobalMultiplier);
-		WritePrivateProfileString("demand","global_multiplier",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",dlg.m_DemandLoadingMode);
-		WritePrivateProfileString("demand","load_vehicle_file_mode",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",dlg.m_agent_based_assignment_flag);
-		WritePrivateProfileString("assignment","agent_based_assignment",lpbuffer,SettingsFile);
-
-		sprintf_s(lpbuffer,"%d",dlg.m_EmissionDataOutput);
-		WritePrivateProfileString("emission","emission_data_output",lpbuffer,SettingsFile);
-
-		bOKFlag = true;
+		return true;
 	}else
-	{  // Exit from On cancel
-		bOKFlag = false;
+	{ 
+		return false;
 	}
-	return bOKFlag;
 }
 
 void CTLiteDoc::OnToolsRuntrafficassignment()
@@ -6533,7 +6638,7 @@ void CTLiteDoc::OnToolsRuntrafficassignment()
 		OnToolsPerformtrafficassignment();
 	else
 	{ //DTALite Settings
-		//	if(EditTrafficAssignmentOptions())
+		if(EditTrafficAssignmentOptions() == true)
 		OnToolsPerformtrafficassignment();
 	}
 

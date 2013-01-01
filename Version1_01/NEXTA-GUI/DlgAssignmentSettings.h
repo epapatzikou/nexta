@@ -1,6 +1,8 @@
 #pragma once
 #include "afxwin.h"
-
+#include "TLite.h"
+#include "Network.h"
+#include "TLiteDoc.h"
 
 // CDlgAssignmentSettings dialog
 
@@ -10,11 +12,11 @@ class CDlgAssignmentSettings : public CDialog
 
 public:
 
+	CTLiteDoc* m_pDoc;
+
 	CDlgAssignmentSettings(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgAssignmentSettings();
 
-	bool m_bLoadSampleProject;
-	CString m_ProjectDirectory;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_Settings };
 
@@ -23,6 +25,9 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+
+	bool m_bModifiedFlag;
+
 	afx_msg void OnEnChangeEdit1();
 	int m_NumberOfIterations;
 	float m_DemandGlobalMultiplier;
@@ -36,9 +41,14 @@ public:
 	afx_msg void OnBnClickedButtonCopyVehicleFile();
 	int m_SimulationHorizon;
 	int m_agent_based_assignment_flag;
-	CListBox m_RoutingMethod;
+	CListBox m_AssignmentMethod;
 	afx_msg void OnLbnSelchangeListDemandLoadingMode();
 	afx_msg void OnLbnSelchangeListRoutingMethod();
 	BOOL m_EmissionDataOutput;
 	afx_msg void OnBnClickedOk2();
+	afx_msg void OnLbnSelchangeListDemandLoadingMode2();
+	CListBox m_NetworkDataList;
+	afx_msg void OnBnClickedCheckEmissionData();
+	float m_DemandLoadingMultipler;
+	afx_msg void OnEnChangeEditDemandLoadingmultiplier();
 };

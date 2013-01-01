@@ -195,6 +195,14 @@ public:
 
 	}
 
+	template <class T>  void SetFieldNameAndValue(string field_name, T& value)
+	{ 
+		FieldsIndices[field_name] = (int)(LineFieldsName.size());
+		LineFieldsName.push_back (field_name);
+		LineFieldsCategoryName.push_back(" ");
+		SetValueByFieldName(field_name,value);
+	}
+
 	void SetFieldNameWithCategoryName(string field_name,string category_name)
 	{ 
 		FieldsIndices[field_name] = (int)(LineFieldsName.size());

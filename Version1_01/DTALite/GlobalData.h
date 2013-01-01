@@ -270,7 +270,7 @@ extern int g_TollingMethodFlag;
 extern float g_VMTTollingRate;
 
 // for traffic assignment 
-extern int g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
+extern e_assignment_method g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
 extern float g_FreewayBiasFactor; // 1: default value, 0.9 travel time on freeway will be weighted less
 
 extern int g_Day2DayAgentLearningMethod; // 0: no learning (use previous day), 1: route choice learning only, 2: route choice and departure time learning
