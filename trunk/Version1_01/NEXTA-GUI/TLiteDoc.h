@@ -621,6 +621,10 @@ public:
 	bool ReadActivityLocationCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadMetaDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadScenarioSettingCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool WriteScenarioSettingCSVFile(LPCTSTR lpszFileName);
+
+
 
 	BOOL ReadDYNASMARTSimulationResults();
 	void RecalculateLinkMOEFromVehicleTrajectoryFile();
@@ -634,8 +638,25 @@ public:
 
 	bool ReadScenarioData();   // for road network
 
+	//scenario data
+
+	int m_number_of_assignment_days;
+	int m_traffic_flow_model;
+	int m_traffic_assignment_method;
+
+	int m_agent_demand_input_mode;
+	int m_emission_data_output;
+	int m_ODME_mode;
+	float m_demand_multiplier;
+
+	int m_NumberOfSecenarioSettings;
+
+	//
+
 	int m_DemandLoadingStartTimeInMin;
 	int m_DemandLoadingEndTimeInMin;
+
+
 
 	// structure for demand file
 
@@ -828,6 +849,8 @@ public:
 	bool m_bSaveProjectFromSubareaCut;
 
 	std::map<int, DTAZone>	m_ZoneMap;
+	int m_ActivityLocationCount;
+	std::vector<CString> m_DemandFileVector;
 	int m_CriticalOriginZone;
 	int m_CriticalDestinationZone;
 
@@ -1664,7 +1687,7 @@ public:
 		}else
 		return NULL;
 	}
-	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote);
+	CString GetTimeStampStrFromIntervalNo(int time_interval, bool with_single_quote=false);
 	CString GetTimeStampFloatingPointStrFromIntervalNo(int time_interval);
 
 	CString GetTimeStampString(int time_stamp_in_min);

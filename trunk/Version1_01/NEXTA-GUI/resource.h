@@ -178,6 +178,8 @@
 #define IDC_EDIT_Number_Iterations      1021
 #define IDC_EDIT_Multiplier             1022
 #define IDC_LIST                        1022
+#define IDC_EDIT_Number_Iterations2     1022
+#define IDC_EDIT_Demand_LoadingMultiplier 1022
 #define IDC_CUSTOM1                     1023
 #define IDC_GRID_CTRL                   1023
 #define IDC_GRIDLISTCTRLEX              1023
@@ -198,6 +200,7 @@
 #define ID_EDIT_META_DATABASE3          1031
 #define IDC_EDIT_TimeInterval           1032
 #define IDC_EDIT3                       1032
+#define IDC_LIST_DEMAND_LOADING_MODE2   1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
 #define IDC_EDIT_Number_of_Zones        1034
 #define IDC_EDIT_StartingTime_in_min    1034

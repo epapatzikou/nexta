@@ -250,16 +250,15 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 
 		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
-
-		if(g_UEAssignmentMethod==0)  // MSA
+		if(g_UEAssignmentMethod== assignment_MSA)  // MSA
 		{
 			switching_rate = 1.0f/(iteration+1);
 		}
-		if(g_UEAssignmentMethod==1) // day to day learning
+		if(g_UEAssignmentMethod== assignment_day_to_day) // day to day learning
 		{
 			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 		}
-		if(g_UEAssignmentMethod==2) // gap function based method,
+		if(g_UEAssignmentMethod==assignment_gap_function) // gap function based method,
 		{
 			switching_rate =  1.0f/(iteration+1) + 0.05; //additonal switch
 
@@ -362,7 +361,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			float relative_gap = 0.0f;
-				if(g_UEAssignmentMethod==2) // gap function based method: the final switching rate is proportaitonal to relative gap
+				if(g_UEAssignmentMethod== assignment_gap_function) // gap function based method: the final switching rate is proportaitonal to relative gap
 				{
 					relative_gap = max(0,ExperiencedGeneralizedTravelTime - TotalCost)/max(0.1,ExperiencedGeneralizedTravelTime);
 
@@ -740,9 +739,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 			switch (g_UEAssignmentMethod)
 			{
-			case 0: switching_rate = 1.0f/(iteration+1); // 0: MSA 
+			case assignment_MSA: switching_rate = 1.0f/(iteration+1); // 0: MSA 
 				break;
-			case 1: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+			case assignment_day_to_day: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 
 				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching || pVeh->m_TripTime > TotalCost*(1+g_RelativeTravelTimePercentageDifferenceForSwitching/100))
 				{

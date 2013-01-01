@@ -232,10 +232,7 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 	AddColumn("agent_demand_input_mode",0);
 	AddColumn("calibration_data_start_time_in_min",0);
 	AddColumn("calibration_data_end_time_in_min",1440);
-	AddColumn("accessibility_calculation_mode",0);
 	AddColumn("routing_movement_delay_mode",0);
-
-
 	}
 
 	if(m_TabText.Find("Vehicle Type")!=-1)  //scenario settings

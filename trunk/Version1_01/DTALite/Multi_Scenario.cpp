@@ -210,13 +210,15 @@ void g_MultiScenarioTrafficAssignment()
 
 		g_TrafficFlowModelFlag = (e_traffic_flow_model)traffic_flow_model;
 
-		g_UEAssignmentMethod = 1;
-		if(parser_scenario.GetValueByFieldName("traffic_assignment_method",g_UEAssignmentMethod)==false)
+		g_UEAssignmentMethod = assignment_day_to_day;
+		int UEAssignmentMethod = 0;
+		if(parser_scenario.GetValueByFieldName("traffic_assignment_method",UEAssignmentMethod)==false)
 		{
 			cout << "Field traffic_assignment_method has not been specified in file input_scenario_settings.csv. A default method of day-to-day learning is used." << endl;
 			getchar();
 		}
 
+		g_UEAssignmentMethod = (e_assignment_method)UEAssignmentMethod;
 
 		g_CalculateUEGapForAllAgents = 0;
 		if(parser_scenario.GetValueByFieldName("ue_gap_calculation_method",g_CalculateUEGapForAllAgents)==false)
@@ -256,14 +258,6 @@ void g_MultiScenarioTrafficAssignment()
 			cout << "Field calibration_data_start_time_in_min has not been specified in file input_scenario_settings.csv. A default factor of 1440 is used." << endl;
 			getchar();
 		}
-
-			g_AccessibilityCalculationMode = 0;
-			if(parser_scenario.GetValueByFieldName("accessibility_calculation_mode",g_AccessibilityCalculationMode)==false)
-		{
-			cout << "Field accessibility_calculation_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
-			getchar();
-		}
-
 
 		g_ODEstimation_StartingIteration = 1000;
 		g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.20f;
