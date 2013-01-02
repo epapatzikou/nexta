@@ -10,8 +10,8 @@ SVN version control
 
 
 Latest version: 
-DTALite simulation engine: \Version1_0\DTALite
-NEXTA graphical user interface: \Version1_0\NEXTA-GUI
+DTALite simulation engine: \Version1_01\DTALite
+NEXTA graphical user interface: \Version1_01\NEXTA-GUI
 
 = Details =
 
