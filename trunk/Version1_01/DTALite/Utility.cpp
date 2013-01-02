@@ -509,7 +509,7 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 	buf[ i ] = 0;
 	
 	double value = atof( buf );
-	if(value>0.0000001)  // positive values
+	if(value>-0.0000001)  // positive values
 	{
 	
 		number_count++;

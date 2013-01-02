@@ -2302,7 +2302,7 @@ BEGIN
         MENUITEM "3. Assignment/Simulation Settings", ID_AssigngmentSimulationSettings
         MENUITEM "4. Traffic Managment / Road Pricing Scenario Data", ID_SCENARIO_CONFIGURATION
         MENUITEM SEPARATOR
-        MENUITEM "5. Perform Traffic Assignment", ID_TOOLS_PERFORMTRAFFICASSIGNMENT
+        MENUITEM "5. Perform Traffic Assignment", ID_TOOLS_RUNTRAFFICASSIGNMENT
         MENUITEM SEPARATOR
         MENUITEM "6. Traffic Assignment Summary", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
         MENUITEM "7. Multi-Scenario Result Comparison", ID_PROJECT_Multi_Scenario_Results
@@ -2353,15 +2353,17 @@ BEGIN
         POPUP "Demand/Vehicle Tools"
         BEGIN
             MENUITEM "Regenerate Activity Locations", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
+            MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
             POPUP "OD Demand Estimation"
             BEGIN
                 MENUITEM "1. Configure OD Matrix Estimation Settings", ID_PROJECT_ODMATRIXESTIMATIONINPUT
                 MENUITEM "2. Input Sensor Data for ODME", ID_PROJECT_INPUTSENSORDATAFORODME
                 MENUITEM "3. View OD Matrix Estimation Log", ID_VIEW_ODME_Result
             END
-            MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
-            MENUITEM "Generate input_agent.bin File", ID_DEMANDTOOLS_GENERATEINPUT
+            MENUITEM SEPARATOR
+            MENUITEM "Use Vehicle Data to Generate input_agent.bin File", ID_DEMANDTOOLS_GENERATEINPUT
             MENUITEM "Reconstruct Link MOE through Cumulative Flow Counts", ID_DEMAND_RECONSTRUCTLINKMOETH
+            MENUITEM "Convert Origin-based Matrix Demand File to 3-Column Format", ID_DEMAND_CONVERT
         END
         POPUP "Accessibility Tools"
         BEGIN

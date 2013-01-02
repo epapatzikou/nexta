@@ -1136,15 +1136,13 @@ void g_ReadInputFiles(int scenario_no)
 
 	if(g_UEAssignmentMethod == assignment_accessibility_distanance)
 	{
-		g_AgentBasedAccessibilityMatrixGeneration();
-
+		g_AgentBasedShortestPathGeneration();
 		exit(0);
 	}
 
 	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
 	{
-		g_AgentBasedShortestPathGeneration();
-
+		g_AgentBasedAccessibilityMatrixGeneration();
 		exit(0);
 	}
 

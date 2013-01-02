@@ -349,6 +349,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_NETWORKTOOLS_RESETLINKLENGTH, &CTLiteDoc::OnNetworktoolsResetlinklength)
 	ON_COMMAND(ID_SUBAREA_CREATEZONEFROMSUBAREA, &CTLiteDoc::OnSubareaCreatezonefromsubarea)
 	ON_COMMAND(ID_DEMAND_REGENERATEACTIVITYLOCATIONS, &CTLiteDoc::OnDemandRegenerateactivitylocations)
+	ON_COMMAND(ID_DEMAND_CONVERT, &CTLiteDoc::OnDemandConvert)
 	END_MESSAGE_MAP()
 
 
@@ -4387,6 +4388,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 		{
 			if(itr->second.m_bWithinSubarea && itr->first>=1)
 			{
+				//create activity location for empty zones
+				RegenerateactivitylocationsForEmptyZone(itr->first );
+
 				fprintf(st, "%d,%f,%f,%d,%f,%d,%f,%s,%f,%s,", 
 					itr->first,
 					itr->second .m_Production ,
@@ -6189,14 +6193,20 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 
 	CString directory = m_ProjectDirectory;
 
-	str_running_time.Format ("Program execution has completed.\nProgram execution time: %d hour(s) %d min(s) %d sec(s) \nDo you want to load the output now?",
-		ts.GetHours(), ts.GetMinutes(), ts.GetSeconds());
+	str_running_time.Format ("Program execution has completed.\nProgram execution time: %d hour(s) %d min(s) %d sec(s).\nPlease check time-dependent link MOEs during period %s->%s.\nDo you want to view the output summary file now?",
+
+		ts.GetHours(), ts.GetMinutes(), ts.GetSeconds(),
+		GetTimeStampString24HourFormat(m_DemandLoadingStartTimeInMin),
+		GetTimeStampString24HourFormat(m_DemandLoadingEndTimeInMin));
+
 
 	if( AfxMessageBox(str_running_time, MB_YESNO| MB_ICONINFORMATION)==IDYES)
 	{
+		OnToolsViewassignmentsummarylog();
+	}
 		LoadSimulationOutput();
 		UpdateAllViews(0);
-	}
+
 
 }
 void CTLiteDoc::LoadSimulationOutput()
@@ -8519,6 +8529,18 @@ CString CTLiteDoc::GetTimeStampString(int time_stamp_in_min)
 		str.Format ("%02d:%02d PM",12,min);
 	else
 		str.Format ("%02d:%02d PM",hour-12,min);
+
+	return str;
+
+}
+
+CString CTLiteDoc::GetTimeStampString24HourFormat(int time_stamp_in_min)
+{
+	CString str;
+	int hour = time_stamp_in_min/60;
+	int min = time_stamp_in_min - hour*60;
+
+	str.Format ("%2d:%02d",hour,min);
 
 	return str;
 
@@ -11818,19 +11840,8 @@ void CTLiteDoc::OnSensortoolsConverttoHourlyVolume()
 void CTLiteDoc::ReadTMCSpeedData(LPCTSTR lpszFileName)
 {
 
-	CCSVWriter DataFile;
 
-	CString data_str = m_ProjectDirectory +"log_missing_TMC.csv";
-	int missing_count = 0;
-
-	// Convert a TCHAR string to a LPCSTR
-	if(DataFile.Open(CString2StdString(data_str)))
-	{
-
-		DataFile.SetFieldName ("TMC");
-		DataFile.WriteHeader ();
-
-
+	std::vector<string> Missing_TMC_vector;
 		CCSVParser parser;
 		int i= 0;
 		if (parser.OpenCSVFile(lpszFileName))
@@ -11893,15 +11904,44 @@ void CTLiteDoc::ReadTMCSpeedData(LPCTSTR lpszFileName)
 				{
 					TRACE("TMC not found: %s\n",TMC.c_str ());
 
-					DataFile.SetValueByFieldName ("TMC",TMC); 
-					DataFile.WriteRecord ();
-					missing_count++;
+					Missing_TMC_vector.push_back(TMC);
 
 				}
 
 
 			}
 
+
+
+		if(Missing_TMC_vector.size())
+		{
+			CCSVWriter DataFile;
+
+			CString data_str = m_ProjectDirectory +"log_missing_TMC.csv";
+
+			// Convert a TCHAR string to a LPCSTR
+			if(DataFile.Open(CString2StdString(data_str)))
+			{
+
+				DataFile.SetFieldName ("TMC");
+				DataFile.WriteHeader ();
+
+
+				for(unsigned i = 0; i < Missing_TMC_vector.size(); i++)
+				{
+				
+					DataFile.SetValueByFieldName ("TMC",Missing_TMC_vector[i] );
+
+					DataFile.WriteRecord ();
+				}
+				
+
+			}
+		CString str;
+		str.Format("%d TMC records cannot be found.\nPlease Check the missing TMC log file (%s)", Missing_TMC_vector.size(), data_str);
+		AfxMessageBox(str);
+
+		}
 			m_bSimulationDataLoaded = true;
 
 			g_Simulation_Time_Stamp = 0; // reset starting time
@@ -11913,18 +11953,9 @@ void CTLiteDoc::ReadTMCSpeedData(LPCTSTR lpszFileName)
 			m_TrafficFlowModelFlag = 3; //enable dynamic moe display
 			m_SimulationLinkMOEDataLoadingStatus.Format ("%d TMC records are loaded from file %s.",i,lpszFileName);
 
-		}
+		
 	}
-	if(missing_count>=1)
-	{
-
-		CString str;
-		str.Format("%d TMC records cannot be found.\nPlease Check the missing TMC log file (%s)", missing_count, data_str);
-		AfxMessageBox(str);
-
-		//OpenCSVFileInExcel( data_str);
-
-	}
+	
 
 }
 
@@ -12664,11 +12695,13 @@ void CTLiteDoc::OnSubareaCreatezonefromsubarea()
 	
 		DTANode* pNode = m_SubareaNodeSet[0];
 
+
+		m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
+
 		if(m_ZoneMap.find(pNode->m_NodeNumber)==m_ZoneMap.end())
 		{
 		zone_number = pNode->m_NodeNumber ;
 
-		m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
 		m_ZoneMap [zone_number].SetNodeActivityMode(pNode->m_NodeNumber,0);
 		
 		}
@@ -12691,13 +12724,16 @@ void CTLiteDoc::OnSubareaCreatezonefromsubarea()
 	}
 
 
-
 			for (unsigned int sub_i= 0; sub_i < m_SubareaShapePoints.size(); sub_i++)
 		{
 				m_ZoneMap [zone_number].m_ShapePoints .push_back (m_SubareaShapePoints[sub_i]);
 
 		}
 	
+
+			// add activity locations if there is no activity location being assigned yet
+		RegenerateactivitylocationsForEmptyZone(zone_number);
+
 		m_SubareaShapePoints.clear();
 			UpdateAllViews(0);
 }
@@ -12818,6 +12854,48 @@ bool CTLiteDoc::FindObject(eSEARCHMODE SearchMode, int value1, int value2)
 
 	return true;
 }
+
+void CTLiteDoc::RegenerateactivitylocationsForEmptyZone(int zoneid)
+{
+	if(m_ZoneMap[zoneid].m_ActivityLocationVector.size()<0)
+		return;
+
+		// scan all nodes 
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+		
+		DTANode* pNode = (*iNode);
+		int nodeid = pNode->m_NodeID ;
+
+		// three conditions: not pretimed signal, not actuated signal, not connected to freeway and ramp
+		if(pNode->m_ControlType != m_ControlType_PretimedSignal && pNode->m_ControlType != m_ControlType_ActuatedSignal && pNode->m_bConnectedToFreewayORRamp == false)
+		{
+
+			if(m_ZoneMap[zoneid].IsInside (pNode->pt))
+			{
+		
+			DTAActivityLocation element;
+			element.ZoneID  = zoneid;
+			element.NodeNumber = pNode->m_NodeNumber ;
+			element.pt = pNode ->pt;
+
+			int External_OD_Flag  = 0;
+
+			m_NodeIDtoZoneNameMap[nodeid] = zoneid;
+			m_NodeIDMap [nodeid ] -> m_ZoneID = zoneid;
+			m_NodeIDMap [nodeid] ->m_External_OD_flag = 0;
+
+			m_ZoneMap[zoneid].m_ActivityLocationVector.push_back (element);
+
+			}
+		
+
+		} 
+
+
+		} // for each node
+}
 void CTLiteDoc::OnDemandRegenerateactivitylocations()
 {
 
@@ -12843,41 +12921,11 @@ void CTLiteDoc::OnDemandRegenerateactivitylocations()
 		(*itr).second .m_ActivityLocationVector .clear();
 
 		int zoneid = (*itr).first;
-		// scan all nodes 
-		std::list<DTANode*>::iterator iNode;
-		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-		
-		DTANode* pNode = (*iNode);
-		int nodeid = pNode->m_NodeID ;
 
-		// three conditions: not pretimed signal, not actuated signal, not connected to freeway and ramp
-		if(pNode->m_ControlType != m_ControlType_PretimedSignal && pNode->m_ControlType != m_ControlType_ActuatedSignal && pNode->m_bConnectedToFreewayORRamp == false)
-		{
+		RegenerateactivitylocationsForEmptyZone(zoneid);
 
-			if((*itr).second.IsInside (pNode->pt))
-			{
-		
-			DTAActivityLocation element;
-			element.ZoneID  = zoneid;
-			element.NodeNumber = pNode->m_NodeNumber ;
-			element.pt = pNode ->pt;
-
-			int External_OD_Flag  = 0;
-
-			m_NodeIDtoZoneNameMap[nodeid] = zoneid;
-			m_NodeIDMap [nodeid ] -> m_ZoneID = zoneid;
-			m_NodeIDMap [nodeid] ->m_External_OD_flag = 0;
-
-			(*itr).second.m_ActivityLocationVector.push_back (element);
-			activity_node_count++;
-			}
-		
-
-		} 
-
-
-		} // for each node
+	
+			activity_node_count+=(*itr).second.m_ActivityLocationVector.size();
 
 		if((*itr).second.m_ActivityLocationVector.size() ==0)
 		{
@@ -12914,3 +12962,4 @@ void CTLiteDoc::OnDemandRegenerateactivitylocations()
 		}
 
 }
+

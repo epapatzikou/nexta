@@ -92,11 +92,16 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
 	
-	str.Format("Simulation Time %s->%s", 
-		m_pDoc->GetTimeStampStrFromIntervalNo(m_pDoc->m_DemandLoadingStartTimeInMin),
-		m_pDoc->GetTimeStampStrFromIntervalNo(m_pDoc->m_DemandLoadingEndTimeInMin)
+	m_DemandLoadingModeList.AddString("Demand Loading Time Period:");
+
+	str.Format("%s->%s (%s->%s)", 
+		m_pDoc->GetTimeStampString24HourFormat(m_pDoc->m_DemandLoadingStartTimeInMin),
+		m_pDoc->GetTimeStampString24HourFormat(m_pDoc->m_DemandLoadingEndTimeInMin),
+		m_pDoc->GetTimeStampString(m_pDoc->m_DemandLoadingStartTimeInMin),
+		m_pDoc->GetTimeStampString(m_pDoc->m_DemandLoadingEndTimeInMin)
 		);
 
+	m_DemandLoadingModeList.AddString(str);
 
 	if(m_pDoc->m_ODME_mode==1)
 	{
@@ -108,6 +113,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 		m_DemandLoadingModeList.AddString("load demand data from input_agent.bin file");
 	}else
 	{
+		m_DemandLoadingModeList.AddString("Demand files:");
 
 		for(unsigned i = 0; i< m_pDoc->m_DemandFileVector.size(); i++)
 		{

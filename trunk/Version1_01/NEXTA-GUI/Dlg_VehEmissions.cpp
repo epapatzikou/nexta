@@ -1041,7 +1041,7 @@ void CDlg_VehPathAnalysis::ShowVehicles()
 
 	m_VehicleList.ResetContent ();
 	int PathNo = m_SelectedPath;
-	if(PathNo>=0)
+	if(PathNo>=0 && PathNo < m_PathVector.size())
 	{
 		for(unsigned int v = 0; v< m_PathVector[PathNo].m_VehicleVector.size(); v++)
 		{
@@ -1186,7 +1186,7 @@ void CDlg_VehPathAnalysis::ShowSelectedPath()
 	if(m_PathVector.size()==0)
 		m_SelectedPath = -1;
 
-	if(m_SelectedPath >= 0)
+	if(m_SelectedPath >= 0 && m_SelectedPath< m_PathVector.size())
 		m_pDoc->HighlightPath(m_PathVector[m_SelectedPath].m_LinkVector,2);
 
 }

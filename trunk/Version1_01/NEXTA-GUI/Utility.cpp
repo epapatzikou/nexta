@@ -288,7 +288,7 @@ int read_2_integers_from_a_string(CString str, int &value1, int &value2)
 
 	return 0;
 }
-int g_read_integer(FILE* f, bool speicial_char_handling )
+int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch )
 // read an integer from the current pointer of the file, skip all spaces
 {
 	char ch, buf[ 32 ];
@@ -299,7 +299,42 @@ int g_read_integer(FILE* f, bool speicial_char_handling )
 	while(true)
 	{
 		ch = getc( f );
-		if( ch == EOF || (speicial_char_handling && (ch == '*' || ch == '$')))
+		if( ch == EOF || (speicial_char_handling && (ch == '*' || ch == '$' || ch == special_ch)))
+			return -1; // * and $ are special characters for comments
+		if (isdigit(ch))
+			break;
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+	};
+	if( ch == EOF ) return -1;
+
+	
+	while( isdigit( ch )) {
+		buf[ i++ ] = ch;
+		ch = fgetc( f );
+	}
+	buf[ i ] = 0;
+
+
+	return atoi( buf ) * flag;
+
+}
+
+
+int g_read_integer(FILE* f, bool speicial_char_handling)
+// read an integer from the current pointer of the file, skip all spaces
+{
+	char ch, buf[ 32 ];
+	int i = 0;
+	int flag = 1;
+	/* returns -1 if end of file is reached */
+
+	while(true)
+	{
+		ch = getc( f );
+		if( ch == EOF || (speicial_char_handling && (ch == '*' || ch == '$' )))
 			return -1; // * and $ are special characters for comments
 		if (isdigit(ch))
 			break;

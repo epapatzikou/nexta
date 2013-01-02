@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\6-Node Network"
+				WorkingDirectory="C:\MPO Data Set\BeijingSubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

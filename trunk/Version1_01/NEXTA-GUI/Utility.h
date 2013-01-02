@@ -24,7 +24,9 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
-int g_read_integer(FILE* f, bool speicial_char_handling = true);
+int g_read_integer(FILE* f, bool speicial_char_handling=false);
+int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch);
+
 int read_2_integers_from_a_string(CString str, int &value1, int &value2);
 int g_read_integer_with_char_O(FILE* f);
 
