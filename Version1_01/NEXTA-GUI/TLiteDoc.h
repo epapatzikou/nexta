@@ -1691,6 +1691,7 @@ public:
 	CString GetTimeStampFloatingPointStrFromIntervalNo(int time_interval);
 
 	CString GetTimeStampString(int time_stamp_in_min);
+	CString GetTimeStampString24HourFormat(int time_stamp_in_min);
 	int* m_ZoneCentroidSizeAry;  //Number of centroids per zone
 	int** m_ZoneCentroidNodeAry; //centroid node Id per zone
 
@@ -1734,6 +1735,7 @@ public:
 	bool ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName);
 
 
+	void ConvertOriginBasedDemandFile(LPCTSTR lpszFileName);
 	bool ReadSynchroLayoutFile(LPCTSTR lpszFileName);
 	bool ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LPCTSTR lpszFileName);
 	bool ReadSynchroLaneFile(LPCTSTR lpszFileName);
@@ -1847,6 +1849,7 @@ public:
 
 	bool FindObject(eSEARCHMODE SearchMode, int value1, int value12);
 
+	void RegenerateactivitylocationsForEmptyZone(int zoneid);
 	// Implementation
 	void GenerateMovementCountFromVehicleFile();
 	void MapSignalDataAcrossProjects();
@@ -2063,6 +2066,7 @@ public:
 	afx_msg void OnNetworktoolsResetlinklength();
 	afx_msg void OnSubareaCreatezonefromsubarea();
 	afx_msg void OnDemandRegenerateactivitylocations();
+	afx_msg void OnDemandConvert();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

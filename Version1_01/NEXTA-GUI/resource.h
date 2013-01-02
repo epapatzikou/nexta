@@ -1032,13 +1032,14 @@
 #define ID_EDIT_MOVENODE                33542
 #define ID_SUBAREA_CREATEZONEFROMSUBAREA 33543
 #define ID_DEMAND_REGENERATEACTIVITYLOCATIONS 33544
+#define ID_DEMAND_CONVERT               33545
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33545
+#define _APS_NEXT_COMMAND_VALUE         33546
 #define _APS_NEXT_CONTROL_VALUE         1162
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

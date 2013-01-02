@@ -4086,3 +4086,87 @@ if(dlg.DoModal() == IDOK)
 void CTLiteDoc::OnImportInrixshapefileandspeeddata()
 {
 }
+
+
+void CTLiteDoc::OnDemandConvert()
+{
+   static char BASED_CODE szFilter_demand[] = "Origin-based Static Demand Files (*.txt;*.oba))|*.txt;*.oba||";
+   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		   szFilter_demand);
+   if(dlg.DoModal() == IDOK)
+   {
+	  ConvertOriginBasedDemandFile(dlg.GetPathName());
+   } 
+
+}
+
+void  CTLiteDoc::ConvertOriginBasedDemandFile(LPCTSTR lpszFileName)
+{
+
+	CString directory;
+	CString PathFile;
+	PathFile.Format("%s",lpszFileName);
+	directory = PathFile.Left(PathFile.ReverseFind('\\') + 1);
+
+
+   FILE* st=fopen(lpszFileName,"r");
+   FILE* outfile=fopen(directory+"input_demand.csv","w");
+
+   if(outfile==NULL)
+   {
+   AfxMessageBox("File input_demand.csv cannot be opened to write.");
+   
+   return;
+   
+   }
+   if(st!=NULL)
+   {
+
+	fprintf(outfile, "from_zone_id,to_zone_id,number_of_trips_demand_type1\n");
+
+      // Number of matrices and the multiplication factor
+
+      int ODSize = g_read_integer(st);
+      float totoal_OD_volume =  g_read_float(st);
+
+ 
+      // Destinations
+
+      // There are two formats available
+
+      for(int i = 1; i <= ODSize; i++)
+      {
+	 // Read each demand
+	 int from_zone_id = g_read_integer(st);
+	 
+	 if(from_zone_id<=0) break;
+
+		if(from_zone_id>i)  //advance
+			i= from_zone_id;
+
+
+	 for(int j = 1; j <= ODSize; j++)
+	 {
+	    int to_zone_id = g_read_integer_with_special_character(st,true,'O');  // break when reading "Origin"
+	    if(to_zone_id<=0) break;
+
+		float demand = g_read_float(st);
+
+
+		if(to_zone_id>j)  //advance
+			j= to_zone_id;
+
+		fprintf(outfile,"%d,%d,%.4f\n", from_zone_id, to_zone_id,demand);
+
+	 }
+
+      }
+
+
+      fclose(st);
+	  fclose(outfile);
+
+	  AfxMessageBox("File input_demand.csv has been generated.",MB_ICONINFORMATION    );
+
+   }
+}
