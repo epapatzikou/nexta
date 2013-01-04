@@ -456,6 +456,7 @@ public:
 
 	int m_OriginOnBottomFlag;
 	bool m_LongLatFlag;
+	int m_StartNodeNumberForNewNodes;
 	PT_Network m_PT_network;  // public transit network class by Shuguang Li
 	bool m_bShowCalibrationResults;
 
@@ -1180,7 +1181,7 @@ public:
 			pto =  (*iLink)->m_ShapePoints[si+1];
 
 
-			float distance_in_feet =  g_GetPoint2LineDistance(p0, pfrom, pto)/max(0.0000001,m_UnitFeet);
+			float distance_in_feet =  g_GetPoint2LineDistance(p0, pfrom, pto,m_UnitMile)/max(0.0000001,m_UnitFeet);
 
 			if(distance_in_feet<150) // 150 feet, 50 meters
 			{
@@ -1384,6 +1385,9 @@ public:
 	{
 		int FromNodeID   = pLink->m_FromNodeID ;
 		int ToNodeID   = pLink->m_ToNodeID ;
+		unsigned long LinkKey = GetLinkKey( FromNodeID , ToNodeID );
+		
+		m_NodeIDtoLinkMap[LinkKey] =NULL;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections-=1;
 
@@ -1436,8 +1440,8 @@ public:
 
 	bool DeleteLink(int LinkNo)
 	{
-		DTALink* pLink = 0;
-		pLink = m_LinkNoMap[LinkNo];
+		DTALink* pLink = m_LinkNoMap[LinkNo];
+
 		if(pLink == NULL)
 			return false;  // a link with the same from and to node numbers exists!
 
@@ -1447,11 +1451,11 @@ public:
 
 	int GetUnusedNodeNumber()
 	{
-		int NewNodeNumber = 1;
+		int NewNodeNumber = m_StartNodeNumberForNewNodes;
 
 		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			if(NewNodeNumber <= (*iNode)->m_NodeNumber)
+			if(NewNodeNumber <= (*iNode)->m_NodeNumber  )  // this node number has been used
 				NewNodeNumber = (*iNode)->m_NodeNumber +1;
 		}
 
@@ -1854,6 +1858,7 @@ public:
 	void GenerateMovementCountFromVehicleFile();
 	void MapSignalDataAcrossProjects();
 	void IdentifyLinkGroupCode();
+	void UpdateUnitMile();
 public:
 	virtual ~CTLiteDoc();
 #ifdef _DEBUG
@@ -2067,6 +2072,7 @@ public:
 	afx_msg void OnSubareaCreatezonefromsubarea();
 	afx_msg void OnDemandRegenerateactivitylocations();
 	afx_msg void OnDemandConvert();
+	afx_msg void OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocurrentnetwork();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

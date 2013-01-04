@@ -23,8 +23,14 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, SaturationFlowRate(0)
 	, EffectiveGreenTime(0)
 	, StreetName(_T(""))
+	, m_TransitTravelTime(0)
+	, m_TransitTransferTime(0)
+	, m_TransitWaitingTime(0)
+	, m_TransitFare(0)
+	, m_BPR_Alpha(0)
+	, m_BPR_Beta(0)
 {
-
+m_bTransitModeFlag = false;
 }
 
 CDlgLinkProperties::~CDlgLinkProperties()
@@ -39,7 +45,7 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_To_NODE, ToNode);
 	DDV_MinMaxInt(pDX, ToNode, 1, 1000000);
 	DDX_Text(pDX, IDC_EDIT_LENGTH, LinkLength);
-	DDV_MinMaxFloat(pDX, LinkLength, 0.001f, 10000);
+	DDV_MinMaxFloat(pDX, LinkLength, 0.0001f, 10000);
 	DDX_Text(pDX, IDC_EDIT_SPEEDLIMIT, SpeedLimit);
 	DDV_MinMaxFloat(pDX, SpeedLimit, 5, 120);
 	DDX_Text(pDX, IDC_EDIT_FFTT, FreeFlowTravelTime);
@@ -54,8 +60,14 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_EFFECTIVE_GREEN_TIME, EffectiveGreenTime);
 	DDV_MinMaxInt(pDX, EffectiveGreenTime, 0, 400);
 	DDX_Text(pDX, IDC_EDIT_STREET_NAME, StreetName);
-    DDV_MaxChars(pDX, StreetName, 100);
+	DDV_MaxChars(pDX, StreetName, 100);
 
+	DDX_Text(pDX, IDC_EDIT1, m_TransitTravelTime);
+	DDX_Text(pDX, IDC_EDIT2, m_TransitTransferTime);
+	DDX_Text(pDX, IDC_EDIT4, m_TransitWaitingTime);
+	DDX_Text(pDX, IDC_EDIT5, m_TransitFare);
+	DDX_Text(pDX, IDC_EDIT6, m_BPR_Alpha);
+	DDX_Text(pDX, IDC_EDIT7, m_BPR_Beta);
 }
 
 
@@ -65,6 +77,8 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_BN_CLICKED(IDSAVEASDEFAULT, &CDlgLinkProperties::OnBnClickedSaveasdefault)
 	ON_BN_CLICKED(ID_CANCEL, &CDlgLinkProperties::OnBnClickedCancel)
 	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlgLinkProperties::OnCbnSelchangeCombo1)
+	ON_EN_CHANGE(IDC_EDIT_LENGTH, &CDlgLinkProperties::OnEnChangeEditLength)
+	ON_BN_CLICKED(IDC_BUTTON_UPDATE, &CDlgLinkProperties::OnBnClickedButtonUpdate)
 END_MESSAGE_MAP()
 
 
@@ -89,10 +103,81 @@ BOOL CDlgLinkProperties::OnInitDialog()
 	}
 
 
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(Miles)");
+		
+		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(mph)");
+
+		EnableDataBasedOnLinkType();
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
+
+void CDlgLinkProperties::EnableDataBasedOnLinkType()
+{
+		int SelectLinkType = m_LinkTypeComboBox.GetCurSel ();
+
+	std::map<int, DTALinkType>:: const_iterator itr;
+
+	int count = 0;
+	int link_type = -1;
+	for(itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+	{
+	
+		if(SelectLinkType == count)
+		{
+		link_type = itr->first;
+			break;
+		}
+		count++;
+	}
+
+	if(link_type ==-1)
+		return ;
+
+		if(m_pDoc->m_LinkTypeMap[link_type].IsTransit () ||  m_pDoc->m_LinkTypeMap[link_type].IsWalking  ())
+		{
+		CEdit* pEdit_flow_rate = (CEdit*)GetDlgItem(IDC_EDIT_SATURATION_FLOW_RATE);
+		pEdit_flow_rate->ShowWindow(SW_HIDE);
+		
+		CEdit* pEdit_green_time = (CEdit*)GetDlgItem(IDC_EDIT_EFFECTIVE_GREEN_TIME);
+		pEdit_green_time->ShowWindow(SW_HIDE);
+
+		CEdit* pEdit1 = (CEdit*)GetDlgItem(IDC_EDIT1);
+		pEdit1->ShowWindow(SW_SHOW);
+
+		CEdit* pEdit2 = (CEdit*)GetDlgItem(IDC_EDIT2);
+		pEdit2->ShowWindow(SW_SHOW);
+
+		CEdit* pEdit4 = (CEdit*)GetDlgItem(IDC_EDIT4);
+		pEdit4->ShowWindow(SW_SHOW);
+
+		CEdit* pEdit5 = (CEdit*)GetDlgItem(IDC_EDIT5);
+		pEdit5->ShowWindow(SW_SHOW);	
+		}else
+		{
+
+		CEdit* pEdit_flow_rate = (CEdit*)GetDlgItem(IDC_EDIT_SATURATION_FLOW_RATE);
+		pEdit_flow_rate->ShowWindow(SW_SHOW);
+		
+		CEdit* pEdit_green_time = (CEdit*)GetDlgItem(IDC_EDIT_EFFECTIVE_GREEN_TIME);
+		pEdit_green_time->ShowWindow(SW_SHOW);
+
+		CEdit* pEdit1 = (CEdit*)GetDlgItem(IDC_EDIT1);
+		pEdit1->ShowWindow(SW_HIDE);
+
+		CEdit* pEdit2 = (CEdit*)GetDlgItem(IDC_EDIT2);
+		pEdit2->ShowWindow(SW_HIDE);
+
+		CEdit* pEdit4 = (CEdit*)GetDlgItem(IDC_EDIT4);
+		pEdit4->ShowWindow(SW_HIDE);
+
+		CEdit* pEdit5 = (CEdit*)GetDlgItem(IDC_EDIT5);
+		pEdit5->ShowWindow(SW_HIDE);	
+	
+	}
+}
 void CDlgLinkProperties::OnCbnEditchangeCombo1()
 {
 
@@ -134,22 +219,44 @@ void CDlgLinkProperties::OnBnClickedCancel()
 
 void CDlgLinkProperties::OnCbnSelchangeCombo1()
 {
-	int SelectLinkType = LinkType = m_LinkTypeComboBox.GetCurSel ()+1;
+	int SelectLinkType = m_LinkTypeComboBox.GetCurSel ();
 
-	switch(SelectLinkType)
+	std::map<int, DTALinkType>:: const_iterator itr;
+
+	int count = 0;
+	for(itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
 	{
-	case 1: SpeedLimit = 65.0f; LaneCapacity = 1800; nLane = 3; break;
-	case 2: SpeedLimit = 50.0f; LaneCapacity = 1450; nLane = 3; break;
-	case 3: SpeedLimit = 40.0f; LaneCapacity = 1000; nLane = 3; break;
-	case 4: SpeedLimit = 35.0f; LaneCapacity = 900; nLane = 3; break;
-	case 5: SpeedLimit = 30.0f; LaneCapacity = 850; nLane = 2; break;
-	case 6: SpeedLimit = 25.0f; LaneCapacity = 650; nLane = 1; break;
-	case 7: SpeedLimit = 20.0f; LaneCapacity = 600; nLane = 1; break;
-	case 8: SpeedLimit = 45.0f; LaneCapacity = 1000; nLane = 2; break;
-	case 9: SpeedLimit = 30.0f; LaneCapacity = 1300; nLane = 2; break;
-	case 10: SpeedLimit = 100.0f; LaneCapacity = 2000; nLane = 2; break;
+	
+		if(SelectLinkType == count)
+		{
+			SpeedLimit = itr->second .default_speed;
+			LaneCapacity = itr->second .default_lane_capacity ;
+			nLane = itr->second .default_number_of_lanes ;
+
+		}
+		count++;
 	}
 
-	UpdateData(true);
+	EnableDataBasedOnLinkType();
+
+	UpdateData(false);
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditLength()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}
+
+void CDlgLinkProperties::OnBnClickedButtonUpdate()
+{
+	UpdateData(1);
+	FreeFlowTravelTime = LinkLength / max(0.001,SpeedLimit) * 60;
+	UpdateData(0);
 
 }

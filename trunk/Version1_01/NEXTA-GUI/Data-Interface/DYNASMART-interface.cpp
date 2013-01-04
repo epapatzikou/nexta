@@ -531,7 +531,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			if(zone_id==-1)   // end of linke
 				break;
-			m_ZoneMap [zone_id].m_ZoneTAZ = zone_id;
+			m_ZoneMap [zone_id].m_ZoneID = zone_id;
 
 			m_ZoneMap [zone_id].m_ShapePoints .clear();
 
@@ -605,7 +605,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					element.pt = m_NodeIDMap [node_id ]  ->pt;
 
 
-					m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
+					m_ZoneMap [zone_number].m_ZoneID = zone_number;
 					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 				}
 			}

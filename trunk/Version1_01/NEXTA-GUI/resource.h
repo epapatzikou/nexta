@@ -23,6 +23,8 @@
 #define ID_FindCriticalOD               4
 #define ID_FIND_RANDOM_ROUTE            4
 #define IDOK5                           4
+#define ID_EXPORT_DATA4                 4
+#define ID_EXPORT_ALL_DATA              4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
 #define ID_EXPORT_DATA3                 5
@@ -32,6 +34,8 @@
 #define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_HTML_DLG_DEMANDTYPE         103
 #define IDR_HTML_DLG_DISPLAY_CONFIGURATION_NODE 104
+#define IDR_HTML_DLGZONEPROPERTIES      105
+#define IDR_HTML_DLG_ZONEPROPERTIES     106
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
@@ -136,6 +140,7 @@
 #define IDD_DIALOG_NodeProperties       228
 #define IDD_DIALOG_NODE_MOVEMENTS       229
 #define IDD_LINEPLOT_DIALOG1            230
+#define IDD_DIALOG_Zone_Property        232
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -396,8 +401,18 @@
 #define IDC_BUTTON_EXIT                 1160
 #define IDC_BUTTON_Reset                1161
 #define IDC_BUTTON_FIND                 1161
+#define IDC_EDIT_NewNodeNumber          1162
 #define IDC_EDIT_Bottom                 1163
+#define IDC_EDIT1                       1163
 #define IDC_EDIT_Right                  1164
+#define IDC_EDIT2                       1164
+#define IDC_EDIT4                       1165
+#define IDC_EDIT5                       1166
+#define IDC_EDIT6                       1167
+#define IDC_EDIT7                       1168
+#define IDC_STATIC_UNIT_LENGTH          1169
+#define IDC_STATIC_UNIT_SPEED_LIMIT     1170
+#define IDC_COMBO_MAX_COLUMNS           1171
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1033,14 +1048,15 @@
 #define ID_SUBAREA_CREATEZONEFROMSUBAREA 33543
 #define ID_DEMAND_REGENERATEACTIVITYLOCATIONS 33544
 #define ID_DEMAND_CONVERT               33545
+#define ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK 33546
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        228
-#define _APS_NEXT_COMMAND_VALUE         33546
-#define _APS_NEXT_CONTROL_VALUE         1162
-#define _APS_NEXT_SYMED_VALUE           105
+#define _APS_NEXT_RESOURCE_VALUE        233
+#define _APS_NEXT_COMMAND_VALUE         33547
+#define _APS_NEXT_CONTROL_VALUE         1172
+#define _APS_NEXT_SYMED_VALUE           107
 #endif
 #endif

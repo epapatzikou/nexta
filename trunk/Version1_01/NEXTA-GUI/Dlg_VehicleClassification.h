@@ -34,6 +34,7 @@ public:
 	void AddChartData();
 
 	void ExportData(CString fname);
+	void ExportAllData(CString fname);
 protected:
 	void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
@@ -68,4 +69,9 @@ public:
 	afx_msg void OnBnClickedHighlightVehicles();
 	CButton m_HighlightVehicleButton;
 	CListBox m_MessageList;
+	int m_MaxColumnSize;
+
+	afx_msg void OnCbnSelchangeComboMaxColumns();
+	CComboBox m_ColumnSizeList;
+	afx_msg void OnBnClickedExportAllData();
 };

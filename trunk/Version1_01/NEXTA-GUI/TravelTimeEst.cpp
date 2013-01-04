@@ -1348,7 +1348,7 @@ DTALink* CTLiteDoc::FindLinkFromSensorLocation(float x, float y, CString orienta
 		if(orientation.MakeUpper().Find('N')>0 && pfrom.y > pto.y)  // North, Yfrom should be < YTo
 			continue;
 
-		float distance = g_GetPoint2LineDistance(p0, pfrom, pto);
+		float distance = g_GetPoint2LineDistance(p0, pfrom, pto, m_UnitMile);
 
 		if(distance >=0 && distance < Min_distance)
 		{

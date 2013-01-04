@@ -147,7 +147,7 @@ float *X, float *Y)
   return true; 
 }
 
-float g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
+double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitMile)
 {
     float U;
     GDPoint Intersection;
@@ -157,7 +157,7 @@ float g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt)
     U = (  (pt.x - ToPt.x) * (FromPt.x - ToPt.x ) + ( pt.y - ToPt.y ) * ( FromPt.y - ToPt.y ) ) /(LineLength * LineLength );
  
     if( U < 0.0f || U > 1.0f )
-        return 99;   // intersection does not fall within the segment
+        return max(UnitMile*100,999999);   // intersection does not fall within the segment
  
     Intersection.x = ToPt.x + U * ( FromPt.x - ToPt.x );
     Intersection.y = ToPt.y + U * ( FromPt.y - ToPt.y );
@@ -288,6 +288,8 @@ int read_2_integers_from_a_string(CString str, int &value1, int &value2)
 
 	return 0;
 }
+
+
 int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch )
 // read an integer from the current pointer of the file, skip all spaces
 {

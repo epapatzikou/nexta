@@ -296,7 +296,7 @@ extern float g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2);
 
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
-extern float g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt);
+extern double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitFeet=1);
 extern double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2);
 extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y) ;
 
@@ -439,7 +439,7 @@ public:
 		m_TotalTimeDependentZoneDemand[time_interval] += value;
 
 	}
-	int m_ZoneTAZ;
+	int m_ZoneID;
 	int m_OriginVehicleSize;  // number of vehicles from this origin, for fast acessing
 	std::vector<DTAActivityLocation> m_ActivityLocationVector;
 
@@ -490,7 +490,7 @@ public:
 	{
 		RemoveNodeActivityMode(NodeNumber);  // remove existing record first
 		DTAActivityLocation element;
-		element.ZoneID = m_ZoneTAZ;
+		element.ZoneID = m_ZoneID;
 		element.NodeNumber = NodeNumber;
 		element.External_OD_flag = External_OD_flag;
 		m_ActivityLocationVector.push_back (element);
@@ -688,9 +688,13 @@ public:
 	{
 	link_type = 0;
 	default_lane_capacity = 1000;  // per hour per lane
+	default_speed = 50;
+	default_number_of_lanes = 2;
 	}
 
 	float default_lane_capacity;
+	float default_speed;
+	float default_number_of_lanes;
 	int link_type;
 	string link_type_name;
 	string type_code;
@@ -1569,6 +1573,15 @@ public:
 		m_Intersection_NumberOfFatalAndInjuryCrashes =0;
 		m_Intersection_NumberOfPDOCrashes = 0;
 
+	m_TransitTravelTime = 0;
+	m_TransitTransferTime = 2;
+	m_TransitWaitingTime = 5;
+	m_TransitFareInDollar = 0;
+
+	m_BPR_alpha_term = 0.15f;
+	m_BPR_beta_term = 4.0f;
+
+
 	};
 
 	int m_FromNodeNumber;
@@ -1577,6 +1590,15 @@ public:
 	int m_ToNodeID;    // index starting from 0
 
 	std::string m_TMC_code;
+
+	float m_TransitTravelTime;
+	float m_TransitTransferTime;
+	float m_TransitWaitingTime;
+	float m_TransitFareInDollar;
+
+	float m_BPR_alpha_term;
+	float m_BPR_beta_term;
+
 
 	float m_StaticTravelTime;
 	int m_CentroidUpdateFlag;

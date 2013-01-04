@@ -945,11 +945,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -973,11 +973,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1005,19 +1005,19 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar2.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\toolbar2.bmp"
 						>
 					</File>
 					<File
@@ -1447,6 +1447,16 @@
 		</Filter>
 		<File
 			RelativePath=".\Dlg_Display_Configuration_Node.htm"
+			DeploymentContent="true"
+			>
+		</File>
+		<File
+			RelativePath=".\Dlg_ZoneProperties.htm"
+			DeploymentContent="true"
+			>
+		</File>
+		<File
+			RelativePath=".\DlgZoneProperties.htm"
 			DeploymentContent="true"
 			>
 		</File>

@@ -845,7 +845,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
 
-				m_pDoc->m_ZoneMap [zone_number].m_ZoneTAZ = zone_number;
+				m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
 
 			for(unsigned int f = 0; f < CoordinateVector.size(); f++)
 			{
