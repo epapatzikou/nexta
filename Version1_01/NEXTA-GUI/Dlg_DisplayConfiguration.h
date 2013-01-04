@@ -57,4 +57,5 @@ public:
 	CComboBox m_ComboxBox_TransitTime;
 	afx_msg void OnCbnSelchangeComboWalkingdistance();
 	afx_msg void OnCbnSelchangeComboTransittime();
+	afx_msg void OnLbnSelchangeListSizeTextControl();
 };

@@ -16,7 +16,7 @@ CDlgDefaultLinkProperties::CDlgDefaultLinkProperties(CWnd* pParent /*=NULL*/)
 	, LaneCapacity(0)
 	, NumLanes(0)
 {
-
+	m_bLongLatSystem = 0;
 }
 
 CDlgDefaultLinkProperties::~CDlgDefaultLinkProperties()
@@ -32,6 +32,8 @@ void CDlgDefaultLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_NUMLANES, NumLanes);
 	DDV_MinMaxInt(pDX, NumLanes, 1, 20);
 	DDX_Control(pDX, IDC_LinkTypeLIST, m_LinkTypeList);
+	DDX_Control(pDX, IDC_COMBO1, m_CoordinateSystemList);
+	DDX_Text(pDX, IDC_EDIT_NewNodeNumber, m_StartNodeNumberForNewNodes);
 }
 
 
@@ -39,6 +41,7 @@ BEGIN_MESSAGE_MAP(CDlgDefaultLinkProperties, CDialog)
 	ON_LBN_SELCHANGE(IDC_LinkTypeLIST, &CDlgDefaultLinkProperties::OnLbnSelchangeList1)
 	ON_BN_CLICKED(IDOK, &CDlgDefaultLinkProperties::OnBnClickedOk)
 	ON_BN_CLICKED(ID_CANCEL, &CDlgDefaultLinkProperties::OnBnClickedCancel)
+	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlgDefaultLinkProperties::OnCbnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -46,21 +49,26 @@ END_MESSAGE_MAP()
 
 void CDlgDefaultLinkProperties::OnLbnSelchangeList1()
 {
-	int SelectLinkType = m_LinkTypeList.GetCurSel() +1;
-	switch(SelectLinkType)
-	{
-	case 1: SpeedLimit = 65.0f; LaneCapacity = 1800; NumLanes = 3; break;
-	case 2: SpeedLimit = 50.0f; LaneCapacity = 1450; NumLanes = 3; break;
-	case 3: SpeedLimit = 40.0f; LaneCapacity = 1000; NumLanes = 3; break;
-	case 4: SpeedLimit = 35.0f; LaneCapacity = 900; NumLanes = 3; break;
-	case 5: SpeedLimit = 30.0f; LaneCapacity = 850; NumLanes = 2; break;
-	case 6: SpeedLimit = 25.0f; LaneCapacity = 650; NumLanes = 1; break;
-	case 7: SpeedLimit = 20.0f; LaneCapacity = 600; NumLanes = 1; break;
-	case 8: SpeedLimit = 45.0f; LaneCapacity = 1000; NumLanes = 2; break;
-	case 9: SpeedLimit = 30.0f; LaneCapacity = 1300; NumLanes = 2; break;
-	case 10: SpeedLimit = 100.0f; LaneCapacity = 2000; NumLanes = 2; break;
-	}
+	int SelectLinkType = m_LinkTypeList.GetCurSel();
 
+	int count = 0;
+			for(std::map<int, DTALinkType>::iterator itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+		{
+			if(itr->second .link_type_name.length () > 0 && itr->second .type_code.length () > 0)
+			{
+
+				if(count == SelectLinkType)
+				{
+				LinkType = itr->first ;
+				SpeedLimit =  itr->second .default_speed;  
+				LaneCapacity = itr->second .default_lane_capacity ;  
+				NumLanes = itr->second .default_number_of_lanes;  
+				break;
+				}
+				 count++;
+
+			}
+		}
 	UpdateData(false);
 }
 
@@ -84,17 +92,51 @@ BOOL CDlgDefaultLinkProperties::OnInitDialog()
 		
 
 		m_LinkTypeList.SetCurSel (LinkType-1);
+		
+		m_CoordinateSystemList.AddString ("Mile");
+		m_CoordinateSystemList.AddString ("Long/Lat");
+
+		if(m_pDoc->m_LongLatFlag==true)
+			m_CoordinateSystemList.SetCurSel (1);
+		else
+			m_CoordinateSystemList.SetCurSel (0);
+
+
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 void CDlgDefaultLinkProperties::OnBnClickedOk()
 {
-	LinkType = m_LinkTypeList.GetCurSel () +1;
-	OnOK();
+
+	LinkType = 1; // default
+	int CurSel = m_LinkTypeList.GetCurSel ();
+	int count = 0;
+			for(std::map<int, DTALinkType>::iterator itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+		{
+			if(itr->second .link_type_name.length () > 0 && itr->second .type_code.length () > 0)
+			{
+
+				if(count == CurSel)
+				{
+				LinkType = itr->first ;
+				break;
+				}
+				 count++;
+
+			}
+		}
+
+OnOK();
 }
 
 void CDlgDefaultLinkProperties::OnBnClickedCancel()
 {
 	OnCancel();
+}
+
+void CDlgDefaultLinkProperties::OnCbnSelchangeCombo1()
+{
+	m_bLongLatSystem = m_CoordinateSystemList.GetCurSel();
 }

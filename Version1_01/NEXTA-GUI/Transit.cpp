@@ -545,7 +545,7 @@ bool CTLiteDoc::TransitTripMatching()
 							GDPoint pfrom = pLink->m_FromPoint;
 							GDPoint pto = pLink->m_ToPoint;
 
-							float distance = g_GetPoint2LineDistance((*iPT_TripMap).second .m_PT_StopTimeVector[s_i].pt, pfrom, pto);  // go through each GPS location point
+							float distance = g_GetPoint2LineDistance((*iPT_TripMap).second .m_PT_StopTimeVector[s_i].pt, pfrom, pto,m_UnitMile);  // go through each GPS location point
 
 							if(distance < 90)  // with intersection
 							{

@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(CDlg_VehicleClassification, CDialog)
 CDlg_VehicleClassification::CDlg_VehicleClassification(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlg_VehicleClassification::IDD, pParent)
 	, m_Message(_T(""))
+	, m_MaxColumnSize(100)
 {
 
 	m_XSelectionNo = CLS_pricing_type;
@@ -39,6 +40,7 @@ void CDlg_VehicleClassification::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_VehicleSelection, m_ComboVehicleSelection);
 	DDX_Control(pDX, ID_HIGHLIGHT_VEHICLES, m_HighlightVehicleButton);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
+	DDX_Control(pDX, IDC_COMBO_MAX_COLUMNS, m_ColumnSizeList);
 }
 
 
@@ -57,6 +59,8 @@ BEGIN_MESSAGE_MAP(CDlg_VehicleClassification, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_VehicleSelection, &CDlg_VehicleClassification::OnCbnSelchangeComboVehicleselection)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(ID_HIGHLIGHT_VEHICLES, &CDlg_VehicleClassification::OnBnClickedHighlightVehicles)
+	ON_CBN_SELCHANGE(IDC_COMBO_MAX_COLUMNS, &CDlg_VehicleClassification::OnCbnSelchangeComboMaxColumns)
+	ON_BN_CLICKED(ID_EXPORT_ALL_DATA, &CDlg_VehicleClassification::OnBnClickedExportAllData)
 END_MESSAGE_MAP()
 
 
@@ -84,6 +88,16 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	// processing available x and y options
 
 	CWaitCursor wc;
+
+	for(int c = 1; c<=100; c++)
+	{
+		CString str;
+		str.Format("%d",c);
+		m_ColumnSizeList.AddString (str);
+
+	}
+	m_ColumnSizeList.SetCurSel (99);
+
 // enum VEHICLE_X_CLASSIFICATION {CLS_pricing_type=0,CLS_VOT_10,CLS_time_interval_15_min,CLS_information_class,CLS_vehicle_type};
 
 	m_ComboX.AddString("All Vehicles/Agents"); // 0;
@@ -263,12 +277,16 @@ void CDlg_VehicleClassification::AddChartData()
 	else
 		m_chart.m_bIntegerValue = false;
 
+	m_MaxColumnSize = m_ColumnSizeList.GetCurSel()+1;
 
-	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter )
+	int count = 0;
+	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter, count++ )
 	 {
 		 int index = iter->first;
-		 
-	    m_chart.AddValue(m_pDoc->m_ClassificationTable[index].DisplayValue ,m_pDoc->m_ClassificationTable[index].Label );
+		 if(count<m_MaxColumnSize)
+		 {
+		 m_chart.AddValue(m_pDoc->m_ClassificationTable[index].DisplayValue ,m_pDoc->m_ClassificationTable[index].Label );
+		 }
 	 }
 
 
@@ -362,10 +380,8 @@ void CDlg_VehicleClassification::OnCbnSelchangeComboXaxis()
 	m_XSelectionNo = (VEHICLE_X_CLASSIFICATION)(m_ComboX.GetCurSel ());
 
 	m_pDoc->GenerateVehicleClassificationData(m_pDoc->m_VehicleSelectionMode,m_XSelectionNo);  // regeneate classification based on the new axis category
-
 	m_pDoc->GenerateClassificationForDisplay(m_XSelectionNo,m_YSelectionNo);
 	// Genernate Vehicle Classification Data
-
 	AddChartData();
 
 	Invalidate();
@@ -382,6 +398,105 @@ void CDlg_VehicleClassification::OnCbnSelchangeComboYaxis()
 	AddChartData();
 
 	Invalidate();
+}
+void CDlg_VehicleClassification::ExportAllData(CString fname)
+{
+	   FILE* st;
+      fopen_s(&st,fname,"w");
+
+     if(st!=NULL)
+      {
+	 int CurSel = m_ComboVehicleSelection.GetCurSel ();
+	 CString VehicleSelection_Title;
+	 m_ComboVehicleSelection.GetLBText (CurSel,VehicleSelection_Title);
+
+
+	 fprintf(st,"Vehicle Selection Mode,--,%s,--\n",VehicleSelection_Title );
+
+		  CWaitCursor wait;
+	m_MaxColumnSize = m_ColumnSizeList.GetCurSel()+1;
+
+	for(int x_i= 0; x_i < min(17,m_ComboX.GetCount ()); x_i++)
+	for(int y_i= 0; y_i < max(20,m_ComboY.GetCount ()); y_i++)
+	 {
+		m_XSelectionNo = (VEHICLE_X_CLASSIFICATION) x_i; 
+		m_YSelectionNo = (VEHICLE_Y_CLASSIFICATION)y_i;
+
+		CString x_value_str,y_value_str;
+
+		m_ComboX.GetLBText(x_i,x_value_str);
+		m_ComboY.GetLBText(y_i,y_value_str);
+
+	if(x_value_str.Find("--") >=0 || y_value_str.Find("--") >=0)
+		continue;
+
+		m_pDoc->GenerateVehicleClassificationData(m_pDoc->m_VehicleSelectionMode,m_XSelectionNo);  // regeneate classification based on the new axis category
+		m_pDoc->GenerateClassificationForDisplay(m_XSelectionNo,m_YSelectionNo);
+	
+
+	string x_str= m_pDoc->CString2StdString (x_value_str);
+	string y_str= m_pDoc->CString2StdString (y_value_str);
+	
+
+		std::replace( x_str.begin(), x_str.end(), ',', ' '); 
+		std::replace( y_str.begin(), y_str.end(), ',', ' '); 
+
+	 std::map<int, VehicleStatistics> ::const_iterator iter;
+	 int data_count = 0;
+	 float data_value = 0;
+	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter )
+	 {
+		 int index = iter->first;
+		 if(m_pDoc->m_ClassificationTable[index].DisplayValue>0.01f)
+		 {
+			data_count++;
+			data_value = m_pDoc->m_ClassificationTable[index].DisplayValue;
+		 }
+	 }
+
+	 if(data_count>=1)
+	 {
+	 fprintf(st,"Category,%s,%s,",x_str.c_str (),y_str.c_str () );
+
+
+	 if(data_count==1)
+	 {
+	 CWaitCursor wc;
+
+			 fprintf(st,"%5.2f\n",data_value); 
+	 }
+	 else  // more than one items
+	 {
+	 CWaitCursor wc;
+
+		 fprintf(st,"\n");
+
+	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter )
+	 {
+		 int index = iter->first;
+		 if(m_pDoc->m_ClassificationTable[index].DisplayValue>0.01f)
+		 {
+
+		string label= m_pDoc->CString2StdString ( m_pDoc->m_ClassificationTable[index].Label);
+	
+
+		std::replace( label.begin(), label.end(), '-', '_'); 
+
+			fprintf(st,",,%s,%5.2f\n",label.c_str(),m_pDoc->m_ClassificationTable[index].DisplayValue);
+		 }
+	 }
+	 }
+	 }
+	 }
+		fclose(st);
+		m_pDoc->OpenCSVFileInExcel(fname);
+
+	}else
+	 {
+		 CString str;
+		 str.Format("File %s cannot be opened.",fname);
+		AfxMessageBox(str);
+	}
 }
 
 void CDlg_VehicleClassification::ExportData(CString fname)
@@ -414,13 +529,24 @@ void CDlg_VehicleClassification::ExportData(CString fname)
 }
 void CDlg_VehicleClassification::OnBnClickedExportData()
 {
-	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		"Data File (*.csv)|*.csv||", NULL);
-	if(dlg.DoModal() == IDOK)
-	{
-			ExportData(dlg.GetPathName ());
-	}
-	m_pDoc->OpenCSVFileInExcel(dlg.GetPathName ());
+
+	int CurSel = m_ComboX.GetCurSel ();
+	 CString X_Title;
+	 m_ComboX.GetLBText (CurSel,X_Title);
+
+	CurSel = m_ComboY.GetCurSel ();
+	 CString Y_Title;
+	 m_ComboY.GetLBText (CurSel,Y_Title);
+
+	CurSel = m_ComboVehicleSelection.GetCurSel ();
+	 CString VehicleSelection_Title;
+	 m_ComboVehicleSelection.GetLBText (CurSel,VehicleSelection_Title);
+
+	 CString Chart_File_Name = m_pDoc->m_ProjectDirectory + VehicleSelection_Title + "_"+ X_Title + "_" + Y_Title + ".csv";
+	CWaitCursor wait;
+	ExportData(Chart_File_Name);
+
+	m_pDoc->OpenCSVFileInExcel(Chart_File_Name);
 }
 
 void CDlg_VehicleClassification::OnChartSelectedItem(NMHDR* pNMHDR, LRESULT* pResult)
@@ -495,5 +621,27 @@ void CDlg_VehicleClassification::OnBnClickedHighlightVehicles()
 		m_HighlightVehicleButton.SetWindowTextA ("Highligh Selected Vehicles");
 
 	m_bHighlightSelectedVehicles = !m_bHighlightSelectedVehicles;
+
+}
+
+
+
+void CDlg_VehicleClassification::OnCbnSelchangeComboMaxColumns()
+{
+	AddChartData();
+
+	Invalidate();
+}
+
+void CDlg_VehicleClassification::OnBnClickedExportAllData()
+{
+
+	 int CurSel = m_ComboVehicleSelection.GetCurSel ();
+	 CString VehicleSelection_Title;
+	 m_ComboVehicleSelection.GetLBText (CurSel,VehicleSelection_Title);
+
+	 CString Chart_File_Name = m_pDoc->m_ProjectDirectory + VehicleSelection_Title +"_all_data.csv";
+
+	 ExportAllData(Chart_File_Name);
 
 }

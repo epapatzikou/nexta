@@ -12,6 +12,7 @@ public:
 	CDlgLinkProperties(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgLinkProperties();
 
+	void EnableDataBasedOnLinkType();
 // Dialog Data
 	enum { IDD = IDD_DIALOG_LinkProperties };
 
@@ -21,6 +22,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CTLiteDoc* m_pDoc;
+
+	bool m_bTransitModeFlag;
+
 
 	int FromNode;
 	int ToNode;
@@ -49,4 +53,12 @@ public:
 	int SaturationFlowRate;
 	int EffectiveGreenTime;
 	CString StreetName;
+	float m_TransitTravelTime;
+	float m_TransitTransferTime;
+	float m_TransitWaitingTime;
+	float m_TransitFare;
+	float m_BPR_Alpha;
+	float m_BPR_Beta;
+	afx_msg void OnEnChangeEditLength();
+	afx_msg void OnBnClickedButtonUpdate();
 };

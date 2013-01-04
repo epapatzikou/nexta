@@ -696,7 +696,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	// step 2: select font and color for node drawing, and compute the bandwidth for links
 	CFont node_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
-	int node_size = min(20,max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution)));
+	int node_size = max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution));
 
 	int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
 	int nFontSize =  max(node_size * NodeTypeSize, 10);
@@ -1546,7 +1546,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 
 
-					if(feet_size*pDoc->m_NodeDisplaySize > 0.2) // add or condition to show all nodes
+	//				if(feet_size*pDoc->m_NodeDisplaySize > 0.2) // add or condition to show all nodes
 					{
 						DrawNode(pDC, (*iNode),point, node_size,tm);
 					}
@@ -1611,7 +1611,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDC->SetBkColor(RGB(0,0,0));
 
 	CFont GPS_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
-	int node_size = min(20,max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution)));
+	int node_size = min(200,max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution)));
 
 	int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
 	int nFontSize =  max(node_size * NodeTypeSize, 10);
@@ -1775,7 +1775,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				center_y  = center_y/max(1,itr->second.m_ShapePoints .size()) - tm.tmHeight;
 
 				CString zone_id_str;
-				zone_id_str.Format("%d", itr->second.m_ZoneTAZ) ;
+				zone_id_str.Format("%d", itr->second.m_ZoneID) ;
 
 				pDC->TextOut(center_x , center_y , zone_id_str);
 			}
@@ -1829,7 +1829,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		CFont vehicle_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 
-		int vehicle_size = min(20,max(3,int(pDoc->m_VehicleDisplaySize *pDoc->m_UnitFeet*m_Resolution)));
+		int vehicle_size = min(200,max(3,int(pDoc->m_VehicleDisplaySize *pDoc->m_UnitFeet*m_Resolution)));
 
 		int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
 		int nFontSize =  max(vehicle_size * NodeTypeSize*0.8, 10);
@@ -2615,6 +2615,8 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		m_bMouseDownFlag = false;
 		CTLiteDoc* pDoc = GetDocument();
 
+		m_TempLinkEndPoint = point;
+
 		CSize OffSet = m_TempLinkStartPoint - m_TempLinkEndPoint;
 
 		if(abs(OffSet.cx) +  abs(OffSet.cy) <3)  // clicking on the same point, do not create links
@@ -2944,7 +2946,7 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 			pfrom.x  = FromPoint.x; pfrom.y  = FromPoint.y;
 			pto.x  = ToPoint.x; pto.y  = ToPoint.y;
 
-			float distance = g_GetPoint2LineDistance(p0, pfrom, pto);
+			float distance = g_GetPoint2LineDistance(p0, pfrom, pto, pDoc->m_UnitMile);
 
 			if(distance >0 && distance < Min_distance)
 			{
@@ -3435,9 +3437,18 @@ void CTLiteView::OnLinkEditlink()
 		dlg.SaturationFlowRate = pLink ->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ;
 		dlg.EffectiveGreenTime  = pLink ->m_EffectiveGreenTimeInSecond  ;
 
+		dlg.m_TransitTravelTime = pLink->m_TransitTravelTime ;
+		dlg.m_TransitTransferTime  = pLink->m_TransitTransferTime  ;
+		dlg.m_TransitWaitingTime  = pLink->m_TransitWaitingTime  ;
+		dlg.m_TransitFare  = pLink->m_TransitFareInDollar  ;
+		dlg.m_BPR_Alpha  = pLink->m_BPR_alpha_term  ;
+		dlg.m_BPR_Beta  = pLink->m_BPR_beta_term  ;
+
 		dlg.DefaultSpeedLimit = pDoc->m_DefaultSpeedLimit ;
 		dlg.DefaultCapacity = pDoc->m_DefaultCapacity ;
 		dlg.DefaultnLane = pDoc->m_DefaultNumLanes;
+
+
 
 		if(dlg.DoModal() == IDOK)
 		{
@@ -3455,6 +3466,13 @@ void CTLiteView::OnLinkEditlink()
 
 			pLink ->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = dlg.SaturationFlowRate;
 			pLink ->m_EffectiveGreenTimeInSecond  = dlg.EffectiveGreenTime;
+
+			pLink->m_TransitTravelTime = dlg.m_TransitTravelTime ;
+			pLink->m_TransitTransferTime  = dlg.m_TransitTransferTime;
+			pLink->m_TransitWaitingTime  = dlg.m_TransitWaitingTime;
+			pLink->m_TransitFareInDollar = dlg.m_TransitFare;
+			pLink->m_BPR_alpha_term  = dlg.m_BPR_Alpha  ;
+			pLink->m_BPR_beta_term   = dlg.m_BPR_Beta;
 
 
 			if(pLink->m_NumberOfLanes  != dlg.nLane)
@@ -3542,6 +3560,7 @@ void CTLiteView::OnEditCreatesubarea()
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	pMainFrame->m_bShowLayerMap[layer_subarea] = true;
+	pMainFrame-> m_iSelectedLayer = layer_zone;
 	GetDocument()->m_SubareaShapePoints.clear();
 
 }
@@ -3769,7 +3788,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 			// now we have an unused TAZ  
 			(*iNode)->m_bZoneActivityLocationFlag = true;
 
-			pDoc->m_ZoneMap [TAZ].m_ZoneTAZ = TAZ;
+			pDoc->m_ZoneMap [TAZ].m_ZoneID = TAZ;
 			(*iNode)->m_ZoneID = TAZ;
 
 			DTAActivityLocation element;
@@ -3980,15 +3999,12 @@ void CTLiteView::OnViewIncreasenodesize()
 
 	if(pDoc->m_LinkMOEMode != MOE_vehicle)
 	{
-		pDoc->m_NodeDisplaySize *=1.2;
-		if(pDoc->m_NodeDisplaySize > 1000)  // fast increase the size
-			pDoc->m_NodeDisplaySize = 1000;
+		pDoc->m_NodeDisplaySize = max(pDoc->m_NodeDisplaySize *1.2, pDoc->m_NodeDisplaySize+1);
+
 	}
 	else 
 	{
 		pDoc->m_VehicleDisplaySize*=1.2;
-		if(pDoc->m_VehicleDisplaySize > 1000)  // fast increase the size
-			pDoc->m_VehicleDisplaySize = 1000;
 	}
 
 
@@ -4001,10 +4017,13 @@ void CTLiteView::OnViewDecreatenodesize()
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc->m_LinkMOEMode != MOE_vehicle)
+	{
 		pDoc->m_NodeDisplaySize /=1.2;
+	}
 	else
 		pDoc->m_VehicleDisplaySize/=1.2;
 
+	pDoc->m_NodeDisplaySize = max(0.00001,pDoc->m_NodeDisplaySize);
 	Invalidate();
 
 

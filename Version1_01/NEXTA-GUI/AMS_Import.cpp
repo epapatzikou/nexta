@@ -271,10 +271,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pNode->m_ControlType = control_type;
 
 
+			if(id==1067)
+			{
+				TRACE("");
+			}
 			if(TAZ>=1)
 			{
 				pNode->m_bZoneActivityLocationFlag = true;
-				m_ZoneMap [TAZ].m_ZoneTAZ = TAZ;
+				m_ZoneMap [TAZ].m_ZoneID = TAZ;
 
 				DTAActivityLocation element;
 				element.ZoneID  = TAZ;
@@ -426,7 +430,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			if(TAZ>=1)
 			{
 				pNode->m_bZoneActivityLocationFlag = true;
-				m_ZoneMap [TAZ].m_ZoneTAZ = TAZ;
+				m_ZoneMap [TAZ].m_ZoneID = TAZ;
 
 				DTAActivityLocation element;
 				element.ZoneID  = TAZ;
@@ -3850,6 +3854,8 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 	}
 	
 int count = 0 ;
+	std::list<DTANode*>::iterator  iNode;
+
 CFileDialog dlg (TRUE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
 "Cross-reference Data File (*.csv)|*.csv||", NULL);
 if(dlg.DoModal() == IDOK)
@@ -3894,9 +3900,10 @@ if(dlg.DoModal() == IDOK)
 		
 		}
 
-
 		
-		
+	}else
+	{
+	
 	}
 
 	// step 2: map cycle length and offset
@@ -3920,7 +3927,6 @@ if(dlg.DoModal() == IDOK)
 		
 		fprintf(st,"------\n");
 		fprintf(st,"Step 1: Check node control type,\n");
-	std::list<DTANode*>::iterator  iNode;
 
 	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{

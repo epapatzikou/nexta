@@ -14,6 +14,8 @@ public:
 	CDlgDefaultLinkProperties(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgDefaultLinkProperties();
 
+	bool m_bLongLatSystem; 
+	int m_StartNodeNumberForNewNodes;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_DefaultLinkProperties };
 
@@ -34,4 +36,7 @@ public:
 	CListBox m_LinkTypeList;
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
+	CComboBox m_CoordinateSystemList;
+	afx_msg void OnCbnSelchangeCombo1();
+
 };

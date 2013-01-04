@@ -49,6 +49,7 @@ BEGIN_MESSAGE_MAP(CDlg_DisplayConfiguration, CDialog)
 	ON_LBN_DBLCLK(IDC_LIST_Size_Text_Control, &CDlg_DisplayConfiguration::OnLbnDblclkListSizeTextControl)
 	ON_CBN_SELCHANGE(IDC_COMBO_WalkingDistance, &CDlg_DisplayConfiguration::OnCbnSelchangeComboWalkingdistance)
 	ON_CBN_SELCHANGE(IDC_COMBO_TransitTime, &CDlg_DisplayConfiguration::OnCbnSelchangeComboTransittime)
+	ON_LBN_SELCHANGE(IDC_LIST_Size_Text_Control, &CDlg_DisplayConfiguration::OnLbnSelchangeListSizeTextControl)
 END_MESSAGE_MAP()
 
 
@@ -407,4 +408,9 @@ void CDlg_DisplayConfiguration::OnCbnSelchangeComboTransittime()
 {
 	 pView->GetDocument ()->m_max_accessible_transit_time_in_min = transit_time_vector [ m_ComboxBox_TransitTime.GetCurSel()];
 	pView->Invalidate ();
+}
+
+void CDlg_DisplayConfiguration::OnLbnSelchangeListSizeTextControl()
+{
+	// TODO: Add your control notification handler code here
 }
