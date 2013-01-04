@@ -41,7 +41,7 @@ using namespace std;
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model};
 enum e_assignment_method { assignment_MSA =0, assignment_day_to_day, assignment_gap_function,
 assignment_gap_function_MSA_step_size,assignment_accessibility_distanance,assignment_accessibility_travel_time};
-
+extern e_traffic_flow_model g_TrafficFlowModelFlag;
 // extention for multi-day equilibirum
 #define MAX_FIFO_QUEUESIZE 5000
 #define MAX_DAY_SIZE 1
@@ -824,6 +824,10 @@ public:
 
 		m_LoadingBufferWaitingTime = 0;
 
+		m_BPR_Alpha = 0.15f;
+		m_BPR_Beta = 4.0f;
+
+
 	};
 
 	void ResizeData(int TimeSize)  // TimeSize's unit: per min
@@ -1077,7 +1081,7 @@ public:
 				if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
 				{
 	
-					return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval); 
+					return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval,g_TrafficFlowModelFlag); 
 				}
 	
 			}
@@ -1247,6 +1251,10 @@ public:
 
 	// traffic flow propagation
 	float m_FreeFlowTravelTime; // min
+
+	float m_BPR_Alpha;
+	float m_BPR_Beta;
+
 	int m_BackwardWaveTimeInSimulationInterval; // simulation time interval
 
 	float m_BPRLinkVolume;
@@ -1468,7 +1476,7 @@ public:
 
 	float GetSpeed(int time)
 	{
-		return m_Length/max(0.1,GetTravelTimeByMin(-1,time,1))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
+		return m_Length/max(0.1,GetTravelTimeByMin(-1,time,1,g_TrafficFlowModelFlag))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
 
 	int GetArrivalFlow(int time)
@@ -1520,7 +1528,7 @@ public:
 	};
 
 
-	float GetTravelTimeByMin(int DayNo,int starting_time, int time_interval, e_traffic_flow_model TrafficModelFlag = tfm_spatial_queue)  // DayNo =-1: unknown day
+	float GetTravelTimeByMin(int DayNo,int starting_time, int time_interval, e_traffic_flow_model TrafficModelFlag)  // DayNo =-1: unknown day
 	{
 		float travel_time  = 0.0f;
 
@@ -2437,7 +2445,7 @@ public:
 	void BuildNetworkBasedOnZoneCentriod(int DayNo,int ZoneID);
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
 	void BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VMSLinkID, float Perception_error_ratio);
-	void BuildPhysicalNetwork(int DayNo=-1, int CurZoneID =-1, e_traffic_flow_model TraffcModelFlag = tfm_spatial_queue);
+	void BuildPhysicalNetwork(int DayNo, int CurZoneID, e_traffic_flow_model TraffcModelFlag);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
@@ -2952,6 +2960,7 @@ extern void g_OutputODMEResults();
 extern void g_GenerateVehicleData_ODEstimation();
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
 extern bool g_read_a_line(FILE* f, char* aline, int & size);
+extern bool g_read_a_line(FILE* f);
 
 std::string g_GetTimeStampStrFromIntervalNo(int time_interval);
 extern CString g_GetTimeStampString(int time_stamp_in_mine);

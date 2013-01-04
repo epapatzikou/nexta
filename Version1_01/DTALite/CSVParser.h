@@ -25,27 +25,40 @@ string NumberToString ( T Number )
 }
 
 
-template <typename T>
-T StringToNumber ( const string &Text )
-{
-	istringstream ss(Text);
-	T result;
-	return ss >> result ? result : 0;
-}
+
+
 class CCSVParser
 {
 public : ifstream inFile;
 
-		 string mFileName;
+	 string mFileName;
+	 vector<int> LineIntegerVector;
+	bool IsFirstLineHeader;
+
 private:
 	char Delimiter;
-	bool IsFirstLineHeader;
 	vector<string> LineFieldsValue;
+
 	map<string,int> FieldsIndices;
 
 	vector<string> ParseLine(string line);
 
 public:
+
+	void  ConvertLineStringValueToIntegers()
+	{
+		LineIntegerVector.clear();
+		for(unsigned i = 0; i < LineFieldsValue.size(); i++)
+		{
+			std::string si = LineFieldsValue[i];
+			int value = atoi(si.c_str ());
+
+			if(value>=1)
+				LineIntegerVector.push_back(value);
+
+		}
+	}
+
 	CCSVParser(void);
 	bool OpenCSVFile(string fileName, bool b_required = true);
 	void CloseCSVFile(void);
