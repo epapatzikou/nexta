@@ -1155,15 +1155,15 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime*(1.0f+0.15f*(powf(pLink->m_BPRLinkVolume/(max(1,pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes())),4.0f)));
+			pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime*(1.0f+pLink->m_BPR_Alpha *(powf(pLink->m_BPRLinkVolume/(max(1,pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes())),pLink->m_BPR_Beta )));
 
-			float maximum_travel_time_ratio = 10;
-			if(pLink->m_BPRLinkTravelTime > pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio )
-			{  // if BRP travel time is extremely large, 10 times slower than the speed limit, then enforce a minimum moving speed to move the vehicles outof the network....
-				pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio;
-				g_LogFile << "Reset extreme large BPR travel time :" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << "travel time:" << pLink->m_BPRLinkTravelTime  << ", org raito: " << pLink->m_BPRLinkTravelTime/pLink->m_FreeFlowTravelTime  << endl;
+			//float maximum_travel_time_ratio = 10;
+			//if(pLink->m_FreeFlowTravelTime >0.01 && pLink->m_BPRLinkTravelTime > pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio )
+			//{  // if BRP travel time is extremely large, 10 times slower than the speed limit, then enforce a minimum moving speed to move the vehicles outof the network....
+			//	pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio;
+			//	g_LogFile << "Reset extreme large BPR travel time :" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << "travel time:" << pLink->m_BPRLinkTravelTime  << ", org raito: " << pLink->m_BPRLinkTravelTime/pLink->m_FreeFlowTravelTime  << endl;
 
-			}
+			//}
 			g_LogFile << "BPR Travel Time for Link "<< g_NodeVector[pLink->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber <<" Flow:" << pLink->m_BPRLinkVolume << "travel time:" << pLink->m_BPRLinkTravelTime  << endl;
 
 		}
@@ -1326,7 +1326,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 		for(int hour = g_DemandLoadingStartTimeInMin/60; hour < g_PlanningHorizon/60+1; hour++)  // used for ODME
 			{
-				pLink->SimultedHourlySpeed[hour] = pLink->m_Length / pLink->GetTravelTimeByMin (Iteration,hour*60, 60 /*interval*/)*60;  // 60: convert min to hour
+				pLink->SimultedHourlySpeed[hour] = pLink->m_Length / pLink->GetTravelTimeByMin (Iteration,hour*60, 60 /*interval*/,TrafficFlowModelFlag)*60;  // 60: convert min to hour
 			}
 	}
 

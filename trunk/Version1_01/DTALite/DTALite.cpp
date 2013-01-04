@@ -759,6 +759,14 @@ void g_ReadInputFiles(int scenario_no)
 			}
 
 
+			float BPR_Alpha = 0.15f;
+			float BPR_Beta = 4.0f;
+
+			parser_link.GetValueByFieldName("BPR_alpha_term",BPR_Alpha);
+			parser_link.GetValueByFieldName("BPR_beta_term",BPR_Beta);
+
+
+
 			int EffectiveGreenTimeInSecond = 0;
 			parser_link.GetValueByFieldName("effective_green_time_length_in_second",EffectiveGreenTimeInSecond);
 
@@ -900,6 +908,9 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 				pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
+				pLink->m_BPR_Alpha = BPR_Alpha;
+				pLink->m_BPR_Beta = BPR_Beta;
+
 				/* common out for now to speed up the process
 				std::vector<CCoordinate> CoordinateVector;
 				string geo_string;
@@ -940,7 +951,7 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->m_NumberOfRightTurnBays = NumberOfRightTurnBays;
 				pLink->m_Direction = link_direction;
 
-				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distanance)
+				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distanance && g_TrafficFlowModelFlag != tfm_BPR)
 					pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
 				else
 					pLink->m_Length= length;
@@ -1245,12 +1256,19 @@ void g_ReadInputFiles(int scenario_no)
 		{
 			int zone_number;
 
-			if(parser_activity_location.GetValueByFieldName("zone_id",zone_number) == false)
+			if(parser_activity_location.GetValueByFieldName("zone_id",zone_number) == false )
 				break;
 
 			int node_number;
-			if(parser_activity_location.GetValueByFieldName("node_id",node_number) == false)
+			if(parser_activity_location.GetValueByFieldName("node_id",node_number) == false )
 				break;
+
+		if(g_NodeNametoIDMap.find(node_number) == g_NodeNametoIDMap.end())
+		{
+				cout <<"node_id = " << node_number << " in file input_activity_location has not been defined in input_node.csv. Please check."<< endl;
+				g_ProgramStop();
+		
+		}
 
 			int nodeid = g_NodeNametoIDMap[node_number];
 			if(g_ODZoneNumberSize < zone_number)
@@ -1261,10 +1279,18 @@ void g_ReadInputFiles(int scenario_no)
 				external_od_flag  =0 ;
 
 
-			if(zone_number == 16)
+			if(zone_number <0)
 			{
-				TRACE("");
+				cout <<"zone_id = " << zone_number << " in file input_activity_location. Please check."<< endl;
+				g_ProgramStop();
 			}
+
+			if(external_od_flag >=2 || external_od_flag <=-2)
+			{
+				cout <<"Invalid external_od_flag = " << external_od_flag << " in file input_activity_location. Please check."<< endl;
+				g_ProgramStop();
+			}
+
 			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 
 			if(external_od_flag != -1) // not external destination
@@ -1584,7 +1610,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	// done with zone.csv
 		DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-		PhysicalNetwork.BuildPhysicalNetwork(0);
+		PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag);
 		PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 	//	ConnectivityChecking(&PhysicalNetwork);
 
@@ -2080,31 +2106,18 @@ void g_ConvertDemandToVehicles()
 			if(pVehicle->m_OriginNodeID==-1 )
 			{
 
-			if(g_NoActivityZoneMap.find( kvhc->m_OriginZoneID ) != g_NoActivityZoneMap.end())
-			{
-			cout << "There is no activity location associated with origin zone " << kvhc->m_OriginZoneID << ", but there is demand sepecified from zone " << kvhc->m_OriginZoneID << " to zone " << kvhc->m_DestinationZoneID <<". Please check input_activity_location.csv and demand files." << endl;
-			if(SkipDemandError < 3)
-				getchar();
-			}
-
-
 			g_NoActivityZoneMap[kvhc->m_OriginZoneID] = 1;
-			SkipDemandError++;
+			kvhc++;
 
 			continue;
 			}
 
 			if(pVehicle->m_DestinationNodeID==-1 )
 			{
-			if(g_NoActivityZoneMap.find( kvhc->m_DestinationZoneID) != g_NoActivityZoneMap.end())
-			{
-			cout << "There is no activity location associated with destination zone " << kvhc->m_DestinationZoneID << ", but there is demand sepecified from zone " << kvhc->m_OriginZoneID << " to zone " << kvhc->m_DestinationZoneID <<". Please check input_activity_location.csv and demand files." << endl;
-			if(SkipDemandError < 3)
-				getchar();
-			}
+
 			g_NoActivityZoneMap[kvhc->m_DestinationZoneID] = 1;
 
-			SkipDemandError++;
+			kvhc++;
 
 			continue;
 			}
@@ -2134,7 +2147,27 @@ void g_ConvertDemandToVehicles()
 		}
 		kvhc++;
 
+		if(i%10000==0 && i >0)
+			cout << "Generating " << i <<" agents... "<< endl;
+
 	}
+
+	if(g_NoActivityZoneMap.size()>=1)
+	{
+	cout << "The following zones have no activity location but have demand being defined in OD demand files." << endl;
+
+		for (std::map<int, int>::iterator iterZone = g_NoActivityZoneMap.begin(); iterZone != g_NoActivityZoneMap.end(); iterZone++)
+		{
+		
+			cout << iterZone->first << endl;
+		
+		}
+		cout << "Please check input_activity_location.csv and demand files." << endl;
+		getchar();
+
+	}
+
+
 	cout << "Total number of vehicles to be simulated = "<< g_simple_vector_vehicles.size() << endl;
 	g_simple_vector_vehicles.clear ();
 }
@@ -2889,7 +2922,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 				if((pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
 				{
 					float LinkOutFlow = float(pLink->GetDepartureFlow(time));
-					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,1);
+					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,1,g_TrafficFlowModelFlag);
 
 					struct_TDMOE tdmoe_element;
 
@@ -3761,7 +3794,7 @@ void g_OutputSummaryKML(Traffic_MOE moe_mode)
 void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes)
 {
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	PhysicalNetwork.BuildPhysicalNetwork(0);
+	PhysicalNetwork.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);
 	int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
 	DTALink* pLink = g_LinkVector[LinkID];
@@ -4285,6 +4318,24 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			}else if (format_type.compare("matrix")== 0)
 			{
+				vector<int> LineIntegerVector;
+
+					CCSVParser parser;
+					parser.IsFirstLineHeader = false;
+					if (parser.OpenCSVFile(file_name))
+					{
+						int control_type_code;
+						int i=0;
+						if(parser.ReadRecord())
+						{
+							 parser.ConvertLineStringValueToIntegers ();
+							 LineIntegerVector = parser.LineIntegerVector ;
+						}
+
+					}
+
+				int number_of_zones = LineIntegerVector.size();
+
 
 				bool bFileReady = false;
 				int i;
@@ -4293,35 +4344,43 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				fopen_s(&st,file_name.c_str (), "r");
 				if (st!=NULL)
 				{
-					int number_of_zones = g_ZoneMap.size();
 					// read the first line
-					for(int dest = 1; dest <= number_of_zones; dest++)
+					g_read_a_line(st);
+
+					cout << "number of zones to be read = " << number_of_zones << endl;
+
+					//test if a zone has been defined. 
+					for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 					{
-						g_read_float(st);
+						int zone = LineIntegerVector[destination_zone_index];
+					
+						if(g_ZoneMap.find(zone)== g_ZoneMap.end())
+						{
+						cout << "Zone "  << zone << " (no." << destination_zone_index+1 << " in the first line) of file " << file_name << " has not been defined in input_zone.csv. Please check." <<endl;
+						g_ProgramStop();
+						
+						}
 					}
 
-					cout << "number_of_zones = " << number_of_zones << endl;
+
+
 					int line_no = 0;
-					for(int origin_zone = 1; origin_zone <= g_ZoneMap.size(); origin_zone++)
+					for(int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
 					{
-						int origin_zone_number = g_read_float(st); // read the origin zone number
+						int origin_zone = g_read_integer(st); // read the origin zone number
 
-						if(origin_zone!= origin_zone_number)
-						{
-							cout << "Reading file " << file_name << " error: Sequential origin zone number "<< origin_zone << " is expected, but a zone number of " << origin_zone_number << " is found." <<  endl;
 
-							g_ProgramStop();
-				
-						}
 						cout << "Reading file " << file_name << " at zone "<< origin_zone << " ... "<< endl;
 
-						for(int destination_zone = 1; destination_zone <= g_ZoneMap.size(); destination_zone++)
+						for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 						{
-							float number_of_vehicles =  g_read_float(st)*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
+							int destination_zone = LineIntegerVector[destination_zone_index];
+							float value = g_read_float(st);
+
+							float number_of_vehicles =  value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
 
 							if(line_no<=5)  // read only one line, but has not reached the end of the line
 								cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
-
 
 							line_no++;
 							int type = 1;  // first demand type definition
@@ -4329,8 +4388,6 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							{
 								total_demand_in_demand_file += number_of_vehicles;
 							
-								if(g_ZoneMap.find(origin_zone)!= g_ZoneMap.end())
-								{
 									g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 									// condition 1: without time-dependent profile 
 
@@ -4355,7 +4412,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 									}
 
-								}
+								
 							}
 
 						}

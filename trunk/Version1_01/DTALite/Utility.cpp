@@ -667,6 +667,31 @@ char g_GetLevelOfService(int PercentageOfSpeedLimit)
 	   return 'F';
 }
 
+bool g_read_a_line(FILE* f)
+   /* read a line from the current line from the file */
+{
+
+   char ch;
+
+   while( 1 ) {
+      ch = getc( f );
+      if( ch != 13 && ch != 10 && ch != EOF )
+	  {
+		  // do nothing
+	  }
+	  else { /* terminate if it's end of line or end of file */
+		  {
+		  // do nothing
+		  }
+	 if( ch == EOF )
+	    return false;
+
+	 return true;
+      }
+   }
+}
+
+
 bool g_read_a_line(FILE* f, char* aline, int & size)
    /* read a line from the current line from the file */
 {
@@ -728,7 +753,7 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	}
 
 	// starting with first node with origin nodes;
-	pPhysicalNetwork->BuildPhysicalNetwork(0);
+	pPhysicalNetwork->BuildPhysicalNetwork(0,-1,g_TrafficFlowModelFlag);
 
 	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false);  // CurNodeID is the node ID
 	// assign shortest path calculation results to label array

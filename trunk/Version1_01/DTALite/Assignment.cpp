@@ -1337,7 +1337,7 @@ void g_AgentBasedShortestPathGeneration()
 		// create network for shortest path calculation at this processor
 		DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 		int	cpu_id = omp_get_thread_num( );  // starting from 0
-		network_MP.BuildPhysicalNetwork(0);  // build network for this zone, because different zones have different connectors...
+		network_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 
 		for(int node_index  = 0; node_index < node_size; node_index++)
 		{
@@ -1516,7 +1516,7 @@ void g_AgentBasedAccessibilityMatrixGeneration()
 		// create network for shortest path calculation at this processor
 		DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 		int	cpu_id = omp_get_thread_num( );  // starting from 0
-		network_MP.BuildPhysicalNetwork(0);  // build network for this zone, because different zones have different connectors...
+		network_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 
 		for(int node_index  = 0; node_index < node_size; node_index++)
 		{
@@ -1556,7 +1556,7 @@ void g_AgentBasedAccessibilityMatrixGeneration()
 		// create network for shortest path calculation at this processor
 		DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 		int	cpu_id = omp_get_thread_num( );  // starting from 0
-		network_MP.BuildPhysicalNetwork(0);  // build network for this zone, because different zones have different connectors...
+		network_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 
 		for(int node_index  = 0; node_index < node_size; node_index++)
 		{
@@ -1761,7 +1761,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 		Day2DayLinkMOE element;
 		element.TotalFlowCount  = pLink->CFlowArrivalCount;
-		element.AvgTravelTime= pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon);
+		element.AvgTravelTime= pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon,g_TrafficFlowModelFlag);
 		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime) *60;  // unit: mph
 
 		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)

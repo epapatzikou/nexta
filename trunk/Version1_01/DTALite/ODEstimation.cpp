@@ -587,7 +587,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if( pLink->SimultedHourlySpeed[arrival_time_in_hour] < pLink->m_SpeedLimit *0.15) // 15% of speed limit
 							number_of_links_with_extremely_heavy_congestion++;
 
-				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,g_AggregationTimetInterval);  // update travel time 
+				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,g_AggregationTimetInterval,g_TrafficFlowModelFlag);  // update travel time 
 
 				if(ArrivalTime >= pLink->m_LinkMOEAry.size() || ArrivalTime >= g_PlanningHorizon) // time of interest exceeds the simulation horizon
 					break;

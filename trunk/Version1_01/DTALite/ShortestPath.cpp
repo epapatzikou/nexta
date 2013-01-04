@@ -53,7 +53,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 		m_InboundSizeAry[i] =0;
 	}
 
-	BuildPhysicalNetwork(DayNo,CurZoneID);
+	BuildPhysicalNetwork(DayNo,CurZoneID,g_TrafficFlowModelFlag);
 
 	int LinkID = g_LinkVector.size();
 
