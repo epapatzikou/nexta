@@ -50,7 +50,6 @@ BOOL CDlgFindALink::OnInitDialog()
 	m_FindObjectList.SetCurSel(m_SearchMode);
 
 
-
 	for(unsigned int i = 0; i <m_SearchHistoryVector.size() ; i++)
 	{
 
@@ -117,8 +116,6 @@ void CDlgFindALink::OnBnClickedButtonFind()
 	default: 
 	m_NodeNumber = value1;
 	}
-
-
 
 	OnOK();
 

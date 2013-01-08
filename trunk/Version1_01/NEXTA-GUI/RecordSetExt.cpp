@@ -60,6 +60,15 @@ CString CRecordsetExt::GetCString(CString ColumnName)
    {
       CString error = "Field not found:" + ColumnName + "\n";
       AfxMessageBox(error ,MB_OK|MB_ICONEXCLAMATION);
+
+	for(int i = 0; i< GetFieldCount(); i++)
+	{
+		CDaoFieldInfo fieldinfo;
+
+		GetFieldInfo(i,fieldinfo);
+		TRACE("index %d: fieldinfo %s\n",i,fieldinfo.m_strName);
+	}
+   
       return "";
    }
 
@@ -110,6 +119,49 @@ double CRecordsetExt:: GetDouble(CString ColumnName, bool &bExist,bool bRequired
 	 AfxMessageBox(error ,MB_OK|MB_ICONEXCLAMATION);
       }
       bExist=false;
+	for(int i = 0; i< GetFieldCount(); i++)
+	{
+		CDaoFieldInfo fieldinfo;
+
+		GetFieldInfo(i,fieldinfo);
+		TRACE("index %d: fieldinfo %s\n",i,fieldinfo.m_strName);
+	}
+   
+      return -999.0;
+   }
+
+   vFieldValue = (LPVARIANT)covFieldValue;
+   VARIANTARG   vargDest={0};
+   VariantChangeType(&vargDest,vFieldValue,0, VT_R8);
+   return vargDest.dblVal;
+}
+double CRecordsetExt::GetDouble(int index, bool &bExist,bool bRequired)
+{
+   COleVariant covFieldValue;
+   VARIANT *vFieldValue;
+   bExist=true;
+
+   try
+   {
+      GetFieldValue(index, covFieldValue);
+   }
+   catch(CDaoException* e)
+   {
+      if(bRequired)
+      {
+	 CString error;
+	 error.Format("Field index %d not found.",index);
+	 AfxMessageBox(error ,MB_OK|MB_ICONEXCLAMATION);
+      }
+      bExist=false;
+	for(int i = 0; i< GetFieldCount(); i++)
+	{
+		CDaoFieldInfo fieldinfo;
+
+		GetFieldInfo(i,fieldinfo);
+		TRACE("index %d: fieldinfo %s\n",i,fieldinfo.m_strName);
+	}
+   
       return -999.0;
    }
 

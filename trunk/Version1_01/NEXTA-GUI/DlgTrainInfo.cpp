@@ -8,24 +8,24 @@
 
 // CDlgTrainInfo dialog
 
-#define NUM_TRAIN_INFO 10
+#define NUM_TRAIN_INFO 13
 
 static _TCHAR *_gColumnTrainLabel[NUM_TRAIN_INFO] =
 {
-	_T("Train Header"), _T("Entry Time"), _T("Origin Node"), _T("Destination Node"),
-	_T("Direction"), _T("Speed Multiplier"), _T("TOB"), _T("Hazmat"),_T("SA Status at Origin"), _T("Terminal Want Time")
+	_T("Train Header"), _T("Origin Node"), _T("Destination Node"),
+	_T("Direction"), _T("Speed Multiplier"), _T("TOB"), _T("Hazmat"),_T("SA Status at Origin"),_T("Entry Time"),  _T("Terminal Want Time"), _T("Acutal Arrival Time"), _T("Schedule Delay at Terminal (min)"),  _T("Main Track Delay")
 };
 
 
 static int _gColumnWidth[NUM_TRAIN_INFO] =
 {
-	100, 80, 80, 90, 80, 100, 80, 80, 120, 120
+	100, 80, 80, 90, 80, 100, 80, 80, 120, 120, 120, 120, 120
 };
 
 IMPLEMENT_DYNAMIC(CDlgTrainInfo, CDialog)
 
 CDlgTrainInfo::CDlgTrainInfo(CWnd* pParent /*=NULL*/)
-	: CDialog(CDlgTrainInfo::IDD, pParent)
+	: CBaseDialog(CDlgTrainInfo::IDD, pParent)
 {
 
 }
@@ -101,7 +101,6 @@ void CDlgTrainInfo::InsertTrainInfoItem()
 		lvi.iItem = i;
 		lvi.iSubItem = 0;
 
-
 		train_info train = (*itr).second ;
 
 		sprintf_s(text, "%s",train.train_header.c_str () );
@@ -117,33 +116,45 @@ void CDlgTrainInfo::InsertTrainInfoItem()
 		lvi.stateMask = LVIS_STATEIMAGEMASK;
 		lvi.state = INDEXTOSTATEIMAGEMASK(ImageNo);
 
+		int count = 1;
 		m_TrainListControl.InsertItem(&lvi);
-		sprintf_s(text, "%d",train.entry_time );
-		m_TrainListControl.SetItemText(i,1,text);
 
 		sprintf_s(text, "%d",train.origin_node_id );
-		m_TrainListControl.SetItemText(i,2,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%d",train.destination_node_id);
-		m_TrainListControl.SetItemText(i,3,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%s",train.direction.c_str());
-		m_TrainListControl.SetItemText(i,4,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%4.3f",train.speed_multiplier );
-		m_TrainListControl.SetItemText(i,5,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%d",train.tob);
-		m_TrainListControl.SetItemText(i,6,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%s",train.hazmat.c_str () );
-		m_TrainListControl.SetItemText(i,7,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
 		sprintf_s(text, "%d",train.sa_status_at_origin);
-		m_TrainListControl.SetItemText(i,8,text);
+		m_TrainListControl.SetItemText(i,count++,text);
 
-		sprintf_s(text, "%d",train.terminal_want_time);
-		m_TrainListControl.SetItemText(i,9,text);
+		sprintf_s(text, "%d (%s)",train.entry_time, m_pDoc->GetTimeStampString24HourFormat(train.entry_time));
+		m_TrainListControl.SetItemText(i,count++,text);
+
+		sprintf_s(text, "%d (%s) ",train.terminal_want_time,m_pDoc->GetTimeStampString24HourFormat(train.terminal_want_time));
+		m_TrainListControl.SetItemText(i,count++,text);
+
+
+		sprintf_s(text, "%d (%s)",train.terminal_arrival_time,m_pDoc->GetTimeStampString24HourFormat(train.terminal_arrival_time));
+		m_TrainListControl.SetItemText(i,count++,text);
+
+		sprintf_s(text, "%d ",train.terminal_arrival_time - train.terminal_want_time);
+		m_TrainListControl.SetItemText(i,count++,text);
+
+		sprintf_s(text, "%d min (%d sec)",train.main_track_speed_difference_delay_in_second/60,train.main_track_speed_difference_delay_in_second );
+		m_TrainListControl.SetItemText(i,count++,text);
 
 	}
 }

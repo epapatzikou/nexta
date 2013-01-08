@@ -212,6 +212,15 @@ using std::string;
 #define MAX_DAY_SIZE 1 
 
 extern int 	g_MOEAggregationIntervalInMin;
+struct DTA_demand
+{
+	int from_zone_id;
+	int to_zone_id;
+	double number_of_vehicles;
+
+};
+
+
 struct GDPoint
 {
 	double x;
@@ -694,7 +703,7 @@ public:
 
 	float default_lane_capacity;
 	float default_speed;
-	float default_number_of_lanes;
+	int default_number_of_lanes;
 	int link_type;
 	string link_type_name;
 	string type_code;
@@ -1086,6 +1095,9 @@ public:
 	
 		if(m_Link_Pair_to_Movement_Map.size()==0)
 			make_Link_Pair_to_Movement_Map();
+
+		if(m_MovementVector.size()==0)
+			return;
 
 		int link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
 		int movement_index = m_Link_Pair_to_Movement_Map[link_pair_key];

@@ -32,7 +32,7 @@
 #include "..//Network.h"
 #include "..//TLiteDoc.h"
 #include "..//TLiteView.h"
-
+#include "..//MainFrm.h"
 #include <iostream>                          // for cout, endl
 #include <fstream>                           // for ofstream
 #include <sstream>
@@ -504,7 +504,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			length_sum += pLink ->m_Length;
 			if(!bNodeNonExistError)
 			{
-				TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
+//				TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
 				m_LinkSet.push_back (pLink);
 				m_LinkNoMap[i]  = pLink;
 				i++;
@@ -788,6 +788,7 @@ bool ReadTrainsFromFile(CString fileName,std::vector<train_schedule>& ts_vector)
 
 	int startIdx,endIdx;
 	string subString = s;
+	int count  = 0;
 	while((startIdx = subString.find("<train ")) != string::npos && (endIdx = subString.find("</train>")) != string::npos)
 	{
 
@@ -795,8 +796,10 @@ bool ReadTrainsFromFile(CString fileName,std::vector<train_schedule>& ts_vector)
 		train_schedule tSchedule;
 
 		if (ParseTrainString(trainString,tSchedule))
-		{
+		{ 
+			TRACE("trainString: %s", trainString.c_str ());
 			ts_vector.push_back(tSchedule);
+			count++;
 		}
 
 		subString = subString.substr(endIdx + string("</train>").length() + 1);
@@ -857,9 +860,11 @@ bool CTLiteDoc::ReadRailTrainXMLFile(CString FileName)
 
 	ReadTrainsFromFile(FileName,m_train_schedule_vector);
 
-	for (int i=0;i<m_train_schedule_vector.size();i++)
+	for (int i=0;i< m_train_schedule_vector.size();i++)
 	{
 		float current_time  = -100;
+
+
 		for (int j=0;j< m_train_schedule_vector[i].movement_vector.size();j++)
 		{
 			train_movements mv = m_train_schedule_vector[i].movement_vector[j];
@@ -910,6 +915,13 @@ bool CTLiteDoc::ReadRailTrainXMLFile(CString FileName)
 					element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
 
 
+					int speed_difference_delay =  0 ;
+					
+					if(pLink->m_TrackType.find_first_of ("0123456789") !=  std::string::npos) // main track
+					{
+						speed_difference_delay = (element.exit_time_in_sec - element.entry_time_in_sec ) - arc_traveling_time;
+						m_train_map[mv.train_id ]. main_track_speed_difference_delay_in_second  += speed_difference_delay;
+					}
 					if(k==0)
 					{   
 						pLink->m_bTrainFromTerminal  = true;
@@ -918,7 +930,12 @@ bool CTLiteDoc::ReadRailTrainXMLFile(CString FileName)
 					if(k== mv.movement_arc_vector.size()-1)
 					{   
 						pLink->m_bTrainToTerminal  = true;
+
+						m_train_map[mv.train_id ].terminal_arrival_time  =  max( m_train_map[mv.train_id ].terminal_arrival_time,element.exit_time_in_sec/60);
+					
 					}
+
+
 
 					pLink->m_TimeTable .m_train_movement_vector .push_back (element);
 				}else
@@ -938,16 +955,25 @@ bool CTLiteDoc::ReadRailTrainXMLFile(CString FileName)
 						element.exit_time_in_sec = element.exit_time_in_sec_with_train_length_time - train_length_time;
 
 
-
+					int speed_difference_delay =  0 ;
+					
+					if(pLink->m_TrackType.find_first_of ("0123456789") !=  std::string::npos) // main track
+					{
+						speed_difference_delay = (element.exit_time_in_sec - element.entry_time_in_sec ) - arc_traveling_time;
+						m_train_map[mv.train_id ]. main_track_speed_difference_delay_in_second  += speed_difference_delay;
+					}
 						// resersed direction
 						if(k==0)
 						{   
 							pLink->m_bTrainToTerminal  = true;
+							TRACE("train no.%d: %s\n", i,element.train_id.c_str ());
 						}
 
 						if(k== mv.movement_arc_vector.size()-1)
 						{   
 							pLink->m_bTrainFromTerminal  = true;
+							m_train_map[mv.train_id ].terminal_arrival_time  =  max( m_train_map[mv.train_id ].terminal_arrival_time,element.exit_time_in_sec/60);
+
 						}
 
 
@@ -1132,7 +1158,8 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 		double ratio;
 		int t ;
 		CPoint from_cpt, to_cpt;
-		bool m_bShowText = true;
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		bool m_bShowText = pMainFrame->m_bShowLayerMap[layer_movement];
 
 		// draw train line
 		if(element.direction ==1)

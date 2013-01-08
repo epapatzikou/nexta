@@ -8,10 +8,10 @@
 
 // CDlg_VehicleClassification dialog
 
-IMPLEMENT_DYNAMIC(CDlg_VehicleClassification, CDialog)
+IMPLEMENT_DYNAMIC(CDlg_VehicleClassification, CBaseDialog)
 
 CDlg_VehicleClassification::CDlg_VehicleClassification(CWnd* pParent /*=NULL*/)
-	: CDialog(CDlg_VehicleClassification::IDD, pParent)
+	: CBaseDialog(CDlg_VehicleClassification::IDD, pParent)
 	, m_Message(_T(""))
 	, m_MaxColumnSize(100)
 {
@@ -41,6 +41,7 @@ void CDlg_VehicleClassification::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_HIGHLIGHT_VEHICLES, m_HighlightVehicleButton);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 	DDX_Control(pDX, IDC_COMBO_MAX_COLUMNS, m_ColumnSizeList);
+	DDX_Control(pDX, IDC_STATIC_MESSAGE, m_MessageEdit);
 }
 
 
@@ -110,6 +111,7 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.AddString("4-hour Departure Time Interval"); 
 	m_ComboX.AddString ("--"); 
 	m_ComboX.AddString("Distance Bin (0.2 ml Interval)"); //2
+	m_ComboX.AddString("Distance Bin (1 ml Interval)"); 
 	m_ComboX.AddString("Distance Bin (2 ml Interval)"); //2
 	m_ComboX.AddString("Distance Bin (5 ml Interval)"); //2
 	m_ComboX.AddString("Distance Bin (10 ml Interval)"); //2
@@ -117,6 +119,7 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboX.AddString("Travel Time Bin (2 min Interval)"); //2
 	m_ComboX.AddString("Travel Time Bin (5 min Interval)"); //2
 	m_ComboX.AddString("Travel Time Bin (10 min Interval)"); //2
+	m_ComboX.AddString("Travel Time Bin (30 min Interval)"); //2
 	m_ComboX.AddString ("--"); 
 	m_ComboX.AddString("VOT distribution ($10 Interval)"); // 1
 	m_ComboX.AddString("VOT distribution ($15 Interval)"); // 1
@@ -280,6 +283,8 @@ void CDlg_VehicleClassification::AddChartData()
 	m_MaxColumnSize = m_ColumnSizeList.GetCurSel()+1;
 
 	int count = 0;
+	m_chart.m_Caption = "Project Title: " + m_pDoc->m_ProjectTitle ;
+
 	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter, count++ )
 	 {
 		 int index = iter->first;
@@ -410,16 +415,26 @@ void CDlg_VehicleClassification::ExportAllData(CString fname)
 	 CString VehicleSelection_Title;
 	 m_ComboVehicleSelection.GetLBText (CurSel,VehicleSelection_Title);
 
-
 	 fprintf(st,"Vehicle Selection Mode,--,%s,--\n",VehicleSelection_Title );
 
 		  CWaitCursor wait;
 	m_MaxColumnSize = m_ColumnSizeList.GetCurSel()+1;
 
 	for(int x_i= 0; x_i < min(17,m_ComboX.GetCount ()); x_i++)
+	{
+		m_XSelectionNo = (VEHICLE_X_CLASSIFICATION) x_i; 
+		m_pDoc->GenerateVehicleClassificationData(m_pDoc->m_VehicleSelectionMode,m_XSelectionNo);  // regeneate classification based on the new axis category
+
+		 CString X_Title;
+		 m_ComboX.GetLBText (x_i,X_Title);
+
+		CString message;
+		message.Format("Processing category %s...", X_Title );
+		SetDlgItemTextA(IDC_STATIC_MESSAGE,message);
+
 	for(int y_i= 0; y_i < max(20,m_ComboY.GetCount ()); y_i++)
 	 {
-		m_XSelectionNo = (VEHICLE_X_CLASSIFICATION) x_i; 
+
 		m_YSelectionNo = (VEHICLE_Y_CLASSIFICATION)y_i;
 
 		CString x_value_str,y_value_str;
@@ -430,7 +445,7 @@ void CDlg_VehicleClassification::ExportAllData(CString fname)
 	if(x_value_str.Find("--") >=0 || y_value_str.Find("--") >=0)
 		continue;
 
-		m_pDoc->GenerateVehicleClassificationData(m_pDoc->m_VehicleSelectionMode,m_XSelectionNo);  // regeneate classification based on the new axis category
+
 		m_pDoc->GenerateClassificationForDisplay(m_XSelectionNo,m_YSelectionNo);
 	
 
@@ -488,7 +503,9 @@ void CDlg_VehicleClassification::ExportAllData(CString fname)
 	 }
 	 }
 	 }
-		fclose(st);
+	}  // x_i selection
+	SetDlgItemTextA(IDC_STATIC_MESSAGE,"");
+	fclose(st);
 		m_pDoc->OpenCSVFileInExcel(fname);
 
 	}else
@@ -609,7 +626,7 @@ void CDlg_VehicleClassification::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
 
-	CDialog::OnClose();
+	OnClose();
 }
 
 void CDlg_VehicleClassification::OnBnClickedHighlightVehicles()

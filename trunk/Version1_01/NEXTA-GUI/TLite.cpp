@@ -36,7 +36,7 @@
 #include "DlgMOE.h"
 #include "DlgPathMOE.h"
 #include "DlgMainTemplate.h"
-
+#include "Dlg_VehicleClassification.h"
 
 eVisulizationTemplate g_VisulizationTemplate;
 
@@ -46,6 +46,7 @@ eVisulizationTemplate g_VisulizationTemplate;
 
 extern CDlgMOE *g_LinkMOEDlg;
 extern CDlgPathMOE	*g_pPathMOEDlg;
+extern std::vector<CDlg_VehicleClassification*>	g_SummaryDialogVector;
 
 
 // CTLiteApp
@@ -99,7 +100,7 @@ BOOL CTLiteApp::InitInstance()
 		CString NEXTASettingsPath;
 		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", CurrentDirectory);
 
-		int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 0, NEXTASettingsPath);
+		int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
 
 		if( visualization_template == 1)
 			m_VisulizationTemplate = e_traffic_assignment;
@@ -116,14 +117,14 @@ BOOL CTLiteApp::InitInstance()
 
 		}
 
-		//if( m_VisulizationTemplate == e_train_scheduling)
-		//{
-  //      m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE4,
-  //              RUNTIME_CLASS(CTLiteDoc),
-  //              RUNTIME_CLASS(CChildFrame), // custom MDI child frame
-  //              RUNTIME_CLASS(CTLiteView));
+		if( m_VisulizationTemplate == e_train_scheduling)
+		{
+        m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE4,
+                RUNTIME_CLASS(CTLiteDoc),
+                RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+                RUNTIME_CLASS(CTLiteView));
 
-		//}
+		}
 
         if (!m_pDocTemplate2DView)
                 return FALSE;
@@ -255,6 +256,8 @@ int CTLiteApp::ExitInstance()
 
 	//if(m_pTemplateTimeTableView!=NULL)
 	//delete m_pTemplateTimeTableView;
+	//collect memory
+
 
 	return CWinApp::ExitInstance();
 }
@@ -403,6 +406,7 @@ void CTLiteApp::OnFileOpenmultipletrafficdataprojects()
 
 void CTLiteApp::OnAppExit()
 {
+
 	exit(0);
 }
 

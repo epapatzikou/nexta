@@ -83,9 +83,9 @@ enum VEHICLE_X_CLASSIFICATION {CLS_all_vehicles=0,CLS_pricing_type,
 CLS_sep_1,
 CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_time_interval_2_hour,CLS_time_interval_4_hour,
 CLS_sep_2,
-CLS_distance_bin_0_2,CLS_distance_bin_2,CLS_distance_bin_5,CLS_distance_bin_10,
+CLS_distance_bin_0_2,CLS_distance_bin_1,CLS_distance_bin_2,CLS_distance_bin_5,CLS_distance_bin_10,
 CLS_sep_3,
-CLS_travel_time_bin_2,CLS_travel_time_bin_5,CLS_travel_time_bin_10,
+CLS_travel_time_bin_2,CLS_travel_time_bin_5,CLS_travel_time_bin_10,CLS_travel_time_bin_30,
 CLS_sep_4,
 CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,
 CLS_information_class,CLS_vehicle_type};
@@ -365,7 +365,8 @@ class CTLiteDoc : public CDocument
 {
 public: // create from serialization only
 
-
+	
+	
 	CTLiteDoc();
 
 
@@ -375,6 +376,11 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	std::vector<DTA_demand> m_ImportedDemandVector;
+
+	bool m_ImportDemandColumnFormat;
+
+	bool m_bSummaryDialog;
 	int m_DocumentNo;
 	int m_calibration_data_start_time_in_min;
 	int m_calibration_data_end_time_in_min;
@@ -1330,7 +1336,7 @@ public:
 	}
 	
 
-	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0, bool ActivityLocation = false)
+	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0, bool ActivityLocation = false, bool bSplitLink = false)
 	{
 		DTANode* pNode = new DTANode;
 		pNode->pt = newpt;
@@ -1353,7 +1359,10 @@ public:
 		m_NodeIDtoNumberMap[pNode->m_NodeID ] = pNode->m_NodeNumber;
 		m_NodeNumbertoIDMap[pNode->m_NodeNumber] = pNode->m_NodeID;
 
+		if(bSplitLink)
+		{
 		SplitLinksForOverlappingNodeOnLinks(pNode->m_NodeID,false,false);
+		}
 		return pNode;
 	}
 
@@ -1724,7 +1733,7 @@ public: // subarea
 
 	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str);
-	bool SaveDemandFile();
+	bool SaveSubareaDemandFile();
 
 	// Overrides
 public:

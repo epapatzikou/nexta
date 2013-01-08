@@ -1,5 +1,3 @@
-//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
-
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
 //   and further prevent a violation of the GPL.

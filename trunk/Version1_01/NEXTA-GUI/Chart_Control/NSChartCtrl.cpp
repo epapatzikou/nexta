@@ -363,6 +363,7 @@ void CNSChartCtrl::DrawBarChart(CDC *pDC)
 	int scale = rcBar.Width()/iValues;
 	int height = rcBar.Height();
 	CRect tmpRect;
+	
 	for ( i = 0; i < iValues; i++ )
 	{
 		pTmp = m_ChartValues.GetAt(i);

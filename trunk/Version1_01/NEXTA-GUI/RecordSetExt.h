@@ -16,6 +16,7 @@ public:
 
    long GetLong(CString ColumnName,bool &bExist,bool bRequired);
    double GetDouble(CString ColumnName,bool &bExist,bool bRequired);
+   double GetDouble(int index, bool &bExist,bool bRequired=false);
    float GetFloat(CString ColumnName);
    // Use with Column Numbers
 
