@@ -52,10 +52,15 @@ public:
 	string hazmat;
 	int sa_status_at_origin;
 	int terminal_want_time;
+	int terminal_arrival_time;
+	int main_track_speed_difference_delay_in_second;
+	
 	train_info ()
 	{
+		main_track_speed_difference_delay_in_second = 0;
 		train_length = 1.0f;
 		speed_multiplier  = 1.0f;
+		terminal_arrival_time = 0;
 	
 	}
 };

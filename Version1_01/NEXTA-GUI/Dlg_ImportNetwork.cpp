@@ -36,9 +36,8 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_ExcelFile, m_Edit_Excel_File);
-	DDX_Text(pDX, IDC_EDIT_Demand_CSV_File, m_Edit_Demand_CSV_File);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
-	DDX_Check(pDX, IDC_CHECK_REMOVE_CONNECTOR, m_bRemoveConnectors);
+	DDX_Control(pDX, IDC_LIST_DEMAND_FORMAT, m_List_DemandFormat);
 }
 
 
@@ -53,6 +52,7 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Load_Sample_File, &CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile)
 	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
 	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
+	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_FORMAT, &CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat)
 END_MESSAGE_MAP()
 
 
@@ -83,6 +83,7 @@ void CDlg_ImportNetwork::OnBnClickedButtonFindDemandCsvFile()
 
 		UpdateData(false);
 	}
+
 }
 void CDlg_ImportNetwork::OnBnClickedButtonFindSensorFile()
 {
@@ -149,13 +150,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				break;
 
 
-			int control_type = rsNode.GetLong(CString("control_type"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field control_type cannot be found in the node table.");
-				rsNode.Close();
-				return;
-			}
+			int control_type = 0;
 
 			float x = rsNode.GetDouble(CString("x"),bExist,false);
 			if(!bExist) 
@@ -201,7 +196,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	}
 
 	// Read record
-	strSQL = m_pDoc->ConstructSQL("2-1-LINK-TYPE");
+	strSQL = m_pDoc->ConstructSQL("2-LINK-TYPE");
 	if(strSQL.GetLength () > 0)
 	{
 
@@ -223,7 +218,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			element.link_type = link_type_number;
 			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
 			element.type_code    = rsLinkType.GetCString (CString("type_code"));
-
+			element.default_lane_capacity     = rsLinkType.GetLong(CString("default_lane_capacity"),bExist,false);
+			element.default_speed      = rsLinkType.GetFloat  (CString("default_speed_limit"));
+			element.default_number_of_lanes       = rsLinkType.GetLong (CString("default_number_of_lanes"),bExist,false);
 			m_pDoc->m_LinkTypeMap[element.link_type] = element;
 
 			rsLinkType.MoveNext ();
@@ -254,10 +251,11 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	}
 	
 		// Read record
-		strSQL = m_pDoc->ConstructSQL("2-LINK");
+		strSQL = m_pDoc->ConstructSQL("3-LINK");
 
 		if(strSQL.GetLength () > 0)
 		{
+			m_pDoc->m_bLinkToBeShifted = true;
 			CRecordsetExt rsLink(&m_pDoc->m_Database);
 			rsLink.Open(dbOpenDynaset, strSQL);
 			i = 0;
@@ -335,15 +333,16 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				std::vector<CCoordinate> CoordinateVector;
 
-				CString geometry_str = rsLink.GetCString(CString("geometry"));
+				CString geometry_str;
+				//= rsLink.GetCString(CString("geometry"));
 
-				if(bAutogenerateNodeFlag && geometry_str.GetLength () ==0)
-				{
-				
-					m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
-					rsLink.Close();
-					return;
-				}
+				//if(bAutogenerateNodeFlag && geometry_str.GetLength () ==0)
+				//{
+				//
+				//	m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
+				//	rsLink.Close();
+				//	return;
+				//}
 
 				if(geometry_str.GetLength () > 0)
 				{
@@ -412,7 +411,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 				}
 
-				float length = rsLink.GetDouble(CString("length_in_mile"),bExist,false);
+				float length = rsLink.GetDouble(CString("length"),bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString ("Field length_in_mile cannot be found in the link table.");
@@ -445,15 +444,15 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 
-				float grade= rsLink.GetDouble(CString("grade"),bExist,false);
-				float AADT_conversion_factor = rsLink.GetDouble(CString("AADT_conversion_factor"),bExist,false);
+				float grade= 0;
+				float AADT_conversion_factor = 0.1;
 				if(!bExist)
 				{
 
 				AADT_conversion_factor = default_AADT_conversion_factor;
 				}
 
-				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit_in_mph"),bExist,false);
+				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit"),bExist,false);
 				if(!bExist) 
 				{
 					AfxMessageBox("Field speed_limit_in_mph cannot be found in the link table.");
@@ -469,7 +468,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					continue; 
 				}
 
-				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_veh_per_hour"),bExist,false);
+				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
 				if(!bExist)
 				{
 					m_MessageList.AddString ("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
@@ -486,10 +485,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 
-				int direction = rsLink.GetLong(CString("two_way_flag"),bExist,false);
+				int direction = rsLink.GetLong(CString("direction"),bExist,false);
 				if(!bExist) 
 				{
-					m_MessageList.AddString("Field two_way_flag cannot be found in the link table.");
+					m_MessageList.AddString("Field direction cannot be found in the link table.");
 					rsLink.Close();
 					return;
 				}
@@ -636,6 +635,34 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					}
 
+	
+					double BPR_alpha_term = 0.15;
+					double BPR_beta_term = 4;
+					double transit_transfer_time_in_min	= 1;
+					double transit_waiting_time_in_min = 3;
+					double transit_fare = 1;
+
+
+					BPR_alpha_term = rsLink.GetDouble(CString("BPR_alpha_term"),bExist,false);
+
+					if(BPR_alpha_term > 0.000001)
+					pLink->m_BPR_alpha_term = BPR_alpha_term;
+
+					BPR_beta_term = rsLink.GetDouble(CString("BPR_beta_term"),bExist,false);
+
+					if(BPR_beta_term > 0.00000001)
+					pLink->m_BPR_beta_term = BPR_beta_term;
+
+					transit_transfer_time_in_min = rsLink.GetDouble(CString("transit_transfer_time_in_min"),bExist,false);
+					pLink->m_TransitTransferTime  = transit_transfer_time_in_min;
+
+					transit_waiting_time_in_min = rsLink.GetDouble(CString("transit_waiting_time_in_min"),bExist,false);
+					pLink->m_TransitWaitingTime  = transit_waiting_time_in_min;
+
+					transit_fare = rsLink.GetDouble(CString("transit_fare"),bExist,false);
+					pLink->m_TransitFareInDollar   = transit_fare;
+
+
 					pLink->m_Kjam = k_jam;
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
@@ -673,8 +700,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
 
 
-		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
-		m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+					__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+					m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 
 					i++;
@@ -712,7 +739,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 		}else
 		{
-			str_msg.Format ( "Worksheet 2-link cannot be found in the given Excel file");
+			str_msg.Format ( "Worksheet 3-link cannot be found in the given Excel file");
 			m_MessageList.AddString (str_msg);
 			return;
 		}
@@ -733,8 +760,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	if(m_bImportNetworkOnly == true)
 		return;
 
-	// ZONE table
-	strSQL = m_pDoc->ConstructSQL("3-2-ZONE-ACTIVITY-LOCATION");
+	// activity location table
+	strSQL = m_pDoc->ConstructSQL("5-ACTIVITY-LOCATION");
 
 	//bool bNodeNonExistError = false;
 	m_pDoc->m_NodeIDtoZoneNameMap.clear ();
@@ -792,6 +819,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			element.ZoneID  = zone_number;
 			element.NodeNumber = node_name;
 
+			element.External_OD_flag  = rsZone.GetLong(CString("external_OD_flag"),bExist,false);
 
 			m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 
@@ -808,7 +836,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	}
 
 	// ZONE table
-	strSQL = m_pDoc->ConstructSQL("3-1-ZONE");
+	strSQL = m_pDoc->ConstructSQL("4-ZONE");
 
 	// Read record
 	if(strSQL.GetLength () > 0)
@@ -830,32 +858,32 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				break;
 
 			// if there are multiple nodes for a zone, the last node id is recorded.
-				std::vector<CCoordinate> CoordinateVector;
+			//	std::vector<CCoordinate> CoordinateVector;
 
-				CString geometry_str = rsZone.GetCString(CString("geometry"));
+			//	CString geometry_str = rsZone.GetCString(CString("geometry"));
 
-				if(geometry_str.GetLength () > 0)
-				{
+			//	if(geometry_str.GetLength () > 0)
+			//	{
 
-				CT2CA pszConvertedAnsiString (geometry_str);
+			//	CT2CA pszConvertedAnsiString (geometry_str);
 
-				// construct a std::string using the LPCSTR input
-				std::string geo_string (pszConvertedAnsiString);
+			//	// construct a std::string using the LPCSTR input
+			//	std::string geo_string (pszConvertedAnsiString);
 
-				CGeometry geometry(geo_string);
-				CoordinateVector = geometry.GetCoordinateList();
+			//	CGeometry geometry(geo_string);
+			//	CoordinateVector = geometry.GetCoordinateList();
 
-				m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
+			//	m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
 
-			for(unsigned int f = 0; f < CoordinateVector.size(); f++)
-			{
-				GDPoint pt;
-				pt.x = CoordinateVector[f].X;
-				pt.y = CoordinateVector[f].Y;
-				m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
-			}
+			//for(unsigned int f = 0; f < CoordinateVector.size(); f++)
+			//{
+			//	GDPoint pt;
+			//	pt.x = CoordinateVector[f].X;
+			//	pt.y = CoordinateVector[f].Y;
+			//	m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
+			//}
 
-				}
+			//	}
 			if(m_pDoc->m_ODSize < zone_number)
 				m_pDoc->m_ODSize = zone_number;
 				
@@ -954,447 +982,172 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		
 		}
 
+		//import demand
 
-	strSQL = m_pDoc->ConstructSQL("4-1-vehicle-type");
+	int demand_type = m_List_DemandFormat.GetCurSel ();
 
-
-	if (strSQL.GetLength() > 0)
+	m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
+	if(demand_type == 0)  // matrix
 	{
-		CRecordsetExt rsVehicleType(&m_pDoc->m_Database);
-		rsVehicleType.Open(dbOpenDynaset, strSQL);
+	// activity location table
 
-		while(!rsVehicleType.IsEOF())
-		{
-			int type_no;
-			type_no = rsVehicleType.GetLong(CString("vehicle_type"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field vehicle_type cannot be found in the 4-1-vehicle-type table.");
-				return;
-			}
+	strSQL = m_pDoc->ConstructSQL("6-DEMAND-MATRIX");
 
-			if(type_no >= MAX_VEHICLE_TYPE_SIZE)
-			{
-				AfxMessageBox("Field vehicle_type is too large. Please contact the program developer.");
-				return;
+	//bool bNodeNonExistError = false;
+	m_pDoc->m_ImportedDemandVector .clear ();
 
-			}
-			if(type_no <=0)
-				break;
-
-			CString vehicle_type_name;
-
-			vehicle_type_name = rsVehicleType.GetCString(CString("vehicle_type_name"));
-
-			DTAVehicleType element;
-			element.vehicle_type = type_no;
-			element.vehicle_type_name = vehicle_type_name;
-			m_pDoc->m_VehicleTypeVector.push_back(element);
-
-			rsVehicleType.MoveNext ();
-		}
-		rsVehicleType.Close();
-
-		str_msg.Format ( "%d vehicle types imported", m_pDoc->m_VehicleTypeVector.size());
-		m_MessageList.AddString (str_msg);
-
-	}
-
-
-
-	strSQL = m_pDoc->ConstructSQL("4-2-demand-type");
-
-
-	if (strSQL.GetLength() > 0)
-	{
-		CRecordsetExt rsDemandType(&m_pDoc->m_Database);
-		rsDemandType.Open(dbOpenDynaset, strSQL);
-
-		while(!rsDemandType.IsEOF())
-		{
-			int type_no;
-			type_no = rsDemandType.GetLong(CString("demand_type"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field demand_type cannot be found in the 4-2-demand-type table.");
-				return;
-			}
-			if(type_no <=0)
-				break;
-
-			float average_VOT = rsDemandType.GetDouble(CString("average_VOT"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field average_VOT cannot be found in the 4-2-demand-type table.");
-			}
-
-			int pricing_type;
-			pricing_type =  rsDemandType.GetLong(CString("pricing_type"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field pricing_type cannot be found in the 4-2-demand-type table.");
-			}
-
-			float ratio_pretrip = rsDemandType.GetLong(CString("percentage_of_pretrip_info"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field percentage_of_pretrip_info cannot be found in the 4-2-demand-type table.");
-			}
-
-			float ratio_enroute = rsDemandType.GetLong(CString("percentage_of_enroute_info"),bExist,false);
-			if(!bExist)
-			{
-				AfxMessageBox("Field percentage_of_enroute_info cannot be found in the 4-2-demand-type table.");
-			}
-
-			if (ratio_pretrip  > 1.0)
-			{
-				AfxMessageBox("The field percentage_of_pretrip_info cannot be greater than 100% in the 4-2-demand-type table. Please check.");
-				ratio_pretrip = 0;
-			}
-
-			if (ratio_enroute  > 1.0)
-			{
-				AfxMessageBox("The field percentage_of_enroute_info cannot be greater than 100% in the 4-2-demand-type table. Please check.");
-				ratio_enroute = 0;
-			}
-
-			if ((ratio_pretrip + ratio_enroute) > 1.0)
-			{
-				AfxMessageBox("Sum of percentage_of_pretrip_info and percentage_of_enroute_info cannot be greater than 100% in the 4-2-demand-type table. Please check.");
-				ratio_pretrip = 0;
-				ratio_enroute = 0;
-
-			}
-
-
-			CString demand_type_name;
-
-			demand_type_name = rsDemandType.GetCString(CString("demand_type_name"));
-
-			DTADemandType element;
-			element.demand_type = type_no;
-			element.pricing_type = pricing_type;
-			element.demand_type_name = demand_type_name;
-			element.average_VOT = average_VOT;
-
-			element.info_class_percentage[1] = ratio_pretrip * 100;
-			element.info_class_percentage[2] = ratio_enroute * 100;
-			element.info_class_percentage[0] = 100 - ratio_pretrip - ratio_enroute;
-
-
-			for(unsigned int i=0; i< m_pDoc->m_VehicleTypeVector.size(); i++)
-			{
-				CString str_percentage_of_vehicle_type; 
-				str_percentage_of_vehicle_type.Format ("percentage_of_vehicle_type%d", i+1);
-				float percentage = rsDemandType.GetDouble(str_percentage_of_vehicle_type,bExist,false);
-				if(!bExist)
-				{
-
-					CString str_percentage_of_vehicle_type_warning; 
-					str_percentage_of_vehicle_type_warning.Format("Field %s cannot be found in the demand table.", str_percentage_of_vehicle_type);
-
-					AfxMessageBox(str_percentage_of_vehicle_type_warning);
-					return;
-				}
-
-				element.vehicle_type_percentage[i] = percentage*100;
-
-
-			}
-
-
-			m_pDoc->m_DemandTypeVector.push_back(element);
-
-			rsDemandType.MoveNext ();
-		}
-		rsDemandType.Close();
-
-
-		str_msg.Format ( "%d demand types imported.", m_pDoc->m_DemandTypeVector.size());
-		m_MessageList.AddString (str_msg);
-
-	}
-
-	strSQL = m_pDoc->ConstructSQL("4-3-PEAK-PERIOD-DEMAND");
-
-	if(strSQL.GetLength() > 0)
-	{
-		// Read record
-
-		float total_demand = 0;
-		CRecordsetExt rsDemand(&m_pDoc->m_Database);
-		rsDemand.Open(dbOpenDynaset, strSQL);
-
-			int line_no = 2;
-			while(!rsDemand.IsEOF())
-			{
-				int origin_zone_id, destination_zone_id;
-				float number_of_vehicles, starting_time_in_min, ending_time_in_min;
-
-				origin_zone_id = rsDemand.GetLong(CString("from_zone_id"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field from_zone_id cannot be found in the demand table.");
-					return;
-				}
-
-			if( origin_zone_id ==0)
-					break;
-
-				destination_zone_id = rsDemand.GetLong(CString("to_zone_id"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field to_zone_id cannot be found in the demand table.");
-					return;
-				}
-
-				starting_time_in_min =  rsDemand.GetLong(CString("starting_time_in_min"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field starting_time_in_min cannot be found in the demand table.");
-					return;
-				}
-				ending_time_in_min =  rsDemand.GetLong(CString("ending_time_in_min"),bExist,false);
-				if(!bExist)
-				{
-					AfxMessageBox("Field ending_time_in_min cannot be found in the demand table.");
-					return;
-				}
-
-				if(ending_time_in_min < starting_time_in_min)
-				{
-					CString str_error; 
-					str_error.Format ("Error: Value ending_time_in_min < starting_time_in_min at line no.%d in the demand table.",line_no);
-					AfxMessageBox(str_error);
-					return;
-				}
-
-				DTADemand element;
-				element.from_zone_id = origin_zone_id;
-				element.to_zone_id = destination_zone_id;
-
-				if(origin_zone_id > m_pDoc->m_ODSize)
-				{
-					CString str_error; 
-					str_error.Format ("Error: Value from_zone_id > numbers of zones at line no.%d in the demand table.",line_no);
-					AfxMessageBox(str_error);
-					return;
-				}
-
-				if(destination_zone_id > m_pDoc->m_ODSize)
-				{
-					CString str_error; 
-					str_error.Format ("Error: Value to_zone_id > numbers of zones at line no.%d in the demand table.",line_no);
-					AfxMessageBox(str_error);
-					return;
-				}
-
-				element.starting_time_in_min = starting_time_in_min;
-				element.ending_time_in_min = ending_time_in_min;
-
-				for(unsigned int	demand_type = 1; demand_type < m_pDoc->m_DemandTypeVector.size(); demand_type++)
-				{
-					CString str_number_of_vehicles; 
-					str_number_of_vehicles.Format ("number_of_trips_demand_type%d", demand_type);
-					number_of_vehicles = rsDemand.GetDouble(str_number_of_vehicles,bExist,false);
-					if(!bExist)
-					{
-
-						CString str_number_of_vehicles_warning; 
-						str_number_of_vehicles_warning.Format("Field %s cannot be found in the demand table.", str_number_of_vehicles);
-
-						AfxMessageBox(str_number_of_vehicles_warning);
-						return;
-					}
-
-					m_pDoc->m_ZoneMap[origin_zone_id].m_ODDemandMatrix [destination_zone_id].SetValue (demand_type,number_of_vehicles);
-					total_demand+=number_of_vehicles;
-					element.number_of_vehicles_per_demand_type.push_back(number_of_vehicles);
-				}
-
-				rsDemand.MoveNext ();
-				line_no++;
-			}
-			rsDemand.Close();
-
-			str_msg.Format ( "%f vehicles have been successfully imported from the peak-hour-demand table.", total_demand);
-			m_MessageList.AddString (str_msg);
-
-	}
-
-
-	strSQL = m_pDoc->ConstructSQL("4-4-temporal-profile");
 
 
 	if(strSQL.GetLength () > 0)
 	{
-		// Read record
-		CRecordsetExt rsDemandProfile(&m_pDoc->m_Database);
-		rsDemandProfile.Open(dbOpenDynaset, strSQL);
+		CRecordsetExt rsDemand(&m_pDoc->m_Database);
+		rsDemand.Open(dbOpenDynaset, strSQL);
 
-		while(!rsDemandProfile.IsEOF())
+		while(!rsDemand.IsEOF())
 		{
-			int from_zone_id, to_zone_id;
-
-			from_zone_id = rsDemandProfile.GetLong(CString("from_zone_id"),bExist,false);
-			if(!bExist)
+			int from_zone_id = rsDemand.GetLong(CString("zone_id"),bExist,false);
+			if(!bExist) 
 			{
-				AfxMessageBox("Field from_zone_id cannot be found in the 4-4-temporal-profile table.");
+				AfxMessageBox("Field zone_id cannot be found in the demand table.");
 				return;
 			}
-			if(from_zone_id <0)
+
+			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
+			{
+				CString message;
+				message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
+				AfxMessageBox(message);
+				break;
+			}
+
+			if(from_zone_id ==0)
 				break;
 
-			to_zone_id = rsDemandProfile.GetLong(CString("to_zone_id"),bExist,false);
-			if(!bExist)
+			int to_zone_id = 0;
+		std::map<int, DTAZone>	:: const_iterator itr;
+
+			int to_zone_index = 1;
+		for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++,to_zone_index++)
+		{
+			to_zone_id = itr->first;
+			double number_of_vehicles = rsDemand.GetDouble(to_zone_index,bExist,false);
+			if(!bExist) 
 			{
-				AfxMessageBox("Field to_zone_id cannot be found in the 4-4-temporal-profile table.");
+				CString messsage;
+				messsage.Format("Field %d cannot be found in the demand matrix", to_zone_id);
+				AfxMessageBox(messsage);
 				return;
 			}
-			if(to_zone_id <0)
-				break;
 
-
-			int demand_type = rsDemandProfile.GetLong(CString("demand_type"),bExist,false);
-			if(!bExist)
+			if(number_of_vehicles < -0.1)
 			{
-				AfxMessageBox("Field demand_type cannot be found in the 4-4-temporal-profile table.");
-				return;
-			}
-			if(demand_type <0)
+				CString message;
+				message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
+				AfxMessageBox(message);
 				break;
+			}
 
-			DTADemandProfile element; 
-
-			element.demand_type = demand_type;
+			DTA_demand element;
 			element.from_zone_id = from_zone_id;
 			element.to_zone_id = to_zone_id;
+			element.number_of_vehicles = number_of_vehicles;
 
-			element.series_name = rsDemandProfile.GetCString(CString("time_series_label"));
+			m_pDoc->m_ImportedDemandVector.push_back (element);
 
-			bool bWithDataFlag = false;
+		}  // for all to zone id
 
-			for(int t = 0; t< MAX_TIME_INTERVAL_SIZE; t++)
-			{
-				CString time_stamp_str = m_pDoc->GetTimeStampFloatingPointStrFromIntervalNo (t);
-				TRACE("demand type = %d, t = %d, %s\n",demand_type, t,time_stamp_str );
-				double ratio = rsDemandProfile.GetDouble(time_stamp_str,bExist,false);
+		
+	
+			rsDemand.MoveNext ();
 
-				if(bExist && ratio > 0.0000001)
-				{
-					element.time_dependent_ratio[t] = ratio;
-					bWithDataFlag = true;
-				}
-
-			}
-
-			if(from_zone_id == 0 && demand_type ==0 && !bWithDataFlag)   // no valid data
-				break;
-
-			m_pDoc->m_DemandProfileVector.push_back (element);
-
-			rsDemandProfile.MoveNext ();
 		}
-		rsDemandProfile.Close();
+		rsDemand.Close();
 
-		str_msg.Format ( "%d temporal profile records imported", m_pDoc->m_DemandProfileVector.size());
+		str_msg.Format ( "%d demand element records imported", m_pDoc->m_ImportedDemandVector.size());
 		m_MessageList.AddString (str_msg);
+	}
 
 	}
 
-	///// VOT distribution
-	strSQL = m_pDoc->ConstructSQL("5-VOT-distribution");
-
-	// Read record
-
-	if(strSQL.GetLength() > 0)
+	if(demand_type == 1)
 	{
-		CRecordsetExt rsVOT(&m_pDoc->m_Database);
-		rsVOT.Open(dbOpenDynaset, strSQL);
+	// activity location table
 
-		while(!rsVOT.IsEOF())
+	strSQL = m_pDoc->ConstructSQL("6-DEMAND-3-COLUMN");
+
+	//bool bNodeNonExistError = false;
+	m_pDoc->m_ImportedDemandVector .clear ();
+
+
+
+	if(strSQL.GetLength () > 0)
+	{
+		CRecordsetExt rsDemand(&m_pDoc->m_Database);
+		rsDemand.Open(dbOpenDynaset, strSQL);
+
+		while(!rsDemand.IsEOF())
 		{
-
-			int pricing_type;
-			float percentage; float VOT;
-			pricing_type = rsVOT.GetLong(CString("demand_type"),bExist,false);
-			if(!bExist)
+			int from_zone_id = rsDemand.GetLong(CString("from_zone_id"),bExist,false);
+			if(!bExist) 
 			{
-				AfxMessageBox("Field demand_type_no cannot be found in the 5-VOT-distribution table.");
+				AfxMessageBox("Field from_zone_id cannot be found in the demand table.");
 				return;
 			}
-			if(pricing_type <=0)
+
+			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
+			{
+				CString message;
+				message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
+				AfxMessageBox(message);
+				break;
+			}
+
+			if(from_zone_id ==0)
 				break;
 
-			VOT = rsVOT.GetDouble(CString("VOT_dollar_per_hour"),bExist,false);
-			if(!bExist)
+			int to_zone_id = rsDemand.GetLong(CString("to_zone_id"),bExist,false);
+
+
+			if(!bExist) 
 			{
-				AfxMessageBox("Field VOT_dollar_per_hour cannot be found in the 5-VOT-distribution table.");
+				AfxMessageBox("Field node_id cannot be found in the demand table.");
 				return;
 			}
 
-			percentage = rsVOT.GetDouble(CString("VOT_percentage"),bExist,false);
-			if(!bExist)
+			if(m_pDoc->m_ZoneMap.find(to_zone_id)== m_pDoc->m_ZoneMap.end())
 			{
-				AfxMessageBox("Field VOT_percentage cannot be found in the 4-3-VOT-distribution table.");
-				return;
+				CString message;
+				message.Format("to_zone_id %d at line %d  in the demand table has not been defined.", to_zone_id,  m_pDoc->m_ImportedDemandVector.size()+1);
+				AfxMessageBox(message);
+				break;
 			}
 
-			DTAVOTDistribution element;
-			element.demand_type = pricing_type;
-			element.percentage  = percentage *100;
-			element.VOT = VOT;
+			double number_of_vehicles =  rsDemand.GetDouble(CString("number_of_vehicles"),bExist,false); 
 
-			m_pDoc->m_VOTDistributionVector.push_back(element);
+			if(number_of_vehicles < -0.1)
+			{
+				CString message;
+				message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
+				AfxMessageBox(message);
+				break;
+			}
 
-			rsVOT.MoveNext ();
+			DTA_demand element;
+			element.from_zone_id = from_zone_id;
+			element.to_zone_id = to_zone_id;
+			element.number_of_vehicles = number_of_vehicles;
+
+			m_pDoc->m_ImportedDemandVector.push_back (element);
+	
+			rsDemand.MoveNext ();
+
 		}
-		rsVOT.Close();
+		rsDemand.Close();
 
-		str_msg.Format ( "%d Value of Time (VOT) records imported.", m_pDoc->m_VOTDistributionVector.size());
+		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
 		m_MessageList.AddString (str_msg);
-
 	}
 
-	//// emission rate
-	strSQL = m_pDoc->ConstructSQL("6-vehicle-emission-rate");;
-
-	if(strSQL.GetLength() > 0)
-	{		// Read record
-		CRecordsetExt rsEmissionRate(&m_pDoc->m_Database);
-		rsEmissionRate.Open(dbOpenDynaset, strSQL);
-
-		while(!rsEmissionRate.IsEOF())
-		{
-
-
-			int vehicle_type = rsEmissionRate.GetLong(CString("vehicle_type"),bExist,false);
-
-			if(vehicle_type <= 0)  //reading empty line
-				break;
-
-			if(bExist)
-			{
-				int opModeID = rsEmissionRate.GetLong(CString("opModeID"),bExist,false);
-				CEmissionRate element;
-				element.meanBaseRate_TotalEnergy = rsEmissionRate.GetDouble(CString("meanBaseRate_TotalEnergy_(J/hr)"),bExist,false);
-				element.meanBaseRate_CO2 = rsEmissionRate.GetDouble(CString("meanBaseRate_CO2_(g/hr)"),bExist,false);
-				element.meanBaseRate_NOX = rsEmissionRate.GetDouble(CString("meanBaseRate_NOX_(g/hr)"),bExist,false);
-				element.meanBaseRate_CO = rsEmissionRate.GetDouble(CString("meanBaseRate_CO_(g/hr)"),bExist,false);
-				element.meanBaseRate_HC = rsEmissionRate.GetDouble(CString("meanBaseRate_HC_(g/hr)"),bExist,false);
-
-				ASSERT(vehicle_type < MAX_VEHICLE_TYPE_SIZE);
-				ASSERT(opModeID < _MAXIMUM_OPERATING_MODE_SIZE);
-
-				m_pDoc->EmissionRateData[vehicle_type][opModeID] = element;
-			}
-			rsEmissionRate.MoveNext ();
-		}
-		rsEmissionRate.Close();
-
-		str_msg.Format ( "%d emissions records imported.", m_pDoc->m_VOTDistributionVector.size());
-		m_MessageList.AddString (str_msg);
 	}
 
 	return;  // not reading sensor data for now.
@@ -1631,4 +1384,24 @@ void CDlg_ImportNetwork::OnBnClickedImport2()
 	OnBnClickedImport();
 }
 
+
+void CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat()
+{
+	// TODO: Add your control notification handler code here
+}
+
+BOOL CDlg_ImportNetwork::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	m_List_DemandFormat.AddString("matrix format");
+	m_List_DemandFormat.AddString("3-column format");
+	m_List_DemandFormat.SetCurSel (0);
+
+
+	// TODO:  Add extra initialization here
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// EXCEPTION: OCX Property Pages should return FALSE
+}
 #endif

@@ -2627,7 +2627,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		int FromNodeID = FindClosestNode(m_TempLinkStartPoint, min_selection_distance);
 		if(FromNodeID ==-1)
 		{
-			pFromNode = pDoc->AddNewNode(SPtoNP(m_TempLinkStartPoint));
+			pFromNode = pDoc->AddNewNode(SPtoNP(m_TempLinkStartPoint),0,0,false,true);
 		}else
 		{
 			pFromNode = pDoc-> m_NodeIDMap[FromNodeID];
@@ -2637,7 +2637,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		int ToNodeID = FindClosestNode(m_TempLinkEndPoint, min_selection_distance);
 		if(ToNodeID ==-1)
 		{
-			pToNode = pDoc->AddNewNode(SPtoNP(m_TempLinkEndPoint));
+			pToNode = pDoc->AddNewNode(SPtoNP(m_TempLinkEndPoint),0,0,false,true);
 		}else
 		{
 			pToNode = pDoc-> m_NodeIDMap[ToNodeID];
@@ -2671,7 +2671,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		int FromNodeID = FindClosestNode(point, min_selection_distance);
 		if(FromNodeID ==-1)
 		{
-			pFromNode = pDoc->AddNewNode(SPtoNP(point));
+			pFromNode = pDoc->AddNewNode(SPtoNP(point),0,0,false,true);
 		}
 
 		pDoc->m_bFitNetworkInitialized = true; // do not reflesh after adding links
@@ -3075,8 +3075,6 @@ void CTLiteView::OnSearchFindlink()
 
 	if(dlg.DoModal () == IDOK)
 	{
-
-
 		if(dlg.m_SearchMode == efind_link)
 		{
 

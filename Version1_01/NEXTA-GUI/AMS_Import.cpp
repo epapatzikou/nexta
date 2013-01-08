@@ -4108,7 +4108,6 @@ void CTLiteDoc::OnDemandConvert()
 
 void  CTLiteDoc::ConvertOriginBasedDemandFile(LPCTSTR lpszFileName)
 {
-
 	CString directory;
 	CString PathFile;
 	PathFile.Format("%s",lpszFileName);

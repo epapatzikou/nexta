@@ -6,10 +6,10 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "afxwin.h"
-
+#include "BaseDialog.h"
 // CDlg_VehicleClassification dialog
 
-class CDlg_VehicleClassification : public CDialog
+class CDlg_VehicleClassification : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlg_VehicleClassification)
 
@@ -74,4 +74,5 @@ public:
 	afx_msg void OnCbnSelchangeComboMaxColumns();
 	CComboBox m_ColumnSizeList;
 	afx_msg void OnBnClickedExportAllData();
+	CStatic m_MessageEdit;
 };

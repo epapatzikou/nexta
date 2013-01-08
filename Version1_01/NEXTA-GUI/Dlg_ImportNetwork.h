@@ -52,6 +52,9 @@ public:
 	afx_msg void OnBnClickedButtonViewSampleProjectFolder();
 	afx_msg void OnBnClickedImport2();
 	BOOL m_bRemoveConnectors;
+	CListBox m_List_DemandFormat;
+	afx_msg void OnLbnSelchangeListDemandFormat();
+	virtual BOOL OnInitDialog();
 };
 
 #endif 

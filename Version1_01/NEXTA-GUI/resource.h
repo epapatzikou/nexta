@@ -23,7 +23,6 @@
 #define ID_FindCriticalOD               4
 #define ID_FIND_RANDOM_ROUTE            4
 #define IDOK5                           4
-#define ID_EXPORT_DATA4                 4
 #define ID_EXPORT_ALL_DATA              4
 #define ID_EXPORT_PATH_DATA             5
 #define ID_IMPORT2                      5
@@ -290,6 +289,7 @@
 #define IDC_BUTTON_View_Sample_File     1078
 #define IDC_BUTTON_Find_Sensor_File     1079
 #define IDC_BUTTON_Load_Sample_File     1079
+#define IDC_BUTTON_View_Sample_File3    1079
 #define IDC_SUBAREA_LINK_SIZE           1080
 #define IDC_BUTTON_View_Sample_CSV_File 1080
 #define IDC_BUTTON_View_Sample_File2    1080
@@ -413,6 +413,8 @@
 #define IDC_STATIC_UNIT_LENGTH          1169
 #define IDC_STATIC_UNIT_SPEED_LIMIT     1170
 #define IDC_COMBO_MAX_COLUMNS           1171
+#define IDC_STATIC_MESSAGE              1172
+#define IDC_LIST_DEMAND_FORMAT          1173
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1049,14 +1051,15 @@
 #define ID_DEMAND_REGENERATEACTIVITYLOCATIONS 33544
 #define ID_DEMAND_CONVERT               33545
 #define ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK 33546
+#define ID_IMPORT_SINGLEEXCELFILE       33547
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        233
-#define _APS_NEXT_COMMAND_VALUE         33547
-#define _APS_NEXT_CONTROL_VALUE         1172
+#define _APS_NEXT_COMMAND_VALUE         33548
+#define _APS_NEXT_CONTROL_VALUE         1174
 #define _APS_NEXT_SYMED_VALUE           107
 #endif
 #endif

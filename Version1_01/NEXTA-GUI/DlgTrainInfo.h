@@ -29,10 +29,12 @@
 #include "afxwin.h"
 #include "Network.h"
 #include "TLiteDoc.h"
+#include "BaseDialog.h"
+
 
 // CDlgTrainInfo dialog
 
-class CDlgTrainInfo : public CDialog
+class CDlgTrainInfo : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlgTrainInfo)
 

@@ -92,7 +92,7 @@ EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE
 CAPTION "Train Info"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_TRAIN_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,553,133
+    CONTROL         "",IDC_TRAIN_LIST_CONTROL,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,553,185
 END
 
 IDD_DIALOG_FILE_LOADING DIALOGEX 0, 0, 641, 257
@@ -597,15 +597,15 @@ BEGIN
     COMBOBOX        IDC_COMBOEndTime,425,28,72,169,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_NSCHART_VEHICLE_DIALOG DIALOGEX 0, 0, 618, 250
+IDD_NSCHART_VEHICLE_DIALOG DIALOGEX 0, 0, 618, 266
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "Data Summary Dialog"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Close",IDOK,561,229,50,14
+    DEFPUSHBUTTON   "Exit",IDOK,505,245,50,14
     CONTROL         "Vechicle Statistics Classification Chart",IDC_VEHICLE_CHART1,
-                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,40,436,203
+                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,37,436,222
     GROUPBOX        "Chart style",IDC_STATIC,458,110,60,40,WS_GROUP
     CONTROL         "Pie Chart",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,467,121,45,10
     CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,468,134,45,10
@@ -626,6 +626,7 @@ BEGIN
     LTEXT           "Max # of Columns:",IDC_STATIC,457,153,60,8
     COMBOBOX        IDC_COMBO_MAX_COLUMNS,462,167,42,146,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "Export All Data to Excel",ID_EXPORT_ALL_DATA,510,193,101,14
+    LTEXT           "",IDC_STATIC_MESSAGE,464,233,119,8
 END
 
 IDD_VISUALIZATION_CONFIG DIALOGEX 0, 0, 316, 130
@@ -772,20 +773,16 @@ BEGIN
     LTEXT           "Excel File (in *.xls format) to be Imported:",IDC_STATIC,7,8,136,8
     PUSHBUTTON      "...",IDC_BUTTON_Find_Exel_File,322,19,20,14
     LISTBOX         IDC_LIST1,7,109,271,105,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Import All Tables",ID_IMPORT,7,68,134,14
-    EDITTEXT        IDC_EDIT_Demand_CSV_File,7,47,306,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Demand_CSV_File,321,47,20,14
+    DEFPUSHBUTTON   "Import All Tables",ID_IMPORT,7,48,134,14
     EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL
-    LTEXT           "Demand Matrix CSV File to be Imported (optional):",IDC_STATIC,7,36,162,8
     RTEXT           "Message List:",IDC_STATIC,7,100,44,8
-    DEFPUSHBUTTON   "Only Import Node, Link and Link Type Tables",ID_IMPORT_Network_Only,161,68,151,14
     DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,155,220,86,14
-    PUSHBUTTON      "1. View Sample Spreadsheet",IDC_BUTTON_View_Sample_File,355,12,109,14
-    PUSHBUTTON      "2. Select Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,355,33,109,14
-    GROUPBOX        "Demo:",IDC_STATIC,345,0,125,77,0,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
-    DEFPUSHBUTTON   "3: Import All Tables",ID_IMPORT2,355,54,104,14
+    PUSHBUTTON      "View Sample Spreadsheet",IDC_BUTTON_View_Sample_File,352,9,109,14
     CONTROL         "Remove Connectors and Centroids",IDC_CHECK_REMOVE_CONNECTOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,89,136,10
+    LISTBOX         IDC_LIST_DEMAND_FORMAT,239,52,72,31,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Demand Format:",IDC_STATIC,240,38,54,8
+    PUSHBUTTON      "Load Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,353,28,109,14
 END
 
 IDD_DIALOG_NODE_LANE DIALOGEX 0, 0, 765, 320
@@ -1351,7 +1348,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 611
         TOPMARGIN, 6
-        BOTTOMMARGIN, 243
+        BOTTOMMARGIN, 259
     END
 
     IDD_VISUALIZATION_CONFIG, DIALOG
@@ -2251,7 +2248,8 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
-            MENUITEM "Transportation GIS Network Data Set", ID_IMPORT_AMSDATASET
+            MENUITEM "Single Excel File (*.xls)",   ID_IMPORT_SINGLEEXCELFILE
+            MENUITEM "GIS Network Data Set (*.ini)", ID_IMPORT_AMSDATASET
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
             MENUITEM "Synchro Combined CSV File",   ID_IMPORT_SYNCHROCOMBINEDCSVFILE
         END
@@ -3346,6 +3344,8 @@ BEGIN
                             "Increase Link Bandwidth\nIncrease Link Bandwidth"
     ID_LINK_DECREASEBANDWIDTH 
                             "Decrease Link Bandwidth\nDecrease Link Bandwidth"
+    ID_LINK_INCREASEOFFSETFORTWO "Increase Link Offset\nIncrease Link Offset"
+    ID_LINK_DECREASEOFFSETFORTWO "Decrease Link Offset\nDecrease Link Offset"
     ID_VIEW_SHOWHIDE_LEGEND "Show/Hide Legend\nShow/Hide Legend"
 END
 

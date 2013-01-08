@@ -154,6 +154,7 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 {
 
 
+
 	UpdateData(true);
 
 
