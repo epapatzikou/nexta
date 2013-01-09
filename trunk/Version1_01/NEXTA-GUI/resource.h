@@ -35,6 +35,7 @@
 #define IDR_HTML_DLG_DISPLAY_CONFIGURATION_NODE 104
 #define IDR_HTML_DLGZONEPROPERTIES      105
 #define IDR_HTML_DLG_ZONEPROPERTIES     106
+#define IDR_HTML_DLG_IMPORTGISDATASET   107
 #define IDR_MAINFRAME                   128
 #define IDR_TLiteTYPE                   129
 #define IDD_DIALOG_MOE                  130
@@ -140,6 +141,7 @@
 #define IDD_DIALOG_NODE_MOVEMENTS       229
 #define IDD_LINEPLOT_DIALOG1            230
 #define IDD_DIALOG_Zone_Property        232
+#define IDD_DIALOG_GIS_Import           233
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -289,7 +291,6 @@
 #define IDC_BUTTON_View_Sample_File     1078
 #define IDC_BUTTON_Find_Sensor_File     1079
 #define IDC_BUTTON_Load_Sample_File     1079
-#define IDC_BUTTON_View_Sample_File3    1079
 #define IDC_SUBAREA_LINK_SIZE           1080
 #define IDC_BUTTON_View_Sample_CSV_File 1080
 #define IDC_BUTTON_View_Sample_File2    1080
@@ -1057,9 +1058,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        233
+#define _APS_NEXT_RESOURCE_VALUE        234
 #define _APS_NEXT_COMMAND_VALUE         33548
 #define _APS_NEXT_CONTROL_VALUE         1174
-#define _APS_NEXT_SYMED_VALUE           107
+#define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

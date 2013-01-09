@@ -64,6 +64,64 @@ public:
 	vector<string> GetLineRecord(void);
 	vector<string> GetHeaderList();
 
+
+	template <class T> bool GetValueBySectionKeyFieldName(string file_name, string section_name, string key_name, string field_name, T& value)
+	{
+		OpenCSVFile(file_name);
+		while(ReadRecord())
+		{
+			if(LineFieldsValue[0]!=section_name || LineFieldsValue[1] != key_name)
+			continue;
+	
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			CloseCSVFile();
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				CloseCSVFile();
+				return false;
+			}
+
+			int size = (int)(LineFieldsValue.size());
+			if(FieldsIndices[field_name]>= size)
+			{
+				CloseCSVFile();
+				return false;
+			}
+
+			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+			if (str_value.length() <= 0)
+			{
+			CloseCSVFile();
+				return false;
+			}
+
+			istringstream ss(str_value);
+
+			T converted_value;
+			ss >> converted_value;
+
+			if (/*!ss.eof() || */ ss.fail())
+			{
+
+			CloseCSVFile();
+			return false;
+			}
+
+			value = converted_value;
+			CloseCSVFile();
+			return true;
+		}
+		}
+			CloseCSVFile();
+
+			return false;
+	}
 	template <class T> bool GetValueByFieldName(string field_name, T& value)
 	{
 		if (FieldsIndices.find(field_name) == FieldsIndices.end())
