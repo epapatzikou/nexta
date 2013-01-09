@@ -56,95 +56,95 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 		return result;
 	}
 
-   double sum_x = 0;     //sum of x values
-   double sum_y = 0;     //sum of y values
-   double sum_xy = 0;    //sum of x * y
-   double sum_xx = 0;    //sum of x^2
-   double sum_residue = 0;   //sum of squared residue
-   double res = 0;      //residue squared
-   double slope = 0;    //slope of regression line
-   double y_intercept = 0; //y intercept of regression line
-   double sum_y_res = 0; //sum of squared of the discrepancies
-   double average_y = 0;     //mean of y
-   double average_x = 0;     //mean of x
-   double y_residual = 0;     //squared of the discrepancies
-   double Rsqr = 0;     //coefficient of determination
+	double sum_x = 0;     //sum of x values
+	double sum_y = 0;     //sum of y values
+	double sum_xy = 0;    //sum of x * y
+	double sum_xx = 0;    //sum of x^2
+	double sum_residue = 0;   //sum of squared residue
+	double res = 0;      //residue squared
+	double slope = 0;    //slope of regression line
+	double y_intercept = 0; //y intercept of regression line
+	double sum_y_res = 0; //sum of squared of the discrepancies
+	double average_y = 0;     //mean of y
+	double average_x = 0;     //mean of x
+	double y_residual = 0;     //squared of the discrepancies
+	double Rsqr = 0;     //coefficient of determination
 
-   //calculate various sum_s 
-   for (int i = 0; i < DataVector.size(); i++)
-   {
-      //sum of x
-      sum_x = sum_x + DataVector[i].x;
-      //sum of y
-      sum_y = sum_y + DataVector[i].y;
-      //sum of squared x*y
-      sum_xy = sum_xy + DataVector[i].x * DataVector[i].y;
-      //sum of squared x
-      sum_xx = sum_xx + DataVector[i].x * DataVector[i].x;
-   }
+	//calculate various sum_s 
+	for (int i = 0; i < DataVector.size(); i++)
+	{
+		//sum of x
+		sum_x = sum_x + DataVector[i].x;
+		//sum of y
+		sum_y = sum_y + DataVector[i].y;
+		//sum of squared x*y
+		sum_xy = sum_xy + DataVector[i].x * DataVector[i].y;
+		//sum of squared x
+		sum_xx = sum_xx + DataVector[i].x * DataVector[i].x;
+	}
 
-   //calculate the means of x and y
-   int dataSize = DataVector.size();
-   average_y = sum_y / dataSize;
-   average_x = sum_x / dataSize;
+	//calculate the means of x and y
+	int dataSize = DataVector.size();
+	average_y = sum_y / dataSize;
+	average_x = sum_x / dataSize;
 
-   //slope or a1
-   slope = (dataSize * sum_xy - sum_x * sum_y) / (dataSize * sum_xx - sum_x*sum_x);
+	//slope or a1
+	slope = (dataSize * sum_xy - sum_x * sum_y) / (dataSize * sum_xx - sum_x*sum_x);
 
-   //y itercept or a0
-   y_intercept = average_y - slope * average_x;
+	//y itercept or a0
+	y_intercept = average_y - slope * average_x;
 
-  
-   //calculate squared residues, their sum_ etc.
-   for (int i = 0; i <  DataVector.size(); i++) 
-   {
-      //current (y_i - a0 - a1 * x_i)^2
-      y_residual = pow((DataVector[i].y - y_intercept - (slope * DataVector[i].x)), 2);
 
-      //sum of (y_i - a0 - a1 * x_i)^2
-      sum_y_res += y_residual;
+	//calculate squared residues, their sum_ etc.
+	for (int i = 0; i <  DataVector.size(); i++) 
+	{
+		//current (y_i - a0 - a1 * x_i)^2
+		y_residual = pow((DataVector[i].y - y_intercept - (slope * DataVector[i].x)), 2);
 
-      //current residue squared (y_i - average_y)^2
-      res = pow(DataVector[i].y - average_y, 2);
+		//sum of (y_i - a0 - a1 * x_i)^2
+		sum_y_res += y_residual;
 
-      //sum of squared residues
-      sum_residue += res;
-      
-  }
+		//current residue squared (y_i - average_y)^2
+		res = pow(DataVector[i].y - average_y, 2);
 
-   //calculate r^2 coefficient of determination
-    Rsqr = (sum_residue - sum_y_res) / max(0.00001,sum_residue);
+		//sum of squared residues
+		sum_residue += res;
 
-    Rsqr = 1 - (sum_y_res / max(0.000001,sum_residue));
+	}
 
-   	result.average_residue = sum_y_res/max(1,DataVector.size());
+	//calculate r^2 coefficient of determination
+	Rsqr = (sum_residue - sum_y_res) / max(0.00001,sum_residue);
+
+	Rsqr = 1 - (sum_y_res / max(0.000001,sum_residue));
+
+	result.average_residue = sum_y_res/max(1,DataVector.size());
 	result.rsqr = Rsqr;
 	result.slope = slope; 
 	result.y_intercept = y_intercept;
 	result.avg_y_to_x_ratio = average_y / max(0.0001,average_x);  // directly calculate bias slope 
 
-   return result;
+	return result;
 
 }
 
-	std::string CString2StdString(CString str)
-	{	 // Convert a TCHAR string to a LPCSTR
-	  CT2CA pszConvertedAnsiString (str);
+std::string CString2StdString(CString str)
+{	 // Convert a TCHAR string to a LPCSTR
+	CT2CA pszConvertedAnsiString (str);
 
-	  // construct a std::string using the LPCSTR input
-	  std::string strStd (pszConvertedAnsiString);
+	// construct a std::string using the LPCSTR input
+	std::string strStd (pszConvertedAnsiString);
 
-	  return strStd;
-	  }
+	return strStd;
+}
 
 std::string GetTimeClockString(int time)
 {
-			int hour = ((int)(time))/60;
-			int min = time - hour*60;
+	int hour = ((int)(time))/60;
+	int min = time - hour*60;
 
-			CString time_str;
-			time_str.Format("%2d:%02d",hour, min);
-			return (CString2StdString(time_str));
+	CString time_str;
+	time_str.Format("%2d:%02d",hour, min);
+	return (CString2StdString(time_str));
 }
 
 bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2)
@@ -165,7 +165,7 @@ bool g_floating_point_value_less_than(double value1, double value2)
 	long lValue2 = (long) (value2*g_precision_constant2);
 
 	if(lValue1<lValue2)
-	return true;
+		return true;
 	else 
 		return false;
 
@@ -227,16 +227,16 @@ float g_GetRandomRatioForVehicleGeneration()
 
 string GetLinkStringID(int FromNodeName, int ToNodeName)
 {
-	    ostringstream ss;
-		ss << FromNodeName << ":" << ToNodeName;
-     return ss.str();
+	ostringstream ss;
+	ss << FromNodeName << ":" << ToNodeName;
+	return ss.str();
 }
 
 string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName)
 {
-	    ostringstream string_movement;
-		string_movement << FromNodeName << ":" << ToNodeName <<  ":" << DestNodeName;
-     return string_movement.str();
+	ostringstream string_movement;
+	string_movement << FromNodeName << ":" << ToNodeName <<  ":" << DestNodeName;
+	return string_movement.str();
 }
 
 float g_RNNOF()
@@ -262,8 +262,8 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 
 	if(g_DemandTypeMap.find(demand_type) == g_DemandTypeMap.end())
 	{
-	cout << "Error: The demand file has demand_type = " << demand_type << ", which has not been defined in input_demand_type.csv."<< endl;
-	g_ProgramStop();
+		cout << "Error: The demand file has demand_type = " << demand_type << ", which has not been defined in input_demand_type.csv."<< endl;
+		g_ProgramStop();
 	}
 
 	float RandomPercentage= g_GetRandomRatio() * 100; 
@@ -278,11 +278,11 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	PricingType = g_DemandTypeMap[demand_type].pricing_type; // pricing_type start from 1
 
 
-		for(i= 1; i<= g_VehicleTypeVector.size(); i++)
-		{
-			if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
-				VehicleType = i;
-		}
+	for(i= 1; i<= g_VehicleTypeVector.size(); i++)
+	{
+		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
+			VehicleType = i;
+	}
 
 
 	//step 3: information type
@@ -304,7 +304,15 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	Age = 0; // default value
 	if(VehicleType>=1) 
 	{
-		RandomPercentage= g_GetRandomRatio() * 100; 
+		RandomPercentage= g_GetRandomRatio() * 100;
+
+		//if (VehicleType == 5)
+		//{
+		//	static int n = 0;
+		//	printf("n = %d, RandomPercentage = %f\n",n,RandomPercentage);
+		//	n++;
+		//}
+
 		float prev_cumulative_percentage = 0;
 		float cumulative_percentage = 0;
 
@@ -314,16 +322,16 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 
 			if(RandomPercentage > prev_cumulative_percentage && RandomPercentage <= cumulative_percentage)
 			{
-			Age = i;
-			break;
+				Age = i;
+				break;
 			}
 
 			prev_cumulative_percentage = cumulative_percentage;
-		
+
 		}
 
 
-	
+
 	}
 
 	RandomPercentage= g_GetRandomRatio() * 100; 
@@ -384,8 +392,8 @@ void g_ProgramStop()
 
 void g_ProgramTrace(CString str)
 {
-//	cout << str << endl;
-//	getchar();
+	//	cout << str << endl;
+	//	getchar();
 
 };
 int g_read_integer(FILE* f, bool speicial_char_handling )
@@ -410,7 +418,7 @@ int g_read_integer(FILE* f, bool speicial_char_handling )
 	};
 	if( ch == EOF ) return -1;
 
-	
+
 	while( isdigit( ch )) {
 		buf[ i++ ] = ch;
 		ch = fgetc( f );
@@ -470,7 +478,7 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 
 {
 	char ch, buf[ 32 ];
-	
+
 	int number_count= 0;
 	int string_index = 0;
 
@@ -478,42 +486,42 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 	while(string_index<length)
 	{
 
-	int i = 0;
-	int flag = 1;
+		int i = 0;
+		int flag = 1;
 
-	while(true)
-	{
-		if(string_index==length)
+		while(true)
 		{
-		break;
-		}
+			if(string_index==length)
+			{
+				break;
+			}
 
 
-		ch = line_string[string_index++];
+			ch = line_string[string_index++];
+			if( ch == EOF ) return number_count;
+			if (isdigit(ch))
+				break;
+
+			if (ch == '-')
+				flag = -1;
+			else
+				flag = 1;
+
+		};
 		if( ch == EOF ) return number_count;
-		if (isdigit(ch))
-			break;
+		while( isdigit( ch ) || ch == '.' ) {
+			buf[ i++ ] = ch;
+			ch = line_string[string_index++];
 
-		if (ch == '-')
-			flag = -1;
-		else
-			flag = 1;
+		}
+		buf[ i ] = 0;
 
-	};
-	if( ch == EOF ) return number_count;
-	while( isdigit( ch ) || ch == '.' ) {
-		buf[ i++ ] = ch;
-		ch = line_string[string_index++];
+		double value = atof( buf );
+		if(value>-0.0000001)  // positive values
+		{
 
-	}
-	buf[ i ] = 0;
-	
-	double value = atof( buf );
-	if(value>-0.0000001)  // positive values
-	{
-	
-		number_count++;
-	}
+			number_count++;
+		}
 	}
 
 	/* atof function converts a character string (char *) into a doubleing
@@ -577,17 +585,17 @@ float g_GetPrivateProfileFloat( LPCTSTR section, LPCTSTR key, float def_value, L
 
 struct entity_deleter
 {
-    void operator()(DTAVehicle*& e) // important to take pointer by reference!
-    { 
-            delete e;
-            e = NULL;
-    }
+	void operator()(DTAVehicle*& e) // important to take pointer by reference!
+	{ 
+		delete e;
+		e = NULL;
+	}
 };
 
 void g_FreeMemoryForVehicleVector()
 {
 	cout << "Free memory for vehicle set... " << endl;
-for_each(g_VehicleVector.begin(), g_VehicleVector.end(), entity_deleter());
+	for_each(g_VehicleVector.begin(), g_VehicleVector.end(), entity_deleter());
 
 	//std::vector<DTAVehicle*>::iterator iterVehicle;		//this part of code needs to be carelfully reviewed, as it tries to delete pointers within STL					
 	//for (iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end();iterVehicle++)
@@ -653,64 +661,64 @@ CString g_GetAppRunningTime(bool with_title)
 
 char g_GetLevelOfService(int PercentageOfSpeedLimit)
 {
-   if(PercentageOfSpeedLimit >= 90)
-	   return 'A';
-   else if (PercentageOfSpeedLimit >= 70)
-	   return 'B';
-   else if (PercentageOfSpeedLimit >= 50)
-	   return 'C';
-   else if (PercentageOfSpeedLimit >= 40)
-	   return 'D';
-   else if (PercentageOfSpeedLimit >= 33)
-	   return 'E';
-   else 
-	   return 'F';
+	if(PercentageOfSpeedLimit >= 90)
+		return 'A';
+	else if (PercentageOfSpeedLimit >= 70)
+		return 'B';
+	else if (PercentageOfSpeedLimit >= 50)
+		return 'C';
+	else if (PercentageOfSpeedLimit >= 40)
+		return 'D';
+	else if (PercentageOfSpeedLimit >= 33)
+		return 'E';
+	else 
+		return 'F';
 }
 
 bool g_read_a_line(FILE* f)
-   /* read a line from the current line from the file */
+/* read a line from the current line from the file */
 {
 
-   char ch;
+	char ch;
 
-   while( 1 ) {
-      ch = getc( f );
-      if( ch != 13 && ch != 10 && ch != EOF )
-	  {
-		  // do nothing
-	  }
-	  else { /* terminate if it's end of line or end of file */
-		  {
-		  // do nothing
-		  }
-	 if( ch == EOF )
-	    return false;
+	while( 1 ) {
+		ch = getc( f );
+		if( ch != 13 && ch != 10 && ch != EOF )
+		{
+			// do nothing
+		}
+		else { /* terminate if it's end of line or end of file */
+			{
+				// do nothing
+			}
+			if( ch == EOF )
+				return false;
 
-	 return true;
-      }
-   }
+			return true;
+		}
+	}
 }
 
 
 bool g_read_a_line(FILE* f, char* aline, int & size)
-   /* read a line from the current line from the file */
+/* read a line from the current line from the file */
 {
 
-   char ch;
-   size = 0;
+	char ch;
+	size = 0;
 
-   while( 1 ) {
-      ch = getc( f );
-      if( ch != 13 && ch != 10 && ch != EOF )
-	 aline[ size++ ] = ch;
-      else { /* terminate if it's end of line or end of file */
-	 aline[ size ] = 0;
-	 if( ch == EOF )
-	    return false;
+	while( 1 ) {
+		ch = getc( f );
+		if( ch != 13 && ch != 10 && ch != EOF )
+			aline[ size++ ] = ch;
+		else { /* terminate if it's end of line or end of file */
+			aline[ size ] = 0;
+			if( ch == EOF )
+				return false;
 
-	 return true;
-      }
-   }
+			return true;
+		}
+	}
 }
 
 
@@ -842,20 +850,20 @@ static unsigned int STATE[R];
 static unsigned int z0, z1, z2;
 
 void InitWELLRNG512a (unsigned int *init){
-   int j;
-   state_i = 0;
-   for (j = 0; j < R; j++)
-     STATE[j] = init[j];
+	int j;
+	state_i = 0;
+	for (j = 0; j < R; j++)
+		STATE[j] = init[j];
 }
 
 double WELLRNG512a (void){
-  z0    = VRm1;
-  z1    = MAT0NEG (-16,V0)    ^ MAT0NEG (-15, VM1);
-  z2    = MAT0POS (11, VM2)  ;
-  newV1 = z1                  ^ z2; 
-  newV0 = MAT0NEG (-2,z0)     ^ MAT0NEG(-18,z1)    ^ MAT3NEG(-28,z2) ^ MAT4NEG(-5,0xda442d24U,newV1) ;
-  state_i = (state_i + 15) & 0x0000000fU;
-  return ((double) STATE[state_i]) * FACT;
+	z0    = VRm1;
+	z1    = MAT0NEG (-16,V0)    ^ MAT0NEG (-15, VM1);
+	z2    = MAT0POS (11, VM2)  ;
+	newV1 = z1                  ^ z2; 
+	newV0 = MAT0NEG (-2,z0)     ^ MAT0NEG(-18,z1)    ^ MAT3NEG(-28,z2) ^ MAT4NEG(-5,0xda442d24U,newV1) ;
+	state_i = (state_i + 15) & 0x0000000fU;
+	return ((double) STATE[state_i]) * FACT;
 }
 
 
