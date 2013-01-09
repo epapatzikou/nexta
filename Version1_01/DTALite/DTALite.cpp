@@ -273,6 +273,7 @@ int g_EmissionDataOutputFlag = 0;
 int g_VehiclePathOutputFlag = 1;
 int g_TimeDependentODMOEOutputFlag = 0;
 int g_OutputSecondBySecondEmissionData =0;
+float g_OutputSecondBySecondEmissionDataPercentage = 0.1;
 int g_start_departure_time_in_min_for_output_second_by_second_emission_data = 0;
 int g_end_departure_time_in_min_for_output_second_by_second_emission_data = 0;
 int g_OutputEmissionOperatingModeData = 0;
@@ -3214,6 +3215,7 @@ void g_ReadDTALiteSettings()
 	else
 	{
 		g_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "output_second_by_second_emission_data", 0, g_DTASettingFileName);	
+		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "output_second_by_second_emission_data_percentage", 0.1, g_DTASettingFileName);	
 		g_start_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "start_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 		g_end_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "end_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 	}
