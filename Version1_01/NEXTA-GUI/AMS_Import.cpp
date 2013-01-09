@@ -106,6 +106,7 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 		else 
 			return 1800;
 	}
+	//default 0;
 
 	return capacity_in_pcphpl;
 }
@@ -116,37 +117,63 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	CString warning_message;
 
-	char model_units[_MAX_STRING_SIZE];
-	GetPrivateProfileString("model_attributes","units","MI",model_units,sizeof(model_units),FileName);
+	std::string file_name = CString2StdString(FileName);
 
-	int b_long_lat_conversion_with_decimal_degree_flag =  g_GetPrivateProfileInt("model_attributes","long_lat_with_decimal_degrees",1,FileName);
+	std::string length_unit,decimal_degrees,with_reverse_direction_field, offset_link, oneway_vs_twoway, r_number_of_lanes_field, link_type_field;
+
+	
+	CCSVParser parser;
+	parser.GetValueBySectionKeyFieldName(file_name,"link","length","value_2",length_unit);
+
+	parser.GetValueBySectionKeyFieldName(file_name,"link","file_name","value_2",decimal_degrees);
+
+	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value_1",r_number_of_lanes_field);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value_2",oneway_vs_twoway);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value_1",link_type_field);
+
+
+	parser.GetValueBySectionKeyFieldName(file_name,"final_output","offset_link","value_1",offset_link);
+
+
 
 	float long_lat_unit = 1.0f;
-	if(b_long_lat_conversion_with_decimal_degree_flag == 0)
+	if(decimal_degrees=="no" || decimal_degrees=="NO")
 		long_lat_unit = 0.00001f;
 
 	bool bMileFlag = false;
-	if(strcmp(model_units,"MI")== 0 )
+	if(length_unit=="mile")
 		bMileFlag = true;
 
-	int direction_field_flag = g_GetPrivateProfileInt("model_attributes","direction_field",1,FileName);
-	int control_type_field_flag = g_GetPrivateProfileInt("model_attributes","control_type_field",0,FileName);
-	int reverse_direction_field_flag = g_GetPrivateProfileInt("model_attributes","reverse_direction_field",0,FileName);
+   
+	int direction_field_flag = 0;
+	int reverse_direction_field_flag  = 0;
+	
+	if(r_number_of_lanes_field.size()>0)
+		reverse_direction_field_flag = 1;
 
 
+	int offset_link_flag = 1;
 
+	if(offset_link == "no")
+		offset_link_flag = 0;
 
-	int link_type_field_flag = g_GetPrivateProfileInt("model_attributes","link_type_field",1,FileName);
+	int link_capacity_flag = 1;
+	int number_of_lanes_for_two_way_links_flag = 0;
 
-	int offset_link_flag = g_GetPrivateProfileInt("model_attributes","offset_link",1,FileName);
-	bool bSkipShapePoints = 1-g_GetPrivateProfileInt("model_attributes","use_curve_info_from_shape_points",1,FileName);
-	m_bBezierCurveFlag = g_GetPrivateProfileInt("model_attributes","apply_bezier_curve_fitting",1,FileName);
+	if(oneway_vs_twoway == "twoway")
+		number_of_lanes_for_two_way_links_flag = 1;
 
-	int link_capacity_flag = g_GetPrivateProfileInt("model_attributes","link_capacity_flag",1,FileName);
-	int number_of_lanes_for_two_way_links_flag = g_GetPrivateProfileInt("model_attributes","number_of_lanes_for_two_way_links",0,FileName);
-	int use_optional_centroid_layer = g_GetPrivateProfileInt("model_attributes","use_optional_centroid_layer",0,FileName);
-	int use_optional_connector_layer = g_GetPrivateProfileInt("model_attributes","use_optional_connector_layer",0,FileName);
+	std::string centroid_file_name,connector_file_name;
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","file_name","value_1",centroid_file_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"connector","file_name","value_1",connector_file_name);
 
+	int use_optional_centroid_layer = 0;
+	if(centroid_file_name.size()>0)
+		use_optional_centroid_layer = 1;
+
+	int use_optional_connector_layer = 0;
+	if(connector_file_name.size()>0)
+		use_optional_connector_layer = 1;
 
 
 	// ************************************/
@@ -156,17 +183,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 
-	char node_table_file_name[_MAX_STRING_SIZE];
-	GetPrivateProfileString("node_table","reference_file_name","",node_table_file_name,sizeof(node_table_file_name),FileName);
-	char node_name[_MAX_STRING_SIZE];
-	GetPrivateProfileString("node_table","name","NAME",node_name,sizeof(node_name),FileName);
-	char node_node_id[_MAX_STRING_SIZE];
-	GetPrivateProfileString("node_table","node_id","NO",node_node_id,sizeof(node_node_id),FileName);
-	char node_control_type[_MAX_STRING_SIZE];
-	GetPrivateProfileString("node_table","control_type","CONTROLT~1",node_control_type,sizeof(node_control_type),FileName);
+	string node_table_file_name;
+	parser.GetValueBySectionKeyFieldName(file_name,"node","file_name","value_1",node_table_file_name);
 
-	char node_TAZ_name[_MAX_STRING_SIZE];
-	GetPrivateProfileString("node_table","TAZ","TAZ",node_TAZ_name,sizeof(node_TAZ_name),FileName);
+	string node_name;
+	parser.GetValueBySectionKeyFieldName(file_name,"node","name","value_1",node_name);
+
+	string node_node_id;
+	parser.GetValueBySectionKeyFieldName(file_name,"node","node_id","value_1",node_node_id);
+	string node_control_type;
+	parser.GetValueBySectionKeyFieldName(file_name,"node","control_type","value_1",node_control_type);
+
+
+	string node_TAZ_name;
+	parser.GetValueBySectionKeyFieldName(file_name,"node","TAZ","value_1",node_TAZ_name);
 
 
 	//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
@@ -177,7 +207,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	OGRDataSource       *poDS;
 
 	CString node_shape_file_name;
-	node_shape_file_name = m_ProjectDirectory + node_table_file_name;
+	node_shape_file_name = m_ProjectDirectory + node_table_file_name.c_str ();
 
 	poDS = OGRSFDriverRegistrar::Open(node_shape_file_name, FALSE );
 	if( poDS == NULL )
@@ -226,7 +256,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 			// node id
-			int id = poFeature->GetFieldAsInteger(node_node_id);
+			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
 
 			if(id == 52508)
 			{
@@ -234,12 +264,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}
 			int control_type = 0;
 
-			if(control_type_field_flag)
-				control_type = poFeature->GetFieldAsInteger(node_control_type);
+			if(node_control_type.size()>0 )
+				control_type = poFeature->GetFieldAsInteger(node_control_type.c_str ());
 
-			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name);
+			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
 
-			CString str_name = poFeature->GetFieldAsString(node_name);
+			CString str_name = poFeature->GetFieldAsString(node_name.c_str ());
 
 			m_AMSLogFile << id << "," << control_type << "," << TAZ << "," <<  str_name << ",";
 
@@ -321,13 +351,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(use_optional_centroid_layer)
 	{
 
-	GetPrivateProfileString("zone_centroid_conversion","reference_file_name","",node_table_file_name,sizeof(node_table_file_name),FileName);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","file_name","value_1",node_table_file_name);
 
 	m_AMSLogFile << "read optional centroid layer from file " << node_table_file_name << endl; 
-
-	GetPrivateProfileString("zone_centroid_conversion","name","NAME",node_name,sizeof(node_name),FileName);
-	GetPrivateProfileString("zone_centroid_conversion","node_id","NO",node_node_id,sizeof(node_node_id),FileName);
-	GetPrivateProfileString("zone_centroid_conversion","TAZ","TAZ",node_TAZ_name,sizeof(node_TAZ_name),FileName);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value_1",node_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","node_id","value_1",node_node_id);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","TAZ","value_1",node_TAZ_name);
 
 	//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
 
@@ -336,7 +365,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	OGRDataSource       *poDS;
 
 	CString node_shape_file_name;
-	node_shape_file_name = m_ProjectDirectory + node_table_file_name;
+	node_shape_file_name = m_ProjectDirectory + node_table_file_name.c_str ();
 
 	poDS = OGRSFDriverRegistrar::Open(node_shape_file_name, FALSE );
 	if( poDS == NULL )
@@ -385,15 +414,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 			// node id
-			int id = poFeature->GetFieldAsInteger(node_node_id);
+			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
 
-			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name);
+			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
 
 			if(TAZ == 0)  // if TAZ value is zero, then use node id as TAZ
 				TAZ = id; 
 
 
-			CString str_name = poFeature->GetFieldAsString(node_name);
+			CString str_name = poFeature->GetFieldAsString(node_name.c_str ());
 
 			m_AMSLogFile << id << "," << "," << TAZ << "," <<  str_name << ",";
 
@@ -487,63 +516,51 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	float default_distance_sum=0;
 	float length_sum = 0;
 
-	if(read_link_layer)
-	{
 		m_OffsetInFeet = 2;
-		char link_table_file_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","reference_file_name","reference_file_name",link_table_file_name,sizeof(link_table_file_name),FileName);
+		string link_table_file_name;
+		string from_node_id_name;
+		string to_node_id_name;
+		string link_id_name;
+		string link_name;
+		string link_type_name;
+		string mode_code_name;
+		string direction_name;
+		string length_name;
+		string number_of_lanes_name;
+		string capacity_in_vhc_per_hour_name;
+		string speed_limit_in_mph_name;
 
-		char from_node_id_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","from_node_id","from_node_id",from_node_id_name,sizeof(from_node_id_name),FileName);
-		char to_node_id_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","to_node_id","to_node_id",to_node_id_name,sizeof(to_node_id_name),FileName);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","file_name","value_1",link_table_file_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value_1",from_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value_1",to_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value_1",link_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","name","value_1",link_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value_1",link_type_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value_1",mode_code_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value_1",direction_name);
 
-		char link_id_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","link_id","link_id",link_id_name,sizeof(link_id_name),FileName);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","length","value_1",length_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value_1",number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value_1",capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","speed_limit","value_1",speed_limit_in_mph_name);
 
-		char link_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","name","name",link_name,sizeof(link_name),FileName);
 
-		char link_type_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","link_type","link_type",link_type_name,sizeof(link_type_name),FileName);
-
-		char mode_code_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","mode_code","mode_code",mode_code_name,sizeof(mode_code_name),FileName);
-
-		char direction_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","direction","direction",direction_name,sizeof(direction_name),FileName);
-
-		char length_name[_MAX_STRING_SIZE];
-		if(bMileFlag)
-			GetPrivateProfileString("link_table","length_in_mile","length_in_mile",length_name,sizeof(length_name),FileName);
-		else
-			GetPrivateProfileString("link_table","length_in_km","length_in_km",length_name,sizeof(length_name),FileName);
-
-		char number_of_lanes_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","number_of_lanes","number_of_lanes",number_of_lanes_name,sizeof(number_of_lanes_name),FileName);
-
-		char lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",lane_capacity_in_vhc_per_hour_name,sizeof(lane_capacity_in_vhc_per_hour_name),FileName);
-
-		char speed_limit_in_mph_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("link_table","speed_limit_in_mph","speed_limit_in_mph",speed_limit_in_mph_name,sizeof(speed_limit_in_mph_name),FileName);
-
-		char r_number_of_lanes_name[_MAX_STRING_SIZE];
-		char r_lane_capacity_in_vhc_per_hour_name[_MAX_STRING_SIZE];
-		char r_speed_limit_in_mph_name[_MAX_STRING_SIZE];
-		char r_link_type_name[_MAX_STRING_SIZE];
+		string r_number_of_lanes_name;
+		string r_lane_capacity_in_vhc_per_hour_name;
+		string r_speed_limit_in_mph_name;
+		string r_link_type_name;
 		if(reverse_direction_field_flag)
 		{
-			GetPrivateProfileString("link_table","r_number_of_lanes","number_of_lanes",r_number_of_lanes_name,sizeof(r_number_of_lanes_name),FileName);
-			GetPrivateProfileString("link_table","r_lane_capacity_in_vhc_per_hour","lane_capacity_in_vhc_per_hour",r_lane_capacity_in_vhc_per_hour_name,sizeof(r_lane_capacity_in_vhc_per_hour_name),FileName);
-			GetPrivateProfileString("link_table","r_speed_limit_in_mph","speed_limit_in_mph",r_speed_limit_in_mph_name,sizeof(r_speed_limit_in_mph_name),FileName);
-			GetPrivateProfileString("link_table","r_link_type","link_type",r_link_type_name,sizeof(r_link_type_name),FileName);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value_1",r_number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value_1",r_lane_capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value_1",r_speed_limit_in_mph_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value_1",r_link_type_name);
 		}
 
 
 
 		CString link_shape_file_name;
-		link_shape_file_name = m_ProjectDirectory + link_table_file_name;
+		link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
 
 		poDS = OGRSFDriverRegistrar::Open(link_shape_file_name, FALSE );
 		if( poDS == NULL )
@@ -591,8 +608,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name);
-				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
+				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
+				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
 
 				if(from_node_id ==  58014 && to_node_id ==  60718)
 					TRACE("");
@@ -604,26 +621,29 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(from_node_id == 613)
 					TRACE("");
 
-				long link_id =  poFeature->GetFieldAsInteger(link_id_name);
-				CString name =  poFeature->GetFieldAsString(link_name);
-				int type = poFeature->GetFieldAsInteger(link_type_name);
+				long link_id =  poFeature->GetFieldAsInteger(link_id_name.c_str ());
+				CString name =  poFeature->GetFieldAsString(link_name.c_str ());
+				int type = 0;
+//				if(link_type_name.size() >=1)
+					type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
 
-				CString mode_code = poFeature->GetFieldAsString(mode_code_name);
+				CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
 
-				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name);
+				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
+
 
 				int direction = 1;
-				if(direction_field_flag) 
-					direction = poFeature->GetFieldAsInteger(direction_name);
+				if(direction_name.size()>0) 
+					direction = poFeature->GetFieldAsInteger(direction_name.c_str ());
 				else
 				{
 						// no direction field, we try to guess the link types
 						if(reverse_direction_field_flag==1)
 						{
 	
-						int type = poFeature->GetFieldAsInteger(link_type_name);
-						int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+						int type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
+						int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
 
 						if(type >=1 && r_link_type>=1)
 							direction = 2;
@@ -638,9 +658,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				
 				}
 
-				float length = poFeature->GetFieldAsDouble(length_name);
+				float length = poFeature->GetFieldAsDouble(length_name.c_str ());
 
-				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name);
+				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name.c_str ());
 
 				if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
 				{
@@ -652,7 +672,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(type== 0 )  // no type information available
 				{
 
-					if(link_type_field_flag)// if link type information is required, skip this link
+					if(link_type_field.size()>0)// if link type information is required, skip this link
 					{
 							CString str;
 							str.Format("link type (%s) for %d ->%d in the link shape file does not have valid values (>=1).\n",link_type_name, from_node_id, to_node_id);
@@ -667,7 +687,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 						if(reverse_direction_field_flag)  // with reserved direction field
 						{
-							int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+							int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
 
 							// if there is a reverse link, skip the following step only if r_link_type = 0
 							if(r_link_type ==0)
@@ -715,7 +735,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				}
 
 
-				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(lane_capacity_in_vhc_per_hour_name);
+				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(capacity_in_vhc_per_hour_name.c_str ());
 
 				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
 
@@ -727,16 +747,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				if(reverse_direction_field_flag)  // with reserved direction field
 				{
-					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name);
+					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name.c_str());
 					if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
 					{
 						number_of_lanes = r_number_of_lanes/2;
 					}
 
-					r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name);
-					r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name);
+					r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name.c_str ());
+					r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name.c_str ());
 					r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,number_of_lanes);
-					r_link_type= poFeature->GetFieldAsInteger(r_link_type_name);
+					r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
 
 						if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 
 						{
@@ -804,6 +824,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				OGRGeometry *poGeometry;
 				std::vector<CCoordinate> CoordinateVector;
 
+				bool bSkipShapePoints = false;
 				if(bSkipShapePoints)
 				{
 				// no geometry information
@@ -1083,7 +1104,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		OGRDataSource::DestroyDataSource( poDS );
 
-		}
+		
 
 				
 		// determine control type for nodes
@@ -1121,26 +1142,28 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(use_optional_connector_layer == 1)
 	{
 
-		char link_table_file_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("connector_conversion","reference_file_name","reference_file_name",link_table_file_name,sizeof(link_table_file_name),FileName);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","file_name","value_1",link_table_file_name);
+		
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value_1",from_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value_1",to_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value_1",length_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value_1",number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value_1",capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value_1",speed_limit_in_mph_name);
+
 		m_AMSLogFile << "starting converting centors from file " << link_table_file_name;
 
-		char from_node_id_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("connector_conversion","zone_end","ZONENO",from_node_id_name,sizeof(from_node_id_name),FileName);
-		char to_node_id_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("connector_conversion","node_end","NODENO",to_node_id_name,sizeof(to_node_id_name),FileName);
 
-		char length_name[_MAX_STRING_SIZE];
-		if(bMileFlag)
-			GetPrivateProfileString("connector_conversion","length_in_mile","length_in_mile",length_name,sizeof(length_name),FileName);
-		else
-			GetPrivateProfileString("connector_conversion","length_in_km","length_in_km",length_name,sizeof(length_name),FileName);
+		
 
 
-		int default_number_of_lanes = g_GetPrivateProfileInt("connector_conversion","default_number_of_lanes",2,FileName);
-		int default_lane_capacity = g_GetPrivateProfileInt("connector_conversion","lane_capacity",10000,FileName);
-		int default_speed_limit = g_GetPrivateProfileInt("connector_conversion","default_speed_limit",60,FileName);
-		int default_link_type = g_GetPrivateProfileInt("connector_conversion","default_link_type_for_connector",99,FileName);
+		int default_number_of_lanes = 1;
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value_1",default_number_of_lanes);
+
+		int default_lane_capacity = 10000;
+		int default_speed_limit = 100;
+		int default_link_type = 99;
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value_1",default_link_type);
 
 
 		if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
@@ -1157,13 +1180,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 		}
-		char direction_name[_MAX_STRING_SIZE];
-		GetPrivateProfileString("connector_conversion","direction","direction",direction_name,sizeof(direction_name),FileName);
-
-		int direction = g_GetPrivateProfileInt("connector_conversion","default_direction",0,FileName);
+		int direction =0;
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","defaut_direction","value_1",direction);
 
 		CString link_shape_file_name;
-		link_shape_file_name = m_ProjectDirectory + link_table_file_name;
+		link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
 
 		poDS = OGRSFDriverRegistrar::Open(link_shape_file_name, FALSE );
 		if( poDS == NULL )
@@ -1202,18 +1223,18 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name);
-				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name);
+				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str());
+				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str());
 
 				if(direction_field_flag) 
 				{
-					direction = poFeature->GetFieldAsInteger(direction_name);
+					direction = poFeature->GetFieldAsInteger(direction_name.c_str());
 				}
 
 
 				long link_id =  0;
 				int type = default_link_type;  // find default connectors type.
-				float length = poFeature->GetFieldAsDouble(length_name);
+				float length = poFeature->GetFieldAsDouble(length_name.c_str());
 
 				int number_of_lanes = default_number_of_lanes;
 				int capacity_in_pcphpl = default_lane_capacity;
@@ -1461,13 +1482,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	// ************************************/
 	// 3: zone table
 	// ************************************/
-	char zone_table_file_name[_MAX_STRING_SIZE];
-	GetPrivateProfileString("zone_table","reference_file_name","",zone_table_file_name,sizeof(zone_table_file_name),FileName);
-	char zone_id_name[_MAX_STRING_SIZE];
-	GetPrivateProfileString("zone_table","zone_id","ID",zone_id_name,sizeof(zone_id_name),FileName);
+	string zone_table_file_name;
+	string zone_id_name;
+		parser.GetValueBySectionKeyFieldName(file_name,"zone","file_name","value_1",zone_table_file_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"zone","zone_id","value_1",zone_id_name);
 
 	CString zone_shape_file_name;
-	zone_shape_file_name = m_ProjectDirectory + zone_table_file_name;
+	zone_shape_file_name = m_ProjectDirectory + zone_table_file_name.c_str();
 
 	poDS = OGRSFDriverRegistrar::Open(zone_shape_file_name, FALSE );
 	if( poDS == NULL )
@@ -1513,7 +1534,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 
 				// zone id
-				int id = poFeature->GetFieldAsInteger(zone_id_name);
+				int id = poFeature->GetFieldAsInteger(zone_id_name.c_str());
 
 				if(id ==0)
 				{
@@ -3093,37 +3114,6 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	}
 
 
-	char pricing_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","pricing_type_file_name","input_pricing_type.csv",pricing_type_file_name,sizeof(pricing_type_file_name),ProjectFileName);
-
-
-	char VOT_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","value_of_time_file_name","input_VOT.csv",VOT_file_name,sizeof(VOT_file_name),ProjectFileName);
-	if(ReadVOTCSVFile(directory+VOT_file_name)==false)
-	{
-	ReadVOTCSVFile(DefaultDataFolder+VOT_file_name);
-	}
-
-	char vehicle_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","vehicle_type_file_name ","input_vehicle_type.csv",vehicle_type_file_name,sizeof(vehicle_type_file_name),ProjectFileName);
-	if(ReadVehicleTypeCSVFile(directory+vehicle_type_file_name)==false)
-	{
-		ReadVehicleTypeCSVFile(DefaultDataFolder+vehicle_type_file_name);
-	}
-
-	char demand_type_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","demand_type_file_name","input_demand_type.csv",demand_type_file_name,sizeof(demand_type_file_name),ProjectFileName);
-	if(ReadDemandTypeCSVFile(directory+demand_type_file_name)==false)
-	{
-	ReadDemandTypeCSVFile(DefaultDataFolder+demand_type_file_name);
-	}
-
-	char emission_rate_file_name[_MAX_STRING_SIZE];
-	g_GetProfileString("default_data_tables","vehicle_emission_rate_file_name ","input_vehicle_emission_rate.csv",emission_rate_file_name,sizeof(emission_rate_file_name),ProjectFileName);
-	if(ReadInputEmissionRateFile(directory+emission_rate_file_name) == false)
-	{
-	ReadInputEmissionRateFile(DefaultDataFolder+emission_rate_file_name);
-	}
 
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);

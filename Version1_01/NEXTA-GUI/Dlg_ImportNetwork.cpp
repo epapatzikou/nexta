@@ -831,7 +831,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		}
 		rsZone.Close();
 
-		str_msg.Format ( "%d activity location records imported",activity_location_count);
+		str_msg.Format ( "%d activity location records imported.",activity_location_count);
 		m_MessageList.AddString (str_msg);
 	}
 
@@ -1063,7 +1063,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		}
 		rsDemand.Close();
 
-		str_msg.Format ( "%d demand element records imported", m_pDoc->m_ImportedDemandVector.size());
+		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
 		m_MessageList.AddString (str_msg);
 	}
 

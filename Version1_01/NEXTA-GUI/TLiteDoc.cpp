@@ -42,7 +42,7 @@
 #include "DlgDefaultLinkProperties.h"
 #include "DlgAssignmentSettings.h"
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
-
+#include "Dlg_ImportGISDataSet.h"
 #include "Zip_utility\\zip.h"
 #include "Zip_utility\\unzip.h"
 
@@ -10618,11 +10618,13 @@ void CTLiteDoc::OnViewTraininfo()
 
 void CTLiteDoc::OnImportAmsdataset()
 {
+
+
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Importing Configuration (*.ini)|*.ini|"));
+		_T("Importing Configuration (import_GIS_settings.csv)|import_GIS_settings.csv|"));
 	if(dlg.DoModal() == IDOK)
 	{
-		ImportingTransportationPlanningDataSet(dlg.GetPathName(),true,true);
+			ImportingTransportationPlanningDataSet(dlg.GetPathName (),true,true);
 	}
 
 	CDlgFileLoading dlg_loading;
