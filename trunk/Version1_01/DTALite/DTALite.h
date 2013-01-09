@@ -1752,7 +1752,7 @@ public:
 	float Speed;
 	float Acceleration;
 	int OperationMode;
-	int VSP;
+	float VSP;
 	VSP_BIN VSPBinNo;
 	SPEED_BIN SpeedBinNo;
 	float Energy,CO2,NOX,CO,HC;
