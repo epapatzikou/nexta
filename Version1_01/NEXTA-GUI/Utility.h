@@ -28,6 +28,7 @@ int g_read_integer(FILE* f, bool speicial_char_handling=false);
 int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch);
 
 int read_2_integers_from_a_string(CString str, int &value1, int &value2);
+int read_2_float_points_from_a_string(CString str, double &value1, double &value2);
 int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);

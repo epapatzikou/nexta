@@ -47,6 +47,8 @@
 #include "Page_Node_LaneTurn.h"
 #include "MyPropertySheet.h"
 #include "CSVParser.h"
+#include "Dlg_BackgroundImageLocation.h"
+
 
 #include "Dlg_DisplayConfiguration.h"
 
@@ -176,12 +178,19 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_NODE_REMOVENODEAVOIDANCECONSTRAINT, &CTLiteView::OnNodeRemovenodeavoidanceconstraint)
 	ON_COMMAND(ID_EDIT_MOVENODE, &CTLiteView::OnEditMovenode)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_MOVENODE, &CTLiteView::OnUpdateEditMovenode)
+	ON_COMMAND(ID_BACKGROUNDIMAGE_MARKLONG_A, &CTLiteView::OnBackgroundimageMarklongA)
+	ON_COMMAND(ID_BACKGROUNDIMAGE_MARKLONG_B, &CTLiteView::OnBackgroundimageMarklongB)
+	ON_COMMAND(ID_BACKGROUNDIMAGE_ADDLAT, &CTLiteView::OnBackgroundimageAddlat)
+	ON_COMMAND(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnZoneHighlightassociatedacititylocations)
+	ON_UPDATE_COMMAND_UI(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnUpdateZoneHighlightassociatedacititylocations)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
 
 CBrush g_BlackBrush(RGB(10,10,10));
+CBrush g_ActivityLocationBrush(RGB(255,0,0));
+
 CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
 CPen g_TransitPen(PS_SOLID,1,RGB(255,69,0));  // orange red
 CBrush g_TransitBrush(RGB(184,134,11));  //DarkGoldenrod	
@@ -544,8 +553,8 @@ void CTLiteView::OnDraw(CDC* pDC)
 	brush.UnrealizeObject();
 	memDC.FillRect(rectClient, &brush);
 
-
-	if(pDoc->m_BackgroundBitmapLoaded && m_bShowImage)
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	if(pDoc->m_BackgroundBitmapLoaded && pMainFrame->m_bShowLayerMap[layer_background_image])
 	{
 		pDoc->m_ImageX2  = pDoc->m_ImageX1+ pDoc->m_ImageWidth * pDoc->m_ImageXResolution;
 		pDoc->m_ImageY2  = pDoc->m_ImageY1+ pDoc->m_ImageHeight * pDoc->m_ImageYResolution * pDoc->m_OriginOnBottomFlag ;
@@ -563,7 +572,39 @@ void CTLiteView::OnDraw(CDC* pDC)
 		CPoint point2 = NPtoSP(IMPoint2);
 
 		pDoc->m_BackgroundBitmap.StretchBlt(memDC,point1.x,point1.y,point2.x-point1.x,abs(point2.y-point1.y),SRCCOPY);
-	}
+	
+
+		if(pDoc->m_bPointA_Initialized )
+		{
+			GDPoint pt;
+			pt.x = pDoc->m_PointA_x;
+			pt.y = pDoc->m_PointA_y;
+
+		CPoint point = NPtoSP(pt);
+		int size  = 5;
+		memDC.Ellipse (point.x - size, point.y + size,
+			point.x + size, point.y - size);
+
+		point.y -= size / 2;
+		memDC.TextOut(point.x , point.y , _T("A"));
+		}
+
+		if(pDoc->m_bPointB_Initialized )
+		{
+			GDPoint pt;
+			pt.x = pDoc->m_PointB_x;
+			pt.y = pDoc->m_PointB_y;
+
+		CPoint point = NPtoSP(pt);
+		int size  = 5;
+		memDC.Ellipse (point.x - size, point.y + size,
+			point.x + size, point.y - size);
+
+		point.y -= size / 2;
+		memDC.TextOut(point.x , point.y , _T("B"));
+		}
+	
+}
 
 
 	DrawObjects(&memDC);
@@ -630,7 +671,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		// get the closest power 10 number
 		m_GridResolution = g_FindClosestYResolution(ScreenRect.Width ()/m_Resolution/10.0f);
 
-		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x);
+		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x)-1;
 
 		if(m_GridResolution>1)
 			LeftX = LeftX- LeftX%int(m_GridResolution);
@@ -661,7 +702,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			pDC->TextOut(FromPoint.x,ScreenRect.TopLeft().y+10,str);
 		}
 
-		int BottomY  = int(SPtoNP(ScreenRect.BottomRight()).y);
+		int BottomY  = int(SPtoNP(ScreenRect.BottomRight()).y)-1;
 
 		if(m_GridResolution>1)
 			BottomY = BottomY- BottomY%int(m_GridResolution);
@@ -1077,12 +1118,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						case link_display_TMC_code: 
 							str_text.Format ("%s", (*iLink)->m_TMC_code.c_str ()); break;
 
-						case  link_display_speed_limit:
+						case  link_display_speed_limit_in_miles:
 							str_text.Format ("%.1f",(*iLink)->m_SpeedLimit ); break;
-						case link_display_length:
+						case link_display_length_in_miles:
 							str_text.Format ("%.3f",(*iLink)->m_Length  ); break;
-						case  link_display_free_flow_travel_time:
+						case  link_display_speed_limit_in_km:
+							str_text.Format ("%.1f",(*iLink)->m_SpeedLimit*1.60934 ); break;
+						case link_display_length_in_km:
+							str_text.Format ("%.3f",(*iLink)->m_Length*1.60934  ); break;
+						case  link_display_free_flow_travel_time_in_min:
 							str_text.Format ("%.3f",(*iLink)->m_FreeFlowTravelTime   ); break;
+						case  link_display_free_flow_travel_time_in_hour:
+							str_text.Format ("%.3f",(*iLink)->m_FreeFlowTravelTime/60.0   ); break;
 
 						case link_display_saturation_flow_rate:
 							str_text.Format ("%.0f",(*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane); break;
@@ -1375,6 +1422,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		CFont od_font;
 		int nODNodeSize = max(node_size,10);
 		int nODFontSize =  max(nODNodeSize * NodeTypeSize, 10);
+
 		m_NodeTextFontSize = nODFontSize; 
 
 		od_font.CreatePointFont(nODFontSize, m_NodeTypeFaceName);
@@ -1399,15 +1447,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 				pDC->SelectObject(&g_PenSelectColor);
 
-			}else if((*iNode)->m_ZoneID > 0 && m_bHighlightActivityLocation)
+			}else if((*iNode)->m_ZoneID ==  pDoc->m_SelectedZoneID  && m_bHighlightActivityLocation)
 			{
 				pDC->SelectObject(&g_PenCentroidColor);
+				pDC->SelectObject(&g_ActivityLocationBrush);
 
 				if((*iNode)->m_External_OD_flag == 1)  // external origin 
 				{
 
 					pDC->SelectObject(&g_PenExternalOColor);
-					pDC->SelectObject(&g_BlackBrush);
+
 					pDC->SetTextColor(RGB(255,0,0));
 					pDC->SetBkColor(RGB(0,0,0));
 
@@ -1416,7 +1465,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				if((*iNode)->m_External_OD_flag == -1)  // external destination
 				{
 					pDC->SelectObject(&g_PenExternalDColor);
-					pDC->SelectObject(&g_BlackBrush);
 					pDC->SetTextColor(RGB(255,0,0));
 					pDC->SetBkColor(RGB(0,0,0));
 
@@ -1731,7 +1779,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	if(pMainFrame->m_bShowLayerMap[layer_zone])
 	{	
-		pDC->SelectObject(&ZonePen);
 
 		CFont zone_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 		zone_font.CreatePointFont(nFontSize*4, m_NodeTypeFaceName);
@@ -1746,6 +1793,19 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); itr++)
 		{
+
+			if(itr->first == pDoc->m_SelectedZoneID )
+			{
+				pDC->SelectObject(&g_PenSelectColor0);
+			}
+			else
+			{
+				pDC->SelectObject(&ZonePen);
+			}
+
+
+			
+
 			int center_x = 0;
 			int center_y = 0;
 
@@ -2091,6 +2151,9 @@ void CTLiteView::OnSize(UINT nType, int cx, int cy)
 
 BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+		// change image size
+		CTLiteDoc* pDoc = GetDocument();
+
 	if(m_ToolMode != backgroundimage_tool && m_ToolMode !=  network_coordinate_tool)  //select, move
 	{
 		if(zDelta > 0)
@@ -2149,8 +2212,6 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 		if(m_ToolMode == backgroundimage_tool)
 		{
-			// change image size
-			CTLiteDoc* pDoc = GetDocument();
 
 			if(zDelta > 0)
 			{
@@ -2175,7 +2236,30 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		}
 	}
 	SetGlobalViewParameters();
+	CRect ScreenRect;
+	GetClientRect(ScreenRect);
 
+	CPoint LeftTop, RightBottom;
+	LeftTop.x = ScreenRect.left ;
+	LeftTop.y = ScreenRect.top  ;
+
+	RightBottom.x = ScreenRect.right ;
+	RightBottom.y = ScreenRect.bottom ;
+
+	GDPoint  gdpt_lt  = SPtoNP(LeftTop);
+	GDPoint  gdpt_rb  = SPtoNP(RightBottom);
+
+	double width = fabs(gdpt_lt.x - gdpt_rb.x )/ pDoc->m_UnitMile;
+	double height = fabs(gdpt_lt.y - gdpt_rb.y )/ pDoc->m_UnitMile;
+
+	CString str;
+
+	GDPoint  gdpt = SPtoNP(pt);
+	str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
+	GetDocument()->SendTexttoStatusBar(str);
+
+	str.Format("width: %.1f mi, %.1f km; height: %.1f mi, %.1f km", width, width/1.60934, height, height/1.60934);
+	pDoc->SendTexttoStatusBar(str,1);
 	Invalidate();
 
 	return TRUE;
@@ -2503,6 +2587,26 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 
 				break;
 
+			case layer_zone:
+
+				pDoc->m_SelectedZoneID = FindClosestZone(point,0);
+
+					pMainFrame->m_FeatureInfoVector.clear();
+
+					if(pDoc->m_SelectedZoneID>=0)
+					{
+					CFeatureInfo element;
+					element.Attribute = "Zone ID";
+					element.Data.Format ("%d", pDoc->m_SelectedZoneID );
+					pMainFrame->m_FeatureInfoVector.push_back (element);
+					
+					}
+
+
+					pMainFrame->FillFeatureInfo ();
+
+
+				break;
 			case layer_link:
 			case layer_link_MOE:
 
@@ -2791,6 +2895,27 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 	str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
 	GetDocument()->SendTexttoStatusBar(str);
 
+	CRect ScreenRect;
+	GetClientRect(ScreenRect);
+
+	CPoint LeftTop, RightBottom;
+	LeftTop.x = ScreenRect.left ;
+	LeftTop.y = ScreenRect.top  ;
+
+	RightBottom.x = ScreenRect.right ;
+	RightBottom.y = ScreenRect.bottom ;
+
+	GDPoint  gdpt_lt  = SPtoNP(LeftTop);
+	GDPoint  gdpt_rb  = SPtoNP(RightBottom);
+
+	double width = fabs(gdpt_lt.x - gdpt_rb.x )/ pDoc->m_UnitMile;
+	double height = fabs(gdpt_lt.y - gdpt_rb.y )/ pDoc->m_UnitMile;
+
+	str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
+	GetDocument()->SendTexttoStatusBar(str);
+
+	str.Format("width: %.1f mi, %.1f km; height: %.1f mi, %.1f km", width, width/1.60934, height, height/1.60934);
+	pDoc->SendTexttoStatusBar(str,1);
 	CView::OnMouseMove(nFlags, point);
 }
 
@@ -2900,11 +3025,34 @@ void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 		// Put it up
 			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-		if(pMainFrame-> m_iSelectedLayer == layer_zone && pDoc->m_SubareaShapePoints .size()>=3)
+		
+		if(pMainFrame-> m_iSelectedLayer == layer_background_image)
 		{
+			
+
+		cm.GetSubMenu(4)->TrackPopupMenu(
+		TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+		MenuPoint.x, MenuPoint.y, this);
+
+
+
+
+		}
+		else if(pMainFrame-> m_iSelectedLayer == layer_zone)
+		{
+			if(pDoc->m_SubareaShapePoints .size()>=3)
+			{
 				cm.GetSubMenu(2)->TrackPopupMenu(
 				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
 				MenuPoint.x, MenuPoint.y, this);
+			}else
+			{
+				cm.GetSubMenu(3)->TrackPopupMenu(
+				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+				MenuPoint.x, MenuPoint.y, this);
+			
+			}
+
 	
 		
 		}else if ((pMainFrame->m_iSelectedLayer == layer_link || pMainFrame->m_iSelectedLayer == layer_link_MOE ) &&
@@ -5315,10 +5463,14 @@ void CTLiteView::OnLinkAvoidusingthislinkinrouting()
 
 void CTLiteView::OnBnClickedButtonConfiguration()
 {
-	CDlg_DisplayConfiguration dlg;
-	dlg.pView = this;
-	dlg.m_ShowNodeTextMode = this ->m_ShowNodeTextMode;
-	dlg.DoModal ();
+
+	CDlg_DisplayConfiguration* m_pDlg = new CDlg_DisplayConfiguration;
+	m_pDlg->pView = this;
+	m_pDlg->m_ShowNodeTextMode = this ->m_ShowNodeTextMode;
+	m_pDlg->SetModelessFlag(true); // voila! this is all it takes to make your dlg modeless!
+	m_pDlg->Create(IDD_DIALOG_DISPLAY_CONFIG); 
+	m_pDlg->ShowWindow(SW_SHOW); 
+
 }
 
 void CTLiteView::OnNodeNodeproperties()
@@ -5711,3 +5863,83 @@ void CTLiteView::OnUpdateEditMovenode(CCmdUI *pCmdUI)
 }
 
 
+
+void CTLiteView::OnBackgroundimageMarklongA()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	GDPoint pt = SPtoNP(m_CurrentMousePoint);
+
+	pDoc->m_PointA_x = pt.x;
+	pDoc->m_PointA_y = pt.y;
+	
+
+	pDoc->m_bPointA_Initialized = true;
+
+	Invalidate();
+}
+
+void CTLiteView::OnBackgroundimageMarklongB()
+{
+
+	CTLiteDoc* pDoc = GetDocument();
+	GDPoint pt = SPtoNP(m_CurrentMousePoint);
+
+	pDoc->m_PointB_x = pt.x;
+	pDoc->m_PointB_y = pt.y;
+	
+	pDoc->m_bPointB_Initialized = true;
+
+	Invalidate();
+
+}
+
+void CTLiteView::OnBackgroundimageAddlat()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	CDlg_BackgroundImageLocation dlg;
+
+	if(pDoc->m_bPointB_Initialized)
+	{
+	dlg.m_bPointA_Initialized = true;
+	dlg.m_PointB_x = pDoc->m_PointB_x;
+	dlg.m_PointB_y = pDoc->m_PointB_y;
+	}
+
+	if(pDoc->m_bPointA_Initialized)
+	{
+	dlg.m_bPointB_Initialized = true;
+	dlg.m_PointA_x = pDoc->m_PointA_x;
+	dlg.m_PointA_y = pDoc->m_PointA_y;
+	}
+
+	if(dlg.DoModal ()==IDOK)
+	{
+		pDoc->m_bPointB_Initialized  = false;
+		pDoc->m_bPointA_Initialized = false;
+
+		pDoc->m_PointA_long = dlg.m_PointA_long ;
+		pDoc->m_PointB_long = dlg.m_PointB_long ;
+	
+		pDoc->m_PointA_lat = dlg.m_PointA_lat ;
+		pDoc->m_PointB_lat = dlg.m_PointB_lat ;
+
+
+		pDoc->ResetBackgroundImageCoordinate();
+
+		Invalidate();
+	}
+}
+
+void CTLiteView::OnZoneHighlightassociatedacititylocations()
+{
+	m_bHighlightActivityLocation = !m_bHighlightActivityLocation;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateZoneHighlightassociatedacititylocations(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bHighlightActivityLocation);
+}

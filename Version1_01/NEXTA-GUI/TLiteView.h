@@ -54,9 +54,12 @@ enum link_text_display_mode
    link_display_link_id, 
    link_display_TMC_code, 
    link_display_from_id_to_id, 
-   link_display_speed_limit, 
-   link_display_length, 
-   link_display_free_flow_travel_time, 
+   link_display_speed_limit_in_miles, 
+   link_display_speed_limit_in_km, 
+   link_display_length_in_miles, 
+   link_display_length_in_km, 
+   link_display_free_flow_travel_time_in_min, 
+   link_display_free_flow_travel_time_in_hour, 
    link_display_number_of_lanes, 
    link_display_link_capacity_per_hour,
    link_display_lane_capacity_per_hour,
@@ -769,6 +772,11 @@ public:
 	afx_msg void OnEditMovenode();
 	afx_msg void OnUpdateEditMovenode(CCmdUI *pCmdUI);
 
+	afx_msg void OnBackgroundimageMarklongA();
+	afx_msg void OnBackgroundimageMarklongB();
+	afx_msg void OnBackgroundimageAddlat();
+	afx_msg void OnZoneHighlightassociatedacititylocations();
+	afx_msg void OnUpdateZoneHighlightassociatedacititylocations(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

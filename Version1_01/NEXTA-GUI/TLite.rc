@@ -597,7 +597,7 @@ BEGIN
     COMBOBOX        IDC_COMBOEndTime,425,28,72,169,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_NSCHART_VEHICLE_DIALOG DIALOGEX 0, 0, 618, 266
+IDD_DIALOG_Summary DIALOGEX 0, 0, 618, 266
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "Data Summary Dialog"
@@ -853,12 +853,12 @@ BEGIN
     PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,152,225,154,14
 END
 
-IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 358
+IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 377
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,103,206,WS_EX_LEFTSCROLLBAR
-    CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,232,103,120,WS_EX_LEFTSCROLLBAR
+    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,23,103,223,WS_EX_LEFTSCROLLBAR
+    CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,251,103,120,WS_EX_LEFTSCROLLBAR
     PUSHBUTTON      "Config",IDC_BUTTON_Configuration,74,7,36,14
 END
 
@@ -1073,6 +1073,36 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,259,162,50,14
     COMBOBOX        IDC_COMBO1,64,19,48,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Distance Unit:",IDC_STATIC,7,19,46,8
+END
+
+IDD_DIALOG_Image_World_Width DIALOGEX 0, 0, 239, 66
+STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Set Real World Width of Background Image"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EDIT1,82,16,76,14,ES_AUTOHSCROLL
+    LTEXT           "Real World Width:",IDC_STATIC,7,17,59,8
+    PUSHBUTTON      "OK",IDC_BUTTONOK,150,43,50,14
+    PUSHBUTTON      "Find Distance using Google Maps",IDC_BUTTON2,7,31,119,14
+    COMBOBOX        IDC_COMBO1,164,18,48,48,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_DIALOG_Image_Location DIALOGEX 0, 0, 316, 131
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Reset Background Image Location Using Long/Lat Information"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Reset Background Image Location",IDOK,90,110,139,14
+    EDITTEXT        IDC_EDIT_LatLongA,180,23,129,14,ES_AUTOHSCROLL
+    LTEXT           "Latitude, Longitude:",IDC_STATIC,184,7,66,8
+    PUSHBUTTON      "Find Lat/Long from Google Maps: Right-click on the spot on the map choose ""What's here?""",IDC_BUTTON1,7,84,302,16
+    LTEXT           "Point A:",IDC_STATIC,7,23,26,8
+    LTEXT           "Point B:",IDC_STATIC,7,45,26,8
+    EDITTEXT        IDC_EDIT_LatLongA2,180,45,129,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT1,36,23,120,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT2,37,45,119,14,ES_AUTOHSCROLL | ES_READONLY
+    DEFPUSHBUTTON   "Cancel",IDCANCEL,259,110,50,14
+    LTEXT           "Internal Coordinates:",IDC_STATIC,39,7,70,8
 END
 
 
@@ -1354,7 +1384,7 @@ BEGIN
         BOTTOMMARGIN, 197
     END
 
-    IDD_NSCHART_VEHICLE_DIALOG, DIALOG
+    IDD_DIALOG_Summary, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 611
@@ -1454,7 +1484,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 110
         TOPMARGIN, 7
-        BOTTOMMARGIN, 352
+        BOTTOMMARGIN, 371
     END
 
     IDD_UNIT_TESTING_DIALOG, DIALOG
@@ -1583,6 +1613,22 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 176
+    END
+
+    IDD_DIALOG_Image_World_Width, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 232
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 59
+    END
+
+    IDD_DIALOG_Image_Location, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 124
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1761,10 +1807,8 @@ BEGIN
     BUTTON      ID_VIEW_MOVE
     SEPARATOR
     BUTTON      ID_VIEW_SHOWHIDE_LEGEND
-    BUTTON      ID_VIEW_TEXTLABEL
     BUTTON      ID_SHOW_GRID
     SEPARATOR
-    BUTTON      ID_VIEW_BACKGROUNDIMAGE
     BUTTON      ID_VIEW_IMAGE
     BUTTON      ID_EDIT_MOVENETWORKCOORDINATES
     SEPARATOR
@@ -2171,20 +2215,32 @@ BEGIN
         MENUITEM "Add Incident",                ID_LINK_ADDINCIDENT
         MENUITEM "Add VMS",                     ID_LINK_ADDVMS
         MENUITEM SEPARATOR
-        POPUP "Delete"
+        MENUITEM "Avoid Using This Link in Routing", ID_LINK_AVOIDUSINGTHISLINKINROUTING
+        MENUITEM "Add Sensor",                  ID_LINK_ADDSENSOR
+        POPUP "Delete Scenario Data"
         BEGIN
             MENUITEM "VMS",                         ID_DELETE_VMS
             MENUITEM "Link-based Toll",             ID_DELETE_LINK
             MENUITEM "Work Zone",                   ID_DELETE_WORKZONE
             MENUITEM "Incident ",                   ID_DELETE_INCIDENT
-            MENUITEM "Link",                        ID_DELETE_SELECTED_LINK
         END
-        MENUITEM "Avoid Using This Link in Routing", ID_LINK_AVOIDUSINGTHISLINKINROUTING
-        MENUITEM "Add Sensor",                  ID_LINK_ADDSENSOR
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Link",                 ID_DELETE_SELECTED_LINK
     END
     POPUP "Subarea"
     BEGIN
         MENUITEM "Create Zone From Subarea",    ID_SUBAREA_CREATEZONEFROMSUBAREA
+    END
+    POPUP "Zone"
+    BEGIN
+        MENUITEM "Highlight/Hide Associated Acitity Locations", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
+        MENUITEM "Delete Zone",                 ID_ZONE_DELETEZONE
+    END
+    POPUP "Background Image"
+    BEGIN
+        MENUITEM "Mark Point A",                ID_BACKGROUNDIMAGE_MARKLONG_A
+        MENUITEM "Mark Point B",                ID_BACKGROUNDIMAGE_MARKLONG_B
+        MENUITEM "Add Lat/Long Coordinates and Reset Image Location", ID_BACKGROUNDIMAGE_ADDLAT
     END
 END
 
@@ -2269,6 +2325,7 @@ BEGIN
         BEGIN
             MENUITEM "Single Excel File (*.xls)",   ID_IMPORT_SINGLEEXCELFILE
             MENUITEM "GIS Network Data Set",        ID_IMPORT_AMSDATASET
+            MENUITEM "Background Image (*.bmp)",    ID_IMPORT_BACKGROUNDIMAGE
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
             MENUITEM "Synchro Combined CSV File",   ID_IMPORT_SYNCHROCOMBINEDCSVFILE
         END
@@ -3131,6 +3188,7 @@ BEGIN
     IDR_MAINFRAME           "NeXTA Version 3 Beta"
     IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
     IDR_MAINFRAME32         "NeXTA Version 3 Beta (32-bit)"
+    ID_INDICATOR_LEFT       "Indicator"
 END
 
 STRINGTABLE 

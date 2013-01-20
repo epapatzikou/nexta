@@ -231,6 +231,63 @@ int g_read_integer_with_char_O(FILE* f)
 }
 
 
+int read_2_float_points_from_a_string(CString str, double &value1, double &value2)
+// read an integer from the current pointer of the file, skip all spaces
+{
+	value1 = 0;
+	value2 = 0;
+	char string_line[100];
+
+	int string_lenghth  = str.GetLength();
+	ASSERT(str.GetLength() < 100);
+
+	sprintf(string_line,"%s\n",str);
+
+	char ch, buf[ 32 ];
+	int i = 0;
+	int buffer_i = 0;
+	int flag = 1;
+	/* returns -1 if end of file is reached */
+
+	for(int i_try  =0 ; i_try < 2; i_try++)
+	{
+		buffer_i = 0;
+	while(true)
+	{
+		ch = string_line[i++];
+		if( ch=='\n' || i > string_lenghth)
+		{
+			return -1; // * and $ are special characters for comments
+		}
+		if (isdigit(ch))
+			break;
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+	};
+	if( ch == '\n' )
+	{
+		return -1;
+	}
+	
+	while( isdigit( ch ) || ch == '.')
+	{
+		buf[ buffer_i++ ] = ch;
+		ch =  string_line[i++];
+	}
+	buf[ buffer_i ] = 0;
+
+	if(i_try==0)
+	value1 = atof( buf ) * flag;
+
+	if(i_try==1)
+	value2 = atof( buf ) * flag;
+	}
+
+	return 0;
+}
+
 
 int read_2_integers_from_a_string(CString str, int &value1, int &value2)
 // read an integer from the current pointer of the file, skip all spaces
@@ -348,7 +405,7 @@ int g_read_integer(FILE* f, bool speicial_char_handling)
 	if( ch == EOF ) return -1;
 
 	
-	while( isdigit( ch )) {
+	while( isdigit( ch ) ) {
 		buf[ i++ ] = ch;
 		ch = fgetc( f );
 	}

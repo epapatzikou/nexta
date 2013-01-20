@@ -353,9 +353,6 @@ void CTLiteDoc::OnToolsGpsmapmatching()
     //// for each link, define the distance cost
     //// find the shortest path
 
-    //CString GPSFileName  = m_ProjectDirectory + "input_GPS_data2.csv";
-
-    //ReadGPSCSVFile(GPSFileName);
 
     //CWaitCursor wait; // let cursor waits
 
@@ -454,53 +451,9 @@ void CTLiteDoc::OnToolsGpsmapmatching()
 // create a network
     // for each link, define the distance cost
     // find the shortest path
-
-    CString GPSFileName  = m_ProjectDirectory + "Input_GPS_Data-2010-5-3.csv";
-
-    // ReadGPSCSVFile(GPSFileName);
-
-	CWaitCursor wait;
-	ReadGPSDataFile("Input_GPS_data-2010-5-3.csv");
-
-	ReadGPSDataFile("Input_GPS_data-2010-5-5.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-6.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-7.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-10.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-11.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-12.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-13.csv");
-	//ReadGPSDataFile("Input_GPS_data-2010-5-14.csv");
-
-	//ReadGPSDataFile("Input_GPS_data-2010-5-17.csv");
-
-	CString msg;
-	msg.Format("%d GPS records are imported.",m_ProbeSet.size());
-		AfxMessageBox(msg, MB_ICONINFORMATION);
-
 	// step 1: find out the origin zone and destination zone
 
 	std::list<DTAVehicle*>::iterator iVehicle;
-
-    //each vehicle GPS data are stored in the list called m_VehicleSet
-
- //   int vehicle_id=0;//index for every vehicle 
-
- //   for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
- //   {
-
-	//	if((*iVehicle)->m_GPSLocationVector.size() > 2)
-	//	{
-
-	//	(*iVehicle)->m_NodeSize = 2;
-	//	(*iVehicle)->m_bComplete = true;
-
-	//	(*iVehicle)->m_OriginZoneID = GetZoneIDFromShapePoints( (*iVehicle)->m_GPSLocationVector[0]);
-	//	(*iVehicle)->m_DestinationZoneID  = GetZoneIDFromShapePoints( (*iVehicle)->m_GPSLocationVector[(*iVehicle)->m_GPSLocationVector.size()-1]);
-
-	//	}
-	//}
-
-	return; 
 
 
     std::list<DTALink*>::iterator iLink;

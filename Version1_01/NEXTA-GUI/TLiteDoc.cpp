@@ -82,6 +82,7 @@
 
 #include "AssignmentSimulationSettingDlg.h"
 #include "NetworkDataDlg.h"
+#include "Dlg_RealWorldWidth.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -356,6 +357,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_DEMAND_REGENERATEACTIVITYLOCATIONS, &CTLiteDoc::OnDemandRegenerateactivitylocations)
 	ON_COMMAND(ID_DEMAND_CONVERT, &CTLiteDoc::OnDemandConvert)
 	ON_COMMAND(ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK, &CTLiteDoc::OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocurrentnetwork)
+	ON_COMMAND(ID_IMPORT_BACKGROUNDIMAGE, &CTLiteDoc::OnImportBackgroundimage)
+	ON_COMMAND(ID_ZONE_DELETEZONE, &CTLiteDoc::OnZoneDeletezone)
 	END_MESSAGE_MAP()
 
 
@@ -363,6 +366,11 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_ImageWidthInMile = 1;
+	m_PointA_x = m_PointA_y = m_PointB_x = m_PointB_y = 0;
+	m_PointA_long = m_PointA_lat = m_PointB_long = m_PointB_lat= 0;
+	m_bPointA_Initialized =  m_bPointB_Initialized = false;
+
 	m_ImportDemandColumnFormat = true;
 	m_bSummaryDialog = false;
 	m_StartNodeNumberForNewNodes = 1;
@@ -548,7 +556,7 @@ CTLiteDoc::CTLiteDoc()
 
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
 	{
-		m_NodeDisplaySize = 50;  // in feet
+		m_NodeDisplaySize = 2000;  // in feet
 		m_VehicleDisplaySize = 10; // in feet
 		m_BackgroundColor =  RGB(255,255,255);  //white
 		m_NodeTextDisplayRatio = 4;
@@ -585,6 +593,7 @@ CTLiteDoc::CTLiteDoc()
 	m_ODSize = 0;
 	m_SelectedLinkNo = -1;
 	m_SelectedNodeID = -1;
+	m_SelectedZoneID = -1;
 	m_SelectedVehicleID = -1;
 
 	m_bSetView = false;
@@ -777,9 +786,10 @@ void CTLiteDoc::SetStatusText(CString StatusText)
 	if(pos != NULL)
 	{
 		pView = (CTLiteView*) GetNextView(pos);
+		if(pView!=NULL)
+			pView->SetStatusText(StatusText);
 	}
 
-	if(pView!=NULL) pView->SetStatusText(StatusText);
 
 }
 
@@ -1200,6 +1210,9 @@ void CTLiteDoc::ReadHistoricalData(CString directory)
 BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetworkOnly, bool bImportShapeFiles)
 {
 
+	m_NodeDisplaySize = 50;  // in feet
+
+
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;
@@ -1438,7 +1451,7 @@ BOOL CTLiteDoc::OnOpenDocument(CString ProjectFileName, bool bLoadNetworkOnly )
 
 }
 
-bool CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName, bool bAskForInput)
 {
 	//read impage file Background.bmp
 
@@ -1453,19 +1466,42 @@ bool CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 		m_ImageXResolution = 1;
 		m_ImageYResolution = 1;
 
+
 	if(m_BackgroundBitmapLoaded)
 	{
 
+		if(bAskForInput)
+		{
+		
+			m_ImageX1 = 0;
+			m_ImageY1 = 0;
+			m_ImageX2 = 20;
+			m_ImageY2 = 10;
+
+		m_OriginOnBottomFlag = 1;
+		}else
+		{
 		m_OriginOnBottomFlag = (int)(g_GetPrivateProfileDouble("coordinate_info", "origin_on_bottom_flag", m_OriginOnBottomFlag, lpszFileName));
 		m_ImageX1 = g_GetPrivateProfileDouble("background_image_coordinate_info", "left", m_NetworkRect.left, lpszFileName);
 		m_ImageY1 = g_GetPrivateProfileDouble("background_image_coordinate_info", "bottom", m_NetworkRect.bottom, lpszFileName);
 		m_ImageX2 = g_GetPrivateProfileDouble("background_image_coordinate_info", "right", m_NetworkRect.right, lpszFileName);
 		m_ImageY2 = g_GetPrivateProfileDouble("background_image_coordinate_info", "top", m_NetworkRect.top, lpszFileName);
+		m_ImageWidthInMile = g_GetPrivateProfileDouble("background_image_coordinate_info", "width",1, lpszFileName);
+
+			if(m_LinkSet.size()==0)  // no link yet, need to initialize the map unit
+			{
+
+			m_UnitMile =fabs(m_ImageX2-m_ImageX1)/ max(0.00001,m_ImageWidthInMile);
+			m_UnitFeet = m_UnitMile/5280;
+			}
+
+		}
 
 		m_ImageWidth = fabs(m_ImageX2 - m_ImageX1);
 		m_ImageHeight = fabs(m_ImageY2 - m_ImageY1);
 
 		m_ImageMoveSize = m_ImageWidth/2000.0f;
+
 		m_BackgroundImageFileLoadingStatus.Format ("Optional background image file is loaded.");
 
 	}
@@ -1478,8 +1514,9 @@ bool CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName)
 
 void CTLiteDoc::OnFileOpen()
 {
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Transportation Network Project (*.tnp)|*.tnp|"));
+
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
+		_T("Transportation Network Project (*.tnp)|*.tnp|"),NULL,0,false);
 	if(dlg.DoModal() == IDOK)
 	{
 		OnOpenDocument(dlg.GetPathName());
@@ -1503,6 +1540,10 @@ void CTLiteDoc::OnFileSaveimagelocation()
 	WritePrivateProfileString("background_image_coordinate_info","right",lpbuffer,IniFilePath);
 	sprintf_s(lpbuffer,"%f",m_ImageY2);
 	WritePrivateProfileString("background_image_coordinate_info","top",lpbuffer,IniFilePath);
+
+	sprintf_s(lpbuffer,"%f",m_ImageWidthInMile);
+	WritePrivateProfileString("background_image_coordinate_info","width",lpbuffer,IniFilePath);
+	
 
 }
 
@@ -3584,17 +3625,17 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("default_lane_capacity",element.default_lane_capacity   ) == false && lineno==0)
 			{
-				AfxMessageBox("Field default_lane_capacity cannot be found in input_link_type.csv.");
+//				AfxMessageBox("Field default_lane_capacity cannot be found in input_link_type.csv.");
 			}
 
 			if(parser.GetValueByFieldName("default_speed_limit",element.default_speed) == false  && lineno==0)
 			{
-				AfxMessageBox("Field default_speed cannot be found in input_link_type.csv.");
+//				AfxMessageBox("Field default_speed cannot be found in input_link_type.csv.");
 			}
 
 			if(parser.GetValueByFieldName("default_number_of_lanes",element.default_number_of_lanes) == false  && lineno==0)
 			{
-				AfxMessageBox("Field default_number_of_lanes cannot be found in input_link_type.csv.");
+//				AfxMessageBox("Field default_number_of_lanes cannot be found in input_link_type.csv.");
 			}
 			
 			if(element.type_code .find('f') != string::npos)
@@ -3871,12 +3912,12 @@ bool CTLiteDoc::ReadScenarioData()
 }
 
 
-void CTLiteDoc::SendTexttoStatusBar(CString str)
+void CTLiteDoc::SendTexttoStatusBar(CString str, int index)
 {
 	POSITION pos = GetFirstViewPosition();
 	CView *p = (CView *)this->GetNextView(pos);
 	CStatusBar* bar = (CStatusBar*)(p->GetParentFrame()->GetMessageBar());
-	bar->SetPaneText(0, str);
+	bar->SetPaneText(index, str);
 }
 
 
@@ -4822,17 +4863,19 @@ void CTLiteDoc::OnFileSaveProject()
 void CTLiteDoc::OnFileSaveProjectAs()
 {
 	try{
-	CFileDialog fdlg (FALSE, "*.tnp", "*.tnp",OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_LONGNAMES,
-		"Transportation Network Project (*.tnp)|*.tnp|");
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
+	CFileDialog fdlg (FALSE, "*.tnp", "*.tnp",OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT |OFN_ENABLESIZING,
+		"Transportation Network Project (*.tnp)|*.tnp|",pMainFrame,0,false);
+	
 	
 	if(fdlg.DoModal()==IDOK)
 	{
 		CString path = fdlg.GetFileName ();
 		CWaitCursor wait;
-		m_ProjectFile = fdlg.GetPathName();
+		m_ProjectFile = path;
 		m_ProjectTitle = GetWorkspaceTitleName(m_ProjectFile);
-		if(SaveProject(fdlg.GetPathName()))
+		if(SaveProject(path))
 		{
 			CString msg;
 			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d links, %d zones.",m_NodeSet.size(), m_LinkSet.size(), m_ZoneMap.size());
@@ -6409,16 +6452,13 @@ void CTLiteDoc::LoadSimulationOutput()
 
 	microsimulation_file_str.Format("%s",microsimulation_file_name);
 
-	if(microsimulation_file_str.Find("bin") >=0)
-	{
-		ReadTraceBinFile(m_ProjectDirectory+microsimulation_file_name,0);
-	}
-
 	if(microsimulation_file_str.Find("csv") >=0)
 	{
 		ReadAimCSVFiles(m_ProjectDirectory+microsimulation_file_name,0);
 	}
 
+
+	
 	char GPS_file_name[_MAX_STRING_SIZE];
 	g_GetProfileString("GPS_data","file_name","",GPS_file_name,sizeof(GPS_file_name),m_ProjectFile);
 
@@ -6801,7 +6841,7 @@ void CTLiteDoc::OnToolsViewsimulationsummary()
 	g_SummaryDialogVector.push_back (m_pDlg);  // collect memory block
 	m_pDlg->m_pDoc = this;
 	m_pDlg->SetModelessFlag(true); // voila! this is all it takes to make your dlg modeless!
-	m_pDlg->Create(IDD_NSCHART_VEHICLE_DIALOG); 
+	m_pDlg->Create(IDD_DIALOG_Summary); 
 	m_pDlg->ShowWindow(SW_SHOW); 
 
 	m_bSummaryDialog = true;
@@ -6931,6 +6971,122 @@ void CTLiteDoc::OnToolsPerformscheduling()
 		LoadSimulationOutput();
 		UpdateAllViews(0);
 	}
+}
+
+
+void CTLiteDoc::ResetBackgroundImageCoordinate()
+{
+
+			float m_XScale = 1;
+			float m_YScale = 1;
+
+			if(fabs(m_PointB_x- m_PointA_x)>0.000001)
+			{
+				m_XScale = (m_PointB_long - m_PointA_long)/(m_PointB_x- m_PointA_x);
+			}else
+			{
+			
+				AfxMessageBox("Horizontal distance between two points is too short. Please redefine two points.");
+				return;
+			}
+
+			if(fabs(m_PointB_y- m_PointA_y)>0.000001)
+			{
+				m_YScale = (m_PointB_lat - m_PointA_lat)/(m_PointB_y- m_PointA_y);
+			}else
+			{
+			
+				AfxMessageBox("Vertical distance between two points is too short. Please redefine two points.");
+				return;
+			}
+
+			float m_XOrigin = m_PointA_x - m_PointA_long /m_XScale;
+
+			float m_YOrigin = m_PointA_y- m_PointA_lat /m_YScale;
+
+
+			/////////////////////////////////adjustment
+
+
+			// adjust node coordinates
+			std::list<DTANode*>::iterator iNode;
+			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			{
+
+				(*iNode)->pt .x  = ((*iNode)->pt .x - m_XOrigin)*m_XScale;
+				(*iNode)->pt .y  = ((*iNode)->pt .y - m_YOrigin)*m_YScale;
+			}
+			//adjust link cooridnates
+
+			std::list<DTALink*>::iterator iLink;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->m_FromPoint.x = ((*iLink)->m_FromPoint.x -m_XOrigin)*m_XScale;
+				(*iLink)->m_FromPoint.y = ((*iLink)->m_FromPoint.y -m_YOrigin)*m_YScale;
+
+				(*iLink)->m_ToPoint.x = ((*iLink)->m_ToPoint.x -m_XOrigin)*m_XScale;
+				(*iLink)->m_ToPoint.y = ((*iLink)->m_ToPoint.y -m_YOrigin)*m_YScale;
+
+
+				for(unsigned int si = 0; si< (*iLink)->m_Original_ShapePoints.size(); si++)
+				{
+
+					(*iLink)->m_Original_ShapePoints[si].x = ((*iLink)->m_Original_ShapePoints[si].x - m_XOrigin)*m_XScale;
+					(*iLink)->m_Original_ShapePoints[si].y = ((*iLink)->m_Original_ShapePoints[si].y - m_YOrigin)*m_YScale;
+
+				}
+
+				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
+				{
+
+					(*iLink)->m_ShapePoints[si].x = ((*iLink)->m_ShapePoints[si].x - m_XOrigin)*m_XScale;
+					(*iLink)->m_ShapePoints[si].y = ((*iLink)->m_ShapePoints[si].y - m_YOrigin)*m_YScale;
+
+				}
+
+			}
+
+			// zone layer
+			std::map<int, DTAZone>	:: iterator itr;
+
+			for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
+			{
+				for(unsigned int si = 0; si< itr->second.m_ShapePoints.size(); si++)
+				{
+					itr->second.m_ShapePoints[si].x = (itr->second.m_ShapePoints[si].x - m_XOrigin)*m_XScale;
+					itr->second.m_ShapePoints[si].y = (itr->second.m_ShapePoints[si].y - m_YOrigin)*m_YScale;
+
+				}
+
+			}
+
+			// image layer
+
+		m_ImageX1 = (m_ImageX1- m_XOrigin)*m_XScale;
+		m_ImageY1 = (m_ImageY1- m_YOrigin)*m_YScale;
+		m_ImageX2 = (m_ImageX2- m_XOrigin)*m_XScale;
+		m_ImageY2 =  (m_ImageY2- m_YOrigin)*m_YScale;
+
+		m_ImageWidth = fabs(m_ImageX2 - m_ImageX1);
+		m_ImageHeight = fabs(m_ImageY2 - m_ImageY1);
+
+		GDPoint pt1, pt2;
+		pt1.x = m_ImageX1;
+		pt1.y = m_ImageY1;
+
+		pt1.x = m_ImageX2;
+		pt1.y = m_ImageY1;
+
+		// update image width in miles
+		m_ImageWidthInMile = max(m_ImageWidthInMile,g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1,pt2));
+
+		m_ImageMoveSize = m_ImageWidth/2000.0f;
+
+		CString str_result;
+		str_result.Format ("The coordinates of %d nodes, %d links and %d zones have been adjusted to long/lat format.\nPleaes save the network to confirm the change.\nYou can use NEXTA_32.exe ->menu->Tools->GIS tools->Export GIS shape files to check the changed network on Google Maps",m_NodeSet.size(),m_LinkSet.size(),m_ZoneMap.size());
+		AfxMessageBox(str_result, MB_ICONINFORMATION);
+
 }
 
 void CTLiteDoc::OnFileChangecoordinatestolong()
@@ -9253,7 +9409,7 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 	{
 		DTAVehicle* pVehicle = (*iVehicle);
 
-		if(pVehicle->m_FreeflowTripTime <0.001f)  // freeflow travel time has not been defined yet
+		if(pVehicle->m_FreeflowTripTime <0.00001f)  // freeflow travel time has not been defined yet
 		{
 
 			DTAVehicle* pVehicle = (*iVehicle);
@@ -9263,7 +9419,7 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 				if(m_LinkNoMap.find(pVehicle->m_NodeAry[i].LinkNo)!= m_LinkNoMap.end()) 
 				{
 				DTALink* pLinkCurrent = m_LinkNoMap[ pVehicle->m_NodeAry[i].LinkNo];
-						pVehicle->m_FreeflowTripTime+= pLinkCurrent->m_FreeFlowTravelTime ;
+					pVehicle->m_FreeflowTripTime+= pLinkCurrent->m_FreeFlowTravelTime ;
 				}
 			}
 		
@@ -11291,244 +11447,6 @@ void CTLiteDoc::OnMoeTableDialog()
 
 }
 
-bool CTLiteDoc::ReadTraceBinFile(LPCTSTR lpszFileName, int date_id)
-{
-	//   cout << "Read vehicle file... "  << endl;
-	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
-	//	arrival_time, complete_flag, trip_time, demand_type, occupancy, information_type,
-	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
-	//	node id, node arrival time
-
-
-
-
-	typedef struct  
-	{
-		int original_vehicle_id;
-		int date_id;
-		int vehicle_id;
-		int from_zone_id;
-		int to_zone_id;
-		float departure_time;
-		float arrival_time;
-		float trip_time;
-		float total_distance_in_km;
-		int number_of_nodes;
-		float reserved_field1;
-		float reserved_field2;
-		float reserved_field3;
-
-	} struct_Vehicle_Header;
-
-
-	FILE* st = NULL;
-	fopen_s(&st,lpszFileName,"rb");
-	if(st!=NULL)
-	{
-
-
-		m_VehicleSet.clear();
-
-		struct_Vehicle_Header header;
-
-		int count =0;
-		while(!feof(st))
-		{
-
-			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
-
-			if( header.vehicle_id < 0)
-				break;
-
-			if(result!=1)  // read end of file
-				break;
-
-			int PathNodeVector[MAX_NODE_SIZE_IN_A_PATH];
-			int PathNodeArrivalTimeVector[MAX_NODE_SIZE_IN_A_PATH];
-			int PathNodeVectorNo = 0;
-			int NetworkNodeNo = -1;
-			int NetworkLinkID = -1;
-
-			DTAVehicle* pVehicle = 0;
-			pVehicle = new DTAVehicle;
-			//			pVehicle->m_bGPSVehicle = true;
-			pVehicle->m_DateID 		= header.date_id;
-
-			pVehicle->m_VehicleID		= m_VehicleSet.size();
-
-			pVehicle->m_OriginZoneID	= header.from_zone_id;
-			pVehicle->m_DestinationZoneID= header.to_zone_id;
-
-			pVehicle->m_Distance = header.total_distance_in_km * 0.621371; // km to miles
-
-
-			pVehicle->m_DepartureTime	=  header.departure_time;
-			pVehicle->m_ArrivalTime =  header.arrival_time;
-
-			if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
-				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
-
-			pVehicle->m_bComplete = true;
-			pVehicle->m_DemandType = 1;
-
-			pVehicle->m_PricingType = 1;
-
-			//pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
-
-			pVehicle->m_VOT = 10;
-			pVehicle->m_TollDollarCost = 0;
-			pVehicle->m_Emissions = 0;
-
-
-			pVehicle->m_TripTime  = header.trip_time;
-
-			pVehicle->m_VehicleLocationSize	= header.number_of_nodes;
-
-			if(pVehicle->m_VehicleLocationSize==0 )
-			{
-				CString error_msg;
-				error_msg.Format("reading error in file %s: vehicle id =%d",lpszFileName, header.vehicle_id);
-
-			}
-
-			if(pVehicle->m_VehicleLocationSize>=1)  // in case reading error
-			{
-
-				float total_distance = 0;
-				pVehicle->m_LocationRecordAry = new VehicleLocationRecord[pVehicle->m_VehicleLocationSize];
-
-				pVehicle->m_NodeNumberSum = 0;
-				for(int i=0; i< pVehicle->m_VehicleLocationSize; i++)
-				{
-					VehicleLocationRecord node_element;
-					fread(&pVehicle->m_LocationRecordAry[i],sizeof(VehicleLocationRecord),1,st);
-
-					double min_distance = m_UnitMile*0.5;
-
-					// update origin and destination zone ids
-
-					if(i==0 && pVehicle->m_OriginZoneID == 0)
-					{
-						int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
-
-						if(ZoneNumber!=-1)
-							pVehicle->m_OriginZoneID = ZoneNumber;
-
-					}
-
-					//					if(i== pVehicle->m_VehicleLocationSize -1 && pVehicle->m_DestinationZoneID == 0)
-					//					{
-					//					int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
-					//					if(ZoneNumber!=-1)
-					//					pVehicle->m_DestinationZoneID = ZoneNumber;
-					//
-					//					}
-					//
-					//					int LinkID = pVehicle->m_LocationRecordAry[i].linkid;
-					//
-					//					if(LinkID != -1  && LinkID != NetworkLinkID) 
-					//					{
-					//						PathNodeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].linkid ;
-					//
-					////						TRACE("no. %d,link id = %,\n",i,pVehicle->m_LocationRecordAry[i].linkid);
-					//						PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
-					//						//pVehicle->m_NodeNumberSum += NodeNo;
-					//						PathNodeVectorNo ++;
-					//						NetworkLinkID = LinkID;
-					//
-					//					}
-				}
-
-
-				if(PathNodeVectorNo>=1)
-				{
-
-					pVehicle->m_NodeSize = PathNodeVectorNo;
-					pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
-
-					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[0];
-					for(int i = 1; i< PathNodeVectorNo; i++)
-					{
-						DTALink* pLink = FindLinkWithLinkID(PathNodeVector[i]);
-						if(pLink!=NULL)
-						{
-							pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-							pLink->m_total_link_volume +=1;
-
-							pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
-							pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
-
-							//	//overwrite zone id for nodes
-							//	if(i==1 && pVehicle->m_OriginZoneID !=0 )
-							//	{
-
-							//DTAActivityLocation element;
-							//element.ZoneID  = pVehicle->m_OriginZoneID;
-							//element.NodeNumber = pLink->m_FromNodeNumber;
-							//element.External_OD_flag = 0;
-
-							//m_NodeIDMap[pLink->m_FromNodeID ] ->m_ZoneID = pVehicle->m_OriginZoneID;
-							//m_ZoneMap [element.ZoneID ].m_ActivityLocationVector .push_back (element);
-							//	
-							//	}
-
-						}else
-						{
-							pVehicle->m_NodeAry[i].LinkNo = -1;
-
-							//						TRACE("cannot find link %d\n", PathLinkVector[i]);
-						}
-					}
-
-				}
-
-				if(pVehicle->m_OriginZoneID ==0 || pVehicle->m_DestinationZoneID ==0)
-				{
-					TRACE("\nvehicle id: %d, O: %d, D: %d", header.vehicle_id, header.from_zone_id,header.to_zone_id );
-				}
-
-
-				// movement count
-
-				m_VehicleSet.push_back (pVehicle);
-				m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
-
-
-				if(count%100 == 0 && count >=1)
-				{
-					CString str;
-					str.Format ("Loading %d GPS records...", count);
-					SetStatusText(str);
-				}
-
-				count++;
-			} 
-		}
-
-
-		fclose(st);
-
-		if(count >=1 ) //with GPS data
-		{
-			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-			pMainFrame->m_bShowLayerMap[layer_vehicle_position]  = true;
-			//			m_bGPSDataSet  = true;
-
-		}
-
-		m_SimulationVehicleDataLoadingStatus.Format ("%d traces are loaded from files %s...",m_VehicleSet.size(),lpszFileName);
-		return true;
-
-	}
-	else
-	{
-		CString msg;
-		msg.Format("File %s cannot be opened.", lpszFileName);
-		AfxMessageBox(msg);
-		return false;
-	}
-}
-
 
 bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 {
@@ -11538,8 +11456,12 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 	//	value_of_time, path_min_cost,distance_in_mile, number_of_nodes,
 	//	node id, node arrival time
 
+   std::list<DTALink*>::iterator iLink;
 
-
+    for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  //m_LinkSet ?????????
+    {
+        (*iLink)->m_OriginalLength = (*iLink)->m_Length ;  // keep the original link length
+    }
 
 	typedef struct  
 	{
@@ -11564,8 +11486,6 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 	fopen_s(&st,lpszFileName,"rb");
 	if(st!=NULL)
 	{
-
-
 		m_VehicleSet.clear();
 
 		struct_Vehicle_Header header;
@@ -11582,9 +11502,9 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 			if(result!=1)  // read end of file
 				break;
 
-			int PathLinkVector[MAX_NODE_SIZE_IN_A_PATH];
-			int PathNodeArrivalTimeVector[MAX_NODE_SIZE_IN_A_PATH];
-			int PathNodeVectorNo = 0;
+			std::vector<int> PathLinkVector;
+			std::vector<int> PathNodeVector;
+			std::vector<int>  PathNodeArrivalTimeVector;
 			int NetworkNodeNo = -1;
 			int NetworkLinkID = -1;
 
@@ -11595,8 +11515,8 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 			pVehicle->m_VehicleID		= m_VehicleSet.size();
 
-			pVehicle->m_OriginZoneID	= header.from_zone_id;
-			pVehicle->m_DestinationZoneID= header.to_zone_id;
+			pVehicle->m_OriginZoneID	= -1;
+			pVehicle->m_DestinationZoneID= -1;
 
 			pVehicle->m_Distance = header.total_distance_in_km * 0.621371; // km to miles
 
@@ -11646,7 +11566,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 					// update origin and destination zone ids
 
-					if(i==0 && pVehicle->m_OriginZoneID == 0)
+					if(i==0 )
 					{
 						int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
 
@@ -11655,7 +11575,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 					}
 
-					if(i== pVehicle->m_VehicleLocationSize -1 && pVehicle->m_DestinationZoneID == 0)
+					if(i== pVehicle->m_VehicleLocationSize -1)
 					{
 						int ZoneNumber  = FindClosestZone( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
 						if(ZoneNumber!=-1)
@@ -11663,36 +11583,78 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 
 					}
 
-					int LinkID = pVehicle->m_LocationRecordAry[i].linkid;
+					int NodeID = FindClosestNode( pVehicle->m_LocationRecordAry[i].x, pVehicle->m_LocationRecordAry[i].y, min_distance	);
+
+						if(PathNodeVector.size() ==0 && NodeID>=0)
+						{
+							PathNodeVector.push_back (NodeID);
+						
+						}
+						if( PathNodeVector.size() >0 &&  PathNodeVector[PathNodeVector.size()-1]!=NodeID && NodeID>=0)
+						{
+							PathNodeVector.push_back (NodeID);
+					
+							DTALink* pLink = FindLinkWithNodeIDs(PathNodeVector[PathNodeVector.size()-2], PathNodeVector[PathNodeVector.size()-1]);
+
+							if(pLink!= NULL)
+							{
+								PathLinkVector.push_back(pLink->m_LinkNo );
+								PathNodeArrivalTimeVector.push_back (pVehicle->m_LocationRecordAry[i].time_stamp_in_min);
+							}
 
 
-					PathLinkVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].linkid ;
+						}
 
-					//						TRACE("no. %d,link id = %,\n",i,pVehicle->m_LocationRecordAry[i].linkid);
-					PathNodeArrivalTimeVector[PathNodeVectorNo] = pVehicle->m_LocationRecordAry[i].time_stamp_in_min;
-					//pVehicle->m_NodeNumberSum += NodeNo;
-					PathNodeVectorNo ++;
-					NetworkLinkID = LinkID;
 
 				}
 
+				if(PathNodeVector.size()>=1)
+				{
+					for(int i = 0; i< PathNodeVector.size(); i++)
+					{
+					
+						DTANode* pNode = m_NodeIDMap[ PathNodeVector[i]];
 
-				if(PathNodeVectorNo>=1)
+						TRACE("Node Id, %d, %d", i,pNode->m_NodeNumber );
+					
+					}
+				 
+				}
+
+
+				// map matching here
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  //m_LinkSet ?????????
+		{
+			(*iLink)->m_Length  = (*iLink)->m_OriginalLength ;
+		}
+
+
+        if(m_pNetwork ==NULL)  // we only build the network once
+        {
+          m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+        }
+
+
+				if(PathLinkVector.size()>=1)
 				{
 
-					pVehicle->m_NodeSize = PathNodeVectorNo;
-					pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+					pVehicle->m_NodeSize = PathLinkVector.size()+1;
+					pVehicle->m_NodeAry = new SVehicleLink[PathLinkVector.size()+1];
 
 					pVehicle->m_NodeAry[0].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[0];
-					for(int i = 0; i< PathNodeVectorNo; i++)
+					for(int i = 0; i< PathLinkVector.size(); i++)
 					{
-						DTALink* pLink = FindLinkWithLinkID(PathLinkVector[i]);
-						if(pLink!=NULL)
-						{
-							pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-							pLink->m_total_link_volume +=1;
+							pVehicle->m_NodeAry[i+1].LinkNo  = PathLinkVector[i] ;
 
-							pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
+							DTALink* pLink = FindLinkWithLinkNo(PathLinkVector[i]);
+
+							TRACE("\n%d->%d", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+
+							pLink->m_total_link_volume +=1;
+							pVehicle->m_FreeflowTripTime += pLink->m_FreeFlowTravelTime ;
+
+							pVehicle->m_NodeAry[i+1].ArrivalTimeOnDSN = PathNodeArrivalTimeVector[i];
 							pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
 
 							//	//overwrite zone id for nodes
@@ -11700,7 +11662,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 							//	{
 
 							//DTAActivityLocation element;
-							//element.ZoneID  = pVehicle->m_OriginZoneID;
+							//element.ZoneID  = pVehcle->m_OriginZoneID;
 							//element.NodeNumber = pLink->m_FromNodeNumber;
 							//element.External_OD_flag = 0;
 
@@ -11709,11 +11671,6 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 							//	
 							//	}
 
-						}else
-						{
-							pVehicle->m_NodeAry[i].LinkNo = -1;
-
-							//						TRACE("cannot find link %d\n", PathLinkVector[i]);
 						}
 					}
 
@@ -11724,23 +11681,27 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id)
 					TRACE("\nvehicle id: %d, O: %d, D: %d", header.vehicle_id, header.from_zone_id,header.to_zone_id );
 				}
 
+				if(count>=2000)  // testing
+					break;
 
-				// movement count
-
-				m_VehicleSet.push_back (pVehicle);
-				m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
-
-
-				if(count%100 == 0 && count >=1)
+				if(count%1000 == 0 && count >=1)
 				{
 					CString str;
-					str.Format ("Loading %d GPS records...", count);
+					str.Format ("Loading %d probe records...", count);
 					SetStatusText(str);
 				}
+				// movement count
+
+				if(pVehicle->m_OriginZoneID >=0 && pVehicle->m_DestinationZoneID >=0)
+				{
+				m_VehicleSet.push_back (pVehicle);
+				m_VehicleIDMap[pVehicle->m_VehicleID]  = pVehicle;
+				}
+
+
 
 				count++;
-			} 
-		}
+		} 
 
 
 		fclose(st);
@@ -12687,7 +12648,7 @@ bool CTLiteDoc::ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id)
 								{
 									pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo ;
 									pLink->m_total_link_volume +=1;
-
+									pVehicle->m_FreeflowTripTime += pLink->m_FreeFlowTravelTime ;
 									pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = valid_section_vector[i].timeSta;
 									pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
 
@@ -13376,3 +13337,73 @@ void CTLiteDoc::OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocur
 	AfxMessageBox(str, MB_ICONINFORMATION);
 
 }
+
+void CTLiteDoc::OnImportBackgroundimage()
+{
+	
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
+		_T("background image file(*.bmp)|*.bmp|"),NULL,0,false);
+	if(dlg.DoModal() == IDOK)
+	{
+
+		if(m_ProjectFile.GetLength ()==0)
+		{
+
+			if(AfxMessageBox("Please specify a transportation network project folder and project file (*.tnp).",MB_ICONINFORMATION)==IDOK)
+			{
+
+			OnFileSaveProjectAs();
+			CopyFile(dlg.GetPathName (),m_ProjectDirectory+"background_image.bmp",false);
+			if(ReadBackgroundImageFile(m_ProjectFile)==true)
+			{
+
+			CDlg_RealWorldWidth dlg_width;
+			if(dlg_width.DoModal ()==IDOK)
+			{
+				m_ImageX1 = 0;
+				m_ImageY1 = 0;
+				m_ImageX2 = dlg_width.m_RealWorldWidth;
+				m_ImageWidth = dlg_width.m_RealWorldWidth;
+				double height = m_BackgroundBitmap.GetHeight();
+				double width  = m_BackgroundBitmap.GetWidth ();
+				m_ImageY2 = height/width * dlg_width.m_RealWorldWidth;
+				m_ImageWidth = fabs(m_ImageX2 - m_ImageX1);
+				m_ImageHeight = fabs(m_ImageY2 - m_ImageY1);
+
+				CalculateDrawingRectangle();
+
+		
+			}
+
+			}
+			}
+	
+		}else
+		{
+			CopyFile(dlg.GetPathName (),m_ProjectDirectory+"background_image.bmp",false);
+			m_ImageX1  = m_NetworkRect.left;
+			m_ImageY1  = m_NetworkRect.bottom;
+			m_ImageX2 = m_NetworkRect.right;
+			m_ImageY2 = m_NetworkRect.top;
+			m_ImageWidth = fabs(m_ImageX2 - m_ImageX1);
+			m_ImageHeight = fabs(m_ImageY2 - m_ImageY1);
+
+		}
+
+}
+			UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnZoneDeletezone()
+{
+
+	m_ZoneMap.erase (this->m_SelectedZoneID );
+	this->m_SelectedZoneID = -1;
+	UpdateAllViews(0);
+
+
+}
+
+
+
+
