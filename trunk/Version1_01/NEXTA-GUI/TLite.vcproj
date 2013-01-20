@@ -393,6 +393,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_BackgroundImageLocation.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_DemandType.cpp"
 				>
 			</File>
@@ -454,6 +458,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_PricingConfiguration.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_RealWorldWidth.cpp"
 				>
 			</File>
 			<File
@@ -949,11 +957,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -977,11 +985,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1009,19 +1017,19 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
 						RelativePath=".\res\toolbar2.bmp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\temp\rowlist\res\toolbar2.bmp"
 						>
 					</File>
 					<File
@@ -1097,6 +1105,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_BackgroundImageLocation.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_DemandType.h"
 				>
 			</File>
@@ -1162,6 +1174,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_PricingConfiguration.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_RealWorldWidth.h"
 				>
 			</File>
 			<File
@@ -1453,6 +1469,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
 		<File
 			RelativePath=".\Dlg_Display_Configuration_Node.htm"
 			DeploymentContent="true"

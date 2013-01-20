@@ -53,6 +53,7 @@ public:
 	bool m_bFeatureInfoInitialized;
 	layer_mode m_iSelectedLayer;
 	std::map<layer_mode, bool> m_bShowLayerMap;
+	bool bLayerInitialized;
 
 	// Overrides
 public:

@@ -29,7 +29,7 @@ public:
 	VEHICLE_X_CLASSIFICATION m_XSelectionNo;
 	VEHICLE_Y_CLASSIFICATION m_YSelectionNo;
 	VEHICLE_CLASSIFICATION_SELECTION m_VehicleSelectionNo;
-	enum { IDD = IDD_NSCHART_VEHICLE_DIALOG };
+	enum { IDD = IDD_DIALOG_Summary };
 
 	void AddChartData();
 

@@ -2,11 +2,11 @@
 #include "afxwin.h"
 #include "TLiteDoc.h"
 #include "TLiteView.h"
-
+#include "BaseDialog.h"
 
 // CDlg_DisplayConfiguration dialog
 
-class CDlg_DisplayConfiguration : public CDialog
+class CDlg_DisplayConfiguration : public CBaseDialog
 {
 	DECLARE_DYNAMIC(CDlg_DisplayConfiguration)
 

@@ -57,6 +57,8 @@ END_MESSAGE_MAP()
 static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
+	ID_INDICATOR_LEFT,
+	ID_SEPARATOR,           // status line indicator
 	ID_INDICATOR_CAPS,
 	ID_INDICATOR_NUM,
 	ID_INDICATOR_SCRL,
@@ -64,7 +66,7 @@ static UINT indicators[] =
 
 
 // CMainFrame construction/destruction
-#define _NUM_OF_GIS_LAYERS  18 
+#define _NUM_OF_GIS_LAYERS  19 
 static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
@@ -85,6 +87,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Vehicle Position"),
 	_T("Transit"),
 	_T("Transit Accessibility"),
+	_T("Background Image")
 
 
 };
@@ -105,6 +108,7 @@ CMainFrame::CMainFrame()
 	m_bShowDataToolBar = true;
 	m_bSynchronizedDisplay = false;
 	m_iSelectedLayer = layer_link;
+	bLayerInitialized = false;
 
 }
 
@@ -158,6 +162,9 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 			TRACE0("Failed to create status bar\n");
 			return -1;      // fail to create
 		}
+
+			m_wndStatusBar.SetPaneInfo(1, ID_INDICATOR_LEFT, SBPS_NORMAL, 300);
+
 
 		if (!m_wndReBar.Create(this) ||
 			!m_wndReBar.AddBar(&m_wndToolBar) ||
@@ -221,7 +228,7 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 
 CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
 
-pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
+pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,150);
 
 	LV_ITEM lvi;
 	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
@@ -249,14 +256,16 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	m_bShowLayerMap[layer_workzone] = true;
 	m_bShowLayerMap[layer_VMS] = true;
 	m_bShowLayerMap[layer_toll] = true;
+	m_bShowLayerMap[layer_background_image] = true;
+
 
 
 	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
 	{
-
 	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
 	}
 
+	bLayerInitialized = true;
 	return 0;
 }
 
@@ -331,7 +340,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 		lvi.iSubItem = 0;
 		lvi.pszText = _gRailLayerLabel[i];
 		pGISLayerList->InsertItem(&lvi);
-		m_bShowLayerMap[(layer_mode)(i)] = false;
+		m_bShowLayerMap[(layer_mode)(i)] = true;
 
 	}
 	pGISLayerList->SetExtendedStyle(LVS_EX_CHECKBOXES);
@@ -346,6 +355,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,100);
 	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
 	}
 
+	bLayerInitialized = true;
 	return 0;
 }
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
@@ -624,19 +634,18 @@ CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLA
 
 	}
 
-	//// detemine the selection status
- //int nItem = 0; //Represents the row number inside CListCtrl
- //     for(nItem =0 ; nItem <  pGISLayerList->GetItemCount(); nItem++)
- //     {
- //        BOOL bChecked =  pGISLayerList->GetCheck(nItem);
+	// detemine the selection status
 
-	//	 layer_mode iSelectedLayer = (layer_mode) nItem;
-	//	 BOOL bChecked = pGISLayerList->GetCheck(nItem); 
+	if(bLayerInitialized)
+	{
+      for(int nItem =0 ; nItem <  pGISLayerList->GetItemCount(); nItem++)
+      {
+		  
+        BOOL bChecked =  ListView_GetCheckState(pGISLayerList->m_hWnd,nItem);
+	 	m_bShowLayerMap[(layer_mode) nItem] = bChecked;
 
-	// 	m_bShowLayerMap[iSelectedLayer] = bChecked;
-
- //     }
-
+      }
+	}
 
 	pGISLayerList->Invalidate (1);
 	UpdateAllViews();

@@ -67,6 +67,7 @@ enum layer_mode
 	layer_vehicle_position,
 	layer_transit,
 	layer_transit_accessibility,
+	layer_background_image,
 	
 };
 
@@ -375,6 +376,10 @@ public: // create from serialization only
 
 	// Attributes
 public:
+
+	CString m_LatLongA;
+	CString m_LatLongB;
+
 
 	std::vector<DTA_demand> m_ImportedDemandVector;
 
@@ -942,7 +947,7 @@ public:
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
-	bool ReadTraceBinFile(LPCTSTR lpszFileName, int date_id);
+
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id);
 	bool ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int date_id);
@@ -973,7 +978,7 @@ public:
 	int FindClassificationNo(DTAVehicle* pVehicle, VEHICLE_X_CLASSIFICATION x_classfication);
 	void GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTION vehicle_selection, VEHICLE_X_CLASSIFICATION x_classfication);
 
-	bool ReadBackgroundImageFile(LPCTSTR lpszFileName);
+	bool ReadBackgroundImageFile(LPCTSTR lpszFileName, bool bAskForInput = false);
 	int m_PathNodeVectorSP[MAX_NODE_SIZE_IN_A_PATH];
 	long m_NodeSizeSP;
 
@@ -988,6 +993,7 @@ public:
 	void ZoomToSelectedNode(int SelectedNodeNumber);
 
 	int m_SelectedNodeID;
+	int m_SelectedZoneID;
 	int m_SelectedVehicleID;
 	string m_SelectedTrainHeader;
 
@@ -1720,6 +1726,7 @@ public:
 	double m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
 	double m_ImageXResolution, m_ImageYResolution;
 	double m_ImageMoveSize;
+	double m_ImageWidthInMile;  // in mile
 
 	// Operations
 public:
@@ -1732,7 +1739,7 @@ public: // subarea
 	std::vector<GDPoint> m_SubareaShapePoints;
 
 	bool EditTrafficAssignmentOptions();
-	void SendTexttoStatusBar(CString str);
+	void SendTexttoStatusBar(CString str,int Index = 0);
 	bool SaveSubareaDemandFile();
 
 	// Overrides
@@ -1853,6 +1860,13 @@ public:
 		
 	}
 	
+	double m_PointA_x,m_PointA_y,m_PointB_x,m_PointB_y;
+	double m_PointA_long,m_PointA_lat,m_PointB_long,m_PointB_lat;
+	bool m_bPointA_Initialized, m_bPointB_Initialized;
+
+	void ResetBackgroundImageCoordinate();
+
+
 	int SelectLink(GDPoint point, double& final_matching_distance);
 	// For demonstration
 	CString m_SampleExcelNetworkFile;
@@ -2082,6 +2096,8 @@ public:
 	afx_msg void OnDemandRegenerateactivitylocations();
 	afx_msg void OnDemandConvert();
 	afx_msg void OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocurrentnetwork();
+	afx_msg void OnImportBackgroundimage();
+	afx_msg void OnZoneDeletezone();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

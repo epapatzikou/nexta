@@ -56,7 +56,7 @@ enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
 
 extern double g_GetPrivateProfileDouble( LPCTSTR section, LPCTSTR key, double def_value, LPCTSTR filename) ;
 extern int g_GetProfileString( LPCTSTR section, LPCTSTR key, LPCTSTR lpdefault, LPTSTR lpReturnedString, DWORD nSize, LPCTSTR filename);
-
+extern HINSTANCE g_OpenDocument(LPCTSTR url, int showcmd);
 // CTLiteApp:
 // See TLite.cpp for the implementation of this class
 //

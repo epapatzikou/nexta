@@ -883,7 +883,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					
 
 					//existing path
-					if(pVehicle->m_bGPSVehicle == false && pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
+					if(pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
 					{
 						
 						m_PathVector[p].date_id = pVehicle->m_DateID ;
@@ -938,7 +938,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					ps_element.m_VehicleVector.push_back(pVehicle);
 
 
-					if(pVehicle->m_bGPSVehicle == false)
+					if(true)
 					{
 						for(int link= 1; link<pVehicle->m_NodeSize; link++)
 						{
@@ -1206,8 +1206,9 @@ void CDlg_VehPathAnalysis::OnLbnDblclkListOd()
 void CDlg_VehPathAnalysis::OnBnClickedExport()
 {
    CString str;
-   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		    "(*.csv)|*.csv||", NULL);
+
+   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
+		    "(*.csv)|*.csv||", NULL,0,false);
    if(dlg.DoModal() == IDOK)
    {
       char fname[_MAX_PATH];
@@ -1283,8 +1284,8 @@ void CDlg_VehPathAnalysis::OnBnClickedFindSingleVehicleId()
 void CDlg_VehPathAnalysis::OnBnClickedExportPathData()
 {
    CString str;
-   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		    "(*.csv)|*.csv||", NULL);
+  CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
+		    "(*.csv)|*.csv||", NULL,0,false);
    if(dlg.DoModal() == IDOK)
    {
       char fname[_MAX_PATH];
@@ -1352,8 +1353,8 @@ bool CDlg_VehPathAnalysis::ExportVehicleDataToCSVFile(char csv_file[_MAX_PATH])
 void CDlg_VehPathAnalysis::OnBnClickedExportVehicleData()
 {
    CString str;
-   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		    "(*.csv)|*.csv||", NULL);
+  CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
+		    "(*.csv)|*.csv||", NULL,0,false);
    if(dlg.DoModal() == IDOK)
    {
       char fname[_MAX_PATH];

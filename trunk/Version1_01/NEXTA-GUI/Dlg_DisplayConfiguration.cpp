@@ -8,10 +8,10 @@
 
 // CDlg_DisplayConfiguration dialog
 
-IMPLEMENT_DYNAMIC(CDlg_DisplayConfiguration, CDialog)
+IMPLEMENT_DYNAMIC(CDlg_DisplayConfiguration, CBaseDialog)
 
 CDlg_DisplayConfiguration::CDlg_DisplayConfiguration(CWnd* pParent /*=NULL*/)
-	: CDialog(CDlg_DisplayConfiguration::IDD, pParent)
+	: CBaseDialog(CDlg_DisplayConfiguration::IDD, pParent)
 {
 	m_ShowNodeTextMode = node_display_none;
 
@@ -93,8 +93,11 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("TMC Code");
 	m_Link_Label.AddString("From ID -> To ID");
 	m_Link_Label.AddString("Speed Limit (mph)");
+	m_Link_Label.AddString("Speed Limit (km/hour)");
 	m_Link_Label.AddString("Length (mile)");
+	m_Link_Label.AddString("Length (km)");
 	m_Link_Label.AddString("Free Flow Travel Time (min)");
+	m_Link_Label.AddString("Free Flow Travel Time (hour)");
 	m_Link_Label.AddString("# of Lanes");
 	m_Link_Label.AddString("Link Capacity Per Hour");
 	m_Link_Label.AddString("Lane Capacity Per Hour");

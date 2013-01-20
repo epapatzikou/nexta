@@ -42,6 +42,7 @@
 #define IDR_MAINFRAME3                  130
 #define IDR_MAINFRAME32                 130
 #define IDD_PLAYERSEEKBAR               131
+#define ID_INDICATOR_LEFT               131
 #define IDC_MOVENETWORK                 132
 #define IDR_MENU1                       133
 #define IDR_MENU_LINK_MOE               136
@@ -106,6 +107,7 @@
 #define IDR_TOOLBARLAYER                191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
 #define IDR_MAINFRAME_RAIL              192
+#define IDD_DIALOG_Summary              192
 #define IDD_VISUALIZATION_CONFIG        193
 #define IDR_VIEW_TOOLBAR_NU             193
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
@@ -142,6 +144,8 @@
 #define IDD_LINEPLOT_DIALOG1            230
 #define IDD_DIALOG_Zone_Property        232
 #define IDD_DIALOG_GIS_Import           233
+#define IDD_DIALOG_Image_World_Width    234
+#define IDD_DIALOG_Image_Location       235
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -416,6 +420,9 @@
 #define IDC_COMBO_MAX_COLUMNS           1171
 #define IDC_STATIC_MESSAGE              1172
 #define IDC_LIST_DEMAND_FORMAT          1173
+#define IDC_BUTTONOK                    1175
+#define IDC_EDIT_LatLongA               1178
+#define IDC_EDIT_LatLongA2              1179
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1053,14 +1060,22 @@
 #define ID_DEMAND_CONVERT               33545
 #define ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK 33546
 #define ID_IMPORT_SINGLEEXCELFILE       33547
+#define ID_IMPORT_BACKGROUNDIMAGE       33548
+#define ID_ZONE_DELETEZONE              33549
+#define ID_LINK_DELETELINK              33550
+#define ID_BACKGROUNDIMAGE_MARKLONG     33551
+#define ID_BACKGROUNDIMAGE_MARKLONG_B   33552
+#define ID_BACKGROUNDIMAGE_MARKLONG_A   33553
+#define ID_BACKGROUNDIMAGE_ADDLAT       33554
+#define ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS 33555
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        234
-#define _APS_NEXT_COMMAND_VALUE         33548
-#define _APS_NEXT_CONTROL_VALUE         1174
+#define _APS_NEXT_RESOURCE_VALUE        236
+#define _APS_NEXT_COMMAND_VALUE         33556
+#define _APS_NEXT_CONTROL_VALUE         1181
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif
