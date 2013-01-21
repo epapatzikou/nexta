@@ -1,4 +1,3 @@
-
 class DTASafetyPredictionModel
 {
 public:
@@ -55,7 +54,7 @@ public:
 		input_spacing_in_feet = 2000;
 		input_aux_lane = 1;
 
-		//  	1/3 * [length_in_miles^1.0*upstream_ADT^0.9212*on_ramp_ADT^0.1209*off_ramp_ADT^0.0445*exp(-8.492 + (513.59/spacing_in_feet) – 300.89*(aux_lane/spacing_in_feet) + 0.1638*input_aux_lane)] 
+		//  	1/3 * [length_in_miles^1.0*upstream_ADT^0.9212*on_ramp_ADT^0.1209*off_ramp_ADT^0.0445*exp(-8.492 + (513.59/spacing_in_feet) ?300.89*(aux_lane/spacing_in_feet) + 0.1638*input_aux_lane)] 
 
 		coeff_length_in_miles = 1.0f;
 		coeff_upstream_ADT = 0.9212f;
@@ -80,7 +79,7 @@ public:
 
 	double EstimateFreewayCrashRatePerYear(double input_upstream_ADT, double input_length_in_miles)
 	{
-		//  	1/3 * [length_in_miles^1.0*upstream_ADT^0.9212*on_ramp_ADT^0.1209*off_ramp_ADT^0.0445*exp(-8.492 + (513.59/spacing_in_feet) – 300.89*(aux_lane/spacing_in_feet) + 0.1638*input_aux_lane)] 
+		//  	1/3 * [length_in_miles^1.0*upstream_ADT^0.9212*on_ramp_ADT^0.1209*off_ramp_ADT^0.0445*exp(-8.492 + (513.59/spacing_in_feet) ?300.89*(aux_lane/spacing_in_feet) + 0.1638*input_aux_lane)] 
 		num_fi_crashes_per_year  = pow(input_length_in_miles,coeff_length_in_miles)*
 			pow(input_upstream_ADT,coeff_upstream_ADT)*
 			pow(input_on_ramp_ADT,coeff_on_ramp_ADT)*

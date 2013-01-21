@@ -547,7 +547,7 @@ void g_ReadInputFiles(int scenario_no)
 			link_type_file<< "link_type,link_type_name,type_code" << endl;
 			link_type_file<< "1,Freeway,f" << endl;
 			link_type_file<< "2,Highway/Expressway,h" << endl;
-			link_type_file<< "3,Principal arterial,a" << endl;
+			link_type_file<< "3,Principal arterial,a" << endl;
 			link_type_file<< "4,Major arterial,a" << endl;
 			link_type_file<< "5,Minor arterial,a" << endl;
 			link_type_file<< "6,Collector,a" << endl;
@@ -3215,7 +3215,7 @@ void g_ReadDTALiteSettings()
 	else
 	{
 		g_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "output_second_by_second_emission_data", 0, g_DTASettingFileName);	
-		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "output_second_by_second_emission_data_percentage", 0.1, g_DTASettingFileName);	
+		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "output_second_by_second_emission_data_rate", 0.1, g_DTASettingFileName);	
 		g_start_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "start_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 		g_end_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "end_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 	}

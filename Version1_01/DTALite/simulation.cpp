@@ -1238,6 +1238,10 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	//else // , spatial queue and Newell's model
 
 
+		if (g_VehicleMap.size() > 0)
+		{
+			g_LastLoadedVehicleID = g_VehicleMap.begin()->first;
+		}
 
 		g_VehicularSimulation(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 
