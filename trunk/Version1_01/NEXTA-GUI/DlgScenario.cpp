@@ -52,7 +52,7 @@ CDlgScenario::CDlgScenario(int idx,CWnd* pParent)
 	}
 	else
 	{
-		m_SelectTab = LINKBASEDTOLL;
+		m_SelectTab = _LINKBASEDTOLL;
 	}
 }
 

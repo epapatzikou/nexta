@@ -66,27 +66,27 @@ static UINT indicators[] =
 
 
 // CMainFrame construction/destruction
-#define _NUM_OF_GIS_LAYERS  19 
+#define _NUM_OF_GIS_LAYERS  20 
 static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 {
 	_T("Node"),
 	_T("Link"),
-	_T("Movement"),
+	_T("Movement/Signal"),
 	_T("Zone"),
-	_T("Connector"),
+	_T("Connector/Activity Location"),
 	_T("Link MOE"),
 	_T("OD Matrix"),
-	_T("Detector"),
+	_T("Sensor"),
 	_T("Subarea"), 
 	_T("Path"), 
 	_T("Workzone"),
 	_T("Crash"),
 	_T("VMS"),
 	_T("Toll"),
-	_T("Ramp Meters"),
-	_T("Vehicle Position"),
+	_T("Ramp Meter"),
+	_T("Vehicle Trajectory"),
 	_T("Transit"),
-	_T("Transit Accessibility"),
+	_T("Grid/Coordinate"),
 	_T("Background Image")
 
 
@@ -177,29 +177,28 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		}
 
 
-		m_MOEToolBar.SetButtonText(0,"Demand");
-		m_MOEToolBar.SetButtonText(1,"Scenario");
-		m_MOEToolBar.SetButtonText(2,"Simulation");
-		m_MOEToolBar.SetButtonText(4,"Network");
-		m_MOEToolBar.SetButtonText(5,"Animation");
-		m_MOEToolBar.SetButtonText(6,"Density");
-		m_MOEToolBar.SetButtonText(7,"Volume");
-		m_MOEToolBar.SetButtonText(8,"Speed");
-		m_MOEToolBar.SetButtonText(9,"Queue");
+		int count = 0;
+		m_MOEToolBar.SetButtonText(count++,"Network");
+		m_MOEToolBar.SetButtonText(count++,"Animation");
+		m_MOEToolBar.SetButtonText(count++,"Density");
+		m_MOEToolBar.SetButtonText(count++,"Volume");
+		m_MOEToolBar.SetButtonText(count++,"Speed");
+		m_MOEToolBar.SetButtonText(count++,"Queue");
 
 
+		count++ ; // separator
 		//m_MOEToolBar.SetButtonText(11,"Radiation");
-		//m_MOEToolBar.SetButtonText(12,"Analysis");
+		//m_MOEToolBar.SetButtonText(12,"Analysisz");
 		//m_MOEToolBar.SetButtonText(13,"Plan");
 
+		m_MOEToolBar.SetButtonText(count++,"Emissions");
+		m_MOEToolBar.SetButtonText(count++,"Safety");
 
-		m_MOEToolBar.SetButtonText(11,"Emissions");
-		m_MOEToolBar.SetButtonText(12,"Safety");
-
-		m_MOEToolBar.SetButtonText(14,"Link");
-		m_MOEToolBar.SetButtonText(15,"Path");
-		m_MOEToolBar.SetButtonText(16,"Vehicle");
-		m_MOEToolBar.SetButtonText(17,"Summary");
+		count++;
+		m_MOEToolBar.SetButtonText(count++,"Link");
+		m_MOEToolBar.SetButtonText(count++,"Path");
+		m_MOEToolBar.SetButtonText(count++,"Vehicle");
+		m_MOEToolBar.SetButtonText(count++,"Summary");
 		
 
 		m_MOEToolBar.SetSizes(CSize(42,38),CSize(16,15));
@@ -228,10 +227,10 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 
 CListCtrl * pGISLayerList = (CListCtrl *)m_GISLayerBar.GetDlgItem(IDC_LIST_GISLAYER);
 
-pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,150);
+pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,170);
 
 	LV_ITEM lvi;
-	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
+	for(int i = 0; i < _NUM_OF_GIS_LAYERS-1; i++)
 	{
 		lvi.mask = LVIF_TEXT;
 		lvi.iItem = i;
@@ -260,7 +259,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,150);
 
 
 
-	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)
+	for(int i = 0; i < _NUM_OF_GIS_LAYERS; i++)  // do not include the last 2 (reseach) layers for now
 	{
 	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
 	}

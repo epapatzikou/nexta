@@ -183,6 +183,7 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_BACKGROUNDIMAGE_ADDLAT, &CTLiteView::OnBackgroundimageAddlat)
 	ON_COMMAND(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnZoneHighlightassociatedacititylocations)
 	ON_UPDATE_COMMAND_UI(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnUpdateZoneHighlightassociatedacititylocations)
+	ON_COMMAND(ID_ZONE_CREATEZONE, &CTLiteView::OnZoneCreatezone)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -662,7 +663,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	GetClientRect(ScreenRect);
 
 	// step 2: draw grids
-	if(m_bShowGrid)
+
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	if(pMainFrame->m_bShowLayerMap[layer_grid] == true)
 	{
 		pDC->SelectObject(&g_GridPen);
 		pDC->SetTextColor(RGB(255,228,181));
@@ -670,6 +674,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		// get the closest power 10 number
 		m_GridResolution = g_FindClosestYResolution(ScreenRect.Width ()/m_Resolution/10.0f);
+
+		if(pDoc->m_bUseMileVsKMFlag==false && pDoc->m_LongLatFlag==false ) //use km
+		{
+		m_GridResolution/=1.60934;
+		}
 
 		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x)-1;
 
@@ -733,7 +742,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		}
 	}
 
-	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	// step 2: select font and color for node drawing, and compute the bandwidth for links
 	CFont node_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
@@ -1010,7 +1018,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if( pMainFrame->m_bShowLayerMap[layer_toll] == true &&  ((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
 
-			if( (*iLink)->m_AdditionalCost>=1)
+			if( (*iLink)->m_AdditionalCost>=1 && pMainFrame->m_bShowLayerMap[layer_path] == true )
 				DrawBitmap(pDC, ScenarioPoint, IDB_LINK_CLOSURE);
 			
 
@@ -1386,7 +1394,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	//draw select path
 
 
-	if(pMainFrame->m_bShowLayerMap[layer_detector] && pDoc->m_PathDisplayList.size() > pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
+	if(pMainFrame->m_bShowLayerMap[layer_path] && pDoc->m_PathDisplayList.size() > pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
 	{
 
 		pDC->SelectObject(&g_PenSelectPath);
@@ -2256,9 +2264,13 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 	GDPoint  gdpt = SPtoNP(pt);
 	str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
-	GetDocument()->SendTexttoStatusBar(str);
+	pDoc->SendTexttoStatusBar(str);
 
-	str.Format("width: %.1f mi, %.1f km; height: %.1f mi, %.1f km", width, width/1.60934, height, height/1.60934);
+	if(pDoc->m_bUseMileVsKMFlag)
+		str.Format("width: %.1f mi; height: %.1f mi",  width, height);
+	else
+		str.Format("width: %.1f km; height: %.1f km",  width/1.60934, height/1.60934);
+
 	pDoc->SendTexttoStatusBar(str,1);
 	Invalidate();
 
@@ -2343,6 +2355,13 @@ int CTLiteView::FindClosestZone(CPoint point, float Min_distance)
 }
 void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 {
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		
+	//speical condition first
+
+	
+
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(m_ToolMode == move_tool)
@@ -2355,7 +2374,7 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 
 
 
-	if(m_ToolMode == select_feature_tool || m_ToolMode == select_link_tool)
+	if(m_ToolMode == select_feature_tool || m_ToolMode == select_link_tool  )
 	{
 		m_last_cpoint = point;
 		m_last_left_down_point  = point;
@@ -2609,6 +2628,12 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 				break;
 			case layer_link:
 			case layer_link_MOE:
+			case layer_detector:
+			case layer_workzone:
+			case layer_VMS:
+			case layer_toll:
+			case layer_path:
+
 
 				pDoc->m_SelectedNodeID = -1;
 				OnClickLink(nFlags, point);
@@ -2914,7 +2939,11 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 	str.Format("%.5f,%.5f", gdpt.x, gdpt.y);
 	GetDocument()->SendTexttoStatusBar(str);
 
-	str.Format("width: %.1f mi, %.1f km; height: %.1f mi, %.1f km", width, width/1.60934, height, height/1.60934);
+	if(pDoc->m_bUseMileVsKMFlag)
+		str.Format("width: %.1f mi; height: %.1f mi",  width, height);
+	else
+		str.Format("width: %.1f km; height: %.1f km",  width/1.60934, height/1.60934);
+
 	pDoc->SendTexttoStatusBar(str,1);
 	CView::OnMouseMove(nFlags, point);
 }
@@ -3006,71 +3035,54 @@ void CTLiteView::FindAccessibleTripIDWithCurrentMousePoint()
 void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 {
 
+	Invalidate();
+
 	CPoint MenuPoint = point;
 	CTLiteDoc* pDoc = GetDocument();
 	ScreenToClient(&point);
 
 	m_CurrentMousePoint = point;
 
-	//	CPoint select_pt = NPtoSP (pDoc->m_NodeIDMap[m_SelectedNodeID]->pt);
-
-	//	CSize size = point-select_pt;
-	//	if(pow((size.cx*size.cx + size.cy*size.cy),0.5) < m_NodeSize*2)
-	{
-		// In our client area - load the context menu
-		CMenu cm;
-		cm.LoadMenu(IDR_MENU1);
-
 		CClientDC dc(this);
-		// Put it up
+			
+		
 			CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		
+			//speical condition first
 
 		
-		if(pMainFrame-> m_iSelectedLayer == layer_background_image)
+		if(pMainFrame-> m_iSelectedLayer == layer_zone)
 		{
-			
+			CMenu cm;
+			cm.LoadMenu(IDR_MENU1);
 
-		cm.GetSubMenu(4)->TrackPopupMenu(
-		TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-		MenuPoint.x, MenuPoint.y, this);
-
-
-
-
-		}
-		else if(pMainFrame-> m_iSelectedLayer == layer_zone)
-		{
 			if(pDoc->m_SubareaShapePoints .size()>=3)
 			{
-				cm.GetSubMenu(2)->TrackPopupMenu(
+				cm.GetSubMenu(layer_subarea)->TrackPopupMenu(
 				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, this);
+				MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
 			}else
 			{
-				cm.GetSubMenu(3)->TrackPopupMenu(
+				cm.GetSubMenu(layer_zone)->TrackPopupMenu(
 				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, this);
+				MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
 			
 			}
+			
+	
+		}else
+		{
+			CMenu cm;
+			cm.LoadMenu(IDR_MENU1);
+	
+			int layer_no = (int)(pMainFrame-> m_iSelectedLayer);
+			cm.GetSubMenu(layer_no)->TrackPopupMenu(
+				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+				MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
+
+		}
 
 	
-		
-		}else if ((pMainFrame->m_iSelectedLayer == layer_link || pMainFrame->m_iSelectedLayer == layer_link_MOE ) &&
-			pDoc->m_SelectedLinkNo>=0)  // link is selected  and not select node mode
-		{
-			// Get point in logical coordinates
-			cm.GetSubMenu(1)->TrackPopupMenu(
-				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, this);
-		}
-		else
-		{
-			// Get point in logical coordinates
-			cm.GetSubMenu(0)->TrackPopupMenu(
-				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, this);
-		}
-	}
 }
 
 void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
@@ -3573,8 +3585,16 @@ void CTLiteView::OnLinkEditlink()
 		dlg.StreetName  = pLink->m_Name.c_str () ;
 		dlg.FromNode = pLink->m_FromNodeNumber ;
 		dlg.ToNode = pLink->m_ToNodeNumber ;
+
+		if(pDoc->m_bUseMileVsKMFlag)
+		{
 		dlg.LinkLength = pLink->m_Length ;
 		dlg.SpeedLimit = pLink->m_SpeedLimit ;
+		}else
+		{ // km
+		dlg.LinkLength = pLink->m_Length*1.60934 ;
+		dlg.SpeedLimit = pLink->m_SpeedLimit*1.60934 ;
+		}
 		dlg.FreeFlowTravelTime = pLink->m_FreeFlowTravelTime ;
 		dlg.LaneCapacity  = pLink->m_LaneCapacity ;
 		dlg.nLane = pLink->m_NumberOfLanes ;
@@ -3598,8 +3618,18 @@ void CTLiteView::OnLinkEditlink()
 
 		if(dlg.DoModal() == IDOK)
 		{
+			
+			if(pDoc->m_bUseMileVsKMFlag)
+			{
 			pLink->m_Length = dlg.LinkLength;
 			pLink->m_SpeedLimit = dlg.SpeedLimit;
+			}else
+			{
+			pLink->m_Length = dlg.LinkLength/1.60934;
+			pLink->m_SpeedLimit = dlg.SpeedLimit/1.60934;
+			}
+
+
 			pLink->m_FreeFlowTravelTime = pLink->m_Length /pLink->m_SpeedLimit*60.0f; 
 
 			CT2CA pszConvertedAnsiString (dlg.StreetName);
@@ -5942,4 +5972,11 @@ void CTLiteView::OnZoneHighlightassociatedacititylocations()
 void CTLiteView::OnUpdateZoneHighlightassociatedacititylocations(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bHighlightActivityLocation);
+}
+
+void CTLiteView::OnZoneCreatezone()
+{
+		OnEditCreatesubarea();
+		Invalidate();
+
 }

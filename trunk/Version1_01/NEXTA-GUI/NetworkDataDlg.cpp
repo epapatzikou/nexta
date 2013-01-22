@@ -3,13 +3,14 @@
 
 #include "stdafx.h"
 #include "TLite.h"
+#include "TLiteDoc.h"
 #include "NetworkDataDlg.h"
 #include "CSVParser.h"
 #include <string>
 using std::vector;
 using std::string;
 
-enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_SENSOR_DATA, _MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+
 static LPTSTR NetworkData_Element[MAX_NUM_OF_NETWORK_DATA_FILES] = {"Node", "Link", "Zone", "Activity Location", "Sensor", "Movement","Calibration Data"};
 static LPTSTR NetworkData_FileName[MAX_NUM_OF_NETWORK_DATA_FILES] = {"input_node","input_link", "input_zone", "input_activity_location", "input_sensor",  "AMS_movement","output_validation_results"};
 
