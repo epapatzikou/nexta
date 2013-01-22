@@ -102,10 +102,15 @@ BOOL CDlgLinkProperties::OnInitDialog()
 		}
 	}
 
-
+	if(m_pDoc->m_bUseMileVsKMFlag)
+	{
 		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(Miles)");
-		
 		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(mph)");
+	}else
+	{
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(km)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(km/h)");
+	}
 
 		EnableDataBasedOnLinkType();
 

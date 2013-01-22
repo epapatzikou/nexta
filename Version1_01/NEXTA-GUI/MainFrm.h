@@ -29,6 +29,9 @@
 #include "PlayerSeekBar.h"
 #include "TLiteDoc.h"
 
+// Nathan Lewis
+//http://www.codeproject.com/Articles/1118/Adding-Text-to-a-Docking-Toolbar
+
 class CFeatureInfo
 {
 public:

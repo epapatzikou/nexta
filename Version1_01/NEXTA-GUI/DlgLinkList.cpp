@@ -145,9 +145,19 @@ void CDlgLinkList::ReloadData()
 	m_Column_names.push_back ("Link Name");
 	m_Column_names.push_back ("From Node");
 	m_Column_names.push_back ("To Node");
-	m_Column_names.push_back ("Length (ml)");
+
+	if(m_pDoc->m_bUseMileVsKMFlag )
+		m_Column_names.push_back ("Length (mi)");
+	else
+		m_Column_names.push_back ("Length (km)");
+
 	m_Column_names.push_back ("NumLanes");
-	m_Column_names.push_back ("Speed Limit");
+
+	if(m_pDoc->m_bUseMileVsKMFlag )
+		m_Column_names.push_back ("Speed Limit (mph)");
+	else
+		m_Column_names.push_back ("Speed Limit (km/h)");
+
 	m_Column_names.push_back ("Lane Capacity");
 	m_Column_names.push_back ("Effective Green");
 	m_Column_names.push_back ("Link Type");
@@ -284,13 +294,21 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%d",pLink1->m_ToNodeNumber);
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%5.2f",pLink1->m_Length);
+		if(m_pDoc->m_bUseMileVsKMFlag )
+			sprintf_s(text, "%5.2f",pLink1->m_Length);
+		else
+			sprintf_s(text, "%5.2f",pLink1->m_Length*1.60934);
+
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		sprintf_s(text, "%d",pLink1->m_NumberOfLanes );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%4.0f",pLink1->m_SpeedLimit  );
+		if(m_pDoc->m_bUseMileVsKMFlag )
+			sprintf_s(text, "%4.0f",pLink1->m_SpeedLimit  );
+		else
+			sprintf_s(text, "%4.0f",pLink1->m_SpeedLimit*1.60934  );
+
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		sprintf_s(text, "%4.0f",pLink1->m_LaneCapacity  );
@@ -315,7 +333,11 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%c",pLink1->m_LevelOfService      );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%5.2f",pLink1->m_avg_simulated_speed    );
+			if(m_pDoc->m_bUseMileVsKMFlag )
+				sprintf_s(text, "%5.2f",pLink1->m_avg_simulated_speed    );
+			else
+				sprintf_s(text, "%5.2f",pLink1->m_avg_simulated_speed*1.60934   );
+
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 		float max_volume , avg_volume, avg_lane_volume;
@@ -394,7 +416,11 @@ void CDlgLinkList::ReloadData()
 				sprintf_s(text, "%.0f",pLink2->m_simulated_AADT        );
 				m_ListCtrl.SetItemText(Index,column_index++,text);
 
+		if(m_pDoc->m_bUseMileVsKMFlag )
 				sprintf_s(text, "%5.2f",pLink2->m_avg_simulated_speed        );
+		else
+				sprintf_s(text, "%5.2f",pLink2->m_avg_simulated_speed*1.60934        );
+
 				m_ListCtrl.SetItemText(Index,column_index++,text);
 
 				sprintf_s(text, "%.4f",pLink2->m_number_of_all_crashes        );

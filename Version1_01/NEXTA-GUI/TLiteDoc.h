@@ -66,11 +66,11 @@ enum layer_mode
 	layer_ramp,
 	layer_vehicle_position,
 	layer_transit,
-	layer_transit_accessibility,
+	layer_grid,
 	layer_background_image,
-	
+	layer_transit_accessibility,
 };
-
+enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_SENSOR_DATA, _MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
@@ -323,7 +323,6 @@ public:
 	float TotalCostVector[_TOTAL_NUMBER_OF_PROJECTS];
 	float TotalEmissionsVector[_TOTAL_NUMBER_OF_PROJECTS];
 
-
 	CVehicleEmission emissiondata;
 
 };
@@ -377,6 +376,7 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	bool m_bUseMileVsKMFlag;
 	CString m_LatLongA;
 	CString m_LatLongB;
 
@@ -1867,6 +1867,7 @@ public:
 	void ResetBackgroundImageCoordinate();
 
 
+	void ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName,  _GIS_DATA_TYPE GIS_data_type );
 	int SelectLink(GDPoint point, double& final_matching_distance);
 	// For demonstration
 	CString m_SampleExcelNetworkFile;
@@ -2098,6 +2099,26 @@ public:
 	afx_msg void OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocurrentnetwork();
 	afx_msg void OnImportBackgroundimage();
 	afx_msg void OnZoneDeletezone();
+	afx_msg void OnZoneViewzonedata();
+	afx_msg void OnNodeViewnodedata();
+	afx_msg void OnLinkViewlinkdata();
+	afx_msg void OnMovementViewmovementdatatable();
+	afx_msg void OnOdmatrixOddemandmatrix();
+	afx_msg void OnWorkzoneViewworkzonedata();
+	afx_msg void OnVmsViewvmsdatatable();
+	afx_msg void OnTollViewtolldatatable();
+	afx_msg void OnDetectorViewsensordatatable();
+	afx_msg void OnConnectorViewactivitylocationdatatable();
+	afx_msg void OnDetectorViewcalibration();
+	afx_msg void OnLinkmoeExportlinkmoedatatoshapefile();
+	afx_msg void OnNodeExportnodelayertogisshapefile();
+	afx_msg void OnZoneExportzonelayertogisshapefile();
+	afx_msg void OnGridUsemileasunitoflength();
+	afx_msg void OnUpdateGridUsemileasunitoflength(CCmdUI *pCmdUI);
+	afx_msg void OnGridUsekmasunitoflength();
+	afx_msg void OnUpdateGridUsekmasunitoflength(CCmdUI *pCmdUI);
+	afx_msg void OnGridUselong();
+	afx_msg void OnUpdateGridUselong(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

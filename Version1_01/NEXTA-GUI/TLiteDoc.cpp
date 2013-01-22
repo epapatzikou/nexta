@@ -359,6 +359,26 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK, &CTLiteDoc::OnTrafficcontroltoolsTransfersignaldatafromreferencenetworktocurrentnetwork)
 	ON_COMMAND(ID_IMPORT_BACKGROUNDIMAGE, &CTLiteDoc::OnImportBackgroundimage)
 	ON_COMMAND(ID_ZONE_DELETEZONE, &CTLiteDoc::OnZoneDeletezone)
+	ON_COMMAND(ID_ZONE_VIEWZONEDATA, &CTLiteDoc::OnZoneViewzonedata)
+	ON_COMMAND(ID_NODE_VIEWNODEDATA, &CTLiteDoc::OnNodeViewnodedata)
+	ON_COMMAND(ID_LINK_VIEWLINKDATA, &CTLiteDoc::OnLinkViewlinkdata)
+	ON_COMMAND(ID_MOVEMENT_VIEWMOVEMENTDATATABLE, &CTLiteDoc::OnMovementViewmovementdatatable)
+	ON_COMMAND(ID_ODMATRIX_ODDEMANDMATRIX, &CTLiteDoc::OnOdmatrixOddemandmatrix)
+	ON_COMMAND(ID_WORKZONE_VIEWWORKZONEDATA, &CTLiteDoc::OnWorkzoneViewworkzonedata)
+	ON_COMMAND(ID_VMS_VIEWVMSDATATABLE, &CTLiteDoc::OnVmsViewvmsdatatable)
+	ON_COMMAND(ID_TOLL_VIEWTOLLDATATABLE, &CTLiteDoc::OnTollViewtolldatatable)
+	ON_COMMAND(ID_DETECTOR_VIEWSENSORDATATABLE, &CTLiteDoc::OnDetectorViewsensordatatable)
+	ON_COMMAND(ID_CONNECTOR_VIEWACTIVITYLOCATIONDATATABLE, &CTLiteDoc::OnConnectorViewactivitylocationdatatable)
+	ON_COMMAND(ID_DETECTOR_VIEWCALIBRATION, &CTLiteDoc::OnDetectorViewcalibration)
+	ON_COMMAND(ID_LINKMOE_EXPORTLINKMOEDATATOSHAPEFILE, &CTLiteDoc::OnLinkmoeExportlinkmoedatatoshapefile)
+	ON_COMMAND(ID_NODE_EXPORTNODELAYERTOGISSHAPEFILE, &CTLiteDoc::OnNodeExportnodelayertogisshapefile)
+	ON_COMMAND(ID_ZONE_EXPORTZONELAYERTOGISSHAPEFILE, &CTLiteDoc::OnZoneExportzonelayertogisshapefile)
+	ON_COMMAND(ID_GRID_USEMILEASUNITOFLENGTH, &CTLiteDoc::OnGridUsemileasunitoflength)
+	ON_UPDATE_COMMAND_UI(ID_GRID_USEMILEASUNITOFLENGTH, &CTLiteDoc::OnUpdateGridUsemileasunitoflength)
+	ON_COMMAND(ID_GRID_USEKMASUNITOFLENGTH, &CTLiteDoc::OnGridUsekmasunitoflength)
+	ON_UPDATE_COMMAND_UI(ID_GRID_USEKMASUNITOFLENGTH, &CTLiteDoc::OnUpdateGridUsekmasunitoflength)
+	ON_COMMAND(ID_GRID_USELONG, &CTLiteDoc::OnGridUselong)
+	ON_UPDATE_COMMAND_UI(ID_GRID_USELONG, &CTLiteDoc::OnUpdateGridUselong)
 	END_MESSAGE_MAP()
 
 
@@ -366,6 +386,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+
+	m_bUseMileVsKMFlag = true;
 	m_ImageWidthInMile = 1;
 	m_PointA_x = m_PointA_y = m_PointB_x = m_PointB_y = 0;
 	m_PointA_long = m_PointA_lat = m_PointB_long = m_PointB_lat= 0;
@@ -1254,6 +1276,8 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	*/
 
 	m_LongLatFlag = (bool)(g_GetPrivateProfileDouble("coordinate_info", "long_lat_flag", 1, ProjectFileName));
+
+	m_bUseMileVsKMFlag = (bool)(g_GetPrivateProfileDouble("coordinate_info", "mile_as_unit_of_length", 1, ProjectFileName));
 
 	ReadBackgroundImageFile(ProjectFileName);
 
@@ -4059,7 +4083,17 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 	sprintf_s(lpbuffer,"%f",m_NodeDisplaySize);
 
 	WritePrivateProfileString("GUI", "node_display_size",lpbuffer,lpszPathName);
-	WritePrivateProfileString("Version", "1.0",lpbuffer,lpszPathName);
+	
+	if(m_bUseMileVsKMFlag==true)
+		WritePrivateProfileString("coordinate_info", "mile_as_unit_of_length","1",lpszPathName);
+	else  // use km
+		WritePrivateProfileString("coordinate_info", "mile_as_unit_of_length","0",lpszPathName);
+
+	if(m_LongLatFlag==true)
+		WritePrivateProfileString("coordinate_info", "long_lat_flag","1",lpszPathName);
+	else  // use km
+		WritePrivateProfileString("coordinate_info", "long_lat_flag","0",lpszPathName);
+	
 
 	fopen_s(&st,directory+"input_node_control_type.csv","w");
 	if(st!=NULL)
@@ -6976,7 +7010,7 @@ void CTLiteDoc::OnToolsPerformscheduling()
 
 void CTLiteDoc::ResetBackgroundImageCoordinate()
 {
-
+			m_LongLatFlag = true;
 			float m_XScale = 1;
 			float m_YScale = 1;
 
@@ -7075,8 +7109,8 @@ void CTLiteDoc::ResetBackgroundImageCoordinate()
 		pt1.x = m_ImageX1;
 		pt1.y = m_ImageY1;
 
-		pt1.x = m_ImageX2;
-		pt1.y = m_ImageY1;
+		pt2.x = m_ImageX2;
+		pt2.y = m_ImageY2;
 
 		// update image width in miles
 		m_ImageWidthInMile = max(m_ImageWidthInMile,g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1,pt2));
@@ -7091,6 +7125,7 @@ void CTLiteDoc::ResetBackgroundImageCoordinate()
 
 void CTLiteDoc::OnFileChangecoordinatestolong()
 {
+	m_LongLatFlag = true;
 	CDlgNetworkAlignment  dlg;
 	if(dlg.DoModal() ==IDOK)
 	{
@@ -7188,6 +7223,7 @@ void CTLiteDoc::OnFileChangecoordinatestolong()
 			str_result.Format ("The coordinates of %d nodes, %d links and %d zones have been adjusted to long/lat format.\nPleaes save the network to confirm the change.\nYou can use NEXTA_32.exe ->menu->Tools->GIS tools->Export GIS shape files to check the changed network on Google Maps",m_NodeSet.size(),m_LinkSet.size(),m_ZoneMap.size());
 			AfxMessageBox(str_result, MB_ICONINFORMATION);
 		}
+
 
 		UpdateAllViews(0);
 	}
@@ -8127,7 +8163,7 @@ void CTLiteDoc::OnLinkAddIncident()
 
 		WriteIncidentScenarioData();
 
-		CDlgScenario dlg(INCIDENT);
+		CDlgScenario dlg(_INCIDENT);
 		dlg.m_pDoc = this;
 
 		dlg.DoModal();
@@ -8166,7 +8202,7 @@ void CTLiteDoc::OnLinkAddWorkzone()
 
 		WriteWorkZoneScenarioData();
 
-		CDlgScenario dlg(WORKZONE);
+		CDlgScenario dlg(_WORKZONE);
 		dlg.m_pDoc = this;
 
 		dlg.DoModal();
@@ -8202,7 +8238,7 @@ void CTLiteDoc::OnLinkAddvms()
 
 		WriteVMSScenarioData();
 
-		CDlgScenario dlg(DYNMSGSIGN);
+		CDlgScenario dlg(_DYNMSGSIGN);
 		dlg.m_pDoc = this;
 
 		dlg.DoModal();
@@ -13405,5 +13441,550 @@ void CTLiteDoc::OnZoneDeletezone()
 }
 
 
+
+
+
+void CTLiteDoc::OnZoneViewzonedata()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project has not been loaded.");
+		return;
+	}
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _ZONE_DATA; // _ZONE_DATA
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnNodeViewnodedata()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project has not been loaded.");
+		return;
+	}
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _NODE_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnLinkViewlinkdata()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project has not been loaded.");
+		return;
+	}
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _LINK_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnMovementViewmovementdatatable()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project has not been loaded.");
+		return;
+	}
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _MOVEMENT_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnOdmatrixOddemandmatrix()
+{
+	// TODO: Add your command handler code here
+}
+
+void CTLiteDoc::OnWorkzoneViewworkzonedata()
+{
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.m_SelectTab = _WORKZONE;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnVmsViewvmsdatatable()
+{
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.m_SelectTab = _DYNMSGSIGN;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnTollViewtolldatatable()
+{
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.m_SelectTab = _LINKBASEDTOLL;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnDetectorViewsensordatatable()
+{
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _SENSOR_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnConnectorViewactivitylocationdatatable()
+{
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _ACTIVITY_LOCATION_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnDetectorViewcalibration()
+{
+	CNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _CALIBRATION_RESULT_DATA; 
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnLinkmoeExportlinkmoedatatoshapefile()
+{
+	ExportToGISFile(m_ProjectDirectory + "output_LinkMOE.csv", m_ProjectDirectory + "output_LinkMOE.shp", GIS_Line_Type);
+
+}
+
+void CTLiteDoc::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, _GIS_DATA_TYPE GIS_data_type)
+{
+
+#ifndef _WIN64
+
+	CWaitCursor wait;
+	CString GISTypeString = "ESRI Shapefile";
+	CString ShapeFileName;
+	
+	ShapeFileName.Format("%s",lpszShapeFileName);
+
+CString ShapeFileName_WithoutExtension = ShapeFileName.Left(ShapeFileName.ReverseFind('.') + 1);
+
+	DeleteFile(ShapeFileName_WithoutExtension+"shp");  // delete shape file first
+	DeleteFile(ShapeFileName_WithoutExtension+"dbf");  // delete shape file first
+	DeleteFile(ShapeFileName_WithoutExtension+"shx");  // delete shape file first
+
+	CCSVParser parser;
+	int i= 0;
+
+	CString message_str;
+
+	// open csv file
+	if (parser.OpenCSVFile(lpszCSVFileName))
+	{
+
+		CString message_str;
+
+		OGRSFDriver *poDriver;
+
+		OGRRegisterAll();
+
+		poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(GISTypeString );
+		if( poDriver == NULL )
+		{
+			message_str.Format ( "%s driver not available.", GISTypeString );
+			AfxMessageBox(message_str);
+			return;
+		}
+
+		OGRDataSource *poDS;
+
+		poDS = poDriver->CreateDataSource(lpszShapeFileName, NULL );
+		if( poDS == NULL )
+		{
+			message_str.Format ( "Creation of GIS output file %s failed.\nPlease do not overwrite the exiting file and please select a new file name.", 
+				lpszShapeFileName );
+			AfxMessageBox(message_str);
+			return;
+		}
+
+		///// export to link layer
+
+		// link layer 
+
+		OGRLayer *poLayer;
+		poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
+		if( poLayer == NULL )
+		{
+			AfxMessageBox ("link Layer creation failed");
+			return;
+		}
+
+
+
+		vector<string> HeaderVector = parser.GetHeaderVector();
+
+		std::vector <CString> LongFieldVector;
+		for(unsigned int i = 0; i < HeaderVector.size(); i++)
+		{
+			if(HeaderVector[i].find ("geometry") !=  string::npos||  HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
+			{
+				OGRFieldDefn oField (HeaderVector[i].c_str (), OFTString);
+
+				CString str;  
+				if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+				{ 
+					str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+					AfxMessageBox(str);
+					return; 
+
+				}
+			}else
+			{
+				CString field_string  = HeaderVector[i].c_str ();
+
+				OGRFieldDefn oField (field_string, OFTReal);
+
+				CString str;  
+				if( poLayer->CreateField( &oField ) != OGRERR_NONE ) 
+				{ 
+					str.Format("Creating field %s failed", oField.GetNameRef()); 
+
+					AfxMessageBox (str);
+					return; 
+				}
+
+			}
+
+			if(HeaderVector[i].size()>=11)
+			{
+				LongFieldVector.push_back (HeaderVector[i].c_str ());
+			}
+
+		}
+
+
+		//if(LongFieldVector.size() >=1)
+		//{
+		//	message_str.Format("Warning: Arc GIS file only supports field names with not more than 10 characters.\nThe following fields have long field names. "); 
+		//	m_MessageList.AddString (message_str);
+		//	for(unsigned l = 0; l< LongFieldVector.size(); l++)
+		//	{
+		//		message_str.Format ("%s",LongFieldVector[l]);
+		//		m_MessageList.AddString (message_str);
+
+
+		//	}
+		//}
+
+		int count = 0 ;
+		while(parser.ReadRecord())
+		{
+			//create feature
+			OGRFeature *poFeature;
+			poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+
+			//step 1: write all fields except geometry
+			for(unsigned int i = 0; i < HeaderVector.size(); i++)
+			{
+				if(HeaderVector[i]!="geometry")
+				{
+					if(HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
+					{
+
+						std::string str_value;
+
+						parser.GetValueByFieldName(HeaderVector[i],str_value);
+
+						//							TRACE("field: %s, value = %s\n",HeaderVector[i].c_str (),str_value.c_str ());
+						poFeature->SetField(i,str_value.c_str ());
+					}else
+					{
+						double value = 0;
+
+						parser.GetValueByFieldName(HeaderVector[i],value);
+
+						//							TRACE("field: %s, value = %f\n",HeaderVector[i].c_str (),value);
+
+						CString field_name = HeaderVector[i].c_str ();
+						poFeature->SetField(i,value);
+
+
+
+					}
+
+				}
+			}
+
+			string geo_string;
+			std::vector<CCoordinate> CoordinateVector;
+			if(parser.GetValueByFieldName("geometry",geo_string))
+			{
+				// overwrite when the field "geometry" exists
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+
+				if( GIS_data_type == GIS_Point_Type && CoordinateVector.size ()==1)
+				{
+					OGRPoint pt;
+					pt.setX( CoordinateVector[0].X );
+					pt.setY( CoordinateVector[0].Y);
+					poFeature->SetGeometry( &pt ); 
+
+				}
+
+
+
+				if( GIS_data_type == GIS_Line_Type)
+				{
+
+
+					OGRLineString line;
+					for(unsigned int si = 0; si< CoordinateVector.size(); si++)
+					{
+						line.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y);
+					}
+
+					poFeature->SetGeometry( &line ); 
+				}
+
+
+				if( GIS_data_type == GIS_Polygon_Type)
+				{
+
+					OGRPolygon polygon;
+					OGRLinearRing  ring;
+
+					for(unsigned int si = 0; si<  CoordinateVector.size(); si++)
+					{
+						ring.addPoint (CoordinateVector[si].X , CoordinateVector[si].Y,1);
+					}
+
+					polygon.addRing(&ring);
+
+					poFeature->SetGeometry( &polygon ); 
+
+				}
+
+
+			} else
+			{ // no geometry field
+
+
+				/// create geometry data from GIS_data_type == GIS_Point_Type
+
+				if( GIS_data_type == GIS_Point_Type )
+				{
+
+					double x, y;
+					if(parser.GetValueByFieldName("x",x) && parser.GetValueByFieldName("y",y) )
+					{
+						OGRPoint pt;
+						pt.setX( x );
+						pt.setY( y);
+						poFeature->SetGeometry( &pt ); 
+
+					}else
+					{
+						AfxMessageBox("Pleaes prepare fields x and y in the csv file in order to create a node GIS layer.", MB_ICONINFORMATION);
+						return;
+
+					}
+
+				}
+
+				///create geometry
+
+				if( GIS_data_type == GIS_Line_Type)
+				{
+
+					int number_of_shape_points = 0;
+					if(parser.GetValueByFieldName("number_of_shape_points", number_of_shape_points))
+					{
+
+						if(number_of_shape_points>=2)
+						{
+
+							OGRLineString line;
+
+							for(int s= 1; s<= number_of_shape_points; s++)
+							{
+								CString str_x, str_y;
+								str_x.Format ("x%d",s);
+								str_y.Format ("y%d",s);
+								double x = 0;
+								double y = 0;
+
+								string string_x, string_y;
+								string_x  = CString2StdString (str_x);
+								string_y  = CString2StdString (str_y);
+
+								if(parser.GetValueByFieldName(string_x, x) && parser.GetValueByFieldName(string_y, y))
+								{
+									line.addPoint(x,y);
+								}else
+								{
+									AfxMessageBox("Pleaes prepare fields x1,y1,x2,y2,...,xn,yn in the csv file in order to create a link GIS layer.", MB_ICONINFORMATION);
+
+									return; 
+								}
+
+
+							}
+							poFeature->SetGeometry( &line ); 
+
+						}
+
+					}else
+					{ 
+						AfxMessageBox("Pleaes prepare fields number_of_shape_points, x1,y1,x2,y2,...,xn,yn in the csv file in order to create a link GIS layer.", MB_ICONINFORMATION);
+						return;
+					}
+
+
+				}
+
+				// 
+
+
+				if( GIS_data_type == GIS_Polygon_Type)
+				{
+
+					OGRPolygon polygon;
+					OGRLinearRing  ring;
+
+					int number_of_shape_points = 0;
+					if(parser.GetValueByFieldName("number_of_shape_points", number_of_shape_points))
+					{
+
+						if(number_of_shape_points>=2)
+						{
+
+							OGRLineString line;
+
+							for(int s= 0; s< number_of_shape_points; s++)
+							{
+								CString str_x, str_y;
+								str_x.Format ("x%d",str_x);
+								str_y.Format ("y%d",str_y);
+								double x = 0;
+								double y = 0;
+
+								string string_x, string_y;
+								string_x  = CString2StdString (str_x);
+								string_y  = CString2StdString (str_y);
+
+								if(parser.GetValueByFieldName(string_x, x) && parser.GetValueByFieldName(string_y, y))
+								{
+									ring.addPoint (x,y,1);
+								}else
+								{
+									AfxMessageBox("Pleaes prepare fields x1,y1,x2,y2,...,xn,yn in the csv file in order to create a zone GIS layer.", MB_ICONINFORMATION);
+
+									return; 
+								}
+
+							}
+							polygon.addRing(&ring);
+
+							poFeature->SetGeometry( &polygon ); 
+
+						}
+
+
+					}
+
+
+				}
+
+			}
+
+
+			if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+			{
+				AfxMessageBox("Failed to create feature in shapefile.\n");
+				return;
+			}  
+
+			OGRFeature::DestroyFeature( poFeature );
+
+			count++;
+		}
+
+		//message_str.Format ("%d records have been created.",count);
+		//m_MessageList.AddString (message_str);
+
+
+		OGRDataSource::DestroyDataSource( poDS );
+
+		CString ShapeFile = lpszShapeFileName;
+		CString ShapeFileFolder = ShapeFile.Left(ShapeFile.ReverseFind('\\') + 1);
+
+
+		CString OutputFile;
+		OutputFile.Format("Shape file %s has been generated with %d records.",lpszShapeFileName,count);
+		if(AfxMessageBox(OutputFile,MB_ICONINFORMATION)==IDOK)
+		{
+			ShellExecute( NULL,  "explore", ShapeFileFolder, NULL,  NULL, SW_SHOWNORMAL );
+	
+		}
+	CalculateDrawingRectangle();
+	m_bFitNetworkInitialized  = false;
+	UpdateAllViews(0);
+
+	}
+#else
+	AfxMessageBox("NEXTA 64-bit version does not support shape file exporting function. Please use NEXTA_32.exe ");
+#endif
+
+}
+
+
+void CTLiteDoc::OnNodeExportnodelayertogisshapefile()
+{
+	ExportToGISFile(m_ProjectDirectory + "input_node.csv", m_ProjectDirectory + "input_node.shp", GIS_Point_Type);
+
+	//m_UnitFeet = 1;  // default value
+	//m_NodeDisplaySize = 50;
+
+}
+
+void CTLiteDoc::OnZoneExportzonelayertogisshapefile()
+{
+	ExportToGISFile(m_ProjectDirectory + "input_zone.csv", m_ProjectDirectory + "input_zone.shp", GIS_Polygon_Type);
+}
+
+void CTLiteDoc::OnGridUsemileasunitoflength()
+{
+	m_bUseMileVsKMFlag = true;
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnUpdateGridUsemileasunitoflength(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bUseMileVsKMFlag == true);
+}
+
+void CTLiteDoc::OnGridUsekmasunitoflength()
+{
+	m_bUseMileVsKMFlag = false;
+	UpdateAllViews(0);
+
+}
+
+void CTLiteDoc::OnUpdateGridUsekmasunitoflength(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bUseMileVsKMFlag == false);
+}
+
+void CTLiteDoc::OnGridUselong()
+{
+	m_LongLatFlag = !m_LongLatFlag;
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnUpdateGridUselong(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_LongLatFlag);
+}
 
 

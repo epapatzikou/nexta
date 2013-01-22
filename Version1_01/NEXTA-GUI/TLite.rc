@@ -853,13 +853,13 @@ BEGIN
     PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,152,225,154,14
 END
 
-IDD_DIALOG_GISLayer DIALOGEX 0, 0, 117, 377
+IDD_DIALOG_GISLayer DIALOGEX 0, 0, 130, 377
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,23,103,223,WS_EX_LEFTSCROLLBAR
-    CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,251,103,120,WS_EX_LEFTSCROLLBAR
-    PUSHBUTTON      "Config",IDC_BUTTON_Configuration,74,7,36,14
+    CONTROL         "",IDC_LIST_GISLAYER,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,23,116,223,WS_EX_LEFTSCROLLBAR
+    CONTROL         "",IDC_LIST_FEATURE_INFO,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,251,116,120,WS_EX_LEFTSCROLLBAR
+    PUSHBUTTON      "Config",IDC_BUTTON_Configuration,87,7,36,14
 END
 
 IDD_UNIT_TESTING_DIALOG DIALOGEX 0, 0, 489, 180
@@ -1482,7 +1482,7 @@ BEGIN
     IDD_DIALOG_GISLayer, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 110
+        RIGHTMARGIN, 123
         TOPMARGIN, 7
         BOTTOMMARGIN, 371
     END
@@ -1715,10 +1715,6 @@ IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 
 IDR_VIEW_TOOLBAR TOOLBAR  16, 15
 BEGIN
-    BUTTON      ID_TOOLS_EDITODDEMANDTABLE
-    BUTTON      ID_SCENARIO_CONFIGURATION
-    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
-    SEPARATOR
     BUTTON      ID_MOE_NONE
     BUTTON      ID_MOE_VEHICLE
     BUTTON      ID_MOE_VC_Ratio
@@ -1734,18 +1730,6 @@ BEGIN
     BUTTON      ID_MOE_VEHICLEPATHANALAYSIS
     BUTTON      ID_TOOLS_VIEWSIMULATIONSUMMARY
     SEPARATOR
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
-    BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
@@ -1807,10 +1791,6 @@ BEGIN
     BUTTON      ID_VIEW_MOVE
     SEPARATOR
     BUTTON      ID_VIEW_SHOWHIDE_LEGEND
-    BUTTON      ID_SHOW_GRID
-    SEPARATOR
-    BUTTON      ID_VIEW_IMAGE
-    BUTTON      ID_EDIT_MOVENETWORKCOORDINATES
     SEPARATOR
     BUTTON      ID_LINK_LINEDISPLAYMODE
     BUTTON      ID_LINK_INCREASEBANDWIDTH
@@ -1831,6 +1811,8 @@ BEGIN
     BUTTON      ID_EDIT_MOVENODE
     SEPARATOR
     BUTTON      ID_EDIT_CREATESUBAREA
+    SEPARATOR
+    BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     SEPARATOR
     BUTTON      ID_ANIMATION_PLAY
     BUTTON      ID_ANIMATION_REWIND
@@ -2177,8 +2159,9 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "Node"
     BEGIN
-        MENUITEM "Node Properties",             ID_NODE_NODEPROPERTIES
-        MENUITEM "Node-Movement Properties",    ID_NODE_MOVEMENTPROPERTIES
+        MENUITEM "View Node Properties for Selected Node", ID_NODE_NODEPROPERTIES
+        MENUITEM SEPARATOR
+        MENUITEM "View Node Data Table",        ID_NODE_VIEWNODEDATA
         MENUITEM SEPARATOR
         POPUP "Activity Location Mode"
         BEGIN
@@ -2188,59 +2171,165 @@ BEGIN
             MENUITEM "External Destination",        ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION
         END
         MENUITEM SEPARATOR
-        MENUITEM "Direction from here",         ID_NODE_ORIGIN
-        MENUITEM "Direction to here ",          ID_NODE_DESTINATION
-        MENUITEM "Add Intermediate Destination here", ID_NODE_ADDINTERMEDIATEDESTINATIONHERE
-        MENUITEM "Avoid this Node",             ID_NODE_AVOIDTHISNODE
-        MENUITEM "Remove All Intermediate Destination(s)", ID_NODE_REMOVEALLINTERMEDIATEDESTINATION
-        MENUITEM "Remove Node Avoidance Constraint(s)", ID_NODE_REMOVENODEAVOIDANCECONSTRAINT
-        MENUITEM SEPARATOR
         MENUITEM "Check Connectivity from here", ID_NODE_CHECKCONNECTIVITYFROMHERE
         MENUITEM "Direction to here and Reliability Analysis", ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS
+        MENUITEM SEPARATOR
+        MENUITEM "Export Node Layer to GIS Shape File (Prototype)", ID_NODE_EXPORTNODELAYERTOGISSHAPEFILE, GRAYED
         MENUITEM SEPARATOR
         MENUITEM "Delete Node",                 ID_EDIT_DELETESELECTEDNODE
     END
     POPUP "Link"
     BEGIN
-        MENUITEM "Edit Link Properties",        ID_LINK_EDITLINK
+        MENUITEM "View Link Properties for Selected Link", ID_LINK_EDITLINK
+        MENUITEM "Perform Vehicle Statistics Analaysis on Selected Link", ID_LINK_VEHICLESTATISTICSANALAYSIS
         MENUITEM SEPARATOR
-        MENUITEM "Vehicle Statistics Analaysis", ID_LINK_VEHICLESTATISTICSANALAYSIS
+        MENUITEM "View Link Data Table",        ID_LINK_VIEWLINKDATA
         MENUITEM "View Link-based Scenario Data", ID_LINK_VIEWLINK
+        MENUITEM SEPARATOR
+        MENUITEM "Export to Link Layer to KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Link",                 ID_DELETE_SELECTED_LINK
+    END
+    POPUP "Movement"
+    BEGIN
+        MENUITEM "View Movement Properties for Selected Node", ID_NODE_MOVEMENTPROPERTIES
+        MENUITEM "View Movement Data Table",    ID_MOVEMENT_VIEWMOVEMENTDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Signal Control Locations", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
+        MENUITEM "Update Link Effective Green Time  Based on Cycle Length", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+    END
+    POPUP "Zone"
+    BEGIN
+        MENUITEM "Highlight/Hide Associated Acitity Locations for Selected Zone", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
+        MENUITEM "Highlight Activity Locations and Show Zone ID for All Zones", ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS
+        MENUITEM "Define Boundary to Create Zone", ID_ZONE_CREATEZONE
+        MENUITEM SEPARATOR
+        MENUITEM "View Zone Data Table",        ID_ZONE_VIEWZONEDATA
+        MENUITEM SEPARATOR
+        MENUITEM "Export Zone Layer to GIS Shape File", ID_ZONE_EXPORTZONELAYERTOGISSHAPEFILE
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Zone",                 ID_ZONE_DELETEZONE
+    END
+    POPUP "Connector"
+    BEGIN
+        MENUITEM "View Activity Location Data Table", ID_CONNECTOR_VIEWACTIVITYLOCATIONDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
+        MENUITEM "Regenerate Activity Locations", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
+    END
+    POPUP "Link MOE"
+    BEGIN
+        MENUITEM "View Link MOE Summary List",  ID_SEARCH_LINKLIST
+        MENUITEM "Left Click to View Link MOE Plot for Selected Link", 0
+        MENUITEM SEPARATOR
+        MENUITEM "View Link MOE File in Excel", ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM "View Time-dependent Link MOE File in Excel", ID_PROJECT_TIME_DEPENDENT_LINK_MOE
+        MENUITEM SEPARATOR
+        MENUITEM "Export Link MOE Data to GIS Shape File", ID_LINKMOE_EXPORTLINKMOEDATATOSHAPEFILE
+    END
+    POPUP "OD Matrix"
+    BEGIN
+        MENUITEM "View OD Demand Meta Database", ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Zone-to-Zone Travel Time Matrix for Opened Projects", ID_EXPORT_GENERATEZONE
+        MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+    END
+    POPUP "Detector"
+    BEGIN
+        MENUITEM "View Sensor Data Table",      ID_DETECTOR_VIEWSENSORDATATABLE
+        MENUITEM "View Calibration Data Table", ID_DETECTOR_VIEWCALIBRATION
+        MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+        MENUITEM SEPARATOR
+        MENUITEM "Add Sensor on Selected Link", ID_LINK_ADDSENSOR
+        MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+        MENUITEM SEPARATOR
+    END
+    POPUP "Subarea"
+    BEGIN
+        MENUITEM "Create New Zone from Boundary", ID_SUBAREA_CREATEZONEFROMSUBAREA
+        MENUITEM "Delete Subarea",              ID_SUBAREA_DELETESUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "Perform Subarea Cut",         ID_EDIT_DELETELINKSOUTSIDESUBAREA
+        MENUITEM "Delete Links inside Subarea (TBD)", ID_SUBAREA_DELETELINKSINSIDESUBAREA
+    END
+    POPUP "Path"
+    BEGIN
+        MENUITEM "Direction from here",         ID_NODE_ORIGIN
+        MENUITEM "Direction to here ",          ID_NODE_DESTINATION
+        MENUITEM SEPARATOR
+        MENUITEM "Add Intermediate Destination here", ID_NODE_ADDINTERMEDIATEDESTINATIONHERE
+        MENUITEM "Avoid Using This Link",       ID_LINK_AVOIDUSINGTHISLINKINROUTING
+        MENUITEM "Avoid this Node",             ID_NODE_AVOIDTHISNODE
+        MENUITEM "Remove All Intermediate Destination(s)", ID_NODE_REMOVEALLINTERMEDIATEDESTINATION
+        MENUITEM "Remove Node Avoidance Constraint(s)", ID_NODE_REMOVENODEAVOIDANCECONSTRAINT
+        MENUITEM SEPARATOR
+        MENUITEM "View Path Data Table and Plot", ID_MOE_PATHLIST
+    END
+    POPUP "WorkZone"
+    BEGIN
+        MENUITEM "View Work Zone Data",         ID_WORKZONE_VIEWWORKZONEDATA
+        MENUITEM SEPARATOR
+        MENUITEM "Add Work Zone on Selected Link", ID_LINK_ADD_WORKZONE
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Work Zone on Selected Link", ID_DELETE_WORKZONE
+    END
+    POPUP "Crash"
+    BEGIN
+        MENUITEM "Run Crash Prediction Models", ID_SAFETYPLANNINGTOOLS_RUN
+        MENUITEM "Generate Crash Prediction Shape Files", ID_SAFETYPLANNINGTOOLS_GENERATENODE
+    END
+    POPUP "VMS"
+    BEGIN
+        MENUITEM "View VMS Data Table",         ID_VMS_VIEWVMSDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Add VMS on Selected Link",    ID_LINK_ADDVMS
+        MENUITEM SEPARATOR
+        MENUITEM "Delete VMS on Selected Link", ID_DELETE_VMS
+    END
+    POPUP "Toll"
+    BEGIN
+        MENUITEM "View Toll Data Table",        ID_TOLL_VIEWTOLLDATATABLE
         MENUITEM SEPARATOR
         MENUITEM "Add Link-based Toll",         ID_LINK_ADDLINK
         MENUITEM "Add HOV Toll",                ID_LINK_ADDHOVTOLL
         MENUITEM "Add HOT Toll",                ID_LINK_ADDHOTTOLL
         MENUITEM SEPARATOR
-        MENUITEM "Add Work Zone",               ID_LINK_ADD_WORKZONE
-        MENUITEM "Add Incident",                ID_LINK_ADDINCIDENT
-        MENUITEM "Add VMS",                     ID_LINK_ADDVMS
-        MENUITEM SEPARATOR
-        MENUITEM "Avoid Using This Link in Routing", ID_LINK_AVOIDUSINGTHISLINKINROUTING
-        MENUITEM "Add Sensor",                  ID_LINK_ADDSENSOR
-        POPUP "Delete Scenario Data"
-        BEGIN
-            MENUITEM "VMS",                         ID_DELETE_VMS
-            MENUITEM "Link-based Toll",             ID_DELETE_LINK
-            MENUITEM "Work Zone",                   ID_DELETE_WORKZONE
-            MENUITEM "Incident ",                   ID_DELETE_INCIDENT
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "Delete Link",                 ID_DELETE_SELECTED_LINK
+        MENUITEM "Delete Link-based Toll on Selected Link", ID_DELETE_LINK
     END
-    POPUP "Subarea"
+    POPUP "Ramp"
     BEGIN
-        MENUITEM "Create Zone From Subarea",    ID_SUBAREA_CREATEZONEFROMSUBAREA
+        MENUITEM "No Related Function Available", 0
     END
-    POPUP "Zone"
+    POPUP "Vehicle Data"
     BEGIN
-        MENUITEM "Highlight/Hide Associated Acitity Locations", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
-        MENUITEM "Delete Zone",                 ID_ZONE_DELETEZONE
+        MENUITEM "View Vehicle-Path Dialog",    ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "View Summary Chart",          ID_TOOLS_VIEWSIMULATIONSUMMARY
+    END
+    POPUP "Transit"
+    BEGIN
+        MENUITEM "No Related Function Available", ID_TRANSIT_NORELATEDFUNCTIONAVAILABLE
+    END
+    POPUP "Grid"
+    BEGIN
+        MENUITEM "Change to  Long/Lat Coordinate System", ID_FILE_CHANGECOORDINATESTOLONG
+        MENUITEM "Reset Link Length Based Long/Lat Coordinate System", ID_NETWORKTOOLS_RESETLINKLENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "Reverse Vertical Coordinate", ID_TOOLS_REVERSEVERTICALCOORDINATE
+        MENUITEM SEPARATOR
+        MENUITEM "Use Mile as Unit of Length",  ID_GRID_USEMILEASUNITOFLENGTH
+        MENUITEM "Use Kilometer as Unit of Length", ID_GRID_USEKMASUNITOFLENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "Use Long/Lat Coordinate System", ID_GRID_USELONG
     END
     POPUP "Background Image"
     BEGIN
         MENUITEM "Mark Point A",                ID_BACKGROUNDIMAGE_MARKLONG_A
         MENUITEM "Mark Point B",                ID_BACKGROUNDIMAGE_MARKLONG_B
         MENUITEM "Add Lat/Long Coordinates and Reset Image Location", ID_BACKGROUNDIMAGE_ADDLAT
+        MENUITEM SEPARATOR
+        MENUITEM "Unlock/Lock Position and Size of Background Image", ID_VIEW_IMAGE
+        MENUITEM SEPARATOR
+        MENUITEM "Background Color",            ID_VIEW_BACKGROUNDCOLOR
     END
 END
 
@@ -2454,7 +2543,6 @@ BEGIN
             MENUITEM "Reset Link Length Based Long/Lat Coordinate System", ID_NETWORKTOOLS_RESETLINKLENGTH
             MENUITEM SEPARATOR
             MENUITEM "Reverse Vertical Coordinate", ID_TOOLS_REVERSEVERTICALCOORDINATE
-            MENUITEM SEPARATOR
         END
         POPUP "Traffic Control Tools"
         BEGIN
@@ -2462,6 +2550,7 @@ BEGIN
             MENUITEM "Update Link Effective Green Time  Based on Cycle Length", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
             MENUITEM SEPARATOR
             MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
+            MENUITEM "Unlock/Lock Reference Network", ID_EDIT_MOVENETWORKCOORDINATES
             MENUITEM "Save External Layer After Coordinate Modification", ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER
             MENUITEM "Create Node Mapping to Obtain Traffic Control  Information", ID_TOOLS_OBTAINCYCLELENGTHFROM
             MENUITEM "Transfer Movement Data from Reference Network to Current Network", ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK

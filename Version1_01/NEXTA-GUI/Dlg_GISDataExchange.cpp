@@ -746,8 +746,8 @@ void CDlg_GISDataExchange::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszS
 					if(parser.GetValueByFieldName("x",x) && parser.GetValueByFieldName("y",y) )
 					{
 						OGRPoint pt;
-						pt.setX( CoordinateVector[0].X );
-						pt.setY( CoordinateVector[0].Y);
+						pt.setX( x );
+						pt.setY(y);
 						poFeature->SetGeometry( &pt ); 
 
 					}else

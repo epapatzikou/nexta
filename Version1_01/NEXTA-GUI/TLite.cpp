@@ -416,3 +416,4 @@ void CTLiteApp::OnFileOpenNetworkOnly()
 	OnFileOpen();
 	//reset back
 	m_bLoadNetworkOnly = false;}
+
