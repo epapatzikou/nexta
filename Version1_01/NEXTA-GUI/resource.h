@@ -113,6 +113,7 @@
 #define IDD_NSCHART_TRAVEL_TIME_RELIABILITY 194
 #define IDB_LINK_CLOSURE                194
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
+#define IDR_MAINFRAME4                  195
 #define IDD_DIALOG_Legend               196
 #define IDD_LINEPLOT_DIALOG             197
 #define IDD_XYPLOT_DIALOG               197
@@ -146,6 +147,10 @@
 #define IDD_DIALOG_GIS_Import           233
 #define IDD_DIALOG_Image_World_Width    234
 #define IDD_DIALOG_Image_Location       235
+#define IDC_CURSOR1                     237
+#define IDC_CURSOR_ZONE                 237
+#define IDC_CREATE_LINK_CURSOR1         238
+#define IDC_CREATE_NODE_CURSOR          238
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -191,9 +196,9 @@
 #define IDC_EDIT_Number_Iterations2     1022
 #define IDC_EDIT_Demand_LoadingMultiplier 1022
 #define IDC_CUSTOM1                     1023
-#define IDC_GRID_CTRL                   1023
 #define IDC_GRIDLISTCTRLEX              1023
 #define IDC_EDIT_Simulation_Horizon     1023
+#define IDC_GRID_CTRL                   1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
@@ -423,6 +428,7 @@
 #define IDC_BUTTONOK                    1175
 #define IDC_EDIT_LatLongA               1178
 #define IDC_EDIT_LatLongA2              1179
+#define IDC_BUTTON_RELOAD               1181
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1109,14 +1115,20 @@
 #define ID_GRID_USEKMASUNITOFLENGTH     33595
 #define ID_GRID_USELONG                 33596
 #define ID_DETECTOR_VIEWCALIBRATIONDATATABLE 33597
+#define ID_CRASH_VIEWINCIDENTDATATABLE  33598
+#define ID_EDIT_CREATEZONE              33599
+#define ID_EDIT_CREATETRAFFICANALYSISZONE 33600
+#define ID_ZONE_REMOVEACTIVITYLOCATIONSOFSELECTEDZONE 33601
+#define ID_ZONE_REGENERATEACTIVITYLOCATIONSFORSELECTEDZONE 33602
+#define ID_VIEW_SIMULATIONTOOLBAR       33604
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        236
-#define _APS_NEXT_COMMAND_VALUE         33598
-#define _APS_NEXT_CONTROL_VALUE         1181
+#define _APS_NEXT_RESOURCE_VALUE        239
+#define _APS_NEXT_COMMAND_VALUE         33605
+#define _APS_NEXT_CONTROL_VALUE         1182
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

@@ -379,6 +379,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_UPDATE_COMMAND_UI(ID_GRID_USEKMASUNITOFLENGTH, &CTLiteDoc::OnUpdateGridUsekmasunitoflength)
 	ON_COMMAND(ID_GRID_USELONG, &CTLiteDoc::OnGridUselong)
 	ON_UPDATE_COMMAND_UI(ID_GRID_USELONG, &CTLiteDoc::OnUpdateGridUselong)
+	ON_COMMAND(ID_CRASH_VIEWINCIDENTDATATABLE, &CTLiteDoc::OnCrashViewincidentdatatable)
+	ON_COMMAND(ID_ZONE_REMOVEACTIVITYLOCATIONSOFSELECTEDZONE, &CTLiteDoc::OnZoneRemoveactivitylocationsofselectedzone)
+	ON_COMMAND(ID_ZONE_REGENERATEACTIVITYLOCATIONSFORSELECTEDZONE, &CTLiteDoc::OnZoneRegenerateactivitylocationsforselectedzone)
 	END_MESSAGE_MAP()
 
 
@@ -386,6 +389,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_ScreenWidth_InMile = 10;
 
 	m_bUseMileVsKMFlag = true;
 	m_ImageWidthInMile = 1;
@@ -4045,7 +4049,7 @@ void  CTLiteDoc::CopyDefaultFiles()
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"background_image.bmp");
 
 }
-BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
+BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 {
 
 	FILE* st = NULL;
@@ -4596,10 +4600,17 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo = 0)
 
 		for(itr = m_ZoneMap.begin(); itr != m_ZoneMap.end(); ++itr)
 		{
+			std::map<int, int > UsedActivityLocationMap;
+
 			for(int i = 0; i< itr->second.m_ActivityLocationVector .size(); i++)
 			{
 				DTAActivityLocation element = itr->second.m_ActivityLocationVector[i];
+
+				if(UsedActivityLocationMap.find(element.NodeNumber) == UsedActivityLocationMap.end ())  // has not been used
+				{
 				fprintf(st, "%d,%d,%d\n", element.ZoneID , element.NodeNumber , element.External_OD_flag );
+				UsedActivityLocationMap[element.NodeNumber] = 1;
+				}
 			}
 
 		}
@@ -4905,16 +4916,22 @@ void CTLiteDoc::OnFileSaveProjectAs()
 	
 	if(fdlg.DoModal()==IDOK)
 	{
-		CString path = fdlg.GetFileName ();
+		CString path = fdlg.GetPathName  ();
 		CWaitCursor wait;
 		m_ProjectFile = path;
 		m_ProjectTitle = GetWorkspaceTitleName(m_ProjectFile);
 		if(SaveProject(path))
 		{
-			CString msg;
+				CString msg;
+			if(m_NodeSet.size()>0)
+			{
 			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d links, %d zones.",m_NodeSet.size(), m_LinkSet.size(), m_ZoneMap.size());
 			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
-
+			}/*else
+			{
+			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved.");
+			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+			}*/
 			SetTitle(m_ProjectTitle);
 
 
@@ -7118,9 +7135,17 @@ void CTLiteDoc::ResetBackgroundImageCoordinate()
 		m_ImageMoveSize = m_ImageWidth/2000.0f;
 
 		CString str_result;
-		str_result.Format ("The coordinates of %d nodes, %d links and %d zones have been adjusted to long/lat format.\nPleaes save the network to confirm the change.\nYou can use NEXTA_32.exe ->menu->Tools->GIS tools->Export GIS shape files to check the changed network on Google Maps",m_NodeSet.size(),m_LinkSet.size(),m_ZoneMap.size());
-		AfxMessageBox(str_result, MB_ICONINFORMATION);
+		str_result.Format ("The coordinates has been adjusted to long/lat format.\nNEXTA will reload this project to reflect changed coordinates.");
+		if(AfxMessageBox(str_result, MB_ICONINFORMATION)==IDOK)
+		{
+		SaveProject(m_ProjectFile);  // save time-dependent MOE to input_link MOE file
 
+		OnOpenDocument(m_ProjectFile);
+		}
+
+		m_bFitNetworkInitialized = false;
+		CalculateDrawingRectangle(false);
+		UpdateAllViews(0);
 }
 
 void CTLiteDoc::OnFileChangecoordinatestolong()
@@ -10149,11 +10174,11 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 		}else
 		{
-			AfxMessageBox("No sensor data are available. Please first input link volume data in file input_sensor.csv.");
+			AfxMessageBox("No matching sensor data are available from file output_validation_results. Please re-generate file output_validation_results.");
 		}
 	}else
 	{
-		AfxMessageBox("File output_LinkMOE.csv does not exist. Please first run traffic assignment.");
+		AfxMessageBox("File output_validation_results.csv does not exist. Please first run traffic assignment.");
 	}
 
 	// aggregated result
@@ -11430,8 +11455,15 @@ void CTLiteDoc::OnToolsSaveprojectforexternallayer()
 		if(SaveProject(fdlg.GetPathName(),ExternalLayerNo))
 		{
 			CString msg;
+			if(m_NodeSet.size()>0)
+			{
 			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d links, %d zones.",m_NodeSet.size(), m_LinkSet.size(), m_ZoneMap.size());
 			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+			}/*else
+			{
+			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved.");
+			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+			}*/
 
 			SetTitle(m_ProjectTitle);
 
@@ -11473,6 +11505,7 @@ void CTLiteDoc::OnToolsUpdateeffectivegreentimebasedoncyclelength()
 	str.Format("%d links have effective updated green time. To accept the changes, please save the network.",count);
 	AfxMessageBox(str, MB_ICONINFORMATION);
 
+	UpdateAllViews(0);
 
 }
 void CTLiteDoc::OnMoeTableDialog()
@@ -12984,6 +13017,10 @@ void CTLiteDoc::OnSubareaCreatezonefromsubarea()
 				zone_number = itr->first +1;
 				
 		}
+
+		if(zone_number==-1)  // no zone has been defined yet
+			zone_number = 1; 
+
 		m_ZoneMap [zone_number].m_ZoneID = max(1,zone_number);
 
 	}
@@ -13196,8 +13233,7 @@ void CTLiteDoc::OnDemandRegenerateactivitylocations()
 
 		RegenerateactivitylocationsForEmptyZone(zoneid);
 
-	
-			activity_node_count+=(*itr).second.m_ActivityLocationVector.size();
+		activity_node_count+=(*itr).second.m_ActivityLocationVector.size();
 
 		if((*itr).second.m_ActivityLocationVector.size() ==0)
 		{
@@ -13427,7 +13463,9 @@ void CTLiteDoc::OnImportBackgroundimage()
 		}
 
 }
-			UpdateAllViews(0);
+		m_bFitNetworkInitialized  = false;
+		CalculateDrawingRectangle(false);
+		UpdateAllViews(0);
 }
 
 void CTLiteDoc::OnZoneDeletezone()
@@ -13988,3 +14026,38 @@ void CTLiteDoc::OnUpdateGridUselong(CCmdUI *pCmdUI)
 }
 
 
+
+void CTLiteDoc::OnCrashViewincidentdatatable()
+{
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.m_SelectTab = _INCIDENT;
+	dlg.DoModal();
+}
+
+void CTLiteDoc::OnZoneRemoveactivitylocationsofselectedzone()
+{
+	if(m_SelectedZoneID<0)
+		AfxMessageBox("Please select a zone first.",MB_ICONINFORMATION);
+
+
+	//remove node's zone id
+		for(unsigned int i = 0; i< m_ZoneMap[m_SelectedZoneID]. m_ActivityLocationVector.size(); i++)
+		{
+		  m_NodeNumberMap[m_ZoneMap[m_SelectedZoneID]. m_ActivityLocationVector[i].NodeNumber]->m_ZoneID = -1;
+		}
+
+	m_ZoneMap[m_SelectedZoneID].m_ActivityLocationVector .clear();
+
+	UpdateAllViews(0);
+}
+
+void CTLiteDoc::OnZoneRegenerateactivitylocationsforselectedzone()
+{
+	if(m_SelectedZoneID<0)
+		AfxMessageBox("Please select a zone first.",MB_ICONINFORMATION);
+
+	RegenerateactivitylocationsForEmptyZone(m_SelectedZoneID);
+	UpdateAllViews(0);
+
+}

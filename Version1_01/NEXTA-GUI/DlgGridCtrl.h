@@ -90,4 +90,7 @@ public:
 	afx_msg void OnBnClickedEditVehicleTypeFile();
 	afx_msg void OnBnClickedEditVehicleEmissionsFile();
 	afx_msg void OnBnClickedEditMetaDatabase3();
+	afx_msg void OnHdnItemdblclickDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnLvnLinkClickedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonReload();
 };

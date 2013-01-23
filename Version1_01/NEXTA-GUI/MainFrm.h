@@ -78,6 +78,7 @@ public:
 	CStatusBar  m_wndStatusBar;
     CReBar      m_wndReBar;
 	CToolBar    m_wndToolBar;
+	CToolBar    m_wndSimulationToolBar;
     CPlayerSeekBar m_wndPlayerSeekBar;
 
    CToolBar m_MOEToolBar;
@@ -86,6 +87,7 @@ public:
    bool m_bShowGISLayerToolBar;
 
    bool m_bShowMOEToolBar;
+   bool m_bShowSimulationoolBar;
    bool m_bShowDataToolBar;
    bool m_bShowAMSToolBar;
 
@@ -128,6 +130,8 @@ public:
 	afx_msg void OnBnClickedButtonDatabase();
 	afx_msg void OnBnClickedButtonConfiguration();
 	afx_msg void OnNgsimmenuActivatespace();
+	afx_msg void OnViewSimulationtoolbar();
+	afx_msg void OnUpdateViewSimulationtoolbar(CCmdUI *pCmdUI);
 };
 
 

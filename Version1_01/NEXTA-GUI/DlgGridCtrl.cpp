@@ -45,6 +45,9 @@ BEGIN_MESSAGE_MAP(CDlgODDemandGridCtrl, CDialog)
 	ON_BN_CLICKED(ID_EDIT_VEHICLE_TYPE_FILE, &CDlgODDemandGridCtrl::OnBnClickedEditVehicleTypeFile)
 	ON_BN_CLICKED(ID_EDIT_VEHICLE_EMISSIONS_FILE, &CDlgODDemandGridCtrl::OnBnClickedEditVehicleEmissionsFile)
 	ON_BN_CLICKED(ID_EDIT_META_DATABASE3, &CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase3)
+	ON_NOTIFY(HDN_ITEMDBLCLICK, 0, &CDlgODDemandGridCtrl::OnHdnItemdblclickDemandtypelist)
+	ON_NOTIFY(LVN_LINKCLICK, IDC_DemandTypeLIST, &CDlgODDemandGridCtrl::OnLvnLinkClickedDemandtypelist)
+	ON_BN_CLICKED(IDC_BUTTON_RELOAD, &CDlgODDemandGridCtrl::OnBnClickedButtonReload)
 END_MESSAGE_MAP()
 
 
@@ -594,21 +597,7 @@ void CDlgODDemandGridCtrl::OnLvnItemchangedDemandtypelist(NMHDR *pNMHDR, LRESULT
 	// TODO: Add your control notification handler code here
 	*pResult = 0;
 
-	m_SelectedDemandMetaType = -1;
-	POSITION pos = m_DemandFileGrid.GetFirstSelectedItemPosition();
-	while(pos!=NULL)
-	{
-		int nSelectedRow = m_DemandFileGrid.GetNextSelectedItem(pos);
-		char str[100];
-		m_DemandFileGrid.GetItemText (nSelectedRow,1,str,20);
-		m_SelectedDemandMetaType = atoi(str);
-		//		TRACE("Select %d\n",m_SelectedDemandMetaType);
-		LoadDemandMatrixFromDemandFile(nSelectedRow,1);
-
-		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
-		DisplayDemandMatrix();
-	}
-
+OnBnClickedButtonReload();
 }
 
 void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase()
@@ -1029,4 +1018,34 @@ void CDlgODDemandGridCtrl::OnBnClickedEditMetaDatabase3()
 	sprintf(file_name,"%s\\%s",m_pDoc->m_ProjectDirectory,m_SelectedFileName);
 	m_pDoc->OpenCSVFileInExcel (file_name);
 
+}
+
+void CDlgODDemandGridCtrl::OnHdnItemdblclickDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	OnLvnItemchangedDemandtypelist(pNMHDR,pResult);
+}
+
+void CDlgODDemandGridCtrl::OnLvnLinkClickedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// TODO: Add your control notification handler code here
+	OnLvnItemchangedDemandtypelist(pNMHDR,pResult);
+}
+
+void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
+{
+	CWaitCursor wait;
+		m_SelectedDemandMetaType = -1;
+	POSITION pos = m_DemandFileGrid.GetFirstSelectedItemPosition();
+	while(pos!=NULL)
+	{
+		int nSelectedRow = m_DemandFileGrid.GetNextSelectedItem(pos);
+		char str[100];
+		m_DemandFileGrid.GetItemText (nSelectedRow,1,str,20);
+		m_SelectedDemandMetaType = atoi(str);
+		//		TRACE("Select %d\n",m_SelectedDemandMetaType);
+		LoadDemandMatrixFromDemandFile(nSelectedRow,1);
+
+		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
+		DisplayDemandMatrix();
+	}
 }

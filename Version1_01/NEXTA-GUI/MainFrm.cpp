@@ -52,6 +52,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_GISLAYER, &CMainFrame::OnNMRClickListGislayer)
 	ON_BN_CLICKED(IDC_BUTTON_Database, &CMainFrame::OnBnClickedButtonDatabase)
 	ON_COMMAND(ID_NGSIMMENU_ACTIVATESPACE, &CMainFrame::OnNgsimmenuActivatespace)
+	ON_COMMAND(ID_VIEW_SIMULATIONTOOLBAR, &CMainFrame::OnViewSimulationtoolbar)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_SIMULATIONTOOLBAR, &CMainFrame::OnUpdateViewSimulationtoolbar)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -80,7 +82,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Subarea"), 
 	_T("Path"), 
 	_T("Workzone"),
-	_T("Crash"),
+	_T("Crash/Incident"),
 	_T("VMS"),
 	_T("Toll"),
 	_T("Ramp Meter"),
@@ -105,6 +107,7 @@ CMainFrame::CMainFrame()
 	m_bFeatureInfoInitialized  = false;
 	m_bShowGISLayerToolBar = true;
 	m_bShowMOEToolBar = true;
+	m_bShowSimulationoolBar = false;
 	m_bShowDataToolBar = true;
 	m_bSynchronizedDisplay = false;
 	m_iSelectedLayer = layer_link;
@@ -139,6 +142,13 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 			return -1;      // fail to create
 		}
 
+	if (!m_wndSimulationToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+			| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY ) ||
+			!m_wndSimulationToolBar.LoadToolBar(IDR_MAINFRAME4))
+		{
+			TRACE0("Failed to create toolbar\n");
+			return -1;      // fail to create
+		}
 		if(!m_wndPlayerSeekBar.Create(this))
 		{
 			TRACE0("Failed to create m_wndPlayerSeekBar toolbar\n");
@@ -167,14 +177,15 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 
 
 		if (!m_wndReBar.Create(this) ||
-			!m_wndReBar.AddBar(&m_wndToolBar) ||
+			!m_wndReBar.AddBar(&m_wndToolBar)||
+			!m_wndReBar.AddBar(&m_wndSimulationToolBar) ||
 			!m_wndReBar.AddBar(&m_wndPlayerSeekBar)
-//			!m_wndReBar.AddBar(&m_wndLayerBar)
 			)
 		{
 			TRACE0("Failed to create rebar\n");
 			return -1;      // fail to create
 		}
+
 
 
 		int count = 0;
@@ -206,6 +217,7 @@ int CMainFrame::OnCreate_TrafficNetwork(LPCREATESTRUCT lpCreateStruct)
 		m_MOEToolBar.EnableDocking(CBRS_ALIGN_ANY);
 		EnableDocking(CBRS_ALIGN_ANY);
 		DockControlBar(&m_MOEToolBar);
+
 
 		SetTimer(0,1000, NULL); // simulation reflesh timer
 		m_wndPlayerSeekBar.Enable(true);
@@ -264,6 +276,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,170);
 	pGISLayerList->SetCheck(i,m_bShowLayerMap[(layer_mode)(i)]);
 	}
 
+	m_wndSimulationToolBar.ShowWindow (m_bShowSimulationoolBar);
 	bLayerInitialized = true;
 	return 0;
 }
@@ -731,4 +744,22 @@ void CMainFrame::OnBnClickedButtonConfiguration()
 void CMainFrame::OnNgsimmenuActivatespace()
 {
 	OnShowTimetable();
+}
+
+void CMainFrame::OnViewSimulationtoolbar()
+{
+	m_bShowSimulationoolBar= !m_bShowSimulationoolBar;
+	if(m_bShowSimulationoolBar)
+	{
+		m_wndSimulationToolBar.ShowWindow (true);
+	}
+	else
+		m_wndSimulationToolBar.ShowWindow (false);
+
+	
+}
+
+void CMainFrame::OnUpdateViewSimulationtoolbar(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck (m_bShowSimulationoolBar);
 }

@@ -59,7 +59,49 @@
 GDPoint g_Origin;
 float g_Resolution;
 
-;
+_cursor_type g_current_cursor_type = _cursor_standard_arrow;
+
+void g_SetCursor(_cursor_type cursor_type)
+{
+	//if(cursor_type == _cursor_movement_network && g_current_cursor_type!=_cursor_movement_network)
+	//{	
+	//	SetCursor(AfxGetApp()->LoadCursor(IDC_MOVENETWORK));
+	//	return;
+	//}
+
+	if(cursor_type == _cursor_create_node && g_current_cursor_type!=_cursor_create_node)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_CREATE_NODE_CURSOR));
+		return;
+	}
+	if(cursor_type == _cursor_create_link && g_current_cursor_type!=_cursor_create_link)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR));
+		return;
+	}
+	if(cursor_type == _cursor_create_subarea && g_current_cursor_type!= _cursor_create_subarea)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_CURSOR_SUBAREA));
+		return;
+	}
+
+	if(cursor_type == _cursor_create_zone && g_current_cursor_type!= _cursor_create_zone)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_CURSOR_ZONE));
+		return;
+	}
+
+	if(cursor_type == _cursor_standard_arrow && g_current_cursor_type!=_cursor_standard_arrow)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_ARROW));
+		return;
+	}
+	if(cursor_type == _cursor_standard_arrow && g_current_cursor_type!=_cursor_standard_arrow)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_ARROW));
+		return;
+	}
+};
 
 extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
 extern float g_Simulation_Time_Stamp;
@@ -184,6 +226,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnZoneHighlightassociatedacititylocations)
 	ON_UPDATE_COMMAND_UI(ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS, &CTLiteView::OnUpdateZoneHighlightassociatedacititylocations)
 	ON_COMMAND(ID_ZONE_CREATEZONE, &CTLiteView::OnZoneCreatezone)
+	ON_COMMAND(ID_EDIT_CREATEZONE, &CTLiteView::OnEditCreatezone)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_CREATEZONE, &CTLiteView::OnUpdateEditCreatezone)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -746,6 +790,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	// step 2: select font and color for node drawing, and compute the bandwidth for links
 	CFont node_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
 	int node_size = max(2,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution));
+
+	node_size = min(50,node_size);
 
 	int NodeTypeSize = pDoc->m_NodeTextDisplayRatio;
 	int nFontSize =  max(node_size * NodeTypeSize, 10);
@@ -1429,6 +1475,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		CFont od_font;
 		int nODNodeSize = max(node_size,10);
+
+
 		int nODFontSize =  max(nODNodeSize * NodeTypeSize, 10);
 
 		m_NodeTextFontSize = nODFontSize; 
@@ -1799,8 +1847,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDC->SetTextColor(pDoc->m_ZoneTextColor);
 
 
+		for(int draw_flag = 0; draw_flag<=1; draw_flag++)
+		{
 		for(itr = pDoc->m_ZoneMap.begin(); itr != pDoc->m_ZoneMap.end(); itr++)
 		{
+			if(draw_flag==1 && itr->first != pDoc->m_SelectedZoneID) 
+			{  // draw the selected zone only when draw_flag = 1
+			continue;
+			}
 
 			if(itr->first == pDoc->m_SelectedZoneID )
 			{
@@ -1810,9 +1864,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 				pDC->SelectObject(&ZonePen);
 			}
-
-
-			
 
 			int center_x = 0;
 			int center_y = 0;
@@ -1849,12 +1900,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			}
 
 		}
+		}
 
 	}	
 
 
 	// step 13: draw subarea layer
-	if(GetDocument()->m_SubareaShapePoints.size() > 0 && pMainFrame->m_bShowLayerMap[layer_subarea])
+	if(GetDocument()->m_SubareaShapePoints.size() > 0 && (pMainFrame->m_bShowLayerMap[layer_subarea]||pMainFrame->m_bShowLayerMap[layer_zone]))
 	{
 		CPoint point_0  = NPtoSP(GetDocument()->m_SubareaShapePoints[0]);
 
@@ -2271,6 +2323,8 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	else
 		str.Format("width: %.1f km; height: %.1f km",  width/1.60934, height/1.60934);
 
+	pDoc->m_ScreenWidth_InMile = width;
+
 	pDoc->SendTexttoStatusBar(str,1);
 	Invalidate();
 
@@ -2368,7 +2422,7 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 	{
 		m_last_cpoint = point;
 		m_last_left_down_point  = point;
-		AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
+		g_SetCursor(_cursor_movement_network);
 		m_bMoveDisplay = true;
 	}
 
@@ -2384,14 +2438,14 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 	if(m_ToolMode == backgroundimage_tool)
 	{
 		m_last_cpoint = point;
-		AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
+			g_SetCursor(_cursor_movement_network);
 		m_bMoveImage = true;
 	}
 
 	if(m_ToolMode == network_coordinate_tool)
 	{
 		m_last_cpoint = point;
-		AfxGetApp()->LoadCursor(IDC_MOVENETWORK);
+				g_SetCursor(_cursor_movement_network);
 		m_bMoveNetwork = true;
 	}
 
@@ -2402,7 +2456,9 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 		m_TempLinkEndPoint = point;
 		m_bMouseDownFlag = true;
 
-		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
+
+		g_SetCursor(_cursor_create_link);
+
 
 	}
 
@@ -2414,8 +2470,14 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 	}
 
 
-	if(m_ToolMode == subarea_tool)
+	if(m_ToolMode == subarea_tool || m_ToolMode == add_zone_tool)
 	{
+		if(m_ToolMode == subarea_tool)
+		g_SetCursor(_cursor_create_subarea);
+
+		if(m_ToolMode == add_zone_tool)
+		g_SetCursor(_cursor_create_zone);
+
 		m_TempZoneStartPoint = point;
 		m_TempZoneEndPoint = point;
 
@@ -2435,18 +2497,26 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 		{
 			if(bFindCloseSubareaPoint(point) && GetDocument()->m_SubareaShapePoints.size()>= 3)
 		 {
-			 CWaitCursor wait;
 			 GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
 			 GetDocument()->m_SubareaShapePoints.push_back(GetDocument()->m_SubareaShapePoints[0]);
 			 isCreatingSubarea = false;
 			 CopyLinkSetInSubarea();
 			 isFinishSubarea = true;
+			 if(m_ToolMode == add_zone_tool)
+			 {
+				 GetDocument()-> OnSubareaCreatezonefromsubarea();
+			 
+			 }
 			 m_ToolMode = move_tool;
 			 ReleaseCapture();
 	         m_last_left_down_point = point;
 
 			 m_last_cpoint = point;
+
+
 			 Invalidate();
+
+
 
 			 //FitNetworkToScreen();
 
@@ -2474,7 +2544,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		m_Origin.x -= OffSet.cx/m_Resolution;
 		m_Origin.y -= OffSet.cy*m_OriginOnBottomFlag/m_Resolution;
 
-		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+		g_SetCursor(_cursor_standard_arrow);
 		SetGlobalViewParameters();
 
 		m_bMoveDisplay = false;
@@ -2502,7 +2572,8 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			m_Origin.x -= OffSet.cx/m_Resolution;
 			m_Origin.y -= OffSet.cy*m_OriginOnBottomFlag/m_Resolution;
 
-			AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+			g_SetCursor(_cursor_standard_arrow);
+
 			SetGlobalViewParameters();
 
 			m_bMoveDisplay = false;
@@ -2522,7 +2593,8 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			m_Origin.x -= OffSet.cx/m_Resolution;
 			m_Origin.y -= OffSet.cy*m_OriginOnBottomFlag/m_Resolution;
 
-			AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+			g_SetCursor(_cursor_standard_arrow);
+	
 			SetGlobalViewParameters();
 
 			m_bMoveDisplay = false;
@@ -2728,12 +2800,13 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		pDoc->m_ImageX1  += OffSet.cx*pDoc->m_ImageMoveSize;
 		pDoc->m_ImageY1  += OffSet.cy*m_OriginOnBottomFlag*pDoc->m_ImageMoveSize;
 
-		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+		g_SetCursor(_cursor_standard_arrow);
+
 		m_bMoveImage = false;
 	}
 	if(m_ToolMode == network_coordinate_tool)
 	{
-		AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+		g_SetCursor(_cursor_standard_arrow);
 		m_bMoveNetwork = false;
 	}
 
@@ -2752,7 +2825,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			return;
 
 		DTANode* pFromNode = 0;// create from node if there is no overlapping node
-		float min_selection_distance = 20.0f;
+		float min_selection_distance = 10.0f;  // 10 pixels
 		int FromNodeID = FindClosestNode(m_TempLinkStartPoint, min_selection_distance);
 		if(FromNodeID ==-1)
 		{
@@ -2830,6 +2903,10 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			m_last_cpoint = point;
 
 		}
+
+	if(m_bMoveDisplay)
+		g_SetCursor(_cursor_movement_network);
+
 		SetGlobalViewParameters();
 
 		Invalidate();
@@ -2854,6 +2931,9 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			m_last_cpoint = point;
 
 		}
+	if(m_bMoveDisplay)
+		g_SetCursor(_cursor_movement_network);
+
 		Invalidate();
 
 	}
@@ -2875,8 +2955,16 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 		Invalidate();
 
 	}
+
+	if(m_ToolMode == create_node_tool )
+	{
+	g_SetCursor(_cursor_create_node);
+	}
+
 	if(m_ToolMode == create_1waylink_tool || m_ToolMode == create_2waylinks_tool)
 	{
+		g_SetCursor(_cursor_create_link);
+
 		if(m_bMouseDownFlag)
 		{
 			// if it is the first moving operation, erase the previous temporal link
@@ -2890,11 +2978,17 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			DrawTemporalLink(m_TempLinkStartPoint,m_TempLinkEndPoint);
 		}
 
-		AfxGetApp()->LoadCursor(IDC_CREATE_LINK_CURSOR);
+
 
 	}
-	if(m_ToolMode == subarea_tool)
+	if(m_ToolMode == subarea_tool  || m_ToolMode == add_zone_tool)
 	{
+		if(m_ToolMode == subarea_tool )
+			g_SetCursor(_cursor_create_subarea);
+
+		if(m_ToolMode == add_zone_tool )
+			g_SetCursor(_cursor_create_zone);
+
 		if(isCreatingSubarea)
 		{
 			// if it is the first moving operation, erase the previous temporal link
@@ -2907,10 +3001,6 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 			// draw a new temporal link
 			DrawTemporalLink(m_TempZoneStartPoint,m_TempZoneEndPoint);
 		}
-
-
-
-		AfxGetApp()->LoadCursor(IDC_CURSOR_SUBAREA);
 
 	}
 
@@ -2944,6 +3034,7 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 	else
 		str.Format("width: %.1f km; height: %.1f km",  width/1.60934, height/1.60934);
 
+	pDoc->m_ScreenWidth_InMile = width;
 	pDoc->SendTexttoStatusBar(str,1);
 	CView::OnMouseMove(nFlags, point);
 }
@@ -2964,7 +3055,7 @@ void CTLiteView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	CView::OnRButtonDown(nFlags, point);
 
-	if(m_ToolMode == subarea_tool && GetDocument()->m_SubareaShapePoints.size()>= 3)
+	if((m_ToolMode == subarea_tool || m_ToolMode == add_zone_tool)&& GetDocument()->m_SubareaShapePoints.size()>= 3)
 	{
 		CWaitCursor wait;
 		GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
@@ -3207,7 +3298,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	*/
 
-	if(m_ToolMode == subarea_tool && GetDocument()->m_SubareaShapePoints.size()>= 3)
+	if((m_ToolMode == subarea_tool || m_ToolMode == add_zone_tool) && GetDocument()->m_SubareaShapePoints.size()>= 3)
 	{
 		CWaitCursor wait;
 		GetDocument()->m_SubareaShapePoints.push_back(SPtoNP(point));
@@ -5173,6 +5264,13 @@ void CTLiteView::OnViewBackgroundcolor()
 
 void CTLiteView::OnActivitylocationmodeNolanduseactivity()
 {
+
+	if(m_ShowNodeTextMode != node_display_zone_number)
+	{
+		m_ShowNodeTextMode = node_display_zone_number;
+		AfxMessageBox("Node text display mode is now set to display the zone ID of activity location.", MB_ICONINFORMATION);
+	}
+
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc != NULL)
@@ -5200,6 +5298,11 @@ void CTLiteView::OnUpdateActivitylocationmodeNolanduseactivity(CCmdUI *pCmdUI)
 
 void CTLiteView::OnActivitylocationmodeLanduseactivity()
 {
+	if(m_ShowNodeTextMode != node_display_zone_number)
+	{
+		m_ShowNodeTextMode = node_display_zone_number;
+		AfxMessageBox("Node text display mode is now set to display the zone ID of activity location.", MB_ICONINFORMATION);
+	}
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc != NULL)
@@ -5230,6 +5333,12 @@ void CTLiteView::OnUpdateActivitylocationmodeLanduseactivity(CCmdUI *pCmdUI)
 
 void CTLiteView::OnActivitylocationmodeExternalorigin()
 {
+	if(m_ShowNodeTextMode != node_display_zone_number)
+	{
+		m_ShowNodeTextMode = node_display_zone_number;
+		AfxMessageBox("Node text display mode is now set to display the zone ID of activity location.", MB_ICONINFORMATION);
+	}
+
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc != NULL)
@@ -5258,6 +5367,12 @@ void CTLiteView::OnUpdateActivitylocationmodeExternalorigin(CCmdUI *pCmdUI)
 
 void CTLiteView::OnActivitylocationmodeExternaldestination()
 {
+	if(m_ShowNodeTextMode != node_display_zone_number)
+	{
+		m_ShowNodeTextMode = node_display_zone_number;
+		AfxMessageBox("Node text display mode is now set to display the zone ID of activity location.", MB_ICONINFORMATION);
+	}
+
 	CTLiteDoc* pDoc = GetDocument();
 
 	if(pDoc != NULL)
@@ -5979,4 +6094,19 @@ void CTLiteView::OnZoneCreatezone()
 		OnEditCreatesubarea();
 		Invalidate();
 
+}
+
+void CTLiteView::OnEditCreatezone()
+{
+	m_ToolMode = add_zone_tool;
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	pMainFrame->m_bShowLayerMap[layer_zone] = true;
+	pMainFrame-> m_iSelectedLayer = layer_zone;
+	GetDocument()->m_SubareaShapePoints.clear();
+}
+
+void CTLiteView::OnUpdateEditCreatezone(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_ToolMode == add_zone_tool ? 1 : 0);
 }

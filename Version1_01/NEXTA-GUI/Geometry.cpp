@@ -13,6 +13,9 @@ CGeometry::CGeometry(string s)
 	size_t start_idx = tmp.find_first_of('<');
 	size_t end_idx = tmp.find_first_of('>');
 
+	if(start_idx==std::string::npos || end_idx==std::string::npos )
+		return;
+
 	string type_str = tmp.substr(start_idx + 1,end_idx - start_idx -1);
 	
 	string start_tag = "<coordinates>";
