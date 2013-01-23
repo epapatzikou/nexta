@@ -929,11 +929,23 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\bmp00006.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\create_l.cur"
+						>
+					</File>
+					<File
 						RelativePath=".\res\cur00001.cur"
 						>
 					</File>
 					<File
 						RelativePath=".\res\cur00002.cur"
+						>
+					</File>
+					<File
+						RelativePath=".\res\cur00003.cur"
 						>
 					</File>
 					<File
@@ -985,11 +997,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1017,11 +1029,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File

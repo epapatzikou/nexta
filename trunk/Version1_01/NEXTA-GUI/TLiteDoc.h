@@ -377,6 +377,7 @@ public: // create from serialization only
 public:
 
 	bool m_bUseMileVsKMFlag;
+	double m_ScreenWidth_InMile;
 	CString m_LatLongA;
 	CString m_LatLongB;
 
@@ -1182,6 +1183,8 @@ public:
 		GDPoint p0 = m_NodeIDMap[ThisNodeID]->pt ;
 
 		// step 1: find overlapping links
+
+		double threshold_in_feet = max(150,m_ScreenWidth_InMile*5280/600); // 150 feet, 50 meters or 1/600 screen width, about 2 pixels given a 1200 pixels for screen width
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
@@ -1195,7 +1198,7 @@ public:
 
 			float distance_in_feet =  g_GetPoint2LineDistance(p0, pfrom, pto,m_UnitMile)/max(0.0000001,m_UnitFeet);
 
-			if(distance_in_feet<150) // 150 feet, 50 meters
+			if(distance_in_feet< threshold_in_feet) 
 			{
 			OverlappingLinks.push_back((*iLink));
 			}
@@ -1269,6 +1272,7 @@ public:
 			length  =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_FromPoint , pLink->m_ToPoint);
 		else 
 			length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
+
 		pLink->m_Length = max(0.00001,length);  // alllow mimum link length
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -1770,7 +1774,7 @@ public:
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
-	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo);
+	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo=0);
 	void CopyDefaultFiles();
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
@@ -2119,6 +2123,9 @@ public:
 	afx_msg void OnUpdateGridUsekmasunitoflength(CCmdUI *pCmdUI);
 	afx_msg void OnGridUselong();
 	afx_msg void OnUpdateGridUselong(CCmdUI *pCmdUI);
+	afx_msg void OnCrashViewincidentdatatable();
+	afx_msg void OnZoneRemoveactivitylocationsofselectedzone();
+	afx_msg void OnZoneRegenerateactivitylocationsforselectedzone();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

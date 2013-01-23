@@ -231,29 +231,6 @@ BEGIN
     COMBOBOX        IDC_COMBO_EndTime,473,7,48,166,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_ODDEMAND_GRID_DIALOG DIALOGEX 0, 0, 715, 385
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "OD Demand Table"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    PUSHBUTTON      "Exit",ID_GRID_QUIT,614,364,78,14
-    CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,7,195,687,143
-    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,500,345,64,14,NOT WS_VISIBLE | WS_DISABLED
-    PUSHBUTTON      "Activity Location Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,577,343,117,14,NOT WS_VISIBLE | WS_DISABLED
-    LTEXT           "1. Demand File List:",IDC_STATIC,7,7,79,8
-    PUSHBUTTON      "View Time-dependent Profile",IDC_BUTTON1,561,7,129,14
-    CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,689,71
-    LTEXT           "2. Demand Type List:",IDC_STATIC,7,97,79,8
-    PUSHBUTTON      "Edit Demand Meta Data File in Excel",ID_EDIT_META_DATABASE,246,7,137,14,0,WS_EX_STATICEDGE
-    LTEXT           "4. OD Demand Matrix:",IDC_STATIC,7,185,79,8
-    CONTROL         "",IDC_DemandTypeLIST2,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,111,687,56
-    PUSHBUTTON      "Edit Demand Type File in Excel",ID_EDIT_META_DATABASE2,389,95,122,14,0,WS_EX_STATICEDGE
-    LTEXT           "3. Vehicle Type List:",IDC_STATIC,7,171,79,8
-    PUSHBUTTON      "Edit Vehicle Type File in Excel",ID_EDIT_VEHICLE_TYPE_FILE,82,169,122,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Edit Vehicle Emissions File in Excel",ID_EDIT_VEHICLE_EMISSIONS_FILE,216,169,122,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Edit Selected Demand Data File in Excel",ID_EDIT_META_DATABASE3,397,7,137,14,0,WS_EX_STATICEDGE
-END
-
 IDD_DIALOG_Image_Width DIALOGEX 0, 0, 327, 199
 STYLE DS_ABSALIGN | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Image Setting Dialog"
@@ -1105,6 +1082,25 @@ BEGIN
     LTEXT           "Internal Coordinates:",IDC_STATIC,39,7,70,8
 END
 
+IDD_ODDEMAND_GRID_DIALOG DIALOGEX 0, 0, 715, 385
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "OD Demand Table"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Exit",ID_GRID_QUIT,614,364,78,14
+    CONTROL         "Custom1",IDC_GRID_CTRL,"MFCGridCtrl",WS_TABSTOP,7,121,687,217
+    PUSHBUTTON      "Create Zones",IDC_BUTTON_CreateZones,500,345,64,14,NOT WS_VISIBLE | WS_DISABLED
+    PUSHBUTTON      "Activity Location Mapping",IDC_BUTTON_Edit_Zone_Node_Mapping,577,343,117,14,NOT WS_VISIBLE | WS_DISABLED
+    LTEXT           "1. Demand File List:",-1,7,7,79,8
+    CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,434,71
+    PUSHBUTTON      "Edit Demand Meta Data File in Excel",ID_EDIT_META_DATABASE,129,7,137,14,0,WS_EX_STATICEDGE
+    LTEXT           "3. OD Demand Matrix:",-1,7,100,79,8
+    PUSHBUTTON      "Edit Selected Demand Data File in Excel",ID_EDIT_META_DATABASE3,297,7,137,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Reload Demand Matrix",IDC_BUTTON_RELOAD,91,101,83,14
+    CONTROL         "",IDC_DemandTypeLIST2,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,496,33,212,56
+    LTEXT           "2. Associated Demand Type for Select Demand File:",-1,498,22,159,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1207,14 +1203,6 @@ BEGIN
         RIGHTMARGIN, 624
         TOPMARGIN, 7
         BOTTOMMARGIN, 199
-    END
-
-    IDD_ODDEMAND_GRID_DIALOG, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 708
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 378
     END
 
     IDD_DIALOG_Image_Width, DIALOG
@@ -1630,6 +1618,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 124
     END
+
+    IDD_ODDEMAND_GRID_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 708
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 378
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1707,6 +1703,7 @@ IDR_TOOLBARLAYER        BITMAP                  "res\\toolbar2.bmp"
 IDR_MAINFRAME_RAIL      BITMAP                  "res\\bmp00004.bmp"
 IDR_VIEW_TOOLBAR_NU     BITMAP                  "res\\view_too.bmp"
 IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
+IDR_MAINFRAME4          BITMAP                  "res\\bmp00006.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1786,45 +1783,32 @@ BEGIN
     BUTTON      ID_FILE_OPEN_NETWORK_ONLY
     BUTTON      ID_FILE_SAVE_PROJECT
     SEPARATOR
-    BUTTON      ID_SEARCH_FINDLINK
     BUTTON      ID_VIEW_SELECT_NODE
     BUTTON      ID_VIEW_MOVE
-    SEPARATOR
-    BUTTON      ID_VIEW_SHOWHIDE_LEGEND
     SEPARATOR
     BUTTON      ID_LINK_LINEDISPLAYMODE
     BUTTON      ID_LINK_INCREASEBANDWIDTH
     BUTTON      ID_LINK_DECREASEBANDWIDTH
-    SEPARATOR
     BUTTON      ID_LINK_INCREASEOFFSETFORTWO
     BUTTON      ID_LINK_DECREASEOFFSETFORTWO
     SEPARATOR
+    BUTTON      ID_VIEW_SHOWNETWORK
     BUTTON      ID_VIEW_ZOOMIN
     BUTTON      ID_VIEW_ZOOMOUT
-    BUTTON      ID_VIEW_SHOWNETWORK
+    SEPARATOR
     BUTTON      ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
     BUTTON      ID_Edit_Create1WayLink
     BUTTON      ID_Edit_Create2WayLinks
     SEPARATOR
     BUTTON      ID_EDIT_CREATENODE
-    SEPARATOR
     BUTTON      ID_EDIT_MOVENODE
     SEPARATOR
     BUTTON      ID_EDIT_CREATESUBAREA
+    BUTTON      ID_EDIT_CREATEZONE
     SEPARATOR
     BUTTON      ID_TOOLS_RUNTRAFFICASSIGNMENT
     SEPARATOR
-    BUTTON      ID_ANIMATION_PLAY
-    BUTTON      ID_ANIMATION_REWIND
-    SEPARATOR
-    BUTTON      ID_ANIMATION_PAUSE
-    BUTTON      ID_ANIMATION_STOP
-    SEPARATOR
-    BUTTON      ID_ANIMATION_FORWARD
-    BUTTON      ID_ANIMATION_SKIPFORWARD
-    BUTTON      ID_ANIMATION_BACKWARD
-    BUTTON      ID_ANIMATION_SKIPBACKWARD
-    SEPARATOR
+    BUTTON      ID_SEARCH_FINDLINK
     BUTTON      ID_HELP_VISITDEVELOPMENTWEBSITE
 END
 
@@ -1973,6 +1957,21 @@ BEGIN
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
     BUTTON      ID_BUTTON32976
+END
+
+IDR_MAINFRAME4 TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_ANIMATION_PLAY
+    BUTTON      ID_ANIMATION_REWIND
+    BUTTON      ID_ANIMATION_PAUSE
+    BUTTON      ID_ANIMATION_STOP
+    SEPARATOR
+    BUTTON      ID_ANIMATION_FORWARD
+    BUTTON      ID_ANIMATION_SKIPFORWARD
+    BUTTON      ID_ANIMATION_BACKWARD
+    BUTTON      ID_ANIMATION_SKIPBACKWARD
+    SEPARATOR
+    BUTTON      ID_VIEW_SHOWHIDE_LEGEND
 END
 
 
@@ -2174,7 +2173,7 @@ BEGIN
         MENUITEM "Check Connectivity from here", ID_NODE_CHECKCONNECTIVITYFROMHERE
         MENUITEM "Direction to here and Reliability Analysis", ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS
         MENUITEM SEPARATOR
-        MENUITEM "Export Node Layer to GIS Shape File (Prototype)", ID_NODE_EXPORTNODELAYERTOGISSHAPEFILE, GRAYED
+        MENUITEM "Export Node Layer to GIS Shape File (Prototype)", ID_NODE_EXPORTNODELAYERTOGISSHAPEFILE, INACTIVE
         MENUITEM SEPARATOR
         MENUITEM "Delete Node",                 ID_EDIT_DELETESELECTEDNODE
     END
@@ -2200,9 +2199,11 @@ BEGIN
     END
     POPUP "Zone"
     BEGIN
-        MENUITEM "Highlight/Hide Associated Acitity Locations for Selected Zone", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
+        MENUITEM "Highlight/Hide Associated Acitity Locations of Selected Zone", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
         MENUITEM "Highlight Activity Locations and Show Zone ID for All Zones", ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS
-        MENUITEM "Define Boundary to Create Zone", ID_ZONE_CREATEZONE
+        MENUITEM SEPARATOR
+        MENUITEM "Remove Activity Locations of Selected Zone", ID_ZONE_REMOVEACTIVITYLOCATIONSOFSELECTEDZONE
+        MENUITEM "Regenerate Activity Locations for Selected Zone", ID_ZONE_REGENERATEACTIVITYLOCATIONSFORSELECTEDZONE
         MENUITEM SEPARATOR
         MENUITEM "View Zone Data Table",        ID_ZONE_VIEWZONEDATA
         MENUITEM SEPARATOR
@@ -2215,7 +2216,7 @@ BEGIN
         MENUITEM "View Activity Location Data Table", ID_CONNECTOR_VIEWACTIVITYLOCATIONDATATABLE
         MENUITEM SEPARATOR
         MENUITEM "Generate Physical Zone Centroids on Road Network", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
-        MENUITEM "Regenerate Activity Locations", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
+        MENUITEM "Regenerate Activity Locations for All Zones", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
     END
     POPUP "Link MOE"
     BEGIN
@@ -2246,7 +2247,6 @@ BEGIN
     END
     POPUP "Subarea"
     BEGIN
-        MENUITEM "Create New Zone from Boundary", ID_SUBAREA_CREATEZONEFROMSUBAREA
         MENUITEM "Delete Subarea",              ID_SUBAREA_DELETESUBAREA
         MENUITEM SEPARATOR
         MENUITEM "Perform Subarea Cut",         ID_EDIT_DELETELINKSOUTSIDESUBAREA
@@ -2267,7 +2267,7 @@ BEGIN
     END
     POPUP "WorkZone"
     BEGIN
-        MENUITEM "View Work Zone Data",         ID_WORKZONE_VIEWWORKZONEDATA
+        MENUITEM "View Work Zone Data Table",   ID_WORKZONE_VIEWWORKZONEDATA
         MENUITEM SEPARATOR
         MENUITEM "Add Work Zone on Selected Link", ID_LINK_ADD_WORKZONE
         MENUITEM SEPARATOR
@@ -2275,6 +2275,8 @@ BEGIN
     END
     POPUP "Crash"
     BEGIN
+        MENUITEM "View Incident Data Table",    ID_CRASH_VIEWINCIDENTDATATABLE
+        MENUITEM SEPARATOR
         MENUITEM "Run Crash Prediction Models", ID_SAFETYPLANNINGTOOLS_RUN
         MENUITEM "Generate Crash Prediction Shape Files", ID_SAFETYPLANNINGTOOLS_GENERATENODE
     END
@@ -2439,6 +2441,7 @@ BEGIN
     POPUP "View"
     BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        MENUITEM "Simulation ToolBar",          ID_VIEW_SIMULATIONTOOLBAR
         MENUITEM "MOE Toolbar",                 ID_VIEW_MOETOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
         MENUITEM "GIS Layer Panel",             ID_VIEW_GIS_Layer_Panel
@@ -2487,6 +2490,7 @@ BEGIN
         MENUITEM "Create Two-Way Links",        ID_Edit_Create2WayLinks
         MENUITEM "Set Default Link Properties for New Links", ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
         MENUITEM "Create Subarea",              ID_EDIT_CREATESUBAREA
+        MENUITEM "Create Traffic Analysis Zone", ID_EDIT_CREATEZONE
         MENUITEM SEPARATOR
         MENUITEM "Delete Selected Link",        ID_LINK_DELETE
         MENUITEM "Delete Selected Node",        ID_EDIT_DELETESELECTEDNODE
@@ -3230,6 +3234,8 @@ END
 IDC_MOVENETWORK         CURSOR                  "res\\cursor1.cur"
 IDC_CREATE_LINK_CURSOR  CURSOR                  "res\\cur00001.cur"
 IDC_CURSOR_SUBAREA      CURSOR                  "res\\cur00002.cur"
+IDC_CURSOR_ZONE         CURSOR                  "res\\cur00003.cur"
+IDC_CREATE_NODE_CURSOR  CURSOR                  "res\\create_l.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3464,7 +3470,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    ID_EDIT_CREATESUBAREA   "Create Subarea\nCreate Subarea/Zone"
+    ID_EDIT_CREATESUBAREA   "Create Subarea\nCreate Subarea"
     ID_IMPORT_AVI_DATA      "Import AVI Sensor Data"
 END
 
@@ -3487,6 +3493,7 @@ BEGIN
                             "Visit Development Website\nVisit Development Website"
     ID_EDIT_CREATENODE      "Add New Node\nAdd New Node"
     ID_VIEW_SELECT_NODE     "Select Object\nSelect Object"
+    ID_TOOLS_RUNTRAFFICASSIGNMENT "Run Simulation\nRun Simulation"
 END
 
 STRINGTABLE 
@@ -3561,6 +3568,16 @@ STRINGTABLE
 BEGIN
     ID_EDIT_MOVENETWORKCOORDINATES 
                             "Fix Baseline Network, Move Reference Network\nFix Baseline Network, Move Reference Network"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_EDIT_MOVENODE        "Move Node Position\nMove Node Position"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_EDIT_CREATEZONE      "Create Zone\nCreate Zone"
 END
 
 #endif    // English (U.S.) resources

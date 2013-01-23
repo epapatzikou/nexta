@@ -778,6 +778,8 @@ public:
 	afx_msg void OnZoneHighlightassociatedacititylocations();
 	afx_msg void OnUpdateZoneHighlightassociatedacititylocations(CCmdUI *pCmdUI);
 	afx_msg void OnZoneCreatezone();
+	afx_msg void OnEditCreatezone();
+	afx_msg void OnUpdateEditCreatezone(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 
