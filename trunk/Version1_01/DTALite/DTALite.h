@@ -150,11 +150,11 @@ struct VehicleCFData
 	int   LaneNo;
 	int   SequentialLinkNo;
 	float FreeflowDistance_per_SimulationInterval;  
-	float   CriticalSpacing_in_meter;
+	float CriticalSpacing_in_meter;
 
 	int StartTime_in_SimulationInterval; // in time interval, LinkStartTime, so it should be sorted
 	int EndTime_in_SimulationInterval; // in time interval
-	int   TimeLag_in_SimulationInterval;
+	int TimeLag_in_SimulationInterval;
 };
 class LinkMOEStatisticsData
 {
@@ -222,10 +222,7 @@ public:
 
 		TotalMiles = 0;
 		TotalGasolineGallon = 0;
-
-
 	}
-
 };
 
 
@@ -782,7 +779,7 @@ public:
 
 		CurrentSequenceNoForVechileDistanceAry = 0;
 		CycleSizeForVechileDistanceAry = 0;
-		VechileDistanceAry = NULL;
+		//VechileDistanceAry = NULL;
 		FIFO_queue_acutal_max_size  = 0;
 		FIFO_queue_max_size = 100;
 
@@ -1214,7 +1211,7 @@ public:
 	int NewVehicleCount;
 	int ExitVehicleCount;
 
-	float **VechileDistanceAry;
+	//float **VechileDistanceAry;
 	int CurrentSequenceNoForVechileDistanceAry;  // start from 0, 
 	int CycleSizeForVechileDistanceAry; // cycle size
 
@@ -1876,6 +1873,7 @@ public:
 	bool m_bLoaded; // be loaded into the physical network or not
 	bool m_bComplete;
 
+	bool m_bDetailedEmissionOutput;
 	float Energy,CO2,NOX,CO,HC;
 
 	// multi-day equilibrium
@@ -1950,6 +1948,8 @@ public:
 		m_TravelTime = 900;
 		m_Distance =0;
 		m_Delay = 0;
+
+		m_bDetailedEmissionOutput = false;
 
 	};
 	~DTAVehicle()
