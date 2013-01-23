@@ -1243,6 +1243,18 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			g_LastLoadedVehicleID = g_VehicleMap.begin()->first;
 		}
 
+		if(g_VehicleMap.size()>0)
+		{
+
+			std::map<int, DTAVehicle*>::iterator iterVM = g_VehicleMap.begin ();
+			g_LastLoadedVehicleID = iterVM->first;
+
+		}
+		
+
+
+
+
 		g_VehicularSimulation(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 
 		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_Number_of_GeneratedVehicles)
