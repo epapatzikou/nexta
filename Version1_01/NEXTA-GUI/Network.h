@@ -1002,8 +1002,12 @@ public:
 
 		m_bQEM_optimized = false;
 
+		m_min_distance_from_GPS_point = 100;
+		m_GPS_arrival_time = 0;
 	};
 
+	double m_min_distance_from_GPS_point;
+	double m_GPS_arrival_time;
 
 	~DTANode(){};
 
@@ -1021,6 +1025,7 @@ public:
 	std::vector<int> m_OutgoingLinkVector;
 	std::vector<int> m_IncomingLinkVector;
 	std::vector <DTANodeMovement> m_MovementVector;
+
 
 	int FindMovementIndexFromDirecion(DTA_APPROACH_TURN movement_direction)
 	{

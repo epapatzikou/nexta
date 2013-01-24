@@ -177,6 +177,7 @@ bool CTLiteDoc::ReadRailNodeCSVFile(LPCTSTR lpszFileName)
 			pNode->m_ZoneID = 0;
 			m_NodeSet.push_back(pNode);
 			m_NodeIDMap[i] = pNode;
+			m_NodeNumberMap[node_id] = pNode;
 			m_NodeIDtoNumberMap[i] = node_id;
 			m_NodeNumbertoIDMap[node_id] = i;
 			i++;

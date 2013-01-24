@@ -295,7 +295,7 @@ void CDlgPathList::ReloadData()
 		
 		if(m_PlotType.GetCurSel ()==0)
 		{
-		m_StrPathMOE.Format("Distance=%4.2f mile, Travel Time=%4.2f min, # of Sensors = %d, detected count = %.4f ",
+		m_StrPathMOE.Format("Distance=%4.2f mi, Free-flow Travel Time=%4.2f min, # of Sensors = %d, detected count = %.4f ",
 			total_distance,total_travel_time, number_of_sensors,total_count);
 		}
 

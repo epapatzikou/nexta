@@ -81,6 +81,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Node_Label.AddString("Offset In Second for Signals only");
 	m_Node_Label.AddString("Intersection Name");
 	m_Node_Label.AddString("Control Type");
+	m_Node_Label.AddString("Reserved Value");
 
 
 	m_Node_Label.SetCurSel ((int)(m_ShowNodeTextMode));

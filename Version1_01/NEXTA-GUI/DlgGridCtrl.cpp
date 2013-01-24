@@ -246,6 +246,7 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 
 	GV_ITEM item;
 	item.mask = GVIF_TEXT;
+	item.nState  = GVIS_READONLY;
 
 	CString str;
 
@@ -303,17 +304,79 @@ void CDlgODDemandGridCtrl::DisplayDemandMatrix()
 							item.row = i;
 							item.col = j;
 
-							if (i<=ZoneNumberVector.size() && j<= ZoneNumberVector.size()&& m_ODMatrixMap.find(GetODKey(ZoneNumberVector[i-1],ZoneNumberVector[j-1]))!= m_ODMatrixMap.end())
+								if(i== m_ODMatrixGrid.GetRowCount()-1)
+								{
+									
+								// special condition for subtotal from origin 
+									if (j-1<ZoneNumberVector.size())
+									{
+									CString str_key;
+									str_key.Format("d%d",ZoneNumberVector[j-1]);
+										
+									if(m_ODMatrixMap.find(str_key)!= m_ODMatrixMap.end())
+										str.Format(_T("%.3f"),m_ODMatrixMap[str_key]);
+									else 
+										str.Format(_T("%.2f"),0.0f);
+									}else
+									{
+									CString str_key;
+									str_key.Format("total");
+										
+									if(m_ODMatrixMap.find(str_key)!= m_ODMatrixMap.end())
+										str.Format(_T("%.3f"),m_ODMatrixMap[str_key]);
+									else 
+										str.Format(_T("%.2f"),0.0f);
+									
+									}
+
+								}
+								if(j== m_ODMatrixGrid.GetColumnCount()-1)
+								{
+									
+								// special condition for subtotal from origin 
+									if (i-1<ZoneNumberVector.size())
+									{
+									CString str_key;
+									str_key.Format("o%d",ZoneNumberVector[i-1]);
+										
+									if(m_ODMatrixMap.find(str_key)!= m_ODMatrixMap.end())
+										str.Format(_T("%.3f"),m_ODMatrixMap[str_key]);
+									else 
+										str.Format(_T("%.2f"),0.0f);
+									}else
+									{
+									CString str_key;
+									str_key.Format("total");
+										
+									if(m_ODMatrixMap.find(str_key)!= m_ODMatrixMap.end())
+										str.Format(_T("%.3f"),m_ODMatrixMap[str_key]);
+									else 
+										str.Format(_T("%.2f"),0.0f);
+									
+									}
+								}
+								//else if (j== m_ODMatrixGrid.GetColumnCount()-1)
+								//{
+								//	// special condition for subtotal to  destination 
+								//	str.Format(_T("%.3f"),m_ODMatrixMap[GetODKey(-1,ZoneNumberVector[i-1])]);
+								//
+								//}
+
+							if (i<=ZoneNumberVector.size() && j<= ZoneNumberVector.size())
 							{
-								str.Format(_T("%.3f"),m_ODMatrixMap[GetODKey(ZoneNumberVector[i-1],ZoneNumberVector[j-1])]);
-							}
-							else
-							{
+								if (m_ODMatrixMap.find(GetODKey(ZoneNumberVector[i-1],ZoneNumberVector[j-1]))!= m_ODMatrixMap.end())
+								{
+									str.Format(_T("%.3f"),m_ODMatrixMap[GetODKey(ZoneNumberVector[i-1],ZoneNumberVector[j-1])]);
+								}else
+								{
 								str.Format(_T("%.2f"),0.0f);
+								}
 							}
 
 							item.strText = str;
 							m_ODMatrixGrid.SetItem(&item);
+							m_ODMatrixGrid.SetItemState(i,j, m_ODMatrixGrid.GetItemState(i,j) | GVIS_READONLY);
+
 						} // neither i nor j is zero
 					} // i is not zero
 				} // Either i or j is not zero
@@ -487,6 +550,8 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonCreatezones()
 
 		GV_ITEM item;
 		item.mask = GVIF_TEXT;
+		item.nState  = GVIS_READONLY;
+
 
 		CString str;
 
@@ -827,13 +892,12 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 						float number_of_vehicles ;
 
 
-						int type= 1;
-						//						for(int type = 1; type <= number_of_demand_types; type++)
+						for(int type = 1; type <= number_of_demand_types; type++)
 						{
 
 							float demand_value = g_read_float(st);
-							SetODMatrx(origin_zone,destination_zone,demand_value);
-
+							if(m_pDoc->m_ZoneMap.find(origin_zone)!= m_pDoc->m_ZoneMap.end() && m_pDoc->m_ZoneMap.find(destination_zone)!= m_pDoc->m_ZoneMap.end())
+								SetODMatrx(origin_zone,destination_zone,demand_value);
 
 						}  // for each demand type
 						//if(line_no >= max_line_number)

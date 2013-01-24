@@ -267,6 +267,7 @@ pGISLayerList->InsertColumn(0,"Layer",LVCFMT_LEFT,170);
 	m_bShowLayerMap[layer_workzone] = true;
 	m_bShowLayerMap[layer_VMS] = true;
 	m_bShowLayerMap[layer_toll] = true;
+	m_bShowLayerMap[layer_grid] = true;
 	m_bShowLayerMap[layer_background_image] = true;
 
 

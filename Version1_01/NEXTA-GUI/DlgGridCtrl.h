@@ -48,11 +48,16 @@ public:
 
 	void SetODMatrx(int origin,int destination,float value)
 	{
-	m_ODMatrixMap[GetODKey(origin,destination)] = value;
+	m_ODMatrixMap[GetODKey(origin,destination)] += value;
 
-	m_ODMatrixMap[GetODKey(origin,m_pDoc->m_ODSize+1)] += value; // destination subtotal
+	CString str;
+	str.Format("o%d",origin);
+	m_ODMatrixMap[str] +=value;
 
-	m_ODMatrixMap[GetODKey(m_pDoc->m_ODSize+1,destination)] += value; // origin subtotal
+	str.Format("d%d",destination);
+	m_ODMatrixMap[str] +=value;
+	str.Format("total",destination);
+	m_ODMatrixMap[str] +=value;
 
 	}
 

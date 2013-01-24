@@ -405,7 +405,7 @@ public:
 	double m_max_accessible_transit_time_in_min;
 
 	void FindAccessibleTripID(double x, double y);
-	int FindClosestNode(double x, double y, double min_distance = 99999, int step_size = 1);
+	int FindClosestNode(double x, double y, double min_distance = 99999, int step_size = 1,double time_stamp_in_min = 9999);
 	int FindClosestZone(double x, double y, double min_distance = 99999, int step_size = 1);
 
 
@@ -424,8 +424,11 @@ public:
 
 	void ShowTextLabel();
 
+	void BuildGridSystem();
+
 	int FindClosestNode(GDPoint point)
 	{
+
 		int SelectedNodeID = -1;
 
 		double min_distance = 99999;
@@ -514,6 +517,7 @@ public:
 	float m_Doc_Resolution;
 
 	int m_ODSize;
+	int m_PreviousODSize;
 	int m_ZoneNoSize;
 	Link_MOE m_LinkMOEMode;
 	Link_MOE m_PrevLinkMOEMode;
@@ -703,6 +707,7 @@ public:
 
 	// additional input
 	void LoadSimulationOutput();
+	void LoadGPSData();
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	bool ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
@@ -950,7 +955,7 @@ public:
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
 
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
-	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id);
+	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
 	bool ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int date_id);
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 
@@ -1366,6 +1371,7 @@ public:
 		pNode->m_bZoneActivityLocationFlag = ActivityLocation;
 		m_NodeSet.push_back(pNode);
 		m_NodeIDMap[pNode->m_NodeID] = pNode;
+		m_NodeNumberMap[pNode->m_NodeNumber] = pNode;
 		m_NodeIDtoNumberMap[pNode->m_NodeID ] = pNode->m_NodeNumber;
 		m_NodeNumbertoIDMap[pNode->m_NodeNumber] = pNode->m_NodeID;
 
@@ -1655,18 +1661,19 @@ public:
 	}
 
 
-
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
-		int FromNodeID = m_NodeNumbertoIDMap[FromNodeNumber];
-		int ToNodeID = m_NodeNumbertoIDMap[ToNodeNumber];
+		DTANode* pFromNode = m_NodeNumberMap[FromNodeNumber];
 
-		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
-
-		map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
-
-		if(m_Iter == m_NodeIDtoLinkMap.end( ) && bWarmingFlag)
+		for(unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
 		{
+			
+			DTALink* pLink = m_LinkNoMap[pFromNode->m_OutgoingLinkVector[i]];
+
+			if(pLink->m_ToNodeNumber == ToNodeNumber)
+				return pLink;
+		
+		}
 			CString msg;
 
 			if(FileName.GetLength() == 0)
@@ -1678,9 +1685,34 @@ public:
 			}
 			AfxMessageBox(msg);
 			return NULL;
-		}
-		return m_NodeIDtoLinkMap[LinkKey];
+		return NULL;
 	}
+
+	//DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
+	//{
+	//	int FromNodeID = m_NodeNumbertoIDMap[FromNodeNumber];
+	//	int ToNodeID = m_NodeNumbertoIDMap[ToNodeNumber];
+
+	//	unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
+
+	//	map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
+
+	//	if(m_Iter == m_NodeIDtoLinkMap.end( ) && bWarmingFlag)
+	//	{
+	//		CString msg;
+
+	//		if(FileName.GetLength() == 0)
+	//		{
+	//			msg.Format ("Link %d-> %d cannot be found.", FromNodeNumber, ToNodeNumber);
+	//		}else
+	//		{
+	//			msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
+	//		}
+	//		AfxMessageBox(msg);
+	//		return NULL;
+	//	}
+	//	return m_NodeIDtoLinkMap[LinkKey];
+	//}
 
 	DTALink* FindLinkWithNodeIDs(int FromNodeID, int ToNodeID)
 	{

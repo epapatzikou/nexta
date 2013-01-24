@@ -70,6 +70,16 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	str.Format("%d zones", m_pDoc->m_ZoneMap.size());
 	m_NetworkDataList.AddString(str);
 
+	//update count of activity location if new zones have been added. 
+	m_pDoc->m_ActivityLocationCount = 0;
+
+	std::map<int, DTAZone>	:: iterator itr;
+
+		for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); ++itr)
+		{
+			m_pDoc->m_ActivityLocationCount+=  itr->second.m_ActivityLocationVector .size();
+		}
+
 	str.Format("%d activity locations", m_pDoc->m_ActivityLocationCount);
 	m_NetworkDataList.AddString(str);
 

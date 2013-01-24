@@ -866,6 +866,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	GenerateOffsetLinkBand();
 
 	CalculateDrawingRectangle();
+	BuildGridSystem();
 
 	m_bFitNetworkInitialized  = false;
 
@@ -1186,7 +1187,6 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 {
 
-
 	CString directory;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
@@ -1402,6 +1402,8 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 	ReadBackgroundImageFile(m_ProjectFile);
 
+	LoadGPSData();
+
 
 	if(bLoadVehicleData)
 	{
@@ -1463,8 +1465,8 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 				int SecondNodeID = g_read_integer(pFile);    // (4) first node
 				int DestinationNodeID = g_read_integer(pFile);    // last node
 
-				pVehicle->m_OriginZoneID = NodeIDtoZoneNameMap[FirstNodeID];
-				pVehicle->m_DestinationZoneID = NodeIDtoZoneNameMap[DestinationNodeID];
+				//pVehicle->m_OriginZoneID = NodeIDtoZoneNameMap[FirstNodeID];
+				//pVehicle->m_DestinationZoneID = NodeIDtoZoneNameMap[DestinationNodeID];
 
 				if( pVehicle->m_OriginZoneID > m_ODSize )
 					m_ODSize = pVehicle->m_OriginZoneID ;
@@ -1710,18 +1712,18 @@ bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int dat
 			{
 				m_PathNodeVectorSP[i] = g_read_integer(pFile);
 
-				// update origin destination data based on TAZ
-				if(i==0 )
-				{
-					pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+				//// update origin destination data based on TAZ
+				//if(i==0 )
+				//{
+				//	pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 
-				}
+				//}
 
-				if(i== pVehicle->m_NodeSize -1 )
-				{
-					pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+				//if(i== pVehicle->m_NodeSize -1 )
+				//{
+				//	pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 
-				}
+				//}
 
 				pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
 				DTALink* pLink = FindLinkWithNodeNumbers(m_PathNodeVectorSP[i-1],m_PathNodeVectorSP[i]);
