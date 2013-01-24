@@ -415,12 +415,15 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	FilterOriginDestinationPairs();
 
 
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 {
+	m_pDoc->ResetODMOEMatrix();
+
 	m_ListCtrl.DeleteAllItems();
 
 	if(m_ZoneNoSize=0)
@@ -517,6 +520,12 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		for (iVehicle = (*iDoc)->m_VehicleSet.begin(); iVehicle != (*iDoc)->m_VehicleSet.end(); iVehicle++, count++)
 		{
 			DTAVehicle* pVehicle = (*iVehicle);
+
+			if(pVehicle->m_OriginZoneID>= (*iDoc)->m_ZoneIDVector.size() || pVehicle->m_DestinationZoneID >=(*iDoc)->m_ZoneIDVector.size())
+			{
+			AfxMessageBox("Please close and reload the data set, as the zone vector in the current document has been changed due to additional zones.");
+			return;
+			}
 
 			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
 			int DesNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_DestinationZoneID];

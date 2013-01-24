@@ -481,6 +481,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_UserInput.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_VehEmissions.cpp"
 				>
 			</File>
@@ -1209,6 +1213,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_User_Input.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_UserInput.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_VehEmissions.h"
 				>
 			</File>
@@ -1492,6 +1504,11 @@
 		</File>
 		<File
 			RelativePath=".\Dlg_ImportGISDataSet.htm"
+			DeploymentContent="true"
+			>
+		</File>
+		<File
+			RelativePath=".\Dlg_User_Input.htm"
 			DeploymentContent="true"
 			>
 		</File>

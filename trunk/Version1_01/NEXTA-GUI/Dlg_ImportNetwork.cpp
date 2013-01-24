@@ -181,6 +181,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			m_pDoc->m_NodeSet.push_back(pNode);
 			m_pDoc->m_NodeIDMap[i] = pNode;
 			m_pDoc->m_NodeIDtoNumberMap[i] = id;
+			m_pDoc->m_NodeNumberMap[id] = pNode;
+
 			m_pDoc->m_NodeNumbertoIDMap[id] = i;
 			i++;
 

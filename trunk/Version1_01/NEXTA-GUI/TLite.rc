@@ -1094,11 +1094,22 @@ BEGIN
     LTEXT           "1. Demand File List:",-1,7,7,79,8
     CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,434,71
     PUSHBUTTON      "Edit Demand Meta Data File in Excel",ID_EDIT_META_DATABASE,129,7,137,14,0,WS_EX_STATICEDGE
-    LTEXT           "3. OD Demand Matrix:",-1,7,100,79,8
+    LTEXT           "3. OD Demand Matrix (Read-Only): (please directly edit the demand file)",-1,7,100,239,8
     PUSHBUTTON      "Edit Selected Demand Data File in Excel",ID_EDIT_META_DATABASE3,297,7,137,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Reload Demand Matrix",IDC_BUTTON_RELOAD,91,101,83,14
+    PUSHBUTTON      "Reload Demand Matrix",IDC_BUTTON_RELOAD,253,103,83,14
     CONTROL         "",IDC_DemandTypeLIST2,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,496,33,212,56
     LTEXT           "2. Associated Demand Type for Select Demand File:",-1,498,22,159,8
+END
+
+IDD_DIALOG_USER_INPUT DIALOGEX 0, 0, 316, 103
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,205,82,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,82,50,14
+    EDITTEXT        IDC_EDIT1,43,52,89,14,ES_AUTOHSCROLL
+    LTEXT           "Static",IDC_QUESTION,22,20,193,8
 END
 
 
@@ -1108,7 +1119,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -1626,6 +1637,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 378
     END
+
+    IDD_DIALOG_USER_INPUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 96
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -1636,12 +1655,12 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#ifndef APSTUDIO_INVOKED\r\n"
     "#include ""targetver.h""\r\n"
@@ -1650,7 +1669,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
     "#define _AFX_NO_OLE_RESOURCES\r\n"
@@ -1980,7 +1999,7 @@ END
 // Menu
 //
 
-IDR_MAINFRAME MENU 
+IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -2003,7 +2022,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE MENU 
+IDR_TLiteTYPE MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -2154,7 +2173,7 @@ BEGIN
     END
 END
 
-IDR_MENU1 MENU 
+IDR_MENU1 MENU
 BEGIN
     POPUP "Node"
     BEGIN
@@ -2335,7 +2354,7 @@ BEGIN
     END
 END
 
-IDR_MENU_LINK_MOE MENU 
+IDR_MENU_LINK_MOE MENU
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
@@ -2371,7 +2390,7 @@ BEGIN
     END
 END
 
-IDR_MENU_PATHMOE MENU 
+IDR_MENU_PATHMOE MENU
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
@@ -2396,7 +2415,7 @@ BEGIN
     END
 END
 
-IDR_MENU_CARFOLLOWING MENU 
+IDR_MENU_CARFOLLOWING MENU
 BEGIN
     POPUP "Simulation"
     BEGIN
@@ -2405,7 +2424,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE1 MENU 
+IDR_TLiteTYPE1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -2627,7 +2646,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE2 MENU 
+IDR_TLiteTYPE2 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -2740,7 +2759,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE3 MENU 
+IDR_TLiteTYPE3 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -2984,7 +3003,7 @@ BEGIN
     END
 END
 
-IDR_MENU4 MENU 
+IDR_MENU4 MENU
 BEGIN
     POPUP "Link Selection"
     BEGIN
@@ -2998,7 +3017,7 @@ BEGIN
     END
 END
 
-IDR_MENU_LINK_MOE1 MENU 
+IDR_MENU_LINK_MOE1 MENU
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
@@ -3051,7 +3070,7 @@ BEGIN
     END
 END
 
-IDR_TLiteTYPE4 MENU 
+IDR_TLiteTYPE4 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -3147,7 +3166,7 @@ BEGIN
     END
 END
 
-IDR_MENU_PATH_INFO MENU 
+IDR_MENU_PATH_INFO MENU
 BEGIN
     POPUP "Data"
     BEGIN
@@ -3164,7 +3183,7 @@ END
 // Accelerator
 //
 
-IDR_MAINFRAME ACCELERATORS 
+IDR_MAINFRAME ACCELERATORS
 BEGIN
     "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
     VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
@@ -3245,20 +3264,20 @@ IDC_CREATE_NODE_CURSOR  CURSOR                  "res\\create_l.cur"
 IDD_LINEPLOT_DIALOG1 DLGINIT
 BEGIN
     ID_CMB_STYLE, 0x403, 11, 0
-0x694c, 0x656e, 0x5320, 0x7974, 0x656c, "\000" 
+0x694c, 0x656e, 0x5320, 0x7974, 0x656c, "\000"
     ID_CMB_STYLE, 0x403, 10, 0
-0x6142, 0x2072, 0x7453, 0x6c79, 0x0065, 
+0x6142, 0x2072, 0x7453, 0x6c79, 0x0065,
     ID_CMB_STYLE, 0x403, 15, 0
-0x5320, 0x6163, 0x7474, 0x7265, 0x5320, 0x7974, 0x656c, "\000" 
+0x5320, 0x6163, 0x7474, 0x7265, 0x5320, 0x7974, 0x656c, "\000"
     0
 END
 
 IDD_DIALOG_GIS_Import DLGINIT
 BEGIN
     IDC_COMBO1, 0x403, 6, 0
-0x694d, 0x656c, 0x0073, 
+0x694d, 0x656c, 0x0073,
     IDC_COMBO1, 0x403, 4, 0
-0x4b20, 0x004d, 
+0x4b20, 0x004d,
     0
 END
 
@@ -3273,12 +3292,13 @@ IDR_HTML_DLGZONEPROPERTIES HTML                    "DlgZoneProperties.htm"
 IDR_HTML_DLG_ZONEPROPERTIES HTML                    "Dlg_ZoneProperties.htm"
 IDR_HTML_DLG_IMPORTGISDATASET HTML                    "Dlg_ImportGISDataSet.htm"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDR_MAINFRAME           "NeXTA Version 3 Beta"
     IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
@@ -3286,13 +3306,13 @@ BEGIN
     ID_INDICATOR_LEFT       "Indicator"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_APP_TITLE       "NeXTA Version 3 Beta"
     AFX_IDS_IDLEMESSAGE     "Ready"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_INDICATOR_EXT        "EXT"
     ID_INDICATOR_CAPS       "CAP"
@@ -3302,7 +3322,7 @@ BEGIN
     ID_INDICATOR_REC        "REC"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FILE_NEW             "Create a new document\nNew"
     ID_FILE_OPEN            "Open an existing document\nOpen"
@@ -3311,13 +3331,13 @@ BEGIN
     ID_FILE_SAVE_AS         "Save the active document with a new name\nSave As"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
     ID_APP_EXIT             "Quit the application; prompts to save documents\nExit"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FILE_MRU_FILE1       "Open this document"
     ID_FILE_MRU_FILE2       "Open this document"
@@ -3337,13 +3357,13 @@ BEGIN
     ID_FILE_MRU_FILE16      "Open this document"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
     ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_WINDOW_NEW           "Open another window for the active document\nNew Window"
     ID_WINDOW_ARRANGE       "Arrange icons at the bottom of the window\nArrange Icons"
@@ -3353,7 +3373,7 @@ BEGIN
     ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_CLEAR           "Erase the selection\nErase"
     ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
@@ -3368,13 +3388,13 @@ BEGIN
     ID_EDIT_REDO            "Redo the previously undone action\nRedo"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
     ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCSIZE          "Change the window size"
     AFX_IDS_SCMOVE          "Change the window position"
@@ -3385,20 +3405,20 @@ BEGIN
     AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "Restore the window to normal size"
     AFX_IDS_SCTASKLIST      "Activate Task List"
     AFX_IDS_MDICHILD        "Activate this window"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_IMAGE           "Enable the background image to be movable\nEnable the background image to be movable"
     ID_VIEW_BACKGROUNDIMAGE "Show/Hide background image\nShow/Hide background image"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_3DZoom               "Zoom in and zoom out in 3D View \n 3D Zoom in & out"
     ID_3DPam                "Panning in 3D Mode\nPanning. Moving the objects "
@@ -3408,7 +3428,7 @@ BEGIN
     ID_WINDOW_NEW3DVIEW     "Show 3D View\nShow 3D View"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_BUTTON32872          "Create One-way Link\nOne-way Link"
     ID_Create1WayLink       "Create One-way Link\nOne-way Link"
@@ -3416,7 +3436,7 @@ BEGIN
     ID_SHOW_TIMETABLE       "\nShow Timetable"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_WINDOW_SHOW2DVIEW    "\nShow 2D View"
     ID_Edit_Create1WayLink  "Add New One-Way Link\nAdd New One-Way Link"
@@ -3424,37 +3444,37 @@ BEGIN
     ID_SHOW_GRID            "Show/Hide Grid\nShow/Hide Grid"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_SHOWMOE         "\nShow Link MOE Window"
     ID_VIEW_SENSOR          "Show/Hide Sensors\nShow/Hide Sensors"
     ID_SEARCH_FINDLINK      "Search Node/Link/Path/Vehicle (Ctrl+F)\nSearch Node/Link/Path/Vehicle"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MOE_SPEED            "Link Speed/nLink Speed"
     ID_MOE_VOLUME           "Link Volume\nLink Volume"
     ID_MOE_NONE             "Display Network Only\nDisplay Network Only"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_TEXTLABEL       "Show/Hide Text Label\nShow/Hide Text Label "
     ID_MOE_VC_Ratio         "Link Density\nLink Density"
     ID_MOE_TRAVELTIME       "/n Unit: min"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MOE_CAPACITY         "\n Unit: veh per link"
     ID_MOE_SPEEDLIMIT       "\nUnit: mph"
     ID_MOE_FREEFLOWTRAVLETIME "\nUnit: Min"
-    ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS 
+    ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
                             "Set Default Link Type\nSet Default Link Type"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_IMPORT_SENSOR_DATA   "Import Point Sensor Data"
     ID_IMPORT_LINKMOE       "Import Simulated Link MOE File"
@@ -3463,47 +3483,47 @@ BEGIN
     ID_LINKMOE_SAFETY       "Crash Rate\nCrash Rate"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_IMPORTDATA_IMPORT    "Import Network Data"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_CREATESUBAREA   "Create Subarea\nCreate Subarea"
     ID_IMPORT_AVI_DATA      "Import AVI Sensor Data"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_IMPORT_GPS           "Import GPS Data"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_IMPORT_NGSIM_FILE    "Import NGSIM Data File"
     ID_EXPORT_AMS           "Construct AMS data set"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
-    ID_TOOLS_VIEWSIMULATIONSUMMARY 
+    ID_TOOLS_VIEWSIMULATIONSUMMARY
                             "View Vehicle Statistics\nView Vehicle Statistics"
-    ID_HELP_VISITDEVELOPMENTWEBSITE 
+    ID_HELP_VISITDEVELOPMENTWEBSITE
                             "Visit Development Website\nVisit Development Website"
     ID_EDIT_CREATENODE      "Add New Node\nAdd New Node"
     ID_VIEW_SELECT_NODE     "Select Object\nSelect Object"
     ID_TOOLS_RUNTRAFFICASSIGNMENT "Run Simulation\nRun Simulation"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_SEARCH_VEHICLE       "Search Vehicles"
-    ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS 
+    ID_TOOLS_TRAVELTIMERELIABILITYANALYSIS
                             "Link Speed Variability\nLink Speed Variability"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_LINK_LINEDISPLAYMODE "Switch Link Bar/Line Display Mode\nSwitch Link Bar/Line Display Mode"
     ID_LINKMOEDISPLAY_QUEUELENGTH "Queue Length\nQueue Length"
@@ -3512,7 +3532,7 @@ BEGIN
     ID_ANIMATION_FORWARD    "Play Forward\nPlay Forward"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_ZOOMIN          "Zoom In\nZoom In"
     ID_VIEW_ZOOMOUT         "Zoom Out\nZoom Out"
@@ -3521,24 +3541,24 @@ BEGIN
     ID_VIEW_SELECT          "Select Link\nSelect Link"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
-    ID_LINK_INCREASEBANDWIDTH 
+    ID_LINK_INCREASEBANDWIDTH
                             "Increase Link Bandwidth\nIncrease Link Bandwidth"
-    ID_LINK_DECREASEBANDWIDTH 
+    ID_LINK_DECREASEBANDWIDTH
                             "Decrease Link Bandwidth\nDecrease Link Bandwidth"
     ID_LINK_INCREASEOFFSETFORTWO "Increase Link Offset\nIncrease Link Offset"
     ID_LINK_DECREASEOFFSETFORTWO "Decrease Link Offset\nDecrease Link Offset"
     ID_VIEW_SHOWHIDE_LEGEND "Show/Hide Legend\nShow/Hide Legend"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_ANIMATION_BACKWARD   "Play Backward\nPlay Backward"
     ID_VIEW_ZONEBOUNDARY    "Show/Hide Zone Boundary\nShow/Hide Zone Boundary"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MOE_VEHICLE          "Ainmation with Vehicles\nAinmation with Vehicles"
     ID_ANIMATION_PLAY       "Start Animation\nStart Animation"
@@ -3547,35 +3567,35 @@ BEGIN
     ID_ANIMATION_STOP       "Stop Animation\nStop Animation"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_TOOLS_EDITODDEMANDTABLE "View Demand Tables"
     ID_SEARCH_LINKLIST      "Link List\nLink List"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MOE_PATHLIST         "Path List\nPath List"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
-    ID_MOE_VEHICLEPATHANALAYSIS 
+    ID_MOE_VEHICLEPATHANALAYSIS
                             "Vehicle Path Analysis Dialog\nVehicle Path Analysis Dialog"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
-    ID_EDIT_MOVENETWORKCOORDINATES 
+    ID_EDIT_MOVENETWORKCOORDINATES
                             "Fix Baseline Network, Move Reference Network\nFix Baseline Network, Move Reference Network"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_MOVENODE        "Move Node Position\nMove Node Position"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_CREATEZONE      "Create Zone\nCreate Zone"
 END
