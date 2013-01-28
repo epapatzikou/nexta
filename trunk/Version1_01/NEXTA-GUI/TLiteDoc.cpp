@@ -5382,6 +5382,7 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 							return;
 						}
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
+						pLink->m_total_link_volume +=1;
 						pLink->m_TotalTravelTime +=  pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
 					}
 
@@ -5602,7 +5603,7 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 	m_MovementDataLoadingStatus.Format ("%d AMS movements are loaded from file %s.",count,lpszFileName);
 
 }
-bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 {
 	//   cout << "Read vehicle file... "  << endl;
 	// vehicle_id,  origin_zone_id, destination_zone_id, departure_time,
@@ -5645,7 +5646,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName)
 	CString SettingsFile;
 	SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
 
-	int version_number = 2;
+	
 	typedef struct  
 	{
 		int vehicle_id;
@@ -6510,9 +6511,12 @@ void CTLiteDoc::LoadSimulationOutput()
 	ReadAMSMovementCSVFile(m_ProjectDirectory+"AMS_movement.csv");
 
 	SetStatusText("Loading agent trajectory data");
-	if(ReadVehicleBinFile(m_ProjectDirectory+"agent.bin")==false)
+	if(ReadVehicleBinFile(m_ProjectDirectory+"agent.bin",2)==false) // try version 2 format first
 	{
-		ReadVehicleCSVFile(m_ProjectDirectory+"output_agent.csv");
+		if(ReadVehicleBinFile(m_ProjectDirectory+"agent.bin",1)==false) // then try version 1 format. 
+		{
+		ReadVehicleCSVFile(m_ProjectDirectory+"output_agent.csv");  // finally try csv file.
+		}
 	}
 
 	char microsimulation_file_name[_MAX_STRING_SIZE];
@@ -14197,4 +14201,194 @@ void CTLiteDoc::OnZoneRegenerateactivitylocationsforselectedzone()
 	RegenerateactivitylocationsForEmptyZone(m_SelectedZoneID);
 	UpdateAllViews(0);
 
+}
+
+void CTLiteDoc::ReadInputPath()
+{
+
+	//for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
+	//{
+
+	//	m_PathDisplayList[p].m_LinkVector.clear();
+	//}
+	//
+
+	//	CFileDialog path_file_dlg (TRUE, "input_path.csv", "input_path.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+	//	"Path Link Data File (*.csv)|*.csv||", NULL);
+	//if(path_file_dlg.DoModal() == IDOK)
+	//{
+
+	//	m_PathDisplayList.clear();
+	//	m_SelectPathNo=0;
+
+
+	//	char lpszFileName[_MAX_PATH];
+	//	
+	//	sprintf(lpszFileName,"%s",path_file_dlg.GetPathName ());
+
+	//	int prev_path_id = -1;
+	//CCSVParser parser;
+	//if (parser.OpenCSVFile(lpszFileName))
+	//{
+	//	bool bNodeNonExistError = false;
+
+	//	m_OriginNodeID = -1;
+	//	m_DestinationNodeID = -1;
+
+	//	int count = 0;
+	//	DTALink* pLink =NULL;
+	//	while(parser.ReadRecord())
+	//	{
+	//		int link_id = 0;
+	//		int from_node_id;
+	//		int to_node_id;
+
+	//		int path_id = 0;
+	//		if(!parser.GetValueByFieldName("path_id",path_id))
+	//		{
+	//			AfxMessageBox("Field path_id has not been defined in file input_path.csv. Please check.");
+	//			break;
+	//		}
+
+	//		string path_name;
+	//		parser.GetValueByFieldName("path_name",path_name);
+	//		//find reference travel time
+	//		int link_sequence_no;
+	//		parser.GetValueByFieldName("link_sequence_no",link_sequence_no);
+
+
+	//		std::string TMC;
+	//		parser.GetValueByFieldName("TMC",TMC);
+
+	//		if(TMC.size () >=1)
+	//		{
+
+	//			if( m_TMC2LinkMap.find (TMC) != m_TMC2LinkMap.end())
+	//			{
+	//			pLink = m_TMC2LinkMap[TMC];
+	//			}else
+	//			{
+	//			CString str;
+	//			str.Format ("TMC %s cannot be found in the current data set.",TMC.c_str () );
+	//			AfxMessageBox(str);
+	//			return;
+	//			}
+
+	//		}
+	//		else
+	//		{
+
+	//		if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
+	//		{
+	//			AfxMessageBox("Field from_node_id has not been defined in file input_path.csv. Please check.");
+	//			break;
+	//		}
+	//		if(!parser.GetValueByFieldName("to_node_id",to_node_id))
+	//		{
+	//			AfxMessageBox("Field to_node_id has not been defined in file input_path.csv. Please check.");
+	//			break;
+	//		}
+
+	//		pLink = FindLinkWithNodeNumbers(from_node_id,to_node_id,lpszFileName);
+	//		}
+
+	//		if(pLink==NULL)
+	//		{
+	//			CString ErrorMessage;
+	//			ErrorMessage.Format("Path ID: %d, Link no.%d, %d->%d does not exist.\n", path_id,link_sequence_no,from_node_id, to_node_id);
+
+	//			ErrorMessageVector+= ErrorMessage;
+	//			continue;
+	//		}
+
+	//		if(count==0)
+	//		{
+	//		m_OriginNodeID  = pLink->m_FromNodeID ;
+	//		}
+
+
+	//		if(prev_path_id!= path_id)  //find new route
+	//		{
+	//			DTAPath path_element;
+	//			m_PathDisplayList.push_back(path_element);
+	//			prev_path_id = path_id;
+	//		}
+	//		int route_no = m_PathDisplayList.size()-1;
+	//		m_PathDisplayList[route_no].m_LinkVector.push_back (pLink->m_LinkNo );
+
+
+	//		if(link_sequence_no == 1)
+	//		{
+	//			for(int t = 0 ; t< 1440; t+= 15)  // for each starting time
+	//			{
+	//				CString str;
+	//				str.Format("min_%d",t);
+	//				std::string str_time = CString2StdString (str);
+	//	
+	//				float travel_time = 0;
+	//				parser.GetValueByFieldName(str_time,travel_time);
+	//			
+
+	//				if(travel_time >0.1f)
+	//				{
+	//					m_PathDisplayList[route_no].m_bWithSensorTravelTime = true;
+	//					for(int s = 0; s<15; s++)
+	//					{
+	//						m_PathDisplayList[route_no].m_SensorTimeDependentTravelTime[t+s] = travel_time;
+	//					}
+	//				}
+	//			
+	//			}
+
+	//		
+	//		}
+
+
+	//		CString c_path_name;
+	//		c_path_name.Format("%d",route_no+1);
+
+
+	//		m_PathDisplayList[route_no].m_PathLabelVector.push_back (c_path_name);
+
+	//		if(m_PathDisplayList[route_no].m_path_name.size() ==0)  // no value yet
+	//		{
+	//			if(path_name.size()>=1)
+	//			{
+	//				m_PathDisplayList[route_no].m_path_name = path_name;
+	//			}else
+	//			{
+	//				m_PathDisplayList[route_no].m_path_name = CString2StdString (c_path_name);
+	//			}
+	//		}
+
+	//		count++;
+	//	}
+
+	//	if(pLink!=NULL)  // last link
+	//	{
+	//		m_DestinationNodeID  = pLink->m_ToNodeID ;	
+	//	}
+
+	//}else
+	//{
+	//AfxMessageBox("File cannot be found.");
+	//}
+	//	ReloadData();
+
+	//	if(	m_PathList.GetCount() >=1)
+	//	{
+	//		m_PathList.SetCurSel(0);
+	//		Invalidate();
+
+	//	}
+
+
+	//	if(ErrorMessageVector.GetLength ()>0)
+	//	{
+	//		WriteStringToLogFile("error_log_path_list.csv", ErrorMessageVector);
+
+	//		ErrorMessageVector+= "Please check file error_log_path_list.csv in Excel.";
+	//		AfxMessageBox(ErrorMessageVector);
+
+	//	}
 }

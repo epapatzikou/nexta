@@ -153,7 +153,7 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 
 
 	m_ComboY.AddString ("--"); 
-	m_ComboY.AddString ("Avg Travel Time Per Mile STD (min/mile)");
+	m_ComboY.AddString ("Travel Time Per Mile STD (min/mile)");
 	m_ComboY.AddString ("95th Percentile Travel Time Per Mile (min/mile)");
 	m_ComboY.AddString ("90th Percentile Travel Time Per Mile (min/mile)");
 	m_ComboY.AddString ("80th Percentile Travel Time Per Mile (min/mile)");

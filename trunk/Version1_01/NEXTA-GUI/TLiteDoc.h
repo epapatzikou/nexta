@@ -952,7 +952,7 @@ public:
 	void ReadAMSMovementCSVFile(LPCTSTR lpszFileName);
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
-	bool ReadVehicleBinFile(LPCTSTR lpszFileName);
+	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
 
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
@@ -1663,6 +1663,9 @@ public:
 
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
+		if(m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
+		{
+		
 		DTANode* pFromNode = m_NodeNumberMap[FromNodeNumber];
 
 		for(unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
@@ -1673,6 +1676,7 @@ public:
 			if(pLink->m_ToNodeNumber == ToNodeNumber)
 				return pLink;
 		
+		}
 		}
 			CString msg;
 
@@ -1896,6 +1900,7 @@ public:
 		
 	}
 	
+	void ReadInputPath();
 	double m_PointA_x,m_PointA_y,m_PointB_x,m_PointB_y;
 	double m_PointA_long,m_PointA_lat,m_PointB_long,m_PointB_lat;
 	bool m_bPointA_Initialized, m_bPointB_Initialized;
