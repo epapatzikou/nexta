@@ -1110,15 +1110,15 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	g_Number_of_GeneratedVehicles = 0;
 
 
-		if(Iteration>= g_settings.IteraitonNoStartSignalOptimization && ((Iteration - g_settings.IteraitonNoStartSignalOptimization)%g_settings.IteraitonStepSizeSignalOptimization ==0))
-		{
-			for(int i=0; i< g_NodeVector.size(); i++)
-		{
-			g_NodeVector[i].QuickSignalOptimization ();
-		
-		}
+		//if(Iteration>= g_settings.IteraitonNoStartSignalOptimization && ((Iteration - g_settings.IteraitonNoStartSignalOptimization)%g_settings.IteraitonStepSizeSignalOptimization ==0))
+		//{
+		//	for(int i=0; i< g_NodeVector.size(); i++)
+		//{
+		//	g_NodeVector[i].QuickSignalOptimization ();
+		//
+		//}
 
-		}
+		//}
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{

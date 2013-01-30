@@ -1045,7 +1045,7 @@ void g_ReadInputFiles(int scenario_no)
 					int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
 
 					if(CycleLength_In_Second ==0 )  // use default cycle length only for zero cycle length
-						CycleLength_In_Second = g_DefaultCycleLength;
+						CycleLength_In_Second = max(15,g_DefaultCycleLength);
 
 					if(g_SimulateSignals && CycleLength_In_Second < 10  && g_number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
 					{
@@ -1062,6 +1062,8 @@ void g_ReadInputFiles(int scenario_no)
 						if(EffectiveGreenTimeInSecond==0) // no value input
 					{
 							EffectiveGreenTimeInSecond = (int)(CycleLength_In_Second * capacity / max(1700,SaturationFlowRate));
+
+							EffectiveGreenTimeInSecond = max(10,EffectiveGreenTimeInSecond);
 
 						if(EffectiveGreenTimeInSecond> CycleLength_In_Second)
 							EffectiveGreenTimeInSecond = CycleLength_In_Second;
@@ -3128,13 +3130,6 @@ int g_InitializeLogFiles()
 	cout << "--- Current Directory: " << szBuffer << " ---" << endl << endl;
 	g_LogFile << "--- Current Directory: " << szBuffer << " ---" << endl << endl;
 
-	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
-	cout << "Version 1.002, Release Date 12/10/2012."<< endl;
-
-
-	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
-	g_LogFile << "Version 1.0.2, Release Date 12/10/2012."<< endl;
-
 
 	CCSVParser parser_MOE_settings;
 	if (!parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
@@ -3312,30 +3307,6 @@ void g_ReadDTALiteSettings()
 		g_LogFile << "Load vehicles from the trajectory file input_agent.csv" << endl;
 	}
 
-	g_LogFile << "Traffic Flow Model =  ";
-	g_SummaryStatFile.WriteTextLabel("Traffic Flow Model =,");
-	switch( g_TrafficFlowModelFlag)
-	{
-	case 0: 		g_LogFile << "BPR Function" << endl;
-		g_SummaryStatFile.WriteTextString("BPR Function");
-		break;
-
-	case 1: 		g_LogFile << "Point Queue Model" << endl;
-		g_SummaryStatFile.WriteTextString("Point Queue Model");
-		break;
-
-	case 2: 		g_LogFile << "Spatial Queue Model" << endl;
-		g_SummaryStatFile.WriteTextString("Spatial Queue Model");
-		break;
-
-	case 3: 		g_LogFile << "Newell's Cumulative Flow Count Model" << endl;
-		g_SummaryStatFile.WriteTextString("Newell's Cumulative Flow Count Model");
-		break;
-
-	default: 		g_LogFile << "No Valid Model is Selected" << endl;
-		g_SummaryStatFile.WriteTextString("Invalid Model");
-		break; 
-	}
 
 
 	if(g_start_iteration_for_MOEoutput == -1)  // no value specified
@@ -4010,6 +3981,12 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 		if(g_AgentBinInputMode == 1)  // g_AgentBinInputMode is input from input_scenario_settings.csv
 		{
 			g_ReadAgentBinFile("input_agent.bin");
+			return;
+		}
+
+		if(g_AgentBinInputMode == 2)  // g_AgentBinInputMode is input from input_scenario_settings.csv
+		{
+			g_ReadDTALiteAgentCSVFile("input_agent.csv");
 			return;
 		}
 

@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\MPO Data Set\Cube_Export_Files\NewNetwork"
+				WorkingDirectory="C:\DataSets\Portland All Streets"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\MPO Data Set\Cube_Export_Files\NewNetwork"
+				WorkingDirectory="C:\DataSets\Portland All Streets"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
