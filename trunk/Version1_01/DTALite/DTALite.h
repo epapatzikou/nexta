@@ -39,8 +39,12 @@
 #include "CSVParser.h"
 using namespace std;
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model};
-enum e_assignment_method { assignment_MSA =0, assignment_day_to_day, assignment_gap_function,
-assignment_gap_function_MSA_step_size,assignment_accessibility_distanance,assignment_accessibility_travel_time};
+enum e_assignment_method { assignment_MSA =0, 
+assignment_day_to_day, 
+assignment_gap_function,
+assignment_gap_function_MSA_step_size,
+assignment_accessibility_distanance,
+assignment_accessibility_travel_time};
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
 // extention for multi-day equilibirum
 #define MAX_FIFO_QUEUESIZE 5000
@@ -2882,7 +2886,7 @@ public:
 	{
 	
 	AdditionalYellowTimeForSignals = 0;
-	IteraitonNoStartSignalOptimization = 100;
+	IteraitonNoStartSignalOptimization = 10000;
 	IteraitonStepSizeSignalOptimization = 5;
 	DefaultCycleTimeSignalOptimization = 60;
 

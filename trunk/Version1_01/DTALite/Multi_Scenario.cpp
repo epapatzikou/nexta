@@ -29,7 +29,7 @@
 #include "Geometry.h"
 #include "GlobalData.h"
 #include "CSVParser.h"
-
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <omp.h>
@@ -42,7 +42,21 @@ void g_MultiScenarioTrafficAssignment()
 
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel ("DTALite:\nA Fast Open Source DTA Engine\n");
-	g_SummaryStatFile.WriteTextLabel("Software Version =,1.001\nRelease Date=,November 1st 2012\n");
+	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,year:2013,month:01,day:29\n");
+
+	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
+	cout << "Version 1.1.0, Release Date 01/29/2013."<< endl;
+
+	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
+	g_LogFile << "Version 1.1.0, Release Date 01/29/2013."<< endl;
+
+
+	time_t t = time(0);   // get time now
+    struct tm * now = localtime( & t );
+		CString time_str;
+		time_str.Format("Simulation Date =,year: %d,month:%02d,day:%d,hour:%2d,min:%2d\n",now->tm_year + 1900, (now->tm_mon + 1),now->tm_mday,now->tm_hour ,now->tm_min);
+
+	g_SummaryStatFile.WriteTextLabel(time_str);
 
 	int scenario_no;
 	string scenario_name;
@@ -218,22 +232,84 @@ void g_MultiScenarioTrafficAssignment()
 			getchar();
 		}
 
+
 		g_UEAssignmentMethod = (e_assignment_method)UEAssignmentMethod;
 
-		g_CalculateUEGapForAllAgents = 0;
+		g_CalculateUEGapForAllAgents = 1;
 		if(parser_scenario.GetValueByFieldName("ue_gap_calculation_method",g_CalculateUEGapForAllAgents)==false)
 		{
-			cout << "Field ue_gap_calculation_method has not been specified in file input_scenario_settings.csv. A default method of day-to-day learning is used." << endl;
-			getchar();
+//			cout << "Field ue_gap_calculation_method has not been specified in file input_scenario_settings.csv.  << endl;
+//			getchar();
 		}
 
+	g_LogFile << "Traffic Flow Model =  ";
+	g_SummaryStatFile.WriteTextLabel("Traffic Flow Model =,");
 
+	switch( g_TrafficFlowModelFlag)
+	{
+	case tfm_BPR: 		g_LogFile << "BPR Function" << endl;
+		g_SummaryStatFile.WriteTextString("BPR Function");
+		break;
+
+	case tfm_point_queue: 		g_LogFile << "Point Queue Model" << endl;
+		g_SummaryStatFile.WriteTextString("Point Queue Model");
+		break;
+
+	case tfm_spatial_queue: 		g_LogFile << "Spatial Queue Model" << endl;
+		g_SummaryStatFile.WriteTextString("Spatial Queue Model");
+		break;
+
+	case tfm_newells_model: 		g_LogFile << "Newell's Cumulative Flow Count Model" << endl;
+		g_SummaryStatFile.WriteTextString("Newell's Cumulative Flow Count Model");
+		break;
+
+	default: 		g_LogFile << "No Valid Model is Selected" << endl;
+		g_SummaryStatFile.WriteTextString("Invalid Model");
+		break; 
+	}
+	switch (g_UEAssignmentMethod)
+	{
+	case assignment_MSA: 
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Method of Successive Average");
+	break;
+	case assignment_day_to_day:
+		g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to Day Learning");
+		g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+		g_SummaryStatFile.WriteParameterValue ("Travel time difference for route switching",g_TravelTimeDifferenceForSwitching);
+		g_SummaryStatFile.WriteParameterValue ("Relative Travel Time Indifference Band (%) for route switching",g_RelativeTravelTimePercentageDifferenceForSwitching);
+
+	break;
+	case assignment_gap_function:
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap function based adjustment");
+	g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+	break;
+
+	case assignment_gap_function_MSA_step_size:
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap-funciton with step size based adjustment");
+	break;
+
+	case assignment_accessibility_distanance:
+	g_SummaryStatFile.WriteParameterValue ("Routing method","Assessibility based on distance");
+	break;
+
+	case assignment_accessibility_travel_time:
+	g_SummaryStatFile.WriteParameterValue ("Routing method","Assessibility based on travel time");
+	break;
+	
+
+	default: 
+	g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
+
+	}
+
+
+	g_SummaryStatFile.WriteTextString(" ");
 
 		g_FreewayBiasFactor = 1;
 		if(parser_scenario.GetValueByFieldName("freeway_bias_factor",g_FreewayBiasFactor)==false)
 		{
-			cout << "Field freeway_bias_factor has not been specified in file input_scenario_settings.csv. A default factor of 1 is used." << endl;
-			getchar();
+//			cout << "Field freeway_bias_factor has not been specified in file input_scenario_settings.csv. A default factor of 1 is used." << endl;
+//			getchar();
 		}
 
 		g_ShortestPathWithMovementDelayFlag = 0;
@@ -248,15 +324,15 @@ void g_MultiScenarioTrafficAssignment()
 		g_ValidationDataStartTimeInMin = 0;
 			if(parser_scenario.GetValueByFieldName("calibration_data_start_time_in_min",g_ValidationDataStartTimeInMin)==false)
 		{
-			cout << "Field calibration_data_start_time_in_min has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
-			getchar();
+//			cout << "Field calibration_data_start_time_in_min has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
+//			getchar();
 		}
 
 		g_ValidationDataEndTimeInMin = 1440;
 			if(parser_scenario.GetValueByFieldName("calibration_data_end_time_in_min",g_ValidationDataEndTimeInMin)==false)
 		{
-			cout << "Field calibration_data_start_time_in_min has not been specified in file input_scenario_settings.csv. A default factor of 1440 is used." << endl;
-			getchar();
+//			cout << "Field calibration_data_start_time_in_min has not been specified in file input_scenario_settings.csv. A default factor of 1440 is used." << endl;
+//			getchar();
 		}
 
 		g_ODEstimation_StartingIteration = 1000;
@@ -328,7 +404,7 @@ void g_MultiScenarioTrafficAssignment()
 		}
 
 		g_DefaultCycleLength = 110;
-		parser_scenario.GetValueByFieldNameWithPrintOut("default_cycle_length",g_DefaultCycleLength);
+		parser_scenario.GetValueByFieldName("default_cycle_length",g_DefaultCycleLength);
 
 
 
@@ -347,8 +423,8 @@ void g_MultiScenarioTrafficAssignment()
 		g_EmissionDataOutputFlag  = 0;
 		if(parser_scenario.GetValueByFieldNameWithPrintOut("emission_data_output",g_EmissionDataOutputFlag )==false)
 		{
-			cout << "Field emission_data_output cannot be found in file input_scenario_settings.csv. Please check." << endl;
-			g_ProgramStop();
+//			cout << "Field emission_data_output cannot be found in file input_scenario_settings.csv. Please check." << endl;
+//			g_ProgramStop();
 		}
 
 		g_ReadInputFiles(scenario_no);

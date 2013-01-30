@@ -76,30 +76,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
 
 	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
-
 	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
-
-	switch (g_UEAssignmentMethod)
-	{
-	case 0: 
-	g_SummaryStatFile.WriteParameterValue ("Assignment method","Method of Successive Average");
-	break;
-	case 1:
-		g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to Day Learning");
-		g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
-		g_SummaryStatFile.WriteParameterValue ("Travel time difference for route switching",g_TravelTimeDifferenceForSwitching);
-		g_SummaryStatFile.WriteParameterValue ("Relative Travel Time Indifference Band (%) for route switching",g_RelativeTravelTimePercentageDifferenceForSwitching);
-
-	break;
-	case 2:
-	g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap function based adjustment");
-	g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
-	break;
-
-	}
-
-
-	g_SummaryStatFile.WriteTextString(" ");
 
 
 	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
@@ -520,140 +497,6 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 
 
-void g_ODBasedDynamicTrafficAssignment()
-{
-
-
-	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
-
-	int connector_count = 0;
-
-	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
-	{
-		connector_count += (iterZone->second.m_OriginActivityVector .size() + iterZone->second.m_DestinationActivityVector.size()) ;  // only this origin zone has vehicles, then we build the network
-	}
-
-	int link_size  = g_LinkVector.size() + connector_count; // maximal number of links including connectors assuming all the nodes are destinations
-
-	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
-
-	// Jason
-	int iteration = 0;
-	bool NotConverged = true;
-	int TotalNumOfVehiclesGenerated = 0;
-	int number_of_threads = omp_get_max_threads();
-
-	if(g_ParallelComputingMode == 0)
-		number_of_threads = 1;
-
-
-	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
-
-	// ----------* start of outer loop *----------
-	for(iteration=0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
-	{
-		cout << "------- Iteration = "<<  iteration << "--------" << endl;
-
-
-		if(iteration == 20)
-			TRACE("");
-		// initialize for each iteration
-		g_CurrentGapValue = 0.0;
-		g_CurrentRelativeGapValue = 0.0;
-		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
-		g_CurrentNumOfVehiclesSwitched = 0;
-		g_NewPathWithSwitchedVehicles = 0; 
-
-		// initialize for OD estimation
-		g_TotalDemandDeviation = 0;
-		g_TotalMeasurementDeviation = 0; 
-		int Actual_ODZoneSize = g_ZoneMap.size();  // Actual_ODZoneSize can be < ODZoneSize after subarea cut with new zones
-
-		if(!(g_VehicleLoadingMode == 1 && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
-		{
-			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl; 
-
-			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)
-				g_HistDemand.ResetUpdatedValue(); // reset update hist table
-
-#pragma omp parallel for
-			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-			{
-				// create network for shortest path calculation at this processor
-				int	id = omp_get_thread_num( );  // starting from 0
-
-				cout << "Processor " << id << " is working on shortest path calculation..  " << endl;
-
-				DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
-				//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-
-				for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
-				{
-					if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
-					{
-						if(g_ZoneMap[CurZoneID].m_OriginVehicleSize >0)  // only this origin zone has vehicles, then we build the network
-						{
-							// create network for shortest path calculation at this processor
-							network_MP.BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
-
-							if(Actual_ODZoneSize > 300)  // only for large networks
-							{
-								cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
-							}
-
-							// scan all possible departure times
-							for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
-							{
-								if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
-								{
-
-									bool debug_flag = false;
-
-									for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from LOV, HOV, truck
-									{
-										network_MP.TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-									}
-
-									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										network_MP.VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
-									else
-										network_MP.VehicleBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
-
-								}
-							} // for each departure time
-
-						} // for zone with volume
-					} // for zone id assigned to the processor id
-				}	// for each zone
-			}  // for each processor
-			//the OD estimation code below should be single thread
-
-			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // re-generate vehicles based on global path set
-			{
-				g_GenerateVehicleData_ODEstimation();
-			}
-
-			cout << "---- Network Loading for Iteration " << iteration <<"----" << endl;
-
-			//	 DTANetworkForSP network(node_size, link_size, g_DemandLoadingHorizon);  // network instance for single-thread application
-
-			NetworkLoadingOutput SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
-			g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,SimuOutput);
-
-		}	// end of outer loop
-
-	} // for each assignment iteration
-
-	cout << "Writing Vehicle Trajectory and MOE File... " << endl;
-
-	if( iteration == g_NumberOfIterations)
-	{ 
-		iteration = g_NumberOfIterations -1;  //roll back to the last iteration if the ending condition is triggered by "iteration < g_NumberOfIterations"
-	}
-
-	g_OutputMOEData(iteration);
-
-}
 
 
 void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration, bool debug_flag  = false)
@@ -1231,8 +1074,7 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 void g_AgentBasedShortestPathGeneration()
 {
 
-
-		// find unique origin node
+	// find unique origin node
 	// find unique destination node
 
 	int node_size  = g_NodeVector.size();
@@ -1294,8 +1136,6 @@ void g_AgentBasedShortestPathGeneration()
 	  cout<< "File input_od_pairs.csv cannot be opened. Please check!" << endl;
 	  g_ProgramStop();
 	}
-
-
 
 
 	unsigned int i;
@@ -1398,9 +1238,9 @@ void g_AgentBasedShortestPathGeneration()
 
 	}
 
-	//			cout <<g_GetAppRunningTime()<<  " Done!" << endl;
+	cout <<g_GetAppRunningTime()<<  " Done!" << endl;
 
-	//			g_ProgramStop();
+	g_ProgramStop();
 }
 
 
@@ -1481,23 +1321,6 @@ void g_AgentBasedAccessibilityMatrixGeneration()
 	int UniqueOriginSize = 0;
 	int UniqueDestinationSize = 0;
 	int number_of_threads = omp_get_max_threads();
-
-	if(g_ParallelComputingMode == 0)
-		number_of_threads = 1;
-
-	for(i=0; i< g_NodeVector.size(); i++)
-	{
-		if(g_NodeVector[i].m_bOriginFlag == true)
-		{
-			UniqueOriginSize +=1;
-		}
-
-
-
-		if(g_NodeVector[i].m_bDestinationFlag == true)
-			UniqueDestinationSize +=1;
-
-	}
 
 	cout<< "# of OD pairs = "  << line << endl; 
 	cout<< "# of unique origins = "  << UniqueOriginSize << " with " << line/UniqueOriginSize << " nodes per origin" << endl; 
