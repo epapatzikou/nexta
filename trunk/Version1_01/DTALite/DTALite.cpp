@@ -1847,8 +1847,26 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			
 			parser_agent.GetValueByFieldNameRequired ("agent_id",agent_id);
 			DTAVehicle* pVehicle = 0;
-			pVehicle = new DTAVehicle;
-			pVehicle->m_VehicleID = i;
+				try
+				{
+				pVehicle = new DTAVehicle;
+				if(pVehicle == NULL)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+
+				}
+
+				}
+				catch (std::bad_alloc& exc)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+			
+				}
+				pVehicle->m_VehicleID = i;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
 			parser_agent.GetValueByFieldNameRequired("from_zone_id",pVehicle->m_OriginZoneID);
@@ -1999,7 +2017,25 @@ void g_ReadDTALiteAgentBinFile(string file_name)
 				struct_VehicleInfo_Header element = pVehicleData[i];
 
 				DTAVehicle* pVehicle = 0;
+				try
+				{
 				pVehicle = new DTAVehicle;
+				if(pVehicle == NULL)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+
+				}
+
+				}
+				catch (std::bad_alloc& exc)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+			
+				}
 				pVehicle->m_VehicleID = count++;
 				pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
@@ -2082,15 +2118,25 @@ void g_ConvertDemandToVehicles()
 		if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
 		{
 
-			pVehicle = new DTAVehicle;
-			if(pVehicle == NULL)
-			{
-				cout << "Insufficient memory...";
-				getchar();
-				exit(0);
+				try
+				{
+				pVehicle = new DTAVehicle;
+				if(pVehicle == NULL)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
 
-			}
+				}
 
+				}
+				catch (std::bad_alloc& exc)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+			
+				}
 			pVehicle->m_VehicleID		= i;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 

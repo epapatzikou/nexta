@@ -126,8 +126,8 @@ string GetLinkStringID(int FromNodeName, int ToNodeName);
 struct SensorDataPoint
 {
 
-   double x;
-   double y;
+	double x;
+	double y;
 };
 
 struct struc_LinearRegressionResult
@@ -363,15 +363,15 @@ public:
 
 	DTADestination()
 	{
-	from_TAZ = 0;
-	to_TAZ = 0;
-	record_id = 0;
-	destination_number = 0;
-	destination_node_index= 0;
-	destination_node_distance = 0;
-	destination_node_travel_time= 0;
+		from_TAZ = 0;
+		to_TAZ = 0;
+		record_id = 0;
+		destination_number = 0;
+		destination_node_index= 0;
+		destination_node_distance = 0;
+		destination_node_travel_time= 0;
 
-	
+
 	}
 };
 
@@ -381,56 +381,56 @@ public:
 	DTANodeMovement()
 	{
 
-	starting_time_in_min = 0;
-	ending_time_in_min = 1440;
-	turnning_percentage = 0;
-	turning_prohibition_flag = 1;
-	signal_control_no = 0;
-	signal_group_no = 0;
-	phase_index = 0;
-	turn_volume = 10;
-	total_vehicle_count = 0;
-	total_vehicle_delay = 0;
-	movement_capacity_per_simulation_interval = 0;
-	movement_vehicle_counter = 0 ;
-	movement_hourly_capacity = 100;
-	movement_effective_green_time_in_min = 0;
+		starting_time_in_min = 0;
+		ending_time_in_min = 1440;
+		turnning_percentage = 0;
+		turning_prohibition_flag = 1;
+		signal_control_no = 0;
+		signal_group_no = 0;
+		phase_index = 0;
+		turn_volume = 10;
+		total_vehicle_count = 0;
+		total_vehicle_delay = 0;
+		movement_capacity_per_simulation_interval = 0;
+		movement_vehicle_counter = 0 ;
+		movement_hourly_capacity = 100;
+		movement_effective_green_time_in_min = 0;
 	}
 
 	float GetAvgDelay_In_Min()
 	{
-	float avg_delay = total_vehicle_delay/ max(1, total_vehicle_count );
+		float avg_delay = total_vehicle_delay/ max(1, total_vehicle_count );
 
-	if(movement_hourly_capacity<=0.1)
-		avg_delay = 99999;
+		if(movement_hourly_capacity<=0.1)
+			avg_delay = 99999;
 
-	return avg_delay;
+		return avg_delay;
 	}
 
 
-int IncomingLinkID;
-int OutgoingLinkID;
-string turning_direction;
-int in_link_from_node_id;
-int in_link_to_node_id;  // this equals to the current node number
-int out_link_to_node_id;
+	int IncomingLinkID;
+	int OutgoingLinkID;
+	string turning_direction;
+	int in_link_from_node_id;
+	int in_link_to_node_id;  // this equals to the current node number
+	int out_link_to_node_id;
 
-int total_vehicle_count;
-float total_vehicle_delay;
+	int total_vehicle_count;
+	float total_vehicle_delay;
 
-float movement_effective_green_time_in_min;
+	float movement_effective_green_time_in_min;
 
-float movement_hourly_capacity;
-float movement_capacity_per_simulation_interval;
-int movement_vehicle_counter;
-int starting_time_in_min;
-int ending_time_in_min;
-float turnning_percentage;
-int turning_prohibition_flag;
-int phase_index;
-int signal_control_no;  // for meso-scopic, link -based
-int signal_group_no;  // for meso-scopic, link -based
-int turn_volume;
+	float movement_hourly_capacity;
+	float movement_capacity_per_simulation_interval;
+	int movement_vehicle_counter;
+	int starting_time_in_min;
+	int ending_time_in_min;
+	float turnning_percentage;
+	int turning_prohibition_flag;
+	int phase_index;
+	int signal_control_no;  // for meso-scopic, link -based
+	int signal_group_no;  // for meso-scopic, link -based
+	int turn_volume;
 };
 
 
@@ -596,7 +596,7 @@ class SLinkMeasurement  // time-dependent link measurement
 {
 public:
 
-	
+
 	int DestinationNode;
 	int StartTime;
 	int EndTime;
@@ -835,7 +835,7 @@ public:
 	{
 		m_SimulationHorizon	= TimeSize;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
-//		m_LinkMeasurementAry.clear();  do not remove measurement data for ODME 
+		//		m_LinkMeasurementAry.clear();  do not remove measurement data for ODME 
 
 	}
 
@@ -873,7 +873,7 @@ public:
 
 		if(OutputFlowFlag == true);
 		NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
-			
+
 		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 		{
 			if( (WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (Time>= WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
@@ -922,7 +922,7 @@ public:
 	}
 
 	unsigned int m_RandomSeed; 
-		float GetRandomRatio()  // get link_specific random seed
+	float GetRandomRatio()  // get link_specific random seed
 	{
 		m_RandomSeed = (LCG_a * m_RandomSeed + LCG_c) % LCG_M;  //m_RandomSeed is automatically updated.
 
@@ -947,8 +947,8 @@ public:
 	char m_Direction;
 
 
-		std::string m_geometry_string, m_original_geometry_string;
-		double m_Intersection_NumberOfCrashes, m_Intersection_NumberOfFatalAndInjuryCrashes,m_Intersection_NumberOfPDOCrashes;
+	std::string m_geometry_string, m_original_geometry_string;
+	double m_Intersection_NumberOfCrashes, m_Intersection_NumberOfFatalAndInjuryCrashes,m_Intersection_NumberOfPDOCrashes;
 	bool m_bOnRampType;
 	bool m_bOffRampType;
 	string m_LinkTypeName;
@@ -1058,7 +1058,7 @@ public:
 
 	bool UpdateSpeedMeasurement(float speed, int timestamp)
 	{
-		
+
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
 			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
@@ -1074,21 +1074,21 @@ public:
 		return 0;
 
 	}
-	
-		float GetSimulatedTravelTime(float timestamp)
+
+	float GetSimulatedTravelTime(float timestamp)
+	{
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
-			for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
 			{
-				if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
-				{
-	
-					return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval,g_TrafficFlowModelFlag); 
-				}
-	
+
+				return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval,g_TrafficFlowModelFlag); 
 			}
-			return m_FreeFlowTravelTime;
-	
+
 		}
+		return m_FreeFlowTravelTime;
+
+	}
 	std::vector<Day2DayLinkMOE> m_Day2DayLinkMOEVector;
 	std::vector <int> m_CumuArrivalFlow;
 	std::vector <int> m_CumuDeparturelFlow;
@@ -1800,9 +1800,9 @@ public:
 
 	DTADecisionAlternative()
 	{
-	total_cost = 999999;  // initial value
-	node_size = 0;
-	final_departuret_time_shift = 0;
+		total_cost = 999999;  // initial value
+		node_size = 0;
+		final_departuret_time_shift = 0;
 	}
 
 	float total_cost;
@@ -1814,15 +1814,15 @@ public:
 	{  // by using this updating funciton, we easily add many alternatives (for mode, departure time choices)
 
 		if(temp_total_cost < total_cost)
-	{
-		total_cost = temp_total_cost;
-		final_departuret_time_shift = departure_time_shift;
-		node_size = temp_node_size;
+		{
+			total_cost = temp_total_cost;
+			final_departuret_time_shift = departure_time_shift;
+			node_size = temp_node_size;
 
-		for(int n = 0; n < MAX_NODE_SIZE_IN_A_PATH; n++)
-			path_link_list[n] = temp_path_link_list[n];
-	}
-	
+			for(int n = 0; n < MAX_NODE_SIZE_IN_A_PATH; n++)
+				path_link_list[n] = temp_path_link_list[n];
+		}
+
 	}
 
 };
@@ -2124,6 +2124,7 @@ T **AllocateDynamicArray(int nRows, int nCols)
 {
 	T **dynamicArray;
 
+	try {
 	dynamicArray = new T*[nRows];
 
 	if(dynamicArray == NULL)
@@ -2132,16 +2133,45 @@ T **AllocateDynamicArray(int nRows, int nCols)
 		g_ProgramStop();
 
 	}
+	}
+		catch (std::bad_alloc& exc)
+		{
+			cout << "Insufficient memory...";
+			getchar();
+			exit(0);
+
+		}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
 
 	for( int i = 0 ; i < nRows ; i++ )
 	{
-		dynamicArray[i] = new T [nCols];
+		try
+		{	
+			dynamicArray[i] = new T [nCols];
 
-		if (dynamicArray[i] == NULL)
-		{
-			cout << "Error: insufficent memory.";
-			g_ProgramStop();
+			if (dynamicArray[i] == NULL)
+			{
+				cout << "Error: insufficent memory.";
+				g_ProgramStop();
+			}
 		}
+		catch (std::bad_alloc& exc)
+		{
+			cout << "Insufficient memory...";
+			getchar();
+			exit(0);
+
+		}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
+
 
 	}
 
@@ -2169,6 +2199,8 @@ T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
 {
 	T ***dynamicArray;
 
+	try 
+	{
 	dynamicArray = new T**[nX];
 
 	if (dynamicArray == NULL)
@@ -2176,25 +2208,71 @@ T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
 		cout << "Error: insufficent memory.";
 		g_ProgramStop();
 	}
+	}
+		catch (std::bad_alloc& exc)
+		{
+			cout << "Insufficient memory...";
+			getchar();
+			exit(0);
+
+		}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
 
 	for( int x = 0 ; x < nX ; x++ )
 	{
-		dynamicArray[x] = new T* [nY];
+		try {
+			dynamicArray[x] = new T* [nY];
 
-		if (dynamicArray[x] == NULL)
-		{
-			cout << "Error: insufficent memory.";
-			g_ProgramStop();
-		}
 
-		for( int y = 0 ; y < nY ; y++ )
-		{
-			dynamicArray[x][y] = new T [nZ];
-			if (dynamicArray[x][y] == NULL)
+			if (dynamicArray[x] == NULL)
 			{
 				cout << "Error: insufficent memory.";
 				g_ProgramStop();
 			}
+		}
+		catch (std::bad_alloc& exc)
+		{
+			cout << "Insufficient memory...";
+			getchar();
+			exit(0);
+
+		}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
+
+
+		for( int y = 0 ; y < nY ; y++ )
+		{
+			try
+			{
+				dynamicArray[x][y] = new T [nZ];
+				if (dynamicArray[x][y] == NULL)
+				{
+					cout << "Error: insufficent memory.";
+					g_ProgramStop();
+				}
+			}
+			catch (std::bad_alloc& exc)
+			{
+				cout << "Insufficient memory...";
+				getchar();
+				exit(0);
+
+			}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
+
+
 		}
 	}
 
@@ -2327,6 +2405,9 @@ public:
 
 		m_PlanningHorizonInMin = PlanningHorizonInMin;
 		m_StartTimeInMin = StartTimeInMin;
+
+		try 
+		{
 		m_NumberOfSPCalculationIntervals = int(m_PlanningHorizonInMin/g_AggregationTimetInterval)+1;  // make sure it is not zero
 		m_StartIntervalForShortestPathCalculation = int(m_StartTimeInMin/g_AggregationTimetInterval);
 
@@ -2335,14 +2416,10 @@ public:
 		m_OutboundSizeAry = new int[m_NodeSize];
 		m_InboundSizeAry = new int[m_NodeSize];
 
-
 		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundConnectorZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
-
-		
-
 
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
@@ -2381,6 +2458,19 @@ public:
 		LinkPredAry = new int[m_LinkSize];
 		LinkLabelTimeAry = new float[m_LinkSize];                     // label - time
 		LinkLabelCostAry = new float[m_LinkSize];                     // label - cost
+		}
+			catch (std::bad_alloc& exc)
+		{
+			cout << "Insufficient memory...";
+			getchar();
+			exit(0);
+
+		}
+		catch (std::exception & e )
+		{
+			cout << "exception caught:" << e.what() << endl;
+
+		}
 
 	};
 	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
@@ -2817,34 +2907,34 @@ public:
 
 typedef struct  
 {
-		int vehicle_id;
-		int from_zone_id;
-		int to_zone_id;
-		float departure_time;
-		float arrival_time;
-		int complete_flag;
-		float trip_time;
-		int demand_type;
-		int pricing_type;
-		int vehicle_type;
-		int information_type;
-		float value_of_time;
-		float toll_cost_in_dollar;
-		float emissions;
-		float distance_in_mile;
-		int number_of_nodes;
-		float Energy;
-		float CO2;
-		float NOX;
-		float CO;
-		float HC;
+	int vehicle_id;
+	int from_zone_id;
+	int to_zone_id;
+	float departure_time;
+	float arrival_time;
+	int complete_flag;
+	float trip_time;
+	int demand_type;
+	int pricing_type;
+	int vehicle_type;
+	int information_type;
+	float value_of_time;
+	float toll_cost_in_dollar;
+	float emissions;
+	float distance_in_mile;
+	int number_of_nodes;
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
 
-		int age;
-		int version_no;
+	int age;
+	int version_no;
 
-		int reserverd_field1;
-		float reserverd_field2;
-		int reserverd_field3;
+	int reserverd_field1;
+	float reserverd_field2;
+	int reserverd_field3;
 
 } struct_VehicleInfo_Header;
 
@@ -2885,17 +2975,17 @@ public:
 	int use_point_queue_model_for_off_ramps; //
 	DTASettings()
 	{
-	
-	AdditionalYellowTimeForSignals = 0;
-	IteraitonNoStartSignalOptimization = 10000;
-	IteraitonStepSizeSignalOptimization = 5;
-	DefaultCycleTimeSignalOptimization = 60;
 
-	pretimed_signal_control_type_code = 5;
-	actuated_signal_control_type_code = 6;
-	no_signal_control_type_code = 1;
-	use_point_queue_model_for_on_ramps = 1;
-	use_point_queue_model_for_off_ramps = 1;
+		AdditionalYellowTimeForSignals = 0;
+		IteraitonNoStartSignalOptimization = 10000;
+		IteraitonStepSizeSignalOptimization = 5;
+		DefaultCycleTimeSignalOptimization = 60;
+
+		pretimed_signal_control_type_code = 5;
+		actuated_signal_control_type_code = 6;
+		no_signal_control_type_code = 1;
+		use_point_queue_model_for_on_ramps = 1;
+		use_point_queue_model_for_off_ramps = 1;
 
 	}
 
