@@ -64,8 +64,8 @@ extern e_traffic_flow_model g_TrafficFlowModelFlag;
 extern int g_ODZoneNumberSize;
 extern int g_ODZoneIDSize;
 
-enum SPEED_BIN {VSP_0_25mph=0,VSP_25_50mph,VSP_GT50mph};
-enum VSP_BIN {VSP_LT0=0,VSP_0_3,VSP_3_6,VSP_6_9,VSP_9_12,VSP_GT12,VSP_6_12,VSP_LT6};
+enum SPEED_BIN {VSP_0_25mph=0, VSP_25_50mph, VSP_GT50mph, MAX_SPEED_BIN};
+enum VSP_BIN {VSP_LT0=0,VSP_0_3, VSP_3_6, VSP_6_9, VSP_9_12, VSP_12_18, VSP_18_24, VSP_24_30, VSP_GT30, MAX_VSP_BIN};
 enum SENSOR_TYPE {sensor_type_time_dependent_link_count=0,sensor_type_static_link_count,sensor_type_time_dependent_movement_count,sensor_type_static_movement_count};
 
 
@@ -1647,10 +1647,10 @@ public:
 
 	}
 
-	double rollingTermA;
-	double	rotatingTermB;
-	double	dragTermC;
-	double sourceMass;
+	float rollingTermA;
+	float rotatingTermB;
+	float dragTermC;
+	float sourceMass;
 
 	int vehicle_type;
 	string vehicle_type_name;
@@ -1767,7 +1767,7 @@ public:
 		case VSP_0_25mph: str.Format ("0_25 mph"); break;
 		case VSP_25_50mph: str.Format ("25_50 mph"); break;
 		case VSP_GT50mph: str.Format (">=50 mph"); break;
-
+		default: str.Format("Unknown"); break;
 		}
 		return str;
 
@@ -1778,15 +1778,16 @@ public:
 		CString str;
 		switch(VSPBinNo)
 		{
-		case VSP_LT0: str.Format ("VSP_<=0"); break;
-		case VSP_0_3: str.Format ("VSP_0_3"); break;
-		case VSP_3_6: str.Format ("VSP_3_6"); break;
-		case VSP_6_9: str.Format ("VSP_6_9"); break;
-		case VSP_9_12: str.Format ("VSP_9_12"); break;
-		case VSP_GT12: str.Format ("VSP_>=12"); break;
-		case VSP_6_12: str.Format ("VSP_6_12"); break;
-		case VSP_LT6: str.Format ("VSP_<=6"); break;
-
+		case VSP_LT0: str.Format("VSP_<=0"); break;
+		case VSP_0_3: str.Format("VSP_0_3"); break;
+		case VSP_3_6: str.Format("VSP_3_6"); break;
+		case VSP_6_9: str.Format("VSP_6_9"); break;
+		case VSP_9_12: str.Format("VSP_9_12"); break;
+		case VSP_12_18: str.Format("VSP_12_18"); break;
+		case VSP_18_24: str.Format("VSP_18_24"); break;
+		case VSP_24_30: str.Format("VSP_24_30"); break;
+		case VSP_GT30: str.Format("VSP_>=30"); break;
+		default: str.Format("Unknown"); break;
 		}
 		return str;
 
