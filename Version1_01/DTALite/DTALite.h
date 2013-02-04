@@ -1639,10 +1639,10 @@ public:
 	DTAVehicleType()
 	{
 		vehicle_type = 1;
-		rollingTermA = 0.156461;
-		rotatingTermB = 0.00200193;
-		dragTermC = 0.000492646;
-		sourceMass = 1.4788;
+		rollingTermA = 0.156461f;
+		rotatingTermB = 0.00200193f;
+		dragTermC = 0.000492646f;
+		sourceMass = 1.4788f;
 
 
 	}
@@ -2124,54 +2124,24 @@ T **AllocateDynamicArray(int nRows, int nCols)
 {
 	T **dynamicArray;
 
-	try {
-	dynamicArray = new T*[nRows];
+	dynamicArray = new (std::nothrow) T*[nRows];
 
 	if(dynamicArray == NULL)
 	{
-		cout << "Error: insufficent memory.";
+		cout << "Error: insufficient memory.";
 		g_ProgramStop();
 
 	}
-	}
-		catch (std::bad_alloc& exc)
-		{
-			cout << "Insufficient memory...";
-			getchar();
-			exit(0);
-
-		}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
 
 	for( int i = 0 ; i < nRows ; i++ )
 	{
-		try
-		{	
-			dynamicArray[i] = new T [nCols];
+		dynamicArray[i] = new (std::nothrow) T[nCols];
 
-			if (dynamicArray[i] == NULL)
-			{
-				cout << "Error: insufficent memory.";
-				g_ProgramStop();
-			}
-		}
-		catch (std::bad_alloc& exc)
+		if (dynamicArray[i] == NULL)
 		{
-			cout << "Insufficient memory...";
-			getchar();
-			exit(0);
-
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
 		}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
-
 
 	}
 
@@ -2199,80 +2169,32 @@ T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
 {
 	T ***dynamicArray;
 
-	try 
-	{
-	dynamicArray = new T**[nX];
+	dynamicArray = new (std::nothrow) T**[nX];
 
 	if (dynamicArray == NULL)
 	{
-		cout << "Error: insufficent memory.";
+		cout << "Error: insufficient memory.";
 		g_ProgramStop();
 	}
-	}
-		catch (std::bad_alloc& exc)
-		{
-			cout << "Insufficient memory...";
-			getchar();
-			exit(0);
-
-		}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
 
 	for( int x = 0 ; x < nX ; x++ )
 	{
-		try {
-			dynamicArray[x] = new T* [nY];
+		dynamicArray[x] = new (std::nothrow) T*[nY];
 
-
-			if (dynamicArray[x] == NULL)
-			{
-				cout << "Error: insufficent memory.";
-				g_ProgramStop();
-			}
-		}
-		catch (std::bad_alloc& exc)
+		if (dynamicArray[x] == NULL)
 		{
-			cout << "Insufficient memory...";
-			getchar();
-			exit(0);
-
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
 		}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
-
 
 		for( int y = 0 ; y < nY ; y++ )
 		{
-			try
+			dynamicArray[x][y] = new (std::nothrow) T[nZ];
+			if (dynamicArray[x][y] == NULL)
 			{
-				dynamicArray[x][y] = new T [nZ];
-				if (dynamicArray[x][y] == NULL)
-				{
-					cout << "Error: insufficent memory.";
-					g_ProgramStop();
-				}
+				cout << "Error: insufficient memory.";
+				g_ProgramStop();
 			}
-			catch (std::bad_alloc& exc)
-			{
-				cout << "Insufficient memory...";
-				getchar();
-				exit(0);
-
-			}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
-
-
 		}
 	}
 
@@ -2405,9 +2327,6 @@ public:
 
 		m_PlanningHorizonInMin = PlanningHorizonInMin;
 		m_StartTimeInMin = StartTimeInMin;
-
-		try 
-		{
 		m_NumberOfSPCalculationIntervals = int(m_PlanningHorizonInMin/g_AggregationTimetInterval)+1;  // make sure it is not zero
 		m_StartIntervalForShortestPathCalculation = int(m_StartTimeInMin/g_AggregationTimetInterval);
 
@@ -2416,10 +2335,14 @@ public:
 		m_OutboundSizeAry = new int[m_NodeSize];
 		m_InboundSizeAry = new int[m_NodeSize];
 
+
 		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundConnectorZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
+
+
+
 
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
@@ -2458,19 +2381,6 @@ public:
 		LinkPredAry = new int[m_LinkSize];
 		LinkLabelTimeAry = new float[m_LinkSize];                     // label - time
 		LinkLabelCostAry = new float[m_LinkSize];                     // label - cost
-		}
-			catch (std::bad_alloc& exc)
-		{
-			cout << "Insufficient memory...";
-			getchar();
-			exit(0);
-
-		}
-		catch (std::exception & e )
-		{
-			cout << "exception caught:" << e.what() << endl;
-
-		}
 
 	};
 	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
