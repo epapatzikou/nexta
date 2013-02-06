@@ -294,12 +294,19 @@ CString CNetworkDataTabDlg::GenerateRecordString()
 {
 	std::string Str;
 
+	vector<int> indexOfGeometryFieldVector;
+
 	for (int i=0;i<names.size();i++)
 	{
 		Str += names.at(i);
 		if (i != names.size() - 1)
 		{
 			Str += ",";
+		}
+
+		if (names[i].find("geometry") != string::npos)
+		{
+			indexOfGeometryFieldVector.push_back(i);
 		}
 	}
 
@@ -312,7 +319,27 @@ CString CNetworkDataTabDlg::GenerateRecordString()
 		{
 			std::string tmp = std::string(m_ListCtrl.GetItemText(i,j));
 
-			subStr += tmp;
+			if (indexOfGeometryFieldVector.size() > 0)
+			{
+				bool bFound = false;
+				for (int n=0;n<indexOfGeometryFieldVector.size();n++)
+				{
+					if (indexOfGeometryFieldVector[n] == j)
+					{
+						subStr += "\"" + tmp + "\"";
+						bFound = true;
+						break;
+					}
+				}
+				if (!bFound)
+				{
+					subStr += tmp;
+				}
+			}
+			else
+			{
+				subStr += tmp;
+			}
 
 			if (j != m_NumOfCols - 1)
 			{
