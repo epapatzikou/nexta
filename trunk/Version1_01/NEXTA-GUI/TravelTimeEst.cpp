@@ -214,7 +214,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 				pLink = m_LinkNoMap[link_id -1];
 			else 
 */
-			pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber,lpszFileName );
+			pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber);
 
 
 			if(pLink!=NULL)

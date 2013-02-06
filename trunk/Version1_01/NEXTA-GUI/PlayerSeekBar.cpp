@@ -100,6 +100,9 @@ m_start(0), m_stop(100), m_pos(0), m_posreal(0),
 {
    m_prev_pos = 0;
    m_Player_Status = 0;
+   m_DemandLoadingStartTimeInMin = -1;
+   m_DemandLoadingEndTimeInMin = -1;
+
 }
 
 CPlayerSeekBar::~CPlayerSeekBar()
@@ -327,17 +330,28 @@ void CPlayerSeekBar::OnPaint()
 
 	int  nFontSize = 80;
 	text_font.CreatePointFont(nFontSize, _T("Arial"));
-
+	
 	dc.SelectObject(&text_font);
+
+	CFont demand_font;  // local font for nodes. dynamically created. it is effective only inside this function. if you want to pass this font to the other function, we need to pass the corresponding font pointer (which has a lot of communication overheads)
+
 	dc.SetTextColor(RGB(190,190,190));
 
 	CRect r = GetChannelRect();
 	  for(int time = m_start; time < m_stop; time +=60)
 	  {
-		int x = r.left + float(time)/(m_stop-m_start)*(r.right - r.left);
+		if(time >= this->m_DemandLoadingStartTimeInMin && time <= this->m_DemandLoadingEndTimeInMin )
+		{
+		dc.SetTextColor(RGB(0,0,0));
+		}else
+		{
+		dc.SetTextColor(RGB(190,190,190));
+		}
+
+	int x = r.left + float(time)/(m_stop-m_start)*(r.right - r.left);
 		int y = r.top;
 		CString str;
-		str.Format("%dh",time/60);
+			str.Format("%dh",time/60);
 		dc.SetBkMode(TRANSPARENT);
 		dc.TextOutA (x,y,str);
 	  }

@@ -54,11 +54,11 @@ enum layer_mode
 	layer_movement,
 	layer_zone,
 	layer_connector,
-	layer_link_MOE,
 	layer_ODMatrix,
-	layer_detector,
-	layer_subarea, 
+	layer_link_MOE,
 	layer_path, 
+	layer_subarea, 
+	layer_detector,
 	layer_workzone,
 	layer_crash,
 	layer_VMS,
@@ -79,7 +79,13 @@ enum VEHICLE_CLASSIFICATION_SELECTION {CLS_network=0, CLS_OD,CLS_link_set,
 CLS_sep_c_1,
 CLS_path_trip,CLS_path_partial_trip,
 CLS_sep_c_2,
-CLS_subarea_generated,CLS_subarea_traversing_through,CLS_subarea_internal_to_external,CLS_subarea_external_to_internal,CLS_subarea_internal_to_internal_trip,CLS_subarea_internal_to_internal_subtrip,CLS_subarea_boundary_to_bounary_subtrip};
+CLS_subarea_generated,
+CLS_subarea_traversing_through,
+CLS_subarea_internal_to_external,
+CLS_subarea_external_to_internal,
+CLS_subarea_internal_to_internal_trip,
+CLS_subarea_internal_to_internal_subtrip,
+CLS_subarea_boundary_to_bounary_subtrip};
 enum VEHICLE_X_CLASSIFICATION {CLS_all_vehicles=0,CLS_pricing_type,
 CLS_sep_1,
 CLS_time_interval_15_min,CLS_time_interval_30_min,CLS_time_interval_60_min,CLS_time_interval_2_hour,CLS_time_interval_4_hour,
@@ -420,6 +426,7 @@ public:
 	int m_PreviousZoneNoSize;
 
 
+	void ResetZoneIDVector();
 	void ResetODMOEMatrix();
 
 	void ShowTextLabel();
@@ -957,6 +964,8 @@ public:
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
 	bool ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int date_id);
+	bool ReadDYNASMART_ControlFile();
+	bool ReadDYNASMART_ControlFile_ForAMSHub();
 	bool WriteSelectVehicleDataToCSVFile(LPCTSTR lpszFileName, std::vector<DTAVehicle*> VehicleVector);
 
 	CString GetPricingTypeStr(int PricingType)
@@ -1682,14 +1691,15 @@ public:
 
 			if(FileName.GetLength() == 0)
 			{
-				msg.Format ("Link %d-> %d cannot be found.", FromNodeNumber, ToNodeNumber);
+							return NULL;
+
 			}else
 			{
 				msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
-			}
 			AfxMessageBox(msg);
-			return NULL;
 		return NULL;
+			}
+
 	}
 
 	//DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
@@ -1811,6 +1821,7 @@ public:
 	virtual void Serialize(CArchive& ar);
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
 	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo=0);
+	BOOL SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input_link_CSF_File, int SelectedLayNo);
 	void CopyDefaultFiles();
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
@@ -2163,6 +2174,8 @@ public:
 	afx_msg void OnCrashViewincidentdatatable();
 	afx_msg void OnZoneRemoveactivitylocationsofselectedzone();
 	afx_msg void OnZoneRegenerateactivitylocationsforselectedzone();
+	afx_msg void OnShowMoePathlist();
+	afx_msg void OnExportExportaggregatedlinkmoefile();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);
