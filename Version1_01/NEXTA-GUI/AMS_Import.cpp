@@ -675,7 +675,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					if(link_type_field.size()>0)// if link type information is required, skip this link
 					{
 							CString str;
-							str.Format("link type (%s) for %d ->%d in the link shape file does not have valid values (>=1).\n",link_type_name, from_node_id, to_node_id);
+							str.Format("link type (%s) for %d ->%d in the link shape file does not have valid values (which should be >=1).\n",link_type_name.c_str (), from_node_id, to_node_id);
 
 								if(warning_message.GetLength ()<1000)  // to avoid too many error messages
 							{

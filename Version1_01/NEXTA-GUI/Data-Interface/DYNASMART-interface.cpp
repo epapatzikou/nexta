@@ -34,6 +34,7 @@
 #include <iostream>                          // for cout, endl
 #include <fstream>                           // for ofstream
 #include <sstream>
+#include "..//Dlg_UserInput.h"
 using namespace std;
 
 //#include "DYNASMART-interace.h"
@@ -874,139 +875,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 	// read control.dat
 
-	fopen_s(&st,directory+"control.dat","r");
-	if(st != NULL)
-	{
-		int num_timing_plan = g_read_integer(st);
-
-		if(num_timing_plan > 1)
-		{
-			AfxMessageBox("Number of signal timing plan is greater than 1.  Only one signal timing plan is allowed to generate the actuated control data in the current version.", MB_ICONINFORMATION);
-			fclose(st);
-		}
-
-		//		double start_time = g_read_float(st);
-		char  str_line[2000]; // input string
-		int str_line_size;
-		g_read_a_line(st,str_line, str_line_size); //  skip the second line
-
-		// read the first block: Node - Control Type
-		std::list<DTANode*>::iterator iNode;
-
-		int last_good_node_number = 0;
-		for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-			int node_name = g_read_integer(st);
-			if(node_name == -1)
-			{
-				CString str;
-				str.Format("Error in reading the node block of control.dat. Last valid node number = %d ", last_good_node_number);
-				AfxMessageBox(str, MB_ICONINFORMATION);
-				fclose(st);
-			}
-
-			last_good_node_number = node_name;
-
-			DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
-			pNode->m_ControlType  = g_read_integer(st);
-			pNode->m_NumberofPhases = g_read_integer(st);
-			pNode->m_CycleLengthInSecond = g_read_integer(st);
-
-		}
-
-		// read the second block: Phase time and movement
-		// read node by node
-
-		int number_of_signals = 0;
-		for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-
-			if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
-			{
-				(*iNode)-> m_bSignalData = true;
-				number_of_signals++;
-
-				for(int p  = 0; p < (*iNode)->m_NumberofPhases; p++)
-				{
-					int node_name = g_read_integer(st);
-					if(m_NodeNumbertoIDMap.find(node_name) == m_NodeNumbertoIDMap.end())
-					{
-						CString str;
-						str.Format("Error in reading the signal data block of control.dat. Last valid node number = %d ", last_good_node_number);
-						AfxMessageBox(str, MB_ICONINFORMATION);
-						fclose(st);
-					}
-					last_good_node_number = node_name;
-
-
-					DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
-
-					int phase_ID = g_read_integer(st);
-
-
-					if(node_name == 54154)
-					{
-						TRACE("");
-
-					}
-
-					DTANodePhase phase;
-					phase.max_green  = g_read_integer(st);
-					phase.min_green   = g_read_integer(st);
-					phase.amber  = g_read_integer(st);
-					int approach = g_read_integer(st);
-
-
-					// approach node numbers (reserved 4 nodes)
-					g_read_integer(st);
-					g_read_integer(st);
-					g_read_integer(st);
-					g_read_integer(st);
-
-					//
-					// read all possible approaches
-					for(int i=0; i< approach; i++)
-					{
-
-						int in_link_from_node_number = g_read_integer(st);
-						int in_link_to_node_number = g_read_integer(st);
-						int in_link_from_node_id = m_NodeNumbertoIDMap[in_link_from_node_number];
-						int in_link_to_node_id = m_NodeNumbertoIDMap[in_link_to_node_number];
-
-						DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
-						if(pLink!=NULL)
-						{
-							pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
-						}
-
-
-
-						int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
-
-						int movement_size  = g_read_integer(st);
-
-						for(int k=0; k<movement_size; k++)
-						{
-							int out_link_to_node_id = m_NodeNumbertoIDMap[g_read_integer(st)];
-
-							int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
-							if(movement_index>=0)
-							{
-								phase.movement_index_vector .push_back(movement_index);
-
-							}
-						}  // movement
-					} // approach 
-					pNode->m_PhaseVector.push_back(phase);
-
-				} // phase
-
-			}   // control data
-		}  // for each node
-		fclose(st);
-
-		m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
-	}
+	ReadDYNASMART_ControlFile();
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -1058,15 +927,15 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 	if(bHighresoltutionFlag)
 	{
 
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		(*iLink)->m_HighResoltionLinkOutCount.resize(1200);  // 0.1 min, 2 hours
-
-		for(int t=0; t< (*iLink)->m_HighResoltionLinkOutCount.size(); t++)
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			(*iLink)->m_HighResoltionLinkOutCount[t] = 0;  // reset 
+			(*iLink)->m_HighResoltionLinkOutCount.resize(1200);  // 0.1 min, 2 hours
+
+			for(int t=0; t< (*iLink)->m_HighResoltionLinkOutCount.size(); t++)
+			{
+				(*iLink)->m_HighResoltionLinkOutCount[t] = 0;  // reset 
+			}
 		}
-	}
 	}
 	int count  = 0;
 	std::list<DTAVehicle*>::iterator iVehicle;
@@ -1111,7 +980,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 				}
 
 			}
-			
+
 			if(i< (pVehicle->m_NodeSize-1)&& pVehicle->m_NodeAry[i+1].LinkNo!=-1) // next link
 			{
 
@@ -1307,7 +1176,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		{
 			float timestamp = g_read_float(pFile);  // read timestamp in min
 
-	//		TRACE("timestamp = %f\n",timestamp);
+			//		TRACE("timestamp = %f\n",timestamp);
 
 			if(timestamp < 0)  // end of file
 				break;
@@ -1777,5 +1646,327 @@ bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int dat
 
 		m_SimulationVehicleDataLoadingStatus.Format ("%d vehicles are loaded from VehTrajectory.dat .",m_VehicleSet.size());
 	}
+	return true;
+}
+
+bool CTLiteDoc::ReadDYNASMART_ControlFile()
+{
+	FILE* st;
+	fopen_s(&st,m_ProjectDirectory+"control.dat","r");
+	if(st != NULL)
+	{
+		int num_timing_plan = g_read_integer(st);
+
+		if(num_timing_plan > 1)
+		{
+			AfxMessageBox("Number of signal timing plan is greater than 1.  Only one signal timing plan is allowed to generate the actuated control data in the current version.", MB_ICONINFORMATION);
+			fclose(st);
+		}
+
+		//		double start_time = g_read_float(st);
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the second line
+
+		// read the first block: Node - Control Type
+		std::list<DTANode*>::iterator iNode;
+
+		int last_good_node_number = 0;
+		for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			int node_name = g_read_integer(st);
+			if(node_name == -1)
+			{
+				CString str;
+				str.Format("Error in reading the node block of control.dat. Last valid node number = %d ", last_good_node_number);
+				AfxMessageBox(str, MB_ICONINFORMATION);
+				fclose(st);
+			}
+
+			last_good_node_number = node_name;
+
+			DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+			pNode->m_ControlType  = g_read_integer(st);
+			pNode->m_NumberofPhases = g_read_integer(st);
+			pNode->m_CycleLengthInSecond = g_read_integer(st);
+
+		}
+
+		// read the second block: Phase time and movement
+		// read node by node
+
+		int number_of_signals = 0;
+		for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			DTANode* pNode = (*iNode);
+
+			if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+				pNode-> m_bSignalData = true;
+				number_of_signals++;
+
+				for(int p  = 0; p < pNode->m_NumberofPhases; p++)
+				{
+					int node_name = g_read_integer(st);
+
+					if(node_name == 55303)
+					{
+						TRACE("");
+					}
+
+					if(m_NodeNumbertoIDMap.find(node_name) == m_NodeNumbertoIDMap.end())
+					{
+						CString str;
+						str.Format("Error in reading the signal data block of control.dat. Last valid node number = %d ", last_good_node_number);
+						AfxMessageBox(str, MB_ICONINFORMATION);
+						fclose(st);
+					}
+					last_good_node_number = node_name;
+
+
+					DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+
+					int phase_ID = g_read_integer(st);
+
+
+					if(node_name == 54154)
+					{
+						TRACE("");
+
+					}
+
+					DTANodePhase phase;
+					phase.max_green  = g_read_integer(st);
+					phase.min_green   = g_read_integer(st);
+					phase.amber  = g_read_integer(st);
+					int approach = g_read_integer(st);
+
+
+					// approach node numbers (reserved 4 nodes)
+					g_read_integer(st);
+					g_read_integer(st);
+					g_read_integer(st);
+					g_read_integer(st);
+
+					//
+					// read all possible approaches
+					for(int i=0; i< approach; i++)
+					{
+
+						int in_link_from_node_number = g_read_integer(st);
+						int in_link_to_node_number = g_read_integer(st);
+						int in_link_from_node_id = m_NodeNumbertoIDMap[in_link_from_node_number];
+						int in_link_to_node_id = m_NodeNumbertoIDMap[in_link_to_node_number];
+
+						DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
+						if(pLink!=NULL)
+						{
+							pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
+						}
+
+
+
+						int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
+
+						int movement_size  = g_read_integer(st);
+
+						for(int k=0; k<movement_size; k++)
+						{
+							int out_link_to_node_id = m_NodeNumbertoIDMap[g_read_integer(st)];
+
+							int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
+							if(movement_index>=0)
+							{
+								phase.movement_index_vector .push_back(movement_index);
+
+							}
+						}  // movement
+					} // approach 
+					pNode->m_PhaseVector.push_back(phase);
+
+				} // phase
+
+			}   // control data
+		}  // for each node
+		fclose(st);
+
+
+		m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
+	}
+
+	return true;
+}
+
+bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
+{
+	FILE* st;
+
+	int number_of_nodes = 0;
+
+	std::vector<int> DSP_signal_node_vector;
+	fopen_s(&st,m_ProjectDirectory+"dsp_control.dat","r");
+	if(st != NULL)
+	{
+		CDlg_UserInput dlg;
+
+		dlg.m_StrQuestion  = "Please specify the number of nodes to be loaded from file dsp_control.dat:";
+		dlg.m_InputValue = "10";
+
+		if(dlg.DoModal ()==IDOK)
+		{
+			number_of_nodes = atoi(dlg.m_InputValue) ;
+		}
+
+		CWaitCursor cursor;
+
+		int num_timing_plan = g_read_integer(st);
+
+		if(num_timing_plan > 1)
+		{
+			AfxMessageBox("Number of signal timing plan is greater than 1.  Only one signal timing plan is allowed to generate the actuated control data in the current version.", MB_ICONINFORMATION);
+			fclose(st);
+		}
+
+		//		double start_time = g_read_float(st);
+		char  str_line[2000]; // input string
+		int str_line_size;
+		g_read_a_line(st,str_line, str_line_size); //  skip the second line
+
+		// read the first block: Node - Control Type
+		int last_good_node_number = 0;
+		for ( int i = 0; i< number_of_nodes; i++)
+		{
+			int node_name = g_read_integer(st);
+			if(node_name == -1)
+			{
+				CString str;
+				str.Format("Error in reading the node block of control.dat. Last valid node number = %d ", last_good_node_number);
+				AfxMessageBox(str, MB_ICONINFORMATION);
+				fclose(st);
+			}
+
+			last_good_node_number = node_name;
+
+			if(m_NodeNumbertoIDMap.find(node_name)!=m_NodeNumbertoIDMap.end())
+			{
+				DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+				pNode->m_ControlType  = g_read_integer(st);
+
+				if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
+				{
+					DSP_signal_node_vector.push_back (node_name);
+				}
+
+
+				pNode->m_NumberofPhases = g_read_integer(st);
+				pNode->m_CycleLengthInSecond = g_read_integer(st);
+
+				TRACE("\nNode Number = %d, type = %d",node_name,pNode->m_ControlType );
+			}else
+			{
+				TRACE("\nMissing Node Number = %d",node_name);
+				g_read_integer(st);
+				g_read_integer(st);
+				g_read_integer(st);
+
+
+
+			}
+
+		}
+
+		// read the second block: Phase time and movement
+		// read node by node
+
+		int number_of_signals = 0;
+		for ( int i = 0; i< DSP_signal_node_vector.size(); i++)
+		{
+
+			int node_name = DSP_signal_node_vector[i];
+			if(m_NodeNumbertoIDMap.find(node_name)!=m_NodeNumbertoIDMap.end())
+			{
+				DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+
+				if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
+				{
+					pNode-> m_bSignalData = true;
+					number_of_signals++;
+
+					for(int p  = 0; p < pNode->m_NumberofPhases; p++)
+					{
+						int node_name = g_read_integer(st);
+
+						last_good_node_number = node_name;
+
+
+						int phase_ID = g_read_integer(st);
+
+
+						if(node_name == 54154)
+						{
+							TRACE("");
+
+						}
+
+						DTANodePhase phase;
+						phase.max_green  = g_read_integer(st);
+						phase.min_green   = g_read_integer(st);
+						phase.amber  = g_read_integer(st);
+						int approach = g_read_integer(st);
+
+
+						// approach node numbers (reserved 4 nodes)
+						g_read_integer(st);
+						g_read_integer(st);
+						g_read_integer(st);
+						g_read_integer(st);
+
+						//
+						// read all possible approaches
+						for(int i=0; i< approach; i++)
+						{
+
+							int in_link_from_node_number = g_read_integer(st);
+							int in_link_to_node_number = g_read_integer(st);
+							int in_link_from_node_id = m_NodeNumbertoIDMap[in_link_from_node_number];
+							int in_link_to_node_id = m_NodeNumbertoIDMap[in_link_to_node_number];
+
+							DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
+							if(pLink!=NULL)
+							{
+								pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
+							}
+
+
+
+							int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
+
+							int movement_size  = g_read_integer(st);
+
+							for(int k=0; k<movement_size; k++)
+							{
+								int out_link_to_node_id = m_NodeNumbertoIDMap[g_read_integer(st)];
+
+								int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
+								if(movement_index>=0)
+								{
+									phase.movement_index_vector .push_back(movement_index);
+
+								}
+							}  // movement
+						} // approach 
+						pNode->m_PhaseVector.push_back(phase);
+
+					} // phase
+
+				}   // control data
+			}
+		}  // for each node
+		fclose(st);
+
+
+		m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
+	}
+
 	return true;
 }

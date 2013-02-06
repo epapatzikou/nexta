@@ -922,10 +922,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			min_y = min(FromPoint.y,ToPoint.y);
 			max_y = max(FromPoint.y,ToPoint.y);
 
-			link_rect.SetRect(min_x-50,min_y-50,max_x+50,max_y+50);
+			int size = 200;
+			link_rect.SetRect(min_x-size,min_y-size,max_x+size,max_y+size);
 
-			if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
-				continue;
+			//if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
+			//	continue;
 
 
 			// step 4: select color and brush for MOE mode
@@ -1001,7 +1002,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 				// special condition for subarea link
-				if((*iLink)->m_bIncludedinSubarea)
+				if((*iLink)->m_bIncludedinSubarea && pDoc->m_SubareaShapePoints.size()>=3)
 					pDC->SelectObject(&g_SubareaLinkPen);
 
 			}else  // default arterial model
@@ -1197,6 +1198,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
  						case link_display_effective_green_time_length_in_second:
 							str_text.Format ("%d",(*iLink)->m_EffectiveGreenTimeInSecond  ); break;
+
+ 						case link_display_BPR_alpha_term:
+							str_text.Format ("%.4f",(*iLink)->m_BPR_alpha_term   ); break;
+							
+ 						case link_display_BPR_beta_term:
+							str_text.Format ("%.4f",(*iLink)->m_BPR_beta_term    ); break;
 
  						case link_display_effective_green_time_length_in_second_positive_number_only:
 
@@ -1443,7 +1450,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if(pMainFrame->m_bShowLayerMap[layer_path] && pDoc->m_PathDisplayList.size() > pDoc->m_SelectPathNo && pDoc->m_SelectPathNo!=-1)
 	{
 
-		pDC->SelectObject(&g_PenSelectPath);
 
 		for (i=0 ; i<pDoc->m_PathDisplayList[pDoc->m_SelectPathNo].m_LinkVector.size(); i++)
 		{
@@ -1458,6 +1464,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 				pDoc->m_DestinationNodeID =  pLink->m_ToNodeID ;
 				}
+
+				// select link color 
+				if(pLink->m_LinkNo == pDoc->m_SelectedLinkNo)
+				{
+								g_SelectThickPenColor(pDC,0);
+								pDC->SetTextColor(RGB(255,0,0));
+				}
+				else
+				{
+					pDC->SelectObject(&g_PenSelectPath);
+				}
+
 				DrawLinkAsLine(pLink,pDC);
 
 			}
@@ -3086,8 +3104,6 @@ void CTLiteView::OnNodeOrigin()
 	GDPoint pt = SPtoNP(m_CurrentMousePoint);
 	pDoc->FindAccessibleTripID(pt.x, pt.y);
 
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	m_ShowAllPaths = true;
 	Invalidate();
@@ -3107,9 +3123,6 @@ void CTLiteView::OnNodeDestination()
 
 	m_ShowAllPaths = true;
 	pDoc->Routing(false);
-
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	Invalidate();
 
@@ -3142,26 +3155,26 @@ void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 			//speical condition first
 
 		
-		if(pMainFrame-> m_iSelectedLayer == layer_zone)
-		{
-			CMenu cm;
-			cm.LoadMenu(IDR_MENU1);
+		//if(pMainFrame-> m_iSelectedLayer == layer_zone)
+		//{
+		//	CMenu cm;
+		//	cm.LoadMenu(IDR_MENU1);
 
-			if(pDoc->m_SubareaShapePoints .size()>=3)
-			{
-				cm.GetSubMenu(layer_subarea)->TrackPopupMenu(
-				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
-			}else
-			{
-				cm.GetSubMenu(layer_zone)->TrackPopupMenu(
-				TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
-				MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
-			
-			}
-			
+		//	if(pDoc->m_SubareaShapePoints .size()>=3)
+		//	{
+		//		cm.GetSubMenu(layer_subarea)->TrackPopupMenu(
+		//		TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+		//		MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
+		//	}else
+		//	{
+		//		cm.GetSubMenu(layer_zone)->TrackPopupMenu(
+		//		TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON,
+		//		MenuPoint.x, MenuPoint.y, AfxGetMainWnd());
+		//	
+		//	}
+		//	
 	
-		}else
+		//}else
 		{
 			CMenu cm;
 			cm.LoadMenu(IDR_MENU1);
@@ -5545,8 +5558,6 @@ void CTLiteView::OnNodeAddintermediatedestinationhere()
 
 	pDoc->Routing(false);
 
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	m_ShowAllPaths = true;
 	Invalidate();
@@ -5576,8 +5587,6 @@ void CTLiteView::OnNodeRemoveallintermediatedestination()
 
 	pDoc->Routing(false);
 
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	m_ShowAllPaths = true;
 	Invalidate();
@@ -5597,8 +5606,6 @@ void CTLiteView::OnLinkAvoidusingthislinkinrouting()
 	pLink -> m_AdditionalCost = 10000;
 	pDoc->Routing(false,true);
 
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	m_ShowAllPaths = true;
 	Invalidate();
@@ -5963,9 +5970,6 @@ void CTLiteView::OnNodeAvoidthisnode()
 
 	pDoc->Routing(false, true);
 
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
-
 	m_ShowAllPaths = true;
 	Invalidate();
 }
@@ -5984,9 +5988,6 @@ void CTLiteView::OnNodeRemovenodeavoidanceconstraint()
 	}
 
 	pDoc->Routing(false, true);
-
-	if(pDoc->m_bShowPathList)
-		pDoc->ShowPathListDlg(pDoc->m_bShowPathList);
 
 	m_ShowAllPaths = true;
 	Invalidate();

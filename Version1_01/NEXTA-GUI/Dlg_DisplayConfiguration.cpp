@@ -111,6 +111,10 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Grade");
 	m_Link_Label.AddString("Jam Density In vhc pmpl");
 	m_Link_Label.AddString("Wave Speed In mph");
+
+	m_Link_Label.AddString("BPR alpha term");
+	m_Link_Label.AddString("BPR beta term");
+
 	m_Link_Label.AddString("Link type In Text");
 	m_Link_Label.AddString("Link type In Number");
 	m_Link_Label.AddString("Internal Link id");

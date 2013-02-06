@@ -64,7 +64,7 @@ enum link_text_display_mode
    link_display_link_capacity_per_hour,
    link_display_lane_capacity_per_hour,
 
-	link_display_separator_1,
+   link_display_separator_1,
    link_display_saturation_flow_rate,
    link_display_effective_green_time_length_in_second,
    link_display_effective_green_time_length_in_second_positive_number_only,
@@ -72,6 +72,10 @@ enum link_text_display_mode
    link_display_link_grade,
    link_display_jam_density_in_vhc_pmpl,
    link_display_wave_speed_in_mph,
+
+   link_display_BPR_alpha_term,
+   link_display_BPR_beta_term,
+
    link_display_link_type_in_text,
    link_display_link_type_in_number,
 

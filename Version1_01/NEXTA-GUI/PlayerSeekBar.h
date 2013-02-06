@@ -26,6 +26,7 @@ class CPlayerSeekBar : public CDialogBar
 {
    DECLARE_DYNAMIC(CPlayerSeekBar)
 
+
       private:
       long m_start, m_stop, m_pos, m_posreal;
    bool m_fEnabled;
@@ -38,7 +39,10 @@ class CPlayerSeekBar : public CDialogBar
    CRect GetInnerThumbRect();
 
 public:
-   int m_Player_Status;
+	int m_DemandLoadingStartTimeInMin;
+	int m_DemandLoadingEndTimeInMin;
+
+	int m_Player_Status;
    CPlayerSeekBar();
    long m_prev_pos;
 
