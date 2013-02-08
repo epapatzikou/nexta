@@ -4227,7 +4227,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						if(destination_zone > g_ODZoneNumberSize) 
 						{
-							cout << endl << "Error: Line " << line_no << " destination zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
+							cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of "<< g_ODZoneNumberSize <<" in input_zone.csv. Please check." << endl;
 							g_ProgramStop();
 						}
 						float number_of_vehicles ;

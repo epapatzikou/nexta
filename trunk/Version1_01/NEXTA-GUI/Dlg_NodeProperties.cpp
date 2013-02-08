@@ -16,6 +16,7 @@ CDlg_NodeProperties::CDlg_NodeProperties(CWnd* pParent /*=NULL*/)
 	, NodeName(_T(""))
 	, CycleLength(0)
 	, ZoneID(0)
+
 {
 
 }
@@ -41,6 +42,7 @@ void CDlg_NodeProperties::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlg_NodeProperties, CDialog)
 	ON_BN_CLICKED(IDOK, &CDlg_NodeProperties::OnBnClickedOk)
 	ON_BN_CLICKED(ID_CANCEL, &CDlg_NodeProperties::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_BUTTON, &CDlg_NodeProperties::OnBnClickedButton)
 END_MESSAGE_MAP()
 
 
@@ -48,7 +50,20 @@ END_MESSAGE_MAP()
 
 void CDlg_NodeProperties::OnBnClickedOk()
 {
+	UpdateData();
 	ControlType = m_ControlTypeVector[m_ControlTypeComboBox.GetCurSel ()];
+
+	if(ControlType== m_pDoc->m_ControlType_PretimedSignal || ControlType== m_pDoc-> m_ControlType_ActuatedSignal)
+	{
+
+		if(CycleLength==0)
+		{
+		AfxMessageBox("Please specify cycle length.");
+		return;
+		}
+	}
+
+
 	OnOK();
 }
 
@@ -105,4 +120,62 @@ BOOL CDlg_NodeProperties::OnInitDialog()
 void CDlg_NodeProperties::OnBnClickedCancel()
 {
 	OnCancel();
+}
+
+void CDlg_NodeProperties::OnBnClickedButton()
+{
+	CWaitCursor wait;
+	if(ControlType== m_pDoc->m_ControlType_PretimedSignal || ControlType== m_pDoc-> m_ControlType_ActuatedSignal)
+	{
+
+		if(CycleLength==0)
+		{
+		AfxMessageBox("Please specify cycle length.");
+		return;
+		}
+	}
+
+
+
+	UpdateEffectiveGreenTime();
+	OnOK();
+
+}
+
+void CDlg_NodeProperties::UpdateEffectiveGreenTime()
+{
+	m_pDoc->Modify();
+	UpdateData();
+	ControlType = m_ControlTypeVector[m_ControlTypeComboBox.GetCurSel ()];
+
+	std::vector<int> data_vector;
+	int count = 0;
+	for (std::list<DTALink*>::iterator  iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_LayerNo == 0 )
+		{
+			int ToNodeID = (*iLink)->m_ToNodeID ;
+
+			if(
+				(NodeID == (*iLink)->m_ToNodeNumber)&&(ControlType == m_pDoc->m_ControlType_PretimedSignal || 
+				ControlType == m_pDoc->m_ControlType_ActuatedSignal))
+			{
+
+				// from given BPR capacity to determine the effective green time
+				(*iLink)->m_EffectiveGreenTimeInSecond = (int)(CycleLength * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
+				data_vector.push_back((*iLink)->m_EffectiveGreenTimeInSecond);
+				count++;
+
+			}else
+			{
+				(*iLink)->m_EffectiveGreenTimeInSecond =0;
+				data_vector.push_back((*iLink)->m_EffectiveGreenTimeInSecond);
+				count++;
+			}
+		}
+	
+	}
+	CString message;
+	message.Format("The effective green time of %d links has been updated,\nbased on the cycle_length*lane_capacity/saturation_flow_rate.",count);
+	AfxMessageBox(message,MB_ICONINFORMATION);
 }

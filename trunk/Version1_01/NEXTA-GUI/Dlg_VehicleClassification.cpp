@@ -208,7 +208,7 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboVehicleSelection.AddString("Subarea Boundary-to-Boundary Trips");
 
 
-	m_ComboVehicleSelection.SetCurSel (m_VehicleSelectionNo);
+	m_ComboVehicleSelection.SetCurSel (m_pDoc->m_VehicleSelectionMode);
 
 	if(m_pDoc==NULL)
 		return false;

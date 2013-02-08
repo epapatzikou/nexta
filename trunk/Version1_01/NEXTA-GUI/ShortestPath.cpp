@@ -103,7 +103,7 @@ int DTANetworkForSP::SimplifiedTDLabelCorrecting_DoubleQueue(int origin, int dep
 
     int	temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
 	int i;
-	debug_flag = 1;
+	debug_flag = 0;
 
 	if(m_OutboundSizeAry[origin]== 0)
 		return 0;

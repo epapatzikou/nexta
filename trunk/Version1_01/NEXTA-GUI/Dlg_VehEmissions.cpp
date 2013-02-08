@@ -249,7 +249,10 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_MinDistanceBox.AddString ("100");
 	m_MinDistanceBox.SetCurSel (0);
 
-	m_MaxSpeedBox.AddString("100"); 
+    m_MaxSpeedBox.AddString("300"); 
+	m_MaxSpeedBox.AddString("200"); 
+	m_MaxSpeedBox.AddString("150"); 
+    m_MaxSpeedBox.AddString("100"); 
 	m_MaxSpeedBox.AddString("80"); 
 	m_MaxSpeedBox.AddString("60"); 
 	m_MaxSpeedBox.AddString("50"); 

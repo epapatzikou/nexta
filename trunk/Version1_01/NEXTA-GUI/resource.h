@@ -431,6 +431,7 @@
 #define IDC_EDIT_LatLongA2              1179
 #define IDC_BUTTON_RELOAD               1181
 #define IDC_QUESTION                    1183
+#define IDC_BUTTON                      1184
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1125,14 +1126,16 @@
 #define ID_VIEW_SIMULATIONTOOLBAR       33604
 #define ID_SHOW_MOE_PATHLIST            33605
 #define ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE 33606
+#define ID_HELP_REPORTBUG               33607
+#define ID_HELP_CHECKLATESTSOFTWARERELEASE 33608
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        241
-#define _APS_NEXT_COMMAND_VALUE         33607
-#define _APS_NEXT_CONTROL_VALUE         1184
+#define _APS_NEXT_COMMAND_VALUE         33609
+#define _APS_NEXT_CONTROL_VALUE         1185
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

@@ -382,6 +382,25 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	void Modify(BOOL bModified=true)
+{
+
+   SetModifiedFlag(bModified);
+
+   CString string_title = GetTitle();
+
+   if(IsModified()&& string_title.Find(" *") == -1)
+   {
+      string_title += " *";
+   }
+   else if(!IsModified() && string_title.Find(" *") != -1)
+   {
+      string_title.Replace(" *", "");
+   }
+
+   SetTitle(string_title);
+}
+
 	bool m_bUseMileVsKMFlag;
 	double m_ScreenWidth_InMile;
 	CString m_LatLongA;
@@ -719,7 +738,7 @@ public:
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	bool ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
 	void ReadTMCSpeedData(LPCTSTR lpszFileName); 
-	void ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
+	bool ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
 	bool ReadTimetableCVSFile(LPCTSTR lpszFileName);
@@ -1082,6 +1101,7 @@ public:
 
 		DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bLongLatFlag = false)
 	{
+		Modify();
 		DTALink* pLink = 0;
 
 		pLink = FindLinkWithNodeIDs(FromNodeID,ToNodeID);
@@ -1126,8 +1146,12 @@ public:
 
 		double length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 
-		if(bLongLatFlag || m_LongLatFlag)  // bLongLatFlag is user input,  m_LongLatFlag is the system input from the project file 
+		if(bLongLatFlag || m_LongLatFlag)
+		{  // bLongLatFlag is user input,  m_LongLatFlag is the system input from the project file 
 			length  =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_FromPoint , pLink->m_ToPoint);
+			m_UnitMile = 1.0/62;
+			m_UnitFeet = 1.0/62/5280;
+		}
 		else 
 			length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 		pLink->m_Length = max(0.00001,length);  // alllow mimum link length
@@ -1143,6 +1167,7 @@ public:
 		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
 
 
+		
 		if(bOffset)
 		{
 			double link_offset = m_UnitFeet*m_OffsetInFeet;
@@ -1362,6 +1387,7 @@ public:
 
 	DTANode* AddNewNode(GDPoint newpt, int NewNodeNumber=0 , int LayerNo =0, bool ActivityLocation = false, bool bSplitLink = false)
 	{
+		Modify();
 		DTANode* pNode = new DTANode;
 		pNode->pt = newpt;
 		pNode->m_LayerNo = LayerNo;
@@ -1788,6 +1814,7 @@ public:
 public: // subarea
 	std::vector<GDPoint> m_SubareaShapePoints;
 
+	bool CheckControlData();
 	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str,int Index = 0);
 	bool SaveSubareaDemandFile();
@@ -2118,7 +2145,6 @@ public:
 	afx_msg void OnProjectViewAgentMoe();
 	afx_msg void OnProjectOdmatrixestimationinput();
 	afx_msg void OnProjectInputsensordataforodme();
-	afx_msg void OnHelpUserguide();
 	afx_msg void OnToolsGenerateodmatrixgravitymodel();
 	afx_msg void OnLinkattributedisplayLinkname();
 	afx_msg void OnUpdateLinkattributedisplayLinkname(CCmdUI *pCmdUI);
@@ -2176,6 +2202,7 @@ public:
 	afx_msg void OnZoneRegenerateactivitylocationsforselectedzone();
 	afx_msg void OnShowMoePathlist();
 	afx_msg void OnExportExportaggregatedlinkmoefile();
+	afx_msg void OnHelpReportbug();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

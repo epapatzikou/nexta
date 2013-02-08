@@ -986,7 +986,7 @@ public:
 		m_Connections = 0;
 		m_LayerNo = 0;
 		m_DistanceToRoot = 0;
-		m_CycleLengthInSecond = 60;
+		m_CycleLengthInSecond = 0;
 		m_SignalOffsetInSecond = 0;
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
@@ -3431,7 +3431,7 @@ public:
 		if(m_OutboundSizeAry)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry)  delete m_InboundSizeAry;
 
-		if(m_NodeSize > 0)
+		if(m_NodeSize > 0 && m_AdjLinkSize >0 && m_OptimizationIntervalSize >0)
 		{
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize);
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize);

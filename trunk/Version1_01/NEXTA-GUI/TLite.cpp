@@ -62,6 +62,8 @@ BEGIN_MESSAGE_MAP(CTLiteApp, CWinApp)
 	ON_COMMAND(ID_FILE_OPENMULTIPLETRAFFICDATAPROJECTS, &CTLiteApp::OnFileOpenmultipletrafficdataprojects)
 	ON_COMMAND(ID_APP_EXIT, &CTLiteApp::OnAppExit)
 	ON_COMMAND(ID_FILE_OPEN_NETWORK_ONLY, &CTLiteApp::OnFileOpenNetworkOnly)
+	ON_COMMAND(ID_HELP_USERGUIDE, &CTLiteApp::OnHelpUserguide)
+	ON_COMMAND(ID_HELP_CHECKLATESTSOFTWARERELEASE, &CTLiteApp::OnHelpChecklatestsoftwarerelease)
 END_MESSAGE_MAP()
 
 
@@ -417,3 +419,15 @@ void CTLiteApp::OnFileOpenNetworkOnly()
 	//reset back
 	m_bLoadNetworkOnly = false;}
 
+
+void CTLiteApp::OnHelpUserguide()
+{
+	g_OpenDocument("https://docs.google.com/document/d/14tUa1I6Xf62zsiWf4lLfngqGqGJlIM_MSehLFMVXass/edit", SW_SHOW);
+}
+
+void CTLiteApp::OnHelpChecklatestsoftwarerelease()
+{
+
+	g_OpenDocument("http://code.google.com/p/nexta/downloads/list", SW_SHOW);
+
+}
