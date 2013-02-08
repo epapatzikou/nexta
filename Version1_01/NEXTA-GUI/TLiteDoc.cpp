@@ -331,7 +331,6 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_PROJECT_VIEW_AGENT_MOE, &CTLiteDoc::OnProjectViewAgentMoe)
 	ON_COMMAND(ID_PROJECT_ODMATRIXESTIMATIONINPUT, &CTLiteDoc::OnProjectOdmatrixestimationinput)
 	ON_COMMAND(ID_PROJECT_INPUTSENSORDATAFORODME, &CTLiteDoc::OnProjectInputsensordataforodme)
-	ON_COMMAND(ID_HELP_USERGUIDE, &CTLiteDoc::OnHelpUserguide)
 	ON_COMMAND(ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL, &CTLiteDoc::OnToolsGenerateodmatrixgravitymodel)
 	ON_COMMAND(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnLinkattributedisplayLinkname)
 	ON_UPDATE_COMMAND_UI(ID_LINKATTRIBUTEDISPLAY_LINKNAME, &CTLiteDoc::OnUpdateLinkattributedisplayLinkname)
@@ -385,6 +384,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_ZONE_REGENERATEACTIVITYLOCATIONSFORSELECTEDZONE, &CTLiteDoc::OnZoneRegenerateactivitylocationsforselectedzone)
 	ON_COMMAND(ID_SHOW_MOE_PATHLIST, &CTLiteDoc::OnShowMoePathlist)
 	ON_COMMAND(ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE, &CTLiteDoc::OnExportExportaggregatedlinkmoefile)
+	ON_COMMAND(ID_HELP_REPORTBUG, &CTLiteDoc::OnHelpReportbug)
 	END_MESSAGE_MAP()
 
 
@@ -1028,9 +1028,9 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 				i++;
 			}else
 			{
-				CString msg;
-				msg.Format ("Please check if link %d->%d at file %s still exists in input_link.csv.", from_node_number , to_node_number, lpszFileName);  // +2 for the first field name line
-				AfxMessageBox(msg);
+				//CString msg;
+				//msg.Format ("Please check if link %d->%d at file %s still exists in input_link.csv.", from_node_number , to_node_number, lpszFileName);  // +2 for the first field name line
+				//AfxMessageBox(msg);
 				break;
 			}
 
@@ -1170,7 +1170,7 @@ void CTLiteDoc::ReadSimulationLinkMOEData(LPCTSTR lpszFileName)
 	}
 }
 
-void CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 {
 	double total_number_of_crashes = 0;
 
@@ -1189,7 +1189,6 @@ void CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 
 			if(parser.GetValueByFieldName("to_node_id",to_node_number) == false)
 				break;
-
 
 
 			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number, lpszFileName );
@@ -1220,7 +1219,12 @@ void CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 
 
 				i++;
+			}else
+			{
+				//reading error;
+			return false;
 			}
+
 
 		}
 		m_SimulationLinkMOEDataLoadingStatus.Format ("%d link records are loaded from file %s.",i,lpszFileName);
@@ -1229,6 +1233,7 @@ void CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 		//		AfxMessageBox("Error: File output_LinkMOE.csv cannot be opened.\nIt might be currently used and locked by EXCEL.");
 	}
 
+	return true;
 }
 
 void CTLiteDoc::ReadHistoricalData(CString directory)
@@ -1526,8 +1531,8 @@ bool CTLiteDoc::ReadBackgroundImageFile(LPCTSTR lpszFileName, bool bAskForInput)
 			if(m_LinkSet.size()==0)  // no link yet, need to initialize the map unit
 			{
 
-			m_UnitMile =fabs(m_ImageX2-m_ImageX1)/ max(0.00001,m_ImageWidthInMile);
-			m_UnitFeet = m_UnitMile/5280;
+			//m_UnitMile =fabs(m_ImageX2-m_ImageX1)/ max(0.00001,m_ImageWidthInMile);
+			//m_UnitFeet = m_UnitMile/5280;
 			}
 
 		}
@@ -4286,7 +4291,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 }
 BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 {
-
+    Modify(false);
 	FILE* st = NULL;
 	CString directory;
 	CString prj_file = lpszPathName;
@@ -4962,6 +4967,8 @@ void CTLiteDoc::OnFileSaveProject()
 
 void CTLiteDoc::OnFileSaveProjectAs()
 {
+	Modify(false);
+
 	try{
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
@@ -5387,7 +5394,6 @@ void CTLiteDoc::ReadVehicleCSVFile(LPCTSTR lpszFileName)
 			pVehicle->m_Emissions = emissions;
 			pVehicle->m_Distance = distance_in_mile;
 			pVehicle->m_NodeSize	= number_of_nodes;
-
 
 
 			if(pVehicle->m_NodeSize>=1)  // in case reading error
@@ -6472,6 +6478,7 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 	STARTUPINFO si = { 0 };  
 	PROCESS_INFORMATION pi = { 0 };  
 
+
 	si.cb = sizeof(si); 
 
 	CWaitCursor curs;
@@ -6487,6 +6494,10 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 		AfxMessageBox(msg);
 		return;
 	}
+
+   if(IsModified())
+		SaveProject(m_ProjectFile);
+
 
 	CString sCommand;
 	CString strParam;
@@ -6541,10 +6552,12 @@ void CTLiteDoc::LoadSimulationOutput()
 	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
 	g_Simulation_Time_Horizon = 1440;
 	SetStatusText("Loading output link time-dependent data");
-	ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
-	ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 	//SetStatusText("Loading AMS movement data");
 	ReadAMSMovementCSVFile(m_ProjectDirectory+"AMS_movement.csv");
+
+	if(ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory+"output_LinkMOE.csv")==true)
+	{
+	ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 
 	SetStatusText("Loading agent trajectory data");
 	if(ReadVehicleBinFile(m_ProjectDirectory+"agent.bin",2)==false) // try version 2 format first
@@ -6553,6 +6566,20 @@ void CTLiteDoc::LoadSimulationOutput()
 		{
 		ReadVehicleCSVFile(m_ProjectDirectory+"output_agent.csv");  // finally try csv file.
 		}
+	}
+	}
+	else
+	{
+		if(AfxMessageBox("The simulation result files in this project/folder might be generated by a previous run with a different network.\nDo you want to remove those outdated simulation results?", MB_YESNO|MB_ICONINFORMATION)== IDYES)
+		{
+		CWaitCursor wait;
+		DeleteFile(m_ProjectDirectory+"output_LinkMOE.csv");
+		DeleteFile(m_ProjectDirectory+"output_LinkTDMOE.bin");
+		DeleteFile(m_ProjectDirectory+"agent.bin");
+		DeleteFile(m_ProjectDirectory+"output_agent.csv");  // finally try csv file.
+		
+		}
+	
 	}
 
 	char microsimulation_file_name[_MAX_STRING_SIZE];
@@ -6701,6 +6728,16 @@ void CTLiteDoc::OnUpdateMoeLength(CCmdUI *pCmdUI)
 
 void CTLiteDoc::OnEditSetdefaultlinkpropertiesfornewlinks()
 {
+
+    CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	CString DefaultDataFolder;
+
+	DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
+
+	if(m_LinkSet.size()==0)
+	ReadLinkTypeCSVFile(DefaultDataFolder+"input_link_type.csv");
+
 	CDlgDefaultLinkProperties dlg;
 	dlg.m_pDoc  = this;
 
@@ -6962,12 +6999,47 @@ void CTLiteDoc::OnHelpVisitdevelopmentwebsite()
 	g_OpenDocument("http://code.google.com/p/nexta/", SW_SHOW);
 }
 
+bool CTLiteDoc::CheckControlData()
+{
+	std::vector <int> NodeVector;
+	std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+			if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+
+				if((*iNode)->m_CycleLengthInSecond ==0)
+				{
+					NodeVector.push_back ((*iNode)->m_NodeNumber );
+				}
+
+			}
+		}
+
+
+		if(NodeVector.size()>0)
+		{
+			CString message;
+			message.Format ("There are %d signalized nodes with zero cycly length. Please check.", NodeVector.size());
+
+			//for(int i=0; i< min(10,NodeVector.size(); i++)
+			//{
+			//
+			//
+			//}
+		
+		return false;
+		}
+
+		return true;
+
+}
 bool CTLiteDoc::EditTrafficAssignmentOptions()
 {
 
 	CDlgAssignmentSettings dlg;
 	dlg.m_pDoc = this;
-
 
 	ReadDemandTypeCSVFile(m_ProjectDirectory+"input_demand_type.csv");
 	ReadMetaDemandCSVFile(m_ProjectDirectory+"input_demand_meta_data.csv");
@@ -6975,6 +7047,12 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 
 	if(dlg.DoModal() ==IDOK)
 	{
+		if(CheckControlData()==false)
+		{
+
+		return false;
+		}
+
 		return true;
 	}else
 	{ 
@@ -7081,6 +7159,10 @@ void CTLiteDoc::OnToolsPerformscheduling()
 void CTLiteDoc::ResetBackgroundImageCoordinate()
 {
 			m_LongLatFlag = true;
+
+			m_UnitMile = 1.0/62;  // 1 degree of long = 62 miels
+			m_UnitFeet = m_UnitMile/5280.0;
+
 			float m_XScale = 1;
 			float m_YScale = 1;
 
@@ -9411,7 +9493,10 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		int distance_counting_flag = 0;
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
 		{
-			if(distance_counting_flag!=2 && m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == true )
+			if(m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end())
+			{
+				DTALink *pLink = m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo];
+				if(pLink->m_bIncludedinSubarea == true )
 			{
 				if(distance_counting_flag==0)
 				{
@@ -9424,6 +9509,14 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 				{
 					subtrip_distance+= m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_Length ;
 					subtrip_free_flow_travel_time += m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_FreeFlowTravelTime ;
+
+				
+				// keep the last record
+				pVehicle->m_subarea_distance = subtrip_distance; // for inside path
+				pVehicle->m_subarea_free_flow_travel_time = subtrip_free_flow_travel_time;
+				pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
+				pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
+
 				}
 
 
@@ -9431,16 +9524,11 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 			{  //leaving subarea
 
 				distance_counting_flag = 2;
-				pVehicle->m_subarea_distance = subtrip_distance; // for inside path
-				pVehicle->m_subarea_free_flow_travel_time = subtrip_free_flow_travel_time;
-				pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
-				pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
 
 				break;
-
-
 			}
-
+			
+			}
 		}
 
 		// pass all the tests
@@ -9459,7 +9547,10 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 		int distance_counting_flag = 0;
 		for(int link= 1; link<pVehicle->m_NodeSize; link++)
 		{
-			if( distance_counting_flag!=2 && m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end() && m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_bIncludedinSubarea == true )
+			if( m_LinkNoMap.find(pVehicle->m_NodeAry[link].LinkNo) != m_LinkNoMap.end())
+			{
+				 DTALink* pLink = m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo];
+			if(pLink->m_bIncludedinSubarea == true )
 			{
 				if(distance_counting_flag==0)
 				{
@@ -9469,22 +9560,34 @@ bool CTLiteDoc::SelectVehicleForAnalysis(DTAVehicle* pVehicle, VEHICLE_CLASSIFIC
 
 				}
 
-				if(distance_counting_flag==1)
+				if(distance_counting_flag==1) // when distance_counting_flag ==0, we will go to this condition right away
 				{
 					//start counting we  have boundary start time
 					subtrip_distance+= m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_Length ;
 					subtrip_free_flow_travel_time += m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo]->m_FreeFlowTravelTime ;
+
+					// keep the last record
+					pVehicle->m_subarea_distance = subtrip_distance; // for inside path
+					pVehicle->m_subarea_free_flow_travel_time = subtrip_free_flow_travel_time;
+					pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
+					pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
+
+					ASSERT(pVehicle->m_subarea_travel_time<900);
+
 				}
 
 			}else if(distance_counting_flag == 1) 
 			{  //leaving subarea
 
 				distance_counting_flag = 2;
-				pVehicle->m_subarea_distance = subtrip_distance; // for inside path
-				pVehicle->m_subarea_free_flow_travel_time = subtrip_free_flow_travel_time;
-				pVehicle->m_subarea_end_node_arrival_time  = pVehicle->m_NodeAry [link].ArrivalTimeOnDSN ;
-				pVehicle->m_subarea_travel_time = pVehicle->m_subarea_end_node_arrival_time  - pVehicle->m_subarea_start_node_departure_time;
 				break;
+			}else
+			{
+			
+				TRACE("\nvehicle %d: Link: %d->%d ", pVehicle->m_VehicleID , pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+			
+			}
+
 			}
 
 		}
@@ -9575,7 +9678,7 @@ void CTLiteDoc::GenerateVehicleClassificationData(VEHICLE_CLASSIFICATION_SELECTI
 				}else if (vehicle_selection == CLS_subarea_internal_to_internal_subtrip || vehicle_selection == CLS_subarea_boundary_to_bounary_subtrip)
 				{
 					m_ClassificationTable[index].TotalTravelTime  += pVehicle->m_subarea_travel_time ;
-					m_ClassificationTable[index].TotalFreeflowTravelTime  += pVehicle->m_subarea_travel_time ;
+					m_ClassificationTable[index].TotalFreeflowTravelTime  += pVehicle->m_subarea_free_flow_travel_time ;
 					m_ClassificationTable[index].TotalDistance   += pVehicle->m_subarea_distance;				
 					m_ClassificationTable[index].TotalTravelTimePerMile += (pVehicle->m_subarea_travel_time)/max(0.01,pVehicle->m_subarea_distance);
 
@@ -11239,16 +11342,6 @@ void CTLiteDoc::OnProjectInputsensordataforodme()
 	OpenCSVFileInExcel(m_ProjectDirectory+"input_sensor.csv");
 }
 
-void CTLiteDoc::OnHelpUserguide()
-{
-	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
-
-	CString UserGuide;
-
-	UserGuide.Format ("%s\\USERS_GUIDE_NEXTA_DTALITE.pdf",pMainFrame->m_CurrentDirectory);
-
-	OpenCSVFileInExcel(UserGuide);
-}
 
 void CTLiteDoc::OnToolsGenerateodmatrixgravitymodel()
 {
@@ -11553,7 +11646,7 @@ void CTLiteDoc::OnToolsUpdateeffectivegreentimebasedoncyclelength()
 	}
 
 	CString str;
-	str.Format("%d links have effective updated green time. To accept the changes, please save the network.",count);
+	str.Format("%d links have updated effective green time. To accept the changes, please save the network.",count);
 	AfxMessageBox(str, MB_ICONINFORMATION);
 
 	UpdateAllViews(0);
@@ -11617,7 +11710,11 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 		if(dlg.DoModal ()==IDOK)
 		{
 			max_GPS_data_count = atoi(dlg.m_InputValue) ;
+		}else
+		{
+		return false;
 		}
+
 
 		if(AfxMessageBox("Do you want to update GPS probes' travel time and distance based on map-matching results?", MB_YESNO) == IDYES)
 		{
@@ -11838,10 +11935,36 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 		DTALink* pLink =NULL;
 		DTANode* pNode = NULL;
 
-		for (int i=0 ; i < NodeSize-1; i++)
+
+		//post processing  to remove non-marked node with arrival time of 99999
+
+		// 
+		int i;
+		for (i=0 ; i < NodeSize-1; i++)
 		{
 
 		PathLinkVector.push_back(PathLinkList[i]) ;
+		}
+
+		float arrival_time_at_downstream_node;
+		// go backward
+		for (i=NodeSize-2 ; i >=0 ; i--)
+		{
+		pLink = m_LinkNoMap[PathLinkList[i]];
+		pNode = m_NodeIDMap[pLink->m_FromNodeID ];
+
+		if(i == NodeSize-2)
+			arrival_time_at_downstream_node = min(1440,pNode->m_GPS_arrival_time);
+
+			if(pNode->m_GPS_arrival_time > 90000)  // node has not been touched, reset the travel time: this is a crude approximatio
+			{
+				pNode->m_GPS_arrival_time = arrival_time_at_downstream_node;
+			}
+		}
+	
+
+		for (i=0 ; i < NodeSize-1; i++)
+		{
 
 		pLink = m_LinkNoMap[PathLinkList[i]];
 
@@ -11877,7 +12000,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 							pVehicle->m_NodeAry[i+1].LinkNo  = PathLinkVector[i] ;
 
 							DTALink* pLink = FindLinkWithLinkNo(PathLinkVector[i]);
-							total_distance+= pLink->m_Length;
+							total_distance+= pLink->m_OriginalLength;
 
 							TRACE("\n%d->%d", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
 
@@ -11942,10 +12065,10 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 
 		// map matching here  // retore the distance of links 
 
-		//for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  //m_LinkSet 
-		//{
-		//	(*iLink)->m_Length  = (*iLink)->m_OriginalLength ;
-		//}
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  //m_LinkSet 
+		{
+			(*iLink)->m_Length  = (*iLink)->m_OriginalLength ;
+		}
 
 
 
@@ -11959,7 +12082,7 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 
 		}
 
-		m_SimulationVehicleDataLoadingStatus.Format ("%d valid traces (%d records)are loaded  files %s...", m_VehicleSet.size(),count,lpszFileName);
+		m_SimulationVehicleDataLoadingStatus.Format ("%d valid traces (%d records) are loaded  files %s...", m_VehicleSet.size(),count_processed,lpszFileName);
 		return true;
 
 	}/*
@@ -13163,7 +13286,7 @@ void CTLiteDoc::OnSubareaCreatezonefromsubarea()
 {
 	int zone_number = -1;  // starting default number 
 
-
+	Modify ();
 	if(m_SubareaNodeSet.size()>0 )
 	{
 		m_PreviousODSize  = -1; // require to regenerate od zone vector
@@ -13620,14 +13743,13 @@ void CTLiteDoc::OnImportBackgroundimage()
 		if(m_ProjectFile.GetLength ()==0)
 		{
 
-			if(AfxMessageBox("Please specify a transportation network project folder and project file (*.tnp).",MB_ICONINFORMATION)==IDOK)
+			if(AfxMessageBox("Please specify a new transportation network project folder and project file (*.tnp).\nTo avoid data inconsistency, please do not overwrite an existing project/data folder with simulation results already.",MB_ICONINFORMATION)==IDOK)
 			{
 
 			OnFileSaveProjectAs();
 			CopyFile(dlg.GetPathName (),m_ProjectDirectory+"background_image.bmp",false);
 			if(ReadBackgroundImageFile(m_ProjectFile)==true)
 			{
-
 			CDlg_RealWorldWidth dlg_width;
 			if(dlg_width.DoModal ()==IDOK)
 			{
@@ -13669,6 +13791,7 @@ void CTLiteDoc::OnImportBackgroundimage()
 
 void CTLiteDoc::OnZoneDeletezone()
 {
+	Modify ();
 
 	m_ZoneMap.erase (this->m_SelectedZoneID );
 	this->m_SelectedZoneID = -1;
@@ -14466,4 +14589,9 @@ void CTLiteDoc::OnExportExportaggregatedlinkmoefile()
 	OnToolsProjectfolder();
 	}
 
+}
+
+void CTLiteDoc::OnHelpReportbug()
+{
+	g_OpenDocument("http://code.google.com/p/nexta/issues/list", SW_SHOW);
 }

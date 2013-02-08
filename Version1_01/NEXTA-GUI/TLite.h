@@ -92,6 +92,8 @@ public:
 	afx_msg void OnFileOpenmultipletrafficdataprojects();
 	afx_msg void OnAppExit();
 	afx_msg void OnFileOpenNetworkOnly();
+	afx_msg void OnHelpUserguide();
+	afx_msg void OnHelpChecklatestsoftwarerelease();
 };
 
 #define MAX_MOE_DISPLAYCOLOR 6

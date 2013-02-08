@@ -31,6 +31,7 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_BPR_Beta(0)
 {
 m_bTransitModeFlag = false;
+m_bEditChange = false;
 }
 
 CDlgLinkProperties::~CDlgLinkProperties()
@@ -79,6 +80,18 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlgLinkProperties::OnCbnSelchangeCombo1)
 	ON_EN_CHANGE(IDC_EDIT_LENGTH, &CDlgLinkProperties::OnEnChangeEditLength)
 	ON_BN_CLICKED(IDC_BUTTON_UPDATE, &CDlgLinkProperties::OnBnClickedButtonUpdate)
+	ON_EN_CHANGE(IDC_EDIT_STREET_NAME, &CDlgLinkProperties::OnEnChangeEditStreetName)
+	ON_EN_CHANGE(IDC_EDIT_SPEEDLIMIT, &CDlgLinkProperties::OnEnChangeEditSpeedlimit)
+	ON_EN_CHANGE(IDC_EDIT_NUMLANES, &CDlgLinkProperties::OnEnChangeEditNumlanes)
+	ON_EN_CHANGE(IDC_EDIT_LANE_CAPACITY, &CDlgLinkProperties::OnEnChangeEditLaneCapacity)
+	ON_EN_CHANGE(IDC_EDIT_SATURATION_FLOW_RATE, &CDlgLinkProperties::OnEnChangeEditSaturationFlowRate)
+	ON_EN_CHANGE(IDC_EDIT_EFFECTIVE_GREEN_TIME, &CDlgLinkProperties::OnEnChangeEditEffectiveGreenTime)
+	ON_EN_CHANGE(IDC_EDIT6, &CDlgLinkProperties::OnEnChangeEdit6)
+	ON_EN_CHANGE(IDC_EDIT7, &CDlgLinkProperties::OnEnChangeEdit7)
+	ON_EN_CHANGE(IDC_EDIT1, &CDlgLinkProperties::OnEnChangeEdit1)
+	ON_EN_CHANGE(IDC_EDIT2, &CDlgLinkProperties::OnEnChangeEdit2)
+	ON_EN_CHANGE(IDC_EDIT4, &CDlgLinkProperties::OnEnChangeEdit4)
+	ON_EN_CHANGE(IDC_EDIT5, &CDlgLinkProperties::OnEnChangeEdit5)
 END_MESSAGE_MAP()
 
 
@@ -250,12 +263,8 @@ void CDlgLinkProperties::OnCbnSelchangeCombo1()
 
 void CDlgLinkProperties::OnEnChangeEditLength()
 {
-	// TODO:  If this is a RICHEDIT control, the control will not
-	// send this notification unless you override the CDialog::OnInitDialog()
-	// function and call CRichEditCtrl().SetEventMask()
-	// with the ENM_CHANGE flag ORed into the mask.
+	m_bEditChange = true;
 
-	// TODO:  Add your control notification handler code here
 }
 
 void CDlgLinkProperties::OnBnClickedButtonUpdate()
@@ -263,5 +272,76 @@ void CDlgLinkProperties::OnBnClickedButtonUpdate()
 	UpdateData(1);
 	FreeFlowTravelTime = LinkLength / max(0.001,SpeedLimit) * 60;
 	UpdateData(0);
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditStreetName()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditSpeedlimit()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditNumlanes()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditLaneCapacity()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditSaturationFlowRate()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditEffectiveGreenTime()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEdit6()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEdit7()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEdit1()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEdit2()
+{
+	m_bEditChange = true;
+
+}
+
+void CDlgLinkProperties::OnEnChangeEdit4()
+{
+	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnEnChangeEdit5()
+{
+	m_bEditChange = true;
 
 }

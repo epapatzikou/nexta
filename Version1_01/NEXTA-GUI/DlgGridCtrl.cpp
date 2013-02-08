@@ -1111,5 +1111,6 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
 
 		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
 		DisplayDemandMatrix();
+		return;
 	}
 }

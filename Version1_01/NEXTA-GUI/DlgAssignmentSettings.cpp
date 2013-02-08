@@ -164,10 +164,14 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 {
 
 
-
 	UpdateData(true);
 
 
+	if(m_pDoc->m_traffic_assignment_method != 0)
+	{
+		if(m_pDoc->CheckControlData () == false)
+			return;
+	}
 	if(m_pDoc->m_traffic_flow_model != m_SimulationMethodControl.GetCurSel())
 	{
 		m_bModifiedFlag = true;
