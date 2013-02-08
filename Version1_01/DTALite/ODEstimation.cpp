@@ -879,9 +879,9 @@ void g_GenerateVehicleData_ODEstimation()
 			if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-origin_zone traffic
 			{
 
-				try
-				{
-				pVehicle = new DTAVehicle;
+				//try
+				//{
+				pVehicle = new (std::nothrow) DTAVehicle;
 				if(pVehicle == NULL)
 				{
 					cout << "Insufficient memory...";
@@ -890,14 +890,14 @@ void g_GenerateVehicleData_ODEstimation()
 
 				}
 
-				}
-				catch (std::bad_alloc& exc)
-				{
-					cout << "Insufficient memory...";
-					getchar();
-					exit(0);
+				//}
+				//catch (std::bad_alloc& exc)
+				//{
+				//	cout << "Insufficient memory...";
+				//	getchar();
+				//	exit(0);
 			
-				}
+				//}
 
 
 				//if(i%10000==0)

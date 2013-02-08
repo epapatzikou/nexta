@@ -41,14 +41,16 @@ void g_MultiScenarioTrafficAssignment()
 {
 
 	g_SummaryStatFile.Open("output_summary.csv");
-	g_SummaryStatFile.WriteTextLabel ("DTALite:\nA Fast Open Source DTA Engine\n");
-	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,year:2013,month:01,day:29\n");
+	g_SummaryStatFile.WriteTextLabel("DTALite:\nA Fast Open Source DTA Engine\n");
+	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,");
+	g_SummaryStatFile.WriteTextLabel(__DATE__);
+	g_SummaryStatFile.WriteTextLabel("\n");
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
-	cout << "Version 1.1.0, Release Date 01/29/2013."<< endl;
+	cout << "Version 1.1.0, Release Date " << __DATE__ << "."<< endl;
 
 	g_LogFile << "---DTALite: A Fast Open-Source DTA Simulation Engine---"<< endl;
-	g_LogFile << "Version 1.1.0, Release Date 01/29/2013."<< endl;
+	g_LogFile << "Version 1.1.0, Release Date " << __DATE__ << "."<< endl;
 
 
 	time_t t = time(0);   // get time now
