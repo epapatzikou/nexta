@@ -871,8 +871,8 @@ public:
 
 		int NumLanes = m_NumLanes;
 
-		if(OutputFlowFlag == true);
-		NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
+		if(OutputFlowFlag == true)
+			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
 
 		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
 		{
