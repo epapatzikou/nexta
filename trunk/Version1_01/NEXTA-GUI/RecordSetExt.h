@@ -12,7 +12,7 @@
 class CRecordsetExt : public CDaoRecordset
 {
 public:
-   CString GetCString(CString ColumnName);
+   CString GetCString(CString ColumnName, bool bErrorMessage = true);
 
    long GetLong(CString ColumnName,bool &bExist,bool bRequired);
    double GetDouble(CString ColumnName,bool &bExist,bool bRequired);

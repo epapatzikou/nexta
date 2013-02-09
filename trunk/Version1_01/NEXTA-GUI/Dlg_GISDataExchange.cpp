@@ -1,3 +1,30 @@
+// TLite.h : main header file for the TLite application
+//
+//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
+
+//   If you help write or modify the code, please also list your names here.
+//   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
+//   and further prevent a violation of the GPL.
+
+// More about "How to use GNU licenses for your own software"
+// http://www.gnu.org/licenses/gpl-howto.html
+
+
+//    This file is part of NeXTA Version 3 (Open-source).
+
+//    NEXTA is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    NEXTA is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
+
 // Dlg_GISDataExchange.cpp : implementation file
 //
 
@@ -185,19 +212,19 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 					int Node_Number  =  0;
 
 					if( bFindOverlappingNode ) 
-						Node_Number = m_pDoc->FindCloseDTAPoint_NodeNumber(start_pt,threashold);
+						Node_Number = m_pDoc->FindCloseDTANode_WithNodeNumber(start_pt,threashold);
 					if(Node_Number ==0)
 					{
-						DTAPoint* pDTAPoint = new DTAPoint;
-						pDTAPoint->pt = start_pt;
+						DTANode* pDTANode = new DTANode;
+						pDTANode->pt = start_pt;
 
-						pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
-						pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
-						pDTAPoint->m_ZoneID = 0;
-						pDTAPoint->m_ControlType = 0;
+						pDTANode->m_NodeNumber = m_pDoc->m_NodeSet.size() +1;
+						pDTANode->m_NodeID = m_pDoc->m_NodeSet.size();
+						pDTANode->m_ZoneID = 0;
+						pDTANode->m_ControlType = 0;
 
-						m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
-						Node_Number = pDTAPoint->m_NodeNumber;
+						m_pDoc->m_NodeSet.push_back(pDTANode);
+						Node_Number = pDTANode->m_NodeNumber;
 					}
 					pDTALine->m_FromNodeNumber = Node_Number;
 
@@ -206,20 +233,20 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 					Node_Number  = 0;
 
 					if( bFindOverlappingNode ) 
-						Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber(end_pt,threashold);
+						Node_Number  = m_pDoc->FindCloseDTANode_WithNodeNumber(end_pt,threashold);
 
 					if(Node_Number ==0)
 					{
-						DTAPoint* pDTAPoint = new DTAPoint;
-						pDTAPoint->pt = end_pt;
+						DTANode* pDTANode = new DTANode;
+						pDTANode->pt = end_pt;
 
-						pDTAPoint->m_NodeNumber = m_pDoc->m_DTAPointSet.size() +1;
-						pDTAPoint->m_NodeID = m_pDoc->m_DTAPointSet.size();
-						pDTAPoint->m_ZoneID = 0;
-						pDTAPoint->m_ControlType = 0;
+						pDTANode->m_NodeNumber = m_pDoc->m_NodeSet.size() +1;
+						pDTANode->m_NodeID = m_pDoc->m_NodeSet.size();
+						pDTANode->m_ZoneID = 0;
+						pDTANode->m_ControlType = 0;
 
-						m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
-						Node_Number = pDTAPoint->m_NodeNumber;
+						m_pDoc->m_NodeSet.push_back(pDTANode);
+						Node_Number = pDTANode->m_NodeNumber;
 					}
 
 					pDTALine->m_ToNodeNumber = Node_Number;
@@ -250,11 +277,11 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 			m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
 
 
-			for (std::list<DTAPoint*>::iterator iPoint = m_pDoc->m_DTAPointSet.begin(); 
-				iPoint != m_pDoc->m_DTAPointSet.end(); iPoint++)
+			for (std::list<DTANode*>::iterator iPoint = m_pDoc->m_NodeSet.begin(); 
+				iPoint != m_pDoc->m_NodeSet.end(); iPoint++)
 			{
 				int ThisNodeNumber = (*iPoint)->m_NodeNumber;
-				int Node_Number  = m_pDoc->FindCloseDTAPoint_NodeNumber((*iPoint)->pt ,threashold, ThisNodeNumber );
+				int Node_Number  = m_pDoc->FindCloseDTANode_WithNodeNumber((*iPoint)->pt ,threashold, ThisNodeNumber );
 				if(Node_Number != ThisNodeNumber && Node_Number!=0)
 				{
 					// find a close node, create a dummy link 

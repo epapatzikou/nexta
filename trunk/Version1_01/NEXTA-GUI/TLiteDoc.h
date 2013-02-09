@@ -1695,7 +1695,53 @@ public:
 		return pNode;
 	}
 
+	int FindNodeNumberWithCoordinate(double x, double y, double min_distance = 0.0000001)
+	{
+		
+		DTANode* pNode= NULL;
 
+		min_distance = 0.00000001;
+		int NodeID = -1;
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
+			if( distance <  min_distance)
+			{
+				min_distance= distance;
+				pNode = (*iNode);
+			}
+		}
+		if(pNode != NULL)
+			return pNode->m_NodeNumber;
+		else
+			return NULL;
+	}
+
+	int FindNonCentroidNodeNumberWithCoordinate(double x, double y)
+	{
+		
+		DTANode* pNode= NULL;
+
+		double min_distance = 999999;
+		int NodeID = -1;
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if((*iNode)->m_bCreatedbyNEXTA == true)
+			{
+			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
+			if( distance <  min_distance)
+			{
+				min_distance= distance;
+				pNode = (*iNode);
+			}
+			}
+		}
+		if(pNode != NULL)
+			return pNode->m_NodeNumber;
+		else
+			return NULL;
+	}
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
 		if(m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
@@ -1900,11 +1946,11 @@ public:
 		return false;  // file exits 
 	}
 
-	int FindCloseDTAPoint_NodeNumber(GDPoint pt, double threadshold, int this_node_number = -1)
+	int FindCloseDTANode_WithNodeNumber(GDPoint pt, double threadshold, int this_node_number = -1)
 	{
 		 double min_distance  = 99999;
 		 int NodeNumber = 0;
-		for (std::list<DTAPoint*>::iterator iPoint = m_DTAPointSet.begin(); iPoint != m_DTAPointSet.end(); iPoint++)
+		for (std::list<DTANode*>::iterator iPoint = m_NodeSet.begin(); iPoint != m_NodeSet.end(); iPoint++)
 		{
 
 				double distance = Find_P2P_Distance((*iPoint)->pt,pt);

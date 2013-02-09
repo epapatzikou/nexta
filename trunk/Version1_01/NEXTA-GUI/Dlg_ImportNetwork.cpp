@@ -1,3 +1,30 @@
+// TLiteDoc.h : interface of the CTLiteDoc class
+//
+//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com)
+
+//   If you help write or modify the code, please also list your names here.
+//   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
+//   and further prevent a violation of the GPL.
+
+// More about "How to use GNU licenses for your own software"
+// http://www.gnu.org/licenses/gpl-howto.html
+
+
+//    This file is part of NeXTA Version 3 (Open-source).
+
+//    NEXTA is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    NEXTA is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
+
 // Dlg_ImportNetwork.cpp : implementation file
 //
 
@@ -21,6 +48,9 @@ CDlg_ImportNetwork::CDlg_ImportNetwork(CWnd* pParent /*=NULL*/)
 , m_Edit_Demand_CSV_File(_T(""))
 , m_Sensor_File(_T(""))
 , m_bRemoveConnectors(FALSE)
+, m_AutogenerateNodeFlag(FALSE)
+, m_ImportZoneData(TRUE)
+, m_bAddConnectorsForIsolatedNodes(FALSE)
 {
 	m_bImportNetworkOnly = false;
 }
@@ -38,6 +68,9 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_ExcelFile, m_Edit_Excel_File);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 	DDX_Control(pDX, IDC_LIST_DEMAND_FORMAT, m_List_DemandFormat);
+	DDX_Check(pDX, IDC_CHECK_GENERATE_NODE_DATA, m_AutogenerateNodeFlag);
+	DDX_Check(pDX, IDC_CHECK_ZONE_DATA, m_ImportZoneData);
+	DDX_Check(pDX, IDC_CHECK_ADD_CONNECTOR, m_bAddConnectorsForIsolatedNodes);
 }
 
 
@@ -53,6 +86,7 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
 	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_FORMAT, &CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat)
+	ON_BN_CLICKED(IDC_CHECK_GENERATE_NODE_DATA, &CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData)
 END_MESSAGE_MAP()
 
 
@@ -65,6 +99,8 @@ void CDlg_ImportNetwork::OnBnClickedButtonFindExelFile()
 		szFilter);
 	if(dlg.DoModal() == IDOK)
 	{
+		UpdateData(true);
+
 		m_Edit_Excel_File = dlg.GetPathName();
 
 		UpdateData(false);
@@ -149,24 +185,48 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			if(id == 0)  // reading empty line
 				break;
 
+			double x;
+			double y;
 
 			int control_type = 0;
 
-			float x = rsNode.GetDouble(CString("x"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field x cannot be found in the node table.");
-				rsNode.Close();
-				return;
-			}
+				std::vector<CCoordinate> CoordinateVector;
 
-			float y = rsNode.GetDouble(CString("y"),bExist,false);
-			if(!bExist) 
-			{
-				m_MessageList.AddString ("Field y cannot be found in the node table.");
-				rsNode.Close();
-				return;
-			}
+				CString geometry_str;
+				geometry_str= rsNode.GetCString(CString("geometry"),false);
+
+				if(geometry_str.GetLength () > 0 )
+				{
+
+				CT2CA pszConvertedAnsiString (geometry_str);
+
+				// construct a std::string using the LPCSTR input
+				std::string geo_string (pszConvertedAnsiString);
+
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+				x = CoordinateVector[0].X;
+				y = CoordinateVector[0].Y;
+
+				}else
+				{
+
+				 x = rsNode.GetDouble(CString("x"),bExist,false);
+				if(!bExist) 
+				{
+					m_MessageList.AddString ("Field x cannot be found in the node table.");
+					rsNode.Close();
+					return;
+				}
+
+				y = rsNode.GetDouble(CString("y"),bExist,false);
+				if(!bExist) 
+				{
+					m_MessageList.AddString ("Field y cannot be found in the node table.");
+					rsNode.Close();
+					return;
+				}
+				}
 
 			// Create and insert the node
 			DTANode* pNode = new DTANode;
@@ -197,6 +257,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		return;
 	}
 
+	int connector_link_type =  0 ;
+
 	// Read record
 	strSQL = m_pDoc->ConstructSQL("2-LINK-TYPE");
 	if(strSQL.GetLength () > 0)
@@ -211,7 +273,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
 			if(!bExist) 
 			{
-				m_MessageList.AddString ("Field link_type cannot be found in input_link_type.csv.");
+				CString Message;
+				Message.Format("Field link_type cannot be found in the link-type sheeet.");
+
+				m_MessageList.AddString (Message);
 				return;
 			}
 			if(link_type_number ==0)
@@ -220,6 +285,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			element.link_type = link_type_number;
 			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
 			element.type_code    = rsLinkType.GetCString (CString("type_code"));
+
+			if(element.type_code.find("c") != string::npos)
+					connector_link_type = element.link_type;
+
 			element.default_lane_capacity     = rsLinkType.GetLong(CString("default_lane_capacity"),bExist,false);
 			element.default_speed      = rsLinkType.GetFloat  (CString("default_speed_limit"));
 			element.default_number_of_lanes       = rsLinkType.GetLong (CString("default_number_of_lanes"),bExist,false);
@@ -237,13 +306,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		return;
 	}
 
-	bool bAutogenerateNodeFlag = false;
-	if(m_pDoc->m_NodeSet.size() == 0)
+	if(m_pDoc->m_NodeSet.size() == 0 && m_AutogenerateNodeFlag == true)
 	{
 
-		bAutogenerateNodeFlag = true;
-
-		str_msg.Format ( "Worksheet 1-node contain 0 node. Upstream and downstream nodes in the link table is used to generate node info.");
+		str_msg.Format ( "Worksheet 1-node contain 0 node.");
+		m_MessageList.AddString (str_msg);
+		str_msg.Format ( "The geometry field in the link table is used to generate node info.");
 		m_MessageList.AddString (str_msg);
 
 	}else
@@ -252,8 +320,100 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		m_MessageList.AddString (str_msg);
 	}
 	
+	/////////////////////////////////////////////////////////////////////
+
+		// Read record to obtain the overall max and min x and y;
+
+	double min_x = 0;
+	double max_x = 0;
+	double min_y = 0;
+	double max_y = 0;
+
+	bool b_RectangleInitialized = false;
+
+	if(m_AutogenerateNodeFlag)
+
+	{
+		strSQL = m_pDoc->ConstructSQL("3-LINK");
+
+		if(strSQL.GetLength () > 0)
+		{
+			CRecordsetExt rsLink(&m_pDoc->m_Database);
+			rsLink.Open(dbOpenDynaset, strSQL);
+
+			int from_node_id;
+			int to_node_id ;
+			while(!rsLink.IsEOF())
+			{
+				std::vector<CCoordinate> CoordinateVector;
+
+				CString geometry_str;
+				geometry_str= rsLink.GetCString(CString("geometry"));
+
+				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
+				{
+					m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
+					rsLink.Close();
+					return;
+				}
+
+				if(geometry_str.GetLength () > 0)
+				{
+
+				CT2CA pszConvertedAnsiString (geometry_str);
+
+				// construct a std::string using the LPCSTR input
+				std::string geo_string (pszConvertedAnsiString);
+
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+
+				if(b_RectangleInitialized==false && CoordinateVector.size()>=1)
+				{
+				
+					min_x = max_x = CoordinateVector[0].X;
+					min_y = max_y = CoordinateVector[0].Y;
+					b_RectangleInitialized = true;
+
+				}else
+				{
+
+						min_x= min(min_x,CoordinateVector[0].X);
+						min_x= min(min_x,CoordinateVector[CoordinateVector.size()-1].X);
+
+						min_y= min(min_y,CoordinateVector[0].Y);
+						min_y= min(min_y,CoordinateVector[CoordinateVector.size()-1].Y);
+
+						max_x= max(max_x,CoordinateVector[0].X);
+						max_x= max(max_x,CoordinateVector[CoordinateVector.size()-1].X);
+
+						max_y= max(max_y,CoordinateVector[0].Y);
+						max_y= max(max_y,CoordinateVector[CoordinateVector.size()-1].Y);
+			
+				}
+				}
+
+	
+				rsLink.MoveNext();
+				//				TRACE("reading line %d\n", line_no);
+			}
+
+			rsLink.Close();
+		}
+	}
+
+	double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))/100000.0;
+
+	/////////////////////////////////////////////////////////////////////
 		// Read record
 		strSQL = m_pDoc->ConstructSQL("3-LINK");
+
+		bool b_default_number_of_lanes_used = false;
+		bool b_default_lane_capacity_used = false;
+
+		int number_of_records_read = 0;
+
+		int line_no = 2;
 
 		if(strSQL.GetLength () > 0)
 		{
@@ -261,18 +421,21 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			CRecordsetExt rsLink(&m_pDoc->m_Database);
 			rsLink.Open(dbOpenDynaset, strSQL);
 			i = 0;
-			int line_no = 2;
 			float default_distance_sum = 0;
 			CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
 			float default_AADT_conversion_factor = g_GetPrivateProfileDouble("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
 
 
 			float length_sum = 0;
+			int from_node_id;
+			int to_node_id ;
 			while(!rsLink.IsEOF())
 			{
+				if(m_AutogenerateNodeFlag == false)
+				{
 
-				int from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
-				if(!bExist  ) 
+				from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
+				if(!bExist ) 
 				{
 					if(m_pDoc->m_LinkSet.size() ==0)
 					{
@@ -288,7 +451,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 				}
 
-				int to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
+				to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString("Field to_node_id cannot be found in the link table.");
@@ -301,6 +464,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					break;
 
 
+				}
 				long link_id =  rsLink.GetLong(CString("link_id"),bExist,false);
 				if(!bExist)
 					link_id = 0;
@@ -308,26 +472,26 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				int type = rsLink.GetLong(CString("link_type"),bExist,false);
 				if(!bExist) 
 				{
-					m_MessageList.AddString("Field link_type cannot be found in the link table.");
-					rsLink.Close();
-					return;
-				}
-
-
-				if(bAutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(from_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
-				{
-
-
-					str_msg.Format("from_node_id %d at row %d cannot be found in the node table!",from_node_id, line_no);
+					str_msg.Format("Field link_type cannot be found or has no value at row %d in the link sheet. Skip record.", line_no);
 					m_MessageList.AddString(str_msg);
-					//					rsLink.Close();
 					rsLink.MoveNext();
 					continue;
 				}
 
-				if(bAutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(to_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+
+				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(from_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
 				{
-					str_msg.Format("to_node_id %d at row %d cannot be found in the node table!",to_node_id, line_no);
+
+
+					str_msg.Format("from_node_id %d at row %d cannot be found in the link sheet!",from_node_id, line_no);
+					m_MessageList.AddString(str_msg);
+					rsLink.MoveNext();
+					continue;
+				}
+
+				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(to_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+				{
+					str_msg.Format("to_node_id %d at row %d cannot be found in the link sheet!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
 					rsLink.MoveNext();
 					continue;
@@ -336,15 +500,15 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				std::vector<CCoordinate> CoordinateVector;
 
 				CString geometry_str;
-				//= rsLink.GetCString(CString("geometry"));
+				geometry_str= rsLink.GetCString(CString("geometry"));
 
-				//if(bAutogenerateNodeFlag && geometry_str.GetLength () ==0)
-				//{
-				//
-				//	m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
-				//	rsLink.Close();
-				//	return;
-				//}
+				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
+				{
+				
+					m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
+					rsLink.Close();
+					return;
+				}
 
 				if(geometry_str.GetLength () > 0)
 				{
@@ -357,11 +521,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
 
-				if(bAutogenerateNodeFlag)  // add nodes
+				if(m_AutogenerateNodeFlag&& CoordinateVector.size() > 0)  // add nodes
 				{
 
+					from_node_id = m_pDoc->FindNodeNumberWithCoordinate(CoordinateVector[0].X,CoordinateVector[0].Y,min_distance_threadshold_for_overlapping_nodes);
 					// from node
-					if(m_pDoc->m_NodeNumbertoIDMap.find(from_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+					if(from_node_id == 0)
 					{
 							GDPoint	pt;
 							pt.x = CoordinateVector[0].X;
@@ -371,12 +536,16 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 							if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 								ActivityLocationFlag = true;
 
-							m_pDoc->AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
+							DTANode* pNode = m_pDoc->AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
+							from_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
+							pNode->m_bCreatedbyNEXTA = true;
 
 					}
 
 					// to node
-					if(m_pDoc->m_NodeNumbertoIDMap.find(to_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+					to_node_id =  m_pDoc->FindNodeNumberWithCoordinate(CoordinateVector[CoordinateVector.size()-1].X,CoordinateVector[CoordinateVector.size()-1].Y,min_distance_threadshold_for_overlapping_nodes);
+					// from node
+					if(to_node_id==0)
 					{
 							GDPoint	pt;
 							pt.x = CoordinateVector[CoordinateVector.size()-1].X;
@@ -386,7 +555,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 							if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 								ActivityLocationFlag = true;
 
-							m_pDoc->AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
+							DTANode* pNode = m_pDoc->AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
+							to_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
+							pNode->m_bCreatedbyNEXTA = true;
 					}
 
 				}
@@ -416,7 +587,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				float length = rsLink.GetDouble(CString("length"),bExist,false);
 				if(!bExist) 
 				{
-					m_MessageList.AddString ("Field length_in_mile cannot be found in the link table.");
+					m_MessageList.AddString ("Field length cannot be found in the link table.");
 					rsLink.Close();
 					return;
 				}
@@ -431,9 +602,26 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
 				if(!bExist)
 				{
+
+					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
+					{
+
+						number_of_lanes = m_pDoc->m_LinkTypeMap[type].default_number_of_lanes;
+
+						if(b_default_number_of_lanes_used)
+						{
+						m_MessageList.AddString("Field number_of_lanes cannot be found in the link table.");
+						m_MessageList.AddString("default_number_of_lanes from 2-link-type table is used.");
+						b_default_number_of_lanes_used =true;
+						}
+					
+					}else
+					{
 					m_MessageList.AddString("Field number_of_lanes cannot be found in the link table.");
+					m_MessageList.AddString("default_number_of_lanes for this link type has not been defined in link_type table.");
 					rsLink.Close();
 					return;
+					}
 				}
 
 				if(number_of_lanes ==0)
@@ -473,13 +661,30 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
 				if(!bExist)
 				{
+					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
+					{
+
+						capacity_in_pcphpl = m_pDoc->m_LinkTypeMap[type].default_number_of_lanes;
+
+						if(b_default_lane_capacity_used)
+						{
+						m_MessageList.AddString("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
+						m_MessageList.AddString("default_lane_capacity from 2-link-type table is used.");
+						b_default_lane_capacity_used =true;
+						}
+					
+					}else
+					{
 					m_MessageList.AddString ("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
 					rsLink.Close();
 					return;
+					}
+
 				}
 
 				if(capacity_in_pcphpl<0)
 				{
+
 					str_msg.Format ( "Link %d -> %d has a negative capacity, please sort the link table by capacity_in_veh_per_hour_per_lane and re-check it!",from_node_id,to_node_id);
 					AfxMessageBox(str_msg, MB_ICONINFORMATION);
 					rsLink.Close();
@@ -526,7 +731,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					link_code_start = 1; link_code_end = 2;
 				}
 
-				if(bAutogenerateNodeFlag == false)
+				if(m_AutogenerateNodeFlag == false)
 				{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
@@ -590,8 +795,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						}
 					}
 
-
-
 					pLink->m_NumberOfLanes= number_of_lanes;
 					pLink->m_SpeedLimit= speed_limit_in_mph;
 					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
@@ -602,6 +805,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
 						pLink->m_Length = distance_in_mile;
 					}
+					default_distance_sum+= pLink->DefaultDistance();
+					length_sum += pLink ->m_Length;
+	
 
 					pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -675,8 +881,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_ToPoint = m_pDoc->m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 
-					default_distance_sum+= pLink->DefaultDistance();
-					length_sum += pLink ->m_Length;
 					//			pLink->SetupMOE();
 					pLink->input_line_no  = line_no;
 					
@@ -713,6 +917,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				rsLink.MoveNext();
 				//				TRACE("reading line %d\n", line_no);
 				line_no ++;
+				number_of_records_read ++;
 			}
 
 			rsLink.Close();
@@ -747,19 +952,53 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		}
 
 
-		if(bAutogenerateNodeFlag)  // generated when read shape files
+		if(m_AutogenerateNodeFlag)  // generated when read shape files
 		{
 		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
 		m_MessageList.AddString (str_msg);
 		}
 
-		str_msg.Format ("%d links have been sucessfully imported.",m_pDoc->m_LinkSet.size());
+		str_msg.Format ("%d links have been sucessfully imported from %d records.",m_pDoc->m_LinkSet.size(),number_of_records_read);
 		m_MessageList.AddString(str_msg);
 	
 
 
+		if(m_bAddConnectorsForIsolatedNodes)
+		{
 
-	if(m_bImportNetworkOnly == true)
+			if(connector_link_type == 0)
+			{
+				AfxMessageBox("The link type for connectors has not been defined.");
+
+				return;
+			}
+			m_pDoc->m_DefaultSpeedLimit = 10;
+			m_pDoc->m_DefaultCapacity = 10000;
+			m_pDoc->m_DefaultLinkType = connector_link_type; //connector
+
+			int number_of_new_connectors = 0;
+
+			for (std::list<DTANode*>::iterator  iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+			{
+				if((*iNode)->m_Connections == 0)
+				{
+
+					int NodeNumber = m_pDoc->FindNonCentroidNodeNumberWithCoordinate((*iNode)->pt .x ,(*iNode)->pt .y );
+					
+					 m_pDoc->AddNewLinkWithNodeNumbers((*iNode)->m_NodeNumber , NodeNumber);
+					 m_pDoc->AddNewLinkWithNodeNumbers(NodeNumber,(*iNode)->m_NodeNumber);
+				
+					number_of_new_connectors ++;
+				}
+
+			}
+		
+			str_msg.Format ("%d connectors have been sucessfully created",number_of_new_connectors);
+			m_MessageList.AddString(str_msg);
+
+		}
+
+	if(m_ImportZoneData == false)
 		return;
 
 	// activity location table
@@ -1160,7 +1399,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 void CDlg_ImportNetwork::OnBnClickedImportNetworkOnly()
 {
-	m_bImportNetworkOnly = true;
 	OnBnClickedImport();
 	m_bImportNetworkOnly = false;  //reset flag
 }
@@ -1407,3 +1645,7 @@ BOOL CDlg_ImportNetwork::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 #endif
+void CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData()
+{
+	// TODO: Add your control notification handler code here
+}
