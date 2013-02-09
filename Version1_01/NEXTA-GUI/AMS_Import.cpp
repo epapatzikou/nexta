@@ -1,3 +1,29 @@
+// TLite.h : main header file for the TLite application
+//
+//  Portions Copyright 2010 Xuesong Zhou (xzhou99@gmail.com), Jeff Taylor (jeffrey.taylor.d@gmail.com)
+
+//   If you help write or modify the code, please also list your names here.
+//   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
+//   and further prevent a violation of the GPL.
+
+// More about "How to use GNU licenses for your own software"
+// http://www.gnu.org/licenses/gpl-howto.html
+
+
+//    This file is part of NeXTA Version 3 (Open-source).
+
+//    NEXTA is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    NEXTA is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdafx.h"
 #include "Geometry.h"
@@ -119,7 +145,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	std::string file_name = CString2StdString(FileName);
 
-	std::string length_unit,decimal_degrees,with_reverse_direction_field, offset_link, oneway_vs_twoway, r_number_of_lanes_field, link_type_field;
+	std::string length_unit,decimal_degrees,with_reverse_direction_field, offset_link, oneway_vs_twoway, lane_vs_link, r_number_of_lanes_field, link_type_field;
 
 	
 	CCSVParser parser;
@@ -129,6 +155,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value_1",r_number_of_lanes_field);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value_2",oneway_vs_twoway);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value_2",lane_vs_link);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value_1",link_type_field);
 
 
@@ -162,6 +189,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	if(oneway_vs_twoway == "twoway")
 		number_of_lanes_for_two_way_links_flag = 1;
+
+	if(lane_vs_link == "link")
+		link_capacity_flag = 1;
 
 	std::string centroid_file_name,connector_file_name;
 	parser.GetValueBySectionKeyFieldName(file_name,"centroid","file_name","value_1",centroid_file_name);
@@ -597,11 +627,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 			m_AMSLogFile << endl << endl << "2: link block---" << endl;
-			m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity," << endl;
+			m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity,";
 
 			if(reverse_direction_field_flag)
 			{
 				m_AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
+			}
+			else
+			{
+				m_AMSLogFile << " " << endl;
 			}
 
 
@@ -755,7 +789,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name.c_str ());
 					r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name.c_str ());
-					r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,number_of_lanes);
+					r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,r_number_of_lanes);
 					r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
 
 						if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 

@@ -354,10 +354,14 @@
 #define IDC_BUTTON_View_CUBE_File       1108
 #define IDC_CHECK_REMOVE_CONNECTOR      1108
 #define IDC_BUTTON_View_CUBE_File2      1109
+#define IDC_CHECK_GENERATE_NODE_DATA    1109
 #define IDC_BUTTON_View_CUBE_File3      1110
 #define IDC_CHECK_ZOOM_TO_SELECTED_LINK 1110
+#define IDC_CHECK_ZONE_DATA             1110
 #define IDC_BUTTON_View_CUBE_File4      1111
 #define IDC_PATHMOE                     1111
+#define IDC_CHECK_REMOVE_CONNECTOR2     1111
+#define IDC_CHECK_ADD_CONNECTOR         1111
 #define IDC_DOC_TITLE                   1113
 #define IDC_COMBOStartTime              1117
 #define IDC_COMBOEndTime                1118

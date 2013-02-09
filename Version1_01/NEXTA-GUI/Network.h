@@ -970,6 +970,7 @@ class DTANode
 public:
 	DTANode()
 	{
+		m_bCreatedbyNEXTA = false;
 		m_bConnectedToFreewayORRamp = false;
 		m_bNodeAvoidance  = false;
 		m_QEM_ReferenceNodeNumber = 0;
@@ -1006,6 +1007,7 @@ public:
 		m_GPS_arrival_time = 0;
 	};
 
+	bool m_bCreatedbyNEXTA;  // not by users
 	double m_min_distance_from_GPS_point;
 	double m_GPS_arrival_time;
 

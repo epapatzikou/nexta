@@ -47,7 +47,7 @@ void CRecordsetExt::DoFieldExchange(CFieldExchange* pFX)
 // CRecordsetExt class
 
 // Get by Column Name
-CString CRecordsetExt::GetCString(CString ColumnName)
+CString CRecordsetExt::GetCString(CString ColumnName, bool bErrorMessage)
 {
    COleVariant covFieldValue;
    CString Holder;
@@ -58,6 +58,8 @@ CString CRecordsetExt::GetCString(CString ColumnName)
    }
    catch(CDaoException* e)
    {
+	   if(bErrorMessage)
+	   {
       CString error = "Field not found:" + ColumnName + "\n";
       AfxMessageBox(error ,MB_OK|MB_ICONEXCLAMATION);
 
@@ -69,6 +71,7 @@ CString CRecordsetExt::GetCString(CString ColumnName)
 		TRACE("index %d: fieldinfo %s\n",i,fieldinfo.m_strName);
 	}
    
+	   }
       return "";
    }
 

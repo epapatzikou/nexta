@@ -1018,7 +1018,7 @@ bool CTLiteView::DrawLinkTimeTable(DTALink* pLink, CDC* pDC, int DisplayMode)
 
 	pDC->SelectObject(PenRectColor);
 
-	// step 1: draw outside rectange
+	// step 1: draw outside rectangle
 	pDC->MoveTo(cpt_from_start); 
 	pDC->LineTo(cpt_from_end); 
 	pDC->LineTo(cpt_to_end); 
