@@ -79,6 +79,9 @@ public:
 	CGridListCtrlEx();
 	~CGridListCtrlEx();
 
+	bool m_FirstColumnWithTitle;
+	bool m_SecondColumnWithKey;
+
 	// CListCtrl
 	LRESULT EnableVisualStyles(bool bValue);
 	inline bool UsingVisualStyle() const { return m_UsingVisualStyle; }

@@ -96,7 +96,9 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Speed Limit (mph)");
 	m_Link_Label.AddString("Speed Limit (km/hour)");
 	m_Link_Label.AddString("Length (mile)");
+	m_Link_Label.AddString("Length (feet)");
 	m_Link_Label.AddString("Length (km)");
+	m_Link_Label.AddString("Length (meter)");
 	m_Link_Label.AddString("Free Flow Travel Time (min)");
 	m_Link_Label.AddString("Free Flow Travel Time (hour)");
 	m_Link_Label.AddString("# of Lanes");
@@ -129,6 +131,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 	m_Link_Label.AddString("-- Simulation/Assignment Results --");
 	m_Link_Label.AddString("Total Link Volume");
+	m_Link_Label.AddString("Avg Travel Time (min)");
 	m_Link_Label.AddString("Volume over Capacity Ratio");
 	m_Link_Label.AddString("Level Of Service");
 	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");

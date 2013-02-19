@@ -57,7 +57,9 @@ enum link_text_display_mode
    link_display_speed_limit_in_miles, 
    link_display_speed_limit_in_km, 
    link_display_length_in_miles, 
+   link_display_length_in_feet, 
    link_display_length_in_km, 
+   link_display_length_in_meters, 
    link_display_free_flow_travel_time_in_min, 
    link_display_free_flow_travel_time_in_hour, 
    link_display_number_of_lanes, 
@@ -90,6 +92,7 @@ enum link_text_display_mode
 
 	link_display_separator_3,
 	link_display_total_link_volume,
+	link_display_avg_travel_time,
 	link_display_volume_over_capacity_ratio,
 	link_display_LevelOfService,
 	link_display_avg_waiting_time_on_loading_buffer,

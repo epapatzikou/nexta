@@ -182,6 +182,17 @@ enum TIMING_ROW
 };
 
 
+enum FREEVAL_SEGMENT
+{
+	FREEVAL_NONE = 0,
+	FREEVAL_B,
+	FREEVAL_ONR,
+	FREEVAL_OFR,
+	FREEVAL_W,
+	FREEVAL_R,
+};
+
+
 #include "Timetable.h"
 
 extern float g_GetRandomRatio();
@@ -1328,16 +1339,24 @@ public:
 } ;
 
 
-class MergeIncomingLink
+class RampLink
 {
 public:
-	MergeIncomingLink()
+	RampLink()
 	{
+		m_LinkNo = -1;
+		m_Length = 1;
 		m_LinkInCapacityRatio = 0;
+		m_link_type = 0;
+		m_NumberOfLanes = 1;
+		m_SpeedLimit = 50;
+		m_LinkInCapacityRatio = 1;
 	};
+	double m_Length;
 	long m_LinkNo;
 	int m_link_type;
 	int m_NumberOfLanes;
+	float m_SpeedLimit;
 	float m_LinkInCapacityRatio;
 };
 
@@ -1517,6 +1536,7 @@ public:
 
 		m_StochaticCapcityFlag = 0;
 		m_bMergeFlag = 0;
+		m_bOnRampType =  m_bOffRampType = false;
 		m_MergeOnrampLinkID = -1;
 		m_MergeMainlineLinkID = -1;
 		m_bSensorData = false;
@@ -1575,6 +1595,8 @@ public:
 		m_bFirstPathLink = false;
 		m_bLastPathLink = false;
 
+		CFlowArrivalCount = 0;
+		CFlowDepartureCount = 0;
 
 		m_AADT = 0;
 		m_ReferenceFlowVolume  = 0;
@@ -1600,6 +1622,7 @@ public:
 	m_BPR_alpha_term = 0.15f;
 	m_BPR_beta_term = 4.0f;
 
+	m_FREEVALSegmentCode = FREEVAL_NONE;
 
 	};
 
@@ -1619,6 +1642,48 @@ public:
 	float m_BPR_beta_term;
 
 
+	FREEVAL_SEGMENT m_FREEVALSegmentCode;
+
+	CString GetFREEVALCode()
+	{
+		CString code="B";
+		switch (m_FREEVALSegmentCode)
+		{
+		case FREEVAL_B: code = "B"; break;
+		case FREEVAL_ONR: code = "ONR"; break;
+		case FREEVAL_OFR: code = "OFR"; break;
+		case FREEVAL_W: code = "W"; break;
+		case FREEVAL_R: code = "R"; break;
+
+		default: code = "B";
+		}
+		return code;
+	}
+
+	bool IsRampAttached()
+	{
+		if(OnRampLinkVector.size() + OffRampLinkVector.size()>=1)
+			return true;
+		else
+			return false;
+	}
+
+	RampLink GetRelatedRampInfo()
+	{
+		RampLink ramp;
+
+		for(int i = 0; i < OnRampLinkVector.size(); i++)
+		{
+			return OnRampLinkVector[i];
+		
+		}
+		for(int i = 0; i < OffRampLinkVector.size(); i++)
+		{
+			return OffRampLinkVector[i];
+		}
+	
+		return ramp;
+	}
 	float m_StaticTravelTime;
 	int m_CentroidUpdateFlag;
 	std::vector<DTALane> m_LaneVector;
@@ -1729,6 +1794,10 @@ public:
 
 		float total_distance = 0; 
 		unsigned int si;
+
+		if(m_ShapePoints.size()==0)
+			return;
+
 		for(si = 0; si < m_ShapePoints .size()-1; si++)
 		{
 			total_distance += g_GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
@@ -1987,7 +2056,9 @@ void AdjustLinkEndpointsWithSetBack()
 
 
 	int m_bMergeFlag;  // 1: freeway and freeway merge, 2: freeway and ramp merge
-	std::vector<MergeIncomingLink> MergeIncomingLinkVector;
+	bool m_bOnRampType, m_bOffRampType;
+	std::vector<RampLink> OnRampLinkVector;
+	std::vector<RampLink> OffRampLinkVector;
 	int m_MergeOnrampLinkID;
 	int m_MergeMainlineLinkID;
 
@@ -2627,6 +2698,7 @@ void AdjustLinkEndpointsWithSetBack()
 	}
 
 
+
 	float GetTravelTime(int starting_time, int time_interval = 1)
 	{
 
@@ -2641,8 +2713,7 @@ void AdjustLinkEndpointsWithSetBack()
 			for(int t=starting_time; t< starting_time + time_interval && (unsigned int)t < m_LinkMOEAry.size(); t++)
 			{
 				total_travel_time +=  ( m_Length * 60/ max(1,m_LinkMOEAry[t].SimulationSpeed));
-
-				
+			
 			}
 
 			travel_time =  total_travel_time/time_interval;
@@ -3474,7 +3545,7 @@ public:
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
 	void BuildTravelerInfoNetwork(int CurrentTime, float Perception_error_ratio);
 
-	void BuildPhysicalNetwork(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, float RandomCostCoef, bool bOverlappingCost);
+	void BuildPhysicalNetwork(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, float RandomCostCoef, bool bOverlappingCost, int OriginNodeID = -1, int DestinationNode = -1);
 	void BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p_NodeSet, std::list<DTALink*>* p_LinkSet, int TrainType);
 
 	void IdentifyBottlenecks(int StochasticCapacityFlag);

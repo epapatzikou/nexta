@@ -149,17 +149,17 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	
 	CCSVParser parser;
-	parser.GetValueBySectionKeyFieldName(file_name,"link","length","value_2",length_unit);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","length_unit","value",length_unit);
 
-	parser.GetValueBySectionKeyFieldName(file_name,"link","file_name","value_2",decimal_degrees);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","with_decimal_long_lat","value",decimal_degrees);
 
-	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value_1",r_number_of_lanes_field);
-	parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value_2",oneway_vs_twoway);
-	parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value_2",lane_vs_link);
-	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value_1",link_type_field);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_field);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","number_of_lanes_oneway_vs_twoway","value",oneway_vs_twoway);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","lane_capacity_vs_link_capacity","value",lane_vs_link);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_field);
 
 
-	parser.GetValueBySectionKeyFieldName(file_name,"final_output","offset_link","value_1",offset_link);
+	parser.GetValueBySectionKeyFieldName(file_name,"final_output","offset_link","value",offset_link);
 
 
 
@@ -194,8 +194,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		link_capacity_flag = 1;
 
 	std::string centroid_file_name,connector_file_name;
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","file_name","value_1",centroid_file_name);
-	parser.GetValueBySectionKeyFieldName(file_name,"connector","file_name","value_1",connector_file_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"file_name","centroid","value",centroid_file_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"file_name","connector","value",connector_file_name);
 
 	int use_optional_centroid_layer = 0;
 	if(centroid_file_name.size()>0)
@@ -214,19 +214,19 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 	string node_table_file_name;
-	parser.GetValueBySectionKeyFieldName(file_name,"node","file_name","value_1",node_table_file_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"file_name","node","value",node_table_file_name);
 
 	string node_name;
-	parser.GetValueBySectionKeyFieldName(file_name,"node","name","value_1",node_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"node","name","value",node_name);
 
 	string node_node_id;
-	parser.GetValueBySectionKeyFieldName(file_name,"node","node_id","value_1",node_node_id);
+	parser.GetValueBySectionKeyFieldName(file_name,"node","node_id","value",node_node_id);
 	string node_control_type;
-	parser.GetValueBySectionKeyFieldName(file_name,"node","control_type","value_1",node_control_type);
+	parser.GetValueBySectionKeyFieldName(file_name,"node","control_type","value",node_control_type);
 
 
 	string node_TAZ_name;
-	parser.GetValueBySectionKeyFieldName(file_name,"node","TAZ","value_1",node_TAZ_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"node","TAZ","value",node_TAZ_name);
 
 
 	//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
@@ -381,12 +381,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(use_optional_centroid_layer)
 	{
 
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","file_name","value_1",node_table_file_name);
-
-	m_AMSLogFile << "read optional centroid layer from file " << node_table_file_name << endl; 
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value_1",node_name);
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","node_id","value_1",node_node_id);
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","TAZ","value_1",node_TAZ_name);
+	m_AMSLogFile << "read optional centroid layer from file " << centroid_file_name << endl; 
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value",node_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","node_id","value",node_node_id);
+	parser.GetValueBySectionKeyFieldName(file_name,"centroid","TAZ","value",node_TAZ_name);
 
 	//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
 
@@ -394,14 +392,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	OGRDataSource       *poDS;
 
-	CString node_shape_file_name;
-	node_shape_file_name = m_ProjectDirectory + node_table_file_name.c_str ();
+	CString centroid_shape_file_name;
+	centroid_shape_file_name = m_ProjectDirectory + centroid_file_name.c_str ();
 
-	poDS = OGRSFDriverRegistrar::Open(node_shape_file_name, FALSE );
+	poDS = OGRSFDriverRegistrar::Open(centroid_shape_file_name, FALSE );
 	if( poDS == NULL )
 	{
 		CString msg;
-		msg.Format("Open zone centroid shape file %s failed.",node_shape_file_name);
+		msg.Format("Open zone centroid shape file %s failed.",centroid_shape_file_name);
 		AfxMessageBox(msg);
 
 		return false;
@@ -524,8 +522,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		m_AMSLogFile << "imported " << i << " nodes. " << endl; 
 		m_AMSLogFile << "imported " << m_ZoneMap.size() << " zones from the node layer. " << endl; 
-		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),node_shape_file_name);
-		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",node_zone_mapping_count,node_shape_file_name);
+		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),centroid_shape_file_name);
+		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",node_zone_mapping_count,centroid_shape_file_name);
 
 		// to do: # of nodes: control: two-way stop signs....
 	}
@@ -548,9 +546,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		m_OffsetInFeet = 2;
 		string link_table_file_name;
+		string connector_table_file_name;
 		string from_node_id_name;
 		string to_node_id_name;
+		string to_link_id_name;
 		string link_id_name;
+
+
+		std::map<long, int> LinkID_FromNodeNumber_Map;
+		std::map<long, int> LinkID_ToNodeNumber_Map;
+
 		string link_name;
 		string link_type_name;
 		string mode_code_name;
@@ -560,19 +565,19 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		string capacity_in_vhc_per_hour_name;
 		string speed_limit_in_mph_name;
 
-		parser.GetValueBySectionKeyFieldName(file_name,"link","file_name","value_1",link_table_file_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value_1",from_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value_1",to_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value_1",link_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","name","value_1",link_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value_1",link_type_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value_1",mode_code_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value_1",direction_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"file_name","link","value",link_table_file_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value",from_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value",to_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value",link_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","name","value",link_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value",mode_code_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value",direction_name);
 
-		parser.GetValueBySectionKeyFieldName(file_name,"link","length","value_1",length_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value_1",number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value_1",capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","speed_limit","value_1",speed_limit_in_mph_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","length","value",length_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value",number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","speed_limit","value",speed_limit_in_mph_name);
 
 
 		string r_number_of_lanes_name;
@@ -581,10 +586,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		string r_link_type_name;
 		if(reverse_direction_field_flag)
 		{
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value_1",r_number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value_1",r_lane_capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value_1",r_speed_limit_in_mph_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value_1",r_link_type_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value",r_lane_capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value",r_speed_limit_in_mph_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value",r_link_type_name);
 		}
 
 
@@ -656,6 +661,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					TRACE("");
 
 				long link_id =  poFeature->GetFieldAsInteger(link_id_name.c_str ());
+
+				LinkID_FromNodeNumber_Map[link_id] = from_node_id;
+				LinkID_ToNodeNumber_Map[link_id] = to_node_id;
+
 				CString name =  poFeature->GetFieldAsString(link_name.c_str ());
 				int type = 0;
 //				if(link_type_name.size() >=1)
@@ -692,7 +701,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				
 				}
 
-				float length = poFeature->GetFieldAsDouble(length_name.c_str ());
+
+
 
 				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name.c_str ());
 
@@ -817,9 +827,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				// To Do Error checking, Numbera of lanes... 
 
-				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
-				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
-
 				if(reverse_direction_field_flag)
 				{
 					m_AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
@@ -925,6 +932,29 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				}
 
 				}
+
+				float length = 0;
+				
+				if(length_name.size() > 0)
+					length = poFeature->GetFieldAsDouble(length_name.c_str ());
+				else
+				{
+					GDPoint pt1; 
+					pt1.x = CoordinateVector[0].X;
+					pt1.x = CoordinateVector[0].Y;
+
+					GDPoint pt2; 
+					pt2.x = CoordinateVector[CoordinateVector.size()-1].X;
+					pt2.x = CoordinateVector[CoordinateVector.size()-1].Y;
+
+					length =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1, pt2);
+				}
+
+				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
+				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
+
+
+
 				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 				{
 					AfxMessageBox("Invalid data: from_node_id==0 && to_node_id ==0 in the link table.");
@@ -1085,12 +1115,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 
+					if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+					{
+						//skip
+						continue;
+					}
+
 					default_distance_sum+= pLink->DefaultDistance();
 					length_sum += pLink ->m_Length;
 					//			pLink->SetupMOE();
 					pLink->input_line_no  = line_no;
-
-
 
 					int index = m_LinkSet.size();
 
@@ -1176,28 +1210,26 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(use_optional_connector_layer == 1)
 	{
 
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","file_name","value_1",link_table_file_name);
-		
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value_1",from_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value_1",to_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value_1",length_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value_1",number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value_1",capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value_1",speed_limit_in_mph_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"file_name","connector","value",connector_table_file_name);
+	
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","link_end","value",to_link_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value",speed_limit_in_mph_name);
 
-		m_AMSLogFile << "starting converting centors from file " << link_table_file_name;
-
-
-		
+		m_AMSLogFile << "starting converting connector from file " << connector_table_file_name;
 
 
 		int default_number_of_lanes = 1;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value_1",default_number_of_lanes);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_number_of_lanes);
 
 		int default_lane_capacity = 10000;
 		int default_speed_limit = 100;
 		int default_link_type = 99;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value_1",default_link_type);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
 
 
 		if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
@@ -1215,12 +1247,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		}
 		int direction =0;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","defaut_direction","value_1",direction);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","direction","value",direction_name);
 
-		CString link_shape_file_name;
-		link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
+		CString connector_shape_file_name;
+		connector_shape_file_name = m_ProjectDirectory + connector_table_file_name.c_str ();
 
-		poDS = OGRSFDriverRegistrar::Open(link_shape_file_name, FALSE );
+		poDS = OGRSFDriverRegistrar::Open(connector_shape_file_name, FALSE );
 		if( poDS == NULL )
 		{
 			CString msg;
@@ -1240,8 +1272,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			if(poLayer == NULL)
 			{
-				
-				AfxMessageBox("Open link layer in the connector shape file failed");
+				CString error_message;
+
+				error_message.Format("Open connector layer in the shape file %s failed",connector_shape_file_name);
+
+				AfxMessageBox(error_message);
 				return false;			
 			}
 
@@ -1251,7 +1286,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			int i = 0;
 			int line_no = 1;
 
-			m_AMSLogFile << endl << endl << "2.2: connector block---" << endl;
+			m_AMSLogFile << endl << endl << "4: " << connector_shape_file_name << " block---" << endl;
 			m_AMSLogFile << "from_node_id,to_name_id,length,number_of_lanes,speed_limit,capacity," << endl;
 
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
@@ -1259,22 +1294,29 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str());
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str());
+				int to_link_id = poFeature->GetFieldAsInteger(to_link_id_name.c_str());
 
-				if(direction_field_flag) 
+				if(direction_name.size()>0) 
 				{
 					direction = poFeature->GetFieldAsInteger(direction_name.c_str());
+
+					CString direction_str = poFeature->GetFieldAsString(direction_name.c_str());
+
 				}
 
 
 				long link_id =  0;
 				int type = default_link_type;  // find default connectors type.
-				float length = poFeature->GetFieldAsDouble(length_name.c_str());
+				float length = 0.001;
+				
+				if(length_name.size() > 0)
+					length = poFeature->GetFieldAsDouble(length_name.c_str ());
 
 				int number_of_lanes = default_number_of_lanes;
 				int capacity_in_pcphpl = default_lane_capacity;
 				float speed_limit_in_mph = default_speed_limit;
 
-				m_AMSLogFile << from_node_id << "," << to_node_id << "," << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
+//				m_AMSLogFile << from_node_id << "," << to_node_id << "," << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
 
 				float grade = 0;
 				float AADT_conversion_factor = 0.1;
@@ -1305,7 +1347,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				poGeometry = poFeature->GetGeometryRef();
 				if( poGeometry != NULL )
-				{	if(wkbFlatten(poGeometry->getGeometryType()) == wkbLineString )
+				{	
+					
+					if(wkbFlatten(poGeometry->getGeometryType()) == wkbLineString )
 				{
 					OGRLineString *poLine = (OGRLineString *) poGeometry;
 
@@ -1346,7 +1390,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 				{
 					AfxMessageBox("Invalid data: from_node_id==0 && to_node_id ==0 in the link table.");
-					return false;
+					break;
 				}
 
 
@@ -1362,15 +1406,40 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_OrgDir = direction;
 					pLink->m_LinkID = link_id;
 
+
+					if(to_link_id == 3522905)
+					{
+					TRACE("");
+					}
 					if(link_code == 1)  //AB link
 					{
 						pLink->m_FromNodeNumber = from_node_id;
 
-						pLink->m_ToNodeNumber = to_node_id;
+						if(to_link_id>=1)
+						{
+							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+							{
+								pLink->m_ToNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id], LinkID_ToNodeNumber_Map[to_link_id]);
+								// from_node_id has been defined
+								to_node_id = pLink->m_ToNodeNumber ;
+							}
+							else
+							{
+								CString error_message;
+
+								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+								AfxMessageBox(error_message);
+								return false;
+							}
+						}
+						else
+							pLink->m_ToNodeNumber = to_node_id;
+
 						pLink->m_Direction  = 1;
 
 						pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
 						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+
 
 
 						for(unsigned si = 0; si < CoordinateVector.size(); si++)
@@ -1383,11 +1452,32 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 							pLink->m_ShapePoints .push_back (pt);
 						}
 
+						
 					}
 
 					if(link_code == 2)  //BA link
 					{
+						if(to_link_id>=1)
+						{
+							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+							{
+								pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
+								from_node_id = pLink->m_FromNodeNumber ;
+							}
+							else
+							{
+								CString error_message;
+
+								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+								AfxMessageBox(error_message);
+								return false;
+							}
+						}else
+						{
 						pLink->m_FromNodeNumber = to_node_id;
+						}
+
+
 						pLink->m_ToNodeNumber = from_node_id;
 						pLink->m_Direction  = 1;
 						pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
@@ -1402,6 +1492,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 							pLink->m_Original_ShapePoints .push_back (pt);
 							pLink->m_ShapePoints .push_back (pt);
 						}
+
 					}
 
 					pLink->m_NumberOfLanes= number_of_lanes;
@@ -1420,6 +1511,26 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					if(link_code == 2)  //BA link
 					{
+						if(to_link_id>=1)
+						{
+							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+							{
+								pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
+								from_node_id = pLink->m_FromNodeNumber ;
+
+							}
+							else
+							{
+								CString error_message;
+
+								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+								AfxMessageBox(error_message);
+								return false;
+							}
+						}else
+						{
+						pLink->m_FromNodeNumber = to_node_id;
+						}
 
 						int R_number_of_lanes = number_of_lanes;
 
@@ -1440,6 +1551,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					}
 
+					m_AMSLogFile << "Add connector " << from_node_id << " -> " << to_node_id << endl;
+
 					pLink->m_Kjam = k_jam;
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
@@ -1450,12 +1563,35 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 
-					default_distance_sum+= pLink->DefaultDistance();
-					length_sum += pLink ->m_Length;
-					//			pLink->SetupMOE();
-					pLink->input_line_no  = line_no;
+				pLink->input_line_no  = line_no;
 
+					if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+					{
+						//skip
+						continue;
+					}
+
+					//if(to_link_id>=1) // generation link based
+					//{
+					//	// reset shape points;
+
+					//	pLink->m_Original_ShapePoints.clear();
+					//	pLink->m_ShapePoints.clear();
+					//		
+					//		GDPoint	pt;
+					//		pt = pLink->m_FromPoint;
+
+					//		pLink->m_Original_ShapePoints .push_back (pt);
+					//		pLink->m_ShapePoints .push_back (pt);
+
+					//		pt = pLink->m_ToPoint;
+
+					//		pLink->m_Original_ShapePoints .push_back (pt);
+					//		pLink->m_ShapePoints .push_back (pt);
+					//}
 					m_LinkNoMap[m_LinkSet.size()]  = pLink;
+
+
 					m_LinkSet.push_back (pLink);
 					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
@@ -1482,7 +1618,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}
 
 			m_AMSLogFile << "imported " << i << " links. " << endl; 
-			m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
+			m_ConnectorDataLoadingStatus.Format ("%d connectors loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
 
 
 		}  // layer
@@ -1503,7 +1639,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			GenerateOffsetLinkBand();
 
-					m_UnitMile  = 1.0f;
+		m_UnitMile  = 1.0f;
 		if(length_sum>0.000001f)
 			m_UnitMile=  default_distance_sum /length_sum;
 
@@ -1518,8 +1654,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	// ************************************/
 	string zone_table_file_name;
 	string zone_id_name;
-		parser.GetValueBySectionKeyFieldName(file_name,"zone","file_name","value_1",zone_table_file_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"zone","zone_id","value_1",zone_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"file_name","zone","value",zone_table_file_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"zone","zone_id","value",zone_id_name);
 
 	CString zone_shape_file_name;
 	zone_shape_file_name = m_ProjectDirectory + zone_table_file_name.c_str();
@@ -2561,6 +2697,12 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 							if(from_node_id == to_node_id)
 							{
 							continue;
+							}
+
+							if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+							{
+								//skip
+								continue;
 							}
 
 							TRACE("\n add ->> movement %s, from node %d to node %d, with %d links",
@@ -4199,3 +4341,188 @@ void  CTLiteDoc::ConvertOriginBasedDemandFile(LPCTSTR lpszFileName)
 
    }
 }
+
+void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
+{
+	if(m_bIdentifyBottleneckAndOnOffRamps == true)
+		return;
+	else  // false
+		m_bIdentifyBottleneckAndOnOffRamps = true;
+
+	// keep working
+
+	CWaitCursor wait;
+	// ! there is an freeway or highway downstream with less number of lanes
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink * pLink = (*iLink);
+		if( m_LinkTypeMap[pLink->m_link_type].IsFreeway () 
+			&&  m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size()==1)  // freeway or highway
+		{
+			int FromID = pLink->m_FromNodeID;
+			int ToID   = pLink->m_ToNodeID;
+
+			for(int i=0; i< m_NodeIDMap[ToID]->m_OutgoingLinkVector.size(); i++)
+			{
+				DTALink* pNextLink =  m_LinkNoMap[m_NodeIDMap[ToID]->m_OutgoingLinkVector[i]];
+				if(m_LinkTypeMap[pNextLink->m_link_type ].IsFreeway () && pNextLink->m_NumberOfLanes  < pLink->m_NumberOfLanes && pNextLink->m_ToNodeID != FromID)
+				{
+					//					pLink->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
+					//g_LogFile << "lane drop:" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << endl;
+				}
+
+			}
+
+		}
+	}
+
+
+	//// merge: one outgoing link, two more incoming links with at least freeway link
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink * pLink = (*iLink);
+		int incoming_link_freeway_and_ramp_count = 0;
+		bool no_arterial_incoming_link = true;
+
+		DTANode* pFromNode = m_NodeIDMap[pLink->m_FromNodeID];
+
+		for(int incoming_link = 0; incoming_link <  pFromNode->m_IncomingLinkVector .size(); incoming_link++) // one outgoing link without considering u-turn
+		{
+			DTALink* pIncomingLink = m_LinkNoMap[pFromNode->m_IncomingLinkVector[incoming_link]];
+
+			if((pIncomingLink->m_FromNodeID != pLink->m_ToNodeID)) // non-uturn link
+			{
+				if(m_LinkTypeMap[pIncomingLink->m_link_type ].IsFreeway() //freeway link
+					|| m_LinkTypeMap[pIncomingLink->m_link_type].IsRamp ())
+				{
+					incoming_link_freeway_and_ramp_count++;
+
+				}else
+				{
+					no_arterial_incoming_link = false;
+
+				}
+			}
+
+		}
+		if(incoming_link_freeway_and_ramp_count >=2 && no_arterial_incoming_link)
+		{
+			TRACE("\nMerge link: %d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+			pLink->m_bMergeFlag = 1;
+		}
+
+	}
+
+
+	//// first count # of incoming freeway, highway or ramp links to each freeway/highway link
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink * pLink = (*iLink);
+		int FromID = pLink->m_FromNodeID;
+		DTANode* pFromNode = m_NodeIDMap[FromID];
+		if(pLink->m_bMergeFlag ==1 && pFromNode->m_IncomingLinkVector .size() == 2)  // is a merge bottlebeck link with two incoming links
+		{
+			int il;
+			bool bRampExistFlag = false;
+			bool bFreewayExistFlag = false;
+
+			for(il = 0; il< pFromNode->m_IncomingLinkVector.size(); il++)
+			{
+				DTALink* pInLink = m_LinkNoMap[ pFromNode->m_IncomingLinkVector[il]];
+				if(m_LinkTypeMap[pInLink->m_link_type].IsRamp ())  // on ramp as incoming link
+				{
+					bRampExistFlag = true;
+
+					pInLink->m_bOnRampType = true;
+
+					pLink ->m_FREEVALSegmentCode  = FREEVAL_ONR;
+
+					pLink->m_MergeOnrampLinkID = pFromNode->m_IncomingLinkVector[il];
+				}
+				if(m_LinkTypeMap[pInLink->m_link_type ].IsFreeway () || 
+					m_LinkTypeMap[pInLink->m_link_type ].IsHighway ())  // freeway or highway
+				{
+					bFreewayExistFlag = true;
+					pLink->m_MergeMainlineLinkID = pFromNode->m_IncomingLinkVector[il];
+				}
+				if(bRampExistFlag && bFreewayExistFlag)
+				{
+					pLink->m_bMergeFlag = 2; // merge with ramp and mainline street
+					//g_LogFile << "merge with ramp:" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber ;
+					//g_LogFile << " with onramp:" << g_NodeVector[m_LinkNoMap[pLink->m_MergeOnrampLinkID]->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[m_LinkNoMap[pLink->m_MergeOnrampLinkID]->m_ToNodeID].m_NodeNumber ;
+					//g_LogFile << " and freeway mainline:" << g_NodeVector[m_LinkNoMap[pLink->m_MergeMainlineLinkID]->m_FromNodeID ].m_NodeNumber << " ->" << g_NodeVector[m_LinkNoMap[pLink->m_MergeMainlineLinkID]->m_ToNodeID].m_NodeNumber << endl;
+					break;
+				}
+
+			}
+
+
+		}
+
+		if(pLink->m_bMergeFlag ==1)
+		{
+			// merge with several merging ramps
+			int ij;
+			int TotalNumberOfLanes = 0;
+			for( ij= 0; ij< pFromNode->m_IncomingLinkVector.size(); ij++)
+			{
+				TotalNumberOfLanes += m_LinkNoMap[  pFromNode->m_IncomingLinkVector[ij]]->m_NumberOfLanes  ;
+			}
+
+			for( ij= 0; ij< pFromNode->m_IncomingLinkVector.size(); ij++)
+			{
+				DTALink* pInLink = m_LinkNoMap[ pFromNode->m_IncomingLinkVector[ij]];
+
+				RampLink mil;
+				mil.m_LinkNo = pInLink->m_LinkNo ;
+				mil.m_link_type =  pInLink->m_link_type ;
+				mil.m_Length = pInLink->m_Length ;
+				mil.m_NumberOfLanes =  pInLink->m_NumberOfLanes  ;
+				mil.m_SpeedLimit = pInLink->m_SpeedLimit ;
+				pLink->OnRampLinkVector.push_back(mil);
+//				g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_ToNodeID].m_NodeNumber <<  " with " << m_LinkNoMap[mil.m_LinkNo]->m_NumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
+			}
+
+		}
+
+	}
+
+	// determine offramp
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		DTALink * pLink = (*iLink);
+		if(m_LinkTypeMap[pLink->m_link_type].IsRamp ()) 
+		{
+
+			if(pLink->m_bOnRampType == false)  // all on ramp links have been marked
+			{
+		
+				pLink->m_bOffRampType = true;
+
+
+				DTALink* pFreewayLink= FindFreewayLinkWithToNodeNumber(pLink->m_FromNodeNumber );
+				if(pFreewayLink!=NULL)
+				{
+				RampLink ramp;
+				ramp.m_LinkNo = pLink->m_LinkNo ;
+				ramp.m_Length = pLink->m_Length ;
+				ramp.m_Length = pLink->m_Length ;
+				ramp.m_link_type =  pLink->m_link_type ;
+				ramp.m_NumberOfLanes =  pLink->m_NumberOfLanes  ;
+				ramp.m_SpeedLimit = pLink->m_SpeedLimit ;
+				pFreewayLink->OffRampLinkVector.push_back(ramp);
+				//
+				pFreewayLink->m_FREEVALSegmentCode = FREEVAL_OFR;
+				}
+
+				//	g_LogFile << "Offramp:" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << endl;
+
+			}
+
+
+		}
+
+	}
+}
+

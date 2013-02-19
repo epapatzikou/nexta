@@ -69,7 +69,7 @@ public:
 
 	eVisulizationTemplate m_VisulizationTemplate;
 
-CTLiteApp();
+	CTLiteApp();
 
 
 	void UpdateAllViews();

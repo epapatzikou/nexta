@@ -441,7 +441,15 @@ BOOL CDlgScenarioTab::DeleteRow()
 
 
 BEGIN_MESSAGE_MAP(CDlgScenarioTab, CDialog)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CDlgScenarioTab::OnLvnItemchangedGridlistctrlex)
 END_MESSAGE_MAP()
 
 
 // CDlgScenarioTab message handlers
+
+void CDlgScenarioTab::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+}

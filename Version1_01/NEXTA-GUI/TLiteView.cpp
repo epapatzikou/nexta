@@ -1069,6 +1069,23 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				DrawBitmap(pDC, ScenarioPoint, IDB_LINK_CLOSURE);
 
 
+			if(pMainFrame->m_bShowLayerMap[layer_ramp] == true)
+			{
+			if( (*iLink)-> m_bOnRampType == true )
+				DrawBitmap(pDC, ScenarioPoint, IDB_ONRAMP);
+		
+			if( (*iLink)-> m_bOffRampType == true )
+				DrawBitmap(pDC, ScenarioPoint, IDB_OFFRAMP);
+
+			if( (*iLink)-> m_FREEVALSegmentCode ==  FREEVAL_ONR)
+				DrawBitmap(pDC, ScenarioPoint, IDB_SEGMENT_ONRAMP);
+			
+			if( (*iLink)-> m_FREEVALSegmentCode ==  FREEVAL_OFR )
+				DrawBitmap(pDC, ScenarioPoint, IDB_SEGMENT_OFFRAMP);
+			}
+
+
+
 			if(pMainFrame->m_bShowLayerMap[layer_detector] == true  && (*iLink)->m_bSensorData)  // only during non display mode
 			{
 				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkNo)
@@ -1177,6 +1194,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					str_text.Format ("%.1f",(*iLink)->m_SpeedLimit ); break;
 				case link_display_length_in_miles:
 					str_text.Format ("%.3f",(*iLink)->m_Length  ); break;
+				case link_display_length_in_feet:
+					str_text.Format ("%.0f",(*iLink)->m_Length*5280  ); break;
+				case link_display_length_in_meters:
+					str_text.Format ("%.0f",(*iLink)->m_Length*1.60934*1000  ); break;
 				case  link_display_speed_limit_in_km:
 					str_text.Format ("%.1f",(*iLink)->m_SpeedLimit*1.60934 ); break;
 				case link_display_length_in_km:
@@ -1311,6 +1332,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						str_text.Format ("%.0f",(*iLink)->m_total_link_volume   );
 
 					break;
+
+				case link_display_avg_travel_time:
+					str_text.Format ("%.1f",(*iLink)->GetTravelTime(pDoc->m_DemandLoadingStartTimeInMin , pDoc->m_DemandLoadingEndTimeInMin)  );
+				break;
 
 
 				case link_display_Num_Driveways_Per_Mile:
@@ -4331,6 +4356,9 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 {
 	// 
 
+	if(pLink->m_ShapePoints.size() == 0)
+		return;
+
 	// normal line
 	CTLiteDoc* pDoc = GetDocument();
 
@@ -4466,6 +4494,9 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 
 bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag =false)
 {
+
+	if(pLink->m_BandLeftShapePoints.size() == 0)
+		return false;
 
 	int band_point_index = 0;  
 

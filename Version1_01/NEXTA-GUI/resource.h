@@ -29,6 +29,8 @@
 #define ID_EXPORT_DATA3                 5
 #define IDDATA_Analysis2                5
 #define ID_EXPORT_VEHICLE_DATA          6
+#define IDDATA_FREEVAL_Analysis_Generate_Data 6
+#define IDDATA_FREEVAL_Analysis_Generate_File 7
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_HTML_DLG_DEMANDTYPE         103
@@ -116,12 +118,16 @@
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_FILE 195
 #define IDR_MAINFRAME4                  195
 #define IDD_DIALOG_Legend               196
+#define IDB_ONRAMP                      196
 #define IDD_LINEPLOT_DIALOG             197
 #define IDD_XYPLOT_DIALOG               197
+#define IDB_OFFRAMP                     197
 #define IDD_NSCHART_TOLL_DIALOG         198
+#define IDB_SEGMENT_ONRAMP              198
 #define IDD_DIALOG_EXCEL_DATA_IMPORT    199
 #define IDD_DIALOG_NODE_MOVEMENT        200
 #define IDD_DIALOG_NODE_LANE            200
+#define IDB_SEGMENT_OFFRAMP             200
 #define IDD_NGSIM_DIALOG                202
 #define IDD_DIALOG_NODE_PHASE           203
 #define IDD_DIALOG_NODE_LANETURN        205
@@ -152,6 +158,11 @@
 #define IDC_CURSOR_ZONE                 237
 #define IDC_CREATE_NODE_CURSOR          238
 #define IDD_DIALOG_USER_INPUT           240
+#define IDD_DIALOG_SETTING_CORRIDOR_DATA 241
+#define IDD_DIALOG_SETTING_TAB_CORRIDOR 242
+#define IDD_DIALOG_SETTING_TAB_GIS_IMPORT 243
+#define IDD_DIALOG_SETTING_DATA_GIS_IMPORT 244
+#define IDD_DIALOG_INFORMATION_WITH_HELP 245
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -360,8 +371,8 @@
 #define IDC_CHECK_ZONE_DATA             1110
 #define IDC_BUTTON_View_CUBE_File4      1111
 #define IDC_PATHMOE                     1111
-#define IDC_CHECK_REMOVE_CONNECTOR2     1111
 #define IDC_CHECK_ADD_CONNECTOR         1111
+#define IDC_CHECK_USE_LINK_TYPE         1112
 #define IDC_DOC_TITLE                   1113
 #define IDC_COMBOStartTime              1117
 #define IDC_COMBOEndTime                1118
@@ -436,6 +447,11 @@
 #define IDC_BUTTON_RELOAD               1181
 #define IDC_QUESTION                    1183
 #define IDC_BUTTON                      1184
+#define IDC_SETTING_TAB_CORRIDOR        1185
+#define ID_GIS_FIELD_NAME               1186
+#define IDC_BUTTON_ONLINE_DOCUMENT      1187
+#define IDC_BUTTON_ONLINE_DOCUMENT2     1188
+#define IDC_BUTTON_SampleFile           1188
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1132,14 +1148,16 @@
 #define ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE 33606
 #define ID_HELP_REPORTBUG               33607
 #define ID_HELP_CHECKLATESTSOFTWARERELEASE 33608
+#define ID_TOOLS_FREEWAYTOOLS           33609
+#define ID_FREEWAYTOOLS_VIEW            33610
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        241
-#define _APS_NEXT_COMMAND_VALUE         33609
-#define _APS_NEXT_CONTROL_VALUE         1185
+#define _APS_NEXT_RESOURCE_VALUE        246
+#define _APS_NEXT_COMMAND_VALUE         33611
+#define _APS_NEXT_CONTROL_VALUE         1190
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

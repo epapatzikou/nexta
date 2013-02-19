@@ -85,7 +85,7 @@ static _TCHAR *_gLayerLabel[_NUM_OF_GIS_LAYERS] =
 	_T("Crash/Incident"),
 	_T("VMS"),
 	_T("Toll"),
-	_T("Ramp Meter"),
+	_T("Ramp/Bottleneck"),
 	_T("Vehicle Trajectory"),
 	_T("Transit"),
 	_T("Grid/Coordinate"),

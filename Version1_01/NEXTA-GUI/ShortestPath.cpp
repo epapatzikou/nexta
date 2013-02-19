@@ -34,7 +34,7 @@
 extern long g_Simulation_Time_Horizon;
 
 
-void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, float RandomCostCoef,bool bOverlappingCost)
+void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::list<DTALink*>*		p_LinkSet, float RandomCostCoef,bool bOverlappingCost,  int OriginNodeID, int DestinationNodeID)
 {
 
 	// build a network from the current zone centroid (1 centroid here) to all the other zones' centroids (all the zones)
@@ -61,14 +61,22 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 	for(iterLink = p_LinkSet->begin(); iterLink != p_LinkSet->end(); iterLink++)
 	{
 
-		if((*iterLink)->m_bConnector )  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
-			continue; 
+		FromID = (*iterLink)->m_FromNodeID;
+		ToID   = (*iterLink)->m_ToNodeID;
+
+		if((*iterLink)->m_bConnector)  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
+		{
+			if(FromID!=OriginNodeID && ToID !=DestinationNodeID)
+				continue; 
+			else
+			{
+			 TRACE("Do not skip this connector");
+			}
+		}
 
 		if((*iterLink)->m_AdditionalCost >1)  // skip prevented links (defined by users)
 			continue;
 
-		FromID = (*iterLink)->m_FromNodeID;
-		ToID   = (*iterLink)->m_ToNodeID;
 
 		m_FromIDAry[(*iterLink)->m_LinkNo] = FromID;
 		m_ToIDAry[(*iterLink)->m_LinkNo]   = ToID;

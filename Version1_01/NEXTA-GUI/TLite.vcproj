@@ -389,6 +389,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CorridorDataDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CorridorDataTabDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CSVParser.cpp"
 				>
 			</File>
@@ -442,6 +450,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_ImportShapeFiles.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_Information.cpp"
 				>
 			</File>
 			<File
@@ -586,6 +598,14 @@
 			</File>
 			<File
 				RelativePath=".\Geometry.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GIS_Import_DataDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GIS_Import_DataTabDlg.cpp"
 				>
 			</File>
 			<File
@@ -823,6 +843,30 @@
 					RelativePath=".\CGridListCtrlEx\ViewConfigSection.h"
 					>
 				</File>
+				<Filter
+					Name="LinePlotLib"
+					>
+					<File
+						RelativePath=".\LinePlot\LinePlot.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\LinePlot\LinePlot.h"
+						>
+					</File>
+					<File
+						RelativePath=".\LinePlot\LinePlotTestDlg.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\LinePlot\LinePlotTestDlg.h"
+						>
+					</File>
+					<File
+						RelativePath=".\LinePlot\memdc.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="CXMLFILE"
@@ -937,6 +981,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\bmp00007.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\create_l.cur"
 						>
 					</File>
@@ -973,15 +1021,31 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
-						>
-					</File>
-					<File
 						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\mainfram_1.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\offramp1.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\offramp2.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\onramp1.bmp"
+						>
+					</File>
+					<File
+						RelativePath=".\res\rampmete.bmp"
 						>
 					</File>
 					<File
@@ -1117,6 +1181,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CorridorDataDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CorridorDataTabDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSVParser.h"
 				>
 			</File>
@@ -1170,6 +1242,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_ImportShapeFiles.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_Information.h"
 				>
 			</File>
 			<File
@@ -1329,6 +1405,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GIS_Import_DataDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GIS_Import_DataTabDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainFrm.h"
 				>
 			</File>
@@ -1468,30 +1552,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="LinePlotLib"
-			>
-			<File
-				RelativePath=".\LinePlot\LinePlot.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\LinePlot\LinePlot.h"
-				>
-			</File>
-			<File
-				RelativePath=".\LinePlot\LinePlotTestDlg.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\LinePlot\LinePlotTestDlg.h"
-				>
-			</File>
-			<File
-				RelativePath=".\LinePlot\memdc.h"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"

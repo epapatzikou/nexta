@@ -90,6 +90,7 @@ CTLiteApp::CTLiteApp()
 }
 BOOL CTLiteApp::InitInstance()
 {
+//TODO: call AfxInitRichEdit2() to initialize richedit2 library.
 	  CWinApp::InitInstance();
 
         // Standard initialization
