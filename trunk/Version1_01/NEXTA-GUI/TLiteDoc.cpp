@@ -82,8 +82,13 @@
 
 #include "AssignmentSimulationSettingDlg.h"
 #include "NetworkDataDlg.h"
+#include "CorridorDataDlg.h"
+#include "GIS_Import_DataDlg.h"
 #include "Dlg_RealWorldWidth.h"
 #include "Dlg_UserInput.h"
+
+#include "Dlg_Information.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -111,8 +116,6 @@ std::vector<CDlg_VehicleClassification*>	g_SummaryDialogVector;
 
 bool g_bValidDocumentChanged = false;
 std::list<CTLiteView*>	g_ViewList;
-
-
 
 void g_ClearLinkSelectionList()
 {
@@ -385,6 +388,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SHOW_MOE_PATHLIST, &CTLiteDoc::OnShowMoePathlist)
 	ON_COMMAND(ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE, &CTLiteDoc::OnExportExportaggregatedlinkmoefile)
 	ON_COMMAND(ID_HELP_REPORTBUG, &CTLiteDoc::OnHelpReportbug)
+	ON_COMMAND(ID_FREEWAYTOOLS_VIEW, &CTLiteDoc::OnFreewaytoolsView)
 	END_MESSAGE_MAP()
 
 
@@ -392,6 +396,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_bIdentifyBottleneckAndOnOffRamps = false;
 	m_ScreenWidth_InMile = 10;
 
 	m_bUseMileVsKMFlag = true;
@@ -585,7 +590,7 @@ CTLiteDoc::CTLiteDoc()
 
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment)
 	{
-		m_NodeDisplaySize = 200;  // in feet
+		m_NodeDisplaySize = 100;  // in feet
 		m_VehicleDisplaySize = 10; // in feet
 		m_BackgroundColor =  RGB(255,255,255);  //white
 		m_NodeTextDisplayRatio = 4;
@@ -2117,6 +2122,8 @@ void CTLiteDoc::GenerateOffsetLinkBand()
 		(*iLink)->m_ReferenceBandLeftShapePoints.clear();
 		(*iLink)->m_ReferenceBandRightShapePoints.clear();
 
+		if((*iLink)->m_ShapePoints.size() ==0)
+			continue;
 
 		int last_shape_point_id = (*iLink) ->m_ShapePoints .size() -1;
 		double DeltaX = (*iLink)->m_ShapePoints[last_shape_point_id].x - (*iLink)->m_ShapePoints[0].x;
@@ -4104,6 +4111,12 @@ void  CTLiteDoc::CopyDefaultFiles()
 BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input_link_CSF_File, int SelectedLayNo)
 {
 	CWaitCursor wait;
+
+	// reidentify bottlenecks;
+	m_bIdentifyBottleneckAndOnOffRamps = false;
+	IdentifyBottleNeckAndOnOffRamps();
+
+
 	FILE* st;
 	fopen_s(&st,lpszPathName,"w");
 	if(st!=NULL)
@@ -5100,6 +5113,7 @@ void CTLiteDoc::CalculateDrawingRectangle(bool NodeLayerOnly)
 	}
 
 
+	IdentifyBottleNeckAndOnOffRamps();
 }
 
 
@@ -7556,8 +7570,16 @@ void CTLiteDoc::OnMoeViewmoes()
 
 void CTLiteDoc::OnImportdataImport()
 {
-#ifndef _WIN64
+	CDlg_Information dlg_info;
+	dlg_info.m_StringInfo = "This function imports node/link/zone/demand data in an Excel file into the NEXTA data hub.\r\nThis function requires 32-bit NEXTA.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\Excel_files";
+	dlg_info.m_OnLineDocumentLink = "https://docs.google.com/document/d/1Ud2FN1utnVrIs4je9CHveAykH8h09x0Ln6_qdXE8F6Y/edit#heading=h.24j41bpvha3d";
 
+	if(dlg_info.DoModal() == IDOK)
+	{
+
+#ifndef _WIN64
+	
 	CDlg_ImportNetwork dlg;
 	dlg.m_pDoc = this;
 	if(dlg.DoModal() == IDOK)
@@ -7579,6 +7601,7 @@ void CTLiteDoc::OnImportdataImport()
 
 	}
 #endif
+	}
 }
 
 float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
@@ -10990,19 +11013,39 @@ void CTLiteDoc::OnViewTraininfo()
 void CTLiteDoc::OnImportAmsdataset()
 {
 
+	CDlg_Information dlg_info;
+	dlg_info.m_StringInfo = "This function imports node/link/zone/centroid/connector GIS files into the NEXTA data hub.\r\nIt currently supports importing functions from typical transportation planning packages such as TransCAD, CUBE, VISUM and AIMSUN.\r\nThis function requires 32-bit NEXTA.\r\nThis function requires three files:\r\n(1)input_node_control_type.csv,\r\n(2)input_link_type.csv and\r\n(3)import_GIS_settings.csv.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_data_set";
+
+
+	if(dlg_info.DoModal() == IDOK)
+	{
 
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("Importing Configuration (import_GIS_settings.csv)|import_GIS_settings.csv|"));
 	if(dlg.DoModal() == IDOK)
 	{
-			ImportingTransportationPlanningDataSet(dlg.GetPathName (),true,true);
+
+	CString directory;
+	CString ImportProjectFile = dlg.GetPathName ();
+	directory = ImportProjectFile.Left(ImportProjectFile.ReverseFind('\\') + 1);
+
+	m_ProjectDirectory = directory;
+
+	CGIS_Import_DataDlg dlg_import;
+	dlg_import.m_pDoc = this;
+	if(dlg_import.DoModal () == IDOK)
+		{
+		ImportingTransportationPlanningDataSet(dlg.GetPathName (),true,true);
+		CDlgFileLoading dlg_loading;
+		dlg_loading.m_pDoc = this;
+		dlg_loading.DoModal ();
+
+		UpdateAllViews(0);
+		}
+		}
+
 	}
-
-	CDlgFileLoading dlg_loading;
-	dlg_loading.m_pDoc = this;
-	dlg_loading.DoModal ();
-
-	UpdateAllViews(0);
 
 }
 
@@ -14595,3 +14638,16 @@ void CTLiteDoc::OnHelpReportbug()
 {
 	g_OpenDocument("http://code.google.com/p/nexta/issues/list", SW_SHOW);
 }
+
+void CTLiteDoc::OnFreewaytoolsView()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project has not been loaded.");
+		return;
+	}
+	CCorridorDataDlg dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}
+

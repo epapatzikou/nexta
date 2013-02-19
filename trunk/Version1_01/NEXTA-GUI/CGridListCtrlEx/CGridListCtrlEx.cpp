@@ -164,7 +164,11 @@ CGridListCtrlEx::CGridListCtrlEx()
 	,m_pDefaultRowTrait(new CGridRowTraitText)
 	,m_pColumnConfig(NULL)
 	,m_InvalidateMarkupText(true)
-{}
+{
+
+	m_FirstColumnWithTitle = false;
+	m_SecondColumnWithKey = false;
+}
 
 //------------------------------------------------------------------------
 //! Destructor
@@ -2408,6 +2412,21 @@ void CGridListCtrlEx::OnRButtonDown(UINT nFlags, CPoint point)
 //------------------------------------------------------------------------
 bool CGridListCtrlEx::OnDisplayCellColor(int nRow, int nCol, COLORREF& textColor, COLORREF& backColor)
 {
+  if (nCol == 0 && m_FirstColumnWithTitle)
+   {
+      textColor = RGB(0,0,0);
+      backColor = RGB(225,225,225);
+
+      return true;  // I want to override the color of this cell
+   }
+
+  if (nCol == 1 && m_SecondColumnWithKey)
+   {
+      textColor = RGB(0,0,0);
+      backColor = RGB(200,200,200);
+      return true;  // I want to override the color of this cell
+   }
+  
 	return false;
 }
 

@@ -55,10 +55,10 @@ public:
 	CListBox m_List_DemandFormat;
 	afx_msg void OnLbnSelchangeListDemandFormat();
 	virtual BOOL OnInitDialog();
-	afx_msg void OnBnClickedCheckGenerateNodeData();
 	BOOL m_AutogenerateNodeFlag;
 	BOOL m_ImportZoneData;
 	BOOL m_bAddConnectorsForIsolatedNodes;
+	BOOL m_bUseLinkTypeForDefaultValues;
 };
 
 #endif 

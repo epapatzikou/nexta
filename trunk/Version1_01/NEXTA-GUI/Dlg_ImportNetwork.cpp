@@ -51,6 +51,7 @@ CDlg_ImportNetwork::CDlg_ImportNetwork(CWnd* pParent /*=NULL*/)
 , m_AutogenerateNodeFlag(FALSE)
 , m_ImportZoneData(TRUE)
 , m_bAddConnectorsForIsolatedNodes(FALSE)
+, m_bUseLinkTypeForDefaultValues(FALSE)
 {
 	m_bImportNetworkOnly = false;
 }
@@ -71,6 +72,7 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_GENERATE_NODE_DATA, m_AutogenerateNodeFlag);
 	DDX_Check(pDX, IDC_CHECK_ZONE_DATA, m_ImportZoneData);
 	DDX_Check(pDX, IDC_CHECK_ADD_CONNECTOR, m_bAddConnectorsForIsolatedNodes);
+	DDX_Check(pDX, IDC_CHECK_USE_LINK_TYPE, m_bUseLinkTypeForDefaultValues);
 }
 
 
@@ -86,7 +88,6 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
 	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_FORMAT, &CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat)
-	ON_BN_CLICKED(IDC_CHECK_GENERATE_NODE_DATA, &CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData)
 END_MESSAGE_MAP()
 
 
@@ -600,9 +601,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
-				if(!bExist)
+				if(number_of_lanes<1 && m_bUseLinkTypeForDefaultValues)
 				{
-
 					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
 					{
 
@@ -614,15 +614,31 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						m_MessageList.AddString("default_number_of_lanes from 2-link-type table is used.");
 						b_default_number_of_lanes_used =true;
 						}
-					
 					}else
+					{
+						CString link_type_str = rsLink.GetCString(CString("link_type"));
+
+
+						if(m_pDoc->m_LinkTypeMap.size()>0)
+						{
+							std::map<int, DTALinkType>::iterator iter = m_pDoc->m_LinkTypeMap.begin ();
+							type = iter->first;
+						}
+
+						CString link_type_message;
+						link_type_message.Format ("link type %s for link %->%d is invald.", link_type_str);
+						m_MessageList.AddString(link_type_message);
+
+					}
+					
+				}else
 					{
 					m_MessageList.AddString("Field number_of_lanes cannot be found in the link table.");
 					m_MessageList.AddString("default_number_of_lanes for this link type has not been defined in link_type table.");
 					rsLink.Close();
 					return;
 					}
-				}
+				
 
 				if(number_of_lanes ==0)
 				{
@@ -643,6 +659,18 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit"),bExist,false);
+
+				if(speed_limit_in_mph <1 && m_bUseLinkTypeForDefaultValues)
+				{
+					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
+					{
+
+						speed_limit_in_mph = m_pDoc->m_LinkTypeMap[type].default_speed ;
+						bExist = true;
+
+
+					}
+				}
 				if(!bExist) 
 				{
 					AfxMessageBox("Field speed_limit_in_mph cannot be found in the link table.");
@@ -659,12 +687,12 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
-				if(!bExist)
+				if(capacity_in_pcphpl<0.1 && m_bUseLinkTypeForDefaultValues)
 				{
 					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
 					{
 
-						capacity_in_pcphpl = m_pDoc->m_LinkTypeMap[type].default_number_of_lanes;
+						capacity_in_pcphpl = m_pDoc->m_LinkTypeMap[type].default_lane_capacity ;
 
 						if(b_default_lane_capacity_used)
 						{
@@ -673,11 +701,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						b_default_lane_capacity_used =true;
 						}
 					
-					}else
-					{
-					m_MessageList.AddString ("Field capacity_in_veh_per_hour_per_lane cannot be found in the link table.");
-					rsLink.Close();
-					return;
 					}
 
 				}
@@ -888,6 +911,19 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					m_pDoc->m_LinkSet.push_back (pLink);
 					m_pDoc->m_LinkNoMap[i]  = pLink;
+
+					unsigned long LinkKey = m_pDoc->GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+
+					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+					__int64  LinkKey2 = m_pDoc->GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
+					m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+
+					m_pDoc->m_LinkNotoLinkMap[i] = pLink;
+
+					m_pDoc->m_LinkIDtoLinkMap[link_id] = pLink;
+
+
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
@@ -900,14 +936,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
-
-
-					unsigned long LinkKey = m_pDoc->GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
-
-
-					__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
-					m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 
 					i++;
@@ -1225,6 +1253,13 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 		//import demand
 
+		// restart the data base
+	if(m_pDoc->m_Database.IsOpen ())
+		m_pDoc->m_Database.Close ();
+
+	m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
+
+
 	int demand_type = m_List_DemandFormat.GetCurSel ();
 
 	m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
@@ -1236,7 +1271,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	//bool bNodeNonExistError = false;
 	m_pDoc->m_ImportedDemandVector .clear ();
-
 
 
 	if(strSQL.GetLength () > 0)
@@ -1318,7 +1352,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	//bool bNodeNonExistError = false;
 	m_pDoc->m_ImportedDemandVector .clear ();
-
 
 
 	if(strSQL.GetLength () > 0)
@@ -1645,7 +1678,4 @@ BOOL CDlg_ImportNetwork::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 #endif
-void CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData()
-{
-	// TODO: Add your control notification handler code here
-}
+

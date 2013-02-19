@@ -1106,13 +1106,12 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 	if(m_pNetwork ==NULL)  
 		{
 		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
-
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false, m_OriginNodeID, m_DestinationNodeID);
 		}
 
 	if(bRebuildNetwork)  // link cost changed
 	{
-		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
+		m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false,m_OriginNodeID, m_DestinationNodeID);
 
 	}
 		int NodeNodeSum = 0;

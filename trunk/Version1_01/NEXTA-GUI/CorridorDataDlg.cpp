@@ -1,4 +1,4 @@
-// NetworkDataDlg.cpp : implementation file
+// CorridorDataTabDlg.cpp : implementation file
 //  Portions Copyright 2011-2013 Hao Lei(haolei.sc@gmail.com), Xuesong Zhou (xzhou99@gmail.com)
 
 //   If you help write or modify the code, please also list your names here.
@@ -27,22 +27,22 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "TLiteDoc.h"
-#include "NetworkDataDlg.h"
 #include "CSVParser.h"
 #include <string>
+#include "CorridorDataDlg.h"
 using std::vector;
 using std::string;
 
 
-static LPTSTR NetworkData_Element[MAX_NUM_OF_NETWORK_DATA_FILES] = {"Node", "Link", "Zone", "Activity Location", "Sensor", "Movement","Calibration Data"};
-static LPTSTR NetworkData_FileName[MAX_NUM_OF_NETWORK_DATA_FILES] = {"input_node","input_link", "input_zone", "input_activity_location", "input_sensor",  "AMS_movement","output_validation_results"};
+static LPTSTR CorridorData_Element[MAX_NUM_OF_CORRIDOR_DATA_FILES] = {"Input Segment", "Output Segment", "Summary"};
+static LPTSTR CorridorData_FileName[MAX_NUM_OF_CORRIDOR_DATA_FILES] = {"FREEVAL_input_segment","FREEVAL_output_segment", "FREEVAL_summary"};
 
-// CNetworkDataSettingDlg dialog
+// CCorridorDataDlg dialog
 
-IMPLEMENT_DYNAMIC(CNetworkDataSettingDlg, CDialog)
+IMPLEMENT_DYNAMIC(CCorridorDataDlg, CDialog)
 
-CNetworkDataSettingDlg::CNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CNetworkDataSettingDlg::IDD, pParent)
+CCorridorDataDlg::CCorridorDataDlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CCorridorDataDlg::IDD, pParent)
 	, m_ZoomToSelectedObject(FALSE)
 {
 	m_SelectTab = 0;
@@ -52,15 +52,15 @@ CNetworkDataSettingDlg::CNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
 
 }
 
-CNetworkDataSettingDlg::~CNetworkDataSettingDlg()
+CCorridorDataDlg::~CCorridorDataDlg()
 {
 }
 
-BOOL CNetworkDataSettingDlg::OnInitDialog()
+BOOL CCorridorDataDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	p_SubTabs = new CNetworkDataTabDlg*[MAX_NUM_OF_NETWORK_DATA_FILES];
+	p_SubTabs = new CCorridorDataTabDlg*[MAX_NUM_OF_CORRIDOR_DATA_FILES];
 
 	vector<string> name_vector;
 	vector<vector<string>> value_vector;
@@ -70,7 +70,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 
 	CWaitCursor wait;
 
-	for (int i=0; i < MAX_NUM_OF_NETWORK_DATA_FILES; i++)
+	for (int i=0; i < MAX_NUM_OF_CORRIDOR_DATA_FILES; i++)
 	{
 		name_vector.clear();
 		value_vector.clear();
@@ -78,19 +78,19 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 		DefaultValue.clear();
 		LinkString.clear();
 
-		ReadNetworkDataCSVFile(NetworkData_FileName[i],name_vector,value_vector);
+		ReadCorridorDataCSVFile(CorridorData_FileName[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
-		tcItem.pszText = _T(NetworkData_Element[i]);
+		tcItem.pszText = _T(CorridorData_Element[i]);
 		m_TabCtrl.InsertItem(i, &tcItem);
 
-		p_SubTabs[i] = new CNetworkDataTabDlg(name_vector, DefaultValue, value_vector);
+		p_SubTabs[i] = new CCorridorDataTabDlg(name_vector, DefaultValue, value_vector);
 		p_SubTabs[i]->m_pDoc = m_pDoc;
 
 		p_SubTabs[i]->m_SelectedFromNodeName = this->m_SelectedFromNodeName;  // copy data
 		p_SubTabs[i]->m_SelectedToNodeName = this->m_SelectedToNodeName;  // copy data
-		p_SubTabs[i]->SetTabText(NetworkData_Element[i]);
+		p_SubTabs[i]->SetTabText(CorridorData_Element[i]);
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 
@@ -100,7 +100,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 
 	p_SubTabs[m_SelectTab]->ShowWindow(SW_SHOW);
 
-	for (int i=1;i<MAX_NUM_OF_NETWORK_DATA_FILES;i++)
+	for (int i=1;i<MAX_NUM_OF_CORRIDOR_DATA_FILES;i++)
 	{
 		p_SubTabs[i]->ShowWindow(SW_HIDE);
 	}
@@ -115,7 +115,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 }
 
 
-void CNetworkDataSettingDlg::SetRectangle()
+void CCorridorDataDlg::SetRectangle()
 {
 	CRect tabRect, itemRect;
 	int nX, nY, nXc, nYc;
@@ -128,7 +128,7 @@ void CNetworkDataSettingDlg::SetRectangle()
 	nXc=tabRect.right-itemRect.left-1;
 	nYc=tabRect.bottom-nY-1;
 
-	for(int nCount=0; nCount < MAX_NUM_OF_NETWORK_DATA_FILES; nCount++)
+	for(int nCount=0; nCount < MAX_NUM_OF_CORRIDOR_DATA_FILES; nCount++)
 	{
 		if (m_SelectTab != nCount)
 		{
@@ -141,76 +141,45 @@ void CNetworkDataSettingDlg::SetRectangle()
 	}
 }
 
-void CNetworkDataSettingDlg::DoDataExchange(CDataExchange* pDX)
+void CCorridorDataDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_SETTING_TAB, m_TabCtrl);
+	DDX_Control(pDX, IDC_SETTING_TAB_CORRIDOR, m_TabCtrl);
 	DDX_Check(pDX, IDC_CHECK_ZOOM_TO_SELECTED_OBJECT, m_ZoomToSelectedObject);
 }
 
 
-BEGIN_MESSAGE_MAP(CNetworkDataSettingDlg, CDialog)
-	ON_BN_CLICKED(IDOK, &CNetworkDataSettingDlg::OnBnClickedOk)
-	ON_NOTIFY(TCN_SELCHANGE, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnTcnSelchangeSettingTab)
-	ON_BN_CLICKED(IDCANCEL, &CNetworkDataSettingDlg::OnBnClickedCancel)
-	ON_BN_CLICKED(IDC_BUTTON_ADD, &CNetworkDataSettingDlg::OnBnClickedButtonAdd)
-	ON_BN_CLICKED(IDC_BUTTON_COPY, &CNetworkDataSettingDlg::OnBnClickedButtonCopy)
-	ON_BN_CLICKED(IDC_BUTTON_EDIT_DATA_IN_EXCEL, &CNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel)
-	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CNetworkDataSettingDlg::OnBnClickedButtonDelete)
-	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_OBJECT, &CNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject)
-	ON_NOTIFY(NM_CLICK, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnNMClickSettingTab)
-	ON_NOTIFY(TCN_SELCHANGING, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnTcnSelchangingSettingTab)
+BEGIN_MESSAGE_MAP(CCorridorDataDlg, CDialog)
+	ON_BN_CLICKED(IDOK, &CCorridorDataDlg::OnBnClickedOk)
+	ON_NOTIFY(TCN_SELCHANGE, IDC_SETTING_TAB_CORRIDOR, &CCorridorDataDlg::OnTcnSelchangeSettingTab)
+	ON_BN_CLICKED(IDCANCEL, &CCorridorDataDlg::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_BUTTON_ADD, &CCorridorDataDlg::OnBnClickedButtonAdd)
+	ON_BN_CLICKED(IDC_BUTTON_COPY, &CCorridorDataDlg::OnBnClickedButtonCopy)
+	ON_BN_CLICKED(IDC_BUTTON_EDIT_DATA_IN_EXCEL, &CCorridorDataDlg::OnBnClickedButtonEditDataInExcel)
+	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CCorridorDataDlg::OnBnClickedButtonDelete)
+	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_OBJECT, &CCorridorDataDlg::OnBnClickedCheckZoomToSelectedObject)
+	ON_NOTIFY(NM_CLICK, IDC_SETTING_TAB_CORRIDOR, &CCorridorDataDlg::OnNMClickSettingTab)
+	ON_NOTIFY(TCN_SELCHANGING, IDC_SETTING_TAB_CORRIDOR, &CCorridorDataDlg::OnTcnSelchangingSettingTab)
+	ON_BN_CLICKED(IDOK2, &CCorridorDataDlg::OnBnClickedOk2)
+	ON_BN_CLICKED(ID_GIS_FIELD_NAME, &CCorridorDataDlg::OnBnClickedGisFieldName)
 END_MESSAGE_MAP()
 
 
-// CNetworkDataSettingDlg message handlers
+// CCorridorDataDlg message handlers
 
-void CNetworkDataSettingDlg::OnBnClickedOk()
+void CCorridorDataDlg::OnBnClickedOk()
 {
-	for (int i=0;i<MAX_NUM_OF_NETWORK_DATA_FILES;i++)
-	{
-		//if (p_SubTabs[i]->ValidityCheck() != 0)
-		//{
-		//	if (m_PrevTab != i)
-		//	{
-		//		p_SubTabs[m_PrevTab]->EnableWindow(FALSE);
-		//		p_SubTabs[m_PrevTab]->ShowWindow(SW_HIDE);
-		//		m_PrevTab = i;
-		//		p_SubTabs[m_PrevTab]->EnableWindow(TRUE);
-		//		p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
-		//		m_TabCtrl.SetCurSel(i);
-		//	}
 
-		//	return;
-		//}
-
-		std::string Str = p_SubTabs[i]->GenerateRecordString();
-
-		if (Str.length() > 0)
-		{
-			std::ofstream outFile(m_pDoc->m_ProjectDirectory + NetworkData_FileName[i] + ".csv");
-
-			if (outFile.is_open())
-			{
-				outFile << Str;
-			}
-
-			outFile.close();
-		}
-		else
-		{
-			remove(m_pDoc->m_ProjectDirectory + NetworkData_FileName[i] + ".csv");
-		}
-	}
+	// save data
+	OnBnClickedOk2();
 
 	OnOK();
 
-	m_pDoc->ReadScenarioData();
 	m_pDoc->UpdateAllViews(0);
 }
 
 
-BOOL CNetworkDataSettingDlg::ReadNetworkDataCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
+BOOL CCorridorDataDlg::ReadCorridorDataCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
 {
 	std::string fileName = m_pDoc->m_ProjectDirectory + ElementType + ".csv";
 	std::vector<std::string> value;
@@ -230,7 +199,7 @@ BOOL CNetworkDataSettingDlg::ReadNetworkDataCSVFile(const char* ElementType, std
 	return TRUE;
 }
 
-void CNetworkDataSettingDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CCorridorDataDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	//if (p_SubTabs[m_PrevTab]->ValidityCheck() != 0)
 	//{
@@ -253,55 +222,55 @@ void CNetworkDataSettingDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pR
 	*pResult = 0;
 }
 
-void CNetworkDataSettingDlg::OnBnClickedCancel()
+void CCorridorDataDlg::OnBnClickedCancel()
 {
 	// TODO: Add your control notification handler code here
 	OnCancel();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonAdd()
+void CCorridorDataDlg::OnBnClickedButtonAdd()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->AddRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonCopy()
+void CCorridorDataDlg::OnBnClickedButtonCopy()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->CopyRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel()
+void CCorridorDataDlg::OnBnClickedButtonEditDataInExcel()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
-	std::string fileName = m_pDoc->m_ProjectDirectory + NetworkData_FileName[cur_tab] + ".csv";
+	std::string fileName = m_pDoc->m_ProjectDirectory + CorridorData_FileName[cur_tab] + ".csv";
 	std::vector<std::string> value;
 	m_pDoc->OpenCSVFileInExcel(fileName.c_str());
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonDelete()
+void CCorridorDataDlg::OnBnClickedButtonDelete()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->DeleteRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject()
+void CCorridorDataDlg::OnBnClickedCheckZoomToSelectedObject()
 {
 
 	UpdateData(1);
-		for (int i=0; i < MAX_NUM_OF_NETWORK_DATA_FILES; i++)
+		for (int i=0; i < MAX_NUM_OF_CORRIDOR_DATA_FILES; i++)
 	{
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 	}
 }
 
-void CNetworkDataSettingDlg::OnNMClickSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CCorridorDataDlg::OnNMClickSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 
 	*pResult = 0;
 }
 
-void CNetworkDataSettingDlg::OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CCorridorDataDlg::OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	{
 		if (m_PrevTab == m_TabCtrl.GetCurSel())	return;
@@ -318,4 +287,48 @@ void CNetworkDataSettingDlg::OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *
 
 
 	*pResult = 0;
+}
+
+void CCorridorDataDlg::OnBnClickedOk2()
+{
+	for (int i=0;i<MAX_NUM_OF_CORRIDOR_DATA_FILES;i++)
+	{
+		//if (p_SubTabs[i]->ValidityCheck() != 0)
+		//{
+		//	if (m_PrevTab != i)
+		//	{
+		//		p_SubTabs[m_PrevTab]->EnableWindow(FALSE);
+		//		p_SubTabs[m_PrevTab]->ShowWindow(SW_HIDE);
+		//		m_PrevTab = i;
+		//		p_SubTabs[m_PrevTab]->EnableWindow(TRUE);
+		//		p_SubTabs[m_PrevTab]->ShowWindow(SW_SHOW);
+		//		m_TabCtrl.SetCurSel(i);
+		//	}
+
+		//	return;
+		//}
+
+		std::string Str = p_SubTabs[i]->GenerateRecordString();
+
+		if (Str.length() > 0)
+		{
+			std::ofstream outFile(m_pDoc->m_ProjectDirectory + CorridorData_FileName[i] + ".csv");
+
+			if (outFile.is_open())
+			{
+				outFile << Str;
+			}
+
+			outFile.close();
+		}
+		else
+		{
+			remove(m_pDoc->m_ProjectDirectory + CorridorData_FileName[i] + ".csv");
+		}
+	}
+}
+
+void CCorridorDataDlg::OnBnClickedGisFieldName()
+{
+	// TODO: Add your control notification handler code here
 }

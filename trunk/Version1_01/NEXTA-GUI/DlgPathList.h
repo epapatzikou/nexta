@@ -74,4 +74,6 @@ public:
 
 	CComboBox m_PlotType;
 	afx_msg void OnBnClickedAnalysis2();
+	afx_msg void OnBnClickedFreevalAnalysisGenerateData();
+	afx_msg void OnBnClickedFreevalAnalysisGenerateFile();
 };

@@ -135,7 +135,7 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		for(int outgoing_link = 0; outgoing_link <  m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size(); outgoing_link++) // one outgoing link without considering u-turn
 		{
 			int outgoing_link_id = m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector[outgoing_link];
-				if (m_LinkTypeMap[m_LinkNotoLinkMap[outgoing_link_id]->m_link_type].IsRamp ())
+				if (m_LinkNotoLinkMap.find(outgoing_link_id)!= m_LinkNotoLinkMap.end() && m_LinkTypeMap[m_LinkNotoLinkMap[outgoing_link_id]->m_link_type].IsRamp ())
 				{
 				
 					// outgoing ramp from a freeway link

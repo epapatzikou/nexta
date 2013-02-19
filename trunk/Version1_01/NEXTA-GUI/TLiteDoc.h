@@ -71,6 +71,8 @@ enum layer_mode
 	layer_transit_accessibility,
 };
 enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_SENSOR_DATA, _MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
+enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
 enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
@@ -382,6 +384,8 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	bool m_bIdentifyBottleneckAndOnOffRamps;
+	void IdentifyBottleNeckAndOnOffRamps();
 	void Modify(BOOL bModified=true)
 {
 
@@ -775,6 +779,7 @@ public:
 
 	CString m_NodeDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
+	CString m_ConnectorDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;
 	CString m_DemandDataLoadingStatus;
 	CString m_ScenarioDataLoadingStatus;
@@ -963,7 +968,7 @@ public:
 
 	std::vector<int> m_IntermediateDestinationVector;
 
-	int Routing(bool bCheckConnectivity, bool bRebuildNetwork = false);
+	int Routing(bool bCheckConnectivity, bool bRebuildNetwork = true);
 	int AlternativeRouting(int NumberOfRoutes);
 
 	CString GetWorkspaceTitleName(CString strFullPath);
@@ -1742,6 +1747,50 @@ public:
 		else
 			return NULL;
 	}
+
+	DTALink* FindFreewayLinkWithFromNodeNumber(int FromNodeNumber)
+	{
+
+		if(m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
+		{
+		
+		DTANode* pFromNode = m_NodeNumberMap[FromNodeNumber];
+
+		for(unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
+		{
+			
+			DTALink* pLink = m_LinkNoMap[ pFromNode->m_OutgoingLinkVector[i]];
+
+			if(pLink->m_FromNodeNumber == FromNodeNumber && m_LinkTypeMap[pLink->m_link_type].IsFreeway() )
+				return pLink;
+		
+		}
+		
+		}
+		return NULL;
+	}
+	DTALink* FindFreewayLinkWithToNodeNumber(int ToNodeNumber)
+	{
+
+		if(m_NodeNumberMap.find(ToNodeNumber)!= m_NodeNumberMap.end())
+		{
+		
+		DTANode* pToNode = m_NodeNumberMap[ToNodeNumber];
+
+		for(unsigned int i = 0; i< pToNode->m_IncomingLinkVector.size(); i++)
+		{
+			
+			DTALink* pLink = m_LinkNoMap[pToNode->m_IncomingLinkVector[i]];
+
+			if(pLink->m_ToNodeNumber == ToNodeNumber && m_LinkTypeMap[pLink->m_link_type].IsFreeway() )
+				return pLink;
+		
+		}
+		
+		}
+		return NULL;
+	}
+
 	DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	{
 		if(m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
@@ -1767,9 +1816,9 @@ public:
 
 			}else
 			{
-				msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
+			msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
 			AfxMessageBox(msg);
-		return NULL;
+			return NULL;
 			}
 
 	}
@@ -2249,6 +2298,7 @@ public:
 	afx_msg void OnShowMoePathlist();
 	afx_msg void OnExportExportaggregatedlinkmoefile();
 	afx_msg void OnHelpReportbug();
+	afx_msg void OnFreewaytoolsView();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

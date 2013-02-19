@@ -119,7 +119,7 @@ bool CTLiteDoc::ReadGPSData(string FileName)
 			pVehicle->m_VOT = 10;
 			pVehicle->m_TollDollarCost = 0;
 			pVehicle->m_Emissions = 0;
-			pVehicle->m_Distance = Trajectory_Length/5480;
+			pVehicle->m_Distance = Trajectory_Length/5280;
 
 			//pVehicle->m_Distance = 0;
 
