@@ -263,6 +263,7 @@ extern int g_VehiclePathOutputFlag;
 
 extern int g_OutputSecondBySecondEmissionData;
 extern float g_OutputSecondBySecondEmissionDataPercentage;
+extern int g_EmissionSmoothVehicleTrajectory;
 extern int g_start_departure_time_in_min_for_output_second_by_second_emission_data;
 extern int g_end_departure_time_in_min_for_output_second_by_second_emission_data;
 extern int g_OutputEmissionOperatingModeData;
