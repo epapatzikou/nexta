@@ -966,6 +966,7 @@ public:
 
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
+	void ThreeDetectorVehicleTrajectorySimulation();
 	void ComputeVSP();
 	//	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
