@@ -16,6 +16,15 @@ using std::vector;
 float proportion[4] = {0.6f,0.18f,0.12f,0.1f};
 int IntProportion[4];
 
+enum RELIABILITY_Y_CLASSIFICATION {
+	REL_travel_time_90_percentile = 0,
+	REL_travel_time_80_percentile,
+	//REL_travel_time_Planning_Time_Index,
+	//REL_travel_time_Buffer_Index,
+	//REL_travel_time_Skew_Index,
+	REL_capacity_impact,
+	REL_occurance_probability
+};
 void g_RandomCapacity(float* ptr, int num, float mean, float COV,int seed)
 {
 	float mu, sigma;
@@ -201,15 +210,22 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 
 	UpdateCapacityAndDelay();
 
-	m_FactorLabel[0]= "Capacity Variations";
-	m_FactorLabel[1]= "Incidents";
+	m_FactorLabel[0]= "Inadequate Base Cap";
+	m_FactorLabel[1]= "Traffic Incidents";
 	m_FactorLabel[2]= "Work Zones";
 	m_FactorLabel[3]= "Severe Weather";
 
+
 	m_FactorSize= 4;
 
-	m_7FactorMOEList.AddString ("Reliability Impact: 1.65*STD of delay");
-	m_7FactorMOEList.AddString ("Delay Impact");
+//	m_7FactorMOEList.AddString ("Reliability Impact: 1.65*STD of delay");
+
+	m_7FactorMOEList.AddString ("90th Percentile Travel Time (min)");
+	m_7FactorMOEList.AddString ("80th Percentile Travel Time (min)");
+	//m_7FactorMOEList.AddString ("Planning Time Index: 95th percentile/FFTT"); 
+	//m_7FactorMOEList.AddString ("Buffer Index: (95th percentile - mean)/mean"); //(95th percentile travel time – mean travel time) / mean travel time
+	//m_7FactorMOEList.AddString ("Skew Index: (90th %ile-median)/(median-10th %ile)"); // (90th percentile travel time – median travel time) / (median travel time – 10th percentile travel time)
+
 	m_7FactorMOEList.AddString ("Capacity Impact" );
 	m_7FactorMOEList.AddString ("Occurrence Probability" );
 	m_7FactorMOEList.SetCurSel(0);
@@ -585,7 +601,7 @@ float GetSTD(float* p, int num,float mean)
 }
 void CDlg_TravelTimeReliability::Display7FactorChart()
 {
-	int CurSelectionNo = m_7FactorMOEList.GetCurSel ();
+	RELIABILITY_Y_CLASSIFICATION CurSelectionNo = (RELIABILITY_Y_CLASSIFICATION)m_7FactorMOEList.GetCurSel ();
 
 	float value =0;
 
@@ -593,12 +609,12 @@ void CDlg_TravelTimeReliability::Display7FactorChart()
 
 	if(CurSelectionNo == 0)
 	{
-	m_chart_7factors.m_Caption = "Sources of Unreliabilitiy";
+	m_chart_7factors.m_Caption = "Sources of Unreliable Travel Times";
 	}
 
 	if(CurSelectionNo == 1)
 	{
-	m_chart_7factors.m_Caption = "Sources of Unreliabilitiy";
+	m_chart_7factors.m_Caption = "Sources of Unreliable Travel Times";
 	}
 
 	if(CurSelectionNo == 2)

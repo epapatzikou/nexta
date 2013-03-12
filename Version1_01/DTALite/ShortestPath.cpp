@@ -557,9 +557,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(pricing_type == 0) // unknown type
 		pricing_type = 1; 
 
-	if(origin_zone ==8 && destination_zone==11 && origin==163)
+//	if(origin_zone ==333 && destination_zone==920 && origin==19)
 	{
-		debug_flag = true;
+		debug_flag = false;
 			TRACE("\nScan from root node %d,",g_NodeVector[origin].m_NodeNumber);
 			TRACE("\ndestination node %d,",g_NodeVector[destination].m_NodeNumber);
 	}

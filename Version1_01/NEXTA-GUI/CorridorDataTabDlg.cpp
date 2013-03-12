@@ -70,6 +70,7 @@ BOOL CCorridorDataTabDlg::OnInitDialog()
 
 	// Give better margin to editors
 	m_ListCtrl.m_FirstColumnWithTitle = true;
+	m_ListCtrl.m_SecondColumnWithKey = true;
 	m_ListCtrl.SetCellMargin(1.2);
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
@@ -78,9 +79,18 @@ BOOL CCorridorDataTabDlg::OnInitDialog()
 	for (size_t i=0;i<names.size();i++)
 	{
 		CGridColumnTrait* pTrait = NULL;
-		int width = 200;
+		int width = 100;
+		if(i==0)  // first column is ready only
+		{
+		width = 100;
+		}
 
-		if(i>=1)  // first column is ready only
+		if(i==1)  // second column is ready only
+		{
+		width = 200;
+		}
+
+		if(i>=2)  // first column is ready only
 		{
 		pTrait = new CGridColumnTraitEdit();
 		width = 60;
@@ -115,7 +125,13 @@ BOOL CCorridorDataTabDlg::OnInitDialog()
 		AddRowForLink (m_SelectedFromNodeName, m_SelectedToNodeName);
 	}
 
-	return TRUE;
+      CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
+      if( pHeader!=NULL)
+      {
+            pHeader->ModifyStyle(HDS_BUTTONS, 0);    // disable the sorting.
+      }
+
+	  return TRUE;
 }
 
 void CCorridorDataTabDlg::SetTabText(CString s)
@@ -384,6 +400,7 @@ void CCorridorDataTabDlg::ZoomToSelectedObject()
 	{
 	int nSelectedColumn = m_ListCtrl.GetFocusCell();
 
+	m_nSelectedColumn = nSelectedColumn ;
 	CString str = m_ListCtrl.GetItemText(m_NumOfRows-1,nSelectedColumn);
 		
 	int from_node_id = 0;

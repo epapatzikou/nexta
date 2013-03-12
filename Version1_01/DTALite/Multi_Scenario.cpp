@@ -56,6 +56,7 @@ void g_MultiScenarioTrafficAssignment()
 	time_t t = time(0);   // get time now
 	struct tm * now = localtime( & t );
 	CString time_str;
+	//`January', `February', `March', `April', `May', `June', `July', `August', `September', `October', `November', `December'. 
 	time_str.Format("Simulation Date =,year: %d,month:%02d,day:%d,hour:%2d,min:%2d\n",now->tm_year + 1900, (now->tm_mon + 1),now->tm_mday,now->tm_hour ,now->tm_min);
 
 	g_SummaryStatFile.WriteTextLabel(time_str);
@@ -416,8 +417,14 @@ void g_MultiScenarioTrafficAssignment()
 				g_ProgramStop();
 			}
 
-			g_AgentBinInputMode = 0;
+			g_AgentBinInputMode = "0";
 			parser_scenario.GetValueByFieldName("agent_demand_input_mode",g_AgentBinInputMode);
+
+			if(g_AgentBinInputMode.find ("0") == string::npos )
+			{  // use the parameters only when agent_demand_input_mode !=0
+			parser_scenario.GetValueByFieldName("agent_demand_start_time_in_min",g_DemandLoadingStartTimeInMin);
+			parser_scenario.GetValueByFieldName("agent_demand_end_time_in_min",g_DemandLoadingEndTimeInMin);
+			}
 
 
 			string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;

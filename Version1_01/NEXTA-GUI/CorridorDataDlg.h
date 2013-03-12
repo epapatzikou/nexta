@@ -49,4 +49,10 @@ public:
 	afx_msg void OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedOk2();
 	afx_msg void OnBnClickedGisFieldName();
+	afx_msg void OnBnClickedAddColumn();
+	afx_msg void OnBnClickedTraveltimereliability();
+	afx_msg void OnBnClickedTimedependentdemand();
+	afx_msg void OnBnClickedButtonCombineSegmentLeft();
+	afx_msg void OnBnClickedButtonCombineSegmentRight();
+	afx_msg void OnBnClickedButtonSplitSegments();
 };

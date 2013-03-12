@@ -4769,91 +4769,10 @@ extern void g_RandomCapacity(float* ptr, int num, float mean, float COV,int seed
 #define MAX_SAMPLE_SIZE 200
 
 void CTLiteView::OnNodeDirectiontohereandreliabilityanalysis()
-{    OnNodeDestination();
-CTLiteDoc* pDoc = GetDocument();
+{   
+	OnNodeDestination();
+	
 
-bool b_Impacted = false;
-float OriginalCapacity = 0.0f;
-float ImpactDuration = 0.0f;
-float LaneClosureRatio = 0.0f;
-
-float CurrentTime = g_Simulation_Time_Stamp;
-
-std::vector<float> LinkCapacity;
-std::vector<float> LinkTravelTime;
-
-float max_density = 0.0f;
-
-int BottleneckIdx = 0;
-int ImpactedLinkIdx = -1;
-
-float free_flow_travel_time = 0.0f;
-
-
-if(pDoc->m_PathDisplayList.size()>0)
-{
-
-	DTAPath* pPath = &pDoc->m_PathDisplayList[0];  // 0 is the current selected path
-	for (int i=0;i<pPath->m_LinkVector.size();i++)  // for each pass link
-	{
-		DTALink* pLink = pDoc->m_LinkNoMap[pPath->m_LinkVector[i]];
-
-		float linkcapacity = pLink->m_LaneCapacity;
-		float linktraveltime = pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime)*60;
-		float density = pLink->GetSimulationDensity(CurrentTime);
-
-		if (density > max_density) BottleneckIdx = i;
-
-		LinkCapacity.push_back(linkcapacity);
-		LinkTravelTime.push_back(linktraveltime);
-		free_flow_travel_time += linktraveltime;
-
-		// for the first link, i==0, use your current code to generate delay, 
-		//additional for user-specified incidents along the routes, add additional delay based on input
-
-		if (!b_Impacted)
-		{
-			LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
-
-			if(LaneClosureRatio > 0.01) // This link is 
-			{  
-				// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
-				//
-				// CurrentTime +=additional delay...
-
-				if (pLink->CapacityReductionVector.size() != 0)
-				{
-					ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
-				}
-
-				ImpactedLinkIdx = i;
-
-				b_Impacted = true;
-
-			}
-		}
-
-		CurrentTime += (pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime))*60;
-	}
-}
-
-CDlg_TravelTimeReliability dlg;
-dlg.m_pDoc= pDoc;
-dlg.LinkCapacity = LinkCapacity;
-dlg.LinkTravelTime = LinkTravelTime;
-
-dlg.m_BottleneckIdx = BottleneckIdx;
-
-if (b_Impacted)
-{
-	dlg.m_bImpacted = b_Impacted;
-	dlg.m_ImpactDuration = ImpactDuration;
-	dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
-	dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
-}
-
-dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
-dlg.DoModal ();
 }
 void CTLiteView::OnLinkIncreasebandwidth()
 {

@@ -162,7 +162,7 @@ int g_number_of_car_following_intervals_per_min = 600; // round to nearest integ
 int g_AggregationTimetInterval = 15; // min
 int g_AggregationTimetIntervalSize = 2;
 float g_DemandGlobalMultiplier = 1.0f;
-
+int g_EmissionSmoothVehicleTrajectory = 0;
 // maximal # of adjacent links of a node (including physical nodes and centriods( with connectors))
 int g_AdjLinkSize = 30; // initial value of adjacent links
 
@@ -185,7 +185,7 @@ int g_PlanningHorizon = 120;  // short horizon for saving memory
 // assignment
 e_assignment_method g_UEAssignmentMethod = assignment_day_to_day; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
 float g_FreewayBiasFactor = 1.0f;
-int g_AgentBinInputMode = 0;
+string g_AgentBinInputMode = "0";
 int g_Day2DayAgentLearningMethod  =0; 
 float g_DepartureTimeChoiceEarlyDelayPenalty = 1;
 float g_DepartureTimeChoiceLateDelayPenalty = 1;
@@ -274,7 +274,6 @@ int g_VehiclePathOutputFlag = 1;
 int g_TimeDependentODMOEOutputFlag = 0;
 int g_OutputSecondBySecondEmissionData =0;
 float g_OutputSecondBySecondEmissionDataPercentage = 0.1f;
-int g_EmissionSmoothVehicleTrajectory = 0;
 int g_start_departure_time_in_min_for_output_second_by_second_emission_data = 0;
 int g_end_departure_time_in_min_for_output_second_by_second_emission_data = 0;
 int g_OutputEmissionOperatingModeData = 0;
@@ -1625,10 +1624,13 @@ void g_ReadInputFiles(int scenario_no)
 
 	// initialize the demand loading range, later resized by CreateVehicles
 
-	if(g_AgentBinInputMode==1)
-		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,input agent file: input_agent.bin\n");
+	if(g_AgentBinInputMode.find("0") == string::npos)
+	{
+		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,");
+		g_SummaryStatFile.WriteTextLabel (g_AgentBinInputMode.c_str ());
+	}
 	else
-		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode:\n");
+		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
 
 	////////////////////////////////////// VOT
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
@@ -1822,264 +1824,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 	return number_of_vehicles_generated;
 }
 
-void g_ReadDTALiteAgentCSVFile(string file_name)
-{
-	if(g_TrafficFlowModelFlag == tfm_BPR)  //BRP  // static assignment parameters
-	{
-		g_AggregationTimetInterval =  60;
-	}
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
-
-	CCSVParser parser_agent;
-
-	float total_number_of_vehicles_to_be_generated = 0;
-
-	if (parser_agent.OpenCSVFile(file_name))
-	{
-		int line_no = 1;
-
-		int i = 0;
-		while(parser_agent.ReadRecord())
-		{
-
-			int agent_id = 0;
-
-			parser_agent.GetValueByFieldNameRequired ("agent_id",agent_id);
-			DTAVehicle* pVehicle = 0;
-
-			pVehicle = new (std::nothrow) DTAVehicle;
-			if(pVehicle == NULL)
-			{
-				cout << "Insufficient memory...";
-				getchar();
-				exit(0);
-
-			}
-
-			pVehicle->m_VehicleID = i;
-			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
-
-			parser_agent.GetValueByFieldNameRequired("from_zone_id",pVehicle->m_OriginZoneID);
-			parser_agent.GetValueByFieldNameRequired("to_zone_id",pVehicle->m_DestinationZoneID);
-
-			int origin_node_id = -1;
-			int origin_node_number = -1;
-
-			parser_agent.GetValueByFieldName("origin_node_id",origin_node_number);
-
-			if(g_NodeNametoIDMap.find(origin_node_number)!= g_NodeNametoIDMap.end())  // convert node number to internal node id
-			{
-				origin_node_id = g_NodeNametoIDMap[origin_node_number];
-			}
-
-			int destination_node_id = -1;
-			int destination_node_number= -1;
-			parser_agent.GetValueByFieldName("destination_node_id",destination_node_number);
-
-			if(g_NodeNametoIDMap.find(destination_node_number)!= g_NodeNametoIDMap.end()) // convert node number to internal node id
-			{
-				destination_node_id = g_NodeNametoIDMap[destination_node_number];
-			}
-
-			if(origin_node_id==-1)  // no default origin node value, re-generate origin node
-				origin_node_id	= g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
-
-			if(destination_node_id==-1)// no default destination node value, re-destination origin node
-				destination_node_id 	=  g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
-
-			pVehicle->m_OriginNodeID	= origin_node_id; 
-			pVehicle->m_DestinationNodeID 	=  destination_node_id;
-
-			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)!= g_ZoneMap.end())
-			{
-				g_ZoneMap[pVehicle->m_OriginZoneID].m_Demand += 1;
-				g_ZoneMap[pVehicle->m_OriginZoneID].m_OriginVehicleSize += 1;
-
-			}
-
-
-			parser_agent.GetValueByFieldNameRequired("departure_time",pVehicle->m_DepartureTime);
-
-
-			if( pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
-			{
-
-				cout << "Error: agent " <<  agent_id << " in file " << file_name << " has a departure time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " << 
-					g_DemandLoadingStartTimeInMin << "->" << g_DemandLoadingEndTimeInMin << " (min)." << endl << "Please check!" ;
-				g_ProgramStop();
-			}
-
-
-
-
-			parser_agent.GetValueByFieldNameRequired("demand_type",pVehicle->m_DemandType);
-			parser_agent.GetValueByFieldNameRequired("pricing_type",pVehicle->m_PricingType);
-			parser_agent.GetValueByFieldNameRequired("vehicle_type",pVehicle->m_VehicleType);
-			parser_agent.GetValueByFieldNameRequired("information_type",pVehicle->m_InformationClass);
-			parser_agent.GetValueByFieldNameRequired("value_of_time",pVehicle->m_VOT);
-			//				parser_agent.GetValueByFieldName("output_speed_profile_flag",pVehicle->m_output_speed_profile_flag);
-
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
-			pVehicle->m_ArrivalTime  = 0;
-			pVehicle->m_bComplete = false;
-			pVehicle->m_bLoaded  = false;
-			pVehicle->m_TollDollarCost = 0;
-			pVehicle->m_Emissions  = 0;
-			pVehicle->m_Distance = 0;
-
-			pVehicle->m_NodeSize = 0;
-
-			pVehicle->m_NodeNumberSum =0;
-			pVehicle->m_Distance =0;
-
-
-			g_VehicleVector.push_back(pVehicle);
-			g_VehicleMap[i]  = pVehicle;
-
-			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-
-			if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-			{
-				AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-			}
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
-
-			i++;
-			line_no++;
-
-		}
-
-	}else
-	{
-		cout << "File input_agent.csv cannot be opened. Please check." << endl;
-		g_ProgramStop();
-
-	}
-
-}
-void g_ReadDTALiteAgentBinFile(string file_name)
-{
-
-	if(g_TrafficFlowModelFlag ==  tfm_BPR)  //BRP  // static assignment parameters
-	{
-		g_AggregationTimetInterval =  60;
-	}
-
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
-
-
-	FILE* st = NULL;
-	fopen_s(&st,file_name.c_str (),"rb");
-	if(st!=NULL)
-	{
-
-		float total_demand = 0;
-		fseek (st , 0 , SEEK_END);
-		long lSize = ftell (st);
-		rewind (st);
-		int RecordCount = lSize/sizeof(struct_VehicleInfo_Header);
-		if(RecordCount >=1)
-		{
-			cout << "Reading " << RecordCount << " vehicles from input_agent.bin file as simulation input... "  << endl;
-
-			// allocate memory to contain the whole file:
-			struct_VehicleInfo_Header* pVehicleData = new struct_VehicleInfo_Header [RecordCount];
-			// copy the file into the buffer:
-			fread (pVehicleData,1,sizeof(struct_VehicleInfo_Header)*RecordCount,st);
-
-
-			int count = 0;
-			for(int i =0; i < RecordCount; i++)
-			{
-
-				if(g_DemandGlobalMultiplier<0.9999)
-				{
-					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multipler, then skip, not generate vehicles
-					{
-						continue;
-					}
-				}
-
-
-
-				struct_VehicleInfo_Header element = pVehicleData[i];
-
-				DTAVehicle* pVehicle = 0;
-
-				pVehicle = new (std::nothrow) DTAVehicle;
-				if(pVehicle == NULL)
-				{
-					cout << "Insufficient memory...";
-					getchar();
-					exit(0);
-
-				}
-
-				pVehicle->m_VehicleID = count++;
-				pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
-
-				pVehicle->m_OriginZoneID = element.from_zone_id;
-				pVehicle->m_DestinationZoneID = element.to_zone_id ;
-
-				pVehicle->m_OriginNodeID	= g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
-				pVehicle->m_DestinationNodeID 	=  g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
-
-
-				if(g_ZoneMap.find( element.from_zone_id)!= g_ZoneMap.end())
-				{
-					g_ZoneMap[ element.from_zone_id].m_Demand += 1;
-				}
-
-				pVehicle->m_DepartureTime =  element.departure_time ;
-				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
-
-				pVehicle->m_ArrivalTime  = 0;
-				pVehicle->m_bComplete = false;
-				pVehicle->m_bLoaded  = false;
-				pVehicle->m_DemandType = element.demand_type ;
-
-				pVehicle->m_PricingType  = element.pricing_type ;
-				pVehicle->m_VehicleType = element.vehicle_type ;
-
-				pVehicle->m_InformationClass = element.information_type ;
-				pVehicle->m_VOT = element.value_of_time ;
-				pVehicle->m_Age  = element.age;
-
-				pVehicle->m_TollDollarCost = 0;
-				pVehicle->m_Emissions  = 0;
-				pVehicle->m_Distance = 0;
-
-				pVehicle->m_NodeSize = 0;
-
-				pVehicle->m_NodeNumberSum =0;
-				pVehicle->m_Distance =0;
-
-
-				g_VehicleVector.push_back(pVehicle);
-				g_VehicleMap[i]  = pVehicle;
-
-				int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-
-				if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-				{
-					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-				}
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
-
-
-			}
-			if(pVehicleData!=NULL)
-				delete pVehicleData;
-		}
-
-
-		fclose(st);	
-	}
-}
 
 
 void g_ConvertDemandToVehicles() 
@@ -3229,8 +2974,8 @@ void g_ReadDTALiteSettings()
 	else
 	{
 		g_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "output_second_by_second_emission_data", 0, g_DTASettingFileName);	
-		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "output_second_by_second_emission_data_rate", 0.1f, g_DTASettingFileName);	
-		g_EmissionSmoothVehicleTrajectory = g_GetPrivateProfileFloat("emission", "smooth_vehicle_trajectory", 1, g_DTASettingFileName);	
+		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "sampling_percentange_for_outputting_second_by_second_emission_data", 1, g_DTASettingFileName);	
+		g_EmissionSmoothVehicleTrajectory = g_GetPrivateProfileFloat("emission", "smooth_vehicle_trajectory", 1, g_DTASettingFileName);
 		g_start_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "start_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 		g_end_departure_time_in_min_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "end_departure_time_in_min_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
 	}
@@ -3998,17 +3743,35 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 	CCSVParser parser;
 
-	if(g_AgentBinInputMode == 1)  // g_AgentBinInputMode is input from input_scenario_settings.csv
+if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin") != string::npos)
 	{
-		g_ReadAgentBinFile("input_agent.bin");
-		return;
+			g_ReadAgentBinFile("input_agent.bin");
+			return;
 	}
 
-	if(g_AgentBinInputMode == 2)  // g_AgentBinInputMode is input from input_scenario_settings.csv
+	if(g_AgentBinInputMode.find("2") != string::npos || g_AgentBinInputMode.find("agent_csv") != string::npos)
 	{
 		g_ReadDTALiteAgentCSVFile("input_agent.csv");
 		return;
 	}
+
+	if(g_AgentBinInputMode.find("3") != string::npos || g_AgentBinInputMode.find("agent_group_csv") != string::npos)
+	{
+		g_ReadDTALiteAgentCSVFile("input_agent.csv");
+		return;
+	}
+
+	if(g_AgentBinInputMode.find("4") != string::npos || g_AgentBinInputMode.find("evacuation_agent_csv") != string::npos)
+	{
+		g_ReadDTALiteAgentCSVFile("evacuation_agent_csv");
+		return;
+	}
+
+	if(g_AgentBinInputMode.find("5") != string::npos || g_AgentBinInputMode.find("vehicle_dat") != string::npos)
+	{
+		g_ReadDSPVehicleFile("vehicle.dat");
+		return;
+	}	
 
 	//step 3:
 	if (parser.OpenCSVFile("input_demand_meta_data.csv"))
@@ -4439,6 +4202,10 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			{
 				g_ReadDTALiteAgentCSVFile(file_name);
 				return;
+			}else if(format_type.find("dsp_vehicle_dat")!= string::npos)
+			{
+				g_ReadDTALiteAgentCSVFile(file_name);
+				return;
 			}else if(format_type.find("agent_bin")!= string::npos)
 			{
 				g_ReadAgentBinFile(file_name);
@@ -4574,4 +4341,5 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 	g_ConvertDemandToVehicles();
 }
+
 

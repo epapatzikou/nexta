@@ -78,7 +78,7 @@ extern double g_DTASimulationInterval;
 extern int g_SimulateSignals;
 extern float g_DefaultArterialKJam;
 extern int g_DefaultCycleLength;
-extern int g_AgentBinInputMode;
+extern string g_AgentBinInputMode;
 
 extern int g_CalculateUEGapForAllAgents;
 
@@ -967,6 +967,7 @@ public:
 	std::vector<LaneVehicleCFData> m_VehicleDataVector;   
 
 	void ThreeDetectorVehicleTrajectorySimulation();
+
 	void ComputeVSP();
 	//	void ComputeVSP_FastMethod();
 	std::vector <SLinkMeasurement> m_LinkMeasurementAry;
@@ -1830,6 +1831,11 @@ public:
 class DTAVehicle
 {
 public:
+
+	int m_EvacuationTime_in_min;
+	int m_EvacuationDestinationZone;
+
+	bool m_bEvacuationMode;
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
@@ -1923,6 +1929,10 @@ public:
 
 	DTAVehicle()
 	{
+		m_bEvacuationMode = false;
+		m_EvacuationTime_in_min = 0;
+		m_EvacuationDestinationZone = 0;
+
 		m_Age = 0;
 		Energy = CO2 = NOX = CO = HC = 0;
 		m_PrevSpeed = 0;
@@ -2932,6 +2942,7 @@ int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float V
 
 void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
+void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();

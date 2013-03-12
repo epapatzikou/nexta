@@ -148,10 +148,23 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 			for(int t = m_DemandLoading_StartHour*4; t<= m_DemandLoading_EndHour*4; t++)
 			{
 				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
+
+				element.time_dependent_ratio[t] = 0.15;
 				double percentage = element.time_dependent_ratio[t]*100.f;
 				m_chart.AddValue(percentage,time_stamp_str);
 			}
 
+		}else
+		{
+			for(int t = m_DemandLoading_StartHour*4; t<= m_DemandLoading_EndHour*4; t++)
+			{
+				CString time_stamp_str = m_pDoc->GetTimeStampStrFromIntervalNo (t,false);
+
+				double percentage = 1.0/max(1,m_DemandLoading_EndHour - m_DemandLoading_StartHour)*100.f;
+				m_chart.AddValue(percentage,time_stamp_str);
+			}
+		
+		
 		}
 	
 	m_chart.SetChartStyle(NSCS_BAR);

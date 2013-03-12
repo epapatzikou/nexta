@@ -216,6 +216,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	string node_table_file_name;
 	parser.GetValueBySectionKeyFieldName(file_name,"file_name","node","value",node_table_file_name);
 
+	if(node_table_file_name.length ()==0)
+	{
+		AfxMessageBox("Section: file_name and key: node has no input value. Please check.");
+		return false;
+	}
+
 	string node_name;
 	parser.GetValueBySectionKeyFieldName(file_name,"node","name","value",node_name);
 
@@ -566,6 +572,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		string speed_limit_in_mph_name;
 
 		parser.GetValueBySectionKeyFieldName(file_name,"file_name","link","value",link_table_file_name);
+
+	if(link_table_file_name.length ()==0)
+	{
+		AfxMessageBox("Section: file_name and key: link has no input value. Please check.");
+		return false;
+	}
+
 		parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value",from_node_id_name);
 		parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value",to_node_id_name);
 		parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value",link_id_name);

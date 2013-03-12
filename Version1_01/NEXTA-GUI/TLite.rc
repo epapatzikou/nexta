@@ -590,12 +590,12 @@ BEGIN
     CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,541,134,49,10
     CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,541,121,37,10
     CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,541,149,39,10
-    LTEXT           "X Axis:",IDC_STATIC,7,6,22,8
-    LTEXT           "Y Axis:",IDC_STATIC,189,6,22,8
+    LTEXT           "Vehicle Filter\nX Axis:",IDC_STATIC,7,6,42,25
+    LTEXT           "MOE Selection\nY Axis:",IDC_STATIC,189,6,48,18
     DEFPUSHBUTTON   "Export Chart Data...",ID_EXPORT_DATA,510,176,101,14
-    COMBOBOX        IDC_COMBO_XAxis,41,6,143,335,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_COMBO_YAxis,214,6,167,343,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Vehicle\nSelection:",IDC_STATIC,390,6,40,17
+    COMBOBOX        IDC_COMBO_XAxis,53,6,131,335,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_YAxis,244,6,160,343,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Spatial\nSelection:",IDC_STATIC,412,6,40,17
     COMBOBOX        IDC_COMBO_VehicleSelection,453,6,158,237,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "Highlight Selected Vehicles",ID_HIGHLIGHT_VEHICLES,510,209,101,14,BS_MULTILINE
     LTEXT           "Selection Summary:",IDC_STATIC,459,31,92,8
@@ -618,35 +618,35 @@ BEGIN
     PUSHBUTTON      "Background Color",IDC_Back_GroundColorBUTTON,7,84,77,14
 END
 
-IDD_NSCHART_TRAVEL_TIME_RELIABILITY DIALOGEX 0, 0, 596, 250
+IDD_NSCHART_TRAVEL_TIME_RELIABILITY DIALOGEX 0, 0, 639, 261
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION
 EXSTYLE WS_EX_APPWINDOW
-CAPTION "Path Travel Time Reliability Analysis"
+CAPTION "Cooridor Travel Time Reliability Analysis"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Close",IDOK,539,228,50,14
+    DEFPUSHBUTTON   "Close",IDOK,582,239,50,14
     CONTROL         "Sources of Unreliability Chart",IDC_Factor_CHART,
-                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,222,51,296,157
-    GROUPBOX        "Chart style",IDC_STATIC,529,49,60,40,WS_GROUP
-    CONTROL         "Pie Chart",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,535,60,45,10
-    CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,535,75,45,10
-    GROUPBOX        "Chart colors",IDC_STATIC,529,99,60,55,WS_GROUP
-    CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,534,126,49,10
-    CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,534,110,37,10
-    CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,533,140,39,10
-    LTEXT           "Travel Time Distribution:",IDC_STATIC,7,20,77,8
-    DEFPUSHBUTTON   "Export Chart Data...",ID_EXPORT_DATA,521,191,68,14
-    LTEXT           "7 Factor Analysis:",IDC_STATIC,276,23,56,8
+                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,62,347,157
+    GROUPBOX        "Chart style",IDC_STATIC,360,68,60,40,WS_GROUP
+    CONTROL         "Pie Chart",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,368,78,45,10
+    CONTROL         "Bar Chart",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,368,92,45,10
+    GROUPBOX        "Chart colors",IDC_STATIC,360,118,60,55,WS_GROUP
+    CONTROL         "Gray scale",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,365,145,49,10
+    CONTROL         "Simple",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,365,129,37,10
+    CONTROL         "Custom",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,364,160,39,10
+    LTEXT           "Travel Time Distribution:",IDC_STATIC,436,6,77,8
+    DEFPUSHBUTTON   "Export Chart Data...",ID_EXPORT_DATA,517,220,68,14
+    LTEXT           "MOE Categories:",IDC_STATIC,7,6,54,8
     CONTROL         "Travel Time Reliability Chart",IDC_TravelTime_CHART,
-                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,7,49,201,158
-    LISTBOX         IDC_LIST2,342,6,171,38,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LISTBOX         IDC_LIST_1,93,6,129,27,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_LABEL,306,215,66,14,ES_AUTOHSCROLL
-    LTEXT           "Source:",IDC_STATIC,272,213,24,14,SS_CENTERIMAGE
-    EDITTEXT        IDC_VALUE,437,214,34,14,ES_AUTOHSCROLL
-    LTEXT           "Occurrence %:",IDC_STATIC,378,214,56,14,SS_CENTERIMAGE
-    PUSHBUTTON      "Update",IDC_MODIFY,477,214,35,14,0,WS_EX_CLIENTEDGE
-    DEFPUSHBUTTON   "Edit Scenario Data",ID_EDIT_SCENARIO,521,171,68,14
+                    "MFC_NSChartCtrl",WS_BORDER | WS_TABSTOP,431,58,201,147
+    LISTBOX         IDC_LIST2,27,17,171,38,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_LIST_1,431,23,129,27,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_LABEL,73,221,66,14,ES_AUTOHSCROLL
+    LTEXT           "Source:",IDC_STATIC,27,221,24,14,SS_CENTERIMAGE
+    EDITTEXT        IDC_VALUE,220,221,34,14,ES_AUTOHSCROLL
+    LTEXT           "Occurrence %:",IDC_STATIC,161,220,56,14,SS_CENTERIMAGE
+    PUSHBUTTON      "Update",IDC_MODIFY,262,222,35,14,0,WS_EX_CLIENTEDGE
+    DEFPUSHBUTTON   "Edit Scenario Data",ID_EDIT_SCENARIO,437,220,68,14
 END
 
 IDD_DIALOG_GIS_IMPORT_SHAPE_FILE DIALOGEX 0, 0, 422, 232
@@ -835,8 +835,7 @@ BEGIN
     COMBOBOX        IDC_COMBO_PLOT_TYPE,165,7,149,145,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Agg Interval:",IDC_STATIC,471,7,44,8
     PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,152,225,154,14
-    PUSHBUTTON      "Generate Segment Data for FREEVAL",IDDATA_FREEVAL_Analysis_Generate_Data,7,243,136,14
-    PUSHBUTTON      "Generate Default Segment File for FREEVAL",IDDATA_FREEVAL_Analysis_Generate_File,151,243,154,14
+    PUSHBUTTON      "Generate Default Segment File for FREEVAL",IDDATA_FREEVAL_Analysis_Generate_File,318,225,154,14
 END
 
 IDD_DIALOG_GISLayer DIALOGEX 0, 0, 130, 377
@@ -1130,12 +1129,16 @@ CAPTION "View/Edit Corridor Data"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     PUSHBUTTON      "Exit Without Saving",IDCANCEL,467,315,76,14
-    DEFPUSHBUTTON   "Save and Exit",IDOK,378,315,71,14
-    PUSHBUTTON      "Edit File in Excel",IDC_BUTTON_EDIT_DATA_IN_EXCEL,288,315,70,14
-    CONTROL         "",IDC_SETTING_TAB_CORRIDOR,"SysTabControl32",0x0,7,7,536,279
+    DEFPUSHBUTTON   "Save and Exit",IDOK,389,315,71,14
+    PUSHBUTTON      "Edit File in Excel",IDC_BUTTON_EDIT_DATA_IN_EXCEL,303,315,70,14
+    CONTROL         "",IDC_SETTING_TAB_CORRIDOR,"SysTabControl32",0x0,7,7,536,266
     CONTROL         "Zoom To Selected Object",IDC_CHECK_ZOOM_TO_SELECTED_OBJECT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,301,96,10
-    DEFPUSHBUTTON   "Save Data",IDOK2,194,315,64,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,319,96,10
+    DEFPUSHBUTTON   "Save Data",IDOK2,223,315,64,14
+    DEFPUSHBUTTON   "Travel Time Reliability (7-factor analysis)",ID_TravelTimeReliability,407,292,136,14
+    PUSHBUTTON      "Merge Segment to the Left",IDC_BUTTON_COMBINE_SEGMENT_LEFT,7,276,101,14
+    PUSHBUTTON      "Split Segment",IDC_BUTTON_SPLIT_SEGMENTS,221,277,72,14
+    PUSHBUTTON      "Merge Segment to the Right",IDC_BUTTON_COMBINE_SEGMENT_RIGHT,114,277,103,14
 END
 
 IDD_DIALOG_SETTING_TAB_CORRIDOR DIALOGEX 0, 0, 536, 333
@@ -1467,9 +1470,9 @@ BEGIN
     IDD_NSCHART_TRAVEL_TIME_RELIABILITY, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 589
+        RIGHTMARGIN, 632
         TOPMARGIN, 6
-        BOTTOMMARGIN, 242
+        BOTTOMMARGIN, 253
     END
 
     IDD_DIALOG_GIS_IMPORT_SHAPE_FILE, DIALOG
@@ -1817,7 +1820,6 @@ IDR_MAINFRAME2          BITMAP                  "res\\bmp00001.bmp"
 IDB_INCIDENT            BITMAP                  "res\\incident.bmp"
 IDB_VMS                 BITMAP                  "res\\VMS.bmp"
 IDB_WORKZONE            BITMAP                  "res\\workzone.bmp"
-IDB_RAMPMETER           BITMAP                  "res\\rampmeter.bmp"
 IDB_TOLL                BITMAP                  "res\\toll.bmp"
 IDR_DATA_TOOLBAR        BITMAP                  "res\\sta_tool.bmp"
 IDR_AMS_TOOLBAR         BITMAP                  "res\\bmp00002.bmp"
@@ -1828,10 +1830,7 @@ IDR_MAINFRAME_RAIL      BITMAP                  "res\\bmp00004.bmp"
 IDR_VIEW_TOOLBAR_NU     BITMAP                  "res\\view_too.bmp"
 IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 IDR_MAINFRAME4          BITMAP                  "res\\bmp00006.bmp"
-IDB_ONRAMP              BITMAP                  "res\\rampmete.bmp"
-IDB_OFFRAMP             BITMAP                  "res\\onramp1.bmp"
-IDB_SEGMENT_ONRAMP      BITMAP                  "res\\bmp00007.bmp"
-IDB_SEGMENT_OFFRAMP     BITMAP                  "res\\offramp2.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2394,6 +2393,8 @@ BEGIN
         MENUITEM "Add Sensor on Selected Link", ID_LINK_ADDSENSOR
         MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
         MENUITEM SEPARATOR
+        MENUITEM "Export Link Flow Proportion Matrix to CSV File", ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE
+        MENUITEM "Use OD Estimation Optimization Excel Program", ID_DETECTOR_USEODESTIMATIONOPTIMIZATIONEXCELPROGRAM
     END
     POPUP "WorkZone"
     BEGIN
@@ -2554,6 +2555,7 @@ BEGIN
         BEGIN
             MENUITEM "Microscopic Network and Traffic Control Data", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
             MENUITEM "Export Network as 3D KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
+            MENUITEM "Export Path Data as 3D KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES_PATH_DATA
             MENUITEM "Export Aggregated Link MOE File", ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE
         END
         MENUITEM SEPARATOR
@@ -3293,6 +3295,21 @@ BEGIN
         MENUITEM "Export CSV",                  ID_PATH_DATA_EXPORT_CSV
         MENUITEM "View/Generate Sample Input Path CSV", ID_DATA_GENERATESAMPLEINPUTPATHCSV
         MENUITEM "Clear All Paths",             ID_DATA_CLEANALLPATHS
+    END
+    POPUP "Change Attributes for Links Along Path"
+    BEGIN
+        MENUITEM "Lane Capacity",               ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGELANECAPACITY
+        MENUITEM "# of Lanes",                  ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGE
+        MENUITEM "Link Type",                   ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGELINKTYPE
+        MENUITEM "Speed Limit (mph)",           ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESPEEDLIMIT
+        MENUITEM "Speed Limit (kmph)",          ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESPEEDLIMIT
+        MENUITEM SEPARATOR
+        MENUITEM "Jam Density (vhc/mile/lane)", ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY
+        MENUITEM "Jam Density (vhc/km/lane)",   ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY33625
+        MENUITEM "Backwave Speed (mph)",        ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEBACKWAVESPEED
+        MENUITEM "Backwave Speed (kmph)",       ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEBACKWAVESPEED33624
+        MENUITEM "Saturation Flow Rate (vhc/hour)", ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESATURATIONFLOWRATE
+        MENUITEM "Effective Green Time (sec)",  ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME
     END
 END
 

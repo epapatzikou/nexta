@@ -1685,3 +1685,184 @@ bool CTLiteDoc::ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName)
 void CTLiteDoc::ExportQEMData(int ThisNodeNumber)
 {
 }
+
+
+void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
+{
+	m_LinkFlowProportionMap.clear ();
+	m_LinkFlowProportionODMap.clear ();
+
+	if(m_VehicleSet.size()>=50000)
+	{
+		AfxMessageBox("Generating link flow proportion matrix from vehicle/agent files might take a while...", MB_ICONINFORMATION);
+
+	}
+
+	int sensor_count = 0;
+		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			DTALink* pLink = (*iLink);
+			if(pLink->m_bSensorData )
+			{
+				sensor_count ++;
+			}
+		}
+
+		if(sensor_count == 0)
+		{
+			AfxMessageBox("Please input sensor data first before generating link flow proportion matrix. Currently, there is 0 sensor.", MB_ICONINFORMATION);
+			return;
+		}
+
+	std::list<DTAVehicle*>::iterator iVehicle;
+
+	for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
+	{
+		DTAVehicle* pVehicle = (*iVehicle);
+
+		if(pVehicle->m_bComplete )
+		{
+
+		for(int i= 2; i<  pVehicle->m_NodeSize; i++)
+		{
+			DTALink* pLink0 = m_LinkNoMap[pVehicle->m_NodeAry[i-1].LinkNo]; // i=0, LinkNo = -1;
+			DTALink* pLink1 = m_LinkNoMap[pVehicle->m_NodeAry[i].LinkNo];
+
+			if(pLink0->m_bSensorData )  // with sensor data
+			{
+			
+			CString movement_label;
+
+			//movement
+			movement_label.Format ("%d,%d,%d,%d;%d;%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int) (pVehicle->m_DepartureTime / 60), 
+			pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber , pLink1->m_ToNodeNumber);
+			m_LinkFlowProportionMap[movement_label]++;
+			
+			// link
+			movement_label.Format ("%d,%d,%d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / 60), 
+			pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber);
+			m_LinkFlowProportionMap[movement_label]++;
+
+
+			if(i==pVehicle->m_NodeSize -1)  //last link
+			{
+			movement_label.Format ("%d,%d,%d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / 60), 
+			pLink1->m_FromNodeNumber  ,  pLink1->m_ToNodeNumber);
+			m_LinkFlowProportionMap[movement_label]++;
+			
+			}
+			}
+
+
+
+		}
+
+			CString OD_label;
+
+			//movement
+			OD_label.Format ("%d,%d,%d,", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , int(pVehicle->m_DepartureTime / 60)); 
+
+			m_LinkFlowProportionODMap[OD_label]++;
+
+		}
+	}
+
+	// export the output 
+
+	// for each element in m_LinkFlowProportionODMap
+
+	FILE* st;
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	CString AMS_File = directory+"AMS_link_flow_proportion_matrix.csv";
+	fopen_s(&st,AMS_File,"w");
+	if(st!=NULL)
+	{
+		// first line 
+		fprintf(st,",,,,,Sensor Link=>,");
+		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			DTALink* pLink = (*iLink);
+			if(pLink->m_bSensorData )
+			{
+			
+			fprintf(st,"%d->%d,",(*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber );
+
+			}
+
+		}
+
+		fprintf(st,"\n,,,,,Observed Count=>,");
+		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			DTALink* pLink = (*iLink);
+			if(pLink->m_bSensorData )
+			{
+			fprintf(st,"%.1f,",(*iLink)->GetSensorLinkHourlyVolume( m_DemandLoadingStartTimeInMin, m_DemandLoadingStartTimeInMin+60) );
+
+			}
+
+		}
+
+		fprintf(st,"\norigin zone id,destination zone id,departure time (hour),");
+
+		fprintf(st,"Hist OD volume,Target OD Volume,Estimated OD volume,");
+
+
+		fprintf(st,"\n");
+
+		// second block
+
+		int movement_index = 1;
+		std::map<CString, int> ::const_iterator itr;
+		for (itr = m_LinkFlowProportionODMap.begin(); itr != m_LinkFlowProportionODMap.end(); itr++)
+		{
+
+			fprintf(st,"%s%d,%d,%d,", itr->first, itr->second,itr->second,itr->second);
+
+			for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				DTALink* pLink = (*iLink);
+				if(pLink->m_bSensorData )
+				{
+				CString LinkString;
+				
+				LinkString.Format ("%s%d->%d",itr->first,(*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber );
+
+				if(m_LinkFlowProportionMap.find(LinkString) != m_LinkFlowProportionMap.end())
+				{
+
+				float ratio = m_LinkFlowProportionMap[LinkString]*1.0f/max(1,itr->second);
+
+				fprintf(st,"%.4f,",ratio);
+				
+				}else
+				{
+				
+				fprintf(st,"0,");
+				
+				}
+
+				}
+
+			}
+
+				fprintf(st,"\n");
+
+
+
+		}
+
+		fclose(st);
+
+		OpenCSVFileInExcel(AMS_File);
+
+	}else
+	{
+		AfxMessageBox("File AMS_link_flow_proportion_matrix.csv cannot be opened.");
+
+	}
+
+}
