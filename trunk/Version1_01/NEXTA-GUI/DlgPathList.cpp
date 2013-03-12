@@ -9,6 +9,7 @@
 #include "CGridListCtrlEx\CGridColumnTraitCombo.h"
 #include "CGridListCtrlEx\CGridRowTraitXP.h"
 #include "Dlg_VehicleClassification.h"
+#include "Dlg_UserInput.h"
 #include <string>
 #include <sstream>
 #include <vector>
@@ -78,8 +79,17 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_AggIntrevalList, &CDlgPathList::OnCbnSelchangeComboAggintrevallist)
 	ON_CBN_SELCHANGE(IDC_COMBO_PLOT_TYPE, &CDlgPathList::OnCbnSelchangeComboPlotType)
 	ON_BN_CLICKED(IDDATA_Analysis2, &CDlgPathList::OnBnClickedAnalysis2)
-	ON_BN_CLICKED(IDDATA_FREEVAL_Analysis_Generate_Data, &CDlgPathList::OnBnClickedFreevalAnalysisGenerateData)
 	ON_BN_CLICKED(IDDATA_FREEVAL_Analysis_Generate_File, &CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGELANECAPACITY, &CDlgPathList::OnChangeattributesforlinksalongpathChangelanecapacity)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGE, &CDlgPathList::OnChangeattributesforlinksalongpathChange)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGELINKTYPE, &CDlgPathList::OnChangeattributesforlinksalongpathChangelinktype)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESPEEDLIMIT, &CDlgPathList::OnChangeattributesforlinksalongpathChangespeedlimit)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESPEEDLIMIT_KMPH, &CDlgPathList::OnChangeattributesforlinksalongpathChangespeedlimitKmph)
+		ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY, &CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEBACKWAVESPEED, &CDlgPathList::OnChangeattributesforlinksalongpathChangebackwavespeed)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESATURATIONFLOWRATE, &CDlgPathList::OnChangeattributesforlinksalongpathChangesaturationflowrate)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY33625, &CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity33625)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME, &CDlgPathList::OnChangeattributesforlinksalongpathEffectivegreentime)
 END_MESSAGE_MAP()
 
 
@@ -1716,6 +1726,9 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 	{
 		m_pDoc->m_SelectPathNo = m_PathList.GetCurSel();
 
+		int time_stamp = 0;
+		for(time_stamp = m_pDoc->m_DemandLoadingStartTimeInMin;  time_stamp < m_pDoc->m_DemandLoadingEndTimeInMin; time_stamp+=15)
+		{
 		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 		{
 
@@ -1724,7 +1737,11 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
 			
 			int i;
-				fprintf(st,"Segment Number,");
+
+			if(time_stamp == m_pDoc->m_DemandLoadingStartTimeInMin)
+			{
+
+				fprintf(st,"Time Interval,Segment Number,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1740,9 +1757,13 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			}
 				fprintf(st,"\n");
 
+			}
+
 
 		// 1st row: segment label
-			fprintf(st,"Segment Label,");
+				fprintf(st,"%s",m_pDoc->GetTimeStampString24HourFormat (time_stamp));
+
+			fprintf(st,",Segment Label,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1751,7 +1772,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 				fprintf(st,"\n");
 			
 			// 2nd row: type
-			fprintf(st,"Type (B;ONR;OFR;R or W),");
+			fprintf(st,",Type (B;ONR;OFR;R or W),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1760,7 +1781,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			// 3rd row: 
-			fprintf(st,"Length (ft),");
+			fprintf(st,",Length (ft),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1769,7 +1790,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			// 3rd row: 
-			fprintf(st,"Number of Lanes,");
+			fprintf(st,",Number of Lanes,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1779,7 +1800,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			// 4th row: 
-			fprintf(st,"FF Speed (Mi/hr),");
+			fprintf(st,",FF Speed (Mi/hr),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1790,18 +1811,18 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 
 
 			// 5th row: 
-			fprintf(st,"Segment Demand (vph),");
+			fprintf(st,",Segment Demand (vph),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
-					fprintf(st,"%.0f,",pLink->m_total_link_volume  );
+					fprintf(st,"%.0f,",pLink->GetAvgLinkHourlyVolume(time_stamp, time_stamp+15));
 			}
 
 			fprintf(st,"\n");
 
 
 			// 6th row: 
-			fprintf(st,"Capacity Adjustment Factor,");
+			fprintf(st,",Capacity Adjustment Factor,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1811,7 +1832,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			// 7th row: 
-			fprintf(st,"Origin Demand Adjustment Factor,");
+			fprintf(st,",Origin Demand Adjustment Factor,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1821,7 +1842,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			// 8th row: 
-			fprintf(st,"Destination Demand Adjustment Factor,");
+			fprintf(st,",Destination Demand Adjustment Factor,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1829,10 +1850,10 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			}
 
 			fprintf(st,"\n");
-			fprintf(st,"Detailed Info\n");
+			fprintf(st,",Detailed Info\n");
 
 			//
-			fprintf(st,"%% Trucks,");
+			fprintf(st,",%% Trucks,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1842,7 +1863,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			//-----------------------------------------
-			fprintf(st,"%% of RV's,");
+			fprintf(st,",%% of RV's,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1852,13 +1873,13 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 			//-----------------------------------------
-			fprintf(st,"On-Ramp Demand (vph),");
+			fprintf(st,",On-Ramp Demand (vph),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
 
 				if(pLink->m_FREEVALSegmentCode == FREEVAL_ONR)
-					fprintf(st,"%.0f,",pLink->m_total_link_volume);
+					fprintf(st,"%.0f,",pLink->GetAvgLinkHourlyVolume(time_stamp, time_stamp+15));
 				else 
 					fprintf(st,",");
 			}
@@ -1866,7 +1887,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"On-Ramp %% Trucks,");
+			fprintf(st,",On-Ramp %% Trucks,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1881,7 +1902,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 
 
 		//-----------------------------------------
-			fprintf(st,"On-Ramp %% RV's,");
+			fprintf(st,",On-Ramp %% RV's,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1894,12 +1915,12 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"Off-Ramp Demand (vph),");
+			fprintf(st,",Off-Ramp Demand (vph),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
 				if(pLink->m_FREEVALSegmentCode == FREEVAL_OFR)
-					fprintf(st,"%.0f,",pLink->m_total_link_volume);
+					fprintf(st,"%.0f,",pLink->GetAvgLinkHourlyVolume(time_stamp, time_stamp+15));
 				else 
 					fprintf(st,",");
 			}
@@ -1907,7 +1928,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"Off-Ramp %% Trucks,");
+			fprintf(st,",Off-Ramp %% Trucks,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1922,7 +1943,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"Off-Ramp %% RVs,");
+			fprintf(st,",Off-Ramp %% RVs,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1936,7 +1957,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 
 
 		//-----------------------------------------
-			fprintf(st,"Acc/Dec Lane Length (ft),");
+			fprintf(st,",Acc/Dec Lane Length (ft),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1950,7 +1971,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"Number of Lanes on Ramps,");
+			fprintf(st,",Number of Lanes on Ramps,");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1963,7 +1984,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			fprintf(st,"\n");
 
 		//-----------------------------------------
-			fprintf(st,"Ramp on Left or Right (L/R),");
+			fprintf(st,",Ramp on Left or Right (L/R),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1977,7 +1998,7 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 
 
 		//-----------------------------------------
-			fprintf(st,"Ramp FFS(mi/hr),");
+			fprintf(st,",Ramp FFS(mi/hr),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1988,7 +2009,9 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 			}
 			fprintf(st,"\n");
 
-				fprintf(st,"Link (from->to),");
+			fprintf(st,"%s,",m_pDoc->GetTimeStampString24HourFormat (time_stamp) );
+
+				fprintf(st,",Link (from->to),");
 			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
@@ -1997,21 +2020,197 @@ void CDlgPathList::OnBnClickedFreevalAnalysisGenerateFile()
 				fprintf(st,"\n");
 
 
-			fprintf(st,"\n");
-
 		} //for each path
 
+		}
 		fclose(st);
 
-		AfxMessageBox("File FREEVAL_input_segment.csv is generated in the project folder.", MB_ICONINFORMATION);
+		if(AfxMessageBox("File FREEVAL_input_segment.csv is generated in the project folder.", MB_ICONINFORMATION)==IDOK)
+		{m_pDoc->OnFreewaytoolsView();}
+
 
 		m_pDoc->OpenCSVFileInExcel (export_file_name);
 
+		
 	}else
 		{
 		
 			AfxMessageBox("File FREEVAL_input_segment.csv cannot be opened to write. Please check if it is currently opened in EXCEL.", MB_ICONINFORMATION);
 	
+			return;
 		}
+	
 
 }
+
+
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangelanecapacity()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_lane_capacity;
+	ChangeLinkAttributeDialog();
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChange()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_number_of_lanes;
+	ChangeLinkAttributeDialog();
+
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangelinktype()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_link_type;
+	ChangeLinkAttributeDialog();
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangespeedlimit()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_speed_limit_mph;
+	ChangeLinkAttributeDialog();
+	
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangespeedlimitKmph()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_speed_limit_kmph;
+	ChangeLinkAttributeDialog();
+}
+
+
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_jam_density_vhcpm;
+	ChangeLinkAttributeDialog();
+
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangebackwavespeed()
+{
+		m_ChangeLinkAttributeMode = eChangeLinkAttribute_backwardwave_speed_mph;
+	ChangeLinkAttributeDialog();
+
+}
+
+void CDlgPathList::OnChangeattributesforlinksalongpathChangesaturationflowrate()
+{
+		m_ChangeLinkAttributeMode = eChangeLinkAttribute_saturation_flow_rate;
+	ChangeLinkAttributeDialog();
+}
+
+
+
+void CDlgPathList::OnChangeattributesforlinksalongpathEffectivegreentime()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_effective_green_time;
+	ChangeLinkAttributeDialog();
+}
+void CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity33625()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_jam_density_vhcpm;
+	ChangeLinkAttributeDialog();
+
+}
+
+
+void CDlgPathList::ChangeLinkAttributeDialog()
+{
+		CDlg_UserInput dlg;
+
+		dlg.m_StrQuestion  = "Please specify the input value:";
+
+
+		float value = 0;
+
+					switch(m_ChangeLinkAttributeMode)
+					{
+					case eChangeLinkAttribute_lane_capacity: dlg.m_InputValue = "2000"; break;
+					case eChangeLinkAttribute_number_of_lanes: dlg.m_InputValue = "3"; break;
+					case eChangeLinkAttribute_link_type: dlg.m_InputValue = "1"; break;
+					case eChangeLinkAttribute_speed_limit_mph : dlg.m_InputValue = "65";break;
+					case eChangeLinkAttribute_speed_limit_kmph: dlg.m_InputValue = "100"; break; 
+					case eChangeLinkAttribute_jam_density_vhcpm : dlg.m_InputValue = "180"; break;
+					case eChangeLinkAttribute_jam_density_vhcpkm: dlg.m_InputValue = "110"; break; 
+					case eChangeLinkAttribute_backwardwave_speed_mph: dlg.m_InputValue = "12";; break;
+					case eChangeLinkAttribute_backwardwave_speed_kmph: dlg.m_InputValue = "7.4"; break;
+					case eChangeLinkAttribute_saturation_flow_rate: dlg.m_InputValue = "1800"; break;
+					case eChangeLinkAttribute_effective_green_time : dlg.m_InputValue = "60"; break; 
+					}
+		
+
+		if(dlg.DoModal ()==IDOK)
+		{
+			value = atof(dlg.m_InputValue) ;
+
+			if(AfxMessageBox("Are you sure to make the change?",  MB_YESNO|MB_ICONINFORMATION)==IDYES)
+			{
+				ChangeLinkAttributeAlongPath(value);
+			}
+		}
+	
+
+}
+
+
+void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
+{
+		m_pDoc->m_SelectPathNo = m_PathList.GetCurSel();
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(m_pDoc->m_SelectPathNo!=p)
+				continue;
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			
+			int i;
+
+			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
+			{
+
+				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+				if(pLink != NULL)
+				{
+					m_pDoc->SetModifiedFlag (true);
+
+					int ToNodeID; 
+					DTANode* pNode =NULL;
+					switch(m_ChangeLinkAttributeMode)
+					{
+					case eChangeLinkAttribute_lane_capacity: pLink->m_LaneCapacity = value; break;
+					case eChangeLinkAttribute_number_of_lanes: pLink->m_NumberOfLanes = value; break;
+					case eChangeLinkAttribute_link_type: pLink->m_link_type = value; break;
+					case eChangeLinkAttribute_speed_limit_mph : pLink->m_SpeedLimit = value; break;
+					case eChangeLinkAttribute_speed_limit_kmph: pLink->m_SpeedLimit = value*0.621371; break; 
+					case eChangeLinkAttribute_jam_density_vhcpm : pLink->m_Kjam = value; break;
+					case eChangeLinkAttribute_jam_density_vhcpkm: pLink->m_Kjam = value*0.621371; break; 
+					case eChangeLinkAttribute_backwardwave_speed_mph: pLink->m_Wave_speed_in_mph = value; break;
+					case eChangeLinkAttribute_backwardwave_speed_kmph: pLink->m_Wave_speed_in_mph = value*0.621371; break;
+					case eChangeLinkAttribute_saturation_flow_rate: pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = value; break;
+					case eChangeLinkAttribute_effective_green_time : 
+
+						ToNodeID = pLink->m_ToNodeID ;
+						pNode = m_pDoc->m_NodeIDMap[ToNodeID];
+						//set default green time 
+						if(pNode->m_ControlType == m_pDoc->m_ControlType_PretimedSignal || 
+							pNode->m_ControlType == m_pDoc->m_ControlType_ActuatedSignal)
+						{
+								
+							pLink->m_EffectiveGreenTimeInSecond = value; break;
+						}
+							
+					
+					
+					}
+
+
+				}  // for all links
+			}
+		}
+
+		m_pDoc->UpdateAllViews(0);
+}
+
+
+

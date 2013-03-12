@@ -660,7 +660,7 @@ public:
 	void OffsetLink();
 	bool m_bBezierCurveFlag;
 
-
+	void PerformPathTravelTimeReliabilityAnalysis();
 	void GenerateOffsetLinkBand();
 
 	void ReCalculateLinkBandWidth();
@@ -1576,6 +1576,7 @@ public:
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag, int default_height);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportPathLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkDiffLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
 	std::map<CString, PathStatistics> m_PathMap;
@@ -1585,6 +1586,10 @@ public:
 	std::map<CString, PathStatistics> m_ODProbeMatrixMap;
 
 	std::map<CString, Movement3Node> m_Movement3NodeMap;  // turnning movement count
+
+	std::map<CString, int> m_LinkFlowProportionMap;  // link-turnning movement count (i,j,tau, from node, to node, destination node)
+	std::map<CString, int> m_LinkFlowProportionODMap;  // link-turnning movement count (for each OD, time pair: i,j,tau)
+
 
 	std::map<CString, DTANodeMovement*> m_MovementPointerMap;  // turnning movement pointer
 
@@ -2299,6 +2304,9 @@ public:
 	afx_msg void OnExportExportaggregatedlinkmoefile();
 	afx_msg void OnHelpReportbug();
 	afx_msg void OnFreewaytoolsView();
+	afx_msg void OnExportGenerateshapefilesPathData();
+	afx_msg void OnDetectorExportlinkflowproportionmatrixtocsvfile();
+	afx_msg void OnDetectorUseodestimationoptimizationexcelprogram();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

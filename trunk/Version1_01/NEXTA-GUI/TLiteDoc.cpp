@@ -389,7 +389,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE, &CTLiteDoc::OnExportExportaggregatedlinkmoefile)
 	ON_COMMAND(ID_HELP_REPORTBUG, &CTLiteDoc::OnHelpReportbug)
 	ON_COMMAND(ID_FREEWAYTOOLS_VIEW, &CTLiteDoc::OnFreewaytoolsView)
-	END_MESSAGE_MAP()
+	ON_COMMAND(ID_EXPORT_GENERATESHAPEFILES_PATH_DATA, &CTLiteDoc::OnExportGenerateshapefilesPathData)
+	ON_COMMAND(ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE, &CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile)
+END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
@@ -2054,6 +2056,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
+		float link_volume = 0;
 		// default mode
 		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 
@@ -2074,14 +2077,13 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			{
 				if(g_Simulation_Time_Stamp>=1) // dynamic traffic assignment mode
 				{
-					float link_volume = 0;
+
 
 					GetLinkMOE((*iLink), MOE_volume,g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, link_volume);
 
 					(*iLink)->m_BandWidthValue = link_volume*VolumeRatio; 
 				}else  // total volume
 				{
-					float link_volume = 0;
 
 					GetLinkMOE((*iLink), MOE_volume,m_DemandLoadingStartTimeInMin, m_DemandLoadingEndTimeInMin-m_DemandLoadingStartTimeInMin, link_volume);
 
@@ -2091,7 +2093,9 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 
 			if(m_LinkMOEMode == MOE_volume && (*iLink)->m_bSensorData)  // reference volume
 			{
-				(*iLink)->m_ReferenceBandWidthValue = (*iLink)->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp)*VolumeRatio; 
+				float sensor_volume = (*iLink)->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp);
+				GetLinkMOE((*iLink), MOE_volume,g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, link_volume);
+				(*iLink)->m_ReferenceBandWidthValue = sensor_volume*VolumeRatio; 
 			}
 
 		}else if (m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
@@ -4089,6 +4093,7 @@ void  CTLiteDoc::CopyDefaultFiles()
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_emission_rate.csv");
 
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_scenario_settings.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_sensor.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_type.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_VOT.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_zone.csv");
@@ -8162,6 +8167,16 @@ void CTLiteDoc::OnImportNgsimFile()
 void CTLiteDoc::OpenCSVFileInExcel(CString filename)
 {
 	/*
+	*/
+
+	//	CString on_line_address;
+	//	on_line_address.Format ("http://www.google.com/fusiontables/DataSource?dsrcid=%s",m_LinkTableID);
+
+	if(filename.Find ("csv") >=0)
+	{
+	HINSTANCE result = ShellExecute(NULL, _T("open"), filename, NULL,NULL, SW_SHOW);
+	}else
+	{
 	CXLEzAutomation XL;
 	//Close Excel if failed to open file 
 	if(!XL.OpenExcelFile(filename))
@@ -8170,12 +8185,8 @@ void CTLiteDoc::OpenCSVFileInExcel(CString filename)
 
 	return;
 	}
-	*/
 
-	//	CString on_line_address;
-	//	on_line_address.Format ("http://www.google.com/fusiontables/DataSource?dsrcid=%s",m_LinkTableID);
-
-	HINSTANCE result = ShellExecute(NULL, _T("open"), filename, NULL,NULL, SW_SHOW);
+	}
 
 
 
@@ -10736,6 +10747,45 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_red_3D_SL.kml","LIBKML",1,true,-1);
 	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_blue_3D_SL.kml","LIBKML",2,true,-1);
 	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_yellow_3D_SL.kml","LIBKML",3,true,-1);
+
+	//DeleteFile(directory+"AMS_agent.kmz");
+	//ExportAgentLayerToKMLFiles(directory+"AMS_agent.kml","KML");
+
+	OnToolsProjectfolder();
+
+}
+void CTLiteDoc::OnExportGenerateshapefilesPathData()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
+	}
+
+	CWaitCursor wc;
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	//DeleteFile(directory+"AMS_node.shp");
+	//DeleteFile(directory+"AMS_node.dbf");
+	//DeleteFile(directory+"AMS_node.shx");
+	//ExportNodeLayerToGISFiles(directory+"AMS_node.shp","ESRI Shapefile");
+
+	//DeleteFile(directory+"AMS_link.shp");
+	//DeleteFile(directory+"AMS_link.dbf");
+	//DeleteFile(directory+"AMS_link.shx");
+	//ExportLinkLayerToGISFiles(directory+"AMS_link.shp","ESRI Shapefile");
+
+	//DeleteFile(directory+"AMS_node.kmz");
+	//ExportNodeLayerToGISFiles(directory+"AMS_node.kml","KML");
+
+	m_bExport_Link_MOE_in_input_link_CSF_File = false;
+	OnFileSaveProject();  // save time-dependent MOE to input_link MOE file
+
+	DeleteFile(directory+"Corridor_link_3D.kml");
+	ExportPathLink3DLayerToKMLFiles(directory+"Corridor_link_3D.kml","LIBKML");
 
 	//DeleteFile(directory+"AMS_agent.kmz");
 	//ExportAgentLayerToKMLFiles(directory+"AMS_agent.kml","KML");
@@ -14650,4 +14700,93 @@ void CTLiteDoc::OnFreewaytoolsView()
 	dlg.m_pDoc = this;
 	dlg.DoModal();
 }
+
+
+void CTLiteDoc::PerformPathTravelTimeReliabilityAnalysis()
+{
+
+bool b_Impacted = false;
+float OriginalCapacity = 0.0f;
+float ImpactDuration = 0.0f;
+float LaneClosureRatio = 0.0f;
+
+float CurrentTime = g_Simulation_Time_Stamp;
+
+std::vector<float> LinkCapacity;
+std::vector<float> LinkTravelTime;
+
+float max_density = 0.0f;
+
+int BottleneckIdx = 0;
+int ImpactedLinkIdx = -1;
+
+float free_flow_travel_time = 0.0f;
+
+
+if(m_PathDisplayList.size()>0)
+{
+
+	DTAPath* pPath = &(m_PathDisplayList[0]);  // 0 is the current selected path
+	for (int i=0;i<pPath->m_LinkVector.size();i++)  // for each pass link
+	{
+		DTALink* pLink = m_LinkNoMap[pPath->m_LinkVector[i]];
+
+		float linkcapacity = pLink->m_LaneCapacity;
+		float linktraveltime = pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime)*60;
+		float density = pLink->GetSimulationDensity(CurrentTime);
+
+		if (density > max_density) BottleneckIdx = i;
+
+		LinkCapacity.push_back(linkcapacity);
+		LinkTravelTime.push_back(linktraveltime);
+		free_flow_travel_time += linktraveltime;
+
+		// for the first link, i==0, use your current code to generate delay, 
+		//additional for user-specified incidents along the routes, add additional delay based on input
+
+		if (!b_Impacted)
+		{
+			LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
+
+			if(LaneClosureRatio > 0.01) // This link is 
+			{  
+				// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
+				//
+				// CurrentTime +=additional delay...
+
+				if (pLink->CapacityReductionVector.size() != 0)
+				{
+					ImpactDuration = pLink->CapacityReductionVector[0].EndTime - pLink->CapacityReductionVector[0].StartTime;
+				}
+
+				ImpactedLinkIdx = i;
+
+				b_Impacted = true;
+
+			}
+		}
+
+		CurrentTime += (pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime))*60;
+	}
+}
+
+CDlg_TravelTimeReliability dlg;
+dlg.m_pDoc= this;
+dlg.LinkCapacity = LinkCapacity;
+dlg.LinkTravelTime = LinkTravelTime;
+
+dlg.m_BottleneckIdx = BottleneckIdx;
+
+if (b_Impacted)
+{
+	dlg.m_bImpacted = b_Impacted;
+	dlg.m_ImpactDuration = ImpactDuration;
+	dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
+	dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
+}
+
+dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
+dlg.DoModal ();
+}
+
 

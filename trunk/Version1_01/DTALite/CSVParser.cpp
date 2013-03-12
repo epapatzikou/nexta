@@ -1,3 +1,27 @@
+//  Portions Copyright 2010 Hao Lei, Xuesong Zhou
+
+//   If you help write or modify the code, please also list your names here.
+//   The reason of having copyright info here is to ensure all the modified version, as a whole, under the GPL 
+//   and further prevent a violation of the GPL.
+
+// More about "How to use GNU licenses for your own software"
+// http://www.gnu.org/licenses/gpl-howto.html
+
+//    This file is part of DTALite.
+
+//    DTALite is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    DTALite is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with DTALite.  If not, see <http://www.gnu.org/licenses/>.
+
 #include "StdAfx.h"
 #include "CSVParser.h"
 
@@ -47,6 +71,15 @@ bool CCSVParser::OpenCSVFile(string fileName,bool b_required)
 				{
 					name = tmp_str.substr(start);
 					TRACE("%s,",name.c_str ());
+				}
+
+				if(name.size ()>1 && FieldsIndices.find(name)  != FieldsIndices.end())
+				{
+				cout << "Field Name" << name << " in file " << fileName << " has been defined twice. Please check." << endl;
+				
+					getchar();
+				return false;
+
 				}
 				FieldsIndices[name] = (int) i;
 			}

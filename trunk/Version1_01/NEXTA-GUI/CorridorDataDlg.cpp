@@ -30,6 +30,8 @@
 #include "CSVParser.h"
 #include <string>
 #include "CorridorDataDlg.h"
+#include "Dlg_TDDemandProfile.h"
+
 using std::vector;
 using std::string;
 
@@ -162,6 +164,10 @@ BEGIN_MESSAGE_MAP(CCorridorDataDlg, CDialog)
 	ON_NOTIFY(TCN_SELCHANGING, IDC_SETTING_TAB_CORRIDOR, &CCorridorDataDlg::OnTcnSelchangingSettingTab)
 	ON_BN_CLICKED(IDOK2, &CCorridorDataDlg::OnBnClickedOk2)
 	ON_BN_CLICKED(ID_GIS_FIELD_NAME, &CCorridorDataDlg::OnBnClickedGisFieldName)
+	ON_BN_CLICKED(ID_TravelTimeReliability, &CCorridorDataDlg::OnBnClickedTraveltimereliability)
+	ON_BN_CLICKED(IDC_BUTTON_COMBINE_SEGMENT_LEFT, &CCorridorDataDlg::OnBnClickedButtonCombineSegmentLeft)
+	ON_BN_CLICKED(IDC_BUTTON_COMBINE_SEGMENT_RIGHT, &CCorridorDataDlg::OnBnClickedButtonCombineSegmentRight)
+	ON_BN_CLICKED(IDC_BUTTON_SPLIT_SEGMENTS, &CCorridorDataDlg::OnBnClickedButtonSplitSegments)
 END_MESSAGE_MAP()
 
 
@@ -258,7 +264,8 @@ void CCorridorDataDlg::OnBnClickedCheckZoomToSelectedObject()
 {
 
 	UpdateData(1);
-		for (int i=0; i < MAX_NUM_OF_CORRIDOR_DATA_FILES; i++)
+
+	for (int i=0; i < MAX_NUM_OF_CORRIDOR_DATA_FILES; i++)
 	{
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 	}
@@ -329,6 +336,60 @@ void CCorridorDataDlg::OnBnClickedOk2()
 }
 
 void CCorridorDataDlg::OnBnClickedGisFieldName()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CCorridorDataDlg::OnBnClickedAddColumn()
+{
+	
+}
+
+void CCorridorDataDlg::OnBnClickedTraveltimereliability()
+{
+	m_pDoc->PerformPathTravelTimeReliabilityAnalysis();
+}
+
+void CCorridorDataDlg::OnBnClickedTimedependentdemand()
+{
+	CDlg_TDDemandProfile dlg;
+	dlg.m_pDoc = m_pDoc;
+	if(dlg.DoModal() ==IDOK)
+	{
+		// TODO: Place code here to handle when the dialog is
+		//  dismissed with OK
+	}
+}
+
+void CCorridorDataDlg::OnBnClickedButtonCombineSegmentLeft()
+{
+	//  //add column
+	//	CGridColumnTrait* pTrait = NULL;
+	//	m_ListCtrl.InsertColumnTrait(m_NumOfCols,name.c_str (),LVCFMT_LEFT,-1,-1, pTrait);
+	//	m_ListCtrl.SetColumnWidth(m_NumOfCols,LVSCW_AUTOSIZE_USEHEADER);
+
+	//	CString default_str;
+	//	default_str.Format ("%d",default_value);
+
+	//  //add default value
+	//	for(int row = 0; row < m_NumOfRows; row++)
+	//	{
+
+	//			m_ListCtrl.SetItemText(row,m_NumOfCols,default_str);
+
+	//	}
+	//
+	//m_NumOfCols++;
+
+	//names.push_back (name);
+}
+
+void CCorridorDataDlg::OnBnClickedButtonCombineSegmentRight()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CCorridorDataDlg::OnBnClickedButtonSplitSegments()
 {
 	// TODO: Add your control notification handler code here
 }

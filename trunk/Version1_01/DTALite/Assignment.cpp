@@ -68,6 +68,12 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
 
+	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+
+	if(number_of_threads > max_number_of_threads)
+		number_of_threads = max_number_of_threads ;
+
+
 	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
 	{ 
 		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
@@ -90,9 +96,9 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
-		cout << "------- Allocating memory for networks " << endl;
+		cout << "------- Allocating memory for networks... " << endl;
 
-	for(int ProcessID=0;  ProcessID < _MAX_NUMBER_OF_PROCESSORS; ProcessID++)
+	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
 		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	}

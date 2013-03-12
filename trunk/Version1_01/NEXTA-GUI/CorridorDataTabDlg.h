@@ -13,6 +13,8 @@ class CCorridorDataTabDlg : public CDialog
 
 public:
 
+	int m_nSelectedColumn;
+
 	CTLiteDoc* m_pDoc;
 	CCorridorDataTabDlg(CWnd* pParent = NULL);   // standard constructor
 	CCorridorDataTabDlg(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values);

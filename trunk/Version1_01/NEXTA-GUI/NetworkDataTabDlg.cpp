@@ -203,14 +203,36 @@ BOOL CNetworkDataTabDlg::AddRowForLink(int from_node_name,int to_node_name)
 			CString str;
 			str.Format ("%d", to_node_name);
 			m_ListCtrl.SetItemText(Index,i,str);
-		} else if (strcmp(names[i].c_str (),"sensor_id")==0)
+		} else if (strcmp(names[i].c_str (),"sensor_id")==0 )
 		{
-		  // empty
+			if(m_NumOfRows ==0)
+			{
+				m_ListCtrl.SetItemText(Index,i,"1");
+			}else
+			{
+			   CString sensor_id;
+			   sensor_id.Format ("%d", m_NumOfRows+1);
+			   m_ListCtrl.SetItemText(Index,i,sensor_id);
+
+			}
 		
-		} else if (strcmp(names[i].c_str (),"link_count")==0)
+		} else if (strcmp(names[i].c_str (),"count")==0 && m_NumOfRows ==0)
 		{
-		   // empty
+			m_ListCtrl.SetItemText(Index,i,"1000");
+
 		
+		}else if (strcmp(names[i].c_str (),"sensor_type")==0 && m_NumOfRows ==0)
+		{
+			m_ListCtrl.SetItemText(Index,i,"link_count");
+	
+		}else if (strcmp(names[i].c_str (),"start_time_in_min")==0 && m_NumOfRows ==0)
+		{
+			m_ListCtrl.SetItemText(Index,i,"0");
+	
+		}else if (strcmp(names[i].c_str (),"end_time_in_min")==0 && m_NumOfRows ==0)
+		{
+			m_ListCtrl.SetItemText(Index,i,"1440");
+	
 		}else
 		{
 			

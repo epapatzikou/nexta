@@ -321,6 +321,10 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 				}
 
 				error_count++;
+
+				if(error_count >=2)  // no more than two errors
+					break;
+
 				continue;
 				}
 			}

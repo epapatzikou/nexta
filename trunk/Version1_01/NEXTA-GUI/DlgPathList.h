@@ -8,6 +8,19 @@
 
 // CDlgPathList dialog
 enum ePathSelectionMode {ePathSelection_AllPaths,ePathSelection_FreewayOnly,ePathSelection_RampOnly,ePathSelection_ArterialOnly,ePathSelection_NoConnectors};
+enum eChangeLinkAttributeMode {
+eChangeLinkAttribute_lane_capacity=0,
+eChangeLinkAttribute_number_of_lanes,
+eChangeLinkAttribute_link_type,
+eChangeLinkAttribute_speed_limit_mph,
+eChangeLinkAttribute_speed_limit_kmph,
+eChangeLinkAttribute_jam_density_vhcpm,
+eChangeLinkAttribute_jam_density_vhcpkm,
+eChangeLinkAttribute_backwardwave_speed_mph,
+eChangeLinkAttribute_backwardwave_speed_kmph,
+eChangeLinkAttribute_saturation_flow_rate,
+eChangeLinkAttribute_effective_green_time,
+};
 
 class CDlgPathList : public CBaseDialog
 {
@@ -15,6 +28,10 @@ class CDlgPathList : public CBaseDialog
 	CTLiteDoc* m_pDoc;
 public:
 
+	void ChangeLinkAttributeDialog();
+	void ChangeLinkAttributeAlongPath(float value);
+
+	eChangeLinkAttributeMode m_ChangeLinkAttributeMode;
 	int m_MOEAggregationIntervalInMin;
 	void CalculateTimeDependentTravelTime();
 	ePathSelectionMode m_PathSelectionMode;
@@ -76,4 +93,14 @@ public:
 	afx_msg void OnBnClickedAnalysis2();
 	afx_msg void OnBnClickedFreevalAnalysisGenerateData();
 	afx_msg void OnBnClickedFreevalAnalysisGenerateFile();
+	afx_msg void OnChangeattributesforlinksalongpathChangelanecapacity();
+	afx_msg void OnChangeattributesforlinksalongpathChange();
+	afx_msg void OnChangeattributesforlinksalongpathChangelinktype();
+	afx_msg void OnChangeattributesforlinksalongpathChangespeedlimit();
+	afx_msg void OnChangeattributesforlinksalongpathChangespeedlimitKmph();
+	afx_msg void OnChangeattributesforlinksalongpathChangejamdensity();
+	afx_msg void OnChangeattributesforlinksalongpathChangebackwavespeed();
+	afx_msg void OnChangeattributesforlinksalongpathChangesaturationflowrate();
+	afx_msg void OnChangeattributesforlinksalongpathChangejamdensity33625();
+	afx_msg void OnChangeattributesforlinksalongpathEffectivegreentime();
 };
