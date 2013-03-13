@@ -4103,6 +4103,10 @@ void  CTLiteDoc::CopyDefaultFiles()
 	//	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_sensor.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand.csv");
 
+
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_base_cycle_fraction_of_OpMode.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_base_cycle_fraction_of_OpMode.csv");
+	
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_vehtypes.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_linktypes.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_signal.csv");

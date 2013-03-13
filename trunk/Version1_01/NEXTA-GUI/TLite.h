@@ -26,6 +26,8 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
+#define _LANGUAGE_CN_
+
 #ifndef __AFXWIN_H__
 	#error "include 'stdafx.h' before including this file for PCH"
 #endif
@@ -33,6 +35,14 @@
 #include "resource.h"       // main symbols
 #include "resource.h"       // main symbols
 #include <list>
+
+enum eLanguageSupport
+{
+     LANG_EN_EN=0,
+     LANG_CN_SIMPLIFIED
+} ;
+
+
 struct s_link_selection
 {
 public:
@@ -56,6 +66,7 @@ enum _cursor_type {_cursor_standard_arrow=0,_cursor_movement_network,_cursor_cre
 
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };
 
+
 extern double g_GetPrivateProfileDouble( LPCTSTR section, LPCTSTR key, double def_value, LPCTSTR filename) ;
 extern int g_GetProfileString( LPCTSTR section, LPCTSTR key, LPCTSTR lpdefault, LPTSTR lpReturnedString, DWORD nSize, LPCTSTR filename);
 extern HINSTANCE g_OpenDocument(LPCTSTR url, int showcmd);
@@ -68,6 +79,7 @@ class CTLiteApp : public CWinApp
 public:
 
 	eVisulizationTemplate m_VisulizationTemplate;
+	eLanguageSupport m_LanguageSupport;
 
 	CTLiteApp();
 

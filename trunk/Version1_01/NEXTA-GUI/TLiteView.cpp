@@ -277,17 +277,17 @@ CBrush g_BrushSensor(RGB(0,255,0));
 CPen g_PenNotMatchedSensorColor(PS_SOLID,1,RGB(255,255,255));
 
 CPen g_PenSelectColor0(PS_SOLID,1,RGB(255,0,0));  // red
-CPen g_PenSelectColor1(PS_SOLID,1,RGB(0,255,0));  // green
+CPen g_PenSelectColor1(PS_SOLID,1,RGB(0,0,255));  // blue
 CPen g_PenSelectColor2(PS_SOLID,1,RGB(255,0,255)); //magenta
 CPen g_PenSelectColor3(PS_SOLID,1,RGB(0,255,255));   // cyan
-CPen g_PenSelectColor4(PS_SOLID,1,RGB(0,0,255));  // blue
+CPen g_PenSelectColor4(PS_SOLID,1,RGB(0,255,0));  // green
 CPen g_PenSelectColor5(PS_SOLID,1,RGB(255,255,0)); // yellow
 
-CPen g_Pen2SelectColor0(PS_DOT ,2,RGB(0,255,0));  // green
-CPen g_Pen2SelectColor1(PS_DOT ,2,RGB(255,0,0));  // red
+CPen g_Pen2SelectColor0(PS_DOT ,2,RGB(255,0,0));  // red
+CPen g_Pen2SelectColor1(PS_DOT ,2,RGB(0,0,255));  // blue
 CPen g_Pen2SelectColor2(PS_DOT ,2,RGB(255,0,255)); //magenta
 CPen g_Pen2SelectColor3(PS_DOT ,2,RGB(0,255,255));   // cyan
-CPen g_Pen2SelectColor4(PS_DOT ,2,RGB(0,0,255));  // blue
+CPen g_Pen2SelectColor4(PS_DOT ,2,RGB(0,255,255));  // green
 CPen g_Pen2SelectColor5(PS_DOT ,2,RGB(255,255,0)); // yellow
 
 //observation
@@ -300,10 +300,10 @@ CPen g_PenSelectColor4_obs(PS_SOLID,4,RGB(0,0,255));  // blue
 CPen g_PenSelectColor5_obs(PS_SOLID,4,RGB(255,255,0)); // yellow
 
 CBrush  g_BrushColor0(HS_BDIAGONAL, RGB(255,0,0));  // red
-CBrush  g_BrushColor1(HS_FDIAGONAL,RGB(0,255,0));  // green
+CBrush  g_BrushColor1(HS_FDIAGONAL,RGB(0,0,255));  // green
 CBrush  g_BrushColor2(HS_VERTICAL,RGB(255,0,255)); //magenta
 CBrush  g_BrushColor3(HS_HORIZONTAL,RGB(0,255,255));   // cyan
-CBrush  g_BrushColor4(HS_CROSS,RGB(0,0,255));  // blue
+CBrush  g_BrushColor4(HS_CROSS,RGB(0,255,0));  // green
 CBrush  g_BrushColor5(HS_DIAGCROSS,RGB(255,255,0)); // yellow
 
 CBrush  g_BrushLinkBand(RGB(125,125,0)); // 
@@ -313,17 +313,17 @@ CBrush  g_BrushLinkReference(HS_CROSS, RGB(255,0,255)); //magenta
 CPen    g_PenLinkReference(PS_SOLID,2,RGB(255,0,255));  //magenta
 
 CPen g_ThickPenSelectColor0(PS_SOLID,3,RGB(255,0,0));  // red
-CPen g_ThickPenSelectColor1(PS_SOLID,3,RGB(0,255,0));  // green
+CPen g_ThickPenSelectColor1(PS_SOLID,3,RGB(0,0,255));  // blue
 CPen g_ThickPenSelectColor2(PS_SOLID,3,RGB(255,0,255)); //magenta
 CPen g_ThickPenSelectColor3(PS_SOLID,3,RGB(0,255,255));   // cyan
-CPen g_ThickPenSelectColor4(PS_SOLID,3,RGB(0,0,255));  // blue
+CPen g_ThickPenSelectColor4(PS_SOLID,3,RGB(0,255,0));  // green
 CPen g_ThickPenSelectColor5(PS_SOLID,3,RGB(255,255,0)); // yellow
 
 CPen g_SuperThickPenSelectColor0(PS_SOLID,5,RGB(255,0,0));  // red
-CPen g_SuperThickPenSelectColor1(PS_SOLID,5,RGB(0,255,0));  // green
+CPen g_SuperThickPenSelectColor1(PS_SOLID,5,RGB(0,0,255));  // blue
 CPen g_SuperThickPenSelectColor2(PS_SOLID,5,RGB(255,0,255)); //magenta
 CPen g_SuperThickPenSelectColor3(PS_SOLID,5,RGB(0,255,255));   // cyan
-CPen g_SuperThickPenSelectColor4(PS_SOLID,5,RGB(0,0,255));  // blue
+CPen g_SuperThickPenSelectColor4(PS_SOLID,5,RGB(0,255,0));  // green
 CPen g_SuperThickPenSelectColor5(PS_SOLID,5,RGB(255,255,0)); // yellow
 
 
@@ -484,7 +484,7 @@ CTLiteView::CTLiteView()
 
 	//	RGB(102,204,204);
 
-	m_ToolMode = move_tool;
+	m_ToolMode = select_feature_tool;
 	m_bMoveDisplay = false;
 	m_bMoveImage = false;
 	m_bMoveNetwork = false;
@@ -3202,7 +3202,14 @@ void CTLiteView::OnContextMenu(CWnd* pWnd, CPoint point)
 	//}else
 	{
 		CMenu cm;
+	if(theApp.m_LanguageSupport  ==LANG_CN_SIMPLIFIED)
+	{
+		cm.LoadMenu(IDR_MENU5);
+	}
+	else
+	{
 		cm.LoadMenu(IDR_MENU1);
+	}
 
 		int layer_no = (int)(pMainFrame-> m_iSelectedLayer);
 		cm.GetSubMenu(layer_no)->TrackPopupMenu(
