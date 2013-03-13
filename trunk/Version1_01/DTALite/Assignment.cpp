@@ -49,7 +49,7 @@ std::map<CString, int> g_path_index_map;
 
 void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
-void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput);
+void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput* SimuOutput);
 void g_OutputSimulationStatistics(int Iteration);
 
 #define _MAX_NUMBER_OF_PROCESSORS  8
@@ -178,7 +178,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		NetworkLoadingOutput SimuOutput;
 		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
-		g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,SimuOutput);
+		g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,&SimuOutput);
 
 	}  // for each assignment iteration
 
@@ -245,6 +245,12 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		{
 			switching_rate =  1.0f/(iteration+1) + 0.05; //additonal switch
 
+		}
+
+
+		if(pVeh->m_OriginZoneID == pVeh->m_DestinationZoneID)
+		{  // do not simulate intra zone traffic
+		continue; 
 		}
 
 
@@ -1457,35 +1463,35 @@ void g_AgentBasedAccessibilityMatrixGeneration()
 }
 
 
-void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput SimuOutput)
+void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput* p_SimuOutput)
 {
 	if(g_AssignmentMOEVector.size()==0)  // no assignment being involved
 		return;
 
-	TotalNumOfVehiclesGenerated = SimuOutput.NumberofVehiclesGenerated; // need this to compute avg gap
+	TotalNumOfVehiclesGenerated = p_SimuOutput->NumberofVehiclesGenerated; // need this to compute avg gap
 
-	g_AssignmentMOEVector[iteration]  = SimuOutput;
+	g_AssignmentMOEVector[iteration]  = (*p_SimuOutput);
 
 	if(iteration >= 1) // Note: we output the gap for the last iteration, so "iteration-1"
 	{
 			//agent based, we record gaps only for vehicles switched (after they find the paths)
-			SimuOutput.AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
-			SimuOutput.AvgRelativeUEGap  = g_CurrentRelativeGapValue *100 / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
-			g_PrevRelativeGapValue = SimuOutput.AvgRelativeUEGap;
+			p_SimuOutput->AvgUEGap = g_CurrentGapValue / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
+			p_SimuOutput->AvgRelativeUEGap  = g_CurrentRelativeGapValue *100 / max(1, g_CurrentNumOfVehiclesForUEGapCalculation);
+			g_PrevRelativeGapValue = p_SimuOutput->AvgRelativeUEGap;
 
 	}
 
 	float PercentageComplete = 0;
 
-	if(SimuOutput.NumberofVehiclesGenerated>0)
-		PercentageComplete =  SimuOutput.NumberofVehiclesCompleteTrips*100.0f/SimuOutput.NumberofVehiclesGenerated;
+	if(p_SimuOutput->NumberofVehiclesGenerated>=1)
+		PercentageComplete =  p_SimuOutput->NumberofVehiclesCompleteTrips*100.0f/max(1,p_SimuOutput->NumberofVehiclesGenerated);
 
-	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Trip Time: " << SimuOutput.AvgTravelTime << ", Travel Time Index: " << SimuOutput.AvgTTI  << ", Average Distance: " << SimuOutput.AvgDistance << ", Switch %:" << SimuOutput.SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
-	cout << g_GetAppRunningTime() << "Iter: " << iteration <<", Avg Trip Time: " << SimuOutput.AvgTripTime << ", Avg Trip Time Index: " << SimuOutput.AvgTTI    << ", Avg Dist: " << SimuOutput.AvgDistance<< ", Switch %:" << SimuOutput.SwitchPercentage << ", # of veh Complete Trips: " <<  SimuOutput.NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
+	g_LogFile << g_GetAppRunningTime() << "Iteration: " << iteration << ", Average Trip Time: " << p_SimuOutput->AvgTravelTime << ", Travel Time Index: " << p_SimuOutput->AvgTTI  << ", Average Distance: " << p_SimuOutput->AvgDistance << ", Switch %:" << p_SimuOutput->SwitchPercentage << ", Number of Vehicles Complete Their Trips: " <<  p_SimuOutput->NumberofVehiclesCompleteTrips<< ", " << PercentageComplete << "%"<<endl;
+	cout << g_GetAppRunningTime() << "Iter: " << iteration <<", Avg Trip Time: " << p_SimuOutput->AvgTripTime << ", Avg Trip Time Index: " << p_SimuOutput->AvgTTI    << ", Avg Dist: " << p_SimuOutput->AvgDistance<< ", Switch %:" << p_SimuOutput->SwitchPercentage << ", # of veh Complete Trips: " <<  p_SimuOutput->NumberofVehiclesCompleteTrips << ", " << PercentageComplete << "%"<<endl;
 
-	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << SimuOutput.AvgTravelTime << "," << SimuOutput.AvgTTI  << "," << SimuOutput.AvgDistance  << "," << SimuOutput.SwitchPercentage <<"," <<  SimuOutput.NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
+	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << p_SimuOutput->AvgTravelTime << "," << p_SimuOutput->AvgTTI  << "," << p_SimuOutput->AvgDistance  << "," << p_SimuOutput->SwitchPercentage <<"," <<  p_SimuOutput->NumberofVehiclesCompleteTrips<< "," << PercentageComplete << "%," ;
 
-	g_AssignmentLogFile << SimuOutput.AvgUEGap   << ","	<< SimuOutput.TotalDemandDeviation << "," << SimuOutput.LinkVolumeAvgAbsError << "," << SimuOutput.LinkVolumeRootMeanSquaredError << ","<< SimuOutput.LinkVolumeAvgAbsPercentageError;
+	g_AssignmentLogFile << p_SimuOutput->AvgUEGap   << ","	<< p_SimuOutput->TotalDemandDeviation << "," << p_SimuOutput->LinkVolumeAvgAbsError << "," << p_SimuOutput->LinkVolumeRootMeanSquaredError << ","<< p_SimuOutput->LinkVolumeAvgAbsPercentageError;
 
 	g_AssignmentLogFile << endl;
 
@@ -1499,7 +1505,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("Avg Waiting Time at Origin (min)");
 		g_SummaryStatFile.SetFieldName ("Avg Trip Time Index=(Mean TT/Free-flow TT)");
 		g_SummaryStatFile.SetFieldName ("Avg Speed (mph)");
-		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
+		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",p_SimuOutput->AvgDistance);
 		g_SummaryStatFile.SetFieldName ("% considering to switch");
 		g_SummaryStatFile.SetFieldName ("% switched");
 		g_SummaryStatFile.SetFieldName ("% completing trips");
@@ -1517,7 +1523,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("ODME: r_squared");
 		g_SummaryStatFile.SetFieldName ("ODME: avg_simulated_to_avg_obs");
 //		}
-		cout << "Avg Gap: " << SimuOutput.AvgUEGap ;
+		cout << "Avg Gap: " << p_SimuOutput->AvgUEGap ;
 	
 
 		cout << endl;
@@ -1528,22 +1534,22 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_SummaryStatFile.SetValueByFieldName ("Iteration #",iteration);
 	g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
-	g_SummaryStatFile.SetValueByFieldName ("# of agents",SimuOutput.NumberofVehiclesGenerated);
-	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",SimuOutput.AvgTravelTime);
-	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time (min)",SimuOutput.AvgTripTime);
+	g_SummaryStatFile.SetValueByFieldName ("# of agents",p_SimuOutput->NumberofVehiclesGenerated);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",p_SimuOutput->AvgTravelTime);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time (min)",p_SimuOutput->AvgTripTime);
 
-	float buffer_waiting_time  = SimuOutput.AvgTripTime - SimuOutput.AvgTravelTime;
+	float buffer_waiting_time  = p_SimuOutput->AvgTripTime - p_SimuOutput->AvgTravelTime;
 	g_SummaryStatFile.SetValueByFieldName ("Avg Waiting Time at Origin (min)",buffer_waiting_time);
-	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time Index=(Mean TT/Free-flow TT)",SimuOutput.AvgTTI );
-	g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",SimuOutput.AvgDistance);
+	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time Index=(Mean TT/Free-flow TT)",p_SimuOutput->AvgTTI );
+	g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",p_SimuOutput->AvgDistance);
 
-	float avg_speed = SimuOutput.AvgDistance/max(0.1,SimuOutput.AvgTravelTime)*60;
+	float avg_speed = p_SimuOutput->AvgDistance/max(0.1,p_SimuOutput->AvgTravelTime)*60;
 
 	g_SummaryStatFile.SetValueByFieldName ("Avg Speed (mph)",avg_speed);
-	g_SummaryStatFile.SetValueByFieldName ("% switched",SimuOutput.SwitchPercentage);
-	g_SummaryStatFile.SetValueByFieldName ("% considering to switch",SimuOutput.ConsideringSwitchPercentage);
+	g_SummaryStatFile.SetValueByFieldName ("% switched",p_SimuOutput->SwitchPercentage);
+	g_SummaryStatFile.SetValueByFieldName ("% considering to switch",p_SimuOutput->ConsideringSwitchPercentage);
 
-	g_SummaryStatFile.SetValueByFieldName ("network clearance time (in min)",SimuOutput.NetworkClearanceTimeStamp_in_Min);
+	g_SummaryStatFile.SetValueByFieldName ("network clearance time (in min)",p_SimuOutput->NetworkClearanceTimeStamp_in_Min);
 
 	g_SummaryStatFile.SetValueByFieldName ("% completing trips",PercentageComplete);
 
@@ -1551,37 +1557,39 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 		if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
 		{
-		SimuOutput.AvgUEGap = 0;
-		SimuOutput.AvgRelativeUEGap = 0;
+		p_SimuOutput->AvgUEGap = 0;
+		p_SimuOutput->AvgRelativeUEGap = 0;
 		
-		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",SimuOutput.ODME_result .data_size );
-		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",SimuOutput.LinkVolumeAvgAbsError);
-		g_SummaryStatFile.SetValueByFieldName ("ODME: % link count error",SimuOutput.LinkVolumeAvgAbsPercentageError );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",p_SimuOutput->ODME_result .data_size );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",p_SimuOutput->LinkVolumeAvgAbsError);
+		g_SummaryStatFile.SetValueByFieldName ("ODME: % link count error",p_SimuOutput->LinkVolumeAvgAbsPercentageError );
 		
-		g_SummaryStatFile.SetValueByFieldName ("ODME: slope",SimuOutput.ODME_result .slope );
-		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared",SimuOutput.ODME_result .rsqr );
-		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",SimuOutput.ODME_result.avg_y_to_x_ratio  );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: slope",p_SimuOutput->ODME_result .slope );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared",p_SimuOutput->ODME_result .rsqr );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",p_SimuOutput->ODME_result.avg_y_to_x_ratio  );
 		}
 
 	if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)
 	{
 		//ODME gap results
-		float AvgUEGap = g_CurrentGapValue / max(1, SimuOutput.NumberofVehiclesGenerated);
-		float AvgRelativeUEGap = g_CurrentRelativeGapValue / max(1, SimuOutput.NumberofVehiclesGenerated);
+		float AvgUEGap = g_CurrentGapValue / max(1, p_SimuOutput->NumberofVehiclesGenerated);
+		float AvgRelativeUEGap = g_CurrentRelativeGapValue / max(1, p_SimuOutput->NumberofVehiclesGenerated);
 		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",AvgUEGap);
 		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",AvgRelativeUEGap);
 
 
 	}else  // simulation gap
 	{
-		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",SimuOutput.AvgUEGap);
-		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",SimuOutput.AvgRelativeUEGap);
+		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",p_SimuOutput->AvgUEGap);
+		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",p_SimuOutput->AvgRelativeUEGap);
 	
 	}
 	
 
 	g_SummaryStatFile.WriteRecord ();
 
+	if(0) //comment out day to day code
+	{
 
 	unsigned li;
 	for(li = 0; li< g_LinkVector.size(); li++)
@@ -1605,13 +1613,13 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		pLink->m_Day2DayLinkMOEVector .push_back (element);
 	}
 
-
+	}
 	if(g_ODEstimationFlag == 1)
-		cout << "Avg Gap: " << SimuOutput.AvgUEGap   << ", Demand Dev:"	<< SimuOutput.TotalDemandDeviation << ", Avg volume error: " << SimuOutput.LinkVolumeAvgAbsError << ", Avg % error: " << SimuOutput.LinkVolumeAvgAbsPercentageError << endl;
+		cout << "Avg Gap: " << p_SimuOutput->AvgUEGap   << ", Demand Dev:"	<< p_SimuOutput->TotalDemandDeviation << ", Avg volume error: " << p_SimuOutput->LinkVolumeAvgAbsError << ", Avg % error: " << p_SimuOutput->LinkVolumeAvgAbsPercentageError << endl;
 
 
 
-	SimuOutput.ResetStatistics ();   
+	p_SimuOutput->ResetStatistics ();   
 
 	// with or without inner loop 
 	if(g_NumberOfInnerIterations == 0) // without inner loop

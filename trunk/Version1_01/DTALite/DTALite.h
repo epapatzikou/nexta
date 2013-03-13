@@ -130,14 +130,26 @@ struct SensorDataPoint
 	double y;
 };
 
-struct struc_LinearRegressionResult
+class struc_LinearRegressionResult
 {
+public: 
 	double avg_y_to_x_ratio;
 	double slope;
 	double y_intercept;
 	double rsqr;
 	double average_residue;
 	int data_size;
+
+	struc_LinearRegressionResult()
+	{
+	avg_y_to_x_ratio = 0;
+	slope = 0;
+	y_intercept = 0;
+	rsqr = 0;
+	average_residue = 0;
+	data_size = 0;
+	
+	}
 
 };
 
@@ -2944,6 +2956,7 @@ void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
+bool g_ReadAgentBinFileVersion1(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
@@ -3000,6 +3013,7 @@ extern float    g_ODEstimation_WeightOnUEGap;
 extern float    g_ODEstimation_StepSize;
 
 extern int g_ODEstimationFlag;
+extern int g_SensorDataCount;
 extern int g_ODEstimationMeasurementType;
 extern int g_ODEstimation_StartingIteration;
 extern float g_ODEstimation_max_percentage_deviation_wrt_hist_demand;

@@ -37,7 +37,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.1.1",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software under GNU Lisence\nRelease Date: 02/07/2013",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
+    LTEXT           "Open-Source Software under GNU Lisence\nRelease Date: 03/16/2013",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,89,189,50,14,WS_GROUP
     LTEXT           "Contact:\nXuesong Zhou, zhou@eng.utah.edu\nJeffrey Taylor, jeff.d.taylor@utah.edu",IDC_STATIC,41,54,171,31,0,WS_EX_STATICEDGE
     LTEXT           "Contributing Members:\nMilan Zlatkovic: Quick Estimation Method\nTao Xing: Synchro Exporting\nHao Lei: Senario Data Editing\nPeng Du: Vissim Data Exporting\nAnxi Jia: Software Testing\nJinjin Tang: Draftting Learning Documents",IDC_STATIC,40,92,171,88,0,WS_EX_STATICEDGE
