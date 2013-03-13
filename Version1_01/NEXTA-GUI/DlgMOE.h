@@ -153,7 +153,7 @@ public:
 	void DrawVehicleTrajectory(eLinkMOEMode MOEType , CPaintDC* pDC, CRect PlotRect, bool LinkTextFlag);
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);
-	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
+	bool ExportDataToCSVFile(CString csv_file);
     int GetMaxYValue(eLinkMOEMode MOEType);
 
 	bool m_bFixYRange;

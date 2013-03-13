@@ -16,12 +16,12 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// Chinese (P.R.C.) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 #ifdef _WIN32
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
-#pragma code_page(1252)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
 #endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1831,7 +1831,6 @@ IDR_VIEW_TOOLBAR_NU     BITMAP                  "res\\view_too.bmp"
 IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 IDR_MAINFRAME4          BITMAP                  "res\\bmp00006.bmp"
 
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // Toolbar
@@ -3313,6 +3312,422 @@ BEGIN
     END
 END
 
+IDR_MENU5 MENU 
+BEGIN
+    POPUP "节点"
+    BEGIN
+        MENUITEM "查询选中节点属性",                    ID_NODE_NODEPROPERTIES
+        MENUITEM SEPARATOR
+        MENUITEM "查看节点数据表",                     ID_NODE_VIEWNODEDATA
+        MENUITEM SEPARATOR
+        POPUP "设置节点模式"
+        BEGIN
+            MENUITEM "No Land Use Activity",        ID_ACTIVITYLOCATIONMODE_NOLANDUSEACTIVITY
+            MENUITEM "Land Use Activity",           ID_ACTIVITYLOCATIONMODE_LANDUSEACTIVITY
+            MENUITEM "外部起始点",                       ID_ACTIVITYLOCATIONMODE_EXTERNALORIGIN
+            MENUITEM "外部目的点",                       ID_ACTIVITYLOCATIONMODE_EXTERNALDESTINATION
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "检测节点关联性",                     ID_NODE_CHECKCONNECTIVITYFROMHERE
+        MENUITEM "可靠性分析",                       ID_NODE_DIRECTIONTOHEREANDRELIABILITYANALYSIS
+        MENUITEM SEPARATOR
+        MENUITEM "更新路段有效绿灯时间",                  ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "通过GIS Shape 文件导入节点图层",        ID_NODE_EXPORTNODELAYERTOGISSHAPEFILE, INACTIVE
+        MENUITEM SEPARATOR
+        MENUITEM "删除节点",                        ID_EDIT_DELETESELECTEDNODE
+    END
+    POPUP "路段"
+    BEGIN
+        MENUITEM "View Link Properties for Selected Link察看选定路段属性", ID_LINK_EDITLINK
+        MENUITEM "Perform Vehicle Statistics Analaysis on Selected Link执行选定路段统计分析", ID_LINK_VEHICLESTATISTICSANALAYSIS
+        MENUITEM SEPARATOR
+        MENUITEM "View Link Data Table查看路段数据表", ID_LINK_VIEWLINKDATA
+        MENUITEM "View Link-based Scenario Data查看基于路段的场景数据", ID_LINK_VIEWLINK
+        MENUITEM SEPARATOR
+        MENUITEM "Export to Link Layer to KML and Shape Files导出路段属性数据到KML和Shape文件中", ID_EXPORT_GENERATESHAPEFILES
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Link删除选定路段",           ID_DELETE_SELECTED_LINK
+    END
+    POPUP "信号控制"
+    BEGIN
+        MENUITEM "View Movement Properties for Selected Node查看选择节点的信号灯属性", ID_NODE_MOVEMENTPROPERTIES
+        MENUITEM "View Movement Data Table查看信号数据表", ID_MOVEMENT_VIEWMOVEMENTDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Signal Control Locations生成信号控制位置", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
+        MENUITEM "Update Link Effective Green Time  Based on Cycle Length基于固定循环时间长度更新有效绿灯时间", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+    END
+    POPUP "交通小区"
+    BEGIN
+        MENUITEM "Highlight/Hide Associated Acitity Locations of Selected Zone显示或隐藏选定的交通小区关联活动节点", ID_ZONE_HIGHLIGHTASSOCIATEDACITITYLOCATIONS
+        MENUITEM "Highlight Activity Locations and Show Zone ID for All Zones高亮显示活动节点以及显示所有交通小区ID号", ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS
+        MENUITEM SEPARATOR
+        MENUITEM "Remove Activity Locations of Selected Zone移动选定交通小区的所有节点", ID_ZONE_REMOVEACTIVITYLOCATIONSOFSELECTEDZONE
+        MENUITEM "Regenerate Activity Locations for Selected Zone重新生成选中交通小区中的节点", ID_ZONE_REGENERATEACTIVITYLOCATIONSFORSELECTEDZONE
+        MENUITEM SEPARATOR
+        MENUITEM "View Zone Data Table查看交通小区数据表", ID_ZONE_VIEWZONEDATA
+        MENUITEM SEPARATOR
+        MENUITEM "Export Zone Layer to GIS Shape File导出交通小区属性到GIS的Shape文件", ID_ZONE_EXPORTZONELAYERTOGISSHAPEFILE
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Zone删除小区",             ID_ZONE_DELETEZONE
+    END
+    POPUP "交通发生点"
+    BEGIN
+        MENUITEM "View Activity Location Data Table查看活动节点数据表", ID_CONNECTOR_VIEWACTIVITYLOCATIONDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Physical Zone Centroids on Road Network生成交通网路中交通小区的重心", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
+        MENUITEM "Regenerate Activity Locations for All Zones重新生成所有交通小区的活动节点", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
+    END
+    POPUP "OD MatrixOD矩阵"
+    BEGIN
+        MENUITEM "View OD Demand Meta Database查看OD需求矩阵数据表", ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Generate Zone-to-Zone Travel Time Matrix for Opened Projects为当前项目生成小区到小区的旅行时间矩阵", ID_EXPORT_GENERATEZONE
+        MENUITEM "Generate OD Matrix from Gravity Model依据重力模型哦那个生成OD矩阵", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+    END
+    POPUP "Link MOE路段统计指标"
+    BEGIN
+        MENUITEM "View Link MOE Summary List 查看路段指标统计数据", ID_SEARCH_LINKLIST
+        MENUITEM "Left Click to View Link MOE Plot for Selected Link 动态指标图", ID_LINKMOE_LEFTCLICKTOVIEWLINKMOEPLOTFORSELECTEDLINK33627
+        MENUITEM SEPARATOR
+        MENUITEM "View Link MOE File in Excel在Excel中查看路段指标文件", ID_MOE_VIEWLINKMOESUMMARYFILE
+        MENUITEM "View Time-dependent Link MOE File in在 Excel查看时间依赖的路段指标文件", ID_PROJECT_TIME_DEPENDENT_LINK_MOE
+        MENUITEM SEPARATOR
+        MENUITEM "Export Link MOE Data to GIS Shape File 导出路段指标 GIS Shape 文件中", ID_LINKMOE_EXPORTLINKMOEDATATOSHAPEFILE
+    END
+    POPUP "Path径路"
+    BEGIN
+        MENUITEM "Direction from here从此点出发",    ID_NODE_ORIGIN
+        MENUITEM "Direction to here 到达此点",      ID_NODE_DESTINATION
+        MENUITEM SEPARATOR
+        MENUITEM "Add Intermediate Destination here添加中间目的节点", ID_NODE_ADDINTERMEDIATEDESTINATIONHERE
+        MENUITEM "Avoid Using This Link禁用此路段 ", ID_LINK_AVOIDUSINGTHISLINKINROUTING
+        MENUITEM "Avoid this Node禁用此节点",        ID_NODE_AVOIDTHISNODE
+        MENUITEM "Remove All Intermediate Destination(s)移除所有中间目的节点", ID_NODE_REMOVEALLINTERMEDIATEDESTINATION
+        MENUITEM "Remove Node Avoidance Constraint(s)移除节点禁用", ID_NODE_REMOVENODEAVOIDANCECONSTRAINT
+        MENUITEM SEPARATOR
+        MENUITEM "View Path Data Table and Plot 查看径路数据", ID_SHOW_MOE_PATHLIST
+    END
+    POPUP "Subarea子区"
+    BEGIN
+        MENUITEM "Delete Subarea 删除子区",         ID_SUBAREA_DELETESUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "Perform Subarea Cut 子区划分",    ID_EDIT_DELETELINKSOUTSIDESUBAREA
+        MENUITEM "Delete Links inside Subarea (TBD)删除子区内部路段", ID_SUBAREA_DELETELINKSINSIDESUBAREA
+    END
+    POPUP "Detector探测器"
+    BEGIN
+        MENUITEM "View Sensor Data Table查看探测器数据表", ID_DETECTOR_VIEWSENSORDATATABLE
+        MENUITEM "View Calibration Data Table查看校验结果数据表", ID_DETECTOR_VIEWCALIBRATION
+        MENUITEM "View Validation Summary Plot 查看动态指标统计", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+        MENUITEM SEPARATOR
+        MENUITEM "Add Sensor on Selected Link 在选中路段中添加探测器", ID_LINK_ADDSENSOR
+        MENUITEM "Generate Aggregated Data and View Validation Results in Excel 在Excel中生成汇总数据以及查看验证结果", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+        MENUITEM SEPARATOR
+        MENUITEM "Export Link Flow Proportion Matrix to CSV File 导出路段流量比例矩阵到CSV文件", ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE
+        MENUITEM "Use OD Estimation Optimization Excel Program  利用 OD预测值优化Excel项目", ID_DETECTOR_USEODESTIMATIONOPTIMIZATIONEXCELPROGRAM
+    END
+    POPUP "WorkZone施工区"
+    BEGIN
+        MENUITEM "View Work Zone Data Table查看施工区数据表", ID_WORKZONE_VIEWWORKZONEDATA
+        MENUITEM SEPARATOR
+        MENUITEM "Add Work Zone on Selected Link在选定路段添加施工区", ID_LINK_ADD_WORKZONE
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Work Zone on Selected Link在选定路段上添加施工区", ID_DELETE_WORKZONE
+    END
+    POPUP "Crash事故"
+    BEGIN
+        MENUITEM "View Incident Data Table 查看事故数据表", ID_CRASH_VIEWINCIDENTDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Run Crash Prediction Models运行事故预测模型", ID_SAFETYPLANNINGTOOLS_RUN
+        MENUITEM "Generate Crash Prediction Shape Files生成事故预测Shape文件", ID_SAFETYPLANNINGTOOLS_GENERATENODE
+    END
+    POPUP "VMS指示牌"
+    BEGIN
+        MENUITEM "View VMS Data Table查看信号牌数据表", ID_VMS_VIEWVMSDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Add VMS on Selected Link查看选定路段信号牌", ID_LINK_ADDVMS
+        MENUITEM SEPARATOR
+        MENUITEM "Delete VMS on Selected Link 删除选定路段信号牌", ID_DELETE_VMS
+    END
+    POPUP "Toll线路费用"
+    BEGIN
+        MENUITEM "View Toll Data Table 查看收费路段数据表", ID_TOLL_VIEWTOLLDATATABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Add Link-based Toll添加基于路段费用", ID_LINK_ADDLINK
+        MENUITEM "Add HOV Toll 添加HOV费用",        ID_LINK_ADDHOVTOLL
+        MENUITEM "Add HOT Toll添加HOT费用",         ID_LINK_ADDHOTTOLL
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Link-based Toll on Selected Link删除选定路段上费用", ID_DELETE_LINK
+    END
+    POPUP "Ramp匝道"
+    BEGIN
+        MENUITEM "View/Edit FREEVAL Data查看/编辑 FREEVAL 数据", ID_FREEWAYTOOLS_VIEW
+    END
+    POPUP "Vehicle Data车辆统计"
+    BEGIN
+        MENUITEM "View Vehicle-Path Dialog查看车辆径路对话框", ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "View Summary Chart 查看统计图表",   ID_TOOLS_VIEWSIMULATIONSUMMARY
+    END
+    POPUP "Transit公共jiaotong"
+    BEGIN
+        MENUITEM "No Related Function Available", ID_TRANSIT_NORELATEDFUNCTIONAVAILABLE
+    END
+    POPUP "Grid"
+    BEGIN
+        MENUITEM "Change to  Long/Lat Coordinate System更改经纬度坐标系统", ID_FILE_CHANGECOORDINATESTOLONG
+        MENUITEM "Reset Link Length Based Long/Lat Coordinate System重置路段长度依据经纬度坐标系统", ID_NETWORKTOOLS_RESETLINKLENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "Reverse Vertical Coordinate  翻转垂直坐标", ID_TOOLS_REVERSEVERTICALCOORDINATE
+        MENUITEM SEPARATOR
+        MENUITEM "Use Mile as Unit of Length  以Mile做长度单位", ID_GRID_USEMILEASUNITOFLENGTH
+        MENUITEM "Use Kilometer as Unit of Length 一千米做长度单位", ID_GRID_USEKMASUNITOFLENGTH
+        MENUITEM SEPARATOR
+        MENUITEM "Use Long/Lat Coordinate System 以经纬度做长度单位", ID_GRID_USELONG
+    END
+    POPUP "背景图"
+    BEGIN
+        MENUITEM "Mark Point A  标志坐标点A",        ID_BACKGROUNDIMAGE_MARKLONG_A
+        MENUITEM "Mark Point B 标志坐标点B",         ID_BACKGROUNDIMAGE_MARKLONG_B
+        MENUITEM "Add Lat/Long Coordinates and Reset Image Location添加经纬坐标并重置底图位置", ID_BACKGROUNDIMAGE_ADDLAT
+        MENUITEM SEPARATOR
+        MENUITEM "Unlock/Lock Position and Size of Background Image 锁定/放开背景图位置和大小", ID_VIEW_IMAGE
+        MENUITEM SEPARATOR
+        MENUITEM "Background Color 背景图颜色",      ID_VIEW_BACKGROUNDCOLOR
+    END
+END
+
+IDR_TLiteTYPE5 MENU 
+BEGIN
+    POPUP "&File文件"
+    BEGIN
+        MENUITEM "&Open Traffic Network Project...打开一个交通网络项目\tCtrl+O", ID_FILE_OPEN_NEW_DOC
+        MENUITEM "&Open Traffic Network Only...仅打开交通网络", ID_FILE_OPEN_NETWORK_ONLY
+        MENUITEM SEPARATOR
+        POPUP "Import导入"
+        BEGIN
+            MENUITEM "Single Excel File (*.xls)单个Excel文件", ID_IMPORT_SINGLEEXCELFILE
+            MENUITEM "GIS Network Data Set GIS网络数据集", ID_IMPORT_AMSDATASET
+            MENUITEM "Background Image (*.bmp)背景图片", ID_IMPORT_BACKGROUNDIMAGE
+            MENUITEM "Synchro UTDF CSV File ",      ID_IMPORT_SYNCHROUTDFCSVFILES
+            MENUITEM "Synchro Combined CSV File ",  ID_IMPORT_SYNCHROCOMBINEDCSVFILE
+        END
+        POPUP "Export导出"
+        BEGIN
+            MENUITEM "Microscopic Network and Traffic Control Data 微观网络和交通控制数据", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+            MENUITEM "Export Network as 3D KML and Shape Files    将网络作为3DKML和Shape文件导出", ID_EXPORT_GENERATESHAPEFILES
+            MENUITEM "Export Path Data as 3D KML and Shape Files将径路作为3DKML和Shape文件导出", ID_EXPORT_GENERATESHAPEFILES_PATH_DATA
+            MENUITEM "Export Aggregated Link MOE File  导出汇总的Link指标文件", ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Save Project存储项目",            ID_FILE_SAVE_PROJECT
+        MENUITEM "Save Project As 存储项目为",       ID_FILE_SAVE_PROJECT_AS
+        MENUITEM SEPARATOR
+        MENUITEM "Check Data Loading Status 检测数据导入状态", ID_FILE_DATALOADINGSTATUS
+        MENUITEM SEPARATOR
+        MENUITEM "Open Project Folder 打开工程文件夹", ID_TOOLS_PROJECTFOLDER
+        MENUITEM "Open NeXTA Program Folder 打开NeXTA程序文件夹", ID_TOOLS_OPENNEXTAPROGRAMFOLDER
+        MENUITEM "&Close  关闭当前工程",              ID_FILE_CLOSE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File 最近文件显示",          ID_FILE_MRU_FILE1
+        MENUITEM "E&xit  退出",                   ID_APP_EXIT
+    END
+    POPUP "View查看"
+    BEGIN
+        MENUITEM "&Toolbar 工具条",                ID_VIEW_TOOLBAR
+        MENUITEM "Simulation ToolBar仿真工具条",     ID_VIEW_SIMULATIONTOOLBAR
+        MENUITEM "MOE Toolbar   MOE工具条",        ID_VIEW_MOETOOLBAR
+        MENUITEM "&Status Bar  状态栏",            ID_VIEW_STATUS_BAR
+        MENUITEM "GIS Layer Panel GIS 图层面板",    ID_VIEW_GIS_Layer_Panel
+        MENUITEM SEPARATOR
+        POPUP "Node节点"
+        BEGIN
+            MENUITEM "Increase Node Size (Page Up Key)", ID_VIEW_INCREASENODESIZE
+            MENUITEM "Decrease Node Size (Page Down Key)", ID_VIEW_DECREATENODESIZE
+            MENUITEM "Increase Node Text Size",     ID_NODE_INCREASENODETEXTSIZE
+            MENUITEM "Decrease Node Text Size",     ID_NODE_DECREASENODETEXTSIZE
+        END
+        POPUP "Link 路段"
+        BEGIN
+            MENUITEM "Increase Bandwidth (Keyboard  Shortcut: Up Arrow)", ID_LINK_INCREASEBANDWIDTH
+            MENUITEM "Decrease Bandwidth  (Keyboard  Shortcut: Down Arrow)", ID_LINK_DECREASEBANDWIDTH
+            MENUITEM "Show/Hide Link Direction Arrow", ID_SHOW_LINKARROW
+        END
+        POPUP "Zone 交通小区"
+        BEGIN
+            MENUITEM "Highlight Activity Locations and Show Zone ID", ID_VIEW_HIGHLIGHTCENTROIDSANDACTIVITYLOCATIONS
+        END
+        POPUP "Path径路"
+        BEGIN
+            MENUITEM "Clear Path Display",          ID_SHOW_SHOWALLPATHS
+        END
+        POPUP "Vehicle车流"
+        BEGIN
+            MENUITEM "Show/Hide Vehicle Number",    ID_VEHICLE_VEHICLENUMBER
+            MENUITEM "Show Vehicles with Incomplete Trips Only", ID_VEHICLE_SHOWVEHICLESWITHINCOMPLETETRIPSONLY
+            MENUITEM "Show Selected Vehicle Only",  ID_VEHICLE_SHOWSELECTEDVEHICLEONLY
+        END
+        MENUITEM "Background Color 背景颜色",       ID_VIEW_BACKGROUNDCOLOR
+        POPUP "Background Image 背景图片"
+        BEGIN
+            MENUITEM "Background Image Configuration背景图片配置", ID_IMAGE_IMPORTBACKGROUNDIMAGE
+            MENUITEM "Unlock Background Image Position 解锁背景图片位置", ID_VIEW_IMAGE
+            MENUITEM "Lock Background Image Position锁定背景图片位置", ID_IMAGE_LOCKBACKGROUNDIMAGEPOSITION
+            MENUITEM "Shift + Mouse Wheel -> Change X Resolution Only  Shift键+鼠标滚轮->改变X大小", ID_IMAGE_SHIFT
+            MENUITEM "Control + Mouse Wheel -> Change Y Resolution Only  Control键+鼠标滚轮->改变Y大小", ID_IMAGE_SHIFT32834
+        END
+    END
+    POPUP "Edit编辑"
+    BEGIN
+        MENUITEM "Create Node 绘制节点",            ID_EDIT_CREATENODE
+        MENUITEM "Create One-Way Link绘制单向路段",   ID_Edit_Create1WayLink
+        MENUITEM "Create Two-Way Links 绘制双向路段", ID_Edit_Create2WayLinks
+        MENUITEM "Set Default Link Properties for New Links为新路段设置空白属性", ID_EDIT_SETDEFAULTLINKPROPERTIESFORNEWLINKS
+        MENUITEM "Create Subarea 创建子区",         ID_EDIT_CREATESUBAREA
+        MENUITEM "Create Traffic Analysis Zone 创建交通分析小区", ID_EDIT_CREATEZONE
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Selected Link删除选中路段",  ID_LINK_DELETE
+        MENUITEM "Delete Selected Node删除选中节点",  ID_EDIT_DELETESELECTEDNODE
+        MENUITEM "Delete Links outside Subarea 删除子区外所有路段", ID_EDIT_DELETELINKSOUTSIDESUBAREA
+        MENUITEM "Delete Subarea删除子区",          ID_SUBAREA_DELETESUBAREA
+        MENUITEM SEPARATOR
+        MENUITEM "Search Node/Link/Path/Vehicle (Ctrl+F)搜索节点/路段/径路/车辆（Ctrl+F）", ID_SEARCH_FINDLINK
+        MENUITEM SEPARATOR
+        POPUP "Network Mapping Mode  网络匹配模式"
+        BEGIN
+            MENUITEM "Enable Network Editing",      ID_NETWORKMAPPINGMODE_ENABLENETWORK
+            MENUITEM "Shift",                       ID_NETWORKMAPPINGMODE_SHIFT
+        END
+    END
+    POPUP "Project工程"
+    BEGIN
+        MENUITEM "1. Network Data 网络数据",        ID_PROJECT_1_NETWORK
+        MENUITEM "2. Demand Meta Database 需求目标数据", ID_TOOLS_EDITODDEMANDTABLE
+        MENUITEM "3. Assignment/Simulation Settings 分配/仿真设置", ID_AssigngmentSimulationSettings
+        MENUITEM "4. Traffic Managment / Road Pricing Scenario Data交通管理/路段价格场景数据", ID_SCENARIO_CONFIGURATION
+        MENUITEM SEPARATOR
+        MENUITEM "5. Perform Traffic Assignment 执行交通分配", ID_TOOLS_RUNTRAFFICASSIGNMENT
+        MENUITEM SEPARATOR
+        MENUITEM "6. Traffic Assignment Summary 交通分配统计", ID_TOOLS_VIEWASSIGNMENTSUMMARYLOG
+        MENUITEM "7. Multi-Scenario Result Comparison 多场景结果比较", ID_PROJECT_Multi_Scenario_Results
+    END
+    POPUP "MOE仿真结果统计"
+    BEGIN
+        MENUITEM "Link List Dialog   路段统计对话框 ", ID_SEARCH_LINKLIST
+        MENUITEM "Path List Dialog  径路统计对话框",   ID_MOE_PATHLIST
+        MENUITEM "Vehicle Path Dialog (Ctrl+P)  车流统计对话框", ID_MOE_VEHICLEPATHANALAYSIS
+        MENUITEM "Network Statistics Dialog  网络统计对话框", ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM SEPARATOR
+        MENUITEM "Network Time-Dependent MOE  网络动态指标统计", ID_2_VIEWNETWORKDATA
+        MENUITEM "Origin-Destination MOE OD 动态指标统计", ID_3_VIEWODDATAINEXCEL
+        POPUP "Link MOE 路段 动态指标统计"
+        BEGIN
+            MENUITEM "Static Link MOE",             ID_MOE_VIEWLINKMOESUMMARYFILE
+            MENUITEM "Time-dependent Link MOE",     ID_PROJECT_TIME_DEPENDENT_LINK_MOE
+        END
+    END
+    POPUP "Tools工具"
+    BEGIN
+        POPUP "GIS Tools  GIS 工具"
+        BEGIN
+            MENUITEM "Import/Export GIS Shape Files 导入导出 GIS Shape 文件", ID_IMPORT_ARCGISSHAPEFILE
+        END
+        POPUP "Network Tools  网络工具"
+        BEGIN
+            MENUITEM "Subarea Cut  子区划分",           ID_EDIT_DELETELINKSOUTSIDESUBAREA
+            MENUITEM "Generate Physical Zone Centroids on Road Network  生成道路网络的交通小区重心点", ID_TOOLS_GENERATEPHYSICALZONECENTROIDSONROADNETWORK
+            MENUITEM SEPARATOR
+            MENUITEM "Change to  Long/Lat Coordinate System  更改经纬度坐标系统", ID_FILE_CHANGECOORDINATESTOLONG
+            MENUITEM "Reset Link Length Based Long/Lat Coordinate System 重置经纬度坐标中的路段长度", ID_NETWORKTOOLS_RESETLINKLENGTH
+            MENUITEM SEPARATOR
+            MENUITEM "Reverse Vertical Coordinate  翻转垂直坐标系", ID_TOOLS_REVERSEVERTICALCOORDINATE
+        END
+        POPUP "Freeway Tools  高速路工具"
+        BEGIN
+            MENUITEM "View/Edit FREEVAL Data",      ID_FREEWAYTOOLS_VIEW
+        END
+        POPUP "Traffic Control Tools 交通控制工具"
+        BEGIN
+            MENUITEM "Generate Signal Control Locations", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
+            MENUITEM "Update Link Effective Green Time  Based on Cycle Length", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+            MENUITEM SEPARATOR
+            MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
+            MENUITEM "Unlock/Lock Reference Network", ID_EDIT_MOVENETWORKCOORDINATES
+            MENUITEM "Save External Layer After Coordinate Modification", ID_TOOLS_SAVEPROJECTFOREXTERNALLAYER
+            MENUITEM "Create Node Mapping to Obtain Traffic Control  Information", ID_TOOLS_OBTAINCYCLELENGTHFROM
+            MENUITEM "Transfer Movement Data from Reference Network to Current Network", ID_TRAFFICCONTROLTOOLS_TRANSFERMOVEMENTDATAFROMREFERENCENETWORKTOCURRENTNETWORK
+            MENUITEM "Transfer Signal Data from Reference Network to Current Network", ID_TRAFFICCONTROLTOOLS_TRANSFERSIGNALDATAFROMREFERENCENETWORKTOCURRENTNETWORK
+        END
+        POPUP "Demand/Vehicle Tools 需求/车流工具"
+        BEGIN
+            MENUITEM "Regenerate Activity Locations", ID_DEMAND_REGENERATEACTIVITYLOCATIONS
+            MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+            POPUP "OD Demand Estimation"
+            BEGIN
+                MENUITEM "1. Configure OD Matrix Estimation Settings", ID_PROJECT_ODMATRIXESTIMATIONINPUT
+                MENUITEM "2. Input Sensor Data for ODME", ID_PROJECT_INPUTSENSORDATAFORODME
+                MENUITEM "3. View OD Matrix Estimation Log", ID_VIEW_ODME_Result
+            END
+            MENUITEM SEPARATOR
+            MENUITEM "Use Vehicle Data to Generate input_agent.bin File", ID_DEMANDTOOLS_GENERATEINPUT
+            MENUITEM "Reconstruct Link MOE through Cumulative Flow Counts", ID_DEMAND_RECONSTRUCTLINKMOETH
+            MENUITEM "Convert Origin-based Matrix Demand File to 3-Column Format", ID_DEMAND_CONVERT
+        END
+        POPUP "Accessibility Tools  可达性工具"
+        BEGIN
+            MENUITEM "Zone-to-Zone Travel Time Matrix for Opened Projects", ID_EXPORT_GENERATEZONE
+        END
+        POPUP "Safety Planning Tools  安全计划工具"
+        BEGIN
+            MENUITEM "Run Crash Prediction Models", ID_SAFETYPLANNINGTOOLS_RUN
+            MENUITEM "Generate Crash Prediction Shape Files", ID_SAFETYPLANNINGTOOLS_GENERATENODE
+        END
+        POPUP "NGSIM  Tools"
+        BEGIN
+            MENUITEM "Activate Space-Time View for Visualizing NGSIM Data", ID_NGSIMMENU_ACTIVATESPACE
+            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
+            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
+            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
+            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
+            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
+            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
+            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
+            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
+            MENUITEM SEPARATOR
+            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
+            MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
+            MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
+            MENUITEM SEPARATOR
+            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
+            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
+            MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
+        END
+        POPUP "Sensor Tools   探测器工具"
+        BEGIN
+            MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+            MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+        END
+    END
+    POPUP "&Window窗口"
+    BEGIN
+        MENUITEM "&New Window 新窗口",             ID_WINDOW_NEW
+        MENUITEM "&Cascade 级联",                 ID_WINDOW_CASCADE
+        MENUITEM "&Tile Horizontally 标题水平放置",   ID_WINDOW_TILE_HORZ
+        MENUITEM "Tile Vertically  标题垂直放置",     ID_WINDOW_TILE_VERT
+        MENUITEM "&Arrange Icons  排坐标",         ID_WINDOW_ARRANGE
+        MENUITEM "Synchronized Display  多窗口同步显示", ID_WINDOW_SYNCHRONIZEDDISPLAY
+    END
+    POPUP "&Help帮助"
+    BEGIN
+        MENUITEM "&About NeXTA Version 3... 关于NeXTA版本3...", ID_APP_ABOUT
+        MENUITEM SEPARATOR
+        MENUITEM "Read Learning Documents  网上学习文档", ID_HELP_USERGUIDE
+        MENUITEM "Visit Development Website 访问开发者网站（Google Code）", ID_HELP_VISITDEVELOPMENTWEBSITE
+        MENUITEM "Report Bug or Offer Suggestion  提交建议", ID_HELP_REPORTBUG
+        MENUITEM "Check Latest Software Release  查询最新版本", ID_HELP_CHECKLATESTSOFTWARERELEASE
+    END
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3439,6 +3854,17 @@ BEGIN
     IDR_TLiteTYPE           "\nNeXTA\nTLite\n\n\nNeXTA Document\nNeXTA.Document"
     IDR_MAINFRAME32         "NeXTA Version 3 Beta (32-bit)"
     ID_INDICATOR_LEFT       "Indicator"
+    IDS_STRING10000         "节点"
+    IDS_STRING10001         "路段"
+    IDS_STRING10002         "信号灯控制"
+    IDS_STRING10003         "交通小区"
+    IDS_STRING10004         "交通发生点"
+    IDS_STRING10005         "OD矩阵"
+    IDS_STRING10006         "路段指标"
+    IDS_STRING10007         "径路"
+    IDS_STRING10008         "分区"
+    IDS_STRING10009         "探测器"
+    IDS_STRING10010         "施工区"
 END
 
 STRINGTABLE 
@@ -3735,7 +4161,37 @@ BEGIN
     ID_EDIT_CREATEZONE      "Create Zone\nCreate Zone"
 END
 
-#endif    // English (U.S.) resources
+STRINGTABLE 
+BEGIN
+    IDS_STRING10011         "交通事故"
+    IDS_STRING10012         "交通信息牌"
+    IDS_STRING10013         "收费路"
+    IDS_STRING10014         "匝道和瓶颈"
+    IDS_STRING10015         "汽车轨迹"
+    IDS_STRING10016         "公交"
+    IDS_STRING10017         "坐标"
+    IDS_STRING10018         "背景图"
+    IDS_STRING10100         "网络"
+    IDS_STRING10101         "动画"
+    IDS_STRING10102         "密度"
+    IDS_STRING10103         "流量"
+    IDS_STRING10104         "速度"
+    IDS_STRING10105         "队长"
+    IDS_STRING10106         " "
+    IDS_STRING10107         "排放"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_STRING10108         "安全"
+    IDS_STRING10109         " "
+    IDS_STRING10110         " 路段"
+    IDS_STRING10111         " 径路"
+    IDS_STRING10112         "车流"
+    IDS_STRING10113         "统计"
+END
+
+#endif    // Chinese (P.R.C.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

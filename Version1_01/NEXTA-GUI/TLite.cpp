@@ -38,7 +38,6 @@
 #include "DlgMainTemplate.h"
 #include "Dlg_VehicleClassification.h"
 
-eVisulizationTemplate g_VisulizationTemplate;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -110,14 +109,27 @@ BOOL CTLiteApp::InitInstance()
 		else
 			m_VisulizationTemplate = e_train_scheduling;
 
+		m_LanguageSupport = (eLanguageSupport)g_GetPrivateProfileInt("template", "LanguageSupport", 0, NEXTASettingsPath);
+
 
 		if( m_VisulizationTemplate == e_traffic_assignment)
+		{
+		if(m_LanguageSupport  ==LANG_CN_SIMPLIFIED)
+		{
+        m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE5,
+                RUNTIME_CLASS(CTLiteDoc),
+                RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+                RUNTIME_CLASS(CTLiteView));
+
+		}else
 		{
         m_pDocTemplate2DView = new CMultiDocTemplate(IDR_TLiteTYPE1,
                 RUNTIME_CLASS(CTLiteDoc),
                 RUNTIME_CLASS(CChildFrame), // custom MDI child frame
                 RUNTIME_CLASS(CTLiteView));
-
+		
+		
+		}
 		}
 
 		if( m_VisulizationTemplate == e_train_scheduling)
@@ -139,12 +151,22 @@ BOOL CTLiteApp::InitInstance()
         //when the program starts. 
         //The template object below is a secondary template that can be activated in response to the New GLView Window menu item.
 
-	m_pTemplateTimeTableView = new CMultiDocTemplate(
-    IDR_TLiteTYPE1,
-    RUNTIME_CLASS(CTLiteDoc),
-    RUNTIME_CLASS(CChildFrame),
-    RUNTIME_CLASS(CTimeSpaceView));
 
+		if(m_LanguageSupport  ==LANG_CN_SIMPLIFIED)
+		{
+			m_pTemplateTimeTableView = new CMultiDocTemplate(
+			IDR_TLiteTYPE5,
+			RUNTIME_CLASS(CTLiteDoc),
+			RUNTIME_CLASS(CChildFrame),
+			RUNTIME_CLASS(CTimeSpaceView));
+		}else
+		{
+			m_pTemplateTimeTableView = new CMultiDocTemplate(
+			IDR_TLiteTYPE1,
+			RUNTIME_CLASS(CTLiteDoc),
+			RUNTIME_CLASS(CChildFrame),
+			RUNTIME_CLASS(CTimeSpaceView));
+		}
 
         // create main MDI Frame window
         CMainFrame* pMainFrame = new CMainFrame;
