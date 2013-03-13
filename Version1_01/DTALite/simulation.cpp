@@ -204,6 +204,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	{
 			DTALink * pLink = g_LinkVector[li];
 
+			if(pLink->m_FromNodeNumber == 14890 && pLink->m_ToNodeNumber == 14966 && CurrentTime>=600 )
+			{
+			TRACE("");
+			}
+
 		while(pLink->LoadingBuffer.size() >0 && pLink->GetNumberOfLanes(DayNo,CurrentTime)>0.01)  // no load vehicle into a blocked link
 		{
 			struc_vehicle_item vi = pLink->LoadingBuffer.front();
@@ -214,7 +219,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
 				TRACE("Step 1: Time %f: Load vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber);
 
-			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)( pLink->EntranceQueue.size() + pLink->ExitQueue.size());
+//			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)( pLink->EntranceQueue.size() + pLink->ExitQueue.size());
+			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)(pLink->CFlowArrivalCount - pLink->CFlowDepartureCount);
 
 			// determine link in capacity 
 			float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
@@ -347,7 +353,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 			}
 
-			if(pLink->m_FromNodeNumber == 53154 && pLink->m_ToNodeNumber == 53541)
+			if(pLink->m_FromNodeNumber == 14890 && pLink->m_ToNodeNumber == 14966 && CurrentTime>=600 )
 			{
 			TRACE("");
 			}
@@ -379,6 +385,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// determine link in capacity 
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 				fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane * pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+
+				if(fLinkInCapacity<0)
+					fLinkInCapacity = 0;
+
 				//			TRACE(" time %5.2f, SC: %5.2f, MFR %5.2f\n",CurrentTime, AvailableSpaceCapacity, MaximumFlowRate);
 
 				// the inflow capcaity is the minimum of (1) incoming maximum flow rate (determined by the number of lanes) and (2) available space capacty  on the link.
@@ -1342,11 +1352,14 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 		for(int hour = g_DemandLoadingStartTimeInMin/60; hour < g_PlanningHorizon/60+1; hour++)  // used for ODME
 			{
-				pLink->SimultedHourlySpeed[hour] = pLink->m_Length / pLink->GetTravelTimeByMin (Iteration,hour*60, 60 /*interval*/,TrafficFlowModelFlag)*60;  // 60: convert min to hour
+				pLink->SimultedHourlySpeed[hour] = pLink->m_Length / max(0.0001,pLink->GetTravelTimeByMin (Iteration,hour*60, 60 /*interval*/,TrafficFlowModelFlag)*60);  // 60: convert min to hour
 			}
 	}
 
+	if(g_SensorDataCount>=1) 
+	{
 	g_UpdateLinkMOEDeviation_ODEstimation(output,Iteration);
+	}
 
 	if(Iteration == g_NumberOfIterations)
 	{
@@ -1363,6 +1376,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	int NumberofVehiclesSwitched  = 0;
 	int NumberofVehiclesConsideringToSwitch  = 0;
 
+
 	for (std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin(); iterVehicle != g_VehicleVector.end(); iterVehicle++)
 	{
 		if((*iterVehicle)->m_bComplete)
@@ -1371,7 +1385,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			TotalTripFFTT+= (*iterVehicle)->m_TripFFTT;
 			
 			TotalTravelTime += (*iterVehicle)->m_TravelTime;
-			TotalDelay += (*iterVehicle)->m_Delay;
+			TotalDelay += max(0,(*iterVehicle)->m_Delay);
 			TotalDistance+= (*iterVehicle)->m_Distance ;
 			VehicleSizeComplete +=1;
 
@@ -1397,15 +1411,15 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	double SwitchPercentage = 0;
 	double ConsideringSwitchPercentage = 0;
 
-	if(VehicleSizeComplete>0)
+	if(VehicleSizeComplete>=1)
 	{
-		AvgTripTime = TotalTripTime /VehicleSizeComplete;
-		AvgTravelTime = TotalTravelTime /VehicleSizeComplete;
-		AvgTripTimeIndex = TotalTripTime/TotalTripFFTT;
-		AvgDelay = TotalDelay /VehicleSizeComplete;
-		AvgDistance = TotalDistance /VehicleSizeComplete;
-		SwitchPercentage =	NumberofVehiclesSwitched*100.0f/VehicleSizeComplete;
-		ConsideringSwitchPercentage = NumberofVehiclesConsideringToSwitch*100.0f/VehicleSizeComplete;
+		AvgTripTime = TotalTripTime /max(1,VehicleSizeComplete);
+		AvgTravelTime = TotalTravelTime /max(1,VehicleSizeComplete);
+		AvgTripTimeIndex = TotalTripTime/max(0.1,TotalTripFFTT);
+		AvgDelay = TotalDelay /max(1,VehicleSizeComplete);
+		AvgDistance = TotalDistance /max(1,VehicleSizeComplete);
+		SwitchPercentage =	NumberofVehiclesSwitched*100.0f/max(1,VehicleSizeComplete);
+		ConsideringSwitchPercentage = NumberofVehiclesConsideringToSwitch*100.0f/max(1,VehicleSizeComplete);
 	}
 
 	output.NumberofVehiclesCompleteTrips = VehicleSizeComplete;
@@ -1446,6 +1460,8 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	//DTASafetyPredictionModel SafePredictionModel;
 	//SafePredictionModel.UpdateCrashRateForAllLinks();
 
+	if(0)  // comment out day to day learning code
+	{
 	std::map<int, DTAVehicle*>::iterator iterVM;
 	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 	{
@@ -1458,6 +1474,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			pVehicle->StorePath(Iteration);
 		}
 
+	}
 	}
 
 	return output;

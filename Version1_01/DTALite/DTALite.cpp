@@ -1635,7 +1635,44 @@ void g_ReadInputFiles(int scenario_no)
 	////////////////////////////////////// VOT
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
 	g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
-	g_ReadDemandFileBasedOnMetaDatabase();
+	
+	if(g_AgentBinInputMode.find ("0") != string::npos )  // we read demand meta database only if we do not read the agent file. 
+	{
+		g_ReadDemandFileBasedOnMetaDatabase();
+	}else
+	{
+		if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin_v1") != string::npos)
+		{
+				g_ReadAgentBinFileVersion1("input_agent.bin");
+
+		}
+
+		if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin") != string::npos)
+		{
+				g_ReadAgentBinFile("input_agent.bin");
+
+		}
+		if(g_AgentBinInputMode.find("2") != string::npos || g_AgentBinInputMode.find("agent_csv") != string::npos)
+		{
+			g_ReadDTALiteAgentCSVFile("input_agent.csv");
+		}
+
+		if(g_AgentBinInputMode.find("3") != string::npos || g_AgentBinInputMode.find("agent_group_csv") != string::npos)
+		{
+			g_ReadDTALiteAgentCSVFile("input_agent.csv");
+		}
+
+		if(g_AgentBinInputMode.find("4") != string::npos || g_AgentBinInputMode.find("evacuation_agent_csv") != string::npos)
+		{
+			g_ReadDTALiteAgentCSVFile("evacuation_agent_csv");
+		}
+
+		if(g_AgentBinInputMode.find("5") != string::npos || g_AgentBinInputMode.find("vehicle_dat") != string::npos)
+		{
+			g_ReadDSPVehicleFile("vehicle.dat");
+		}	
+	}
+
 
 	//if(g_VehicleLoadingMode == 1)  // load from csv vehicle file
 	//{
@@ -3743,35 +3780,6 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 	CCSVParser parser;
 
-if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin") != string::npos)
-	{
-			g_ReadAgentBinFile("input_agent.bin");
-			return;
-	}
-
-	if(g_AgentBinInputMode.find("2") != string::npos || g_AgentBinInputMode.find("agent_csv") != string::npos)
-	{
-		g_ReadDTALiteAgentCSVFile("input_agent.csv");
-		return;
-	}
-
-	if(g_AgentBinInputMode.find("3") != string::npos || g_AgentBinInputMode.find("agent_group_csv") != string::npos)
-	{
-		g_ReadDTALiteAgentCSVFile("input_agent.csv");
-		return;
-	}
-
-	if(g_AgentBinInputMode.find("4") != string::npos || g_AgentBinInputMode.find("evacuation_agent_csv") != string::npos)
-	{
-		g_ReadDTALiteAgentCSVFile("evacuation_agent_csv");
-		return;
-	}
-
-	if(g_AgentBinInputMode.find("5") != string::npos || g_AgentBinInputMode.find("vehicle_dat") != string::npos)
-	{
-		g_ReadDSPVehicleFile("vehicle.dat");
-		return;
-	}	
 
 	//step 3:
 	if (parser.OpenCSVFile("input_demand_meta_data.csv"))

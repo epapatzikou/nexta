@@ -422,8 +422,15 @@ void g_MultiScenarioTrafficAssignment()
 
 			if(g_AgentBinInputMode.find ("0") == string::npos )
 			{  // use the parameters only when agent_demand_input_mode !=0
-			parser_scenario.GetValueByFieldName("agent_demand_start_time_in_min",g_DemandLoadingStartTimeInMin);
-			parser_scenario.GetValueByFieldName("agent_demand_end_time_in_min",g_DemandLoadingEndTimeInMin);
+
+				g_DemandLoadingStartTimeInMin = 0;
+				g_DemandLoadingEndTimeInMin = 1440; // one day as default
+
+				parser_scenario.GetValueByFieldName("agent_demand_start_time_in_min",g_DemandLoadingStartTimeInMin);
+				parser_scenario.GetValueByFieldName("agent_demand_end_time_in_min",g_DemandLoadingEndTimeInMin);
+
+				g_PlanningHorizon = g_DemandLoadingEndTimeInMin;
+
 			}
 
 

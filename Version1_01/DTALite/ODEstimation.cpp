@@ -124,6 +124,7 @@ float    g_ODEstimation_Weight_TravelTime = 1.0f;
 float    g_ODEstimation_StepSize  = 0.1f;
 
 int g_ODEstimationFlag = 0;
+int g_SensorDataCount = 0;
 int g_Agent_shortest_path_generation_flag = 0;
 int g_ODEstimationMeasurementType = 0; // 0: flow, 1: density, 2, speed
 int g_ODEstimation_StartingIteration = 2;
@@ -168,7 +169,7 @@ bool g_ReadLinkMeasurementFile()
 			}
 
 
-				if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
+			if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 			{
 			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./DTASettings.txt");
 
@@ -297,7 +298,6 @@ bool g_ReadLinkMeasurementFile()
  
 				pLink->m_bSensorData  = true;
 				SLinkMeasurement element;
-
 				
 				element.sensor_type = sensor_type;
 
@@ -316,6 +316,7 @@ bool g_ReadLinkMeasurementFile()
 				
 
 				pLink->m_LinkMeasurementAry.push_back (element);
+				g_SensorDataCount ++;
 				
 				count++;
 
@@ -336,8 +337,6 @@ bool g_ReadLinkMeasurementFile()
 	cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
 	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 	}
-
-
 
 
 			//cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
@@ -1065,8 +1064,8 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 					if(link_capacity>1)
 					{
-					obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval) /link_capacity;
-					simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval) /link_capacity;
+					obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
+					simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
 					}
 					g_EstimationLogFile << "Iteration," << Iteration << "," << pLink->m_LinkMeasurementAry[i].name << "," << pLink->m_LinkMeasurementAry[i].direction << "," << pLink->m_LinkTypeName << ",Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
 						<< ",time "<<  g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime) << "->" << g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) <<  ",Observed and simulated link count,"<< ObsFlowCount << "," << SimulatedFlowCount <<", Error:, " << SimulatedFlowCount -  ObsFlowCount << 
