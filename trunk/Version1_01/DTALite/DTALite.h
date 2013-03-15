@@ -773,6 +773,9 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+		m_CumulativeOutCapacityCount = 0.0f;
+		m_CumulativeMergeOutCapacityCount = 0.0f;
+		m_CumulativeInCapacityCount = 0.0f;
 		m_Direction;
 		m_NumberOfLeftTurnBays = 0;
 		m_NumberOfRightTurnBays = 0;
@@ -940,6 +943,13 @@ public:
 
 		return float(m_RandomSeed)/LCG_M;
 	}
+
+	float m_CumulativeOutCapacityCount; 
+	float m_CumulativeMergeOutCapacityCount; 
+
+
+	float m_CumulativeInCapacityCount;
+
 
 	int m_FromNodeNumber;
 	int m_ToNodeNumber;
@@ -1344,6 +1354,9 @@ public:
 
 	void SetupMOE()
 	{
+		m_CumulativeOutCapacityCount = 0;
+		m_CumulativeMergeOutCapacityCount = 0;
+		m_CumulativeInCapacityCount = 0;
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
 		m_BPRLinkVolume = 0;
@@ -2341,7 +2354,10 @@ public:
 	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
 	DTANetworkForSP()
-	{};
+	{
+	
+	m_NodeSize = 0;
+	};
 
 	void Setup(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0)
 	{
@@ -2414,6 +2430,8 @@ public:
 
 	~DTANetworkForSP()
 	{
+		if(m_NodeSize==0)
+			return;
 
 		if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry && m_NodeSize>=1)  delete m_InboundSizeAry;

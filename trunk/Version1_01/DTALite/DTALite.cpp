@@ -1013,6 +1013,7 @@ void g_ReadInputFiles(int scenario_no)
 					//							signal_reset_count++;
 				}
 
+				pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane  = capacity;  // default rate
 
 				if(pLink->m_bArterialType)
 				{
@@ -1833,7 +1834,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 		}
 		else
 		{
-			RandomRatio = (i+1)*1.0f/number_of_vehicles_generated; // uniform distribution
+			RandomRatio = (i+1)*1.0f/(number_of_vehicles_generated+1); // uniform distribution
 		}
 
 		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
@@ -1895,7 +1896,7 @@ void g_ConvertDemandToVehicles()
 			pVehicle->m_VehicleID		= i;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
-			if(pVehicle->m_VehicleID==504)
+			if(pVehicle->m_VehicleID>=200 && pVehicle->m_VehicleID<=202)
 			{
 				TRACE("");
 			}
@@ -3032,7 +3033,7 @@ void g_ReadDTALiteSettings()
 
 	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, g_DTASettingFileName);	
 	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);	
-	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.02f, g_DTASettingFileName);
+	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.00f, g_DTASettingFileName);
 	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "use_point_queue_model_x_min_after_demand_loading_period", 60.0f, g_DTASettingFileName);
 	g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
 	g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, g_DTASettingFileName);
