@@ -373,7 +373,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			float Capacity = MaximumFlowRate;
 			// use integer number of vehicles as unit of capacity
 			
-			pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
+			//pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
+							
+			float PrevCumulativeOutCapacityCount = pLink->m_CumulativeOutCapacityCount;
+			pLink->m_CumulativeOutCapacityCount+= Capacity;
+			pLink-> LinkOutCapacity = (int)pLink->m_CumulativeOutCapacityCount - (int) PrevCumulativeOutCapacityCount;
+
+
 
 			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)(pLink->CFlowArrivalCount - pLink->CFlowDepartureCount);
 
@@ -384,7 +390,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			{
 				// determine link in capacity 
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
-				fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane * pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+				fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
 
 				if(fLinkInCapacity<0)
 					fLinkInCapacity = 0;
@@ -465,7 +471,16 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 
 			// finally we convert the floating-point capacity to integral capacity in terms of number of vehicles
-			pLink-> LinkInCapacity= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(fLinkInCapacity,li);
+
+			//pLink-> LinkInCapacity= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(fLinkInCapacity,li);
+			// new version with uniform inflow capa distribution 
+			
+			float PrevCumulativeInCap  = pLink-> m_CumulativeInCapacityCount;
+			pLink-> m_CumulativeInCapacityCount += fLinkInCapacity;
+			pLink-> LinkInCapacity = (int) pLink-> m_CumulativeInCapacityCount -(int)  PrevCumulativeInCap;
+
+			//
+
 
 			if(debug_flag && pLink->m_FromNodeNumber ==60306 &&  pLink->m_ToNodeNumber ==54256 && CurrentTime>=5 )
 			{
@@ -512,7 +527,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							float LinkOutCapacity = pLink-> LinkInCapacity * pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio;
 
-							int LinkOutCapacity_int= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
+//							int LinkOutCapacity_int= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
+
+							float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
+							pLink->m_CumulativeMergeOutCapacityCount+= LinkOutCapacity;
+							int LinkOutCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+
 							g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity = LinkOutCapacity_int;
 
 						}
@@ -525,7 +545,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						// 0.5f -> half of the onramp capacity
 						// use integer number of vehicles as unit of capacity
 
-						unsigned int MaxMergeCapacity_int=  g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacity,li); 
+						// int MaxMergeCapacity_int=  g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacity,li); 
+							float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
+							pLink->m_CumulativeMergeOutCapacityCount+= MaxMergeCapacity;
+							int MaxMergeCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+
 
 						unsigned int FlowonOnRamp = g_LinkVector [ pLink->m_MergeOnrampLinkID ]->ExitQueue.size();
 						int DownstreamLinkInCapacity = pLink->LinkInCapacity ;

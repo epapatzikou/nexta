@@ -177,6 +177,13 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		cout << "---- Network Loading for Iteration " << iteration <<"----" << endl;
 
 		NetworkLoadingOutput SimuOutput;
+
+	if(g_EmissionDataOutputFlag==1 && iteration == g_NumberOfIterations)  // last iteration
+	{
+	g_DTASimulationInterval = 0.1;
+	}
+
+
 		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 		g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,&SimuOutput);
 
