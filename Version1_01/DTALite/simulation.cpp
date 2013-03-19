@@ -373,12 +373,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			float Capacity = MaximumFlowRate;
 			// use integer number of vehicles as unit of capacity
 			
-			//pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
-							
+			if(g_RandomizedCapacityMode)
+			{
+			pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
+			}else
+			{
 			float PrevCumulativeOutCapacityCount = pLink->m_CumulativeOutCapacityCount;
 			pLink->m_CumulativeOutCapacityCount+= Capacity;
 			pLink-> LinkOutCapacity = (int)pLink->m_CumulativeOutCapacityCount - (int) PrevCumulativeOutCapacityCount;
-
+			}
 
 
 			int NumberOfVehiclesOnThisLinkAtCurrentTime = (int)(pLink->CFlowArrivalCount - pLink->CFlowDepartureCount);
@@ -472,13 +475,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			// finally we convert the floating-point capacity to integral capacity in terms of number of vehicles
 
-			//pLink-> LinkInCapacity= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(fLinkInCapacity,li);
+			if(g_RandomizedCapacityMode)
+			{
+
+			pLink-> LinkInCapacity= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(fLinkInCapacity,li);
 			// new version with uniform inflow capa distribution 
-			
+			}else
+			{
 			float PrevCumulativeInCap  = pLink-> m_CumulativeInCapacityCount;
 			pLink-> m_CumulativeInCapacityCount += fLinkInCapacity;
 			pLink-> LinkInCapacity = (int) pLink-> m_CumulativeInCapacityCount -(int)  PrevCumulativeInCap;
-
+			}
 			//
 
 
@@ -527,12 +534,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							float LinkOutCapacity = pLink-> LinkInCapacity * pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio;
 
-//							int LinkOutCapacity_int= g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
-
+							int LinkOutCapacity_int =  0;
+							
+							if(g_RandomizedCapacityMode)
+							{
+								LinkOutCapacity_int = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
+							}else
+							{
 							float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
 							pLink->m_CumulativeMergeOutCapacityCount+= LinkOutCapacity;
-							int LinkOutCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
-
+							LinkOutCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+							}
 							g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity = LinkOutCapacity_int;
 
 						}
@@ -545,10 +557,18 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						// 0.5f -> half of the onramp capacity
 						// use integer number of vehicles as unit of capacity
 
-						// int MaxMergeCapacity_int=  g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacity,li); 
+						 int MaxMergeCapacity_int =  0;
+						 
+						if(g_RandomizedCapacityMode)
+						{
+								MaxMergeCapacity_int = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacity,li); 
+						}
+						else
+						{
 							float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
 							pLink->m_CumulativeMergeOutCapacityCount+= MaxMergeCapacity;
-							int MaxMergeCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+						MaxMergeCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+						}
 
 
 						unsigned int FlowonOnRamp = g_LinkVector [ pLink->m_MergeOnrampLinkID ]->ExitQueue.size();

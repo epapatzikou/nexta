@@ -73,14 +73,7 @@ bool CCSVParser::OpenCSVFile(string fileName,bool b_required)
 					TRACE("%s,",name.c_str ());
 				}
 
-				if(name.size ()>1 && FieldsIndices.find(name)  != FieldsIndices.end())
-				{
-				cout << "Field Name" << name << " in file " << fileName << " has been defined twice. Please check." << endl;
-				
-					getchar();
-				return false;
 
-				}
 				FieldsIndices[name] = (int) i;
 			}
 		}

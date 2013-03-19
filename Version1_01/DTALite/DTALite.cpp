@@ -216,8 +216,9 @@ float g_TravelTimeDifferenceForSwitching = 1.0;  // min
 float g_RelativeTravelTimePercentageDifferenceForSwitching = 15;  // min
 
 
-
+int g_RandomizedCapacityMode = 0;
 int g_StochasticCapacityMode = 0;
+int g_UseRandomCapacityMode = 0;
 float g_MinimumInFlowRatio = 0.1f;
 float g_RelaxInFlowConstraintAfterDemandLoadingTime = 60;
 float g_MaxDensityRatioForVehicleLoading = 0.8f;
@@ -3028,6 +3029,8 @@ void g_ReadDTALiteSettings()
 	//	g_ParallelComputingMode = g_GetPrivateProfileInt("assignment", "parallel_computing", 1, g_DTASettingFileName);
 	g_ParallelComputingMode = 1;
 
+
+	g_RandomizedCapacityMode = g_GetPrivateProfileInt("simulation", "ramdomized_capacity",0, g_DTASettingFileName);
 
 	g_StochasticCapacityMode = g_GetPrivateProfileInt("simulation", "stochatic_capacity_mode", 1, g_DTASettingFileName);
 
