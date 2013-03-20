@@ -486,10 +486,11 @@ public:
 
 };
 
-// event structure in this "event-basd" traffic simulation
+// event structure in this "event-based" traffic simulation
 typedef struct{
 	int veh_id;
 	int veh_car_following_no;
+	int veh_next_node_number; // next link's downstream node number
 	float time_stamp;
 
 }struc_vehicle_item;
@@ -543,6 +544,8 @@ public:
 	int CumulativeArrivalCount; 
 	int CumulativeDepartureCount;
 	int ExitQueueLength;
+	int LeftExit_QueueLength;
+
 	int EndTimeOfPartialCongestion;  // time in min to the end of partial congestion
 	int TrafficStateCode;  // 0: free-flow: 1: partial congested: 2: fully congested
 
@@ -567,6 +570,7 @@ public:
 		CumulativeArrivalCount  = 0;
 		CumulativeDepartureCount = 0;
 		ExitQueueLength = 0;
+		LeftExit_QueueLength = 0;
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
 
@@ -591,6 +595,8 @@ public:
 		CumulativeArrivalCount  = 0;
 		CumulativeDepartureCount = 0;
 		ExitQueueLength = 0;
+		LeftExit_QueueLength = 0;
+
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
 		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
@@ -773,7 +779,14 @@ class DTALink
 public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
+
+		m_LeftTurn_DestNodeNumber = -1;
+		m_LeftTurn_NumberOfLanes = 0; 
+		m_LeftTurn_EffectiveGreenTime_In_Second = 0;
+		m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;
+
 		m_CumulativeOutCapacityCount = 0.0f;
+		m_CumulativeLeftOutCapacityCount = 0.0f;
 		m_CumulativeMergeOutCapacityCount = 0.0f;
 		m_CumulativeInCapacityCount = 0.0f;
 		m_Direction;
@@ -945,6 +958,7 @@ public:
 	}
 
 	float m_CumulativeOutCapacityCount; 
+	float m_CumulativeLeftOutCapacityCount; 
 	float m_CumulativeMergeOutCapacityCount; 
 
 
@@ -1133,7 +1147,12 @@ public:
 	std::list<struc_vehicle_item> LoadingBuffer;  //loading buffer of each link, to prevent grid lock
 
 	std::list<struc_vehicle_item> EntranceQueue;  //link-in queue  of each link
+	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
 
+// for left turn queues
+	std::list<struc_vehicle_item> LeftEntrance_Queue;  // left-turn in queue  of each link
+	std::list<struc_vehicle_item> LeftExit_Queue;      // left-turn out  queue of each link
+//
 	struc_vehicle_item EntranceBuffer[1000];  //link-in buffer  of each link, controlled by vehicle loading and transferring parts
 
 	struc_vehicle_item* FIFOQueue;   // implementation through a cycle 
@@ -1243,7 +1262,6 @@ public:
 	int CurrentSequenceNoForVechileDistanceAry;  // start from 0, 
 	int CycleSizeForVechileDistanceAry; // cycle size
 
-	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
 
 	int m_LinkNo;
 	int m_OrgLinkID;    //original link id from input_link.csv file
@@ -1266,9 +1284,17 @@ public:
 	int m_DownstreamCycleLength_In_Second;
 	int m_DownstreamNodeSignalOffset_In_Second;
 
-	int m_EffectiveGreenTime_In_Second;
 	int m_GreenStartTime_In_Second;
+
+	int m_EffectiveGreenTime_In_Second;
 	int m_SaturationFlowRate_In_vhc_per_hour_per_lane; 
+
+
+	int m_LeftTurn_DestNodeNumber; 
+	int m_LeftTurn_NumberOfLanes; 
+	int m_LeftTurn_EffectiveGreenTime_In_Second;
+	int m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane; 
+
 
 	// for MOE data array
 	int m_SimulationHorizon;
@@ -1305,6 +1331,10 @@ public:
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
 		ExitQueue.clear();
+
+		LeftEntrance_Queue.clear();
+		LeftExit_Queue.clear();
+
 		MergeIncomingLinkVector.clear();
 
 		m_ShapePoints.clear();
@@ -1354,7 +1384,9 @@ public:
 
 	void SetupMOE()
 	{
+
 		m_CumulativeOutCapacityCount = 0;
+		m_CumulativeLeftOutCapacityCount = 0;
 		m_CumulativeMergeOutCapacityCount = 0;
 		m_CumulativeInCapacityCount = 0;
 		m_JamTimeStamp = (float) m_SimulationHorizon;
@@ -1389,6 +1421,7 @@ public:
 		CFlowDepartureCount = 0;
 
 		LinkOutCapacity = 0;
+		LinkLeftOutCapacity = 0;
 		LinkInCapacity = 0;
 
 		VehicleCount = 0;
@@ -1413,6 +1446,10 @@ public:
 		LoadingBuffer.clear();
 		EntranceQueue.clear();
 		ExitQueue.clear();
+
+		LeftEntrance_Queue.clear();
+		LeftExit_Queue.clear();
+
 
 
 	}
@@ -1494,7 +1531,8 @@ public:
 
 	double m_AdditionalDelayDueToCrashes;
 
-	unsigned int LinkOutCapacity;  // unit: number of vehiles
+	int LinkOutCapacity;  // unit: number of vehiles
+	int LinkLeftOutCapacity;  // unit: number of vehiles
 	int LinkInCapacity;   // unit: number of vehiles
 
 	int VehicleCount;
@@ -2963,6 +3001,7 @@ int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR
 float GetStochasticCapacity(bool bQueueFlag, float CurrentCapacity);
 
 float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second, int EffectiveGreenTime_in_second, int GreenStartTime_in_second, int offset_in_second, double CurrentTime, float SaturationFlowRate);
+
 void InitWELLRNG512a (unsigned int *init);
 double WELLRNG512a (void);
 
