@@ -303,6 +303,7 @@ extern bool g_floating_point_value_less_than_or_eq_comparison(double value1, dou
 extern bool g_floating_point_value_less_than(double value1, double value2);
 extern string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName);
 extern void g_ReadDemandFileBasedOnMetaDatabase();
+extern void g_ReadAMSMovementData();
 extern void g_ReadTimeDependentDemandProfile();
 extern void g_ReadVOTProfile();
 extern float g_GetRandomRatioForVehicleGeneration();

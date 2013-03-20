@@ -1165,7 +1165,7 @@ void g_ReadInputFiles(int scenario_no)
 	// step 3.2 movement input
 
 
-
+	g_ReadAMSMovementData();
 	//*******************************
 	// step 4: zone input
 
@@ -2715,7 +2715,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 	{
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermoda_count,cumulative_SOV_revenue,cumulative_HOV_revenue,cumulative_truck_revenue,cumulative_intermodal_revenue,EnergyCO2,NOX,CO,HC\n");
+			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count,left_turn_queue_count,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermoda_count,cumulative_SOV_revenue,cumulative_HOV_revenue,cumulative_truck_revenue,cumulative_intermodal_revenue,EnergyCO2,NOX,CO,HC\n");
 		}
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -2741,10 +2741,11 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					}else
 					{
 						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(g_DefaultArterialKJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
-					}
+
+				}
 
 
-					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,",
+					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,%d,",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,time,
 						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
 						LinkOutFlow*60.0/pLink->m_NumLanes ,LinkOutFlow*60.0,
@@ -2752,7 +2753,8 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						pLink->GetSpeed(time),
 						queue_length_ratio,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
-						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
+						pLink->m_LinkMOEAry[time].CumulativeDepartureCount,
+						pLink->m_LinkMOEAry[time].LeftExit_QueueLength);
 
 
 					tdmoe_element. from_node_id = g_NodeVector[pLink->m_FromNodeID].m_NodeNumber;
@@ -4355,3 +4357,59 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 }
 
 
+
+void g_ReadAMSMovementData()
+{
+	CCSVParser parser_movement;
+
+	int count = 0;
+
+	if (parser_movement.OpenCSVFile("AMS_movement.csv"))
+	{
+		while(parser_movement.ReadRecord())
+		{
+			int up_node_id, node_id, dest_node_id;
+
+			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
+				break;
+
+			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
+			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
+
+
+
+				std::string turn_type;
+
+				parser_movement.GetValueByFieldName ("turn_type",turn_type );
+
+				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
+				{
+					int QEM_Lanes = 0;
+					int QEM_EffectiveGreen = 0;
+					int QEM_SatFlow = 1900;
+					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
+					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
+					parser_movement.GetValueByFieldName ("QEM_SatFlow",QEM_SatFlow );
+
+					//find link
+					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
+					{
+						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
+
+						if(pLink->m_bArterialType == true && QEM_EffectiveGreen>=1 && QEM_SatFlow>=100 )  // only for arterial streets
+						{
+						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
+						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
+						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
+						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow;
+						}
+
+					}
+
+
+				}
+
+		}
+		
+	}
+}
