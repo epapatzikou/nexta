@@ -262,6 +262,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_IMPORT_ATIS, &CTLiteDoc::OnImportAtis)
 	ON_COMMAND(ID_IMPORT_BUS, &CTLiteDoc::OnImportBus)
 	ON_COMMAND(ID_LINK_ADD_WORKZONE, &CTLiteDoc::OnLinkAddWorkzone)
+	ON_COMMAND(ID_LINK_ADD_INCIDENT, &CTLiteDoc::OnLinkAddIncident)
 	ON_COMMAND(ID_LINK_ADDVMS, &CTLiteDoc::OnLinkAddvms)
 	ON_COMMAND(ID_IMPORT_LINKLAYERINKML, &CTLiteDoc::OnImportLinklayerinkml)
 	ON_COMMAND(ID_EDIT_OFFSETLINKS, &CTLiteDoc::OnEditOffsetlinks)
@@ -391,7 +392,12 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FREEWAYTOOLS_VIEW, &CTLiteDoc::OnFreewaytoolsView)
 	ON_COMMAND(ID_EXPORT_GENERATESHAPEFILES_PATH_DATA, &CTLiteDoc::OnExportGenerateshapefilesPathData)
 	ON_COMMAND(ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE, &CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_DELETE_WORKZONE, &CTLiteDoc::OnDeleteWorkzone)
+	ON_COMMAND(ID_CRASH_DELETEINCIDENTONSELECTEDLINK, &CTLiteDoc::OnCrashDeleteincidentonselectedlink)
+	ON_COMMAND(ID_SUBAREA_GENERATEEVACUATIONZONESCENARIOFILE, &CTLiteDoc::OnSubareaGenerateevacuationzonescenariofile)
+	ON_COMMAND(ID_SUBAREA_GENERATEWEATHERSCENARIOFILE, &CTLiteDoc::OnSubareaGenerateweatherscenariofile)
+	ON_COMMAND(ID_SUBAREA_GENERATEWORKZONESCENARIOFILEFROMLINKSINSIDESUBAREA, &CTLiteDoc::OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea)
+	END_MESSAGE_MAP()
 
 
 // CTLiteDoc construction/destruction
@@ -2549,6 +2555,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			if(!parser.GetValueByFieldName("mode_code",mode_code))
 				mode_code  = "";
 
+			std::replace( mode_code.begin(), mode_code.end(), ',', ';'); 
+
+
 			if(mode_code.find ('"') !=  string::npos)
 			{
 				mode_code = '"' + mode_code + '"' ;
@@ -2817,7 +2826,6 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 				m_LinkNotoLinkMap[i] = pLink;
-
 				m_LinkIDtoLinkMap[link_id] = pLink;
 
 
@@ -3987,6 +3995,13 @@ bool CTLiteDoc::ReadScenarioData()
 	}
 
 	//  Dynamic Message Sign
+
+	// clean up all scenario data first
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+
+	}
 	int i =0;
 	i+=ReadIncidentScenarioData();
 	i+=ReadWorkZoneScenarioData();
@@ -5913,7 +5928,8 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 				}
 
 				int Hour = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN / 60;  // min to hour
-				if(pLink0 !=NULL && pLink1!=NULL)
+
+				if(pLink0 !=NULL && pLink1!=NULL &&Hour >=0 && Hour<24)
 				{
 				pLink0->m_TotalVolumeForMovementCount++;
 				pNode->AddMovementCount(Hour, pLink0->m_FromNodeID, pLink1->m_ToNodeID );
@@ -7024,7 +7040,7 @@ void CTLiteDoc::OnHelpVisitdevelopmentwebsite()
 
 bool CTLiteDoc::CheckControlData()
 {
-	std::vector <int> NodeVector;
+	std::map <int,int> NodeMap;
 	std::list<DTANode*>::iterator iNode;
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
@@ -7034,24 +7050,64 @@ bool CTLiteDoc::CheckControlData()
 
 				if((*iNode)->m_CycleLengthInSecond ==0)
 				{
-					NodeVector.push_back ((*iNode)->m_NodeNumber );
+					NodeMap[(*iNode)->m_NodeNumber] = 1;
 				}
 
 			}
 		}
 
-
-		if(NodeVector.size()>0)
+		if(NodeMap.size()>0)
 		{
 			CString message;
-			message.Format ("There are %d signalized nodes with zero cycly length. Please check.", NodeVector.size());
+			message.Format ("There are %d signalized nodes with zero cycle length. Please make the corrections before running DTALite.\n Do you want to set up default cycle length for those nodes?", NodeMap.size());
 
-			//for(int i=0; i< min(10,NodeVector.size(); i++)
-			//{
-			//
-			//
-			//}
-		
+			if(AfxMessageBox(message,MB_YESNO|MB_ICONINFORMATION)==IDYES)
+			{
+
+				int cycle_length_in_seconds = 0;
+				CDlg_UserInput dlg_cycle_length;
+
+				dlg_cycle_length.m_StrQuestion  = "Please specify default cycle length:";
+				dlg_cycle_length.m_InputValue = "100";
+
+				if(dlg_cycle_length.DoModal ()==IDOK)
+				{
+					cycle_length_in_seconds = atoi(dlg_cycle_length.m_InputValue) ;
+
+					// setup effective green time for related links
+					for (std::list<DTALink*>::iterator  iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+					{
+						if((*iLink)->m_LayerNo == 0 )
+						{
+							int ToNodeID = (*iLink)->m_ToNodeID ;
+							DTANode* pNode = m_NodeIDMap[ToNodeID];
+							//set default green time 
+							if(NodeMap[(*iLink)->m_ToNodeNumber]  == 1 &&  (pNode->m_ControlType == m_ControlType_PretimedSignal || 
+								pNode->m_ControlType == m_ControlType_ActuatedSignal))
+							{
+								// from given BPR capacity to determine the effective green time
+								(*iLink)->m_EffectiveGreenTimeInSecond = (int)(pNode->m_CycleLengthInSecond * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
+
+
+							}else
+							{
+								(*iLink)->m_EffectiveGreenTimeInSecond =0;
+
+							}
+						}
+					}
+
+					SaveProject(m_ProjectFile);
+
+				}
+			
+			}else
+			{
+				AfxMessageBox("You can also manually set cycle lenghts in file input_node.csv,\nand then set up the effective green time for related links through \nMenu->Tools->Traffic Control Tools->Update Link Effective Green Time Through Cycle Length.",MB_ICONINFORMATION);
+							
+			}
+
+
 		return false;
 		}
 
@@ -8343,7 +8399,13 @@ void CTLiteDoc::OnLinkAddIncident()
 	if(pLink!=NULL)
 	{
 
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+
+	}
 		ReadIncidentScenarioData();
+		ReadWorkZoneScenarioData();
 
 		CapacityReduction cs;
 		cs.bWorkzone  = false; 
@@ -8353,7 +8415,7 @@ void CTLiteDoc::OnLinkAddIncident()
 		cs.EndDayNo	   = 20;
 		cs.StartTime = 600;
 		cs.EndTime = 640;
-		cs.LaneClosureRatio= 60;
+		cs.LaneClosurePercentage= 60;
 		cs.SpeedLimit = 30;
 
 		pLink->CapacityReductionVector.push_back(cs);
@@ -8382,6 +8444,12 @@ void CTLiteDoc::OnLinkAddWorkzone()
 	if(pLink!=NULL)
 	{
 
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+
+	}
+		ReadIncidentScenarioData();
 		ReadWorkZoneScenarioData();
 
 		CapacityReduction cs;
@@ -8392,7 +8460,7 @@ void CTLiteDoc::OnLinkAddWorkzone()
 		cs.EndDayNo	   = 100;
 		cs.StartTime = 0;
 		cs.EndTime = 1440;
-		cs.LaneClosureRatio= 50;
+		cs.LaneClosurePercentage= 50;
 		cs.SpeedLimit = 50;
 
 		pLink->CapacityReductionVector.push_back(cs);
@@ -8537,7 +8605,7 @@ bool CTLiteDoc::WriteIncidentScenarioData()
 	{
 		// reset
 
-		fprintf(st, "Link,Scenario No, Day No,Start Time in Min,End Time in min,Capacity Reduction Percentage (%),Speed Limit (mph)\n");
+		fprintf(st, "Link,Scenario No, Day No,Start Time in Min,End Time in min,Capacity Reduction Percentage (%%),Speed Limit (mph)\n");
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -8550,8 +8618,37 @@ bool CTLiteDoc::WriteIncidentScenarioData()
 				if(element.bWorkzone == false)
 				{
 					fprintf(st,"\"[%d,%d]\",%d,%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
-						element.ScenarioNo ,element.StartDayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
+						element.ScenarioNo ,element.StartDayNo , element.StartTime , element.EndTime ,element.LaneClosurePercentage, element.SpeedLimit );
 				}
+			}
+		}
+
+		fclose(st);
+	}
+
+	return true;
+}
+
+bool CTLiteDoc:: WriteCapacityReductionScenarioDataFromSubareaLinks(CString Scenario_File_Name)
+{
+	FILE* st = NULL;
+	int i =0;
+	//  incident scenario
+	fopen_s(&st,m_ProjectDirectory+Scenario_File_Name,"w");
+	if(st!=NULL)
+	{
+		// reset
+
+		fprintf(st, "Link,Scenario No,Start Day,End Day,Start Time in Min,End Time in min,Capacity Reduction Percentage (%%),Speed Limit (mph)\n");
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+
+			if( (*iLink)->m_bIncludedinSubarea)
+			{
+
+				CapacityReduction element;
+				fprintf(st,"\"[%d,%d]\",0,1,1,0,1440,2,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber , (*iLink)->m_SpeedLimit  );
 			}
 		}
 
@@ -8571,7 +8668,7 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 	{
 		// reset
 
-		fprintf(st, "Link,Scenario No,Start Day,End Day,Start Time in Min,End Time in min,Capacity Reduction Percentage (%),Speed Limit (mph)\n");
+		fprintf(st, "Link,Scenario No,Start Day,End Day,Start Time in Min,End Time in min,Capacity Reduction Percentage (%%),Speed Limit (mph)\n");
 
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
@@ -8584,7 +8681,7 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 				if(element.bWorkzone == true)
 				{
 					fprintf(st,"\"[%d,%d]\",%d,%d,%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
-						element.ScenarioNo,element.StartDayNo  , element.EndDayNo , element.StartTime , element.EndTime ,element.LaneClosureRatio, element.SpeedLimit );
+						element.ScenarioNo,element.StartDayNo  , element.EndDayNo , element.StartTime , element.EndTime ,element.LaneClosurePercentage, element.SpeedLimit );
 				}
 			}
 		}
@@ -8595,14 +8692,9 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 	return true;
 }
 
-int CTLiteDoc::ReadWorkZoneScenarioData()
+int CTLiteDoc::ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber, int RemoveLinkToNodeNumber)
 {
-	// clean up all scenario data first
-	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		(*iLink)->CapacityReductionVector .clear();
 
-	}
 	int i = 0;
 
 	CString workzone_file = m_ProjectDirectory+"Scenario_Work_Zone.csv";
@@ -8631,11 +8723,17 @@ int CTLiteDoc::ReadWorkZoneScenarioData()
 				cs.EndDayNo	   = g_read_integer(st);
 				cs.StartTime = g_read_float(st);
 				cs.EndTime = g_read_float(st);
-				cs.LaneClosureRatio= g_read_float(st);
+				cs.LaneClosurePercentage= g_read_float(st);
 				cs.SpeedLimit = g_read_float(st);
 
+				if(RemoveLinkFromNodeNumber==usn && RemoveLinkToNodeNumber== dsn)
+				{
+					//skip
+				}else
+				{
 				plink->CapacityReductionVector.push_back(cs);
 				i++;
+				}
 			}else
 			{
 				error_count ++;
@@ -8649,14 +8747,9 @@ int CTLiteDoc::ReadWorkZoneScenarioData()
 	return i;
 }
 
-int CTLiteDoc::ReadIncidentScenarioData()
+int CTLiteDoc::ReadIncidentScenarioData(int RemoveLinkFromNodeNumber, int RemoveLinkToNodeNumber)
 {
-	// clean up all scenario data first
-	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		(*iLink)->CapacityReductionVector .clear();
 
-	}
 
 	CString incident_file = m_ProjectDirectory+"Scenario_Incident.csv";
 	FILE* st;
@@ -8676,7 +8769,7 @@ int CTLiteDoc::ReadIncidentScenarioData()
 
 			DTALink* plink = FindLinkWithNodeNumbers(usn,dsn,incident_file );
 
-			if(plink!=NULL)
+			if(plink!=NULL )
 			{
 				CapacityReduction cs;
 				cs.bIncident = true; 
@@ -8686,10 +8779,18 @@ int CTLiteDoc::ReadIncidentScenarioData()
 				cs.EndDayNo = cs.StartDayNo;
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
-				cs.LaneClosureRatio= g_read_float(st);
+				cs.LaneClosurePercentage= g_read_float(st);
 				cs.SpeedLimit = g_read_float(st);
-				plink->CapacityReductionVector.push_back(cs);
-				i++;
+
+				if(RemoveLinkFromNodeNumber==usn && RemoveLinkToNodeNumber== dsn)
+				{
+					//skip
+				}else
+				{
+					plink->CapacityReductionVector.push_back(cs);
+					i++;
+				
+				}
 			}else
 			{
 				error_count ++;
@@ -8703,7 +8804,7 @@ int CTLiteDoc::ReadIncidentScenarioData()
 	return i;
 }
 
-int CTLiteDoc::ReadVMSScenarioData()
+int CTLiteDoc::ReadVMSScenarioData(int RemoveLinkFromNodeNumber, int RemoveLinkToNodeNumber )
 {
 	// clean up all scenario data first
 	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -8744,8 +8845,15 @@ int CTLiteDoc::ReadVMSScenarioData()
 				ms.StartTime = g_read_integer(st);
 				ms.EndTime = g_read_integer(st);
 				ms.ResponsePercentage= g_read_float(st);
+
+				if(RemoveLinkFromNodeNumber==usn && RemoveLinkToNodeNumber== dsn)
+				{
+					//skip
+				}else
+				{
 				plink->MessageSignVector.push_back(ms);
 				i++;
+				}
 			}
 		}
 
@@ -14712,7 +14820,7 @@ void CTLiteDoc::PerformPathTravelTimeReliabilityAnalysis()
 bool b_Impacted = false;
 float OriginalCapacity = 0.0f;
 float ImpactDuration = 0.0f;
-float LaneClosureRatio = 0.0f;
+float LaneClosurePercentage = 0.0f;
 
 float CurrentTime = g_Simulation_Time_Stamp;
 
@@ -14750,9 +14858,9 @@ if(m_PathDisplayList.size()>0)
 
 		if (!b_Impacted)
 		{
-			LaneClosureRatio = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
+			LaneClosurePercentage = pLink->GetImpactedFlag(CurrentTime); // check capacity reduction event
 
-			if(LaneClosureRatio > 0.01) // This link is 
+			if(LaneClosurePercentage > 0.01) // This link is 
 			{  
 				// use the incident duration data in CapacityReductionVector[] to calculate the additional delay...
 				//
@@ -14785,7 +14893,7 @@ if (b_Impacted)
 {
 	dlg.m_bImpacted = b_Impacted;
 	dlg.m_ImpactDuration = ImpactDuration;
-	dlg.m_LaneClosureRatio = LaneClosureRatio/100.0f;
+	dlg.m_LaneClosurePercentage = LaneClosurePercentage/100.0f;
 	dlg.m_ImpactedLinkIdx = ImpactedLinkIdx;
 }
 
@@ -14793,4 +14901,81 @@ dlg.m_PathFreeFlowTravelTime = free_flow_travel_time;
 dlg.DoModal ();
 }
 
+
+
+void CTLiteDoc::OnDeleteWorkzone()
+{
+	if(m_SelectedLinkNo==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink= m_LinkNoMap [m_SelectedLinkNo];
+	if(pLink!=NULL)
+	{
+
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+
+	}
+		ReadIncidentScenarioData();
+		ReadWorkZoneScenarioData(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+
+
+		WriteWorkZoneScenarioData();
+
+
+		UpdateAllViews(0);
+	}
+}
+
+void CTLiteDoc::OnCrashDeleteincidentonselectedlink()
+{
+	if(m_SelectedLinkNo==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink= m_LinkNoMap [m_SelectedLinkNo];
+	if(pLink!=NULL)
+	{
+
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		(*iLink)->CapacityReductionVector .clear();
+
+	}
+		ReadIncidentScenarioData(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+		ReadWorkZoneScenarioData();
+
+
+		WriteWorkZoneScenarioData();
+
+
+		UpdateAllViews(0);
+	}
+}
+
+
+void CTLiteDoc::OnSubareaGenerateevacuationzonescenariofile()
+{
+	WriteCapacityReductionScenarioDataFromSubareaLinks("Scenario_Evacuation_Zone.csv");
+	OpenCSVFileInExcel(m_ProjectDirectory + "Scenario_Evacuation_Zone.csv");
+
+}
+
+void CTLiteDoc::OnSubareaGenerateweatherscenariofile()
+{
+	WriteCapacityReductionScenarioDataFromSubareaLinks("Scenario_Weather.csv");
+	OpenCSVFileInExcel(m_ProjectDirectory + "Scenario_Weather.csv");
+}
+
+void CTLiteDoc::OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea()
+{
+	WriteCapacityReductionScenarioDataFromSubareaLinks("Scenario_Work_Zone.csv");
+	OpenCSVFileInExcel(m_ProjectDirectory + "Scenario_Work_Zone.csv");
+}
 

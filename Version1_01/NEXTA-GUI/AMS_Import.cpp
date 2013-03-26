@@ -33,6 +33,7 @@
 #include "Shellapi.h"
 #include "Network.h"
 #include "TLiteDoc.h"
+#include "Dlg_UserInput.h"
 #ifndef _WIN64
 #include "Data-Interface//include//ogrsf_frmts.h"
 #endif 
@@ -162,6 +163,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"final_output","offset_link","value",offset_link);
 
 
+	int m_bGenerateDefaultCycleLength = 0; // initial value: 1: use default cycle length, 2: do not use default cycle length
+	int  default_cycle_length = 100; 
 
 	float long_lat_unit = 1.0f;
 	if(decimal_degrees=="no" || decimal_degrees=="NO")
@@ -301,7 +304,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			int control_type = 0;
 
 			if(node_control_type.size()>0 )
+			{
 				control_type = poFeature->GetFieldAsInteger(node_control_type.c_str ());
+			}
 
 			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
 
@@ -336,11 +341,48 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pNode->m_ZoneID = TAZ;
 			pNode->m_ControlType = control_type;
 
-
-			if(id==1067)
+			if(control_type == m_ControlType_PretimedSignal || control_type == m_ControlType_ActuatedSignal)
 			{
-				TRACE("");
+
+				if(m_bGenerateDefaultCycleLength==0)
+				{
+				if(AfxMessageBox("Do you want to set up a cycle length for signalized nodes?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
+				{
+					m_bGenerateDefaultCycleLength = 1;
+				}else
+				{
+					m_bGenerateDefaultCycleLength = 2;
+				}
+
+
+				}
+
+
+			if(m_bGenerateDefaultCycleLength == 1)
+			{
+
+
+				CDlg_UserInput dlg_cycle_length;
+
+				dlg_cycle_length.m_StrQuestion  = "Please specify default cycle length:";
+				dlg_cycle_length.m_InputValue = "100";
+
+				if(dlg_cycle_length.DoModal ()==IDOK)
+				{
+					default_cycle_length = atoi(dlg_cycle_length.m_InputValue) ;
+				}
+
+				m_bGenerateDefaultCycleLength = 3;
+				
 			}
+
+			if(m_bGenerateDefaultCycleLength == 3)
+			{
+			pNode->m_CycleLengthInSecond = default_cycle_length;
+			}
+
+			}
+
 			if(TAZ>=1)
 			{
 				pNode->m_bZoneActivityLocationFlag = true;
@@ -686,6 +728,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
 
+
 				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
 
 
@@ -1014,7 +1057,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					warning_message+= str_msg;
 				}
 
-
 				line_no ++;
 				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
 				{
@@ -1030,6 +1072,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					CT2CA pszConvertedAnsiString (mode_code);
 					// construct a std::string using the LPCSTR input
 					std::string  strStd (pszConvertedAnsiString);
+
+					std::replace( strStd.begin(), strStd.end(), ',', ';'); 
 
 					pLink->m_Mode_code = strStd;
 

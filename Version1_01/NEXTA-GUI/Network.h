@@ -1120,7 +1120,8 @@ public:
 		int link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
 		int movement_index = m_Link_Pair_to_Movement_Map[link_pair_key];
 
-		ASSERT(link_pair_key == m_MovementVector[movement_index].pair_key );
+		if(link_pair_key == m_MovementVector[movement_index].pair_key ) // in case there is a U turn 
+		{
 		
 		if(Hour<24)
 		{
@@ -1128,6 +1129,7 @@ public:
 		}
 
 		m_MovementVector[movement_index].sim_turn_count++;
+		}
 
 	}
 
@@ -1366,9 +1368,14 @@ class CapacityReduction
 public:
 	CapacityReduction()
 	{
-		StartDayNo = 0;
-		EndDayNo = 0;
+		StartDayNo = 1;
+		EndDayNo = 1;
 		ScenarioNo = 0;
+		StartTime = 0;
+		EndTime = 1440;
+
+		SpeedLimit = -1; // no change
+		LaneClosurePercentage = 0;
 
 		for (int i=0;i<MAX_RANDOM_SAMPLE_SIZE;i++)
 		{
@@ -1390,7 +1397,7 @@ public:
 	int StartDayNo;
 	int ScenarioNo;
 	int EndDayNo;
-	float LaneClosureRatio;
+	float LaneClosurePercentage;
 	float SpeedLimit;
 	float ServiceFlowRate;
 
@@ -1591,6 +1598,7 @@ public:
 
 		m_bIncludedBySelectedPath = false;
 		m_bIncludedinSubarea = false;
+		m_bIncludedinBoundaryOfSubarea = false;
 
 		m_bFirstPathLink = false;
 		m_bLastPathLink = false;
@@ -1698,6 +1706,7 @@ public:
 
 	bool m_bIncludedBySelectedPath;
 	bool m_bIncludedinSubarea;
+	bool m_bIncludedinBoundaryOfSubarea;
 	
 
 	bool m_bFirstPathLink;
@@ -1978,13 +1987,14 @@ void AdjustLinkEndpointsWithSetBack()
    m_ToPointWithSetback.y = m_ShapePoints[m_ShapePoints.size()-1].y + Direction.y;
 
 }
-	float 	GetImpactedFlag(int DepartureTime)
-	{
+	float 	GetImpactedFlag(int DepartureTime = -1, bool bWorkZone = true)
+	{ // if DepartureTime < -1, then we ignore the depature time attribute and show that any way
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if(DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime )
+			if( bWorkZone&&CapacityReductionVector[il].bWorkzone || !bWorkZone&&CapacityReductionVector[il].bIncident )
 			{
-				return CapacityReductionVector[il].LaneClosureRatio;
+				if(DepartureTime<=-1 || (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime ))
+						return CapacityReductionVector[il].LaneClosurePercentage;
 			}
 		}
 
@@ -2414,6 +2424,30 @@ void AdjustLinkEndpointsWithSetBack()
 			return 0;
 	}
 
+
+	float GetSimulatedLinkInVolume(int current_time)
+	{
+		float total_value = 0;
+		int total_count = 0;
+		
+		int StartTime = min(current_time, m_SimulationHorizon);
+		StartTime = min (StartTime,m_LinkMOEAry.size());
+
+		int EndTime = min(current_time+g_MOEAggregationIntervalInMin, m_SimulationHorizon-1);
+		EndTime = min (EndTime,m_LinkMOEAry.size()-1);
+
+			total_count  = max(1,EndTime - StartTime);
+			total_value = m_LinkMOEAry[EndTime].SimuArrivalCumulativeFlow - m_LinkMOEAry[StartTime].SimuArrivalCumulativeFlow;
+
+			if(total_value < 0)
+				total_value = 0;
+
+			if(total_count>=1)
+				return total_value/total_count*60;  // hourly volume
+			else
+			return 0;
+	}
+
 	float GetSensorLinkHourlyVolume(int t)
 	{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
@@ -2436,7 +2470,7 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 		{
-			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
+			if(GetSimulatedLinkInVolume(t) >=1) // with in flow
 			{
 				total_count++;
 				total_value+= m_LinkMOEAry[t].SimulatedTravelTime;

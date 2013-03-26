@@ -43,7 +43,7 @@ public:
 
 	bool m_bImpacted;
 	float m_ImpactDuration;
-	float m_LaneClosureRatio;
+	float m_LaneClosurePercentage;
 
 	float	m_dValue;
 	CString	m_sLabel;

@@ -143,7 +143,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneNumberSize;
 }
 
-void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traffic_flow_model TraffcModelFlag)  // for agent based 
+void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traffic_flow_model TraffcModelFlag, bool bUseCurrentInformation , double CurrentTime)  // for agent based 
 {
 
 	//CurrentZoneNo >=0: called by zone based assignment 
@@ -220,6 +220,12 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
 			float AvgTravelTime = pLink->GetTravelTimeByMin (DayNo,t,g_AggregationTimetInterval, TraffcModelFlag);
+
+			if(bUseCurrentInformation == true) // use travel information
+			{
+				AvgTravelTime = pLink->GetPrevailingTravelTime (DayNo, CurrentTime);
+			
+			}
 
 			if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
 				AvgTravelTime*=g_FreewayBiasFactor;
@@ -312,7 +318,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 	for(li = 0; li< g_LinkVector.size(); li++)
 	{
 		// if CurrentZoneNo ==- 1, we do not run the following line (to skip zone outgoing connectors)
-		if( CurrentZoneNo >=0 && g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsConnector() && g_NodeVector[g_LinkVector[li]->m_FromNodeID ].m_ZoneID != CurrentZoneNo) // only for non connector-links
+		if( CurrentZoneNo >=0 && g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsConnector() 
+			&& g_NodeVector[g_LinkVector[li]->m_FromNodeID ].m_ZoneID != CurrentZoneNo) // only for non connector-links
 			continue;
 
 		//find downstream node
@@ -360,7 +367,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 	m_LinkSize = g_LinkVector.size();
 }
-void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VMSLinkNo, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
+void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
 {
 
 	std::set<DTANode*>::iterator iterNode;
@@ -384,8 +391,7 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VM
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 
-		if(g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsConnector() && g_NodeVector[g_LinkVector[li]->m_FromNodeID ].m_ZoneID >= 0 
-			&& g_LinkVector[li]->m_LinkNo != VMSLinkNo) // connector from centroid and not the starting link
+		if(g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsConnector() && g_NodeVector[g_LinkVector[li]->m_FromNodeID ].m_ZoneID >= 0 ) // connector from centroid and not the starting link
 			continue;
 
 		FromID = g_LinkVector[li]->m_FromNodeID;

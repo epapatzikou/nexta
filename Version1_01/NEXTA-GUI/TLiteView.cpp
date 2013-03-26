@@ -228,7 +228,11 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_ZONE_CREATEZONE, &CTLiteView::OnZoneCreatezone)
 	ON_COMMAND(ID_EDIT_CREATEZONE, &CTLiteView::OnEditCreatezone)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_CREATEZONE, &CTLiteView::OnUpdateEditCreatezone)
-END_MESSAGE_MAP()
+	ON_COMMAND(ID_SUBAREA_HIGHLIGHTLINKSINSIDESUBAREA, &CTLiteView::OnSubareaHighlightlinksinsidesubarea)
+	ON_UPDATE_COMMAND_UI(ID_SUBAREA_HIGHLIGHTLINKSINSIDESUBAREA, &CTLiteView::OnUpdateSubareaHighlightlinksinsidesubarea)
+	ON_COMMAND(ID_SUBAREA_HIGHLIGHTLINKSACOSSSUBAREA, &CTLiteView::OnSubareaHighlightlinksacosssubarea)
+	ON_UPDATE_COMMAND_UI(ID_SUBAREA_HIGHLIGHTLINKSACOSSSUBAREA, &CTLiteView::OnUpdateSubareaHighlightlinksacosssubarea)
+	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
 // CTLiteView construction/destruction
@@ -330,6 +334,7 @@ CPen g_SuperThickPenSelectColor5(PS_SOLID,5,RGB(255,255,0)); // yellow
 CPen g_TempLinkPen(PS_DASH,0,RGB(255,255,255));
 CPen g_AVILinkPen(PS_DASH,0,RGB(0,255,0));
 CPen g_SubareaLinkPen(PS_SOLID,0,RGB(255,255,0));
+CPen g_SubareaBoundaryLinkPen(PS_SOLID,2,RGB(255,0,255));
 CPen g_SubareaPen(PS_DASH,2,RGB(255,0,0));
 
 CPen g_GridPen(PS_SOLID,1,RGB(190,190,190));
@@ -467,6 +472,8 @@ CTLiteView::CTLiteView()
 
 	m_bShowAVISensor = true;
 	m_bShowODDemandVolume = false;
+	m_bHighlightSubareaLinks = true;
+	m_bHighlightSubareaBoundaryLinks = false;
 	m_bShowConnector = false;
 	m_bHighlightActivityLocation = false;
 	isCreatingSubarea = false;
@@ -1002,8 +1009,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 				// special condition for subarea link
-				if((*iLink)->m_bIncludedinSubarea && pDoc->m_SubareaShapePoints.size()>=3)
+				if(m_bHighlightSubareaLinks &&(*iLink)->m_bIncludedinSubarea && pDoc->m_SubareaShapePoints.size()>=3)
 					pDC->SelectObject(&g_SubareaLinkPen);
+
+				if(m_bHighlightSubareaBoundaryLinks &&(*iLink)->m_bIncludedinBoundaryOfSubarea  && pDoc->m_SubareaShapePoints.size()>=3)
+					pDC->SelectObject(&g_SubareaBoundaryLinkPen);
 
 			}else  // default arterial model
 			{
@@ -1028,10 +1038,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				g_SelectThickPenColor(pDC,(*iLink)->m_DisplayLinkID);
 				pDC->SetTextColor(RGB(255,0,0));
 			}
-			else if((*iLink)->m_bIncludedinSubarea)
+			else if(m_bHighlightSubareaLinks &&(*iLink)->m_bIncludedinSubarea)
 			{
 				g_SelectThickPenColor(pDC,1);
 				pDC->SetTextColor(RGB(255,0,0));
+			}else if(m_bHighlightSubareaBoundaryLinks &&(*iLink)->m_bIncludedinBoundaryOfSubarea  && pDoc->m_SubareaShapePoints.size()>=3)
+			{
+					pDC->SelectObject(&g_SubareaBoundaryLinkPen);
 			}else if  ((*iLink)->m_LinkNo == pDoc->m_SelectedLinkNo)
 			{
 				g_SelectThickPenColor(pDC,0);
@@ -1056,7 +1069,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 
-			if( pMainFrame->m_bShowLayerMap[layer_workzone] == true && ((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->CapacityReductionVector.size()>0)))
+			if( pMainFrame->m_bShowLayerMap[layer_workzone] == true && 
+				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,true)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetImpactedFlag(-1,true)>=0.01)))
+				DrawBitmap(pDC, ScenarioPoint, IDB_WORKZONE);
+
+			if( pMainFrame->m_bShowLayerMap[layer_incident] == true && 
+				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,false)>=0.01 || (g_Simulation_Time_Stamp <=0.1 &&(*iLink) ->GetImpactedFlag(-1,false)>=0.01)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
 
 			if(  pMainFrame->m_bShowLayerMap[layer_VMS] == true && ((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0)))
@@ -1729,7 +1747,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	//step 12: draw generic point layer , e.g. crashes
 
-	if(pMainFrame->m_bShowLayerMap[layer_crash])
+	if(pMainFrame->m_bShowLayerMap[layer_incident])
 	{
 		pDC->SelectObject(&g_BlackBrush);
 		pDC->SetTextColor(RGB(255,255,0));
@@ -2745,6 +2763,8 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			case layer_link_MOE:
 			case layer_detector:
 			case layer_workzone:
+			case layer_incident:
+
 			case layer_VMS:
 			case layer_toll:
 			case layer_path:
@@ -3887,7 +3907,7 @@ void CTLiteView::OnEditCreatesubarea()
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 	pMainFrame->m_bShowLayerMap[layer_subarea] = true;
-	pMainFrame-> m_iSelectedLayer = layer_zone;
+	pMainFrame-> m_iSelectedLayer = layer_subarea;
 	GetDocument()->m_SubareaShapePoints.clear();
 
 }
@@ -3940,7 +3960,7 @@ void CTLiteView::CopyLinkSetInSubarea()
 	while (iLink != pDoc->m_LinkSet.end())
 	{
 		(*iLink)->m_bIncludedinSubarea = false;
-		if(pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_SubareaNodeIDMap.end() && pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_SubareaNodeIDMap.end()) 
+		if(pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_SubareaNodeIDMap.end() || pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_SubareaNodeIDMap.end()) 
 		{
 			pDoc->m_SubareaLinkSet.push_back (*iLink);
 
@@ -3948,6 +3968,14 @@ void CTLiteView::CopyLinkSetInSubarea()
 
 
 		}
+
+		(*iLink)->m_bIncludedinBoundaryOfSubarea = false;
+		if( (pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) != pDoc->m_SubareaNodeIDMap.end() && pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) == pDoc->m_SubareaNodeIDMap.end())
+			|| (pDoc->m_SubareaNodeIDMap.find((*iLink)->m_ToNodeID ) != pDoc->m_SubareaNodeIDMap.end() && pDoc->m_SubareaNodeIDMap.find((*iLink)->m_FromNodeID ) == pDoc->m_SubareaNodeIDMap.end()))
+		{
+			(*iLink)->m_bIncludedinBoundaryOfSubarea = true;
+		}
+
 		iLink++;
 	}
 
@@ -6095,4 +6123,36 @@ void CTLiteView::OnEditCreatezone()
 void CTLiteView::OnUpdateEditCreatezone(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_ToolMode == add_zone_tool ? 1 : 0);
+	Invalidate();
+
+}
+
+void CTLiteView::OnSubareaHighlightlinksinsidesubarea()
+{
+	m_bHighlightSubareaLinks = !m_bHighlightSubareaLinks;
+
+	if(m_bHighlightSubareaLinks)
+		m_bHighlightSubareaBoundaryLinks = false;
+
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateSubareaHighlightlinksinsidesubarea(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bHighlightSubareaLinks);
+}
+
+void CTLiteView::OnSubareaHighlightlinksacosssubarea()
+{
+	m_bHighlightSubareaBoundaryLinks = !m_bHighlightSubareaBoundaryLinks;
+
+	if(m_bHighlightSubareaBoundaryLinks)
+		m_bHighlightSubareaLinks = false;
+
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateSubareaHighlightlinksacosssubarea(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bHighlightSubareaBoundaryLinks);
 }

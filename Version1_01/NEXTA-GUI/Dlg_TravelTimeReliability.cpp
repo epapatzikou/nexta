@@ -99,7 +99,7 @@ void CDlg_TravelTimeReliability::UpdateCapacityAndDelay()
 				if (m_bImpacted && i == m_ImpactedLinkIdx)
 				{
 					g_RandomCapacity(&Capacity[0],IntProportion[0],LinkCapacity[i],0.1f,100);
-					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosureRatio,0.3f,100);
+					g_RandomCapacity(&Capacity[IntProportion[0]],IntProportion[1],LinkCapacity[i]*m_LaneClosurePercentage,0.3f,100);
 					g_RandomCapacity(&Capacity[IntProportion[0]+IntProportion[1]],IntProportion[2],LinkCapacity[i]*0.5f,0.2f,100);
 					g_RandomCapacity(&Capacity[MAX_SAMPLE_SIZE-IntProportion[3]],IntProportion[3],LinkCapacity[i]*0.7f,0.2f,100);
 

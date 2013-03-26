@@ -253,7 +253,7 @@ void CTLiteApp::OnFileOpen()
 	static char BASED_CODE szFilter[] = "NEXTA Data Files (*.dws;*.tnp)|*.dws; *.tnp|DYNASMART Workspace Files (*.dws)|*.dws|Transportation Network Projects (*.tnp)|*.tnp|All Files (*.*)|*.*||";
 
 	 
-   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_ENABLESIZING , szFilter,NULL, 0, false);
+   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_ENABLESIZING , szFilter,NULL, 0, true);
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();

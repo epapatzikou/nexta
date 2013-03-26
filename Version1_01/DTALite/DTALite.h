@@ -38,6 +38,9 @@
 #include <list>
 #include "CSVParser.h"
 using namespace std;
+#define _MAX_NUMBER_OF_PROCESSORS  8
+
+enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model};
 enum e_assignment_method { assignment_MSA =0, 
 assignment_day_to_day, 
@@ -683,6 +686,17 @@ public:
 	float SpeedLimit;
 };
 
+class EvacuationImpact
+{
+public:
+	int StartDayNo;
+	int EndDayNo;
+	int StartTime;  // use integer
+	int EndTime;    // use integer
+	float LaneClosureRatio;
+	float SpeedLimit;
+};
+
 class MessageSign
 {
 public:
@@ -811,12 +825,6 @@ public:
 
 		CurrentSequenceNoForVechileDistanceAry = 0;
 		CycleSizeForVechileDistanceAry = 0;
-		//VechileDistanceAry = NULL;
-		FIFO_queue_acutal_max_size  = 0;
-		FIFO_queue_max_size = 100;
-
-		FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
-
 
 		m_ObservedFlowVolume = 0;
 		m_FlowMeasurementError = 0;
@@ -869,9 +877,9 @@ public:
 
 	bool 	GetImpactedFlag(int DayNo=0, int DepartureTime = -1)
 	{
-		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
+		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if((WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (DepartureTime >= WorkZoneCapacityReductionVector[il].StartTime && DepartureTime<=WorkZoneCapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
+			if((CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime + 60))  // 60 impacted after capacity reduction
 			{
 				return true;
 			}
@@ -888,6 +896,21 @@ public:
 		return false;
 	}
 
+	bool 	IsInsideEvacuationZoneFlag(int DayNo=0, int CurrentTime = -1)
+	{
+		for(unsigned int il = 0; il< EvacuationImpactVector.size(); il++)
+		{
+			if((EvacuationImpactVector[il].StartDayNo  <=DayNo 
+				&& DayNo <= EvacuationImpactVector[il].EndDayNo ) 
+				&& (CurrentTime >= EvacuationImpactVector[il].StartTime 
+				&& CurrentTime<=EvacuationImpactVector[il].EndTime)) 
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	float GetHourlyPerLaneCapacity(int Time=-1)
 	{
@@ -902,11 +925,11 @@ public:
 		if(OutputFlowFlag == true)
 			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
 
-		for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
+		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if( (WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) && (Time>= WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
+			if( (CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
 			{
-				return (1-WorkZoneCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+				return (1-CapacityReductionVector[il].LaneClosureRatio)*NumLanes;
 			}
 		}
 
@@ -915,6 +938,26 @@ public:
 			if( (IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (Time>= IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime))
 			{
 				return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+			}
+		}
+
+		return (float)NumLanes;
+
+	}
+
+	float GetNumberOfLanes_ImpactedByWorkZoneConditions(int DayNo=0, int Time=-1, bool OutputFlowFlag = false)  // with lane closure
+	{
+
+		int NumLanes = m_NumLanes;
+
+		if(OutputFlowFlag == true)
+			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
+
+		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+		{
+			if( (CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
+			{
+				return (1-CapacityReductionVector[il].LaneClosureRatio)*NumLanes;
 			}
 		}
 
@@ -1131,8 +1174,14 @@ public:
 	std::vector <int> m_CumuArrivalFlow;
 	std::vector <int> m_CumuDeparturelFlow;
 
-	std::vector<CapacityReduction> WorkZoneCapacityReductionVector;
+	std::vector<CapacityReduction> CapacityReductionVector;
 	std::vector<CapacityReduction> IncidentCapacityReductionVector;
+
+	std::vector<CapacityReduction> EvacuationImpactVector;
+
+
+
+
 	std::vector<MessageSign> MessageSignVector;
 	std::vector<Toll> TollVector;
 
@@ -1153,112 +1202,7 @@ public:
 	std::list<struc_vehicle_item> LeftEntrance_Queue;  // left-turn in queue  of each link
 	std::list<struc_vehicle_item> LeftExit_Queue;      // left-turn out  queue of each link
 //
-	struc_vehicle_item EntranceBuffer[1000];  //link-in buffer  of each link, controlled by vehicle loading and transferring parts
 
-	struc_vehicle_item* FIFOQueue;   // implementation through a cycle 
-	int FIFO_front;
-	int FIFO_end;
-	int FIFO_queue_size;  // time-dependent size per simulation time interval
-	int FIFO_queue_max_size;   // for memory allocation
-
-	int FIFO_queue_acutal_max_size; // for car following simulation, across all simulation time intervals
-
-
-
-	void FIFOQueue_init()
-	{
-		FIFO_front = 0;
-		FIFO_end = 0;
-		FIFO_queue_size = 0;
-
-		if(FIFOQueue!=NULL)
-		{
-
-			delete FIFOQueue;
-
-			FIFO_queue_max_size = 100;
-			FIFOQueue  = new struc_vehicle_item[FIFO_queue_max_size];
-
-
-		}
-
-	}
-
-
-	void FIFO_queue_check_size()
-	{
-		if(FIFO_queue_size >= FIFO_queue_max_size-10)
-		{
-
-			cout << "FIFO_queue_size>=MAX_FIFO_QUEUESIZE " << FIFO_queue_max_size;
-
-			struc_vehicle_item* FIFOQueueTemp;   // implementation through a cycle 
-
-			FIFOQueueTemp = new struc_vehicle_item[FIFO_queue_max_size*2];  // increase size
-
-
-			for(int new_i = 0; new_i < FIFO_queue_size; new_i++)
-			{
-				int index = FIFO_front%(FIFO_queue_max_size-1);  // (FIFO_queue_max_size-1 is old cycle length
-				FIFOQueueTemp[new_i] = FIFOQueue[index]; // copy old content
-
-				FIFO_front = (FIFO_front+1)%(FIFO_queue_max_size-1); // move forward
-
-			}
-
-			//reset  front and end pointers
-			FIFO_front = 0;
-			FIFO_end = FIFO_queue_size;
-
-			if(FIFOQueue)  // delete old pointer
-				delete FIFOQueue;
-
-			FIFOQueue = FIFOQueueTemp;  // copy pointer
-
-			FIFO_queue_max_size  = FIFO_queue_max_size*2;  // increase actual size
-
-		}
-	}
-
-	void FIFOQueue_push_back(struc_vehicle_item item)
-	{
-		FIFO_queue_check_size();
-
-		if(CycleSizeForVechileDistanceAry>=5)  // car following simulation
-		{
-			// assign car following sequence no in the distance array
-			item.veh_car_following_no = CurrentSequenceNoForVechileDistanceAry%CycleSizeForVechileDistanceAry;
-			//		VechileDistanceAry[item.veh_car_following_no][i] = 0.0f; // initialize the starting position
-			CurrentSequenceNoForVechileDistanceAry++;
-		}
-
-		FIFOQueue[FIFO_end] = item;
-		FIFO_end = (FIFO_end+1)%(FIFO_queue_max_size-1); // move forward
-		FIFO_queue_size ++;
-
-		if(FIFO_queue_size > FIFO_queue_acutal_max_size)
-		{
-			FIFO_queue_acutal_max_size = FIFO_queue_size;  // update acutal max # of vehicles on a link at any given time
-		}
-
-	}
-
-	struc_vehicle_item FIFOQueue_pop_front()
-	{
-		FIFO_queue_check_size();
-
-		FIFOQueue[FIFO_front].veh_car_following_no  = -1;  // reset
-		struc_vehicle_item item = FIFOQueue[FIFO_front];
-		FIFO_front = (FIFO_front+1)%(FIFO_queue_max_size-1); // move forward
-		FIFO_queue_size --;
-		return item;
-	}
-
-	int EntranceBufferSize;
-	int NewVehicleCount;
-	int ExitVehicleCount;
-
-	//float **VechileDistanceAry;
 	int CurrentSequenceNoForVechileDistanceAry;  // start from 0, 
 	int CycleSizeForVechileDistanceAry; // cycle size
 
@@ -1268,11 +1212,6 @@ public:
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
 	int m_link_code; //1: AB, 2: BA
-
-	std::vector <int> m_InboundLinkWithoutUTurnVector;
-	std::vector <int> m_OutboundLinkWithoutUTurnVector;
-
-
 
 	int  m_StochaticCapcityFlag;  // 0: deterministic cacpty, 1: lane drop. 2: merge, 3: weaving
 	// optional for display only
@@ -1319,8 +1258,6 @@ public:
 
 	~DTALink()
 	{
-		if(FIFOQueue!=NULL)
-			delete FIFOQueue;
 
 		if(LoadingBufferVector!=NULL && LoadingBufferSize>=1)
 			delete LoadingBufferVector;
@@ -1341,16 +1278,18 @@ public:
 		m_LinkMOEAry.clear();
 		m_LinkMeasurementAry.clear();
 		m_VehicleDataVector.clear();
+		m_OutCapacityVector.clear();
 
 		m_CumuArrivalFlow.clear();
 		m_CumuDeparturelFlow.clear();
 
-		WorkZoneCapacityReductionVector.clear();
+		CapacityReductionVector.clear();
 		IncidentCapacityReductionVector.clear();
 		MessageSignVector.clear();
 		TollVector.clear();
 
 
+		m_Day2DayLinkMOEVector.clear();
 	};
 
 	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, int DayNo=0, float Time = -1)
@@ -1359,11 +1298,11 @@ public:
 			return m_BPRLinkTravelTime;
 		else 
 		{
-			for(unsigned int il = 0; il< WorkZoneCapacityReductionVector.size(); il++)
+			for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 			{
-				if((WorkZoneCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= WorkZoneCapacityReductionVector[il].EndDayNo ) &&(Time>=WorkZoneCapacityReductionVector[il].StartTime && Time<=WorkZoneCapacityReductionVector[il].EndTime))
+				if((CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) &&(Time>=CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
 				{
-					return m_Length/max(1,WorkZoneCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
+					return m_Length/max(1,CapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
 			}
 			for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
@@ -1391,13 +1330,13 @@ public:
 		m_CumulativeInCapacityCount = 0;
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
+		m_prevailing_travel_time = m_FreeFlowTravelTime;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
 		m_FFTT_simulation_interval = int(m_FreeFlowTravelTime/g_DTASimulationInterval);
 		LoadingBufferVector = NULL;
 
 		LoadingBufferSize = 0;
-		FIFOQueue_init();
 
 		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*60/g_DTASimulationInterval); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
@@ -1539,6 +1478,7 @@ public:
 
 	int departure_count;
 	float total_departure_based_travel_time;
+	float m_prevailing_travel_time;
 
 	float GetSpeed(int time)
 	{
@@ -1563,18 +1503,13 @@ public:
 
 	};
 
+
 	float GetPrevailingTravelTime(int DayNo,int CurrentTime)
-	{
-		if(GetNumberOfLanes(DayNo,CurrentTime)<=0.1)   // road blockage, less than 0.1 lanes, or about 2000 capacity
+	{  // used by real time information users
+		if(GetNumberOfLanes(DayNo,CurrentTime)<=0.001)   // road blockage, less than 0.1 lanes, or about 2000 capacity
 			return 1440; // unit min
 
-		if(departure_count >= 1 && CurrentTime >0)
-		{
-			return total_departure_based_travel_time/departure_count;
-		}
-		else { // CurrentTime ==0 or departure_count ==0 
-			return  m_FreeFlowTravelTime;
-		}
+			return m_prevailing_travel_time;
 
 	};
 
@@ -1598,8 +1533,8 @@ public:
 	{
 		float travel_time  = 0.0f;
 
-		// condition 1:road blockage
-		if(GetNumberOfLanes(DayNo,starting_time)<=0.1)   // 
+		// condition 1:road blockage caused by work zones
+		if(GetNumberOfLanes_ImpactedByWorkZoneConditions(DayNo,starting_time)<=0.001)   // 
 			return 9999; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
@@ -1891,14 +1826,47 @@ public:
 	}
 
 };
+class DTAVMSRespone
+{
+public:
+	int LinkNo;
+	int ResponseTime;
+	int SwitchFlag;
+
+	DTAVMSRespone()
+	{
+	ResponseTime = 0;
+	SwitchFlag = 0;
+	}
+
+};
+
+class DTAEvacuationRespone
+{
+public:
+	int LinkNo;
+	int ResponseTime;
+	int SwitchFlag;
+
+	DTAEvacuationRespone()
+	{
+	ResponseTime = 0;
+	SwitchFlag = 0;
+	}
+
+};
 class DTAVehicle
 {
 public:
+
+	std::vector<DTAVMSRespone> m_VMSResponseVector;
+	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
 
 	int m_EvacuationTime_in_min;
 	int m_EvacuationDestinationZone;
 
 	bool m_bEvacuationMode;
+	bool m_bEvacuationResponse;
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
@@ -1926,7 +1894,7 @@ public:
 
 	bool  m_bImpacted;
 
-	int m_TimeToRetrieveInfo;  // in simulation interval
+	double m_TimeToRetrieveInfo;
 	float m_DepartureTime;
 	float m_LeavingTimeFromLoadingBuffer;
 
@@ -1961,6 +1929,10 @@ public:
 	float m_AvgDayTravelTime;
 	float m_DayTravelTimeSTD;
 
+	int m_DestinationZoneID_Updated; 
+	int m_attribute_update_time_in_min;
+
+
 	int m_Age;
 	float m_VOT;        // range 0 to 255
 	float m_TollDollarCost;
@@ -1992,7 +1964,11 @@ public:
 
 	DTAVehicle()
 	{
+		m_DestinationZoneID_Updated = 0;
+		m_attribute_update_time_in_min = -1;
+
 		m_bEvacuationMode = false;
+		m_bEvacuationResponse = false;
 		m_EvacuationTime_in_min = 0;
 		m_EvacuationDestinationZone = 0;
 
@@ -2141,6 +2117,12 @@ public:
 			vehicle_type_percentage[vehicle_type] = 0;
 			cumulative_type_percentage[vehicle_type] = 0;
 		}
+		for(int info_class =0; info_class < MAX_INFO_CLASS_SIZE; info_class++)
+		{
+			info_class_percentage[info_class] = 0;
+			cumulative_info_class_percentage[info_class] = 0;
+		}
+
 	}
 
 };
@@ -2528,8 +2510,8 @@ public:
 
 	void BuildNetworkBasedOnZoneCentriod(int DayNo,int ZoneID);
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
-	void BuildTravelerInfoNetwork(int DayNo,int CurrentTime, int VMSLinkID, float Perception_error_ratio);
-	void BuildPhysicalNetwork(int DayNo, int CurZoneID, e_traffic_flow_model TraffcModelFlag);
+	void BuildTravelerInfoNetwork(int DayNo,int CurrentTime, float Perception_error_ratio);
+	void BuildPhysicalNetwork(int DayNo, int CurZoneID, e_traffic_flow_model TraffcModelFlag, bool bUseCurrentInformation = false, double CurrentTime = 0);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
@@ -2547,7 +2529,9 @@ public:
 	void AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void VehicleBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
+	void AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
 
+	void AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time);
 	// SEList: Scan List implementation: the reason for not using STL-like template is to avoid overhead associated pointer allocation/deallocation
 	void SEList_clear()
 	{
@@ -3017,10 +3001,10 @@ bool g_ReadAgentBinFileVersion1(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
-void g_VehicleRerouting(int DayNo,int v, float CurrentTime, MessageSign* p_is); // v for vehicle id
 void g_ODBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
-
+void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime ) ;
+void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
 int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,float& AvgCost, EmissionStatisticsData &emission_data,
@@ -3038,8 +3022,13 @@ void g_ComputeFinalGapValue();
 
 extern float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS];
 extern float g_VMSPerceptionErrorRatio;
-extern int g_information_updating_interval_of_en_route_info_travelers_in_min;
+extern int g_information_updating_interval_in_min;
+extern bool g_bInformationUpdatingAndReroutingFlag;
+extern bool g_bVehicleAttributeUpdatingFlag;
+
 extern int g_information_updating_interval_of_VMS_in_min;
+
+
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void ConstructPathArrayForEachODT_ODEstimation(int,PathArrayForEachODT *, int, int); // construct path array for each ODT
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Iteration);
@@ -3111,6 +3100,11 @@ void ReadVMSScenarioFile(string FileName,int scenario_no=0);
 void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
 void ReadWorkZoneScenarioFile(string FileName,int scenario_no=0);
 
+void ReadEvacuationScenarioFile(string FileName,int scenario_no=0);
+void ReadWeatherScenarioFile(string FileName,int scenario_no=0);
+
+
+void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime );
 void ReadLinkCapacityScenarioFile(string FileName,int scenario_no=0);
 void ReadMovementCapacityScenarioFile(string FileName,int scenario_no=0);
 

@@ -63,7 +63,7 @@ void CDlg_GISDataExchange::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_CSV_SHAPE_FILE, m_CSV_File);
 	DDX_Control(pDX, IDC_GIS_DATA_TYPE_LIST, m_GISDataType_List);
 	DDX_Check(pDX, IDC_CHECK1, m_bCreateNodeFromLink);
-	DDX_Check(pDX, IDC_CHECK2, m_SaveInputNodeLinkFiles);
+//	DDX_Check(pDX, IDC_CHECK2, m_SaveInputNodeLinkFiles);
 }
 
 

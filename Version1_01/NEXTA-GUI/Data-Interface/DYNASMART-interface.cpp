@@ -443,7 +443,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				cs.EndDayNo = 100;
 				cs.StartTime = g_read_float(st);
 				cs.EndTime = g_read_float(st);
-				cs.LaneClosureRatio= g_read_float(st)*100;  //DYNASMART-P use ratio, DTALite use percentage
+				cs.LaneClosurePercentage= g_read_float(st)*100;  //DYNASMART-P use ratio, DTALite use percentage
 				cs.SpeedLimit = g_read_float(st);
 				g_read_float(st);
 
