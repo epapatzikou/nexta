@@ -388,6 +388,9 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	int m_SelectFromNodeNumber; 
 	int m_SelectToNodeNumber;
 
+	bool m_bHighlightSubareaLinks;
+	bool m_bHighlightSubareaBoundaryLinks;
+
 	bool m_bShowODDemandVolume;
 	bool m_bShowConnector;
 	bool m_bHighlightActivityLocation;
@@ -787,6 +790,10 @@ public:
 	afx_msg void OnZoneCreatezone();
 	afx_msg void OnEditCreatezone();
 	afx_msg void OnUpdateEditCreatezone(CCmdUI *pCmdUI);
+	afx_msg void OnSubareaHighlightlinksinsidesubarea();
+	afx_msg void OnUpdateSubareaHighlightlinksinsidesubarea(CCmdUI *pCmdUI);
+	afx_msg void OnSubareaHighlightlinksacosssubarea();
+	afx_msg void OnUpdateSubareaHighlightlinksacosssubarea(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

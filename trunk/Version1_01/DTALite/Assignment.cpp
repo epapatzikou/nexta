@@ -52,7 +52,7 @@ void InnerLoopAssignment(int,int, int, int); // for inner loop assignment
 void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput* SimuOutput);
 void g_OutputSimulationStatistics(int Iteration);
 
-#define _MAX_NUMBER_OF_PROCESSORS  8
+
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	// reset random number seeds
@@ -1115,8 +1115,17 @@ void g_AgentBasedShortestPathGeneration()
 
 		while(!feof( st_input) )
 		{
+			origin_node_id = 0;
+			destination_node_id = 0;
+			record_id = 0;
 
-			fscanf(st_input,"%d,%d,%d\n", &record_id, &origin_node_id, &destination_node_id);
+			int number_of_values = fscanf(st_input,"%d,%d,%d\n", &record_id, &origin_node_id, &destination_node_id);
+			
+			// the expected number of items = 3;
+			if(number_of_values<3)
+				break;
+
+			TRACE("%d;%d;%d\n",record_id, &origin_node_id, &destination_node_id);
 
 			if(g_NodeNametoIDMap.find(origin_node_id)== g_NodeNametoIDMap.end())
 			{
@@ -1259,7 +1268,7 @@ void g_AgentBasedShortestPathGeneration()
 
 	cout <<g_GetAppRunningTime()<<  " Done!" << endl;
 
-	g_ProgramStop();
+
 }
 
 

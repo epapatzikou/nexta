@@ -182,7 +182,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			}
 
 
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 			pVehicle->m_ArrivalTime  = 0;
 			pVehicle->m_bComplete = false;
 			pVehicle->m_bLoaded  = false;
@@ -398,7 +398,33 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			parser_agent.GetValueByFieldNameRequired("vehicle_type",pVehicle->m_VehicleType);
 			parser_agent.GetValueByFieldNameRequired("information_type",pVehicle->m_InformationClass);
 			parser_agent.GetValueByFieldNameRequired("value_of_time",pVehicle->m_VOT);
-			parser_agent.GetValueByFieldNameRequired("age",pVehicle->m_Age );
+			parser_agent.GetValueByFieldNameRequired("vehicle_age",pVehicle->m_Age );
+
+
+			pVehicle->m_attribute_update_time_in_min  = -1;
+			parser_agent.GetValueByFieldName("time_for_attribute_updating",pVehicle->m_attribute_update_time_in_min );
+			parser_agent.GetValueByFieldName("updated_to_zone_id",pVehicle->m_DestinationZoneID_Updated );
+
+			if(pVehicle->m_attribute_update_time_in_min>=0)  // there are vehicles' attributes need to be updated
+			{
+
+				if(g_ZoneMap.find(pVehicle->m_DestinationZoneID_Updated) == g_ZoneMap.end())
+				{
+				
+
+					cout << "updated_to_zone_id " << pVehicle->m_DestinationZoneID_Updated << " does not exist for vehicle " << pVehicle->m_VehicleID << endl;
+					g_ProgramStop();
+						
+				
+				}
+				g_bVehicleAttributeUpdatingFlag = true;
+				g_bInformationUpdatingAndReroutingFlag = true;
+
+			}
+
+
+			
+			
 
 			int number_of_nodes = 0;
 			parser_agent.GetValueByFieldNameRequired("number_of_nodes",number_of_nodes );
@@ -414,9 +440,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
 			}
 
-			//				parser_agent.GetValueByFieldName("output_speed_profile_flag",pVehicle->m_output_speed_profile_flag);
-
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 			pVehicle->m_ArrivalTime  = 0;
 			pVehicle->m_bComplete = false;
 			pVehicle->m_bLoaded  = false;
@@ -441,24 +465,6 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			parser_agent.GetValueByFieldName ("ending_departure_time",ending_departure_time);
 			}
 
-			if(ecaculation_modeling_flag)
-			{
-			
-				int evacuation_time_in_min;
-				int evacuation_destination_zone;
-
-				parser_agent.GetValueByFieldName("evacuation_time_in_min",evacuation_time_in_min);
-				parser_agent.GetValueByFieldName ("evacuation_destination_zone",evacuation_destination_zone);
-
-
-				if(evacuation_time_in_min>=1)
-				{
-					pVehicle-> m_bEvacuationMode = true;
-					pVehicle->m_EvacuationTime_in_min = evacuation_time_in_min;
-					pVehicle->m_EvacuationDestinationZone = evacuation_destination_zone;
-				}
-
-			}
 
 			for(int agent_i = 0; agent_i < number_of_agents; agent_i++)
 			{
@@ -482,10 +488,10 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 					// add node sequence 
 
-					if(number_of_nodes>=2)
-					{
-					AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
-					}
+					//if(number_of_nodes>=2)
+					//{
+					//AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
+					//}
 
 
 					g_VehicleVector.push_back(pNewVehicle);
@@ -496,7 +502,8 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 				}else
 				{
 				g_VehicleVector.push_back(pVehicle);
-				g_VehicleMap[i]  = pVehicle;
+				g_VehicleMap[pVehicle->m_VehicleID ]  = pVehicle;
+
 				}
 
 
@@ -509,6 +516,9 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 				{
 					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
 				}
+
+				ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+
 				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
 				i++;
@@ -646,7 +656,7 @@ bool g_ReadAgentBinFile(string file_name)
 			pVehicle->m_VOT = header.value_of_time;
 			pVehicle->m_Age  = header.age;
 
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 
 			pVehicle->m_NodeSize = header.number_of_nodes;
 			pVehicle->m_ArrivalTime  = 0;
@@ -852,7 +862,7 @@ bool g_ReadAgentBinFileVersion1(string file_name)
 			pVehicle->m_InformationClass = header.information_type;
 			pVehicle->m_VOT = header.value_of_time;
 
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 
 			pVehicle->m_NodeSize = header.number_of_nodes;
 			pVehicle->m_ArrivalTime  = 0;
@@ -951,3 +961,4 @@ bool g_ReadAgentBinFileVersion1(string file_name)
 	}
 	return false;
 }
+

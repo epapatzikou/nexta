@@ -37,9 +37,9 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 4
+#define _MAX_SCENARIO_SIZE 6
 // CDlgScenario dialog
-static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll"};
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Evacuation_Zone","Weather"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -52,7 +52,7 @@ CDlgScenario::CDlgScenario(int idx,CWnd* pParent)
 	}
 	else
 	{
-		m_SelectTab = _LINKBASEDTOLL;
+		m_SelectTab = 0;
 	}
 }
 
@@ -66,6 +66,8 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 	switch (i)
 	{
 	case 0:  //work zone
+	case 4:  //evacuation zone
+	case 5:  //weather zone
 		HeaderList.push_back("Link");
 		HeaderList.push_back("Scenario No");
 		HeaderList.push_back("Start Day No");
@@ -141,9 +143,6 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1.5");
 		DefaultList.push_back("0");
 		break;
-	case 5:
-		// link capacity
-
 		break;
 	}
 }

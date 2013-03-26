@@ -144,6 +144,14 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	UpdateData(true);
 
+	if(m_Edit_Excel_File.GetLength () ==0)
+	{
+		
+		AfxMessageBox("Please first provide Excel file to be imported.");
+
+		return;
+	}
+
 	if(m_pDoc->m_Database.IsOpen ())
 		m_pDoc->m_Database.Close ();
 
@@ -349,7 +357,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				std::vector<CCoordinate> CoordinateVector;
 
 				CString geometry_str;
-				geometry_str= rsLink.GetCString(CString("geometry"));
+				geometry_str= rsLink.GetCString(CString("geometry"),false);
 
 				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
 				{
@@ -450,6 +458,17 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					break;
 					// moveon					
 					}
+				}else
+				{
+					if(from_node_id == 0 && m_pDoc->m_LinkSet.size() ==0)
+					{
+					
+					m_MessageList.AddString ("Field from_node_id has no valid data in the link table.");
+					rsLink.Close();
+					break;
+					}
+				
+
 				}
 
 				to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
@@ -501,7 +520,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				std::vector<CCoordinate> CoordinateVector;
 
 				CString geometry_str;
-				geometry_str= rsLink.GetCString(CString("geometry"));
+				geometry_str= rsLink.GetCString(CString("geometry"),false);
 
 				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
 				{
@@ -601,7 +620,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
-				if(number_of_lanes<1 && m_bUseLinkTypeForDefaultValues)
+				if(m_bUseLinkTypeForDefaultValues)
+				{
+				if(number_of_lanes<1)
 				{
 					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
 					{
@@ -638,7 +659,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					rsLink.Close();
 					return;
 					}
-				
+				}
 
 				if(number_of_lanes ==0)
 				{
@@ -1283,14 +1304,22 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			int from_zone_id = rsDemand.GetLong(CString("zone_id"),bExist,false);
 			if(!bExist) 
 			{
-				AfxMessageBox("Field zone_id cannot be found in the demand table.");
+				AfxMessageBox("Field zone_id cannot be found in the demand matrix.\n Please make sure your demand input is matrix-based format.");
 				return;
 			}
+
+			if(from_zone_id==0)
+			{
+				AfxMessageBox("zone_id = 0\nPlease make sure your demand input follows matrix format.");
+				return;
+			
+			}
+
 
 			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
 			{
 				CString message;
-				message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
+				message.Format("from_zone_id %d at line %d in the demand matrix has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
 				AfxMessageBox(message);
 				break;
 			}
@@ -1309,7 +1338,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			if(!bExist) 
 			{
 				CString messsage;
-				messsage.Format("Field %d cannot be found in the demand matrix", to_zone_id);
+				messsage.Format("Field %d cannot be found in the demand matrix.", to_zone_id);
 				AfxMessageBox(messsage);
 				return;
 			}
@@ -1364,7 +1393,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			int from_zone_id = rsDemand.GetLong(CString("from_zone_id"),bExist,false);
 			if(!bExist) 
 			{
-				AfxMessageBox("Field from_zone_id cannot be found in the demand table.");
+				AfxMessageBox("Field from_zone_id cannot be found in the demand table.\n Please make sure your demand input is three column-based format.");
 				return;
 			}
 

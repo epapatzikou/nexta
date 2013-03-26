@@ -60,7 +60,7 @@ enum layer_mode
 	layer_subarea, 
 	layer_detector,
 	layer_workzone,
-	layer_crash,
+	layer_incident,
 	layer_VMS,
 	layer_toll,
 	layer_ramp,
@@ -716,15 +716,16 @@ public:
 	};
 
 
-	int ReadVMSScenarioData();
-	int ReadWorkZoneScenarioData();
-	int ReadIncidentScenarioData();
+	int ReadVMSScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
+	int ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
+	int ReadIncidentScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadLink_basedTollScenarioData();
 
 	bool WriteLink_basedTollScenarioData();
 	bool WriteVMSScenarioData();
 	bool WriteIncidentScenarioData();
 	bool WriteWorkZoneScenarioData();
+	bool WriteCapacityReductionScenarioDataFromSubareaLinks(CString Scenario_File_Name);
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
 	bool ReadLinkGeoFile(LPCTSTR lpszFileName);
@@ -1220,6 +1221,7 @@ public:
 		return pLink;
 	}
 
+	
 	void SplitLinksForOverlappingNodeOnLinks(int ThisNodeID, bool bOffset = false, bool bLongLatFlag = false)
 	{
 		std::vector<DTALink*> OverlappingLinks;
@@ -2307,6 +2309,13 @@ public:
 	afx_msg void OnExportGenerateshapefilesPathData();
 	afx_msg void OnDetectorExportlinkflowproportionmatrixtocsvfile();
 	afx_msg void OnDetectorUseodestimationoptimizationexcelprogram();
+	afx_msg void OnDeleteWorkzone();
+	afx_msg void OnCrashDeleteincidentonselectedlink();
+
+	afx_msg void OnSubareaGenerateevacuationzonescenariofile();
+	afx_msg void OnSubareaGenerateweatherscenariofile();
+	afx_msg void OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea();
+
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

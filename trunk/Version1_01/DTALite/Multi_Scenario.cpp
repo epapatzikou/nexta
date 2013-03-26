@@ -96,7 +96,7 @@ void g_MultiScenarioTrafficAssignment()
 
 
 	CCSVParser parser_MOE_settings;
-	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
+	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
 	{
 		while(parser_MOE_settings.ReadRecord())
 		{
@@ -466,7 +466,7 @@ void g_MultiScenarioTrafficAssignment()
 			csv_output.SetValueByFieldName ("default_cycle_length",g_DefaultCycleLength);
 
 			CCSVParser parser_MOE_settings;
-			if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
+			if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
 			{
 				while(parser_MOE_settings.ReadRecord())
 				{

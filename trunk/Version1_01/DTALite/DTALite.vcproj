@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				RuntimeLibrary="1"
-				OpenMP="false"
+				OpenMP="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -343,6 +343,10 @@
 			</File>
 			<File
 				RelativePath=".\ODEstimation.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RealTimeRouting.cpp"
 				>
 			</File>
 			<File

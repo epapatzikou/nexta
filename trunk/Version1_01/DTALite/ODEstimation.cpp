@@ -908,10 +908,9 @@ void g_GenerateVehicleData_ODEstimation()
 				pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
 				pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
 				pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
-				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+				pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 				pVehicle->m_VOT = kvhc->m_VOT ;
 				pVehicle->m_Age  = kvhc->m_Age;
-				pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
 
 
 				pVehicle->m_DemandType	= kvhc->m_DemandType;

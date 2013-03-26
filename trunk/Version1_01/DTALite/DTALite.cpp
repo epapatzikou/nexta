@@ -207,7 +207,10 @@ float g_TotalMeasurementDeviation = 0;
 float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
 float g_VMSPerceptionErrorRatio;
 
-int g_information_updating_interval_of_en_route_info_travelers_in_min;
+int g_information_updating_interval_in_min;
+bool g_bInformationUpdatingAndReroutingFlag = false;
+bool g_bVehicleAttributeUpdatingFlag = false;
+ 
 int g_information_updating_interval_of_VMS_in_min = 60;
 
 
@@ -417,6 +420,8 @@ void g_ReadInputFiles(int scenario_no)
 		CCSVWriter File_output_ODMOE;
 		File_output_ODMOE.Open ("output_ODMOE.csv");
 
+		CCSVWriter File_output_Agent;
+		File_output_Agent.Open ("output_agent.csv");
 
 		CCSVWriter File_output_ODME_table;
 		File_output_ODME_table.Open ("output_ODME_table.csv");
@@ -460,7 +465,10 @@ void g_ReadInputFiles(int scenario_no)
 
 
 
-	ReadNodeControlTypeCSVFile();
+	if(g_UEAssignmentMethod != assignment_accessibility_distanance)  //  node control type is not required when calculating node-to-node distance 
+	{
+		ReadNodeControlTypeCSVFile();
+	}
 
 	if(FindNodeControlType("pretimed_signal")>0)  // valid record
 	{
@@ -497,13 +505,13 @@ void g_ReadInputFiles(int scenario_no)
 				break;
 
 			int cycle_length_in_second = 60;
-			parser_node.GetValueByFieldNameRequired ("cycle_length_in_second",cycle_length_in_second);
+			parser_node.GetValueByFieldName("cycle_length_in_second",cycle_length_in_second);
 
-			int control_type = 1;
-			parser_node.GetValueByFieldNameRequired ("control_type",control_type);
+			int control_type = 0;
+			parser_node.GetValueByFieldName ("control_type",control_type);
 
-			int offset = 1;
-			parser_node.GetValueByFieldNameRequired ("control_type",offset);
+			int offset = 0;
+			parser_node.GetValueByFieldName ("control_type",offset);
 
 			DTANode Node;
 			Node.m_NodeID = i;
@@ -536,6 +544,8 @@ void g_ReadInputFiles(int scenario_no)
 	cout << "Step 2: Reading file input_link_type.csv..."<< endl;
 	g_LogFile << "Step 2: Reading file input_link_type.csv.." << endl;
 
+	if(g_UEAssignmentMethod != assignment_accessibility_distanance)  //  link type is not required when calculating node-to-node distance 
+	{
 	CCSVParser parser_link_type;
 
 	if (!parser_link_type.OpenCSVFile("input_link_type.csv"))
@@ -636,6 +646,8 @@ void g_ReadInputFiles(int scenario_no)
 
 	g_SummaryStatFile.WriteParameterValue ("# of Link Types",g_LinkTypeMap.size());
 
+	}
+
 
 	//*******************************
 	// step 3: link data input
@@ -732,13 +744,17 @@ void g_ReadInputFiles(int scenario_no)
 
 			if(!parser_link.GetValueByFieldName("number_of_lanes",number_of_lanes))
 			{
+				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				{
 				cout << "Field number_of_lanes has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 			}
 
 			if(!parser_link.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
 			{
+
 				cout << "Field speed_limit_in_mph has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
@@ -746,18 +762,24 @@ void g_ReadInputFiles(int scenario_no)
 
 			if(!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour",capacity))
 			{
+				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				{
 				cout << "Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 
 			}
 			int SaturationFlowRate;
 
 			if(!parser_link.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane",SaturationFlowRate))
 			{
+				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				{
 				cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 			}
 
 
@@ -794,13 +816,17 @@ void g_ReadInputFiles(int scenario_no)
 
 			if(!parser_link.GetValueByFieldName("link_type",type))
 			{
+				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				{
+
 				cout << "Field link_type has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 			}
 
 
-			if(g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
+			if((g_UEAssignmentMethod != assignment_accessibility_distanance) && g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
 			{
 				int round_down_type = int(type/10)*10;
 				if(g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())  // round down type exists
@@ -1615,6 +1641,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	// done with zone.csv
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	PhysicalNetwork.Setup(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag);
 	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 	//	ConnectivityChecking(&PhysicalNetwork);
@@ -1929,7 +1956,7 @@ void g_ConvertDemandToVehicles()
 			}
 
 			pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
-			pVehicle->m_TimeToRetrieveInfo = (int)(pVehicle->m_DepartureTime*10);
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 
 			pVehicle->m_DemandType	= kvhc->m_DemandType;
 			pVehicle->m_PricingType 	= kvhc->m_PricingType ;
@@ -2194,7 +2221,7 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 			{
 				int local_scenario_no = g_read_integer(st);
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st); // start from zero
+				cs.StartDayNo = g_read_integer(st)-1; // start from zero
 				cs.EndDayNo = cs.StartDayNo;
 
 				if(cs.StartDayNo <0)
@@ -2215,15 +2242,6 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 
 				float percentage= g_read_float(st); 
 
-				if(percentage < 1.1f)
-				{
-					cout << "Capacity Reduction Percentage = " <<  percentage << " % in line " << count +1 << "in file Scenario_Incident.csv. Please check!" <<endl;
-
-					g_ProgramStop();
-
-				}
-
-
 				cs.LaneClosureRatio = percentage/100.f; // percentage -> to ratio
 
 
@@ -2235,7 +2253,7 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 
 				if(cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Incident.csv. Please check!" <<endl;
+					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << " in file Scenario_Incident.csv. Please check!" <<endl;
 					g_ProgramStop();
 
 				}
@@ -2257,7 +2275,7 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 		fclose(st);
 	}else
 	{
-		if(FileName.size()>0 && FileName.compare ("Scenario_Incident.csv")!=0)  // external input files from multi-scenario runs
+		if(FileName.size()>0 && FileName.compare ("Scenario_Incident.csv")==0)  // external input files from multi-scenario runs
 		{
 			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
 			g_ProgramStop();
@@ -2271,7 +2289,7 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 
-		g_LinkVector[li]->WorkZoneCapacityReductionVector.clear(); // remove all previouly read records
+		g_LinkVector[li]->CapacityReductionVector.clear(); // remove all previouly read records
 
 	}
 
@@ -2307,8 +2325,8 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st); // start from zero
-				cs.EndDayNo = g_read_integer(st);
+				cs.StartDayNo = g_read_integer(st)-1; // start from zero
+				cs.EndDayNo = g_read_integer(st)-1;
 
 				if(cs.StartDayNo <0)
 				{
@@ -2365,7 +2383,7 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				}
 				if(local_scenario_no==0 || local_scenario_no == scenario_no)
 				{
-					pLink->WorkZoneCapacityReductionVector.push_back(cs);
+					pLink->CapacityReductionVector.push_back(cs);
 					count++;
 				}
 
@@ -2392,6 +2410,250 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 	}
 
 }
+
+void ReadWeatherScenarioFile(string FileName, int scenario_no)
+{
+
+
+	FILE* st = NULL;
+	fopen_s(&st,FileName.c_str(),"r"); /// 
+	if(st!=NULL)
+	{
+		cout << "Reading file " << FileName << endl;
+		g_LogFile << "Reading file " << FileName << endl;
+		int count = 0;
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn <=0) 
+				break;
+			int dsn =  g_read_integer(st);
+
+			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			{
+				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+
+			if(pLink!=NULL)
+			{
+				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				{
+					TRACE("");
+				}
+
+				int local_scenario_no = g_read_integer(st);
+
+				CapacityReduction cs;
+				cs.StartDayNo = g_read_integer(st)-1; // start from zero
+				cs.EndDayNo = g_read_integer(st)-1;
+
+				if(cs.StartDayNo <0)
+				{
+					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
+					g_ProgramStop();
+				}
+
+				if(cs.EndDayNo <0)
+				{
+					cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
+					g_ProgramStop();
+				}
+
+				if(cs.EndDayNo < cs.StartDayNo )
+				{
+					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+					g_ProgramStop();
+				}
+
+
+				cs.StartTime = g_read_integer(st);
+				cs.EndTime = g_read_integer(st);
+
+				if(cs.StartTime >= cs.EndTime )
+				{
+					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+					g_ProgramStop();
+				}
+
+				float percentage = g_read_float(st);
+
+				if(percentage < 1.1f)
+				{
+					cout << "Capacity Reduction Percentage = " <<  percentage << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+
+					g_ProgramStop();
+
+				}
+
+
+				cs.LaneClosureRatio= percentage/100.0f; // percentage -> to ratio
+				if(cs.LaneClosureRatio > 1.0)
+					cs.LaneClosureRatio = 1.0;
+				if(cs.LaneClosureRatio < 0.0)
+					cs.LaneClosureRatio = 0.0;
+				cs.SpeedLimit = g_read_float(st);
+
+				if(cs.SpeedLimit < -0.1f)
+				{
+					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+
+					g_ProgramStop();
+
+				}
+				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				{
+					pLink->CapacityReductionVector.push_back(cs);
+					count++;
+				}
+
+			}
+		}
+
+		g_scenario_short_description << "with " << count << "weather records;";
+		g_LogFile << "weather records = " << count << endl;
+		g_SummaryStatFile.WriteTextLabel("# of weather records=");
+		g_SummaryStatFile.WriteNumber(count);
+
+
+		fclose(st);
+	}else
+	{
+
+		cout << "Weather records = 0 " << endl;
+
+		if(FileName.size()>0 && FileName.compare ("Scenario_Weather.csv")!=0)
+		{
+			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+			g_ProgramStop();
+		}
+	}
+
+}
+void ReadEvacuationScenarioFile(string FileName, int scenario_no)
+{
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	{
+
+		g_LinkVector[li]->EvacuationImpactVector.clear(); // remove all previouly read records
+
+	}
+
+	FILE* st = NULL;
+	fopen_s(&st,FileName.c_str(),"r"); /// 
+	if(st!=NULL)
+	{
+		cout << "Reading file " << FileName << endl;
+		g_LogFile << "Reading file " << FileName << endl;
+		int count = 0;
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn <=0) 
+				break;
+			int dsn =  g_read_integer(st);
+
+			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			{
+				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+
+			if(pLink!=NULL)
+			{
+				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				{
+					TRACE("");
+				}
+
+				int local_scenario_no = g_read_integer(st);
+
+				CapacityReduction cs;
+				cs.StartDayNo = g_read_integer(st)-1; // start from zero
+				cs.EndDayNo = g_read_integer(st)-1;
+
+				if(cs.StartDayNo <0)
+				{
+					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
+					g_ProgramStop();
+				}
+
+				if(cs.EndDayNo <0)
+				{
+					cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
+					g_ProgramStop();
+				}
+
+				if(cs.EndDayNo < cs.StartDayNo )
+				{
+					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+					g_ProgramStop();
+				}
+
+
+				cs.StartTime = g_read_integer(st);
+				cs.EndTime = g_read_integer(st);
+
+				if(cs.StartTime >= cs.EndTime )
+				{
+					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+					g_ProgramStop();
+				}
+
+				float percentage = g_read_float(st);
+
+				cs.LaneClosureRatio= percentage/100.0f; // percentage -> to ratio
+				if(cs.LaneClosureRatio > 1.0)
+					cs.LaneClosureRatio = 1.0;
+				if(cs.LaneClosureRatio < 0.0)
+					cs.LaneClosureRatio = 0.0;
+				cs.SpeedLimit = g_read_float(st);
+
+				if(cs.SpeedLimit < -0.1f)
+				{
+					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << " in file Scenario_Work_Zone.csv. Please check!" <<endl;
+
+					g_ProgramStop();
+
+				}
+				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				{
+					//evacuation data record goes to both capacity reduction and evacuation vectors. the latter is used to inform drivers to switch
+					pLink->EvacuationImpactVector.push_back(cs);
+					pLink->CapacityReductionVector.push_back(cs);
+
+
+					count++;
+				}
+
+			}
+		}
+
+		g_scenario_short_description << "with " << count << "evacuation link records;";
+		g_LogFile << "evacuation link records = " << count << endl;
+		g_SummaryStatFile.WriteTextLabel("# of evacuation link records=");
+		g_SummaryStatFile.WriteNumber(count);
+
+
+		fclose(st);
+	}else
+	{
+
+		cout << "evacuation linkrecords = 0 " << endl;
+
+		if(FileName.size()>0 && FileName.compare ("Scenario_Evacuation_Zone.csv")!=0)
+		{
+			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+			g_ProgramStop();
+		}
+	}
+
+}
+
 void ReadMovementScenarioFile(string FileName, int scenario_no)
 {
 
@@ -2498,14 +2760,16 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 				MessageSign is;
 
 				is.Type = 1;
-				is.StartDayNo  = g_read_integer(st);
-				is.EndDayNo   = g_read_integer(st);
+				is.StartDayNo  = g_read_integer(st)-1;  // start from day zero
+				is.EndDayNo   = g_read_integer(st)-1;  // start from day zero
 				is.StartTime = g_read_integer(st);
 				is.EndTime = g_read_integer(st);
 				is.ResponsePercentage =  g_read_float(st);
 
 				if(local_scenario_no==0 || local_scenario_no == scenario_no)
 				{
+					g_bInformationUpdatingAndReroutingFlag = true;
+
 					pLink->MessageSignVector.push_back(is);
 					count++;
 				}
@@ -2575,8 +2839,8 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				Toll tc;  // toll collection
-				tc.StartDayNo  = g_read_integer(st,false);
-				tc.EndDayNo  = g_read_integer(st,false);
+				tc.StartDayNo  = g_read_integer(st,false)-1;  // start from zero
+				tc.EndDayNo  = g_read_integer(st,false)-1;  // start from zero
 
 				tc.StartTime = g_read_integer(st,false);
 				tc.EndTime = g_read_integer(st,false);
@@ -2622,29 +2886,43 @@ void ReadScenarioInputFiles(int scenario_no)
 	ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv",scenario_no);
 	ReadLinkTollScenarioFile("Scenario_Link_Based_Toll.csv",scenario_no);
 	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv",scenario_no);
+
+	//ReadEvacuationScenarioFile("Scenario_Evacuation_Zone.csv",scenario_no);
+	//ReadWeatherScenarioFile("Scenario_Weather.csv",scenario_no);
+
 	ReadMovementScenarioFile("Scenario_Movement.csv",scenario_no);
 }
 void FreeMemory()
 {
 	// Free pointers
 
-	cout << "Free node set... " << endl;
+	//exit(0);
+	//  use windows system to release memory
 
-	if(g_TDOVehicleArray!=NULL && g_ODZoneNumberSize > 0);
+	try
 	{
-		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
-		g_TDOVehicleArray = NULL;
-	}
-
-	g_NodeVector.clear();
-
 	cout << "Free link set... " << endl;
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 		DTALink* pLink = g_LinkVector[li];
+
+		if(pLink!=NULL && pLink->m_NumLanes >=1)
+		{
 		delete pLink;
+		}
+
 	}
 
+	}
+	catch (const std::exception& e)
+	{
+		std::cout << "Got exception: " << e.what() << std::endl;
+
+	}
+
+
+	cout << "Free node set... " << endl;
+	g_NodeVector.clear();
 
 	g_LinkVector.clear();
 	g_LinkVector.clear();
@@ -2662,6 +2940,12 @@ void FreeMemory()
 	g_AssignmentMOEVector.clear();
 	g_ODTKPathVector.clear();
 	g_simple_vector_vehicles.clear();
+
+	if(g_TDOVehicleArray!=NULL && g_ODZoneNumberSize > 0);
+	{
+		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
+		g_TDOVehicleArray = NULL;
+	}
 }
 
 
@@ -2937,7 +3221,7 @@ int g_InitializeLogFiles()
 
 
 	CCSVParser parser_MOE_settings;
-	if (!parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv"))
+	if (!parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
 	{
 		// use default files
 		CCSVWriter csv_output("input_MOE_settings.csv");
@@ -3097,8 +3381,7 @@ void g_ReadDTALiteSettings()
 	g_UserClassPerceptionErrorRatio[3] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_en-route_info_travelers_perception_error",0.05f,g_DTASettingFileName);	
 
 	g_VMSPerceptionErrorRatio          = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_VMS_perception_error",0.05f,g_DTASettingFileName);	
-	g_information_updating_interval_of_en_route_info_travelers_in_min = g_GetPrivateProfileInt("traveler_information", "information_updating_interval_of_en_route_info_travelers_in_min",5,g_DTASettingFileName);	
-	g_information_updating_interval_of_VMS_in_min  = g_GetPrivateProfileInt("traveler_information", "information_updating_interval_of_VMS_in_min",60,g_DTASettingFileName);	
+	g_information_updating_interval_in_min = g_GetPrivateProfileInt("traveler_information", "information_updating_interval",5,g_DTASettingFileName);	
 
 
 	if(g_UEAssignmentMethod == assignment_accessibility_distanance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 
