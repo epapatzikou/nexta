@@ -238,6 +238,7 @@ struct GDPoint
 	double y;
 };
 
+
 struct GDRect
 {
 	double left, right,top, bottom;
@@ -275,6 +276,63 @@ struct GDRect
 
 };
 
+struct GDArea
+{
+	std::vector<GDPoint> m_GDPoint_vector;
+
+	GDPoint GetCenter(std::vector<GDPoint> GDPoint_vector)
+	{
+		m_GDPoint_vector = GDPoint_vector;
+
+		GDPoint pt;
+		pt.x = 0;
+		pt.y = 0;
+
+		for(int i = 0 ; i< GDPoint_vector.size(); i++)
+		{
+		pt.x += GDPoint_vector[i].x;
+		pt.y += GDPoint_vector[i].y;
+		}
+		pt.x = pt.x / max(1,GDPoint_vector.size());
+		pt.y = pt.y / max(1,GDPoint_vector.size());
+
+		return pt;
+	}
+
+	double left, right,top, bottom;
+
+	double Height() { return top - bottom; }
+	double Width()  { return right - left; }
+
+	bool PtInRect(GDPoint& pt)
+	{
+		return left <= pt.x && pt.x <= right && bottom <= pt.y && pt.y <= top;
+	}
+
+	GDPoint Center(){
+		GDPoint pt;
+		pt.x = left + (right - left) / 2;
+		pt.y = bottom + (top - bottom) / 2;
+		return pt;
+	}
+
+	void Expand(GDPoint& pt)  // Inflate by a point
+	{
+		left = min(left, pt.x);
+		top = max(top, pt.y);
+		right = max(right, pt.x);
+		bottom = min(bottom, pt.y);
+	}
+
+	void Expand(GDRect& rect)  // Inflate by another Rectangle
+	{
+		left = min(left, rect.left);
+		top = max(top, rect.top);
+		right = max(right, rect.right);
+		bottom = min(bottom, rect.bottom);
+	}
+
+};
 #include "RailNetwork\\RailNetwork.h"
 
 typedef struct{
@@ -312,7 +370,7 @@ public:
 	}
 };
 
-extern float g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2);
+extern double g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2);
 
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
@@ -3034,6 +3092,7 @@ public:
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path
 
+	int m_number_of_VMS_response_links;
 	int m_VehicleLocationSize;
 	VehicleLocationRecord *m_LocationRecordAry; // link list arrary of a vehicle path
 
@@ -3110,6 +3169,7 @@ public:
 	DTAVehicle()
 	{
 
+		m_number_of_VMS_response_links = 0;
 		m_subarea_start_node_departure_time = 0;
 		m_subarea_end_node_arrival_time = 0;
 		m_subarea_travel_time = 0;

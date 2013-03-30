@@ -59,6 +59,8 @@ public:
 	BOOL m_ImportZoneData;
 	BOOL m_bAddConnectorsForIsolatedNodes;
 	BOOL m_bUseLinkTypeForDefaultValues;
+	afx_msg void OnBnClickedCheckGenerateNodeData();
+	afx_msg void OnBnClickedCheckAddConnector();
 };
 
 #endif 

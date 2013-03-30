@@ -83,7 +83,6 @@ public:
 
 	CTLiteApp();
 
-
 	void UpdateAllViews();
 
 	CMultiDocTemplate* m_pDocTemplate2DView;

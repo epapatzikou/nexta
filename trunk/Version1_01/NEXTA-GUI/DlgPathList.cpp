@@ -2172,7 +2172,7 @@ void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
 				if(pLink != NULL)
 				{
-					m_pDoc->SetModifiedFlag (true);
+					m_pDoc->Modify (true);
 
 					int ToNodeID; 
 					DTANode* pNode =NULL;

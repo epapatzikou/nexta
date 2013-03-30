@@ -110,4 +110,6 @@ public:
 	afx_msg void OnLvnItemchangedList5(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedBarchart();
 	afx_msg void OnClose();
+	BOOL m_VMS_Responsive_Flag;
+	afx_msg void OnBnClickedCheckVmsResponsive();
 };

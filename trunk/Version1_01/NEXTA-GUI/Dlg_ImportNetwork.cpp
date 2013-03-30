@@ -88,6 +88,8 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
 	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_FORMAT, &CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat)
+	ON_BN_CLICKED(IDC_CHECK_GENERATE_NODE_DATA, &CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData)
+	ON_BN_CLICKED(IDC_CHECK_ADD_CONNECTOR, &CDlg_ImportNetwork::OnBnClickedCheckAddConnector)
 END_MESSAGE_MAP()
 
 
@@ -214,8 +216,17 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
+
+				if(CoordinateVector.size() >=1)
+				{
 				x = CoordinateVector[0].X;
 				y = CoordinateVector[0].Y;
+				}else
+				{
+				
+					AfxMessageBox("Processing error in parsing geometry string in 1_node data sheet.");
+					return;
+				}
 
 				}else
 				{
@@ -1708,3 +1719,13 @@ BOOL CDlg_ImportNetwork::OnInitDialog()
 }
 #endif
 
+
+void CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CDlg_ImportNetwork::OnBnClickedCheckAddConnector()
+{
+	// TODO: Add your control notification handler code here
+}

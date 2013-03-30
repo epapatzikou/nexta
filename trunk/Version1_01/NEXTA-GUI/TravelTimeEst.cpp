@@ -313,7 +313,10 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 				{
 
 				CString msg;
+					if(sensor.FromNodeNumber!=5010 && sensor.ToNodeNumber!=4958)
+					{
 				msg.Format ("Link %d -> %d in input_sensor.csv does not exist in input_link.csv.\n", sensor.FromNodeNumber , sensor.ToNodeNumber);
+					}
 				if(prev_error_message!=msg)
 				{
 					error_message+=msg;

@@ -62,7 +62,6 @@ void CDlg_GISDataExchange::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 	DDX_Text(pDX, IDC_EDIT_CSV_SHAPE_FILE, m_CSV_File);
 	DDX_Control(pDX, IDC_GIS_DATA_TYPE_LIST, m_GISDataType_List);
-	DDX_Check(pDX, IDC_CHECK1, m_bCreateNodeFromLink);
 //	DDX_Check(pDX, IDC_CHECK2, m_SaveInputNodeLinkFiles);
 }
 
@@ -82,8 +81,7 @@ BEGIN_MESSAGE_MAP(CDlg_GISDataExchange, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Find_CSF_File, &CDlg_GISDataExchange::OnBnClickedButtonFindCsfFile)
 	ON_BN_CLICKED(IDOK, &CDlg_GISDataExchange::OnBnClickedOk)
 	ON_BN_CLICKED(ID_EXPORT_GIS_Shape_File, &CDlg_GISDataExchange::OnBnClickedExportGisShapeFile)
-
-
+	ON_BN_CLICKED(ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE2, &CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2)
 END_MESSAGE_MAP()
 
 
@@ -91,9 +89,11 @@ END_MESSAGE_MAP()
 
 void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 {
+	UpdateData(1);
+
 #ifndef _WIN64
 
-	UpdateData(1);
+
 	if(m_GIS_ShapeFile.GetLength () == 0 )
 	{
 		AfxMessageBox("Please select a file first.");
@@ -1098,3 +1098,265 @@ void CDlg_GISDataExchange::SaveTNPProject()
 		return;
 	}
 }
+void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
+{
+
+	UpdateData(1);
+#ifndef _WIN64
+
+
+	if(m_GIS_ShapeFile.GetLength () == 0 )
+	{
+		AfxMessageBox("Please select a file first.");
+		return;
+	}
+
+	bool bCreateNodeForIsolatedPoint  = false;
+
+	CWaitCursor wait;
+	CString message_str;
+	OGRRegisterAll();
+	OGRDataSource       *poDS;
+
+	bool bFindOverlappingNode = false;
+
+	poDS = OGRSFDriverRegistrar::Open(m_GIS_ShapeFile, FALSE );
+	if( poDS == NULL )
+	{
+		m_MessageList.AddString("Open file failed." );
+		return;
+	}
+
+	int point_index = 0;
+	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
+	for (int i=0; i < poLayers; i++) 
+	{
+
+		OGRLayer  *poLayer;
+
+		poLayer = ((OGRDataSource*)poDS)->GetLayer(i);	
+
+		if(poLayer == NULL)
+		{
+			message_str.Format("Open layer %d failed", i+1);
+			m_MessageList.AddString (message_str);
+			return;			
+		}
+
+		OGRFeature *poFeature;
+
+		int feature_count = 0;
+
+		// 0.03 miles
+		// 0.02: shape length / miles
+		double threashold = 0.02*0.001;
+
+		poLayer->ResetReading();
+
+
+		DTALink* pLink = NULL;
+
+		std::vector<GDPoint> GDPoint_vector;  // vector to store points with the same route_fid
+
+
+		int prev_route_fid = -1;
+		
+		
+		double min_distance_for_same_point = 0.000002;
+			m_pDoc->m_DefaultSpeedLimit = 40;
+			m_pDoc->m_DefaultCapacity = 2000;
+			m_pDoc->m_DefaultLinkType = 4; //connector
+			m_pDoc->m_DefaultNumLanes  = 2;
+
+
+		while( (poFeature = poLayer->GetNextFeature()) != NULL )
+		{
+			OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+			OGRGeometry *poGeometry;
+
+			poGeometry = poFeature->GetGeometryRef();
+			if( poGeometry != NULL 
+				&& wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )  // point data
+			{
+				OGRPoint *poPoint = (OGRPoint *) poGeometry;
+
+
+				int route_fid = poFeature->GetFieldAsDouble("route_fid");
+
+				if(route_fid == 2587)
+				{
+				TRACE("\nroute_id = %d", route_fid);
+				}
+
+				if(prev_route_fid!=route_fid)  // new route
+				{
+					if(prev_route_fid !=-1) // not from the beginning
+					{
+					// decide if we need to add a DTANode or a DTALink
+
+							GDPoint pt_start = GDPoint_vector[0];
+							GDPoint pt_end= GDPoint_vector[GDPoint_vector.size()-1];
+
+
+						if(GDPoint_vector.size()>=2)
+						{
+							if(g_GetPoint2Point_Distance(pt_start, pt_end)<=min_distance_for_same_point)  // two end points are the same
+							{ //create DTANode
+
+								if(bCreateNodeForIsolatedPoint)
+								{
+								GDArea area;
+								GDPoint center = area.GetCenter(GDPoint_vector);
+
+								m_pDoc->AddNewNode(center,0,0,true,false);
+								}
+
+							}
+							else // create DTALink for each feature point segment
+							{
+								for(int i = 0; i< GDPoint_vector.size()-1; i++)
+								{
+
+										pt_start = GDPoint_vector[i];
+										pt_end= GDPoint_vector[i+1];
+
+
+									int from_node_id = m_pDoc->FindNodeIDWithCoordinate(pt_start.x,pt_start.y,min_distance_for_same_point);
+									// from node
+									if(from_node_id == 0)
+									{
+																				
+											DTANode* pNode = m_pDoc->AddNewNode(pt_start, from_node_id, 0,false);
+											from_node_id = pNode->m_NodeID;  // update to_node_id after creating new node
+											pNode->m_bCreatedbyNEXTA = true;
+
+									}
+
+									// to node
+									int to_node_id =  m_pDoc->FindNodeIDWithCoordinate(pt_end.x, pt_end.y,min_distance_for_same_point);
+									// from node
+									if(to_node_id==0)
+									{
+											DTANode* pNode = m_pDoc->AddNewNode(pt_end, to_node_id, 0,false);
+											to_node_id = pNode->m_NodeID;  // update to_node_id after creating new node
+											pNode->m_bCreatedbyNEXTA = true;
+									}
+
+								DTALink* pLink = m_pDoc->AddNewLink(from_node_id, to_node_id,false, true);
+
+								// reversed direction 
+								DTALink* pLink2 = m_pDoc->AddNewLink(to_node_id, from_node_id, false, true);
+									
+								}
+
+							}
+
+						}
+
+
+					}
+
+					prev_route_fid = route_fid;
+
+					GDPoint_vector.clear();
+
+				}
+				GDPoint pt;
+				pt.x = poPoint->getX();
+				pt.y = poPoint->getY();
+
+				GDPoint_vector.push_back (pt);
+
+				//// Create and insert the node
+				//DTAPoint* pDTAPoint = new DTAPoint;
+				//pDTAPoint->pt.x = poPoint->getX();
+				//pDTAPoint->pt.y = poPoint->getY();
+
+				//pDTAPoint->m_NodeNumber = point_index;
+				//pDTAPoint->m_NodeID = point_index;
+				//pDTAPoint->m_ZoneID = 0;
+				//pDTAPoint->m_ControlType = 0;
+				//m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
+				point_index++;
+			
+				
+				if(point_index%1000 ==0)
+				{
+					message_str.Format("Processing %d point records.", point_index);
+					m_MessageList.AddString(message_str);
+				}
+		
+		}
+
+		OGRFeature::DestroyFeature( poFeature );
+		feature_count ++;
+	}
+	OGRDataSource::DestroyDataSource( poDS );
+	}
+
+
+	// add zone and activity locations;
+
+			double zone_radius = 0.0003;
+			m_pDoc->m_ODSize = 0;
+			for (std::list<DTANode*>::iterator  iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+			{
+				if((*iNode)->m_Connections == 2) 
+				{
+					// add zone
+					int node_name = (*iNode)->m_NodeNumber;
+					int zone_number = node_name;
+					int TAZ = node_name ;
+
+					m_pDoc->m_ZoneMap [zone_number].m_ZoneID = TAZ;
+
+					GDPoint pt;
+
+					pt.x = (*iNode)->pt.x - zone_radius;  
+					pt.y = (*iNode)->pt.y - zone_radius;  
+					m_pDoc->m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+
+					pt.x = (*iNode)->pt.x - zone_radius;  
+					pt.y = (*iNode)->pt.y + zone_radius;  
+					m_pDoc->m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+
+					pt.x = (*iNode)->pt.x + zone_radius;  
+					pt.y = (*iNode)->pt.y + zone_radius;  
+					m_pDoc->m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+
+					pt.x = (*iNode)->pt.x + zone_radius;  
+					pt.y = (*iNode)->pt.y - zone_radius;  
+					m_pDoc->m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+
+					pt.x = (*iNode)->pt.x - zone_radius;  
+					pt.y = (*iNode)->pt.y - zone_radius;  
+					m_pDoc->m_ZoneMap [zone_number].m_ShapePoints .push_back (pt);
+
+
+			//activity locations;
+
+			DTAActivityLocation element;
+			element.ZoneID  = zone_number;
+			element.NodeNumber = node_name;
+
+			element.External_OD_flag = 0;
+
+			m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNumbertoIDMap[node_name]] = zone_number;
+			(*iNode) -> m_ZoneID = zone_number;
+			(*iNode) ->m_External_OD_flag = element.External_OD_flag;
+
+			m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+
+			if(m_pDoc->m_ODSize < zone_number)
+				m_pDoc->m_ODSize = zone_number;
+
+
+				}
+
+			}
+
+#endif
+}
+
+

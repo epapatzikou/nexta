@@ -2905,7 +2905,7 @@ typedef struct
 	int age;
 	int version_no;
 
-	int reserverd_field1;
+	int number_of_VMS_response_links;
 	float reserverd_field2;
 	int reserverd_field3;
 

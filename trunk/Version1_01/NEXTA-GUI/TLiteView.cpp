@@ -1724,9 +1724,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 	}
 
-	if(m_ShowMovementTextMode != movement_display_none)
-		pMainFrame->m_bShowLayerMap[layer_movement] = true;
-
 	if(pMainFrame->m_bShowLayerMap[layer_movement] == true)
 	{
 		CRect PlotRect;
@@ -5170,6 +5167,7 @@ void CTLiteView::OnNodeMovementproperties()
 
 		if(sheet.DoModal() == IDOK)
 		{
+
 
 		}
 

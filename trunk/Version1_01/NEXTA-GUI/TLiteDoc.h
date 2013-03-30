@@ -374,7 +374,7 @@ class CTLiteDoc : public CDocument
 public: // create from serialization only
 
 	
-	
+	float m_PeakHourFactor;
 	CTLiteDoc();
 
 
@@ -981,7 +981,7 @@ public:
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName);
 	void ReadAMSPathCSVFile(LPCTSTR lpszFileName);
-	void ReadAMSMovementCSVFile(LPCTSTR lpszFileName);
+	int ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber);
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
@@ -1730,6 +1730,30 @@ public:
 			return NULL;
 	}
 
+	int FindNodeIDWithCoordinate(double x, double y, double min_distance = 0.0000001)
+	{
+		
+		DTANode* pNode= NULL;
+
+		min_distance = 0.00000001;
+		int NodeID = -1;
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
+			if( distance <  min_distance)
+			{
+				min_distance= distance;
+				pNode = (*iNode);
+			}
+		}
+		if(pNode != NULL)
+			return pNode->m_NodeID;
+		else
+			return NULL;
+	}
+
+
 	int FindNonCentroidNodeNumberWithCoordinate(double x, double y)
 	{
 		
@@ -2058,9 +2082,12 @@ public:
 
 	bool FindObject(eSEARCHMODE SearchMode, int value1, int value12);
 
+	void SaveMovementData(CString MovementFileName,  int NodeNumber);
+	void RunQEMTool(CString MovementFileName, int NodeNumber);
+
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);
 	// Implementation
-	void GenerateMovementCountFromVehicleFile();
+	void GenerateMovementCountFromVehicleFile(float PeakHourFactor);
 	void MapSignalDataAcrossProjects();
 	void IdentifyLinkGroupCode();
 	void UpdateUnitMile();

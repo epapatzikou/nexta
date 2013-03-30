@@ -383,9 +383,11 @@
 #define IDC_EDIT_CSV_SHAPE_FILE         1095
 #define ID_EXPORT_KML_FILE              1096
 #define IDC_Toll_Link_LIST              1096
+#define ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE 1096
 #define IDC_DISTANCE_BASED_TOLL_CHECK   1097
 #define ID_EXPORT_GIS_Shape_File        1097
 #define IDC_AREA_TOLL_CHECK             1098
+#define ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE2 1098
 #define IDC_AREA_BUTTON                 1099
 #define IDC_ADD_BUTTON                  1100
 #define IDC_Delete_BUTTON               1101
@@ -494,6 +496,8 @@
 #define IDC_BUTTON_INPUT_DEFAULT_Cycle_Length 1192
 #define IDC_BUTTON_COMBINE_SEGMENT_RIGHT 1193
 #define IDC_BUTTON_UPDATE_EFFECTIVE_GREEN_TIME 1193
+#define IDC_CHECK_VMS_RESPONSIVE        1193
+#define IDC_EDIT_PEAK_HOUR_FACTOR       1194
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1229,7 +1233,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        247
 #define _APS_NEXT_COMMAND_VALUE         33641
-#define _APS_NEXT_CONTROL_VALUE         1193
+#define _APS_NEXT_CONTROL_VALUE         1195
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

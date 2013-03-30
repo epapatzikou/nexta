@@ -404,6 +404,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_PeakHourFactor = 1.0;
 	m_bIdentifyBottleneckAndOnOffRamps = false;
 	m_ScreenWidth_InMile = 10;
 
@@ -4450,156 +4451,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 
 	SaveLinkData(directory+"input_link.csv",false,SelectedLayNo);
 
+	SaveMovementData("AMS_movement.csv", -1);
 
-	CCSVWriter MovementFile;
-
-	CString movement_str = directory+"AMS_movement.csv";
-
-	// Convert a TCHAR string to a LPCSTR
-	CT2CA pszConvertedAnsiString (movement_str);
-
-	// construct a std::string using the LPCSTR input
-	std::string strStd (pszConvertedAnsiString);
-
-	if(MovementFile.Open(strStd))
-	{
-
-
-		MovementFile.SetFieldName ("node_id");
-		MovementFile.SetFieldName ("QEM_reference_node_id");
-		MovementFile.SetFieldName ("up_node_id");
-		MovementFile.SetFieldName ("dest_node_id");
-		MovementFile.SetFieldName ("name");
-		MovementFile.SetFieldName ("turn_type");
-		MovementFile.SetFieldName ("turn_direction");
-
-		MovementFile.SetFieldName ("prohibitted_flag");
-		MovementFile.SetFieldName ("protected_flag");
-		MovementFile.SetFieldName ("permitted_flag");
-
-		MovementFile.SetFieldName ("sim_turn_volume");
-		MovementFile.SetFieldName ("sim_turn_hourly_volume");
-		MovementFile.SetFieldName ("sim_turn_percentage");
-		MovementFile.SetFieldName ("sim_turn_delay_in_second");
-
-		MovementFile.SetFieldName ("obs_turn_volume");
-		MovementFile.SetFieldName ("obs_turn_hourly_volume");
-		MovementFile.SetFieldName ("obs_turn_percentage");
-		MovementFile.SetFieldName ("obs_turn_delay_in_second");
-
-
-		MovementFile.SetFieldName ("QEM_TurnDirection");
-		MovementFile.SetFieldName ("QEM_TurnVolume");
-		MovementFile.SetFieldName ("QEM_LinkVolume");
-		MovementFile.SetFieldName ("QEM_Lanes");
-		MovementFile.SetFieldName ("QEM_Shared");
-		MovementFile.SetFieldName ("QEM_Width");
-		MovementFile.SetFieldName ("QEM_Storage");
-		MovementFile.SetFieldName ("QEM_StLanes");
-		MovementFile.SetFieldName ("QEM_Grade");
-		MovementFile.SetFieldName ("QEM_Speed");
-		MovementFile.SetFieldName ("QEM_IdealFlow");
-		MovementFile.SetFieldName ("QEM_LostTime");
-		MovementFile.SetFieldName ("QEM_Phase1");
-		MovementFile.SetFieldName ("QEM_PermPhase1");
-		MovementFile.SetFieldName ("QEM_DetectPhase1");
-
-		MovementFile.SetFieldName ("QEM_EffectiveGreen");
-		MovementFile.SetFieldName ("QEM_Capacity");
-		MovementFile.SetFieldName ("QEM_VOC");
-		MovementFile.SetFieldName ("QEM_SatFlow");
-		MovementFile.SetFieldName ("QEM_Delay");
-		MovementFile.SetFieldName ("QEM_LOS");
-
-		MovementFile.WriteHeader();
-
-		std::list<DTANode*>::iterator iNode;
-		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-			if((*iNode)->m_LayerNo == SelectedLayNo) 
-			{
-				for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
-				{
-
-
-					DTANodeMovement movement = (*iNode)->m_MovementVector[m];
-
-					MovementFile.SetValueByFieldName  ("node_id",(*iNode)->m_NodeNumber);
-
-					MovementFile.SetValueByFieldName  ("name",(*iNode)->m_Name);
-
-					MovementFile.SetValueByFieldName ("turn_type",GetTurnString(movement.movement_turn));
-
-					MovementFile.SetValueByFieldName ("turn_direction",GetTurnDirectionString(movement.movement_dir));
-
-
-					//if nodes have been cut outside the network, so we do not need save them
-					if(m_NodeIDMap.find (movement.in_link_from_node_id) == m_NodeIDMap.end())
-						continue;
-
-					if(m_NodeIDMap.find (movement.out_link_to_node_id) == m_NodeIDMap.end())
-						continue;
-
-
-					int up_node_id = m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  ;
-
-
-					MovementFile.SetValueByFieldName ("up_node_id",up_node_id);
-					int dest_node_id = m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ;
-					MovementFile.SetValueByFieldName ("dest_node_id",dest_node_id);
-
-					MovementFile.SetValueByFieldName ("prohibitted_flag",movement.turning_prohibition_flag);
-					MovementFile.SetValueByFieldName ("protected_flag",movement.turning_prohibition_flag);
-					MovementFile.SetValueByFieldName ("permitted_flag",movement.turning_prohibition_flag);
-
-					MovementFile.SetValueByFieldName ("sim_turn_volume",movement.sim_turn_count );
-					MovementFile.SetValueByFieldName ("sim_turn_hourly_volume",movement.sim_turn_hourly_count );
-					MovementFile.SetValueByFieldName ("sim_turn_percentage",movement.turning_percentage);
-					MovementFile.SetValueByFieldName ("sim_turn_delay_in_second",movement.sim_turn_delay );
-
-					MovementFile.SetValueByFieldName ("obs_turn_volume",movement.obs_turn_delay );
-					MovementFile.SetValueByFieldName ("obs_turn_hourly_volume",movement.obs_turn_delay );
-					MovementFile.SetValueByFieldName ("obs_turn_percentage",movement.obs_turn_delay );
-					MovementFile.SetValueByFieldName ("obs_turn_delay_in_second",movement.obs_turn_delay );
-
-					MovementFile.SetValueByFieldName ("QEM_TurnDirection", movement.QEM_dir_string );
-					MovementFile.SetValueByFieldName ("QEM_TurnVolume",movement.QEM_TurnVolume );
-
-
-					MovementFile.SetValueByFieldName ("QEM_LinkVolume", movement.QEM_LinkVolume);
-
-					MovementFile.SetValueByFieldName ("QEM_Lanes",movement.QEM_Lanes );
-					MovementFile.SetValueByFieldName ("QEM_Shared",movement.QEM_Shared );
-					MovementFile.SetValueByFieldName ("QEM_Width",movement.QEM_Width );
-					MovementFile.SetValueByFieldName ("QEM_Storage",movement.QEM_Storage );
-					MovementFile.SetValueByFieldName ("QEM_StLanes",movement.QEM_StLanes );
-					MovementFile.SetValueByFieldName ("QEM_Grade",movement.QEM_Grade );
-					MovementFile.SetValueByFieldName ("QEM_Speed",movement.QEM_Speed );
-					MovementFile.SetValueByFieldName ("QEM_IdealFlow",movement.QEM_IdealFlow );
-					MovementFile.SetValueByFieldName ("QEM_LostTime",movement.QEM_LostTime );
-					MovementFile.SetValueByFieldName ("QEM_Phase1",movement.QEM_Phase1 );
-					MovementFile.SetValueByFieldName ("QEM_PermPhase1",movement.QEM_PermPhase1 );
-					MovementFile.SetValueByFieldName ("QEM_DetectPhase1",movement.QEM_DetectPhase1 );
-
-					MovementFile.SetValueByFieldName ("QEM_EffectiveGreen",movement.QEM_EffectiveGreen );
-					MovementFile.SetValueByFieldName ("QEM_Capacity",movement.QEM_Capacity );
-					MovementFile.SetValueByFieldName ("QEM_VOC",movement.QEM_VOC );
-					MovementFile.SetValueByFieldName ("QEM_SatFlow",movement.QEM_SatFlow );
-					MovementFile.SetValueByFieldName ("QEM_Delay",movement.QEM_Delay );
-
-					CT2CA pszConvertedAnsiString (movement.QEM_LOS);
-					// construct a std::string using the LPCSTR input
-					std::string strStd (pszConvertedAnsiString);
-
-					MovementFile.SetValueByFieldName ("QEM_LOS", strStd);
-
-					MovementFile.WriteRecord ();
-
-				}
-			}
-		}
-
-	}
 	//fopen_s(&st,directory+"input_phase.csv","w");
 	//if(st!=NULL)
 	//{
@@ -5561,8 +5414,10 @@ void CTLiteDoc::ReadAMSPathCSVFile(LPCTSTR lpszFileName)
 
 }
 
-void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
+int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 {
+
+	int number_of_nodes = 0;
 
 	m_MovementPointerMap.clear();
 
@@ -5606,6 +5461,7 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 
 	int count = 0;
 
+	int current_node_id = -1;
 	if (parser_movement.OpenCSVFile(lpszFileName))
 	{
 		while(parser_movement.ReadRecord())
@@ -5614,6 +5470,20 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 
 			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
 				break;
+
+			if(current_node_id != node_id)
+			{
+				current_node_id = node_id;
+				number_of_nodes++;
+			}
+
+			if(NodeNumber >=0) //selected node
+			{
+			
+				if(node_id!= NodeNumber)  // skip this node
+					continue; 
+			
+			}
 
 			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
 			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
@@ -5661,6 +5531,7 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 				parser_movement.GetValueByFieldName ("QEM_IdealFlow",pMovement->QEM_IdealFlow );
 				parser_movement.GetValueByFieldName ("QEM_LostTime",pMovement->QEM_LostTime );
 				parser_movement.GetValueByFieldName ("QEM_Phase1",pMovement->QEM_Phase1 );
+
 				parser_movement.GetValueByFieldName ("QEM_PermPhase1",pMovement->QEM_PermPhase1 );
 				parser_movement.GetValueByFieldName ("QEM_DetectPhase1",pMovement->QEM_DetectPhase1 );
 
@@ -5681,6 +5552,7 @@ void CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName)
 	}
 
 	m_MovementDataLoadingStatus.Format ("%d AMS movements are loaded from file %s.",count,lpszFileName);
+	return number_of_nodes;
 
 }
 bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
@@ -5759,7 +5631,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 		int age;
 		int version_no;
 
-		int reserverd_field1;
+		int number_of_VMS_response_links;
 		float reserverd_field2;
 		int reserverd_field3;
 
@@ -5829,6 +5701,8 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 			pVehicle->m_Emissions = header.emissions;
 			pVehicle->m_Distance = header.distance_in_mile;
 			pVehicle->m_NodeSize	= header.number_of_nodes;
+
+			pVehicle->m_number_of_VMS_response_links = header_extension.number_of_VMS_response_links;
 
 			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalNumberOfVehicles += 1;
 			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalTravelDistance  += pVehicle->m_Distance ;
@@ -11621,8 +11495,11 @@ void CTLiteDoc::OnToolsGeneratesignalcontrollocations()
 	UpdateAllViews(0);
 }
 
-void CTLiteDoc::GenerateMovementCountFromVehicleFile()
+void CTLiteDoc::GenerateMovementCountFromVehicleFile(float PeakHourFactor)
 {
+
+	m_PeakHourFactor = PeakHourFactor;
+
 
 	if(m_Movement3NodeMap.size()>=1)
 		return;
@@ -11656,7 +11533,7 @@ void CTLiteDoc::GenerateMovementCountFromVehicleFile()
 	CString directory;
 	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
 
-	fopen_s(&st,directory+"AMS_movement.csv","w");
+	fopen_s(&st,directory+"AMS_movement_3_node_format.csv","w");
 	if(st!=NULL)
 	{
 		fprintf(st,"movement_index,three-node key,count\n");
@@ -14979,3 +14856,211 @@ void CTLiteDoc::OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea()
 	OpenCSVFileInExcel(m_ProjectDirectory + "Scenario_Work_Zone.csv");
 }
 
+void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
+{
+
+	if(m_ProjectDirectory.GetLength () ==0)
+	{
+
+		AfxMessageBox("Please specify a project folder first!");
+		return;
+	
+	}
+
+		SaveMovementData(MovementFileName, NodeNumber);
+		SaveMovementData(MovementFileName+".input.csv", NodeNumber);
+
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+		CString QEM_setting_file;
+
+		QEM_setting_file.Format ("%s\\QEM_Settings.ini",pMainFrame->m_CurrentDirectory);
+
+		CString file_name;
+		file_name  = m_ProjectDirectory + MovementFileName;
+	   
+			CCSVWriter MovementFile;
+			if(MovementFile.Open(CString2StdString(QEM_setting_file)))
+			{
+			
+			MovementFile.WriteTextLabel (file_name);
+			MovementFile.CloseCSVFile ();
+			
+			// run QEM utility
+			CString sCommand, strParam, strWorkingFolder;
+			sCommand.Format("%s\\MOE_ExcelAutomation.exe", pMainFrame->m_CurrentDirectory);
+			strWorkingFolder.Format("%s", pMainFrame->m_CurrentDirectory);
+	
+			ProcessExecute(sCommand, strParam, strWorkingFolder, true);
+
+
+
+			}else
+			{
+			CString error_message;
+			error_message.Format ("File %s cannot be opened.", QEM_setting_file);
+			AfxMessageBox(error_message);
+			}
+}
+
+void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
+{
+
+	CCSVWriter MovementFile;
+
+	CString movement_str = m_ProjectDirectory + MovementFileName;
+
+	// Convert a TCHAR string to a LPCSTR
+	CT2CA pszConvertedAnsiString (movement_str);
+
+	// construct a std::string using the LPCSTR input
+	std::string strStd (pszConvertedAnsiString);
+
+	if(MovementFile.Open(strStd))
+	{
+
+
+		MovementFile.SetFieldName ("node_id");
+		MovementFile.SetFieldName ("QEM_reference_node_id");
+		MovementFile.SetFieldName ("up_node_id");
+		MovementFile.SetFieldName ("dest_node_id");
+		MovementFile.SetFieldName ("name");
+		MovementFile.SetFieldName ("turn_type");
+		MovementFile.SetFieldName ("turn_direction");
+
+		MovementFile.SetFieldName ("prohibitted_flag");
+		MovementFile.SetFieldName ("protected_flag");
+		MovementFile.SetFieldName ("permitted_flag");
+
+		MovementFile.SetFieldName ("sim_turn_volume");
+		MovementFile.SetFieldName ("sim_turn_hourly_volume");
+		MovementFile.SetFieldName ("sim_turn_percentage");
+		MovementFile.SetFieldName ("sim_turn_delay_in_second");
+
+		MovementFile.SetFieldName ("obs_turn_volume");
+		MovementFile.SetFieldName ("obs_turn_hourly_volume");
+		MovementFile.SetFieldName ("obs_turn_percentage");
+		MovementFile.SetFieldName ("obs_turn_delay_in_second");
+
+
+		MovementFile.SetFieldName ("QEM_TurnDirection");
+		MovementFile.SetFieldName ("QEM_TurnVolume");
+		MovementFile.SetFieldName ("QEM_LinkVolume");
+		MovementFile.SetFieldName ("QEM_Lanes");
+		MovementFile.SetFieldName ("QEM_Shared");
+		MovementFile.SetFieldName ("QEM_Width");
+		MovementFile.SetFieldName ("QEM_Storage");
+		MovementFile.SetFieldName ("QEM_StLanes");
+		MovementFile.SetFieldName ("QEM_Grade");
+		MovementFile.SetFieldName ("QEM_Speed");
+		MovementFile.SetFieldName ("QEM_IdealFlow");
+		MovementFile.SetFieldName ("QEM_LostTime");
+		MovementFile.SetFieldName ("QEM_Phase1");
+		MovementFile.SetFieldName ("QEM_PermPhase1");
+		MovementFile.SetFieldName ("QEM_DetectPhase1");
+
+		MovementFile.SetFieldName ("QEM_EffectiveGreen");
+		MovementFile.SetFieldName ("QEM_Capacity");
+		MovementFile.SetFieldName ("QEM_VOC");
+		MovementFile.SetFieldName ("QEM_SatFlow");
+		MovementFile.SetFieldName ("QEM_Delay");
+		MovementFile.SetFieldName ("QEM_LOS");
+
+		MovementFile.WriteHeader();
+
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+			if(NodeNumber>=0)  // with valid node number
+			{
+			
+				if((*iNode)->m_NodeNumber != NodeNumber)
+					continue; // skip not selected node number
+			}
+				for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+				{
+
+					DTANodeMovement movement = (*iNode)->m_MovementVector[m];
+
+					MovementFile.SetValueByFieldName  ("node_id",(*iNode)->m_NodeNumber);
+
+					MovementFile.SetValueByFieldName  ("name",(*iNode)->m_Name);
+
+					MovementFile.SetValueByFieldName ("turn_type",GetTurnString(movement.movement_turn));
+
+					MovementFile.SetValueByFieldName ("turn_direction",GetTurnDirectionString(movement.movement_dir));
+
+
+					//if nodes have been cut outside the network, so we do not need save them
+					if(m_NodeIDMap.find (movement.in_link_from_node_id) == m_NodeIDMap.end())
+						continue;
+
+					if(m_NodeIDMap.find (movement.out_link_to_node_id) == m_NodeIDMap.end())
+						continue;
+
+
+					int up_node_id = m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  ;
+
+
+					MovementFile.SetValueByFieldName ("up_node_id",up_node_id);
+					int dest_node_id = m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ;
+					MovementFile.SetValueByFieldName ("dest_node_id",dest_node_id);
+
+					MovementFile.SetValueByFieldName ("prohibitted_flag",movement.turning_prohibition_flag);
+					MovementFile.SetValueByFieldName ("protected_flag",movement.turning_prohibition_flag);
+					MovementFile.SetValueByFieldName ("permitted_flag",movement.turning_prohibition_flag);
+
+					MovementFile.SetValueByFieldName ("sim_turn_volume",movement.sim_turn_count );
+
+					// update peak hour volume
+					movement.sim_turn_hourly_count  = movement.sim_turn_count* m_PeakHourFactor;
+
+					MovementFile.SetValueByFieldName ("sim_turn_hourly_volume",movement.sim_turn_hourly_count );
+					MovementFile.SetValueByFieldName ("sim_turn_percentage",movement.turning_percentage);
+					MovementFile.SetValueByFieldName ("sim_turn_delay_in_second",movement.sim_turn_delay );
+
+					MovementFile.SetValueByFieldName ("obs_turn_volume",movement.obs_turn_delay );
+					MovementFile.SetValueByFieldName ("obs_turn_hourly_volume",movement.obs_turn_delay );
+					MovementFile.SetValueByFieldName ("obs_turn_percentage",movement.obs_turn_delay );
+					MovementFile.SetValueByFieldName ("obs_turn_delay_in_second",movement.obs_turn_delay );
+
+					MovementFile.SetValueByFieldName ("QEM_TurnDirection", movement.QEM_dir_string );
+					MovementFile.SetValueByFieldName ("QEM_TurnVolume",movement.QEM_TurnVolume );
+
+
+					MovementFile.SetValueByFieldName ("QEM_LinkVolume", movement.QEM_LinkVolume);
+
+					MovementFile.SetValueByFieldName ("QEM_Lanes",movement.QEM_Lanes );
+					MovementFile.SetValueByFieldName ("QEM_Shared",movement.QEM_Shared );
+					MovementFile.SetValueByFieldName ("QEM_Width",movement.QEM_Width );
+					MovementFile.SetValueByFieldName ("QEM_Storage",movement.QEM_Storage );
+					MovementFile.SetValueByFieldName ("QEM_StLanes",movement.QEM_StLanes );
+					MovementFile.SetValueByFieldName ("QEM_Grade",movement.QEM_Grade );
+					MovementFile.SetValueByFieldName ("QEM_Speed",movement.QEM_Speed );
+					MovementFile.SetValueByFieldName ("QEM_IdealFlow",movement.QEM_IdealFlow );
+					MovementFile.SetValueByFieldName ("QEM_LostTime",movement.QEM_LostTime );
+					MovementFile.SetValueByFieldName ("QEM_Phase1",movement.QEM_Phase1 );
+					MovementFile.SetValueByFieldName ("QEM_PermPhase1",movement.QEM_PermPhase1 );
+					MovementFile.SetValueByFieldName ("QEM_DetectPhase1",movement.QEM_DetectPhase1 );
+
+					MovementFile.SetValueByFieldName ("QEM_EffectiveGreen",movement.QEM_EffectiveGreen );
+					MovementFile.SetValueByFieldName ("QEM_Capacity",movement.QEM_Capacity );
+					MovementFile.SetValueByFieldName ("QEM_VOC",movement.QEM_VOC );
+					MovementFile.SetValueByFieldName ("QEM_SatFlow",movement.QEM_SatFlow );
+					MovementFile.SetValueByFieldName ("QEM_Delay",movement.QEM_Delay );
+
+					CT2CA pszConvertedAnsiString (movement.QEM_LOS);
+					// construct a std::string using the LPCSTR input
+					std::string strStd (pszConvertedAnsiString);
+
+					MovementFile.SetValueByFieldName ("QEM_LOS", strStd);
+
+					MovementFile.WriteRecord ();
+
+				}
+			
+		}
+
+	}
+}

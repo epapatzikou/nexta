@@ -122,7 +122,7 @@ public:
 
 			return false;
 	}
-	template <class T> bool GetValueByFieldName(string field_name, T& value)
+	template <class T> bool GetValueByFieldName(string field_name, T& value, bool NonnegativeFlag  = true)
 	{
 		if (FieldsIndices.find(field_name) == FieldsIndices.end())
 		{
@@ -157,6 +157,9 @@ public:
 			{
 				return false;
 			}
+
+			if(NonnegativeFlag && converted_value<0)
+				converted_value = 0;
 
 			value = converted_value;
 			return true;

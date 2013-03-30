@@ -31,4 +31,5 @@ public:
 	CListBox m_InfoList;
 	virtual BOOL OnInitDialog();
 	afx_msg void OnLbnSelchangeListInfo();
+	float m_PeakHourFactor;
 };

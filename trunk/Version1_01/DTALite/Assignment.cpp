@@ -120,7 +120,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		g_CurrentGapValue = 0.0;
 		g_CurrentRelativeGapValue  = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
-		g_CurrentNumOfVehiclesSwitched = 0;
+	g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0;
 
 #pragma omp parallel for
