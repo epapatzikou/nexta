@@ -19,6 +19,7 @@ IMPLEMENT_DYNAMIC(CDlg_VehPathAnalysis, CBaseDialog)
 CDlg_VehPathAnalysis::CDlg_VehPathAnalysis(CWnd* pParent /*=NULL*/)
 : CBaseDialog(CDlg_VehPathAnalysis::IDD, pParent)
 , m_SingleVehicleID(0)
+, m_VMS_Responsive_Flag(FALSE)
 {
 	m_SelectedPath = -1;
 	m_SelectedOrigin = -1;
@@ -66,6 +67,7 @@ void CDlg_VehPathAnalysis::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_VOT_UB, m_ComboBox_VOT_UB);
 	DDX_Control(pDX, IDC_COMBO_DemandType, m_DemandTypeBox);
 	DDX_Control(pDX, IDC_COMBO_DayNo, m_DayNo_Combobox);
+	DDX_Check(pDX, IDC_CHECK_VMS_RESPONSIVE, m_VMS_Responsive_Flag);
 }
 
 
@@ -99,6 +101,7 @@ BEGIN_MESSAGE_MAP(CDlg_VehPathAnalysis, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_DayNo, &CDlg_VehPathAnalysis::OnCbnSelchangeComboDayno)
 	ON_BN_CLICKED(ID_BarChart, &CDlg_VehPathAnalysis::OnBnClickedBarchart)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_CHECK_VMS_RESPONSIVE, &CDlg_VehPathAnalysis::OnBnClickedCheckVmsResponsive)
 END_MESSAGE_MAP()
 
 
@@ -427,10 +430,13 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 {
 	m_pDoc->ResetODMOEMatrix();
 
+
 	m_ListCtrl.DeleteAllItems();
 
 	if(m_ZoneNoSize=0)
 		return;
+
+	UpdateData(1);
 
 	CString SummaryInfoString;
 
@@ -508,6 +514,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 		std::list<DTAVehicle*>::iterator iVehicle;
 
 
+		
 
 	std::list<CTLiteDoc*>::iterator  iDoc = g_DocumentList.begin ();
 
@@ -528,6 +535,14 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			{
 			AfxMessageBox("Please close and reload the data set, as the zone vector in the current document has been changed due to additional zones.");
 			return;
+			}
+
+			if(m_VMS_Responsive_Flag == true)
+			{
+			
+				if(pVehicle->m_number_of_VMS_response_links==0)
+					continue;
+		
 			}
 
 			int OrgNo = (*iDoc)->m_ZoneIDVector[pVehicle->m_OriginZoneID];
@@ -839,6 +854,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 	m_VehicleList.ResetContent ();
 	m_PathListCtrl.DeleteAllItems();  // OD changed, refresh
 
+	UpdateData(1);
 
 	int Origin = m_SelectedOrigin;
 	int Destination = m_SelectedDestination;
@@ -886,7 +902,19 @@ void CDlg_VehPathAnalysis::FilterPaths()
 				(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 				(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 			{
+
+				if(m_VMS_Responsive_Flag == true)
+				{
+				
+					if(pVehicle->m_number_of_VMS_response_links==0)
+						continue;
+			
+				}
+
+
 				bool bFingFlag =  false;
+
+
 
 			pVehicle->m_bODMarked = true;
 
@@ -1474,4 +1502,9 @@ void CDlg_VehPathAnalysis::OnClose()
 
 	OnOK();
 	g_bShowVehiclePathDialog = false;
+}
+
+void CDlg_VehPathAnalysis::OnBnClickedCheckVmsResponsive()
+{
+	FilterOriginDestinationPairs();
 }

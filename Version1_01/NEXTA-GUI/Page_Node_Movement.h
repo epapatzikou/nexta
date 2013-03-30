@@ -38,6 +38,7 @@ public:
 	CPage_Node_Movement();
 	virtual ~CPage_Node_Movement();
 
+	bool m_bModifiedFlag;
 // Dialog Data
 	enum { IDD = IDD_DIALOG_NODE_MOVEMENTS };
 

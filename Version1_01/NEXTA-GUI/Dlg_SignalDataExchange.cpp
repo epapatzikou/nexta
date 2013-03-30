@@ -365,6 +365,7 @@ IMPLEMENT_DYNAMIC(CDlg_SignalDataExchange, CDialog)
 
 CDlg_SignalDataExchange::CDlg_SignalDataExchange(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlg_SignalDataExchange::IDD, pParent)
+	, m_PeakHourFactor(0.5)
 {
 
 }
@@ -378,6 +379,8 @@ void CDlg_SignalDataExchange::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 
 	DDX_Control(pDX, IDC_LIST_INFO, m_InfoList);
+	DDX_Text(pDX, IDC_EDIT_PEAK_HOUR_FACTOR, m_PeakHourFactor);
+	DDV_MinMaxFloat(pDX, m_PeakHourFactor, 0, 2);
 }
 
 
@@ -395,19 +398,33 @@ END_MESSAGE_MAP()
 void CDlg_SignalDataExchange::OnBnClickedButtonGenerateData()
 {
 	CWaitCursor wait;
+	UpdateData(1);
 
-   m_pDoc->GenerateMovementCountFromVehicleFile();
+   m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
 
    m_pDoc->Constructandexportsignaldata ();
 }
 
 void CDlg_SignalDataExchange::OnBnClickedButtonQem()
-{ 
+{
 
-    m_pDoc->GenerateMovementCountFromVehicleFile();
+    m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
+		UpdateData(1);
+
 	m_InfoList.ResetContent ();
 
-   	CString directory;
+	m_pDoc->RunQEMTool("AMS_movement.csv", -1);
+
+	int number_of_updated_nodes = m_pDoc->ReadAMSMovementCSVFile( m_pDoc->m_ProjectDirectory+"AMS_movement.csv",-1);
+
+	CString updted_string;
+	updted_string.Format("Signal data for %d node(s) have been updated from QEM tool.", number_of_updated_nodes);
+
+	m_InfoList.AddString (updted_string);
+	return;
+
+
+	CString directory;
 	directory = m_pDoc->m_ProjectFile.Left( m_pDoc->m_ProjectFile.ReverseFind('\\') + 1);
 
 
@@ -1017,9 +1034,10 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 {
-		CWaitCursor wait;
+	CWaitCursor wait;
+	UpdateData(1);
 
-   m_pDoc->GenerateMovementCountFromVehicleFile();
+   m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
 	m_pDoc->ExportPathflowToCSVFiles();
 	m_pDoc->ConstructandexportVISSIMdata();
 }
@@ -1043,8 +1061,9 @@ BOOL CDlg_SignalDataExchange::OnInitDialog()
 
 	m_InfoList.AddString (info_str);
 
-	info_str.Format("Volume conversion factor = %.2f", 60.f/max(1,m_pDoc->m_DemandLoadingEndTimeInMin - m_pDoc->m_DemandLoadingStartTimeInMin));
-	m_InfoList.AddString (info_str);
+	m_PeakHourFactor = 60.f/max(1,m_pDoc->m_DemandLoadingEndTimeInMin - m_pDoc->m_DemandLoadingStartTimeInMin);
+	UpdateData(0);
+
 
 	// TODO:  Add extra initialization here
 

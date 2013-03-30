@@ -45,6 +45,7 @@ CPage_Node_Movement::CPage_Node_Movement()
 	, m_CurrentNodeName(0)
 {
 	m_SelectedMovementIndex = -1;
+	m_bModifiedFlag = false;
 	
 }
 
@@ -81,12 +82,19 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	std::vector<std::string> m_Column_names;
 
-	m_Column_names.push_back ("Incoming Node");
-	m_Column_names.push_back ("Outgoing Node");
-	m_Column_names.push_back ("Turn Type");
-//	m_Column_names.push_back ("Prohibition/Permitted/Protected");
-	m_Column_names.push_back ("# of Lanes");
-	m_Column_names.push_back ("Shared");
+	m_Column_names.push_back ("Incoming Node");  //0
+	m_Column_names.push_back ("Outgoing Node");   //1
+	m_Column_names.push_back ("Turn Type"); //2
+	m_Column_names.push_back ("Prohibition"); //3
+	m_Column_names.push_back ("# of Lanes"); //4
+	m_Column_names.push_back ("Effective Green Time (sec)"); //5
+	m_Column_names.push_back ("Saturation Flow Rate (veh/hour/lane)"); //6
+
+CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
+      if( pHeader!=NULL)
+      {
+            pHeader->ModifyStyle(HDS_BUTTONS, 0);    // disable the sorting.
+      }
 
 	//Add Columns and set headers
 	for (size_t i=0;i<m_Column_names.size();i++)
@@ -100,19 +108,31 @@ BOOL CPage_Node_Movement::OnInitDialog()
 			pTrait = new CGridColumnTraitEdit();
 		}
 
-		if(m_Column_names[i].find ("Shared")!=  string::npos)
+		if(m_Column_names[i].find ("Effective Green Time (sec)")!=  string::npos)
+		{
+			pTrait = new CGridColumnTraitEdit();
+		}
+
+		if(m_Column_names[i].find ("Saturation Flow Rate (veh/hour/lane)")!=  string::npos)
+		{
+			pTrait = new CGridColumnTraitEdit();
+		}
+
+		
+
+		if(m_Column_names[i].find ("Prohibition")!=  string::npos)
 		{
 				CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
 
 				pComboTrait->SetStyle (CBS_DROPDOWNLIST);
-				pComboTrait->AddItem(0, _T("No"));
-				pComboTrait->AddItem(0, _T("Yes"));
+				pComboTrait->AddItem(0, _T(""));
+				pComboTrait->AddItem(0, _T("Prohibited"));
 
 				pTrait = pComboTrait;
 		}
 
 		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
-		m_ListCtrl.SetColumnWidth((int)i,90);
+		m_ListCtrl.SetColumnWidth((int)i,60);
 
 	}
 
@@ -127,24 +147,43 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
 			CString str;
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  );
+		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
 
 		int column_index = 1;
 
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber );
+		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
 		m_ListCtrl.SetItemText(Index, column_index++,str);
 		
-		m_ListCtrl.SetItemText(Index, column_index++,m_pDoc->GetTurnString(movement.movement_turn));
+		m_ListCtrl.SetItemText(Index, column_index++,m_pDoc->GetTurnString(movement.movement_turn)); //2: turn type
 
-		str.Format ("%d",movement.QEM_Lanes );
+		if(movement.turning_prohibition_flag  == 1)
+			str.Format ("Prohibited"); 
+		else
+			str.Format (""); 
+
+
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 
-		if(movement.QEM_Shared==0)
-			m_ListCtrl.SetItemText(Index, column_index++, _T("No"));
+		str.Format ("%d",movement.QEM_Lanes ); // 4: number of lanes 
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+		str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // 5: effective green time 
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+		if(movement.QEM_SatFlow <1) // use default value
+		{
+		if(movement.movement_turn ==  DTA_LeftTurn || movement.movement_turn ==  movement.movement_turn ==  DTA_LeftTurn2)
+			movement.QEM_SatFlow  = 1400 ;
 		else
-			m_ListCtrl.SetItemText(Index, column_index++, _T("Yes"));
+			movement.QEM_SatFlow  = 1900 ;
+		}
+
+		str.Format ("%.0f",movement.QEM_SatFlow   ); // 6: saturation flow rate
+		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 	}
 
@@ -321,8 +360,6 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		Point_Movement[2]= NPtoSP(pt_movement[1]);
 		Point_Movement[3]= NPtoSP(pt_movement[2]);
 
-
-
 		Point_Movement[0]= NPtoSP(pt_movement[0]);
 		Point_Movement[1]= NPtoSP(pt_movement[1]);
 		Point_Movement[2]= NPtoSP(pt_movement[1]);
@@ -429,43 +466,61 @@ void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT 
 
 void CPage_Node_Movement::SaveData()
 {
+/*
+	m_Column_names.push_back ("Incoming Node");  //0
+	m_Column_names.push_back ("Outgoing Node");   //1
+	m_Column_names.push_back ("Turn Type"); //2
+	m_Column_names.push_back ("Prohibition/Permitted/Protected"); //3
+	m_Column_names.push_back ("# of Lanes"); //4
+	m_Column_names.push_back ("Effective Green Time (sec)"); //5
+*/
 
 DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
 
+
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
+		int turning_prohibition_flag=  pNode->m_MovementVector[i].turning_prohibition_flag;
+		int QEM_lanes=  pNode->m_MovementVector[i].QEM_Lanes ;
+		int effective_green=  (int)(pNode->m_MovementVector[i].QEM_EffectiveGreen);
+		int saturation_flow_rate=  (int)(pNode->m_MovementVector[i].QEM_SatFlow);
 	
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
 			CString str;
 			str = m_ListCtrl.GetItemText (i,3);
-			pNode->m_MovementVector[i].QEM_Lanes = atoi(str);
+
+			if(str.Find("Prohibited") == -1)  // not found 
+				pNode->m_MovementVector[i].turning_prohibition_flag  = 0;
+			else
+				pNode->m_MovementVector[i].turning_prohibition_flag  = 1;
+
 
 			str = m_ListCtrl.GetItemText (i,4);
 			pNode->m_MovementVector[i].QEM_Lanes = atoi(str);
 
-		if(strcmp(str,"Yes") == 0 || strcmp(str,"Yes") == 0 || strcmp(str,"y") == 0 || strcmp(str,"Y") == 0)
-		{
+			str = m_ListCtrl.GetItemText (i,5);
+			pNode->m_MovementVector[i].QEM_EffectiveGreen =  atof(str);
 
-			if(pNode->m_MovementVector[i].QEM_Lanes ==0)
+			str = m_ListCtrl.GetItemText (i,6);
+			pNode->m_MovementVector[i].QEM_SatFlow =  atof(str);
+
+			if(turning_prohibition_flag != turning_prohibition_flag || 
+				QEM_lanes != pNode->m_MovementVector[i].QEM_Lanes ||
+				effective_green != pNode->m_MovementVector[i].QEM_EffectiveGreen)
 			{
-			AfxMessageBox("");
-			
-			}else
-			{
-			
-				pNode->m_MovementVector[i].QEM_Shared = 1;
+			m_bModifiedFlag = true;
+
+			m_pDoc->Modify (true);
 			}
-		}
-		else
-			pNode->m_MovementVector[i].QEM_Shared = 0;
 
 	}
+
 }
 
 void CPage_Node_Movement::OnOK( )
 {
-	SaveData();
+  SaveData();
   CPropertyPage::OnOK();
 }
 

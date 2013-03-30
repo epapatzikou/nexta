@@ -1022,10 +1022,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						}
 
 
-						if(pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6 && CurrentTime >60)
-						{
-						TRACE("");
-						}
+
 						pLink-> departure_count +=1;
 						pLink-> total_departure_based_travel_time += TravelTime;
 
@@ -1067,16 +1064,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 				}else
-				{
-
-					
-				if(vehicle_id == 130)
-				{
-				TRACE("..");
-				}
-
+				{ 
+				
 					// reach destination, increase the counter.
-					float ArrivalTimeOnDSN = vi.time_stamp;  // no delay at destination node
+
+					float ArrivalTimeOnDSN = CurrentTime;
 
 					// update statistics for traveled link
 					int link_sequence_no = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo;
@@ -1132,6 +1124,19 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					}
 
 					pLink->CFlowDepartureCount +=1;
+
+						if(pLink->m_FromNodeNumber == 6 && pLink->m_ToNodeNumber == 4 && CurrentTime >60)
+						{
+						TRACE("");
+						}
+						pLink-> departure_count +=1;
+						pLink-> total_departure_based_travel_time += TravelTime;
+
+
+					if(pLink->m_FromNodeNumber == 6 && pLink->m_ToNodeNumber == 4 && CurrentTime>=60)
+					{
+					TRACE("current time %f, travel time = %f @ %d\n", CurrentTime,TravelTime, t_link_arrival_time);
+					}
 
 					if(t_link_arrival_time < pLink->m_LinkMOEAry.size())
 					{

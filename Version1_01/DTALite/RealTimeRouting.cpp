@@ -149,6 +149,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		bool b_switch_flag = false;
 
 
+
+
 		if(g_bVehicleAttributeUpdatingFlag ==true)  // if some vehicles' attribute might need updating
 		{
 		int current_time_in_min = (int)(current_time);
@@ -218,6 +220,10 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		if(b_switch_flag == true)
 		{
 
+		if(pVeh->m_VehicleID == 68)
+		{
+		TRACE("");
+		}
 		float TotalCost = 0;
 		bool bDistanceFlag = false;
 		bool bDebugFlag = false;
@@ -307,13 +313,13 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
 					NodeNumberSum += PathLinkList[i];
 
-					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
+					if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]!=NULL)
 					{
-					cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
-					getchar();
-					exit(0);
+						DTALink* pLink = g_LinkVector[pVeh->m_NodeAry [i].LinkNo];
+						TRACE("Prevailing Travel Time %f \n", pLink->m_prevailing_travel_time );
+
 					}
-					*/
+					
 					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
 					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 
@@ -363,12 +369,8 @@ void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time)
 
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 
-
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
 
-		pVeh->m_TimeToRetrieveInfo = current_time+1; // update information one more min later
-	
-	
 		float TotalCost = 0;
 		bool bDistanceFlag = false;
 		bool bDebugFlag = false;
@@ -432,10 +434,6 @@ void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time)
 		if(NodeSize<=1)
 			return;
 
-			if( pVeh->m_NodeAry !=NULL)  // delete the old path
-			{
-				delete pVeh->m_NodeAry;
-			}
 
 			// add link to VMS respons link
 
@@ -459,6 +457,15 @@ void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time)
 				pVeh->m_VMSResponseVector.push_back (vms);
 
 			}
+
+		if(bSwitchFlag==0)
+			return;
+
+			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			{
+				delete pVeh->m_NodeAry;
+			}
+
 
 
 

@@ -60,4 +60,6 @@ public:
 
 	BOOL m_bCreateNodeFromLink;
 	BOOL m_SaveInputNodeLinkFiles;
+	afx_msg void OnBnClickedImportGpsOsmPointShapeFile();
+	afx_msg void OnBnClickedImportGpsOsmPointShapeFile2();
 };
