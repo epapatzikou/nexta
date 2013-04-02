@@ -48,9 +48,9 @@ https://nexta.googlecode.com/svn/trunk/
 
 6. Use the local folder, e.g. C:\NEXTA_OpenSource, in the Destination Directory. 
 
-7. The DTALite source code can be found under  C:\NEXTA_OpenSource\Version1_0\DTALite
+7. The DTALite source code can be found under  C:\NEXTA_OpenSource\Version1_01\DTALite
 
-NEXTA GUi source code can be found under  C:\NEXTA_OpenSource\Version1_0\NEXTA-GUI
+NEXTA GUi source code can be found under  C:\NEXTA_OpenSource\Version1_01\NEXTA-GUI
 
 
 ==3. Use Visual C++ 2008/2010 to build the NEXTA package ==
@@ -69,7 +69,7 @@ Compile the source code, and run the NEXTA application.
 
 ==4. Use Visual C++ 2008/2010 to build the DTALite package ==
 
-1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\DTALite\DTALite.sln to open DTALite project. 
+1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_01\DTALite\DTALite.sln to open DTALite project. 
 
 2. Go to Visual C++ menu Project -> DTALite Property -> Configuration Property -> Debugging -> Working Directory. 
 
