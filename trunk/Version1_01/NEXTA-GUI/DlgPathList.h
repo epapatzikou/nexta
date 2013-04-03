@@ -103,4 +103,5 @@ public:
 	afx_msg void OnChangeattributesforlinksalongpathChangesaturationflowrate();
 	afx_msg void OnChangeattributesforlinksalongpathChangejamdensity33625();
 	afx_msg void OnChangeattributesforlinksalongpathEffectivegreentime();
+	afx_msg void OnChangeattributesforlinksalongpathDeletelinksalongpath();
 };

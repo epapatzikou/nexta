@@ -137,6 +137,21 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 
 	return capacity_in_pcphpl;
 }
+
+void CTLiteDoc::FieldNameNotExistMessage(CString FieldName, CString KeyName)
+{
+ CString message;
+ message.Format("Field %s does not exist for %s. Please check.",FieldName, KeyName);
+ AfxMessageBox(message);
+}
+
+void CTLiteDoc::FieldNameNotExistMessage(std::string FieldName, std::string KeyName)
+{
+ CString message;
+ message.Format("Field %s does not exist for %s. Please check.",FieldName.c_str(), KeyName.c_str() );
+ AfxMessageBox(message);
+}
+
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
 	CWaitCursor wait;
@@ -287,6 +302,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		m_AMSLogFile << "1: node block---" << endl;
 		m_AMSLogFile << "node id,control_type,TAZ,name,x,y" << endl;
 
+		bool bTestFieldName = false;
+
 		while( (poFeature = poLayer->GetNextFeature()) != NULL )
 		{
 			OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -294,13 +311,37 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			double y = 0;
 
 
+			if(bTestFieldName==false) 
+			{
+				if(poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_node_id, "section node: key node_id");
+					break;
+				}
+			
+				if(node_control_type.size()>0 && poFeature->GetFieldIndex(node_control_type.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_control_type, "section node: key control_type");
+					break;
+				}
+
+				if(node_TAZ_name.size()>0 && poFeature->GetFieldIndex(node_TAZ_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_TAZ_name,"section node: key TAZ");
+					break;
+				}				
+
+				if(node_name.size()>0 && poFeature->GetFieldIndex(node_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_name,"section node; key name");
+					break;
+				}	
+			
+				bTestFieldName = true;
+			}
 			// node id
 			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
 
-			if(id == 52508)
-			{
-			TRACE("");
-			}
 			int control_type = 0;
 
 			if(node_control_type.size()>0 )
@@ -428,6 +469,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	if(use_optional_centroid_layer)
 	{
+		bool bTestFieldName = false;
 
 	m_AMSLogFile << "read optional centroid layer from file " << centroid_file_name << endl; 
 	parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value",node_name);
@@ -482,12 +524,36 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		m_AMSLogFile << "1: zone centroid block---" << endl;
 		m_AMSLogFile << "node id,TAZ,name,x,y" << endl;
 
+		bool bTestFieldName = false;
 		while( (poFeature = poLayer->GetNextFeature()) != NULL )
 		{
 			OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 			double x = 0;
 			double y = 0;
 
+			if(bTestFieldName==false) 
+			{
+				if(node_node_id.size()>0  && poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_node_id, "section centroid: key node_id");
+					break;
+				}
+			
+
+				if(node_TAZ_name.size()>0 && poFeature->GetFieldIndex(node_TAZ_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_TAZ_name, "section centroid: key TAZ");
+					break;
+				}				
+
+				if(node_name.size()>0 && poFeature->GetFieldIndex(node_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(node_name, "section centroid: key name");
+					break;
+				}	
+			
+				bTestFieldName = true;
+			}
 
 			// node id
 			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
@@ -697,11 +763,100 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			{
 				m_AMSLogFile << " " << endl;
 			}
-
+			
+			bool bTestFieldName = false;
 
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+			if(bTestFieldName==false) 
+			{
+				if(from_node_id_name.size()>0  && poFeature->GetFieldIndex(from_node_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(from_node_id_name, "section link; key from_node_id");
+					break;
+				}
+			
+
+				if(to_node_id_name.size()>0 && poFeature->GetFieldIndex(to_node_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(to_node_id_name, "section link; key to_node_id");
+					break;
+				}				
+
+				if(link_id_name.size()>0 && poFeature->GetFieldIndex(link_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(link_id_name, "section link; key link_id");
+					break;
+				}
+
+				if(link_name.size()>0 && poFeature->GetFieldIndex(link_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(link_name, "section link; key name");
+					break;
+				}	
+
+
+				if(link_type_name.size()>0 && poFeature->GetFieldIndex(link_type_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(link_type_name, "section link; key link_type");
+					break;
+				}	
+
+
+				if(speed_limit_in_mph_name.size()>0 && poFeature->GetFieldIndex(speed_limit_in_mph_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(speed_limit_in_mph_name,"section link; key speed_limit");
+					break;
+				}	
+
+				if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(number_of_lanes_name, "section link; key number_of_lanes");
+					break;
+				}	
+				if(capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(capacity_in_vhc_per_hour_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(capacity_in_vhc_per_hour_name,"section link; key hourly_capacity");
+					break;
+				}	
+				if(link_type_name.size()>0 && poFeature->GetFieldIndex(link_type_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(link_type_name,"section link; key link_type");
+					break;
+				}	
+
+				//-- reversed direction 
+
+				if(r_number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(r_number_of_lanes_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(r_number_of_lanes_name, "section link; key r_number_of_lanes");
+					break;
+				}	
+
+				if(r_lane_capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(r_lane_capacity_in_vhc_per_hour_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(r_lane_capacity_in_vhc_per_hour_name, "section link; key r_hourly_capacity");
+					break;
+				}	
+
+				if(r_speed_limit_in_mph_name.size()>0 && poFeature->GetFieldIndex(r_speed_limit_in_mph_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(r_speed_limit_in_mph_name, "section link; key r_speed_limit");
+					break;
+				}	
+
+
+				if(r_link_type_name.size()>0 && poFeature->GetFieldIndex(r_link_type_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(r_link_type_name,  "section link; key r_link_type");
+					break;
+				}	
+				bTestFieldName = true;
+			}
+
+			//--------------------------------------//
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
 
@@ -727,10 +882,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
-
-
 				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
-
 
 				int direction = 1;
 				if(direction_name.size()>0) 
@@ -1303,6 +1455,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 		}
+
+		from_node_id_name.clear();
+		to_node_id_name.clear();
+		to_link_id_name.clear();
+		link_id_name.clear();
+		link_name.clear();
+		link_type_name.clear();
+		mode_code_name.clear();
+		direction_name.clear();
+		length_name.clear();
+		number_of_lanes_name.clear();
+		capacity_in_vhc_per_hour_name.clear();
+		speed_limit_in_mph_name.clear();
+
 		int direction =0;
 		parser.GetValueBySectionKeyFieldName(file_name,"connector","direction","value",direction_name);
 
@@ -1346,9 +1512,61 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			m_AMSLogFile << endl << endl << "4: " << connector_shape_file_name << " block---" << endl;
 			m_AMSLogFile << "from_node_id,to_name_id,length,number_of_lanes,speed_limit,capacity," << endl;
 
+			bool bTestFieldName = false;
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+			if(bTestFieldName==false) 
+			{
+				if(from_node_id_name.size()>0  && poFeature->GetFieldIndex(from_node_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(from_node_id_name,  "section connector; key zone_end");
+					break;
+				}
+			
+
+				if(to_node_id_name.size()>0 && poFeature->GetFieldIndex(to_node_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(to_node_id_name, "section connector; key node_end");
+					break;
+				}				
+
+				if(to_link_id_name.size()>0 && poFeature->GetFieldIndex(to_link_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(to_link_id_name,"section connector; key link_end");
+					break;
+				}
+
+
+				if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(number_of_lanes_name,"section connector; key number_of_lanes");
+					break;
+				}	
+
+
+				if(speed_limit_in_mph_name.size()>0 && poFeature->GetFieldIndex(speed_limit_in_mph_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(speed_limit_in_mph_name,"section connector; key speed_limit");
+					break;
+				}	
+
+				if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(length_name,"section connector; key length" );
+					break;
+				}	
+
+				if(capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(capacity_in_vhc_per_hour_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(capacity_in_vhc_per_hour_name,"section connector; key length");
+					break;
+				}
+
+
+				bTestFieldName = true;
+			}
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str());
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str());
 				int to_link_id = poFeature->GetFieldAsInteger(to_link_id_name.c_str());
@@ -1756,9 +1974,23 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			m_AMSLogFile << "zone id" << endl;
 
 			int zone_record_count = 1;
+			bool bTestFieldName = false;
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+
+			if(bTestFieldName==false) 
+			{
+				if(zone_id_name.size()>0  && poFeature->GetFieldIndex(zone_id_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(zone_id_name, "section zone: key zone_id");
+					break;
+				}
+			
+	
+				bTestFieldName = true;
+			}
 
 				// zone id
 				int id = poFeature->GetFieldAsInteger(zone_id_name.c_str());
@@ -2237,6 +2469,11 @@ void  CTLiteDoc::ReadSynchroUniversalDataFiles()
 	static char BASED_CODE szFilter[] = "Synchro UTDF LAYOUT File (LAYOUT.csv)|LAYOUT.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString NetworkFile = pMainFrame->m_CurrentDirectory;
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
 	if(dlg.DoModal() == IDOK)
 	{
 		CString ProjectFile = dlg.GetPathName();
@@ -3271,7 +3508,9 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 {
 	if(m_ImportNetworkAlready)
 	{
-	AfxMessageBox("A data set has been imported. Please close the current data set to use the import function again.");
+
+		ClearNetworkData();
+
 	}
 
 	m_ImportNetworkAlready = true;
@@ -3464,6 +3703,11 @@ void CTLiteDoc::OnImportSynchrocombinedcsvfile()
 	static char BASED_CODE szFilter[] = "Synchro Combined CSV File (*.csv)|*.csv||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString NetworkFile = pMainFrame->m_CurrentDirectory;
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
 	if(dlg.DoModal() == IDOK)
 	{
 		CString ProjectFile = dlg.GetPathName();

@@ -572,6 +572,8 @@ public:
 	ofstream m_AMSLogFile;
 
 	BOOL OnOpenDocument(CString FileName, bool bLoadNetworkOnly =false);
+	void FieldNameNotExistMessage(CString FieldName, CString KeyName);
+	void FieldNameNotExistMessage(std::string FieldName, std::string KeyName);
 	BOOL OnOpenAMSDocument(CString FileName);
 	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
 	bool ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int start_time_in_min,int end_time_in_min);
@@ -1880,6 +1882,8 @@ public:
 	//	return m_NodeIDtoLinkMap[LinkKey];
 	//}
 
+	void ClearNetworkData();
+
 	DTALink* FindLinkWithNodeIDs(int FromNodeID, int ToNodeID)
 	{
 
@@ -2343,6 +2347,9 @@ public:
 	afx_msg void OnSubareaGenerateweatherscenariofile();
 	afx_msg void OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea();
 
+	afx_msg void OnImportShapefile();
+	afx_msg void OnFileOpentestsets();
+	afx_msg void OnFileOpensampledatasetfolder();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

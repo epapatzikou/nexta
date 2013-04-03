@@ -61,7 +61,7 @@ public:
 extern std::list<s_link_selection>	g_LinkDisplayList;
 extern void g_AddLinkIntoSelectionList(int link_no, int document_no, bool b_SelectOtherDocuments = false, double x = 0, double y = 0);
 extern void g_ClearLinkSelectionList();
-enum _cursor_type {_cursor_standard_arrow=0,_cursor_movement_network,_cursor_create_link,_cursor_create_node,_cursor_create_subarea,_cursor_create_zone};
+enum _cursor_type {_cursor_standard_arrow=0,_cursor_movement_network,_cursor_create_link,_cursor_create_node,_cursor_create_subarea,_cursor_create_zone,_cursor_wait};
 
 
 enum eVisulizationTemplate {e_traffic_assignment, e_train_scheduling };

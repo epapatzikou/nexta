@@ -55,12 +55,7 @@ void CTLiteDoc::OnFileOpenNewRailDoc()
 BOOL CTLiteDoc::OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly)
 {
 
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
-	m_NodeNumbertoIDMap.clear();
-	m_RailMOW_vector.clear();
-	m_train_schedule_vector.clear();
-
+	ClearNetworkData();
 	CTime LoadingStartTime = CTime::GetCurrentTime();
 
 	m_bLoadNetworkDataOnly = bNetworkOnly;

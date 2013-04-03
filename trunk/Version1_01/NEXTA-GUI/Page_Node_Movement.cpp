@@ -43,9 +43,11 @@ IMPLEMENT_DYNAMIC(CPage_Node_Movement, CPropertyPage)
 CPage_Node_Movement::CPage_Node_Movement()
 	: CPropertyPage(CPage_Node_Movement::IDD)
 	, m_CurrentNodeName(0)
+	, m_PeakHourFactor(0)
 {
 	m_SelectedMovementIndex = -1;
 	m_bModifiedFlag = false;
+	m_PeakHourFactor = 1.0;
 	
 }
 
@@ -58,6 +60,7 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 	CPropertyPage::DoDataExchange(pDX);
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODEID, m_CurrentNodeName);
+	DDX_Text(pDX, IDC_EDIT1, m_PeakHourFactor);
 }
 
 
@@ -65,30 +68,45 @@ BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_PAINT()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_GRIDLISTCTRLEX, &CPage_Node_Movement::OnLvnItemchangedGridlistctrlex)
+	ON_BN_CLICKED(IDC_BUTTON_UPDATE, &CPage_Node_Movement::OnBnClickedButtonUpdate)
+	ON_BN_CLICKED(IDC_BUTTON_QEM, &CPage_Node_Movement::OnBnClickedButtonQem)
 END_MESSAGE_MAP()
 
 
 
 BOOL CPage_Node_Movement::OnInitDialog()
 {
-	CPropertyPage::OnInitDialog();
-	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
 
-	m_CurrentNodeName = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_NodeNumber ;
-	// Give better margin to editors
-	m_ListCtrl.SetCellMargin(1.2);
-	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
-	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
+        CPropertyPage::OnInitDialog();
+        m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
 
-	std::vector<std::string> m_Column_names;
+        m_CurrentNodeName = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_NodeNumber ;
+        // Give better margin to editors
+        m_ListCtrl.SetCellMargin(1.2);
+        CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
+        m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
-	m_Column_names.push_back ("Incoming Node");  //0
-	m_Column_names.push_back ("Outgoing Node");   //1
-	m_Column_names.push_back ("Turn Type"); //2
-	m_Column_names.push_back ("Prohibition"); //3
-	m_Column_names.push_back ("# of Lanes"); //4
-	m_Column_names.push_back ("Effective Green Time (sec)"); //5
-	m_Column_names.push_back ("Saturation Flow Rate (veh/hour/lane)"); //6
+        std::vector<std::string> m_Column_names;
+
+        m_Column_names.push_back ("Incoming Node");  //0
+        m_Column_names.push_back ("Outgoing Node");   //1
+        m_Column_names.push_back ("Turn Type"); //2
+        m_Column_names.push_back ("Prohibition"); //3
+        m_Column_names.push_back ("# of Lanes"); //4
+		m_Column_names.push_back ("Effective Green Time (sec)"); //5
+        m_Column_names.push_back ("Saturation Flow Rate (veh/hour/lane)"); //6
+        m_Column_names.push_back ("Simulated Volume"); //7
+        m_Column_names.push_back ("Hourly Volume"); //8
+
+        m_Column_names.push_back ("QEM_Speed"); //8
+        m_Column_names.push_back ("QEM_Capacity"); //8
+        m_Column_names.push_back ("QEM_VOC"); //8
+        m_Column_names.push_back ("QEM_Delay"); //8
+        m_Column_names.push_back ("QEM_LOS"); //8
+        m_Column_names.push_back ("QEM_Phase1"); //8
+
+
+
 
 CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
       if( pHeader!=NULL)
@@ -96,46 +114,132 @@ CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
             pHeader->ModifyStyle(HDS_BUTTONS, 0);    // disable the sorting.
       }
 
-	//Add Columns and set headers
-	for (size_t i=0;i<m_Column_names.size();i++)
-	{
+        //Add Columns and set headers
+        for (size_t i=0;i<m_Column_names.size();i++)
+        {
 
-		CGridColumnTrait* pTrait = NULL;
-//		pTrait = new CGridColumnTraitEdit();
+                CGridColumnTrait* pTrait = NULL;
+//              pTrait = new CGridColumnTraitEdit();
 
-		if(m_Column_names[i].find ("# of Lanes")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
+                if(m_Column_names[i].find ("# of Lanes")!=  string::npos)
+                {
+                        pTrait = new CGridColumnTraitEdit();
+                }
+
+                if(m_Column_names[i].find ("Effective Green Time (sec)")!=  string::npos)
+                {
+                        pTrait = new CGridColumnTraitEdit();
+                }
+
+                if(m_Column_names[i].find ("Saturation Flow Rate (veh/hour/lane)")!=  string::npos)
+                {
+                        pTrait = new CGridColumnTraitEdit();
+                }
+
+                
+
+                if(m_Column_names[i].find ("Prohibition")!=  string::npos)
+                {
+                                CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
+
+                                pComboTrait->SetStyle (CBS_DROPDOWNLIST);
+                                pComboTrait->AddItem(0, _T(""));
+                                pComboTrait->AddItem(0, _T("Prohibited"));
+
+                                pTrait = pComboTrait;
+                }
+
+                m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
+
+				if(i<=8)
+					m_ListCtrl.SetColumnWidth((int)i,60);
+				else
+					m_ListCtrl.SetColumnWidth((int)i,80);
+
+
+        }
+
+
+        //Add Rows
+
+        DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+
+        for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+        {
+        
+                DTANodeMovement movement = pNode->m_MovementVector[i];
+
+                        CString str;
+                str.Format ("%d", m_pDoc->m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
+                int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
+
+                int column_index = 1;
+
+                str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
+                m_ListCtrl.SetItemText(Index, column_index++,str);
+                
+                m_ListCtrl.SetItemText(Index, column_index++,m_pDoc->GetTurnString(movement.movement_turn)); //2: turn type
+
+                if(movement.turning_prohibition_flag  == 1)
+                        str.Format ("Prohibited"); 
+                else
+                        str.Format (""); 
+
+
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+                str.Format ("%d",movement.QEM_Lanes ); // 4: number of lanes 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+                str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // 5: effective green time 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+                if(movement.QEM_SatFlow <1) // use default value
+                {
+                if(movement.movement_turn ==  DTA_LeftTurn || movement.movement_turn ==  movement.movement_turn ==  DTA_LeftTurn2)
+                        movement.QEM_SatFlow  = 1400 ;
+                else
+                        movement.QEM_SatFlow  = 1900 ;
+                }
+
+                str.Format ("%.0f",movement.QEM_SatFlow   ); // 6: saturation flow rate
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.sim_turn_count   ); // 7: simulated volume
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor   ); // 7: simulated volume
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.QEM_Speed    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.QEM_Capacity    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.QEM_VOC    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%.0f",movement.QEM_Delay    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%s",movement.QEM_LOS    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
+                str.Format ("%d",movement.QEM_Phase1    ); 
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
 		}
 
-		if(m_Column_names[i].find ("Effective Green Time (sec)")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-
-		if(m_Column_names[i].find ("Saturation Flow Rate (veh/hour/lane)")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-
-		
-
-		if(m_Column_names[i].find ("Prohibition")!=  string::npos)
-		{
-				CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
-
-				pComboTrait->SetStyle (CBS_DROPDOWNLIST);
-				pComboTrait->AddItem(0, _T(""));
-				pComboTrait->AddItem(0, _T("Prohibited"));
-
-				pTrait = pComboTrait;
-		}
-
-		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
-		m_ListCtrl.SetColumnWidth((int)i,60);
-
-	}
-
+        UpdateData(0);
+        return TRUE;  // return TRUE unless you set the focus to a control
+        // EXCEPTION: OCX Property Pages should return FALSE
+}
+void CPage_Node_Movement::UpdateList()
+{
 
 	//Add Rows
 
@@ -146,12 +250,11 @@ CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
 	
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
-			CString str;
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
-		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
-
 		int column_index = 1;
 
+
+		CString str; 
+		int Index = i;
 		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
 		m_ListCtrl.SetItemText(Index, column_index++,str);
 		
@@ -185,13 +288,45 @@ CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
 		str.Format ("%.0f",movement.QEM_SatFlow   ); // 6: saturation flow rate
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
+		str.Format ("%.0f",movement.sim_turn_count    ); // 6: saturation flow rate
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+		
+		str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor     ); // 6: saturation flow rate
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
+        str.Format ("%.0f",movement.QEM_Speed    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%.0f",movement.QEM_Capacity    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%.0f",movement.QEM_VOC    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%.0f",movement.QEM_Delay    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%s",movement.QEM_LOS    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%d",movement.QEM_Phase1    ); 
+        m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
 	}
 
+
 	UpdateData(0);
-	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
+void CPage_Node_Movement::DisplayList()
+{
+
+
+}
 void CPage_Node_Movement::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
@@ -527,5 +662,23 @@ void CPage_Node_Movement::OnOK( )
 void CPage_Node_Movement::OnBnClickedButtonSave()
 {
 
+
+}
+
+void CPage_Node_Movement::OnBnClickedButtonUpdate()
+{
+	UpdateData(1);
+	UpdateList();
+}
+
+void CPage_Node_Movement::OnBnClickedButtonQem()
+{
+	m_pDoc->RunQEMTool("AMS_movement_node.csv",m_CurrentNodeName );
+	int number_of_updated_nodes = m_pDoc->ReadAMSMovementCSVFile( m_pDoc->m_ProjectDirectory+"AMS_movement_node.csv",m_CurrentNodeName);
+	UpdateList();
+	CString updted_string;
+	updted_string.Format("Signal data for %d node(s) have been updated from QEM tool.", number_of_updated_nodes);
+
+	m_pDoc->Modify (true);
 
 }

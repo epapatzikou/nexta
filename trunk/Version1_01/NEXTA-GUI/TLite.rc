@@ -658,26 +658,17 @@ CAPTION "Import/Export GIS Data File"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Exit",IDOK,365,211,50,14
-    LISTBOX         IDC_LIST1,7,153,408,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,49,166,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,176,49,20,14
-    LTEXT           "Shape File of Point/Line Data Layer:",IDC_STATIC,7,39,116,8
-    RTEXT           "Message List:",IDC_STATIC,7,142,44,8
-    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,7,65,96,14
-    LTEXT           "GIS Shape File ->AMS CVS File:",IDC_STATIC,7,6,182,14,0,WS_EX_STATICEDGE
-    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,201,6,1,141
-    LTEXT           "AMS CSV File->GIS Shape File",IDC_STATIC,207,6,182,14,0,WS_EX_STATICEDGE
-    LTEXT           "CSV File with geometry Field",IDC_STATIC,209,39,91,8
-    EDITTEXT        IDC_EDIT_CSV_SHAPE_FILE,207,48,178,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_Find_CSF_File,388,50,20,14
-    DEFPUSHBUTTON   "Export to GIS Shape File",ID_EXPORT_GIS_Shape_File,209,124,96,14
-    LISTBOX         IDC_GIS_DATA_TYPE_LIST,210,81,106,35,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "GIS Data Type:",IDC_STATIC,211,71,50,8
+    LISTBOX         IDC_LIST1,7,83,408,124,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,35,166,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,175,35,20,14
+    LTEXT           "Shape File of Point/Line Data Layer:",IDC_STATIC,7,6,116,8
+    RTEXT           "Message List:",IDC_STATIC,7,63,44,8
+    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,225,14,96,14
     DEFPUSHBUTTON   "Exit",IDOK3,365,211,50,14
     DEFPUSHBUTTON   "Exit",IDOK4,365,211,50,14
     DEFPUSHBUTTON   "Exit",IDOK5,365,211,50,14
-    DEFPUSHBUTTON   "Import OSM Route Point Shape File",ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE2,7,89,140,14
-    DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,114,96,14
+    DEFPUSHBUTTON   "Import OSM Route Point Shape File",ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE2,226,33,140,14
+    DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,227,54,96,14
 END
 
 IDD_DIALOG_Legend DIALOGEX 0, 0, 133, 124
@@ -751,24 +742,13 @@ BEGIN
     DEFPUSHBUTTON   "Exit",IDOK,265,235,50,14
     LTEXT           "Excel File (in *.xls format) to be Imported:",IDC_STATIC,7,8,136,8
     PUSHBUTTON      "...",IDC_BUTTON_Find_Exel_File,322,19,20,14
-    LISTBOX         IDC_LIST1,7,126,450,71,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Import Data Sheets",ID_IMPORT,145,108,134,14
+    LISTBOX         IDC_LIST1,7,102,450,95,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "Import Data Sheets",ID_IMPORT,119,62,134,14
     EDITTEXT        IDC_EDIT_ExcelFile,7,19,306,15,ES_AUTOHSCROLL
-    RTEXT           "Message List:",IDC_STATIC,7,113,44,8
+    RTEXT           "Message List:",IDC_STATIC,7,85,44,8
     DEFPUSHBUTTON   "Export Messsages...",ID_EXPORT_DATA,155,235,86,14
-    PUSHBUTTON      "View Sample Spreadsheet",IDC_BUTTON_View_Sample_File,352,9,109,14
-    CONTROL         "Remove Connectors and Centroids",IDC_CHECK_REMOVE_CONNECTOR,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,299,82,136,10
-    LISTBOX         IDC_LIST_DEMAND_FORMAT,7,65,72,31,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Demand Format:",IDC_STATIC,7,52,54,8
-    PUSHBUTTON      "Load Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,353,28,109,14
-    CONTROL         "Generate Node Layer from Link Layer",IDC_CHECK_GENERATE_NODE_DATA,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,147,38,136,10
+    PUSHBUTTON      "Load Sample Spreadsheet",IDC_BUTTON_Load_Sample_File,352,19,109,14
     CONTROL         "Import Zone and Demand Data",IDC_CHECK_ZONE_DATA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,39,113,10
-    CONTROL         "Add Connectors for Isolated Nodes",IDC_CHECK_ADD_CONNECTOR,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,147,80,136,10
-    CONTROL         "Use Link Type to Generate Default Values for Speed Limit, Lane Capacity and # of Lanes",IDC_CHECK_USE_LINK_TYPE,
-                    "Button",BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,147,51,156,24
 END
 
 IDD_DIALOG_NODE_LANE DIALOGEX 0, 0, 765, 320
@@ -1003,8 +983,12 @@ EXSTYLE WS_EX_RIGHT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,28,291,220
-    LTEXT           "Current Node ID:",IDC_STATIC,6,9,56,8
-    EDITTEXT        IDC_EDIT_CURRENT_NODEID,73,7,47,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Node ID:",IDC_STATIC,6,9,30,8
+    EDITTEXT        IDC_EDIT_CURRENT_NODEID,37,7,47,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "Perform QEM ",IDC_BUTTON_QEM,248,7,50,14
+    EDITTEXT        IDC_EDIT1,155,7,29,14,ES_AUTOHSCROLL
+    LTEXT           "Peak Hour Factor: ",IDC_STATIC,91,8,61,8
+    PUSHBUTTON      "Update",IDC_BUTTON_UPDATE,189,7,31,14
 END
 
 IDD_DIALOG_SHAPEFILE DIALOGEX 0, 0, 562, 286
@@ -1180,6 +1164,34 @@ BEGIN
     PUSHBUTTON      "On-Line Help Document",IDC_BUTTON_ONLINE_DOCUMENT,133,121,92,14
     EDITTEXT        IDC_EDIT1,29,16,231,93,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN
     PUSHBUTTON      "Sample File(s)",IDC_BUTTON_SampleFile,30,121,92,14
+END
+
+IDD_DIALOG_GIS_IMPORT_SHAPE_EXPORT DIALOGEX 0, 0, 422, 232
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Import/Export GIS Data File"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Exit",IDOK,365,211,50,14
+    LISTBOX         IDC_LIST1,7,153,408,54,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_GIS_SHAPE_FILE,7,49,166,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_Sensor_File,176,49,20,14
+    LTEXT           "Shape File of Point/Line Data Layer:",IDC_STATIC,7,39,116,8
+    RTEXT           "Message List:",IDC_STATIC,7,142,44,8
+    DEFPUSHBUTTON   "Export to CSV File",ID_EXPORT_CSV_FILE,7,65,96,14
+    LTEXT           "GIS Shape File ->AMS CVS File:",IDC_STATIC,7,6,182,14,0,WS_EX_STATICEDGE
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,201,6,1,141
+    LTEXT           "AMS CSV File->GIS Shape File",IDC_STATIC,207,6,182,14,0,WS_EX_STATICEDGE
+    LTEXT           "CSV File with geometry Field",IDC_STATIC,209,39,91,8
+    EDITTEXT        IDC_EDIT_CSV_SHAPE_FILE,207,48,178,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_Find_CSF_File,388,50,20,14
+    DEFPUSHBUTTON   "Export to GIS Shape File",ID_EXPORT_GIS_Shape_File,209,124,96,14
+    LISTBOX         IDC_GIS_DATA_TYPE_LIST,210,81,106,35,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "GIS Data Type:",IDC_STATIC,211,71,50,8
+    DEFPUSHBUTTON   "Exit",IDOK3,365,211,50,14
+    DEFPUSHBUTTON   "Exit",IDOK4,365,211,50,14
+    DEFPUSHBUTTON   "Exit",IDOK5,365,211,50,14
+    DEFPUSHBUTTON   "Import OSM Route Point Shape File",ID_IMPORT_GPS_OSM_POINT_SHAPE_FILE2,7,89,140,14
+    DEFPUSHBUTTON   "Import GIS Shape File",ID_IMPORT_GPS_SHAPE_FILE,7,114,96,14
 END
 
 
@@ -1754,6 +1766,14 @@ BEGIN
         RIGHTMARGIN, 309
         TOPMARGIN, 7
         BOTTOMMARGIN, 176
+    END
+
+    IDD_DIALOG_GIS_IMPORT_SHAPE_EXPORT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 415
+        TOPMARGIN, 6
+        BOTTOMMARGIN, 225
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2556,12 +2576,13 @@ BEGIN
     POPUP "&File"
     BEGIN
         MENUITEM "&Open Traffic Network Project...\tCtrl+O", ID_FILE_OPEN_NEW_DOC
-        MENUITEM "&Open Traffic Network Only...", ID_FILE_OPEN_NETWORK_ONLY
+        MENUITEM "&Open Traffic Network Only (Without Loading Simulation Data)...", ID_FILE_OPEN_NETWORK_ONLY
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
             MENUITEM "Single Excel File (*.xls)",   ID_IMPORT_SINGLEEXCELFILE
             MENUITEM "GIS Network Data Set",        ID_IMPORT_AMSDATASET
+            MENUITEM "Openstreetmap Route Point Shape File", ID_IMPORT_SHAPEFILE
             MENUITEM "Background Image (*.bmp)",    ID_IMPORT_BACKGROUNDIMAGE
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
             MENUITEM "Synchro Combined CSV File",   ID_IMPORT_SYNCHROCOMBINEDCSVFILE
@@ -2581,8 +2602,11 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Open Project Folder",         ID_TOOLS_PROJECTFOLDER
         MENUITEM "Open NeXTA Program Folder",   ID_TOOLS_OPENNEXTAPROGRAMFOLDER
-        MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM SEPARATOR
+        MENUITEM "Open Test Data Set",          ID_FILE_OPENTESTSETS
+        MENUITEM "Open Sample Data Set",        ID_FILE_OPENSAMPLEDATASETFOLDER
+        MENUITEM SEPARATOR
+        MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
@@ -3326,6 +3350,8 @@ BEGIN
         MENUITEM "Backwave Speed (kmph)",       ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEBACKWAVESPEED33624
         MENUITEM "Saturation Flow Rate (vhc/hour)", ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESATURATIONFLOWRATE
         MENUITEM "Effective Green Time (sec)",  ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Links Along Path",     ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DELETELINKSALONGPATH
     END
 END
 
@@ -3523,13 +3549,14 @@ BEGIN
     POPUP "&File文件"
     BEGIN
         MENUITEM "&Open Traffic Network Project...打开一个交通网络项目\tCtrl+O", ID_FILE_OPEN_NEW_DOC
-        MENUITEM "&Open Traffic Network Only...仅打开交通网络", ID_FILE_OPEN_NETWORK_ONLY
+        MENUITEM "&Open Traffic Network Only...仅打开交通网络 (不加载模拟数据)", ID_FILE_OPEN_NETWORK_ONLY
         MENUITEM SEPARATOR
         POPUP "Import导入"
         BEGIN
             MENUITEM "Single Excel File (*.xls)单个Excel文件", ID_IMPORT_SINGLEEXCELFILE
             MENUITEM "GIS Network Data Set GIS网络数据集", ID_IMPORT_AMSDATASET
             MENUITEM "Background Image (*.bmp)背景图片", ID_IMPORT_BACKGROUNDIMAGE
+            MENUITEM "Openstreetmap Route Point Shape File ：开源 OpenStreetMaps SHAPE 文件", ID_IMPORT33642
             MENUITEM "Synchro UTDF CSV File ",      ID_IMPORT_SYNCHROUTDFCSVFILES
             MENUITEM "Synchro Combined CSV File ",  ID_IMPORT_SYNCHROCOMBINEDCSVFILE
         END
@@ -3550,7 +3577,11 @@ BEGIN
         MENUITEM "Open NeXTA Program Folder 打开NeXTA程序文件夹", ID_TOOLS_OPENNEXTAPROGRAMFOLDER
         MENUITEM "&Close  关闭当前工程",              ID_FILE_CLOSE
         MENUITEM SEPARATOR
+        MENUITEM "Open Test Data Set 打开 测试数据集", ID_FILE_OPENTESTSETS
+        MENUITEM "Open Sample Data Set 打开例子数据集", ID_FILE_OPENSAMPLEDATASETFOLDER
+        MENUITEM SEPARATOR
         MENUITEM "Recent File 最近文件显示",          ID_FILE_MRU_FILE1
+        MENUITEM SEPARATOR
         MENUITEM "E&xit  退出",                   ID_APP_EXIT
     END
     POPUP "View查看"
@@ -4072,7 +4103,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    ID_EDIT_CREATESUBAREA   "Create Subarea\nCreate Subarea"
+    ID_EDIT_CREATESUBAREA   "Create Subarea for Subarea Analysis \nCreate Subarea for Subarea Analysis "
     ID_IMPORT_AVI_DATA      "Import AVI Sensor Data"
 END
 

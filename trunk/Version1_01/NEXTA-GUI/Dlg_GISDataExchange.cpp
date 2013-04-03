@@ -60,9 +60,6 @@ void CDlg_GISDataExchange::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_GIS_SHAPE_FILE, m_GIS_ShapeFile);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
-	DDX_Text(pDX, IDC_EDIT_CSV_SHAPE_FILE, m_CSV_File);
-	DDX_Control(pDX, IDC_GIS_DATA_TYPE_LIST, m_GISDataType_List);
-//	DDX_Check(pDX, IDC_CHECK2, m_SaveInputNodeLinkFiles);
 }
 
 
@@ -1003,11 +1000,6 @@ BOOL CDlg_GISDataExchange::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_GISDataType_List.AddString ("Point");
-	m_GISDataType_List.AddString ("Line");
-	m_GISDataType_List.AddString ("Polygon");
-	m_GISDataType_List.SetCurSel (1);  // default line type
-
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -1168,6 +1160,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 			m_pDoc->m_DefaultLinkType = 4; //connector
 			m_pDoc->m_DefaultNumLanes  = 2;
 
+		bool bTestFieldName = false;
 
 		while( (poFeature = poLayer->GetNextFeature()) != NULL )
 		{
@@ -1181,6 +1174,19 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 			{
 				OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
+				if(!bTestFieldName)
+				{
+				CString str_route_fid = poFeature->GetFieldAsString("route_fid");
+				if(str_route_fid.GetLength () ==0)
+				{
+					AfxMessageBox("Field route_fid does not exist in this shape file. Please check.");
+					return; 
+	
+				}
+
+				bTestFieldName = true;
+
+				}
 
 				int route_fid = poFeature->GetFieldAsDouble("route_fid");
 

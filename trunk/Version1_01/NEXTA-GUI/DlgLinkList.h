@@ -69,5 +69,4 @@ public:
 	afx_msg void OnCbnSelchangeComboStarttime();
 	afx_msg void OnCbnSelchangeComboEndtime();
 	afx_msg void OnStnClickedDocTitle();
-	afx_msg void OnChangeattributesforlinksalongpathChangespeedlimit();
 };
