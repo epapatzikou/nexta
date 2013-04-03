@@ -56,7 +56,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	std::list<struc_vehicle_item>::iterator vii;
 
-	int vehicle_id_trace = 0;
+	int vehicle_id_trace = 86;
 	int link_id_trace = -1;
 
 
@@ -941,6 +941,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 						float FFTT = p_Nextlink->GetFreeMovingTravelTime(TrafficFlowModelFlag,DayNo,CurrentTime);
 
+						if(vehicle_id==86)
+						{
+						TRACE("");
+						}
 						vi.time_stamp = ArrivalTimeOnDSN + FFTT;
 
 						vi.veh_next_node_number  = -1;  // initialization 
