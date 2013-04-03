@@ -190,11 +190,14 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		// pVeh->m_DepartureTime +1: assume we access pre trip information one min before the trip
 
 		if(pVeh->m_InformationClass == info_pre_trip 
-			&& pVeh->m_DepartureTime -1 < current_time 
-			&& pVeh->m_TimeToRetrieveInfo <= current_time)
+			&& int(pVeh->m_DepartureTime +1) > current_time /* if the departure time rounds up to the current time (min by min), then perforom pre-trip routing  */
+			&& int(pVeh->m_TimeToRetrieveInfo) <= current_time)
 		{
 
-
+						if(pVeh->m_VehicleID ==86)
+						{
+						TRACE("");
+						}
 			b_switch_flag = true;
 
 			pVeh->m_TimeToRetrieveInfo = 99999; // no more update
@@ -202,8 +205,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 		// if this is an enroute info vehicle, 
 		if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true &&
-			pVeh->m_DepartureTime-1 < current_time &&
-			pVeh->m_TimeToRetrieveInfo <= current_time && pVeh ->m_bComplete == false)
+			int(pVeh->m_DepartureTime) < current_time &&
+			(int)(pVeh->m_TimeToRetrieveInfo) <= current_time && pVeh ->m_bComplete == false)
 		{
 
 			pVeh->m_TimeToRetrieveInfo += 1; // next 1 min

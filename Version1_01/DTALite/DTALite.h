@@ -2660,7 +2660,7 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-#define _MAX_ODT_PATH_SIZE_4_ODME 50
+#define _MAX_ODT_PATH_SIZE_4_ODME 100
 #define _MAX_PATH_NODE_SIZE_4_ODME 300
 
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval

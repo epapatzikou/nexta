@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Simple Network"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Adjusted_Fort_Worth_workzone"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\6-Node Network_information"
+				WorkingDirectory="C:\Temp\2. With Information Classes"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\6-Node Network_information"
+				WorkingDirectory="C:\Temp\2. With Information Classes"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

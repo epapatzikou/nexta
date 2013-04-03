@@ -2148,7 +2148,7 @@ void g_ReadDemandFile_Parser()
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
 
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
+	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval)+1; // "+1" in case  rounding downs errors. 
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();
@@ -2223,6 +2223,9 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 				CapacityReduction cs;
 				cs.StartDayNo = g_read_integer(st)-1; // start from zero
 				cs.EndDayNo = cs.StartDayNo;
+
+				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
+				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
 
 				if(cs.StartDayNo <0)
 				{
@@ -2328,17 +2331,8 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				cs.StartDayNo = g_read_integer(st)-1; // start from zero
 				cs.EndDayNo = g_read_integer(st)-1;
 
-				if(cs.StartDayNo <0)
-				{
-					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
-					g_ProgramStop();
-				}
-
-				if(cs.EndDayNo <0)
-				{
-					cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
-					g_ProgramStop();
-				}
+				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
+				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
 
 				if(cs.EndDayNo < cs.StartDayNo )
 				{
@@ -2449,6 +2443,9 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 				CapacityReduction cs;
 				cs.StartDayNo = g_read_integer(st)-1; // start from zero
 				cs.EndDayNo = g_read_integer(st)-1;
+
+				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
+				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
 
 				if(cs.StartDayNo <0)
 				{
@@ -2575,6 +2572,9 @@ void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 				CapacityReduction cs;
 				cs.StartDayNo = g_read_integer(st)-1; // start from zero
 				cs.EndDayNo = g_read_integer(st)-1;
+
+				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
+				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
 
 				if(cs.StartDayNo <0)
 				{
@@ -2762,6 +2762,10 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 				is.Type = 1;
 				is.StartDayNo  = g_read_integer(st)-1;  // start from day zero
 				is.EndDayNo   = g_read_integer(st)-1;  // start from day zero
+
+				if( is.StartDayNo <0) is.StartDayNo  = 0;
+				if( is.EndDayNo <0) is.EndDayNo  = 0;
+
 				is.StartTime = g_read_integer(st);
 				is.EndTime = g_read_integer(st);
 				is.ResponsePercentage =  g_read_float(st);
@@ -4647,7 +4651,7 @@ void g_ReadAMSMovementData()
 
 	int count = 0;
 
-	if (parser_movement.OpenCSVFile("AMS_movement.csv"))
+	if (parser_movement.OpenCSVFile("AMS_movement.csv",false))  // not required
 	{
 		while(parser_movement.ReadRecord())
 		{
