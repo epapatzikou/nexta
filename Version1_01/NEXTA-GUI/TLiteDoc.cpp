@@ -74,6 +74,8 @@
 #include "Dlg_Find_Vehicle.h"
 #include "Dlg_TravelTimeReliability.h"
 #include "Dlg_GISDataExchange.h"
+#include "Dlg_GISDataExport.h"
+
 #include "Dlg_Legend.h"
 
 #include "LinePlot\\LinePlotTest.h"
@@ -93,7 +95,7 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
+extern void g_SetCursor(_cursor_type cursor_type);
 CDlgMOE *g_LinkMOEDlg = NULL;
 CDlgPathMOE	*g_pPathMOEDlg = NULL;
 CDlg_Legend* g_pLegendDlg = NULL;
@@ -397,6 +399,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_SUBAREA_GENERATEEVACUATIONZONESCENARIOFILE, &CTLiteDoc::OnSubareaGenerateevacuationzonescenariofile)
 	ON_COMMAND(ID_SUBAREA_GENERATEWEATHERSCENARIOFILE, &CTLiteDoc::OnSubareaGenerateweatherscenariofile)
 	ON_COMMAND(ID_SUBAREA_GENERATEWORKZONESCENARIOFILEFROMLINKSINSIDESUBAREA, &CTLiteDoc::OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea)
+	ON_COMMAND(ID_IMPORT_SHAPEFILE, &CTLiteDoc::OnImportShapefile)
+	ON_COMMAND(ID_FILE_OPENTESTSETS, &CTLiteDoc::OnFileOpentestsets)
+	ON_COMMAND(ID_FILE_OPENSAMPLEDATASETFOLDER, &CTLiteDoc::OnFileOpensampledatasetfolder)
 	END_MESSAGE_MAP()
 
 
@@ -682,12 +687,44 @@ CTLiteDoc::CTLiteDoc()
 	m_Doc_Resolution = 1;
 	m_bShowCalibrationResults = false;
 
-	m_SampleExcelNetworkFile = "\\importing_sample_data_sets\\sample_data_set.xls";
+	m_SampleExcelNetworkFile = "\\importing_sample_data_sets\\Excel_files\\";
 	//	m_SampleExcelSensorFile = "\\Sample_Import_Excel_Files\\input_Portland_sensor_data.xls";
 
 }
 
 static bool DeleteLinkPointer( DTALink * theElement ) { delete theElement; return true; }
+
+void CTLiteDoc::ClearNetworkData()
+{
+	m_NodeSet.clear ();
+	m_LinkSet.clear ();
+
+	m_NodeIDtoZoneNameMap.clear();
+	m_NodeIDtoLinkMap.clear();
+
+	m_NodeNumbertoIDMap.clear();
+	m_RailMOW_vector.clear();
+	m_train_schedule_vector.clear();
+	m_ODSize = 0;
+	m_PathDisplayList.clear();
+	m_LinkIDRecordVector.clear();
+	m_MessageStringVector.clear();
+
+	m_DTAPointSet.clear();
+	m_DTALineSet.clear();
+
+
+	m_SubareaNodeSet.clear();
+	m_SubareaLinkSet.clear();
+	m_ZoneMap.clear();
+
+	m_DemandFileVector.clear();
+
+	m_SensorMap.clear();
+
+
+
+}
 
 CTLiteDoc::~CTLiteDoc()
 {
@@ -2062,24 +2099,26 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
+		
+		DTALink* pLink = (*iLink);
 
 		float link_volume = 0;
 		// default mode
-		(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
+		pLink->m_BandWidthValue =  max(0,pLink->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio);
 
 		if(m_LinkBandWidthMode == LBW_number_of_lanes)
 		{
-			if(m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // 1 lane as connector
-				(*iLink)->m_BandWidthValue =  min(1,(*iLink)->m_NumberOfLanes)*LaneVolumeEquivalent*VolumeRatio;
+			if(m_LinkTypeMap[pLink->m_link_type ].IsConnector ())  // 1 lane as connector
+				pLink->m_BandWidthValue =  min(1,pLink->m_NumberOfLanes)*LaneVolumeEquivalent*VolumeRatio;
 			else
-				(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
+				pLink->m_BandWidthValue =  pLink->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 
 
 		}else if(m_LinkBandWidthMode == LBW_link_volume)
 		{
 			if(m_LinkMOEMode == MOE_safety)  // safety
 			{
-				(*iLink)->m_BandWidthValue = (*iLink)->m_number_of_all_crashes *10*VolumeRatio;   // 10 crashes as 5 lanes. 
+				pLink->m_BandWidthValue = pLink->m_number_of_all_crashes *10*VolumeRatio;   // 10 crashes as 5 lanes. 
 			}else
 			{
 				if(g_Simulation_Time_Stamp>=1) // dynamic traffic assignment mode
@@ -2088,30 +2127,30 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 
 					GetLinkMOE((*iLink), MOE_volume,g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, link_volume);
 
-					(*iLink)->m_BandWidthValue = link_volume*VolumeRatio; 
+					pLink->m_BandWidthValue = link_volume*VolumeRatio; 
 				}else  // total volume
 				{
 
 					GetLinkMOE((*iLink), MOE_volume,m_DemandLoadingStartTimeInMin, m_DemandLoadingEndTimeInMin-m_DemandLoadingStartTimeInMin, link_volume);
 
-					(*iLink)->m_BandWidthValue = link_volume*VolumeRatio;
+					pLink->m_BandWidthValue = link_volume*VolumeRatio;
 				}
 			}
 
-			if(m_LinkMOEMode == MOE_volume && (*iLink)->m_bSensorData)  // reference volume
+			if(m_LinkMOEMode == MOE_volume && pLink->m_bSensorData)  // reference volume
 			{
-				float sensor_volume = (*iLink)->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp);
+				float sensor_volume = pLink->GetSensorLinkHourlyVolume(g_Simulation_Time_Stamp);
 				GetLinkMOE((*iLink), MOE_volume,g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, link_volume);
-				(*iLink)->m_ReferenceBandWidthValue = sensor_volume*VolumeRatio; 
+				pLink->m_ReferenceBandWidthValue = sensor_volume*VolumeRatio; 
 			}
 
 		}else if (m_LinkBandWidthMode == LBW_number_of_marked_vehicles)
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfMarkedVehicles *VolumeRatio;
+			pLink->m_BandWidthValue =  pLink->m_NumberOfMarkedVehicles *VolumeRatio;
 		}else
 			// default value
 		{
-			(*iLink)->m_BandWidthValue =  (*iLink)->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
+			pLink->m_BandWidthValue =  pLink->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
 		}
 
 	}
@@ -2127,6 +2166,7 @@ void CTLiteDoc::GenerateOffsetLinkBand()
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
+		(*iLink);
 		(*iLink)->m_BandLeftShapePoints.clear();
 		(*iLink)->m_BandRightShapePoints.clear();
 
@@ -4121,8 +4161,10 @@ void  CTLiteDoc::CopyDefaultFiles()
 
 
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_base_cycle_fraction_of_OpMode.csv");
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_base_cycle_fraction_of_OpMode.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_cycle_emission_factor.csv");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_emission_rate.csv");
 	
+
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_vehtypes.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_linktypes.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_signal.csv");
@@ -6391,6 +6433,7 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 	STARTUPINFO si = { 0 };  
 	PROCESS_INFORMATION pi = { 0 };  
 
+	CopyDefaultFiles();
 
 	si.cb = sizeof(si); 
 
@@ -7510,8 +7553,8 @@ void CTLiteDoc::OnMoeViewmoes()
 void CTLiteDoc::OnImportdataImport()
 {
 	CDlg_Information dlg_info;
-	dlg_info.m_StringInfo = "This function imports node/link/zone/demand data in an Excel file into the NEXTA data hub.\r\nThis function requires 32-bit NEXTA.";
-	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\Excel_files";
+	dlg_info.m_StringInfo = "This function imports node/link/zone GIS shape files through a CSV configuration file.\r\nThis function requires 32-bit NEXTA.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_files";
 	dlg_info.m_OnLineDocumentLink = "https://docs.google.com/document/d/1Ud2FN1utnVrIs4je9CHveAykH8h09x0Ln6_qdXE8F6Y/edit#heading=h.24j41bpvha3d";
 
 	if(dlg_info.DoModal() == IDOK)
@@ -10053,7 +10096,7 @@ void CTLiteDoc::OnImportArcgisshapefile()
 	return;
 #endif
 
-	CDlg_GISDataExchange dlg;
+	CDlg_GISDataExport dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
 	//
@@ -11050,8 +11093,9 @@ void CTLiteDoc::OnImportAmsdataset()
 {
 
 	CDlg_Information dlg_info;
-	dlg_info.m_StringInfo = "This function imports node/link/zone/centroid/connector GIS files into the NEXTA data hub.\r\nIt currently supports importing functions from typical transportation planning packages such as TransCAD, CUBE, VISUM and AIMSUN.\r\nThis function requires 32-bit NEXTA.\r\nThis function requires three files:\r\n(1)input_node_control_type.csv,\r\n(2)input_link_type.csv and\r\n(3)import_GIS_settings.csv.";
-	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_data_set";
+	dlg_info.m_StringInfo = "This function imports node/link/zone/centroid/connector GIS files\r\nIt supports importing files from TransCAD, CUBE, VISUM and AIMSUN.\r\nThis function requires 32-bit NEXTA.\r\nThis function requires three files:\r\n(1) input_node_control_type.csv,\r\n(2) input_link_type.csv and\r\n(3) import_GIS_settings.csv.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_files\\";
+	dlg_info.m_OnLineDocumentLink = "https://docs.google.com/file/d/0Bw8gtHCvOm7WSDBBamdPTDAwYmc"; 
 
 
 	if(dlg_info.DoModal() == IDOK)
@@ -11498,6 +11542,7 @@ void CTLiteDoc::OnToolsGeneratesignalcontrollocations()
 void CTLiteDoc::GenerateMovementCountFromVehicleFile(float PeakHourFactor)
 {
 
+	CWaitCursor wait;
 	m_PeakHourFactor = PeakHourFactor;
 
 
@@ -13818,7 +13863,13 @@ void CTLiteDoc::OnImportBackgroundimage()
 {
 	
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
-		_T("background image file(*.bmp)|*.bmp|"),NULL,0,false);
+		_T("background image file(*.bmp)|*.bmp|"),NULL,0);
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString bitmap_string  = "//importing_sample_data_sets";
+	CString NetworkFile = pMainFrame->m_CurrentDirectory + bitmap_string;
+	dlg.m_ofn.lpstrInitialDir = NetworkFile ;
+
+
 	if(dlg.DoModal() == IDOK)
 	{
 
@@ -14867,6 +14918,8 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 	
 	}
 
+		g_SetCursor(_cursor_wait);
+
 		SaveMovementData(MovementFileName, NodeNumber);
 		SaveMovementData(MovementFileName+".input.csv", NodeNumber);
 
@@ -14891,8 +14944,9 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 			sCommand.Format("%s\\MOE_ExcelAutomation.exe", pMainFrame->m_CurrentDirectory);
 			strWorkingFolder.Format("%s", pMainFrame->m_CurrentDirectory);
 	
-			ProcessExecute(sCommand, strParam, strWorkingFolder, true);
+			g_SetCursor(_cursor_standard_arrow);
 
+			ProcessExecute(sCommand, strParam, strWorkingFolder, true);
 
 
 			}else
@@ -14901,6 +14955,9 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 			error_message.Format ("File %s cannot be opened.", QEM_setting_file);
 			AfxMessageBox(error_message);
 			}
+
+			g_SetCursor(_cursor_standard_arrow);
+
 }
 
 void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
@@ -14962,9 +15019,9 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 		MovementFile.SetFieldName ("QEM_EffectiveGreen");
 		MovementFile.SetFieldName ("QEM_Capacity");
 		MovementFile.SetFieldName ("QEM_VOC");
-		MovementFile.SetFieldName ("QEM_SatFlow");
 		MovementFile.SetFieldName ("QEM_Delay");
 		MovementFile.SetFieldName ("QEM_LOS");
+		MovementFile.SetFieldName ("QEM_SatFlow");
 
 		MovementFile.WriteHeader();
 
@@ -15047,7 +15104,6 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 					MovementFile.SetValueByFieldName ("QEM_EffectiveGreen",movement.QEM_EffectiveGreen );
 					MovementFile.SetValueByFieldName ("QEM_Capacity",movement.QEM_Capacity );
 					MovementFile.SetValueByFieldName ("QEM_VOC",movement.QEM_VOC );
-					MovementFile.SetValueByFieldName ("QEM_SatFlow",movement.QEM_SatFlow );
 					MovementFile.SetValueByFieldName ("QEM_Delay",movement.QEM_Delay );
 
 					CT2CA pszConvertedAnsiString (movement.QEM_LOS);
@@ -15056,11 +15112,78 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 
 					MovementFile.SetValueByFieldName ("QEM_LOS", strStd);
 
+					MovementFile.SetValueByFieldName ("QEM_SatFlow",movement.QEM_SatFlow );
+
+
 					MovementFile.WriteRecord ();
 
 				}
 			
 		}
 
+	}
+}
+void CTLiteDoc::OnImportShapefile()
+{
+	CDlg_Information dlg_info;
+	dlg_info.m_StringInfo = "This function imports Openstreetmap OSM file route point shape file.\r\nThis function requires 32-bit NEXTA.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\OpenStreetMap_files";
+	dlg_info.m_OnLineDocumentLink = "https://docs.google.com/document/d/1Ud2FN1utnVrIs4je9CHveAykH8h09x0Ln6_qdXE8F6Y/edit#heading=h.24j41bpvha3d";
+
+	if(dlg_info.DoModal() == IDOK)
+	{
+
+#ifndef _WIN64
+	
+	CDlg_GISDataExchange dlg;
+	dlg.m_pDoc = this;
+
+	if(dlg.DoModal() == IDOK)
+	{
+		CalculateDrawingRectangle();
+		m_bFitNetworkInitialized  = false;
+		UpdateAllViews(0);
+
+	}
+#endif
+	}
+
+
+	//m_UnitFeet = 1;  // default value
+	//m_NodeDisplaySize = 50;
+
+}
+
+void CTLiteDoc::OnFileOpentestsets()
+{
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString folder = "\\test_data_sets\\";
+	CString NetworkFile = pMainFrame->m_CurrentDirectory + folder;
+
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
+		_T("Transportation Network Project (*.tnp)|*.tnp|"),NULL,0,true);
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
+	if(dlg.DoModal() == IDOK)
+	{
+		OnOpenDocument(dlg.GetPathName());
+	}
+
+}
+
+void CTLiteDoc::OnFileOpensampledatasetfolder()
+{
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		CString folder = "\\sample_data_sets\\";
+	CString NetworkFile = pMainFrame->m_CurrentDirectory + folder;
+
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
+		_T("Transportation Network Project (*.tnp)|*.tnp|"),NULL,0,true);
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
+	if(dlg.DoModal() == IDOK)
+	{
+		OnOpenDocument(dlg.GetPathName());
 	}
 }

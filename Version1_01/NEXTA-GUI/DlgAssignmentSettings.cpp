@@ -30,7 +30,7 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_Number_Iterations, m_NumberOfIterations);
-	DDV_MinMaxInt(pDX, m_NumberOfIterations, 1, 100);
+	DDV_MinMaxInt(pDX, m_NumberOfIterations, 1, 10000);
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE, m_DemandLoadingModeList);
 	DDX_Control(pDX, IDC_LIST_Routing_METHOD, m_AssignmentMethod);
 	DDX_Control(pDX, IDC_LIST_SIMULATION_METHOD, m_SimulationMethodControl);

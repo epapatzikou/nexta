@@ -85,6 +85,8 @@ public:
 	}
 
 	void SaveData();
+	void DisplayList();
+	void UpdateList();
 
 	virtual void OnOK( );
 	void DrawMovements(CPaintDC* pDC,CRect PlotRect);
@@ -95,4 +97,7 @@ public:
 	int m_CurrentNodeName;
 	afx_msg void OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonSave();
+	float m_PeakHourFactor;
+	afx_msg void OnBnClickedButtonUpdate();
+	afx_msg void OnBnClickedButtonQem();
 };

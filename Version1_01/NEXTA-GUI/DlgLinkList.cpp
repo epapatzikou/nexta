@@ -72,7 +72,7 @@ BEGIN_MESSAGE_MAP(CDlgLinkList, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_StartTime, &CDlgLinkList::OnCbnSelchangeComboStarttime)
 	ON_CBN_SELCHANGE(IDC_COMBO_EndTime, &CDlgLinkList::OnCbnSelchangeComboEndtime)
 	ON_STN_CLICKED(IDC_DOC_TITLE, &CDlgLinkList::OnStnClickedDocTitle)
-	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESPEEDLIMIT, &CDlgLinkList::OnChangeattributesforlinksalongpathChangespeedlimit)
+
 END_MESSAGE_MAP()
 
 
@@ -732,7 +732,3 @@ void CDlgLinkList::OnStnClickedDocTitle()
 	// TODO: Add your control notification handler code here
 }
 
-void CDlgLinkList::OnChangeattributesforlinksalongpathChangespeedlimit()
-{
-	// TODO: Add your command handler code here
-}

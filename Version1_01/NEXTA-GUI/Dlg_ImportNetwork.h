@@ -53,14 +53,11 @@ public:
 	afx_msg void OnBnClickedImport2();
 	BOOL m_bRemoveConnectors;
 	CListBox m_List_DemandFormat;
-	afx_msg void OnLbnSelchangeListDemandFormat();
 	virtual BOOL OnInitDialog();
 	BOOL m_AutogenerateNodeFlag;
 	BOOL m_ImportZoneData;
 	BOOL m_bAddConnectorsForIsolatedNodes;
 	BOOL m_bUseLinkTypeForDefaultValues;
-	afx_msg void OnBnClickedCheckGenerateNodeData();
-	afx_msg void OnBnClickedCheckAddConnector();
 };
 
 #endif 

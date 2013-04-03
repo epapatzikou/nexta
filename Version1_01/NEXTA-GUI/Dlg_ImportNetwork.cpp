@@ -68,11 +68,8 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_ExcelFile, m_Edit_Excel_File);
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
-	DDX_Control(pDX, IDC_LIST_DEMAND_FORMAT, m_List_DemandFormat);
-	DDX_Check(pDX, IDC_CHECK_GENERATE_NODE_DATA, m_AutogenerateNodeFlag);
 	DDX_Check(pDX, IDC_CHECK_ZONE_DATA, m_ImportZoneData);
-	DDX_Check(pDX, IDC_CHECK_ADD_CONNECTOR, m_bAddConnectorsForIsolatedNodes);
-	DDX_Check(pDX, IDC_CHECK_USE_LINK_TYPE, m_bUseLinkTypeForDefaultValues);
+
 }
 
 
@@ -87,11 +84,7 @@ BEGIN_MESSAGE_MAP(CDlg_ImportNetwork, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_Load_Sample_File, &CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile)
 	ON_BN_CLICKED(IDC_BUTTON_View_Sample_CSV_File, &CDlg_ImportNetwork::OnBnClickedButtonViewSampleCsvFile)
 	ON_BN_CLICKED(ID_IMPORT2, &CDlg_ImportNetwork::OnBnClickedImport2)
-	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_FORMAT, &CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat)
-	ON_BN_CLICKED(IDC_CHECK_GENERATE_NODE_DATA, &CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData)
-	ON_BN_CLICKED(IDC_CHECK_ADD_CONNECTOR, &CDlg_ImportNetwork::OnBnClickedCheckAddConnector)
 END_MESSAGE_MAP()
-
 
 // CDlg_ImportNetwork message handlers
 
@@ -134,11 +127,14 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 {
 	CWaitCursor cursor;
 	// Make sure the network is empty
-	m_pDoc->m_NodeSet.clear ();
-	m_pDoc->m_LinkSet.clear ();
+	m_pDoc->ClearNetworkData();
+
 	m_MessageList.ResetContent ();
 
 	UpdateData(true);
+
+
+
 	bool bExist=true;
 
 	CString strSQL;
@@ -161,6 +157,53 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	// Open the EXCEL file
 	std::string itsErrorMessage;
+
+
+	// detetect if nodes will be automatically generated. 
+
+			// Read record
+		strSQL = m_pDoc->ConstructSQL("3-LINK");
+
+		if(strSQL.GetLength () > 0)
+		{
+			CRecordsetExt rsLink(&m_pDoc->m_Database);
+			rsLink.Open(dbOpenDynaset, strSQL);
+			int from_node_id;
+			while(!rsLink.IsEOF())
+			{
+			
+				from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
+
+				if(from_node_id==0)
+				{
+				m_AutogenerateNodeFlag = true;
+
+//				AfxMessageBox("Field from_node_id is empty, so from_node and to_node fields will be automatically generated based on the geometry data from the link layer.", MB_ICONINFORMATION);
+				}else
+				{
+				m_AutogenerateNodeFlag = false;
+				}
+
+				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
+				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit"),bExist,false);
+				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
+
+
+				if(number_of_lanes <=0 || speed_limit_in_mph <1 || capacity_in_pcphpl<1)
+				{
+				m_bUseLinkTypeForDefaultValues = true;
+
+				str_msg.Format ( "Fields number_of_lanes, speed_limit_in_mph or capacity_in_pcphpl might be empty, so those fields will be automatically generated based on link type from the link layer.");
+				m_MessageList.AddString (str_msg);
+
+				}
+
+				break;
+
+
+			}
+		}
+
 
 	// this accesses first sheet regardless of name.
 	int i= 0;
@@ -352,7 +395,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	bool b_RectangleInitialized = false;
 
 	if(m_AutogenerateNodeFlag)
-
 	{
 		strSQL = m_pDoc->ConstructSQL("3-LINK");
 
@@ -475,6 +517,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					{
 					
 					m_MessageList.AddString ("Field from_node_id has no valid data in the link table.");
+
+					AfxMessageBox("Field from_node_id has no valid data in the link table.\n");
 					rsLink.Close();
 					break;
 					}
@@ -512,8 +556,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(from_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
 				{
-
-
 					str_msg.Format("from_node_id %d at row %d cannot be found in the link sheet!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
 					rsLink.MoveNext();
@@ -672,9 +714,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					}
 				}
 
-				if(number_of_lanes ==0)
+				if(number_of_lanes <=0)
 				{
-					str_msg.Format ("Link %d -> %d has 0 lane. Skip.",from_node_id,to_node_id);
+					str_msg.Format ("number of lanes for link %d -> %d <= 0. Skip.",from_node_id,to_node_id);
 					m_MessageList.AddString(str_msg);
 					rsLink.MoveNext();
 					continue; 
@@ -981,7 +1023,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			}
 
 			rsLink.Close();
-			m_pDoc->GenerateOffsetLinkBand();
 
 			m_pDoc->m_UnitMile  = 1.0f;
 
@@ -989,6 +1030,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				m_pDoc->m_UnitMile=  default_distance_sum /length_sum;
 
 			m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
+			m_pDoc->GenerateOffsetLinkBand();
 
 			/*
 			if(m_UnitMile>50)  // long/lat must be very large and greater than 62!
@@ -1022,6 +1064,27 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		m_MessageList.AddString(str_msg);
 	
 
+		// test if we need to add connectors for isolated nodes
+		m_bAddConnectorsForIsolatedNodes = false;
+		{
+			for (std::list<DTANode*>::iterator  iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+			{
+				if((*iNode)->m_bCreatedbyNEXTA == false)
+				{
+
+					if((*iNode)->m_Connections ==0)
+					{
+					
+					m_bAddConnectorsForIsolatedNodes = true;
+
+					str_msg.Format ("There are isoluated nodes in node table. Connectors will be added automatically.");
+					m_MessageList.AddString(str_msg);
+					break;
+					}
+				}
+
+			}
+		}
 
 		if(m_bAddConnectorsForIsolatedNodes)
 		{
@@ -1057,6 +1120,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			m_MessageList.AddString(str_msg);
 
 		}
+
+	//test if activity location has been defined
+
 
 	if(m_ImportZoneData == false)
 		return;
@@ -1292,7 +1358,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
 
 
-	int demand_type = m_List_DemandFormat.GetCurSel ();
+	int demand_type = 0;
 
 	m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
 	if(demand_type == 0)  // matrix
@@ -1315,15 +1381,20 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			int from_zone_id = rsDemand.GetLong(CString("zone_id"),bExist,false);
 			if(!bExist) 
 			{
-				AfxMessageBox("Field zone_id cannot be found in the demand matrix.\n Please make sure your demand input is matrix-based format.");
-				return;
+			demand_type = 1;
+			break;
 			}
 
 			if(from_zone_id==0)
 			{
-				AfxMessageBox("zone_id = 0\nPlease make sure your demand input follows matrix format.");
-				return;
-			
+				if(m_pDoc->m_ImportedDemandVector.size() ==0)
+				{
+				demand_type = 1;
+
+				break;
+				}
+
+				break; 
 			}
 
 
@@ -1357,7 +1428,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			if(number_of_vehicles < -0.1)
 			{
 				CString message;
-				message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
+				message.Format("number_of_vehicles %f in the demand matrix is invalid.", number_of_vehicles);
 				AfxMessageBox(message);
 				break;
 			}
@@ -1663,7 +1734,22 @@ void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile()
 {
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	CString SampleExcelNetworkFile = pMainFrame->m_CurrentDirectory + m_pDoc->m_SampleExcelNetworkFile;
-	m_Edit_Excel_File = SampleExcelNetworkFile;
+
+	static char BASED_CODE szFilter[] = "Excel File (*.xls)|*.xls||";
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		szFilter);
+
+	dlg.m_ofn.lpstrInitialDir = SampleExcelNetworkFile;
+
+	if(dlg.DoModal() == IDOK)
+	{
+		UpdateData(true);
+
+		m_Edit_Excel_File = dlg.GetPathName();
+
+		UpdateData(false);
+	}
+
 	UpdateData(false);
 }
 
@@ -1698,19 +1784,10 @@ void CDlg_ImportNetwork::OnBnClickedImport2()
 }
 
 
-void CDlg_ImportNetwork::OnLbnSelchangeListDemandFormat()
-{
-	// TODO: Add your control notification handler code here
-}
 
 BOOL CDlg_ImportNetwork::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
-	m_List_DemandFormat.AddString("matrix format");
-	m_List_DemandFormat.AddString("3-column format");
-	m_List_DemandFormat.SetCurSel (0);
-
 
 	// TODO:  Add extra initialization here
 
@@ -1719,13 +1796,3 @@ BOOL CDlg_ImportNetwork::OnInitDialog()
 }
 #endif
 
-
-void CDlg_ImportNetwork::OnBnClickedCheckGenerateNodeData()
-{
-	// TODO: Add your control notification handler code here
-}
-
-void CDlg_ImportNetwork::OnBnClickedCheckAddConnector()
-{
-	// TODO: Add your control notification handler code here
-}

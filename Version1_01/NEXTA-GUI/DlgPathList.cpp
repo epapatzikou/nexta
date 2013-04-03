@@ -90,6 +90,7 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGESATURATIONFLOWRATE, &CDlgPathList::OnChangeattributesforlinksalongpathChangesaturationflowrate)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY33625, &CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity33625)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME, &CDlgPathList::OnChangeattributesforlinksalongpathEffectivegreentime)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DELETELINKSALONGPATH, &CDlgPathList::OnChangeattributesforlinksalongpathDeletelinksalongpath)
 END_MESSAGE_MAP()
 
 
@@ -2214,3 +2215,36 @@ void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
 
 
 
+
+void CDlgPathList::OnChangeattributesforlinksalongpathDeletelinksalongpath()
+{
+		m_pDoc->m_SelectPathNo = m_PathList.GetCurSel();
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(m_pDoc->m_SelectPathNo!=p)
+				continue;
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			
+			int i;
+
+			for (i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
+			{
+
+				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+				if(pLink != NULL)
+				{
+
+					m_pDoc->DeleteLink(pLink);
+					m_pDoc->Modify (true);
+
+
+				}  // for all links
+			}
+		}
+
+		m_pDoc->m_PathDisplayList.clear ();
+
+		m_pDoc->UpdateAllViews(0);
+}

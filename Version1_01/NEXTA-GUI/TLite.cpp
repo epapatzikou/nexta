@@ -254,6 +254,11 @@ void CTLiteApp::OnFileOpen()
 
 	 
    CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_ENABLESIZING , szFilter,NULL, 0, true);
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString NetworkFile = pMainFrame->m_CurrentDirectory;
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
    if(dlg.DoModal() == IDOK)
    {
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();

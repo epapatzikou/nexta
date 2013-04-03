@@ -78,7 +78,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		HeaderList.push_back("Speed Limit (mph)");
 
 		DefaultList.push_back("0");
-		DefaultList.push_back("0");
+		DefaultList.push_back("1");
 		DefaultList.push_back("100");
 
 		DefaultList.push_back("0");
@@ -97,7 +97,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 
 		DefaultList.push_back("0");
-		DefaultList.push_back("0");
+		DefaultList.push_back("1");
 		DefaultList.push_back("100");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
@@ -134,7 +134,7 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 
 
 		DefaultList.push_back("0");
-		DefaultList.push_back("0");
+		DefaultList.push_back("1");
 		DefaultList.push_back("100");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");

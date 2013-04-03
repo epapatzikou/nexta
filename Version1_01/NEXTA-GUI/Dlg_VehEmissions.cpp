@@ -236,7 +236,14 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_MinVehicleSizeBox.AddString ("100");
 	m_MinVehicleSizeBox.AddString ("200");
 	m_MinVehicleSizeBox.AddString ("500");
-	m_MinVehicleSizeBox.SetCurSel (4);
+
+	if(m_pDoc->m_ZoneNoSize <100)
+		m_MinVehicleSizeBox.SetCurSel (1);  //2
+	else if (m_pDoc->m_ZoneNoSize <200)
+		m_MinVehicleSizeBox.SetCurSel (2);  // 5
+	else
+		m_MinVehicleSizeBox.SetCurSel (4); // 20
+
 
 	m_MinDistanceBox.AddString ("0");
 	m_MinDistanceBox.AddString ("1");
@@ -560,12 +567,6 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 					(pVehicle->m_InformationClass  == InformationClass ||InformationClass ==0)&&
 					(pVehicle->m_DepartureTime >= DepartureTime && pVehicle->m_DepartureTime <= DepartureTime+TimeInterval))
 				{
-
-
-
-					
-
-
 
 					m_ODMOEMatrix[p][OrgNo][DesNo].TotalVehicleSize+=1;
 

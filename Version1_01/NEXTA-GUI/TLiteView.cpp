@@ -101,6 +101,13 @@ void g_SetCursor(_cursor_type cursor_type)
 		SetCursor(AfxGetApp()->LoadCursor(IDC_ARROW));
 		return;
 	}
+
+	if(cursor_type == _cursor_wait && g_current_cursor_type!=_cursor_standard_arrow)
+	{	
+		SetCursor(AfxGetApp()->LoadCursor(IDC_WAIT));
+		return;
+	}
+	
 };
 
 extern COLORREF g_MOEDisplayColor[MAX_MOE_DISPLAYCOLOR];
@@ -2881,11 +2888,12 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 
 		CSize OffSet = m_TempLinkStartPoint - m_TempLinkEndPoint;
 
-		if(abs(OffSet.cx) +  abs(OffSet.cy) <3)  // clicking on the same point, do not create links
+		if(abs(OffSet.cx) +  abs(OffSet.cy) < 3)  // clicking on the same point, do not create links
 			return;
 
 		DTANode* pFromNode = 0;// create from node if there is no overlapping node
-		float min_selection_distance = 10.0f;  // 10 pixels
+		float min_selection_distance = max(10,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution));
+
 		int FromNodeID = FindClosestNode(m_TempLinkStartPoint, min_selection_distance);
 		if(FromNodeID ==-1)
 		{
@@ -2929,7 +2937,8 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		CTLiteDoc* pDoc = GetDocument();
 
 		DTANode* pFromNode = 0;// create from node if there is no overlapping node
-		float min_selection_distance = 20.0f;
+
+		float min_selection_distance = max(20,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution));
 		int FromNodeID = FindClosestNode(point, min_selection_distance);
 		if(FromNodeID ==-1)
 		{
