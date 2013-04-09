@@ -255,9 +255,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
-	if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true 
-		
-)  // en route info
+	if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true )  // en route info
 	{
 
 		int count = pVeh->m_SimLinkSequenceNo;
@@ -351,14 +349,12 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 
 	}
-
 	g_network_VMS.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
-
 
 }
 
 
-void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time)
+void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
 // for VMS resonsive information
 {
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};

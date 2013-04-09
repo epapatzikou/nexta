@@ -334,6 +334,15 @@ bool g_ReadLinkMeasurementFile()
 
 		}
 
+		if(count==0 && g_ODEstimationFlag==1)
+		{
+		
+		cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check." << endl;
+		g_ProgramStop();
+
+		
+		}
+
 	cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
 	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 	}
@@ -907,6 +916,8 @@ void g_GenerateVehicleData_ODEstimation()
 
 				pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
 				pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
+
+
 				pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
 				pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 				pVehicle->m_VOT = kvhc->m_VOT ;
@@ -945,6 +956,17 @@ void g_GenerateVehicleData_ODEstimation()
 				for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
 				{
 					pVehicle->m_NodeAry[j].LinkNo = element.m_LinkNoArray[j];
+
+					if(j==0)
+					{
+						pVehicle->m_OriginNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_FromNodeID ;
+					}
+
+					if(j==pVehicle->m_NodeSize-2)
+					{
+						pVehicle->m_DestinationNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_ToNodeID ;
+					}
+
 					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_Length ;
 				}
 				g_VehicleVector.push_back(pVehicle);

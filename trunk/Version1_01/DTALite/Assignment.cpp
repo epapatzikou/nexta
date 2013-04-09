@@ -1589,7 +1589,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	{
 		//ODME gap results
 		float AvgUEGap = g_CurrentGapValue / max(1, p_SimuOutput->NumberofVehiclesGenerated);
-		float AvgRelativeUEGap = g_CurrentRelativeGapValue / max(1, p_SimuOutput->NumberofVehiclesGenerated);
+//		float AvgRelativeUEGap = g_CurrentRelativeGapValue / max(1, p_SimuOutput->NumberofVehiclesGenerated);
+		float AvgRelativeUEGap = 0;
 		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",AvgUEGap);
 		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",AvgRelativeUEGap);
 

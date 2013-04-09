@@ -63,6 +63,25 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	bool debug_flag = true ;
 
 
+	bool bRadioMessageActive  = false;
+	float network_wide_RadioMessageResponsePercentage = 0; 
+
+	if((simulation_time_interval_no)%(10) == 0)
+	{
+			for(unsigned li = 0; li< g_LinkVector.size(); li++)
+			{
+				DTALink * pLink = g_LinkVector[li];
+
+				float ResponsePercentage = pLink->GetRadioMessageResponsePercentage(DayNo,CurrentTime);
+				if( ResponsePercentage > -0.01)// positive vlaue
+				{
+					// use maximum response percentage when there are multiple messages
+				network_wide_RadioMessageResponsePercentage = max(network_wide_RadioMessageResponsePercentage, ResponsePercentage);
+
+				}
+
+			}
+	}
 	//DTALite:
 	// vertical queue data structure
 	// each link  ExitQueue, EntranceQueue: (VehicleID, ReadyTime)
@@ -103,9 +122,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		if(simulation_time_interval_no%10 ==0) //update routes for re-trip or en-route information users, every min, (10 simulation time intervlas)
 		{
 
-
 		g_AgentBasedPathAdjustment(DayNo, CurrentTime);
+
 		g_AgentBasedVMSRoutingInitialization(DayNo, CurrentTime);
+
 		}
 	
 	}
@@ -172,16 +192,28 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					g_NetworkMOEAry[time_stamp_in_min].Flow_in_a_min +=1;
 					g_NetworkMOEAry[time_stamp_in_min].CumulativeInFlow = g_Number_of_GeneratedVehicles;
 
-					// access VMS information from the first link
+					// access VMS information from the first link: 
+					// condition 1: VMS is active on the first link
+					// condition 2: Radio message is active throughout the network
 					int IS_id  = p_link->GetInformationResponseID(DayNo,CurrentTime);
 					if(IS_id >= 0)
 					{
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
 
-							g_AgentBasedVMSPathAdjustment(vi.veh_id ,CurrentTime);
+							g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
 						}
 
+					}
+
+					if(bRadioMessageActive)
+					{
+						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
+						{  // vehicle rerouting
+
+							g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+						}
+					// check if a radio message has been enabled
 					}
 				}
 
@@ -930,9 +962,20 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
 
-							g_AgentBasedVMSPathAdjustment(vi.veh_id ,CurrentTime);
+							g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
 						}
 
+						}
+
+						//check if radio message is active 
+						if(bRadioMessageActive)
+						{
+							if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
+							{  // vehicle rerouting
+
+								g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+							}
+						// check if a radio message has been enabled
 						}
 
 
@@ -1300,7 +1343,11 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			//	g_LogFile << "Reset extreme large BPR travel time :" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << "travel time:" << pLink->m_BPRLinkTravelTime  << ", org raito: " << pLink->m_BPRLinkTravelTime/pLink->m_FreeFlowTravelTime  << endl;
 
 			//}
+
+			if(Iteration == 19)
+			{
 			g_LogFile << "BPR Travel Time for Link "<< g_NodeVector[pLink->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber <<" Flow:" << pLink->m_BPRLinkVolume << "travel time:" << pLink->m_BPRLinkTravelTime  << endl;
+			}
 
 		}
 	}
