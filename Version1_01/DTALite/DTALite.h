@@ -752,6 +752,7 @@ public:
 
 };
 
+
 class Toll
 {
 public:
@@ -765,6 +766,23 @@ public:
 	{
 		for(int vt = 1; vt<MAX_PRICING_TYPE_SIZE; vt++)
 			TollRate[vt]=0;
+	}
+};
+
+class RadioMessage
+{
+public:
+	int StartDayNo;
+	int EndDayNo;
+	float StartTime;
+	float EndTime;
+	float ResponsePercentage;
+	float DelayPenaltyInMin;
+
+	RadioMessage()
+	{
+		ResponsePercentage = 0;
+		DelayPenaltyInMin = 0;
 	}
 };
 
@@ -917,7 +935,7 @@ public:
 		return m_LaneCapacity;
 	}
 
-	float GetNumberOfLanes(int DayNo=0, int Time=-1, bool OutputFlowFlag = false)  // with lane closure
+	float GetNumberOfLanes(int DayNo=0, int Time=-1, bool OutputFlowFlag = false, bool bConsiderIncident = true)  // with lane closure
 	{
 
 		int NumLanes = m_NumLanes;
@@ -933,12 +951,18 @@ public:
 			}
 		}
 
-		for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
+
+		if(bConsiderIncident == true)
 		{
-			if( (IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (Time>= IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime))
+	
+			for(unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
 			{
-				return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+				if( (IncidentCapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo ) && (Time>= IncidentCapacityReductionVector[il].StartTime && Time<=IncidentCapacityReductionVector[il].EndTime))
+				{
+					return (1-IncidentCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+				}
 			}
+
 		}
 
 		return (float)NumLanes;
@@ -1187,6 +1211,8 @@ public:
 
 	int m_TollSize;
 	Toll *pTollVector;  // not using SLT here to avoid issues with OpenMP
+
+	std::vector<RadioMessage> m_RadioMessageVector;
 
 	int m_bMergeFlag;  // 1: freeway and freeway merge, 2: freeway and ramp merge
 	std::vector<MergeIncomingLink> MergeIncomingLinkVector;
@@ -1504,12 +1530,44 @@ public:
 	};
 
 
+
+	float GetRadioMessageResponsePercentage(int DayNo,int CurrentTime)
+	{
+		for(int i = 0; i < m_RadioMessageVector.size(); i++)
+		{
+			if(DayNo >=  m_RadioMessageVector[i].StartDayNo && DayNo <=  m_RadioMessageVector[i].EndDayNo && 
+			   CurrentTime >= m_RadioMessageVector[i].StartTime && CurrentTime <= m_RadioMessageVector[i].EndTime )
+			{
+				return m_RadioMessageVector[i].ResponsePercentage;
+			}
+		}
+	
+		return -1; // default non-response percentage: // not using 0, as it is difficult to check if a float point value is >0.000
+
+	}
+
 	float GetPrevailingTravelTime(int DayNo,int CurrentTime)
 	{  // used by real time information users
-		if(GetNumberOfLanes(DayNo,CurrentTime)<=0.001)   // road blockage, less than 0.1 lanes, or about 2000 capacity
+		bool bConsiderIncident = false;
+
+		if(GetNumberOfLanes(DayNo,CurrentTime,false,bConsiderIncident)<=0.001)   // road blockage by work zone, less than 0.1 lanes, or about 2000 capacity
 			return 1440; // unit min
 
-			return m_prevailing_travel_time;
+
+		for(int i = 0; i < m_RadioMessageVector.size(); i++)
+		{
+			if(DayNo >=  m_RadioMessageVector[i].StartDayNo && DayNo <=  m_RadioMessageVector[i].EndDayNo && 
+			   CurrentTime >= m_RadioMessageVector[i].StartTime && CurrentTime <= m_RadioMessageVector[i].EndTime )
+			{
+
+			
+			m_prevailing_travel_time+= m_RadioMessageVector[i].DelayPenaltyInMin; 
+			}
+		}
+
+
+		return m_prevailing_travel_time;
+
 
 	};
 
@@ -1895,6 +1953,9 @@ public:
 	bool  m_bImpacted;
 
 	double m_TimeToRetrieveInfo;
+
+	bool m_bRadioMessageResponseFlag;
+
 	float m_DepartureTime;
 	float m_LeavingTimeFromLoadingBuffer;
 
@@ -1964,6 +2025,8 @@ public:
 
 	DTAVehicle()
 	{
+		m_bRadioMessageResponseFlag = false;
+
 		m_DestinationZoneID_Updated = 0;
 		m_attribute_update_time_in_min = -1;
 
@@ -2297,6 +2360,7 @@ public:
 		m_bTollExist = false;
 		for(int i=0; i< MAX_PRICING_TYPE_SIZE; i++)
 			TollValue[i] = 0;
+
 	}
 };
 
@@ -2522,7 +2586,7 @@ public:
 
 	bool OptimalTDLabelCorrecting_DQ(int origin, int departure_time, int destination);
 	int  FindOptimalSolution(int origin, int departure_time, int destination,int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]);  // the last pointer is used to get the node array;
-	int  FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool bDebugFlag = false);
+	int  FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool ResponseToRadioMessage=false, bool bDebugFlag = false);
 
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
@@ -2532,6 +2596,7 @@ public:
 	void AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
 
 	void AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time);
+	void AgentBasedRadioMessageResponse(int DayNo, int zone,int departure_time_begin, double current_time);
 	// SEList: Scan List implementation: the reason for not using STL-like template is to avoid overhead associated pointer allocation/deallocation
 	void SEList_clear()
 	{
@@ -2660,7 +2725,7 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-#define _MAX_ODT_PATH_SIZE_4_ODME 100
+#define _MAX_ODT_PATH_SIZE_4_ODME 50
 #define _MAX_PATH_NODE_SIZE_4_ODME 300
 
 struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
@@ -2911,6 +2976,12 @@ typedef struct
 
 } struct_VehicleInfo_Header;
 
+	typedef  struct  
+	{
+		int NodeName;
+		float AbsArrivalTimeOnDSN;
+	} struct_Vehicle_Node;
+
 class VehicleArrayForOriginDepartrureTimeInterval
 {
 public:
@@ -2997,14 +3068,13 @@ void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
-bool g_ReadAgentBinFileVersion1(string file_name);
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
 void g_ODBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
 void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime ) ;
-void g_AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
+void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
 int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,float& AvgCost, EmissionStatisticsData &emission_data,
@@ -3098,6 +3168,7 @@ extern void g_ReadInputFiles(int scenario_no);
 void  ReadIncidentScenarioFile(string FileName,int scenario_no=0);
 void ReadVMSScenarioFile(string FileName,int scenario_no=0);
 void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
+void ReadRadioMessageScenarioFile(string FileName,int scenario_no=0);
 void ReadWorkZoneScenarioFile(string FileName,int scenario_no=0);
 
 void ReadEvacuationScenarioFile(string FileName,int scenario_no=0);
@@ -3105,6 +3176,8 @@ void ReadWeatherScenarioFile(string FileName,int scenario_no=0);
 
 
 void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime );
+
+
 void ReadLinkCapacityScenarioFile(string FileName,int scenario_no=0);
 void ReadMovementCapacityScenarioFile(string FileName,int scenario_no=0);
 

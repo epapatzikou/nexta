@@ -423,9 +423,6 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			}
 
 
-			
-			
-
 			int number_of_nodes = 0;
 			parser_agent.GetValueByFieldNameRequired("number_of_nodes",number_of_nodes );
 
@@ -549,57 +546,18 @@ bool g_ReadAgentBinFile(string file_name)
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 
-	typedef struct  
-	{
-		int vehicle_id;
-		int from_zone_id;
-		int to_zone_id;
-		float departure_time;
-		float arrival_time;
-		int complete_flag;
-		float trip_time;
-		int demand_type;
-		int pricing_type;
-		int vehicle_type;
-		int information_type;
-		float value_of_time;
-		float toll_cost_in_dollar;
-		float emissions;
-		float distance_in_mile;
-		int number_of_nodes;
-		float Energy;
-		float CO2;
-		float NOX;
-		float CO;
-		float HC;
-
-
-	int age;
-	int version_no;
-
-	int reserverd_field1;
-	float reserverd_field2;
-	int reserverd_field3;
-
-	} struct_Vehicle_Header;
-
-	typedef  struct  
-	{
-		int NodeName;
-		float AbsArrivalTimeOnDSN;
-	} struct_Vehicle_Node;
 
 	FILE* st = NULL;
 	fopen_s(&st,file_name.c_str (),"rb");
 	if(st!=NULL)
 	{
-		struct_Vehicle_Header header;
+		struct_VehicleInfo_Header header;
 
 		int count =0;
 		while(!feof(st))
 		{
 
-			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
+			size_t result = fread(&header,sizeof(struct_VehicleInfo_Header),1,st);
 
 			if( header.vehicle_id < 0)
 				break;
@@ -706,212 +664,7 @@ bool g_ReadAgentBinFile(string file_name)
 							msg.Format("Error in reading link %d->%d for vehicle id %d  in file %s.", path_node_sequence[i-1],path_node_sequence[i],header.vehicle_id,file_name.c_str ());
 							cout << msg << endl; 
 							fclose(st);
-
-							return false;
-						}
-
-						pVehicle->m_Distance+= pLink ->m_Length ;
-
-						pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo  ; // start from 0
-					}
-
-
-				}
-
-
-				if(g_DemandGlobalMultiplier<0.9999)
-				{
-					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multipler, then skip, not generate vehicles
-					{
-
-						delete pVehicle;
-						continue;
-					}
-				}
-
-
-				g_VehicleVector.push_back(pVehicle);
-				g_VehicleMap[pVehicle->m_VehicleID ]  = pVehicle;
-
-				int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-
-				if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-				{
-					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-				}
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
-
-				count++;
-
-				if(count%10000==0)
-					cout << "reading " << count/1000 << "K agents from binary file " << file_name << endl;
-			} 
-		}
-
-		fclose(st);
-		return true;
-
-	}
-	return false;
-}
-
-bool g_ReadAgentBinFileVersion1(string file_name)
-{
-	int path_node_sequence[MAX_NODE_SIZE_IN_A_PATH];
-
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
-
-
-	typedef struct  
-	{
-		int vehicle_id;
-		int from_zone_id;
-		int to_zone_id;
-		float departure_time;
-		float arrival_time;
-		int complete_flag;
-		float trip_time;
-		int demand_type;
-		int pricing_type;
-		int vehicle_type;
-		int information_type;
-		float value_of_time;
-		float toll_cost_in_dollar;
-		float emissions;
-		float distance_in_mile;
-		int number_of_nodes;
-		float Energy;
-		float CO2;
-		float NOX;
-		float CO;
-		float HC;
-
-	} struct_Vehicle_Header;
-
-	typedef  struct  
-	{
-		int NodeName;
-		float AbsArrivalTimeOnDSN;
-	} struct_Vehicle_Node;
-
-	FILE* st = NULL;
-	fopen_s(&st,file_name.c_str (),"rb");
-	if(st!=NULL)
-	{
-		struct_Vehicle_Header header;
-
-		int count =0;
-		while(!feof(st))
-		{
-
-			size_t result = fread(&header,sizeof(struct_Vehicle_Header),1,st);
-
-			if( header.vehicle_id < 0)
-				break;
-
-			if(result!=1)  // read end of file
-				break;
-
-
-			DTAVehicle* pVehicle = 0;
-			//try
-			//{
-			pVehicle = new (std::nothrow) DTAVehicle;
-			if(pVehicle == NULL)
-			{
-				cout << "Insufficient memory...";
-				getchar();
-				exit(0);
-
-			}
-
-			////}
-			////catch (std::bad_alloc& exc)
-			////{
-			////	cout << "Insufficient memory...";
-			////	getchar();
-			////	exit(0);
-
-			////}
-
-			pVehicle->m_VehicleID		= header.vehicle_id;
-			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
-
-			pVehicle->m_OriginZoneID	= header.from_zone_id;
-			pVehicle->m_DestinationZoneID = header.to_zone_id;
-
-			g_ZoneMap[pVehicle->m_OriginZoneID].m_Demand += 1;
-			g_ZoneMap[pVehicle->m_OriginZoneID].m_OriginVehicleSize += 1;
-
-
-			pVehicle->m_DepartureTime	=  header.departure_time;
-			pVehicle->m_PreferredDepartureTime = header.departure_time;
-			pVehicle->m_ArrivalTime =  header.arrival_time;
-
-			pVehicle->m_TripTime  = header.trip_time;
-
-			pVehicle->m_DemandType = header.demand_type;
-			pVehicle->m_PricingType = header.pricing_type;
-
-			if(pVehicle->m_PricingType == 0) // unknown type
-				pVehicle->m_PricingType = 1;
-
-			pVehicle->m_VehicleType = header.vehicle_type;
-			pVehicle->m_InformationClass = header.information_type;
-			pVehicle->m_VOT = header.value_of_time;
-
-			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
-
-			pVehicle->m_NodeSize = header.number_of_nodes;
-			pVehicle->m_ArrivalTime  = 0;
-			pVehicle->m_bComplete = false;
-			pVehicle->m_bLoaded  = false;
-			pVehicle->m_TollDollarCost = 0;
-			pVehicle->m_Emissions  = 0;
-			pVehicle->m_Distance = 0;
-			pVehicle->m_NodeNumberSum =0;
-
-			int time_interval = pVehicle->m_DepartureTime/15;
-
-			if(g_ODEstimationFlag==1 ) // having hist od only unde ODME mode
-			{
-				g_HistDemand.AddValue(pVehicle->m_OriginZoneID,pVehicle->m_DestinationZoneID,time_interval, 1); // to store the initial table as hist database
-			}
-
-			if(pVehicle->m_NodeSize>=1)  // in case reading error
-			{
-				pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
-
-				pVehicle->m_NodeNumberSum = 0;
-				for(int i=0; i< pVehicle->m_NodeSize; i++)
-				{
-
-					int node_id;
-					float time_stamp,travel_time, emissions;
-
-					struct_Vehicle_Node node_element;
-					fread(&node_element,sizeof(node_element),1,st);
-
-					path_node_sequence[i] = node_element.NodeName;
-					pVehicle->m_NodeNumberSum += path_node_sequence[i];
-
-					if(i==0)
-						pVehicle->m_OriginNodeID = g_NodeNametoIDMap[path_node_sequence[0]];
-
-					if(i==pVehicle->m_NodeSize-1)
-						pVehicle->m_DestinationNodeID   = g_NodeNametoIDMap[path_node_sequence[pVehicle->m_NodeSize-1]];
-
-					if(i>=1)
-					{
-						DTALink* pLink = g_LinkMap[GetLinkStringID(path_node_sequence[i-1],path_node_sequence[i])];
-						if(pLink==NULL)
-						{
-							CString msg;
-							msg.Format("Error in reading link %d->%d for vehicle id %d  in file %s.", path_node_sequence[i-1],path_node_sequence[i],header.vehicle_id,file_name.c_str ());
-							cout <<msg << endl;
-							fclose(st);
+							g_ProgramStop();
 
 							return false;
 						}

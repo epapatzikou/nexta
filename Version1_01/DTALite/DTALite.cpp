@@ -1670,11 +1670,6 @@ void g_ReadInputFiles(int scenario_no)
 		g_ReadDemandFileBasedOnMetaDatabase();
 	}else
 	{
-		if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin_v1") != string::npos)
-		{
-				g_ReadAgentBinFileVersion1("input_agent.bin");
-
-		}
 
 		if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin") != string::npos)
 		{
@@ -2884,11 +2879,89 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 	g_CreateLinkTollVector();
 }
 
+void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
+{
+
+	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	{
+
+		g_LinkVector[li]->m_RadioMessageVector.clear(); // remove all previouly read records
+
+	}
+
+	FILE* st = NULL;
+
+	fopen_s(&st,FileName.c_str(),"r");
+	if(st!=NULL)
+	{
+		cout << "Reading file " << FileName << endl;
+		g_LogFile << "Reading file " << FileName << endl;
+
+
+		int count = 0;
+
+		while(true)
+		{
+			int usn  = g_read_integer(st,false);
+
+			if(usn <=0)
+				break;
+
+			int dsn =  g_read_integer(st,false);
+			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			{
+				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+
+			if(pLink!=NULL)
+			{
+				int local_scenario_no = g_read_integer(st);
+
+				RadioMessage rm;  
+				rm.StartDayNo  = g_read_integer(st,false)-1;  // start from zero
+				rm.EndDayNo  = g_read_integer(st,false)-1;  // start from zero
+
+				rm.StartTime = g_read_integer(st,false);
+				rm.EndTime = g_read_integer(st,false);
+
+				rm.ResponsePercentage = g_read_float(st);
+				rm.DelayPenaltyInMin = g_read_float(st);
+
+				pLink->m_RadioMessageVector.push_back(rm);
+
+
+			}
+		}
+
+		cout << "Number of link-based toll records =  " << count << endl;
+		g_SummaryStatFile.WriteTextLabel("# of link-based toll records=");
+		g_SummaryStatFile.WriteNumber(count);
+
+		fclose(st);
+
+	}else
+	{
+		//if(FileName.size()>0 && FileName.compare ("Scenario_Link_Based_Toll.csv")!=0)
+		//{
+		//	cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+		//	g_ProgramStop();
+		//}
+
+		g_SummaryStatFile.WriteTextString ("File Scenario_Link_Based_Toll.csv cannot be opened");
+	}
+
+
+	g_CreateLinkTollVector();
+}
 void ReadScenarioInputFiles(int scenario_no)
 {
 	ReadIncidentScenarioFile("Scenario_Incident.csv",scenario_no);
 	ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv",scenario_no);
 	ReadLinkTollScenarioFile("Scenario_Link_Based_Toll.csv",scenario_no);
+	ReadRadioMessageScenarioFile("Scenario_Radio_Message.csv",scenario_no);
 	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv",scenario_no);
 
 	//ReadEvacuationScenarioFile("Scenario_Evacuation_Zone.csv",scenario_no);
@@ -3137,7 +3210,7 @@ void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file)
 			g_NetworkMOEAry[time].Flow_in_a_min <<"," <<
 			g_NetworkMOEAry[time].AvgTripTime <<"," << endl;
 
-		if((g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow) == 0)
+		if(time > g_DemandLoadingStartTimeInMin+10 && ((g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow) == 0))
 			break; // stop, as all vehicles leave. 
 	}
 

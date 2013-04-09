@@ -242,7 +242,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTravelTime;
 
-
 			// copy pricing type dependent link toll values
 			for(int itoll = 0; itoll< pLink->TollVector.size(); itoll++)
 			{
@@ -553,9 +552,10 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 
 
-int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool debug_flag)   // Pointer to previous node (node)
+int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
+	debug_flag = false;
 
 	if(g_ShortestPathWithMovementDelayFlag)
 	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, pricing_type, VOT, PathLinkList, TotalCost,distance_flag, debug_flag);
@@ -564,8 +564,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		pricing_type = 1; 
 
 //	if(origin_zone ==333 && destination_zone==920 && origin==19)
+	if(debug_flag)
 	{
-		debug_flag = false;
+
 			TRACE("\nScan from root node %d,",g_NodeVector[origin].m_NodeNumber);
 			TRACE("\ndestination node %d,",g_NodeVector[destination].m_NodeNumber);
 	}
@@ -656,6 +657,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			// end of road pricing module
 										 // special feature 6: update cost
+
 				if(distance_flag)
 					NewCost    = LabelCostAry[FromID] + m_LinkTDDistanceAry[LinkID];  // do not take into account toll value
 				else 
