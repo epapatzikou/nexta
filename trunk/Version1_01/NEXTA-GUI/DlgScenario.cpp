@@ -37,9 +37,9 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 6
+#define _MAX_SCENARIO_SIZE 7
 // CDlgScenario dialog
-static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Evacuation_Zone","Weather"};
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Evacuation_Zone","Weather", "Radio_Message"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -143,7 +143,25 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1.5");
 		DefaultList.push_back("0");
 		break;
-		break;
+	case 6:  //radio
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Scenario No");
+		HeaderList.push_back("Start Day No");
+		HeaderList.push_back("End Day No");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Responce Percentage (%)");
+		HeaderList.push_back("Delay Penalty In Min");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1");
+		DefaultList.push_back("100");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("100");
+		DefaultList.push_back("999");
+		break;		break;
 	}
 }
 void CDlgScenario::DoDataExchange(CDataExchange* pDX)

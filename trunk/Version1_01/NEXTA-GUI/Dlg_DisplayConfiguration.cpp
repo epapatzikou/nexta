@@ -166,7 +166,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Movement_Label.AddString ("Simulated Total Count");
 	m_Movement_Label.AddString ("Simulated Hourly Count");
 	m_Movement_Label.AddString ("Simulated Turning %");
-	m_Movement_Label.AddString ("Simulated Turn Delay");
+	m_Movement_Label.AddString ("Simulated Turn Delay (sec)");
 
 	m_Movement_Label.AddString ("Observed Total Count");
 	m_Movement_Label.AddString ("Observed Hourly Count");
@@ -195,7 +195,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Movement_Label.AddString ("QEM Capacity");
 	m_Movement_Label.AddString ("QEM VOC");
 	m_Movement_Label.AddString ("QEM DischargeRate");
-	m_Movement_Label.AddString ("QEM Delay");
+	m_Movement_Label.AddString ("QEM Control Delay (sec)");
 	m_Movement_Label.AddString ("QEM LOS");
 
 	m_Movement_Label.SetCurSel ((int)(pView->m_ShowMovementTextMode));

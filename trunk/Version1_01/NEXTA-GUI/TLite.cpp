@@ -80,6 +80,7 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
+	m_NEXTA_use_flag = 0;
 	m_bLoadNetworkOnly = false;
 	//m_pTemplateGLView = false;
 	m_pTemplateTimeTableView = false;
@@ -101,6 +102,10 @@ BOOL CTLiteApp::InitInstance()
 
 		CString NEXTASettingsPath;
 		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", CurrentDirectory);
+
+		m_NEXTA_use_flag = (int)g_GetPrivateProfileDouble("initialization", "nexta", 0, NEXTASettingsPath);
+		WritePrivateProfileString("initialization", "nexta","1",NEXTASettingsPath);
+
 
 		int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
 
@@ -257,7 +262,17 @@ void CTLiteApp::OnFileOpen()
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	CString NetworkFile = pMainFrame->m_CurrentDirectory;
+	if(theApp.m_NEXTA_use_flag == 0)
+	{
 	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+	theApp.m_NEXTA_use_flag = 1;
+	}else
+	{// elsewise use the last used folder
+		dlg.m_ofn.lpstrInitialDir = "";
+
+	}
+
+
 
    if(dlg.DoModal() == IDOK)
    {

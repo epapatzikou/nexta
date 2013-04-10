@@ -176,7 +176,7 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 				sprintf_s(text, "%d",number_of_demand_types);
 				m_DemandFileGrid.SetItemText(Index,7,text);
 
-
+			i++;
 			}
 
 
@@ -793,7 +793,11 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 			parser.GetValueByFieldName("number_of_demand_types",number_of_demand_types);
 
 			if(demand_file_seq_no != DemandFileSequenceNo)  // not the selected matrix 
+			{
+
+				demand_file_seq_no++;
 				continue;
+			}
 
 			m_DemandTypeGrid.DeleteAllItems ();
 

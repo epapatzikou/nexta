@@ -203,10 +203,17 @@ void CNetworkDataSettingDlg::OnBnClickedOk()
 		}
 	}
 
+	
 	OnOK();
 
+	{
+	CWaitCursor wait;
+	// reload the network 
+	m_pDoc->OnOpenTrafficNetworkDocument(m_pDoc->m_ProjectFile ,false, false);
 	m_pDoc->ReadScenarioData();
 	m_pDoc->UpdateAllViews(0);
+	}
+	AfxMessageBox("The network data has been reloaded. , MB_ICONINFORMATION");
 }
 
 
