@@ -1652,7 +1652,6 @@ unsigned long  LinkNo;  // range: 4294967295
 unsigned short  LinkNo;  // range:  65535
 #endif
 
-unsigned short  LaneBasedCumulativeFlowCount;  // range:  65535
 float AbsArrivalTimeOnDSN;     // absolute arrvial time at downstream node of a link: 0 for the departure time, including delay/stop time
 //   float LinkWaitingTime;   // unit: 0.1 seconds
 SVehicleLink()
@@ -1660,7 +1659,6 @@ SVehicleLink()
 	LinkNo = MAX_LINK_NO;
 	AbsArrivalTimeOnDSN = 99999;
 	//		LinkWaitingTime = 0;
-	LaneBasedCumulativeFlowCount = 0;
 }
 
 };

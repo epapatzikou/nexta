@@ -49,7 +49,7 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	result.y_intercept = 0;
 	result.avg_y_to_x_ratio = 0;
 
-	if(DataVector.size()<=1 && g_ODEstimationFlag ==1)
+	if(DataVector.size()<1 && g_ODEstimationFlag ==1)
 	{
 		cout << "OD demand estiation mode: No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
 		g_ProgramStop();
@@ -89,7 +89,10 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	average_x = sum_x / dataSize;
 
 	//slope or a1
-	slope = (dataSize * sum_xy - sum_x * sum_y) / (dataSize * sum_xx - sum_x*sum_x);
+	if(dataSize==1)
+		slope = 0;
+	else
+		slope = (dataSize * sum_xy - sum_x * sum_y) / max(0.00001,(dataSize * sum_xx - sum_x*sum_x));
 
 	//y itercept or a0
 	y_intercept = average_y - slope * average_x;
