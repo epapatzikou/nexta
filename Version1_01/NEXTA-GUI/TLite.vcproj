@@ -461,6 +461,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_KML_Configuration.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Legend.cpp"
 				>
 			</File>
@@ -486,6 +490,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_TDDemandProfile.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_TDMOE_Configuration.cpp"
 				>
 			</File>
 			<File
@@ -1129,6 +1137,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\res\vms1.bmp"
+						>
+					</File>
+					<File
 						RelativePath=".\res\workzone.bmp"
 						>
 					</File>
@@ -1257,6 +1269,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_KML_Configuration.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Legend.h"
 				>
 			</File>
@@ -1286,6 +1302,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_TDDemandProfile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_TDMOE_Configuration.h"
 				>
 			</File>
 			<File

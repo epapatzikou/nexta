@@ -80,6 +80,7 @@ public:
 
 	eVisulizationTemplate m_VisulizationTemplate;
 	eLanguageSupport m_LanguageSupport;
+	int m_NEXTA_use_flag;
 
 	CTLiteApp();
 

@@ -100,4 +100,5 @@ public:
 	float m_PeakHourFactor;
 	afx_msg void OnBnClickedButtonUpdate();
 	afx_msg void OnBnClickedButtonQem();
+	int m_CycleLengthInSec;
 };

@@ -73,7 +73,7 @@ enum layer_mode
 enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_SENSOR_DATA, _MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
 enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -507,6 +507,7 @@ public:
 
 	int m_TrafficFlowModelFlag;
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
+	int m_ColorDirection;
 
 	COLORREF m_FreewayColor;
 	COLORREF m_RampColor;
@@ -719,12 +720,14 @@ public:
 
 
 	int ReadVMSScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
+	int ReadRadioMessageScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadIncidentScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadLink_basedTollScenarioData();
 
 	bool WriteLink_basedTollScenarioData();
 	bool WriteVMSScenarioData();
+	bool WriteRadioMessageScenarioData();
 	bool WriteIncidentScenarioData();
 	bool WriteWorkZoneScenarioData();
 	bool WriteCapacityReductionScenarioDataFromSubareaLinks(CString Scenario_File_Name);
@@ -873,6 +876,12 @@ public:
 	}
 	int GetLOSCode(float Value)
 	{
+
+		if(Value < m_LOSBound[m_LinkMOEMode][1])
+			return 1;
+
+		if(Value > m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
+			return MAX_LOS_SIZE-3;
 
 		for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 		{
@@ -1581,7 +1590,7 @@ public:
 	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag, int default_height);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportPathLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
-	void ExportLinkDiffLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GIS_type_string);
 
 	std::map<CString, PathStatistics> m_PathMap;
 
@@ -2189,8 +2198,8 @@ public:
 	afx_msg void OnUpdateLinkmoeEmissions(CCmdUI *pCmdUI);
 	afx_msg void OnLinkmoeReliability();
 	afx_msg void OnUpdateLinkmoeReliability(CCmdUI *pCmdUI);
-	afx_msg void OnLinkmoeSafety();
-	afx_msg void OnUpdateLinkmoeSafety(CCmdUI *pCmdUI);
+	afx_msg void OnLinkUserDefinedMOE();
+	afx_msg void OnUpdateUserDefinedMOE(CCmdUI *pCmdUI);
 	afx_msg void OnExportAms();
 	afx_msg void OnImportAvi();
 	afx_msg void OnImportGps33185();
@@ -2350,6 +2359,7 @@ public:
 	afx_msg void OnImportShapefile();
 	afx_msg void OnFileOpentestsets();
 	afx_msg void OnFileOpensampledatasetfolder();
+	afx_msg void OnLinkAddRadioMessage();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

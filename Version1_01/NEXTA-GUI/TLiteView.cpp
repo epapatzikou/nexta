@@ -963,9 +963,26 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 				// dynamically create LOS pen and brush  
-				float power = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
-				int LOS = pDoc->GetLOSCode(power);
+				float power =0 ; int LOS = 1;
 
+				if(pDoc->m_LinkMOEMode == MOE_user_defined)
+				{ 
+					int current_time  =(int)g_Simulation_Time_Stamp;
+					if(current_time < (*iLink)->m_LinkMOEAry.size())
+					{
+					power = (*iLink)->m_LinkMOEAry [current_time].UserDefinedValue ;
+					value = (*iLink)->m_LinkMOEAry [current_time].UserDefinedValue ;
+
+					}else
+					{
+					power = 0;
+					}
+				}else
+				{
+				power= pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+				}
+
+				LOS = pDoc->GetLOSCode(power);
 				//draw link as lines
 				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
 				{
@@ -1228,7 +1245,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				case link_display_length_in_km:
 					str_text.Format ("%.3f",(*iLink)->m_Length*1.60934  ); break;
 				case  link_display_free_flow_travel_time_in_min:
-					str_text.Format ("%.3f",(*iLink)->m_FreeFlowTravelTime   ); break;
+					str_text.Format ("%.2f",(*iLink)->m_FreeFlowTravelTime   ); break;
 				case  link_display_free_flow_travel_time_in_hour:
 					str_text.Format ("%.3f",(*iLink)->m_FreeFlowTravelTime/60.0   ); break;
 
@@ -5173,7 +5190,6 @@ void CTLiteView::OnNodeMovementproperties()
 		//// Change the caption of the CPropertySheet object 
 		//// from "Simple PropertySheet" to "Simple Properties".
 		sheet.SetActivePage (0);
-
 		if(sheet.DoModal() == IDOK)
 		{
 
@@ -5462,7 +5478,7 @@ void CTLiteView::SetGlobalViewParameters()
 void CTLiteView::OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI)
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_safety || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none) && m_bLineDisplayConditionalMode  == false);
+	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none) && m_bLineDisplayConditionalMode  == false);
 
 }
 
@@ -5470,7 +5486,7 @@ void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_safety || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
+	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }
 
 
@@ -5929,6 +5945,15 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 			str_text.Format("%.1f%%", movement.turning_percentage  ); 
 
 			break;
+
+		case movement_display_sim_turn_delay: 
+
+			//					if(movement.sim_turn_count>=1)
+			str_text.Format("%.1f", movement.sim_turn_delay*60  ); 
+
+			break;
+	
+
 
 		case movement_display_QEM_TurnDirection: str_text.Format("%s",movement.QEM_dir_string.c_str () ); break;
 

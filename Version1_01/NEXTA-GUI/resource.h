@@ -154,6 +154,7 @@
 #define IDR_MAINFRAME4                  195
 #define IDD_DIALOG_Legend               196
 #define IDB_ONRAMP                      196
+#define IDB_RADIOMESSAGE                196
 #define IDD_LINEPLOT_DIALOG             197
 #define IDD_XYPLOT_DIALOG               197
 #define IDB_OFFRAMP                     197
@@ -184,6 +185,7 @@
 #define IDR_TLiteTYPE5                  224
 #define IDD_DIALOG_NETWORK_DATA         225
 #define IDD_DIALOG_DISPLAY_CONFIG       227
+#define IDD_DIALOG_CONFIG_GIS_TEXT_DISPLAY 227
 #define IDD_DIALOG_NodeProperties       228
 #define IDD_DIALOG_NODE_MOVEMENTS       229
 #define IDD_LINEPLOT_DIALOG1            230
@@ -202,6 +204,9 @@
 #define IDD_DIALOG_INFORMATION_WITH_HELP 245
 #define IDD_DIALOG_SIGNAL_DATA_MANAGEMENT 246
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_EXPORT 247
+#define IDD_DIALOG_CONFIG_KML           248
+#define IDB_COLOR_RAMP                  249
+#define IDD_DIALOG_CONFIG_TDMOE         249
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -498,6 +503,20 @@
 #define IDC_BUTTON_UPDATE_EFFECTIVE_GREEN_TIME 1193
 #define IDC_CHECK_VMS_RESPONSIVE        1193
 #define IDC_EDIT_PEAK_HOUR_FACTOR       1194
+#define IDC_EDIT_HEIGHT                 1195
+#define IDC_EDIT_Transparency           1196
+#define IDC_EDIT_L1                     1197
+#define IDC_EDIT_L7                     1198
+#define IDC_EDIT_L2                     1200
+#define IDC_EDIT_L3                     1201
+#define IDC_EDIT_L4                     1202
+#define IDC_EDIT_L5                     1203
+#define IDC_EDIT_L6                     1206
+#define IDC_EDIT_BandWidth              1207
+#define IDC_BITMAP                      1208
+#define IDC_BUTTON_REVERSE              1209
+#define IDC_PROJECT_LIST                1210
+#define IDC_COMBO_AGG_INTERVAL          1211
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1231,14 +1250,15 @@
 #define ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DELETELINKSALONGPATH 33643
 #define ID_FILE_OPENTESTSETS            33644
 #define ID_FILE_OPENSAMPLEDATASETFOLDER 33645
+#define ID_LINK_ADD_RADIO_MESSAGE       33646
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        247
-#define _APS_NEXT_COMMAND_VALUE         33646
-#define _APS_NEXT_CONTROL_VALUE         1195
+#define _APS_NEXT_RESOURCE_VALUE        250
+#define _APS_NEXT_COMMAND_VALUE         33647
+#define _APS_NEXT_CONTROL_VALUE         1212
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

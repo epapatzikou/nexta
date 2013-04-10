@@ -4692,7 +4692,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 		{
 			DTALink* pIncomingLink = m_LinkNoMap[pFromNode->m_IncomingLinkVector[incoming_link]];
 
-			if((pIncomingLink->m_FromNodeID != pLink->m_ToNodeID)) // non-uturn link
+			if(pIncomingLink!=NULL && (pIncomingLink->m_FromNodeID != pLink->m_ToNodeID)) // non-uturn link
 			{
 				if(m_LinkTypeMap[pIncomingLink->m_link_type ].IsFreeway() //freeway link
 					|| m_LinkTypeMap[pIncomingLink->m_link_type].IsRamp ())
@@ -4728,8 +4728,12 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 			bool bRampExistFlag = false;
 			bool bFreewayExistFlag = false;
 
+
 			for(il = 0; il< pFromNode->m_IncomingLinkVector.size(); il++)
 			{
+				if(m_LinkNoMap.find(pFromNode->m_IncomingLinkVector[il]) == m_LinkNoMap.end())
+					continue; 
+
 				DTALink* pInLink = m_LinkNoMap[ pFromNode->m_IncomingLinkVector[il]];
 				if(m_LinkTypeMap[pInLink->m_link_type].IsRamp ())  // on ramp as incoming link
 				{
@@ -4773,6 +4777,9 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 
 			for( ij= 0; ij< pFromNode->m_IncomingLinkVector.size(); ij++)
 			{
+				if(m_LinkNoMap.find(pFromNode->m_IncomingLinkVector[ij]) == m_LinkNoMap.end())
+					continue;
+
 				DTALink* pInLink = m_LinkNoMap[ pFromNode->m_IncomingLinkVector[ij]];
 
 				RampLink mil;

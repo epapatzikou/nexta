@@ -37,7 +37,7 @@
 #include "..//Dlg_SignalDataExchange.h"
 #include "..//CSVParser.h"
 #include "..//Geometry.h"
-
+#include "..//Dlg_KML_Configuration.h"
 
 void CTLiteDoc::OnExportAms()
 {
@@ -1344,10 +1344,16 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 
 }
 
-void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISTypeString)
+
+void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GISTypeString)
 {
 	
 //	m_LinkBandWidthMode = LBW_link_volume;
+
+	CDlg_KML_Configuration dlg;
+	dlg.m_pDoc  = this;
+	if(dlg.DoModal () != IDOK)
+	 return;
 
 	// other options:
 	m_LinkBandWidthMode  = LBW_link_volume;
@@ -1365,13 +1371,14 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
-		(*iLink)->m_BandWidthValue = (*iLink)->m_total_link_volume*250/max_link_volume;
+		(*iLink)->m_BandWidthValue = dlg.m_BandWidth ;
 
 	}
 
 
 	GenerateOffsetLinkBand();
 
+	CString LOS_str[MAX_LOS_SIZE];
 
 	FILE* st;
 	fopen_s(&st,file_name,"w");
@@ -1383,52 +1390,28 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 		fprintf(st,"<Document>\n");
 		fprintf(st,"<name>KmlFile</name>\n");
 
+	   for(int i = 1; i<MAX_LOS_SIZE-1; i++)
+	   {
+			char str[10];
+			int transparency = 255- dlg.m_Transparency /100.0*255;
+			wsprintf(str, "%02x%06x",  transparency, m_colorLOS[i]);
+			LOS_str[i].Format ("color%d", i);
+			
 
-		// blue style
-		fprintf(st,"<Style id=\"green\">\n");
+		fprintf(st,"<Style id=\"%s\">\n", LOS_str[i]);
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
 		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d00ff00</color>\n");
+		fprintf(st," <color>%s</color>\n",str );
 		fprintf(st,"</PolyStyle>\n");
    		fprintf(st,"</Style>\n");
+		}
 
-		// red style
 
-		fprintf(st,"<Style id=\"red\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d0000ff</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
-
-		// blue style
-
-		fprintf(st,"<Style id=\"blue\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7dff0000</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
-
-		// yellow style
-
-		fprintf(st,"<Style id=\"yellow\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d00ffff</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
 
 		fprintf(st,"<Folder>\n");
-   		fprintf(st,"<name>Zone Layer</name>\n");
+   		fprintf(st,"<name>Link Layer</name>\n");
    		fprintf(st," <visibility>1</visibility>\n");
       	
 
@@ -1437,18 +1420,11 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 		int t = 0;
 		double ratio = 1;
 		
-		int max_link_height = g_GetPrivateProfileInt("KML_output","max_link_height",5000,m_ProjectFile);
-		int min_link_height = g_GetPrivateProfileInt("KML_output","min_link_height",100,m_ProjectFile);
 
- 
-		max_link_height = 60;
-
-		float min_link_volume_threadshold= 3000;
+		float min_link_volume_threadshold= 0;
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
-			if((*iLink)->m_total_link_volume >= min_link_volume_threadshold)
-			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
 /*			fprintf(st,"\t\t\t<TimeSpan>\n");
@@ -1466,16 +1442,29 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 */	
         	fprintf(st,"\t\t<visibility>1</visibility>\n");
 
-			string color_code = "red";
+			CString current_color_code = LOS_str[MAX_LOS_SIZE-2];
 
-			if((*iLink)->m_NumberOfLanes == 2)
-				color_code = "green";
+			int current_los_code = 1;
+				
+			float Value = (*iLink)->KML_color_value ;
+			for(int los = 1; los < MAX_LOS_SIZE-1; los++)
+				{
+					if( (dlg.m_ColorCategoryValue [los] <= Value && Value < dlg.m_ColorCategoryValue [los+1]*1.001)
+						|| (dlg.m_ColorCategoryValue [los] >= Value && Value > dlg.m_ColorCategoryValue [los+1]*1.001))
+					{
 
-			if((*iLink)->m_NumberOfLanes == 1)
-				color_code = "yellow";
+						current_los_code = los;
+					break;
+					}
 
+				}	
 
-			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",color_code.c_str ());
+			if( current_los_code < MAX_LOS_SIZE-1)
+			{
+				current_color_code = LOS_str[current_los_code];
+			}
+
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",current_color_code);
 			fprintf(st,"\t\t<Polygon>\n");
 			fprintf(st,"\t\t<extrude>1</extrude>\n");
 			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
@@ -1483,11 +1472,8 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height =(*iLink)->m_total_link_volume* max_link_height/max(1,max_link_volume);
+			float height = dlg.m_KML_Height;
 	
-			if(height<=min_link_height)
-				height = min_link_height;
-
 			int si;
 			int band_point_index = 0;
 		for(si = 0; si < (*iLink) ->m_ShapePoints .size(); si++)
@@ -1516,7 +1502,6 @@ void CTLiteDoc::ExportLinkDiffLayerToKMLFiles(CString file_name, CString GISType
 
 			fprintf(st,"\t\t</Polygon>\n");
 			fprintf(st,"\t</Placemark>\n");
-			}
 		}  // for each link
 
 		   	fprintf(st,"</Folder>\n");

@@ -44,6 +44,7 @@ CPage_Node_Movement::CPage_Node_Movement()
 	: CPropertyPage(CPage_Node_Movement::IDD)
 	, m_CurrentNodeName(0)
 	, m_PeakHourFactor(0)
+	, m_CycleLengthInSec(0)
 {
 	m_SelectedMovementIndex = -1;
 	m_bModifiedFlag = false;
@@ -61,6 +62,7 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODEID, m_CurrentNodeName);
 	DDX_Text(pDX, IDC_EDIT1, m_PeakHourFactor);
+	DDX_Text(pDX, IDC_EDIT_CYCLE_LENGTH, m_CycleLengthInSec);
 }
 
 
@@ -81,6 +83,8 @@ BOOL CPage_Node_Movement::OnInitDialog()
         m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
 
         m_CurrentNodeName = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_NodeNumber ;
+
+		m_CycleLengthInSec = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
         // Give better margin to editors
         m_ListCtrl.SetCellMargin(1.2);
         CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
@@ -97,13 +101,15 @@ BOOL CPage_Node_Movement::OnInitDialog()
         m_Column_names.push_back ("Saturation Flow Rate (veh/hour/lane)"); //6
         m_Column_names.push_back ("Simulated Volume"); //7
         m_Column_names.push_back ("Hourly Volume"); //8
+        m_Column_names.push_back ("Simulated Delay (sec)"); //8
 
-        m_Column_names.push_back ("QEM_Speed"); //8
-        m_Column_names.push_back ("QEM_Capacity"); //8
-        m_Column_names.push_back ("QEM_VOC"); //8
-        m_Column_names.push_back ("QEM_Delay"); //8
-        m_Column_names.push_back ("QEM_LOS"); //8
-        m_Column_names.push_back ("QEM_Phase1"); //8
+        m_Column_names.push_back ("QEM Speed"); //8
+        m_Column_names.push_back ("QEM Capacity"); //8
+        m_Column_names.push_back ("QEM VOC"); //8
+        
+		m_Column_names.push_back ("QEM Control Delay (sec)"); //8
+        m_Column_names.push_back ("QEM LOS"); //8
+        m_Column_names.push_back ("QEM Phase1"); //8
 
 
 
@@ -214,6 +220,9 @@ CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
                 str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor   ); // 7: simulated volume
                 m_ListCtrl.SetItemText(Index, column_index++,str );
 
+                str.Format ("%.1f",movement.sim_turn_delay*60   ); // simulated turn delay
+                m_ListCtrl.SetItemText(Index, column_index++,str );
+
                 str.Format ("%.0f",movement.QEM_Speed    ); 
                 m_ListCtrl.SetItemText(Index, column_index++,str );
 
@@ -294,6 +303,9 @@ void CPage_Node_Movement::UpdateList()
 		
 		str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor     ); // 6: saturation flow rate
 		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+        str.Format ("%.1f",movement.sim_turn_delay*60   ); // simulated turn delay
+        m_ListCtrl.SetItemText(Index, column_index++,str );
 
 
         str.Format ("%.0f",movement.QEM_Speed    ); 
@@ -610,8 +622,16 @@ void CPage_Node_Movement::SaveData()
 	m_Column_names.push_back ("Effective Green Time (sec)"); //5
 */
 
-DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	UpdateData(1);
 
+	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+
+	if(	pNode->m_CycleLengthInSecond  != m_CycleLengthInSec)
+	{
+		m_pDoc->Modify (true);
+
+		pNode->m_CycleLengthInSecond  = m_CycleLengthInSec; // update cycle length too
+	}
 
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
@@ -680,5 +700,9 @@ void CPage_Node_Movement::OnBnClickedButtonQem()
 	updted_string.Format("Signal data for %d node(s) have been updated from QEM tool.", number_of_updated_nodes);
 
 	m_pDoc->Modify (true);
+
+	m_CycleLengthInSec = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
+	// update cycle length 
+	UpdateData(0);
 
 }

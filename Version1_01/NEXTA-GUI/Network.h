@@ -1166,7 +1166,7 @@ public:
 
 	std::map<int, int > m_Link_Pair_to_Movement_Map;
 
-	void AddMovementCount(int Hour,int in_link_from_node_id, int out_link_to_node_id)
+	void AddMovementCountAndDelay(int Hour,int in_link_from_node_id, int out_link_to_node_id, float delay)
 	{
 	
 		if(m_Link_Pair_to_Movement_Map.size()==0)
@@ -1187,6 +1187,9 @@ public:
 		}
 
 		m_MovementVector[movement_index].sim_turn_count++;
+		m_MovementVector[movement_index].sim_turn_delay+=delay;
+
+
 		}
 
 	}
@@ -1330,7 +1333,7 @@ public:
 	float QueueVehicleCount;
 	float VehicleOutflowCount;
 
-
+	float UserDefinedValue;
 
 	float Energy;
 	float CO2;
@@ -1344,6 +1347,7 @@ public:
 
 	SLinkMOE()
 	{
+		UserDefinedValue = 0;
 		//EventCode = 0;
 		//EpisoDuration = 0;
 		//EpisodeNo = 0;
@@ -1475,6 +1479,41 @@ public:
 
 };
 
+class RadioMessage
+{
+public:
+
+	int ScenarioNo;
+	int StartDayNo;
+	int EndDayNo;
+	float StartTime;
+	float EndTime;
+	float ResponsePercentage;
+	float DelayPenalty_InMin;
+
+	/*
+	int   BestPathFlag;
+	int   DetourLinkSize;
+	int   DetourLinkArray[MAX_LINK_SIZE_IN_VMS];
+	*/
+
+	RadioMessage()
+	{
+		ScenarioNo = 0;
+		StartDayNo= 0;
+		EndDayNo = 100;
+		StartTime = 0;
+		EndTime = 1440;
+		ResponsePercentage = 100;
+		DelayPenalty_InMin= 999;
+
+	}
+
+	~RadioMessage()
+	{
+	}
+
+};
 class MessageSign
 {
 public:
@@ -1586,6 +1625,7 @@ public:
 		m_AVISensorFlag = false;
 		m_LinkID = 0;
 		green_height = 10;
+		color_value = 0;
 		red_height = 100;
 		blue_height = 300;
 		yellow_height = 1000;
@@ -2072,6 +2112,18 @@ void AdjustLinkEndpointsWithSetBack()
 		return 0;
 	}
 
+	float 	GetRadioMessage(int Time)
+	{
+		for(unsigned int il = 0; il< RadioMessageVector.size(); il++)
+		{
+			if(Time >= RadioMessageVector[il].StartTime && Time<=RadioMessageVector[il].EndTime) 
+			{
+				return RadioMessageVector[il].ResponsePercentage;
+			}
+		}
+
+		return 0;
+	}
 	float 	GetTollValue(int DepartureTime)
 	{
 		for(unsigned int il = 0; il< TollVector.size(); il++)
@@ -2120,6 +2172,7 @@ void AdjustLinkEndpointsWithSetBack()
 
 	std::vector<CapacityReduction> CapacityReductionVector;
 	std::vector<MessageSign> MessageSignVector;
+	std::vector<RadioMessage> RadioMessageVector;
 	std::vector<DTAToll> TollVector;
 
 
@@ -2198,6 +2251,9 @@ void AdjustLinkEndpointsWithSetBack()
 
 
 	std::string m_geo_string;
+
+	float KML_color_value;
+	float color_value;
 	int green_height;  // for 3D KML
 	int red_height;
 	int blue_height;

@@ -16,7 +16,7 @@ public:
 
 	CTLiteView* pView;
 // Dialog Data
-	enum { IDD = IDD_DIALOG_DISPLAY_CONFIG };
+	enum { IDD = IDD_DIALOG_CONFIG_GIS_TEXT_DISPLAY };
 
 	std::vector<int> movement_text_size_vector;
 	std::vector<float> walking_distance_vector;
