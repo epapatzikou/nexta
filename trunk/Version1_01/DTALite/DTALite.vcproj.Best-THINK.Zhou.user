@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\workshop\DTALite_workshop\Fort Worth - test\Fort Worth Workzone"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_Salt_Lake_City_West_Jordan"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\test\Adjusted_Fort_Worth_workzone"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_Salt_Lake_City_West_Jordan"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

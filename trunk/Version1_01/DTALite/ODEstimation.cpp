@@ -138,7 +138,7 @@ std::map<long, long> g_LinkIDtoSensorIDMap;
 
 bool g_GetSequentialEstimationTimePeriod(int iteration,float ArrivalTime)
 {
- // 20 iterations for each hour adjustment period
+	// 20 iterations for each hour adjustment period
 
 	int ODME_iteration_no = iteration - g_ODEstimation_StartingIteration;
 
@@ -162,22 +162,22 @@ bool g_ReadLinkMeasurementFile()
 	int error_count = 0;
 
 
-			if(g_ValidationDataEndTimeInMin < g_DemandLoadingStartTimeInMin)
-			{
-				cout << "Error: ODME end time ( " << g_ValidationDataEndTimeInMin << ")> demand loading end time (" << g_DemandLoadingStartTimeInMin << ")" << endl;
-				g_ProgramStop();
-			}
+	if(g_ValidationDataEndTimeInMin < g_DemandLoadingStartTimeInMin)
+	{
+		cout << "Error: ODME end time ( " << g_ValidationDataEndTimeInMin << ")> demand loading end time (" << g_DemandLoadingStartTimeInMin << ")" << endl;
+		g_ProgramStop();
+	}
 
 
-			if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
-			{
-			TCHAR ODMESettingFileName[_MAX_PATH] = _T("./DTASettings.txt");
+	if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
+	{
+		TCHAR ODMESettingFileName[_MAX_PATH] = _T("./DTASettings.txt");
 
-			g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
-			g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
-			g_ODEstimationNumberOfIterationsForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "number_of_iterations_per_sequential_adjustment", 10, ODMESettingFileName,true);	
-			g_ODEstimationTimePeriodForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "time_period_in_min_per_sequential_adjustment", 60, ODMESettingFileName,true);	
-			}
+		g_ODEstimation_WeightOnHistODDemand = g_GetPrivateProfileFloat("estimation", "weight_on_hist_oddemand", 1, ODMESettingFileName,true);
+		g_ODEstimation_WeightOnUEGap = g_GetPrivateProfileFloat("estimation", "weight_on_ue_gap", 1, ODMESettingFileName,true);
+		g_ODEstimationNumberOfIterationsForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "number_of_iterations_per_sequential_adjustment", 10, ODMESettingFileName,true);	
+		g_ODEstimationTimePeriodForSequentialAdjustment = g_GetPrivateProfileInt("estimation", "time_period_in_min_per_sequential_adjustment", 60, ODMESettingFileName,true);	
+	}
 
 	if (parser.OpenCSVFile("input_sensor.csv",g_ODEstimationFlag==1))
 	{
@@ -190,11 +190,11 @@ bool g_ReadLinkMeasurementFile()
 
 			if(record_no == 2497)
 			{
-			TRACE("");
+				TRACE("");
 			}
 
 
-				int FromNodeNumber = 0; int ToNodeNumber = 0; 
+			int FromNodeNumber = 0; int ToNodeNumber = 0; 
 
 			if(!parser.GetValueByFieldName("from_node_id",FromNodeNumber )) 
 				continue;
@@ -204,16 +204,16 @@ bool g_ReadLinkMeasurementFile()
 
 			if(FromNodeNumber == 56154 )
 			{
-			TRACE("");
+				TRACE("");
 			}
 
-				string name;
-				parser.GetValueByFieldName("name",name );
-				std::replace( name.begin(), name.end(), ',', ' '); 
+			string name;
+			parser.GetValueByFieldName("name",name );
+			std::replace( name.begin(), name.end(), ',', ' '); 
 
-				string tag;
-				parser.GetValueByFieldName("tag",tag );
-				std::replace( tag.begin(), tag.end(), ',', ' '); 
+			string tag;
+			parser.GetValueByFieldName("tag",tag );
+			std::replace( tag.begin(), tag.end(), ',', ' '); 
 
 			if(g_LinkMap.find(GetLinkStringID(FromNodeNumber,ToNodeNumber))== g_LinkMap.end())
 			{
@@ -229,105 +229,105 @@ bool g_ReadLinkMeasurementFile()
 				continue;
 			}
 
-				int start_time_in_min = 0;
-				int end_time_in_min  = 0;
-				int volume_count = 0;
+			int start_time_in_min = 0;
+			int end_time_in_min  = 0;
+			int volume_count = 0;
 
-				parser.GetValueByFieldNameRequired("start_time_in_min",start_time_in_min );
-				parser.GetValueByFieldNameRequired("end_time_in_min",end_time_in_min );
+			parser.GetValueByFieldNameRequired("start_time_in_min",start_time_in_min );
+			parser.GetValueByFieldNameRequired("end_time_in_min",end_time_in_min );
 
-				if( g_ValidationDataStartTimeInMin <= start_time_in_min  && end_time_in_min <= g_ValidationDataEndTimeInMin )
-				{
-
-			DTALink* pLink = g_LinkMap[GetLinkStringID(FromNodeNumber,ToNodeNumber)];
-
-
-			string sensor_type;
-			parser.GetValueByFieldNameRequired("sensor_type",sensor_type );
-
-			if(pLink!=NULL)
+			if( g_ValidationDataStartTimeInMin <= start_time_in_min  && end_time_in_min <= g_ValidationDataEndTimeInMin )
 			{
-			TRACE("\n%d->%d,%s",FromNodeNumber,ToNodeNumber,name.c_str());
+
+				DTALink* pLink = g_LinkMap[GetLinkStringID(FromNodeNumber,ToNodeNumber)];
+
+
+				string sensor_type;
+				parser.GetValueByFieldNameRequired("sensor_type",sensor_type );
+
+				if(pLink!=NULL)
+				{
+					TRACE("\n%d->%d,%s",FromNodeNumber,ToNodeNumber,name.c_str());
 
 
 
-				int dest_node_id = -1;
-				if(sensor_type.find("link_count")!= string::npos)
-				{
-					parser.GetValueByFieldName ("count",volume_count );
-				}else if(sensor_type.find("lane_count")!= string::npos)
-				{
-					parser.GetValueByFieldName ("count",volume_count );
-					volume_count = volume_count* pLink->m_NumLanes;
-				} else if(sensor_type.find("movement_count")!= string::npos)
-				{
-					parser.GetValueByFieldName ("count",volume_count );
-					if(!parser.GetValueByFieldName("dest_node_id",dest_node_id )) 
+					int dest_node_id = -1;
+					if(sensor_type.find("link_count")!= string::npos)
 					{
-					cout << "missing dest_node_id for link " << name <<":" << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check." << endl;
-					getchar();
-					}
-				}else if(sensor_type.find("avg_speed")!= string::npos)
-				{
-					float avg_speed = 0;
-					parser.GetValueByFieldName ("avg_speed",avg_speed );
-
-					for(int t = start_time_in_min;  t< end_time_in_min; t+=g_AggregationTimetInterval)
+						parser.GetValueByFieldName ("count",volume_count );
+					}else if(sensor_type.find("lane_count")!= string::npos)
 					{
-						pLink->UpdateSpeedMeasurement(avg_speed, t);
-					}
-					continue;
+						parser.GetValueByFieldName ("count",volume_count );
+						volume_count = volume_count* pLink->m_NumLanes;
+					} else if(sensor_type.find("movement_count")!= string::npos)
+					{
+						parser.GetValueByFieldName ("count",volume_count );
+						if(!parser.GetValueByFieldName("dest_node_id",dest_node_id )) 
+						{
+							cout << "missing dest_node_id for link " << name <<":" << FromNodeNumber << "-> " << ToNodeNumber << " at line " << count+1 << " of file input_sensor.csv  has not been defined in input_link.csv. Please check." << endl;
+							getchar();
+						}
+					}else if(sensor_type.find("avg_speed")!= string::npos)
+					{
+						float avg_speed = 0;
+						parser.GetValueByFieldName ("avg_speed",avg_speed );
 
-				}else 
+						for(int t = start_time_in_min;  t< end_time_in_min; t+=g_AggregationTimetInterval)
+						{
+							pLink->UpdateSpeedMeasurement(avg_speed, t);
+						}
+						continue;
+
+					}else 
+					{
+						// do not accept other types yets
+						continue;
+
+					}
+
+					float occupancy = 0;
+					float avg_speed = 50;
+					parser.GetValueByFieldName("occupancy",occupancy );
+					parser.GetValueByFieldName("avg_speed",avg_speed );
+
+
+					string direction;
+					parser.GetValueByFieldName("direction",direction);
+					std::replace( direction.begin(), direction.end(), ',', ' '); 
+
+
+					pLink->m_bSensorData  = true;
+					SLinkMeasurement element;
+
+					element.sensor_type = sensor_type;
+
+					if(sensor_type.find("movement_count")!= string::npos)
+						element.DestinationNode = dest_node_id;
+
+					element.name = name;
+					element.tag = tag;
+					element.direction = direction;
+					element.StartTime = start_time_in_min;
+					element.EndTime  = end_time_in_min;
+					element.ObsFlowCount   = volume_count;
+					element.ObsNumberOfVehicles = occupancy*100* pLink->m_Length * pLink->m_NumLanes;  // convert occupancy to density
+					element.ObsTravelTime =  pLink->m_Length / max(1,avg_speed)*60;
+
+
+
+					pLink->m_LinkMeasurementAry.push_back (element);
+					g_SensorDataCount ++;
+
+					count++;
+
+
+				}else
 				{
-					// do not accept other types yets
-				 continue;
-				
+					TRACE("\nwrong: %d->%d,%s",FromNodeNumber,ToNodeNumber,name.c_str());
+
+					cout << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
+					g_EstimationLogFile << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
 				}
-
-				float occupancy = 0;
-				float avg_speed = 50;
-				parser.GetValueByFieldName("occupancy",occupancy );
-				parser.GetValueByFieldName("avg_speed",avg_speed );
-
-
-				string direction;
-				parser.GetValueByFieldName("direction",direction);
-				std::replace( direction.begin(), direction.end(), ',', ' '); 
-
- 
-				pLink->m_bSensorData  = true;
-				SLinkMeasurement element;
-				
-				element.sensor_type = sensor_type;
-
-				if(sensor_type.find("movement_count")!= string::npos)
-					element.DestinationNode = dest_node_id;
-
-				element.name = name;
-				element.tag = tag;
-				element.direction = direction;
-				element.StartTime = start_time_in_min;
-				element.EndTime  = end_time_in_min;
-				element.ObsFlowCount   = volume_count;
-				element.ObsNumberOfVehicles = occupancy*100* pLink->m_Length * pLink->m_NumLanes;  // convert occupancy to density
-				element.ObsTravelTime =  pLink->m_Length / max(1,avg_speed)*60;
-
-				
-
-				pLink->m_LinkMeasurementAry.push_back (element);
-				g_SensorDataCount ++;
-				
-				count++;
-
-
-			}else
-			{
-				TRACE("\nwrong: %d->%d,%s",FromNodeNumber,ToNodeNumber,name.c_str());
-
-				cout << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
-				g_EstimationLogFile << "Reading Error in input_sensor.dat. Link " << FromNodeNumber << " -> " << ToNodeNumber << " does not exist. "  << endl;
-			}
 
 
 			}
@@ -336,25 +336,25 @@ bool g_ReadLinkMeasurementFile()
 
 		if(count==0 && g_ODEstimationFlag==1)
 		{
-		
-		cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check." << endl;
-		g_ProgramStop();
 
-		
+			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check." << endl;
+			g_ProgramStop();
+
+
 		}
 
-	cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
-	g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
+		cout << "File input_sensor.csv has "<< count << " valid sensor records." << endl;
+		g_LogFile << "Reading file input_sensor.csv with "<< count << " valid sensors." << endl;
 	}
 
 
-			//cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
-			//cout << "Please press 'n' if you want to exit and edit files ODME_Settings.txt and input_sensor.csv. Pleaes press the other key to continue." << endl;
-			//char ret = getchar();
-			//if(ret=='n')
-			//	exit(0);
+	//cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
+	//cout << "Please press 'n' if you want to exit and edit files ODME_Settings.txt and input_sensor.csv. Pleaes press the other key to continue." << endl;
+	//char ret = getchar();
+	//if(ret=='n')
+	//	exit(0);
 
-			//getchar(); // for return key
+	//getchar(); // for return key
 	return true;
 }
 
@@ -445,7 +445,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if(PathArray[VehicleDestZoneNo].NumOfPaths>= _MAX_ODT_PATH_SIZE_4_ODME-1) 
 				{
 					cout << " Too many paths for ODME: " <<  PathArray[VehicleDestZoneNo].NumOfPaths << " > " << _MAX_ODT_PATH_SIZE_4_ODME << endl;
- 					g_ProgramStop();
+					g_ProgramStop();
 				}
 				PathArray[VehicleDestZoneNo].NumOfVehsOnEachPath[PathArray[VehicleDestZoneNo].NumOfPaths]++;
 				PathArray[VehicleDestZoneNo].PathNodeSums[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSum;
@@ -510,7 +510,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				}
 
 				// we calculate the gap for the previous iteraiton, for each path, path travel time gap * path flow
-// comment out for omp				g_CurrentGapValue += (PathArray[DestZoneNo].AvgPathGap[p]* PathArray[DestZoneNo].NumOfVehsOnEachPath[p]);
+				// comment out for omp				g_CurrentGapValue += (PathArray[DestZoneNo].AvgPathGap[p]* PathArray[DestZoneNo].NumOfVehsOnEachPath[p]);
 
 			}
 
@@ -566,17 +566,17 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 				DTALink* pLink = g_LinkVector[LinkID];
 
-						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination && ArrivalTime>=990)
-						{
-							g_EstimationLogFile << "Link Index : " << l << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ", arrival time = "<< ArrivalTime << endl;
-						}
+				if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination && ArrivalTime>=990)
+				{
+					g_EstimationLogFile << "Link Index : " << l << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ", arrival time = "<< ArrivalTime << endl;
+				}
 
 
 
-					int ArrivalTime_int = (int)(ArrivalTime);
+				int ArrivalTime_int = (int)(ArrivalTime);
 
-					if (ArrivalTime_int >= g_PlanningHorizon)  // time of interest exceeds the simulation horizon
-						break;
+				if (ArrivalTime_int >= g_PlanningHorizon)  // time of interest exceeds the simulation horizon
+					break;
 
 
 
@@ -584,16 +584,16 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				{
 
 					// if loading buffer is congested at the current time, we need to move the the end of the congestion period (to start over)
-						if(  pLink->m_LinkMOEAry[ArrivalTime_int].LoadingBuffer_QueueLength >=1)
-						{
+					if(  pLink->m_LinkMOEAry[ArrivalTime_int].LoadingBuffer_QueueLength >=1)
+					{
 						ArrivalTime  = pLink->m_LinkMOEAry[ArrivalTime_int].LoadingBuffer_EndTimeOfCongestion;
 						ArrivalTime_int = (int)(ArrivalTime);
-						}
+					}
 				}
 
-					int arrival_time_in_hour = int(ArrivalTimeBasedonTravelTime/60);
+				int arrival_time_in_hour = int(ArrivalTimeBasedonTravelTime/60);
 				if( pLink->SimultedHourlySpeed[arrival_time_in_hour] < pLink->m_SpeedLimit *0.15) // 15% of speed limit
-							number_of_links_with_extremely_heavy_congestion++;
+					number_of_links_with_extremely_heavy_congestion++;
 
 				ArrivalTimeBasedonTravelTime += pLink->GetTravelTimeByMin (0,ArrivalTimeBasedonTravelTime,g_AggregationTimetInterval,g_TrafficFlowModelFlag);  // update travel time 
 
@@ -603,7 +603,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if( pLink->m_LinkMOEAry [(int)(ArrivalTime)].TrafficStateCode == 0) 					// if Arrival at Free-flow condition.
 				{
 
-					
+
 					if(g_GetSequentialEstimationTimePeriod(iteration,ArrivalTime) && pLink->ContainFlowCount(ArrivalTime)) // with flow measurement
 					{
 						PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p]+= 
@@ -679,8 +679,8 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				}
 
 
-//				TRACE("link index l = %d, arrival time = %5.1f \n",l,ArrivalTime);
-//				g_EstimationLogFile <<  "link index l = " << l << "arrival time = "<< ArrivalTime << endl;
+				//				TRACE("link index l = %d, arrival time = %5.1f \n",l,ArrivalTime);
+				//				g_EstimationLogFile <<  "link index l = " << l << "arrival time = "<< ArrivalTime << endl;
 
 
 
@@ -712,16 +712,16 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if(number_of_links_with_extremely_heavy_congestion >=2)
 				{
 					FlowAdjustment = 0; // reset the adjustment volume to zero if there are more than 2  heavily congested links
-//					cout << "ODME: reset adjustment flow to 0: avoid heavy congestion." << endl;
+					//					cout << "ODME: reset adjustment flow to 0: avoid heavy congestion." << endl;
 				}
 			}
-				
+
 
 			// add constraints based on the deviation from historical demand 
 
 
- 		int abs_threashold = 0;
-		int bound_for_applying_target_demand_constraint = 5;
+			int abs_threashold = 0;
+			int bound_for_applying_target_demand_constraint = 5;
 
 
 			if ( hist_demand >= bound_for_applying_target_demand_constraint)  // ;OD demand with sufficiently large volumes
@@ -729,14 +729,14 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 				if(origin_zone == 1 && DestZoneNumber == 11 )
 				{
-				TRACE("");
+					TRACE("");
 				}
 				float existing_demand = PathArray[DestZoneNo].NumOfVehicles;
 				float new_demand  =  existing_demand - g_ODEstimation_StepSize*FlowAdjustment;
 				float upper_bound = hist_demand * (1+ g_ODEstimation_max_percentage_deviation_wrt_hist_demand);
 				float lower_bound = hist_demand * (1- g_ODEstimation_max_percentage_deviation_wrt_hist_demand);
 
-					if( new_demand>upper_bound  + abs_threashold && FlowAdjustment < 0) 
+				if( new_demand>upper_bound  + abs_threashold && FlowAdjustment < 0) 
 				{ 
 					FlowAdjustment  = -(upper_bound - existing_demand)/ g_ODEstimation_StepSize; 
 				}
@@ -744,7 +744,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 				if (  new_demand < lower_bound - abs_threashold && FlowAdjustment > 0) 
 				{
 					FlowAdjustment  = (existing_demand - lower_bound)/ g_ODEstimation_StepSize; 
-				
+
 				}
 			}
 
@@ -776,7 +776,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 			PathArrayForEachODTK element;
 			int PathIndex  = g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.size();
-				
+
 
 			element.Setup (PathIndex,origin_zone, DestZoneNumber, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
 				PathArray[DestZoneNo].PathSize[p]-1, PathArray[DestZoneNo].PathLinkSequences[p],PathArray[DestZoneNo].NewNumberOfVehicles[p],PathArray[DestZoneNo].PathNodeSums[p],AssignmentInterval );
@@ -790,13 +790,13 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 			g_HistDemand.AddUpdatedValue(origin_zone,DestZoneNumber,AssignmentInterval, PathArray[DestZoneNo].NewNumberOfVehicles[p]); // to store the initial table as hist database
 
 			g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.push_back(element);
-			
+
 
 			//			g_AssignmentLogFile << "OED: O: " << origin_zone << ", D:" << DestZoneID << "Demand Dev: " << PathArray[DestZoneNo].DeviationNumOfVehicles << ", Path:" << p << ", marginal: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << ", AvgTT: "<< PathArray[DestZoneNo].AvgPathTimes[p]<< ", Gap : "<< PathArray[DestZoneNo].AvgPathGap[p]<<  ", VehicleSize:" << PathArray[DestZoneNo].NewNumberOfVehicles[p] << ", flow adjustment" << FlowAdjustment << endl;
 
-		   // for path p
+			// for path p
 
-	}
+		}
 
 	}  //  for each OD pair
 
@@ -813,9 +813,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,in
 	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
 	// g_VehcileIDPerAssignmentIntervalMap is more like a cursor to record the last scanned position
-	
+
 	if(g_ZoneNumber2NoVector[origin_zone]<0)  // no such zone number
-			return;
+		return;
 
 	PathArrayForEachODT *PathArray;
 	PathArray = new PathArrayForEachODT[g_ODZoneIDSize]; // remember to release memory
@@ -828,159 +828,160 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,in
 void g_GenerateVehicleData_ODEstimation()
 {
 
-//	g_EstimationLogFile << "g_GenerateVehicleData_ODEstimation "  <<endl; 
+	//	g_EstimationLogFile << "g_GenerateVehicleData_ODEstimation "  <<endl; 
 
 	g_FreeMemoryForVehicleVector();
 
-		cout << "Converting OD demand flow to vehicles..."<< endl;
+	cout << "Converting OD demand flow to vehicles..."<< endl;
 
-		
-	for(int z = 0; z <= g_ODZoneNumberSize; z++)
+
+
+
+	for(int di = 0; di < g_AggregationTimetIntervalSize; di++)  // for time index first, as we need to sort the vehicle vector according to departure time intervals, by doing so, we can speed up the sorting process
 	{
-
-		if(g_ZoneNumber2NoVector[z]<0)  // no such Zone ID
-			continue;
-
-		for(int di = 0; di < g_AggregationTimetIntervalSize; di++)
+		for(int z = 0; z <= g_ODZoneNumberSize; z++)  // for each zone 
 		{
-			g_TDOVehicleArray[z][di].VehicleArray.clear ();
-		
 
-			for(int pi = 0; pi< g_TDOVehicleArray[z][di].m_ODTKPathVector .size(); pi++)
+			if(g_ZoneNumber2NoVector[z]<0)  // no such Zone ID
+				continue;g_TDOVehicleArray[z][di].VehicleArray.clear ();
+
+
+			for(int pi = 0; pi< g_TDOVehicleArray[z][di].m_ODTKPathVector .size(); pi++)  // for each path
 			{
-			PathArrayForEachODTK element = g_TDOVehicleArray[z][di].m_ODTKPathVector[pi];
+				PathArrayForEachODTK element = g_TDOVehicleArray[z][di].m_ODTKPathVector[pi];
 
-			CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,
-				element.m_VehicleSize ,
-				element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,
-				element.m_PathIndex,false, element.m_DepartureTimeIndex );
+				CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,
+					element.m_VehicleSize ,
+					element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,
+					element.m_PathIndex,false, element.m_DepartureTimeIndex );
 			}
 
 		}
 	}
 
 
-		//PathArrayForEachODTK element;
+	//PathArrayForEachODTK element;
 
-		//for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
-		//{
-		//	element = g_ODTKPathVector[vi];
-		//	CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
+	//for(int vi = 0; vi< g_ODTKPathVector.size(); vi++)
+	//{
+	//	element = g_ODTKPathVector[vi];
+	//	CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,element.m_VehicleSize ,element.m_DemandType,element.m_starting_time_in_min,element.m_ending_time_in_min,element.m_PathIndex );
 
-		//}
-
-		
-		// create vehicle heres...
-//		g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
+	//}
 
 
-		std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
-		cout << " Sort vehicles... "  <<endl; 
+	// create vehicle heres...
+	//		g_EstimationLogFile << " Converting demand flow to vehicles... "  <<endl; 
 
-		std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
 
-		DTAVehicle* pVehicle = 0;
+	cout << " Sort vehicles... "  <<endl; 
+	std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
+	cout << " Sorting ends. Allocating memory for vehicles..."  <<endl; 
 
-		int i = 0;
-		while(kvhc != g_simple_vector_vehicles.end())
+	std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
+
+	DTAVehicle* pVehicle = 0;
+
+	int i = 0;
+	while(kvhc != g_simple_vector_vehicles.end())
+	{
+		if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-origin_zone traffic
 		{
-			if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-origin_zone traffic
+
+			//try
+			//{
+			pVehicle = new DTAVehicle;
+			if(pVehicle == NULL)
 			{
+				cout << "Insufficient memory...";
+				getchar();
+				exit(0);
 
-				//try
-				//{
-				pVehicle = new (std::nothrow) DTAVehicle;
-				if(pVehicle == NULL)
-				{
-					cout << "Insufficient memory...";
-					getchar();
-					exit(0);
+			}
 
-				}
+			//}
+			//catch (std::bad_alloc& exc)
+			//{
+			//	cout << "Insufficient memory...";
+			//	getchar();
+			//	exit(0);
 
-				//}
-				//catch (std::bad_alloc& exc)
-				//{
-				//	cout << "Insufficient memory...";
-				//	getchar();
-				//	exit(0);
-			
-				//}
+			//}
 
 
-				//if(i%10000==0)
-				//cout << " Adding "<< i/10000<< "K vehicles... "  <<endl; 
+			//if(i%10000==0)
+			//cout << " Adding "<< i/10000<< "K vehicles... "  <<endl; 
 
-				pVehicle->m_VehicleID		= i;
-				pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
+			pVehicle->m_VehicleID		= i;
+			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
-				pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
-				pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
-
-
-				pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
-				pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
-				pVehicle->m_VOT = kvhc->m_VOT ;
-				pVehicle->m_Age  = kvhc->m_Age;
+			pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
+			pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
 
 
-				pVehicle->m_DemandType	= kvhc->m_DemandType;
-				pVehicle->m_InformationClass = kvhc->m_InformationClass;
-				pVehicle->m_PricingType 	= kvhc->m_PricingType ;
-				pVehicle->m_VehicleType = kvhc->m_VehicleType;
+			pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+			pVehicle->m_VOT = kvhc->m_VOT ;
+			pVehicle->m_Age  = kvhc->m_Age;
 
-				
-				
-				if( kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
-				{
+
+			pVehicle->m_DemandType	= kvhc->m_DemandType;
+			pVehicle->m_InformationClass = kvhc->m_InformationClass;
+			pVehicle->m_PricingType 	= kvhc->m_PricingType ;
+			pVehicle->m_VehicleType = kvhc->m_VehicleType;
+
+
+
+			if( kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
+			{
 				cout << "kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size()" << endl;
 				g_ProgramStop();
-				}
-				PathArrayForEachODTK element = g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector[kvhc->m_PathIndex ];
-
-//				PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
-
-				int NodeSize = element.m_LinkSize+1;
-				pVehicle->m_NodeSize = NodeSize;
-				pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
-
-				if(pVehicle->m_NodeAry==NULL)
-				{
-					cout << "Insufficient memory for allocating vehicle arrays!";
-					g_ProgramStop();
-				}
-
-				pVehicle->m_NodeNumberSum =  element.m_NodeSum ;
-				pVehicle->m_Distance =0;
-
-				for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
-				{
-					pVehicle->m_NodeAry[j].LinkNo = element.m_LinkNoArray[j];
-
-					if(j==0)
-					{
-						pVehicle->m_OriginNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_FromNodeID ;
-					}
-
-					if(j==pVehicle->m_NodeSize-2)
-					{
-						pVehicle->m_DestinationNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_ToNodeID ;
-					}
-
-					pVehicle->m_Distance+= g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_Length ;
-				}
-				g_VehicleVector.push_back(pVehicle);
-				g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
-
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
-
-
-				i++;
 			}
-			kvhc++;
+			PathArrayForEachODTK element = g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector[kvhc->m_PathIndex ];
 
+			//				PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
+
+			int NodeSize = element.m_LinkSize+1;
+			pVehicle->m_NodeSize = NodeSize;
+			pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+
+			if(pVehicle->m_NodeAry==NULL)
+			{
+				cout << "Insufficient memory for allocating vehicle arrays!";
+				g_ProgramStop();
+			}
+
+			pVehicle->m_NodeNumberSum =  element.m_NodeSum ;
+			pVehicle->m_Distance =0;
+
+			for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
+			{
+				pVehicle->m_NodeAry[j].LinkNo = element.m_LinkNoArray[j];
+
+				if(j==0)
+				{
+					pVehicle->m_OriginNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_FromNodeID ;
+				}
+
+				if(j==pVehicle->m_NodeSize-2)
+				{
+					pVehicle->m_DestinationNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_ToNodeID ;
+				}
+
+				pVehicle->m_Distance+= g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_Length ;
+			}
+			g_VehicleVector.push_back(pVehicle);
+			g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
+
+			g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
+
+
+			i++;
 		}
-		g_simple_vector_vehicles.clear ();
+		kvhc++;
+
+	}
+	g_simple_vector_vehicles.clear ();
 
 	for(int z = 0; z <=g_ODZoneNumberSize; z++)
 	{
@@ -990,9 +991,11 @@ void g_GenerateVehicleData_ODEstimation()
 		for(int di = 0; di < g_AggregationTimetIntervalSize; di++)
 		{
 			g_TDOVehicleArray[z][di].m_ODTKPathVector.clear();
-		
+
 		}
 	}
+
+	cout << " Memory allocation ends."  <<endl; 
 
 }
 
@@ -1005,7 +1008,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 	//MAPE Mean absolute percentage error 
 	//RMSE  root mean sequared error
 
-//	g_EstimationLogFile << "--------------------------------- Iteration" << Iteration << " -----------------------------" << endl;
+	//	g_EstimationLogFile << "--------------------------------- Iteration" << Iteration << " -----------------------------" << endl;
 	float TotaMOESampleSize  = 0;
 	float TotalFlowError = 0;
 	float TotalFlowSequaredError = 0;
@@ -1018,10 +1021,10 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 	int number_of_sensors = 0;
 
 	std::vector <SensorDataPoint> SensorDataVector;
-	
+
 	g_EstimationLogFile << "Iteration," << Iteration << "," << "direction" << ","<< "link name,link_type," <<  "Link " << "from node" << ",->," << "to node" 
-						<< ",time "<<  "start time in min" << "->" << "end time in min" <<  ",,"<< "observed link count" << "," << "simulated link count" <<", Error:, " << "Simulated flow count -  Obs flow count" << 
-						"," << "Abosolute Percentage Error " << ",,Lane Flow Error /h=,Capacity ,obs voc,simu VOC" << endl;
+		<< ",time "<<  "start time in min" << "->" << "end time in min" <<  ",,"<< "observed link count" << "," << "simulated link count" <<", Error:, " << "Simulated flow count -  Obs flow count" << 
+		"," << "Abosolute Percentage Error " << ",,Lane Flow Error /h=,Capacity ,obs voc,simu VOC" << endl;
 
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -1036,8 +1039,8 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 				if(pLink->m_FromNodeNumber == 56154)
 				{
-				
-				TRACE("");
+
+					TRACE("");
 				}
 
 				if( pLink->m_LinkMeasurementAry[i].EndTime  < g_ValidationDataStartTimeInMin || pLink->m_LinkMeasurementAry[i].StartTime > g_ValidationDataEndTimeInMin)
@@ -1052,53 +1055,53 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 
 				if(SimulatedFlowCount>=0)
 				{
-				pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
+					pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
 
-				int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
+					int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
 
-				SensorDataPoint element;
-				element.x = ObsFlowCount;
-				element.y = SimulatedFlowCount;
-				SensorDataVector.push_back (element);
+					SensorDataPoint element;
+					element.x = ObsFlowCount;
+					element.y = SimulatedFlowCount;
+					SensorDataVector.push_back (element);
 
-				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
+					pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
 
-				if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
-				{
-				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
-				}else
-				{
-				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
-				}
-					
-
-				if(ObsFlowCount >= 1)  // flow count
-				{
-					int time_interval = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
-					float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100);
-					float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
-						max(1,time_interval)/pLink->m_NumLanes;												
-
-					float obs_v_over_c_ratio = 0;
-					float simu_over_c_ratio = 0;
-					float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
-
-					if(link_capacity>1)
+					if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
 					{
-					obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
-					simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
+						pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
+					}else
+					{
+						pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
 					}
-					g_EstimationLogFile << "Iteration," << Iteration << "," << pLink->m_LinkMeasurementAry[i].name << "," << pLink->m_LinkMeasurementAry[i].direction << "," << pLink->m_LinkTypeName << ",Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
-						<< ",time "<<  g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime) << "->" << g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) <<  ",Observed and simulated link count,"<< ObsFlowCount << "," << SimulatedFlowCount <<", Error:, " << SimulatedFlowCount -  ObsFlowCount << 
-						"," << AbosolutePercentageError << " %" << ",Lane Flow Error /h=, " << LaneFlowError << "," << pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity << "," << obs_v_over_c_ratio << "," << simu_over_c_ratio << endl;
 
-					TotalMOEPercentageError +=AbosolutePercentageError ; 
-					TotalMOEAbsError += fabs(LaneFlowError) ;
-					TotaMOESampleSize ++;
+
+					if(ObsFlowCount >= 1)  // flow count
+					{
+						int time_interval = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
+						float AbosolutePercentageError = abs((SimulatedFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100);
+						float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
+							max(1,time_interval)/pLink->m_NumLanes;												
+
+						float obs_v_over_c_ratio = 0;
+						float simu_over_c_ratio = 0;
+						float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
+
+						if(link_capacity>1)
+						{
+							obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
+							simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval) /max(1,link_capacity);
+						}
+						g_EstimationLogFile << "Iteration," << Iteration << "," << pLink->m_LinkMeasurementAry[i].name << "," << pLink->m_LinkMeasurementAry[i].direction << "," << pLink->m_LinkTypeName << ",Link " << pLink->m_FromNodeNumber << ",->," << pLink->m_ToNodeNumber 
+							<< ",time "<<  g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime) << "->" << g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) <<  ",Observed and simulated link count,"<< ObsFlowCount << "," << SimulatedFlowCount <<", Error:, " << SimulatedFlowCount -  ObsFlowCount << 
+							"," << AbosolutePercentageError << " %" << ",Lane Flow Error /h=, " << LaneFlowError << "," << pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity << "," << obs_v_over_c_ratio << "," << simu_over_c_ratio << endl;
+
+						TotalMOEPercentageError +=AbosolutePercentageError ; 
+						TotalMOEAbsError += fabs(LaneFlowError) ;
+						TotaMOESampleSize ++;
 
 					}
 				}
-				
+
 
 			}
 		}
@@ -1161,110 +1164,110 @@ void g_OutputODMEResults()
 
 				if(pLink->m_FromNodeNumber == 56154)
 				{
-				TRACE("");
+					TRACE("");
 				}
 
 
 				if( g_ValidationDataStartTimeInMin<= pLink->m_LinkMeasurementAry[i].StartTime   &&  
 					pLink->m_LinkMeasurementAry[i].EndTime  <= g_ValidationDataEndTimeInMin)
 				{  // within the observation time window
-					
 
-				// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
 
-				int EndTime = min(pLink->m_LinkMeasurementAry[i].EndTime,pLink->m_LinkMOEAry.size()-1);
-				int StartTime = min(pLink->m_LinkMeasurementAry[i].StartTime,pLink->m_LinkMOEAry.size()-1);
+					// CumulativeArrivalCount is available after this time interval, so we calculate statistics on time time_index-1
 
-				int SimulatedFlowCount = pLink->m_LinkMOEAry[EndTime].CumulativeArrivalCount 
-					- pLink->m_LinkMOEAry[ StartTime ].CumulativeArrivalCount; 
+					int EndTime = min(pLink->m_LinkMeasurementAry[i].EndTime,pLink->m_LinkMOEAry.size()-1);
+					int StartTime = min(pLink->m_LinkMeasurementAry[i].StartTime,pLink->m_LinkMOEAry.size()-1);
 
-				if(SimulatedFlowCount>=0)
-				{
-				pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
+					int SimulatedFlowCount = pLink->m_LinkMOEAry[EndTime].CumulativeArrivalCount 
+						- pLink->m_LinkMOEAry[ StartTime ].CumulativeArrivalCount; 
 
-				int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
-
-				SensorDataPoint element;
-				element.x = ObsFlowCount;
-				element.y = SimulatedFlowCount;
-				SensorDataVector.push_back (element);
-
-				pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
-
-				if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
-				{
-				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
-				}else
-				{
-				pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
-				}
-					
-				
-				if(ObsFlowCount >= 1)  // flow count
-				{
-					int time_interval_in_min = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
-					float PercentageError = (SimulatedFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100;
-					float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
-						max(1,time_interval_in_min)/pLink->m_NumLanes;												
-
-					float obs_v_over_c_ratio = 0;
-					float simu_over_c_ratio = 0;
-					float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
-
-					if(link_capacity>1)
+					if(SimulatedFlowCount>=0)
 					{
-					obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval_in_min) /link_capacity;  // 60.0f/max(1,time_interval_in_min) --> to hour
-					simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval_in_min) /link_capacity;
+						pLink->m_LinkMeasurementAry[i].SimuFlowCount = SimulatedFlowCount;
+
+						int ObsFlowCount =  pLink->m_LinkMeasurementAry[i].ObsFlowCount;
+
+						SensorDataPoint element;
+						element.x = ObsFlowCount;
+						element.y = SimulatedFlowCount;
+						SensorDataVector.push_back (element);
+
+						pLink->m_LinkMeasurementAry[i].DeviationOfFlowCount = SimulatedFlowCount -  pLink->m_LinkMeasurementAry[i].ObsFlowCount ;
+
+						if(pLink->m_LinkMeasurementAry[i].ObsTravelTime>=0.01 && ObsFlowCount >=1)
+						{
+							pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime  = pLink->GetSimulatedTravelTime(StartTime) - pLink->m_LinkMeasurementAry[i].ObsTravelTime; 
+						}else
+						{
+							pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
+						}
+
+
+						if(ObsFlowCount >= 1)  // flow count
+						{
+							int time_interval_in_min = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
+							float PercentageError = (SimulatedFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100;
+							float LaneFlowError = (SimulatedFlowCount -  ObsFlowCount)*60.0f/
+								max(1,time_interval_in_min)/pLink->m_NumLanes;												
+
+							float obs_v_over_c_ratio = 0;
+							float simu_over_c_ratio = 0;
+							float link_capacity = pLink->GetNumberOfLanes ()* pLink->m_LaneCapacity;
+
+							if(link_capacity>1)
+							{
+								obs_v_over_c_ratio  = ObsFlowCount*60.0f/max(1,time_interval_in_min) /link_capacity;  // 60.0f/max(1,time_interval_in_min) --> to hour
+								simu_over_c_ratio = SimulatedFlowCount*60.0f/max(1,time_interval_in_min) /link_capacity;
+							}
+							validation_result_file.SetValueByFieldName  ("name", pLink->m_LinkMeasurementAry[i].name);
+							validation_result_file.SetValueByFieldName  ("tag", pLink->m_LinkMeasurementAry[i].tag);
+							validation_result_file.SetValueByFieldName ("link_type", pLink->m_LinkTypeName );
+							validation_result_file.SetValueByFieldName ("from_node_id", pLink->m_FromNodeNumber );
+							validation_result_file.SetValueByFieldName ("to_node_id",  pLink->m_ToNodeNumber);
+
+							CString link_id_str;
+							link_id_str.Format("%d->%d", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+
+							{
+								CT2CA pszConvertedAnsiString (link_id_str);
+								// construct a std::string using the LPCSTR input
+								std::string strStd (pszConvertedAnsiString);
+
+								validation_result_file.SetValueByFieldName ("link_id",  strStd);
+							}
+
+							CString time_interval_str;
+							time_interval_str.Format("%s->%s", g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime), g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) );
+
+							CT2CA pszConvertedAnsiString (time_interval_str);
+							// construct a std::string using the LPCSTR input
+							std::string strStd (pszConvertedAnsiString);
+
+							validation_result_file.SetValueByFieldName ("time_interval",strStd);
+							validation_result_file.SetValueByFieldName ("observed_link_count",ObsFlowCount );
+							validation_result_file.SetValueByFieldName ("simulated_link_count",SimulatedFlowCount);
+
+							float simulated_over_observed_ratio = SimulatedFlowCount*1.0f/max(1,ObsFlowCount);
+
+
+							validation_result_file.SetValueByFieldName ("simulated_over_observed_ratio",simulated_over_observed_ratio);
+							validation_result_file.SetValueByFieldName ("simulated_vs_observed_percentage_error",PercentageError);
+
+							int simulated_vs_observed_count_error = SimulatedFlowCount -  ObsFlowCount;
+							validation_result_file.SetValueByFieldName ("simulated_vs_observed_count_error",simulated_vs_observed_count_error);
+							validation_result_file.SetValueByFieldName ("simulated_voc_ratio",simu_over_c_ratio);
+							validation_result_file.SetValueByFieldName ("observed_voc_ratio",obs_v_over_c_ratio);
+
+							int number_of_lanes = pLink->GetNumberOfLanes ();
+							validation_result_file.SetValueByFieldName ("number_of_lanes",number_of_lanes);
+							validation_result_file.SetValueByFieldName ("lane_capacity_per_hour",pLink->m_LaneCapacity);
+							int link_capacity_per_hour = number_of_lanes * pLink->m_LaneCapacity;
+							validation_result_file.SetValueByFieldName ("link_capacity_per_hour",link_capacity_per_hour);
+
+							validation_result_file.WriteRecord ();
+						}
 					}
-					validation_result_file.SetValueByFieldName  ("name", pLink->m_LinkMeasurementAry[i].name);
-					validation_result_file.SetValueByFieldName  ("tag", pLink->m_LinkMeasurementAry[i].tag);
-					validation_result_file.SetValueByFieldName ("link_type", pLink->m_LinkTypeName );
-					validation_result_file.SetValueByFieldName ("from_node_id", pLink->m_FromNodeNumber );
-					validation_result_file.SetValueByFieldName ("to_node_id",  pLink->m_ToNodeNumber);
 
-					CString link_id_str;
-					link_id_str.Format("%d->%d", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
-
-					{
-					CT2CA pszConvertedAnsiString (link_id_str);
-					// construct a std::string using the LPCSTR input
-					std::string strStd (pszConvertedAnsiString);
-
-					validation_result_file.SetValueByFieldName ("link_id",  strStd);
-					}
-					
-					CString time_interval_str;
-					time_interval_str.Format("%s->%s", g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].StartTime), g_GetTimeStampString(pLink->m_LinkMeasurementAry[i].EndTime) );
-
-					CT2CA pszConvertedAnsiString (time_interval_str);
-					// construct a std::string using the LPCSTR input
-					std::string strStd (pszConvertedAnsiString);
-
-					validation_result_file.SetValueByFieldName ("time_interval",strStd);
-					validation_result_file.SetValueByFieldName ("observed_link_count",ObsFlowCount );
-					validation_result_file.SetValueByFieldName ("simulated_link_count",SimulatedFlowCount);
-
-					float simulated_over_observed_ratio = SimulatedFlowCount*1.0f/max(1,ObsFlowCount);
-
-
-					validation_result_file.SetValueByFieldName ("simulated_over_observed_ratio",simulated_over_observed_ratio);
-					validation_result_file.SetValueByFieldName ("simulated_vs_observed_percentage_error",PercentageError);
-					
-					int simulated_vs_observed_count_error = SimulatedFlowCount -  ObsFlowCount;
-					validation_result_file.SetValueByFieldName ("simulated_vs_observed_count_error",simulated_vs_observed_count_error);
-					validation_result_file.SetValueByFieldName ("simulated_voc_ratio",simu_over_c_ratio);
-					validation_result_file.SetValueByFieldName ("observed_voc_ratio",obs_v_over_c_ratio);
-
-					int number_of_lanes = pLink->GetNumberOfLanes ();
-					validation_result_file.SetValueByFieldName ("number_of_lanes",number_of_lanes);
-					validation_result_file.SetValueByFieldName ("lane_capacity_per_hour",pLink->m_LaneCapacity);
-					int link_capacity_per_hour = number_of_lanes * pLink->m_LaneCapacity;
-					validation_result_file.SetValueByFieldName ("link_capacity_per_hour",link_capacity_per_hour);
-
-					validation_result_file.WriteRecord ();
-					}
-				}
-				
 				}
 			}
 		}

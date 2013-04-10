@@ -49,6 +49,8 @@ DTANetworkForSP g_network_VMS;
 
 void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip and en-route information user classes
 {
+	if(g_ODEstimationFlag==1)
+		return;
 	int number_of_threads = omp_get_max_threads ( );
 
 
@@ -82,7 +84,7 @@ void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip
 
 	}
 
-#pragma omp parallel for
+//#pragma omp parallel for
 		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 		{
 			// create network for shortest path calculation at this processor
@@ -120,6 +122,8 @@ void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip
 void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time)
  // for pre-trip and en-route information user classes, for each departure time interval
 {
+	if(g_ODEstimationFlag==1)
+		return;
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	int CurrentPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	int TempPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
@@ -340,6 +344,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )  
 // for VMS responsive vehicles
 {
+	if(g_ODEstimationFlag==1)
+		return;
 	if(DayNo==0 && CurrentTime<=0.15)  // allocate memory once 
 	{
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
@@ -357,6 +363,10 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
 // for VMS resonsive information
 {
+
+	if(g_ODEstimationFlag==1)
+		return;
+
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	int CurrentPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	int TempPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
