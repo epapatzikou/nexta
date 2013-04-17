@@ -50,10 +50,10 @@
 extern CDlgPathMOE	*g_pPathMOEDlg;
 /******************************
 External calling functions
-if(ReadSensorData(directory+"input_sensor.csv") == true)
+if(ReadSensorData() == true)
 {
 CWaitCursor wc;
-ReadSensorData(directory);   // if there are sensor location data
+ReadSensorData();   // if there are sensor location data
 ReadEventData(directory); 
 }
 
@@ -171,13 +171,20 @@ void DTAPath::UpdateWithinDayStatistics()
 	}
 }
 
-bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_in_min)
+bool CTLiteDoc::ReadSensorData()
 {
+
+	CString SensorFileName;
+	SensorFileName.Format("%s//input_sensor.csv", m_ProjectDirectory);
+
+
+
+
 	CCSVParser parser;
 	int error_count = 0;
 
 	int data_count = 0;
-	if (parser.OpenCSVFile(lpszFileName))
+	if (parser.OpenCSVFile(CString2StdString(SensorFileName)))
 	{
 
 			std::list<DTALink*>::iterator iLink;
@@ -293,7 +300,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 						TRACE("");
 					}
 
-					int time = t - simulation_start_time_in_min;  // allow shift of start time
+					int time = t;  // allow shift of start time
 					if(time>=0 && (unsigned int)time < pLink->m_LinkMOEAry.size())
 					{
 
@@ -344,7 +351,7 @@ bool CTLiteDoc::ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_i
 
 		if(m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensors and %d sensor records are loaded from file %s.",m_SensorMap.size(),data_count,lpszFileName);
+			m_SensorLocationLoadingStatus.Format("%d sensors and %d sensor records are loaded from file %s.",m_SensorMap.size(),data_count,SensorFileName);
 			return true;
 		}
 		else

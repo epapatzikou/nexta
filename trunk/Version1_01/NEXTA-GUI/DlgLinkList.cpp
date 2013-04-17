@@ -175,8 +175,11 @@ void CDlgLinkList::ReloadData()
 
 
 	m_Column_names.push_back ("Waiting Time at Origin");
-	m_Column_names.push_back ("AADT Factor");
+	m_Column_names.push_back ("AADT Conversion Factor");
 	m_Column_names.push_back ("Simulated AADT");
+	m_Column_names.push_back ("Observed AADT");
+	m_Column_names.push_back ("Observed Peak hourly volume");
+
 
 	m_Column_names.push_back ("# Crashes Per Year");
 	m_Column_names.push_back ("# FI Crashes Per Year");

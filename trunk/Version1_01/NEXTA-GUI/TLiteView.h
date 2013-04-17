@@ -92,16 +92,21 @@ enum link_text_display_mode
 
 	link_display_separator_3,
 	link_display_total_link_volume,
+
 	link_display_avg_travel_time,
+
 	link_display_volume_over_capacity_ratio,
 	link_display_LevelOfService,
 	link_display_avg_waiting_time_on_loading_buffer,
 	link_display_avg_simulated_speed,
+	link_display_separator_4,
 	link_display_total_sensor_link_volume,
 	link_display_total_link_count_error,
 	link_display_simulated_AADT,
+	link_display_observed_AADT,
+	link_display_observed_peak_hourly_volume,
 
-	link_display_separator_4,
+	link_display_separator_5,
 	link_display_crash_prediction_group_1_code,
 	link_display_crash_prediction_group_2_code,
 	link_display_crash_prediction_group_3_code,
@@ -128,7 +133,6 @@ enum movement_text_display_mode
    movement_display_sim_turn_percentage, 
    movement_display_sim_turn_delay, 
 
-   movement_display_obs_turn_count, 
    movement_display_obs_turn_hourly_count,
    movement_display_obs_turn_percentage, 
    movement_display_obs_turn_delay, 

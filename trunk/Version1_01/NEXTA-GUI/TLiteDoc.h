@@ -70,7 +70,8 @@ enum layer_mode
 	layer_background_image,
 	layer_transit_accessibility,
 };
-enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_SENSOR_DATA, _MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
 enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
 enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
@@ -145,7 +146,6 @@ enum VEHICLE_Y_CLASSIFICATION {
 	CLS_avg_CO,
 	CLS_avg_HC,
 	CLS_avg_mile
-
 };
 enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
 
@@ -761,7 +761,7 @@ public:
 	int m_SimulationEndTime_in_min;
 
 
-	bool ReadSensorData(LPCTSTR lpszFileName, int simulation_start_time_in_min = 0);
+	bool ReadSensorData();
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
 
@@ -830,6 +830,15 @@ public:
 		return str;
 	}
 
+	DTA_APPROACH_TURN GetTurnDirectionFromString(CString str) 
+	{
+		if(m_TurnDirectionStringMap.find(str) != m_TurnDirectionStringMap.end())
+		{
+			return m_TurnDirectionStringMap[str];
+		}
+			return DTA_LANES_COLUME_init;
+	}
+	std::map<CString, DTA_APPROACH_TURN> m_TurnDirectionStringMap;
 	CString GetTurnDirectionString(DTA_APPROACH_TURN turn_dir)
 	{
 		CString str;
@@ -874,6 +883,7 @@ public:
 
 		return str;
 	}
+
 	int GetLOSCode(float Value)
 	{
 
@@ -881,7 +891,7 @@ public:
 			return 1;
 
 		if(Value > m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
-			return MAX_LOS_SIZE-3;
+			return MAX_LOS_SIZE-2;
 
 		for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 		{
@@ -1449,6 +1459,8 @@ public:
 				m_ZoneMap[ZoneID].RemoveNodeActivityMode ((*iNode)->m_NodeNumber);
 				
 				m_NodeIDMap[(*iNode)->m_NodeID ] = NULL;
+				m_NodeIDMap.erase ((*iNode)->m_NodeID);
+	
 				m_NodeNumbertoIDMap[(*iNode)->m_NodeNumber  ] = -1;
 
 				m_NodeSet.erase  (iNode);
@@ -1465,6 +1477,7 @@ public:
 		int ToNodeID   = pLink->m_ToNodeID ;
 		unsigned long LinkKey = GetLinkKey( FromNodeID , ToNodeID );
 		
+		m_NodeIDtoLinkMap.erase (LinkKey);  
 		m_NodeIDtoLinkMap[LinkKey] =NULL;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections-=1;
@@ -1480,6 +1493,8 @@ public:
 		}
 
 		m_NodeIDMap[ToNodeID ]->m_Connections-=1;
+		m_LinkNoMap.erase (pLink->m_LinkNo);  
+
 		m_LinkNoMap[pLink->m_LinkNo]  = NULL;
 
 		std::list<DTALink*>::iterator iLink;
@@ -1638,8 +1653,9 @@ public:
 
 	DTA_Turn Find_RelativeAngle_to_Turn(int relative_angle);
 
-	DTA_Direction g_Angle_to_Approach_8_direction(int angle);
-	DTA_Direction g_Angle_to_Approach_4_direction(int angle);
+	DTA_Direction Find_Angle_to_Approach_8_direction(int angle);
+	DTA_Direction Find_Angle_to_Approach_4_direction(int angle, int &relative_angel_difference_from_main_direction);
+	DTA_Direction Find_Angle_to_Approach_4_directionWithoutGivenDirection(int angle, DTA_Direction not_use_DTA_Direction);
 	
 	DTA_Direction Find_Closest_Angle_to_Approach(int angle);
 
@@ -2360,6 +2376,7 @@ public:
 	afx_msg void OnFileOpentestsets();
 	afx_msg void OnFileOpensampledatasetfolder();
 	afx_msg void OnLinkAddRadioMessage();
+	afx_msg void OnSensortoolsSensordata();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

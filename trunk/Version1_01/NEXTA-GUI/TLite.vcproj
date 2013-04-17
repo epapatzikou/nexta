@@ -661,6 +661,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SensorNetworkDataDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SensorNetworkDataTabDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ShortestPath.cpp"
 				>
 			</File>
@@ -1502,6 +1510,14 @@
 			</File>
 			<File
 				RelativePath=".\SafetyPlanning\SafetyPlanning.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SensorNetworkDataDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SensorNetworkDataTabDlg.h"
 				>
 			</File>
 			<File

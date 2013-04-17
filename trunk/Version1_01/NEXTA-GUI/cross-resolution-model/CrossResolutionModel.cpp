@@ -116,7 +116,7 @@ DTA_Direction CTLiteDoc::Find_Closest_Angle_to_Approach(int angle)
 	else
 		return DTA_East;
 }
-DTA_Direction CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
+DTA_Direction CTLiteDoc::Find_Angle_to_Approach_8_direction(int angle)
 {
 	if(angle < 23)
 	{
@@ -154,26 +154,83 @@ DTA_Direction CTLiteDoc::g_Angle_to_Approach_8_direction(int angle)
 		return DTA_East;
 }
 
-DTA_Direction CTLiteDoc::g_Angle_to_Approach_4_direction(int angle)
+DTA_Direction CTLiteDoc::Find_Angle_to_Approach_4_directionWithoutGivenDirection(int angle, DTA_Direction not_use_DTA_Direction)
 {
+
+	if(not_use_DTA_Direction== DTA_East)
+	{
+		if(angle > 180) 
+		{
+			return DTA_South;
+		}else
+			return DTA_North;
+		
+	}
+
+	if(not_use_DTA_Direction== DTA_West)
+	{
+		if(angle < 180) 
+		{
+			return DTA_South;
+		}else
+			return DTA_North;
+		
+	}
+
+	if(not_use_DTA_Direction== DTA_North)
+	{
+		if(angle < 90 || angle > 270) 
+		{
+			return DTA_East;
+		}else
+			return DTA_West;
+		
+	}
+
+	if(not_use_DTA_Direction== DTA_South)
+	{
+		if(angle < 90 || angle > 270) 
+		{
+			return DTA_East;
+		}else
+			return DTA_West;
+		
+	}
+
+	return DTA_NotDefined;
+}
+
+DTA_Direction CTLiteDoc::Find_Angle_to_Approach_4_direction(int angle, int &relative_angel_difference_from_main_direction)
+{
+	relative_angel_difference_from_main_direction = 0;
 	if(angle < 45)
 	{
+		relative_angel_difference_from_main_direction = abs(angle-0);
+
 		return DTA_East;
 	}
 	else if(angle < 135) 
 	{
+		relative_angel_difference_from_main_direction = abs(angle-90);
 		return DTA_North;
 	}
 	else if(angle < 225) 
 	{
+		relative_angel_difference_from_main_direction = abs(angle-180);
 		return DTA_West;
 	}
 	else if(angle < 315) 
 	{
+		relative_angel_difference_from_main_direction = abs(angle-270);
+
 		return DTA_South;
 	}
-	else
+	else 
+	{
+		relative_angel_difference_from_main_direction = abs(angle-360);
 		return DTA_East;
+	
+	}
 }
 
 DTA_Turn CTLiteDoc::Find_RelativeAngle_to_Left_OR_Right_Turn_1_OR_2(int relative_angle)
@@ -429,15 +486,84 @@ void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part 
 		(*iNode)->m_PhaseVector.push_back(node_phase); // phase 2;
 
 
+		// determine initial from direction
+
+		std::map<DTA_Direction, DTALink*> Node_Direction2LinkMap;
+
+		for(int inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
+		{
+			// for each incoming link 
+				int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
+
+				// do not consider u-turn
+
+					DTANodeMovement element;
+
+					element.in_link_to_node_id = i;						
+
+					element.IncomingLinkID = m_Network.m_InboundLinkAry[i][inbound_i];;
+
+					element.in_link_from_node_id = m_Network.m_FromIDAry[LinkID];
+
+					int up_node = m_NodeIDMap[element.in_link_from_node_id]->m_NodeNumber;
+
+					if(up_node == 20020 ||  up_node == 4032 )
+					{
+						TRACE("Up Node: %d\n",up_node);
+					}
+
+					GDPoint p1, p2, p3;
+					p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
+					p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
+
+					element.angle = Find_P2P_Angle(p1,p2);
+					int relative_angel_difference_from_main_direction = 0;
+					element.movement_direction = Find_Angle_to_Approach_4_direction(element.angle, relative_angel_difference_from_main_direction);
+					// movement_direction is for in_bound link
+					DTALink* pLink = m_LinkNoMap[LinkID];
+					if(pLink!=NULL)
+					{
+						// we have not considered different directions/approach with respect to from and to nodes (e.g. with a curve)
+						pLink ->m_FromApproach = element.movement_direction;
+						pLink ->relative_angel_difference_from_main_direction = relative_angel_difference_from_main_direction;
+
+						if( Node_Direction2LinkMap.find(element.movement_direction)!= Node_Direction2LinkMap.end())
+						{
+							// overlapping from direction!!
+							// special handling 
+
+							DTALink* pLink0 = Node_Direction2LinkMap[element.movement_direction];
+
+							if(pLink0->relative_angel_difference_from_main_direction > pLink->relative_angel_difference_from_main_direction)
+							{  
+							//specical handling for pLink 0
+								pLink0 ->m_FromApproach = Find_Angle_to_Approach_4_directionWithoutGivenDirection(element.angle ,pLink ->m_FromApproach);
+							
+							}else
+							{
+								pLink ->m_FromApproach = Find_Angle_to_Approach_4_directionWithoutGivenDirection(element.angle ,pLink0 ->m_FromApproach);
+							}
+
+						
+						}
+
+						Node_Direction2LinkMap[element.movement_direction] = pLink;
+						pLink ->m_ToApproach = Find_Angle_to_Approach_8_direction(Find_P2P_Angle(p2,p1));
+					}
+				
+			}
+
+	
 		int inbound_i;
 
 		for(inbound_i= 0; inbound_i< m_Network.m_InboundSizeAry[i]; inbound_i++)
 		{
 			// for each incoming link 
+			int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
+
 			for(int outbound_i= 0; outbound_i< m_Network.m_OutboundSizeAry [i]; outbound_i++)
 			{
 				//for each outging link
-				int LinkID = m_Network.m_InboundLinkAry[i][inbound_i];
 
 				if (m_Network.m_FromIDAry[LinkID] != m_Network.m_OutboundNodeAry [i][outbound_i])
 				{
@@ -453,9 +579,11 @@ void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part 
 					element.in_link_from_node_id = m_Network.m_FromIDAry[LinkID];
 					element.out_link_to_node_id = m_Network.m_OutboundNodeAry [i][outbound_i];
 
-					if((*iNode)->m_NodeNumber == 52508 )
+					int up_node = m_NodeIDMap[element.in_link_from_node_id]->m_NodeNumber;
+
+					if(up_node == 20020 ||  up_node == 4032 )
 					{
-						TRACE("Up Node: %d\n",m_NodeIDMap[element.in_link_from_node_id]->m_NodeNumber);
+						TRACE("Up Node: %d\n",up_node);
 					}
 
 					GDPoint p1, p2, p3;
@@ -463,70 +591,66 @@ void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part 
 					p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
 					p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
 
-					element.movement_approach = g_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2));
-					// movement_approach is for in_bound link
-					DTALink* pLink = m_LinkNoMap[LinkID];
-					if(pLink!=NULL)
-					{
-						// we have not considered different directions/approach with respect to from and to nodes (e.g. with a curve)
-						pLink ->m_FromApproach = element.movement_approach;
-						pLink ->m_ToApproach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p2,p1));
-					}
 
+					DTALink* pLink = m_LinkNoMap[LinkID];
+					element.movement_direction = pLink->m_FromApproach ;
 
 					element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 					// determine  movement type /direction here
-					element.movement_dir = DTA_LANES_COLUME_init;
+					element.movement_approach_turn = DTA_LANES_COLUME_init;
 
 					int PhaseIndex  = 0;
-					switch (element.movement_approach)
+					switch (element.movement_direction)
 					{
 					case DTA_North:
 						PhaseIndex = 0;
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
-						case DTA_Through: element.movement_dir = DTA_NBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_NBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_NBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_NBR; break;
 						}
 						break;
 					case DTA_East:
 						PhaseIndex = 1;
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
-						case DTA_Through: element.movement_dir = DTA_EBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_EBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_EBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_EBR; break;
 						}
 						break;
 					case DTA_South:
 						PhaseIndex = 0;
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
-						case DTA_Through: element.movement_dir = DTA_SBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_SBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_SBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_SBR; break;
 						}
 						break;
 					case DTA_West:
 						PhaseIndex = 1;
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
-						case DTA_Through: element.movement_dir = DTA_WBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_WBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_WBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_WBR; break;
 						}
 						break;
 					default:
 						TRACE("");
 					}
 
-					int movement_index = (*iNode)->m_MovementVector.size();
 					element.phase_index = PhaseIndex;
+
+					int movement_index = (*iNode)->m_MovementVector.size();
 					(*iNode)->m_MovementVector.push_back(element);
 
 					//record the movement index into the right phase index
+					
+
 					(*iNode)->m_PhaseVector[PhaseIndex].movement_index_vector .push_back(movement_index);
 
 
@@ -535,6 +659,10 @@ void  CTLiteDoc::Construct4DirectionMovementVector(bool ResetFlag) // this part 
 			} // for each outbound link
 
 		} // for each inbound link
+
+
+		(*iNode)->SortMovementVector();
+
 	}// for each node
 
 	m_bMovementAvailableFlag = true;
@@ -634,9 +762,9 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 						TRACE("Node 1: %d\nNode 2: %d\nNode 3: %d\n",m_NodeIDMap[element.UpNodeID]->m_NodeNumber,m_NodeIDMap[element.CurrentNodeID]->m_NodeNumber, m_NodeIDMap[element.DestNodeID]->m_NodeNumber );
 						}
 
-						element.movement_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
+						element.movement_direction = Find_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 
-						m_ApproachMap[element.movement_approach] = 1;
+						m_ApproachMap[element.movement_direction] = 1;
 
 					}
 				}
@@ -681,7 +809,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 
 							// method 1: identify movement approach from scratch 
-							element.movement_approach = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
+							element.movement_direction = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
 							// method 2: read pre-generated layout file from synchro
 
 							CString str_key;
@@ -692,13 +820,13 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 							if (m_PredefinedApproachMap.find(str_key) != m_PredefinedApproachMap.end())  // approach has been predefined in synchro_layout.csv file
 							{
-								element.movement_approach = m_PredefinedApproachMap[str_key];
+								element.movement_direction = m_PredefinedApproachMap[str_key];
 
 								str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
 
 								DTA_Direction approach2= m_PredefinedApproachMap[str_key];
 
-								element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
+								element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_direction,approach2);
 								MovementCount[element.movement_turn]+=1;
 
 								if(MaxAbsAngelForMovement.find(element.movement_turn) == MaxAbsAngelForMovement.end()) // initialize
@@ -746,7 +874,7 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 
 						// method 1: identify movement approach from scratch 
-						element.movement_approach = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
+						element.movement_direction = Find_Closest_Angle_to_Approach(Find_P2P_Angle(p1,p2));
 						// method 2: read pre-generated layout file from synchro
 
 						CString str_key;
@@ -757,13 +885,13 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 						if (m_PredefinedApproachMap.find(str_key) != m_PredefinedApproachMap.end())  // approach has been predefined in synchro_layout.csv file
 						{
-							element.movement_approach = m_PredefinedApproachMap[str_key];
+							element.movement_direction = m_PredefinedApproachMap[str_key];
 
 							str_key.Format("%d,%d",element.CurrentNodeID+1, element.DestNodeID+1);
 
 							DTA_Direction approach2= m_PredefinedApproachMap[str_key];
 
-							element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_approach,approach2);
+							element.movement_turn = Find_PPP_to_Turn_with_DTAApproach(p1,p2,p3,element.movement_direction,approach2);
 
 							if(MovementCount[element.movement_turn] >=2)
 							{
@@ -789,102 +917,102 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 
 
 						// determine  movement type /direction here
-						element.movement_dir = DTA_LANES_COLUME_init;
-						switch (element.movement_approach)
+						element.movement_approach_turn = DTA_LANES_COLUME_init;
+						switch (element.movement_direction)
 						{
 						case DTA_North:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_NBT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_NBL2; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_NBR2; break;
+							case DTA_Through: element.movement_approach_turn = DTA_NBT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_NBL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_NBR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_NBL2; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_NBR2; break;
 							}
 							break;
 						case DTA_East:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_EBT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_EBL2; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_EBR2; break;
+							case DTA_Through: element.movement_approach_turn = DTA_EBT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_EBL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_EBR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_EBL2; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_EBR2; break;
 							}
 							break;
 						case DTA_South:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_SBT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_SBL2; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_SBR2; break;
+							case DTA_Through: element.movement_approach_turn = DTA_SBT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_SBL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_SBR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_SBL2; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_SBR2; break;
 							}
 							break;
 						case DTA_West:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_WBT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_WBL2; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_WBR2; break;
+							case DTA_Through: element.movement_approach_turn = DTA_WBT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_WBL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_WBR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_WBL2; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_WBR2; break;
 							}
 							break;
 						case DTA_NorthEast:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_NET; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_NEL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_NER; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_NEL; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_NER; break;
+							case DTA_Through: element.movement_approach_turn = DTA_NET; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_NEL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_NER; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_NEL; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_NER; break;
 							}
 							break;
 						case DTA_NorthWest:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_NWT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_NWL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_NWR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_NWL; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_NWR; break;
+							case DTA_Through: element.movement_approach_turn = DTA_NWT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_NWL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_NWR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_NWL; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_NWR; break;
 							}
 							break;
 						case DTA_SouthEast:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_SET; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_SEL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_SER; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_SEL; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_SER; break;
+							case DTA_Through: element.movement_approach_turn = DTA_SET; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_SEL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_SER; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_SEL; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_SER; break;
 							}
 							break;
 						case DTA_SouthWest:
 							switch (element.movement_turn)
 							{
-							case DTA_Through: element.movement_dir = DTA_SWT; break;
-							case DTA_LeftTurn: element.movement_dir = DTA_SWL; break;
-							case DTA_RightTurn: element.movement_dir = DTA_SWR; break;
-							case DTA_LeftTurn2: element.movement_dir = DTA_SWL; break;
-							case DTA_RightTurn2: element.movement_dir = DTA_SWR; break;
+							case DTA_Through: element.movement_approach_turn = DTA_SWT; break;
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_SWL; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_SWR; break;
+							case DTA_LeftTurn2: element.movement_approach_turn = DTA_SWL; break;
+							case DTA_RightTurn2: element.movement_approach_turn = DTA_SWR; break;
 							}
 							break;
 						}
 
-						if (element.movement_dir > 0)
+						if (element.movement_approach_turn > 0)
 						{
 							// copy from template
-							MovementTemplate.copy_to_Movement(element, element.movement_dir);
+							MovementTemplate.copy_to_Movement(element, element.movement_approach_turn);
 							// add Movement into m_MovementVector
-							//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_dir);
-							movement_set.MovementMatrix[element.movement_dir] = element;
-							movement_set.copy_from_Movement(element, element.movement_dir);
+							//TRACE("current node: %d, dir = %d\n", element.CurrentNodeID, element.movement_approach_turn);
+							movement_set.MovementMatrix[element.movement_approach_turn] = element;
+							movement_set.copy_from_Movement(element, element.movement_approach_turn);
 						}
 
-						//	(*iNode)->m_MovementSet.MovementMatrix[element.movement_dir] = element;
+						//	(*iNode)->m_MovementSet.MovementMatrix[element.movement_approach_turn] = element;
 
 
 					}  // for each feasible movement (without U-turn)
@@ -901,6 +1029,8 @@ void CTLiteDoc::ConstructMovementVector(bool flag_Template)
 			m_PhaseVector.push_back(PhaseSet);
 
 		} // checking control type
+
+		
 	}// for each node
 
 	m_ApproachMap.clear();
@@ -1380,7 +1510,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				up_node_id = m_Network.m_FromIDAry[LinkID];
 				p1  = m_NodeIDMap[up_node_id]->pt;
 				p2  = m_NodeIDMap[current_node_id]->pt;
-				incoming_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
+				incoming_approach = Find_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 				switch (incoming_approach)
 				{ 
 				case DTA_North:
@@ -1431,7 +1561,7 @@ void CTLiteDoc::ExportSynchroVersion6Files()
 				down_node_id = m_Network.m_ToIDAry[LinkID];
 				p1  = m_NodeIDMap[current_node_id]->pt;
 				p2  = m_NodeIDMap[down_node_id]->pt;
-				out_approach = g_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
+				out_approach = Find_Angle_to_Approach_8_direction(Find_P2P_Angle(p1,p2));
 				switch (out_approach)
 				{ 
 				case DTA_North:
@@ -1689,6 +1819,7 @@ void CTLiteDoc::ExportQEMData(int ThisNodeNumber)
 
 void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 {
+	CWaitCursor wait;
 	m_LinkFlowProportionMap.clear ();
 	m_LinkFlowProportionODMap.clear ();
 
@@ -1702,7 +1833,7 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			DTALink* pLink = (*iLink);
-			if(pLink->m_bSensorData )
+			if(pLink->m_bSensorData || pLink->m_observed_peak_hourly_volume >1)
 			{
 				sensor_count ++;
 			}
@@ -1710,9 +1841,12 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 
 		if(sensor_count == 0)
 		{
-			AfxMessageBox("Please input sensor data first before generating link flow proportion matrix. Currently, there is 0 sensor.", MB_ICONINFORMATION);
+			AfxMessageBox("Please input sensor data or specify observed link peak hourly count first, before generating link flow proportion matrix. Currently, there is 0 link with observation data.", MB_ICONINFORMATION);
 			return;
 		}
+
+
+		int departure_time_interval = 1440;
 
 	std::list<DTAVehicle*>::iterator iVehicle;
 
@@ -1728,29 +1862,29 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 			DTALink* pLink0 = m_LinkNoMap[pVehicle->m_NodeAry[i-1].LinkNo]; // i=0, LinkNo = -1;
 			DTALink* pLink1 = m_LinkNoMap[pVehicle->m_NodeAry[i].LinkNo];
 
-			if(pLink0->m_bSensorData )  // with sensor data
+			if(pLink0->m_bSensorData || pLink0->m_observed_peak_hourly_volume >=1)  // with sensor data
 			{
 			
-			CString movement_label;
+				CString movement_label;
 
-			//movement
-			movement_label.Format ("%d,%d,%d,%d;%d;%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int) (pVehicle->m_DepartureTime / 60), 
-			pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber , pLink1->m_ToNodeNumber);
-			m_LinkFlowProportionMap[movement_label]++;
-			
-			// link
-			movement_label.Format ("%d,%d,%d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / 60), 
-			pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber);
-			m_LinkFlowProportionMap[movement_label]++;
+				//movement
+				movement_label.Format ("%03d,%03d,%02d,%d;%d;%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int) (pVehicle->m_DepartureTime / departure_time_interval), 
+				pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber , pLink1->m_ToNodeNumber);
+				m_LinkFlowProportionMap[movement_label]++;
+				
+				// link
+				movement_label.Format ("%03d,%03d,%02d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / departure_time_interval), 
+				pLink0->m_FromNodeNumber  ,  pLink0->m_ToNodeNumber);
+				m_LinkFlowProportionMap[movement_label]++;
 
 
-			if(i==pVehicle->m_NodeSize -1)  //last link
-			{
-			movement_label.Format ("%d,%d,%d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / 60), 
-			pLink1->m_FromNodeNumber  ,  pLink1->m_ToNodeNumber);
-			m_LinkFlowProportionMap[movement_label]++;
-			
-			}
+				if(i==pVehicle->m_NodeSize -1)  //last link
+				{
+				movement_label.Format ("%03d,%03d,%02d,%d->%d", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , (int)(pVehicle->m_DepartureTime / departure_time_interval), 
+				pLink1->m_FromNodeNumber  ,  pLink1->m_ToNodeNumber);
+				m_LinkFlowProportionMap[movement_label]++;
+				
+				}
 			}
 
 
@@ -1760,7 +1894,7 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 			CString OD_label;
 
 			//movement
-			OD_label.Format ("%d,%d,%d,", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , int(pVehicle->m_DepartureTime / 60)); 
+			OD_label.Format ("%03d,%03d,%02d,", pVehicle->m_OriginZoneID ,pVehicle->m_DestinationZoneID , int(pVehicle->m_DepartureTime / departure_time_interval)); 
 
 			m_LinkFlowProportionODMap[OD_label]++;
 
@@ -1785,7 +1919,7 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			DTALink* pLink = (*iLink);
-			if(pLink->m_bSensorData )
+			if(pLink->m_bSensorData || pLink->m_observed_peak_hourly_volume >=1)
 			{
 			
 			fprintf(st,"%d->%d,",(*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber );
@@ -1798,10 +1932,9 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 			DTALink* pLink = (*iLink);
-			if(pLink->m_bSensorData )
+			if(pLink->m_bSensorData || pLink->m_observed_peak_hourly_volume >=1)
 			{
-			fprintf(st,"%.1f,",(*iLink)->GetSensorLinkHourlyVolume( m_DemandLoadingStartTimeInMin, m_DemandLoadingStartTimeInMin+60) );
-
+			fprintf(st,"%.1f,",(*iLink)->GetSensorVolume( 0, 1440) );
 			}
 
 		}
@@ -1825,7 +1958,7 @@ void CTLiteDoc::OnDetectorExportlinkflowproportionmatrixtocsvfile()
 			for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 				DTALink* pLink = (*iLink);
-				if(pLink->m_bSensorData )
+				if(pLink->m_bSensorData || pLink->m_observed_peak_hourly_volume >=1)
 				{
 				CString LinkString;
 				

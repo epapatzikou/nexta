@@ -27,22 +27,22 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "TLiteDoc.h"
-#include "NetworkDataDlg.h"
+#include "SensorNetworkDataDlg.h"
 #include "CSVParser.h"
 #include <string>
 using std::vector;
 using std::string;
 
 
-static LPTSTR NetworkData_Element[MAX_NUM_OF_NETWORK_DATA_FILES] = {"Node", "Link", "Zone", "Activity Location", "Movement"};
-static LPTSTR NetworkData_FileName[MAX_NUM_OF_NETWORK_DATA_FILES] = {"input_node","input_link", "input_zone", "input_activity_location", "AMS_movement"};
+static LPTSTR SensorNetworkData_Element[MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES] = {"Sensor Link", "Movement Count","Calibration Data"};
+static LPTSTR SensorNetworkData_FileName[MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES] = {"input_sensor", "input_movement_count","output_validation_results"};
 
-// CNetworkDataSettingDlg dialog
+// CSensorNetworkDataSettingDlg dialog
 
-IMPLEMENT_DYNAMIC(CNetworkDataSettingDlg, CDialog)
+IMPLEMENT_DYNAMIC(CSensorNetworkDataSettingDlg, CDialog)
 
-CNetworkDataSettingDlg::CNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CNetworkDataSettingDlg::IDD, pParent)
+CSensorNetworkDataSettingDlg::CSensorNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CSensorNetworkDataSettingDlg::IDD, pParent)
 	, m_ZoomToSelectedObject(FALSE)
 {
 	m_SelectTab = 0;
@@ -52,15 +52,15 @@ CNetworkDataSettingDlg::CNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
 
 }
 
-CNetworkDataSettingDlg::~CNetworkDataSettingDlg()
+CSensorNetworkDataSettingDlg::~CSensorNetworkDataSettingDlg()
 {
 }
 
-BOOL CNetworkDataSettingDlg::OnInitDialog()
+BOOL CSensorNetworkDataSettingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	p_SubTabs = new CNetworkDataTabDlg*[MAX_NUM_OF_NETWORK_DATA_FILES];
+	p_SubTabs = new CSensorNetworkDataTabDlg*[MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES];
 
 	vector<string> name_vector;
 	vector<vector<string>> value_vector;
@@ -70,7 +70,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 
 	CWaitCursor wait;
 
-	for (int i=0; i < MAX_NUM_OF_NETWORK_DATA_FILES; i++)
+	for (int i=0; i < MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES; i++)
 	{
 		name_vector.clear();
 		value_vector.clear();
@@ -78,19 +78,19 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 		DefaultValue.clear();
 		LinkString.clear();
 
-		ReadNetworkDataCSVFile(NetworkData_FileName[i],name_vector,value_vector);
+		ReadNetworkDataCSVFile(SensorNetworkData_FileName[i],name_vector,value_vector);
 
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
-		tcItem.pszText = _T(NetworkData_Element[i]);
+		tcItem.pszText = _T(SensorNetworkData_Element[i]);
 		m_TabCtrl.InsertItem(i, &tcItem);
 
-		p_SubTabs[i] = new CNetworkDataTabDlg(name_vector, DefaultValue, value_vector);
+		p_SubTabs[i] = new CSensorNetworkDataTabDlg(name_vector, DefaultValue, value_vector);
 		p_SubTabs[i]->m_pDoc = m_pDoc;
 
 		p_SubTabs[i]->m_SelectedFromNodeName = this->m_SelectedFromNodeName;  // copy data
 		p_SubTabs[i]->m_SelectedToNodeName = this->m_SelectedToNodeName;  // copy data
-		p_SubTabs[i]->SetTabText(NetworkData_Element[i]);
+		p_SubTabs[i]->SetTabText(SensorNetworkData_Element[i]);
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 
@@ -100,7 +100,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 
 	p_SubTabs[m_SelectTab]->ShowWindow(SW_SHOW);
 
-	for (int i=1;i<MAX_NUM_OF_NETWORK_DATA_FILES;i++)
+	for (int i=1;i<MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES;i++)
 	{
 		p_SubTabs[i]->ShowWindow(SW_HIDE);
 	}
@@ -115,7 +115,7 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 }
 
 
-void CNetworkDataSettingDlg::SetRectangle()
+void CSensorNetworkDataSettingDlg::SetRectangle()
 {
 	CRect tabRect, itemRect;
 	int nX, nY, nXc, nYc;
@@ -128,7 +128,7 @@ void CNetworkDataSettingDlg::SetRectangle()
 	nXc=tabRect.right-itemRect.left-1;
 	nYc=tabRect.bottom-nY-1;
 
-	for(int nCount=0; nCount < MAX_NUM_OF_NETWORK_DATA_FILES; nCount++)
+	for(int nCount=0; nCount < MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES; nCount++)
 	{
 		if (m_SelectTab != nCount)
 		{
@@ -141,7 +141,7 @@ void CNetworkDataSettingDlg::SetRectangle()
 	}
 }
 
-void CNetworkDataSettingDlg::DoDataExchange(CDataExchange* pDX)
+void CSensorNetworkDataSettingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_SETTING_TAB, m_TabCtrl);
@@ -149,25 +149,25 @@ void CNetworkDataSettingDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BEGIN_MESSAGE_MAP(CNetworkDataSettingDlg, CDialog)
-	ON_BN_CLICKED(IDOK, &CNetworkDataSettingDlg::OnBnClickedOk)
-	ON_NOTIFY(TCN_SELCHANGE, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnTcnSelchangeSettingTab)
-	ON_BN_CLICKED(IDCANCEL, &CNetworkDataSettingDlg::OnBnClickedCancel)
-	ON_BN_CLICKED(IDC_BUTTON_ADD, &CNetworkDataSettingDlg::OnBnClickedButtonAdd)
-	ON_BN_CLICKED(IDC_BUTTON_COPY, &CNetworkDataSettingDlg::OnBnClickedButtonCopy)
-	ON_BN_CLICKED(IDC_BUTTON_EDIT_DATA_IN_EXCEL, &CNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel)
-	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CNetworkDataSettingDlg::OnBnClickedButtonDelete)
-	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_OBJECT, &CNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject)
-	ON_NOTIFY(NM_CLICK, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnNMClickSettingTab)
-	ON_NOTIFY(TCN_SELCHANGING, IDC_SETTING_TAB, &CNetworkDataSettingDlg::OnTcnSelchangingSettingTab)
+BEGIN_MESSAGE_MAP(CSensorNetworkDataSettingDlg, CDialog)
+	ON_BN_CLICKED(IDOK, &CSensorNetworkDataSettingDlg::OnBnClickedOk)
+	ON_NOTIFY(TCN_SELCHANGE, IDC_SETTING_TAB, &CSensorNetworkDataSettingDlg::OnTcnSelchangeSettingTab)
+	ON_BN_CLICKED(IDCANCEL, &CSensorNetworkDataSettingDlg::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_BUTTON_ADD, &CSensorNetworkDataSettingDlg::OnBnClickedButtonAdd)
+	ON_BN_CLICKED(IDC_BUTTON_COPY, &CSensorNetworkDataSettingDlg::OnBnClickedButtonCopy)
+	ON_BN_CLICKED(IDC_BUTTON_EDIT_DATA_IN_EXCEL, &CSensorNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel)
+	ON_BN_CLICKED(IDC_BUTTON_DELETE, &CSensorNetworkDataSettingDlg::OnBnClickedButtonDelete)
+	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_SELECTED_OBJECT, &CSensorNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject)
+	ON_NOTIFY(NM_CLICK, IDC_SETTING_TAB, &CSensorNetworkDataSettingDlg::OnNMClickSettingTab)
+	ON_NOTIFY(TCN_SELCHANGING, IDC_SETTING_TAB, &CSensorNetworkDataSettingDlg::OnTcnSelchangingSettingTab)
 END_MESSAGE_MAP()
 
 
-// CNetworkDataSettingDlg message handlers
+// CSensorNetworkDataSettingDlg message handlers
 
-void CNetworkDataSettingDlg::OnBnClickedOk()
+void CSensorNetworkDataSettingDlg::OnBnClickedOk()
 {
-	for (int i=0;i<MAX_NUM_OF_NETWORK_DATA_FILES;i++)
+	for (int i=0;i<MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES;i++)
 	{
 		//if (p_SubTabs[i]->ValidityCheck() != 0)
 		//{
@@ -188,7 +188,7 @@ void CNetworkDataSettingDlg::OnBnClickedOk()
 
 		if (Str.length() > 0)
 		{
-			std::ofstream outFile(m_pDoc->m_ProjectDirectory + NetworkData_FileName[i] + ".csv");
+			std::ofstream outFile(m_pDoc->m_ProjectDirectory + SensorNetworkData_FileName[i] + ".csv");
 
 			if (outFile.is_open())
 			{
@@ -199,7 +199,7 @@ void CNetworkDataSettingDlg::OnBnClickedOk()
 		}
 		else
 		{
-			remove(m_pDoc->m_ProjectDirectory + NetworkData_FileName[i] + ".csv");
+			remove(m_pDoc->m_ProjectDirectory + SensorNetworkData_FileName[i] + ".csv");
 		}
 	}
 
@@ -208,14 +208,13 @@ void CNetworkDataSettingDlg::OnBnClickedOk()
 	{
 	CWaitCursor wait;
 	// reload the network 
-	m_pDoc->OnOpenTrafficNetworkDocument(m_pDoc->m_ProjectFile ,false, false);
 	m_pDoc->ReadScenarioData();
 	m_pDoc->UpdateAllViews(0);
 	}
 }
 
 
-BOOL CNetworkDataSettingDlg::ReadNetworkDataCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
+BOOL CSensorNetworkDataSettingDlg::ReadNetworkDataCSVFile(const char* ElementType, std::vector<std::string>& name_vector,std::vector<std::vector<std::string>>& value_vector)
 {
 	std::string fileName = m_pDoc->m_ProjectDirectory + ElementType + ".csv";
 	std::vector<std::string> value;
@@ -235,7 +234,7 @@ BOOL CNetworkDataSettingDlg::ReadNetworkDataCSVFile(const char* ElementType, std
 	return TRUE;
 }
 
-void CNetworkDataSettingDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CSensorNetworkDataSettingDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	//if (p_SubTabs[m_PrevTab]->ValidityCheck() != 0)
 	//{
@@ -258,55 +257,55 @@ void CNetworkDataSettingDlg::OnTcnSelchangeSettingTab(NMHDR *pNMHDR, LRESULT *pR
 	*pResult = 0;
 }
 
-void CNetworkDataSettingDlg::OnBnClickedCancel()
+void CSensorNetworkDataSettingDlg::OnBnClickedCancel()
 {
 	// TODO: Add your control notification handler code here
 	OnCancel();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonAdd()
+void CSensorNetworkDataSettingDlg::OnBnClickedButtonAdd()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->AddRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonCopy()
+void CSensorNetworkDataSettingDlg::OnBnClickedButtonCopy()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->CopyRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel()
+void CSensorNetworkDataSettingDlg::OnBnClickedButtonEditDataInExcel()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
-	std::string fileName = m_pDoc->m_ProjectDirectory + NetworkData_FileName[cur_tab] + ".csv";
+	std::string fileName = m_pDoc->m_ProjectDirectory + SensorNetworkData_FileName[cur_tab] + ".csv";
 	std::vector<std::string> value;
 	m_pDoc->OpenCSVFileInExcel(fileName.c_str());
 }
 
-void CNetworkDataSettingDlg::OnBnClickedButtonDelete()
+void CSensorNetworkDataSettingDlg::OnBnClickedButtonDelete()
 {
 	int cur_tab = m_TabCtrl.GetCurSel();
 	p_SubTabs[cur_tab]->DeleteRow();
 }
 
-void CNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject()
+void CSensorNetworkDataSettingDlg::OnBnClickedCheckZoomToSelectedObject()
 {
 
 	UpdateData(1);
-		for (int i=0; i < MAX_NUM_OF_NETWORK_DATA_FILES; i++)
+		for (int i=0; i < MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES; i++)
 	{
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 	}
 }
 
-void CNetworkDataSettingDlg::OnNMClickSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CSensorNetworkDataSettingDlg::OnNMClickSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 
 	*pResult = 0;
 }
 
-void CNetworkDataSettingDlg::OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
+void CSensorNetworkDataSettingDlg::OnTcnSelchangingSettingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	{
 		if (m_PrevTab == m_TabCtrl.GetCurSel())	return;

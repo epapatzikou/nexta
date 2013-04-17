@@ -75,4 +75,6 @@ public:
 	afx_msg void OnEnChangeEdit2();
 	afx_msg void OnEnChangeEdit4();
 	afx_msg void OnEnChangeEdit5();
+	int m_AADT;
+	int m_PeakHourlyVolume;
 };

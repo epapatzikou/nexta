@@ -455,7 +455,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 	ResetODMOEMatrix();
-	ReadSensorData(directory+"input_sensor.csv");
+	ReadSensorData();
 
 	// read link xy data
 	int ReadLinkXYFile = g_GetPrivateProfileInt("display","read_link_x_y",1,ProjectFileName);

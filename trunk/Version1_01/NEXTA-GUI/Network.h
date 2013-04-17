@@ -42,8 +42,7 @@
 #include <iostream>
 #include <vector>
 #include <list>
-
-
+#include <algorithm>
 
 
 enum DTA_Direction
@@ -55,7 +54,8 @@ enum DTA_Direction
 	DTA_NorthEast,
 	DTA_NorthWest,
 	DTA_SouthEast,
-	DTA_SouthWest
+	DTA_SouthWest,
+	DTA_NotDefined
 };
 
 enum DTA_Turn
@@ -103,7 +103,9 @@ enum DTA_APPROACH_TURN
 		DTA_SER,
 		DTA_SWL,
 		DTA_SWT,
-		DTA_SWR
+		DTA_SWR,
+		DTA_max_approach_turn
+
    };
 
 enum LANES_ROW
@@ -856,6 +858,8 @@ class DTANodeMovement
 public:
 	DTANodeMovement()
 	{
+	bOverlappingTurnFlag = false;
+
 	pair_key = -1;
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;
@@ -905,6 +909,7 @@ obs_turn_delay = 0;
    QEM_SatFlow = 0;
    QEM_Delay = 0;
    QEM_reference_node_number = 0;
+   angle = -100;
 
 	}
 
@@ -915,8 +920,10 @@ int HourlyCount[24];
 int IncomingLinkID;
 int OutgoingLinkID;
 DTA_Turn movement_turn;
-DTA_Direction movement_approach;
-DTA_APPROACH_TURN movement_dir;
+DTA_Direction movement_direction;
+int angle;
+DTA_APPROACH_TURN movement_approach_turn;
+bool bOverlappingTurnFlag;
 string QEM_dir_string;
 
 int QEM_reference_node_number;
@@ -939,10 +946,10 @@ float sim_turn_hourly_count;
 float sim_turn_percentage; 
 float sim_turn_delay; 
 
-float obs_turn_count; 
-float obs_turn_hourly_count;
+int obs_turn_count; 
+int obs_turn_hourly_count;
 float obs_turn_percentage; 
-float obs_turn_delay; 
+int obs_turn_delay; 
 
    int QEM_TurnVolume;
    int QEM_LinkVolume;
@@ -1033,7 +1040,7 @@ public:
    std::vector<DTANodePhase> phase_vector;
 
 };
-
+extern bool compare_MovementData (DTANodeMovement first, DTANodeMovement second);
 class DTANode
 {
 public:
@@ -1098,12 +1105,17 @@ public:
 	std::vector <DTANodeMovement> m_MovementVector;
 
 
-	int FindMovementIndexFromDirecion(DTA_APPROACH_TURN movement_direction)
+	void SortMovementVector()
+	{
+	std::sort(m_MovementVector.begin(), m_MovementVector.end(), compare_MovementData);
+	}
+
+	int FindMovementIndexFromDirecion(DTA_APPROACH_TURN movement_approach_turnection)
 	{
 	
 		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
 		{
-			if(m_MovementVector[i].movement_dir == movement_direction)
+			if(m_MovementVector[i].movement_approach_turn == movement_approach_turnection)
 				return i;
 
 		}
@@ -1118,7 +1130,7 @@ public:
 		// sum up all movement along the same approach
 		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
 		{
-			if(m_MovementVector[i].movement_approach  == movement_approach)
+			if(m_MovementVector[i].movement_direction   == movement_approach)
 				link_count+= m_MovementVector[i].QEM_TurnVolume;
 
 		}
@@ -1594,6 +1606,11 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		relative_angel_difference_from_main_direction = 0;
+		m_observed_AADT = 0;
+		m_observed_peak_hourly_volume = 0;
+		m_observed_peak_hourly_volume_calculated_from_movement_counts = 0;
+
 		m_AdditionalCost = 0;
 		m_EffectiveGreenTimeInSecond = 0;
 		m_GreenStartTimetInSecond =0;
@@ -1634,7 +1651,6 @@ public:
 		m_OrgDir = 1;
 		m_RailBidirectionalFlag = 1;
 		m_Direction = 1;
-		m_ObsHourlyLinkVolume = 0;
 		m_SimulationHorizon	= TimeHorizon;
 		m_LinkMOEAry.resize(m_SimulationHorizon+1);
 
@@ -1837,6 +1853,11 @@ public:
 	float m_total_sensor_link_volume;
 	float m_total_link_count_error;
 	float m_simulated_AADT;
+
+	int m_observed_AADT;  // bi-directional 
+	int m_observed_peak_hourly_volume;  
+	int m_observed_peak_hourly_volume_calculated_from_movement_counts;
+
 	double m_number_of_all_crashes;
 	double m_num_of_fatal_and_injury_crashes_per_year;
 	double m_num_of_PDO_crashes_per_year;
@@ -2166,7 +2187,6 @@ void AdjustLinkEndpointsWithSetBack()
 
 	int  m_SensorID;
 
-	float m_ObsHourlyLinkVolume;
 	int *aryCFlowA;
 	int *aryCFlowD;
 
@@ -2282,6 +2302,7 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_LeftTurnCapacity;
 
 	DTA_Direction m_FromApproach;
+	int relative_angel_difference_from_main_direction;
 	DTA_Direction m_ToApproach;
 	int m_ReverseLinkId;
 
@@ -2420,6 +2441,21 @@ void AdjustLinkEndpointsWithSetBack()
 		return total_volume*60/max(1,end_time - start_time);
 	}
 
+		float GetSensorVolume(int start_time, int end_time)
+	{
+
+		if(m_LinkMOEAry.size() == 0) // no time-dependent data 
+				return 0;
+
+		float total_volume = 0;
+		for(int t= start_time ; t< end_time; t++)
+		{
+		
+		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
+			total_volume += m_LinkMOEAry[t].SensorLinkCount;
+		}
+		return total_volume;
+	}
 
 		float GetAvgLinkHourlyVolume(int start_time, int end_time)
 	{

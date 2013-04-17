@@ -136,9 +136,12 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Level Of Service");
 	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
 	m_Link_Label.AddString("Avg Simulated Speed");
+	m_Link_Label.AddString("-- Observations --");
 	m_Link_Label.AddString("Total Sensor Link Volume");
 	m_Link_Label.AddString("Total Link Count Error");
-	m_Link_Label.AddString("simulated AADT");
+	m_Link_Label.AddString("Simulated AADT");
+	m_Link_Label.AddString("Observed bidirectional AADT");
+	m_Link_Label.AddString("Observed peak hour volume");
 
 	m_Link_Label.AddString("-- Safety Prediction Results --");
 	m_Link_Label.AddString("Group 1 Code");
@@ -168,10 +171,10 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Movement_Label.AddString ("Simulated Turning %");
 	m_Movement_Label.AddString ("Simulated Turn Delay (sec)");
 
-	m_Movement_Label.AddString ("Observed Total Count");
+//	m_Movement_Label.AddString ("Observed Total Count");
 	m_Movement_Label.AddString ("Observed Hourly Count");
 	m_Movement_Label.AddString ("Observed Turning %");
-	m_Movement_Label.AddString ("Observed Turn Delay");
+	m_Movement_Label.AddString ("Observed Turn Delay (sec)");
 
 	m_Movement_Label.AddString ("QEM Turn Direction");
 	m_Movement_Label.AddString ("QEM # of Lanes");
