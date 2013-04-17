@@ -35,6 +35,7 @@ class CPage_Node_Movement : public CPropertyPage
 	DECLARE_DYNAMIC(CPage_Node_Movement)
 
 public:
+
 	CPage_Node_Movement();
 	virtual ~CPage_Node_Movement();
 
@@ -68,6 +69,7 @@ public:
 		return SelectedMovement;
 	}
 	
+	bool m_bColumnWidthIncludeHeader;
 	CTLiteDoc* m_pDoc;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -87,6 +89,7 @@ public:
 	void SaveData();
 	void DisplayList();
 	void UpdateList();
+	void RunQEM();
 
 	virtual void OnOK( );
 	void DrawMovements(CPaintDC* pDC,CRect PlotRect);
@@ -98,7 +101,8 @@ public:
 	afx_msg void OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonSave();
 	float m_PeakHourFactor;
-	afx_msg void OnBnClickedButtonUpdate();
 	afx_msg void OnBnClickedButtonQem();
 	int m_CycleLengthInSec;
+	afx_msg void OnBnClickedButtonExtendcolumewidth();
+	afx_msg void OnBnClickedButtonQem2();
 };

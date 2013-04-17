@@ -1324,7 +1324,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				case link_display_simulated_AADT:
 					if((*iLink)->m_simulated_AADT >=1)
 						str_text.Format ("%.0f",(*iLink)->m_simulated_AADT     ); 
+					break;
 
+				case link_display_observed_AADT:
+					if((*iLink)->m_observed_AADT >=1)
+						str_text.Format ("%d",(*iLink)->m_observed_AADT      ); 
+					break;
+
+				case link_display_observed_peak_hourly_volume:
+					if((*iLink)->m_observed_peak_hourly_volume >=1)
+						str_text.Format ("%d",(*iLink)->m_observed_peak_hourly_volume     ); 
 					break;
 
 				case link_display_crash_prediction_group_1_code:
@@ -3395,6 +3404,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		CopyLinkSetInSubarea();
 		isFinishSubarea = true;
 
+
 		//add a zone
 		if(m_ToolMode == add_zone_tool)
 		{
@@ -3406,6 +3416,7 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		m_last_left_down_point = point;
 
 	}
+	m_bMoveDisplay = false;
 
 	CView::OnLButtonDblClk(nFlags, point);
 }
@@ -3802,6 +3813,8 @@ void CTLiteView::OnLinkEditlink()
 		dlg.DefaultCapacity = pDoc->m_DefaultCapacity ;
 		dlg.DefaultnLane = pDoc->m_DefaultNumLanes;
 
+		dlg.m_AADT = pLink->m_observed_AADT ;
+		dlg.m_PeakHourlyVolume  = pLink->m_observed_peak_hourly_volume ;
 
 
 		if(dlg.DoModal() == IDOK)
@@ -3851,6 +3864,9 @@ void CTLiteView::OnLinkEditlink()
 			}
 			pLink->m_link_type = dlg.LinkType ;
 
+			pLink->m_observed_AADT = dlg.m_AADT;
+			pLink->m_observed_peak_hourly_volume = dlg.m_PeakHourlyVolume;
+
 			if( pDoc->m_LinkTypeMap[pLink->m_link_type].IsFreeway () ||  pDoc->m_LinkTypeMap[pLink->m_link_type].IsRamp  ())
 			{
 				pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_bConnectedToFreewayORRamp = true;
@@ -3861,6 +3877,7 @@ void CTLiteView::OnLinkEditlink()
 			pDoc->m_DefaultSpeedLimit = dlg.DefaultSpeedLimit;
 			pDoc->m_DefaultCapacity = dlg.DefaultCapacity;
 			pDoc->m_DefaultNumLanes = dlg.DefaultnLane;
+
 
 
 		}
@@ -5770,7 +5787,7 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		double DeltaY = p2.y - p1.y ;
 		double theta = atan2(DeltaY, DeltaX);
 
-		double movement_direction_theta = atan2(p3.y - p1.y, p3.x - p1.x);
+		double movement_approach_turnection_theta = atan2(p3.y - p1.y, p3.x - p1.x);
 
 
 		GDPoint p1_new, p2_new, p3_new;
@@ -5796,18 +5813,18 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		int mid_lane_number = 4+ pInLink->m_NumberOfLanes / 2;
 		float control_point_ratio = 0;
 
-		CString movement_direction_label;
-		movement_direction_label.Format ("%d,%s", movement.in_link_from_node_id , pDoc->GetTurnString(movement.movement_turn));
+		CString movement_approach_turnection_label;
+		movement_approach_turnection_label.Format ("%d,%s", movement.in_link_from_node_id , pDoc->GetTurnString(movement.movement_turn));
 
 
 
 		if(movement.movement_turn == DTA_Through ) 
 		{
 
-			if(Turn_Degree_map.find (movement_direction_label ) != Turn_Degree_map.end())
+			if(Turn_Degree_map.find (movement_approach_turnection_label ) != Turn_Degree_map.end())
 			{  // this direction has been used/defined.
 
-				if( Turn_Degree_map[movement_direction_label ] <  movement_direction_theta)
+				if( Turn_Degree_map[movement_approach_turnection_label ] <  movement_approach_turnection_theta)
 					movement_offset = lane_width * (mid_lane_number - 0.7);
 				else
 					movement_offset = lane_width * (mid_lane_number + 0.7);
@@ -5827,7 +5844,7 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		}
 
 		// keep a record
-		Turn_Degree_map[movement_direction_label] = movement_direction_theta;
+		Turn_Degree_map[movement_approach_turnection_label] = movement_approach_turnection_theta;
 
 
 		GDPoint pt_from, pt_to, pt_text;
@@ -5949,11 +5966,30 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		case movement_display_sim_turn_delay: 
 
 			//					if(movement.sim_turn_count>=1)
-			str_text.Format("%.1f", movement.sim_turn_delay*60  ); 
+			str_text.Format("%.1f", movement.sim_turn_delay*60  ); // min to second
 
 			break;
-	
+	/////////////////////
 
+		case movement_display_obs_turn_hourly_count: 
+			//					if(movement.sim_turn_count>=1)
+			str_text.Format("%d", movement.obs_turn_hourly_count); 
+
+			break;
+
+		case movement_display_obs_turn_percentage: 
+
+			if(movement.obs_turn_hourly_count>=1 && pInLink->m_observed_peak_hourly_volume >=1)
+			str_text.Format("%.1f%%", movement.obs_turn_hourly_count*100.0/ max (1, pInLink->m_observed_peak_hourly_volume)); 
+
+			break;
+
+		case movement_display_obs_turn_delay: 
+
+			//					if(movement.sim_turn_count>=1)
+			str_text.Format("%d", movement.obs_turn_delay  ); 
+
+			break;
 
 		case movement_display_QEM_TurnDirection: str_text.Format("%s",movement.QEM_dir_string.c_str () ); break;
 

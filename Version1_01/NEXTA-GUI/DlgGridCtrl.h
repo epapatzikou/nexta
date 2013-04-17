@@ -46,6 +46,23 @@ public:
 
 	}
 
+
+	
+	float GetODValue(int origin,int destination)
+	{
+	
+		if (m_ODMatrixMap.find(GetODKey(origin, destination))!= m_ODMatrixMap.end())
+		{
+			return m_ODMatrixMap[GetODKey(origin, destination)];
+		}else
+		{
+			return 0;
+		}
+
+	}
+
+
+
 	void SetODMatrx(int origin,int destination,float value)
 	{
 	m_ODMatrixMap[GetODKey(origin,destination)] += value;
@@ -98,4 +115,6 @@ public:
 	afx_msg void OnHdnItemdblclickDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnLvnLinkClickedDemandtypelist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonReload();
+	afx_msg void OnBnClickedButtonExportMatrix();
+	afx_msg void OnBnClickedButtonExportColumn();
 };

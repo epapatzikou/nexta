@@ -188,9 +188,10 @@ public:
 class DTA_Movement
 {
 public:
-	int CurrentNodeID; int InboundLinkID;
-    DTA_APPROACH_TURN movement_dir;
-	DTA_Direction movement_approach;
+	int CurrentNodeID; 
+	int InboundLinkID;
+	DTA_Direction movement_direction;
+    DTA_APPROACH_TURN movement_approach_turn;
 	DTA_Turn movement_turn;
 	int UpNodeID,  DestNodeID;
 	int Lanes, Shared, Width, Storage, StLanes, Grade, Speed, FirstDetect, LastDetect, Phase1, PermPhase1, DetectPhase1, IdealFlow, LostTime; 

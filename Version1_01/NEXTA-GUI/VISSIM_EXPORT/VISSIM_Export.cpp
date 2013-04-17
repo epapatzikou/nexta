@@ -2759,12 +2759,12 @@ p1  = m_NodeIDMap[element.UpNodeID]->pt;
 p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
 p3  = m_NodeIDMap[element.DestNodeID]->pt;
 
-element.movement_approach = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
+element.movement_direction = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
 element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 // determine  movement type /direction here
 element.dir = DTA_LANES_COLUME_init;
-switch (element.movement_approach)
+switch (element.movement_direction)
 {
 case DTA_North:
 switch (element.movement_turn)

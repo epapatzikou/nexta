@@ -67,6 +67,12 @@ public:
 	}
 
 };
+bool compare_MovementData (DTANodeMovement first, DTANodeMovement second)
+{
+	if(first.movement_approach_turn < second.movement_approach_turn) return true;
+	else 
+		return false;
+}
 
 void CTLiteDoc::OGDF_WriteGraph(CString FileName)
 {
@@ -3393,46 +3399,47 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 					p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
 					p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
 
-					element.movement_approach = g_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2));
+					int relative_angel_difference_from_main_direction = 0;
+					element.movement_direction = Find_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2),relative_angel_difference_from_main_direction);
 					element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
 					// determine  movement type /direction here
-					element.movement_dir = DTA_LANES_COLUME_init;
+					element.movement_approach_turn = DTA_LANES_COLUME_init;
 
-					switch (element.movement_approach)
+					switch (element.movement_direction)
 					{
 					case DTA_North:
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_NBL; break;
-						case DTA_Through: element.movement_dir = DTA_NBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_NBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_NBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_NBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_NBR; break;
 						}
 						break;
 					case DTA_East:
 
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_EBL; break;
-						case DTA_Through: element.movement_dir = DTA_EBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_EBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_EBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_EBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_EBR; break;
 						}
 						break;
 					case DTA_South:
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_SBL; break;
-						case DTA_Through: element.movement_dir = DTA_SBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_SBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_SBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_SBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_SBR; break;
 						}
 						break;
 					case DTA_West:
 
 						switch (element.movement_turn)
 						{
-						case DTA_LeftTurn: element.movement_dir = DTA_WBL; break;
-						case DTA_Through: element.movement_dir = DTA_WBT; break;
-						case DTA_RightTurn: element.movement_dir = DTA_WBR; break;
+						case DTA_LeftTurn: element.movement_approach_turn = DTA_WBL; break;
+						case DTA_Through: element.movement_approach_turn = DTA_WBT; break;
+						case DTA_RightTurn: element.movement_approach_turn = DTA_WBR; break;
 						}
 						break;
 					}
@@ -3498,6 +3505,13 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 		}
 	}
 
+	std::list<DTANode*>::iterator iNode;
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+
+	(*iNode)->SortMovementVector();
+
+	}
 		//Construct4DirectionMovementVector();
 //		GenerateOffsetLinkBand();
 	return 1;
@@ -3590,8 +3604,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);
 
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
+	ClearNetworkData();
 	m_ODSize = 0;
 
 	OnOpenAMSDocument(ProjectFileName);  
@@ -4477,9 +4490,9 @@ if(dlg.DoModal() == IDOK)
 
 								DTANodeMovement baseline_movement = (*iNode)->m_MovementVector[m];
 
-								int MovementIndex = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_dir );
+								int MovementIndex = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_approach_turn );
 
-								if(baseline_movement.movement_dir >=0 && MovementIndex>=0)
+								if(baseline_movement.movement_approach_turn >=0 && MovementIndex>=0)
 								{
 									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementVector[m]);
 									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
@@ -4488,7 +4501,7 @@ if(dlg.DoModal() == IDOK)
 
 									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
 									pThisMovement->QEM_LinkVolume  =
-										pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_approach);
+										pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_direction);
 
 									pThisMovement->QEM_Lanes = reference_movement.QEM_Lanes;
 									pThisMovement->QEM_Shared = reference_movement.QEM_Shared;
@@ -4513,7 +4526,7 @@ if(dlg.DoModal() == IDOK)
 										baseline_node_id, 
 										m_NodeIDMap[pThisMovement-> in_link_from_node_id]->m_NodeNumber,
 										m_NodeIDMap[pThisMovement-> out_link_to_node_id]->m_NodeNumber,
-										GetTurnDirectionString( pThisMovement-> movement_dir),
+										GetTurnDirectionString( pThisMovement-> movement_approach_turn),
 										GetTurnString( pThisMovement->movement_turn),
 										pThisMovement->QEM_Lanes,
 										pThisMovement->QEM_Shared,
@@ -4525,7 +4538,7 @@ if(dlg.DoModal() == IDOK)
 										baseline_node_id, 
 										m_NodeIDMap[(*iNode)->m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
 										m_NodeIDMap[(*iNode)->m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
-										GetTurnDirectionString((*iNode)->m_MovementVector[m]. movement_dir),
+										GetTurnDirectionString((*iNode)->m_MovementVector[m]. movement_approach_turn),
 										GetTurnString((*iNode)->m_MovementVector[m].movement_turn));
 							
 								}

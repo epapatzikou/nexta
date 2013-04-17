@@ -5,16 +5,16 @@
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
 
 #include "TLiteDoc.h"
-// CNetworkDataTabDlg dialog
+// CSensorNetworkDataTabDlg dialog
 
-class CNetworkDataTabDlg : public CDialog
+class CSensorNetworkDataTabDlg : public CDialog
 {
-	DECLARE_DYNAMIC(CNetworkDataTabDlg)
+	DECLARE_DYNAMIC(CSensorNetworkDataTabDlg)
 
 public:
 	CTLiteDoc* m_pDoc;
-	CNetworkDataTabDlg(CWnd* pParent = NULL);   // standard constructor
-	CNetworkDataTabDlg(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values);
+	CSensorNetworkDataTabDlg(CWnd* pParent = NULL);   // standard constructor
+	CSensorNetworkDataTabDlg(std::vector<std::string> names, std::vector<CString> default_value, std::vector<std::vector<std::string>> values);
 	BOOL CopyRow();
 	BOOL AddRow();
 	BOOL AddRowForLink(int from_node_name,int to_node_name);
@@ -24,10 +24,10 @@ public:
 	void SetTabText(CString s);
 	CString GetTabText();
 	int ValidityCheck();
-	virtual ~CNetworkDataTabDlg();
+	virtual ~CSensorNetworkDataTabDlg();
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_NETWORK_SETTING_TAB };
+	enum { IDD = IDD_DIALOG_SENSOR_SETTING_TAB };
 public:
 	CGridListCtrlEx m_ListCtrl;
 	std::vector<std::string> names;

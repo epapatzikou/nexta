@@ -29,6 +29,8 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_TransitFare(0)
 	, m_BPR_Alpha(0)
 	, m_BPR_Beta(0)
+	, m_AADT(0)
+	, m_PeakHourlyVolume(0)
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -69,6 +71,10 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT5, m_TransitFare);
 	DDX_Text(pDX, IDC_EDIT6, m_BPR_Alpha);
 	DDX_Text(pDX, IDC_EDIT7, m_BPR_Beta);
+	DDX_Text(pDX, IDC_EDIT_AADT, m_AADT);
+	DDV_MinMaxInt(pDX, m_AADT, 0, 1000000);
+	DDX_Text(pDX, IDC_EDIT_PeakHourlyVolume, m_PeakHourlyVolume);
+	DDV_MinMaxInt(pDX, m_PeakHourlyVolume, 0, 100000);
 }
 
 

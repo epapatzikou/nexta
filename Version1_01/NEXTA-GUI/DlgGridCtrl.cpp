@@ -48,6 +48,8 @@ BEGIN_MESSAGE_MAP(CDlgODDemandGridCtrl, CDialog)
 	ON_NOTIFY(HDN_ITEMDBLCLICK, 0, &CDlgODDemandGridCtrl::OnHdnItemdblclickDemandtypelist)
 	ON_NOTIFY(LVN_LINKCLICK, IDC_DemandTypeLIST, &CDlgODDemandGridCtrl::OnLvnLinkClickedDemandtypelist)
 	ON_BN_CLICKED(IDC_BUTTON_RELOAD, &CDlgODDemandGridCtrl::OnBnClickedButtonReload)
+	ON_BN_CLICKED(IDC_BUTTON_EXPORT_MATRIX, &CDlgODDemandGridCtrl::OnBnClickedButtonExportMatrix)
+	ON_BN_CLICKED(IDC_BUTTON_EXPORT_COLUMN, &CDlgODDemandGridCtrl::OnBnClickedButtonExportColumn)
 END_MESSAGE_MAP()
 
 
@@ -921,6 +923,8 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 				bool bFileReady = false;
 				int i;
 
+				std::vector<int> zone_sequence_vector;
+
 				FILE* st;
 				fopen_s(&st,m_pDoc->m_ProjectDirectory+ file_name.c_str (), "r");
 				if (st!=NULL)
@@ -928,27 +932,23 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 					// read the first line
 					for(int dest = 1; dest <= m_pDoc->m_ODSize; dest++)
 					{
-						g_read_float(st);
+						int zone_number = g_read_float(st);
+						zone_sequence_vector.push_back(zone_number);
 					}
 
 					int line_no = 0;
 					for(int origin_zone = 1; origin_zone <= m_pDoc->m_ODSize; origin_zone++)
 					{
-						g_read_float(st); // read the origin zone number
+						int origin_zone_id = g_read_float(st); // read the origin zone number
 
 						for(int destination_zone = 1; destination_zone <= m_pDoc->m_ODSize; destination_zone++)
 						{
 							float number_of_vehicles =  g_read_float(st);
 
+							int destination_zone_id = zone_sequence_vector[destination_zone-1];
 							line_no++;
-							int type = 1;  // first demand type definition
-							if(demand_type_code[type]>=1)  // feasible demand type
-							{
-								SetODMatrx(origin_zone,destination_zone,number_of_vehicles);
 
-
-							}
-
+								SetODMatrx(origin_zone_id,destination_zone_id,number_of_vehicles);
 						}
 						//
 						if(subtotal_in_last_column==1)
@@ -1117,4 +1117,88 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
 		DisplayDemandMatrix();
 		return;
 	}
+}
+
+void CDlgODDemandGridCtrl::OnBnClickedButtonExportMatrix()
+{
+	FILE* st;
+
+	CString AMS_File = m_pDoc->m_ProjectDirectory +"AMS_demand_matrix_format.csv";
+	fopen_s(&st,AMS_File,"w");
+	if(st!=NULL)
+	{
+		// first line 
+		fprintf(st,",");
+
+		for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
+		{
+			int origin = m_pDoc->m_ZoneNumberVector [i];
+			fprintf(st,"%d,",origin);
+		}
+		fprintf(st,"\n");
+
+		//matrix
+
+		for(int j=0; j <  m_pDoc->m_ZoneNoSize  ; j++)
+		{
+			int destination = m_pDoc->m_ZoneNumberVector [j];
+			fprintf(st,"%d,",destination);
+
+			for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
+			{
+				int origin = m_pDoc->m_ZoneNumberVector [i];
+				float value = GetODValue(origin,destination); 
+				fprintf(st,"%f", origin, destination, value);
+
+			}
+		fprintf(st,"\n");
+		
+		}
+
+
+		fclose(st);
+	}else
+	{
+		AfxMessageBox("File AMS_demand_matrix_format.csv cannot be opened.");
+
+	}
+
+		m_pDoc->OpenCSVFileInExcel(AMS_File);
+}
+
+void CDlgODDemandGridCtrl::OnBnClickedButtonExportColumn()
+{
+
+	FILE* st;
+
+	CString AMS_File = m_pDoc->m_ProjectDirectory +"AMS_demand_3_column_format.csv";
+	fopen_s(&st,AMS_File,"w");
+	if(st!=NULL)
+	{
+		// first line 
+		fprintf(st,"origin,destination,volume\n");
+
+		for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
+		for(int j=0; j <  m_pDoc->m_ZoneNoSize  ; j++)
+		{
+			int origin = m_pDoc->m_ZoneNumberVector [i];
+			int destination = m_pDoc->m_ZoneNumberVector [j];
+			float value = GetODValue(origin,destination); 
+			if(value>0.001)
+			{
+			fprintf(st,"%d,%d,%f\n", origin, destination, value);
+			}
+
+		}
+
+
+		fclose(st);
+	}else
+	{
+		AfxMessageBox("File AMS_demand_3_column_format.csv cannot be opened.");
+
+	}
+
+		m_pDoc->OpenCSVFileInExcel(AMS_File);
+
 }

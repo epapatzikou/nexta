@@ -84,6 +84,7 @@
 
 #include "AssignmentSimulationSettingDlg.h"
 #include "NetworkDataDlg.h"
+#include "SensorNetworkDataDlg.h"
 #include "CorridorDataDlg.h"
 #include "GIS_Import_DataDlg.h"
 #include "Dlg_RealWorldWidth.h"
@@ -91,7 +92,6 @@
 
 #include "Dlg_Information.h"
 #include "Dlg_TDMOE_Configuration.h"
-
 
 
 #ifdef _DEBUG
@@ -405,6 +405,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_OPENTESTSETS, &CTLiteDoc::OnFileOpentestsets)
 	ON_COMMAND(ID_FILE_OPENSAMPLEDATASETFOLDER, &CTLiteDoc::OnFileOpensampledatasetfolder)
 	ON_COMMAND(ID_LINK_ADD_RADIO_MESSAGE, &CTLiteDoc::OnLinkAddRadioMessage)
+	ON_COMMAND(ID_SENSORTOOLS_SENSORDATA, &CTLiteDoc::OnSensortoolsSensordata)
 	END_MESSAGE_MAP()
 
 
@@ -412,6 +413,30 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 
 CTLiteDoc::CTLiteDoc()
 {
+	m_TurnDirectionStringMap["NBL2"] =  DTA_NBL2;
+	m_TurnDirectionStringMap["NBL"] =  DTA_NBL;
+	m_TurnDirectionStringMap["NBT"] =  DTA_NBT;
+	m_TurnDirectionStringMap["NBR"] =  DTA_NBR;
+	m_TurnDirectionStringMap["NBR2"] =  DTA_NBR2;
+
+	m_TurnDirectionStringMap["SBL2"] =  DTA_SBL2;
+	m_TurnDirectionStringMap["SBL"] =  DTA_SBL;
+	m_TurnDirectionStringMap["SBT"] =  DTA_SBT;
+	m_TurnDirectionStringMap["SBR"] =  DTA_SBR;
+	m_TurnDirectionStringMap["SBR2"] =  DTA_SBR2;
+
+	m_TurnDirectionStringMap["EBL2"] =  DTA_EBL2;
+	m_TurnDirectionStringMap["EBL"] =  DTA_EBL;
+	m_TurnDirectionStringMap["EBT"] =  DTA_EBT;
+	m_TurnDirectionStringMap["EBR"] =  DTA_EBR;
+	m_TurnDirectionStringMap["EBR2"] =  DTA_EBR2;
+
+	m_TurnDirectionStringMap["WBL2"] =  DTA_WBL2;
+	m_TurnDirectionStringMap["WBL"] =  DTA_WBL;
+	m_TurnDirectionStringMap["WBT"] =  DTA_WBT;
+	m_TurnDirectionStringMap["WBR"] =  DTA_WBR;
+	m_TurnDirectionStringMap["WBR2"] =  DTA_WBR2;
+
 	m_PeakHourFactor = 1.0;
 	m_bIdentifyBottleneckAndOnOffRamps = false;
 	m_ScreenWidth_InMile = 10;
@@ -1334,8 +1359,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);
 
-	m_NodeSet.clear ();
-	m_LinkSet.clear ();
+ClearNetworkData();
 	m_ODSize = 0;
 
 	// test if input_node.csv can be opened.
@@ -1392,10 +1416,9 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	//: comment out now, it uses alternative format	
 
-	//	ReadSensorData(directory+"input_sensor_location.csv");
 	//	ReadHistoricalData(directory);
 
-	ReadSensorData(directory+"input_sensor.csv");
+	ReadSensorData();
 
 	//ReadObservationLinkVolumeData(directory+"input_static_obs_link_volume.csv");
 
@@ -2245,6 +2268,15 @@ void CTLiteDoc::OffsetLink()
 
 			(*iLink) ->m_Original_ShapePoints = (*iLink) ->m_ShapePoints;
 		}
+
+		if( (*iLink) ->m_Original_ShapePoints .size() ==2)// two shape points only, overwite them using upsteram node and downstream node number 
+		{
+
+			(*iLink) ->m_Original_ShapePoints.clear ();
+			(*iLink) ->m_Original_ShapePoints.push_back ((*iLink) ->m_FromPoint );
+			(*iLink) ->m_Original_ShapePoints.push_back ((*iLink) ->m_ToPoint );
+
+		}
 	}
 
 	if(m_bLinkToBeShifted)
@@ -2286,6 +2318,7 @@ void CTLiteDoc::OffsetLink()
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+
 			if( (*iLink)->m_bOneWayLink == false)// apply link split to two way links
 			{
 
@@ -2296,7 +2329,7 @@ void CTLiteDoc::OffsetLink()
 				double DeltaX = (*iLink)->m_Original_ShapePoints[last_shape_point_id].x - (*iLink)->m_Original_ShapePoints[0].x;
 				double DeltaY = (*iLink)->m_Original_ShapePoints[last_shape_point_id].y - (*iLink)->m_Original_ShapePoints[0].y;
 				double theta = 0;			
-				if(fabs(DeltaY)>0.000000001)
+				if(fabs(DeltaY)>0.00001)
 					theta= atan2(DeltaY, DeltaX);
 
 				for(unsigned int si = 0; si < (*iLink) ->m_Original_ShapePoints .size(); si++)
@@ -2313,8 +2346,10 @@ void CTLiteDoc::OffsetLink()
 						//	theta= atan2(DeltaY, DeltaX);
 					}
 
-					(*iLink)->m_ShapePoints[si].x = (*iLink)->m_Original_ShapePoints[si].x + link_offset* cos(theta-PI/2.0f);
-					(*iLink)->m_ShapePoints[si].y = (*iLink)->m_Original_ShapePoints[si].y +  link_offset* sin(theta-PI/2.0f);
+					double cos_offset =  cos(theta-PI/2.0f);
+					double sin_offset = sin(theta-PI/2.0f);
+					(*iLink)->m_ShapePoints[si].x = (*iLink)->m_Original_ShapePoints[si].x + link_offset* cos_offset;
+					(*iLink)->m_ShapePoints[si].y = (*iLink)->m_Original_ShapePoints[si].y +  link_offset* sin_offset;
 				}
 			}
 
@@ -2582,6 +2617,12 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			}
 
 
+			int observed_AADT = 0;
+			int oserved_peak_hourly_volume = 0;
+
+			parser.GetValueByFieldName("observed_AADT",observed_AADT);
+			parser.GetValueByFieldName("observed_peak_hourly_volume",oserved_peak_hourly_volume);
+
 			if(!parser.GetValueByFieldName("jam_density_in_vhc_pmpl",k_jam))
 				k_jam = 180;
 
@@ -2726,6 +2767,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 				pLink->m_NumberOfLeftTurnLanes =  number_of_left_turn_lanes ;
 				pLink->m_NumberOfRightTurnLanes =  number_of_right_turn_lanes ;
+
+				pLink->m_observed_AADT = observed_AADT;
+				pLink->m_observed_peak_hourly_volume = oserved_peak_hourly_volume;
 
 				pLink->color_value = color_value;
 				pLink->green_height = green_height;
@@ -4195,7 +4239,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
+		fprintf(st,"name,link_id,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,observed_AADT,observed_peak_hourly_volume,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
 		fprintf(st,"transit_travel_time_in_min,transit_transfer_time_in_min,transit_waiting_time_in_min,transit_fare_in_dollar,BPR_alpha_term,BPR_beta_term,");
 		fprintf(st,"KML_color_attribute,KML_green_height,KML_red_height,KML_blue_height,KML_yellow_height,");
 
@@ -4270,7 +4314,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 
 				std::replace( (*iLink)->m_Name.begin(), (*iLink)->m_Name.end(), ',', ' '); 
 
-				fprintf(st,"%s,%d,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%.3f,\"%s\",%.1f,",
+				fprintf(st,"%s,%d,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%d,%d,%.3f,\"%s\",%.1f,",
 					(*iLink)->m_Name.c_str (),
 					(*iLink)->m_LinkID, 
 					(*iLink)->m_TMC_code .c_str (),
@@ -4283,7 +4327,10 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 					(*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane,
 					(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph, 
 					(*iLink)->m_EffectiveGreenTimeInSecond, (*iLink)->m_GreenStartTimetInSecond,
-					(*iLink)->m_AADT_conversion_factor ,(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
+					(*iLink)->m_observed_AADT,
+					(*iLink)->m_observed_peak_hourly_volume,
+					(*iLink)->m_AADT_conversion_factor ,
+					(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
 
 				// geometry
 				fprintf(st,"\"<LineString><coordinates>");
@@ -5469,6 +5516,13 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 
 	m_MovementPointerMap.clear();
 
+			std::list<DTALink*>::iterator iLink;
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				(*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts = 0; 
+			}
+
 	std::list<DTANode*>::iterator iNode;
 	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
@@ -5553,15 +5607,29 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				parser_movement.GetValueByFieldName ("sim_turn_percentage",pMovement->turning_percentage);
 				parser_movement.GetValueByFieldName ("sim_turn_delay_in_second",pMovement->sim_turn_delay );
 
-				parser_movement.GetValueByFieldName ("obs_turn_volume",pMovement->obs_turn_delay );
-				parser_movement.GetValueByFieldName ("obs_turn_hourly_volume",pMovement->obs_turn_delay );
-				parser_movement.GetValueByFieldName ("obs_turn_percentage",pMovement->obs_turn_delay );
+				parser_movement.GetValueByFieldName ("obs_turn_volume",pMovement->obs_turn_count  );
+				parser_movement.GetValueByFieldName ("obs_turn_hourly_volume",pMovement->obs_turn_hourly_count  );
+				parser_movement.GetValueByFieldName ("obs_turn_percentage",pMovement->obs_turn_percentage  );
 				parser_movement.GetValueByFieldName ("obs_turn_delay_in_second",pMovement->obs_turn_delay );
+
+				
+
+				DTALink* pLink0 = FindLinkWithNodeNumbers(up_node_id, node_id);
+
+				if(pLink0!=NULL)
+				{
+				pLink0 ->m_observed_peak_hourly_volume_calculated_from_movement_counts += pMovement->obs_turn_hourly_count ;
+				}
+
+			
 
 				std::string turn_type;
 
+				std::string QEM_dir_string;
 				parser_movement.GetValueByFieldName ("turn_type",turn_type );
-				parser_movement.GetValueByFieldName ("turn_direction",pMovement->QEM_dir_string );
+				parser_movement.GetValueByFieldName ("turn_direction", QEM_dir_string);
+
+				pMovement->movement_approach_turn  = GetTurnDirectionFromString(QEM_dir_string.c_str ());
 
 				parser_movement.GetValueByFieldName ("QEM_TurnVolume",pMovement->QEM_TurnVolume );
 				if(turn_type.find("Through") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
@@ -5584,16 +5652,14 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				parser_movement.GetValueByFieldName ("QEM_DetectPhase1",pMovement->QEM_DetectPhase1 );
 
 				int QEM_CycleLength = 70;
-				parser_movement.GetValueByFieldName ("QEM_CycleLength",QEM_CycleLength );
-
-				if(QEM_CycleLength>0)
+				if(parser_movement.GetValueByFieldName ("QEM_CycleLength",QEM_CycleLength ) && QEM_CycleLength)
 				{
 				DTANode* pNode = FindNodeWithNodeNumber (node_id);
 
-				if(pNode != NULL)
-				{
-					pNode ->m_CycleLengthInSecond = QEM_CycleLength;
-				}
+					if(pNode != NULL)
+					{
+						pNode ->m_CycleLengthInSecond = QEM_CycleLength;
+					}
 
 				}
 
@@ -5612,6 +5678,12 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 			}
 		}
 	}
+
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+				if((*iLink)->m_observed_peak_hourly_volume == 0 && (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts >0)  // overwrite
+					(*iLink)->m_observed_peak_hourly_volume  = (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts;
+			}
 
 	m_MovementDataLoadingStatus.Format ("%d AMS movements are loaded from file %s.",count,lpszFileName);
 	return number_of_nodes;
@@ -11695,7 +11767,7 @@ void CTLiteDoc::OnLinkAddsensor()
 
 		if(dlg.DoModal()==IDOK)
 		{
-			ReadSensorData(m_ProjectDirectory+"input_sensor.csv");
+			ReadSensorData();
 			UpdateAllViews(0);
 		}
 
@@ -14067,8 +14139,8 @@ void CTLiteDoc::OnTollViewtolldatatable()
 
 void CTLiteDoc::OnDetectorViewsensordatatable()
 {
-	CNetworkDataSettingDlg dlg;
-	dlg.m_SelectTab = _SENSOR_DATA; 
+	CSensorNetworkDataSettingDlg dlg;
+	dlg.m_SelectTab = _SENSOR_LINK_DATA; 
 	dlg.m_pDoc = this;
 	dlg.DoModal();
 }
@@ -15091,13 +15163,11 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 					MovementFile.SetValueByFieldName  ("node_id",(*iNode)->m_NodeNumber);
 					MovementFile.SetValueByFieldName  ("QEM_CycleLength",(*iNode)->m_CycleLengthInSecond );
 
-					
-
 					MovementFile.SetValueByFieldName  ("name",(*iNode)->m_Name);
 
 					MovementFile.SetValueByFieldName ("turn_type",GetTurnString(movement.movement_turn));
 
-					MovementFile.SetValueByFieldName ("turn_direction",GetTurnDirectionString(movement.movement_dir));
+					MovementFile.SetValueByFieldName ("turn_direction",GetTurnDirectionString(movement.movement_approach_turn));
 
 
 					//if nodes have been cut outside the network, so we do not need save them
@@ -15106,7 +15176,6 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 
 					if(m_NodeIDMap.find (movement.out_link_to_node_id) == m_NodeIDMap.end())
 						continue;
-
 
 					int up_node_id = m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  ;
 
@@ -15128,9 +15197,9 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 					MovementFile.SetValueByFieldName ("sim_turn_percentage",movement.turning_percentage);
 					MovementFile.SetValueByFieldName ("sim_turn_delay_in_second",movement.sim_turn_delay );
 
-					MovementFile.SetValueByFieldName ("obs_turn_volume",movement.obs_turn_delay );
-					MovementFile.SetValueByFieldName ("obs_turn_hourly_volume",movement.obs_turn_delay );
-					MovementFile.SetValueByFieldName ("obs_turn_percentage",movement.obs_turn_delay );
+					MovementFile.SetValueByFieldName ("obs_turn_volume",movement.obs_turn_count  );
+					MovementFile.SetValueByFieldName ("obs_turn_hourly_volume",movement.obs_turn_hourly_count) ;
+					MovementFile.SetValueByFieldName ("obs_turn_percentage",movement.obs_turn_percentage  );
 					MovementFile.SetValueByFieldName ("obs_turn_delay_in_second",movement.obs_turn_delay );
 
 					MovementFile.SetValueByFieldName ("QEM_TurnDirection", movement.QEM_dir_string );
@@ -15370,3 +15439,9 @@ bool CTLiteDoc::WriteRadioMessageScenarioData()
 
 	return true;
 }
+
+void CTLiteDoc::OnSensortoolsSensordata()
+{
+	// TODO: Add your command handler code here
+}
+

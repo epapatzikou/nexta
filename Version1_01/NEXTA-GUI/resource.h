@@ -96,6 +96,7 @@
 #define IDD_DIALOG_Settings             155
 #define IDR_TLiteTYPE3                  155
 #define IDS_STRING10103                 155
+#define IDD_DIALOG_NETWORK_DATA_Settings 155
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDS_STRING10104                 156
 #define IDD_DIALOG_LINK_LIST            157
@@ -183,6 +184,7 @@
 #define IDR_MENU5                       223
 #define IDD_DIALOG_SETTING_TAB          224
 #define IDR_TLiteTYPE5                  224
+#define IDD_DIALOG_NETWORK_SETTING_TAB  224
 #define IDD_DIALOG_NETWORK_DATA         225
 #define IDD_DIALOG_DISPLAY_CONFIG       227
 #define IDD_DIALOG_CONFIG_GIS_TEXT_DISPLAY 227
@@ -207,6 +209,8 @@
 #define IDD_DIALOG_CONFIG_KML           248
 #define IDB_COLOR_RAMP                  249
 #define IDD_DIALOG_CONFIG_TDMOE         249
+#define IDD_DIALOG_NETWORK_SENSOR_DATA  250
+#define IDD_DIALOG_SENSOR_SETTING_TAB   251
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -373,7 +377,9 @@
 #define IDC_LANE_C                      1083
 #define IDC_DEMAND_PROFILE_LIST         1084
 #define IDC_LANE_D                      1084
+#define IDC_BUTTON_ExtendColumeWidth    1084
 #define IDC_VEHICLE_CHART1              1085
+#define IDC_BUTTON_QEM2                 1085
 #define IDC_COMBO_XAxis                 1086
 #define IDC_TravelTime_CHART            1086
 #define IDC_STATIC_ERROR_MESSAGE        1088
@@ -484,13 +490,18 @@
 #define IDC_STATIC_UNIT_LENGTH          1169
 #define IDC_STATIC_UNIT_SPEED_LIMIT     1170
 #define IDC_COMBO_MAX_COLUMNS           1171
+#define IDC_EDIT_AADT                   1171
 #define IDC_STATIC_MESSAGE              1172
+#define IDC_EDIT_PeakHourlyVolume       1172
 #define IDC_LIST_DEMAND_FORMAT          1173
 #define IDC_BUTTONOK                    1175
 #define IDC_EDIT_LatLongA               1178
 #define IDC_EDIT_LatLongA2              1179
 #define IDC_BUTTON_RELOAD               1181
+#define IDC_BUTTON_EXPORT_MATRIX        1182
 #define IDC_QUESTION                    1183
+#define IDC_BUTTON_EXPORT_MATRIX2       1183
+#define IDC_BUTTON_EXPORT_COLUMN        1183
 #define IDC_BUTTON                      1184
 #define IDC_SETTING_TAB_CORRIDOR        1185
 #define ID_GIS_FIELD_NAME               1186
@@ -1251,13 +1262,14 @@
 #define ID_FILE_OPENTESTSETS            33644
 #define ID_FILE_OPENSAMPLEDATASETFOLDER 33645
 #define ID_LINK_ADD_RADIO_MESSAGE       33646
+#define ID_SENSORTOOLS_SENSORDATA       33647
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        250
-#define _APS_NEXT_COMMAND_VALUE         33647
+#define _APS_NEXT_COMMAND_VALUE         33648
 #define _APS_NEXT_CONTROL_VALUE         1212
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
