@@ -563,7 +563,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(pricing_type == 0) // unknown type
 		pricing_type = 1; 
 
-//	if(origin_zone ==333 && destination_zone==920 && origin==19)
+	if(origin_zone ==7 && destination_zone==41 && origin==121)
+	{
+	debug_flag = true;
+	}
 	if(debug_flag)
 	{
 

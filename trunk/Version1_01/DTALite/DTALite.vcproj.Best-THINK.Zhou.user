@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_Salt_Lake_City_West_Jordan"
+				WorkingDirectory="C:\Speed_test\ODME_6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Baseline"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_Salt_Lake_City_West_Jordan"
+				WorkingDirectory="C:\Speed_test\ODME_6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

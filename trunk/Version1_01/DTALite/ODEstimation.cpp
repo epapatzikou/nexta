@@ -181,6 +181,10 @@ bool g_ReadLinkMeasurementFile()
 
 	if (parser.OpenCSVFile("input_sensor.csv",g_ODEstimationFlag==1))
 	{
+
+		int early_start_time_in_min = 99999;
+		int late_end_time_in_min = 0;
+
 		int sensor_count = 0;
 		while(parser.ReadRecord())
 		{
@@ -235,6 +239,12 @@ bool g_ReadLinkMeasurementFile()
 
 			parser.GetValueByFieldNameRequired("start_time_in_min",start_time_in_min );
 			parser.GetValueByFieldNameRequired("end_time_in_min",end_time_in_min );
+
+			if(start_time_in_min < early_start_time_in_min) 
+				early_start_time_in_min =  start_time_in_min;
+
+			if(end_time_in_min > late_end_time_in_min) 
+				late_end_time_in_min =  end_time_in_min;
 
 			if( g_ValidationDataStartTimeInMin <= start_time_in_min  && end_time_in_min <= g_ValidationDataEndTimeInMin )
 			{
@@ -337,7 +347,18 @@ bool g_ReadLinkMeasurementFile()
 		if(count==0 && g_ODEstimationFlag==1)
 		{
 
-			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check." << endl;
+			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check input_scenario_settings.csv and input_sensor.csv." << endl;
+
+			if(g_ValidationDataEndTimeInMin < early_start_time_in_min || late_end_time_in_min < g_ValidationDataStartTimeInMin ) 
+			{
+				cout << "calibration_data_start_time_in_min = " << g_ValidationDataStartTimeInMin << endl;
+				cout << "calibration_data_end_time_in_min = " << g_ValidationDataEndTimeInMin << endl;
+				cout << "time period in input_sensor.csv = [" << early_start_time_in_min << "," << late_end_time_in_min << "]"  <<endl;
+	
+			}
+
+
+
 			g_ProgramStop();
 
 
@@ -362,12 +383,12 @@ bool g_ReadLinkMeasurementFile()
 
 
 
-void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT PathArray[], int origin_zone, int AssignmentInterval)
+void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArrayForEachODT> PathArray, int origin_zone, int AssignmentInterval)
 {  // this function has been enhanced for path flow adjustment
 	// step 1: initialization
 
-	int CriticalOD_origin = 431;
-	int CriticalOD_destination = 2251;
+	int CriticalOD_origin = 2382;
+	int CriticalOD_destination = 0;
 
 	int DestZoneNumber; 
 	for(DestZoneNumber=1; DestZoneNumber <= g_ODZoneNumberSize; DestZoneNumber++) // initialization...
@@ -375,23 +396,15 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 		if(g_ZoneNumber2NoVector[DestZoneNumber]<0)  // no such zone number
 			continue;
 
-
 		int DestZoneNo = g_ZoneNumber2NoVector[DestZoneNumber];
 
 		PathArray[DestZoneNo].NumOfPaths = 0;
 		PathArray[DestZoneNo].NumOfVehicles = 0;
 		PathArray[DestZoneNo].DeviationNumOfVehicles = 0;
 		PathArray[DestZoneNo].BestPathIndex = 0;
-		for(int p=0; p<_MAX_ODT_PATH_SIZE_4_ODME; p++)
-		{
-			PathArray[DestZoneNo].NumOfVehsOnEachPath[p] = 0;
-			PathArray[DestZoneNo].PathNodeSums[p] = 0;
-			PathArray[DestZoneNo].AvgPathTimes[p] = 0.0;
-			PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] = 0.0;
-			PathArray[DestZoneNo].PathSize[p] = 0;
-			//for(int q=0; q< _MAX_ODT_PATH_SIZE_4_ODME; q++)
-			//	PathArray[DestZoneNo].PathLinkSequences[p][q] = 0.0;
-		}
+
+		PathArray[DestZoneNo].ClearPathElements ();
+
 	}
 
 	//step 2: construct path array
@@ -401,6 +414,12 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 		int VehicleID = g_TDOVehicleArray[origin_zone][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
+
+		if(g_ZoneNumber2NoVector[pVeh->m_DestinationZoneID]<0)  // no such zone number
+			continue;
+
+		if(iteration >=1 && pVeh->m_bComplete == false)  // do not count incomplet trips/paths: ideally we want to complete all vehicle trips before ODME
+			continue; 
 
 		int VehicleDestZoneNumber = pVeh->m_DestinationZoneID;
 		float TripTime = pVeh->m_TripTime;
@@ -414,6 +433,9 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 		if(PathArray[VehicleDestZoneNo].NumOfPaths == 0) // the first path for VehicleDestZoneNo
 		{
+			PathArray[VehicleDestZoneNo].AddPathElement ();  // 0 index
+			PathArray[VehicleDestZoneNo].AddPathElement ();  // 1 index
+
 			PathArray[VehicleDestZoneNo].NumOfPaths++;
 			PathArray[VehicleDestZoneNo].NumOfVehsOnEachPath[PathArray[VehicleDestZoneNo].NumOfPaths]++;
 			PathArray[VehicleDestZoneNo].PathNodeSums[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSum;
@@ -421,7 +443,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 			// obtain path link sequence from vehicle link sequence
 			for(int i = 0; i< NodeSize-1; i++)
 			{
-				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
+				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back (pVeh->m_NodeAry[i].LinkNo); 
 
 			}
 			PathArray[VehicleDestZoneNo].PathSize[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSize;
@@ -440,20 +462,20 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 			if(PathIndex == 0) // a new path is found
 			{
+			
+				PathArray[VehicleDestZoneNo].AddPathElement (); 
+
 				PathArray[VehicleDestZoneNo].NumOfPaths++;
 
-				if(PathArray[VehicleDestZoneNo].NumOfPaths>= _MAX_ODT_PATH_SIZE_4_ODME-1) 
-				{
-					cout << " Too many paths for ODME: " <<  PathArray[VehicleDestZoneNo].NumOfPaths << " > " << _MAX_ODT_PATH_SIZE_4_ODME << endl;
-					g_ProgramStop();
-				}
 				PathArray[VehicleDestZoneNo].NumOfVehsOnEachPath[PathArray[VehicleDestZoneNo].NumOfPaths]++;
 				PathArray[VehicleDestZoneNo].PathNodeSums[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSum;
 				PathArray[VehicleDestZoneNo].AvgPathTimes[PathArray[VehicleDestZoneNo].NumOfPaths] = TripTime;
-				// obtain path link sequence from vehicle link sequence
+
+							// obtain path link sequence from vehicle link sequence
+				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.clear ();
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
+					PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back(pVeh->m_NodeAry[i].LinkNo); 
 				}
 				PathArray[VehicleDestZoneNo].PathSize[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSize;
 			}
@@ -521,8 +543,6 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 	for(DestZoneNumber=1; DestZoneNumber <= g_ODZoneNumberSize; DestZoneNumber++)  //  for each OD pair
 	{
 
-
-
 		if(g_ZoneNumber2NoVector[DestZoneNumber]<0)  // no such Zone ID
 			continue;
 		int DestZoneNo = g_ZoneNumber2NoVector[DestZoneNumber];
@@ -562,7 +582,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 			int l = 0;
 			while(l>=0 && l< PathArray[DestZoneNo].PathSize[p]-1)  // for each link along the path
 			{
-				int LinkID = PathArray[DestZoneNo].PathLinkSequences[p][l];
+				int LinkID = PathArray[DestZoneNo].PathLinkSequences[p].LinkNoVector [l];
 
 				DTALink* pLink = g_LinkVector[LinkID];
 
@@ -779,7 +799,8 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,PathArrayForEachODT
 
 
 			element.Setup (PathIndex,origin_zone, DestZoneNumber, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
-				PathArray[DestZoneNo].PathSize[p]-1, PathArray[DestZoneNo].PathLinkSequences[p],PathArray[DestZoneNo].NewNumberOfVehicles[p],PathArray[DestZoneNo].PathNodeSums[p],AssignmentInterval );
+			
+			PathArray[DestZoneNo].PathSize[p]-1, PathArray[DestZoneNo].PathLinkSequences[p].LinkNoVector ,PathArray[DestZoneNo].NewNumberOfVehicles[p],PathArray[DestZoneNo].PathNodeSums[p],AssignmentInterval );
 
 			//PathArrayForEachODTK element;
 			//int PathIndex  = g_ODTKPathVector.size();
@@ -816,12 +837,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,in
 
 	if(g_ZoneNumber2NoVector[origin_zone]<0)  // no such zone number
 		return;
+	
+	ConstructPathArrayForEachODT_ODEstimation(iteration,m_PathArray, origin_zone, AssignmentInterval);
 
-	PathArrayForEachODT *PathArray;
-	PathArray = new PathArrayForEachODT[g_ODZoneIDSize]; // remember to release memory
-	ConstructPathArrayForEachODT_ODEstimation(iteration,PathArray, origin_zone, AssignmentInterval);
-
-	delete PathArray;
 }
 
 

@@ -274,6 +274,7 @@ int g_OutputLinkCapacityStarting_Time =0;
 int g_OutputLinkCapacityEnding_Time =300;
 int g_CalculateUEGapForAllAgents = 0;
 int g_EmissionDataOutputFlag = 0;
+int g_MovementCapacityModelFlag = 0;
 int g_VehiclePathOutputFlag = 1;
 int g_TimeDependentODMOEOutputFlag = 0;
 int g_OutputSecondBySecondEmissionData =0;
@@ -510,8 +511,19 @@ void g_ReadInputFiles(int scenario_no)
 			int control_type = 0;
 			parser_node.GetValueByFieldName ("control_type",control_type);
 
+			if(control_type == g_settings.pretimed_signal_control_type_code ||
+				control_type == g_settings.actuated_signal_control_type_code )
+			{
+				if(cycle_length_in_second == 0)
+				{
+				cout << "Please input cycle length for signalized node " << node_id << endl;
+				g_ProgramStop();
+				}
+
+			}
+
 			int offset = 0;
-			parser_node.GetValueByFieldName ("control_type",offset);
+			parser_node.GetValueByFieldName ("offset",offset);
 
 			DTANode Node;
 			Node.m_NodeID = i;
@@ -1191,7 +1203,10 @@ void g_ReadInputFiles(int scenario_no)
 	// step 3.2 movement input
 
 
+	if(g_MovementCapacityModelFlag == 1)
+	{
 	g_ReadAMSMovementData();
+	}
 	//*******************************
 	// step 4: zone input
 
@@ -1664,39 +1679,11 @@ void g_ReadInputFiles(int scenario_no)
 	////////////////////////////////////// VOT
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
 	g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
+
+	ReadScenarioInputFiles(scenario_no);
+
+	g_ReadDemandFileBasedOnMetaDatabase();
 	
-	if(g_AgentBinInputMode.find ("0") != string::npos )  // we read demand meta database only if we do not read the agent file. 
-	{
-		g_ReadDemandFileBasedOnMetaDatabase();
-	}else
-	{
-
-		if(g_AgentBinInputMode.find("1") != string::npos || g_AgentBinInputMode.find("agent_bin") != string::npos)
-		{
-				g_ReadAgentBinFile("input_agent.bin");
-
-		}
-		if(g_AgentBinInputMode.find("2") != string::npos || g_AgentBinInputMode.find("agent_csv") != string::npos)
-		{
-			g_ReadDTALiteAgentCSVFile("input_agent.csv");
-		}
-
-		if(g_AgentBinInputMode.find("3") != string::npos || g_AgentBinInputMode.find("agent_group_csv") != string::npos)
-		{
-			g_ReadDTALiteAgentCSVFile("input_agent.csv");
-		}
-
-		if(g_AgentBinInputMode.find("4") != string::npos || g_AgentBinInputMode.find("evacuation_agent_csv") != string::npos)
-		{
-			g_ReadDTALiteAgentCSVFile("evacuation_agent_csv");
-		}
-
-		if(g_AgentBinInputMode.find("5") != string::npos || g_AgentBinInputMode.find("vehicle_dat") != string::npos)
-		{
-			g_ReadDSPVehicleFile("vehicle.dat");
-		}	
-	}
-
 
 	//if(g_VehicleLoadingMode == 1)  // load from csv vehicle file
 	//{
@@ -1732,7 +1719,6 @@ void g_ReadInputFiles(int scenario_no)
 	//*******************************
 	// step 9: Crash Prediction input
 
-	ReadScenarioInputFiles(scenario_no);
 
 	//	cout << "Global Loading Factor = "<< g_DemandGlobalMultiplier << endl;
 
@@ -2959,15 +2945,20 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 void ReadScenarioInputFiles(int scenario_no)
 {
 	ReadIncidentScenarioFile("Scenario_Incident.csv",scenario_no);
-	ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv",scenario_no);
 	ReadLinkTollScenarioFile("Scenario_Link_Based_Toll.csv",scenario_no);
-	ReadRadioMessageScenarioFile("Scenario_Radio_Message.csv",scenario_no);
 	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv",scenario_no);
+
+	if(g_ODEstimationFlag == false)
+	{
+		ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv",scenario_no);
+		ReadRadioMessageScenarioFile("Scenario_Radio_Message.csv",scenario_no);
+	}
 
 	//ReadEvacuationScenarioFile("Scenario_Evacuation_Zone.csv",scenario_no);
 	//ReadWeatherScenarioFile("Scenario_Weather.csv",scenario_no);
 
 	ReadMovementScenarioFile("Scenario_Movement.csv",scenario_no);
+	
 }
 void FreeMemory()
 {
@@ -3357,7 +3348,7 @@ void g_ReadDTALiteSettings()
 	//	g_settings.DefaultCycleTimeSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "default_cycle_time_in_sec", 60, g_DTASettingFileName);
 
 	g_UseDefaultLaneCapacityFlag = g_GetPrivateProfileInt("simulation", "use_default_lane_capacity", 0, g_DTASettingFileName);	
-	g_UseFreevalRampMergeModelFlag = g_GetPrivateProfileInt("simulation", "use_freeval_merge_model", 0, g_DTASettingFileName);	
+//	g_UseFreevalRampMergeModelFlag = g_GetPrivateProfileInt("simulation", "use_freeval_merge_model", 0, g_DTASettingFileName);	
 	g_UseSaturationFlowRateAsCapacityForLinkwithNoControl = g_GetPrivateProfileInt("simulation", "use_saturation_flow_rate_as_capacity_for_link_with_no_control_downstream_node", 1, g_DTASettingFileName);	
 	g_OutputLinkCapacityFlag = g_GetPrivateProfileInt("simulation", "output_link_capacity_file", 0, g_DTASettingFileName);	
 	g_OutputLinkCapacityStarting_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_start_time_in_min", 0, g_DTASettingFileName);	
@@ -3397,7 +3388,8 @@ void g_ReadDTALiteSettings()
 
 	g_StochasticCapacityMode = g_GetPrivateProfileInt("simulation", "stochatic_capacity_mode", 1, g_DTASettingFileName);
 
-	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 1, g_DTASettingFileName);	
+	g_MergeNodeModelFlag = 0;
+//	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 0, g_DTASettingFileName);	
 	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);	
 	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.00f, g_DTASettingFileName);
 	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "use_point_queue_model_x_min_after_demand_loading_period", 60.0f, g_DTASettingFileName);
@@ -4226,9 +4218,9 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				{
 					cout << "Please specify dynasmart format for demand_truck file demand.dat, other than " << format_type << endl; 			
 				}
-				if (file_name.compare  ("agent.bin")== 0 && format_type.find("agent_bin")== string::npos)
+				if (file_name.compare  ("input_agent.bin")== 0 && format_type.find("agent_bin")== string::npos)
 				{
-					cout << "Please specify agent_bin format for agent binary file , other than " << format_type << endl; 			
+					cout << "Please specify input_agent_bin format for agent binary file , other than " << format_type << endl; 			
 				}
 
 			}

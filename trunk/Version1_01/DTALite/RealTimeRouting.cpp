@@ -54,7 +54,7 @@ void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip
 	int number_of_threads = omp_get_max_threads ( );
 
 
-	if(DayNo==0 && CurrentTime<=0.15)  // allocate memory once 
+	if(DayNo==0 && g_network_MP[0].m_NodeSize ==0 )  // allocate memory once 
 	{
 	// reset random number seeds
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
@@ -346,7 +346,7 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 {
 	if(g_ODEstimationFlag==1)
 		return;
-	if(DayNo==0 && CurrentTime<=0.15)  // allocate memory once 
+	if(DayNo==0 && g_network_VMS.m_NodeSize == 0)  // allocate memory once 
 	{
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
