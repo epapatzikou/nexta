@@ -1606,10 +1606,12 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_UserDefinedHeight = 1;
 		relative_angel_difference_from_main_direction = 0;
 		m_observed_AADT = 0;
 		m_observed_peak_hourly_volume = 0;
 		m_observed_peak_hourly_volume_calculated_from_movement_counts = 0;
+		m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts = 0;
 
 		m_AdditionalCost = 0;
 		m_EffectiveGreenTimeInSecond = 0;
@@ -1753,6 +1755,7 @@ public:
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
 
+
 	std::string m_TMC_code;
 
 	float m_TransitTravelTime;
@@ -1763,6 +1766,8 @@ public:
 	float m_BPR_alpha_term;
 	float m_BPR_beta_term;
 
+
+	float m_UserDefinedHeight;
 
 	FREEVAL_SEGMENT m_FREEVALSegmentCode;
 
@@ -1857,6 +1862,7 @@ public:
 	int m_observed_AADT;  // bi-directional 
 	int m_observed_peak_hourly_volume;  
 	int m_observed_peak_hourly_volume_calculated_from_movement_counts;
+	int m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts;
 
 	double m_number_of_all_crashes;
 	double m_num_of_fatal_and_injury_crashes_per_year;

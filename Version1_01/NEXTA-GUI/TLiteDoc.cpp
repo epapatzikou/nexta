@@ -450,8 +450,6 @@ CTLiteDoc::CTLiteDoc()
 	m_ImportDemandColumnFormat = true;
 	m_bSummaryDialog = false;
 	m_StartNodeNumberForNewNodes = 1;
-	m_agent_demand_input_mode = 0;
-	m_ODME_mode = 0;
 	m_demand_multiplier = 1;
 
 	m_number_of_assignment_days = 20;
@@ -2618,10 +2616,10 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 
 			int observed_AADT = 0;
-			int oserved_peak_hourly_volume = 0;
+			int observed_peak_hourly_volume = 0;
 
 			parser.GetValueByFieldName("observed_AADT",observed_AADT);
-			parser.GetValueByFieldName("observed_peak_hourly_volume",oserved_peak_hourly_volume);
+			parser.GetValueByFieldName("observed_peak_hourly_volume",observed_peak_hourly_volume);
 
 			if(!parser.GetValueByFieldName("jam_density_in_vhc_pmpl",k_jam))
 				k_jam = 180;
@@ -2769,7 +2767,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				pLink->m_NumberOfRightTurnLanes =  number_of_right_turn_lanes ;
 
 				pLink->m_observed_AADT = observed_AADT;
-				pLink->m_observed_peak_hourly_volume = oserved_peak_hourly_volume;
+				pLink->m_observed_peak_hourly_volume = observed_peak_hourly_volume;
 
 				pLink->color_value = color_value;
 				pLink->green_height = green_height;
@@ -3292,9 +3290,6 @@ bool CTLiteDoc::ReadScenarioSettingCSVFile(LPCTSTR lpszFileName)
 		parser_scenario.GetValueByFieldName("traffic_flow_model",m_traffic_flow_model);
 
 		parser_scenario.GetValueByFieldName("traffic_assignment_method",m_traffic_assignment_method);
-		parser_scenario.GetValueByFieldName("agent_demand_input_mode",m_agent_demand_input_mode);
-		parser_scenario.GetValueByFieldName("ODME_mode",m_ODME_mode);
-		parser_scenario.GetValueByFieldName("emission_data_output",m_emission_data_output);
 		parser_scenario.GetValueByFieldName("demand_multiplier",m_demand_multiplier);
 		m_NumberOfSecenarioSettings++;
 		}
@@ -3309,8 +3304,6 @@ bool CTLiteDoc::WriteScenarioSettingCSVFile(LPCTSTR lpszFileName)
 int scenario_no;
 string scenario_name;
 int random_seed;
-int default_arterial_k_jam;
-int default_cycle_length;
 int ODME_start_iteration;
 
 float ODME_max_percentage_deviation_wrt_hist_demand;
@@ -3341,12 +3334,7 @@ int accessibility_mode;
 		//parser_scenario.GetValueByFieldName("demand_multiplier",m_demand_multiplier);
 		//parser_scenario.GetValueByFieldName("emission_data_output",m_emission_data_output);
 
-		parser_scenario.GetValueByFieldName("agent_demand_input_mode",m_agent_demand_input_mode);
-		parser_scenario.GetValueByFieldName("ODME_mode",m_ODME_mode);
-
 		parser_scenario.GetValueByFieldName("random_seed",random_seed);
-		parser_scenario.GetValueByFieldName("default_arterial_k_jam",default_arterial_k_jam);
-		parser_scenario.GetValueByFieldName("default_cycle_length",default_cycle_length);
 
 		parser_scenario.GetValueByFieldName("ODME_start_iteration",ODME_start_iteration);
 		parser_scenario.GetValueByFieldName("ODME_max_percentage_deviation_wrt_hist_demand",ODME_max_percentage_deviation_wrt_hist_demand);
@@ -3381,14 +3369,10 @@ int accessibility_mode;
 		ScenarioFile.SetFieldNameAndValue("number_of_assignment_days",m_number_of_assignment_days);//
 		ScenarioFile.SetFieldNameAndValue("traffic_flow_model",m_traffic_flow_model);
 		ScenarioFile.SetFieldNameAndValue("traffic_assignment_method",m_traffic_assignment_method);
-		ScenarioFile.SetFieldNameAndValue("agent_demand_input_mode",m_agent_demand_input_mode);
 		ScenarioFile.SetFieldNameAndValue("ODME_mode",m_ODME_mode);
-		ScenarioFile.SetFieldNameAndValue("emission_data_output",m_emission_data_output);
 		ScenarioFile.SetFieldNameAndValue("demand_multiplier",m_demand_multiplier);
 
 		ScenarioFile.SetFieldNameAndValue("random_seed",random_seed);
-		ScenarioFile.SetFieldNameAndValue("default_arterial_k_jam",default_arterial_k_jam);
-		ScenarioFile.SetFieldNameAndValue("default_cycle_length",default_cycle_length);
 
 		ScenarioFile.SetFieldNameAndValue("ODME_start_iteration",ODME_start_iteration);
 		ScenarioFile.SetFieldNameAndValue("ODME_max_percentage_deviation_wrt_hist_demand",ODME_max_percentage_deviation_wrt_hist_demand);
@@ -4547,6 +4531,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	SaveLinkData(directory+"input_link.csv",false,SelectedLayNo);
 
 	SaveMovementData("AMS_movement.csv", -1);
+	SaveQEMMovementData("QEM_movement_simu_counts.csv", true);
+	SaveQEMMovementData("QEM_movement_obs_counts.csv", false);
 
 	//fopen_s(&st,directory+"input_phase.csv","w");
 	//if(st!=NULL)
@@ -5621,6 +5607,13 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				pLink0 ->m_observed_peak_hourly_volume_calculated_from_movement_counts += pMovement->obs_turn_hourly_count ;
 				}
 
+				DTALink* pLink1 = FindLinkWithNodeNumbers(node_id, dest_node_id);
+
+				if(pLink1!=NULL)
+				{
+				pLink1 ->m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts += pMovement->obs_turn_hourly_count ;
+				}
+
 			
 
 				std::string turn_type;
@@ -5681,8 +5674,15 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-				if((*iLink)->m_observed_peak_hourly_volume == 0 && (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts >0)  // overwrite
+				if((*iLink)->m_observed_peak_hourly_volume <  (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts
+					&& (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts >0)  // overwrite
 					(*iLink)->m_observed_peak_hourly_volume  = (*iLink)->m_observed_peak_hourly_volume_calculated_from_movement_counts;
+
+
+				if((*iLink)->m_observed_peak_hourly_volume ==0 && (*iLink)->m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts >0)  // overwrite
+					(*iLink)->m_observed_peak_hourly_volume  = (*iLink)->m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts;
+
+				
 			}
 
 	m_MovementDataLoadingStatus.Format ("%d AMS movements are loaded from file %s.",count,lpszFileName);
@@ -6609,7 +6609,6 @@ void CTLiteDoc::OnToolsPerformtrafficassignment()
 	}
 		LoadSimulationOutput();
 		UpdateAllViews(0);
-
 
 }
 void CTLiteDoc::LoadSimulationOutput()
@@ -10876,13 +10875,13 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 
 	//	OGDF_WriteGraph(directory+"graph.gml");
 
-	//////////DeleteFile(directory+"AMS_zone.kmz");
-	//////////ExportZoneLayerToKMLFiles(directory+"AMS_zone.kml","LIBKML");
 
+	CString KML_Zone_3D_File = directory+"AMS_zone.kml";
 	CString KML_Link_3D_File = directory+"AMS_link.kml";
 	DeleteFile(KML_Link_3D_File);
 	ExportLinkSingleAttributeLayerToKMLFiles(KML_Link_3D_File,"LIBKML");
 	HINSTANCE result = ShellExecute(NULL, _T("open"), KML_Link_3D_File, NULL,NULL, SW_SHOW);
+	result = ShellExecute(NULL, _T("open"), KML_Zone_3D_File, NULL,NULL, SW_SHOW);
 
 
 	//	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_2D.kml","LIBKML",0,false,1);
@@ -15243,6 +15242,148 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 
 	}
 }
+void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag)
+{
+
+	std::vector<DTA_APPROACH_TURN> Approach_vector;
+
+	Approach_vector.push_back (DTA_NBL);
+	Approach_vector.push_back (DTA_NBT);
+	Approach_vector.push_back (DTA_NBR);
+
+	Approach_vector.push_back (DTA_SBL);
+	Approach_vector.push_back (DTA_SBT);
+	Approach_vector.push_back (DTA_SBR);
+
+	Approach_vector.push_back (DTA_EBL);
+	Approach_vector.push_back (DTA_EBT);
+	Approach_vector.push_back (DTA_EBR);
+
+	Approach_vector.push_back (DTA_WBL);
+	Approach_vector.push_back (DTA_WBT);
+	Approach_vector.push_back (DTA_WBR);
+
+	CCSVWriter MovementFile;
+
+	CString movement_str = m_ProjectDirectory + MovementFileName;
+
+	FILE* st = NULL;
+
+	fopen_s(&st,movement_str,"w");
+	if(st!=NULL)
+	{
+		fprintf(st, "#,cycle_length,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR,NBL,NBT,NBR,SBL,SBT,SBR,EBL,EBT,EBR,WBL,WBT,WBR,EBL,EBT,EBR,WBL,WBT,WBR,NBL,NBT,NBR,SBL,SBT,SBR\n");
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+			if((*iNode)->m_MovementVector .size() > 0)
+			{
+		
+			fprintf(st,"%d,%d,",(*iNode)->m_NodeNumber, (*iNode)->m_CycleLengthInSecond );
+
+			// first block: Number of lanes for each movement
+			for(unsigned i= 0; i < Approach_vector.size(); i++)
+			{
+			int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
+				if(MovementIndex >=0)
+				{  
+				fprintf(st,"%d,",(*iNode)->m_MovementVector[MovementIndex]. QEM_Lanes);
+
+				}else
+				{
+
+				fprintf(st,",");
+				}
+
+			}
+
+			// second block: turn volume 
+			for(unsigned i= 0; i < Approach_vector.size(); i++)
+			{
+			int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
+				if(MovementIndex >=0)
+				{  
+					if(bSimulatedCountFlag) 
+						fprintf(st,"%.1f,",(*iNode)->m_MovementVector[MovementIndex]. sim_turn_hourly_count);
+					else // observed 
+						fprintf(st,"%d,",(*iNode)->m_MovementVector[MovementIndex]. obs_turn_hourly_count);
+
+
+				}else
+				{
+
+				fprintf(st,",");
+				}
+
+			}
+
+			// third block: speed
+			for(unsigned i= 0; i < Approach_vector.size(); i++)
+			{
+			int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
+				if(MovementIndex >=0)
+				{  
+						fprintf(st,"%.0f,",(*iNode)->m_MovementVector[MovementIndex].QEM_Speed);
+
+
+				}else
+				{
+
+				fprintf(st,",");
+				}
+
+			}
+
+			// fourth block: street name
+			for(unsigned i= 0; i < Approach_vector.size(); i++)
+			{
+			int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
+				if(MovementIndex >=0)
+				{  
+
+					DTALink* pLink = FindLinkWithNodeIDs(
+					(*iNode)->m_MovementVector[MovementIndex].in_link_from_node_id,
+					(*iNode)->m_MovementVector[MovementIndex].in_link_to_node_id);
+
+					if(pLink!=NULL)
+						fprintf(st,"%s,", pLink->m_Name .c_str ());
+					else
+						fprintf(st,",");
+
+				}else
+				{
+
+				fprintf(st,",");
+				}
+
+			}
+
+
+			// fifth block: effective green time
+			for(unsigned i= 0; i < Approach_vector.size(); i++)
+			{
+			int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
+				if(MovementIndex >=0)
+				{  
+
+					fprintf(st,"%.1f,", (*iNode)->m_MovementVector[MovementIndex].QEM_EffectiveGreen);
+
+				}else
+				{
+
+				fprintf(st,"0,");
+				}
+
+			}
+
+			fprintf(st,"\n");
+			}
+
+
+		} // for each node
+			fclose(st);	}	
+}
+
 void CTLiteDoc::OnImportShapefile()
 {
 	CDlg_Information dlg_info;

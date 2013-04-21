@@ -1,7 +1,7 @@
 #pragma once
 #include "afxwin.h"
 #include "TLiteDoc.h"
-enum eKML_ColorMode { e_KML_number_of_lanes = 0,e_KML_speed_limit,e_KML_speed, e_KML_user_defined_attribue};
+enum eKML_ColorMode { e_KML_number_of_lanes = 0,e_KML_speed_limit,e_KML_avg_speed,e_KML_avg_speed_to_speed_limit_raio,e_KML_speed, e_KML_user_defined_attribue};
 // CDlg_KML_Configuration dialog
 
 class CDlg_KML_Configuration : public CDialog
@@ -12,6 +12,7 @@ public:
 	CDlg_KML_Configuration(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_KML_Configuration();
 
+	void SelchangeComboHeight();
 // Dialog Data
 	enum { IDD = IDD_DIALOG_CONFIG_KML };
 
@@ -26,7 +27,7 @@ public:
 
 	void UpdateCategoryValues();
 	eKML_ColorMode m_KML_MOE_selection;
-	int m_KML_Height;
+	float m_KML_Height_Ratio;
 	int m_Transparency;
 	afx_msg void OnBnClickedButtonSpaceevenly();
 	float m_ColorCategoryValue[10];
@@ -38,4 +39,7 @@ public:
 	CStatic m_ColorRampStatic;
 	afx_msg void OnPaint();
 	afx_msg void OnBnClickedButtonReverse();
+	CComboBox m_Height_ComboBox;
+
+	float m_Zone_Height_Ratio;
 };

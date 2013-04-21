@@ -156,6 +156,15 @@ void CAssignmentSimulationSettingDlg::OnBnClickedOk()
 			if (outFile.is_open())
 			{
 				outFile << Str;
+			}else
+			{
+			
+				CString ErrorMessage;
+				ErrorMessage.Format("File %s cannot be opened.", Setting_FileName[i]);
+				AfxMessageBox(ErrorMessage);
+				return;
+
+			
 			}
 
 			outFile.close();

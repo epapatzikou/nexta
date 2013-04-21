@@ -15,7 +15,6 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_NumberOfIterations(10)
 	, m_DemandGlobalMultiplier(1.0f)
 	, m_SimulationHorizon(0)
-	, m_EmissionDataOutput(FALSE)
 	, m_DemandLoadingMultipler(0)
 {
 	m_bModifiedFlag  = false;
@@ -35,7 +34,6 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_Routing_METHOD, m_AssignmentMethod);
 	DDX_Control(pDX, IDC_LIST_SIMULATION_METHOD, m_SimulationMethodControl);
 
-	DDX_Check(pDX, IDC_CHECK_EMISSION_DATA, m_EmissionDataOutput);
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE2, m_NetworkDataList);
 	DDX_Text(pDX, IDC_EDIT_Demand_LoadingMultiplier, m_DemandLoadingMultipler);
 }
@@ -86,19 +84,23 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	str.Format("%d link types", m_pDoc->m_LinkTypeMap.size());
 	m_NetworkDataList.AddString(str);
 
-	m_SimulationMethodControl.AddString ("BPR Function");
-	m_SimulationMethodControl.AddString ("Point Queue Model");
-	m_SimulationMethodControl.AddString ("Spatial Queue Model");
-	m_SimulationMethodControl.AddString ("Newell's N-Curve Model");
+	m_SimulationMethodControl.AddString ("1. BPR Function");
+	m_SimulationMethodControl.AddString ("2. Point Queue Model");
+	m_SimulationMethodControl.AddString ("3. Spatial Queue Model");
+	m_SimulationMethodControl.AddString ("4. Newell's N-Curve Model");
+	m_SimulationMethodControl.AddString ("5. Newell's Model+Emissions Output");
+	m_SimulationMethodControl.AddString ("6. Point Queue + Movement Capacity");
+
 	m_SimulationMethodControl.SetCurSel(m_pDoc->m_traffic_flow_model);
 
 
-	m_AssignmentMethod.AddString("Method of Successive Average");
-	m_AssignmentMethod.AddString("Day-to-Day Learning");
-	m_AssignmentMethod.AddString("Gap function-based Assignment");
-	m_AssignmentMethod.AddString("Gap funciton-based MSA");
-	m_AssignmentMethod.AddString("Accessibility (Distance)");
-	m_AssignmentMethod.AddString("Accessibility (Travel Time)");
+	m_AssignmentMethod.AddString("1. Method of Successive Average");
+	m_AssignmentMethod.AddString("2. Day-to-Day Learning");
+	m_AssignmentMethod.AddString("3. Gap function-based Assignment");
+	m_AssignmentMethod.AddString("4. Gap funciton-based MSA");
+	m_AssignmentMethod.AddString("5. Accessibility (Distance)");
+	m_AssignmentMethod.AddString("6. Accessibility (Travel Time)");
+	m_AssignmentMethod.AddString("7. OD Demand Estimation");
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
 	
@@ -113,17 +115,7 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 	m_DemandLoadingModeList.AddString(str);
 
-	if(m_pDoc->m_ODME_mode==1)
-	{
-		m_DemandLoadingModeList.AddString("OD demand estimation mode");
-	}
-
-	if(m_pDoc->m_agent_demand_input_mode==1)
-	{
-		m_DemandLoadingModeList.AddString("load demand data from input_agent.bin file");
-	}else
-	{
-		m_DemandLoadingModeList.AddString("Demand files:");
+	m_DemandLoadingModeList.AddString("Demand files:");
 
 		for(unsigned i = 0; i< m_pDoc->m_DemandFileVector.size(); i++)
 		{
@@ -131,11 +123,8 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 		}
 
-	}
 
 	m_NumberOfIterations = m_pDoc->m_number_of_assignment_days;
-
-	m_EmissionDataOutput = m_pDoc->m_emission_data_output;
 
 	m_DemandLoadingMultipler = m_pDoc->m_demand_multiplier;
 
@@ -190,13 +179,6 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 		m_bModifiedFlag = true;
 		m_pDoc->m_number_of_assignment_days = m_NumberOfIterations;
 	}
-
-	if(m_EmissionDataOutput != m_pDoc->m_emission_data_output)
-	{
-		m_bModifiedFlag = true;
-		m_pDoc->m_emission_data_output = m_EmissionDataOutput;
-	}
-
 
 	if(fabs(m_DemandLoadingMultipler - m_pDoc->m_demand_multiplier)>0.00001)
 	{

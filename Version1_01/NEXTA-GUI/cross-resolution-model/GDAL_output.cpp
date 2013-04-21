@@ -788,7 +788,7 @@ void CTLiteDoc::ExportZoneLayerToGISFiles(CString file_name, CString GISTypeStri
 #endif
 }
 
-void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeString)
+void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeString, float Zone_Height_Ratio = 1)
 {
 	FILE* st;
 	fopen_s(&st,file_name,"w");
@@ -867,9 +867,6 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 		int t = 0;
 		double ratio = 1;
 		
-		int max_zone_height = g_GetPrivateProfileInt("KML_output","max_zone_height",500,m_ProjectFile);
-		int min_zone_height = g_GetPrivateProfileInt("KML_output","min_zone_height",10,m_ProjectFile);
-
 		if(m_DemandProfileVector.size() > 0)
 			ratio = m_DemandProfileVector[0].time_dependent_ratio[t];
  
@@ -908,11 +905,11 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height = itr_o->second.GetTotalZonalDemand()* max_zone_height/max(1,max_zone_demand);
-	
-			if(height<=min_zone_height)
-				height = min_zone_height;
+			float height = itr_o->second.m_OriginTotalNumberOfVehicles*  Zone_Height_Ratio;
 
+			if(height < 1)
+				height = 1;
+	
 				for(unsigned int si = 0; si< itr_o->second.m_ShapePoints.size(); si++)
 			{
 
@@ -1162,7 +1159,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 }
 
-void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GISTypeString, int ColorCode, bool no_curve_flag, int default_height =-1)
+void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GISTypeString, int ColorCode, bool no_curve_flag, float height_ratio = 1)
 {
 	
 	m_LinkBandWidthMode =  LBW_number_of_lanes;
@@ -1284,19 +1281,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 			fprintf(st,"\t\t<coordinates>\n");
 
 
-			float height =(*iLink)->green_height;
-	
-				if(ColorCode==1)
-					height =(*iLink)->red_height;
-
-				if(ColorCode==2)
-					height =(*iLink)->blue_height;
-
-				if(ColorCode==3)
-					height =(*iLink)->yellow_height;
-
-				if(default_height>=0)
-					height= default_height;
+			float height = height_ratio * (*iLink) ->m_UserDefinedHeight ;
 
 				int si;
 			int band_point_index = 0;
@@ -1354,6 +1339,10 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 	dlg.m_pDoc  = this;
 	if(dlg.DoModal () != IDOK)
 	 return;
+
+	DeleteFile(m_ProjectDirectory+"AMS_zone.kmz");
+	ExportZoneLayerToKMLFiles(m_ProjectDirectory+"AMS_zone.kml","LIBKML", dlg.m_Zone_Height_Ratio );
+
 
 	// other options:
 	m_LinkBandWidthMode  = LBW_link_volume;
@@ -1472,7 +1461,9 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height = dlg.m_KML_Height;
+			float height = dlg.m_KML_Height_Ratio * (*iLink) ->m_UserDefinedHeight  ;
+			if(height<1)
+				height = 1;
 	
 			int si;
 			int band_point_index = 0;
