@@ -545,8 +545,6 @@ bool g_ReadAgentBinFile(string file_name)
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
-
-
 	FILE* st = NULL;
 	fopen_s(&st,file_name.c_str (),"rb");
 	if(st!=NULL)
@@ -669,6 +667,12 @@ bool g_ReadAgentBinFile(string file_name)
 							return false;
 						}
 
+							if(pLink->GetNumberOfLanes () <0.01)  // this is a blocked link by work zone
+							{
+								pVehicle->m_bForcedSwitchAtFirstIteration = true;
+							
+							}
+
 						pVehicle->m_Distance+= pLink ->m_Length ;
 
 						pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo  ; // start from 0
@@ -711,6 +715,13 @@ bool g_ReadAgentBinFile(string file_name)
 		fclose(st);
 		return true;
 
+	}else
+	{
+		cout << "File input_agent.bin cannot be found. Please check."  << endl;
+		g_ProgramStop();
+
+		
+	
 	}
 	return false;
 }

@@ -477,6 +477,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			// determine link out capacity 
 
 			bool OutFlowFlag = true;
+
 			float MaximumFlowRate = PerHourCapacityAtCurrentSimulatioInterval *g_DTASimulationInterval/60.0f*pLink->GetNumberOfLanes(DayNo,CurrentTime,OutFlowFlag); //60 --> cap per min --> unit # of vehicle per simulation interval
 
 			float Capacity = MaximumFlowRate;
@@ -619,7 +620,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 				}
 
-				if(TotalInFlowCount > pLink-> LinkInCapacity)  // demand > supply
+				if(TotalInFlowCount > pLink-> LinkInCapacity)  // total demand > supply
 				{
 
 					if(pLink -> m_bMergeFlag == 1 || (g_UseFreevalRampMergeModelFlag==0 && pLink -> m_bMergeFlag == 2))  // merge with mulitple freeway/onramp links only, or for freeway/on-ramp merge when not using freeval model
@@ -662,7 +663,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					{
 						// step a. check with flow on onramp
 						bool OutFlowFlag = true;
-						float MaxMergeCapacity = g_LinkVector [ pLink->m_MergeOnrampLinkID ]->GetHourlyPerLaneCapacity(CurrentTime)*g_DTASimulationInterval/60.0f*g_LinkVector [ pLink->m_MergeOnrampLinkID ]->GetNumberOfLanes(DayNo,CurrentTime) * 0.5f; //60 --> cap per min --> unit # of vehicle per simulation interval
+
+						float MaxMergeCapacityForOnRamp = 
+							g_LinkVector [ pLink->m_MergeOnrampLinkID ]->GetHourlyPerLaneCapacity(CurrentTime)*g_DTASimulationInterval/60.0f
+							*g_LinkVector [ pLink->m_MergeOnrampLinkID ]->GetNumberOfLanes(DayNo,CurrentTime) * 0.5f; //60 --> cap per min --> unit # of vehicle per simulation interval
 						// 0.5f -> half of the onramp capacity
 						// use integer number of vehicles as unit of capacity
 
@@ -670,40 +674,40 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 						if(g_RandomizedCapacityMode)
 						{
-							MaxMergeCapacity_int = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacity,li); 
+							MaxMergeCapacity_int = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(MaxMergeCapacityForOnRamp,li); 
 						}
 						else
 						{
 							float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
-							pLink->m_CumulativeMergeOutCapacityCount+= MaxMergeCapacity;
+							pLink->m_CumulativeMergeOutCapacityCount+= MaxMergeCapacityForOnRamp;
 							MaxMergeCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
 						}
 
 
-						unsigned int FlowonOnRamp = g_LinkVector [ pLink->m_MergeOnrampLinkID ]->ExitQueue.size();
+						unsigned int DemandonOnRamp = g_LinkVector [ pLink->m_MergeOnrampLinkID ]->ExitQueue.size();
 						int DownstreamLinkInCapacity = pLink->LinkInCapacity ;
 
-						if(FlowonOnRamp > MaxMergeCapacity_int)  
+						if(DemandonOnRamp > MaxMergeCapacity_int)  
 							// ramp flow > max merge capacity on ramp  
 							// over regions I and II in Dr. Rouphail's diagram
 							// capacity on ramp = max merge capacity on ramp
 							// capacity on main line = LinkInCapacity - capacity on ramp
 							// if flow on main line > capacity on main line  // queue on main line
 							// elsewise, no queue on mainline
-						{
+						{  //region I
 							g_LinkVector [ pLink->m_MergeOnrampLinkID ]->LinkOutCapacity = MaxMergeCapacity_int;
 							g_LinkVector [pLink->m_MergeMainlineLinkID] ->LinkOutCapacity = DownstreamLinkInCapacity - MaxMergeCapacity_int;
 
 						}else // ramp flow <= max merge capacity on ramp  // region III  
-							// restrict the mainly capacity  // mainly capacity = LinkInCapacity - flow on ramp
+							// restrict the mainly capacity  // mainline capacity = LinkInCapacity - flow on ramp
 						{
 							g_LinkVector [ pLink->m_MergeOnrampLinkID ]->LinkOutCapacity = MaxMergeCapacity_int;
-							g_LinkVector [pLink->m_MergeMainlineLinkID]->LinkOutCapacity = DownstreamLinkInCapacity - FlowonOnRamp;
+							g_LinkVector [pLink->m_MergeMainlineLinkID]->LinkOutCapacity = DownstreamLinkInCapacity - DemandonOnRamp;
 
 						}
 						if(pLink->m_FromNodeNumber == 58675 && pLink->m_ToNodeNumber == 57423 && CurrentTime>=1800)
 						{
-							TRACE("time %f, MaxMergeCapacity,FlowonOnRamp = %d, LinkOutCapacity = %, MaxMergeCapacity_int = %d\n", CurrentTime, MaxMergeCapacity, FlowonOnRamp, MaxMergeCapacity_int);
+							TRACE("time %f, MaxMergeCapacityForOnRamp,DemandonOnRamp = %d, LinkOutCapacity = %, MaxMergeCapacity_int = %d\n", CurrentTime, MaxMergeCapacityForOnRamp, DemandonOnRamp, MaxMergeCapacity_int);
 						}
 
 						//		g_LogFile << "merge: mainline capacity"<< CurrentTime << " "  << g_LinkVector [pLink->m_MergeMainlineLinkID] ->LinkOutCapacity << endl;

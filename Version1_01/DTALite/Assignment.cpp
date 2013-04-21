@@ -100,7 +100,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
-		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
+		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
 	}
 		cout << "------- Memory allocation completed.-------" << endl;
 
@@ -372,8 +372,19 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			}
 		}
+
+		if(pVeh->m_bForcedSwitchAtFirstIteration == true)
+		{
+			// m_bForcedSwitchAtFirstIteration is true when the vehicle has to pass through a totally closed work zone link
+			bSwitchFlag = true;
+			 pVeh->m_bForcedSwitchAtFirstIteration  = false; // reset the flag to false in any case, as it is effective only for the first iteration
+		
+		}
+
 		if(bSwitchFlag || g_CalculateUEGapForAllAgents==1)  // for all vehicles that need to switch
 		{
+
+
 
 			pVeh->m_DepartureTime  = pVeh->m_PreferredDepartureTime  + final_departuret_time_shift;
 
@@ -397,7 +408,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			pVeh->m_bConsiderToSwitch = true;
 
-			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			if( pVeh->m_NodeAry !=NULL && pVeh->m_NodeSize >0)  // delete the old path
 			{
 				delete pVeh->m_NodeAry;
 			}
@@ -1015,9 +1026,10 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 			PathArray[VehicleDest].PathNodeSums[PathArray[VehicleDest].NumOfPaths] = NodeSum;
 			PathArray[VehicleDest].AvgPathTimes[PathArray[VehicleDest].NumOfPaths] = TripTime;
 			// obtain path link sequence from vehicle link sequence
+			PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths].LinkNoVector.clear ();
 			for(int i = 0; i< NodeSize-1; i++)
 			{
-				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
+				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths].LinkNoVector .push_back (pVeh->m_NodeAry[i].LinkNo); 
 			}
 			PathArray[VehicleDest].PathSize[PathArray[VehicleDest].NumOfPaths] = NodeSize;
 		}
@@ -1041,9 +1053,11 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 				PathArray[VehicleDest].PathNodeSums[PathArray[VehicleDest].NumOfPaths] = NodeSum;
 				PathArray[VehicleDest].AvgPathTimes[PathArray[VehicleDest].NumOfPaths] = TripTime;
 				// obtain path link sequence from vehicle link sequence
+
+				PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths].LinkNoVector .clear ();
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths][i] = pVeh->m_NodeAry[i].LinkNo; 
+					PathArray[VehicleDest].PathLinkSequences[PathArray[VehicleDest].NumOfPaths].LinkNoVector .push_back (pVeh->m_NodeAry[i].LinkNo); 
 				}
 				PathArray[VehicleDest].PathSize[PathArray[VehicleDest].NumOfPaths] = NodeSize;
 			}

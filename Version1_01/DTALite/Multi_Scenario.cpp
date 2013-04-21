@@ -91,9 +91,6 @@ void g_MultiScenarioTrafficAssignment()
 	csv_output.SetFieldName ("number_of_assignment_days");
 	csv_output.SetFieldName ("traffic_flow_model");
 
-	csv_output.SetFieldName ("default_arterial_k_jam");
-	csv_output.SetFieldName ("default_cycle_length");
-
 
 	CCSVParser parser_MOE_settings;
 	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
@@ -248,6 +245,10 @@ void g_MultiScenarioTrafficAssignment()
 			g_LogFile << "Traffic Flow Model =  ";
 			g_SummaryStatFile.WriteTextLabel("Traffic Flow Model =,");
 
+			g_EmissionDataOutputFlag  = 0; 
+			g_MovementCapacityModelFlag = 0;
+ 
+
 			switch( g_TrafficFlowModelFlag)
 			{
 			case tfm_BPR: 		g_LogFile << "BPR Function" << endl;
@@ -266,10 +267,31 @@ void g_MultiScenarioTrafficAssignment()
 				g_SummaryStatFile.WriteTextString("Newell's Cumulative Flow Count Model");
 				break;
 
+			case tfm_newells_model_with_emissions: 		g_LogFile << "Newell's Cumulative Flow Count Model + Emissions Output" << endl;
+				g_SummaryStatFile.WriteTextString("Newell's Cumulative Flow Count Model  + Emissions Output");
+
+				traffic_flow_model = tfm_newells_model;  // newell's model
+				g_EmissionDataOutputFlag  = 1;  // with emission data
+
+				break;
+
+			case tfm_point_queue_with_movement_capacity: 		g_LogFile << "Point Queue Model with Movement Capacity" << endl;
+				g_SummaryStatFile.WriteTextString("Point Queue Model with Movement Capacity");
+				traffic_flow_model = tfm_point_queue;  // point queue 
+				g_MovementCapacityModelFlag = 1;
+
+				break;
+
+
 			default: 		g_LogFile << "No Valid Model is Selected" << endl;
 				g_SummaryStatFile.WriteTextString("Invalid Model");
 				break; 
 			}
+
+
+
+				g_ODEstimationFlag = 0;
+
 			switch (g_UEAssignmentMethod)
 			{
 			case assignment_MSA: 
@@ -295,10 +317,12 @@ void g_MultiScenarioTrafficAssignment()
 				g_SummaryStatFile.WriteParameterValue ("Routing method","Assessibility based on distance");
 				break;
 
-			case assignment_accessibility_travel_time:
-				g_SummaryStatFile.WriteParameterValue ("Routing method","Assessibility based on travel time");
-				break;
+			case assignment_OD_demand_estimation:
+				g_SummaryStatFile.WriteParameterValue ("Routing method","OD demand estimation");
 
+				g_UEAssignmentMethod = assignment_MSA; // default assignment mode to MSA, use ODME_step_size after running ODME
+				g_ODEstimationFlag = 1;
+				break;
 
 			default: 
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
@@ -341,15 +365,20 @@ void g_MultiScenarioTrafficAssignment()
 			g_ODEstimation_StartingIteration = 1000;
 			g_ODEstimation_max_percentage_deviation_wrt_hist_demand = 0.20f;
 
-			g_ODEstimationFlag = 0;
-
-			parser_scenario.GetValueByFieldNameWithPrintOut ("ODME_mode",g_ODEstimationFlag );
 
 			if(g_ODEstimationFlag ==1)
 			{
 				if(parser_scenario.GetValueByFieldName("ODME_start_iteration",g_ODEstimation_StartingIteration)==false)
 				{
-					cout << "Field ODME_start_iteration has not been specified in file input_scenario_settings.csv. A default factor of 1000 is used." << endl;
+					g_ODEstimation_StartingIteration = 20;
+					cout << "Field ODME_start_iteration has not been specified in file input_scenario_settings.csv. A default factor of 20 is used." << endl;
+					getchar();
+				}
+
+				if( TotalUEIterationNumber> g_ODEstimation_StartingIteration && g_ODEstimation_StartingIteration >= _MAX_ODT_PATH_SIZE_4_ODME)
+				{
+					cout << "Field ODME_start_iteration should be less than " << _MAX_ODT_PATH_SIZE_4_ODME  << endl;
+					g_ODEstimation_StartingIteration = _MAX_ODT_PATH_SIZE_4_ODME-1;
 					getchar();
 				}
 
@@ -395,22 +424,6 @@ void g_MultiScenarioTrafficAssignment()
 			}
 
 
-
-			g_DefaultArterialKJam = 250;
-			parser_scenario.GetValueByFieldNameWithPrintOut("default_arterial_k_jam",g_DefaultArterialKJam);
-
-
-			if(g_DefaultArterialKJam <=100)
-			{
-				cout << "g_DefaultArterialKJam = " << g_DefaultArterialKJam << "which is too small. Please check  file input_scenario_settings.csv." << endl;
-				g_ProgramStop();
-			}
-
-			g_DefaultCycleLength = 110;
-			parser_scenario.GetValueByFieldName("default_cycle_length",g_DefaultCycleLength);
-
-
-
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false )
 			{
 				cout << "Field demand_multiplier cannot be found in file input_scenario_settings.csv. Please check." << endl;
@@ -436,13 +449,6 @@ void g_MultiScenarioTrafficAssignment()
 
 			string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;
 
-			g_EmissionDataOutputFlag  = 0;
-			if(parser_scenario.GetValueByFieldNameWithPrintOut("emission_data_output",g_EmissionDataOutputFlag )==false)
-			{
-				//			cout << "Field emission_data_output cannot be found in file input_scenario_settings.csv. Please check." << endl;
-				//			g_ProgramStop();
-			}
-
 			g_ReadInputFiles(scenario_no);
 
 			cout << "Start Traffic Assignment/Simulation... " << endl;
@@ -462,8 +468,6 @@ void g_MultiScenarioTrafficAssignment()
 			csv_output.SetValueByFieldName ("demand_multiplier",g_DemandGlobalMultiplier);
 
 			csv_output.SetValueByFieldName ("traffic_flow_model",traffic_flow_model);
-			csv_output.SetValueByFieldName ("default_arterial_k_jam",g_DefaultArterialKJam);
-			csv_output.SetValueByFieldName ("default_cycle_length",g_DefaultCycleLength);
 
 			CCSVParser parser_MOE_settings;
 			if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))

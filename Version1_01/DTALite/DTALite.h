@@ -41,14 +41,18 @@ using namespace std;
 #define _MAX_NUMBER_OF_PROCESSORS  8
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
-enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model};
+enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, tfm_point_queue_with_movement_capacity};
 enum e_assignment_method { assignment_MSA =0, 
 assignment_day_to_day, 
 assignment_gap_function,
 assignment_gap_function_MSA_step_size,
 assignment_accessibility_distanance,
-assignment_accessibility_travel_time};
+assignment_accessibility_travel_time,
+assignment_OD_demand_estimation
+};
+
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
+extern int g_MovementCapacityModelFlag;
 // extention for multi-day equilibirum
 #define MAX_FIFO_QUEUESIZE 5000
 #define MAX_DAY_SIZE 1
@@ -63,6 +67,8 @@ extern e_traffic_flow_model g_TrafficFlowModelFlag;
 #define MAX_SIZE_INFO_USERS 5 
 #define MAX_VOT_RANGE 101
 #define DEFAULT_VOT 12
+#define _MAX_ODT_PATH_SIZE_4_ODME 50
+#define _MAX_PATH_NODE_SIZE_4_ODME 300
 
 extern int g_ODZoneNumberSize;
 extern int g_ODZoneIDSize;
@@ -935,12 +941,12 @@ public:
 		return m_LaneCapacity;
 	}
 
-	float GetNumberOfLanes(int DayNo=0, int Time=-1, bool OutputFlowFlag = false, bool bConsiderIncident = true)  // with lane closure
+	float GetNumberOfLanes(int DayNo=0, int Time=0, bool OutputFlowFlag = false, bool bConsiderIncident = true)  // with lane closure
 	{
 
 		int NumLanes = m_NumLanes;
 
-		if(OutputFlowFlag == true)
+		if(OutputFlowFlag == true && g_MovementCapacityModelFlag == 0)  // when we use AMS movement capacity, we do not consider # of left-turn bays in outflow link capacity calculation
 			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
 
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
@@ -1968,6 +1974,7 @@ public:
 	float m_EstimatedTravelTime;
 	float m_Delay;
 
+	bool m_bForcedSwitchAtFirstIteration; // used by agent model, if there is a newly added work zone, then we have to force the vehicles to switch (in order to avoid bloced links)
 	bool m_bSwitch;  // switch route in assignment
 	bool m_bConsiderToSwitch;  //consider to switch route in assignment
 
@@ -2023,6 +2030,8 @@ public:
 
 	DTAVehicle()
 	{
+
+		m_bForcedSwitchAtFirstIteration  = false;
 		m_bRadioMessageResponseFlag = false;
 
 		m_DestinationZoneID_Updated = 0;
@@ -2070,7 +2079,7 @@ public:
 	};
 	~DTAVehicle()
 	{
-		if(m_NodeAry != NULL)
+		if(m_NodeAry != NULL && m_NodeSize > 0)
 			delete m_NodeAry;
 
 		m_OperatingModeCount.clear();
@@ -2362,11 +2371,130 @@ public:
 	}
 };
 
+struct PathLinkStruct
+{
+	std::vector<int> LinkNoVector;
+
+};
+class PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
+{
+public:
+	//  // for path flow adjustment
+	int   NumOfVehicles;
+	float   DeviationNumOfVehicles; 
+	int  LeastTravelTime;
+
+	//
+	int   NumOfPaths;
+
+	std::vector<float> AvgPathGap; 
+	std::vector<float> NewNumberOfVehicles; 
+	std::vector<int>   PathNodeSums;            // max 100 path for each ODT
+	std::vector<int>   NumOfVehsOnEachPath; 	
+	std::vector<int>   PathSize;				// number of nodes on each path
+	std::vector<int>   MeasurementDeviationPathMarginal;            // max 100 path for each ODT
+	std::vector<float> AvgPathTimes; 	       // average path travel time across different vehicles on the same path with the same departure time
+
+	std::vector<PathLinkStruct>   PathLinkSequences;	// max 300 links on each path
+
+void AddPathElement()
+{
+	AvgPathGap.push_back(0);
+	NewNumberOfVehicles.push_back(0);
+	PathNodeSums.push_back(0);
+	NumOfVehsOnEachPath.push_back(0);
+	PathSize.push_back(0);
+	PathNodeSums.push_back(0);
+	MeasurementDeviationPathMarginal.push_back(0);
+	AvgPathTimes.push_back(0);
+	PathLinkStruct pl;
+	PathLinkSequences.push_back(pl);
+
+}
+void ClearPathElements()
+{
+	AvgPathGap.clear();
+	NewNumberOfVehicles.clear();
+	PathNodeSums.clear();
+	NumOfVehsOnEachPath.clear();
+	PathSize.clear();
+	PathNodeSums.clear();
+	MeasurementDeviationPathMarginal.clear();
+	AvgPathTimes.clear();
+	PathLinkSequences.clear();
+}
+
+
+	int   BestPathIndex;				// index of the best (i.e., least experienced time) path for each ODT
+
+};
+
+class PathArrayForEachODTK // Xuesong: store path set for each OD, tau and k set.
+{
+public: 
+	int m_PathIndex; 
+	int m_OriginZoneID;  //range 0, 65535
+	int m_DestinationZoneID;  // range 0, 65535
+	int m_DemandType;     // 1: passenger,  2, HOV, 2, truck, 3: bus
+
+	int m_DepartureTimeIndex;
+	int m_NodeSum; 
+
+	float m_starting_time_in_min;
+	float m_ending_time_in_min;
+
+	int m_LinkSize;
+	std::vector<int> m_LinkNoArray;
+	float m_VehicleSize;
+
+	PathArrayForEachODTK()
+	{
+		m_LinkSize = 0;
+		m_VehicleSize = 0;
+		m_DepartureTimeIndex = 0;
+
+	}
+
+	void Setup(int PathIndex,int OriginZoneID, int DestinationZoneID, int DemandType, int starting_time_in_min, int ending_time_in_min, int LinkSize, std::vector<int> PathLinkSequences, float VehicleSize, int NodeSum, int DepartureTimeIndex)
+	{
+		m_PathIndex  = PathIndex;
+		m_DepartureTimeIndex = DepartureTimeIndex;
+
+		m_OriginZoneID = OriginZoneID;
+		m_DestinationZoneID = DestinationZoneID;
+		m_DemandType = DemandType;
+
+		m_starting_time_in_min = starting_time_in_min;
+		m_ending_time_in_min = ending_time_in_min;
+
+
+		m_LinkSize = LinkSize;
+
+		m_VehicleSize = VehicleSize;
+		for(int i = 0; i< LinkSize; i++)
+		{
+			m_LinkNoArray.push_back (PathLinkSequences[i]);
+		}
+
+
+		m_NodeSum = NodeSum;
+	}
+	~ PathArrayForEachODTK()
+	{
+
+		m_LinkNoArray.clear();
+
+	}
+};
+
 class DTANetworkForSP  // mainly for shortest path calculation, not just physical network
 	// for shortes path calculation between zone centroids, for origin zone, there are only outgoing connectors, for destination zone, only incoming connectors
 	// different shortest path calculations have different network structures, depending on their origions/destinations
 {
 public:
+
+	std::vector<PathArrayForEachODT> m_PathArray;
+
 	int m_NumberOfSPCalculationIntervals;
 	int m_StartIntervalForShortestPathCalculation;
 
@@ -2437,11 +2565,10 @@ public:
 
 	DTANetworkForSP()
 	{
-	
-	m_NodeSize = 0;
+		m_NodeSize = 0;
 	};
 
-	void Setup(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0)
+	void Setup(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0, bool bODMEFlag=false)
 	{
 		m_NodeSize = NodeSize;
 		m_LinkSize = LinkSize;
@@ -2503,6 +2630,13 @@ public:
 		LinkLabelTimeAry = new float[m_LinkSize];                     // label - time
 		LinkLabelCostAry = new float[m_LinkSize];                     // label - cost
 
+		if(bODMEFlag)
+		{
+			PathArrayForEachODT element;
+
+			for(int z = 0; z < g_ODZoneIDSize; z++)
+				m_PathArray.push_back (element);
+		}
 	};
 	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
 
@@ -2564,6 +2698,7 @@ public:
 		if(LinkLabelCostAry) delete LinkLabelCostAry;
 
 		m_ScanLinkList.clear();
+
 
 	};
 
@@ -2723,90 +2858,8 @@ public:
 
 NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
 
-#define _MAX_ODT_PATH_SIZE_4_ODME 50
-#define _MAX_PATH_NODE_SIZE_4_ODME 300
-
-struct PathArrayForEachODT // Jason : store the path set for each OD pair and each departure time interval
-{
-	//  // for path flow adjustment
-	int   NumOfVehicles;
-	float   DeviationNumOfVehicles; 
-	int   MeasurementDeviationPathMarginal[_MAX_ODT_PATH_SIZE_4_ODME];
-	float AvgPathGap[_MAX_ODT_PATH_SIZE_4_ODME]; 
-	float NewNumberOfVehicles[_MAX_ODT_PATH_SIZE_4_ODME]; 
-
-	int  LeastTravelTime;
-
-	//
-	int   NumOfPaths;
-	int   PathNodeSums[_MAX_ODT_PATH_SIZE_4_ODME];            // max 100 path for each ODT
-	int   NumOfVehsOnEachPath[_MAX_ODT_PATH_SIZE_4_ODME]; 	
-	int   PathLinkSequences[_MAX_ODT_PATH_SIZE_4_ODME][_MAX_PATH_NODE_SIZE_4_ODME];	// max 300 links on each path
-	int   PathSize[_MAX_ODT_PATH_SIZE_4_ODME];				// number of nodes on each path
-	//	int   BestPath[100];				// the link sequence of the best path for each ODT
-	int   BestPathIndex;				// index of the best (i.e., least experienced time) path for each ODT
-	float AvgPathTimes[_MAX_ODT_PATH_SIZE_4_ODME]; 	       // average path travel time across different vehicles on the same path with the same departure time
 
 
-};
-
-class PathArrayForEachODTK // Xuesong: store path set for each OD, tau and k set.
-{
-public: 
-	int m_PathIndex; 
-	int m_OriginZoneID;  //range 0, 65535
-	int m_DestinationZoneID;  // range 0, 65535
-	int m_DemandType;     // 1: passenger,  2, HOV, 2, truck, 3: bus
-
-	int m_DepartureTimeIndex;
-	int m_NodeSum; 
-
-	float m_starting_time_in_min;
-	float m_ending_time_in_min;
-
-	int m_LinkSize;
-	std::vector<int> m_LinkNoArray;
-	float m_VehicleSize;
-
-	PathArrayForEachODTK()
-	{
-		m_LinkSize = 0;
-		m_VehicleSize = 0;
-		m_DepartureTimeIndex = 0;
-
-	}
-
-	void Setup(int PathIndex,int OriginZoneID, int DestinationZoneID, int DemandType, int starting_time_in_min, int ending_time_in_min, int LinkSize, int PathLinkSequences[100], float VehicleSize, int NodeSum, int DepartureTimeIndex)
-	{
-		m_PathIndex  = PathIndex;
-		m_DepartureTimeIndex = DepartureTimeIndex;
-
-		m_OriginZoneID = OriginZoneID;
-		m_DestinationZoneID = DestinationZoneID;
-		m_DemandType = DemandType;
-
-		m_starting_time_in_min = starting_time_in_min;
-		m_ending_time_in_min = ending_time_in_min;
-
-
-		m_LinkSize = LinkSize;
-
-		m_VehicleSize = VehicleSize;
-		for(int i = 0; i< LinkSize; i++)
-		{
-			m_LinkNoArray.push_back (PathLinkSequences[i]);
-		}
-
-
-		m_NodeSum = NodeSum;
-	}
-	~ PathArrayForEachODTK()
-	{
-
-		m_LinkNoArray.clear();
-
-	}
-};
 
 class NetworkSimulationResult
 {
@@ -3098,7 +3151,7 @@ extern int g_information_updating_interval_of_VMS_in_min;
 
 
 extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
-extern void ConstructPathArrayForEachODT_ODEstimation(int,PathArrayForEachODT *, int, int); // construct path array for each ODT
+extern void ConstructPathArrayForEachODT_ODEstimation(int,std::vector<PathArrayForEachODT> PathArray, int, int); // construct path array for each ODT
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Iteration);
 extern void g_OutputODMEResults();
 extern void g_GenerateVehicleData_ODEstimation();

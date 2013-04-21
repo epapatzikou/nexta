@@ -259,6 +259,7 @@ extern int g_FIFOConditionAcrossDifferentMovementFlag;
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
 extern int g_ShortestPathWithMovementDelayFlag;
 extern int g_EmissionDataOutputFlag;
+extern int g_MovementCapacityModelFlag;
 extern int g_TimeDependentODMOEOutputFlag;
 extern int g_VehiclePathOutputFlag;
 
