@@ -44,7 +44,6 @@ public:
 	CListBox m_AssignmentMethod;
 	afx_msg void OnLbnSelchangeListDemandLoadingMode();
 	afx_msg void OnLbnSelchangeListRoutingMethod();
-	BOOL m_EmissionDataOutput;
 	afx_msg void OnBnClickedOk2();
 	afx_msg void OnLbnSelchangeListDemandLoadingMode2();
 	CListBox m_NetworkDataList;

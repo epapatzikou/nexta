@@ -59,9 +59,6 @@ CAssignmentSimulationTabDlg::CAssignmentSimulationTabDlg(std::vector<std::string
 	values = Values;
 	this->default_value = default_value;
 	this->m_TrafficFlowModel_Idx = -1;
-	this->m_ODME_mode_Idx = -1;
-	this->m_emission_data_output_Idx = -1;
-	this->m_agent_demand_input_Idx = -1;
 	m_traffic_assignment_method_Idx = -1;
 	m_ue_gap_calculation_method_Idx = -1;
 }
@@ -93,19 +90,6 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 			m_TrafficFlowModel_Idx = i;
 		}
 
-		if (names.at(i).find("ODME_mode") != std::string::npos)
-		{
-			m_ODME_mode_Idx = i;
-		}
-
-		if (names.at(i).find("emission_data_output") != std::string::npos)
-		{
-			m_emission_data_output_Idx = i;
-		}
-		if (names.at(i).find("agent_demand_input_mode") != std::string::npos)
-		{
-			m_agent_demand_input_Idx = i;
-		}
 
 		if (names.at(i).find("traffic_assignment_method") != std::string::npos)
 		{
@@ -129,17 +113,7 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 		}
 		else
 		{
-			if (i == m_ODME_mode_Idx || i == m_emission_data_output_Idx || i == m_agent_demand_input_Idx)
-			{
-				CGridColumnTraitCombo* pComboTrait = new CGridColumnTraitCombo;
 
-				pComboTrait->SetStyle (CBS_DROPDOWNLIST);
-				pComboTrait->AddItem(0, _T("No"));
-				pComboTrait->AddItem(0, _T("Yes"));
-
-				pTrait = pComboTrait;
-			}
-			else
 			{
 				if (i == m_traffic_assignment_method_Idx)
 				{
@@ -189,18 +163,6 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 			}
 			else
 			{
-				if (j == m_ODME_mode_Idx || j == m_emission_data_output_Idx || j==m_agent_demand_input_Idx)
-				{
-					if (values.at(i).at(j).length() == 0 || atoi(values.at(i).at(j).c_str()) == 0)
-					{
-						m_ListCtrl.SetItemText(Index, nCol, _T("No"));
-					}
-					else
-					{
-						m_ListCtrl.SetItemText(Index, nCol, _T("Yes"));
-					}
-				}
-				else
 				{
 					if (j == this->m_traffic_assignment_method_Idx)
 					{
@@ -229,7 +191,6 @@ BOOL CAssignmentSimulationTabDlg::OnInitDialog()
 	AddColumn("ODME_start_iteration",100);
 	AddColumn("ODME_step_size",0.05);
 	AddColumn("ODME_max_percentage_deviation_wrt_hist_demand",70);
-	AddColumn("agent_demand_input_mode",0);
 	AddColumn("calibration_data_start_time_in_min",0);
 	AddColumn("calibration_data_end_time_in_min",1440);
 	AddColumn("routing_movement_delay_mode",0);
@@ -473,19 +434,6 @@ CString CAssignmentSimulationTabDlg::GenerateRecordString()
 					}
 				}
 			}
-
-			if (j == m_ODME_mode_Idx || j == m_emission_data_output_Idx || j == m_agent_demand_input_Idx)
-			{
-				if (tmp == "Yes")
-				{
-					tmp = "1";
-				}
-				else
-				{
-					tmp = "0";
-				}
-			}
-			
 
 			subStr += tmp;
 

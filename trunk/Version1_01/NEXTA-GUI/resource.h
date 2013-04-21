@@ -96,7 +96,6 @@
 #define IDD_DIALOG_Settings             155
 #define IDR_TLiteTYPE3                  155
 #define IDS_STRING10103                 155
-#define IDD_DIALOG_NETWORK_DATA_Settings 155
 #define IDD_DIALOG_DefaultLinkProperties 156
 #define IDS_STRING10104                 156
 #define IDD_DIALOG_LINK_LIST            157
@@ -500,7 +499,6 @@
 #define IDC_BUTTON_RELOAD               1181
 #define IDC_BUTTON_EXPORT_MATRIX        1182
 #define IDC_QUESTION                    1183
-#define IDC_BUTTON_EXPORT_MATRIX2       1183
 #define IDC_BUTTON_EXPORT_COLUMN        1183
 #define IDC_BUTTON                      1184
 #define IDC_SETTING_TAB_CORRIDOR        1185
@@ -518,6 +516,8 @@
 #define IDC_EDIT_Transparency           1196
 #define IDC_EDIT_L1                     1197
 #define IDC_EDIT_L7                     1198
+#define IDC_EDIT_HEIGHT2                1199
+#define IDC_EDIT_HEIGHT_ZONE            1199
 #define IDC_EDIT_L2                     1200
 #define IDC_EDIT_L3                     1201
 #define IDC_EDIT_L4                     1202
@@ -528,6 +528,7 @@
 #define IDC_BUTTON_REVERSE              1209
 #define IDC_PROJECT_LIST                1210
 #define IDC_COMBO_AGG_INTERVAL          1211
+#define IDC_COMBO_Height                1212
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1270,7 +1271,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        250
 #define _APS_NEXT_COMMAND_VALUE         33648
-#define _APS_NEXT_CONTROL_VALUE         1212
+#define _APS_NEXT_CONTROL_VALUE         1213
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

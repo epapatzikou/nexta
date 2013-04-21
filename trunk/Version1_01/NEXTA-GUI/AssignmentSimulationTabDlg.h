@@ -44,8 +44,6 @@ private:
 	int m_Rate_Idx;
 	int m_TrafficFlowModel_Idx;
 	int m_ODME_mode_Idx;
-	int m_emission_data_output_Idx;
-	int m_agent_demand_input_Idx;
 	int m_traffic_assignment_method_Idx;
 	int m_ue_gap_calculation_method_Idx;
 

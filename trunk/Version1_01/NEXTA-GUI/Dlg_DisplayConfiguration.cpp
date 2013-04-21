@@ -140,8 +140,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Total Sensor Link Volume");
 	m_Link_Label.AddString("Total Link Count Error");
 	m_Link_Label.AddString("Simulated AADT");
-	m_Link_Label.AddString("Observed bidirectional AADT");
-	m_Link_Label.AddString("Observed peak hour volume");
+	m_Link_Label.AddString("Observed Bidirectional AADT");
+	m_Link_Label.AddString("Observed Peak Hour Volume");
 
 	m_Link_Label.AddString("-- Safety Prediction Results --");
 	m_Link_Label.AddString("Group 1 Code");

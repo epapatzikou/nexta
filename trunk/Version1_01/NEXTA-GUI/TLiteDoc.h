@@ -694,8 +694,6 @@ public:
 	int m_traffic_flow_model;
 	int m_traffic_assignment_method;
 
-	int m_agent_demand_input_mode;
-	int m_emission_data_output;
 	int m_ODME_mode;
 	float m_demand_multiplier;
 
@@ -1601,8 +1599,8 @@ public:
 	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
-	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string);
-	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag, int default_height);
+	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string, float Zone_Height_Ratio);
+	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag, float height_ratio);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportPathLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GIS_type_string);
@@ -2112,6 +2110,7 @@ public:
 	bool FindObject(eSEARCHMODE SearchMode, int value1, int value12);
 
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
+	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
 	void RunQEMTool(CString MovementFileName, int NodeNumber);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);

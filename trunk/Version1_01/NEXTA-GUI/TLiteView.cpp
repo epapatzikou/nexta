@@ -1456,7 +1456,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 					CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
 					pDC->SetBkColor(RGB(0,0, 0));
+
+				if((*iLink)->m_LinkNo == pDoc->m_SelectedLinkNo)
+				{
+					pDC->SetTextColor(RGB(255,0,0));
+				}else
+				{
 					pDC->SetTextColor(RGB(0,0,0));
+				}
+
+
 					pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
 
 					if(str_reference_text.GetLength () > 0 )  // reference text with different color4
@@ -4398,6 +4407,8 @@ void CTLiteView::OnViewIncreasenodesize()
 	{
 		pDoc->m_NodeDisplaySize = max(pDoc->m_NodeDisplaySize *1.2, pDoc->m_NodeDisplaySize+1);
 
+
+
 	}
 	else 
 	{
@@ -4405,6 +4416,7 @@ void CTLiteView::OnViewIncreasenodesize()
 	}
 
 
+	m_LinkTextFontSize = max((int)(m_LinkTextFontSize*1.2),m_LinkTextFontSize+1);
 	Invalidate();
 
 }
@@ -4421,6 +4433,13 @@ void CTLiteView::OnViewDecreatenodesize()
 		pDoc->m_VehicleDisplaySize/=1.2;
 
 	pDoc->m_NodeDisplaySize = max(0.00001,pDoc->m_NodeDisplaySize);
+
+	m_LinkTextFontSize = min((int)(m_LinkTextFontSize/1.2),m_LinkTextFontSize-1);
+
+
+
+	m_LinkTextFontSize = max(m_LinkTextFontSize,8);
+
 	Invalidate();
 
 
@@ -6022,7 +6041,9 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 		CPoint TextPoint = NPtoSP(pt_text);
 		pDC->SetBkColor(RGB(0,0, 0));
+		
 		pDC->SetTextColor(RGB(0,1,0));
+
 		pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
 		pDC->SelectObject(oldFont);
 
