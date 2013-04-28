@@ -148,7 +148,7 @@ public:
 		{
 			if(required_field)
 			{
-				cout << "Field " << field_name << " in File " << mFileName << " does not exit."  << endl;
+				cout << "Field " << field_name << " in File " << mFileName << " does not exist."  << endl;
 
 				g_ProgramStop();
 			}
