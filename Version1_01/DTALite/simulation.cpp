@@ -56,7 +56,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	std::list<struc_vehicle_item>::iterator vii;
 
-	int vehicle_id_trace = 86;
+	int vehicle_id_trace = 7;
 	int link_id_trace = -1;
 
 
@@ -1370,7 +1370,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 		g_VehicularSimulation(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
 
-		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_Number_of_GeneratedVehicles)
+		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_VehicleMap.size())
 		{		
 			cout << "--Simulation completes as all the vehicles are out of the network.--" << endl;
 			output.NetworkClearanceTimeStamp_in_Min = time;

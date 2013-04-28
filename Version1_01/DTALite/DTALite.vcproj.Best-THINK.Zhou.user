@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Baseline"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\ODME_Foothill Corridor_Student Project"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Speed_test\ODME_6-Node Network"
+				WorkingDirectory="C:\Speed_test\Sorbiers_20_04_2013"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Speed_test\ODME_6-Node Network"
+				WorkingDirectory="C:\Speed_test\Sorbiers_20_04_2013"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
