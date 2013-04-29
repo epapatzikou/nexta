@@ -788,7 +788,7 @@ void CTLiteDoc::ExportZoneLayerToGISFiles(CString file_name, CString GISTypeStri
 #endif
 }
 
-void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeString, float Zone_Height_Ratio = 1)
+void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeString, int ZoneKML_height_mode, float Zone_Height_Ratio,  int ZoneColor_mode, int Transparency, float ColorCategoryValue[10])
 {
 	FILE* st;
 	fopen_s(&st,file_name,"w");
@@ -798,50 +798,30 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 		fprintf(st,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
 		fprintf(st,"<Document>\n");
 		fprintf(st,"<name>KmlFile</name>\n");
+	CString LOS_str[MAX_LOS_SIZE];
 
 
-		// blue style
-		fprintf(st,"<Style id=\"green\">\n");
+	   for(int i = 1; i<MAX_LOS_SIZE-1; i++)
+	   {
+			char str[10];
+			int transparency = 255- Transparency /100.0*255;
+
+			if(m_ColorDirection==1)
+				wsprintf(str, "%02x%06x",  transparency, m_colorLOS[i]);
+			else
+				wsprintf(str, "%02x%06x",  transparency, m_colorLOS[MAX_LOS_SIZE-1-i]);
+
+
+			LOS_str[i].Format ("color%d", i);
+		fprintf(st,"<Style id=\"%s\">\n", LOS_str[i]);
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
 		fprintf(st,"</LineStyle>\n");
 		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d00ff00</color>\n");
+		fprintf(st," <color>%s</color>\n",str );
 		fprintf(st,"</PolyStyle>\n");
    		fprintf(st,"</Style>\n");
-
-		// red style
-
-		fprintf(st,"<Style id=\"red\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d0000ff</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
-
-		// blue style
-
-		fprintf(st,"<Style id=\"blue\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7dff0000</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
-
-		// yellow style
-
-		fprintf(st,"<Style id=\"yellow\">\n");
-		fprintf(st,"<LineStyle>\n");
-		fprintf(st,"<width>1.5</width>\n");
-		fprintf(st,"</LineStyle>\n");
-		fprintf(st,"<PolyStyle>\n");
-		fprintf(st," <color>7d00ffff</color>\n");
-		fprintf(st,"</PolyStyle>\n");
-   		fprintf(st,"</Style>\n");
+		}
 
 		fprintf(st,"<Folder>\n");
    		fprintf(st,"<name>Zone Layer</name>\n");
@@ -894,10 +874,48 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 //			fprintf(st,"\t\t\t<end>2012-01-01-T%s:00Z</end>\n",time_stamp_str_end);
 
 			fprintf(st,"\t\t\t </TimeSpan>\n");
+
+
 */	
         	fprintf(st,"\t\t<visibility>1</visibility>\n");
+				
 
-			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",itr_o->second .color_code.c_str ());
+			int current_los_code = 1;
+
+			if(ZoneColor_mode<3)
+			{
+			switch(ZoneColor_mode)
+			{
+			case 0:  current_los_code  = 1; break;
+			case 1:  current_los_code  = 3; break;
+			case 2:   current_los_code  = 6; break;
+			default: current_los_code  =1;
+			}
+
+			}else
+			{
+
+			float Value = (*itr_o).second .KML_color_value ;
+			for(int los = 1; los < MAX_LOS_SIZE-1; los++)
+				{
+					if( (ColorCategoryValue [los] <= Value && Value < ColorCategoryValue [los+1]*1.001)
+						|| (ColorCategoryValue [los] >= Value && Value > ColorCategoryValue [los+1]*1.001))
+					{
+
+						current_los_code = los;
+					break;
+					}
+
+				}	
+			}
+
+		
+
+			CString current_color_code = LOS_str[current_los_code];
+
+
+			fprintf(st,"\t\t<styleUrl>#%s</styleUrl>\n",current_color_code);
+
 			fprintf(st,"\t\t<Polygon>\n");
 			fprintf(st,"\t\t<extrude>1</extrude>\n");
 			fprintf(st,"\t\t<altitudeMode>relativeToGround</altitudeMode>\n");
@@ -905,7 +923,24 @@ void CTLiteDoc::ExportZoneLayerToKMLFiles(CString file_name, CString GISTypeStri
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height = itr_o->second.m_OriginTotalNumberOfVehicles*  Zone_Height_Ratio;
+			float height = Zone_Height_Ratio;
+
+			switch(ZoneKML_height_mode)
+			{
+			case 0: 
+				height = Zone_Height_Ratio;
+			break;
+
+			case 1:
+				height = itr_o->second.m_OriginTotalNumberOfVehicles*  Zone_Height_Ratio;
+			break;
+
+			case 2:
+				height = itr_o->second.m_DestinationTotalNumberOfVehicles *  Zone_Height_Ratio;
+			break;
+			
+			}
+
 
 			if(height < 1)
 				height = 1;
@@ -1330,19 +1365,9 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString
 }
 
 
-void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GISTypeString)
+void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GISTypeString, int Bandwidth, int Transparency, float ColorCategoryValue[10], float KML_Height_Ratio)
 {
 	
-//	m_LinkBandWidthMode = LBW_link_volume;
-
-	CDlg_KML_Configuration dlg;
-	dlg.m_pDoc  = this;
-	if(dlg.DoModal () != IDOK)
-	 return;
-
-	DeleteFile(m_ProjectDirectory+"AMS_zone.kmz");
-	ExportZoneLayerToKMLFiles(m_ProjectDirectory+"AMS_zone.kml","LIBKML", dlg.m_Zone_Height_Ratio );
-
 
 	// other options:
 	m_LinkBandWidthMode  = LBW_link_volume;
@@ -1360,7 +1385,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
-		(*iLink)->m_BandWidthValue = dlg.m_BandWidth ;
+		(*iLink)->m_BandWidthValue = Bandwidth ;
 
 	}
 
@@ -1382,11 +1407,13 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 	   for(int i = 1; i<MAX_LOS_SIZE-1; i++)
 	   {
 			char str[10];
-			int transparency = 255- dlg.m_Transparency /100.0*255;
-			wsprintf(str, "%02x%06x",  transparency, m_colorLOS[i]);
-			LOS_str[i].Format ("color%d", i);
-			
+			int transparency = 255- Transparency /100.0*255;
+			if(m_ColorDirection==1)
+				wsprintf(str, "%02x%06x",  transparency, m_colorLOS[i]);
+			else
+				wsprintf(str, "%02x%06x",  transparency, m_colorLOS[MAX_LOS_SIZE-1-i]);
 
+		LOS_str[i].Format ("color%d", i);
 		fprintf(st,"<Style id=\"%s\">\n", LOS_str[i]);
 		fprintf(st,"<LineStyle>\n");
 		fprintf(st,"<width>1.5</width>\n");
@@ -1434,12 +1461,19 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 			CString current_color_code = LOS_str[MAX_LOS_SIZE-2];
 
 			int current_los_code = 1;
+
+			if((*iLink)->KML_single_color_code >=1)  // single color defined
+			{
+			current_los_code = (*iLink)->KML_single_color_code;
+			
+			}else  // color category
+			{
 				
 			float Value = (*iLink)->KML_color_value ;
 			for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 				{
-					if( (dlg.m_ColorCategoryValue [los] <= Value && Value < dlg.m_ColorCategoryValue [los+1]*1.001)
-						|| (dlg.m_ColorCategoryValue [los] >= Value && Value > dlg.m_ColorCategoryValue [los+1]*1.001))
+					if( (ColorCategoryValue [los] <= Value && Value < ColorCategoryValue [los+1]*1.001)
+						|| (ColorCategoryValue [los] >= Value && Value > ColorCategoryValue [los+1]*1.001))
 					{
 
 						current_los_code = los;
@@ -1447,6 +1481,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 					}
 
 				}	
+			}
 
 			if( current_los_code < MAX_LOS_SIZE-1)
 			{
@@ -1461,7 +1496,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 			fprintf(st,"\t\t<LinearRing>\n");
 			fprintf(st,"\t\t<coordinates>\n");
 
-			float height = dlg.m_KML_Height_Ratio * (*iLink) ->m_UserDefinedHeight  ;
+			float height = KML_Height_Ratio * (*iLink) ->m_UserDefinedHeight  ;
 			if(height<1)
 				height = 1;
 	

@@ -205,11 +205,12 @@
 #define IDD_DIALOG_INFORMATION_WITH_HELP 245
 #define IDD_DIALOG_SIGNAL_DATA_MANAGEMENT 246
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_EXPORT 247
-#define IDD_DIALOG_CONFIG_KML           248
+#define IDD_DIALOG_CONFIG_KML_LINK      248
 #define IDB_COLOR_RAMP                  249
 #define IDD_DIALOG_CONFIG_TDMOE         249
 #define IDD_DIALOG_NETWORK_SENSOR_DATA  250
 #define IDD_DIALOG_SENSOR_SETTING_TAB   251
+#define IDD_DIALOG_CONFIG_KML_ZONE      252
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -516,12 +517,13 @@
 #define IDC_EDIT_Transparency           1196
 #define IDC_EDIT_L1                     1197
 #define IDC_EDIT_L7                     1198
-#define IDC_EDIT_HEIGHT2                1199
 #define IDC_EDIT_HEIGHT_ZONE            1199
+#define IDC_EDIT_HEIGHT_MAX             1199
 #define IDC_EDIT_L2                     1200
 #define IDC_EDIT_L3                     1201
 #define IDC_EDIT_L4                     1202
 #define IDC_EDIT_L5                     1203
+#define IDC_EDIT_Transparency_Zone      1204
 #define IDC_EDIT_L6                     1206
 #define IDC_EDIT_BandWidth              1207
 #define IDC_BITMAP                      1208
@@ -529,6 +531,7 @@
 #define IDC_PROJECT_LIST                1210
 #define IDC_COMBO_AGG_INTERVAL          1211
 #define IDC_COMBO_Height                1212
+#define IDC_COMBO_Zone_Height           1213
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1264,13 +1267,15 @@
 #define ID_FILE_OPENSAMPLEDATASETFOLDER 33645
 #define ID_LINK_ADD_RADIO_MESSAGE       33646
 #define ID_SENSORTOOLS_SENSORDATA       33647
+#define ID_EXPORT_EXPORTZONE3DKMLFILE   33648
+#define ID_EXPORT33649                  33649
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        250
-#define _APS_NEXT_COMMAND_VALUE         33648
+#define _APS_NEXT_COMMAND_VALUE         33650
 #define _APS_NEXT_CONTROL_VALUE         1213
 #define _APS_NEXT_SYMED_VALUE           109
 #endif

@@ -1,4 +1,4 @@
-Dlg_KML_Configuration.cpp : implementation file
+//Dlg_KML_Configuration.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -19,7 +19,7 @@ CDlg_KML_Configuration::CDlg_KML_Configuration(CWnd* pParent /*=NULL*/)
 	, m_KML_Height_Ratio(0)
 	, m_Transparency(0)
 	, m_BandWidth(0)
-	, m_Zone_Height_Ratio(1)
+	, m_MaxHeightValue(1)
 {
 	m_BandWidth = 20;
 	m_KML_Height_Ratio = 100;
@@ -52,8 +52,7 @@ void CDlg_KML_Configuration::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1, m_List);
 	DDX_Control(pDX, IDC_BITMAP, m_ColorRampStatic);
 	DDX_Control(pDX, IDC_COMBO_Height, m_Height_ComboBox);
-	DDX_Text(pDX, IDC_EDIT_HEIGHT_ZONE, m_Zone_Height_Ratio);
-	DDV_MinMaxFloat(pDX, m_Zone_Height_Ratio, 0, 10000);
+	DDX_Text(pDX, IDC_EDIT_HEIGHT_MAX, m_MaxHeightValue);
 }
 
 
@@ -62,6 +61,11 @@ BEGIN_MESSAGE_MAP(CDlg_KML_Configuration, CDialog)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlg_KML_Configuration::OnLbnSelchangeList1)
 	ON_WM_PAINT()
 	ON_BN_CLICKED(IDC_BUTTON_REVERSE, &CDlg_KML_Configuration::OnBnClickedButtonReverse)
+	ON_BN_CLICKED(IDOK3, &CDlg_KML_Configuration::OnBnClickedOk3)
+	ON_BN_CLICKED(IDOK4, &CDlg_KML_Configuration::OnBnClickedOk4)
+	ON_CBN_SELCHANGE(IDC_COMBO_Height, &CDlg_KML_Configuration::OnCbnSelchangeComboHeight)
+	ON_EN_CHANGE(IDC_EDIT_HEIGHT_MAX, &CDlg_KML_Configuration::OnEnChangeEditHeightMax)
+
 END_MESSAGE_MAP()
 
 
@@ -74,8 +78,6 @@ void CDlg_KML_Configuration::OnBnClickedButtonSpaceevenly()
 
 void CDlg_KML_Configuration::OnBnClickedOk()
 {
-	UpdateData(1);
-	SelchangeComboHeight();
 	OnOK();
 }
 void CDlg_KML_Configuration::UpdateCategoryValues()
@@ -88,13 +90,61 @@ void CDlg_KML_Configuration::UpdateCategoryValues()
 	float max_value = 0;
 	float min_value = 999999;
 
+
+		CEdit* pEdit1 = (CEdit*)GetDlgItem(IDC_EDIT_L1);
+		CEdit* pEdit2 = (CEdit*)GetDlgItem(IDC_EDIT_L2);
+		CEdit* pEdit3 = (CEdit*)GetDlgItem(IDC_EDIT_L3);
+		CEdit* pEdit4 = (CEdit*)GetDlgItem(IDC_EDIT_L4);
+		CEdit* pEdit5 = (CEdit*)GetDlgItem(IDC_EDIT_L5);
+		CEdit* pEdit6 = (CEdit*)GetDlgItem(IDC_EDIT_L6);
+		CEdit* pEdit7 = (CEdit*)GetDlgItem(IDC_EDIT_L7);
+
+	if(m_KML_MOE_selection == e_KML_green ||
+		m_KML_MOE_selection == e_KML_yellow ||
+		m_KML_MOE_selection == e_KML_red)
+	{
+
+		for(int i = 1; i<=7; i++)
+		{
+			m_ColorCategoryValue[i] = 0;
+		}
+
+
+		pEdit1->EnableWindow (0);
+		pEdit2->EnableWindow (0);
+		pEdit3->EnableWindow (0);
+		pEdit4->EnableWindow (0);
+		pEdit5->EnableWindow (0);
+		pEdit6->EnableWindow (0);
+		pEdit7->EnableWindow (0);
+
+
+
+	}else
+	{
+		pEdit1->EnableWindow (1);
+		pEdit2->EnableWindow (1);
+		pEdit3->EnableWindow (1);
+		pEdit4->EnableWindow (1);
+		pEdit5->EnableWindow (1);
+		pEdit6->EnableWindow (1);
+		pEdit7->EnableWindow (1);
+
+
 	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
 	{
 		DTALink* pLink = (*iLink); 
 		float KML_color_value = 0;
 
+		pLink->KML_single_color_code = -1;
+
+		pLink->KML_color_value  = 0;
 		switch (m_KML_MOE_selection)
 		{
+		case e_KML_green: pLink->KML_single_color_code =  1 ; break; 
+		case e_KML_yellow: pLink->KML_single_color_code = 3 ; break; 
+		case e_KML_red: pLink->KML_single_color_code = 6 ; break; 
+
 		case e_KML_number_of_lanes: pLink->KML_color_value  =  pLink->m_NumberOfLanes ; break; 
 		case e_KML_speed_limit: pLink->KML_color_value  =  pLink->m_SpeedLimit  ; break; 
 		case e_KML_avg_speed: pLink->KML_color_value =  pLink->m_avg_simulated_speed; break;
@@ -120,6 +170,7 @@ void CDlg_KML_Configuration::UpdateCategoryValues()
 		m_ColorCategoryValue[i] = m_ColorCategoryValue[i-1] + incremental;
 	}
 
+	}
 	UpdateData(0);
 }
 
@@ -334,7 +385,10 @@ BOOL CDlg_KML_Configuration::OnInitDialog()
 	m_Height_ComboBox.AddString("Number of Intersection PDO Crashes Per Year");
 
 	m_Height_ComboBox.SetCurSel(0);
-	
+
+	m_List.AddString ("Green");
+	m_List.AddString ("Yellow");
+	m_List.AddString ("Red");
 	m_List.AddString ("Number of lanes");
 	m_List.AddString ("Speed limit");
 	m_List.AddString ("Avg Speed");
@@ -343,7 +397,8 @@ BOOL CDlg_KML_Configuration::OnInitDialog()
 
 	m_List.AddString ("User defined KML attribute in input_link.csv");
 
-	m_List.SetCurSel (0);
+	m_List.SetCurSel (3);
+
 	UpdateCategoryValues();
 	// TODO:  Add extra initialization here
 
@@ -415,6 +470,8 @@ void CDlg_KML_Configuration::OnBnClickedButtonReverse()
 
 void CDlg_KML_Configuration::SelchangeComboHeight()
 {
+	float max_value = 0;
+
 	link_text_display_mode HeightSelection = (link_text_display_mode) m_Height_ComboBox.GetCurSel();
 	std::list<DTALink*>::iterator iLink;
 
@@ -583,8 +640,62 @@ void CDlg_KML_Configuration::SelchangeComboHeight()
 				{
 				float value  = atof(str_text);
 				pLink->m_UserDefinedHeight  =  value ;
+
+				if(max_value < value)
+					max_value = value;
 				}
 
 
 	}
+
+		m_MaxHeightValue = max_value;
+		m_KML_Height_Ratio  = 100/max(1,max_value);
+		UpdateData(0);
+
 }
+
+
+
+void CDlg_KML_Configuration::OnBnClickedOk3()
+{
+	UpdateData(1);
+
+	CString directory  = m_pDoc->m_ProjectDirectory ;
+
+	CString KML_Link_3D_File = directory+"AMS_link.kml";
+	DeleteFile(KML_Link_3D_File);
+	m_pDoc->ExportLinkSingleAttributeLayerToKMLFiles(KML_Link_3D_File,"LIBKML",m_BandWidth, m_Transparency,m_ColorCategoryValue, m_KML_Height_Ratio);
+	HINSTANCE result = ShellExecute(NULL, _T("open"), KML_Link_3D_File, NULL,NULL, SW_SHOW);
+
+}
+
+
+void CDlg_KML_Configuration::OnBnClickedOk4()
+{
+	UpdateData(1);
+
+	CString directory  = m_pDoc->m_ProjectDirectory ;
+	DeleteFile(directory+"AMS_link.shp");
+	m_pDoc->ExportLinkLayerToGISFiles(directory+"AMS_link.shp","ESRI Shapefile");
+	CString SHP_Link_File = directory+"AMS_link.shp";
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), SHP_Link_File, NULL,NULL, SW_SHOW);
+
+}
+
+void CDlg_KML_Configuration::OnCbnSelchangeComboHeight()
+{
+	SelchangeComboHeight();
+
+}
+
+void CDlg_KML_Configuration::OnEnChangeEditHeightMax()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}
+
