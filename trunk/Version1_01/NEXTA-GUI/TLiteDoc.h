@@ -1191,8 +1191,7 @@ public:
 		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
 		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
 
-
-		
+	
 		if(bOffset)
 		{
 			double link_offset = m_UnitFeet*m_OffsetInFeet;
@@ -1599,11 +1598,11 @@ public:
 	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
-	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string, float Zone_Height_Ratio);
+	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string, int ZoneKML_height_mode,float Zone_Height_Ratio, int ZoneColor_mode, int Transparency, float ColorCategoryValue[10]);
 	void ExportLink3DLayerToKMLFiles_ColorCode(CString file_name, CString GIS_type_string,int ColorCode, bool no_curve_flag, float height_ratio);
 	void ExportLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
 	void ExportPathLink3DLayerToKMLFiles(CString file_name, CString GIS_type_string);
-	void ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GIS_type_string);
+	void ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GIS_type_string, int BandWidth, int Transparency,float ColorCategoryValue[10], float KML_Height_Ratio);
 
 	std::map<CString, PathStatistics> m_PathMap;
 
@@ -2376,6 +2375,7 @@ public:
 	afx_msg void OnFileOpensampledatasetfolder();
 	afx_msg void OnLinkAddRadioMessage();
 	afx_msg void OnSensortoolsSensordata();
+	afx_msg void OnExportExportzone3dkmlfile();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

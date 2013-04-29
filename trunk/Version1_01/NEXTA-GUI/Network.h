@@ -489,12 +489,51 @@ public:
 	int m_CBDFlag;
 
 	float m_OriginTotalTravelDistance;
+	float m_OriginTotalTravelTime;
 	int m_OriginTotalNumberOfVehicles;
 
 	float m_DestinationTotalTravelDistance;
+	float m_DestinationTotalTravelTime;
 	int m_DestinationTotalNumberOfVehicles;
 
 	bool m_bWithinSubarea;
+	float KML_color_value;
+
+	float GetOriginAvgSpeed()
+	{
+		return m_OriginTotalTravelDistance/max(1,m_OriginTotalTravelTime)*60;
+	
+	}
+
+	float GetDestinationAvgSpeed()
+	{
+		return m_DestinationTotalTravelDistance/max(1,m_DestinationTotalTravelTime)*60;
+	
+	}
+
+	float GetOriginAvgTravelTime()
+	{
+		return m_OriginTotalTravelTime/max(1,m_OriginTotalNumberOfVehicles);
+	
+	}
+
+	float GetDestinationAvgTravelTime()
+	{
+		return m_DestinationTotalTravelTime/max(1,m_DestinationTotalNumberOfVehicles);
+	
+	}
+
+	float GetOriginAvgTravelDistance()
+	{
+		return m_OriginTotalTravelDistance/max(1,m_OriginTotalNumberOfVehicles);
+	
+	}
+
+	float GetDestinationAvgTravelDistance()
+	{
+		return m_DestinationTotalTravelDistance/max(1,m_DestinationTotalNumberOfVehicles);
+	
+	}
 
 	float GetTotalZonalDemand()
 	{
@@ -594,8 +633,10 @@ public:
 	DTAZone()
 	{
 		m_OriginTotalTravelDistance = 0;
+		m_OriginTotalTravelTime = 0;
 		m_OriginTotalNumberOfVehicles = 0;
 
+		m_DestinationTotalTravelTime = 0;
 		m_DestinationTotalTravelDistance = 0;
 		m_DestinationTotalNumberOfVehicles = 0;
 
@@ -1606,6 +1647,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		KML_single_color_code = -1;
 		m_UserDefinedHeight = 1;
 		relative_angel_difference_from_main_direction = 0;
 		m_observed_AADT = 0;
@@ -2279,6 +2321,7 @@ void AdjustLinkEndpointsWithSetBack()
 	std::string m_geo_string;
 
 	float KML_color_value;
+	int KML_single_color_code;
 	float color_value;
 	int green_height;  // for 3D KML
 	int red_height;

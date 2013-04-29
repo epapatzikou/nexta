@@ -2578,6 +2578,7 @@ bool  CTLiteDoc::ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LP
 
 bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 {
+	CWaitCursor wait;
 	m_NodeTypeMap[0] = "signalized intersection";
 	m_NodeTypeMap[1] = "external node";
 	m_NodeTypeMap[2] = "bend";
@@ -2586,6 +2587,7 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 	m_NodeTypeMap[5] = "";
 	m_NodeTypeMap[6] = "";
 
+	float unit = 1; //5280;
 	CCSVParser parser;
 	parser.m_bSkipFirstLine  = true;  // skip the first line  
 	if (parser.OpenCSVFile(lpszFileName))
@@ -2610,8 +2612,8 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 				node_type = 0;
 
 			// use the X and Y as default values first
-			bool bFieldX_Exist = parser.GetValueByFieldName("X",X);
-			parser.GetValueByFieldName("Y",Y);
+			bool bFieldX_Exist = parser.GetValueByFieldName("X",X,false);
+			parser.GetValueByFieldName("Y",Y,false);
 
 			if(m_NodeNumbertoIDMap.find(node_id) != m_NodeNumbertoIDMap.end())
 			{
@@ -3726,18 +3728,15 @@ void CTLiteDoc::OnImportSynchrocombinedcsvfile()
 		CString ProjectFile = dlg.GetPathName();
 		CString Synchro_directory = ProjectFile.Left(ProjectFile.ReverseFind('\\') + 1);
 
-
 		if(ReadSynchroCombinedCSVFile(dlg.GetPathName()))
 		{
 			OffsetLink();
 			CalculateDrawingRectangle(true);
 			m_bFitNetworkInitialized  = false;
-
 		}
 
 		m_LinkMOEMode = MOE_none;
 		ShowTextLabel();
-
 	
 		UpdateAllViews(0);
 	
@@ -4146,7 +4145,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 									pMovement->QEM_dir_string = direction_vector[direction];
 
 
-									/* {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
+				/* {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
 				"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow",
 				14 "SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 									*/

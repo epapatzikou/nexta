@@ -93,6 +93,8 @@
 #include "Dlg_Information.h"
 #include "Dlg_TDMOE_Configuration.h"
 
+#include "Dlg_KML_Configuration.h"
+#include "Dlg_KML_Configuration_Zone.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -406,6 +408,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_FILE_OPENSAMPLEDATASETFOLDER, &CTLiteDoc::OnFileOpensampledatasetfolder)
 	ON_COMMAND(ID_LINK_ADD_RADIO_MESSAGE, &CTLiteDoc::OnLinkAddRadioMessage)
 	ON_COMMAND(ID_SENSORTOOLS_SENSORDATA, &CTLiteDoc::OnSensortoolsSensordata)
+	ON_COMMAND(ID_EXPORT_EXPORTZONE3DKMLFILE, &CTLiteDoc::OnExportExportzone3dkmlfile)
 	END_MESSAGE_MAP()
 
 
@@ -4214,8 +4217,18 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 	CWaitCursor wait;
 
 	// reidentify bottlenecks;
+
+	if(bExport_Link_MOE_in_input_link_CSF_File == false)
+	{
 	m_bIdentifyBottleneckAndOnOffRamps = false;
 	IdentifyBottleNeckAndOnOffRamps();
+	}
+
+	int StartHour = m_DemandLoadingStartTimeInMin/60;
+	int EndHour = int((m_DemandLoadingEndTimeInMin+59)/60);
+
+	int Start15Min =  (m_DemandLoadingStartTimeInMin/15)*15;
+	int End15Min =  int((m_DemandLoadingEndTimeInMin+14)/15)*15;
 
 
 	FILE* st;
@@ -4225,8 +4238,6 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 		std::list<DTALink*>::iterator iLink;
 		fprintf(st,"name,link_id,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,observed_AADT,observed_peak_hourly_volume,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
 		fprintf(st,"transit_travel_time_in_min,transit_transfer_time_in_min,transit_waiting_time_in_min,transit_fare_in_dollar,BPR_alpha_term,BPR_beta_term,");
-		fprintf(st,"KML_color_attribute,KML_green_height,KML_red_height,KML_blue_height,KML_yellow_height,");
-
 
 		// ANM output
 		fprintf(st,"number_of_left_turn_lanes,length_of_bays_in_feet,number_of_right_turn_lanes,from_approach,to_approach,reversed_link_id,");
@@ -4234,25 +4245,47 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 		if(bExport_Link_MOE_in_input_link_CSF_File)  // save time-dependent MOE
 		{
 			int hour;
-			for(hour =0; hour <= 23; hour++)
+			for(hour =StartHour; hour <= EndHour; hour++)
 			{
 				CString str_MOE_hour;
 				str_MOE_hour.Format ("h%d_link_volume,",hour);
 				fprintf(st,str_MOE_hour);
 			}
 
-			for(hour =0; hour <= 23; hour++)
+			for(hour = StartHour; hour <= EndHour; hour++)
 			{
 				CString str_MOE_hour;
 				str_MOE_hour.Format ("h%d_speed,",hour);
 				fprintf(st,str_MOE_hour);
 			}
 
-			for(hour =0; hour <= 23; hour++)
+			for(hour =StartHour; hour <= EndHour; hour++)
 			{
 				CString str_MOE_hour;
 				str_MOE_hour.Format ("h%d_travel_time,",hour);
 				fprintf(st,str_MOE_hour);
+			}
+
+			int min;
+				CString str_MOE_15Min;
+
+			for(min = Start15Min; min <= End15Min; min+=15)
+			{
+				str_MOE_15Min.Format ("%s_link_volume,",GetTimeStampString(min));
+				fprintf(st,str_MOE_15Min);
+			}
+
+			for(min = Start15Min; min <= End15Min; min+=15)
+			{
+				str_MOE_15Min.Format ("%s_speed,",GetTimeStampString(min));
+				fprintf(st,str_MOE_15Min);
+			}
+
+			for(min = Start15Min; min <= End15Min; min+=15)
+			{
+
+				str_MOE_15Min.Format ("%s_travel_time,",GetTimeStampString(min));
+				fprintf(st,str_MOE_15Min);
 			}
 		}
 
@@ -4344,8 +4377,6 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 
 				fprintf(st,"%.1f,%.1f,%.1f,%.2f,%.4f,%.4f,",
 					(*iLink)->m_TransitTravelTime, (*iLink)->m_TransitTransferTime,(*iLink)->m_TransitWaitingTime, (*iLink)->m_TransitFareInDollar, (*iLink)->m_BPR_alpha_term, (*iLink)->m_BPR_beta_term);
-				// mobility and reliability
-				fprintf(st,"%.3f,%d,%d,%d,%d,",(*iLink)->color_value, (*iLink)->green_height, (*iLink)->red_height,(*iLink)->blue_height, (*iLink)->yellow_height);
 
 				// ANM output
 				unsigned long ReversedLinkKey = GetLinkKey((*iLink)->m_ToNodeID, (*iLink)->m_FromNodeID);
@@ -4361,28 +4392,46 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 				fprintf(st,"%d,%d,%d,%c,%c,%d,",(*iLink)->m_NumberOfLeftTurnLanes,(*iLink)->m_LeftTurnBayLengthInFeet, (*iLink)->m_NumberOfRightTurnLanes,
 					GetApproachChar((*iLink)->m_FromApproach), GetApproachChar((*iLink)->m_ToApproach),reversed_link_id);
 
-				fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
-
 				if(bExport_Link_MOE_in_input_link_CSF_File)  // save time-dependent MOE
 				{ 
 				int hour;
-				for(hour =0; hour <= 23; hour++)
+				for(hour = StartHour; hour <= EndHour; hour++)
 				{ 
 					fprintf(st,"%f,", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60));
 				}
 
-				for(hour =0; hour <= 23; hour++)
+				for(hour = StartHour; hour <= EndHour; hour++)
 				{ 
 					float avg_travel_time = (*iLink)->m_Length *60/max (1,(*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
 					fprintf(st,"%.2f,", (*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
 				}
-				for(hour =0; hour <= 23; hour++)
+				for(hour =StartHour; hour <= EndHour; hour++)
 				{ 
 					float avg_travel_time = (*iLink)->m_Length *60/max (1,(*iLink)->GetAvgLinkSpeed (hour*60,(hour+1)*60));
 					fprintf(st,"%.2f,", avg_travel_time );
 				}
+
+				int min;
+
+
+			for(min = Start15Min; min <= End15Min; min+=15)
+				{ 
+					fprintf(st,"%f,", (*iLink)->GetAvgLinkHourlyVolume(min,min+15));
 				}
 
+			for(min = Start15Min; min <= End15Min; min+=15)
+				{ 
+					fprintf(st,"%.2f,", (*iLink)->GetAvgLinkSpeed (min,min+15));
+				}
+			for(min = Start15Min; min <= End15Min; min+=15)
+				{ 
+					float avg_travel_time = (*iLink)->m_Length *60/max (1,(*iLink)->GetAvgLinkSpeed (min,min+15));
+					fprintf(st,"%.2f,", avg_travel_time );
+				}
+
+				}
+
+				fprintf(st,"%s,%s,%s,", (*iLink) -> group_1_code.c_str(),(*iLink)->  group_2_code.c_str(),(*iLink) -> group_3_code.c_str());
 
 
 				fprintf(st,"%5.1f,%5.1f,%5.1f,%5.1f,%5.1f,%5.1f", 
@@ -5838,11 +5887,16 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 
 			pVehicle->m_number_of_VMS_response_links = header_extension.number_of_VMS_response_links;
 
+			if(pVehicle->m_bComplete )
+			{
 			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalNumberOfVehicles += 1;
 			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalTravelDistance  += pVehicle->m_Distance ;
+			m_ZoneMap[pVehicle->m_OriginZoneID].m_OriginTotalTravelTime  += pVehicle->m_TripTime ;
 
 			m_ZoneMap[pVehicle->m_DestinationZoneID].m_DestinationTotalNumberOfVehicles += 1;
 			m_ZoneMap[pVehicle->m_DestinationZoneID].m_DestinationTotalTravelDistance  += pVehicle->m_Distance ;
+			m_ZoneMap[pVehicle->m_DestinationZoneID].m_DestinationTotalTravelTime  += pVehicle->m_TripTime ;
+			}
 
 
 			pVehicle->m_EmissionData .Energy = header.Energy;
@@ -10851,9 +10905,6 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 
 	CWaitCursor wc;
 
-	CString directory;
-	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
-
 	//DeleteFile(directory+"AMS_node.shp");
 	//DeleteFile(directory+"AMS_node.dbf");
 	//DeleteFile(directory+"AMS_node.shx");
@@ -10870,18 +10921,18 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 	m_bExport_Link_MOE_in_input_link_CSF_File = false;
 	OnFileSaveProject();  // save time-dependent MOE to input_link MOE file
 
-	DeleteFile(directory+"AMS_link.shp");
-	ExportLinkLayerToGISFiles(directory+"AMS_link.shp","ESRI Shapefile");
+	CDlg_KML_Configuration dlg;
+	dlg.m_pDoc  = this;
+	if(dlg.DoModal () == IDOK)
+	{
+
+	}
+	
+
 
 	//	OGDF_WriteGraph(directory+"graph.gml");
 
 
-	CString KML_Zone_3D_File = directory+"AMS_zone.kml";
-	CString KML_Link_3D_File = directory+"AMS_link.kml";
-	DeleteFile(KML_Link_3D_File);
-	ExportLinkSingleAttributeLayerToKMLFiles(KML_Link_3D_File,"LIBKML");
-	HINSTANCE result = ShellExecute(NULL, _T("open"), KML_Link_3D_File, NULL,NULL, SW_SHOW);
-	result = ShellExecute(NULL, _T("open"), KML_Zone_3D_File, NULL,NULL, SW_SHOW);
 
 
 	//	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_2D.kml","LIBKML",0,false,1);
@@ -14836,8 +14887,8 @@ void CTLiteDoc::OnExportExportaggregatedlinkmoefile()
 	if(m_ProjectDirectory.GetLength () >0)
 	{
 	SaveLinkData(m_ProjectDirectory+"AMS_link.csv",true,0);
-	AfxMessageBox("Hourly volume and speed have been outputed to file: AMS_link.csv under the project folder.",MB_ICONINFORMATION);
-	OnToolsProjectfolder();
+	OpenCSVFileInExcel(m_ProjectDirectory + "AMS_link.csv");
+
 	}
 
 }
@@ -15586,3 +15637,25 @@ void CTLiteDoc::OnSensortoolsSensordata()
 	// TODO: Add your command handler code here
 }
 
+
+void CTLiteDoc::OnExportExportzone3dkmlfile()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
+	}
+
+	CWaitCursor wc;
+
+	OnFileSaveProject();  // save time-dependent MOE to input_link MOE file
+
+	CDlg_KML_Configuration_Zone dlg;
+	dlg.m_pDoc  = this;
+	if(dlg.DoModal () == IDOK)
+	{
+
+	}
+	
+}
