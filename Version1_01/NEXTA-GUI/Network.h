@@ -2577,6 +2577,12 @@ void AdjustLinkEndpointsWithSetBack()
 		int total_count = 0;
 		float total_value = 0;
 		
+		if(this->m_FromNodeNumber == 7 && this->m_FromNodeNumber == 3 && current_time >= 530)
+		{
+		TRACE("");
+		}
+
+
 		if(current_time>=1 &&	current_time < m_SimulationHorizon && current_time < m_LinkMOEAry.size())
 		{
 

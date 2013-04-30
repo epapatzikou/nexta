@@ -4218,11 +4218,6 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 
 	// reidentify bottlenecks;
 
-	if(bExport_Link_MOE_in_input_link_CSF_File == false)
-	{
-	m_bIdentifyBottleneckAndOnOffRamps = false;
-	IdentifyBottleNeckAndOnOffRamps();
-	}
 
 	int StartHour = m_DemandLoadingStartTimeInMin/60;
 	int EndHour = int((m_DemandLoadingEndTimeInMin+59)/60);

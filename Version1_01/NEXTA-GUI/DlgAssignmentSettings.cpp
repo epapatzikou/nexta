@@ -95,12 +95,13 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 
 	m_AssignmentMethod.AddString("1. Method of Successive Average");
-	m_AssignmentMethod.AddString("2. Day-to-Day Learning");
-	m_AssignmentMethod.AddString("3. Gap function-based Assignment");
-	m_AssignmentMethod.AddString("4. Gap funciton-based MSA");
-	m_AssignmentMethod.AddString("5. Accessibility (Distance)");
-	m_AssignmentMethod.AddString("6. Accessibility (Travel Time)");
-	m_AssignmentMethod.AddString("7. OD Demand Estimation");
+	m_AssignmentMethod.AddString("2. Fixed switching Rate");
+	m_AssignmentMethod.AddString("3. Day-to-Day Learning with BR rule");
+	m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
+	m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
+	m_AssignmentMethod.AddString("6. Accessibility (Distance)");
+	m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
+	m_AssignmentMethod.AddString("8. OD Demand Estimation");
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
 	

@@ -2552,7 +2552,7 @@ IDR_MENU_LINK_MOE MENU
 BEGIN
     POPUP "MOE Type 1"
     BEGIN
-        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE_LINKVOLUME
+        MENUITEM "Lane Outflow Volume (vphpl)", ID_MOETYPE_LINKVOLUME
         MENUITEM "Link Inflow Volume (vph)",    ID_MOETYPE1_LINKVOLUME
         MENUITEM "Link Outflow Volume (vph)",   ID_MOETYPE1_LINKOUTFLOWVOLUME
         MENUITEM "Link Inflow and Outflow Volume (solid line)", ID_MOETYPE1_LINKINANDOUTFLOW
@@ -2567,7 +2567,7 @@ BEGIN
     END
     POPUP "MOE Type 2"
     BEGIN
-        MENUITEM "Lane Volume (vphpl)",         ID_MOETYPE2_LINKVOLUME
+        MENUITEM "Lane Outflow Volume (vphpl)", ID_MOETYPE2_LINKVOLUME
         MENUITEM "Link Inflow Volume (vph)",    ID_MOETYPE2_LINKVOLUME_VPH
         MENUITEM "Link Outflow Volume (vph)",   ID_MOETYPE2_LINKOUTFLOWVOLUME
         MENUITEM "Link Inflow and Outflow Volume (solid line)", ID_MOETYPE2_LINKINANDOUTFLOW
