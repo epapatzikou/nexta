@@ -655,8 +655,14 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 
 							float capacity1 = pLink-> LinkInCapacity * pLink->MergeIncomingLinkVector[il].m_LinkInCapacityRatio; 
+							// capacity from proportional lane assignment 
+
 							float capacity2 = pLink->MergeIncomingLinkVector[il].m_LinkInRemainingCapaityPerSimuInterval; 
-							float LinkOutCapacity = max( capacity1, capacity2);
+							// remaining residual capacity from total inflow capacity 
+							
+							float capacity3 = g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity;
+							// outflow capacity of the incoming link 
+							float LinkOutCapacity = min(capacity3,max( capacity1, capacity2));
 
 			if(g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_FromNodeNumber == 200 && g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_ToNodeNumber == 117 && CurrentTime>=430 )
 			{
