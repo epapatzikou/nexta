@@ -40,6 +40,9 @@ using namespace std;
 void g_MultiScenarioTrafficAssignment() 
 {
 
+	if(g_InitializeLogFiles()==0) 
+		return;
+
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel("DTALite:\nA Fast Open Source DTA Engine\n");
 	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,");
@@ -137,7 +140,9 @@ void g_MultiScenarioTrafficAssignment()
 			csv_output.SetFieldName("avg_HC_"+moe_category_label);
 			csv_output.SetFieldName("avg_MilesPerGallon_"+moe_category_label);
 
-			if(moe_type.find("Link") != string::npos)  // Link MOE
+			std::transform(moe_type.begin(), moe_type.end(), moe_type.begin(), ::tolower);
+
+			if(moe_type.find("link") != string::npos)  // Link MOE
 			{
 				//			csv_output.SetFieldName("level_of_service"+moe_category_label);
 
@@ -166,8 +171,7 @@ void g_MultiScenarioTrafficAssignment()
 	CCSVParser parser_scenario;
 	if (parser_scenario.OpenCSVFile("input_scenario_settings.csv"))
 	{
-		if(g_InitializeLogFiles()==0) 
-			return;
+
 
 		g_ODEstimationFlag = 0; 			// no OD estimation
 
@@ -224,7 +228,7 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_TrafficFlowModelFlag = (e_traffic_flow_model)traffic_flow_model;
 
-			g_UEAssignmentMethod = assignment_day_to_day;
+			g_UEAssignmentMethod = assignment_fixed_percentage;
 			int UEAssignmentMethod = 0;
 			if(parser_scenario.GetValueByFieldName("traffic_assignment_method",UEAssignmentMethod)==false)
 			{
@@ -297,18 +301,21 @@ void g_MultiScenarioTrafficAssignment()
 			case assignment_MSA: 
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Method of Successive Average");
 				break;
-			case assignment_day_to_day:
-				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to Day Learning");
+			case assignment_fixed_percentage:
+				g_SummaryStatFile.WriteParameterValue ("Assignment method","Fixed Switching Rate");
 				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
 				g_SummaryStatFile.WriteParameterValue ("Travel time difference for route switching",g_TravelTimeDifferenceForSwitching);
 				g_SummaryStatFile.WriteParameterValue ("Relative Travel Time Indifference Band (%) for route switching",g_RelativeTravelTimePercentageDifferenceForSwitching);
 
 				break;
-			case assignment_gap_function:
-				g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap function based adjustment");
+			case assignment_day_to_day_learning_threshold_route_choice:
+				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning with bounded rationality rule");
 				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
 				break;
-
+			case assignment_day_to_day_learning_threshold_route_and_departure_time_choice:
+				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning with departure time choice and bounded rationality rule");
+				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+				break;
 			case assignment_gap_function_MSA_step_size:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap-funciton with step size based adjustment");
 				break;
@@ -430,23 +437,6 @@ void g_MultiScenarioTrafficAssignment()
 				g_ProgramStop();
 			}
 
-			g_AgentBinInputMode = "0";
-			parser_scenario.GetValueByFieldName("agent_demand_input_mode",g_AgentBinInputMode);
-
-			if(g_AgentBinInputMode.find ("0") == string::npos )
-			{  // use the parameters only when agent_demand_input_mode !=0
-
-				g_DemandLoadingStartTimeInMin = 0;
-				g_DemandLoadingEndTimeInMin = 1440; // one day as default
-
-				parser_scenario.GetValueByFieldName("agent_demand_start_time_in_min",g_DemandLoadingStartTimeInMin);
-				parser_scenario.GetValueByFieldName("agent_demand_end_time_in_min",g_DemandLoadingEndTimeInMin);
-
-				g_PlanningHorizon = g_DemandLoadingEndTimeInMin;
-
-			}
-
-
 			string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;
 
 			g_ReadInputFiles(scenario_no);
@@ -537,7 +527,9 @@ void g_MultiScenarioTrafficAssignment()
 					csv_output.SetValueByFieldName("avg_MilesPerGallon_"+moe_category_label,emission_data.AvgMilesPerGallon );
 
 
-					if(moe_type.find("Link")!=string::npos) // Link MOE
+					std::transform(moe_type.begin(), moe_type.end(), moe_type.begin(), ::tolower);
+					
+					if(moe_type.find("link")!=string::npos) // Link MOE
 					{
 						csv_output.SetValueByFieldName("SOV_volume"+moe_category_label,link_data.SOV_volume );
 						csv_output.SetValueByFieldName("HOV_volume"+moe_category_label,link_data.HOV_volume );

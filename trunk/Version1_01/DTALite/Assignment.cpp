@@ -240,18 +240,23 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 
 		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
-		if(g_UEAssignmentMethod== assignment_MSA)  // MSA
+		if(g_UEAssignmentMethod == assignment_MSA)  // MSA
 		{
 			switching_rate = 1.0f/(iteration+1);
 		}
-		if(g_UEAssignmentMethod== assignment_day_to_day) // day to day learning
+		if(g_UEAssignmentMethod== assignment_fixed_percentage) // day to day learning
 		{
 			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 		}
-		if(g_UEAssignmentMethod==assignment_gap_function) // gap function based method,
+		if(g_UEAssignmentMethod==assignment_gap_function_MSA_step_size) // gap function based method,
 		{
 			switching_rate =  1.0f/(iteration+1) + 0.05; //additonal switch
-
+		}
+		if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
+		g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  			
+		{
+			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+					 // all agents have also to subject to bounded rationality rules
 		}
 
 
@@ -296,7 +301,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 		}else
 		{ // iteration >=1
-			if(g_Day2DayAgentLearningMethod>=1)  			
+			if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
+				g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  			
 			{
 				float gain_factor = 0.1f;
 
@@ -320,7 +326,7 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 				min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, 0, TempNodeSize, TempPathLinkList);
 
-				if(g_Day2DayAgentLearningMethod==2)  //departure time choice
+				if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  //departure time choice
 				{
 					departuret_time_shift = -5; //leave early
 					// leaving option: +5*
@@ -339,7 +345,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 				}
 				//switching to the min cost alternative
-				if( min_cost_alternative.total_cost < pVeh->m_EstimatedTravelTime - switch_threshold)
+
+				if( min_cost_alternative.total_cost < pVeh->m_EstimatedTravelTime - g_TravelTimeDifferenceForSwitching
+					||min_cost_alternative.total_cost*(1+g_RelativeTravelTimePercentageDifferenceForSwitching/100) < pVeh->m_EstimatedTravelTime )
 				{
 					bSwitchFlag = true;
 					final_departuret_time_shift = min_cost_alternative.final_departuret_time_shift ;
@@ -357,17 +365,21 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			float relative_gap = 0.0f;
-				if(g_UEAssignmentMethod== assignment_gap_function) // gap function based method: the final switching rate is proportaitonal to relative gap
+				if(g_UEAssignmentMethod== assignment_gap_function_MSA_step_size) // gap function based method: the final switching rate is proportaitonal to relative gap
 				{
 					relative_gap = max(0,ExperiencedGeneralizedTravelTime - TotalCost)/max(0.1,ExperiencedGeneralizedTravelTime);
 
-					
-				}
-
-				if(RandomNumber < 1.0f/(iteration+1) || relative_gap > g_PrevRelativeGapValue)
+					bSwitchFlag = false;
+					if(relative_gap > g_PrevRelativeGapValue)
 					{
 						bSwitchFlag = true;
 					}
+
+				}else
+				{
+					bSwitchFlag = true;				
+				}
+
 
 
 			}
@@ -614,7 +626,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			{
 			case assignment_MSA: switching_rate = 1.0f/(iteration+1); // 0: MSA 
 				break;
-			case assignment_day_to_day: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+			case assignment_fixed_percentage: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
 
 				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching || pVeh->m_TripTime > TotalCost*(1+g_RelativeTravelTimePercentageDifferenceForSwitching/100))
 				{

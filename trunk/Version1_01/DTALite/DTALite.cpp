@@ -182,11 +182,11 @@ int g_NumberOfInnerIterations;
 int g_VehicleLoadingMode = 2; // not load from vehicle file by default, 1: load vehicle file
 int g_PlanningHorizon = 120;  // short horizon for saving memory
 
+int g_SimululationReadyToEnd = 120;
+
 // assignment
-e_assignment_method g_UEAssignmentMethod = assignment_day_to_day; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
+e_assignment_method g_UEAssignmentMethod = assignment_fixed_percentage; // 0: MSA, 1: day-to-day learning, 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE
 float g_FreewayBiasFactor = 1.0f;
-string g_AgentBinInputMode = "0";
-int g_Day2DayAgentLearningMethod  =0; 
 float g_DepartureTimeChoiceEarlyDelayPenalty = 1;
 float g_DepartureTimeChoiceLateDelayPenalty = 1;
 float g_CurrentGapValue = 0.0; // total network gap value in the current iteration
@@ -1668,13 +1668,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	// initialize the demand loading range, later resized by CreateVehicles
 
-	if(g_AgentBinInputMode.find("0") == string::npos)
-	{
-		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,");
-		g_SummaryStatFile.WriteTextLabel (g_AgentBinInputMode.c_str ());
-	}
-	else
-		g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
+	g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
 
 	////////////////////////////////////// VOT
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
@@ -3074,10 +3068,10 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		{
 
 			DTALink* pLink = g_LinkVector[li];
-			for(int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon;time++)
+			for(int time = g_DemandLoadingStartTimeInMin; time<= g_SimululationReadyToEnd;time++)
 			{
 
-				if((pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
+//				if((pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
 				{
 					float LinkOutFlow = float(pLink->GetDepartureFlow(time));
 					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,1,g_TrafficFlowModelFlag);
@@ -3396,7 +3390,6 @@ void g_ReadDTALiteSettings()
 	g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
 	g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, g_DTASettingFileName);
 
-	//	g_NumberOfIterations = g_GetPrivateProfileInt("assignment", "number_of_iterations", 10, g_DTASettingFileName);	
 	g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 1, g_DTASettingFileName);
 	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "aggregation_time_interval_in_min", 15, g_DTASettingFileName);	
 
@@ -3415,7 +3408,6 @@ void g_ReadDTALiteSettings()
 
 	g_StartIterationsForOutputPath = g_EndIterationsForOutputPath = g_NumberOfIterations -1;
 
-	g_Day2DayAgentLearningMethod = g_GetPrivateProfileInt("assignment", "day_to_day_agent_learning_method", 0, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceEarlyDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_early_delay_penalty", 0.969387755f, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceLateDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_late_delay_penalty", 1.306122449f, g_DTASettingFileName); // default is non learning
 
@@ -3625,6 +3617,13 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 			g_LinkVector[li]->m_bMergeFlag = 1;
 		}
 
+		if(no_arterial_incoming_link == false)
+		{
+			g_LogFile << "warning: freeway merges with arterial street directly. Please check if the arterial street should be a ramp" <<
+				g_LinkVector[li]->m_FromNodeNumber << " ->" << g_LinkVector[li]->m_ToNodeNumber << endl;
+
+		}
+
 	}
 
 
@@ -3667,7 +3666,7 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 		}
 
-		if(g_LinkVector[li]->m_bMergeFlag ==1)
+		if(g_LinkVector[li]->m_bMergeFlag ==1 || g_LinkVector[li]->m_bMergeFlag ==2)
 		{
 			// merge with several merging ramps
 			int ij;
