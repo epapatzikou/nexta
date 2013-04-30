@@ -3617,13 +3617,6 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 			g_LinkVector[li]->m_bMergeFlag = 1;
 		}
 
-		if(no_arterial_incoming_link == false)
-		{
-			g_LogFile << "warning: freeway merges with arterial street directly. Please check if the arterial street should be a ramp" <<
-				g_LinkVector[li]->m_FromNodeNumber << " ->" << g_LinkVector[li]->m_ToNodeNumber << endl;
-
-		}
-
 	}
 
 
