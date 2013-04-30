@@ -42,9 +42,11 @@ using namespace std;
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, tfm_point_queue_with_movement_capacity};
-enum e_assignment_method { assignment_MSA =0, 
-assignment_day_to_day, 
-assignment_gap_function,
+enum e_assignment_method { 
+assignment_MSA =0, 
+assignment_fixed_percentage, 
+assignment_day_to_day_learning_threshold_route_choice,
+assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
 assignment_gap_function_MSA_step_size,
 assignment_accessibility_distanance,
 assignment_accessibility_travel_time,
@@ -87,7 +89,6 @@ extern double g_DTASimulationInterval;
 extern int g_SimulateSignals;
 extern float g_DefaultArterialKJam;
 extern int g_DefaultCycleLength;
-extern string g_AgentBinInputMode;
 
 extern int g_CalculateUEGapForAllAgents;
 
@@ -185,6 +186,7 @@ class LinkMOEStatisticsData
 {
 
 public:
+
 	int SOV_volume, HOV_volume, Truck_volume,Intermodal_volume;
 	float number_of_crashes_per_year, number_of_fatal_and_injury_crashes_per_year,number_of_property_damage_only_crashes_per_year;
 	char level_of_service;
@@ -673,11 +675,13 @@ public:
 	MergeIncomingLink()
 	{
 		m_LinkInCapacityRatio = 0;
+		m_LinkInRemainingCapaityPerSimuInterval = 0;
 	};
 	int m_LinkNo;
 	int m_link_type;
 	int m_NumLanes;
 	float m_LinkInCapacityRatio;
+	int m_LinkInRemainingCapaityPerSimuInterval;  // derived from other incoming  demand
 };
 
 
