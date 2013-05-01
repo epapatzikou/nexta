@@ -3344,7 +3344,6 @@ int accessibility_mode;
 		parser_scenario.GetValueByFieldName("ODME_step_size",ODME_step_size);
 		parser_scenario.GetValueByFieldName("freeway_bias_factor",freeway_bias_factor);
 		parser_scenario.GetValueByFieldName("ue_gap_calculation_method",ue_gap_calculation_method);
-		parser_scenario.GetValueByFieldName("agent_demand_input_mode",agent_demand_input_mode);
 		parser_scenario.GetValueByFieldName("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
 		parser_scenario.GetValueByFieldName("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
 		parser_scenario.GetValueByFieldName("routing_movement_delay_mode",routing_movement_delay_mode);
@@ -3372,7 +3371,6 @@ int accessibility_mode;
 		ScenarioFile.SetFieldNameAndValue("number_of_assignment_days",m_number_of_assignment_days);//
 		ScenarioFile.SetFieldNameAndValue("traffic_flow_model",m_traffic_flow_model);
 		ScenarioFile.SetFieldNameAndValue("traffic_assignment_method",m_traffic_assignment_method);
-		ScenarioFile.SetFieldNameAndValue("ODME_mode",m_ODME_mode);
 		ScenarioFile.SetFieldNameAndValue("demand_multiplier",m_demand_multiplier);
 
 		ScenarioFile.SetFieldNameAndValue("random_seed",random_seed);
@@ -3382,7 +3380,6 @@ int accessibility_mode;
 		ScenarioFile.SetFieldNameAndValue("ODME_step_size",ODME_step_size);
 		ScenarioFile.SetFieldNameAndValue("freeway_bias_factor",freeway_bias_factor);
 		ScenarioFile.SetFieldNameAndValue("ue_gap_calculation_method",ue_gap_calculation_method);
-		ScenarioFile.SetFieldNameAndValue("agent_demand_input_mode",agent_demand_input_mode);
 		ScenarioFile.SetFieldNameAndValue("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
 		ScenarioFile.SetFieldNameAndValue("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
 		ScenarioFile.SetFieldNameAndValue("routing_movement_delay_mode",routing_movement_delay_mode);

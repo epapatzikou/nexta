@@ -37,11 +37,30 @@
 #include <sstream>
 
 // CAssignmentSimulationTabDlg dialog
-enum Traffic_Flow_Model {BPR, VERTICAL_QUEUE, SPATIAL_QUEUE, NEWELL, MAX_FLOW_MODEL};
-static LPSTR Traffic_Flow_Model_String[MAX_FLOW_MODEL] = {"BPR Function-0", "Vertical QueueModel-1", "Spatial QueueModel-2", "Newell's Model-3"};
+enum Traffic_Flow_Model {BPR, VERTICAL_QUEUE, SPATIAL_QUEUE, NEWELL,NEWELL_EMISSIONS, POINT_QUEUE_MOVEMENT, MAX_FLOW_MODEL};
 
-enum Traffic_Assignment_Method {MSA, DAY_TO_DAY_LEARNING, GAP_BASED, GAP_BASED_PLUS_MSA, MAX_ASSIGNMENT_METHOD};
-static LPSTR Traffic_Assignment_Method_String[MAX_ASSIGNMENT_METHOD] = {"Method of Successive Average-0", "Day_to_Day_Learning-1", "GAP_BASED-2", "GAP_BASED+MSA-3"};
+
+static LPSTR Traffic_Flow_Model_String[MAX_FLOW_MODEL] = {"BPR Function", 
+"Point Queue Model", 
+"Spatial Queue Model",
+"Newell's N-Curve Model",
+"Newell's Model+Emissions Output",
+"Point Queue + Movement Capacity",
+};
+
+
+enum Traffic_Assignment_Method {MSA, FIXED_RATE,DAY_TO_DAY_LEARNING, DAY_TO_DAY_LEARNING_DEPARTURE_TIME, GAP_BASED_PLUS_MSA, 
+Accessibility_DISTANCE,Accessibility_TIME,ODME_MODE,MAX_ASSIGNMENT_METHOD};
+
+
+static LPSTR Traffic_Assignment_Method_String[MAX_ASSIGNMENT_METHOD] = {"Method of Successive Average",
+"Fixed switching Rate", 
+"Day-to-Day Learning with BR rule", 
+"Day-to-Day Route/Departure Time Choice with BR rule",
+"Gap funciton-based MSA",
+"Accessibility (Distance)",
+"Accessibility (Travel Time)",
+"OD Demand Estimation"};
 static LPSTR UE_Gap_Method_String[2] = {"For Switched Agents Only-0", "For All Agents-1"};
 
 IMPLEMENT_DYNAMIC(CAssignmentSimulationTabDlg, CDialog)
