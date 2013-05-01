@@ -77,4 +77,7 @@ public:
 	afx_msg void OnEnChangeEdit5();
 	int m_AADT;
 	int m_PeakHourlyVolume;
+	BOOL m_bUpdateLinkAttributeBasedOnType;
+	afx_msg void OnEnChangeEditAadt();
+	afx_msg void OnEnChangeEditPeakhourlyvolume();
 };

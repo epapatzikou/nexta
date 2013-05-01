@@ -357,7 +357,7 @@ protected: // create from serialization only
 // Attributes
 public:
 
-
+	bool m_bUpdateLinkAttributeBasedOnType;
 	bool bShowVehiclesWithIncompleteTrips;
 		Mustang m_ms;
 		int m_msStatus;

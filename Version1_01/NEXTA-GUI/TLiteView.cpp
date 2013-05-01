@@ -459,6 +459,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 CTLiteView::CTLiteView()
 {
 
+	m_bUpdateLinkAttributeBasedOnType  = false;
 	m_LinkTextFontSize = 12;
 	m_NodeDisplayBoundarySize = 200;
 
@@ -3787,6 +3788,9 @@ void CTLiteView::OnLinkEditlink()
 	{
 		CDlgLinkProperties dlg;
 
+		dlg.m_bUpdateLinkAttributeBasedOnType = m_bUpdateLinkAttributeBasedOnType;
+
+
 		dlg.m_pDoc = pDoc;
 
 		dlg.m_LinkID = pLink->m_LinkID ;
@@ -3828,9 +3832,9 @@ void CTLiteView::OnLinkEditlink()
 
 		if(dlg.DoModal() == IDOK)
 		{
+			m_bUpdateLinkAttributeBasedOnType = dlg.m_bUpdateLinkAttributeBasedOnType;
 
-			if(dlg.m_bEditChange)
-				pDoc->Modify();
+
 
 			if(pDoc->m_bUseMileVsKMFlag)
 			{
@@ -3871,7 +3875,12 @@ void CTLiteView::OnLinkEditlink()
 				pLink->m_NumberOfLanes  = dlg.nLane;
 				pDoc->GenerateOffsetLinkBand();  // update width of band
 			}
-			pLink->m_link_type = dlg.LinkType ;
+			
+			if(pLink->m_link_type != dlg.LinkType)
+			{
+				dlg.m_bEditChange = true;
+				pLink->m_link_type = dlg.LinkType ;
+			}
 
 			pLink->m_observed_AADT = dlg.m_AADT;
 			pLink->m_observed_peak_hourly_volume = dlg.m_PeakHourlyVolume;
@@ -3887,6 +3896,8 @@ void CTLiteView::OnLinkEditlink()
 			pDoc->m_DefaultCapacity = dlg.DefaultCapacity;
 			pDoc->m_DefaultNumLanes = dlg.DefaultnLane;
 
+			if(dlg.m_bEditChange)
+				pDoc->Modify();
 
 
 		}

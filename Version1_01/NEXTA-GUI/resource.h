@@ -463,6 +463,7 @@
 #define IDC_COMBO_Link_Selection        1147
 #define IDC_CHECK_ZOOM_TO_LINK          1148
 #define IDC_CHECK1                      1150
+#define IDC_CHECK_UseDefaultData        1150
 #define IDC_CHECK2                      1151
 #define IDC_COMBO_StartTime             1151
 #define IDC_COMBO_EndTime               1152
