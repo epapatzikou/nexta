@@ -31,6 +31,7 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_BPR_Beta(0)
 	, m_AADT(0)
 	, m_PeakHourlyVolume(0)
+	, m_bUpdateLinkAttributeBasedOnType(FALSE)
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -75,6 +76,7 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_AADT, 0, 1000000);
 	DDX_Text(pDX, IDC_EDIT_PeakHourlyVolume, m_PeakHourlyVolume);
 	DDV_MinMaxInt(pDX, m_PeakHourlyVolume, 0, 100000);
+	DDX_Check(pDX, IDC_CHECK_UseDefaultData, m_bUpdateLinkAttributeBasedOnType);
 }
 
 
@@ -98,6 +100,8 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT2, &CDlgLinkProperties::OnEnChangeEdit2)
 	ON_EN_CHANGE(IDC_EDIT4, &CDlgLinkProperties::OnEnChangeEdit4)
 	ON_EN_CHANGE(IDC_EDIT5, &CDlgLinkProperties::OnEnChangeEdit5)
+	ON_EN_CHANGE(IDC_EDIT_AADT, &CDlgLinkProperties::OnEnChangeEditAadt)
+	ON_EN_CHANGE(IDC_EDIT_PeakHourlyVolume, &CDlgLinkProperties::OnEnChangeEditPeakhourlyvolume)
 END_MESSAGE_MAP()
 
 
@@ -243,27 +247,32 @@ void CDlgLinkProperties::OnBnClickedCancel()
 
 void CDlgLinkProperties::OnCbnSelchangeCombo1()
 {
-	int SelectLinkType = m_LinkTypeComboBox.GetCurSel ();
 
-	std::map<int, DTALinkType>:: const_iterator itr;
-
-	int count = 0;
-	for(itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+	UpdateData(true);
+	if(m_bUpdateLinkAttributeBasedOnType)
 	{
-	
-		if(SelectLinkType == count)
-		{
-			SpeedLimit = itr->second .default_speed;
-			LaneCapacity = itr->second .default_lane_capacity ;
-			nLane = itr->second .default_number_of_lanes ;
 
+		int SelectLinkType = m_LinkTypeComboBox.GetCurSel ();
+		std::map<int, DTALinkType>:: const_iterator itr;
+
+		int count = 0;
+		for(itr = m_pDoc->m_LinkTypeMap.begin(); itr != m_pDoc->m_LinkTypeMap.end(); itr++)
+		{
+		
+			if(SelectLinkType == count)
+			{
+				SpeedLimit = itr->second .default_speed;
+				LaneCapacity = itr->second .default_lane_capacity ;
+				nLane = itr->second .default_number_of_lanes ;
+
+			}
+			count++;
 		}
-		count++;
+
+		UpdateData(false);
 	}
 
-	EnableDataBasedOnLinkType();
-
-	UpdateData(false);
+		EnableDataBasedOnLinkType();
 
 }
 
@@ -350,4 +359,14 @@ void CDlgLinkProperties::OnEnChangeEdit5()
 {
 	m_bEditChange = true;
 
+}
+
+void CDlgLinkProperties::OnEnChangeEditAadt()
+{
+	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnEnChangeEditPeakhourlyvolume()
+{
+	m_bEditChange = true;
 }

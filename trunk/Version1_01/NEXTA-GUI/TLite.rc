@@ -169,6 +169,8 @@ BEGIN
     EDITTEXT        IDC_EDIT_AADT,275,192,56,14,ES_AUTOHSCROLL
     LTEXT           "Peak Hourly Volume:",IDC_STATIC,202,210,66,8
     EDITTEXT        IDC_EDIT_PeakHourlyVolume,275,209,56,14,ES_AUTOHSCROLL
+    CONTROL         "Update Attributes Based On Selected Link Type",IDC_CHECK_UseDefaultData,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,215,181,10
 END
 
 IDD_DIALOG_Settings DIALOGEX 0, 0, 396, 198
