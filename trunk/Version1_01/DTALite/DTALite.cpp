@@ -3613,12 +3613,17 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 		}
 		if(incoming_link_freeway_and_ramp_count >=2 && no_arterial_incoming_link)
 		{
+
+			if( m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID] ==1)
+			{
 			TRACE("\nMerge link: %d->%d",g_LinkVector[li]->m_FromNodeNumber , g_LinkVector[li]->m_ToNodeNumber );
 			g_LinkVector[li]->m_bMergeFlag = 1;
+
+			}
+
 		}
 
 	}
-
 
 	// first count # of incoming freeway, highway or ramp links to each freeway/highway link
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)

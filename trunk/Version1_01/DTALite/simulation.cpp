@@ -437,14 +437,25 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 			}
 
-			if(pLink->m_FromNodeNumber == 200 && pLink->m_ToNodeNumber == 117 && CurrentTime>=430 )
+ 			if(pLink->m_FromNodeNumber == 53961 && pLink->m_ToNodeNumber == 57547 && CurrentTime>=840 )
+			{
+				TRACE("");
+			}
+
+ 			if(pLink->m_FromNodeNumber == 1 && pLink->m_ToNodeNumber == 5 && CurrentTime>=0 )
 			{
 				TRACE("");
 			}
 
 			if(pLink->m_bSignalizedArterialType == true && g_SimulateSignals)
 			{
-				PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( pLink->m_DownstreamCycleLength_In_Second, pLink->m_EffectiveGreenTime_In_Second ,pLink->m_GreenStartTime_In_Second ,  pLink->m_DownstreamNodeSignalOffset_In_Second, CurrentTime, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane);
+				PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( 
+					pLink->m_DownstreamCycleLength_In_Second, 
+					pLink->m_EffectiveGreenTime_In_Second ,
+					pLink->m_GreenStartTime_In_Second,  
+					pLink->m_DownstreamNodeSignalOffset_In_Second, 
+					CurrentTime, 
+					pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane);
 
 				if(pLink->m_LeftTurn_NumberOfLanes >0)
 				{
@@ -503,10 +514,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			{
 				// determine link in capacity 
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
-				fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+
+				//if(g_LinkTypeMap[pLink->m_link_type] .IsFreeway())
+				//	fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+				//else // non freeway links
+					fLinkInCapacity = AvailableSpaceCapacity;
 
 				if(fLinkInCapacity<0)
 					fLinkInCapacity = 0;
+
 
 				//			TRACE(" time %5.2f, SC: %5.2f, MFR %5.2f\n",CurrentTime, AvailableSpaceCapacity, MaximumFlowRate);
 
@@ -585,6 +601,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			// finally we convert the floating-point capacity to integral capacity in terms of number of vehicles
 
+
 			if(g_RandomizedCapacityMode)
 			{
 
@@ -598,6 +615,21 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 			//
 
+			//overwrite ramp in flow capacity
+		if(g_LinkTypeMap[pLink->m_link_type].IsRamp ()) 
+		{
+
+				if(pLink->m_bOnRampType == true && g_settings.use_point_queue_model_for_on_ramps)
+				{
+					pLink-> LinkInCapacity =   99999; // reset in flow capacity constraint 
+				}
+
+				if(pLink->m_bOnRampType == false && g_settings.use_point_queue_model_for_off_ramps)
+				{
+					pLink-> LinkInCapacity =   99999; // reset outflow flow capacity constraint 
+				}
+		}
+
 
 			if(debug_flag && pLink->m_FromNodeNumber ==60306 &&  pLink->m_ToNodeNumber ==54256 && CurrentTime>=5 )
 			{
@@ -607,7 +639,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 		// distribute link in capacity to different incoming links
-		for(unsigned li = 0; li< link_size; li++)
+#pragma omp parallel for
+		for(int li = 0; li< link_size; li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
 			unsigned int il;
@@ -626,12 +659,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				if(TotalInFlowCount > pLink-> LinkInCapacity)  // total demand > supply
 				{
 
-				if(pLink->m_FromNodeNumber == 3 && pLink->m_ToNodeNumber == 4)
-				{
 				
-					TRACE("");
-				}
-
 					if(pLink -> m_bMergeFlag == 1 ||  pLink -> m_bMergeFlag == 2)  // merge with mulitple freeway/onramp links only, or for freeway/on-ramp merge when not using freeval model
 					{
 
@@ -661,14 +689,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 							// remaining residual capacity from total inflow capacity 
 							
 							float capacity3 = g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity;
-							// outflow capacity of the incoming link 
+							//// outflow capacity of the incoming link 
 							float LinkOutCapacity = min(capacity3,max( capacity1, capacity2));
+							
+//							float capacity3 = g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity;
+							// outflow capacity of the incoming link 
 
-			if(g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_FromNodeNumber == 200 && g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_ToNodeNumber == 117 && CurrentTime>=430 )
-			{
-				TRACE("");
-			}
-							// priority based model is used here from  Daganzo's Priority-Based Merge Model  (1995)
+			          // priority based model is used here from  Daganzo's Priority-Based Merge Model  (1995)
 							int LinkOutCapacity_int =  0;
 
 							if(g_RandomizedCapacityMode)
@@ -676,18 +703,20 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 								LinkOutCapacity_int = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(LinkOutCapacity,li);
 							}else
 							{
-								float PrevCumulativeMergeOutCapacityCount = pLink->m_CumulativeMergeOutCapacityCount;
-								pLink->m_CumulativeMergeOutCapacityCount+= LinkOutCapacity;
-								LinkOutCapacity_int = (int)pLink->m_CumulativeMergeOutCapacityCount - (int) PrevCumulativeMergeOutCapacityCount;
+								float PrevCumulativeMergeOutCapacityCount = g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_CumulativeMergeOutCapacityCount;
+								g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_CumulativeMergeOutCapacityCount+= LinkOutCapacity;
+								LinkOutCapacity_int = (int)g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->m_CumulativeMergeOutCapacityCount - 
+									(int) PrevCumulativeMergeOutCapacityCount;
 							}
 							g_LinkVector [pLink->MergeIncomingLinkVector[il].m_LinkNo]->LinkOutCapacity = LinkOutCapacity_int;
 
-						}
-					}
-				}
-			}
-		}
-	}
+						} // for each incoming link
+					}  //   merge with mulitple freeway/onramp links only, or for freeway/on-ramp merge when not using freeval model
+				}  // total demand > supply
+			} // m_bMergeFlag >= 1
+		}  // 		// distribute link in capacity to different incoming links
+
+	}  // // queueing model
 
 
 	// step 4: move vehicles from ExitQueue to next link's EntranceQueue, if there is available capacity
@@ -752,8 +781,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 
 			///////////////////////// end of left-turn handling ///////////////////////
-
-			int Before_Queue_Size = pLink->ExitQueue.size(); // before this simulation time interval
 
 			int through_blocking_count  = 0;
 			int left_blocking_count  = 0;
@@ -828,6 +855,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					// test if movement capacity available
 					//DTANodeMovement movement_element;
 					//string movement_id;
+
+					if(p_Nextlink->m_FromNodeNumber == 57547 && p_Nextlink->m_ToNodeNumber == 54720)
+					{
+					
+						TRACE("");
+					
+					}
 
 					if(p_Nextlink->LinkInCapacity > 0) // if there is available spatial capacity on next link, then move to next link, otherwise, stay on the current link
 					{
@@ -1114,7 +1148,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			if(g_OutputLinkCapacityFlag ==1 && CurrentTime >= g_OutputLinkCapacityStarting_Time && CurrentTime <= g_OutputLinkCapacityEnding_Time)
 			{
-				DTALinkOutCapacity element(CurrentTime,Before_Queue_Size,pLink->ExitQueue.size(), through_blocking_count, blocking_node_number );
+				DTALinkOutCapacity element(CurrentTime,pLink->LinkOutCapacity,pLink->ExitQueue.size(), through_blocking_count, blocking_node_number );
 				pLink->m_OutCapacityVector .push_back (element);
 			}
 
@@ -1605,24 +1639,28 @@ float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second
 
 	ASSERT(EffectiveGreenTime_in_second>=1);
 
-	float CycleLength_in_min = CycleLength_in_second/60.0f;
-	float GreenEndTime_In_Second = GreenStartTime_in_second + EffectiveGreenTime_in_second/60.0f;
+	//step 1: calculate number of cycles 
 
+	float CycleLength_in_min = CycleLength_in_second/60.0f;
 	float offset_in_min = offset_in_second/60.0f;
 	int number_of_cycles = int((CurrentTime-offset_in_min)/CycleLength_in_min);
 
-	float PerCycleTime_StartTime = (CurrentTime-offset_in_min) - number_of_cycles*CycleLength_in_min - GreenStartTime_in_second;
-	float PerCycleTime_EndTime = PerCycleTime_StartTime + g_DTASimulationInterval;  // unit: min
+	float GreenStartTime_in_min = (GreenStartTime_in_second )/60.0f;
+	float GreenEndTime_in_min = (GreenStartTime_in_second + EffectiveGreenTime_in_second)/60.0f;
+
+	//step 2:  
+	float PerCycleTime_StartTime_in_min = (CurrentTime-offset_in_min) - number_of_cycles*CycleLength_in_min - GreenStartTime_in_min;
+	float PerCycleTime_EndTime_in_min = PerCycleTime_StartTime_in_min + g_DTASimulationInterval;  // unit: min
 
 	// we now find the intersection of two time intervals
 
-	float intersection_start_time = max(PerCycleTime_StartTime, GreenStartTime_in_second);
-	float intersection_end_time = min(PerCycleTime_EndTime, GreenEndTime_In_Second);
+	float intersection_start_time_in_min = max(PerCycleTime_StartTime_in_min, GreenStartTime_in_min);
+	float intersection_end_time_in_min = min(PerCycleTime_EndTime_in_min, GreenEndTime_in_min);
 
 	float DynamicCapacity  = 0;
 
 	// max(0,intersection_end_time-intersection_start_time)  is the duraiton of intersection of two time intervals
-	DynamicCapacity =  SaturationFlowRate*max(0,intersection_end_time-intersection_start_time)/g_DTASimulationInterval;
+	DynamicCapacity =  SaturationFlowRate*max(0,intersection_end_time_in_min - intersection_start_time_in_min)/g_DTASimulationInterval;
 
 	return DynamicCapacity;
 }

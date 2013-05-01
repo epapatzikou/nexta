@@ -1574,7 +1574,9 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	}
 
-	g_SummaryStatFile.SetValueByFieldName ("Iteration #",iteration);
+	int day_no = iteration+1;
+
+	g_SummaryStatFile.SetValueByFieldName ("Iteration #",day_no);  // iteration from 0
 	g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
 	g_SummaryStatFile.SetValueByFieldName ("# of agents",p_SimuOutput->NumberofVehiclesGenerated);
 	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",p_SimuOutput->AvgTravelTime);
