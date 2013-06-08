@@ -1429,7 +1429,7 @@ void g_ReadInputFiles(int scenario_no)
 		g_VehicleTypeVector.clear();
 		while(parser_vehicle_type.ReadRecord())
 		{
-			int vehicle_type;
+			int vehicle_type =0;
 			if(parser_vehicle_type.GetValueByFieldName("vehicle_type",vehicle_type) == false)
 				break;
 
@@ -1600,7 +1600,7 @@ void g_ReadInputFiles(int scenario_no)
 		if(PricingTypeFile.is_open ())
 		{
 			PricingTypeFile << "pricing_type,pricing_type_name,default_VOT"<< endl;
-			PricingTypeFile << "1,LOV,10"<< endl;
+			PricingTypeFile << "1,SOV,10"<< endl;
 			PricingTypeFile << "2,HOV,20"<< endl;
 			PricingTypeFile << "3,Truck,30"<< endl;
 			PricingTypeFile << "4,Intermodal,10"<< endl;
@@ -1724,7 +1724,7 @@ void g_ReadInputFiles(int scenario_no)
 	cout << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
 	cout <<	"Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
 
-	g_SummaryStatFile.WriteParameterValue ("\nDemand multipler in setting file",g_DemandGlobalMultiplier);
+	g_SummaryStatFile.WriteParameterValue ("\nDemand multiplier in setting file",g_DemandGlobalMultiplier);
 
 	g_SummaryStatFile.WriteParameterValue ("# of Vehicles to be simulated",g_VehicleVector.size());
 
@@ -1970,7 +1970,10 @@ void g_ConvertDemandToVehicles()
 			cout << iterZone->first << endl;
 
 		}
-		cout << "Please check input_activity_location.csv and demand files." << endl;
+		cout << "Please check input_activity_location.csv and demand files. You might need to manually prepare zone-to-node mapping in file input_activity_location file to ensure each zone has at least one activity node. " << endl;
+
+		cout << "Please any key to continue the simulation without consider vehicles associated with those zones. " << endl;
+
 		getchar();
 
 	}
@@ -2852,7 +2855,7 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 			g_ProgramStop();
 		}
 
-		g_SummaryStatFile.WriteTextString ("File Scenario_Link_Based_Toll.csv cannot be opened");
+		//g_SummaryStatFile.WriteTextString ("File Scenario_Link_Based_Toll.csv cannot be opened");
 	}
 
 
@@ -3161,8 +3164,8 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		fclose(st_struct);
 	}else
 	{
-		fprintf(g_ErrorFile, "File output_LinkMOE.csv cannot be opened. It might be currently used and locked by EXCEL.");
-		cout << "Error: File output_LinkMOE.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		fprintf(g_ErrorFile, "File output_LinkTDMOE.csv cannot be opened. It might be currently used and locked by EXCEL.");
+		cout << "Error: File output_LinkTDMOE.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 		cin.get();  // pause
 	}
 
@@ -4069,6 +4072,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			string format_type;
 			int number_of_lines_to_be_skipped = 0;
 			int subtotal_in_last_column = 0;
+			int demand_type_in_3rd_column = 0;
 			float loading_multiplier =1;
 			int start_time_in_min = -1; 
 			int end_time_in_min = -1;
@@ -4149,6 +4153,8 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			string format_type= "null";
 			int number_of_lines_to_be_skipped = 0;
 			int subtotal_in_last_column = 0;
+			int demand_type_in_3rd_column = 0;
+
 			int start_time_in_min = 0; 
 			int end_time_in_min = 1440;
 			int number_of_demand_types = 0;
@@ -4224,6 +4230,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			parser.GetValueByFieldNameWithPrintOut("number_of_lines_to_be_skipped",number_of_lines_to_be_skipped);
 			parser.GetValueByFieldNameWithPrintOut("subtotal_in_last_column",subtotal_in_last_column);
+			parser.GetValueByFieldName("demand_type_in_3rd_column",demand_type_in_3rd_column);
 
 			int apply_additional_time_dependent_profile =0;	
 			parser.GetValueByFieldNameWithPrintOut("apply_additional_time_dependent_profile",apply_additional_time_dependent_profile);
@@ -4254,6 +4261,18 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			}
 
 			parser.GetValueByFieldNameWithPrintOut("number_of_demand_types",number_of_demand_types);
+
+			if(demand_type_in_3rd_column == 1)
+			{
+				if(number_of_demand_types != 1)
+				{
+					cout << "Error: number_of_demand_types should be 1 when demand_type_in_3rd_column is set to 1. The current value is " << number_of_demand_types << endl;
+					g_ProgramStop();
+				
+					}
+			
+			}
+
 
 
 			for(int type = 1; type <= number_of_demand_types; type++)
@@ -4304,7 +4323,19 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 					g_read_a_line(st,str_line, str_line_size); //  skip the first line
 					int number_of_values = g_read_number_of_numerical_values(str_line,str_line_size);
 
-					if(number_of_values != 2 + number_of_demand_types) // 2: origin, destination 
+					if(demand_type_in_3rd_column == 1)
+					{
+
+						if(number_of_values != 4)
+						{
+						cout << "demand_type_in_3rd_column = 1, please make sure there are 4 values per line" << endl;
+						g_ProgramStop();
+						
+						}
+					
+					}
+
+					if(number_of_values != 2 + number_of_demand_types + demand_type_in_3rd_column) // 2: origin, destination (demand type)
 					{
 						cout << "There are " << number_of_values << " values() per line in file " << file_name << "," << endl << "but " << number_of_demand_types << " demand type(s) are defined in file input_demand_meta_data.csv. " << endl << "Please check file input_demand_meta_data.csv." << endl;
 						g_ProgramStop();
@@ -4312,6 +4343,8 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 					}
 					fclose(st);
 				}
+
+				// read the file formaly after the test. 
 
 				fopen_s(&st,file_name.c_str (), "r");
 				if (st!=NULL)
@@ -4358,12 +4391,22 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of "<< g_ODZoneNumberSize <<" in input_zone.csv. Please check." << endl;
 							g_ProgramStop();
 						}
+						
+						
+						if(demand_type_in_3rd_column == 1)
+						{
+						demand_type_code[1] =  g_read_integer(st);  // read the user specified demand type per row
+	
+						}
+						
 						float number_of_vehicles ;
+
+
 
 
 						for(int type = 1; type <= number_of_demand_types; type++)
 						{
-
+							
 							float demand_value = g_read_float(st);
 
 							number_of_vehicles =  demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
@@ -4707,58 +4750,3 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 
 
-void g_ReadAMSMovementData()
-{
-	CCSVParser parser_movement;
-
-	int count = 0;
-
-	if (parser_movement.OpenCSVFile("AMS_movement.csv",false))  // not required
-	{
-		while(parser_movement.ReadRecord())
-		{
-			int up_node_id, node_id, dest_node_id;
-
-			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
-				break;
-
-			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
-			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
-
-
-
-				std::string turn_type;
-
-				parser_movement.GetValueByFieldName ("turn_type",turn_type );
-
-				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
-				{
-					int QEM_Lanes = 0;
-					int QEM_EffectiveGreen = 0;
-					int QEM_SatFlow = 1900;
-					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
-					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
-					parser_movement.GetValueByFieldName ("QEM_SatFlow",QEM_SatFlow );
-
-					//find link
-					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
-					{
-						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
-
-						if(pLink->m_bArterialType == true && QEM_EffectiveGreen>=1 && QEM_SatFlow>=100 )  // only for arterial streets
-						{
-						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
-						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
-						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
-						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow;
-						}
-
-					}
-
-
-				}
-
-		}
-		
-	}
-}

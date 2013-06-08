@@ -826,6 +826,7 @@ public:
 		m_LeftTurn_NumberOfLanes = 0; 
 		m_LeftTurn_EffectiveGreenTime_In_Second = 0;
 		m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;
+		m_LeftTurnGreenStartTime_In_Second = 0;
 
 		m_CumulativeOutCapacityCount = 0.0f;
 		m_CumulativeLeftOutCapacityCount = 0.0f;
@@ -1269,6 +1270,7 @@ public:
 	int m_LeftTurn_NumberOfLanes; 
 	int m_LeftTurn_EffectiveGreenTime_In_Second;
 	int m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane; 
+	int m_LeftTurnGreenStartTime_In_Second;
 
 
 	// for MOE data array
@@ -1980,6 +1982,8 @@ public:
 
 	bool m_bForcedSwitchAtFirstIteration; // used by agent model, if there is a newly added work zone, then we have to force the vehicles to switch (in order to avoid bloced links)
 	bool m_bSwitch;  // switch route in assignment
+	float m_gap;
+	bool m_gap_update;
 	bool m_bConsiderToSwitch;  //consider to switch route in assignment
 
 	// used for simulation
@@ -2034,7 +2038,8 @@ public:
 
 	DTAVehicle()
 	{
-
+		m_gap = 0;
+		m_gap_update = false;
 		m_bForcedSwitchAtFirstIteration  = false;
 		m_bRadioMessageResponseFlag = false;
 
@@ -2806,6 +2811,73 @@ int CreateVehicles(int originput_zone, int destination_zone, float number_of_veh
 
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
+struct NetworkLoadingTimeDepedentMOE
+{
+public: 
+
+	NetworkLoadingTimeDepedentMOE()
+	{
+		 TotalTripTime = 0;
+		 TotalTripFFTT = 0;
+		 TotalTravelTime = 0;
+		 TotalDelay = 0;
+		 TotalDistance  = 0;
+		 VehicleSizeComplete = 0;
+
+
+		AvgTripTime = 0;
+		AvgTravelTime = 0;
+		AvgDelay = 0;
+		AvgTripTimeIndex = 0;
+		AvgDistance = 0;
+		NumberofVehiclesCompleteTrips = 0;
+		NumberofVehiclesGenerated = 0;
+		SwitchPercentage = 0;
+		ConsideringSwitchPercentage = 0;
+		AvgUEGap = 0;
+		AvgRelativeUEGap = 0;
+	
+	}
+
+	double TotalTripTime; 
+	double TotalTripFFTT;
+	double TotalTravelTime; 
+	double TotalDelay;
+	double TotalDistance ;
+	double VehicleSizeComplete;
+
+	double AvgTripTime;
+	double AvgTravelTime;
+	double AvgTripTimeIndex;
+	double AvgDelay;
+	double AvgTTI;
+	double AvgDistance;
+	int   NumberofVehiclesCompleteTrips;
+	int   NumberofVehiclesGenerated;
+	double SwitchPercentage;
+	double ConsideringSwitchPercentage; 
+	double AvgUEGap;
+	double AvgRelativeUEGap;
+
+};	
+
+struct NetworkLoadingTimeDepedentGap
+{
+public:
+	NetworkLoadingTimeDepedentGap()
+	{
+	
+	total_gap = 0;
+	total_relative_gap = 0;
+	NumberofVehiclesWithGapUpdate = 0;
+
+	}
+	double total_gap;
+	double total_relative_gap;
+	int NumberofVehiclesWithGapUpdate;
+
+};
+
 struct NetworkLoadingOutput
 {
 public:
@@ -2837,6 +2909,9 @@ public:
 		ConsideringSwitchPercentage = 0;
 		NetworkClearanceTimeStamp_in_Min = 1440;
 		NetworkClearanceTimePeriod_in_Min = 1440;
+
+		TimeDedepentMOEMap.clear();
+		TimeDedepentMOEMap.clear();
 	}
 
 	int   NetworkClearanceTimeStamp_in_Min;
@@ -2853,6 +2928,72 @@ public:
 	double ConsideringSwitchPercentage; 
 	double AvgUEGap;
 	double AvgRelativeUEGap;
+
+	std::map<int,NetworkLoadingTimeDepedentMOE> TimeDedepentMOEMap;
+	std::map<int,NetworkLoadingTimeDepedentGap> TimeDedepentGapMap;
+
+
+	double GetTimeDependentAvgTravelTime(int time)
+	{
+	int time_interval_no = time / 15;
+
+		if(TimeDedepentMOEMap.find(time_interval_no)!= TimeDedepentMOEMap.end())
+		{
+			return TimeDedepentMOEMap[time_interval_no].AvgTravelTime;
+			
+		}else 
+		{
+			return 0;
+
+		}
+	}
+
+
+	double GetTimeDependentAvgTravelDistance(int time)
+	{
+	int time_interval_no = time / 15;
+
+		if(TimeDedepentMOEMap.find(time_interval_no)!= TimeDedepentMOEMap.end())
+		{
+			return TimeDedepentMOEMap[time_interval_no].AvgDistance ;
+			
+		}else 
+		{
+			return 0;
+
+		}
+	}
+
+		double GetTimeDependentAvgGap(int time)
+	{
+	int time_interval_no = time / 15;
+
+		if(TimeDedepentGapMap.find(time_interval_no)!= TimeDedepentGapMap.end())
+		{
+		 return TimeDedepentGapMap[time_interval_no].total_gap /max(1,TimeDedepentGapMap[time_interval_no].NumberofVehiclesWithGapUpdate);
+			
+		}else 
+		{
+			return 0;
+
+		}
+	}
+
+
+		double GetTimeDependentAvgRelativeGapInPercentage(int time)
+	{
+	int time_interval_no = time / 15;
+
+		if(TimeDedepentGapMap.find(time_interval_no)!= TimeDedepentGapMap.end())
+		{
+		 return TimeDedepentGapMap[time_interval_no].total_relative_gap *100 /max(1,TimeDedepentGapMap[time_interval_no].NumberofVehiclesWithGapUpdate);
+			
+		}else 
+		{
+			return 0;
+
+		}
+	}
 	double TotalDemandDeviation;
 	double LinkVolumeAvgAbsError;
 	double LinkVolumeAvgAbsPercentageError;

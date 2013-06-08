@@ -1,4 +1,4 @@
-//  Portions Copyright 2010 Xuesong Zhou
+//  Portions Copyright 2010 Xuesong Zhou, Jinjin Tang
 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having copyright info here is to ensure all the modified version, as a whole, under the GPL 
@@ -117,3 +117,89 @@ void DTANode::QuickSignalOptimization()
 }
 
 
+void g_ReadAMSMovementData()
+{
+
+	// read data block per node:
+	// movement-specific phase number, effective green time 
+	// movement-specific green start time according to standard dual ring sequence
+
+	// look up: 
+
+	// step 1 
+	// update node-specific cycle time using AMS_Movement's cycle tim
+
+	// step 2:
+	// when read through turn movement, we overwrite link-based m_EffectiveGreenTime_In_Second and m_EffectiveGreenTime_In_Second
+	//	pLink->m_EffectiveGreenTime_In_Second ,
+	//	pLink->m_GreenStartTime_In_Second,  
+	// update saturation flow rate:
+
+
+	// step 3:
+	// if this a left turn movment and left-turn # of lanes >0
+	//m_LeftTurn_EffectiveGreenTime_In_Second
+	//
+
+	// pLink->m_DownstreamCycleLength_In_Second
+
+	CCSVParser parser_movement;
+
+	int count = 0;
+
+	if (parser_movement.OpenCSVFile("AMS_movement.csv",false))  // not required
+	{
+		while(parser_movement.ReadRecord())
+		{
+			int up_node_id, node_id, dest_node_id;
+
+			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
+				break;
+
+			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
+			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
+
+
+
+				std::string turn_type;
+
+				parser_movement.GetValueByFieldName ("turn_type",turn_type );
+
+				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
+				{
+					int QEM_Lanes = 0;
+					int QEM_EffectiveGreen = 0;
+					int QEM_SatFlow = 1900;
+					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
+					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
+					parser_movement.GetValueByFieldName ("QEM_SatFlow",QEM_SatFlow );
+
+					//find link
+					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
+					{
+						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
+
+						if(pLink->m_bArterialType == true && QEM_EffectiveGreen>=1 && QEM_SatFlow>=100 )  // only for arterial streets
+						{
+						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
+						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
+						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
+						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow;
+						}
+
+					}
+
+
+				}
+
+		}
+		
+	}
+
+	// step 4: from dual ring structure: find the start_time for both through and left-turn movement
+	// given input:
+	// 1,2,3,4,: 5,6,7,8
+	// store internal phase number for each movement: 
+	// we use the standard phase sequence 
+
+}
