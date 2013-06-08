@@ -202,7 +202,7 @@ void g_ReadDSPVehicleFile(string file_name)
 				if(g_DemandGlobalMultiplier<0.9999)
 				{
 					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multipler, then skip, not generate vehicles
+					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
 					{
 
 						delete pVehicle;
@@ -685,7 +685,7 @@ bool g_ReadAgentBinFile(string file_name)
 				if(g_DemandGlobalMultiplier<0.9999)
 				{
 					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multipler, then skip, not generate vehicles
+					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
 					{
 
 						delete pVehicle;

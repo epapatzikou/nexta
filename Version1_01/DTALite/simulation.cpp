@@ -449,6 +449,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			if(pLink->m_bSignalizedArterialType == true && g_SimulateSignals)
 			{
+
+				//by default, we handle through turn here
 				PerHourCapacityAtCurrentSimulatioInterval = GetTimeDependentCapacityAtSignalizedIntersection( 
 					pLink->m_DownstreamCycleLength_In_Second, 
 					pLink->m_EffectiveGreenTime_In_Second ,
@@ -460,9 +462,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				if(pLink->m_LeftTurn_NumberOfLanes >0)
 				{
 				float PerHourLeftTurnCapacityAtCurrentSimulatioInterval = 
-					GetTimeDependentCapacityAtSignalizedIntersection( pLink->m_DownstreamCycleLength_In_Second,
+					GetTimeDependentCapacityAtSignalizedIntersection( 
+					pLink->m_DownstreamCycleLength_In_Second,
 					pLink->m_LeftTurn_EffectiveGreenTime_In_Second , /*left turn handling for effective green time*/
-					pLink->m_GreenStartTime_In_Second ,
+					pLink->m_LeftTurnGreenStartTime_In_Second ,
 					pLink->m_DownstreamNodeSignalOffset_In_Second,
 					CurrentTime,
 					pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane);  /*left turn handling for saturation flow rate*/ 
@@ -515,9 +518,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// determine link in capacity 
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 
-				//if(g_LinkTypeMap[pLink->m_link_type] .IsFreeway())
-				//	fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
-				//else // non freeway links
+				if(g_LinkTypeMap[pLink->m_link_type] .IsFreeway())
+					fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+				else // non freeway links
 					fLinkInCapacity = AvailableSpaceCapacity;
 
 				if(fLinkInCapacity<0)
@@ -1269,10 +1272,14 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			}
 		}
 
+		double hourly_demand_loading_muliplier = 1.0;
+
+		hourly_demand_loading_muliplier = 60.0 / max(1, g_DemandLoadingEndTimeInMin - g_DemandLoadingStartTimeInMin);
+
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime*(1.0f+pLink->m_BPR_Alpha *(powf(pLink->m_BPRLinkVolume/(max(1,pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes())),pLink->m_BPR_Beta )));
+			pLink->m_BPRLinkTravelTime = pLink->m_FreeFlowTravelTime*(1.0f+pLink->m_BPR_Alpha *(powf(pLink->m_BPRLinkVolume*hourly_demand_loading_muliplier/(max(1,pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes())),pLink->m_BPR_Beta )));
 
 			//float maximum_travel_time_ratio = 10;
 			//if(pLink->m_FreeFlowTravelTime >0.01 && pLink->m_BPRLinkTravelTime > pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio )
@@ -1497,7 +1504,31 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			TotalTravelTime += (*iterVehicle)->m_TravelTime;
 			TotalDelay += max(0,(*iterVehicle)->m_Delay);
 			TotalDistance+= (*iterVehicle)->m_Distance ;
+
 			VehicleSizeComplete +=1;
+
+
+			// calcaulate time-dependent MOE for simulation daily output
+			int time_interval =  (*iterVehicle)->m_DepartureTime / 15;
+			
+			output.TimeDedepentMOEMap[time_interval].TotalTripTime+= (*iterVehicle)->m_TripTime;
+			output.TimeDedepentMOEMap[time_interval].TotalTripFFTT+= (*iterVehicle)->m_TripFFTT;
+
+			output.TimeDedepentMOEMap[time_interval].TotalTravelTime += (*iterVehicle)->m_TravelTime;
+			output.TimeDedepentMOEMap[time_interval].TotalDelay += max(0,(*iterVehicle)->m_Delay);
+			output.TimeDedepentMOEMap[time_interval].TotalDistance+= (*iterVehicle)->m_Distance ;
+			output.TimeDedepentMOEMap[time_interval].VehicleSizeComplete +=1;
+
+			// only calculate gap for vehicles with updated gap measures
+
+			if((*iterVehicle)->m_gap_update )
+			{
+				output.TimeDedepentGapMap[time_interval].NumberofVehiclesWithGapUpdate +=1;
+				output.TimeDedepentGapMap[time_interval].total_gap  += (*iterVehicle)->m_gap;
+				double relative_gap = max(0, (*iterVehicle)->m_gap);
+				output.TimeDedepentGapMap[time_interval].total_relative_gap   += (relative_gap/max(0.1,(*iterVehicle)->m_TripTime)) ;
+			}
+
 
 			if((*iterVehicle)->m_bConsiderToSwitch )
 			{
@@ -1531,6 +1562,24 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		SwitchPercentage =	NumberofVehiclesSwitched*100.0f/max(1,VehicleSizeComplete);
 		ConsideringSwitchPercentage = NumberofVehiclesConsideringToSwitch*100.0f/max(1,VehicleSizeComplete);
 	}
+
+	//tally statistics for time-dependent MOE
+		std::map<int, NetworkLoadingTimeDepedentMOE>::iterator iterTD;
+		for (iterTD = output.TimeDedepentMOEMap.begin(); iterTD != output.TimeDedepentMOEMap.end(); iterTD++)
+		{
+			if((*iterTD).second .VehicleSizeComplete >=1)
+			{
+				(*iterTD).second.AvgTripTime = (*iterTD).second.TotalTripTime /max(1,(*iterTD).second .VehicleSizeComplete);
+				(*iterTD).second.AvgTravelTime = (*iterTD).second.TotalTravelTime /max(1,(*iterTD).second .VehicleSizeComplete);
+				(*iterTD).second.AvgTripTimeIndex = (*iterTD).second.TotalTripTime/max(0.1,(*iterTD).second .TotalTripFFTT);
+				(*iterTD).second.AvgDelay = (*iterTD).second.TotalDelay /max(1,(*iterTD).second .VehicleSizeComplete);
+				(*iterTD).second.AvgDistance = (*iterTD).second.TotalDistance /max(1,(*iterTD).second .VehicleSizeComplete);
+
+			}
+		}
+
+	
+
 
 	output.NumberofVehiclesCompleteTrips = VehicleSizeComplete;
 	output.NumberofVehiclesGenerated = g_Number_of_GeneratedVehicles;

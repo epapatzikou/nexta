@@ -319,6 +319,14 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 		float prev_cumulative_percentage = 0;
 		float cumulative_percentage = 0;
 
+		if(g_VehicleTypeVector.size() ==0)
+		{
+		
+			cout << "No vehicle type data. Please check file input_vehicle_type.csv." << endl;
+			g_ProgramStop();
+		
+		}
+
 		for(i=0; i< g_VehicleTypeVector[VehicleType-1].percentage_age_vector.size(); i++)
 		{
 			cumulative_percentage+=g_VehicleTypeVector[VehicleType-1].percentage_age_vector[i];

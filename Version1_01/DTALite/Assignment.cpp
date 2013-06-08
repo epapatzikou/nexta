@@ -120,7 +120,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		g_CurrentGapValue = 0.0;
 		g_CurrentRelativeGapValue  = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
-	g_CurrentNumOfVehiclesSwitched = 0;
+		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0;
 
 #pragma omp parallel for
@@ -393,6 +393,8 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		
 		}
 
+		pVeh->m_gap_update = false;
+
 		if(bSwitchFlag || g_CalculateUEGapForAllAgents==1)  // for all vehicles that need to switch
 		{
 
@@ -405,7 +407,10 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			float m_gap = ExperiencedGeneralizedTravelTime - TotalCost;
 
-			if(m_gap < 0) m_gap = 0.0;			
+			if(m_gap < 0) m_gap = 0.0;	
+			
+			pVeh->m_gap_update = true;
+			pVeh->m_gap = m_gap;
 
 			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
 			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedGeneralizedTravelTime);
@@ -1537,6 +1542,9 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_AssignmentLogFile << endl;
 
+	int time_interval = 15; // min
+	int start_time  = (int)(g_DemandLoadingStartTimeInMin/time_interval)*time_interval;
+
 	if(iteration==0)
 	{
 		g_SummaryStatFile.SetFieldName ("Iteration #");
@@ -1565,6 +1573,30 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("ODME: r_squared");
 		g_SummaryStatFile.SetFieldName ("ODME: avg_simulated_to_avg_obs");
 //		}
+
+
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "travel_time_"+GetTimeClockString(time) ;
+				g_SummaryStatFile.SetFieldName (time_str);
+
+		}
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "Avg UE gap_"+GetTimeClockString(time) ;
+				g_SummaryStatFile.SetFieldName (time_str);
+
+		}
+
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "Relative UE gap_"+GetTimeClockString(time) ;
+				g_SummaryStatFile.SetFieldName (time_str);
+
+		}
 		cout << "Avg Gap: " << p_SimuOutput->AvgUEGap ;
 	
 
@@ -1625,11 +1657,53 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	}else  // simulation gap
 	{
+		if(iteration>=1)
+		{
 		g_SummaryStatFile.SetValueByFieldName ("Avg UE gap (min)",p_SimuOutput->AvgUEGap);
 		g_SummaryStatFile.SetValueByFieldName ("Relative UE gap (%)",p_SimuOutput->AvgRelativeUEGap);
+		}
 	
 	}
 	
+	//-- time dependent MOE 
+
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "travel_time_"+GetTimeClockString(time) ;
+
+				int time_interval_ =  time / 15;
+				double travel_time = p_SimuOutput->GetTimeDependentAvgTravelTime (time);
+
+				g_SummaryStatFile.SetValueByFieldName (time_str,travel_time);
+
+		}
+
+	if(iteration>=1)
+	{
+
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "Avg UE gap_"+GetTimeClockString(time) ;
+				double travel_time_gap = p_SimuOutput->GetTimeDependentAvgGap  (time);
+
+				g_SummaryStatFile.SetValueByFieldName (time_str,travel_time_gap);
+
+		}
+
+		for(int time = start_time; time< g_DemandLoadingEndTimeInMin;time+=time_interval)
+		{
+
+				std::string time_str = "Relative UE gap_"+GetTimeClockString(time) ;
+				
+				double travel_relative_time_gap = p_SimuOutput->GetTimeDependentAvgRelativeGapInPercentage   (time);
+				
+				g_SummaryStatFile.SetValueByFieldName (time_str,travel_relative_time_gap);
+
+		}
+	}
+
 
 	g_SummaryStatFile.WriteRecord ();
 

@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Adjusted_Fort_Worth_workzone"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\temp"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Speed_test\2035_baseline_capacity_DST - NewDTALite"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Adjusted_Fort_Worth_workzone"
+				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\3-Corridor_Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Speed_test\2035_baseline_capacity_DST - NewDTALite"
+				WorkingDirectory="C:\Temp\ODME\Region Between Aveiro and Porto"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
