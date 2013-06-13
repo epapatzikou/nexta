@@ -409,6 +409,12 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_LINK_ADD_RADIO_MESSAGE, &CTLiteDoc::OnLinkAddRadioMessage)
 	ON_COMMAND(ID_SENSORTOOLS_SENSORDATA, &CTLiteDoc::OnSensortoolsSensordata)
 	ON_COMMAND(ID_EXPORT_EXPORTZONE3DKMLFILE, &CTLiteDoc::OnExportExportzone3dkmlfile)
+	ON_COMMAND(ID_LINK_APPLYDEFAULTLINKATTRIBUTESTOALLLINKS, &CTLiteDoc::OnLinkApplydefaultlinkattributestoalllinks)
+	ON_COMMAND(ID_LINK_APPLYDEFAULTLANECAPACITYTOALLLINKS, &CTLiteDoc::OnLinkApplydefaultlanecapacitytoalllinks)
+	ON_COMMAND(ID_LINK_APPLYDEFAULTNUMBEROFLANESTOALLLINKS, &CTLiteDoc::OnLinkApplydefaultnumberoflanestoalllinks)
+	ON_COMMAND(ID_EXPORT_EXPORTLINK2DKMLFILE, &CTLiteDoc::OnExportExportlink2dkmlfile)
+	ON_COMMAND(ID_EXPORT_EXPORTSIGNALNODEKMLFILE, &CTLiteDoc::OnExportExportsignalnodekmlfile)
+	ON_COMMAND(ID_EXPORT_EXPORTNON, &CTLiteDoc::OnExportExportnonsignalnodekmlfile)
 	END_MESSAGE_MAP()
 
 
@@ -457,7 +463,7 @@ CTLiteDoc::CTLiteDoc()
 
 	m_number_of_assignment_days = 20;
 	m_traffic_flow_model = 3;
-	m_traffic_assignment_method = 1;
+	m_traffic_assignment_method = 0;
 
 	m_ActivityLocationCount = 0;
 	m_SearchMode= efind_node;
@@ -1081,9 +1087,9 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					pLink->m_LinkMOEAry[t].SimulationDensity  = element.density_in_veh_per_mile_per_lane;
 
 
-					if(pLink->m_FromNodeNumber == 60306 && pLink->m_ToNodeNumber == 54256)
+					if(pLink->m_FromNodeNumber == 7 && pLink->m_ToNodeNumber == 8)
 					{
-						TRACE("%d, density = %f\n",t, element.density_in_veh_per_mile_per_lane);
+						TRACE("%d, speed = %f\n",t, element.speed_in_mph);
 					}
 
 					pLink->m_LinkMOEAry[t].SimulationSpeed = element.speed_in_mph;
@@ -2139,7 +2145,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 			if(m_LinkTypeMap[pLink->m_link_type ].IsConnector ())  // 1 lane as connector
 				pLink->m_BandWidthValue =  min(1,pLink->m_NumberOfLanes)*LaneVolumeEquivalent*VolumeRatio;
 			else
-				pLink->m_BandWidthValue =  pLink->m_NumberOfLanes*LaneVolumeEquivalent*VolumeRatio;
+				pLink->m_BandWidthValue =  max(1,pLink->m_NumberOfLanes)*LaneVolumeEquivalent*VolumeRatio;
 
 
 		}else if(m_LinkBandWidthMode == LBW_link_volume)
@@ -2270,14 +2276,20 @@ void CTLiteDoc::OffsetLink()
 			(*iLink) ->m_Original_ShapePoints = (*iLink) ->m_ShapePoints;
 		}
 
-		if( (*iLink) ->m_Original_ShapePoints .size() ==2)// two shape points only, overwite them using upsteram node and downstream node number 
-		{
+		// comment it out for future examination
+		//if( (*iLink) ->m_Original_ShapePoints .size() ==2)// two shape points only, overwite them using upsteram node and downstream node number 
+		//{
 
-			(*iLink) ->m_Original_ShapePoints.clear ();
-			(*iLink) ->m_Original_ShapePoints.push_back ((*iLink) ->m_FromPoint );
-			(*iLink) ->m_Original_ShapePoints.push_back ((*iLink) ->m_ToPoint );
+		//		if((*iLink)->m_FromNodeNumber == 53718 && (*iLink)->m_ToNodeNumber == 53810)
+		//		{
+		//		TRACE("");
+		//		}
 
-		}
+		//	(*iLink) ->m_Original_ShapePoints.clear ();
+		//	(*iLink) ->m_Original_ShapePoints.push_back (m_NodeIDMap[(*iLink) ->m_FromNodeID]->pt);
+		//	(*iLink) ->m_Original_ShapePoints.push_back (m_NodeIDMap[(*iLink) ->m_ToNodeID]->pt );
+
+		//}
 	}
 
 	if(m_bLinkToBeShifted)
@@ -2323,9 +2335,14 @@ void CTLiteDoc::OffsetLink()
 			if( (*iLink)->m_bOneWayLink == false)// apply link split to two way links
 			{
 
+				if((*iLink)->m_FromNodeNumber == 53718 && (*iLink)->m_ToNodeNumber == 53810)
+				{
+				TRACE("");
+				}
+
 				int last_shape_point_id = (*iLink) ->m_Original_ShapePoints .size() -1;
 
-				ASSERT(last_shape_point_id>=0);
+				ASSERT(last_shape_point_id>=1);
 
 				double DeltaX = (*iLink)->m_Original_ShapePoints[last_shape_point_id].x - (*iLink)->m_Original_ShapePoints[0].x;
 				double DeltaY = (*iLink)->m_Original_ShapePoints[last_shape_point_id].y - (*iLink)->m_Original_ShapePoints[0].y;
@@ -2347,8 +2364,8 @@ void CTLiteDoc::OffsetLink()
 						//	theta= atan2(DeltaY, DeltaX);
 					}
 
-					double cos_offset =  cos(theta-PI/2.0f);
-					double sin_offset = sin(theta-PI/2.0f);
+					double cos_offset =  cos(theta-PI/2.0);
+					double sin_offset = sin(theta-PI/2.0);
 					(*iLink)->m_ShapePoints[si].x = (*iLink)->m_Original_ShapePoints[si].x + link_offset* cos_offset;
 					(*iLink)->m_ShapePoints[si].y = (*iLink)->m_Original_ShapePoints[si].y +  link_offset* sin_offset;
 				}
@@ -2708,15 +2725,21 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			}
 
 			bool bToBeShifted = true;
+			bool bWithCoordinateVector = false;
 			std::vector<CCoordinate> CoordinateVector;
 			if(parser.GetValueByFieldName("geometry",geo_string))
 			{
 				// overwrite when the field "geometry" exists
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
+				if(CoordinateVector.size()>=2)
+				{
 				m_bLinkToBeShifted = false;
 				bToBeShifted = false;
-			}else
+				bWithCoordinateVector = true;
+				}
+			}
+			if(bWithCoordinateVector == false)
 			{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
@@ -2834,6 +2857,12 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 					pLink->m_bToBeShifted = bToBeShifted; 
 				}
 				// original geometry
+
+				if(pLink->m_ShapePoints.size() ==0)
+				{
+				TRACE("");
+				}
+
 
 				if(Original_CoordinateVector.size()>0) // data available
 				{
@@ -4141,7 +4170,7 @@ bool  CTLiteDoc::SaveSubareaDemandFile()
 	return true;
 }
 
-void  CTLiteDoc::CopyDefaultFiles()
+void  CTLiteDoc::CopyDefaultFiles(CString directory)
 {
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
@@ -4149,7 +4178,9 @@ void  CTLiteDoc::CopyDefaultFiles()
 	CString DefaultDataFolder;
 
 	DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
-	CString directory = m_ProjectDirectory;
+
+	if(directory.GetLength () == 0)
+		directory = m_ProjectDirectory;
 
 
 	if(m_bDYNASMARTDataSet)
@@ -4170,9 +4201,13 @@ void  CTLiteDoc::CopyDefaultFiles()
 		}
 
 		if(m_ImportDemandColumnFormat==true)
-			CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data.csv");
+			{
+				CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data.csv");\
+		}
 		else
+		{
 			CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_meta_data_matrix.csv","input_demand_meta_data.csv");
+		}
 
 	}
 
@@ -4477,7 +4512,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	}
 
 	// update m_ProjectDirectory
-	CopyDefaultFiles();
+	CopyDefaultFiles(directory);
 	m_ProjectDirectory = directory;
 
 	char lpbuffer[64];
@@ -4617,7 +4652,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	fopen_s(&st,directory+"input_zone.csv","w");
 	if(st!=NULL)
 	{
-		fprintf(st,"zone_id,production,attraction,origin_num_of_veh,origin_avg_distance,destination_num_of_veh,destination_avg_distance,color_code,height,notes,geometry\n");
+		fprintf(st,"zone_id,production,attraction,geometry\n");
 
 		std::map<int, DTAZone>	:: const_iterator itr;
 
@@ -4632,15 +4667,16 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 				TRACE("");
 				}
 
-				fprintf(st, "%d,%f,%f,%d,%f,%d,%f,%s,%f,%s,", 
+				fprintf(st, "%d,%f,%f,", 
 					itr->first,
 					itr->second .m_Production ,
-					itr->second .m_Attraction, 
-					itr->second .m_OriginTotalNumberOfVehicles , itr->second .m_OriginTotalTravelDistance /max(1,itr->second .m_OriginTotalNumberOfVehicles),
-					itr->second .m_DestinationTotalNumberOfVehicles , itr->second .m_DestinationTotalTravelDistance /max(1,itr->second .m_DestinationTotalNumberOfVehicles),
-					itr->second .color_code.c_str () , 
-					itr->second.m_Height,
-					itr->second .notes.c_str ());
+					itr->second .m_Attraction
+					//itr->second .m_OriginTotalNumberOfVehicles , itr->second .m_OriginTotalTravelDistance /max(1,itr->second .m_OriginTotalNumberOfVehicles),
+					//itr->second .m_DestinationTotalNumberOfVehicles , itr->second .m_DestinationTotalTravelDistance /max(1,itr->second .m_DestinationTotalNumberOfVehicles),
+					//itr->second .color_code.c_str () , 
+					//itr->second.m_Height,
+					//itr->second .notes.c_str ()
+					);
 
 				fprintf(st,"\"<Polygon><outerBoundaryIs><LinearRing><coordinates>");
 				for(unsigned int si = 0; si< itr->second.m_ShapePoints.size(); si++)
@@ -4981,6 +5017,19 @@ void CTLiteDoc::OnFileSaveProjectAs()
 {
 	Modify(false);
 
+	int number_of_signals  = 0;
+	
+	for (std::list<DTANode*>::iterator iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+	
+			if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+				number_of_signals++;
+			}
+			
+		}
+
 	try{
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
@@ -4999,7 +5048,12 @@ void CTLiteDoc::OnFileSaveProjectAs()
 				CString msg;
 			if(m_NodeSet.size()>0)
 			{
-			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d links, %d zones.",m_NodeSet.size(), m_LinkSet.size(), m_ZoneMap.size());
+			msg.Format ("Files input_node.csv, input_link.csv and input_zone.csv have been successfully saved with %d nodes, %d signals, %d links, %d zones.",
+				m_NodeSet.size(), 
+				number_of_signals,
+				m_LinkSet.size(), 
+				m_ZoneMap.size()
+				);
 			AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
 			}/*else
 			{
@@ -5578,6 +5632,9 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 						(*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLanes;
 						(*iNode)->m_MovementVector[m].QEM_Speed  = pLink->m_SpeedLimit ;
 
+					}else
+					{
+					return 0;
 					}
 				}
 
@@ -5646,6 +5703,9 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				if(pLink0!=NULL)
 				{
 				pLink0 ->m_observed_peak_hourly_volume_calculated_from_movement_counts += pMovement->obs_turn_hourly_count ;
+				}else
+				{
+				return 0;
 				}
 
 				DTALink* pLink1 = FindLinkWithNodeNumbers(node_id, dest_node_id);
@@ -5653,6 +5713,9 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				if(pLink1!=NULL)
 				{
 				pLink1 ->m_observed_peak_hourly_in_flow_volume_calculated_from_movement_counts += pMovement->obs_turn_hourly_count ;
+				}else
+				{
+				return 0;
 				}
 
 			
@@ -7149,6 +7212,20 @@ bool CTLiteDoc::CheckControlData()
 				{
 					cycle_length_in_seconds = atoi(dlg_cycle_length.m_InputValue) ;
 
+					for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+					{
+
+						if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+						{
+
+							if((*iNode)->m_CycleLengthInSecond ==0)
+							{
+								(*iNode)->m_CycleLengthInSecond = cycle_length_in_seconds;
+							}
+
+						}
+					}
+
 					// setup effective green time for related links
 					for (std::list<DTALink*>::iterator  iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 					{
@@ -7196,7 +7273,9 @@ bool CTLiteDoc::EditTrafficAssignmentOptions()
 	dlg.m_pDoc = this;
 
 	ReadDemandTypeCSVFile(m_ProjectDirectory+"input_demand_type.csv");
-	ReadMetaDemandCSVFile(m_ProjectDirectory+"input_demand_meta_data.csv");
+	if(ReadMetaDemandCSVFile(m_ProjectDirectory+"input_demand_meta_data.csv") == false)
+		return false;
+
 	ReadScenarioSettingCSVFile(m_ProjectDirectory+"input_scenario_settings.csv");
 
 	if(dlg.DoModal() ==IDOK)
@@ -10926,8 +11005,7 @@ void CTLiteDoc::OnExportGenerateshapefiles()
 
 
 
-
-	//	ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_2D.kml","LIBKML",0,false,1);
+	//ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_2D.kml","LIBKML",0,false,1);
 	//ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_green_3D.kml","LIBKML",0,false,-1);
 	//ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_red_3D.kml","LIBKML",1,false,-1);
 	//ExportLink3DLayerToKMLFiles_ColorCode(directory+"AMS_link_blue_3D.kml","LIBKML",2,false,-1);
@@ -11254,16 +11332,23 @@ void CTLiteDoc::OnImportAmsdataset()
 {
 
 	CDlg_Information dlg_info;
-	dlg_info.m_StringInfo = "This function imports node/link/zone/centroid/connector GIS files\r\nIt supports importing files from TransCAD, CUBE, VISUM and AIMSUN.\r\nThis function requires 32-bit NEXTA.\r\nThis function requires three files:\r\n(1) input_node_control_type.csv,\r\n(2) input_link_type.csv and\r\n(3) import_GIS_settings.csv.";
-	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_files\\";
+	dlg_info.m_StringInfo = "This function imports node/link/zone/centroid/connector GIS files\r\nIt supports importing files from TransCAD, CUBE, VISUM and AIMSUN.\r\nThis function requires 32-bit NEXTA.\r\nThis function requires fours files:\r\n(1) input_node_control_type.csv,\r\n(2) input_link_type.csv,\r\n(3) input_demand_meta_data.csv (and related demand files),\r\n(4) import_GIS_settings.csv.";
+	dlg_info.m_SampleFileDirectory = "importing_sample_data_sets\\GIS_files\\West_Jordan_from_CUBE";
 	dlg_info.m_OnLineDocumentLink = "https://docs.google.com/file/d/0Bw8gtHCvOm7WSDBBamdPTDAwYmc"; 
 
 
+	
 	if(dlg_info.DoModal() == IDOK)
 	{
 
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("Importing Configuration (import_GIS_settings.csv)|import_GIS_settings.csv|"));
+
+	if(dlg_info.m_bLoadGISSampleFile)
+	{
+		dlg.m_ofn.lpstrInitialDir = dlg_info.m_SampleFileDirectory; 
+	}
+
 	if(dlg.DoModal() == IDOK)
 	{
 
@@ -11283,6 +11368,7 @@ void CTLiteDoc::OnImportAmsdataset()
 		dlg_loading.DoModal ();
 
 		UpdateAllViews(0);
+
 		}
 		}
 
@@ -11577,7 +11663,7 @@ void CTLiteDoc::OnNodeDecreasenodetextsize()
 void CTLiteDoc::OnImportSynchroutdfcsvfiles()
 {
 	ReadSynchroUniversalDataFiles();
-	OnFileSaveProjectAs();
+	//	OnFileSaveProjectAs();
 
 }
 
@@ -12446,7 +12532,11 @@ void CTLiteDoc::ResetODMOEMatrix()
 	if(m_ODSize== m_PreviousODSize)
 		return; 
 
+	
 	ResetZoneIDVector();
+
+	if(m_VehicleSet.size() ==0)  // no vheicle data, no need to process OD matrix
+		return;
 
 	if(m_ODMOEMatrix == NULL  )
 	{
@@ -15650,4 +15740,126 @@ void CTLiteDoc::OnExportExportzone3dkmlfile()
 
 	}
 	
+}
+
+void CTLiteDoc::OnLinkApplydefaultlinkattributestoalllinks()
+{
+	CWaitCursor wait;
+
+	std::list<DTALink*>::iterator iLink;
+	Modify();
+
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		
+		DTALink* pLink = (*iLink);
+
+		pLink->m_SpeedLimit = m_LinkTypeMap[pLink->m_link_type ].default_speed ;
+
+	}
+	
+}
+
+void CTLiteDoc::OnLinkApplydefaultlanecapacitytoalllinks()
+{
+	CWaitCursor wait;
+
+	std::list<DTALink*>::iterator iLink;
+
+	Modify();
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		
+		DTALink* pLink = (*iLink);
+
+		pLink->m_LaneCapacity = m_LinkTypeMap[pLink->m_link_type ].default_lane_capacity ;
+
+	}
+}
+
+void CTLiteDoc::OnLinkApplydefaultnumberoflanestoalllinks()
+{
+	CWaitCursor wait;
+
+	std::list<DTALink*>::iterator iLink;
+
+	Modify();
+	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		
+		DTALink* pLink = (*iLink);
+
+		pLink->m_NumberOfLanes  = m_LinkTypeMap[pLink->m_link_type ].default_number_of_lanes ;
+
+	}
+}
+
+void CTLiteDoc::OnExportExportlink2dkmlfile()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
+	}
+
+	CWaitCursor wc;
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	//DeleteFile(directory+"AMS_node.kml");
+	//ExportNodeLayerToGISFiles(directory+"AMS_node.kml","KML");
+
+	CString Link_2D_File = directory+"AMS_link_2D.kml";
+	
+	DeleteFile(Link_2D_File);
+	ExportLinkLayerToGISFiles(Link_2D_File,"KML");
+	HINSTANCE result = ShellExecute(NULL, _T("open"), Link_2D_File, NULL,NULL, SW_SHOW);
+}
+
+void CTLiteDoc::OnExportExportsignalnodekmlfile()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
+	}
+
+	CWaitCursor wc;
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	CString Signal_File = directory+"AMS_signal.kml";
+
+	DeleteFile(Signal_File);
+	ExportNodeLayerToGISFiles(Signal_File,"KML", true);
+
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), Signal_File, NULL,NULL, SW_SHOW);
+}
+
+void CTLiteDoc::OnExportExportnonsignalnodekmlfile()
+{
+	if(m_ProjectDirectory.GetLength()==0)
+	{
+		AfxMessageBox("The project directory has not been specified. Please save the project to a new folder first.");
+		OnFileSaveProjectAs();
+		return;
+	}
+
+	CWaitCursor wc;
+
+	CString directory;
+	directory = m_ProjectFile.Left(m_ProjectFile.ReverseFind('\\') + 1);
+
+	CString Signal_File = directory+"AMS_node.kml";
+
+	DeleteFile(Signal_File);
+	ExportNodeLayerToGISFiles(Signal_File,"KML", false);
+
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), Signal_File, NULL,NULL, SW_SHOW);
 }

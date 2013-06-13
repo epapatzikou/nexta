@@ -860,7 +860,7 @@ void CPage_Node_Movement::OnBnClickedButtonQem2()
 
 	if(ObservedTurnVolume == false)
 	{
-		AfxMessageBox("Simulated turning movement counts are not available. ",MB_ICONINFORMATION);
+		AfxMessageBox("Observed turning movement counts are not available. ",MB_ICONINFORMATION);
 		return;
 	}
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)

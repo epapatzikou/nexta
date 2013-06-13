@@ -1994,7 +1994,19 @@ public:
 
 	GDPoint GetRelativePosition(float ratio)
 	{
+
 		GDPoint Pt;
+		Pt.x = 0;
+		Pt.y = 0;
+
+		if(m_ShapePoints.size() <2)
+		{
+		Pt.x = ratio * this->m_FromPoint .x + (1- ratio)* this->m_ToPoint .x;
+		Pt.y = ratio * this->m_FromPoint .y + (1- ratio)* this->m_ToPoint .y;
+		 return Pt; 
+		}
+
+
 		Pt.x= (m_ShapePoints[0].x+ m_ShapePoints[m_ShapePoints .size()-1].x)/2;
 		Pt.y= (m_ShapePoints[0].y+ m_ShapePoints[m_ShapePoints .size()-1].y)/2;
 
@@ -2423,20 +2435,20 @@ void AdjustLinkEndpointsWithSetBack()
 		int total_count = 0;
 		for(int t = current_time; t< current_time+g_MOEAggregationIntervalInMin; t++)
 		{
-		if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
-		{
-			if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
+			if(t < m_SimulationHorizon && (unsigned int)t < m_LinkMOEAry.size())
 			{
-				total_count++;
-				total_value+= m_LinkMOEAry[t].SimulationSpeed;
+				if(m_LinkMOEAry[t].SimulationLinkFlow >=1) // with flow
+				{
+					total_count++;
+					total_value+= m_LinkMOEAry[t].SimulationSpeed;
+				}
 			}
-		}
 		}
 
 			if(total_count>=1)
 				return total_value/total_count;
 			else
-			return m_avg_simulated_speed;
+				return this->m_SpeedLimit ;
 	}
 
 	float GetSensorSpeed(int t)
@@ -2446,7 +2458,7 @@ void AdjustLinkEndpointsWithSetBack()
 			if(m_LinkMOEAry[t].SensorLinkCount >=1) // with flow
 				return m_LinkMOEAry[t].SensorSpeed;
 		}
-			return m_avg_simulated_speed;
+			return this->m_SpeedLimit;
 	}
 
 	float GetObsLaneVolume(int current_time)

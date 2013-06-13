@@ -32,6 +32,7 @@ void CDlgFindALink::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlgFindALink, CBaseDialog)
 	ON_BN_CLICKED(IDC_BUTTON_FIND, &CDlgFindALink::OnBnClickedButtonFind)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgFindALink::OnLbnSelchangeList1)
+	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlgFindALink::OnCbnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -124,4 +125,9 @@ void CDlgFindALink::OnBnClickedButtonFind()
 void CDlgFindALink::OnLbnSelchangeList1()
 {
 	// TODO: Add your control notification handler code here
+}
+
+void CDlgFindALink::OnCbnSelchangeCombo1()
+{
+	OnBnClickedButtonFind();
 }

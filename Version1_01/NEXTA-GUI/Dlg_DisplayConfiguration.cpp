@@ -132,7 +132,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("-- Simulation/Assignment Results --");
 	m_Link_Label.AddString("Total Link Volume");
 	m_Link_Label.AddString("Avg Travel Time (min)");
-	m_Link_Label.AddString("Volume over Capacity Ratio");
+	m_Link_Label.AddString("Total Volume over Capacity Ratio");
 	m_Link_Label.AddString("Level Of Service");
 	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
 	m_Link_Label.AddString("Avg Simulated Speed");

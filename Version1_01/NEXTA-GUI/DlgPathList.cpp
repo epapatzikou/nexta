@@ -91,6 +91,9 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_CHANGEJAMDENSITY33625, &CDlgPathList::OnChangeattributesforlinksalongpathChangejamdensity33625)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME, &CDlgPathList::OnChangeattributesforlinksalongpathEffectivegreentime)
 	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DELETELINKSALONGPATH, &CDlgPathList::OnChangeattributesforlinksalongpathDeletelinksalongpath)
+	ON_BN_CLICKED(IDDATA_DYNAMIC_Density_Contour, &CDlgPathList::OnBnClickedDynamicDensityContour)
+	ON_BN_CLICKED(IDDATA_DYNAMIC_Speed_Contour, &CDlgPathList::OnBnClickedDynamicSpeedContour)
+	ON_BN_CLICKED(IDDATA_DYNAMIC_Flow_Contour, &CDlgPathList::OnBnClickedDynamicFlowContour)
 END_MESSAGE_MAP()
 
 
@@ -450,7 +453,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 			for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
 			{
-				fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+				fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
 			}
 
 			fprintf(st,"\nPath %d, %s,simulated travel time,",p+1,path_element.m_path_name .c_str ());
@@ -508,7 +511,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 		for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
 		{
-			fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+			fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
 		}
 
 
@@ -555,19 +558,19 @@ void CDlgPathList::OnPathDataExportCSV()
 		} //for each path
 
 		// part II: time-dependent speed contour
-		int step_size = 5;
+		int step_size = 1;
 
-		for(int aggregation_index = 0; aggregation_index<3; aggregation_index++)
+		for(int aggregation_index = 0; aggregation_index<4; aggregation_index++)
 		{
 			switch (aggregation_index)
 			{
-			case 0: step_size = 5; break;
-			case 1: step_size = 15; break;
-			case 2: step_size = 30; break;
+			case 0: step_size = 1; break;
+			case 1: step_size = 5; break;
+			case 2: step_size = 15; break;
+			case 3: step_size = 30; break;
 
-			default: step_size = 60;
+			default: step_size = 30;
 			}
-
 
 			int previous_MOEAggregationIntervalInMin = g_MOEAggregationIntervalInMin;
 			g_MOEAggregationIntervalInMin = step_size;
@@ -577,11 +580,20 @@ void CDlgPathList::OnPathDataExportCSV()
 			for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 			{
 				DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
 				fprintf(st,"\n\nPart III,time-dependent speed contour for path %d, %s,(%d min)\n\n", p+1, path_element.m_path_name .c_str (),step_size);
 
 
+					fprintf(st,",,,");
 
-				for (int i=path_element.m_LinkVector.size()-1 ; i >=0 ; i--)  // for each pass link
+				for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+				{
+					fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
+				}
+
+					fprintf(st,"\n");
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
 				{
 					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
 
@@ -591,14 +603,15 @@ void CDlgPathList::OnPathDataExportCSV()
 
 						for(int s = 0; s< pLink->m_Length / 0.2; s++)
 						{
+							 
+							CString label = pLink->m_Name .c_str ();
 
-							if(s==0)
+							if(pLink->m_Name  == "(null)")
 							{
-								fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (), pLink->m_Name .c_str ());
-							}else
-							{
-								fprintf(st,",,,");
+							label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
 							}
+
+							fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
 
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
@@ -614,18 +627,55 @@ void CDlgPathList::OnPathDataExportCSV()
 
 				}
 
-				// time axis
-				fprintf(st,",,,");
-				for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
+				fprintf(st,"\n\n");
+
+				fprintf(st,"\n\nPart III,time-dependent density contour for path %d, %s,(%d min)\n\n", p+1, path_element.m_path_name .c_str (),step_size);
+
+					fprintf(st,",,,");
+				for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 				{
-					if(t%15 == 0 || (t-1)%15 == 0 )
-						fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
-					else
-						fprintf(st,",");
+					fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
+				}
+
+					fprintf(st,"\n");
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.2; s++)
+						{
+							 
+							CString label = pLink->m_Name .c_str ();
+
+							if(pLink->m_Name  == "(null)")
+							{
+							label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+							}
+
+							fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
+
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "%.1f,", pLink->GetSimulationDensity (t));
+
+							}
+							fprintf(st,"\n");
+						}
+
+					}
+
 
 				}
-				fprintf(st,"\n");
 
+				// time axis
+				fprintf(st,",,,");
+				fprintf(st,"\n");
 
 
 			} //for each path
@@ -667,7 +717,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 				path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
 
-				fprintf(st,"%d,%s,%.2f,%.2f,%.2f,%.2f\n",p+1, m_pDoc->GetTimeStampString(t),
+				fprintf(st,"%d,%s,%.2f,%.2f,%.2f,%.2f\n",p+1, m_pDoc->GetTimeStampString24HourFormat(t),
 					path_element.GetTimeDependentMOE (t,0,15),path_element.GetTimeDependentMOE (t,1,1),
 					path_element.m_TimeDependentTravelTime[t]/max(1,path_element.total_free_flow_travel_time), path_element.m_TimeDependentCount [t]);
 
@@ -702,7 +752,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 			for(int t = m_TimeLeft ; t< m_TimeRight; t+= time_step)  // for each starting time
 			{
-				fprintf(st,"%s,", m_pDoc->GetTimeStampString (t));
+				fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
 			}
 
 			fprintf(st,"\nPath %d, %s,path engery,",p+1,path_element.m_path_name .c_str ());
@@ -2247,4 +2297,643 @@ void CDlgPathList::OnChangeattributesforlinksalongpathDeletelinksalongpath()
 		m_pDoc->m_PathDisplayList.clear ();
 
 		m_pDoc->UpdateAllViews(0);
+}
+
+void CDlgPathList::OnBnClickedDynamicDensityContour()
+{
+
+	int ytics_stepsize  = 1;
+
+	CString export_file_name, export_plt_file_name;
+
+	export_file_name = m_pDoc->m_ProjectDirectory +"export_path_density.txt";
+
+	export_plt_file_name = m_pDoc->m_ProjectDirectory +"export_path_density.plt";
+
+	int yrange = 0;
+	int xrange = m_TimeRight - m_TimeLeft +1;
+
+
+	FILE* st;
+	fopen_s(&st,export_file_name,"w");
+	if(st!=NULL)
+	{
+		
+	int step_size = 1;
+
+	
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+			if(path_element.m_LinkVector.size() >=15)
+				ytics_stepsize = 4;
+
+			if(path_element.m_LinkVector.size() >=30)
+				ytics_stepsize = 10;
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							 
+							CString label = pLink->m_Name .c_str ();
+
+							//if(pLink->m_Name  == "(null)")
+							//{
+							//label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+							//}
+
+							//fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
+
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "%.1f ", pLink->GetSimulationDensity (t));
+
+							}
+							fprintf(st,"\n");
+
+							yrange++;
+						}
+
+					}
+
+
+				}
+
+							// last line with zero
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "0.0 ");
+
+							}
+
+							fprintf(st,"\n");
+
+			} //for each path
+		
+	fclose(st);
+	}
+
+
+	FILE* st_plt;
+	fopen_s(&st_plt,export_plt_file_name,"w");
+	if(st_plt!=NULL)
+	{
+
+		CString xtics_str; 
+
+		fprintf(st_plt,"set title \"Dynamic Density Contour\" \n");
+
+
+		fprintf(st_plt,"set xlabel \"Time\"\n");
+		fprintf(st_plt,"set ylabel \"Space\"  offset -3\n");
+
+		int xtics_stepsize  = 30;
+
+		if(xrange/xtics_stepsize >20)
+			xtics_stepsize = 120;  // 2 hour interval
+		else if(xrange/xtics_stepsize >10)
+			xtics_stepsize = 60;   // 1 hour interval
+		else if(xrange/xtics_stepsize < 5)
+			xtics_stepsize = 10;   // 1 hour interval
+
+			 
+		for(int t = m_TimeLeft ; t<= m_TimeRight; t+= xtics_stepsize)  
+		{
+			CString str;
+			str.Format("\"%s\" %d ",m_pDoc->GetTimeStampString24HourFormat (t), t-m_TimeLeft);
+
+			if(t+ xtics_stepsize> m_TimeRight ) 
+				xtics_str += str;
+			else 
+			{
+				xtics_str += str ;
+				xtics_str += "," ;
+			}
+		}
+
+		fprintf(st_plt,"set xtics (%s) \n",xtics_str);
+
+		CString ytics_str; 
+
+		int yrange_i  = 0;
+
+		CString last_node_number = " ";
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							CString label = pLink->m_Name .c_str ();
+
+
+							if(pLink->m_Name  == "(null)" || pLink->m_Name.size() ==0)
+							{
+							label.Format ("%d",pLink->m_FromNodeNumber);
+
+							last_node_number.Format ("%d",pLink->m_ToNodeNumber);
+							}
+
+							if(s==0 && (i%ytics_stepsize) ==0)   // first segment 
+							{
+							CString str;
+							str.Format("\"%s\" %d, ",label, yrange_i) ;
+
+							ytics_str += str;
+							
+							}
+
+							yrange_i++;
+						}
+
+					}
+
+
+				}
+
+				
+			} //for each path
+
+
+		CString str;
+		str.Format("\"%s\" %d", last_node_number, yrange_i);
+		ytics_str +=str;
+		fprintf(st_plt,"set ytics (%s)\n",ytics_str);
+
+		fprintf(st_plt,"set xrange [0:%d] \n",xrange);
+		fprintf(st_plt,"set yrange [0:%d] \n",yrange);
+
+		fprintf(st_plt,"set palette defined (0 \"white\", 10 \"green\", 30 \"yellow\", 50 \"red\")\n");
+
+
+		fprintf(st_plt,"set pm3d map\n");
+		fprintf(st_plt,"splot '%s' matrix\ notitle\n",export_file_name);
+
+		fclose(st_plt);
+	}else
+	{
+	AfxMessageBox("File export_path_density.plt cannot be opened. Please check");
+	}
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), export_plt_file_name, NULL,NULL, SW_SHOW);
+	
+
+}
+void CDlgPathList::OnBnClickedDynamicSpeedContour()
+{
+	CString export_file_name, export_plt_file_name;
+
+	export_file_name = m_pDoc->m_ProjectDirectory +"export_path_speed.txt";
+	// 
+
+	export_plt_file_name = m_pDoc->m_ProjectDirectory +"export_path_speed.plt";
+
+	int yrange = 0;
+
+	int ytics_stepsize  = 1;
+	bool bFreewayFlag = true;
+	FILE* st;
+	fopen_s(&st,export_file_name,"w");
+	if(st!=NULL)
+	{
+		
+	int step_size = 1;
+	
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+
+			if(path_element.m_LinkVector.size() >=15)
+				ytics_stepsize = 4;
+
+			if(path_element.m_LinkVector.size() >=30)
+				ytics_stepsize = 10;
+				//for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+				//{
+				//	fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
+				//}
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+					if(pLink != NULL)
+					{
+
+						if(m_pDoc->m_LinkTypeMap[pLink->m_link_type].IsFreeway () == false)
+							bFreewayFlag = false;
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+							 
+							CString label = pLink->m_Name .c_str ();
+
+							//if(pLink->m_Name  == "(null)")
+							//{
+							//label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+							//}
+
+							//fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
+
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "%.1f ", pLink->GetSimulationSpeed (t));
+
+							}
+							fprintf(st,"\n");
+							yrange++;
+						}
+
+					}
+
+
+				}
+							// last line with zero
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "0.0 ");
+
+							}
+
+							fprintf(st,"\n");
+
+			} //for each path
+		
+	fclose(st);
+	}
+
+	int xrange = m_TimeRight - m_TimeLeft +1;
+
+
+	FILE* st_plt;
+	fopen_s(&st_plt,export_plt_file_name,"w");
+	if(st_plt!=NULL)
+	{
+
+		CString xtics_str; 
+
+		fprintf(st_plt,"set title \"Dynamic Speed Contour\" \n");
+
+
+		fprintf(st_plt,"set xlabel \"Time\"\n");
+		fprintf(st_plt,"set ylabel \"Space\" offset -3\n");
+
+		int xtics_stepsize  = 30;
+
+		if(xrange/xtics_stepsize >20)
+			xtics_stepsize = 120;  // 2 hour interval
+		else if(xrange/xtics_stepsize >10)
+			xtics_stepsize = 60;   // 1 hour interval
+		else if(xrange/xtics_stepsize < 5)
+			xtics_stepsize = 10;   // 1 hour interval
+
+			 
+		for(int t = m_TimeLeft ; t<= m_TimeRight; t+= xtics_stepsize)  
+		{
+			CString str;
+			str.Format("\"%s\" %d ",m_pDoc->GetTimeStampString24HourFormat (t), t-m_TimeLeft);
+
+			if(t+ xtics_stepsize> m_TimeRight ) 
+				xtics_str += str;
+			else 
+			{
+				xtics_str += str ;
+				xtics_str += "," ;
+			}
+		}
+
+		fprintf(st_plt,"set xtics (%s) \n",xtics_str);
+
+		CString ytics_str; 
+
+		int yrange_i  = 0;
+
+	CString last_node_number = " ";
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							CString label = pLink->m_Name .c_str ();
+
+
+							if(pLink->m_Name  == "(null)" || pLink->m_Name.size() ==0)
+							{
+							label.Format ("%d",pLink->m_FromNodeNumber);
+
+							last_node_number.Format ("%d",pLink->m_ToNodeNumber);
+							}
+
+							if(s==0 && (i%ytics_stepsize) ==0)   // first segment 
+							{
+							CString str;
+							str.Format("\"%s\" %d, ",label, yrange_i) ;
+
+							ytics_str += str;
+							
+							}
+
+							yrange_i++;
+						}
+
+					}
+
+
+				}
+
+				
+			} //for each path
+
+
+		CString str;
+		str.Format("\"%s\" %d", last_node_number, yrange_i);
+		ytics_str +=str;
+		fprintf(st_plt,"set ytics (%s)\n",ytics_str);
+
+		fprintf(st_plt,"set xrange [0:%d] \n",xrange);
+		fprintf(st_plt,"set yrange [0:%d] \n",yrange);
+
+		if(bFreewayFlag)
+			fprintf(st_plt,"set palette defined (0 \"white\", 0.1 \"red\", 40 \"yellow\", 50 \"green\")\n");
+		else
+			fprintf(st_plt,"set palette defined (0 \"white\", 0.1 \"red\", 20 \"yellow\", 40 \"green\")\n");
+
+		fprintf(st_plt,"set pm3d map\n");
+		fprintf(st_plt,"splot '%s' matrix\ notitle\n",export_file_name);
+
+		fclose(st_plt);
+	}else
+	{
+	AfxMessageBox("File export_path_speed.plt cannot be opened. Please check");
+	}
+
+
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), export_plt_file_name, NULL,NULL, SW_SHOW);
+}
+
+void CDlgPathList::OnBnClickedDynamicFlowContour()
+{
+	int ytics_stepsize = 1;
+	CString export_file_name, export_plt_file_name;
+
+	export_file_name = m_pDoc->m_ProjectDirectory +"export_path_v_over_c.txt";
+	// 
+
+	export_plt_file_name = m_pDoc->m_ProjectDirectory +"export_path_v_over_c.plt";
+
+	int yrange = 0;
+	int xrange = m_TimeRight - m_TimeLeft +1;
+
+	FILE* st;
+	fopen_s(&st,export_file_name,"w");
+	if(st!=NULL)
+	{
+		
+	int step_size = 1;
+	
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+			if(path_element.m_LinkVector.size() >=15)
+				ytics_stepsize = 4;
+
+			if(path_element.m_LinkVector.size() >=30)
+				ytics_stepsize = 10;
+
+				//for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+				//{
+				//	fprintf(st,"%s,", m_pDoc->GetTimeStampString24HourFormat (t));
+				//}
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+							 
+							CString label = pLink->m_Name .c_str ();
+
+							//if(pLink->m_Name  == "(null)")
+							//{
+							//label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+							//}
+
+							//fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
+
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+								float LaneClosurePercentage = pLink->GetImpactedFlag(t); // check capacity reduction event;
+								float Capacity=  pLink->m_NumberOfLanes * pLink->m_LaneCapacity *(1-	LaneClosurePercentage);		
+
+								float volume  = pLink->GetSimulatedLinkOutVolume (t);
+								float voc = volume/max(1,Capacity);
+								if(voc>1.01 && m_pDoc->m_traffic_flow_model!=0)  // not BPR function 
+									voc = 1.0;
+								fprintf(st, "%.2f ", voc);
+
+								if( pLink->m_FromNodeNumber == 30 && pLink->m_ToNodeNumber == 31)
+								{
+						
+								TRACE("\n%f; %f; %f", volume, Capacity, voc);
+								}
+
+							}
+							fprintf(st,"\n");
+
+							yrange++;
+						}
+
+					}
+
+
+				}
+
+						//last line with zero
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "0.00 ");
+
+							}
+
+							fprintf(st,"\n");
+			} //for each path
+		
+	fclose(st);
+	}
+
+
+	FILE* st_plt;
+	fopen_s(&st_plt,export_plt_file_name,"w");
+	if(st_plt!=NULL)
+	{
+
+		CString xtics_str; 
+
+		fprintf(st_plt,"set title \"Dynamic Volume Over Capcity Contour\" \n");
+
+
+		fprintf(st_plt,"set xlabel \"Time\"\n");
+		fprintf(st_plt,"set ylabel \"Space\" offset -3\n");
+
+		int xtics_stepsize  = 30;
+
+		if(xrange/xtics_stepsize >20)
+			xtics_stepsize = 120;  // 2 hour interval
+		else if(xrange/xtics_stepsize >10)
+			xtics_stepsize = 60;   // 1 hour interval
+		else if(xrange/xtics_stepsize < 5)
+			xtics_stepsize = 10;   // 1 hour interval
+
+			 
+		for(int t = m_TimeLeft ; t<= m_TimeRight; t+= xtics_stepsize)  
+		{
+			CString str;
+			str.Format("\"%s\" %d ",m_pDoc->GetTimeStampString24HourFormat (t), t-m_TimeLeft);
+
+			if(t+ xtics_stepsize> m_TimeRight ) 
+				xtics_str += str;
+			else 
+			{
+				xtics_str += str ;
+				xtics_str += "," ;
+			}
+		}
+
+		fprintf(st_plt,"set xtics (%s) \n",xtics_str);
+
+		CString ytics_str; 
+
+		int yrange_i  = 0;
+
+		CString last_node_number = " ";
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							CString label = pLink->m_Name .c_str ();
+
+							last_node_number.Empty ();
+							if(pLink->m_Name  == "(null)" || pLink->m_Name.size() ==0)
+							{
+							label.Format ("%d",pLink->m_FromNodeNumber);
+
+							last_node_number.Format ("%d",pLink->m_ToNodeNumber);
+							}
+
+							if(s==0 && (i%ytics_stepsize) ==0)   // first segment 
+							{
+							CString str;
+							str.Format("\"%s\" %d, ",label, yrange_i) ;
+
+							ytics_str += str;
+							
+							}
+
+							yrange_i++;
+						}
+
+					}
+
+
+				}
+
+				
+			} //for each path
+
+
+		CString str;
+		str.Format("\"%s\" %d", last_node_number, yrange_i);
+		ytics_str +=str;
+		fprintf(st_plt,"set ytics (%s)\n",ytics_str);
+
+		fprintf(st_plt,"set xrange [0:%d] \n",xrange);
+		fprintf(st_plt,"set yrange [0:%d] \n",yrange);
+
+		fprintf(st_plt,"set palette defined (0 \"white\", 0.4 \"green\", 0.6 \"yellow\", 1 \"red\")\n");
+		fprintf(st_plt,"set pm3d map\n");
+		fprintf(st_plt,"splot '%s' matrix\ notitle\n",export_file_name);
+
+		fclose(st_plt);
+	}else
+	{
+	AfxMessageBox("File export_path_v_over_c.plt cannot be opened. Please check");
+	}
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), export_plt_file_name, NULL,NULL, SW_SHOW);
 }

@@ -178,10 +178,73 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_field);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","number_of_lanes_oneway_vs_twoway","value",oneway_vs_twoway);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","lane_capacity_vs_link_capacity","value",lane_vs_link);
+	
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_field);
 
 
-	parser.GetValueBySectionKeyFieldName(file_name,"final_output","offset_link","value",offset_link);
+	// new data fields
+
+	std::string direction_0_as_oneway_vs_twoway, use_default_speed_limit_from_link_type, use_default_lane_capacity_from_link_type, use_default_number_of_lanes_from_link_type;
+	bool b_use_default_speed_limit_from_link_type = false;
+	bool b_use_default_lane_capacity_from_link_type = false;
+	bool b_use_default_number_of_lanes_from_link_type = false;
+
+	int node_number_threshold_as_centroid = 3000;
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","direction_0_as_oneway_vs_twoway","value",direction_0_as_oneway_vs_twoway);
+
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","node_number_threshold_as_centroid","value",node_number_threshold_as_centroid);
+
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_speed_limit_from_link_type","value",use_default_speed_limit_from_link_type);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_lane_capacity_from_link_type","value",use_default_lane_capacity_from_link_type);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_number_of_lanes_from_link_type","value",use_default_number_of_lanes_from_link_type);
+
+	std::string identify_signal_intersection;
+	bool b_identify_signal_intersection = false;
+
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","identify_signal_intersection","value",identify_signal_intersection);
+
+	if(identify_signal_intersection == "yes")
+		b_identify_signal_intersection = true;
+
+	int minimum_speed_limit_for_signals = 30;
+	int maximum_speed_limit_for_signals = 60;
+	int default_cycle_length_in_second = 110;
+	int default_saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
+
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_saturation_flow_rate_in_vhc_per_hour_per_lane","value",default_saturation_flow_rate_in_vhc_per_hour_per_lane);
+	
+
+	if(default_saturation_flow_rate_in_vhc_per_hour_per_lane < 1700)
+		default_saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
+
+	if(b_identify_signal_intersection)
+	{
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","minimum_speed_limit_for_signals","value",minimum_speed_limit_for_signals);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","maximum_speed_limit_for_signals","value",maximum_speed_limit_for_signals);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_cycle_length_in_second","value",default_cycle_length_in_second);
+	
+	}
+
+	float minimum_length_for_importing_links = 0.00001;
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","minimum_length_for_importing_links","value",minimum_length_for_importing_links);
+
+
+	bool b_direction_0_as_twoway_flag = true;
+
+	if(direction_0_as_oneway_vs_twoway == "oneway")
+		b_direction_0_as_twoway_flag = false;
+
+	if(use_default_speed_limit_from_link_type == "yes") 
+		b_use_default_speed_limit_from_link_type = true;
+
+	if(use_default_lane_capacity_from_link_type == "yes") 
+		b_use_default_lane_capacity_from_link_type = true;
+
+	if(use_default_number_of_lanes_from_link_type == "yes") 
+		b_use_default_number_of_lanes_from_link_type = true;
+
+
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","offset_link","value",offset_link);
 
 
 	int m_bGenerateDefaultCycleLength = 0; // initial value: 1: use default cycle length, 2: do not use default cycle length
@@ -201,7 +264,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	
 	if(r_number_of_lanes_field.size()>0)
 		reverse_direction_field_flag = 1;
-
 
 	int offset_link_flag = 1;
 
@@ -236,7 +298,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	// ************************************/
 
 
-
+	int number_of_signals = 0;
 	string node_table_file_name;
 	parser.GetValueBySectionKeyFieldName(file_name,"file_name","node","value",node_table_file_name);
 
@@ -390,44 +452,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			if(control_type == m_ControlType_PretimedSignal || control_type == m_ControlType_ActuatedSignal)
 			{
+				number_of_signals++;
+				pNode->m_CycleLengthInSecond = default_cycle_length_in_second;
 
-				if(m_bGenerateDefaultCycleLength==0)
-				{
-				if(AfxMessageBox("Do you want to set up a cycle length for signalized nodes?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
-				{
-					m_bGenerateDefaultCycleLength = 1;
-				}else
-				{
-					m_bGenerateDefaultCycleLength = 2;
-				}
-
-
-				}
-
-
-			if(m_bGenerateDefaultCycleLength == 1)
-			{
-
-
-				CDlg_UserInput dlg_cycle_length;
-
-				dlg_cycle_length.m_StrQuestion  = "Please specify default cycle length:";
-				dlg_cycle_length.m_InputValue = "100";
-
-				if(dlg_cycle_length.DoModal ()==IDOK)
-				{
-					default_cycle_length = atoi(dlg_cycle_length.m_InputValue) ;
-				}
-
-				m_bGenerateDefaultCycleLength = 3;
-				
 			}
 
-			if(m_bGenerateDefaultCycleLength == 3)
+			if(id <= node_number_threshold_as_centroid && TAZ ==0)  // no TAZ value
 			{
-			pNode->m_CycleLengthInSecond = default_cycle_length;
-			}
-
+			TAZ = id;   // set node id as the default TAZ
 			}
 
 			if(TAZ>=1)
@@ -450,6 +482,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			m_NodeSet.push_back(pNode);
 			m_NodeIDMap[i] = pNode;
+			m_NodeNumberMap[id] = pNode;
 			m_NodeIDtoNumberMap[i] = id;
 			if(id == 54170)
 			{
@@ -564,9 +597,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			// node id
 			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
 
-			int TAZ= poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
+			int TAZ =  0;
+			int value = poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
 
-			if(TAZ == 0)  // if TAZ value is zero, then use node id as TAZ
+			if(TAZ == 0 || value <= 0 || value > 100000)  // if TAZ value is zero, then use node id as TAZ
 				TAZ = id; 
 
 
@@ -866,7 +900,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
 				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
 
-				if(from_node_id ==  58014 && to_node_id ==  60718)
+				if(from_node_id ==  53718 && to_node_id ==  53810)
 					TRACE("");
 
 				int link_code_start = 1;
@@ -888,7 +922,16 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
-				float speed_limit_in_mph= poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
+				float speed_limit_in_mph = poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
+
+				if(b_use_default_speed_limit_from_link_type)
+				{
+						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+						{
+                          speed_limit_in_mph = m_LinkTypeMap[type ].default_speed;
+						}
+				}
+
 
 				int direction = 1;
 				if(direction_name.size()>0) 
@@ -920,7 +963,17 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name.c_str ());
 
-				if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
+
+				if(b_use_default_number_of_lanes_from_link_type)
+				{
+						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+						{
+                          number_of_lanes = m_LinkTypeMap[type ].default_number_of_lanes;
+						}
+				}
+
+
+				if(direction_field_flag == 1 && ( (direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
 				{
 					number_of_lanes = number_of_lanes/2;
 				}
@@ -995,7 +1048,17 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(capacity_in_vhc_per_hour_name.c_str ());
 
+
 				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
+
+				if(b_use_default_lane_capacity_from_link_type)
+				{
+						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+						{
+                          capacity_in_pcphpl = m_LinkTypeMap[type ].default_lane_capacity;
+						}
+				}
+
 
 				// if link_capacity_flag == 0, we give a default value
 				int r_number_of_lanes =0; 
@@ -1006,7 +1069,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(reverse_direction_field_flag)  // with reserved direction field
 				{
 					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name.c_str());
-					if(direction_field_flag == 1 && (direction==0 || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
+					if(direction_field_flag == 1 && ((direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
 					{
 						number_of_lanes = r_number_of_lanes/2;
 					}
@@ -1056,7 +1119,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					k_jam = 220;
 				}else
 				{
-					k_jam = 120;
+					k_jam = 190;
 				}
 
 				wave_speed_in_mph = 12;
@@ -1070,7 +1133,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				}
 
 
-				if ((direction == 0 || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
+				if (((direction == 0&&b_direction_0_as_twoway_flag) || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
 				{
 					link_code_start = 1; link_code_end = 2;
 					bTwoWayLinkFlag = true;
@@ -1164,7 +1227,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					length =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1, pt2);
 				}
 
-				m_AMSLogFile << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
+				if(length < minimum_length_for_importing_links)
+					continue;
+
+				if(bMileFlag == false)
+					length*=0.621371;
+
+				m_AMSLogFile << "," << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
 				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
 
 
@@ -1246,18 +1315,34 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
 
 
+
+						if(CoordinateVector.size() >=2)  // with shape point data 
+						{
 						for(unsigned si = 0; si < CoordinateVector.size(); si++)
 						{
 							GDPoint	pt;
 							pt.x = CoordinateVector[si].X;
 							pt.y = CoordinateVector[si].Y;
 							pLink->m_Original_ShapePoints .push_back (pt);
-						pLink->m_ShapePoints .push_back (pt);
+							pLink->m_ShapePoints .push_back (pt);
+						}
+						}else	// without shape point data 
+						{
+						  // use position data from upstream node
+							GDPoint	pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+							pLink->m_Original_ShapePoints .push_back (pt);
+							pLink->m_ShapePoints .push_back (pt);
+						
+						  // use position data from downstream node
+							pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+							pLink->m_Original_ShapePoints .push_back (pt);
+							pLink->m_ShapePoints .push_back (pt);
+						
 						}
 
 					}
 
-					if(link_code == 2)  //BA link
+					if(link_code == 2)  //BA link 
 					{
 						pLink->m_FromNodeNumber = to_node_id;
 						pLink->m_ToNodeNumber = from_node_id;
@@ -1266,6 +1351,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
 
 
+						if(CoordinateVector.size() >=2) // with shape point data 
+						{
 						for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
 						{
 							GDPoint	pt;
@@ -1273,6 +1360,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 							pt.y = CoordinateVector[si].Y;
 							pLink->m_Original_ShapePoints .push_back (pt);
 							pLink->m_ShapePoints .push_back (pt);
+						}
+						}else // without shape point data 
+						{
+						  // use position data from downstream node
+							GDPoint	pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+							pLink->m_Original_ShapePoints .push_back (pt);
+							pLink->m_ShapePoints .push_back (pt);
+						
+						  // use position data from upstream node
+							pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+							pLink->m_Original_ShapePoints .push_back (pt);
+							pLink->m_ShapePoints .push_back (pt);
+						
+						
 						}
 					}
 
@@ -1291,6 +1392,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
 					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
+
+					pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = default_saturation_flow_rate_in_vhc_per_hour_per_lane;
 					pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 					pLink->m_link_type= type;
 					pLink->m_Grade = grade;
@@ -1387,29 +1490,48 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		OGRDataSource::DestroyDataSource( poDS );
 
-		
-
-				
+			
 		// determine control type for nodes
 	
-
-	int MinimumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","minimum_speed_limit_for_signals",30,FileName);
-	int MaximumSpeedLimit4SignalControl  = g_GetPrivateProfileInt("control_type","maximum_speed_limit_for_signals",60,FileName);
-
 		std::list<DTALink*>::iterator iLink;
 
-	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		if(b_identify_signal_intersection)
+		{
+		
+		number_of_signals = 0;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
 
 		DTALink* pLink = (*iLink);
 
+		if( pLink->m_ToNodeNumber == 3000)
+		{
+			TRACE("");
+		}
+
 					{  // reset default value
 						if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
-							pLink->m_SpeedLimit> MinimumSpeedLimit4SignalControl && pLink->m_SpeedLimit<= MaximumSpeedLimit4SignalControl && 
+							pLink->m_SpeedLimit> minimum_speed_limit_for_signals && pLink->m_SpeedLimit<= maximum_speed_limit_for_signals && 
 							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
 							m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size() >=3) 
 						{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
 							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
+							number_of_signals++;
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_CycleLengthInSecond = default_cycle_length_in_second;	
+
+					for(unsigned int i = 0; i< m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.size(); i++)
+							{
+								
+								DTALink* pLink0 = m_LinkNoMap[m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector[i]];
+
+								TRACE("%d -> %d\n",pLink0->m_FromNodeNumber,pLink0->m_ToNodeNumber);
+
+							
+							}
+
+
+
 						}
 
 						if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
@@ -1419,8 +1541,31 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					}
 		}
+		
+		}
+
+	int number_of_links_with_effective_green_time  = 0;
+	for (std::list<DTALink*>::iterator  iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	{
+		if((*iLink)->m_LayerNo == 0 )
+		{
+			int ToNodeID = (*iLink)->m_ToNodeID ;
+			DTANode* pNode = m_NodeIDMap[ToNodeID];
+			//set default green time 
+			if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
+				pNode->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+
+				// from given BPR capacity to determine the effective green time
+				(*iLink)->m_EffectiveGreenTimeInSecond = (int)(pNode->m_CycleLengthInSecond * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
+				number_of_links_with_effective_green_time++;
 
 
+			}
+		}
+	}
+
+		m_SignalDataLoadingStatus.Format("%d nodes are signalized intersections; %d links have postive effective green time.",number_of_signals, number_of_links_with_effective_green_time );
 
 	if(use_optional_connector_layer == 1)
 	{
@@ -1476,7 +1621,21 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		speed_limit_in_mph_name.clear();
 
 		int direction =0;
+		int defaut_direction = 0;
 		parser.GetValueBySectionKeyFieldName(file_name,"connector","direction","value",direction_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
+
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_number_of_lanes","value",default_number_of_lanes);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","defaut_direction","value",defaut_direction);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
+		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_speed_limit);
+
 
 		CString connector_shape_file_name;
 		connector_shape_file_name = m_ProjectDirectory + connector_table_file_name.c_str ();
@@ -1583,6 +1742,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					CString direction_str = poFeature->GetFieldAsString(direction_name.c_str());
 
+				}else
+				{
+				direction = defaut_direction;
+				
 				}
 
 
@@ -1602,7 +1765,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				float grade = 0;
 				float AADT_conversion_factor = 0.1;
 				float k_jam, wave_speed_in_mph;
-				k_jam = 120;
+				k_jam = 190;
 
 				wave_speed_in_mph = 12;
 
@@ -1652,7 +1815,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					{
 						CCoordinate pt;
 						pt.X   =  poLine->getX(si)*long_lat_unit;
-						pt.Y =  poLine->getY(si)*long_lat_unit;
+						pt.Y   =  poLine->getY(si)*long_lat_unit;
 						CoordinateVector.push_back(pt);
 						m_AMSLogFile << pt.X << ";" << pt.Y << " ";
 
@@ -1670,7 +1833,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				
 				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
 				{
-					AfxMessageBox("Invalid data: from_node_id==0 && to_node_id ==0 in the link table.");
+					AfxMessageBox("Invalid data in connector layer: from_node_id==0 && to_node_id ==0.");
 					break;
 				}
 
@@ -2040,7 +2203,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 						}
 
-						m_AMSLogFile << "}";
+						m_AMSLogFile << "}" << endl;
 					} // wkbPolygon
 					line_no++;
 				} // poGeometry
@@ -2050,7 +2213,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 		m_AMSLogFile << "imported " << line_no << " zone boundaries." << endl;
-		m_ZoneDataLoadingStatus.Format ("%d zone boundary records are loaded from file %s.",line_no,zone_shape_file_name);
+		m_ZoneDataLoadingStatus.Format ("%d zone boundary records (and %d zones) are loaded from file %s.",line_no,m_ZoneMap.size(), zone_shape_file_name);
 
 		if(warning_message.GetLength () >=1)
 		{
@@ -2058,6 +2221,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			final_message = "Warning messages:\n" + warning_message + "\nPlease check your original shape files and corresponding dbf files\n\n";
 			AfxMessageBox(final_message);
 		}
+
 
 
 	}
@@ -3063,6 +3227,9 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 							m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
 							m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
+							pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
+							pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+
 							unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 
 							m_NodeIDtoLinkMap[LinkKey] = pLink;
@@ -3590,6 +3757,14 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 		return false;
 	}
 
+	if(ReadMetaDemandCSVFile(directory+"input_demand_meta_data.csv") == false)
+	{
+		CString msg;
+		msg.Format ("Please prepare demand meta data file input_demand_meta_data and place it at folder %s.",directory);
+			AfxMessageBox(msg);
+		return false;
+	}
+
 	if(bNodeControlFile || bNodeControlFile)
 	{
 		CString msg;
@@ -3610,6 +3785,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	m_ODSize = 0;
 
 	OnOpenAMSDocument(ProjectFileName);  
+
 	CalculateDrawingRectangle(false);
 	m_bFitNetworkInitialized  = false;
 
@@ -3629,6 +3805,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 
 	m_AMSLogFile.close();
 	m_ProjectFile = "";  // reset m_ProjectFile so that the user has to give a new project name
+
 	return true;
 }
 

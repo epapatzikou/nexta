@@ -30,7 +30,10 @@
 #define IDDATA_Analysis2                5
 #define ID_TravelTimeReliability        5
 #define ID_EXPORT_VEHICLE_DATA          6
+#define IDDATA_DYNAMIC_Density_Contour  6
 #define IDDATA_FREEVAL_Analysis_Generate_File 7
+#define IDDATA_DYNAMIC_Speed_Contour    8
+#define IDDATA_DYNAMIC_Flow_Contour     9
 #define IDD_ABOUTBOX                    100
 #define IDD_NSCHART_DEMAND_DIALOG       102
 #define IDR_HTML_DLG_DEMANDTYPE         103
@@ -1270,13 +1273,19 @@
 #define ID_SENSORTOOLS_SENSORDATA       33647
 #define ID_EXPORT_EXPORTZONE3DKMLFILE   33648
 #define ID_EXPORT33649                  33649
+#define ID_LINK_APPLYDEFAULTLINKATTRIBUTESTOALLLINKS 33650
+#define ID_LINK_APPLYDEFAULTLANECAPACITYTOALLLINKS 33651
+#define ID_LINK_APPLYDEFAULTNUMBEROFLANESTOALLLINKS 33652
+#define ID_EXPORT_EXPORTLINK2DKMLFILE   33653
+#define ID_EXPORT_EXPORTSIGNALNODEKMLFILE 33654
+#define ID_EXPORT_EXPORTNON             33655
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        250
-#define _APS_NEXT_COMMAND_VALUE         33650
+#define _APS_NEXT_COMMAND_VALUE         33656
 #define _APS_NEXT_CONTROL_VALUE         1213
 #define _APS_NEXT_SYMED_VALUE           109
 #endif

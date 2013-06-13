@@ -64,4 +64,5 @@ public:
 	CListBox m_FindObjectList;
 	afx_msg void OnBnClickedButtonFind();
 	afx_msg void OnLbnSelchangeList1();
+	afx_msg void OnCbnSelchangeCombo1();
 };

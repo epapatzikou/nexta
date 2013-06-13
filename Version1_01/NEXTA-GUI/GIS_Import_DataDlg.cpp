@@ -37,8 +37,8 @@ using std::vector;
 using std::string;
 
 
-static LPTSTR GIS_Import_Data_Element[MAX_NUM_OF_GIS_IMPORT_DATA_FILES] = {"Input Node Type", "Input Link Type", "GIS Import Setting"};
-static LPTSTR GIS_Import_Data_FileName[MAX_NUM_OF_GIS_IMPORT_DATA_FILES] = {"input_node_control_type","input_link_type", "import_GIS_settings"};
+static LPTSTR GIS_Import_Data_Element[MAX_NUM_OF_GIS_IMPORT_DATA_FILES] = {"Input Node Type", "Input Link Type", "Input Demand Meta Data","GIS Import Setting"};
+static LPTSTR GIS_Import_Data_FileName[MAX_NUM_OF_GIS_IMPORT_DATA_FILES] = {"input_node_control_type","input_link_type", "input_demand_meta_data", "import_GIS_settings"};
 
 // CGIS_Import_DataDlg dialog
 
@@ -97,7 +97,7 @@ BOOL CGIS_Import_DataDlg::OnInitDialog()
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
 		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
 
-		if(i == 2)
+		if(i == 3)
 		{  //GIS importing 
 		p_SubTabs[i]->m_ListCtrl.m_FirstColumnWithTitle  = true;
 		p_SubTabs[i]->m_ListCtrl.m_SecondColumnWithKey = true;

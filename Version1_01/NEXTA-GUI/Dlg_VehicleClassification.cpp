@@ -626,7 +626,9 @@ void CDlg_VehicleClassification::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
 
-	OnClose();
+   int nRet = 5; 
+   EndDialog(nRet); 
+
 }
 
 void CDlg_VehicleClassification::OnBnClickedHighlightVehicles()

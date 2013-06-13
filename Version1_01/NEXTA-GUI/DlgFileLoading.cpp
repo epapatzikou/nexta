@@ -45,6 +45,11 @@ BOOL CDlgFileLoading::OnInitDialog()
 	}
 
 	m_ListBox_NetworkData.AddString (m_pDoc->m_NodeDataLoadingStatus);
+	
+	if(m_pDoc->m_SignalDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_SignalDataLoadingStatus);
+	}
 	m_ListBox_NetworkData.AddString (m_pDoc->m_LinkDataLoadingStatus);
 	
 	if(m_pDoc->m_ConnectorDataLoadingStatus.GetLength () >=1)
@@ -81,10 +86,7 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_NetworkData.AddString(m_pDoc->m_ScenarioDataLoadingStatus);
 	}
 	
-	if(m_pDoc->m_SignalDataLoadingStatus.GetLength() > 0)
-	{
-		m_ListBox_NetworkData.AddString(m_pDoc->m_SignalDataLoadingStatus);
-	}
+
 
 
 	if(m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus.GetLength () >0) // there are data being loaded
