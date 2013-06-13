@@ -940,8 +940,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			int size = 1000;
 			link_rect.SetRect(min_x-size,min_y-size,max_x+size,max_y+size);
 
-			if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
-				continue;
+			//if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
+			//	continue;
 
 
 			// step 4: select color and brush for MOE mode
@@ -3292,6 +3292,8 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 
 	for (std::list<DTALink*>::iterator iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 	{
+		if((*iLink) ->m_ShapePoints.size() <2)
+			continue;
 
 		for(int si = 0; si < (*iLink) ->m_ShapePoints .size()-1; si++)
 		{
@@ -3833,8 +3835,6 @@ void CTLiteView::OnLinkEditlink()
 		if(dlg.DoModal() == IDOK)
 		{
 			m_bUpdateLinkAttributeBasedOnType = dlg.m_bUpdateLinkAttributeBasedOnType;
-
-
 
 			if(pDoc->m_bUseMileVsKMFlag)
 			{
@@ -4615,17 +4615,21 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 
 	if(bObservationFlag == false)
 	{  // simulated data
-		for(si = 0; si < pLink ->m_ShapePoints .size(); si++)
+
+		if( pLink ->m_BandLeftShapePoints.size() > 0)
+		{
+		for(si = 0; si < pLink ->m_BandLeftShapePoints .size(); si++)
 		{
 			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[si]);
 		}
 
-		for(si = pLink ->m_ShapePoints .size()-1; si >=0 ; si--)
+		for(si = pLink ->m_BandRightShapePoints .size()-1; si >=0 ; si--)
 		{
 			m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[si]);
 		}
 
 		m_BandPoint[band_point_index++]= NPtoSP(pLink->m_BandLeftShapePoints[0]);
+		}
 
 	}else if (pMainFrame->m_bShowLayerMap[layer_detector])
 	{  //observed data
@@ -5142,7 +5146,7 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 			if(pNode->m_CycleLengthInSecond >0)
 				str_node_label.Format ("%d",pNode->m_CycleLengthInSecond  );
 			else
-				str_node_label.Format ("Default");
+				str_node_label.Format ("");
 
 		}
 

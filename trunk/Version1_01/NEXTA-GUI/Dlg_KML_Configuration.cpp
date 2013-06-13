@@ -360,7 +360,7 @@ BOOL CDlg_KML_Configuration::OnInitDialog()
 	m_Height_ComboBox.AddString("-- Simulation/Assignment Results --");
 	m_Height_ComboBox.AddString("Total Link Volume");
 	m_Height_ComboBox.AddString("Avg Travel Time (min)");
-	m_Height_ComboBox.AddString("Volume over Capacity Ratio");
+	m_Height_ComboBox.AddString("Total Volume over Capacity Ratio");
 	m_Height_ComboBox.AddString("Level Of Service");
 	m_Height_ComboBox.AddString("Avg Waiting Time on Loading Buffer");
 	m_Height_ComboBox.AddString("Avg Simulated Speed");

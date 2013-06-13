@@ -73,7 +73,7 @@ enum layer_mode
 enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
-enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
+enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
 enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
 
 enum OD_MOE {odnone,critical_volume};
@@ -97,7 +97,8 @@ CLS_distance_bin_0_2,CLS_distance_bin_1,CLS_distance_bin_2,CLS_distance_bin_5,CL
 CLS_sep_3,
 CLS_travel_time_bin_2,CLS_travel_time_bin_5,CLS_travel_time_bin_10,CLS_travel_time_bin_30,
 CLS_sep_4,
-CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck,
+CLS_VOT_10,CLS_VOT_15,CLS_VOT_10_SOV,CLS_VOT_10_HOV,CLS_VOT_10_truck, 
+CLS_sep_5,
 CLS_information_class,CLS_vehicle_type};
 enum VEHICLE_Y_CLASSIFICATION {
 	CLS_vehicle_count=0,CLS_cumulative_vehicle_count,CLS_total_travel_time,CLS_total_travel_distance, 
@@ -779,9 +780,11 @@ public:
 	CEmissionRate EmissionRateData[MAX_VEHICLE_TYPE_SIZE][_MAXIMUM_OPERATING_MODE_SIZE];
 
 
+	CString m_lpstrInitialDir; 
 	std::vector <CString> m_MessageStringVector;
 
 	CString m_NodeDataLoadingStatus;
+	CString m_SignalDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
 	CString m_ConnectorDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;
@@ -799,7 +802,7 @@ public:
 	CString m_SimulationVehicleDataLoadingStatus;
 	CString m_PathDataLoadingStatus;
 	CString m_MovementDataLoadingStatus;
-	CString m_SignalDataLoadingStatus;
+
 	CString m_SensorLocationLoadingStatus;
 
 	CString m_SensorDataLoadingStatus;
@@ -1595,7 +1598,7 @@ public:
 	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
 	void ExportSingleSynchroFile(CString SynchroProjectFile);
 
-	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string);
+	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string, bool b_signal_data_only);
 	void ExportLinkLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToGISFiles(CString file_name, CString GIS_type_string);
 	void ExportZoneLayerToKMLFiles(CString file_name, CString GIS_type_string, int ZoneKML_height_mode,float Zone_Height_Ratio, int ZoneColor_mode, int Transparency, float ColorCategoryValue[10]);
@@ -2001,7 +2004,7 @@ public:
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
 	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo=0);
 	BOOL SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input_link_CSF_File, int SelectedLayNo);
-	void CopyDefaultFiles();
+	void CopyDefaultFiles(CString directory = "");
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
 	{
@@ -2376,6 +2379,12 @@ public:
 	afx_msg void OnLinkAddRadioMessage();
 	afx_msg void OnSensortoolsSensordata();
 	afx_msg void OnExportExportzone3dkmlfile();
+	afx_msg void OnLinkApplydefaultlinkattributestoalllinks();
+	afx_msg void OnLinkApplydefaultlanecapacitytoalllinks();
+	afx_msg void OnLinkApplydefaultnumberoflanestoalllinks();
+	afx_msg void OnExportExportlink2dkmlfile();
+	afx_msg void OnExportExportsignalnodekmlfile();
+	afx_msg void OnExportExportnonsignalnodekmlfile();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

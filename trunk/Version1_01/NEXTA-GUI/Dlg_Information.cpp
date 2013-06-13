@@ -15,6 +15,8 @@ CDlg_Information::CDlg_Information(CWnd* pParent /*=NULL*/)
 	, m_StringInfo(_T(""))
 {
 	m_OnLineDocumentLink = "https://docs.google.com/document/d/14tUa1I6Xf62zsiWf4lLfngqGqGJlIM_MSehLFMVXass/edit";
+
+	m_bLoadGISSampleFile = false;
 }
 
 CDlg_Information::~CDlg_Information()
@@ -48,5 +50,6 @@ void CDlg_Information::OnBnClickedButtonSamplefile()
 	CString FileFolder;
 	FileFolder.Format("%s\\%s", pMainFrame->m_CurrentDirectory,m_SampleFileDirectory);
 
-	HINSTANCE result = ShellExecute(NULL, _T("open"), FileFolder, NULL,NULL, SW_SHOW);;
+	HINSTANCE result = ShellExecute(NULL, _T("open"), FileFolder, NULL,NULL, SW_SHOW);
+	m_bLoadGISSampleFile = true;
 }

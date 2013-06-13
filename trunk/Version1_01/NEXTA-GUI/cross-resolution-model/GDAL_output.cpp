@@ -348,7 +348,7 @@ bool CreateGISVector(std::vector<OGRFieldDefn> OGRFieldVector, OGRLayer *poLayer
 	return true;
 }
 #endif 
-void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeString)
+void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeString, bool signal_only)
 {
 #ifndef _WIN64
 
@@ -391,33 +391,35 @@ void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeStri
 
 
 		OGRFieldDefn oField1 ("Name", OFTString); 
-		OGRFieldDefn oField2 ("NodeId", OFTInteger); 
-		OGRFieldDefn oField3 ("NodeType", OFTInteger); 
-		OGRFieldDefn oField4 ("x", OFTReal); 
-		OGRFieldDefn oField5 ("y", OFTReal); 
+		OGRFieldDefn oField2 ("node_id", OFTInteger); 
+		OGRFieldDefn oField3 ("cycle_length_in_second", OFTInteger); 
+		OGRFieldDefn oField4 ("signal_offset_in_second", OFTInteger); 
 
 		CString str;  
 		if( poLayer->CreateField( &oField1 ) != OGRERR_NONE ) { str.Format("Creating field %s failed", oField1.GetNameRef()); AfxMessageBox(str); return; }
 		if( poLayer->CreateField( &oField2 ) != OGRERR_NONE ) {	str.Format("Creating field %s failed", oField2.GetNameRef()); AfxMessageBox(str); return; }
 		if( poLayer->CreateField( &oField3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField3.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField4.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField5.GetNameRef()); AfxMessageBox(str); return ;	}
+//		if( poLayer->CreateField( &oField5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField5.GetNameRef()); AfxMessageBox(str); return ;	}
 
 		std::list<DTANode*>::iterator iNode;
 
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			if((*iNode)->m_LayerNo ==0) 
-			{
+
+			if(signal_only == true && (*iNode)->m_ControlType != m_ControlType_PretimedSignal && 
+				(*iNode)->m_ControlType != m_ControlType_ActuatedSignal ) 
+				continue;
+
+			
 				OGRFeature *poFeature;
 
 				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
 				poFeature->SetField("Name",(*iNode)->m_Name.c_str () );
-				poFeature->SetField("NodeId", (*iNode)->m_NodeNumber );
-				poFeature->SetField("NodeType", (*iNode)->m_ControlType );
-				poFeature->SetField("x", (*iNode)->pt .x );
-				poFeature->SetField("y", (*iNode)->pt .y );
-
+				poFeature->SetField("node_id", (*iNode)->m_NodeNumber );
+				poFeature->SetField("cycle_length_in_second", (*iNode)->m_CycleLengthInSecond  );
+				poFeature->SetField("signal_offset_in_second", (*iNode)->m_SignalOffsetInSecond  );
+	
 				OGRPoint pt;
 				pt.setX( (*iNode)->pt .x );
 				pt.setY( (*iNode)->pt .y );
@@ -431,12 +433,14 @@ void CTLiteDoc::ExportNodeLayerToGISFiles(CString file_name, CString GISTypeStri
 				}
 
 				OGRFeature::DestroyFeature( poFeature );
-		 }
+		 
 		}
 
 	} // end of node layer
 
 	OGRDataSource::DestroyDataSource( poDS );
+#else
+	AfxMessageBox("Please use NEXTA 32 bit version to generate KML files.");
 #endif
 }
 
@@ -481,59 +485,17 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 
 		OGRFieldDefn oField1 ("LinkID", OFTInteger); 
 		OGRFieldDefn oField2 ("Name", OFTString); 
-		OGRFieldDefn oField3 ("A_Node", OFTInteger); 
-		OGRFieldDefn oField4 ("B_Node", OFTInteger); 
-		OGRFieldDefn oField5 ("Length", OFTReal); 
-		OGRFieldDefn oField6 ("nLanes", OFTInteger); 
-		OGRFieldDefn oField7 ("SpeedLimit", OFTInteger); 
-		OGRFieldDefn oField8 ("LaneCap", OFTInteger); 
-		OGRFieldDefn oField9 ("FunctClass", OFTInteger); 
-		OGRFieldDefn oField10 ("FFTT", OFTReal); 
+		OGRFieldDefn oField3 ("from_node_id", OFTInteger); 
+		OGRFieldDefn oField4 ("to_node_id", OFTInteger); 
+		OGRFieldDefn oField5 ("length_in_mile", OFTReal); 
+		OGRFieldDefn oField6 ("number_of_lanes", OFTInteger); 
+		OGRFieldDefn oField7 ("speed_limit_in_mph", OFTInteger); 
+		OGRFieldDefn oField8 ("lane_capacity", OFTInteger); 
+		OGRFieldDefn oField9 ("link_capacity", OFTInteger); 
+		OGRFieldDefn oField10 ("link_type_name", OFTString); 
+		OGRFieldDefn oField11 ("FFTT", OFTReal); 
+		OGRFieldDefn oField12 ("effective_green_time", OFTReal); 
 
-		OGRFieldDefn oField_vol_h0 ("vol_0", OFTReal); 
-		OGRFieldDefn oField_vol_h1 ("vol_1", OFTReal); 
-		OGRFieldDefn oField_vol_h2 ("vol_2", OFTReal); 
-		OGRFieldDefn oField_vol_h3 ("vol_3", OFTReal); 
-		OGRFieldDefn oField_vol_h4 ("vol_4", OFTReal); 
-		OGRFieldDefn oField_vol_h5 ("vol_5", OFTReal); 
-		OGRFieldDefn oField_vol_h6 ("vol_6", OFTReal); 
-		OGRFieldDefn oField_vol_h7 ("vol_7", OFTReal); 
-		OGRFieldDefn oField_vol_h8 ("vol_8", OFTReal); 
-		OGRFieldDefn oField_vol_h9 ("vol_9", OFTReal); 
-		OGRFieldDefn oField_vol_h10 ("vol_10", OFTReal); 
-		OGRFieldDefn oField_vol_h11 ("vol_11", OFTReal); 
-		OGRFieldDefn oField_vol_h12 ("vol_12", OFTReal); 
-		OGRFieldDefn oField_vol_h13 ("vol_13", OFTReal); 
-		OGRFieldDefn oField_vol_h14 ("vol_14", OFTReal); 
-		OGRFieldDefn oField_vol_h15 ("vol_15", OFTReal); 
-		OGRFieldDefn oField_vol_h16 ("vol_16", OFTReal); 
-		OGRFieldDefn oField_vol_h17 ("vol_17", OFTReal); 
-		OGRFieldDefn oField_vol_h18 ("vol_18", OFTReal); 
-		OGRFieldDefn oField_vol_h19 ("vol_19", OFTReal); 
-		OGRFieldDefn oField_vol_h20 ("vol_20", OFTReal); 
-
-
-		OGRFieldDefn oField_spd_h0 ("spd_0", OFTReal); 
-		OGRFieldDefn oField_spd_h1 ("spd_1", OFTReal); 
-		OGRFieldDefn oField_spd_h2 ("spd_2", OFTReal); 
-		OGRFieldDefn oField_spd_h3 ("spd_3", OFTReal); 
-		OGRFieldDefn oField_spd_h4 ("spd_4", OFTReal); 
-		OGRFieldDefn oField_spd_h5 ("spd_5", OFTReal); 
-		OGRFieldDefn oField_spd_h6 ("spd_6", OFTReal); 
-		OGRFieldDefn oField_spd_h7 ("spd_7", OFTReal); 
-		OGRFieldDefn oField_spd_h8 ("spd_8", OFTReal); 
-		OGRFieldDefn oField_spd_h9 ("spd_9", OFTReal); 
-		OGRFieldDefn oField_spd_h10 ("spd_10", OFTReal); 
-		OGRFieldDefn oField_spd_h11 ("spd_11", OFTReal); 
-		OGRFieldDefn oField_spd_h12 ("spd_12", OFTReal); 
-		OGRFieldDefn oField_spd_h13 ("spd_13", OFTReal); 
-		OGRFieldDefn oField_spd_h14 ("spd_14", OFTReal); 
-		OGRFieldDefn oField_spd_h15 ("spd_15", OFTReal); 
-		OGRFieldDefn oField_spd_h16 ("spd_16", OFTReal); 
-		OGRFieldDefn oField_spd_h17 ("spd_17", OFTReal); 
-		OGRFieldDefn oField_spd_h18 ("spd_18", OFTReal); 
-		OGRFieldDefn oField_spd_h19 ("spd_19", OFTReal); 
-		OGRFieldDefn oField_spd_h20 ("spd_20", OFTReal); 
 
 
 		CString str;  
@@ -547,50 +509,9 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 		if( poLayer->CreateField( &oField8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField8.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField9.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField10.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField11.GetNameRef()); AfxMessageBox(str); return ;	}
+		if( poLayer->CreateField( &oField12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField12.GetNameRef()); AfxMessageBox(str); return ;	}
 
-		if( poLayer->CreateField( &oField_vol_h0 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h0.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h1 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h1.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h2 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h2.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h3.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h4.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h5.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h6 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h6.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h7 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h7.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h8.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h9.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h10.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h11.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h12.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h13 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h13.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h14 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h14.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h15 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h15.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h16 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h16.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h17 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h17.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h18 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h18.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h19 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h19.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_vol_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_vol_h20.GetNameRef()); AfxMessageBox(str); return ;	}
-
-		if( poLayer->CreateField( &oField_spd_h0 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h0.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h1 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h1.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h2 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h2.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h3 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h3.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h4 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h4.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h5 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h5.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h6 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h6.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h7 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h7.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h8 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h8.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h9.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h10.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h11.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h12.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h13 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h13.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h14 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h14.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h15 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h15.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h16 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h16.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h17 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h17.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h18 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h18.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h19 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h19.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField_spd_h10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField_spd_h20.GetNameRef()); AfxMessageBox(str); return ;	}
 
 		std::list<DTALink*>::iterator iLink;
 
@@ -604,72 +525,28 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
 				poFeature->SetField("LinkID",(*iLink)->m_LinkID );
 				poFeature->SetField("Name", (*iLink)->m_Name.c_str () );
-				poFeature->SetField("A_Node", (*iLink)->m_FromNodeNumber );
-				poFeature->SetField("B_Node", (*iLink)->m_ToNodeNumber );
-				poFeature->SetField("Length", (*iLink)->m_Length  );
-				poFeature->SetField("nLanes", (*iLink)->m_NumberOfLanes );
-				poFeature->SetField("SpeedLimit", (*iLink)->m_SpeedLimit );
-				poFeature->SetField("LaneCap", (*iLink)->m_LaneCapacity );
-				poFeature->SetField("FunctClass", (*iLink)->m_link_type );
+				poFeature->SetField("from_node_id", (*iLink)->m_FromNodeNumber );
+				poFeature->SetField("to_node_id", (*iLink)->m_ToNodeNumber );
+				poFeature->SetField("length_in_mile", (*iLink)->m_Length  );
+				poFeature->SetField("number_of_lanes", (*iLink)->m_NumberOfLanes );
+				poFeature->SetField("speed_limit_in_mph", (*iLink)->m_SpeedLimit );
+				poFeature->SetField("lane_capacity", (*iLink)->m_LaneCapacity );
+				poFeature->SetField("link_capacity", (*iLink)->m_LaneCapacity*(*iLink)->m_NumberOfLanes );
+				CString link_type_name = " ";
+
+				if(m_LinkTypeMap.find((*iLink)->m_link_type) != m_LinkTypeMap.end())
+				{
+					link_type_name = m_LinkTypeMap[(*iLink)->m_link_type].link_type_name.c_str ();
+				}
+				poFeature->SetField("link_type_name", link_type_name );
+
 				poFeature->SetField("FFTT", (*iLink)->m_FreeFlowTravelTime );
+				poFeature->SetField("effective_green_time", (*iLink)->m_EffectiveGreenTimeInSecond  );
 
 
 				int hour = 0;
 
 				
-				poFeature->SetField("vol_0", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_1", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_2", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_3", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_4", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_5", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_6", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_7", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_8", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_9", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				
-				poFeature->SetField("vol_10", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_11", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_12", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_13", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_14", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_15", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_16", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_17", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_18", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_19", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("vol_20", (*iLink)->GetAvgLinkHourlyVolume(hour*60,(hour+1)*60)); hour ++;
-
-				hour= 0;
-				poFeature->SetField("spd_0", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_1", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_2", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_3", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_4", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_5", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_6", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_7", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_8", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_9", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				
-				poFeature->SetField("spd_10", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_11", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_12", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_13", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_14", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_15", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_16", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_17", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_18", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_19", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-				poFeature->SetField("spd_20", (*iLink)->GetAvgLinkSpeed(hour*60,(hour+1)*60)); hour ++;
-
-				//float value;
-				//float mobility_index  = GetLinkMOE((*iLink), MOE_speed, 1, 360, value);
-				//float reliability_index  = GetLinkMOE((*iLink), MOE_reliability, 1, 360, value);
-				//poFeature->SetField("iSpeed", mobility_index);
-				//poFeature->SetField("iReliable", reliability_index );
-
 				OGRLineString line;
 				for(unsigned int si = 0; si< (*iLink)->m_ShapePoints.size(); si++)
 				{
@@ -692,6 +569,9 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 
 	} // end of link layer
 	OGRDataSource::DestroyDataSource( poDS );
+#else
+	AfxMessageBox("Please use NEXTA 32 bit version to generate 2D KML files.");
+
 #endif
 }
 
@@ -785,6 +665,9 @@ void CTLiteDoc::ExportZoneLayerToGISFiles(CString file_name, CString GISTypeStri
 		}
 	} // end of zone layer
 	OGRDataSource::DestroyDataSource( poDS );
+#else
+	AfxMessageBox("Please use NEXTA 32 bit version to generate 2D KML files.");
+
 #endif
 }
 
@@ -1705,6 +1588,9 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 			}
 	
 	OGRDataSource::DestroyDataSource( poDS );
+#else
+	AfxMessageBox("Please use NEXTA 32 bit version to generate 2D KML files.");
+
 #endif
 }
 
@@ -1930,8 +1816,8 @@ void CTLiteDoc::ExportLinkMOEToKMLFiles(CString file_name)
 				poFeature = OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
 				poFeature->SetField("LinkID",(*iLink)->m_LinkID );
 				poFeature->SetField("Name", (*iLink)->m_Name.c_str () );
-				poFeature->SetField("A_Node", (*iLink)->m_FromNodeNumber );
-				poFeature->SetField("B_Node", (*iLink)->m_ToNodeNumber );
+				poFeature->SetField("from_node_id", (*iLink)->m_FromNodeNumber );
+				poFeature->SetField("to_node_id", (*iLink)->m_ToNodeNumber );
 				poFeature->SetField("IsOneWay", (*iLink)->m_Direction );
 				poFeature->SetField("NumberOfLanes", (*iLink)->m_NumberOfLanes );
 				poFeature->SetField("SpeedLimit", (*iLink)->m_SpeedLimit );

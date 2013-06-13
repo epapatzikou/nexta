@@ -276,8 +276,6 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	for(int vot = 0; vot<=100; vot+=5)
 	{
 		str.Format ("%d", vot);
-		m_DepartureTimeBox.AddString(str);
-
 		m_ComboBox_VOT_LB.AddString (str);
 		m_ComboBox_VOT_UB.AddString (str);
 	}
@@ -1501,8 +1499,10 @@ void CDlg_VehPathAnalysis::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
 
-	OnOK();
-	g_bShowVehiclePathDialog = false;
+ 	g_bShowVehiclePathDialog = false;
+	int nRet = 5; 
+   EndDialog(nRet); 
+
 }
 
 void CDlg_VehPathAnalysis::OnBnClickedCheckVmsResponsive()

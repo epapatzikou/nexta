@@ -393,7 +393,6 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 			}
 
 
-
 			pLink->m_number_of_all_crashes  = 
 				 SafePredictionModel.EstimateArterialCrashRatePerYear(crash_ratio_on_this_link, 
 				 pLink->m_num_of_fatal_and_injury_crashes_per_year, 

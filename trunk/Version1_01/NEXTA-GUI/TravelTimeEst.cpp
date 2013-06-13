@@ -178,8 +178,6 @@ bool CTLiteDoc::ReadSensorData()
 	SensorFileName.Format("%s//input_sensor.csv", m_ProjectDirectory);
 
 
-
-
 	CCSVParser parser;
 	int error_count = 0;
 

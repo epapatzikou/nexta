@@ -8,6 +8,8 @@ class CDlg_Information : public CDialog
 	DECLARE_DYNAMIC(CDlg_Information)
 
 public:
+	bool m_bLoadGISSampleFile;
+
 	CString m_OnLineDocumentLink;
 	CString m_SampleFileDirectory;
 	CDlg_Information(CWnd* pParent = NULL);   // standard constructor

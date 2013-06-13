@@ -69,10 +69,10 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Find Node/Link/Path/Vehicle"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    PUSHBUTTON      "Find",IDC_BUTTON_FIND,176,103,50,14
     LTEXT           "Find What:",IDC_STATIC,7,7,36,8
     LTEXT           "Look In:",IDC_STATIC,7,55,27,8
     LISTBOX         IDC_LIST1,43,56,124,60,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Find",IDC_BUTTON_FIND,176,103,50,14
     COMBOBOX        IDC_COMBO1,51,7,116,92,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
 END
 
@@ -804,7 +804,7 @@ CAPTION "Path Information"
 MENU IDR_MENU_PATH_INFO
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,109,209,77
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,107,209,77
     LTEXT           "Variation Coefficient:",IDC_STATIC,7,261,68,8
     PUSHBUTTON      "Exit",IDCANCEL,504,272,50,14
     LTEXT           "",IDC_PATHMOE,105,195,364,17,0,WS_EX_STATICEDGE
@@ -814,7 +814,7 @@ BEGIN
     PUSHBUTTON      "Find Alternative Route through Random Routing",ID_FIND_RANDOM_ROUTE,103,272,165,14
     LISTBOX         IDC_LIST1,7,22,208,76,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Path List:",IDC_STATIC,7,7,31,8
-    PUSHBUTTON      "Trip Data Analysis for Selected Path",IDDATA_Analysis,7,226,136,14
+    PUSHBUTTON      "Trip Data Analysis for Selected Path",IDDATA_Analysis,167,244,152,14
     COMBOBOX        IDC_COMBO_StartHour,359,7,34,149,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Start Hour:",IDC_STATIC,319,7,37,8
     COMBOBOX        IDC_COMBO_EndHour,437,7,31,153,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -822,8 +822,11 @@ BEGIN
     COMBOBOX        IDC_COMBO_AggIntrevalList,517,7,37,162,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_COMBO_PLOT_TYPE,165,7,149,145,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Agg Interval:",IDC_STATIC,471,7,44,8
-    PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,152,225,154,14
-    PUSHBUTTON      "Generate Default Segment File for FREEVAL",IDDATA_FREEVAL_Analysis_Generate_File,318,225,154,14
+    PUSHBUTTON      "Node-to-Node Data Analysis for Selected Path",IDDATA_Analysis2,7,244,154,14
+    PUSHBUTTON      "Generate Default Segment File for FREEVAL",IDDATA_FREEVAL_Analysis_Generate_File,7,226,154,14
+    PUSHBUTTON      "Density Contour",IDDATA_DYNAMIC_Density_Contour,223,173,74,15
+    PUSHBUTTON      "Speed Contour",IDDATA_DYNAMIC_Speed_Contour,306,173,74,14
+    PUSHBUTTON      "V/C Contour",IDDATA_DYNAMIC_Flow_Contour,389,173,74,14
 END
 
 IDD_DIALOG_GISLayer DIALOGEX 0, 0, 130, 377
@@ -2386,6 +2389,10 @@ BEGIN
         MENUITEM "Export to Link Layer to KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES
         MENUITEM "Export Link Flow Proportion Matrix to CSV File", ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE
         MENUITEM SEPARATOR
+        MENUITEM "Apply Default Link Speed Limit to All Links", ID_LINK_APPLYDEFAULTLINKATTRIBUTESTOALLLINKS
+        MENUITEM "Apply Default Lane Capacity to All Links", ID_LINK_APPLYDEFAULTLANECAPACITYTOALLLINKS
+        MENUITEM "Apply Default Number of Lanes to All Links", ID_LINK_APPLYDEFAULTNUMBEROFLANESTOALLLINKS
+        MENUITEM SEPARATOR
         MENUITEM "Delete Link",                 ID_DELETE_SELECTED_LINK
     END
     POPUP "Movement"
@@ -2633,8 +2640,8 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import"
         BEGIN
+            MENUITEM "GIS Planning Data Set",       ID_IMPORT_AMSDATASET
             MENUITEM "Single Excel File (*.xls)",   ID_IMPORT_SINGLEEXCELFILE
-            MENUITEM "GIS Network Data Set",        ID_IMPORT_AMSDATASET
             MENUITEM "Openstreetmap Route Point Shape File", ID_IMPORT_SHAPEFILE
             MENUITEM "Background Image (*.bmp)",    ID_IMPORT_BACKGROUNDIMAGE
             MENUITEM "Synchro UTDF CSV File",       ID_IMPORT_SYNCHROUTDFCSVFILES
@@ -2643,10 +2650,16 @@ BEGIN
         POPUP "Export"
         BEGIN
             MENUITEM "Microscopic Network and Traffic Control Data", ID_FILE_CONSTRUCTANDEXPORTSIGNALDATA
+            MENUITEM SEPARATOR
+            MENUITEM "Export Link 2D KML File",     ID_EXPORT_EXPORTLINK2DKMLFILE
+            MENUITEM "Export Signal Node KML File", ID_EXPORT_EXPORTSIGNALNODEKMLFILE
+            MENUITEM "Export Node KML File",        ID_EXPORT_EXPORTNON
+            MENUITEM SEPARATOR
             MENUITEM "Export Link 3D KML File",     ID_EXPORT_GENERATESHAPEFILES
             MENUITEM "Export Zone 3D KML File",     ID_EXPORT_EXPORTZONE3DKMLFILE
             MENUITEM "Export Path Data as 3D KML and Shape Files", ID_EXPORT_GENERATESHAPEFILES_PATH_DATA
             MENUITEM "Export Aggregated Link MOE File", ID_EXPORT_EXPORTAGGREGATEDLINKMOEFILE
+            MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
         MENUITEM "Save Project",                ID_FILE_SAVE_PROJECT
@@ -3444,6 +3457,9 @@ BEGIN
         MENUITEM "View Link-based Scenario Data查看基于路段的场景数据", ID_LINK_VIEWLINK
         MENUITEM SEPARATOR
         MENUITEM "Export to Link Layer to KML and Shape Files导出路段属性数据到KML和Shape文件中", ID_EXPORT_GENERATESHAPEFILES
+        MENUITEM "Export Link Flow Proportion Matrix to CSV File 导出路段流量矩阵到CSV文件", ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE
+        MENUITEM "Apply Default Speed Limit to All Links (speed limit, # of lanes, capacity) 用默认路段限速重写路段数据", ID_LINK_APPLYDEFAULTLINKATTRIBUTESTOALLLINKS
+        MENUITEM "Apply Default Lane Capacity to All Links 用默认车道能力重写路段数据", ID_LINK_APPLYDEFAULTLANECAPACITYTOALLLINKS
         MENUITEM SEPARATOR
         MENUITEM "Delete Link删除选定路段",           ID_DELETE_SELECTED_LINK
     END
@@ -3608,8 +3624,8 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Import导入"
         BEGIN
+            MENUITEM "GIS Planning Data Set GIS规划网络数据集", ID_IMPORT_AMSDATASET
             MENUITEM "Single Excel File (*.xls)单个Excel文件", ID_IMPORT_SINGLEEXCELFILE
-            MENUITEM "GIS Network Data Set GIS网络数据集", ID_IMPORT_AMSDATASET
             MENUITEM "Background Image (*.bmp)背景图片", ID_IMPORT_BACKGROUNDIMAGE
             MENUITEM "Openstreetmap Route Point Shape File ：开源 OpenStreetMaps SHAPE 文件", ID_IMPORT33642
             MENUITEM "Synchro UTDF CSV File ",      ID_IMPORT_SYNCHROUTDFCSVFILES

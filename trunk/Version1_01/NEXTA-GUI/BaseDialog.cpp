@@ -132,6 +132,9 @@ void CBaseDialog::OnClose()
 {
    if(m_bIsModeless) // modeless dialog
       DestroyWindow();
-   else
+   else 
+   {
       CDialog::OnClose();
-}
+   }
+   
+  }

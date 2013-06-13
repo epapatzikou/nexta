@@ -102,6 +102,7 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT5, &CDlgLinkProperties::OnEnChangeEdit5)
 	ON_EN_CHANGE(IDC_EDIT_AADT, &CDlgLinkProperties::OnEnChangeEditAadt)
 	ON_EN_CHANGE(IDC_EDIT_PeakHourlyVolume, &CDlgLinkProperties::OnEnChangeEditPeakhourlyvolume)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -369,4 +370,15 @@ void CDlgLinkProperties::OnEnChangeEditAadt()
 void CDlgLinkProperties::OnEnChangeEditPeakhourlyvolume()
 {
 	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnClose()
+{
+	// TODO: Add your message handler code here and/or call default
+
+//	CDialog::OnClose();
+
+   int nRet = 5; 
+   EndDialog(nRet); 
+
 }

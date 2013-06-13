@@ -80,4 +80,5 @@ public:
 	BOOL m_bUpdateLinkAttributeBasedOnType;
 	afx_msg void OnEnChangeEditAadt();
 	afx_msg void OnEnChangeEditPeakhourlyvolume();
+	afx_msg void OnClose();
 };

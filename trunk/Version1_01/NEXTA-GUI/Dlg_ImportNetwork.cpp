@@ -806,7 +806,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					k_jam = 220;
 				}else
 				{
-					k_jam = 120;
+					k_jam = 190;
 				}
 
 				wave_speed_in_mph = 12;
@@ -1060,7 +1060,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		m_MessageList.AddString (str_msg);
 		}
 
-		str_msg.Format ("%d links have been sucessfully imported from %d records.",m_pDoc->m_LinkSet.size(),number_of_records_read);
+		str_msg.Format ("%d links have been successfully imported from %d records.",m_pDoc->m_LinkSet.size(),number_of_records_read);
 		m_MessageList.AddString(str_msg);
 	
 
@@ -1116,7 +1116,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 			}
 		
-			str_msg.Format ("%d connectors have been sucessfully created",number_of_new_connectors);
+			str_msg.Format ("%d connectors have been successfully created",number_of_new_connectors);
 			m_MessageList.AddString(str_msg);
 
 		}
