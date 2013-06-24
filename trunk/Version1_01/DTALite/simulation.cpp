@@ -66,7 +66,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	bool bRadioMessageActive  = false;
 	float network_wide_RadioMessageResponsePercentage = 0; 
 
-	if((simulation_time_interval_no)%(10) == 0)
+	if((simulation_time_interval_no)%10 == 0)  // every one minute
 	{
 			for(unsigned li = 0; li< g_LinkVector.size(); li++)
 			{
@@ -119,7 +119,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 		}
 
-		if(simulation_time_interval_no%10 ==0) //update routes for re-trip or en-route information users, every min, (10 simulation time intervlas)
+
+
+		if(simulation_time_interval_no%10 ==0) //update routes for pre-trip or en-route information users, every min, (10 simulation time intervlas)
 		{
 
 		g_AgentBasedPathAdjustment(DayNo, CurrentTime);
@@ -129,6 +131,18 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		}
 	
 	}
+
+	
+		// user_defined information updating 
+
+		int time_clock_in_min  = simulation_time_interval_no/10;
+		if(simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
+		{  // we need to update travel time and agent file
+
+			g_ExchangeRealTimeSimulationData(time_clock_in_min);
+		
+		
+		}
 
 	// load vehicle into network
 

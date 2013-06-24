@@ -24,7 +24,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	CListBox m_ListBox_NetworkData;
-	CListBox m_ListBox_OptimizationData;
+	CListBox m_ListBox_SensorData;
 	virtual BOOL OnInitDialog();
 	CListBox m_ListBox_OutputData;
 };

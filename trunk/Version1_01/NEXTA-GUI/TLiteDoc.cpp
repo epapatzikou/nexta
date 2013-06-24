@@ -3804,7 +3804,7 @@ bool CTLiteDoc::ReadLinkTypeCSVFile(LPCTSTR lpszFileName)
 			}
 
 
-			if(element.link_type<=0)
+			if(element.link_type<0)
 			{
 				CString str;
 				str.Format ("Field link_type in file input_link_type.csv has an invalid value of %d at line %d. Please check.",element.link_type, lineno);
@@ -12898,7 +12898,7 @@ void CTLiteDoc::ReadTMCSpeedData(LPCTSTR lpszFileName)
 			m_SimulationEndTime_in_min = 1440;
 
 			m_TrafficFlowModelFlag = 3; //enable dynamic moe display
-			m_SimulationLinkMOEDataLoadingStatus.Format ("%d TMC records are loaded from file %s.",i,lpszFileName);
+			m_SensorDataLoadingStatus.Format ("%d TMC records are loaded from file %s.",i,lpszFileName);
 
 		
 	}
@@ -15685,6 +15685,32 @@ int CTLiteDoc::ReadRadioMessageScenarioData(int RemoveLinkFromNodeNumber, int Re
 
 	return i;
 }
+
+	int CTLiteDoc:: FindNonCentroidNodeNumberWithCoordinate(double x, double y, int this_node_name)
+	{
+		
+		DTANode* pNode= NULL;
+
+		double min_distance = 999999;
+		int NodeID = -1;
+		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+			if((*iNode)->m_NodeNumber  != this_node_name && (*iNode)->m_ZoneID <=0)  // non centroid node
+			{
+			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
+			if( distance <  min_distance)
+			{
+				min_distance= distance;
+				pNode = (*iNode);
+			}
+			}
+		}
+		if(pNode != NULL)
+			return pNode->m_NodeNumber;
+		else
+			return NULL;
+	}
 bool CTLiteDoc::WriteRadioMessageScenarioData()
 {
 	FILE* st = NULL;

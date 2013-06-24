@@ -208,6 +208,42 @@ public:
 
 };
 
+
+class RealTimeSimulationSettings
+{
+	public:
+		int timestamp_in_min;
+		bool break_point_flag;
+		bool break_and_wait_flag;
+
+		int output_TD_start_time_in_min; 
+		int output_TD_aggregation_time_in_min;
+
+		int update_attribute_aggregation_time_interval_in_min;
+
+		std::string output_TD_link_travel_time_file, 
+			output_TD_link_MOE_file,
+			output_agent_file,
+
+			update_TD_link_attribute_file,
+			update_agent_file;
+
+
+		RealTimeSimulationSettings()
+		{
+			output_TD_aggregation_time_in_min = 1;
+			update_attribute_aggregation_time_interval_in_min = 1;
+			output_TD_start_time_in_min = 0;
+			break_point_flag = false;
+
+			break_and_wait_flag = false;
+
+		}
+
+};
+
+extern std::map<int, RealTimeSimulationSettings>  g_RealTimeSimulationSettingsMap;
+
 extern HistoricalDemand g_HistDemand;
 
 extern std::vector<NetworkMOE>  g_NetworkMOEAry;
@@ -310,6 +346,10 @@ extern void g_ReadVOTProfile();
 extern float g_GetRandomRatioForVehicleGeneration();
 extern struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &DataVector, bool bSetYInterceptTo0 = true);
 extern std::string GetTimeClockString(int time);
+extern void g_ReadRealTimeSimulationSettingsFile();
+
+
+extern void g_ExchangeRealTimeSimulationData(int timestamp_in_min);
 
 
 

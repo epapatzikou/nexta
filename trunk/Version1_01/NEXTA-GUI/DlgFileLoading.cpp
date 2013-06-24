@@ -24,7 +24,7 @@ void CDlgFileLoading::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST_NETEWORK_FILE, m_ListBox_NetworkData);
-	DDX_Control(pDX, IDC_LIST_NETEWORK_FILE2, m_ListBox_OptimizationData);
+	DDX_Control(pDX, IDC_LIST_SENSOR_FILE, m_ListBox_SensorData);
 	DDX_Control(pDX, IDC_LIST_OUTPUTDTA, m_ListBox_OutputData);
 }
 
@@ -68,12 +68,12 @@ BOOL CDlgFileLoading::OnInitDialog()
 	
 	if(m_pDoc->m_SensorLocationLoadingStatus.GetLength() > 0)
 	{
-		m_ListBox_NetworkData.AddString(m_pDoc->m_SensorLocationLoadingStatus);
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorLocationLoadingStatus);
 	}
 
 	if(m_pDoc->m_SensorDataLoadingStatus.GetLength() > 0)
 	{
-		m_ListBox_NetworkData.AddString(m_pDoc->m_SensorDataLoadingStatus);
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorDataLoadingStatus);
 	}
 
 	if(m_pDoc->m_EventDataLoadingStatus.GetLength() > 0)
@@ -91,18 +91,18 @@ BOOL CDlgFileLoading::OnInitDialog()
 
 	if(m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus.GetLength () >0) // there are data being loaded
 	{
-		m_ListBox_OptimizationData.AddString (m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus);	
+		m_ListBox_SensorData.AddString (m_pDoc->m_LinkTrainTravelTimeDataLoadingStatus);	
 	}
 
 	if(m_pDoc->m_SimulatedLinkVolumeStatus.GetLength () >0) // there are data being loaded
 	{
-		m_ListBox_OptimizationData.AddString (m_pDoc->m_SimulatedLinkVolumeStatus);	
+		m_ListBox_SensorData.AddString (m_pDoc->m_SimulatedLinkVolumeStatus);	
 	}
 	
 
 	if(m_pDoc->m_TimetableDataLoadingStatus.GetLength () >0) // there are data being loaded
 	{
-		m_ListBox_OptimizationData.AddString (m_pDoc->m_TimetableDataLoadingStatus);	
+		m_ListBox_SensorData.AddString (m_pDoc->m_TimetableDataLoadingStatus);	
 	}
 
 	if(m_pDoc->m_SimulationLinkMOEDataLoadingStatus.GetLength ()>0)

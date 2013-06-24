@@ -292,6 +292,7 @@ int g_FIFOConditionAcrossDifferentMovementFlag = 0;
 
 std::vector<NetworkMOE>  g_NetworkMOEAry;
 std::vector<NetworkLoadingOutput>  g_AssignmentMOEVector;
+std::map<int, RealTimeSimulationSettings>  g_RealTimeSimulationSettingsMap;
 
 DTASettings g_settings;  // global settings;
 
@@ -3052,8 +3053,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		int cumulative_HOV_revenue;
 		int cumulative_truck_revenue;
 		int cumulative_intermodal_revenue;
-		float Energy;
-		float CO2;
+		float Energy;		float CO2;
 		float NOX;
 		float CO;
 		float HC;
@@ -3169,6 +3169,88 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		cin.get();  // pause
 	}
 
+
+}
+
+
+void OutputRealTimeLinkMOEData(std::string fname, int start_time_in_min,int current_time_in_min, int ouput_MOE_aggregation_time_interval_in_min,  bool bTravelTimeOnly)
+{
+
+	FILE* st = NULL;
+
+	fopen_s(&st,fname.c_str(),"w");
+
+	std::set<DTALink*>::iterator iterLink;
+
+	if(st!=NULL)
+	{
+
+		if(bTravelTimeOnly)
+		{
+		fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min\n");
+		}
+		else
+		{
+		fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length_ratio\n");
+		}
+
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		{
+
+			DTALink* pLink = g_LinkVector[li];
+			for(int time = start_time_in_min; time<= current_time_in_min;time++)
+			{
+
+					float LinkOutFlow = float(pLink->GetDepartureFlow(time, ouput_MOE_aggregation_time_interval_in_min ));
+					float travel_time = pLink->GetTravelTimeByMin(0,time,ouput_MOE_aggregation_time_interval_in_min,g_TrafficFlowModelFlag);
+
+					float queue_length_ratio  = 0 ;
+
+
+					if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
+					{
+						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
+					}else
+					{
+						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(g_DefaultArterialKJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
+					}
+
+
+					if(bTravelTimeOnly)
+					{
+					fprintf(st, "%d,%d,%d,%6.2f",
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,time,
+						travel_time);
+
+					fprintf(st,"\n");
+					
+					
+					}else
+					{
+
+					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,",
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,time,
+						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
+						LinkOutFlow*60.0/pLink->m_NumLanes ,LinkOutFlow*60.0,
+						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes,
+						 pLink->m_Length/max(0.1,travel_time)*60.0,
+						queue_length_ratio);
+
+					fprintf(st,"\n");
+					}
+
+				}
+
+
+
+			}  //all links
+
+		fclose(st);
+	}else
+	{
+		cout << "Error: File " << fname << " cannot be opened.\n It might be currently used and locked. Please any key to continue."<< endl;
+		cin.get();  // pause
+	}
 
 }
 
@@ -4452,7 +4534,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 								}
 
 
-							}else
+							}else if(type!=0)  // if demand type == 0 then we will skip this value. By doing so, we can reading only one demand type per record with demand-type specific departure time loading profile. e.g. truck vs. HOV
 							{
 								cout << "demand type " << type << " in file input_demand_meta_data has not been defined. Please check." <<endl;
 								g_ProgramStop();

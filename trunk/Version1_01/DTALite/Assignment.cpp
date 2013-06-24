@@ -53,6 +53,26 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 void g_OutputSimulationStatistics(int Iteration);
 
 
+bool g_GetSequentialUEAdjustmentTimePeriod(int iteration,float DepartureTime)
+{
+	// 20 iterations for each hour adjustment period
+
+	int TimePeriodForSequentialAdjustment = 15;  //min
+	int iteration_size = 20;
+
+	int SequentialAdjustmentTimePeriodStart = g_DemandLoadingStartTimeInMin + iteration*1.0/iteration_size*TimePeriodForSequentialAdjustment;
+	if(SequentialAdjustmentTimePeriodStart>= g_DemandLoadingEndTimeInMin) // restart from the beginning 
+		SequentialAdjustmentTimePeriodStart = g_DemandLoadingStartTimeInMin; 
+
+	int SequentialAdjustmentTimePeriodEnd = SequentialAdjustmentTimePeriodStart +  TimePeriodForSequentialAdjustment; 
+
+	if(DepartureTime >= SequentialAdjustmentTimePeriodStart && DepartureTime <=SequentialAdjustmentTimePeriodEnd)  //within time interval
+		return true;
+	else 
+		return false;
+
+}
+
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	// reset random number seeds
@@ -250,7 +270,15 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		}
 		if(g_UEAssignmentMethod==assignment_gap_function_MSA_step_size) // gap function based method,
 		{
-			switching_rate =  1.0f/(iteration+1) + 0.05; //additonal switch
+			switching_rate = 1.0f/(iteration+1);
+
+			if(iteration > 20 )
+			{
+				if(g_GetSequentialUEAdjustmentTimePeriod (iteration, pVeh->m_DepartureTime))
+				switching_rate = 0.05;
+				else
+				switching_rate = 0.001;
+			}
 		}
 		if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
 		g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  			
@@ -359,28 +387,13 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 						PathLinkList[n] = min_cost_alternative.path_link_list [n];
 					}
 				}
-			}else if(RandomNumber < switching_rate || g_CalculateUEGapForAllAgents == 1)  // g_Day2DayAgentLearningMethod==0: no learning, just switching 
+			}else if(RandomNumber < switching_rate)  // g_Day2DayAgentLearningMethod==0: no learning, just switching 
 			{
 
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 			float relative_gap = 0.0f;
-				if(g_UEAssignmentMethod== assignment_gap_function_MSA_step_size) // gap function based method: the final switching rate is proportaitonal to relative gap
-				{
-					relative_gap = max(0,ExperiencedGeneralizedTravelTime - TotalCost)/max(0.1,ExperiencedGeneralizedTravelTime);
-
-					bSwitchFlag = false;
-					if(relative_gap > g_PrevRelativeGapValue)
-					{
-						bSwitchFlag = true;
-					}
-
-				}else
-				{
-					bSwitchFlag = true;				
-				}
-
-
+			bSwitchFlag = true;				
 
 			}
 		}
@@ -395,32 +408,15 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 		pVeh->m_gap_update = false;
 
-		if(bSwitchFlag || g_CalculateUEGapForAllAgents==1)  // for all vehicles that need to switch
+		if(bSwitchFlag)  // for all vehicles that need to switch
 		{
-
-
 
 			pVeh->m_DepartureTime  = pVeh->m_PreferredDepartureTime  + final_departuret_time_shift;
 
 			pVeh->SetMinCost(TotalCost);
 
+		/// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
 
-			float m_gap = ExperiencedGeneralizedTravelTime - TotalCost;
-
-			if(m_gap < 0) m_gap = 0.0;	
-			
-			pVeh->m_gap_update = true;
-			pVeh->m_gap = m_gap;
-
-			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedGeneralizedTravelTime);
-			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
-
-		}
-		if(bSwitchFlag)
-		{/// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
-
-			// Jason : accumulate number of vehicles switching paths
 			g_CurrentNumOfVehiclesSwitched += 1; 
 
 			pVeh->m_bConsiderToSwitch = true;
@@ -470,10 +466,29 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
 
 				}
-				if(fabs(pVeh->m_Distance - Distance) >0.1 && NodeNumberSum != pVeh->m_NodeNumberSum)
-				{  //different  path 
+				if(NodeNumberSum != pVeh->m_NodeNumberSum)
+				{  //different  paths 
 					pVeh->m_bSwitch = true;
 				}
+
+
+			float m_gap = ExperiencedGeneralizedTravelTime - TotalCost;
+
+			if(m_gap < 0)
+				m_gap = 0.0;	
+
+			if(NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
+				m_gap = 0.0;	
+
+			
+			pVeh->m_gap_update = true;
+			pVeh->m_gap = m_gap;
+
+			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedGeneralizedTravelTime);
+			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
+
+			
 					
 				pVeh->m_Distance  = Distance;
 				pVeh->m_NodeNumberSum = NodeNumberSum;
@@ -537,6 +552,43 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 			}
 
 		}  // switch
+		else
+		{ 
+		//	if (g_CalculateUEGapForAllAgents ==1 || )
+			{
+				NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+				int NodeNumberSum =0;
+
+				for(int i = 0; i< NodeSize-1; i++)
+				{
+					NodeNumberSum += PathLinkList[i];
+
+				}
+
+			float m_gap = ExperiencedGeneralizedTravelTime - TotalCost;
+
+			if(m_gap < 0)
+				m_gap = 0.0;	
+
+			if(NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
+				m_gap = 0.0;	
+
+			
+			pVeh->m_gap_update = true;
+			pVeh->m_gap = m_gap;
+
+			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedGeneralizedTravelTime);
+			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
+
+
+
+			
+			}
+
+
+		}
 
 	} // for each vehicle on this OD pair
 

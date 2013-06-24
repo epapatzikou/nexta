@@ -1781,30 +1781,8 @@ public:
 	}
 
 
-	int FindNonCentroidNodeNumberWithCoordinate(double x, double y)
-	{
-		
-		DTANode* pNode= NULL;
+	int FindNonCentroidNodeNumberWithCoordinate(double x, double y, int this_node_name);
 
-		double min_distance = 999999;
-		int NodeID = -1;
-		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-		{
-			if((*iNode)->m_bCreatedbyNEXTA == true)
-			{
-			double distance = sqrt( ((*iNode)->pt.x - x)*((*iNode)->pt.x - x) + ((*iNode)->pt.y - y)*((*iNode)->pt.y - y));
-			if( distance <  min_distance)
-			{
-				min_distance= distance;
-				pNode = (*iNode);
-			}
-			}
-		}
-		if(pNode != NULL)
-			return pNode->m_NodeNumber;
-		else
-			return NULL;
-	}
 
 	DTALink* FindFreewayLinkWithFromNodeNumber(int FromNodeNumber)
 	{

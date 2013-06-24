@@ -89,6 +89,7 @@ BOOL CDlgLinkList::OnInitDialog()
 	m_ComboBox.AddString ("Selected Links");
 	m_ComboBox.AddString ("Within Subarea");
 	m_ComboBox.AddString ("Freeway");
+	m_ComboBox.AddString ("Highway");
 	m_ComboBox.AddString ("Arterial");
 	m_ComboBox.AddString ("Ramp");
 	m_ComboBox.AddString ("Connectors");
