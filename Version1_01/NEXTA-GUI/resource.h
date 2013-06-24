@@ -247,6 +247,7 @@
 #define IDC_TRAIN_LIST_CONTROL          1013
 #define IDC_LIST_NETEWORK_FILE          1014
 #define IDC_LIST_NETEWORK_FILE2         1015
+#define IDC_LIST_SENSOR_FILE            1015
 #define IDC_LIST_OUTPUTDTA              1016
 #define IDC_COMBO1                      1018
 #define ID_CANCEL                       1019

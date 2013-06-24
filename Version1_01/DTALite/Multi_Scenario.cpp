@@ -43,6 +43,8 @@ void g_MultiScenarioTrafficAssignment()
 	if(g_InitializeLogFiles()==0) 
 		return;
 
+	g_ReadRealTimeSimulationSettingsFile();
+
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel("DTALite:\nA Fast Open Source DTA Engine\n");
 	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,");
@@ -573,5 +575,7 @@ void g_DTALiteMultiScenarioMain()
 {
 
 	g_MultiScenarioTrafficAssignment();
+
+
 
 }

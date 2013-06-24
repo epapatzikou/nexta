@@ -39,6 +39,9 @@
 #include <stdlib.h>  
 #include <math.h>    
 
+#include <iostream>
+#include <conio.h>
+#include <windows.h>
 
 using namespace std;
 
@@ -255,6 +258,12 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 				AbsArrivalTimeOnDSNVector[i]= pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN ;
 			}
 		}
+
+
+		// use agent-specific information look up window to update the prevailing travel time conditions 
+		// step 1: update m_prevailing_travel_time for each link
+		// step 2: call function BuildPhysicalNetwork again to use m_prevailing_travel_time to overwrite link travel time data
+		// step 3: use link travel time data in agent-based routing 
 
 		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
@@ -527,5 +536,220 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 
 }
 
+void g_ReadRealTimeSimulationSettingsFile()
+{
+	CCSVParser parser_RTSimulation_settings;
+	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv",false))
+	{
+
+		int record_count = 0;
+
+	cout << "File input_real_time_simulation_settings.csv is opened."<< endl;
+	g_LogFile << "File input_real_time_simulation_settings.csv is opened."<< endl;
+
+		while(parser_RTSimulation_settings.ReadRecord())
+		{
+
+		int timestamp_in_min = -1;
+		std::string  break_point_flag;
+		int output_TD_start_time_in_min = 0;
+
+		int output_MOE_aggregation_time_interval_in_min = 1;
+		int update_attribute_aggregation_time_interval_in_min = 1;
+		
 
 
+		std::string output_TD_link_travel_time_file, output_TD_link_MOE_file,
+			output_agent_file,update_TD_link_attribute_file,
+			update_agent_file;
+
+		parser_RTSimulation_settings.GetValueByFieldName("timestamp_in_min",timestamp_in_min);
+		parser_RTSimulation_settings.GetValueByFieldName("break_point_flag",break_point_flag);
+		parser_RTSimulation_settings.GetValueByFieldName("output_TD_link_travel_time_file",output_TD_link_travel_time_file);
+		parser_RTSimulation_settings.GetValueByFieldName("output_TD_link_MOE_file",output_TD_link_MOE_file);
+		parser_RTSimulation_settings.GetValueByFieldName("output_TD_start_time_in_min",output_TD_start_time_in_min);
+		parser_RTSimulation_settings.GetValueByFieldName("output_MOE_aggregation_time_interval_in_min",output_MOE_aggregation_time_interval_in_min);
+		parser_RTSimulation_settings.GetValueByFieldName("update_attribute_time_interval_in_min",update_attribute_aggregation_time_interval_in_min);
+	
+
+		parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",output_agent_file);
+		parser_RTSimulation_settings.GetValueByFieldName("update_TD_link_attribute_file",update_TD_link_attribute_file);
+		parser_RTSimulation_settings.GetValueByFieldName("update_agent_file",output_agent_file);
+
+			if(timestamp_in_min>=0)
+			{
+				if(break_point_flag.find ("break") != string::npos)
+				{
+
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].break_point_flag  =true;
+
+					if(break_point_flag.find ("break_and_wait") != string::npos)
+					{
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].break_and_wait_flag   =true;
+					
+					}
+
+
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file = output_TD_link_travel_time_file;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_MOE_file = output_TD_link_MOE_file;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_start_time_in_min = output_TD_start_time_in_min;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_aggregation_time_in_min = output_MOE_aggregation_time_interval_in_min;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file = output_agent_file;
+
+
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_attribute_aggregation_time_interval_in_min = update_attribute_aggregation_time_interval_in_min;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file  = update_TD_link_attribute_file;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file = update_agent_file;
+
+					record_count ++;
+				}
+
+			}
+
+		}
+
+	cout << "File input_real_time_simulation_settings.csv has "<< record_count  << " breakpoint records." << endl;
+	g_LogFile << "File input_real_time_simulation_settings.csv has "<<  record_count << " breakpoint records." << endl;
+
+	}
+}
+
+void g_ExchangeRealTimeSimulationData(int timestamp_in_min)
+{
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file.size() >=1)
+	{
+		  OutputRealTimeLinkMOEData(
+			  g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file,
+			   g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_start_time_in_min ,
+			   timestamp_in_min,
+			    g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_aggregation_time_in_min,
+				true);
+	}
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_MOE_file.size() >=1)
+	{
+		  OutputRealTimeLinkMOEData(
+			  g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_MOE_file,
+			   g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_start_time_in_min ,
+			   timestamp_in_min,
+			    g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_aggregation_time_in_min,
+				false);
+	}
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file.size() >=1)
+	{
+		   // output agent file;
+	}
+
+		if(g_RealTimeSimulationSettingsMap[timestamp_in_min].break_and_wait_flag)
+		{
+		cout << "time clock =" << timestamp_in_min  << ", press any key to continue " << endl;
+		
+		getchar();
+
+		// press any key will continue
+
+		}
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file .size() >=1)
+	{
+		   // wait for update_TD_link_attribute_file;
+		cout << "time clock =" << timestamp_in_min  << ", wait for file " << g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file << endl;
+
+		while(1)
+		{
+
+			CCSVParser parser_link_TD_attribute;
+			if (parser_link_TD_attribute.OpenCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file,false))
+			{
+					// updating file exists.
+					parser_link_TD_attribute.CloseCSVFile ();
+
+				g_UpdateRealTimeLinkMOEData(
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file,
+					timestamp_in_min,
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_attribute_aggregation_time_interval_in_min );
+				
+
+				cout << "File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file << " has been read. Continue" << endl;
+
+				break;
+			}else
+			{
+			 Sleep(5000); // wait for 5 second
+		
+			 cout << "wait for 5 seconds... " << endl;
+			  
+			
+			}
+		
+
+		}
+		
+	}  // with input_TD_travel_time_file
+	
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file .size() >=1)
+	{
+		   // wait for input_agent_updating_file;
+
+
+
+	}
+}
+
+
+
+void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int update_MOE_aggregation_time_interval_in_min)
+{
+	CCSVParser parser_RTUpdateLinkMOE;
+	if (parser_RTUpdateLinkMOE.OpenCSVFile(fname,false))
+	{
+
+		int record_count = 0;
+
+	cout << "File input_real_time_simulation_settings.csv is opened."<< endl;
+	g_LogFile << "File input_real_time_simulation_settings.csv is opened."<< endl;
+
+		while(parser_RTUpdateLinkMOE.ReadRecord())
+		{
+			int from_node_id = 0 ;
+			int to_node_id = 0;
+			int timestamp_in_min = 0;
+
+			parser_RTUpdateLinkMOE.GetValueByFieldName("from_node_id",from_node_id);
+			parser_RTUpdateLinkMOE.GetValueByFieldName("to_node_id",to_node_id);
+			parser_RTUpdateLinkMOE.GetValueByFieldName("timestamp_in_min",timestamp_in_min);
+
+			float travel_time  = -1;
+
+			parser_RTUpdateLinkMOE.GetValueByFieldName("travel_time_in_min",travel_time);
+
+			if(g_LinkMap.find(GetLinkStringID(from_node_id,to_node_id))== g_LinkMap.end())
+			{
+				cout << "Link " << from_node_id << "-> " << to_node_id << " of file" << fname << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(from_node_id,to_node_id)];
+
+			if(pLink!=NULL)
+			{
+
+				int time = max(timestamp_in_min, current_time_in_min);
+				pLink->UpdateFutureLinkAttribute(time, update_MOE_aggregation_time_interval_in_min, travel_time);
+				cout << "Link " << from_node_id << "-> " << to_node_id << " has a updated travel time " << travel_time << " at time " << current_time_in_min << endl;
+				g_LogFile << "Link " << from_node_id << "-> " << to_node_id << " has a updated travel time " << travel_time << " at time " << current_time_in_min << endl;
+
+			}
+
+		}
+
+	}else
+	{
+		cout << "Error File " <<  fname << " cannot be opened. " << endl;
+		getchar();
+
+	}
+
+}

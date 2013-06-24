@@ -227,6 +227,17 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 			
 			}
 
+			// use predicted travel time from user definded data file
+			//
+
+			if(t < pLink->m_LinkMOEAry .size() &&  pLink->m_LinkMOEAry [t].PredictedTravelTime_in_min >=0.1)  // with valid data
+			{
+			
+			AvgTravelTime = pLink->m_LinkMOEAry [t].PredictedTravelTime_in_min;
+
+			}
+
+
 			if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
 				AvgTravelTime*=g_FreewayBiasFactor;
 

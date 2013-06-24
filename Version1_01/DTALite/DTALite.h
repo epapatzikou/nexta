@@ -542,6 +542,8 @@ class SLinkMOE  // time-dependent link MOE
 {
 public:
 
+	float PredictedTravelTime_in_min;
+
 	float Energy;
 	float CO2;
 	float NOX;
@@ -570,6 +572,7 @@ public:
 
 	SLinkMOE()
 	{
+		PredictedTravelTime_in_min = -1;
 		Energy = 0;
 		CO2 = 0;
 		NOX = 0;
@@ -593,8 +596,11 @@ public:
 
 	};
 
-	void SetupMOE()
+	void SetupMOE(float FreeflowTravelTime)
 	{
+
+		PredictedTravelTime_in_min = -1;  // no updated data
+
 		Energy = 0;
 		CO2 = 0;
 		NOX = 0;
@@ -1070,6 +1076,11 @@ public:
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector <SLinkMOE> m_LinkMOEAry;
 
+
+	
+	std::map<int,float> m_LinkRealTimeTDTravelTimeMap; // time_index, travel time
+
+
 	std::vector<DTALinkOutCapacity> m_OutCapacityVector;
 
 	float TotalEnergy;
@@ -1415,7 +1426,7 @@ public:
 
 		for(t=0; t<=m_SimulationHorizon; t++)
 		{
-			m_LinkMOEAry[t].SetupMOE();
+			m_LinkMOEAry[t].SetupMOE(m_FreeFlowTravelTime);
 		}
 		for(int hour = 0; hour <= 24; hour++)  // used for ODME
 			SimultedHourlySpeed[hour] = m_SpeedLimit;
@@ -1431,6 +1442,17 @@ public:
 
 	}
 
+	void UpdateFutureLinkAttribute(int start_time_in_min, int time_step_in_min, float travel_time = -1, float toll_value_in_dollar = -1, float lane_capacity = -1) 
+	{
+		for(int t = max(0,start_time_in_min); t<= min(start_time_in_min + time_step_in_min, m_SimulationHorizon); t++)
+		{
+			if(travel_time >=0.1)  // minimum simulation time  = 0.1 min
+			{
+			m_LinkMOEAry[t].PredictedTravelTime_in_min  = travel_time;
+			}
+		}
+	
+	}
 	void InitializeDayDependentCapacity()
 	{
 		for(int day = 0; day < MAX_DAY_SIZE; day ++)
@@ -1541,7 +1563,23 @@ public:
 
 	};
 
+	int GetDepartureFlow(int time, int aggregation_time_in_min)
+	{
+		int prev_departure_count = 0 ;
+		int prev_time =  time - aggregation_time_in_min;
+		if(prev_time >=0)
+			prev_departure_count = m_LinkMOEAry[prev_time].CumulativeDepartureCount;
+		else
+			prev_time = 0;
 
+			
+
+		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
+			return m_LinkMOEAry[time].CumulativeDepartureCount - m_LinkMOEAry[prev_time].CumulativeDepartureCount;
+		else
+			return 0;
+
+	};
 
 	float GetRadioMessageResponsePercentage(int DayNo,int CurrentTime)
 	{
@@ -3236,6 +3274,11 @@ void Assignment_MP(int id, int nthreads, int node_size, int link_size, int itera
 void g_OutputMOEData(int iteration);
 
 void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
+void OutputRealTimeLinkMOEData(std::string fname,int start_time_in_min,int current_time_in_min, int output_MOE_aggregation_time_interval_in_min, bool bTravelTimeOnly = true);
+
+void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int update_MOE_aggregation_time_interval_in_min);
+
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file);
 void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1);

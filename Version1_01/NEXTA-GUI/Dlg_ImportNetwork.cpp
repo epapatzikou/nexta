@@ -1106,7 +1106,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				if((*iNode)->m_Connections == 0)
 				{
 
-					int NodeNumber = m_pDoc->FindNonCentroidNodeNumberWithCoordinate((*iNode)->pt .x ,(*iNode)->pt .y );
+					int NodeNumber = m_pDoc->FindNonCentroidNodeNumberWithCoordinate((*iNode)->pt .x ,(*iNode)->pt .y , (*iNode)->m_NodeNumber);
 					
 					 m_pDoc->AddNewLinkWithNodeNumbers((*iNode)->m_NodeNumber , NodeNumber);
 					 m_pDoc->AddNewLinkWithNodeNumbers(NodeNumber,(*iNode)->m_NodeNumber);

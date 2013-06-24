@@ -54,7 +54,7 @@ public:
 		Phase2 = 0;
 		Phase3 = 0;
 		Phase4 = 0;
-		
+
 		PermPhase1 = 0;
 		PermPhase2 = 0;
 		PermPhase3 = 0;
@@ -146,22 +146,22 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 
 void CTLiteDoc::FieldNameNotExistMessage(CString FieldName, CString KeyName)
 {
- CString message;
- message.Format("Field %s does not exist for %s. Please check.",FieldName, KeyName);
- AfxMessageBox(message);
+	CString message;
+	message.Format("Field %s does not exist for %s. Please check.",FieldName, KeyName);
+	AfxMessageBox(message);
 }
 
 void CTLiteDoc::FieldNameNotExistMessage(std::string FieldName, std::string KeyName)
 {
- CString message;
- message.Format("Field %s does not exist for %s. Please check.",FieldName.c_str(), KeyName.c_str() );
- AfxMessageBox(message);
+	CString message;
+	message.Format("Field %s does not exist for %s. Please check.",FieldName.c_str(), KeyName.c_str() );
+	AfxMessageBox(message);
 }
 
 BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 {
 	CWaitCursor wait;
-	#ifndef _WIN64
+#ifndef _WIN64
 
 	CString warning_message;
 
@@ -169,7 +169,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	std::string length_unit,decimal_degrees,with_reverse_direction_field, offset_link, oneway_vs_twoway, lane_vs_link, r_number_of_lanes_field, link_type_field;
 
-	
+
 	CCSVParser parser;
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","length_unit","value",length_unit);
 
@@ -178,7 +178,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_field);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","number_of_lanes_oneway_vs_twoway","value",oneway_vs_twoway);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","lane_capacity_vs_link_capacity","value",lane_vs_link);
-	
+
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_field);
 
 
@@ -198,6 +198,42 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_lane_capacity_from_link_type","value",use_default_lane_capacity_from_link_type);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_number_of_lanes_from_link_type","value",use_default_number_of_lanes_from_link_type);
 
+
+	std::string default_link_direction, identify_from_node_id_and_to_node_id_based_on_geometry,
+		create_connectors_for_isolated_centroids,
+		multiplier_for_obtaining_hourly_capacity;
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_link_direction","value",default_link_direction);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","identify_from_node_id_and_to_node_id_based_on_geometry","value",identify_from_node_id_and_to_node_id_based_on_geometry);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","create_connectors_for_isolated_centroids","value",create_connectors_for_isolated_centroids);
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","multiplier_for_obtaining_hourly_capacity","value",multiplier_for_obtaining_hourly_capacity);
+
+	if(identify_from_node_id_and_to_node_id_based_on_geometry == "yes")
+	{
+		m_StartNodeNumberForNewNodes = 10000; // in order to avoid duplication with centroids or other nodes
+	}
+
+	if(create_connectors_for_isolated_centroids == "yes")
+	{
+		// we add link type 99 anyway
+			int default_link_type = 99;
+
+			if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
+			{
+
+				m_LinkTypeMap[default_link_type].link_type = 99;
+				m_LinkTypeMap[default_link_type].type_code = 'c';
+				m_LinkTypeMap[default_link_type].default_lane_capacity = 4000;
+
+			}	
+	}
+
+	double multiplier_for_obtaining_hourly_capacity_value  = 1.0;
+
+	if(multiplier_for_obtaining_hourly_capacity.length () > 0)
+	{
+		multiplier_for_obtaining_hourly_capacity_value = atof(multiplier_for_obtaining_hourly_capacity.c_str ());
+	}
+
 	std::string identify_signal_intersection;
 	bool b_identify_signal_intersection = false;
 
@@ -212,17 +248,17 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int default_saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_saturation_flow_rate_in_vhc_per_hour_per_lane","value",default_saturation_flow_rate_in_vhc_per_hour_per_lane);
-	
+
 
 	if(default_saturation_flow_rate_in_vhc_per_hour_per_lane < 1700)
 		default_saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
 	if(b_identify_signal_intersection)
 	{
-	parser.GetValueBySectionKeyFieldName(file_name,"configuration","minimum_speed_limit_for_signals","value",minimum_speed_limit_for_signals);
-	parser.GetValueBySectionKeyFieldName(file_name,"configuration","maximum_speed_limit_for_signals","value",maximum_speed_limit_for_signals);
-	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_cycle_length_in_second","value",default_cycle_length_in_second);
-	
+		parser.GetValueBySectionKeyFieldName(file_name,"configuration","minimum_speed_limit_for_signals","value",minimum_speed_limit_for_signals);
+		parser.GetValueBySectionKeyFieldName(file_name,"configuration","maximum_speed_limit_for_signals","value",maximum_speed_limit_for_signals);
+		parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_cycle_length_in_second","value",default_cycle_length_in_second);
+
 	}
 
 	float minimum_length_for_importing_links = 0.00001;
@@ -258,10 +294,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(length_unit=="mile")
 		bMileFlag = true;
 
-   
+
 	int direction_field_flag = 0;
 	int reverse_direction_field_flag  = 0;
-	
+
 	if(r_number_of_lanes_field.size()>0)
 		reverse_direction_field_flag = 1;
 
@@ -304,8 +340,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	if(node_table_file_name.length ()==0)
 	{
-		AfxMessageBox("Section: file_name and key: node has no input value. Please check.");
-		return false;
+
+		AfxMessageBox("The node file name is not provided.\nThe node data will be automatically generated based on the geometry data of the link layer.",MB_ICONINFORMATION);
+
+		identify_from_node_id_and_to_node_id_based_on_geometry = "yes";
+
 	}
 
 	string node_name;
@@ -326,23 +365,28 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	CString message_str;
 	OGRRegisterAll();
 
+
 	OGRDataSource       *poDS;
+	int poLayers = 0;
+
 
 	CString node_shape_file_name;
 	node_shape_file_name = m_ProjectDirectory + node_table_file_name.c_str ();
 
-	poDS = OGRSFDriverRegistrar::Open(node_shape_file_name, FALSE );
-	if( poDS == NULL )
-	{
 
+	poDS = OGRSFDriverRegistrar::Open(node_shape_file_name, FALSE );
+	if( poDS == NULL && node_table_file_name.length () > 0)
+	{
 		CString msg;
 		msg.Format("Open node shape file %s failed.",node_shape_file_name);
 		AfxMessageBox(msg);
 		return false;
 	}
 
+	if(poDS !=NULL)
+		{
 	int node_zone_mapping_count = 0;
-	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
+	poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
 	for (int j=0; j < poLayers; j++) 
 	{
 
@@ -386,7 +430,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					FieldNameNotExistMessage(node_node_id, "section node: key node_id");
 					break;
 				}
-			
+
 				if(node_control_type.size()>0 && poFeature->GetFieldIndex(node_control_type.c_str ())==-1)
 				{
 					FieldNameNotExistMessage(node_control_type, "section node: key control_type");
@@ -404,7 +448,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					FieldNameNotExistMessage(node_name,"section node; key name");
 					break;
 				}	
-			
+
 				bTestFieldName = true;
 			}
 			// node id
@@ -459,7 +503,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			if(id <= node_number_threshold_as_centroid && TAZ ==0)  // no TAZ value
 			{
-			TAZ = id;   // set node id as the default TAZ
+				TAZ = id;   // set node id as the default TAZ
 			}
 
 			if(TAZ>=1)
@@ -503,188 +547,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 	OGRDataSource::DestroyDataSource( poDS );
+	}
+
 
 	// 1.2 optional zone_centroid_conversion
-
-	if(use_optional_centroid_layer)
-	{
-		bool bTestFieldName = false;
-
-	m_AMSLogFile << "read optional centroid layer from file " << centroid_file_name << endl; 
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value",node_name);
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","node_id","value",node_node_id);
-	parser.GetValueBySectionKeyFieldName(file_name,"centroid","TAZ","value",node_TAZ_name);
-
-	//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
-
-	CString message_str;
-
-	OGRDataSource       *poDS;
-
-	CString centroid_shape_file_name;
-	centroid_shape_file_name = m_ProjectDirectory + centroid_file_name.c_str ();
-
-	poDS = OGRSFDriverRegistrar::Open(centroid_shape_file_name, FALSE );
-	if( poDS == NULL )
-	{
-		CString msg;
-		msg.Format("Open zone centroid shape file %s failed.",centroid_shape_file_name);
-		AfxMessageBox(msg);
-
-		return false;
-	}
-
-	int node_zone_mapping_count = 0;
-	int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
-	for (int j=0; j < poLayers; j++) 
-	{
-
-		OGRLayer  *poLayer;
-
-		poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
-
-		if(poLayer == NULL)
-		{
-			message_str.Format("Open layer %d failed", j+1);
-			AfxMessageBox(message_str);
-
-			return false;			
-		}
-
-		OGRFeature *poFeature;
-
-		int feature_count = 0;
-
-		poLayer->ResetReading();
-
-
-		int i = 0;
-
-		m_AMSLogFile << "1: zone centroid block---" << endl;
-		m_AMSLogFile << "node id,TAZ,name,x,y" << endl;
-
-		bool bTestFieldName = false;
-		while( (poFeature = poLayer->GetNextFeature()) != NULL )
-		{
-			OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-			double x = 0;
-			double y = 0;
-
-			if(bTestFieldName==false) 
-			{
-				if(node_node_id.size()>0  && poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(node_node_id, "section centroid: key node_id");
-					break;
-				}
-			
-
-				if(node_TAZ_name.size()>0 && poFeature->GetFieldIndex(node_TAZ_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(node_TAZ_name, "section centroid: key TAZ");
-					break;
-				}				
-
-				if(node_name.size()>0 && poFeature->GetFieldIndex(node_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(node_name, "section centroid: key name");
-					break;
-				}	
-			
-				bTestFieldName = true;
-			}
-
-			// node id
-			int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
-
-			int TAZ =  0;
-			int value = poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
-
-			if(TAZ == 0 || value <= 0 || value > 100000)  // if TAZ value is zero, then use node id as TAZ
-				TAZ = id; 
-
-
-			CString str_name = poFeature->GetFieldAsString(node_name.c_str ());
-
-			m_AMSLogFile << id << "," << "," << TAZ << "," <<  str_name << ",";
-
-			OGRGeometry *poGeometry;
-
-			poGeometry = poFeature->GetGeometryRef();
-			if( poGeometry != NULL )
-			{
-				if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
-				{
-					OGRPoint *poPoint = (OGRPoint *) poGeometry;
-
-					x =   poPoint->getX()*long_lat_unit;
-					y  = poPoint->getY()*long_lat_unit;
-					m_AMSLogFile << x << "," << y << ",";
-
-				}
-
-			}
-
-
-
-			DTANode* pNode = new DTANode;
-			pNode->pt.x = x;
-			pNode->pt.y = y;
-
-			pNode->m_Name  = str_name;
-			pNode->m_NodeNumber = id;
-			pNode->m_NodeID = i;
-			pNode->m_ZoneID = TAZ;
-			pNode->m_ControlType = m_ControlType_NoControl;
-
-
-			if(TAZ>=1)
-			{
-				pNode->m_bZoneActivityLocationFlag = true;
-				m_ZoneMap [TAZ].m_ZoneID = TAZ;
-
-				DTAActivityLocation element;
-				element.ZoneID  = TAZ;
-				element.NodeNumber = id;
-				m_ZoneMap [TAZ].m_ActivityLocationVector .push_back (element );
-
-				if(m_ODSize < TAZ)
-					m_ODSize = TAZ;
-
-				node_zone_mapping_count ++;
-
-			}
-
-
-			if(m_NodeNumbertoIDMap.find(id) == m_NodeNumbertoIDMap.end())  // no duplicated nodes
-			{
-			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNumberMap[i] = id;
-
-			if(id == 54170)
-			{
-				TRACE("");
-			}
-
-			m_NodeNumbertoIDMap[id] = i;
-			i++;
-			}
-
-			m_AMSLogFile  << endl;
-		}
-
-		m_AMSLogFile << "imported " << i << " nodes. " << endl; 
-		m_AMSLogFile << "imported " << m_ZoneMap.size() << " zones from the node layer. " << endl; 
-		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),centroid_shape_file_name);
-		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",node_zone_mapping_count,centroid_shape_file_name);
-
-		// to do: # of nodes: control: two-way stop signs....
-	}
-
-	OGRDataSource::DestroyDataSource( poDS );
-
-	}
 
 
 	// ************************************/
@@ -698,28 +564,32 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	float default_distance_sum=0;
 	float length_sum = 0;
 
-		m_OffsetInFeet = 2;
-		string link_table_file_name;
-		string connector_table_file_name;
-		string from_node_id_name;
-		string to_node_id_name;
-		string to_link_id_name;
-		string link_id_name;
+	m_OffsetInFeet = 2;
+	string link_table_file_name;
+	string connector_table_file_name;
+	string from_node_id_name;
+	string to_node_id_name;
 
 
-		std::map<long, int> LinkID_FromNodeNumber_Map;
-		std::map<long, int> LinkID_ToNodeNumber_Map;
+	int from_node_id_to_node_id_eq_0_error = 0;
+	string to_link_id_name;
+	string link_id_name;
 
-		string link_name;
-		string link_type_name;
-		string mode_code_name;
-		string direction_name;
-		string length_name;
-		string number_of_lanes_name;
-		string capacity_in_vhc_per_hour_name;
-		string speed_limit_in_mph_name;
 
-		parser.GetValueBySectionKeyFieldName(file_name,"file_name","link","value",link_table_file_name);
+	std::map<long, int> LinkID_FromNodeNumber_Map;
+	std::map<long, int> LinkID_ToNodeNumber_Map;
+
+	string link_name;
+	string link_type_name;
+	string TMC_name;
+	string mode_code_name;
+	string direction_name;
+	string length_name;
+	string number_of_lanes_name;
+	string capacity_in_vhc_per_hour_name;
+	string speed_limit_in_mph_name;
+
+	parser.GetValueBySectionKeyFieldName(file_name,"file_name","link","value",link_table_file_name);
 
 	if(link_table_file_name.length ()==0)
 	{
@@ -727,34 +597,32 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		return false;
 	}
 
-		parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value",from_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value",to_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value",link_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","name","value",link_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value",mode_code_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value",direction_name);
-
-		parser.GetValueBySectionKeyFieldName(file_name,"link","length","value",length_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value",number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value",capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","speed_limit","value",speed_limit_in_mph_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","from_node_id","value",from_node_id_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","to_node_id","value",to_node_id_name);
 
 
-		string r_number_of_lanes_name;
-		string r_lane_capacity_in_vhc_per_hour_name;
-		string r_speed_limit_in_mph_name;
-		string r_link_type_name;
-		if(reverse_direction_field_flag)
+	if(from_node_id_name.length ()==0 || to_node_id_name.length () ==0)
+	{
+		if(identify_from_node_id_and_to_node_id_based_on_geometry != "yes")
 		{
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value",r_lane_capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value",r_speed_limit_in_mph_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value",r_link_type_name);
+			AfxMessageBox("Section: link, key  from_node_id_name or to_node_id_name has no input value. Please check.\nYou can also set identify_from_node_id_and_to_node_id_based_on_geometry = yes to automatically identify from_node_id and to_node_id based on link geometry data.");
+			return false;			
 		}
 
+	}
 
 
+	// Read record to obtain the overall max and min x and y;
+
+	double min_x = 0;
+	double max_x = 0;
+	double min_y = 0;
+	double max_y = 0;
+
+	bool b_RectangleInitialized = false;
+
+	// the following step initialize the coordinate region of network. 
+	{
 		CString link_shape_file_name;
 		link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
 
@@ -762,11 +630,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		if( poDS == NULL )
 		{
 
-		CString msg;
-		msg.Format("Open link shape file %s failed.",link_shape_file_name);
-		AfxMessageBox(msg);
+			CString msg;
+			msg.Format("Open link shape file %s failed.",link_shape_file_name);
+			AfxMessageBox(msg);
 
-		return false;
+			return false;
 		}
 
 		poLayers = ((OGRDataSource*)poDS)->GetLayerCount();
@@ -790,25 +658,160 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			poLayer->ResetReading();
 			int line_no = 1;
 
-
-
-			m_AMSLogFile << endl << endl << "2: link block---" << endl;
-			m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity,";
-
-			if(reverse_direction_field_flag)
-			{
-				m_AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
-			}
-			else
-			{
-				m_AMSLogFile << " " << endl;
-			}
-			
-			bool bTestFieldName = false;
-
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+				//***************************************//
+				// first, we read geometry information
+
+				OGRGeometry *poGeometry;
+				std::vector<CCoordinate> CoordinateVector;
+
+				poGeometry = poFeature->GetGeometryRef();
+				if( poGeometry != NULL )
+				{
+					if(wkbFlatten(poGeometry->getGeometryType()) == wkbLineString )
+					{
+						OGRLineString *poLine = (OGRLineString *) poGeometry;
+
+						int step = 1;
+
+						int Number_of_Shape_Points = poLine->getNumPoints();
+
+						m_AMSLogFile << "[" << 	Number_of_Shape_Points << "]" ;
+						m_AMSLogFile << "{" ;
+
+						if(Number_of_Shape_Points>= 20)  //
+							step = (int)(Number_of_Shape_Points)/10;  // avoid samping from the last point
+
+						int si;
+						int si_with_data = 0;
+						for( si = 0; si< Number_of_Shape_Points; si+=step)
+						{
+
+							CCoordinate pt;
+							pt.X   =  poLine->getX(si)*long_lat_unit;
+							pt.Y =  poLine->getY(si)*long_lat_unit;
+							CoordinateVector.push_back(pt);
+							si_with_data = si;
+
+						}
+
+						if(b_RectangleInitialized==false && CoordinateVector.size()>=1)
+						{
+
+							min_x = max_x = CoordinateVector[0].X;
+							min_y = max_y = CoordinateVector[0].Y;
+							b_RectangleInitialized = true;
+
+						}else
+						{
+
+							min_x= min(min_x,CoordinateVector[0].X);
+							min_x= min(min_x,CoordinateVector[CoordinateVector.size()-1].X);
+
+							min_y= min(min_y,CoordinateVector[0].Y);
+							min_y= min(min_y,CoordinateVector[CoordinateVector.size()-1].Y);
+
+							max_x= max(max_x,CoordinateVector[0].X);
+							max_x= max(max_x,CoordinateVector[CoordinateVector.size()-1].X);
+
+							max_y= max(max_y,CoordinateVector[0].Y);
+							max_y= max(max_y,CoordinateVector[CoordinateVector.size()-1].Y);
+
+						}
+					} // for line string
+
+				} //for poGeometry pointer !=NULL
+
+			} // for each record
+		} // for each layer
+
+	}  // end of block for  reading geometry information
+
+
+	parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value",link_id_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","name","value",link_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","TMC","value",TMC_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value",mode_code_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value",direction_name);
+
+	parser.GetValueBySectionKeyFieldName(file_name,"link","length","value",length_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value",number_of_lanes_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","speed_limit","value",speed_limit_in_mph_name);
+
+
+	string r_number_of_lanes_name;
+	string r_lane_capacity_in_vhc_per_hour_name;
+	string r_speed_limit_in_mph_name;
+	string r_link_type_name;
+	if(reverse_direction_field_flag)
+	{
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value",r_lane_capacity_in_vhc_per_hour_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value",r_speed_limit_in_mph_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value",r_link_type_name);
+	}
+
+
+
+	CString link_shape_file_name;
+	link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
+
+	poDS = OGRSFDriverRegistrar::Open(link_shape_file_name, FALSE );
+	if( poDS == NULL )
+	{
+
+		CString msg;
+		msg.Format("Open link shape file %s failed.",link_shape_file_name);
+		AfxMessageBox(msg);
+
+		return false;
+	}
+
+	poLayers = ((OGRDataSource*)poDS)->GetLayerCount();
+
+
+	for (int j=0; j < poLayers; j++) 
+	{
+
+		OGRLayer  *poLayer;
+
+		poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
+
+		if(poLayer == NULL)
+		{
+			AfxMessageBox("Open link layer failed");
+			return false;			
+		}
+
+		OGRFeature *poFeature;
+		int feature_count = 0;
+		poLayer->ResetReading();
+		int line_no = 1;
+
+
+
+		m_AMSLogFile << endl << endl << "2: link block---" << endl;
+		m_AMSLogFile << "from_node_id,to_name_id,link_id,name,type,direction,length,number_of_lanes,speed_limit,capacity,";
+
+		if(reverse_direction_field_flag)
+		{
+			m_AMSLogFile << "r_number_of_lanes,r_speed_limit,r_capacity," << endl;
+		}
+		else
+		{
+			m_AMSLogFile << " " << endl;
+		}
+
+		bool bTestFieldName = false;
+
+		while( (poFeature = poLayer->GetNextFeature()) != NULL )
+		{
+			OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 
 			if(bTestFieldName==false) 
 			{
@@ -817,7 +820,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					FieldNameNotExistMessage(from_node_id_name, "section link; key from_node_id");
 					break;
 				}
-			
+
 
 				if(to_node_id_name.size()>0 && poFeature->GetFieldIndex(to_node_id_name.c_str ())==-1)
 				{
@@ -896,269 +899,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				bTestFieldName = true;
 			}
 
-			//--------------------------------------//
-				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
-				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
+			//***************************************//
+			// first, we read geometry information
 
-				if(from_node_id ==  53718 && to_node_id ==  53810)
-					TRACE("");
+			OGRGeometry *poGeometry;
+			std::vector<CCoordinate> CoordinateVector;
 
-				int link_code_start = 1;
-				int link_code_end = 1;
-
-
-				if(from_node_id == 613)
-					TRACE("");
-
-				long link_id =  poFeature->GetFieldAsInteger(link_id_name.c_str ());
-
-				LinkID_FromNodeNumber_Map[link_id] = from_node_id;
-				LinkID_ToNodeNumber_Map[link_id] = to_node_id;
-
-				CString name =  poFeature->GetFieldAsString(link_name.c_str ());
-				int type = 0;
-//				if(link_type_name.size() >=1)
-					type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
-
-				CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
-
-				float speed_limit_in_mph = poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
-
-				if(b_use_default_speed_limit_from_link_type)
-				{
-						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
-						{
-                          speed_limit_in_mph = m_LinkTypeMap[type ].default_speed;
-						}
-				}
-
-
-				int direction = 1;
-				if(direction_name.size()>0) 
-					direction = poFeature->GetFieldAsInteger(direction_name.c_str ());
-				else
-				{
-						// no direction field, we try to guess the link types
-						if(reverse_direction_field_flag==1)
-						{
-	
-						int type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
-						int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
-
-						if(type >=1 && r_link_type>=1)
-							direction = 2;
-
-						if(type ==0 && r_link_type>=1)
-							direction = -1;  // reverse
-
-						if(type >=1 && r_link_type==0)
-							direction = 1;  //forward
-
-						}
-				
-				}
-
-
-
-
-				int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name.c_str ());
-
-
-				if(b_use_default_number_of_lanes_from_link_type)
-				{
-						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
-						{
-                          number_of_lanes = m_LinkTypeMap[type ].default_number_of_lanes;
-						}
-				}
-
-
-				if(direction_field_flag == 1 && ( (direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
-				{
-					number_of_lanes = number_of_lanes/2;
-				}
-
-
-
-				if(type== 0 )  // no type information available
-				{
-
-					if(link_type_field.size()>0)// if link type information is required, skip this link
-					{
-							CString str;
-							str.Format("link type (%s) for %d ->%d in the link shape file does not have valid values (which should be >=1).\n",link_type_name.c_str (), from_node_id, to_node_id);
-
-								if(warning_message.GetLength ()<1000)  // to avoid too many error messages
-							{
-								warning_message+= str;
-
-							}
-
-							m_AMSLogFile << str;
-
-						if(reverse_direction_field_flag)  // with reserved direction field
-						{
-							int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
-
-							// if there is a reverse link, skip the following step only if r_link_type = 0
-							if(r_link_type ==0)
-								continue;
-							else
-							{
-								// continue to the following steps for reverse link
-								link_code_start = 2; link_code_end = 2;
-
-							
-							}
-						}else // no reserve direction; skip the following steps
-							continue;
-
-					
-					}
-					else
-					{// check speed limit to determine type
-
-					if(speed_limit_in_mph>=55)
-						type = 1; // default freeway
-					else
-						type = 4; // default arterial street
-
-					if(number_of_lanes>=7)
-						type = 10; // default connectors;
-
-					int node_id  =0 ;
-					
-					if(m_NodeNumbertoIDMap.find (from_node_id) != m_NodeNumbertoIDMap.end())
-					{
-						node_id =  m_NodeNumbertoIDMap[from_node_id];
-						DTANode* pFromNode = m_NodeIDMap[node_id];
-						if(pFromNode->m_ZoneID >=1)
-						{
-						  // from node is a zone centroid, then the link is a connector
-							type = 10;
-
-						}
-
-
-					}
-					}
-				
-				}
-
-
-				float capacity_in_pcphpl= poFeature->GetFieldAsDouble(capacity_in_vhc_per_hour_name.c_str ());
-
-
-				capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes);
-
-				if(b_use_default_lane_capacity_from_link_type)
-				{
-						if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
-						{
-                          capacity_in_pcphpl = m_LinkTypeMap[type ].default_lane_capacity;
-						}
-				}
-
-
-				// if link_capacity_flag == 0, we give a default value
-				int r_number_of_lanes =0; 
-				int r_link_type = 0; 
-				float r_speed_limit_in_mph = 0; 
-				float r_capacity_in_pcphpl=0; 
-
-				if(reverse_direction_field_flag)  // with reserved direction field
-				{
-					r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name.c_str());
-					if(direction_field_flag == 1 && ((direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
-					{
-						number_of_lanes = r_number_of_lanes/2;
-					}
-
-					r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name.c_str ());
-					r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name.c_str ());
-					r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,r_number_of_lanes);
-					r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
-
-						if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 
-						{
-						  r_link_type = type; //reset r_link_type by type
-						}
-
-					
-
-				}else
-				{  // no reserved link fields
-					r_number_of_lanes = number_of_lanes;
-					r_speed_limit_in_mph = speed_limit_in_mph;
-					r_capacity_in_pcphpl= capacity_in_pcphpl;
-					r_link_type = 0;
-
-						if(m_LinkTypeMap[type ].IsConnector ()) // forward link is connector, r_link_type is not defined 
-						{
-						  r_link_type = type; //reset r_link_type by type
-						}
-
-
-
-				}
-
-				// To Do Error checking, Numbera of lanes... 
-
-				if(reverse_direction_field_flag)
-				{
-					m_AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
-
-				}
-
-
-				float grade = 0;
-				float AADT_conversion_factor = 0.1;
-				float k_jam, wave_speed_in_mph;
-				if(m_LinkTypeMap[type].IsFreeway ())  // freeway link
-				{
-					k_jam = 220;
-				}else
-				{
-					k_jam = 190;
-				}
-
-				wave_speed_in_mph = 12;
-
-
-				int m_SimulationHorizon = 1;
-
-				if (direction == -1) // reversed
-				{
-					link_code_start = 2; link_code_end = 2;
-				}
-
-
-				if (((direction == 0&&b_direction_0_as_twoway_flag) || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
-				{
-					link_code_start = 1; link_code_end = 2;
-					bTwoWayLinkFlag = true;
-				}
-
-				OGRGeometry *poGeometry;
-				std::vector<CCoordinate> CoordinateVector;
-
-				bool bSkipShapePoints = false;
-				if(bSkipShapePoints)
-				{
-				// no geometry information
-				CCoordinate cc_from, cc_to; 
-				cc_from.X = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->pt.x;
-				cc_from.Y = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->pt.y;
-
-				cc_to.X = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->pt.x;
-				cc_to.Y = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->pt.y;
-
-				CoordinateVector.push_back(cc_from);
-				CoordinateVector.push_back(cc_to);
- 
-				}else
-				{
-
+		
 
 				poGeometry = poFeature->GetGeometryRef();
 				if( poGeometry != NULL )
@@ -1168,14 +915,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					int step = 1;
 
-						int Number_of_Shape_Points = poLine->getNumPoints();
+					int Number_of_Shape_Points = poLine->getNumPoints();
 
-						m_AMSLogFile << "[" << 	Number_of_Shape_Points << "]" ;
-						m_AMSLogFile << "{" ;
+					m_AMSLogFile << "[" << 	Number_of_Shape_Points << "]" ;
+					m_AMSLogFile << "{" ;
 
 					if(Number_of_Shape_Points>= 20)  //
 						step = (int)(Number_of_Shape_Points)/10;  // avoid samping from the last point
-					
+
 					int si;
 					int si_with_data = 0;
 					for( si = 0; si< Number_of_Shape_Points; si+=step)
@@ -1191,7 +938,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					}
 
-						m_AMSLogFile << "%" << 	si << "%" ;
+					m_AMSLogFile << "%" << 	si << "%" ;
 
 					if(si_with_data!= Number_of_Shape_Points-1)  // not include the last point
 					{
@@ -1200,289 +947,601 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 						pt.Y =  poLine->getY(Number_of_Shape_Points-1)*long_lat_unit;
 						CoordinateVector.push_back(pt);
 						m_AMSLogFile << pt.X << ";" << pt.Y << " ";
-					
+
 					}
 
 					m_AMSLogFile << "}" ;
 
 				}
-				}
+
+			}
+			//--------------------------------------//
+			int from_node_id = 0;
+			int to_node_id = 0; 
+
+			double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))/100000.0;
+
+			if(identify_from_node_id_and_to_node_id_based_on_geometry == "yes" )
+			{  
+
+				if(CoordinateVector.size() >=2)
+				{
+
+				// need to identify from and to nodes;
+
+				from_node_id =FindNodeNumberWithCoordinate(CoordinateVector[0].X,CoordinateVector[0].Y,min_distance_threadshold_for_overlapping_nodes);
+				// from node
+				if(from_node_id == 0)
+				{
+					GDPoint	pt;
+					pt.x = CoordinateVector[0].X;
+					pt.y = CoordinateVector[0].Y;
+
+					bool ActivityLocationFlag = false;
+					DTANode* pNode =AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
+					from_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
+					pNode->m_bCreatedbyNEXTA = true;
 
 				}
 
-				float length = 0;
-				
-				if(length_name.size() > 0)
-					length = poFeature->GetFieldAsDouble(length_name.c_str ());
+				// to node
+				to_node_id =  FindNodeNumberWithCoordinate(CoordinateVector[CoordinateVector.size()-1].X,CoordinateVector[CoordinateVector.size()-1].Y,min_distance_threadshold_for_overlapping_nodes);
+				// to node
+				if(to_node_id==0)
+				{
+					GDPoint	pt;
+					pt.x = CoordinateVector[CoordinateVector.size()-1].X;
+					pt.y = CoordinateVector[CoordinateVector.size()-1].Y;
+
+					bool ActivityLocationFlag = false;
+
+					DTANode* pNode =AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
+					to_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
+					pNode->m_bCreatedbyNEXTA = true;
+				}
+				}
+
+	}else  // identify_from_node_id_and_to_node_id_based_on_geometry == no
+	{
+		from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
+		to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
+
+
+	}
+
+	int link_code_start = 1;
+	int link_code_end = 1;
+
+
+	if(from_node_id == 613)
+		TRACE("");
+
+	long link_id =  poFeature->GetFieldAsInteger(link_id_name.c_str ());
+
+	LinkID_FromNodeNumber_Map[link_id] = from_node_id;
+	LinkID_ToNodeNumber_Map[link_id] = to_node_id;
+
+	CString name =  poFeature->GetFieldAsString(link_name.c_str ());
+	int type = 0;
+	//				if(link_type_name.size() >=1)
+	type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
+
+	CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
+
+	CString TMC_code = poFeature->GetFieldAsString(TMC_name.c_str ());
+
+
+	float speed_limit_in_mph = poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
+
+	if(b_use_default_speed_limit_from_link_type)
+	{
+		if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+		{
+			speed_limit_in_mph = m_LinkTypeMap[type ].default_speed;
+		}
+	}
+
+
+	int direction = 1;
+	if(direction_name.size()>0) 
+		direction = poFeature->GetFieldAsInteger(direction_name.c_str ());
+	else
+	{
+		// no direction field, we try to guess the link types
+		if(reverse_direction_field_flag==1)
+		{
+
+			int type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
+			int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
+
+			if(type >=1 && r_link_type>=1)
+				direction = 2;
+
+			if(type ==0 && r_link_type>=1)
+				direction = -1;  // reverse
+
+			if(type >=1 && r_link_type==0)
+				direction = 1;  //forward
+
+		}
+
+	}
+
+
+
+
+	int number_of_lanes = poFeature->GetFieldAsInteger(number_of_lanes_name.c_str ());
+
+
+	if(b_use_default_number_of_lanes_from_link_type)
+	{
+		if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+		{
+			number_of_lanes = m_LinkTypeMap[type ].default_number_of_lanes;
+		}
+	}
+
+
+	if(direction_field_flag == 1 && ( (direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1 )
+	{
+		number_of_lanes = number_of_lanes/2;
+	}
+
+
+
+	if(type< 0 )  // no type information available
+	{
+
+		if(link_type_field.size()>0)// if link type information is required, skip this link
+		{
+			CString str;
+			str.Format("link type (%s) for %d ->%d in the link shape file does not have valid values (which should be >=0).\n",link_type_name.c_str (), from_node_id, to_node_id);
+
+			if(warning_message.GetLength ()<1000)  // to avoid too many error messages
+			{
+				warning_message+= str;
+
+			}
+
+			m_AMSLogFile << str;
+
+			if(reverse_direction_field_flag)  // with reserved direction field
+			{
+				int r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
+
+				// if there is a reverse link, skip the following step only if r_link_type = 0
+				if(r_link_type ==0)
+					continue;
 				else
 				{
-					GDPoint pt1; 
-					pt1.x = CoordinateVector[0].X;
-					pt1.x = CoordinateVector[0].Y;
+					// continue to the following steps for reverse link
+					link_code_start = 2; link_code_end = 2;
 
-					GDPoint pt2; 
-					pt2.x = CoordinateVector[CoordinateVector.size()-1].X;
-					pt2.x = CoordinateVector[CoordinateVector.size()-1].Y;
 
-					length =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1, pt2);
 				}
-
-				if(length < minimum_length_for_importing_links)
-					continue;
-
-				if(bMileFlag == false)
-					length*=0.621371;
-
-				m_AMSLogFile << "," << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
-				m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
-
-
-
-				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
-				{
-					AfxMessageBox("Invalid data: from_node_id==0 && to_node_id ==0 in the link table.");
-					return false;
-				}
-
-				
-				DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
-
-				// error checking 
-				CString str_msg;
-				if(pExistingLink)
-				{
-				str_msg.Format ("Link %d-> %d at row %d is duplicated with the previous link at row %d. NEXTA will skip this link.\n", from_node_id,to_node_id, line_no, pExistingLink->input_line_no);
+			}else // no reserve direction; skip the following steps
 				continue;
+
+
+		}
+		else
+		{// check speed limit to determine type
+
+			if(speed_limit_in_mph>=55)
+				type = 1; // default freeway
+			else
+				type = 4; // default arterial street
+
+			if(number_of_lanes>=7)
+				type = 10; // default connectors;
+
+			int node_id  =0 ;
+
+			if(m_NodeNumbertoIDMap.find (from_node_id) != m_NodeNumbertoIDMap.end())
+			{
+				node_id =  m_NodeNumbertoIDMap[from_node_id];
+				DTANode* pFromNode = m_NodeIDMap[node_id];
+				if(pFromNode->m_ZoneID >=1)
+				{
+					// from node is a zone centroid, then the link is a connector
+					type = 10;
+
 				}
 
-				if(from_node_id == to_node_id)
+
+			}
+		}
+
+	}
+
+
+	float capacity_in_pcphpl= poFeature->GetFieldAsDouble(capacity_in_vhc_per_hour_name.c_str ());
+
+
+	capacity_in_pcphpl = ComputeCapacity(capacity_in_pcphpl,link_capacity_flag, speed_limit_in_mph,number_of_lanes)*multiplier_for_obtaining_hourly_capacity_value;
+
+	if(b_use_default_lane_capacity_from_link_type)
+	{
+		if(m_LinkTypeMap.find(type) != m_LinkTypeMap.end())
+		{
+			capacity_in_pcphpl = m_LinkTypeMap[type ].default_lane_capacity;
+		}
+	}
+
+
+	// if link_capacity_flag == 0, we give a default value
+	int r_number_of_lanes =0; 
+	int r_link_type = 0; 
+	float r_speed_limit_in_mph = 0; 
+	float r_capacity_in_pcphpl=0; 
+
+	if(reverse_direction_field_flag)  // with reserved direction field
+	{
+		r_number_of_lanes = poFeature->GetFieldAsInteger(r_number_of_lanes_name.c_str());
+		if(direction_field_flag == 1 && ((direction==0&&b_direction_0_as_twoway_flag) || direction==2) && number_of_lanes_for_two_way_links_flag ==1)
+		{
+			number_of_lanes = r_number_of_lanes/2;
+		}
+
+		r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name.c_str ());
+		r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name.c_str ());
+		r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,r_number_of_lanes);
+		r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
+
+		if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 
+		{
+			r_link_type = type; //reset r_link_type by type
+		}
+
+
+
+	}else
+	{  // no reserved link fields
+		r_number_of_lanes = number_of_lanes;
+		r_speed_limit_in_mph = speed_limit_in_mph;
+		r_capacity_in_pcphpl= capacity_in_pcphpl;
+		r_link_type = 0;
+
+		if(m_LinkTypeMap[type ].IsConnector ()) // forward link is connector, r_link_type is not defined 
+		{
+			r_link_type = type; //reset r_link_type by type
+		}
+
+
+
+	}
+
+	// To Do Error checking, Numbera of lanes... 
+
+	if(reverse_direction_field_flag)
+	{
+		m_AMSLogFile << r_number_of_lanes << "," << r_speed_limit_in_mph << ","  << r_capacity_in_pcphpl << ",";
+
+	}
+
+
+	float grade = 0;
+	float AADT_conversion_factor = 0.1;
+	float k_jam, wave_speed_in_mph;
+	if(m_LinkTypeMap[type].IsFreeway ())  // freeway link
+	{
+		k_jam = 220;
+	}else
+	{
+		k_jam = 190;
+	}
+
+	wave_speed_in_mph = 12;
+
+
+	int m_SimulationHorizon = 1;
+
+	if (direction == -1) // reversed
+	{
+		link_code_start = 2; link_code_end = 2;
+	}
+
+
+	if (((direction == 0&&b_direction_0_as_twoway_flag) || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
+	{
+		link_code_start = 1; link_code_end = 2;
+		bTwoWayLinkFlag = true;
+	}
+
+
+
+	float length = 0;
+
+	if(length_name.size() > 0)
+		length = poFeature->GetFieldAsDouble(length_name.c_str ());
+	else
+	{
+		GDPoint pt1; 
+		pt1.x = CoordinateVector[0].X;
+		pt1.x = CoordinateVector[0].Y;
+
+		GDPoint pt2; 
+		pt2.x = CoordinateVector[CoordinateVector.size()-1].X;
+		pt2.x = CoordinateVector[CoordinateVector.size()-1].Y;
+
+		length =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pt1, pt2);
+	}
+
+	if(length < minimum_length_for_importing_links)
+		continue;
+
+	if(bMileFlag == false)
+		length*=0.621371;
+
+	m_AMSLogFile << "," << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
+	m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
+
+
+
+	if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
+	{
+
+		if(from_node_id_to_node_id_eq_0_error ==0)  // report error message once
+		{
+
+		CString error_msg;
+		error_msg.Format ("Please check:\nInvalid data: from_node_id==0 && to_node_id ==0 for link id %d in the link table.", link_id);
+		AfxMessageBox(error_msg);
+
+		}
+
+
+
+		from_node_id_to_node_id_eq_0_error ++;
+
+		continue; // not create any link in this case
+
+	}
+
+
+	DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+
+	// error checking 
+	CString str_msg;
+	if(pExistingLink)
+	{
+		str_msg.Format ("Link %d-> %d at row %d is duplicated with the previous link at row %d. NEXTA will skip this link.\n", from_node_id,to_node_id, line_no, pExistingLink->input_line_no);
+		continue;
+	}
+
+	if(from_node_id == to_node_id)
+	{
+		str_msg.Format ("Link %d-> %d has the same end nodes. NEXTA will skip this link.\n", from_node_id,to_node_id);
+		continue;
+	}
+
+	if(length > 100)
+	{
+		str_msg.Format ("The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.\n",from_node_id,to_node_id);
+	}
+
+	if(number_of_lanes ==0)
+	{
+		str_msg.Format ("Link %d -> %d has 0 lane.\n",from_node_id,to_node_id);
+	}
+	if(speed_limit_in_mph ==0)
+	{
+		str_msg.Format ("Link %d -> %d has a speed limit of 0.\n",from_node_id,to_node_id);
+	}
+	if(capacity_in_pcphpl<0)
+	{
+		str_msg.Format ("Link %d -> %d has a capcaity of 0.\n",from_node_id,to_node_id);
+	}
+
+	if(warning_message.GetLength ()<1000)  // to avoid too many error messages
+	{
+		warning_message+= str_msg;
+	}
+
+	line_no ++;
+	for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
+	{
+
+		bool bNodeNonExistError = false;
+		int m_SimulationHorizon = 1;
+		DTALink* pLink = new DTALink(m_SimulationHorizon);
+		pLink->m_LinkNo = m_LinkSet.size();
+		pLink->m_Name  = name;
+		pLink->m_OrgDir = direction;
+		pLink->m_LinkID = link_id;
+
+		CT2CA pszConvertedAnsiString (mode_code);
+		// construct a std::string using the LPCSTR input
+		std::string  strStd (pszConvertedAnsiString);
+
+		std::replace( strStd.begin(), strStd.end(), ',', ';'); 
+
+		pLink->m_Mode_code = strStd;
+
+		// 
+
+		pLink->m_TMC_code = CString2StdString(TMC_code);
+
+
+		if(link_code == 1)  //AB link
+		{
+			pLink->m_FromNodeNumber = from_node_id;
+
+			pLink->m_ToNodeNumber = to_node_id;
+			pLink->m_Direction  = 1;
+
+			pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+
+
+
+			if(CoordinateVector.size() >=2)  // with shape point data 
+			{
+				for(unsigned si = 0; si < CoordinateVector.size(); si++)
 				{
-				str_msg.Format ("Link %d-> %d has the same end nodes. NEXTA will skip this link.\n", from_node_id,to_node_id);
-				continue;
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					pLink->m_Original_ShapePoints .push_back (pt);
+					pLink->m_ShapePoints .push_back (pt);
 				}
+			}else	// without shape point data 
+			{
+				// use position data from upstream node
+				GDPoint	pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+				pLink->m_Original_ShapePoints .push_back (pt);
+				pLink->m_ShapePoints .push_back (pt);
 
-				if(length > 100)
+				// use position data from downstream node
+				pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+				pLink->m_Original_ShapePoints .push_back (pt);
+				pLink->m_ShapePoints .push_back (pt);
+
+			}
+
+		}
+
+		if(link_code == 2)  //BA link 
+		{
+			pLink->m_FromNodeNumber = to_node_id;
+			pLink->m_ToNodeNumber = from_node_id;
+			pLink->m_Direction  = 1;
+			pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
+
+
+			if(CoordinateVector.size() >=2) // with shape point data 
+			{
+				for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
 				{
-				str_msg.Format ("The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.\n",from_node_id,to_node_id);
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					pLink->m_Original_ShapePoints .push_back (pt);
+					pLink->m_ShapePoints .push_back (pt);
 				}
+			}else // without shape point data 
+			{
+				// use position data from downstream node
+				GDPoint	pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+				pLink->m_Original_ShapePoints .push_back (pt);
+				pLink->m_ShapePoints .push_back (pt);
 
-				if(number_of_lanes ==0)
-				{
-				str_msg.Format ("Link %d -> %d has 0 lane.\n",from_node_id,to_node_id);
-				}
-				if(speed_limit_in_mph ==0)
-				{
-				str_msg.Format ("Link %d -> %d has a speed limit of 0.\n",from_node_id,to_node_id);
-				}
-				if(capacity_in_pcphpl<0)
-				{
-				str_msg.Format ("Link %d -> %d has a capcaity of 0.\n",from_node_id,to_node_id);
-				}
-
-				if(warning_message.GetLength ()<1000)  // to avoid too many error messages
-				{
-					warning_message+= str_msg;
-				}
-
-				line_no ++;
-				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
-				{
-
-					bool bNodeNonExistError = false;
-					int m_SimulationHorizon = 1;
-					DTALink* pLink = new DTALink(m_SimulationHorizon);
-					pLink->m_LinkNo = m_LinkSet.size();
-					pLink->m_Name  = name;
-					pLink->m_OrgDir = direction;
-					pLink->m_LinkID = link_id;
-
-					CT2CA pszConvertedAnsiString (mode_code);
-					// construct a std::string using the LPCSTR input
-					std::string  strStd (pszConvertedAnsiString);
-
-					std::replace( strStd.begin(), strStd.end(), ',', ';'); 
-
-					pLink->m_Mode_code = strStd;
-
-					if(link_code == 1)  //AB link
-					{
-						pLink->m_FromNodeNumber = from_node_id;
-
-						pLink->m_ToNodeNumber = to_node_id;
-						pLink->m_Direction  = 1;
-
-						pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+				// use position data from upstream node
+				pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+				pLink->m_Original_ShapePoints .push_back (pt);
+				pLink->m_ShapePoints .push_back (pt);
 
 
+			}
+		}
 
-						if(CoordinateVector.size() >=2)  // with shape point data 
-						{
-						for(unsigned si = 0; si < CoordinateVector.size(); si++)
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						}
-						}else	// without shape point data 
-						{
-						  // use position data from upstream node
-							GDPoint	pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						
-						  // use position data from downstream node
-							pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						
-						}
+		pLink->m_NumberOfLanes= number_of_lanes;
+		pLink->m_SpeedLimit= speed_limit_in_mph;
+		pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
+		pLink->m_Length= length;  // minimum distance
 
-					}
+		//if(length < 0.00001) // zero value in length field, we consider no length info.
+		//{
+		//	float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
+		//	pLink->m_Length = distance_in_mile;
+		//}
 
-					if(link_code == 2)  //BA link 
-					{
-						pLink->m_FromNodeNumber = to_node_id;
-						pLink->m_ToNodeNumber = from_node_id;
-						pLink->m_Direction  = 1;
-						pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
-						pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
+		pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
+		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+
+		pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
+
+		pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = default_saturation_flow_rate_in_vhc_per_hour_per_lane;
+		pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+		pLink->m_link_type= type;
+		pLink->m_Grade = grade;
 
 
-						if(CoordinateVector.size() >=2) // with shape point data 
-						{
-						for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						}
-						}else // without shape point data 
-						{
-						  // use position data from downstream node
-							GDPoint	pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						
-						  // use position data from upstream node
-							pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						
-						
-						}
-					}
+		if(link_code == 2)  //BA link
+		{
 
-					pLink->m_NumberOfLanes= number_of_lanes;
-					pLink->m_SpeedLimit= speed_limit_in_mph;
-					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
-					pLink->m_Length= length;  // minimum distance
+			int R_number_of_lanes = r_number_of_lanes;
 
-					//if(length < 0.00001) // zero value in length field, we consider no length info.
-					//{
-					//	float distance_in_mile = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_ShapePoints[0], pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1]);
-					//	pLink->m_Length = distance_in_mile;
-					//}
+			float R_speed_limit_in_mph= r_speed_limit_in_mph;
 
-					pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
-					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
-
-					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
-
-					pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = default_saturation_flow_rate_in_vhc_per_hour_per_lane;
-					pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-					pLink->m_link_type= type;
-					pLink->m_Grade = grade;
-
-
-					if(link_code == 2)  //BA link
-					{
-
-						int R_number_of_lanes = r_number_of_lanes;
-
-						float R_speed_limit_in_mph= r_speed_limit_in_mph;
-
-						float R_lane_capacity_in_vhc_per_hour= r_capacity_in_pcphpl;
-						float R_grade= grade;
-						pLink->m_NumberOfLanes= R_number_of_lanes;
-						pLink->m_SpeedLimit= R_speed_limit_in_mph;
-						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
-						pLink->m_Grade = R_grade;
-						pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
-						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
-						pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
-						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
-						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-						pLink->m_link_type= max(type,r_link_type);  // commmented by Jeff Taylor. to be safe, so we take the max in case  type or r_link_type is 0
+			float R_lane_capacity_in_vhc_per_hour= r_capacity_in_pcphpl;
+			float R_grade= grade;
+			pLink->m_NumberOfLanes= R_number_of_lanes;
+			pLink->m_SpeedLimit= R_speed_limit_in_mph;
+			pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
+			pLink->m_Grade = R_grade;
+			pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
+			pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
+			pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
+			pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+			pLink->m_link_type= max(type,r_link_type);  // commmented by Jeff Taylor. to be safe, so we take the max in case  type or r_link_type is 0
 
 
 
-					}
+		}
 
-					pLink->m_Kjam = k_jam;
-					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
-					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
+		pLink->m_Kjam = k_jam;
+		pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
+		pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+		m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-					pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
-
-
-					if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
-					{
-						//skip
-						continue;
-					}
-
-					default_distance_sum+= pLink->DefaultDistance();
-					length_sum += pLink ->m_Length;
-					//			pLink->SetupMOE();
-					pLink->input_line_no  = line_no;
-
-					int index = m_LinkSet.size();
-
-					m_LinkNoMap[index]  = pLink;
-					m_LinkSet.push_back (pLink);
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
-
-					if(m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
-					{ 
-						// mark them as activity location 
-						m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
-
-						m_NodeIDMap[pLink->m_FromNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
-
-					}
+		pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(index);
-					m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(index);
+		if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+		{
+			//skip
+			continue;
+		}
+
+		default_distance_sum+= pLink->DefaultDistance();
+		length_sum += pLink ->m_Length;
+		//			pLink->SetupMOE();
+		pLink->input_line_no  = line_no;
+
+		int index = m_LinkSet.size();
+
+		m_LinkNoMap[index]  = pLink;
+		m_LinkSet.push_back (pLink);
+		m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
+		m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+
+		if(m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
+		{ 
+			// mark them as activity location 
+			m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+			m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
+
+			m_NodeIDMap[pLink->m_FromNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+			m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+
+		}
 
 
-					unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-					m_NodeIDtoLinkMap[LinkKey] = pLink;
+		m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(index);
+		m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(index);
 
 
-					__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
-					m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+		m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+
+		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 
 
-				}  // link code
+	}  // link code
 
-				m_AMSLogFile  << endl;
-			}  // feature
+	m_AMSLogFile  << endl;
+}  // feature
 
-			m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl; 
-			m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
+m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl; 
+m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
 
 
 		}  // layer
@@ -1490,632 +1549,115 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		OGRDataSource::DestroyDataSource( poDS );
 
-			
+
 		// determine control type for nodes
-	
+
 		std::list<DTALink*>::iterator iLink;
 
 		if(b_identify_signal_intersection)
 		{
-		
-		number_of_signals = 0;
 
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
+			number_of_signals = 0;
 
-		DTALink* pLink = (*iLink);
-
-		if( pLink->m_ToNodeNumber == 3000)
-		{
-			TRACE("");
-		}
-
-					{  // reset default value
-						if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
-							pLink->m_SpeedLimit> minimum_speed_limit_for_signals && pLink->m_SpeedLimit<= maximum_speed_limit_for_signals && 
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size() >=3) 
-						{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
-							number_of_signals++;
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_CycleLengthInSecond = default_cycle_length_in_second;	
-
-					for(unsigned int i = 0; i< m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.size(); i++)
-							{
-								
-								DTALink* pLink0 = m_LinkNoMap[m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector[i]];
-
-								TRACE("%d -> %d\n",pLink0->m_FromNodeNumber,pLink0->m_ToNodeNumber);
-
-							
-							}
-
-
-
-						}
-
-						if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
-						{
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
-						}
-
-					}
-		}
-		
-		}
-
-	int number_of_links_with_effective_green_time  = 0;
-	for (std::list<DTALink*>::iterator  iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	{
-		if((*iLink)->m_LayerNo == 0 )
-		{
-			int ToNodeID = (*iLink)->m_ToNodeID ;
-			DTANode* pNode = m_NodeIDMap[ToNodeID];
-			//set default green time 
-			if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
-				pNode->m_ControlType == m_ControlType_ActuatedSignal)
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 
-				// from given BPR capacity to determine the effective green time
-				(*iLink)->m_EffectiveGreenTimeInSecond = (int)(pNode->m_CycleLengthInSecond * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
-				number_of_links_with_effective_green_time++;
+				DTALink* pLink = (*iLink);
+
+				if( pLink->m_ToNodeNumber == 3000)
+				{
+					TRACE("");
+				}
+
+				{  // reset default value
+					if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
+						pLink->m_SpeedLimit> minimum_speed_limit_for_signals && pLink->m_SpeedLimit<= maximum_speed_limit_for_signals && 
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size() >=3) 
+					{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
+						number_of_signals++;
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_CycleLengthInSecond = default_cycle_length_in_second;	
+
+						for(unsigned int i = 0; i< m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.size(); i++)
+						{
+
+							DTALink* pLink0 = m_LinkNoMap[m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector[i]];
+
+							TRACE("%d -> %d\n",pLink0->m_FromNodeNumber,pLink0->m_ToNodeNumber);
 
 
+						}
+
+
+
+					}
+
+					if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+					{
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
+					}
+
+				}
+			}
+
+		}
+
+		int number_of_links_with_effective_green_time  = 0;
+		for (std::list<DTALink*>::iterator  iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			if((*iLink)->m_LayerNo == 0 )
+			{
+				int ToNodeID = (*iLink)->m_ToNodeID ;
+				DTANode* pNode = m_NodeIDMap[ToNodeID];
+				//set default green time 
+				if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
+					pNode->m_ControlType == m_ControlType_ActuatedSignal)
+				{
+
+					// from given BPR capacity to determine the effective green time
+					(*iLink)->m_EffectiveGreenTimeInSecond = (int)(pNode->m_CycleLengthInSecond * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
+					number_of_links_with_effective_green_time++;
+
+
+				}
 			}
 		}
-	}
 
 		m_SignalDataLoadingStatus.Format("%d nodes are signalized intersections; %d links have postive effective green time.",number_of_signals, number_of_links_with_effective_green_time );
 
-	if(use_optional_connector_layer == 1)
+	int number_of_new_connectors = 0;
+
+	if(use_optional_centroid_layer)
 	{
+		bool bTestFieldName = false;
 
-		parser.GetValueBySectionKeyFieldName(file_name,"file_name","connector","value",connector_table_file_name);
-	
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","link_end","value",to_link_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value",speed_limit_in_mph_name);
+		m_AMSLogFile << "read optional centroid layer from file " << centroid_file_name << endl; 
+		parser.GetValueBySectionKeyFieldName(file_name,"centroid","name","value",node_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"centroid","node_id","value",node_node_id);
+		parser.GetValueBySectionKeyFieldName(file_name,"centroid","TAZ","value",node_TAZ_name);
 
-		m_AMSLogFile << "starting converting connector from file " << connector_table_file_name;
+		//	; Control type 0 = unknown, 1 = uncontrolled, 2 = two-way stop, 6 = two-way yield, 3 = signalized, 4 = all-way stop, 5 = roundabout
 
+		CString message_str;
 
-		int default_number_of_lanes = 1;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_number_of_lanes);
+		OGRDataSource       *poDS;
 
-		int default_lane_capacity = 10000;
-		int default_speed_limit = 100;
-		int default_link_type = 99;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
+		CString centroid_shape_file_name;
+		centroid_shape_file_name = m_ProjectDirectory + centroid_file_name.c_str ();
 
-
-		if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
-		{
-		
-			CString message;
-			message.Format("default_link_type_for_connector=%d has not been defined in the input_link_type.csv file.\nThe NEXTA data conversion utility will add this link type definition automatically.");
-
-			AfxMessageBox(message);
-
-			m_LinkTypeMap[default_link_type].link_type = default_link_type;
-			m_LinkTypeMap[default_link_type].type_code = 'c';
-			m_LinkTypeMap[default_link_type].default_lane_capacity = 4000;
-
-
-		}
-
-		from_node_id_name.clear();
-		to_node_id_name.clear();
-		to_link_id_name.clear();
-		link_id_name.clear();
-		link_name.clear();
-		link_type_name.clear();
-		mode_code_name.clear();
-		direction_name.clear();
-		length_name.clear();
-		number_of_lanes_name.clear();
-		capacity_in_vhc_per_hour_name.clear();
-		speed_limit_in_mph_name.clear();
-
-		int direction =0;
-		int defaut_direction = 0;
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","direction","value",direction_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
-
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
-
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_number_of_lanes","value",default_number_of_lanes);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","defaut_direction","value",defaut_direction);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
-		parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_speed_limit);
-
-
-		CString connector_shape_file_name;
-		connector_shape_file_name = m_ProjectDirectory + connector_table_file_name.c_str ();
-
-		poDS = OGRSFDriverRegistrar::Open(connector_shape_file_name, FALSE );
+		poDS = OGRSFDriverRegistrar::Open(centroid_shape_file_name, FALSE );
 		if( poDS == NULL )
 		{
 			CString msg;
-			msg.Format ("Open connector shape file %s failed",link_shape_file_name);
+			msg.Format("Open zone centroid shape file %s failed.",centroid_shape_file_name);
 			AfxMessageBox(msg);
+
 			return false;
 		}
 
-		poLayers = ((OGRDataSource*)poDS)->GetLayerCount();
-
-		for (int j=0; j < poLayers; j++) 
-		{
-
-			OGRLayer  *poLayer;
-
-			poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
-
-			if(poLayer == NULL)
-			{
-				CString error_message;
-
-				error_message.Format("Open connector layer in the shape file %s failed",connector_shape_file_name);
-
-				AfxMessageBox(error_message);
-				return false;			
-			}
-
-			OGRFeature *poFeature;
-			int feature_count = 0;
-			poLayer->ResetReading();
-			int i = 0;
-			int line_no = 1;
-
-			m_AMSLogFile << endl << endl << "4: " << connector_shape_file_name << " block---" << endl;
-			m_AMSLogFile << "from_node_id,to_name_id,length,number_of_lanes,speed_limit,capacity," << endl;
-
-			bool bTestFieldName = false;
-			while( (poFeature = poLayer->GetNextFeature()) != NULL )
-			{
-				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-
-			if(bTestFieldName==false) 
-			{
-				if(from_node_id_name.size()>0  && poFeature->GetFieldIndex(from_node_id_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(from_node_id_name,  "section connector; key zone_end");
-					break;
-				}
-			
-
-				if(to_node_id_name.size()>0 && poFeature->GetFieldIndex(to_node_id_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(to_node_id_name, "section connector; key node_end");
-					break;
-				}				
-
-				if(to_link_id_name.size()>0 && poFeature->GetFieldIndex(to_link_id_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(to_link_id_name,"section connector; key link_end");
-					break;
-				}
-
-
-				if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(number_of_lanes_name,"section connector; key number_of_lanes");
-					break;
-				}	
-
-
-				if(speed_limit_in_mph_name.size()>0 && poFeature->GetFieldIndex(speed_limit_in_mph_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(speed_limit_in_mph_name,"section connector; key speed_limit");
-					break;
-				}	
-
-				if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(length_name,"section connector; key length" );
-					break;
-				}	
-
-				if(capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(capacity_in_vhc_per_hour_name.c_str ())==-1)
-				{
-					FieldNameNotExistMessage(capacity_in_vhc_per_hour_name,"section connector; key length");
-					break;
-				}
-
-
-				bTestFieldName = true;
-			}
-				int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str());
-				int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str());
-				int to_link_id = poFeature->GetFieldAsInteger(to_link_id_name.c_str());
-
-				if(direction_name.size()>0) 
-				{
-					direction = poFeature->GetFieldAsInteger(direction_name.c_str());
-
-					CString direction_str = poFeature->GetFieldAsString(direction_name.c_str());
-
-				}else
-				{
-				direction = defaut_direction;
-				
-				}
-
-
-				long link_id =  0;
-				int type = default_link_type;  // find default connectors type.
-				float length = 0.001;
-				
-				if(length_name.size() > 0)
-					length = poFeature->GetFieldAsDouble(length_name.c_str ());
-
-				int number_of_lanes = default_number_of_lanes;
-				int capacity_in_pcphpl = default_lane_capacity;
-				float speed_limit_in_mph = default_speed_limit;
-
-//				m_AMSLogFile << from_node_id << "," << to_node_id << "," << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
-
-				float grade = 0;
-				float AADT_conversion_factor = 0.1;
-				float k_jam, wave_speed_in_mph;
-				k_jam = 190;
-
-				wave_speed_in_mph = 12;
-
-				int m_SimulationHorizon = 1;
-
-				int link_code_start = 1;
-				int link_code_end = 1;
-
-				if (direction == -1) // reversed
-				{
-					link_code_start = 2; link_code_end = 2;
-				}
-
-
-				if (direction == 0 || direction ==2) // two-directional link
-				{
-					link_code_start = 1; link_code_end = 2;
-					bTwoWayLinkFlag = true;
-				}
-
-				OGRGeometry *poGeometry;
-				std::vector<CCoordinate> CoordinateVector;
-
-				poGeometry = poFeature->GetGeometryRef();
-				if( poGeometry != NULL )
-				{	
-					
-					if(wkbFlatten(poGeometry->getGeometryType()) == wkbLineString )
-				{
-					OGRLineString *poLine = (OGRLineString *) poGeometry;
-
-					m_AMSLogFile << "{" ;
-
-					int step = 1;
-
-						int Number_of_Shape_Points = poLine->getNumPoints();
-
-						if(Number_of_Shape_Points > 100)
-						{
-						TRACE("\nNumber_of_Shape_Points = %d",Number_of_Shape_Points);
-						}
-					
-					//if(Number_of_Shape_Points>=10)  //
-					//	step = (int)(Number_of_Shape_Points/10);
-
-					for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)  // up to Number_of_Shape_Points-1
-					{
-						CCoordinate pt;
-						pt.X   =  poLine->getX(si)*long_lat_unit;
-						pt.Y   =  poLine->getY(si)*long_lat_unit;
-						CoordinateVector.push_back(pt);
-						m_AMSLogFile << pt.X << ";" << pt.Y << " ";
-
-					}
-						//CCoordinate pt;
-						//pt.X   =  poLine->getX(Number_of_Shape_Points-1)*long_lat_unit;
-						//pt.Y =  poLine->getY(Number_of_Shape_Points-1)*long_lat_unit;
-						//CoordinateVector.push_back(pt);
-						//m_AMSLogFile << pt.X << ";" << pt.Y << " ";
-
-					m_AMSLogFile << "}" ;
-
-				}
-
-				
-				if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
-				{
-					AfxMessageBox("Invalid data in connector layer: from_node_id==0 && to_node_id ==0.");
-					break;
-				}
-
-
-				line_no ++;
-				for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
-				{
-
-					bool bNodeNonExistError = false;
-					int m_SimulationHorizon = 1;
-					DTALink* pLink = new DTALink(m_SimulationHorizon);
-					pLink->m_LinkNo = m_LinkSet.size();
-					pLink->m_Name  = "connector";
-					pLink->m_OrgDir = direction;
-					pLink->m_LinkID = link_id;
-
-
-					if(to_link_id == 3522905)
-					{
-					TRACE("");
-					}
-					if(link_code == 1)  //AB link
-					{
-						pLink->m_FromNodeNumber = from_node_id;
-
-						if(to_link_id>=1)
-						{
-							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
-							{
-								pLink->m_ToNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id], LinkID_ToNodeNumber_Map[to_link_id]);
-								// from_node_id has been defined
-								to_node_id = pLink->m_ToNodeNumber ;
-							}
-							else
-							{
-								CString error_message;
-
-								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
-								AfxMessageBox(error_message);
-								return false;
-							}
-						}
-						else
-							pLink->m_ToNodeNumber = to_node_id;
-
-						pLink->m_Direction  = 1;
-
-						pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
-
-
-
-						for(unsigned si = 0; si < CoordinateVector.size(); si++)
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						}
-
-						
-					}
-
-					if(link_code == 2)  //BA link
-					{
-						if(to_link_id>=1)
-						{
-							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
-							{
-								pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
-								from_node_id = pLink->m_FromNodeNumber ;
-							}
-							else
-							{
-								CString error_message;
-
-								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
-								AfxMessageBox(error_message);
-								return false;
-							}
-						}else
-						{
-						pLink->m_FromNodeNumber = to_node_id;
-						}
-
-
-						pLink->m_ToNodeNumber = from_node_id;
-						pLink->m_Direction  = 1;
-						pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
-						pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
-
-
-						for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
-						{
-							GDPoint	pt;
-							pt.x = CoordinateVector[si].X;
-							pt.y = CoordinateVector[si].Y;
-							pLink->m_Original_ShapePoints .push_back (pt);
-							pLink->m_ShapePoints .push_back (pt);
-						}
-
-					}
-
-					pLink->m_NumberOfLanes= number_of_lanes;
-					pLink->m_SpeedLimit= speed_limit_in_mph;
-					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
-					pLink->m_Length= length;  // minimum distance
-
-					pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
-					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
-
-					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
-					pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-					pLink->m_link_type= type;
-					pLink->m_Grade = grade;
-
-
-					if(link_code == 2)  //BA link
-					{
-						if(to_link_id>=1)
-						{
-							if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
-							{
-								pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
-								from_node_id = pLink->m_FromNodeNumber ;
-
-							}
-							else
-							{
-								CString error_message;
-
-								error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
-								AfxMessageBox(error_message);
-								return false;
-							}
-						}else
-						{
-						pLink->m_FromNodeNumber = to_node_id;
-						}
-
-						int R_number_of_lanes = number_of_lanes;
-
-						float R_speed_limit_in_mph= speed_limit_in_mph;
-
-						float R_lane_capacity_in_vhc_per_hour= capacity_in_pcphpl;
-						float R_grade= grade;
-						pLink->m_NumberOfLanes= number_of_lanes;
-						pLink->m_SpeedLimit= speed_limit_in_mph;
-						pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
-						pLink->m_Grade = R_grade;
-						pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
-						pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
-						pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
-						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
-						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-						pLink->m_link_type= type;
-
-					}
-
-					m_AMSLogFile << "Add connector " << from_node_id << " -> " << to_node_id << endl;
-
-					pLink->m_Kjam = k_jam;
-					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
-					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
-
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
-
-					pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-					pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
-
-
-				pLink->input_line_no  = line_no;
-
-					if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
-					{
-						//skip
-						continue;
-					}
-
-					//if(to_link_id>=1) // generation link based
-					//{
-					//	// reset shape points;
-
-					//	pLink->m_Original_ShapePoints.clear();
-					//	pLink->m_ShapePoints.clear();
-					//		
-					//		GDPoint	pt;
-					//		pt = pLink->m_FromPoint;
-
-					//		pLink->m_Original_ShapePoints .push_back (pt);
-					//		pLink->m_ShapePoints .push_back (pt);
-
-					//		pt = pLink->m_ToPoint;
-
-					//		pLink->m_Original_ShapePoints .push_back (pt);
-					//		pLink->m_ShapePoints .push_back (pt);
-					//}
-					m_LinkNoMap[m_LinkSet.size()]  = pLink;
-
-
-					m_LinkSet.push_back (pLink);
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-					m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
-
-						// mark them as activity location 
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
-					m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
-
-
-					unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-					m_NodeIDtoLinkMap[LinkKey] = pLink;
-
-
-					__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
-					m_NodeNumbertoLinkMap[LinkKey2] = pLink;
-
-
-					i++;
-
-				}  // link code
-
-				m_AMSLogFile  << endl;
-			}  // feature
-			}
-
-			m_AMSLogFile << "imported " << i << " links. " << endl; 
-			m_ConnectorDataLoadingStatus.Format ("%d connectors loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
-
-
-		}  // layer
-		// to do: # of nodes: control: two-way stop signs....
-
-		OGRDataSource::DestroyDataSource( poDS );
-
-
-	}
-
-	// post-processing link information
-
-			Construct4DirectionMovementVector();
-			AssignUniqueLinkIDForEachLink();
-
-			if(bTwoWayLinkFlag == true)
-				m_bLinkToBeShifted = true;
-
-			GenerateOffsetLinkBand();
-
-		m_UnitMile  = 1.0f;
-		if(length_sum>0.000001f)
-			m_UnitMile=  default_distance_sum /length_sum;
-
-		m_UnitFeet = m_UnitMile/5280.0f;  
-
-		if(offset_link_flag)
-			OffsetLink();
-
-
-	// ************************************/
-	// 3: zone table
-	// ************************************/
-	string zone_table_file_name;
-	string zone_id_name;
-		parser.GetValueBySectionKeyFieldName(file_name,"file_name","zone","value",zone_table_file_name);
-		parser.GetValueBySectionKeyFieldName(file_name,"zone","zone_id","value",zone_id_name);
-
-	CString zone_shape_file_name;
-	zone_shape_file_name = m_ProjectDirectory + zone_table_file_name.c_str();
-
-	poDS = OGRSFDriverRegistrar::Open(zone_shape_file_name, FALSE );
-	if( poDS == NULL )
-	{  // zone layer file is not provided
-		m_AMSLogFile << "Zone layer file is not provided. Use node file to generate zone layers." << endl; 
-		m_ZoneDataLoadingStatus.Format ("Zone layer file is not provided. Use node file to generate zone layers.");
-
-	}else  // read zone layer file
-	{
-
+		int node_zone_mapping_count = 0;
 		int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
-		int line_no = 0;
-
 		for (int j=0; j < poLayers; j++) 
 		{
 
@@ -2138,93 +1680,828 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			poLayer->ResetReading();
 
 
+			int i = m_NodeSet.size ();
+			int number_of_new_connectors = 0;
 
-			m_AMSLogFile << "3: zone block---" << endl;
-			m_AMSLogFile << "zone id" << endl;
 
-			int zone_record_count = 1;
+
+			m_AMSLogFile << "1: zone centroid block---" << endl;
+			m_AMSLogFile << "node id,TAZ,name,x,y" << endl;
+
 			bool bTestFieldName = false;
 			while( (poFeature = poLayer->GetNextFeature()) != NULL )
 			{
 				OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+				double x = 0;
+				double y = 0;
 
-
-			if(bTestFieldName==false) 
-			{
-				if(zone_id_name.size()>0  && poFeature->GetFieldIndex(zone_id_name.c_str ())==-1)
+				if(bTestFieldName==false) 
 				{
-					FieldNameNotExistMessage(zone_id_name, "section zone: key zone_id");
-					break;
-				}
-			
-	
-				bTestFieldName = true;
-			}
+					if(node_node_id.size()>0  && poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
+					{
+						FieldNameNotExistMessage(node_node_id, "section centroid: key node_id");
+						break;
+					}
 
-				// zone id
-				int id = poFeature->GetFieldAsInteger(zone_id_name.c_str());
 
-				if(id ==0)
-				{
-				
-				CString str;
-				str.Format ("Reading field %s = 0 at record No. %d for field %s. This field might not exist.",zone_id_name, zone_record_count,zone_id_name);
-				
-				AfxMessageBox(str);
-				return false;
+					if(node_TAZ_name.size()>0 && poFeature->GetFieldIndex(node_TAZ_name.c_str ())==-1)
+					{
+						FieldNameNotExistMessage(node_TAZ_name, "section centroid: key TAZ");
+						break;
+					}				
+
+					if(node_name.size()>0 && poFeature->GetFieldIndex(node_name.c_str ())==-1)
+					{
+						FieldNameNotExistMessage(node_name, "section centroid: key name");
+						break;
+					}	
+
+					bTestFieldName = true;
 				}
-				m_AMSLogFile << id << "," ;
+
+				// node id
+				int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
+
+				int TAZ =  0;
+				int value = poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
+
+				if(TAZ == 0 || value <= 0 || value > 100000)  // if TAZ value is zero, then use node id as TAZ
+					TAZ = id; 
+
+
+				CString str_name = poFeature->GetFieldAsString(node_name.c_str ());
+
+				m_AMSLogFile << id << "," << "," << TAZ << "," <<  str_name << ",";
 
 				OGRGeometry *poGeometry;
 
 				poGeometry = poFeature->GetGeometryRef();
 				if( poGeometry != NULL )
 				{
-
-					if (wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon )
+					if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
 					{
+						OGRPoint *poPoint = (OGRPoint *) poGeometry;
 
-						OGRPolygon* polygon = (OGRPolygon*)(poGeometry);
+						x =   poPoint->getX()*long_lat_unit;
+						y  = poPoint->getY()*long_lat_unit;
+						m_AMSLogFile << x << "," << y << ",";
 
-						OGRLinearRing *ring = polygon->getExteriorRing();
-						OGRPoint point;
+					}
 
-						m_AMSLogFile << "{";
+				}
 
-						for(int i = 0; i < ring->getNumPoints(); i++)
+
+
+				DTANode* pNode = new DTANode;
+				pNode->pt.x = x;
+				pNode->pt.y = y;
+
+				pNode->m_Name  = str_name;
+				pNode->m_NodeNumber = id;
+
+				m_NodeNumberMap[id] = pNode;
+				pNode->m_NodeID = i;
+				pNode->m_ZoneID = TAZ;
+				pNode->m_ControlType = m_ControlType_NoControl;
+
+
+				if(TAZ>=1)
+				{
+					pNode->m_bZoneActivityLocationFlag = true;
+					m_ZoneMap [TAZ].m_ZoneID = TAZ;
+
+					DTAActivityLocation element;
+					element.ZoneID  = TAZ;
+					element.NodeNumber = id;
+					m_ZoneMap [TAZ].m_ActivityLocationVector .push_back (element );
+
+					if(m_ODSize < TAZ)
+						m_ODSize = TAZ;
+
+					node_zone_mapping_count ++;
+
+				}
+
+
+				if(m_NodeNumbertoIDMap.find(id) == m_NodeNumbertoIDMap.end())  // no duplicated nodes
+				{
+					m_NodeSet.push_back(pNode);
+					m_NodeIDMap[i] = pNode;
+					m_NodeIDtoNumberMap[i] = id;
+
+					if(id == 54170)
+					{
+						TRACE("");
+					}
+
+					m_NodeNumbertoIDMap[id] = i;
+					i++;
+				}
+
+
+				if(create_connectors_for_isolated_centroids == "yes")
+				{
+
+					m_DefaultSpeedLimit = 10;
+					m_DefaultCapacity = 10000;
+					m_DefaultLinkType = 99; //connector
+
+						int OtherNodeNumber = FindNonCentroidNodeNumberWithCoordinate(pNode->pt .x ,pNode->pt .y, id );
+						
+						 AddNewLinkWithNodeNumbers(pNode->m_NodeNumber , OtherNodeNumber);
+						 AddNewLinkWithNodeNumbers(OtherNodeNumber,pNode->m_NodeNumber);
+					
+						number_of_new_connectors ++;
+						number_of_new_connectors ++;
+				}
+
+				m_AMSLogFile  << endl;
+			}
+
+			m_AMSLogFile << "imported " << i << " nodes. " << endl; 
+			m_AMSLogFile << "imported " << m_ZoneMap.size() << " zones from the node layer. " << endl; 
+			m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),centroid_shape_file_name);
+			m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",node_zone_mapping_count,centroid_shape_file_name);
+
+			// to do: # of nodes: control: two-way stop signs....
+		}
+
+		OGRDataSource::DestroyDataSource( poDS );
+
+	}
+
+
+
+		if(use_optional_connector_layer == 1)
+		{
+
+			parser.GetValueBySectionKeyFieldName(file_name,"file_name","connector","value",connector_table_file_name);
+
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","link_end","value",to_link_id_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value",speed_limit_in_mph_name);
+
+			m_AMSLogFile << "starting converting connector from file " << connector_table_file_name;
+
+
+			int default_number_of_lanes = 1;
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_number_of_lanes);
+
+			int default_lane_capacity = 10000;
+			int default_speed_limit = 100;
+			int default_link_type = 99;
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
+
+
+			if(m_LinkTypeMap.find(default_link_type)==m_LinkTypeMap.end())
+			{
+
+				CString message;
+				message.Format("default_link_type_for_connector=%d has not been defined in the input_link_type.csv file.\nThe NEXTA data conversion utility will add this link type definition automatically.",default_link_type);
+
+				AfxMessageBox(message);
+
+				m_LinkTypeMap[default_link_type].link_type = default_link_type;
+				m_LinkTypeMap[default_link_type].type_code = 'c';
+				m_LinkTypeMap[default_link_type].default_lane_capacity = 4000;
+
+
+			}
+
+			from_node_id_name.clear();
+			to_node_id_name.clear();
+			to_link_id_name.clear();
+			link_id_name.clear();
+			link_name.clear();
+			link_type_name.clear();
+			mode_code_name.clear();
+			direction_name.clear();
+			length_name.clear();
+			number_of_lanes_name.clear();
+			capacity_in_vhc_per_hour_name.clear();
+			speed_limit_in_mph_name.clear();
+
+			int direction =0;
+			int defaut_direction = 0;
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","direction","value",direction_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","node_end","value",to_node_id_name);
+
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","length","value",length_name);
+
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","default_number_of_lanes","value",default_number_of_lanes);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","defaut_direction","value",defaut_direction);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","default_link_type","value",default_link_type);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","default_speed_limit","value",default_speed_limit);
+
+
+			CString connector_shape_file_name;
+			connector_shape_file_name = m_ProjectDirectory + connector_table_file_name.c_str ();
+
+			poDS = OGRSFDriverRegistrar::Open(connector_shape_file_name, FALSE );
+			if( poDS == NULL )
+			{
+				CString msg;
+				msg.Format ("Open connector shape file %s failed",link_shape_file_name);
+				AfxMessageBox(msg);
+				return false;
+			}
+
+			poLayers = ((OGRDataSource*)poDS)->GetLayerCount();
+
+			for (int j=0; j < poLayers; j++) 
+			{
+
+				OGRLayer  *poLayer;
+
+				poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
+
+				if(poLayer == NULL)
+				{
+					CString error_message;
+
+					error_message.Format("Open connector layer in the shape file %s failed",connector_shape_file_name);
+
+					AfxMessageBox(error_message);
+					return false;			
+				}
+
+				OGRFeature *poFeature;
+				int feature_count = 0;
+				poLayer->ResetReading();
+				int i = 0;
+				int line_no = 1;
+
+				m_AMSLogFile << endl << endl << "4: " << connector_shape_file_name << " block---" << endl;
+				m_AMSLogFile << "from_node_id,to_name_id,length,number_of_lanes,speed_limit,capacity," << endl;
+
+				bool bTestFieldName = false;
+				while( (poFeature = poLayer->GetNextFeature()) != NULL )
+				{
+					OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+					if(bTestFieldName==false) 
+					{
+						if(from_node_id_name.size()>0  && poFeature->GetFieldIndex(from_node_id_name.c_str ())==-1)
 						{
-							ring->getPoint(i, &point);
-							GDPoint pt;
-							pt.x = point.getX()*long_lat_unit;
-							pt.y =point.getY()*long_lat_unit;
-							m_ZoneMap [id].m_ShapePoints.push_back (pt);
+							FieldNameNotExistMessage(from_node_id_name,  "section connector; key zone_end");
+							break;
+						}
 
-							m_AMSLogFile << pt.x << "," << pt.y << " ";
+
+						if(to_node_id_name.size()>0 && poFeature->GetFieldIndex(to_node_id_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(to_node_id_name, "section connector; key node_end");
+							break;
+						}				
+
+						if(to_link_id_name.size()>0 && poFeature->GetFieldIndex(to_link_id_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(to_link_id_name,"section connector; key link_end");
+							break;
+						}
+
+
+						if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(number_of_lanes_name,"section connector; key number_of_lanes");
+							break;
+						}	
+
+
+						if(speed_limit_in_mph_name.size()>0 && poFeature->GetFieldIndex(speed_limit_in_mph_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(speed_limit_in_mph_name,"section connector; key speed_limit");
+							break;
+						}	
+
+						if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(length_name,"section connector; key length" );
+							break;
+						}	
+
+						if(capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(capacity_in_vhc_per_hour_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(capacity_in_vhc_per_hour_name,"section connector; key length");
+							break;
+						}
+
+
+						bTestFieldName = true;
+					}
+					int from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str());
+					int to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str());
+					int to_link_id = poFeature->GetFieldAsInteger(to_link_id_name.c_str());
+
+					if(direction_name.size()>0) 
+					{
+						direction = poFeature->GetFieldAsInteger(direction_name.c_str());
+
+						CString direction_str = poFeature->GetFieldAsString(direction_name.c_str());
+
+					}else
+					{
+						direction = defaut_direction;
+
+					}
+
+
+					long link_id =  0;
+					int type = default_link_type;  // find default connectors type.
+					float length = 0.001;
+
+					if(length_name.size() > 0)
+						length = poFeature->GetFieldAsDouble(length_name.c_str ());
+
+					int number_of_lanes = default_number_of_lanes;
+					int capacity_in_pcphpl = default_lane_capacity;
+					float speed_limit_in_mph = default_speed_limit;
+
+					//				m_AMSLogFile << from_node_id << "," << to_node_id << "," << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";
+
+					float grade = 0;
+					float AADT_conversion_factor = 0.1;
+					float k_jam, wave_speed_in_mph;
+					k_jam = 190;
+
+					wave_speed_in_mph = 12;
+
+					int m_SimulationHorizon = 1;
+
+					int link_code_start = 1;
+					int link_code_end = 1;
+
+					if (direction == -1) // reversed
+					{
+						link_code_start = 2; link_code_end = 2;
+					}
+
+
+					if (direction == 0 || direction ==2) // two-directional link
+					{
+						link_code_start = 1; link_code_end = 2;
+						bTwoWayLinkFlag = true;
+					}
+
+					OGRGeometry *poGeometry;
+					std::vector<CCoordinate> CoordinateVector;
+
+					poGeometry = poFeature->GetGeometryRef();
+					if( poGeometry != NULL )
+					{	
+
+						if(wkbFlatten(poGeometry->getGeometryType()) == wkbLineString )
+						{
+							OGRLineString *poLine = (OGRLineString *) poGeometry;
+
+							m_AMSLogFile << "{" ;
+
+							int step = 1;
+
+							int Number_of_Shape_Points = poLine->getNumPoints();
+
+							if(Number_of_Shape_Points > 100)
+							{
+								TRACE("\nNumber_of_Shape_Points = %d",Number_of_Shape_Points);
+							}
+
+							//if(Number_of_Shape_Points>=10)  //
+							//	step = (int)(Number_of_Shape_Points/10);
+
+							for(unsigned int si = 0; si< Number_of_Shape_Points; si+=step)  // up to Number_of_Shape_Points-1
+							{
+								CCoordinate pt;
+								pt.X   =  poLine->getX(si)*long_lat_unit;
+								pt.Y   =  poLine->getY(si)*long_lat_unit;
+								CoordinateVector.push_back(pt);
+								m_AMSLogFile << pt.X << ";" << pt.Y << " ";
+
+							}
+							//CCoordinate pt;
+							//pt.X   =  poLine->getX(Number_of_Shape_Points-1)*long_lat_unit;
+							//pt.Y =  poLine->getY(Number_of_Shape_Points-1)*long_lat_unit;
+							//CoordinateVector.push_back(pt);
+							//m_AMSLogFile << pt.X << ";" << pt.Y << " ";
+
+							m_AMSLogFile << "}" ;
 
 						}
 
-						m_AMSLogFile << "}" << endl;
-					} // wkbPolygon
-					line_no++;
-				} // poGeometry
-			zone_record_count++;
-			} // poFeature
-		} // poLayers
+
+						if(from_node_id==0 && to_node_id ==0)  // test twice here for from and to nodes
+						{
+							AfxMessageBox("Invalid data in connector layer: from_node_id==0 && to_node_id ==0.");
+							break;
+						}
 
 
-		m_AMSLogFile << "imported " << line_no << " zone boundaries." << endl;
-		m_ZoneDataLoadingStatus.Format ("%d zone boundary records (and %d zones) are loaded from file %s.",line_no,m_ZoneMap.size(), zone_shape_file_name);
+						line_no ++;
+						for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
+						{
 
-		if(warning_message.GetLength () >=1)
+							bool bNodeNonExistError = false;
+							int m_SimulationHorizon = 1;
+							DTALink* pLink = new DTALink(m_SimulationHorizon);
+							pLink->m_LinkNo = m_LinkSet.size();
+							pLink->m_Name  = "connector";
+							pLink->m_OrgDir = direction;
+							pLink->m_LinkID = link_id;
+
+
+							if(to_link_id == 3522905)
+							{
+								TRACE("");
+							}
+							if(link_code == 1)  //AB link
+							{
+								pLink->m_FromNodeNumber = from_node_id;
+
+								if(to_link_id>=1)
+								{
+									if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+									{
+										pLink->m_ToNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id], LinkID_ToNodeNumber_Map[to_link_id]);
+										// from_node_id has been defined
+										to_node_id = pLink->m_ToNodeNumber ;
+									}
+									else
+									{
+										CString error_message;
+
+										error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+										AfxMessageBox(error_message);
+										return false;
+									}
+								}
+								else
+									pLink->m_ToNodeNumber = to_node_id;
+
+								pLink->m_Direction  = 1;
+
+								pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
+								pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+
+
+
+								for(unsigned si = 0; si < CoordinateVector.size(); si++)
+								{
+									GDPoint	pt;
+									pt.x = CoordinateVector[si].X;
+									pt.y = CoordinateVector[si].Y;
+
+									pLink->m_Original_ShapePoints .push_back (pt);
+									pLink->m_ShapePoints .push_back (pt);
+								}
+
+
+							}
+
+							if(link_code == 2)  //BA link
+							{
+								if(to_link_id>=1)
+								{
+									if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+									{
+										pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
+										from_node_id = pLink->m_FromNodeNumber ;
+									}
+									else
+									{
+										CString error_message;
+
+										error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+										AfxMessageBox(error_message);
+										return false;
+									}
+								}else
+								{
+									pLink->m_FromNodeNumber = to_node_id;
+								}
+
+
+								pLink->m_ToNodeNumber = from_node_id;
+								pLink->m_Direction  = 1;
+								pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
+								pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
+
+
+								for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
+								{
+									GDPoint	pt;
+									pt.x = CoordinateVector[si].X;
+									pt.y = CoordinateVector[si].Y;
+									pLink->m_Original_ShapePoints .push_back (pt);
+									pLink->m_ShapePoints .push_back (pt);
+								}
+
+							}
+
+							pLink->m_NumberOfLanes= number_of_lanes;
+							pLink->m_SpeedLimit= speed_limit_in_mph;
+							pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
+							pLink->m_Length= length;  // minimum distance
+
+							pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
+							pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+
+							pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
+							pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+							pLink->m_link_type= type;
+							pLink->m_Grade = grade;
+
+
+							if(link_code == 2)  //BA link
+							{
+								if(to_link_id>=1)
+								{
+									if(LinkID_ToNodeNumber_Map.find (to_link_id) != LinkID_ToNodeNumber_Map.end())
+									{
+										pLink->m_FromNodeNumber = max(LinkID_FromNodeNumber_Map[to_link_id],LinkID_ToNodeNumber_Map[to_link_id]);
+										from_node_id = pLink->m_FromNodeNumber ;
+
+									}
+									else
+									{
+										CString error_message;
+
+										error_message.Format("Invalid data: to_link_id %d in connector layer has not been defined in link layer.", to_link_id);		
+										AfxMessageBox(error_message);
+										return false;
+									}
+								}else
+								{
+									pLink->m_FromNodeNumber = to_node_id;
+								}
+
+								int R_number_of_lanes = number_of_lanes;
+
+								float R_speed_limit_in_mph= speed_limit_in_mph;
+
+								float R_lane_capacity_in_vhc_per_hour= capacity_in_pcphpl;
+								float R_grade= grade;
+								pLink->m_NumberOfLanes= number_of_lanes;
+								pLink->m_SpeedLimit= speed_limit_in_mph;
+								pLink->m_MaximumServiceFlowRatePHPL= R_lane_capacity_in_vhc_per_hour;
+								pLink->m_Grade = R_grade;
+								pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
+								pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance
+								pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
+								pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+								pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+								pLink->m_link_type= type;
+
+							}
+
+							m_AMSLogFile << "Add connector " << from_node_id << " -> " << to_node_id << endl;
+
+							pLink->m_Kjam = k_jam;
+							pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
+							pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
+
+							m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+
+							pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
+							pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+
+
+							pLink->input_line_no  = line_no;
+
+							if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+							{
+								//skip
+								continue;
+							}
+
+							//if(to_link_id>=1) // generation link based
+							//{
+							//	// reset shape points;
+
+							//	pLink->m_Original_ShapePoints.clear();
+							//	pLink->m_ShapePoints.clear();
+							//		
+							//		GDPoint	pt;
+							//		pt = pLink->m_FromPoint;
+
+							//		pLink->m_Original_ShapePoints .push_back (pt);
+							//		pLink->m_ShapePoints .push_back (pt);
+
+							//		pt = pLink->m_ToPoint;
+
+							//		pLink->m_Original_ShapePoints .push_back (pt);
+							//		pLink->m_ShapePoints .push_back (pt);
+							//}
+							m_LinkNoMap[m_LinkSet.size()]  = pLink;
+
+
+							m_LinkSet.push_back (pLink);
+							m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
+							m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+
+							// mark them as activity location 
+							m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+							m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+
+
+							unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+							m_NodeIDtoLinkMap[LinkKey] = pLink;
+
+
+							__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
+							m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+
+							number_of_new_connectors++;
+
+							i++;
+
+						}  // link code
+
+						m_AMSLogFile  << endl;
+					}  // feature
+				}
+
+				m_AMSLogFile << "imported " << i << " links. " << endl; 
+
+
+			}  // layer
+			// to do: # of nodes: control: two-way stop signs....
+
+			OGRDataSource::DestroyDataSource( poDS );
+
+
+		}
+
+		if(number_of_new_connectors>0)
 		{
-			CString final_message; 
-			final_message = "Warning messages:\n" + warning_message + "\nPlease check your original shape files and corresponding dbf files\n\n";
-			AfxMessageBox(final_message);
+		m_ConnectorDataLoadingStatus.Format ("%d connectors loaded or generated.",number_of_new_connectors);
+		}
+
+		// post-processing link information
+
+		Construct4DirectionMovementVector();
+		AssignUniqueLinkIDForEachLink();
+
+		if(bTwoWayLinkFlag == true)
+			m_bLinkToBeShifted = true;
+
+		GenerateOffsetLinkBand();
+
+		m_UnitMile  = 1.0f;
+		if(length_sum>0.000001f)
+			m_UnitMile=  default_distance_sum /length_sum;
+
+		m_UnitFeet = m_UnitMile/5280.0f;  
+
+		if(offset_link_flag)
+			OffsetLink();
+
+
+		// ************************************/
+		// 3: zone table
+		// ************************************/
+		string zone_table_file_name;
+		string zone_id_name;
+		parser.GetValueBySectionKeyFieldName(file_name,"file_name","zone","value",zone_table_file_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"zone","zone_id","value",zone_id_name);
+
+		CString zone_shape_file_name;
+		zone_shape_file_name = m_ProjectDirectory + zone_table_file_name.c_str();
+
+		poDS = OGRSFDriverRegistrar::Open(zone_shape_file_name, FALSE );
+		if( poDS == NULL )
+		{  // zone layer file is not provided
+			m_AMSLogFile << "Zone layer file is not provided. Use node file to generate zone layers." << endl; 
+			m_ZoneDataLoadingStatus.Format ("Zone layer file is not provided. Use node file to generate zone layers.");
+
+		}else  // read zone layer file
+		{
+
+			int poLayers = ((OGRDataSource*)poDS)->GetLayerCount() ;
+			int line_no = 0;
+
+			for (int j=0; j < poLayers; j++) 
+			{
+
+				OGRLayer  *poLayer;
+
+				poLayer = ((OGRDataSource*)poDS)->GetLayer(j);	
+
+				if(poLayer == NULL)
+				{
+					message_str.Format("Open layer %d failed", j+1);
+					AfxMessageBox(message_str);
+
+					return false;			
+				}
+
+				OGRFeature *poFeature;
+
+				int feature_count = 0;
+
+				poLayer->ResetReading();
+
+
+
+				m_AMSLogFile << "3: zone block---" << endl;
+				m_AMSLogFile << "zone id" << endl;
+
+				int zone_record_count = 1;
+				bool bTestFieldName = false;
+				while( (poFeature = poLayer->GetNextFeature()) != NULL )
+				{
+					OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+
+
+					if(bTestFieldName==false) 
+					{
+						if(zone_id_name.size()>0  && poFeature->GetFieldIndex(zone_id_name.c_str ())==-1)
+						{
+							FieldNameNotExistMessage(zone_id_name, "section zone: key zone_id");
+							break;
+						}
+
+
+						bTestFieldName = true;
+					}
+
+					// zone id
+					int id = poFeature->GetFieldAsInteger(zone_id_name.c_str());
+
+					if(id ==0)
+					{
+
+						CString str;
+						str.Format ("Reading field %s = 0 at record No. %d for field %s. This field might not exist.",zone_id_name, zone_record_count,zone_id_name);
+
+						AfxMessageBox(str);
+						return false;
+					}
+					m_AMSLogFile << id << "," ;
+
+					OGRGeometry *poGeometry;
+
+					poGeometry = poFeature->GetGeometryRef();
+					if( poGeometry != NULL )
+					{
+
+						if (wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon )
+						{
+
+							OGRPolygon* polygon = (OGRPolygon*)(poGeometry);
+
+							OGRLinearRing *ring = polygon->getExteriorRing();
+							OGRPoint point;
+
+							m_AMSLogFile << "{";
+
+							for(int i = 0; i < ring->getNumPoints(); i++)
+							{
+								ring->getPoint(i, &point);
+								GDPoint pt;
+								pt.x = point.getX()*long_lat_unit;
+								pt.y =point.getY()*long_lat_unit;
+								m_ZoneMap [id].m_ShapePoints.push_back (pt);
+
+								m_AMSLogFile << pt.x << "," << pt.y << " ";
+
+							}
+
+							m_AMSLogFile << "}" << endl;
+						} // wkbPolygon
+						line_no++;
+					} // poGeometry
+					zone_record_count++;
+				} // poFeature
+			} // poLayers
+
+
+			m_AMSLogFile << "imported " << line_no << " zone boundaries." << endl;
+			m_ZoneDataLoadingStatus.Format ("%d zone boundary records (and %d zones) are loaded from file %s.",line_no,m_ZoneMap.size(), zone_shape_file_name);
+
+			if(warning_message.GetLength () >=1)
+			{
+				CString final_message; 
+				final_message = "Warning messages:\n" + warning_message + "\nPlease check your original shape files and corresponding dbf files\n\n";
+				AfxMessageBox(final_message);
+			}
+
+
+
 		}
 
 
+		if(identify_from_node_id_and_to_node_id_based_on_geometry == "yes")
+		{
+		m_NodeDataLoadingStatus.Format ("%d nodes are automatically generated from link layer.",m_NodeSet.size());
+		}
 
-	}
 #else  // 64 bit
 
 	AfxMessageBox("NEXTA 64-bit version does not support shape file importing function. Please use NEXTA_32.exe ");
@@ -2305,7 +2582,7 @@ bool  CTLiteDoc::ReadDemandMatrixFile(LPCTSTR lpszFileName,int demand_type)
 			} // for each origin
 
 		}  // for each line
-	
+
 
 	}
 	CString msg;
@@ -2431,7 +2708,7 @@ bool CTLiteDoc::ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int 
 		int str_line_size;
 
 		for(int skip = 0; skip < 8; skip++)
-		g_read_a_line(st,str_line, str_line_size); //  skip the first 8 line
+			g_read_a_line(st,str_line, str_line_size); //  skip the first 8 line
 
 		int origin_zone, destination_zone;
 		float number_of_vehicles ;
@@ -2445,21 +2722,21 @@ bool CTLiteDoc::ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int 
 			if(AMSLogOutput)
 				m_AMSLogFile << origin_zone << "," << destination_zone << "," << number_of_vehicles << "," ;
 
-				if(number_of_vehicles < -0.0001)
-					number_of_vehicles = 0;
+			if(number_of_vehicles < -0.0001)
+				number_of_vehicles = 0;
 
-				if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
-				{
-					//m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].AddTimeDependentValue (demand_type,number_of_vehicles,starting_time_in_min, ending_time_in_min);
-					total_demand += number_of_vehicles;
-				}
-				else
-				{
-					CString msg;
-					msg.Format ("Line %d in file %s has a zone number greater than the size of zones (%d). ",line_no,lpszFileName, m_ODSize);
-					AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
-					return false;
-				}
+			if(origin_zone <= m_ODSize && destination_zone <= m_ODSize)
+			{
+				//m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].AddTimeDependentValue (demand_type,number_of_vehicles,starting_time_in_min, ending_time_in_min);
+				total_demand += number_of_vehicles;
+			}
+			else
+			{
+				CString msg;
+				msg.Format ("Line %d in file %s has a zone number greater than the size of zones (%d). ",line_no,lpszFileName, m_ODSize);
+				AfxMessageBox(msg,MB_OK|MB_ICONINFORMATION);
+				return false;
+			}
 
 			if(AMSLogOutput)					
 				m_AMSLogFile << endl;
@@ -2506,7 +2783,7 @@ bool  CTLiteDoc::RunGravityModel()
 			parser.GetValueByFieldName("accessibility_factor",accessibility_factor);
 
 			CString label;
-			
+
 			label.Format("%d,%d", from_TAZ   , to_TAZ);
 			m_ODMatrixMap[label].Origin = from_TAZ;
 			m_ODMatrixMap[label].Destination  = to_TAZ;
@@ -2515,11 +2792,11 @@ bool  CTLiteDoc::RunGravityModel()
 		}
 	}else
 	{
-	
-	AfxMessageBox("File output_accessibility.csv cannot be opened.");
+
+		AfxMessageBox("File output_accessibility.csv cannot be opened.");
 	}
 
-				
+
 
 	float total_demand = 0;
 	long line_no = 0;
@@ -2535,22 +2812,22 @@ bool  CTLiteDoc::RunGravityModel()
 	{
 		if(itr_o->second.m_bWithinSubarea)
 		{
-		for(unsigned int i = 0; i< itr_o->second.m_ActivityLocationVector.size(); i++)
-		{
-			DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[itr_o->second.m_ActivityLocationVector[i].NodeNumber]];
-				
- 		total_production += itr_o->second .m_Production;
-		total_attraction += itr_o->second .m_Attraction;
+			for(unsigned int i = 0; i< itr_o->second.m_ActivityLocationVector.size(); i++)
+			{
+				DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[itr_o->second.m_ActivityLocationVector[i].NodeNumber]];
 
-		}
+				total_production += itr_o->second .m_Production;
+				total_attraction += itr_o->second .m_Attraction;
+
+			}
 		}
 	}
 
 	if(total_production <0.1  || total_attraction < 0.1)
 	{
-	
-	AfxMessageBox("0 production/attraction is found.\nPlease first input production and attraction values for each zone in file input_zone.csv.");
-	return false;
+
+		AfxMessageBox("0 production/attraction is found.\nPlease first input production and attraction values for each zone in file input_zone.csv.");
+		return false;
 	}
 
 
@@ -2561,29 +2838,29 @@ bool  CTLiteDoc::RunGravityModel()
 		if(itr_o->second.m_bWithinSubarea)
 		{
 
-		int destination_zone;
+			int destination_zone;
 
-		for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
-		{
-			if(itr_d->second.m_bWithinSubarea)
+			for(itr_d = m_ZoneMap.begin(); itr_d != m_ZoneMap.end(); itr_d++)
 			{
-				destination_zone = itr_d->first ;
+				if(itr_d->second.m_bWithinSubarea)
+				{
+					destination_zone = itr_d->first ;
 
 
 					float accessibility_factor = 1;
-					
-						CString label;
-				label.Format("%d,%d", itr_o->first   , itr_d->first);
+
+					CString label;
+					label.Format("%d,%d", itr_o->first   , itr_d->first);
 
 					if(m_ODMatrixMap.find(label)  != m_ODMatrixMap.end())
 					{
 						accessibility_factor = m_ODMatrixMap[label].Accessibility_Factor;
 					}
 
-				total_relative_attraction += (itr_d)->second .m_Attraction * accessibility_factor;
-			}
+					total_relative_attraction += (itr_d)->second .m_Attraction * accessibility_factor;
+				}
 
-		}
+			}
 		}
 
 		if(total_relative_attraction <0.0001f)
@@ -2594,33 +2871,33 @@ bool  CTLiteDoc::RunGravityModel()
 		{
 			if(itr_d->second.m_bWithinSubarea)
 			{
-			int origin_zone  = itr_o->first ;
-			int destination_zone = itr_d->first ;
+				int origin_zone  = itr_o->first ;
+				int destination_zone = itr_d->first ;
 
-					float accessibility_factor = 1;
-					CString label;
+				float accessibility_factor = 1;
+				CString label;
 				label.Format("%d,%d", itr_o->first   , itr_d->first);
 
-					if(m_ODMatrixMap.find(label)  != m_ODMatrixMap.end())
-					{
-						accessibility_factor = m_ODMatrixMap[label].Accessibility_Factor;
-					}
+				if(m_ODMatrixMap.find(label)  != m_ODMatrixMap.end())
+				{
+					accessibility_factor = m_ODMatrixMap[label].Accessibility_Factor;
+				}
 
 
-			float number_of_vehicles = itr_o->second .m_Production * (itr_d)->second .m_Attraction * accessibility_factor / max(0.00000001,total_relative_attraction);
+				float number_of_vehicles = itr_o->second .m_Production * (itr_d)->second .m_Attraction * accessibility_factor / max(0.00000001,total_relative_attraction);
 
 
-			sub_total += number_of_vehicles;
-			
-			// m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
+				sub_total += number_of_vehicles;
 
-			m_ODMatrixMap[label].Origin = origin_zone;
-			m_ODMatrixMap[label].Destination  = destination_zone;
-			m_ODMatrixMap[label].TotalVehicleSize = number_of_vehicles; 
-			total_demand += number_of_vehicles;
+				// m_ZoneMap[origin_zone].m_ODDemandMatrix [destination_zone].SetValue (demand_type,number_of_vehicles);
 
-			if(number_of_vehicles < -0.0001)
-				number_of_vehicles = 0;
+				m_ODMatrixMap[label].Origin = origin_zone;
+				m_ODMatrixMap[label].Destination  = destination_zone;
+				m_ODMatrixMap[label].TotalVehicleSize = number_of_vehicles; 
+				total_demand += number_of_vehicles;
+
+				if(number_of_vehicles < -0.0001)
+					number_of_vehicles = 0;
 			}
 		}
 
@@ -2658,9 +2935,9 @@ void  CTLiteDoc::ReadSynchroUniversalDataFiles()
 			m_bFitNetworkInitialized  = false;
 
 		}
-	
+
 		UpdateAllViews(0);
-	
+
 	}
 
 }
@@ -2689,8 +2966,8 @@ bool  CTLiteDoc::ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LP
 
 			if(node_id==89)
 			{
-			TRACE("");
-			
+				TRACE("");
+
 			}
 			if(!parser.GetValueByFieldName("INTNAME",name))
 				name = "";
@@ -2725,12 +3002,12 @@ bool  CTLiteDoc::ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LP
 
 						}
 
-					
+
 					}
-			
+
 
 				}
-				
+
 			}
 
 		}
@@ -2849,7 +3126,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 	parser.m_bSkipFirstLine  = true;  // skip the first line  : Lane Group Data
 
 	const int LaneColumnSize = 32;
-//	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
+	//	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
 	string lane_Column_name_str[LaneColumnSize] = { "NBT","NBL2","NBL","NBR","NBR2",
 		"SBT","SBL2","SBL","SBR","SBR2",
 		"EBT","EBL2","EBL","EBR","EBR2",
@@ -3112,181 +3389,181 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 				for(m = 0; m< LaneColumnSize; m++)
 				{
 
-						if(LaneDataMap.find(lane_Column_name_str[m]) != LaneDataMap.end() )  // data exists
-						{
+					if(LaneDataMap.find(lane_Column_name_str[m]) != LaneDataMap.end() )  // data exists
+					{
 
 
-							from_node_id  = LaneDataMap[lane_Column_name_str[m]].UpNode;
-							int dest_node_id  = LaneDataMap[lane_Column_name_str[m]].DestNode ;
+						from_node_id  = LaneDataMap[lane_Column_name_str[m]].UpNode;
+						int dest_node_id  = LaneDataMap[lane_Column_name_str[m]].DestNode ;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase1 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase1;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase1 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase1;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase2 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase2;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase2 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase2;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase3 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase3;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase3 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase3;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase4 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase4;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].Phase4 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].Phase4;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase1 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase1;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase1 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase1;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase2 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase2;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase2 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase2;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase3 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase3;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase3 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase3;
 
-							if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase4 )
-								max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase4;
+						if( max_phase_number < LaneDataMap[lane_Column_name_str[m]].PermPhase4 )
+							max_phase_number = LaneDataMap[lane_Column_name_str[m]].PermPhase4;
 
-							TRACE("\nmovement %s, from node %d to node %d",
-								lane_Column_name_str[m].c_str (), from_node_id, to_node_id);
+						TRACE("\nmovement %s, from node %d to node %d",
+							lane_Column_name_str[m].c_str (), from_node_id, to_node_id);
 
-	
 
-							if(from_node_id<=0 || to_node_id <= 0)
-								continue;
 
-							// add link
-							DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
-
-							if(pExistingLink)
-							{
-								//the approach has been processed.
-								continue;
-							}
-
-							if(from_node_id == to_node_id)
-							{
+						if(from_node_id<=0 || to_node_id <= 0)
 							continue;
-							}
 
-							if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
-							{
-								//skip
-								continue;
-							}
+						// add link
+						DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
 
-							TRACE("\n add ->> movement %s, from node %d to node %d, with %d links",
-								lane_Column_name_str[m].c_str (), from_node_id, to_node_id,  LaneDataMap[lane_Column_name_str[m]].Lanes );
+						if(pExistingLink)
+						{
+							//the approach has been processed.
+							continue;
+						}
 
-							bool bToBeShifted = true;
-							int number_of_lanes = LaneDataMap[lane_Column_name_str[m]].Lanes ;
-							float speed_limit_in_mph = LaneDataMap[lane_Column_name_str[m]].Speed ;
-							float capacity_in_pcphpl =  LaneDataMap[lane_Column_name_str[m]].SatFlow / max(1,number_of_lanes);  // convert per link flow rate to per lane flow rate
+						if(from_node_id == to_node_id)
+						{
+							continue;
+						}
 
-							int m_SimulationHorizon = 1;
-							DTALink* pLink = new DTALink(m_SimulationHorizon);
-							pLink->m_LayerNo = LayerNo;
-							pLink->m_LinkNo = m_LinkSet.size();
-							pLink->m_LinkID = m_LinkSet.size();
+						if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
+						{
+							//skip
+							continue;
+						}
+
+						TRACE("\n add ->> movement %s, from node %d to node %d, with %d links",
+							lane_Column_name_str[m].c_str (), from_node_id, to_node_id,  LaneDataMap[lane_Column_name_str[m]].Lanes );
+
+						bool bToBeShifted = true;
+						int number_of_lanes = LaneDataMap[lane_Column_name_str[m]].Lanes ;
+						float speed_limit_in_mph = LaneDataMap[lane_Column_name_str[m]].Speed ;
+						float capacity_in_pcphpl =  LaneDataMap[lane_Column_name_str[m]].SatFlow / max(1,number_of_lanes);  // convert per link flow rate to per lane flow rate
+
+						int m_SimulationHorizon = 1;
+						DTALink* pLink = new DTALink(m_SimulationHorizon);
+						pLink->m_LayerNo = LayerNo;
+						pLink->m_LinkNo = m_LinkSet.size();
+						pLink->m_LinkID = m_LinkSet.size();
 
 
-							pLink->m_FromNodeNumber = from_node_id;
+						pLink->m_FromNodeNumber = from_node_id;
 
-							pLink->m_ToNodeNumber = to_node_id;
-							pLink->m_Direction  = 1;
+						pLink->m_ToNodeNumber = to_node_id;
+						pLink->m_Direction  = 1;
 
-							if(pLink->m_FromNodeNumber == 12 && pLink->m_ToNodeNumber == 2)
+						if(pLink->m_FromNodeNumber == 12 && pLink->m_ToNodeNumber == 2)
 							TRACE("");
 
-							pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-							pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+						pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
+						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
 
-							pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-							pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
-							float length_in_mile =  pLink->DefaultDistance();  // cooridnates have been changed to mile for unit
+						pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
+						pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+						float length_in_mile =  pLink->DefaultDistance();  // cooridnates have been changed to mile for unit
 
-							pLink->m_bToBeShifted = bToBeShifted; 
+						pLink->m_bToBeShifted = bToBeShifted; 
 
-							pLink->m_NumberOfLanes= number_of_lanes;
-							pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
-							pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
+						pLink->m_NumberOfLanes= number_of_lanes;
+						pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
+						pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 
-							//				pLink->m_Length= max(length_in_mile, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance, special note: we do not consider the minimum constraint here, but a vehicle cannot travel longer then 0.1 seconds
-							pLink->m_Length= length_in_mile;
-							pLink->m_FreeFlowTravelTime = pLink->m_Length/pLink->m_SpeedLimit*60.0f;  // convert from hour to min
-							pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
+						//				pLink->m_Length= max(length_in_mile, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance, special note: we do not consider the minimum constraint here, but a vehicle cannot travel longer then 0.1 seconds
+						pLink->m_Length= length_in_mile;
+						pLink->m_FreeFlowTravelTime = pLink->m_Length/pLink->m_SpeedLimit*60.0f;  // convert from hour to min
+						pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
-							pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
-							pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
-							pLink->m_link_type= 4;  //arterial
-							pLink->m_Grade = LaneDataMap[lane_Column_name_str[m]].Grade;
+						pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
+						pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
+						pLink->m_link_type= 4;  //arterial
+						pLink->m_Grade = LaneDataMap[lane_Column_name_str[m]].Grade;
 
-							int k_jam = 180;
-							int wave_speed_in_mph = 12;
+						int k_jam = 180;
+						int wave_speed_in_mph = 12;
 
-							pLink->m_Kjam = k_jam;
-							pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
+						pLink->m_Kjam = k_jam;
+						pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+						m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
+						m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
-							pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-							pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+						pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
+						pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
-							unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
+						unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 
-							m_NodeIDtoLinkMap[LinkKey] = pLink;
+						m_NodeIDtoLinkMap[LinkKey] = pLink;
 
-							__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
-							m_NodeNumbertoLinkMap[LinkKey2] = pLink;
+						__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
+						m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
-							m_LinkNotoLinkMap[m_LinkSet.size()] = pLink;
+						m_LinkNotoLinkMap[m_LinkSet.size()] = pLink;
 
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
-
-
-							default_distance_sum+= pLink->DefaultDistance();
-							length_sum += pLink ->m_Length;
-							//			pLink->SetupMOE();
-
-								GDPoint	pt;
-								pt.x = pLink->m_FromPoint.x;
-								pt.y = pLink->m_FromPoint.y;
-							pLink->m_Original_ShapePoints .push_back (pt);
-								pLink->m_ShapePoints .push_back (pt);
+						m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 
-								pt.x = pLink->m_ToPoint.x;
-								pt.y = pLink->m_ToPoint.y;
-							pLink->m_Original_ShapePoints .push_back (pt);
-								pLink->m_ShapePoints .push_back (pt);
+						default_distance_sum+= pLink->DefaultDistance();
+						length_sum += pLink ->m_Length;
+						//			pLink->SetupMOE();
 
-							TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
-							m_LinkNoMap[m_LinkSet.size()]  = pLink;
-							m_LinkSet.push_back (pLink);
-						}  // per major approach
+						GDPoint	pt;
+						pt.x = pLink->m_FromPoint.x;
+						pt.y = pLink->m_FromPoint.y;
+						pLink->m_Original_ShapePoints .push_back (pt);
+						pLink->m_ShapePoints .push_back (pt);
 
-					} // for each movement
 
-					DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
+						pt.x = pLink->m_ToPoint.x;
+						pt.y = pLink->m_ToPoint.y;
+						pLink->m_Original_ShapePoints .push_back (pt);
+						pLink->m_ShapePoints .push_back (pt);
 
-					for(int p  = 1; p <= max_phase_number; p++)
-					{
-							DTANodePhase node_phase;
+						TRACE("\nAdd link no.%d,  %d -> %d",i,pLink->m_FromNodeNumber, pLink->m_ToNodeNumber );
+						m_LinkNoMap[m_LinkSet.size()]  = pLink;
+						m_LinkSet.push_back (pLink);
+					}  // per major approach
 
-							pNode->m_PhaseVector.push_back(node_phase); // phase 1;
-					}
+				} // for each movement
 
-					LaneDataMap.clear();  // clear data after adding a set of links
+				DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
+
+				for(int p  = 1; p <= max_phase_number; p++)
+				{
+					DTANodePhase node_phase;
+
+					pNode->m_PhaseVector.push_back(node_phase); // phase 1;
 				}
+
+				LaneDataMap.clear();  // clear data after adding a set of links
+			}
 		}
 	}
-		
-		m_UnitMile  = 1.0f;
-		if(length_sum>0.000001f)
-			m_UnitMile=  default_distance_sum /length_sum;
 
-		m_UnitFeet = m_UnitMile/5280.0f;  
+	m_UnitMile  = 1.0f;
+	if(length_sum>0.000001f)
+		m_UnitMile=  default_distance_sum /length_sum;
+
+	m_UnitFeet = m_UnitMile/5280.0f;  
 
 
-		m_LinkDataLoadingStatus.Format ("%d links are loaded.",m_LinkSet.size());
+	m_LinkDataLoadingStatus.Format ("%d links are loaded.",m_LinkSet.size());
 
 
 	// add movement
@@ -3537,139 +3814,139 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 				for(m = 0; m< LaneColumnSize; m++)
 				{
 
-						if(LaneDataMap.find(lane_Column_name_str[m]) != LaneDataMap.end() )  // data exists
-						{
+					if(LaneDataMap.find(lane_Column_name_str[m]) != LaneDataMap.end() )  // data exists
+					{
 
-							int from_node_id  = LaneDataMap[lane_Column_name_str[m]].UpNode;
-							int to_node_id  = INTID;
-							int dest_node_id  = LaneDataMap[lane_Column_name_str[m]].DestNode ;
+						int from_node_id  = LaneDataMap[lane_Column_name_str[m]].UpNode;
+						int to_node_id  = INTID;
+						int dest_node_id  = LaneDataMap[lane_Column_name_str[m]].DestNode ;
 
-							TRACE("\nmovement %s, from node %d to node %d -> %d",lane_Column_name_str[m].c_str (), from_node_id, to_node_id,dest_node_id);
+						TRACE("\nmovement %s, from node %d to node %d -> %d",lane_Column_name_str[m].c_str (), from_node_id, to_node_id,dest_node_id);
 
 						DTANodeMovement element;
 
-					element.in_link_from_node_id = m_NodeNumbertoIDMap[from_node_id];		
-					element.in_link_to_node_id = m_NodeNumbertoIDMap[to_node_id];						
-					element.out_link_to_node_id = m_NodeNumbertoIDMap[dest_node_id];	
+						element.in_link_from_node_id = m_NodeNumbertoIDMap[from_node_id];		
+						element.in_link_to_node_id = m_NodeNumbertoIDMap[to_node_id];						
+						element.out_link_to_node_id = m_NodeNumbertoIDMap[dest_node_id];	
 
-					DTALink* pIncomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+						DTALink* pIncomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
 
-					if(pIncomingLink)
-						element.IncomingLinkID = pIncomingLink->m_LinkNo  ;
+						if(pIncomingLink)
+							element.IncomingLinkID = pIncomingLink->m_LinkNo  ;
 
-					DTALink* pOutcomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[to_node_id],m_NodeNumbertoIDMap[dest_node_id]);
+						DTALink* pOutcomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[to_node_id],m_NodeNumbertoIDMap[dest_node_id]);
 
-					if(pOutcomingLink)
-						element.OutgoingLinkID = pOutcomingLink->m_LinkNo ;
+						if(pOutcomingLink)
+							element.OutgoingLinkID = pOutcomingLink->m_LinkNo ;
 
 
-					GDPoint p1, p2, p3;
-					p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
-					p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
-					p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
+						GDPoint p1, p2, p3;
+						p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
+						p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
+						p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
 
-					int relative_angel_difference_from_main_direction = 0;
-					element.movement_direction = Find_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2),relative_angel_difference_from_main_direction);
-					element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
+						int relative_angel_difference_from_main_direction = 0;
+						element.movement_direction = Find_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2),relative_angel_difference_from_main_direction);
+						element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
 
-					// determine  movement type /direction here
-					element.movement_approach_turn = DTA_LANES_COLUME_init;
+						// determine  movement type /direction here
+						element.movement_approach_turn = DTA_LANES_COLUME_init;
 
-					switch (element.movement_direction)
-					{
-					case DTA_North:
-						switch (element.movement_turn)
+						switch (element.movement_direction)
 						{
-						case DTA_LeftTurn: element.movement_approach_turn = DTA_NBL; break;
-						case DTA_Through: element.movement_approach_turn = DTA_NBT; break;
-						case DTA_RightTurn: element.movement_approach_turn = DTA_NBR; break;
+						case DTA_North:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_NBL; break;
+							case DTA_Through: element.movement_approach_turn = DTA_NBT; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_NBR; break;
+							}
+							break;
+						case DTA_East:
+
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_EBL; break;
+							case DTA_Through: element.movement_approach_turn = DTA_EBT; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_EBR; break;
+							}
+							break;
+						case DTA_South:
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_SBL; break;
+							case DTA_Through: element.movement_approach_turn = DTA_SBT; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_SBR; break;
+							}
+							break;
+						case DTA_West:
+
+							switch (element.movement_turn)
+							{
+							case DTA_LeftTurn: element.movement_approach_turn = DTA_WBL; break;
+							case DTA_Through: element.movement_approach_turn = DTA_WBT; break;
+							case DTA_RightTurn: element.movement_approach_turn = DTA_WBR; break;
+							}
+							break;
 						}
-						break;
-					case DTA_East:
-
-						switch (element.movement_turn)
-						{
-						case DTA_LeftTurn: element.movement_approach_turn = DTA_EBL; break;
-						case DTA_Through: element.movement_approach_turn = DTA_EBT; break;
-						case DTA_RightTurn: element.movement_approach_turn = DTA_EBR; break;
-						}
-						break;
-					case DTA_South:
-						switch (element.movement_turn)
-						{
-						case DTA_LeftTurn: element.movement_approach_turn = DTA_SBL; break;
-						case DTA_Through: element.movement_approach_turn = DTA_SBT; break;
-						case DTA_RightTurn: element.movement_approach_turn = DTA_SBR; break;
-						}
-						break;
-					case DTA_West:
-
-						switch (element.movement_turn)
-						{
-						case DTA_LeftTurn: element.movement_approach_turn = DTA_WBL; break;
-						case DTA_Through: element.movement_approach_turn = DTA_WBT; break;
-						case DTA_RightTurn: element.movement_approach_turn = DTA_WBR; break;
-						}
-						break;
-					}
 
 
-					DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
+						DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
 
-					ASSERT(pNode!=NULL);
+						ASSERT(pNode!=NULL);
 
-					int movement_index = pNode->m_MovementVector.size();
-					
-					// educated guess about the associatd phase, as a movement can be associated with multiple phases 
-					element.phase_index = max(LaneDataMap[lane_Column_name_str[m]].Phase1,LaneDataMap[lane_Column_name_str[m]].PermPhase1);
+						int movement_index = pNode->m_MovementVector.size();
 
-					pNode->m_MovementVector.push_back(element);
+						// educated guess about the associatd phase, as a movement can be associated with multiple phases 
+						element.phase_index = max(LaneDataMap[lane_Column_name_str[m]].Phase1,LaneDataMap[lane_Column_name_str[m]].PermPhase1);
 
-					//record the movement index into the right phase index
+						pNode->m_MovementVector.push_back(element);
 
-					int PhaseIndex  = 0;
-					
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase1;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						//record the movement index into the right phase index
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase2;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						int PhaseIndex  = 0;
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase3;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase1;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase4;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-					
-					////////////// permitted phase
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase1;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase2;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase2;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase3;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase3;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase4;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
 
-					PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase4;
-					if(PhaseIndex>=1)
-						pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+						////////////// permitted phase
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase1;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase2;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase3;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
+
+						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase4;
+						if(PhaseIndex>=1)
+							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
 
 
 					}  // per major approach
 
 
 
-					} // for each movement
-					LaneDataMap.clear();  // clear data after adding a set of links
-				}
+				} // for each movement
+				LaneDataMap.clear();  // clear data after adding a set of links
+			}
 
 		}
 	}
@@ -3678,11 +3955,11 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 	{
 
-	(*iNode)->SortMovementVector();
+		(*iNode)->SortMovementVector();
 
 	}
-		//Construct4DirectionMovementVector();
-//		GenerateOffsetLinkBand();
+	//Construct4DirectionMovementVector();
+	//		GenerateOffsetLinkBand();
 	return 1;
 }
 
@@ -3744,7 +4021,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	{
 		CString msg;
 		msg.Format ("Please prepare node control type definition file input_link_type.csv and place it at folder %s.",directory);
-			AfxMessageBox(msg);
+		AfxMessageBox(msg);
 		return false;
 	}
 
@@ -3753,7 +4030,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	{
 		CString msg;
 		msg.Format ("Please prepare link type definition file input_link_type.csv and place it at folder %s.",directory);
-			AfxMessageBox(msg);
+		AfxMessageBox(msg);
 		return false;
 	}
 
@@ -3761,7 +4038,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	{
 		CString msg;
 		msg.Format ("Please prepare demand meta data file input_demand_meta_data and place it at folder %s.",directory);
-			AfxMessageBox(msg);
+		AfxMessageBox(msg);
 		return false;
 	}
 
@@ -3770,10 +4047,10 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 		CString msg;
 		msg.Format ("Please use Excel to review files input_node_control_type.csv and input_link_type.csv, as default files are used.");
 
-			AfxMessageBox(msg, MB_ICONINFORMATION);
+		AfxMessageBox(msg, MB_ICONINFORMATION);
 
-			OpenCSVFileInExcel(m_ProjectDirectory+"input_node_control_type.csv");
-			OpenCSVFileInExcel(m_ProjectDirectory+"input_link_type.csv");
+		OpenCSVFileInExcel(m_ProjectDirectory+"input_node_control_type.csv");
+		OpenCSVFileInExcel(m_ProjectDirectory+"input_link_type.csv");
 	}
 
 
@@ -3791,7 +4068,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 
 
 	ReadTransitFiles(directory+"transit_data\\");  // read transit data
-	
+
 
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
@@ -3914,9 +4191,9 @@ void CTLiteDoc::OnImportSynchrocombinedcsvfile()
 
 		m_LinkMOEMode = MOE_none;
 		ShowTextLabel();
-	
+
 		UpdateAllViews(0);
-	
+
 	}
 }
 
@@ -3930,20 +4207,20 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 	// read users' prespecified control type
 	if(ReadNodeControlTypeCSVFile(Synchro_directory+"input_node_control_type.csv") == false)
 	{
-	CString msg;
-	msg.Format("Please first make sure file %s\\input_node_control_type.csv exists before importing synchro single csv file.", Synchro_directory);
-	AfxMessageBox(msg, MB_ICONINFORMATION);
-	
+		CString msg;
+		msg.Format("Please first make sure file %s\\input_node_control_type.csv exists before importing synchro single csv file.", Synchro_directory);
+		AfxMessageBox(msg, MB_ICONINFORMATION);
+
 	}
 	if(ReadLinkTypeCSVFile(Synchro_directory+"input_link_type.csv") == false)
 	{
-	CString msg;
-	msg.Format("Please first make sure file %s\\input_link_type.csv exists before importing synchro single csv file.", Synchro_directory);
-	AfxMessageBox(msg, MB_ICONINFORMATION);
-	
+		CString msg;
+		msg.Format("Please first make sure file %s\\input_link_type.csv exists before importing synchro single csv file.", Synchro_directory);
+		AfxMessageBox(msg, MB_ICONINFORMATION);
+
 	}
 
-	
+
 	std::map<int,int> UpNodeNumberMap;
 	std::map<int,int> DestNodeNumberMap;
 
@@ -3967,177 +4244,177 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 			if(parser.m_SynchroSectionName.find ("Nodes")!=  string::npos) 
 			{
 
-			int intid;
-			string name;
-			DTANode* pNode = 0;
+				int intid;
+				string name;
+				DTANode* pNode = 0;
 
-			int node_type;
-			double X;
-			double Y;
-			if(parser.GetValueByFieldName("INTID",intid) == false)
-				continue;
+				int node_type;
+				double X;
+				double Y;
+				if(parser.GetValueByFieldName("INTID",intid) == false)
+					continue;
 
-			if(!parser.GetValueByFieldName("INTNAME",name))
-				name = "";
+				if(!parser.GetValueByFieldName("INTNAME",name))
+					name = "";
 
-			if(!parser.GetValueByFieldName("TYPE",node_type))
-				node_type = 0;
+				if(!parser.GetValueByFieldName("TYPE",node_type))
+					node_type = 0;
 
-			// use the X and Y as default values first
-			bool bFieldX_Exist = parser.GetValueByFieldName("X",X);
-			parser.GetValueByFieldName("Y",Y);
+				// use the X and Y as default values first
+				bool bFieldX_Exist = parser.GetValueByFieldName("X",X);
+				parser.GetValueByFieldName("Y",Y);
 
-			pNode = new DTANode;
+				pNode = new DTANode;
 
-			pNode->m_Name = name;
+				pNode->m_Name = name;
 
-			pNode->m_ControlType = m_ControlType_NoControl;  // default value
-
-
-			pNode->pt.x = X/5280.0f;  // feet to mile
-			pNode->pt.y = Y/5280.0f;  // feet to mile
+				pNode->m_ControlType = m_ControlType_NoControl;  // default value
 
 
-			int node_number_estimator  = j;
-			if(intid < 10000 && intid > j)
-			{
-			  node_number_estimator = intid;  // encounter skipped nodes, move 
-			  j = node_number_estimator;
-			
-			}
-			pNode->m_NodeNumber = node_number_estimator; // intid is the name used , start from 1
-			pNode->m_NodeOriginalNumber = node_number_estimator;
-			m_INTIDMap [intid] = i;
-			m_NodeOrgNumber2INTIDMap[intid] = node_number_estimator;
-			pNode->m_NodeID = i;
-			pNode->m_ZoneID = 0;
-			pNode->m_CycleLengthInSecond = 0;
-			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNumberMap[i] = node_number_estimator; // start from 1
-			m_NodeNumbertoIDMap[node_number_estimator] = i;
-			m_NodeOrgNumber2NodeNoMap[intid] = i;
-			i++;
-			j++;
+				pNode->pt.x = X/5280.0f;  // feet to mile
+				pNode->pt.y = Y/5280.0f;  // feet to mile
 
-		} // node block
-////////////////////////////////////////////
+
+				int node_number_estimator  = j;
+				if(intid < 10000 && intid > j)
+				{
+					node_number_estimator = intid;  // encounter skipped nodes, move 
+					j = node_number_estimator;
+
+				}
+				pNode->m_NodeNumber = node_number_estimator; // intid is the name used , start from 1
+				pNode->m_NodeOriginalNumber = node_number_estimator;
+				m_INTIDMap [intid] = i;
+				m_NodeOrgNumber2INTIDMap[intid] = node_number_estimator;
+				pNode->m_NodeID = i;
+				pNode->m_ZoneID = 0;
+				pNode->m_CycleLengthInSecond = 0;
+				m_NodeSet.push_back(pNode);
+				m_NodeIDMap[i] = pNode;
+				m_NodeIDtoNumberMap[i] = node_number_estimator; // start from 1
+				m_NodeNumbertoIDMap[node_number_estimator] = i;
+				m_NodeOrgNumber2NodeNoMap[intid] = i;
+				i++;
+				j++;
+
+			} // node block
+			////////////////////////////////////////////
 
 			m_DefaultLinkType = m_LinkTypeArterial;
 
-		if(parser.m_SynchroSectionName.find ("Links")!=  string::npos) 
-		{
-
-
-			string direction_vector[8] = {"NB","SB","EB","WB","NE","NW","SE","SW"};
-
-			int intid;
-			string name;
-			DTANode* pNode = 0;
-
-			int node_type;
-			double X;
-			double Y;
-			if(parser.GetValueByFieldName("INTID",intid) == false)
-				continue;
-
-			parser.GetValueByFieldName("RECORDNAME",name);
-			int INTID;
-				int m;
-			//			switch (name)
-			if (name == "Up ID" || name == "UpNodeID")
+			if(parser.m_SynchroSectionName.find ("Links")!=  string::npos) 
 			{
 
 
-				for(int direction = 0; direction < 8; direction++)
+				string direction_vector[8] = {"NB","SB","EB","WB","NE","NW","SE","SW"};
+
+				int intid;
+				string name;
+				DTANode* pNode = 0;
+
+				int node_type;
+				double X;
+				double Y;
+				if(parser.GetValueByFieldName("INTID",intid) == false)
+					continue;
+
+				parser.GetValueByFieldName("RECORDNAME",name);
+				int INTID;
+				int m;
+				//			switch (name)
+				if (name == "Up ID" || name == "UpNodeID")
 				{
-					int  incoming_node_number;
-					if(parser.GetValueByFieldName(direction_vector[direction],incoming_node_number))// value exits
+
+
+					for(int direction = 0; direction < 8; direction++)
 					{
-						// add a new link
-						int to_node_id = m_INTIDMap[intid];
-
-
-						if(m_NodeNumbertoIDMap.find(incoming_node_number) != m_NodeNumbertoIDMap.end() )
+						int  incoming_node_number;
+						if(parser.GetValueByFieldName(direction_vector[direction],incoming_node_number))// value exits
 						{
-							int from_node_id = m_NodeNumbertoIDMap[incoming_node_number];
-							from_node_id_map[direction] = from_node_id;
-							//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
-							  // add new link if the outbound node is an external node
+							// add a new link
+							int to_node_id = m_INTIDMap[intid];
+
+
+							if(m_NodeNumbertoIDMap.find(incoming_node_number) != m_NodeNumbertoIDMap.end() )
+							{
+								int from_node_id = m_NodeNumbertoIDMap[incoming_node_number];
+								from_node_id_map[direction] = from_node_id;
+								//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
+								// add new link if the outbound node is an external node
 								AddNewLink(from_node_id, to_node_id,false, false);
 
-						} else
-						{
-						
-							if(m_NodeOrgNumber2NodeNoMap.find(incoming_node_number) != m_NodeOrgNumber2NodeNoMap.end())
+							} else
 							{
 
-							int from_node_id = m_NodeOrgNumber2NodeNoMap[incoming_node_number];
-							from_node_id_map[direction] = from_node_id;
-							//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
-							  // add new link if the outbound node is an external node
-								AddNewLink(from_node_id, to_node_id,false);
+								if(m_NodeOrgNumber2NodeNoMap.find(incoming_node_number) != m_NodeOrgNumber2NodeNoMap.end())
+								{
+
+									int from_node_id = m_NodeOrgNumber2NodeNoMap[incoming_node_number];
+									from_node_id_map[direction] = from_node_id;
+									//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
+									// add new link if the outbound node is an external node
+									AddNewLink(from_node_id, to_node_id,false);
+								}
+
 							}
+
 
 						}
 
-					
+
 					}
-			
 
 				}
-	
-			}
 
-			///
-			if (name == "Name")
-			{
-
-				for(int direction = 0; direction < 8; direction++)
+				///
+				if (name == "Name")
 				{
-					string  name;
-					if(parser.GetValueByFieldName(direction_vector[direction],name))// value exits
-					{
-						// add a new link
-						int to_node_id = m_INTIDMap[intid];
-						int from_node_id = from_node_id_map[direction];
-						 DTALink* pLink = FindLinkWithNodeIDs(from_node_id, to_node_id);
 
-						 if(pLink!=NULL)
+					for(int direction = 0; direction < 8; direction++)
+					{
+						string  name;
+						if(parser.GetValueByFieldName(direction_vector[direction],name))// value exits
+						{
+							// add a new link
+							int to_node_id = m_INTIDMap[intid];
+							int from_node_id = from_node_id_map[direction];
+							DTALink* pLink = FindLinkWithNodeIDs(from_node_id, to_node_id);
+
+							if(pLink!=NULL)
 						 {
-							pLink->m_Name = name;
+							 pLink->m_Name = name;
 						 }
 
-					}
+						}
 
 
-				}	
-				
-			} // end of name attributes;
-	
-		} // link block
-	
+					}	
+
+				} // end of name attributes;
+
+			} // link block
+
 			if(parser.m_SynchroSectionName.find ("Lanes")!=  string::npos) 
-		{
-
-			// finish reading node and link blocks, now we construct movement data
-		
-			if(m_bMovementAvailableFlag==0)  // has not been initialized. 
 			{
-			Construct4DirectionMovementVector();
 
-			m_MovementPointerMap.clear();
+				// finish reading node and link blocks, now we construct movement data
 
-			std::list<DTANode*>::iterator iNode;
-			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+				if(m_bMovementAvailableFlag==0)  // has not been initialized. 
 				{
-							if((*iNode)->m_NodeID  == 7)
-							{
-								TRACE("");
-							
-							}
+					Construct4DirectionMovementVector();
 
-							for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+					m_MovementPointerMap.clear();
+
+					std::list<DTANode*>::iterator iNode;
+					for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+					{
+						if((*iNode)->m_NodeID  == 7)
+						{
+							TRACE("");
+
+						}
+
+						for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
 						{
 
 							DTANodeMovement movement = (*iNode)->m_MovementVector[m];
@@ -4149,100 +4426,100 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 							m_MovementPointerMap[label] = &((*iNode)->m_MovementVector[m]); // store pointer
 
-		
+
+						}
+
+					}
+
 				}
-			
-				}
 
-			}
+				//
 
-			//
+				string direction_vector[12] = {"NBL","NBT","NBR","SBL","SBT","SBR","EBL","EBT","EBR","WBL",	"WBT",	"WBR"};
 
-			string direction_vector[12] = {"NBL","NBT","NBR","SBL","SBT","SBR","EBL","EBT","EBR","WBL",	"WBT",	"WBR"};
+				string lane_att_name_str[28] = {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
+					"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime",
+					"SatFlow","Volume","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
-			string lane_att_name_str[28] = {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
-				"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime",
-				"SatFlow","Volume","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+				int intid;
+				string name;
+				DTANode* pNode = 0;
 
-			int intid;
-			string name;
-			DTANode* pNode = 0;
+				int node_type;
+				double X;
+				double Y;
+				if(parser.GetValueByFieldName("INTID",intid) == false)
+					continue;
 
-			int node_type;
-			double X;
-			double Y;
-			if(parser.GetValueByFieldName("INTID",intid) == false)
-				continue;
-
-			parser.GetValueByFieldName("RECORDNAME",name);
+				parser.GetValueByFieldName("RECORDNAME",name);
 
 				int m;
-			//			switch (name)
-			if (name == "Up Node" || name == "UpNodeID")
-			{
-				UpNodeNumberMap.clear();
-				DestNodeNumberMap.clear();
-
-				for(int direction = 0; direction < 12; direction++)
+				//			switch (name)
+				if (name == "Up Node" || name == "UpNodeID")
 				{
-					int  incoming_node_number;
-					if(parser.GetValueByFieldName(direction_vector[direction],incoming_node_number))// value exits
+					UpNodeNumberMap.clear();
+					DestNodeNumberMap.clear();
+
+					for(int direction = 0; direction < 12; direction++)
 					{
-						UpNodeNumberMap[direction] = incoming_node_number;
+						int  incoming_node_number;
+						if(parser.GetValueByFieldName(direction_vector[direction],incoming_node_number))// value exits
+						{
+							UpNodeNumberMap[direction] = incoming_node_number;
 
-			
-					}
-			
 
-				} //direction
-	
-			}  // Up Node
-		
-			if (name == "Dest Node" || name == "DestNodeID")
-			{
+						}
 
-				for(int direction = 0; direction < 12; direction++)
+
+					} //direction
+
+				}  // Up Node
+
+				if (name == "Dest Node" || name == "DestNodeID")
 				{
-					int  outgoing_node_number;
-					if(parser.GetValueByFieldName(direction_vector[direction],outgoing_node_number))// value exits
+
+					for(int direction = 0; direction < 12; direction++)
 					{
+						int  outgoing_node_number;
+						if(parser.GetValueByFieldName(direction_vector[direction],outgoing_node_number))// value exits
+						{
 
-						DestNodeNumberMap[direction] = outgoing_node_number;
-		
-					}
+							DestNodeNumberMap[direction] = outgoing_node_number;
 
-				} //direction
-	
-			}  // Dest Node
-			
-			// Lanes
+						}
 
-			int attribute_index = -1;
+					} //direction
 
-			if(name == "Volume")
-			{
-			TRACE("");
-			}
+				}  // Dest Node
 
-			for(int n = 0;  n < 28; n ++)
-			{
+				// Lanes
 
-				if (name == lane_att_name_str[n])
+				int attribute_index = -1;
+
+				if(name == "Volume")
 				{
-				attribute_index = n;
-				break;
+					TRACE("");
 				}
 
-				
-			}
-			
-
-			if (attribute_index>=0)  // attrite has been defined
-			{
-
-						int to_node_id = m_INTIDMap[intid];
-						for(int direction = 0; direction < 12; direction++)
+				for(int n = 0;  n < 28; n ++)
 				{
+
+					if (name == lane_att_name_str[n])
+					{
+						attribute_index = n;
+						break;
+					}
+
+
+				}
+
+
+				if (attribute_index>=0)  // attrite has been defined
+				{
+
+					int to_node_id = m_INTIDMap[intid];
+					for(int direction = 0; direction < 12; direction++)
+					{
 
 
 
@@ -4250,67 +4527,67 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 						{
 
 							int UpNodeNo = -1;
-							
+
 							if(m_NodeNumbertoIDMap.find(UpNodeNumberMap[direction]) != m_NodeNumbertoIDMap.end())
 							{
-							UpNodeNo = m_NodeNumbertoIDMap[UpNodeNumberMap[direction]];
-							
+								UpNodeNo = m_NodeNumbertoIDMap[UpNodeNumberMap[direction]];
+
 							}else
 							{
 								if(m_NodeOrgNumber2NodeNoMap.find(UpNodeNumberMap[direction]) != m_NodeOrgNumber2NodeNoMap.end())
 								{
-								UpNodeNo = m_NodeOrgNumber2NodeNoMap[UpNodeNumberMap[direction]];
+									UpNodeNo = m_NodeOrgNumber2NodeNoMap[UpNodeNumberMap[direction]];
 								}			
-							
+
 							}
 
 
 
 							int DestNodeNo = -1;
-							
+
 							if(m_NodeNumbertoIDMap.find(DestNodeNumberMap[direction]) != m_NodeNumbertoIDMap.end())
 							{
-							DestNodeNo = m_NodeNumbertoIDMap[DestNodeNumberMap[direction]];
-							
+								DestNodeNo = m_NodeNumbertoIDMap[DestNodeNumberMap[direction]];
+
 							}else
 							{
 								if(m_NodeOrgNumber2NodeNoMap.find(DestNodeNumberMap[direction]) != m_NodeOrgNumber2NodeNoMap.end())
 								{
-								DestNodeNo = m_NodeOrgNumber2NodeNoMap[DestNodeNumberMap[direction]];
+									DestNodeNo = m_NodeOrgNumber2NodeNoMap[DestNodeNumberMap[direction]];
 								}	
-							
-							
+
+
 							}
 
 
 							int CurrentNodeNo = -1;
 							if(m_NodeNumbertoIDMap.find(intid) != m_NodeNumbertoIDMap.end())
 							{
-							CurrentNodeNo = m_NodeNumbertoIDMap[intid];
-							
+								CurrentNodeNo = m_NodeNumbertoIDMap[intid];
+
 							}else
 							{
 								if(m_NodeOrgNumber2NodeNoMap.find(intid) != m_NodeOrgNumber2NodeNoMap.end())
 								{
-								CurrentNodeNo = m_NodeOrgNumber2NodeNoMap[intid];
+									CurrentNodeNo = m_NodeOrgNumber2NodeNoMap[intid];
 								}	
-							
-							
+
+
 							}
 
 
-								if(UpNodeNo<0)
-									TRACE("\nNode ID %d cannot be found.",UpNodeNumberMap[direction]);
+							if(UpNodeNo<0)
+								TRACE("\nNode ID %d cannot be found.",UpNodeNumberMap[direction]);
 
-								if(DestNodeNo<0)
-									TRACE("\nNode ID %d cannot be found.",DestNodeNumberMap[direction]);
+							if(DestNodeNo<0)
+								TRACE("\nNode ID %d cannot be found.",DestNodeNumberMap[direction]);
 
-								if(CurrentNodeNo<0)
-									TRACE("\nNode ID %d cannot be found.",intid);
+							if(CurrentNodeNo<0)
+								TRACE("\nNode ID %d cannot be found.",intid);
 
 
-						CString label;
-						label.Format("%d;%d;%d", UpNodeNo,CurrentNodeNo,DestNodeNo);
+							CString label;
+							label.Format("%d;%d;%d", UpNodeNo,CurrentNodeNo,DestNodeNo);
 							if(m_MovementPointerMap.find(label) != m_MovementPointerMap.end())
 							{
 								DTANodeMovement* pMovement = m_MovementPointerMap[label];
@@ -4322,101 +4599,101 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 									pMovement->QEM_dir_string = direction_vector[direction];
 
 
-				/* {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
-				"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow",
-				14 "SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+									/* {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
+									"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow",
+									14 "SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 									*/
 									switch(attribute_index)
 									{
 									case  0:// "Lanes"
-									pMovement->QEM_Lanes = value; break;
+										pMovement->QEM_Lanes = value; break;
 									case  1:// "Shared"
-									pMovement->QEM_Shared = value; break;
+										pMovement->QEM_Shared = value; break;
 									case  2:// "Width"
-									pMovement->QEM_Width = value; break;
+										pMovement->QEM_Width = value; break;
 									case  3:// "Storage"
-									pMovement->QEM_Storage = value; break;
+										pMovement->QEM_Storage = value; break;
 									case  4:// "StLanes"
-									pMovement->QEM_StLanes = value; break;
+										pMovement->QEM_StLanes = value; break;
 									case  5:// "Grade"
-									pMovement->QEM_Grade = value; break;
+										pMovement->QEM_Grade = value; break;
 									case  6:// "Speed"
-									pMovement->QEM_Speed = value; break;
+										pMovement->QEM_Speed = value; break;
 									case  9:// "Phase1"
-									pMovement->QEM_Phase1 = value; break;
+										pMovement->QEM_Phase1 = value; break;
 									case  10:// "PermPhase1"
-									pMovement->QEM_PermPhase1 = value; break;
+										pMovement->QEM_PermPhase1 = value; break;
 									case  11:// "DetectPhase1"
-									pMovement->QEM_DetectPhase1 = value; break;
+										pMovement->QEM_DetectPhase1 = value; break;
 									case  12:// "IdealFlow"
-									pMovement->QEM_IdealFlow = value; break;
+										pMovement->QEM_IdealFlow = value; break;
 									case  13:// "LostTime"
-									pMovement->QEM_LostTime = value; break;
+										pMovement->QEM_LostTime = value; break;
 									case  14:// "SatFlow"
-									pMovement->QEM_SatFlow = value; break;
+										pMovement->QEM_SatFlow = value; break;
 									case  15:// "Volume"
-									pMovement->QEM_TurnVolume  = value; break;
+										pMovement->QEM_TurnVolume  = value; break;
 
 									}
 								}
 
 							}else
 							{
-							
+
 								TRACE("Cannot find movement %s\n", label);
-							
+
 							}
 
 						}
-				
-				}  //direction
-			} // lanes
 
-/////////////
+					}  //direction
+				} // lanes
+
+				/////////////
 
 
-		}  // Lane attribute
-			
-	
+			}  // Lane attribute
+
+
 
 			if(parser.m_SynchroSectionName.find ("Timeplans")!=  string::npos) 
 			{
 
-			string name;
-			parser.GetValueByFieldName("RECORDNAME",name);
+				string name;
+				parser.GetValueByFieldName("RECORDNAME",name);
 
 
 				if(name == "Cycle Length")
 				{
-				int intid;
-				if(parser.GetValueByFieldName("INTID",intid) == false)
-					continue;
+					int intid;
+					if(parser.GetValueByFieldName("INTID",intid) == false)
+						continue;
 
-				int node_id = m_INTIDMap[intid];
+					int node_id = m_INTIDMap[intid];
 
-				int data = 0;
-				if(parser.GetValueByFieldName("DATA",data) == false)
-					continue;
+					int data = 0;
+					if(parser.GetValueByFieldName("DATA",data) == false)
+						continue;
 
-				m_NodeIDMap[node_id]->m_CycleLengthInSecond = data;
+					m_NodeIDMap[node_id]->m_CycleLengthInSecond = data;
 
-				if(data > 10)  // set 
-					m_NodeIDMap[node_id]->m_ControlType = m_ControlType_PretimedSignal;
+					if(data > 10)  // set 
+						m_NodeIDMap[node_id]->m_ControlType = m_ControlType_PretimedSignal;
 				}
 
 				if(name == "Offset")
 				{
-				int intid;
-				if(parser.GetValueByFieldName("INTID",intid) == false)
-					continue;
+					int intid;
+					if(parser.GetValueByFieldName("INTID",intid) == false)
+						continue;
 
-				int node_id = m_INTIDMap[intid];
+					int node_id = m_INTIDMap[intid];
 
-				int data = 0;
-				if(parser.GetValueByFieldName("DATA",data) == false)
-					continue;
+					int data = 0;
+					if(parser.GetValueByFieldName("DATA",data) == false)
+						continue;
 
-				m_NodeIDMap[node_id]->m_SignalOffsetInSecond  = data;
+					m_NodeIDMap[node_id]->m_SignalOffsetInSecond  = data;
 
 				}
 
@@ -4425,37 +4702,37 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 		}//while
 
-	parser.CloseCSVFile ();
+		parser.CloseCSVFile ();
 
-	// update QEM turn percentage
+		// update QEM turn percentage
 
 		// turning percentage
-			std::list<DTANode*>::iterator iNode;
+		std::list<DTANode*>::iterator iNode;
 
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-				for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			{
+				DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
+				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkID  ];
+
+				int total_link_count = 0;
+				for(unsigned int j = 0; j< (*iNode)->m_MovementVector .size(); j++)
 				{
-					DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
-					DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkID  ];
 
-					int total_link_count = 0;
-					for(unsigned int j = 0; j< (*iNode)->m_MovementVector .size(); j++)
+					if((*iNode)->m_MovementVector[j].IncomingLinkID == pMovement->IncomingLinkID )
 					{
-					
-						if((*iNode)->m_MovementVector[j].IncomingLinkID == pMovement->IncomingLinkID )
-						{
 						total_link_count+= (*iNode)->m_MovementVector[j].QEM_TurnVolume ;
-						}
-					
 					}
 
-					if (pMovement->QEM_TurnVolume >=1)
-					{
-						pMovement->QEM_TurnPercentage = 
-						pMovement->QEM_TurnVolume * 100.0f / max(1,total_link_count);
-					}
 				}
+
+				if (pMovement->QEM_TurnVolume >=1)
+				{
+					pMovement->QEM_TurnPercentage = 
+						pMovement->QEM_TurnVolume * 100.0f / max(1,total_link_count);
+				}
+			}
 
 		}
 
@@ -4488,178 +4765,178 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 	// step 0: make sure two networks have been opened
 
 	CTLiteDoc* pReferenceDoc = NULL;
-		std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
+	std::list<CTLiteDoc*>::iterator iDoc = g_DocumentList.begin ();
 	int project_index = 0 ;
 	while (iDoc != g_DocumentList.end())
 	{
 		if((*iDoc)->m_NodeSet.size() >0 && (*iDoc)!=this)  
 		{
 
-		pReferenceDoc = (*iDoc);
+			pReferenceDoc = (*iDoc);
 
-		project_index++;
+			project_index++;
 		}
 		iDoc++;
 	}
 
 	if(pReferenceDoc == NULL)
 	{
-	
+
 		AfxMessageBox("Please open the reference network data set in anoter window.");
 		return;
 	}
-	
-int count = 0 ;
+
+	int count = 0 ;
 	std::list<DTANode*>::iterator  iNode;
 
-CFileDialog dlg (TRUE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-"Cross-reference Data File (*.csv)|*.csv||", NULL);
-if(dlg.DoModal() == IDOK)
-{
-
-	CString SynchroProjectFile = dlg.GetPathName();
-
-	CCSVParser parser;
-
-	std::map<int, CrossReferenceNodeInfo> CrossReferenceNodeInfoMap;
-
-	// step 1: read reference map
-	CString cs = dlg.GetPathName();
-	CT2CA pszConvertedAnsiString (cs);
-	// construct a std::string using the LPCSTR input
-	std::string strStd (pszConvertedAnsiString);
-
-	if (parser.OpenCSVFile( strStd) )
+	CFileDialog dlg (TRUE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
+		"Cross-reference Data File (*.csv)|*.csv||", NULL);
+	if(dlg.DoModal() == IDOK)
 	{
 
-		string intersection_name;
-		string intersection_name2;
-		int reference_node_id;
-		int baseline_node_id;
+		CString SynchroProjectFile = dlg.GetPathName();
 
-		while(parser.ReadRecord())
-		{
-		parser.GetValueByFieldName("baseline_node_id",baseline_node_id);
-		
-			if(baseline_node_id>=1)
-			{
-				parser.GetValueByFieldName("reference_node_id",reference_node_id);		
-				parser.GetValueByFieldName("intersection_name",intersection_name);			
-				parser.GetValueByFieldName("intersection_name2",intersection_name2);	
+		CCSVParser parser;
 
-				CrossReferenceNodeInfoMap[baseline_node_id]. reference_node_id = reference_node_id;
-				CrossReferenceNodeInfoMap[baseline_node_id]. intersection_name = intersection_name;
-				CrossReferenceNodeInfoMap[baseline_node_id]. intersection_name2 = intersection_name2;
+		std::map<int, CrossReferenceNodeInfo> CrossReferenceNodeInfoMap;
 
-			
-			}
-		
-		}
+		// step 1: read reference map
+		CString cs = dlg.GetPathName();
+		CT2CA pszConvertedAnsiString (cs);
+		// construct a std::string using the LPCSTR input
+		std::string strStd (pszConvertedAnsiString);
 
-		
-	}else
-	{
-	
-	}
-
-	// step 2: map cycle length and offset
-	
-	
-
-	FILE* st = NULL;
-
-	CString str_log_file;
-	str_log_file.Format ("%s\\signal_data_reading_log.csv",m_ProjectDirectory);
-	
-	fopen_s(&st,str_log_file,"w");
-
-
-	int count = 0;
-	if( st !=NULL)
-	{
-
-	
-//	fprintf(st,"intersection_name1,intersection_name2, baseline_node_id,reference_node_id,base_line_cycle_length_in_second,reference_cycle_length_in_second\n");
-		
-		fprintf(st,"------\n");
-		fprintf(st,"Step 1: Check node control type,\n");
-
-	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		if (parser.OpenCSVFile( strStd) )
 		{
 
-			int baseline_node_id = (*iNode)->m_NodeNumber  ;
-			if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
+			string intersection_name;
+			string intersection_name2;
+			int reference_node_id;
+			int baseline_node_id;
+
+			while(parser.ReadRecord())
 			{
-			
-				if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_ActuatedSignal)
+				parser.GetValueByFieldName("baseline_node_id",baseline_node_id);
+
+				if(baseline_node_id>=1)
 				{
-					fprintf(st,"Baseline,Node,%d,is not an signalized intersection, control type is changed to Pretimed Signal \n",  baseline_node_id);
-					(*iNode)->m_ControlType = m_ControlType_PretimedSignal;
+					parser.GetValueByFieldName("reference_node_id",reference_node_id);		
+					parser.GetValueByFieldName("intersection_name",intersection_name);			
+					parser.GetValueByFieldName("intersection_name2",intersection_name2);	
+
+					CrossReferenceNodeInfoMap[baseline_node_id]. reference_node_id = reference_node_id;
+					CrossReferenceNodeInfoMap[baseline_node_id]. intersection_name = intersection_name;
+					CrossReferenceNodeInfoMap[baseline_node_id]. intersection_name2 = intersection_name2;
+
+
 				}
-			
+
 			}
-		}
 
 
-
-		fprintf(st,"------\n");
-		fprintf(st,"Step 2: Read Cycle length and offset,\n");
-
-	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		}else
 		{
 
-			int baseline_node_id = (*iNode)->m_NodeNumber  ;
-			if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
+		}
+
+		// step 2: map cycle length and offset
+
+
+
+		FILE* st = NULL;
+
+		CString str_log_file;
+		str_log_file.Format ("%s\\signal_data_reading_log.csv",m_ProjectDirectory);
+
+		fopen_s(&st,str_log_file,"w");
+
+
+		int count = 0;
+		if( st !=NULL)
+		{
+
+
+			//	fprintf(st,"intersection_name1,intersection_name2, baseline_node_id,reference_node_id,base_line_cycle_length_in_second,reference_cycle_length_in_second\n");
+
+			fprintf(st,"------\n");
+			fprintf(st,"Step 1: Check node control type,\n");
+
+			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 			{
-				if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+
+				int baseline_node_id = (*iNode)->m_NodeNumber  ;
+				if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
 				{
-					
-					DTANode* pRefNode = NULL;
-					int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
 
-					if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
+					if((*iNode)->m_ControlType != m_ControlType_PretimedSignal && (*iNode)->m_ControlType != m_ControlType_ActuatedSignal)
 					{
-						int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
-
-						(*iNode)->m_CycleLengthInSecond = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_CycleLengthInSecond ;
-						(*iNode)->m_SignalOffsetInSecond =pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_SignalOffsetInSecond  ;
-						fprintf(st,"Baseline,Node,%d,use reference node:,%d,obtains cycle length =,%d,offset,%d,%s,%s\n",  baseline_node_id,reference_node_id,(*iNode)->m_CycleLengthInSecond,(*iNode)->m_SignalOffsetInSecond,CrossReferenceNodeInfoMap [baseline_node_id].intersection_name.c_str (),CrossReferenceNodeInfoMap [baseline_node_id].intersection_name2.c_str () );
-						count++;
-
-					}else
-					{
-						
-						fprintf(st,"Baseline,node,%d,'s reference node,%d,not found.\n",  reference_node_id,baseline_node_id);
+						fprintf(st,"Baseline,Node,%d,is not an signalized intersection, control type is changed to Pretimed Signal \n",  baseline_node_id);
+						(*iNode)->m_ControlType = m_ControlType_PretimedSignal;
 					}
-					
-				}
-			
-			}
-		}
 
-	// step 3: construct node, movement direction map for reference project
+				}
+			}
+
+
+
+			fprintf(st,"------\n");
+			fprintf(st,"Step 2: Read Cycle length and offset,\n");
+
+			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			{
+
+				int baseline_node_id = (*iNode)->m_NodeNumber  ;
+				if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
+				{
+					if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+					{
+
+						DTANode* pRefNode = NULL;
+						int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
+
+						if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
+						{
+							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
+
+							(*iNode)->m_CycleLengthInSecond = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_CycleLengthInSecond ;
+							(*iNode)->m_SignalOffsetInSecond =pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_SignalOffsetInSecond  ;
+							fprintf(st,"Baseline,Node,%d,use reference node:,%d,obtains cycle length =,%d,offset,%d,%s,%s\n",  baseline_node_id,reference_node_id,(*iNode)->m_CycleLengthInSecond,(*iNode)->m_SignalOffsetInSecond,CrossReferenceNodeInfoMap [baseline_node_id].intersection_name.c_str (),CrossReferenceNodeInfoMap [baseline_node_id].intersection_name2.c_str () );
+							count++;
+
+						}else
+						{
+
+							fprintf(st,"Baseline,node,%d,'s reference node,%d,not found.\n",  reference_node_id,baseline_node_id);
+						}
+
+					}
+
+				}
+			}
+
+			// step 3: construct node, movement direction map for reference project
 
 
 			//step 3: map movement information
-		fprintf(st,"------\n");
-		fprintf(st,"Step 3: Find mapping movement,\n");
+			fprintf(st,"------\n");
+			fprintf(st,"Step 3: Find mapping movement,\n");
 
-		
+
 			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			{
+				int baseline_node_id = (*iNode)->m_NodeNumber  ;
+				if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
 				{
-					int baseline_node_id = (*iNode)->m_NodeNumber  ;
-					if(CrossReferenceNodeInfoMap.find(baseline_node_id) != CrossReferenceNodeInfoMap.end())
+					if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
 					{
-						if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+
+						DTANode* pRefNode = NULL;
+						int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
+
+						if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
 						{
-							
-							DTANode* pRefNode = NULL;
-							int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
 
-							if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
-							{
-
-								int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
+							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
 
 							for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
 							{
@@ -4673,7 +4950,7 @@ if(dlg.DoModal() == IDOK)
 									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementVector[m]);
 									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
 									pThisMovement->QEM_TurnVolume = reference_movement.QEM_TurnVolume;
-									
+
 
 									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
 									pThisMovement->QEM_LinkVolume  =
@@ -4697,7 +4974,7 @@ if(dlg.DoModal() == IDOK)
 									pThisMovement->QEM_VOC = reference_movement.QEM_VOC;
 									pThisMovement->QEM_SatFlow = reference_movement.QEM_SatFlow;
 									pThisMovement->QEM_Delay = reference_movement.QEM_Delay;
-						
+
 									fprintf(st,"Baseline,Node,%d,Up Node,%d,Dest Node,%d,%s,%s, obtains # of lanes =,%d,shared=,%d,Width=,%d,Storage=,%d\n",  
 										baseline_node_id, 
 										m_NodeIDMap[pThisMovement-> in_link_from_node_id]->m_NodeNumber,
@@ -4716,31 +4993,31 @@ if(dlg.DoModal() == IDOK)
 										m_NodeIDMap[(*iNode)->m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
 										GetTurnDirectionString((*iNode)->m_MovementVector[m]. movement_approach_turn),
 										GetTurnString((*iNode)->m_MovementVector[m].movement_turn));
-							
+
 								}
 
 							} // for each movement
-							}  // with reference node
-						}  // signal control
+						}  // with reference node
+					}  // signal control
 
-					}
 				}
+			}
 
-		
-		fclose(st);
-	}else
-	{
+
+			fclose(st);
+		}else
+		{
+			CString str;
+			str.Format("File %s cannot be opened.", str_log_file);
+			AfxMessageBox(str);
+		}
+
+
+		OpenCSVFileInExcel(str_log_file);
+
 		CString str;
-		str.Format("File %s cannot be opened.", str_log_file);
-		AfxMessageBox(str);
-	}
-	
-	
-	OpenCSVFileInExcel(str_log_file);
-
-	CString str;
-	str.Format("%d nodes have obtained cycle length from the reference network. To accept the changes, please save the network.",count);
-	AfxMessageBox(str, MB_ICONINFORMATION);
+		str.Format("%d nodes have obtained cycle length from the reference network. To accept the changes, please save the network.",count);
+		AfxMessageBox(str, MB_ICONINFORMATION);
 
 	}
 }
@@ -4752,13 +5029,13 @@ void CTLiteDoc::OnImportInrixshapefileandspeeddata()
 
 void CTLiteDoc::OnDemandConvert()
 {
-   static char BASED_CODE szFilter_demand[] = "Origin-based Static Demand Files (*.txt;*.oba))|*.txt;*.oba||";
-   CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		   szFilter_demand);
-   if(dlg.DoModal() == IDOK)
-   {
-	  ConvertOriginBasedDemandFile(dlg.GetPathName());
-   } 
+	static char BASED_CODE szFilter_demand[] = "Origin-based Static Demand Files (*.txt;*.oba))|*.txt;*.oba||";
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		szFilter_demand);
+	if(dlg.DoModal() == IDOK)
+	{
+		ConvertOriginBasedDemandFile(dlg.GetPathName());
+	} 
 
 }
 
@@ -4770,66 +5047,66 @@ void  CTLiteDoc::ConvertOriginBasedDemandFile(LPCTSTR lpszFileName)
 	directory = PathFile.Left(PathFile.ReverseFind('\\') + 1);
 
 
-   FILE* st=fopen(lpszFileName,"r");
-   FILE* outfile=fopen(directory+"input_demand.csv","w");
+	FILE* st=fopen(lpszFileName,"r");
+	FILE* outfile=fopen(directory+"input_demand.csv","w");
 
-   if(outfile==NULL)
-   {
-   AfxMessageBox("File input_demand.csv cannot be opened to write.");
-   
-   return;
-   
-   }
-   if(st!=NULL)
-   {
+	if(outfile==NULL)
+	{
+		AfxMessageBox("File input_demand.csv cannot be opened to write.");
 
-	fprintf(outfile, "from_zone_id,to_zone_id,number_of_trips_demand_type1\n");
+		return;
 
-      // Number of matrices and the multiplication factor
+	}
+	if(st!=NULL)
+	{
 
-      int ODSize = g_read_integer(st);
-      float totoal_OD_volume =  g_read_float(st);
+		fprintf(outfile, "from_zone_id,to_zone_id,number_of_trips_demand_type1\n");
 
- 
-      // Destinations
+		// Number of matrices and the multiplication factor
 
-      // There are two formats available
-
-      for(int i = 1; i <= ODSize; i++)
-      {
-	 // Read each demand
-	 int from_zone_id = g_read_integer(st);
-	 
-	 if(from_zone_id<=0) break;
-
-		if(from_zone_id>i)  //advance
-			i= from_zone_id;
+		int ODSize = g_read_integer(st);
+		float totoal_OD_volume =  g_read_float(st);
 
 
-	 for(int j = 1; j <= ODSize; j++)
-	 {
-	    int to_zone_id = g_read_integer_with_special_character(st,true,'O');  // break when reading "Origin"
-	    if(to_zone_id<=0) break;
+		// Destinations
 
-		float demand = g_read_float(st);
+		// There are two formats available
 
+		for(int i = 1; i <= ODSize; i++)
+		{
+			// Read each demand
+			int from_zone_id = g_read_integer(st);
 
-		if(to_zone_id>j)  //advance
-			j= to_zone_id;
+			if(from_zone_id<=0) break;
 
-		fprintf(outfile,"%d,%d,%.4f\n", from_zone_id, to_zone_id,demand);
-
-	 }
-
-      }
+			if(from_zone_id>i)  //advance
+				i= from_zone_id;
 
 
-      fclose(st);
-	  fclose(outfile);
+			for(int j = 1; j <= ODSize; j++)
+			{
+				int to_zone_id = g_read_integer_with_special_character(st,true,'O');  // break when reading "Origin"
+				if(to_zone_id<=0) break;
 
-	  AfxMessageBox("File input_demand.csv has been generated.",MB_ICONINFORMATION    );
+				float demand = g_read_float(st);
 
-   }
+
+				if(to_zone_id>j)  //advance
+					j= to_zone_id;
+
+				fprintf(outfile,"%d,%d,%.4f\n", from_zone_id, to_zone_id,demand);
+
+			}
+
+		}
+
+
+		fclose(st);
+		fclose(outfile);
+
+		AfxMessageBox("File input_demand.csv has been generated.",MB_ICONINFORMATION    );
+
+	}
 }
 
 void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
@@ -4843,7 +5120,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 
 	CWaitCursor wait;
 	// ! there is an freeway or highway downstream with less number of lanes
-		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 		DTALink * pLink = (*iLink);
 		if( m_LinkTypeMap[pLink->m_link_type].IsFreeway () 
@@ -4869,7 +5146,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 
 	//// merge: one outgoing link, two more incoming links with at least freeway link
 
-		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 		DTALink * pLink = (*iLink);
 		int incoming_link_freeway_and_ramp_count = 0;
@@ -4906,7 +5183,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 
 
 	//// first count # of incoming freeway, highway or ramp links to each freeway/highway link
-		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 		DTALink * pLink = (*iLink);
 		int FromID = pLink->m_FromNodeID;
@@ -4978,7 +5255,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 				mil.m_NumberOfLanes =  pInLink->m_NumberOfLanes  ;
 				mil.m_SpeedLimit = pInLink->m_SpeedLimit ;
 				pLink->OnRampLinkVector.push_back(mil);
-//				g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_ToNodeID].m_NodeNumber <<  " with " << m_LinkNoMap[mil.m_LinkNo]->m_NumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
+				//				g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[m_LinkNoMap[mil.m_LinkNo]->m_ToNodeID].m_NodeNumber <<  " with " << m_LinkNoMap[mil.m_LinkNo]->m_NumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
 			}
 
 		}
@@ -4986,7 +5263,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 	}
 
 	// determine offramp
-		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 		DTALink * pLink = (*iLink);
 		if(m_LinkTypeMap[pLink->m_link_type].IsRamp ()) 
@@ -4994,23 +5271,23 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 
 			if(pLink->m_bOnRampType == false)  // all on ramp links have been marked
 			{
-		
+
 				pLink->m_bOffRampType = true;
 
 
 				DTALink* pFreewayLink= FindFreewayLinkWithToNodeNumber(pLink->m_FromNodeNumber );
 				if(pFreewayLink!=NULL)
 				{
-				RampLink ramp;
-				ramp.m_LinkNo = pLink->m_LinkNo ;
-				ramp.m_Length = pLink->m_Length ;
-				ramp.m_Length = pLink->m_Length ;
-				ramp.m_link_type =  pLink->m_link_type ;
-				ramp.m_NumberOfLanes =  pLink->m_NumberOfLanes  ;
-				ramp.m_SpeedLimit = pLink->m_SpeedLimit ;
-				pFreewayLink->OffRampLinkVector.push_back(ramp);
-				//
-				pFreewayLink->m_FREEVALSegmentCode = FREEVAL_OFR;
+					RampLink ramp;
+					ramp.m_LinkNo = pLink->m_LinkNo ;
+					ramp.m_Length = pLink->m_Length ;
+					ramp.m_Length = pLink->m_Length ;
+					ramp.m_link_type =  pLink->m_link_type ;
+					ramp.m_NumberOfLanes =  pLink->m_NumberOfLanes  ;
+					ramp.m_SpeedLimit = pLink->m_SpeedLimit ;
+					pFreewayLink->OffRampLinkVector.push_back(ramp);
+					//
+					pFreewayLink->m_FREEVALSegmentCode = FREEVAL_OFR;
 				}
 
 				//	g_LogFile << "Offramp:" << g_NodeVector[pLink->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[pLink->m_ToNodeID].m_NodeNumber << endl;
