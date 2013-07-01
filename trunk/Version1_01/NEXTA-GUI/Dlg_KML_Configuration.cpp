@@ -346,8 +346,28 @@ BOOL CDlg_KML_Configuration::OnInitDialog()
 	m_Height_ComboBox.AddString("BPR beta term");
 
 	m_Height_ComboBox.AddString("--");
-	m_Height_ComboBox.AddString("Link type In Number");
 	m_Height_ComboBox.AddString("--");
+	m_Height_ComboBox.AddString("--");
+
+
+	m_Height_ComboBox.AddString("-- Simulation/Assignment Results --");
+	m_Height_ComboBox.AddString("Total Link Volume");
+	m_Height_ComboBox.AddString("Avg Travel Time (min)");
+	m_Height_ComboBox.AddString("Total Volume over Capacity Ratio");
+	m_Height_ComboBox.AddString("Level Of Service");
+	m_Height_ComboBox.AddString("Avg Waiting Time on Loading Buffer");
+	m_Height_ComboBox.AddString("Avg Simulated Speed");
+
+	m_Height_ComboBox.AddString("Total Assigned Link Volume");
+	m_Height_ComboBox.AddString("Total Link Volume of Incomplete Trips");
+
+
+	m_Height_ComboBox.AddString("-- Observations --");
+	m_Height_ComboBox.AddString("Total Sensor Link Volume");
+	m_Height_ComboBox.AddString("Total Link Count Error");
+	m_Height_ComboBox.AddString("Simulated AADT");
+	m_Height_ComboBox.AddString("Observed Bidirectional AADT");
+	m_Height_ComboBox.AddString("Observed Peak Hour Volume");
 
 	m_Height_ComboBox.AddString("-- Safety Related Attributes --");
 	m_Height_ComboBox.AddString("Number of Driveways Per Mile");
@@ -357,21 +377,6 @@ BOOL CDlg_KML_Configuration::OnInitDialog()
 	m_Height_ComboBox.AddString("Number of 4SG Intersections");
 	m_Height_ComboBox.AddString("Number of 4ST Intersections");
 
-	m_Height_ComboBox.AddString("-- Simulation/Assignment Results --");
-	m_Height_ComboBox.AddString("Total Link Volume");
-	m_Height_ComboBox.AddString("Avg Travel Time (min)");
-	m_Height_ComboBox.AddString("Total Volume over Capacity Ratio");
-	m_Height_ComboBox.AddString("Level Of Service");
-	m_Height_ComboBox.AddString("Avg Waiting Time on Loading Buffer");
-	m_Height_ComboBox.AddString("Avg Simulated Speed");
-	m_Height_ComboBox.AddString("-- Observations --");
-	m_Height_ComboBox.AddString("Total Sensor Link Volume");
-	m_Height_ComboBox.AddString("Total Link Count Error");
-	m_Height_ComboBox.AddString("Simulated AADT");
-	m_Height_ComboBox.AddString("Observed Bidirectional AADT");
-	m_Height_ComboBox.AddString("Observed Peak Hour Volume");
-
-	m_Height_ComboBox.AddString("-- Safety Prediction Results --");
 	m_Height_ComboBox.AddString("--");
 	m_Height_ComboBox.AddString("--");
 	m_Height_ComboBox.AddString("--");
@@ -613,6 +618,20 @@ void CDlg_KML_Configuration::SelchangeComboHeight()
 						str_text.Format ("%.0f",(*iLink)->m_total_link_volume   );
 
 					break;
+
+
+				case link_display_total_assigned_link_volume:
+					if((*iLink)->m_total_assigned_link_volume >=1)
+						str_text.Format ("%.0f",(*iLink)->m_total_assigned_link_volume   );
+
+					break;
+
+				case link_display_total_incomplete_link_volume:
+					if((*iLink)->m_total_link_volume_of_incomplete_trips >=1)
+						str_text.Format ("%.0f",(*iLink)->m_total_link_volume_of_incomplete_trips   );
+
+					break;
+
 
 				case link_display_avg_travel_time:
 					str_text.Format ("%.1f",(*iLink)->GetTravelTime(m_pDoc->m_DemandLoadingStartTimeInMin , m_pDoc->m_DemandLoadingEndTimeInMin)  );

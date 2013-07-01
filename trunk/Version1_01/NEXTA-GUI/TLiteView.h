@@ -80,25 +80,20 @@ enum link_text_display_mode
 
    link_display_link_type_in_text,
    link_display_link_type_in_number,
-
-	link_display_separator_2,
-   link_display_internal_link_id,
-	link_display_Num_Driveways_Per_Mile,
-	link_display_volume_proportion_on_minor_leg,
-	link_display_Num_3SG_Intersections, 
-	link_display_Num_3ST_Intersections, 
-	link_display_Num_4SG_Intersections,
-	link_display_Num_4ST_Intersections,
+    link_display_internal_link_id,
 
 	link_display_separator_3,
 	link_display_total_link_volume,
-
 	link_display_avg_travel_time,
 
 	link_display_volume_over_capacity_ratio,
 	link_display_LevelOfService,
 	link_display_avg_waiting_time_on_loading_buffer,
 	link_display_avg_simulated_speed,
+
+	link_display_total_assigned_link_volume,
+	link_display_total_incomplete_link_volume,
+
 	link_display_separator_4,
 	link_display_total_sensor_link_volume,
 	link_display_total_link_count_error,
@@ -106,7 +101,15 @@ enum link_text_display_mode
 	link_display_observed_AADT,
 	link_display_observed_peak_hourly_volume,
 
+
 	link_display_separator_5,
+	link_display_Num_Driveways_Per_Mile,
+	link_display_volume_proportion_on_minor_leg,
+	link_display_Num_3SG_Intersections, 
+	link_display_Num_3ST_Intersections, 
+	link_display_Num_4SG_Intersections,
+	link_display_Num_4ST_Intersections,
+
 	link_display_crash_prediction_group_1_code,
 	link_display_crash_prediction_group_2_code,
 	link_display_crash_prediction_group_3_code,
@@ -356,6 +359,12 @@ protected: // create from serialization only
 
 // Attributes
 public:
+
+	bool m_bShowTop10ODOnly;
+	bool m_bShowTop20ODOnly;
+	bool m_bShowTop50ODOnly;
+	bool m_bShowTop100ODOnly;
+
 
 	bool m_bUpdateLinkAttributeBasedOnType;
 	bool bShowVehiclesWithIncompleteTrips;
@@ -798,6 +807,8 @@ public:
 	afx_msg void OnUpdateSubareaHighlightlinksinsidesubarea(CCmdUI *pCmdUI);
 	afx_msg void OnSubareaHighlightlinksacosssubarea();
 	afx_msg void OnUpdateSubareaHighlightlinksacosssubarea(CCmdUI *pCmdUI);
+	afx_msg void OnOdmatrixViewtop50odpairsonly();
+	afx_msg void OnUpdateOdmatrixViewtop50odpairsonly(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

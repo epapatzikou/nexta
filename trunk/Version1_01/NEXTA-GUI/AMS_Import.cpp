@@ -1009,11 +1009,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	}
 
+
 	int link_code_start = 1;
 	int link_code_end = 1;
 
 
-	if(from_node_id == 613)
+	if(from_node_id == 758 && to_node_id == 491)
 		TRACE("");
 
 	long link_id =  poFeature->GetFieldAsInteger(link_id_name.c_str ());
@@ -1088,7 +1089,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 
-
+	
 	if(type< 0 )  // no type information available
 	{
 
@@ -1185,10 +1186,19 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		r_speed_limit_in_mph= poFeature->GetFieldAsDouble(r_speed_limit_in_mph_name.c_str ());
 		r_capacity_in_pcphpl= poFeature->GetFieldAsDouble(r_lane_capacity_in_vhc_per_hour_name.c_str ());
-		r_capacity_in_pcphpl = ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,r_number_of_lanes);
+		r_capacity_in_pcphpl = 
+			ComputeCapacity(r_capacity_in_pcphpl,link_capacity_flag, r_speed_limit_in_mph,r_number_of_lanes)
+			*multiplier_for_obtaining_hourly_capacity_value;
 		r_link_type= poFeature->GetFieldAsInteger(r_link_type_name.c_str ());
 
-		if(m_LinkTypeMap[type ].IsConnector () && r_link_type ==0) // forward link is connector, r_link_type is not defined 
+
+		if(r_speed_limit_in_mph <1)
+			r_speed_limit_in_mph = speed_limit_in_mph;
+	
+		if(r_capacity_in_pcphpl <1)
+		r_capacity_in_pcphpl= capacity_in_pcphpl;
+
+		if(r_link_type ==0) // r_link_type is not defined 
 		{
 			r_link_type = type; //reset r_link_type by type
 		}
@@ -1349,6 +1359,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		pLink->m_Name  = name;
 		pLink->m_OrgDir = direction;
 		pLink->m_LinkID = link_id;
+
+		if(link_code == link_code_start)
+			pLink->m_LinkKey.Format("%d_AB",link_id);
+		else
+			pLink->m_LinkKey.Format("%d_BA",link_id);
+		
 
 		CT2CA pszConvertedAnsiString (mode_code);
 		// construct a std::string using the LPCSTR input
@@ -1525,6 +1541,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(index);
 		m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(index);
 
+		if(m_LinkTypeMap[pLink->m_link_type].IsConnector  () == false )
+			m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors++;
+
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 		m_NodeIDtoLinkMap[LinkKey] = pLink;
@@ -1573,7 +1592,8 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 					if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
 						pLink->m_SpeedLimit> minimum_speed_limit_for_signals && pLink->m_SpeedLimit<= maximum_speed_limit_for_signals && 
 						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size() >=3) 
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors >=3 && 
+						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors == m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size()/*no incoming connectors*/) 
 					{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
 						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
 						number_of_signals++;
@@ -2030,7 +2050,7 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 					float grade = 0;
 					float AADT_conversion_factor = 0.1;
 					float k_jam, wave_speed_in_mph;
-					k_jam = 190;
+					k_jam = 250;
 
 					wave_speed_in_mph = 12;
 
@@ -4070,7 +4090,6 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	ReadTransitFiles(directory+"transit_data\\");  // read transit data
 
 
-
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
 	CTimeSpan ts = LoadingEndTime  - LoadingStartTime;
@@ -4282,8 +4301,8 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 					j = node_number_estimator;
 
 				}
+				pNode->m_NodeOriginalNumber = pNode->m_NodeNumber;
 				pNode->m_NodeNumber = node_number_estimator; // intid is the name used , start from 1
-				pNode->m_NodeOriginalNumber = node_number_estimator;
 				m_INTIDMap [intid] = i;
 				m_NodeOrgNumber2INTIDMap[intid] = node_number_estimator;
 				pNode->m_NodeID = i;

@@ -385,6 +385,8 @@ public: // create from serialization only
 	// Attributes
 public:
 
+	std::vector<int> m_OD_data_vector;
+
 	bool m_bIdentifyBottleneckAndOnOffRamps;
 	void IdentifyBottleNeckAndOnOffRamps();
 	void Modify(BOOL bModified=true)
@@ -606,6 +608,7 @@ public:
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo=0);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
 
+	void CalculateZoneCapacity();
 
 	bool ReadGPSCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadGPSDataFile(LPCTSTR lpszFileName);   // for road network
@@ -888,11 +891,6 @@ public:
 	int GetLOSCode(float Value)
 	{
 
-		if(Value < m_LOSBound[m_LinkMOEMode][1])
-			return 1;
-
-		if(Value > m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
-			return MAX_LOS_SIZE-2;
 
 		for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 		{
@@ -901,7 +899,26 @@ public:
 
 				return los;
 		}
+
+		if(m_LinkMOEMode != MOE_speed )
+		{
+
+		if(Value < m_LOSBound[m_LinkMOEMode][1])
+			return 1;
+
+		if(Value > m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
+			return MAX_LOS_SIZE-2;
+		}else
+		{ // m_LinkMOEMode != MOE_speed, reverse legend
+		if(Value > m_LOSBound[m_LinkMOEMode][1])
+			return 1;
+
+		if(Value < m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
+			return MAX_LOS_SIZE-2;
+		
+		}
 		return 1;
+
 	}
 
 public:
@@ -2363,6 +2380,9 @@ public:
 	afx_msg void OnExportExportlink2dkmlfile();
 	afx_msg void OnExportExportsignalnodekmlfile();
 	afx_msg void OnExportExportnonsignalnodekmlfile();
+	afx_msg void OnSensortoolsImportsensordatafromimport();
+	afx_msg void OnTrafficcapacitySetdefault();
+	afx_msg void OnFileRemovenonessentialfilestoreducefoldersize();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

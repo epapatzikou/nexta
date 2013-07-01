@@ -288,6 +288,10 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 		}
 
 
+
+
+			
+
 		if(pVeh->m_OriginZoneID == pVeh->m_DestinationZoneID)
 		{  // do not simulate intra zone traffic
 		continue; 
@@ -316,7 +320,14 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 
 			pVeh->m_PreferredDepartureTime = pVeh->m_DepartureTime;  // set departure time to m_PreferredDepartureTime
 
+			bDebugFlag =false;
 			// get the first feasible solution
+			if(pVeh->m_OriginZoneID == 134 && pVeh->m_DestinationZoneID == 18177)
+			{  // do not simulate intra zone traffic
+			TRACE("vehicle id  = %d", VehicleID);
+			bDebugFlag = true;
+			}
+
 			NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 			pVeh-> m_bSwitch = true;
 			}else
@@ -1759,7 +1770,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_SummaryStatFile.WriteRecord ();
 
-	if(0) //comment out day to day code
+//	if(0) //comment out day to day code
 	{
 
 	unsigned li;

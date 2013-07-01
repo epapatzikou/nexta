@@ -1426,7 +1426,10 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 					pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 					m_pPathLinkVector[i] = pLink;
 					pVehicle->m_Distance +=pLink->m_Length ;
-					pLink->m_total_link_volume +=1;
+						if(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) // feasible arrival time
+						{
+						pLink->m_total_link_volume +=1;
+						}
 				}
 
 
@@ -1607,7 +1610,11 @@ bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int dat
 				}
 				pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 				pVehicle->m_Distance +=pLink->m_Length ;
-				pLink->m_total_link_volume +=1;
+
+						if(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) // feasible arrival time
+						{
+						pLink->m_total_link_volume +=1;
+						}
 			}
 
 

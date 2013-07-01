@@ -37,9 +37,9 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "NEXTA, Version 3.1.2",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Open-Source Software under GNU Lisence\nRelease Date: 04/02/2013",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
+    LTEXT           "Open-Source Software under GNU Lisence\nRelease Date: 06/26/2013",IDC_STATIC,42,26,171,20,0,WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,89,189,50,14,WS_GROUP
-    LTEXT           "Contact:\nXuesong Zhou, zhou@eng.utah.edu\nJeffrey Taylor, jeff.d.taylor@utah.edu",IDC_STATIC,41,54,171,31,0,WS_EX_STATICEDGE
+    LTEXT           "Contact:\nXuesong Zhou, xzhou99@gmail.com\nJeffrey Taylor, jeffrey.taylor.d@gmail.com",IDC_STATIC,41,54,171,31,0,WS_EX_STATICEDGE
     LTEXT           "Contributing Members:\nMilan Zlatkovic: Quick Estimation Method\nTao Xing: Synchro Exporting\nHao Lei: Senario Data Editing\nPeng Du: Vissim Data Exporting\nAnxi Jia: Software Testing\nJinjin Tang: Draftting Learning Documents",IDC_STATIC,40,92,171,88,0,WS_EX_STATICEDGE
 END
 
@@ -1101,9 +1101,9 @@ BEGIN
     LTEXT           "1. Demand File List:",-1,7,7,79,8
     CONTROL         "",IDC_DemandTypeLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,22,435,71
     PUSHBUTTON      "Edit Demand Meta Data File in Excel",ID_EDIT_META_DATABASE,129,7,137,14,0,WS_EX_STATICEDGE
-    LTEXT           "3. OD Demand Matrix (Read-Only): (please directly edit the demand file)",-1,7,100,239,8
+    LTEXT           "3. OD Demand Matrix (Read-Only): (please use other text editors to change the demand file)",-1,7,100,309,8
     PUSHBUTTON      "Edit Selected Demand Data File in Excel",ID_EDIT_META_DATABASE3,297,7,137,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Reload Demand Matrix",IDC_BUTTON_RELOAD,253,103,83,14
+    PUSHBUTTON      "Reload Demand Matrix",IDC_BUTTON_RELOAD,357,102,83,14
     CONTROL         "",IDC_DemandTypeLIST2,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,496,33,212,56
     LTEXT           "2. Associated Demand Type for Select Demand File:",-1,498,22,159,8
     PUSHBUTTON      "Export to Matrix Format",IDC_BUTTON_EXPORT_MATRIX,508,104,83,14
@@ -2432,6 +2432,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Generate Zone-to-Zone Travel Time Matrix for Opened Projects", ID_EXPORT_GENERATEZONE
         MENUITEM "Generate OD Matrix from Gravity Model", ID_TOOLS_GENERATEODMATRIXGRAVITYMODEL
+        MENUITEM "Show Top 10 OD Pairs Only",   ID_ODMATRIX_VIEWTOP50ODPAIRSONLY
     END
     POPUP "Link MOE"
     BEGIN
@@ -2673,6 +2674,8 @@ BEGIN
         MENUITEM "Open Test Data Set",          ID_FILE_OPENTESTSETS
         MENUITEM "Open Sample Data Set",        ID_FILE_OPENSAMPLEDATASETFOLDER
         MENUITEM SEPARATOR
+        MENUITEM "Remove Nonessential Files to Save Space", ID_FILE_REMOVENONESSENTIALFILESTOREDUCEFOLDERSIZE
+        MENUITEM SEPARATOR
         MENUITEM "&Close",                      ID_FILE_CLOSE
         MENUITEM "Recent File",                 ID_FILE_MRU_FILE1
         MENUITEM "E&xit",                       ID_APP_EXIT
@@ -2791,11 +2794,11 @@ BEGIN
         BEGIN
             MENUITEM "View/Edit FREEVAL Data",      ID_FREEWAYTOOLS_VIEW
         END
-        POPUP "Traffic Control Tools"
+        POPUP "Traffic Capacity/Control Tools"
         BEGIN
             MENUITEM "Generate Signal Control Locations", ID_TOOLS_GENERATESIGNALCONTROLLOCATIONS
-            MENUITEM "Input Default Cycle Length for Signalized Intersections", ID_TRAFFICCONTROLTOOLS_INPUTDEFAULTCYCLELENGTH
             MENUITEM "Update Link Effective Green Time  Based on Cycle Length", ID_TOOLS_UPDATEEFFECTIVEGREENTIMEBASEDONCYCLELENGTH
+            MENUITEM "Set Default Jam Density for All Arterial Links", ID_TRAFFICCAPACITY_SETDEFAULT
             MENUITEM SEPARATOR
             MENUITEM "Import External Node/Link Layer for Map Matching", ID_IMPORT_SUBAREALAYERFORMAPMATCHING
             MENUITEM "Unlock/Lock Reference Network", ID_EDIT_MOVENETWORKCOORDINATES
@@ -2850,9 +2853,11 @@ BEGIN
         END
         POPUP "Sensor Tools"
         BEGIN
-            MENUITEM "Sensor Data ",                ID_SENSORTOOLS_SENSORDATA
-            MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+            MENUITEM "Import Sensor Data from import_sensor.csv", ID_SENSORTOOLS_IMPORTSENSORDATAFROMIMPORT
             MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+            MENUITEM SEPARATOR
+            MENUITEM "View Sensor Data ",           ID_SENSORTOOLS_SENSORDATA
+            MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
         END
     END
     POPUP "&Window"
@@ -3828,8 +3833,10 @@ BEGIN
         END
         POPUP "Sensor Tools   Ì½²âÆ÷¹¤¾ß"
         BEGIN
-            MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
+            MENUITEM "Import Sensor Data from import_sensor.csv", ID_SENSORTOOLS_IMPORTSENSORDATAFROMIMPORT
             MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+            MENUITEM SEPARATOR
+            MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
         END
     END
     POPUP "&Window´°¿Ú"

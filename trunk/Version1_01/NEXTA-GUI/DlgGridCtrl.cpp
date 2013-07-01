@@ -57,6 +57,7 @@ END_MESSAGE_MAP()
 CDlgODDemandGridCtrl::CDlgODDemandGridCtrl(CWnd* pParent /*=NULL*/)
 : CDialog(CDlgODDemandGridCtrl::IDD, pParent)
 {
+	m_bLoadDemandForLargeScaleNetwork = false;
 	m_bSizeChanged = false;
 	m_SelectedDemandMetaType = -1;
 }
@@ -1111,6 +1112,21 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
 		m_DemandFileGrid.GetItemText (nSelectedRow,1,str,20);
 		m_SelectedDemandMetaType = atoi(str);
 		//		TRACE("Select %d\n",m_SelectedDemandMetaType);
+		if(m_pDoc->m_ZoneMap .size() >=200)
+		{
+			if(m_bLoadDemandForLargeScaleNetwork == false)
+			{
+				if(AfxMessageBox("It takes a while to load the demand file for this large-scale network.\nDo you want to continue?",MB_YESNO|MB_ICONINFORMATION)==IDNO)
+				{
+					return;
+				}
+
+				m_bLoadDemandForLargeScaleNetwork = true;
+
+			}
+		}
+
+		CWaitCursor wait;
 		LoadDemandMatrixFromDemandFile(nSelectedRow,1);
 
 		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
