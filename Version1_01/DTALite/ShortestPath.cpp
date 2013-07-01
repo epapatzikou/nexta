@@ -69,7 +69,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 		m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
 
-		m_OutboundConnectorZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
+		//m_OutboundConnectorOriginZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
 		m_OutboundSizeAry[FromID] +=1;
 
 		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = LinkID ;
@@ -194,11 +194,15 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		int link_id = pLink->m_LinkNo ;
 		if(g_LinkTypeMap[g_LinkVector[link_id]->m_link_type].IsConnector())
 		{
-			m_OutboundConnectorZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
+			m_OutboundConnectorOriginZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
+			m_OutboundConnectorDestinationZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_ToNodeID ].m_ZoneID ;
+			
 			m_OutboundLinkConnectorZoneIDAry[link_id] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
+	
 		}else
 		{
-			m_OutboundConnectorZoneIDAry[FromID][m_OutboundSizeAry[FromID]]  = -1; // default values
+			m_OutboundConnectorOriginZoneIDAry[FromID][m_OutboundSizeAry[FromID]]  = -1; // default values
+			m_OutboundConnectorDestinationZoneIDAry[FromID][m_OutboundSizeAry[FromID]]  = -1; // default values
 			m_OutboundLinkConnectorZoneIDAry[link_id]  = -1;  // default values
 		}
 
@@ -574,7 +578,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(pricing_type == 0) // unknown type
 		pricing_type = 1; 
 
-	if(origin_zone ==7 && destination_zone==41 && origin==121)
+	if(origin_zone == 134 && destination_zone== 18177 )
 	{
 	debug_flag = true;
 	}
@@ -623,7 +627,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		SEList_pop_front();
 
 
-		if(debug_flag)
+		if(debug_flag && g_NodeVector[FromID].m_NodeNumber == 4217)
 			TRACE("\nScan from node %d,",g_NodeVector[FromID].m_NodeNumber);
 
 		NodeStatusAry[FromID] = 2;        //scaned
@@ -633,8 +637,19 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			LinkID = m_OutboundLinkAry[FromID][i];
 			ToID = m_OutboundNodeAry[FromID][i];
 
-			if(m_OutboundConnectorZoneIDAry[FromID][i] >=1 /* TAZ >=1*/ && (m_OutboundConnectorZoneIDAry[FromID][i]!= origin_zone ) )
-			continue;  // special feature 1: skip connectors that do not belong to this origin zone
+			int ToNodeNumber = g_NodeVector[ToID].m_NodeNumber;
+
+			int OriginTAZ  = m_OutboundConnectorOriginZoneIDAry[FromID][i];
+			int DestinationTAZ  = m_OutboundConnectorDestinationZoneIDAry[FromID][i];
+
+			if( OriginTAZ >=1 /* TAZ >=1*/  && DestinationTAZ <=0 && OriginTAZ != origin_zone)
+			continue;  // special feature 1: skip connectors with origin TAZ only and do not belong to this origin zone
+
+			if( DestinationTAZ >=1 /* TAZ >=1*/ && OriginTAZ <=0 && DestinationTAZ != destination_zone )
+			continue;  // special feature 2: skip connectors with destination TAZ that do not belong to this destination zone
+
+			if( OriginTAZ >=1 /* TAZ >=1*/ && OriginTAZ != origin_zone  && DestinationTAZ >=1 /* TAZ >=1*/ && DestinationTAZ != destination_zone)
+			continue;  // special feature 3: skip connectors (with both TAZ at two ends) that do not belong to the origin/destination zones
 
 			if(ToID == origin) // special feature 2: no detour at origin
 			continue;
@@ -847,8 +862,20 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				}
 				// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
-			if(m_OutboundLinkConnectorZoneIDAry[ToLinkID] >=1 /* TAZ >=1*/ && (m_OutboundLinkConnectorZoneIDAry[ToLinkID]!= origin_zone ) )
-			continue;  // special feature 1: skip connectors that do not belong to this origin zone
+
+			int FromID = m_FromIDAry[FromLinkID];
+
+			int OriginTAZ  = m_OutboundConnectorOriginZoneIDAry[FromID][i];
+			int DestinationTAZ  = m_OutboundConnectorDestinationZoneIDAry[FromID][i];
+
+			if( OriginTAZ >=1 /* TAZ >=1*/  && DestinationTAZ <=0 && OriginTAZ != origin_zone)
+			continue;  // special feature 1: skip connectors with origin TAZ only and do not belong to this origin zone
+
+			if( DestinationTAZ >=1 /* TAZ >=1*/ && OriginTAZ <=0 && DestinationTAZ != destination_zone )
+			continue;  // special feature 2: skip connectors with destination TAZ that do not belong to this destination zone
+
+			if( OriginTAZ >=1 /* TAZ >=1*/ && OriginTAZ != origin_zone  && DestinationTAZ >=1 /* TAZ >=1*/ && DestinationTAZ != destination_zone)
+			continue;  // special feature 3: skip connectors (with both TAZ at two ends) that do not belong to the origin/destination zones
 
 			if(m_ToIDAry[ToLinkID] == origin) // special feature 2: no detour at origin
 			continue;

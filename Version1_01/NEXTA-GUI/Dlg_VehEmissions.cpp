@@ -203,7 +203,7 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 
 	for(i=0; i <= 1440 ; i+=15)
 	{
-		str.Format ("%d", i);
+		str.Format ("%d (%s)", i,m_pDoc->GetTimeStampString24HourFormat (i));
 		m_DepartureTimeBox.AddString(str);
 	}
 	m_DepartureTimeBox.SetCurSel (0);

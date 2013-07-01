@@ -563,7 +563,13 @@ void g_ReadRealTimeSimulationSettingsFile()
 			output_agent_file,update_TD_link_attribute_file,
 			update_agent_file;
 
+		int day_no = 0;
+		parser_RTSimulation_settings.GetValueByFieldName("day_no",day_no);
 		parser_RTSimulation_settings.GetValueByFieldName("timestamp_in_min",timestamp_in_min);
+
+		if(day_no >=1)
+			timestamp_in_min = (day_no-1)*1440 + timestamp_in_min; // consider day no
+
 		parser_RTSimulation_settings.GetValueByFieldName("break_point_flag",break_point_flag);
 		parser_RTSimulation_settings.GetValueByFieldName("output_TD_link_travel_time_file",output_TD_link_travel_time_file);
 		parser_RTSimulation_settings.GetValueByFieldName("output_TD_link_MOE_file",output_TD_link_MOE_file);
@@ -614,8 +620,11 @@ void g_ReadRealTimeSimulationSettingsFile()
 	}
 }
 
-void g_ExchangeRealTimeSimulationData(int timestamp_in_min)
+void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 {
+	// update timestamp using day no
+	timestamp_in_min = day_no*1440+ timestamp_in_min;
+
 	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file.size() >=1)
 	{
 		  OutputRealTimeLinkMOEData(

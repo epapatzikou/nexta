@@ -177,7 +177,6 @@ bool CTLiteDoc::ReadSensorData()
 	CString SensorFileName;
 	SensorFileName.Format("%s//input_sensor.csv", m_ProjectDirectory);
 
-
 	CCSVParser parser;
 	int error_count = 0;
 
@@ -261,22 +260,24 @@ bool CTLiteDoc::ReadSensorData()
 					volume_count = volume_count* pLink->m_NumberOfLanes;
 				} 
 
-
-
 				data_count++;
 
 				if(start_time_in_min <0 && error_message.GetLength () < 1000)
 				{
-					CString msg;
-					msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
+						CString msg;
+						msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
 
-				if(prev_error_message!=msg)
-				{
-					error_message+=msg;
-					prev_error_message=  msg;
+					if(prev_error_message!=msg)
+					{
+						error_message+=msg;
+						prev_error_message=  msg;
+					}
+
 				}
 
-				}
+				if(end_time_in_min >1440)
+				 return false;
+
 
 				if(end_time_in_min < start_time_in_min+1 && error_message.GetLength () < 1000)
 				{
@@ -291,7 +292,14 @@ bool CTLiteDoc::ReadSensorData()
 				}
 				}
 			
-				for(int t = start_time_in_min; t< end_time_in_min; t++)
+				DTASensorData element;
+				element.start_time_in_min = start_time_in_min;
+				element.end_time_in_min = end_time_in_min;
+				element.count = volume_count;
+				pLink->m_SensorDataVector.push_back(element);
+
+
+				for(int t = start_time_in_min; t< min (1440,end_time_in_min); t++)
 				{
 					if(pLink->m_FromNodeNumber == 54656 && pLink->m_ToNodeNumber == 56154 && t>=720)
 					{
@@ -349,7 +357,7 @@ bool CTLiteDoc::ReadSensorData()
 
 		if(m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensors and %d sensor records are loaded from file %s.",m_SensorMap.size(),data_count,SensorFileName);
+			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",data_count,SensorFileName);
 			return true;
 		}
 		else

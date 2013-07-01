@@ -121,6 +121,24 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Link type In Number");
 	m_Link_Label.AddString("Internal Link id");
 
+	m_Link_Label.AddString("-- Simulation/Assignment Results --");
+	m_Link_Label.AddString("Total Link Volume");
+	m_Link_Label.AddString("Avg Travel Time (min)");
+	m_Link_Label.AddString("Total Volume over Capacity Ratio");
+	m_Link_Label.AddString("Level Of Service");
+	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
+	m_Link_Label.AddString("Avg Simulated Speed");
+
+	m_Link_Label.AddString("Total Assigned Link Volume");
+	m_Link_Label.AddString("Total Link Volume of Incomplete Trips");
+
+	m_Link_Label.AddString("-- Observations --");
+	m_Link_Label.AddString("Total Sensor Link Volume");
+	m_Link_Label.AddString("Total Link Count Error");
+	m_Link_Label.AddString("Simulated AADT");
+	m_Link_Label.AddString("Observed Bidirectional AADT");
+	m_Link_Label.AddString("Observed Peak Hour Volume");
+
 	m_Link_Label.AddString("-- Safety Related Attributes --");
 	m_Link_Label.AddString("Number of Driveways Per Mile");
 	m_Link_Label.AddString("Volume Proportion on Minor Leg");
@@ -129,21 +147,6 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Number of 4SG Intersections");
 	m_Link_Label.AddString("Number of 4ST Intersections");
 
-	m_Link_Label.AddString("-- Simulation/Assignment Results --");
-	m_Link_Label.AddString("Total Link Volume");
-	m_Link_Label.AddString("Avg Travel Time (min)");
-	m_Link_Label.AddString("Total Volume over Capacity Ratio");
-	m_Link_Label.AddString("Level Of Service");
-	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
-	m_Link_Label.AddString("Avg Simulated Speed");
-	m_Link_Label.AddString("-- Observations --");
-	m_Link_Label.AddString("Total Sensor Link Volume");
-	m_Link_Label.AddString("Total Link Count Error");
-	m_Link_Label.AddString("Simulated AADT");
-	m_Link_Label.AddString("Observed Bidirectional AADT");
-	m_Link_Label.AddString("Observed Peak Hour Volume");
-
-	m_Link_Label.AddString("-- Safety Prediction Results --");
 	m_Link_Label.AddString("Group 1 Code");
 	m_Link_Label.AddString("Group 2 Code");
 	m_Link_Label.AddString("Group 3 Code");

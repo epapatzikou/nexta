@@ -1053,15 +1053,16 @@ void CDlg_GISDataExchange::SaveTNPProject()
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"link_id,TMC,from_node_id,to_node_id,length_in_mile,link_type,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,geometry\n");
+		fprintf(st,"link_id,link_key,TMC,from_node_id,to_node_id,length_in_mile,link_type,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,geometry\n");
 
 		std::list<DTALine*>::iterator iLine;
 
 		for (iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
 		{
 
-			fprintf(st,"%d,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
+			fprintf(st,"%d,%s,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
 				(*iLine)->LineID , 
+				(*iLine)->m_LinkKey , 
 				(*iLine)->TMC_code.c_str (), 
 				(*iLine)->m_FromNodeNumber ,
 				(*iLine)->m_ToNodeNumber ,(*iLine)->Miles);

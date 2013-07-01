@@ -2559,7 +2559,8 @@ public:
 
 	int** m_OutboundNodeAry; //Outbound node array
 	int** m_OutboundLinkAry; //Outbound link array
-	int** m_OutboundConnectorZoneIDAry; //Outbound connector array
+	int** m_OutboundConnectorOriginZoneIDAry; //Outbound connector array
+	int** m_OutboundConnectorDestinationZoneIDAry; //Outbound connector array (destination zone)
 	int* m_OutboundLinkConnectorZoneIDAry; //Outbound connector array
 	int* m_OutboundSizeAry;  //Number of outbound links
 
@@ -2633,7 +2634,8 @@ public:
 
 		m_OutboundNodeAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
-		m_OutboundConnectorZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_OutboundConnectorOriginZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
+		m_OutboundConnectorDestinationZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
 
 
@@ -2701,7 +2703,8 @@ public:
 
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
 		DeallocateDynamicArray<int>(m_OutboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
-		DeallocateDynamicArray<int>(m_OutboundConnectorZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<int>(m_OutboundConnectorOriginZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
+		DeallocateDynamicArray<int>(m_OutboundConnectorDestinationZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
 
 		if(m_LinkSize>=1)
 			delete m_OutboundLinkConnectorZoneIDAry;
@@ -2841,7 +2844,11 @@ public:
 int g_read_integer(FILE* f, bool special_char_handling = true);
 int g_read_integer_with_char_O(FILE* f);
 
+
 float g_read_float(FILE *f);
+
+float g_read_float_from_a_line(FILE *f);
+
 int g_read_number_of_numerical_values(char* line_string, int length);
 
 void ReadNetworkTables();

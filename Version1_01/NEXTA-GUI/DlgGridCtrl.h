@@ -22,6 +22,7 @@ class CDlgODDemandGridCtrl : public CDialog
 	DECLARE_DYNAMIC(CDlgODDemandGridCtrl)
 
 public:
+	bool m_bLoadDemandForLargeScaleNetwork;
 	CDlgODDemandGridCtrl(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgODDemandGridCtrl();
 

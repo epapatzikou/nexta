@@ -239,6 +239,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SUBAREA_HIGHLIGHTLINKSINSIDESUBAREA, &CTLiteView::OnUpdateSubareaHighlightlinksinsidesubarea)
 	ON_COMMAND(ID_SUBAREA_HIGHLIGHTLINKSACOSSSUBAREA, &CTLiteView::OnSubareaHighlightlinksacosssubarea)
 	ON_UPDATE_COMMAND_UI(ID_SUBAREA_HIGHLIGHTLINKSACOSSSUBAREA, &CTLiteView::OnUpdateSubareaHighlightlinksacosssubarea)
+	ON_COMMAND(ID_ODMATRIX_VIEWTOP50ODPAIRSONLY, &CTLiteView::OnOdmatrixViewtop50odpairsonly)
+	ON_UPDATE_COMMAND_UI(ID_ODMATRIX_VIEWTOP50ODPAIRSONLY, &CTLiteView::OnUpdateOdmatrixViewtop50odpairsonly)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -458,6 +460,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bShowTop10ODOnly = false;
 
 	m_bUpdateLinkAttributeBasedOnType  = false;
 	m_LinkTextFontSize = 12;
@@ -1207,8 +1210,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 
-
-
 				if(m_ShowLinkTextMode == link_display_street_name)
 				{
 					if((*iLink)->m_Name.length () > 0 && (*iLink)->m_Name!="(null)"  && screen_distance > 100 )
@@ -1385,6 +1386,17 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					break;
 
+				case link_display_total_assigned_link_volume:
+					if((*iLink)->m_total_assigned_link_volume >=1)
+						str_text.Format ("%.0f",(*iLink)->m_total_assigned_link_volume   );
+
+					break;
+
+				case link_display_total_incomplete_link_volume:
+					if((*iLink)->m_total_link_volume_of_incomplete_trips >=1)
+						str_text.Format ("%.0f",(*iLink)->m_total_link_volume_of_incomplete_trips   );
+
+					break;
 				case link_display_avg_travel_time:
 					str_text.Format ("%.1f",(*iLink)->GetTravelTime(pDoc->m_DemandLoadingStartTimeInMin , pDoc->m_DemandLoadingEndTimeInMin)  );
 				break;
@@ -1825,6 +1837,15 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		CFont* pOldFont = pDC->SelectObject(&node_font);
 
+		int vehicle_size  = pDoc->m_VehicleSet.size();
+
+		bool bSamplingDisplay = false;
+		int sample_size  = 1;
+		if(vehicle_size>100000)
+		{ // more than one millon vehicle
+			bSamplingDisplay = true;
+			sample_size = vehicle_size/100000;
+		}
 
 		std::list<DTAVehicle*>::iterator iVehicle;
 
@@ -1835,9 +1856,12 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if(pVehicle->m_VehicleLocationSize> 1)
 			{
 
+				if(bSamplingDisplay ==true)
+				{
+					if(pVehicle->m_VehicleID %sample_size !=0)  // one one of samples will be displayed to speed up display speed
+						continue;
+				}
 
-				if(pVehicle->m_VehicleID != pDoc->m_SelectedVehicleID &&  m_ShowGPSTextMode != GPS_display_all)
-					continue;
 
 				float previous_timestamp = 0;
 
@@ -2067,9 +2091,27 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDC->SelectObject(&g_BrushVehicle); //green
 
 
+
+		int vehicle_set_size  = pDoc->m_VehicleSet.size();
+
+		bool bSamplingDisplay = false;
+		int sample_size  = 1;
+		if(vehicle_set_size>500000)
+		{ // more than 0.5 millon vehicles
+			bSamplingDisplay = true;
+			sample_size = vehicle_set_size/500000;
+		}
+
 		std::list<DTAVehicle*>::iterator iVehicle;
 		for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
 		{
+			if(bSamplingDisplay)
+			{
+				if((*iVehicle)->m_VehicleID %sample_size !=0)
+					continue;
+			}
+				
+				
 			if((*iVehicle)->m_DepartureTime <=g_Simulation_Time_Stamp &&
 				g_Simulation_Time_Stamp <=(*iVehicle)->m_ArrivalTime && (*iVehicle)->m_NodeSize>=2)
 			{
@@ -2112,7 +2154,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 								VehPoint.x + vehicle_size, VehPoint.y + vehicle_size);
 
 						}
-						if(m_ShowGPSTextMode= GPS_display_vehicle_id)
+						if(m_ShowGPSTextMode== GPS_display_vehicle_id)
 						{
 
 							CString str_number;
@@ -2174,6 +2216,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		int  p = 0; 
 		int i,j;
+
+
+		bool bODDataReady = false;
+		if(pDoc->m_OD_data_vector.size()>0)
+		{
+		bODDataReady = true;
+		}
+
 		for(i=0; i < pDoc->m_ZoneNoSize ; i++)
 			for(j=0; j< pDoc->m_ZoneNoSize ; j++)
 			{
@@ -2182,7 +2232,38 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					MaxODDemand = pDoc->m_ODMOEMatrix[p][i][j].TotalVehicleSize;
 
 				}
+
+					if( bODDataReady == false && pDoc->m_ODMOEMatrix[p][i][j].TotalVehicleSize >=10 && i!=j  )
+					{
+					pDoc->m_OD_data_vector.push_back (pDoc->m_ODMOEMatrix[p][i][j].TotalVehicleSize);
+					}
+
 			}
+
+		int threashold_200 = 100;   // width: 1
+		int threashold_100 = 100;  //width: 2
+		int threashold_50 = 100;  //width: 3
+		int threashold_20 = 100;  //width: 4
+		int threashold_10 = 100;  //width: 5
+
+		if(bODDataReady == false)
+		{
+		sort(pDoc->m_OD_data_vector.begin(), pDoc->m_OD_data_vector.end());
+		}
+		
+		if(pDoc->m_OD_data_vector.size()>200)
+		{
+			int size  = pDoc->m_OD_data_vector.size();
+			threashold_200 = pDoc->m_OD_data_vector[size-200];
+
+			threashold_100 = pDoc->m_OD_data_vector[size- 100];
+			threashold_50 = pDoc->m_OD_data_vector[size- 50];
+			threashold_20 = pDoc->m_OD_data_vector[size- 20];
+			threashold_10 = pDoc->m_OD_data_vector[size- 10];
+		}
+
+		// threashold is 100th largest number
+
 
 			for(i=0; i < pDoc->m_ZoneNoSize ; i++)
 				for(j=0; j< pDoc->m_ZoneNoSize ; j++)
@@ -2193,10 +2274,29 @@ void CTLiteView::DrawObjects(CDC* pDC)
 						CPoint ToPoint = NPtoSP(pDoc->m_ZoneMap[pDoc->m_ZoneNumberVector [j]].GetCenter());
 
 						CPen penmoe;
-						float Width = pDoc->m_ODMOEMatrix[p][i][j].TotalVehicleSize/MaxODDemand*10;
+						double value = pDoc->m_ODMOEMatrix[p][i][j].TotalVehicleSize;
+						float Width = value/MaxODDemand*10;
+
+						if(m_bShowTop10ODOnly == false)
+						{
+						if(value >= threashold_200)
+							Width = max(1.1,Width);  // show the line for 200th largest value
+
+						if(value >= threashold_100)
+							Width = max(Width,2);  
+					
+						if(value >= threashold_50)
+							Width = max(Width,3);  // show the line for 50th largest value
+
+						if(value >= threashold_20)
+							Width = max(Width,4);  // show the line for 50th largest value
+						}
+						if(value >= threashold_10)
+							Width = max(Width,5);  // show the line for 50th largest value
 
 						if(Width>=1)  //draw critical OD demand only
 						{
+
 							penmoe.CreatePen (PS_SOLID, (int)(Width), RGB(0,255,255));
 							pDC->SelectObject(&penmoe);
 							pDC->MoveTo(FromPoint);
@@ -2800,10 +2900,12 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 
 				break;
 			case layer_link:
+			case layer_connector:
 			case layer_link_MOE:
 			case layer_detector:
 			case layer_workzone:
 			case layer_incident:
+			
 
 			case layer_VMS:
 			case layer_toll:
@@ -2861,6 +2963,10 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 
 					element.Attribute = "Lane Capacity";
 					element.Data.Format ("%4.0f",pLink->m_MaximumServiceFlowRatePHPL  );
+					pMainFrame->m_FeatureInfoVector.push_back (element);
+
+					element.Attribute = "Link Capacity";
+					element.Data.Format ("%4.0f",pLink->m_MaximumServiceFlowRatePHPL*pLink->m_NumberOfLanes   );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
 
 					if(pLink->m_EffectiveGreenTimeInSecond >=1)
@@ -3209,7 +3315,11 @@ void CTLiteView::OnNodeDestination()
 		TRACE("ONode %s selected.\n", pDoc->m_NodeIDMap [pDoc->m_DestinationNodeID]->m_Name );
 
 	m_ShowAllPaths = true;
-	pDoc->Routing(false);
+	if(pDoc->Routing(false)==0)
+	{
+		AfxMessageBox("The selected OD pair does not have a connected path. Please check input_link.csv for details.");
+			
+	}
 
 	Invalidate();
 
@@ -4224,6 +4334,7 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	// step 06: generate route file
 	std::list<DTAVehicle*>::iterator iVehicle;
 	pDoc->m_PathMap.clear();
+
 
 	for (iVehicle = pDoc->m_VehicleSet.begin(); iVehicle != pDoc->m_VehicleSet.end(); iVehicle++)
 	{
@@ -6259,4 +6370,16 @@ void CTLiteView::OnSubareaHighlightlinksacosssubarea()
 void CTLiteView::OnUpdateSubareaHighlightlinksacosssubarea(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bHighlightSubareaBoundaryLinks);
+}
+
+void CTLiteView::OnOdmatrixViewtop50odpairsonly()
+{
+	m_bShowTop10ODOnly = !m_bShowTop10ODOnly;
+	Invalidate();
+
+}
+
+void CTLiteView::OnUpdateOdmatrixViewtop50odpairsonly(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowTop10ODOnly);
 }

@@ -139,7 +139,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		if(simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
 		{  // we need to update travel time and agent file
 
-			g_ExchangeRealTimeSimulationData(time_clock_in_min);
+			g_ExchangeRealTimeSimulationData(DayNo,time_clock_in_min);
 		
 		
 		}

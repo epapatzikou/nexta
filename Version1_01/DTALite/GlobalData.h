@@ -212,6 +212,7 @@ public:
 class RealTimeSimulationSettings
 {
 	public:
+		int day_no;
 		int timestamp_in_min;
 		bool break_point_flag;
 		bool break_and_wait_flag;
@@ -237,6 +238,7 @@ class RealTimeSimulationSettings
 			break_point_flag = false;
 
 			break_and_wait_flag = false;
+			day_no = 0;
 
 		}
 
@@ -349,7 +351,7 @@ extern std::string GetTimeClockString(int time);
 extern void g_ReadRealTimeSimulationSettingsFile();
 
 
-extern void g_ExchangeRealTimeSimulationData(int timestamp_in_min);
+extern void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min);
 
 
 

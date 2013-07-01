@@ -441,6 +441,53 @@ int g_read_integer(FILE* f, bool speicial_char_handling )
 
 }
 
+
+float g_read_float_from_a_line(FILE *f)
+//read a floating point number from the current pointer of the file,
+//skip all spaces
+
+{
+	char ch, buf[ 32 ];
+	int i = 0;
+	int flag = 1;
+
+	/* returns -100 if end of line is reached */
+
+	while(true)
+	{
+		ch = getc( f );
+		if( ch == EOF || ch == '*' || ch == '$' ) 
+			return -1;
+
+		if( ch == '\n' ) 
+			return -100;
+
+		if (isdigit(ch))
+			break;
+
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+
+	};
+	if( ch == EOF ) return -1;
+	while( isdigit( ch ) || ch == '.' ) {
+		buf[ i++ ] = ch;
+		ch = fgetc( f );
+
+	}
+	buf[ i ] = 0;
+
+	/* atof function converts a character string (char *) into a doubleing
+	pointer equivalent, and if the string is not a floting point number,
+	a zero will be return.
+	*/
+
+	return (float)(atof( buf ) * flag);
+
+}
+
 float g_read_float(FILE *f)
 //read a floating point number from the current pointer of the file,
 //skip all spaces

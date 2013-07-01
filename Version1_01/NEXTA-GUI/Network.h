@@ -400,6 +400,23 @@ public:
   GDPoint pt;
 };
 
+class DTASensorData
+{
+public:
+	int start_time_in_min;
+	int end_time_in_min;
+
+	float count; 
+	DTASensorData()
+	{
+	start_time_in_min = end_time_in_min = 0;
+	count = 0;
+	}
+
+
+
+		
+};
 class DTATimeDependentemand
 {
 public: 
@@ -643,7 +660,9 @@ public:
 
 		m_Height = 0;
 		color_code = "red";
-		m_Capacity  =0;
+		m_ProductionCapacity  =0;
+		m_AttractionCapacity  =0;
+
 		m_Demand = 0;
 		m_OriginVehicleSize = 0;
 		bInitialized = false;
@@ -708,7 +727,8 @@ public:
 	}
 
 	
-	float m_Capacity;
+	float m_ProductionCapacity;
+	float m_AttractionCapacity;
 	float m_Demand;
 
 
@@ -1097,7 +1117,7 @@ public:
 
 		m_bZoneActivityLocationFlag = false;
 		m_NodeNumber = 0;
-		m_NodeOriginalNumber = 0;
+		m_NodeOriginalNumber = -1;
 		m_ControlType = 0;
 		m_ZoneID = 0;
 		m_TotalCapacity = 0;
@@ -1112,6 +1132,8 @@ public:
 		m_tobeRemoved = false;
 		m_bSubareaFlag = 0;  // when the associated link is removed as it is outside the boundary, then we mark its from and t nodes as subarea boundary node 
 		m_CentroidUpdateFlag = 0;
+
+		m_IncomingNonConnectors = 0;
 
 		for(int si = 0; si <10; si++)
 			m_SignalPhaseNo[si] = 0;
@@ -1143,6 +1165,7 @@ public:
 
 	std::vector<int> m_OutgoingLinkVector;
 	std::vector<int> m_IncomingLinkVector;
+	int m_IncomingNonConnectors;
 	std::vector <DTANodeMovement> m_MovementVector;
 
 
@@ -1344,6 +1367,7 @@ public:
 	
 	}
 	int LineID;
+	CString m_LinkKey;
 	double Miles;
 
 	int m_FromNodeNumber;
@@ -1893,6 +1917,10 @@ public:
 	// overall information
 
 	float m_total_link_volume;
+	
+	float m_total_assigned_link_volume;
+	float m_total_link_volume_of_incomplete_trips;
+
 	float m_volume_over_capacity_ratio;
 	char m_LevelOfService;
 	float m_avg_waiting_time_on_loading_buffer;
@@ -2091,6 +2119,10 @@ public:
 		m_SimulationHorizon	= TimeHorizon;
 
 		m_total_link_volume = 0;
+
+		m_total_assigned_link_volume = 0;
+		m_total_link_volume_of_incomplete_trips = 0;
+
 		m_TotalVolumeForMovementCount= 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
@@ -2243,6 +2275,8 @@ void AdjustLinkEndpointsWithSetBack()
 
 	bool m_bSensorData;
 
+	std::vector<DTASensorData> m_SensorDataVector;
+
 	string m_SensorTypeString;
 
 	int  m_SensorID;
@@ -2323,6 +2357,8 @@ void AdjustLinkEndpointsWithSetBack()
 	}
 	int m_LinkNo;
 	int m_OrgDir;
+	CString m_LinkKey;
+
 	int m_RailBidirectionalFlag;
 	string m_TrackType;
 	int m_Direction; 

@@ -1679,6 +1679,16 @@ void g_ReadInputFiles(int scenario_no)
 
 	g_ReadDemandFileBasedOnMetaDatabase();
 	
+ g_LogFile << " -- zone-specific demand data -- " << endl; 
+	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+
+		if(iterZone->second .m_Demand > 0.01)
+		{
+		g_LogFile << "Zone " <<  iterZone->first  << ",demand =" <<  iterZone->second .m_Demand  << 
+			", agent count =" << iterZone->second .m_OriginVehicleSize << endl;
+		}
+	}
 
 	//if(g_VehicleLoadingMode == 1)  // load from csv vehicle file
 	//{
@@ -1703,14 +1713,7 @@ void g_ReadInputFiles(int scenario_no)
 	//}
 
 
-	/* to do: change this to the loop for map structure 
-	for(z = 1; z <=g_ODZoneNumberSize; z++)
-	{
-	if(g_ZoneMap[z]->m_Demand >= g_ZoneMap[z].m_Capacity )
-	g_WarningFile << "Zone "<< z << " has demand " << g_ZoneMap[z]->m_Demand  << " and capacity " << g_ZoneMap[z].m_Capacity<< endl;
-
-	}
-	*/
+	
 	//*******************************
 	// step 9: Crash Prediction input
 
@@ -3496,8 +3499,6 @@ void g_ReadDTALiteSettings()
 	g_DepartureTimeChoiceEarlyDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_early_delay_penalty", 0.969387755f, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceLateDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_late_delay_penalty", 1.306122449f, g_DTASettingFileName); // default is non learning
 
-	// parameters for day-to-day learning mode
-	g_LearningPercentage = g_GetPrivateProfileInt("assignment", "learning_percentage", 15, g_DTASettingFileName);
 	g_TravelTimeDifferenceForSwitching = g_GetPrivateProfileFloat("assignment", "travel_time_difference_for_switching_in_min", 1, g_DTASettingFileName);
 	g_RelativeTravelTimePercentageDifferenceForSwitching = g_GetPrivateProfileFloat("assignment",
 		"relative_travel_time_difference_in_percentage_for_switching_in_percentage", 15, g_DTASettingFileName);
@@ -4489,7 +4490,12 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 						for(int type = 1; type <= number_of_demand_types; type++)
 						{
 							
-							float demand_value = g_read_float(st);
+							float demand_value = g_read_float_from_a_line(st);
+
+							if(demand_value<-99) // encounter return 
+							{
+							break; 
+							}
 
 							number_of_vehicles =  demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
 
