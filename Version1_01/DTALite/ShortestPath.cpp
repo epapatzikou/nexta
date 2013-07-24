@@ -206,12 +206,21 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 			m_OutboundLinkConnectorZoneIDAry[link_id]  = -1;  // default values
 		}
 
+		if(FromID == 0) 
+		{
+		TRACE(" m_OutboundSizeAry[FromID] =  %d for node %d \n", m_OutboundSizeAry[FromID], g_NodeVector[ToID].m_NodeNumber  );
+		}
 		m_OutboundSizeAry[FromID] +=1;
 
 		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = pLink->m_LinkNo  ;
 		m_InboundSizeAry[ToID] +=1;
 
-		ASSERT(g_AdjLinkSize > m_OutboundSizeAry[FromID]);
+		if(g_AdjLinkSize <= m_OutboundSizeAry[FromID])
+		{
+			cout << "node " <<  g_NodeVector[FromID].m_NodeNumber  << " have more than 30 outbound links. Please check." << endl;
+		
+			g_ProgramStop();
+		}
 
 		m_LinkTDDistanceAry[pLink->m_LinkNo] = pLink->m_Length ;
 

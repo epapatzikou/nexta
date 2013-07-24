@@ -2639,8 +2639,6 @@ public:
 		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
 
 
-
-
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 
 		//movement-specific array

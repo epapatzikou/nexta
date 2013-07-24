@@ -81,4 +81,7 @@ public:
 	afx_msg void OnEnChangeEditAadt();
 	afx_msg void OnEnChangeEditPeakhourlyvolume();
 	afx_msg void OnClose();
+	int m_NumLeftTurnLanes;
+	int m_LeftTurnTreatment; 
+	CComboBox m_LeftTurnTreatmentComboBox;
 };

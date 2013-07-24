@@ -32,6 +32,7 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_AADT(0)
 	, m_PeakHourlyVolume(0)
 	, m_bUpdateLinkAttributeBasedOnType(FALSE)
+	, m_NumLeftTurnLanes(0)
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -77,6 +78,8 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_PeakHourlyVolume, m_PeakHourlyVolume);
 	DDV_MinMaxInt(pDX, m_PeakHourlyVolume, 0, 100000);
 	DDX_Check(pDX, IDC_CHECK_UseDefaultData, m_bUpdateLinkAttributeBasedOnType);
+	DDX_Text(pDX, IDC_EDIT_NUMLANES_LEFT_TURN, m_NumLeftTurnLanes);
+	DDX_Control(pDX, IDC_COMBO_LEFT_TURN_TREATMENT, m_LeftTurnTreatmentComboBox);
 }
 
 
@@ -136,7 +139,12 @@ BOOL CDlgLinkProperties::OnInitDialog()
 		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(km/h)");
 	}
 
-		EnableDataBasedOnLinkType();
+	m_LeftTurnTreatmentComboBox.AddString ("Not Defined");
+	m_LeftTurnTreatmentComboBox.AddString ("Protected");
+	m_LeftTurnTreatmentComboBox.AddString ("Permitted");
+	m_LeftTurnTreatmentComboBox.AddString ("Protected + Permitted");
+
+	EnableDataBasedOnLinkType();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -226,6 +234,8 @@ void CDlgLinkProperties::OnBnClickedOk()
 		sscanf_s(m_Text, "%d,%s", &LinkType, LinkTypeString,sizeof(LinkTypeString));
 	
 	}
+
+	m_LeftTurnTreatment = m_LeftTurnTreatmentComboBox.GetCurSel();
 
 	OnOK();
 }

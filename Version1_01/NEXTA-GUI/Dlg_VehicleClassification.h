@@ -23,6 +23,7 @@ public:
 	CTLiteDoc* m_pDoc;
 	float	m_dValue;
 	CString	m_sLabel;
+	CString m_PresetChartTitle;
 	CNSChartCtrl m_chart;
 	bool m_bHighlightSelectedVehicles;
 

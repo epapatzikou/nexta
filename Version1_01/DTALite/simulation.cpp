@@ -1265,8 +1265,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		{
 			if(pLink->m_FFTT_simulation_interval >= MAX_TIME_INTERVAL_ADCURVE)
 			{
-				cout << "Error: link" << pLink->m_FromNodeNumber << "->" <<  pLink->m_ToNodeNumber << " has FFTT_simulation_interval = " << pLink->m_FFTT_simulation_interval << ">= MAX_TIME_INTERVAL_ADCURVE " << MAX_TIME_INTERVAL_ADCURVE << endl;
-				g_ProgramStop();
+				TrafficFlowModelFlag = tfm_point_queue;
 			}
 		}
 

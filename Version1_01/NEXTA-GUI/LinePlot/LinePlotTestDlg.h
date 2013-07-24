@@ -20,6 +20,8 @@
 #include "..\\Network.h"
 #include "..\\TLiteDoc.h"
 #include "afxwin.h"
+#include "..\\BaseDialog.h"
+
 #define ID_CTRL_LINE_PLOT (WM_USER+1001)
 
 
@@ -48,7 +50,7 @@ class CLinePlotData
 	COLORREF crPlot;
 
 };
-class CLinePlotTestDlg : public CDialog
+class CLinePlotTestDlg : public CBaseDialog
 {
   // Construction/Destruction
   public:

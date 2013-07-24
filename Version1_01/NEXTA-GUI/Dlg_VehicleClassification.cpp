@@ -85,6 +85,11 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	// TODO: Add extra initialization here
 
 	m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
+	
+	if(m_PresetChartTitle.GetLength () > 0)
+		m_chart.m_Caption = m_PresetChartTitle;
+	else
+		m_chart.m_Caption = "Project Title: " + m_pDoc->m_ProjectTitle ;
 
 	// processing available x and y options
 
@@ -283,7 +288,6 @@ void CDlg_VehicleClassification::AddChartData()
 	m_MaxColumnSize = m_ColumnSizeList.GetCurSel()+1;
 
 	int count = 0;
-	m_chart.m_Caption = "Project Title: " + m_pDoc->m_ProjectTitle ;
 
 	 for ( iter = m_pDoc->m_ClassificationTable.begin(); iter != m_pDoc->m_ClassificationTable.end(); ++iter, count++ )
 	 {

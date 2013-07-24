@@ -241,6 +241,9 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SUBAREA_HIGHLIGHTLINKSACOSSSUBAREA, &CTLiteView::OnUpdateSubareaHighlightlinksacosssubarea)
 	ON_COMMAND(ID_ODMATRIX_VIEWTOP50ODPAIRSONLY, &CTLiteView::OnOdmatrixViewtop50odpairsonly)
 	ON_UPDATE_COMMAND_UI(ID_ODMATRIX_VIEWTOP50ODPAIRSONLY, &CTLiteView::OnUpdateOdmatrixViewtop50odpairsonly)
+	ON_COMMAND(ID_TRANSIT_SHOWTRANSITACCESSIBILITY, &CTLiteView::OnTransitShowtransitaccessibility)
+	ON_UPDATE_COMMAND_UI(ID_TRANSIT_SHOWTRANSITACCESSIBILITY, &CTLiteView::OnUpdateTransitShowtransitaccessibility)
+	ON_COMMAND(ID_TRANSIT_CALCULATETRANSITACCESSSIBILITYFROMHERE, &CTLiteView::OnTransitCalculatetransitaccesssibilityfromhere)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -250,8 +253,16 @@ CBrush g_BlackBrush(RGB(10,10,10));
 CBrush g_ActivityLocationBrush(RGB(255,0,0));
 
 CPen g_BlackPen(PS_SOLID,1,RGB(0,0,0));
+
 CPen g_TransitPen(PS_SOLID,1,RGB(255,69,0));  // orange red
 CBrush g_TransitBrush(RGB(184,134,11));  //DarkGoldenrod	
+
+CPen g_TransitLightPen(PS_SOLID,1,RGB(216,191,216));  // orange red
+CBrush g_TransitLightBrush(RGB(255,225,255));  //DarkGoldenrod	
+
+
+CPen g_TransitAccessibilityPen(PS_SOLID,1,RGB(0,0,255)); //Blue 
+CBrush g_TransitAccessibilityBrush(RGB(0,0,255));  //Blue 	
 
 CPen g_LaneMarkingPen(PS_DASH,0,RGB(255,255,255));
 
@@ -460,6 +471,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bShowTransitAccessibility  = false;
 	m_bShowTop10ODOnly = false;
 
 	m_bUpdateLinkAttributeBasedOnType  = false;
@@ -930,6 +942,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					continue; 
 			}
 
+			if( !pMainFrame->m_bShowLayerMap[layer_transit] )
+			{
+				if (pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsTransit  ())  //hide transit
+					continue; 
+			}
+
+
 			// step 1: decide if a link is included in the screen region
 			FromPoint = NPtoSP((*iLink)->m_FromPoint);
 			ToPoint = NPtoSP((*iLink)->m_ToPoint);
@@ -943,8 +962,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			int size = 1000;
 			link_rect.SetRect(min_x-size,min_y-size,max_x+size,max_y+size);
 
-			//if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
-			//	continue;
+			if(RectIsInsideScreen(link_rect,ScreenRect) == false)  // not inside the screen boundary
+				continue;
 
 
 			// step 4: select color and brush for MOE mode
@@ -990,8 +1009,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				//draw link as lines
 				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
 				{
+					if(pDoc->m_LinkMOEMode != MOE_volume) // not volume display
+					{
 					pDC->SelectObject(&pen_moe[LOS]);
 					pDC->SelectObject(&g_BrushLinkBand);   //default brush  , then MOE, then condition with volume
+					}else
+					{
+					pDC->SelectObject(&g_BlackPen);
+					pDC->SelectObject(&g_BlackBrush);
+
+					}
 				}
 				else 
 				{// display link as a band so use black pen
@@ -1255,6 +1282,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					str_text.Format ("%.0f",(*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane); break;
 				case link_display_number_of_lanes:
 					str_text.Format ("%d",(*iLink)->m_NumberOfLanes ); break;						
+
+				case link_display_number_of_left_turn_lanes:
+					str_text.Format ("%d",(*iLink)->m_LeftTurnLanes  ); break;						
+
+				case link_display_number_of_right_turn_lanes:
+					str_text.Format ("%d",(*iLink)->m_RightTurnLanes  ); break;		
+
 				case link_display_lane_capacity_per_hour:
 					str_text.Format ("%.0f",(*iLink)->m_LaneCapacity); break;
 
@@ -1308,8 +1342,11 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					if( (*iLink)->m_avg_waiting_time_on_loading_buffer > 0.1)
 						str_text.Format ("%.1f",(*iLink)->m_avg_waiting_time_on_loading_buffer   ); break;
 
-				case link_display_avg_simulated_speed:
+				case link_display_avg_simulated_speed_mph:
 					str_text.Format ("%.0f",(*iLink)->m_avg_simulated_speed    ); break;
+
+				case link_display_avg_simulated_speed_kmph:
+					str_text.Format ("%.0f",(*iLink)->m_avg_simulated_speed*1.6093   ); break;
 
 				case link_display_total_sensor_link_volume:
 
@@ -1386,6 +1423,19 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					break;
 
+				case link_display_avg_delay:
+					if((*iLink)->m_total_delay >=1 && (*iLink)->m_total_delay/ max(1,(*iLink)->m_total_link_volume) >= 0.1 && pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsConnector () == false)
+						str_text.Format ("%.1f",(*iLink)->m_total_delay/ max(1,(*iLink)->m_total_link_volume)   );
+					break;
+
+
+				case link_display_total_delay:
+					if((*iLink)->m_total_delay>=1 && pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsConnector () == false)
+						str_text.Format ("%.0f",(*iLink)->m_total_delay/60.0   );
+
+					break;
+
+
 				case link_display_total_assigned_link_volume:
 					if((*iLink)->m_total_assigned_link_volume >=1)
 						str_text.Format ("%.0f",(*iLink)->m_total_assigned_link_volume   );
@@ -1417,32 +1467,52 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				case link_display_Num_4ST_Intersections:
 					str_text.Format ("%.1f",(*iLink)->m_Num_4ST_Intersections    ); break;
 
-				}
+				
 
-				// show text condition 3: other statistics
-				if((m_ShowLinkTextMode == link_display_link_MOE || m_ShowLinkTextMode == link_display_link_LOS) && (screen_distance > 20 && (
-					pDoc->m_LinkMOEMode == MOE_queue_length 
-					|| pDoc->m_LinkMOEMode == MOE_speed 
-					|| pDoc->m_LinkMOEMode == MOE_volume 
-					|| pDoc->m_LinkMOEMode == MOE_density 
-					|| pDoc->m_LinkMOEMode == MOE_reliability
-					|| pDoc->m_LinkMOEMode == MOE_safety)))
-				{
+				case link_display_time_dependent_link_volume:
+					
+					pDoc->GetLinkMOE((*iLink), MOE_volume,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+						str_text.Format ("%.0f",value);
+						break;
+				
+				case link_display_time_dependent_lane_volume:
+					
+					pDoc->GetLinkMOE((*iLink), MOE_volume,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+						str_text.Format ("%.0f",value/max(1,(*iLink)->m_NumberOfLanes) );
+						break;
 
-					float power  = pDoc->GetLinkMOE((*iLink), pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
-					int LOS = pDoc->GetLOSCode(power);
 
-					if( m_ShowLinkTextMode == link_display_link_MOE )
-						str_reference_text.Format ("%.1f",value);
 
-					if( m_ShowLinkTextMode == link_display_link_LOS )
+				case link_display_time_dependent_speed_mph:
+					pDoc->GetLinkMOE((*iLink), MOE_speed,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+						str_text.Format ("%.0f",value);
+						break;
+				case link_display_time_dependent_speed_kmph:
+					pDoc->GetLinkMOE((*iLink), MOE_speed,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+						str_text.Format ("%.0f",value*1.6093);
+						break;
+	
+				case link_display_time_dependent_density:
+					pDoc->GetLinkMOE((*iLink), MOE_density,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+
+					if(value > 0.1)
 					{
-						str_reference_text.Format ("%d",LOS);
+						str_text.Format ("%.0f",value);
 					}
+						break;
 
+				case link_display_time_dependent_queue_length:
+					pDoc->GetLinkMOE((*iLink), MOE_queue_length,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+
+					if(value>0.01)
+					{
+						str_text.Format ("%.1f%%",value*100);
+					}
+					break;
 
 					with_text = true;
 
+			}
 					if(pDoc->m_bShowCalibrationResults && pDoc->m_LinkMOEMode == MOE_volume)  // special conditions with calibration mode
 					{
 						if((*iLink)->m_bSensorData )
@@ -1462,9 +1532,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					}
 
 
-				}
-
-				// after all the above 3 conditions, show test now. 
+					// after all the above 3 conditions, show test now. 
 				if(with_text)
 				{
 					CPoint TextPoint = NPtoSP((*iLink)->GetRelativePosition(0.3));
@@ -1479,7 +1547,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				}
 
 
-					pDC->TextOut(TextPoint.x,TextPoint.y, str_text);
+					pDC->TextOut(TextPoint.x,TextPoint.y - m_LinkTextFontSize*1.5, str_text);
 
 					if(str_reference_text.GetLength () > 0 )  // reference text with different color4
 					{
@@ -2344,15 +2412,23 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDC->SetTextColor(RGB(255,0,0));
 		pDC->SetBkColor(RGB(0,0,0));
 
+		if(m_bShowTransitAccessibility)
+		{
+		pDC->SelectObject(&g_TransitLightBrush);
+		pDC->SelectObject(&g_TransitLightPen);
+	
+		}
+		else
+		{
 		pDC->SelectObject(&g_TransitBrush);
 		pDC->SelectObject(&g_TransitPen);
-
+		}
 		DrawPublicTransitLayer(pDC);
 		pDC->SelectObject(oldFont);  // restore font
 
 	}
 
-	if(pMainFrame->m_bShowLayerMap[layer_transit_accessibility])
+	if(m_bShowTransitAccessibility)
 	{
 		CFont pt_font;
 		int nODNodeSize = max(node_size*0.8,8);
@@ -2365,8 +2441,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pDC->SetTextColor(RGB(255,0,0));
 		pDC->SetBkColor(RGB(0,0,0));
 
-		pDC->SelectObject(&g_TransitBrush);
-		pDC->SelectObject(&g_TransitPen);
+		pDC->SelectObject(&g_TransitAccessibilityPen);
+		pDC->SelectObject(&g_TransitAccessibilityBrush);
 
 		DrawPublicTransitAccessibilityLayer(pDC);
 		pDC->SelectObject(oldFont);  // restore font
@@ -3294,10 +3370,6 @@ void CTLiteView::OnNodeOrigin()
 		TRACE("ONode %s selected.\n", pDoc->m_NodeIDMap [pDoc->m_OriginNodeID]->m_Name );
 	pDoc->Routing(false);
 
-	GDPoint pt = SPtoNP(m_CurrentMousePoint);
-	pDoc->FindAccessibleTripID(pt.x, pt.y);
-
-
 	m_ShowAllPaths = true;
 	Invalidate();
 
@@ -3329,7 +3401,8 @@ void CTLiteView::FindAccessibleTripIDWithCurrentMousePoint()
 {
 	GDPoint pt = SPtoNP(m_CurrentMousePoint);
 	CTLiteDoc* pDoc = GetDocument();
-	pDoc->FindAccessibleTripID(pt.x, pt.y);
+	
+	pDoc->FindAccessibleTripID(pt,g_Simulation_Time_Stamp);
 }
 
 
@@ -3540,6 +3613,23 @@ void CTLiteView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	}
 	m_bMoveDisplay = false;
 
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+	if(pMainFrame-> m_iSelectedLayer == layer_vehicle_position)
+	{
+	 
+	FILE* st = NULL;
+	fopen_s(&st,pDoc->m_ProjectDirectory + "GPS_log.csv","a");
+	if(st!=NULL)
+	{
+	DWORD Time = GetTickCount();
+
+	int node_id = FindClosestNode(point, 300);  // 300 is screen unit
+
+	fprintf(st, "%d,%ld\n", pDoc->m_NodeIDtoNumberMap[node_id], Time);
+	fclose(st);
+	}
+	}
 	CView::OnLButtonDblClk(nFlags, point);
 }
 
@@ -3910,6 +4000,10 @@ void CTLiteView::OnLinkEditlink()
 		dlg.FromNode = pLink->m_FromNodeNumber ;
 		dlg.ToNode = pLink->m_ToNodeNumber ;
 
+		dlg.m_NumLeftTurnLanes  = pLink-> m_LeftTurnLanes;
+		dlg.m_LeftTurnTreatment = pLink-> m_LeftTurnTreatment;
+
+
 		if(pDoc->m_bUseMileVsKMFlag)
 		{
 			dlg.LinkLength = pLink->m_Length ;
@@ -3986,6 +4080,10 @@ void CTLiteView::OnLinkEditlink()
 				pDoc->GenerateOffsetLinkBand();  // update width of band
 			}
 			
+		    pLink-> m_LeftTurnLanes = dlg.m_NumLeftTurnLanes ;
+			pLink-> m_LeftTurnTreatment = dlg.m_LeftTurnTreatment;
+
+
 			if(pLink->m_link_type != dlg.LinkType)
 			{
 				dlg.m_bEditChange = true;
@@ -5050,7 +5148,6 @@ void CTLiteView::OnUpdateViewTransitlayer(CCmdUI *pCmdUI)
 void CTLiteView::DrawPublicTransitLayer(CDC *pDC)
 {
 
-	CWaitCursor wait;
 	CTLiteDoc* pDoc = GetDocument();
 	std::map<int, int> RouteMap;
 
@@ -5127,7 +5224,7 @@ void CTLiteView::DrawPublicTransitLayer(CDC *pDC)
 void CTLiteView::DrawPublicTransitAccessibilityLayer(CDC *pDC)
 {
 
-	CWaitCursor wait;
+	//CWaitCursor wait;
 	CTLiteDoc* pDoc = GetDocument();
 	std::map<int, int> RouteMap;
 
@@ -5318,6 +5415,13 @@ void CTLiteView::OnNodeMovementproperties()
 
 	if(pDoc == NULL)
 		return;
+
+	if(pDoc->m_ProjectDirectory.GetLength () ==0)
+	{
+	
+		AfxMessageBox("Please first save and then reload the data set to show movement data.");
+		return;
+	}
 
 	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
 
@@ -6383,3 +6487,35 @@ void CTLiteView::OnUpdateOdmatrixViewtop50odpairsonly(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowTop10ODOnly);
 }
+
+void CTLiteView::OnTransitShowtransitaccessibility()
+{
+	m_bShowTransitAccessibility = !m_bShowTransitAccessibility;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateTransitShowtransitaccessibility(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowTransitAccessibility);
+}
+
+void CTLiteView::OnTransitCalculatetransitaccesssibilityfromhere()
+{
+	CTLiteDoc* pDoc = GetDocument();
+
+	pDoc->m_SelectedNodeID = FindClosestNode(m_CurrentMousePoint, 300);  // 300 is screen unit
+
+	pDoc->m_OriginNodeID = pDoc->m_SelectedNodeID;
+
+	GDPoint pt = SPtoNP(m_CurrentMousePoint);
+
+	if( g_Simulation_Time_Stamp < 300 || g_Simulation_Time_Stamp >= 22*60)
+	{  // reset to morning 7AM
+		g_Simulation_Time_Stamp = 420;
+
+	}
+	pDoc->FindAccessibleTripID(pt,g_Simulation_Time_Stamp);
+
+	m_bShowTransitAccessibility = true;
+
+	Invalidate();}

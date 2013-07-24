@@ -93,6 +93,8 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	if(number_of_threads > max_number_of_threads)
 		number_of_threads = max_number_of_threads ;
 
+	if(g_NodeVector.size() > 2000 || g_ODZoneNumberSize >2000 )  // large network or subare cut with large node number, reset to single thread mode
+		number_of_threads = 1;
 
 	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
 	{ 
@@ -116,7 +118,14 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
-		cout << "------- Allocating memory for networks... " << endl;
+		//cout << "------- Allocating memory for networks for " number_of_threads << " CPU threads" << endl;
+		//cout << "Tips: If your computer encounters a memory allocation problem, please open file DTASettings.txt in the project folder " << endl;
+		//cout << "find section [computation], set max_number_of_threads_to_be_used=1 or a small value to reduce memory usage. " << endl;
+		//cout << "This modification could significantly increase the total runing time as a less number of CPU threads will be used. " << endl;
+
+
+			//
+			//" number_of_threads << " CPU threads" << endl;
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
@@ -1619,6 +1628,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName ("Avg Trip Time Index=(Mean TT/Free-flow TT)");
 		g_SummaryStatFile.SetFieldName ("Avg Speed (mph)");
 		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",p_SimuOutput->AvgDistance);
+	
 		g_SummaryStatFile.SetFieldName ("% considering to switch");
 		g_SummaryStatFile.SetFieldName ("% switched");
 		g_SummaryStatFile.SetFieldName ("% completing trips");

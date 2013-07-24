@@ -87,8 +87,6 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Node_Label.SetCurSel ((int)(m_ShowNodeTextMode));
 
 	m_Link_Label.AddString("None");
-	m_Link_Label.AddString("Time-dependent Link MOE");
-	m_Link_Label.AddString("Time-dependent Link LOS Value");
 	m_Link_Label.AddString("Street Name");
 	m_Link_Label.AddString("Link ID");
 	m_Link_Label.AddString("TMC Code");
@@ -102,6 +100,9 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Free Flow Travel Time (min)");
 	m_Link_Label.AddString("Free Flow Travel Time (hour)");
 	m_Link_Label.AddString("# of Lanes");
+	m_Link_Label.AddString("# of Left-turn Lanes");
+	m_Link_Label.AddString("# of Right-turn Lanes");
+
 	m_Link_Label.AddString("Link Capacity Per Hour");
 	m_Link_Label.AddString("Lane Capacity Per Hour");
 
@@ -123,14 +124,28 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 	m_Link_Label.AddString("-- Simulation/Assignment Results --");
 	m_Link_Label.AddString("Total Link Volume");
-	m_Link_Label.AddString("Avg Travel Time (min)");
+	m_Link_Label.AddString("Total Link Delay (hour)");
 	m_Link_Label.AddString("Total Volume over Capacity Ratio");
 	m_Link_Label.AddString("Level Of Service");
-	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
-	m_Link_Label.AddString("Avg Simulated Speed");
 
-	m_Link_Label.AddString("Total Assigned Link Volume");
-	m_Link_Label.AddString("Total Link Volume of Incomplete Trips");
+	
+	m_Link_Label.AddString("Avg Simulated Speed (mph)");
+	m_Link_Label.AddString("Avg Simulated Speed (km/h)");
+	m_Link_Label.AddString("Avg Travel Time (min)");
+	m_Link_Label.AddString("Avg Delay Per Vehicle (min)");
+	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
+
+
+	m_Link_Label.AddString("Time-dependent Link Volume");
+	m_Link_Label.AddString("Time-dependent Lane Volume");
+	m_Link_Label.AddString("Time-dependent Speed (mph)");
+	m_Link_Label.AddString("Time-dependent Speed (km/h)");
+	m_Link_Label.AddString("Time-dependent Density (vplpm)");
+	m_Link_Label.AddString("Time-dependent Queue Length (%)");
+
+
+//	m_Link_Label.AddString("Total Assigned Link Volume");
+//	m_Link_Label.AddString("Total Link Volume of Incomplete Trips");
 
 	m_Link_Label.AddString("-- Observations --");
 	m_Link_Label.AddString("Total Sensor Link Volume");
@@ -139,6 +154,9 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Observed Bidirectional AADT");
 	m_Link_Label.AddString("Observed Peak Hour Volume");
 
+	bool m_SafetyRelatedFeature = false;
+	if(m_SafetyRelatedFeature == true)
+	{
 	m_Link_Label.AddString("-- Safety Related Attributes --");
 	m_Link_Label.AddString("Number of Driveways Per Mile");
 	m_Link_Label.AddString("Volume Proportion on Minor Leg");
@@ -160,6 +178,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Number of Intersection Fatal and Injury Crashes Per_Year");
 	m_Link_Label.AddString("Number of Intersection PDO Crashes Per Year");
 
+	}
 	m_Link_Label.SetCurSel ((int)(pView->m_ShowLinkTextMode));
 
 	m_Movement_Label.AddString("None");
@@ -215,6 +234,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_GPS_Label.SetCurSel ((int)(pView->m_ShowGPSTextMode));
 
 
+	movement_text_size_vector.push_back(10);
+	movement_text_size_vector.push_back(50);
 	movement_text_size_vector.push_back(100);
 	movement_text_size_vector.push_back(150);
 	movement_text_size_vector.push_back(200);

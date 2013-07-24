@@ -1429,6 +1429,14 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 						if(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) // feasible arrival time
 						{
 						pLink->m_total_link_volume +=1;
+
+						double travel_time = 0 ;
+						if(i>=2)
+						travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
+						else // first link
+						travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_DepartureTime ;
+						pLink->m_TotalTravelTime += travel_time;
+						pLink->m_total_delay += ( travel_time- pLink->m_FreeFlowTravelTime );
 						}
 				}
 
@@ -1614,6 +1622,15 @@ bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int dat
 						if(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) // feasible arrival time
 						{
 						pLink->m_total_link_volume +=1;
+
+						double travel_time = 0;
+						if(i>=2)
+						travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
+						else // first link
+						travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_DepartureTime ;
+
+						pLink->m_TotalTravelTime += travel_time;
+						pLink->m_total_delay += ( travel_time- pLink->m_FreeFlowTravelTime );
 						}
 			}
 

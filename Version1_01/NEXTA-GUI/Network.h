@@ -1671,6 +1671,10 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+	    m_LeftTurnLanes = 0;
+		m_RightTurnLanes = 0;
+		m_LeftTurnTreatment = 0;
+
 		KML_single_color_code = -1;
 		m_UserDefinedHeight = 1;
 		relative_angel_difference_from_main_direction = 0;
@@ -1702,6 +1706,8 @@ public:
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
 		m_total_link_volume = 0;
+		m_total_delay = 0;
+
 		m_TotalVolumeForMovementCount = 0;
 		m_MeanSpeed  = m_SpeedLimit;
 		m_TotalTravelTime = 0;
@@ -1832,6 +1838,10 @@ public:
 	float m_BPR_alpha_term;
 	float m_BPR_beta_term;
 
+	int m_LeftTurnLanes;
+	int m_RightTurnLanes;
+	int m_LeftTurnTreatment;  // 0: not defined: 1: protected, 2: permitted, 3: protected, + permitted,
+
 
 	float m_UserDefinedHeight;
 
@@ -1917,7 +1927,7 @@ public:
 	// overall information
 
 	float m_total_link_volume;
-	
+	float m_total_delay;
 	float m_total_assigned_link_volume;
 	float m_total_link_volume_of_incomplete_trips;
 
@@ -3024,6 +3034,7 @@ class DTAPath
 public:
 	DTAPath()
 	{
+		m_bSavedPath = false;
 		m_bWithSensorTravelTime = false;
 		total_free_flow_travel_time = 0;
 		total_distance = 0;
@@ -3173,6 +3184,7 @@ public:
 	{
 	}
 
+	bool m_bSavedPath;
 	bool m_bWithSensorTravelTime;
 	float total_free_flow_travel_time;
 	float total_distance;
@@ -4019,7 +4031,8 @@ public:
 
 	void Reset()
 	{
-	m_data_vector.clear();
+		if(m_data_vector.size() > 0)
+			m_data_vector.clear();
 	
 	}
 	

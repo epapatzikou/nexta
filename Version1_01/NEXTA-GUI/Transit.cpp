@@ -51,7 +51,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 	if (parser.OpenCSVFile(strStd))
 	{
 
-		AfxMessageBox("Start reading Google Transit Feed files...", MB_ICONINFORMATION);
+	//	AfxMessageBox("Start reading Google Transit Feed files...", MB_ICONINFORMATION);
 
 		int count =0;
 		PT_Route route;
@@ -112,10 +112,12 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 			if(parser.GetValueByFieldName("stop_id",stop.stop_id ) == false)
 				break;
 
-			if(parser.GetValueByFieldName("stop_lat",stop.m_ShapePoint.y   ) == false)
+
+			bool NonnegativeFlag = false;
+			if(parser.GetValueByFieldName("stop_lat",stop.m_ShapePoint.y, NonnegativeFlag) == false)
 				break;
 
-			if(parser.GetValueByFieldName("stop_lon",stop.m_ShapePoint.x   ) == false)
+			if(parser.GetValueByFieldName("stop_lon",stop.m_ShapePoint.x , NonnegativeFlag) == false)
 				break;
 
 			if(parser.GetValueByFieldName("direction",stop.direction  ) == false)
@@ -354,33 +356,6 @@ bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
 
 	m_PT_network.m_ProjectDirectory = TransitDataProjectFolder;
 	m_PT_network.ReadGTFFiles(m_NetworkRect);
-
-
-	std::map<int, PT_Trip>::iterator iPT_TripMap;
-	for ( iPT_TripMap= m_PT_network.m_PT_TripMap.begin() ; iPT_TripMap != m_PT_network.m_PT_TripMap.end(); iPT_TripMap++ )
-	{
-
-	
-         for(int si = 0; si < (*iPT_TripMap).second .m_PT_StopTimeVector.size(); si++)
-		 {
-				
-				double x = (*iPT_TripMap).second .m_PT_StopTimeVector[si].pt.x ;
-				double y = (*iPT_TripMap).second .m_PT_StopTimeVector[si].pt.y;
-
-				// add trip id into vector
-			int x_key = (x - m_GridRect.left)/ m_GridXStep;
-			int y_key = (y - m_GridRect.bottom)/ m_GridYStep;
-
-			//feasible region
-			x_key = max(0,x_key);
-			x_key = min(99,x_key);
-
-			y_key = max(0,y_key);
-			y_key = min(99,y_key);
-
-			m_GridMatrix[x_key][y_key].m_TripIDVector.push_back ((*iPT_TripMap).second. trip_id);
-			}
-	}
 
 
 

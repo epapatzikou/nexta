@@ -1,7 +1,7 @@
 #pragma once
 #include "afxwin.h"
 #include "TLiteDoc.h"
-enum eKML_ColorMode { e_KML_green = 0, e_KML_yellow, e_KML_red ,e_KML_number_of_lanes,e_KML_speed_limit,e_KML_avg_speed,e_KML_avg_speed_to_speed_limit_raio,e_KML_speed, e_KML_user_defined_attribue};
+enum eKML_ColorMode { e_KML_green = 0, e_KML_yellow, e_KML_red ,e_KML_speed_limit,e_KML_avg_speed,e_KML_avg_speed_to_speed_limit_raio, e_KML_user_defined_attribue};
 // CDlg_KML_Configuration dialog
 
 class CDlg_KML_Configuration : public CDialog

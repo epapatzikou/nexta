@@ -48,8 +48,6 @@ enum tool
 
 enum link_text_display_mode
    { link_display_none = 0, 
-   link_display_link_MOE,
-   link_display_link_LOS,
    link_display_street_name, 
    link_display_link_id, 
    link_display_TMC_code, 
@@ -63,6 +61,9 @@ enum link_text_display_mode
    link_display_free_flow_travel_time_in_min, 
    link_display_free_flow_travel_time_in_hour, 
    link_display_number_of_lanes, 
+   link_display_number_of_left_turn_lanes, 
+   link_display_number_of_right_turn_lanes, 
+
    link_display_link_capacity_per_hour,
    link_display_lane_capacity_per_hour,
 
@@ -84,15 +85,23 @@ enum link_text_display_mode
 
 	link_display_separator_3,
 	link_display_total_link_volume,
-	link_display_avg_travel_time,
-
+	link_display_total_delay,
 	link_display_volume_over_capacity_ratio,
 	link_display_LevelOfService,
-	link_display_avg_waiting_time_on_loading_buffer,
-	link_display_avg_simulated_speed,
 
-	link_display_total_assigned_link_volume,
-	link_display_total_incomplete_link_volume,
+	link_display_avg_simulated_speed_mph,
+	link_display_avg_simulated_speed_kmph,
+	link_display_avg_travel_time,
+	link_display_avg_delay,
+	link_display_avg_waiting_time_on_loading_buffer,
+
+	link_display_time_dependent_link_volume,
+	link_display_time_dependent_lane_volume,
+	link_display_time_dependent_speed_mph,
+	link_display_time_dependent_speed_kmph,
+	link_display_time_dependent_density,
+	link_display_time_dependent_queue_length,
+
 
 	link_display_separator_4,
 	link_display_total_sensor_link_volume,
@@ -119,8 +128,12 @@ enum link_text_display_mode
 
 	link_display_number_of_intersection_crashes,
 	link_display_num_of_intersection_fatal_and_injury_crashes_per_year,
-	link_display_num_of_intersection_PDO_crashes_per_year
+	link_display_num_of_intersection_PDO_crashes_per_year,
 
+
+	// reserve
+	link_display_total_assigned_link_volume,
+	link_display_total_incomplete_link_volume
 
 };
 enum movement_text_display_mode
@@ -662,6 +675,7 @@ void ArrowTo(HDC hDC, const POINT *lpTo, ARROWSTRUCT *pA)
 	}
 }
 
+bool m_bShowTransitAccessibility;
 // Overrides
 public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
@@ -809,6 +823,9 @@ public:
 	afx_msg void OnUpdateSubareaHighlightlinksacosssubarea(CCmdUI *pCmdUI);
 	afx_msg void OnOdmatrixViewtop50odpairsonly();
 	afx_msg void OnUpdateOdmatrixViewtop50odpairsonly(CCmdUI *pCmdUI);
+	afx_msg void OnTransitShowtransitaccessibility();
+	afx_msg void OnUpdateTransitShowtransitaccessibility(CCmdUI *pCmdUI);
+	afx_msg void OnTransitCalculatetransitaccesssibilityfromhere();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 
