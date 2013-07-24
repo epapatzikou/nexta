@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\test_data_sets\Real_time_simulation_6-Node Network"
+				WorkingDirectory="C:\Work\I205Cor_with_result"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\workshop\SEMCOG\DTALite"
+				WorkingDirectory="C:\Temp\Julian_data0722"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\workshop\SEMCOG\DTALite"
+				WorkingDirectory="C:\Temp\Julian_data0722"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

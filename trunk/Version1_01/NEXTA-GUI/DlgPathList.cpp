@@ -94,6 +94,9 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_BN_CLICKED(IDDATA_DYNAMIC_Density_Contour, &CDlgPathList::OnBnClickedDynamicDensityContour)
 	ON_BN_CLICKED(IDDATA_DYNAMIC_Speed_Contour, &CDlgPathList::OnBnClickedDynamicSpeedContour)
 	ON_BN_CLICKED(IDDATA_DYNAMIC_Flow_Contour, &CDlgPathList::OnBnClickedDynamicFlowContour)
+	ON_COMMAND(ID_DATA_SAVECURRENTPATH, &CDlgPathList::OnDataSavecurrentpath)
+	ON_COMMAND(ID_DATA_EXPORTFREEVALSEGMENTFILE, &CDlgPathList::OnDataExportfreevalsegmentfile)
+	ON_BN_CLICKED(IDC_BUTTON_GOOGLE_EARTH_KML, &CDlgPathList::OnBnClickedButtonGoogleEarthKml)
 END_MESSAGE_MAP()
 
 
@@ -200,7 +203,12 @@ void CDlgPathList::ReloadData()
 	for(unsigned int i= 0; i< m_pDoc->m_PathDisplayList.size(); i++)
 	{
 		CString str;
-		str.Format("Path ID.%d: %s, %d links",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+
+		if(m_pDoc->m_PathDisplayList[i].m_bSavedPath)
+			str.Format("Path ID.%d: %s, %d links ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+		else
+			str.Format("Path ID.%d: %s, %d links ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+
 		m_PathList.AddString (str);
 
 	}
@@ -961,11 +969,38 @@ void CDlgPathList::OnDataImportCsv()
 				if(prev_path_id!= path_id)  //find new route
 				{
 					DTAPath path_element;
+
+					path_element.m_bSavedPath = true;  // a path read from the file is treated as a save path
 					m_pDoc->m_PathDisplayList.push_back(path_element);
 					prev_path_id = path_id;
 				}
 				int route_no = m_pDoc->m_PathDisplayList.size()-1;
 				m_pDoc->m_PathDisplayList[route_no].m_LinkVector.push_back (pLink->m_LinkNo );
+
+				if(link_sequence_no == 1)
+				{
+					for(int t = 0 ; t< 1440; t+= 60)  // for each starting time
+					{
+						CString str;
+						str.Format("hour_%d",t/60);
+						std::string str_time = m_pDoc->CString2StdString (str);
+
+						float travel_time = 0;
+						parser.GetValueByFieldName(str_time,travel_time);
+
+
+						if(travel_time >0.1f)
+						{
+							m_pDoc->m_PathDisplayList[route_no].m_bWithSensorTravelTime = true;
+							for(int s = 0; s<60; s++)
+							{
+								m_pDoc->m_PathDisplayList[route_no].m_SensorTimeDependentTravelTime[t+s] = travel_time;
+							}
+						}
+
+					}
+
+				}
 
 
 				if(link_sequence_no == 1)
@@ -990,7 +1025,6 @@ void CDlgPathList::OnDataImportCsv()
 						}
 
 					}
-
 
 				}
 
@@ -1093,11 +1127,17 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 		}
 	}
 
-	CDlg_VehicleClassification dlg;
-	dlg.m_pDoc = m_pDoc;
+	CDlg_VehicleClassification* m_pDlg = new CDlg_VehicleClassification; 
+
+	m_pDlg->m_PresetChartTitle.Format ("Path No.%d", m_pDoc->m_SelectPathNo+1);
+
+	m_pDlg->m_pDoc = m_pDoc;
 	m_pDoc->m_VehicleSelectionMode = CLS_path_trip;
-	dlg.m_VehicleSelectionNo  = CLS_path_trip;
-	dlg.DoModal ();
+	m_pDlg->m_XSelectionNo = CLS_time_interval_15_min;
+	m_pDlg->m_VehicleSelectionNo  = CLS_path_trip;
+	m_pDlg->SetModelessFlag(true); // voila! this is all it takes to make your dlg modeless!
+	m_pDlg->Create(IDD_DIALOG_Summary); 
+	m_pDlg->ShowWindow(SW_SHOW); 
 
 }
 
@@ -1109,16 +1149,15 @@ void CDlgPathList::OnDataGeneratesampleinputpathcsv()
 
 	CString input_sample_file_name;
 
-	input_sample_file_name = m_pDoc->m_ProjectDirectory +"input_path_sample.csv";
+	input_sample_file_name.Format("%sinput_path_sample.csv",m_pDoc->m_ProjectDirectory);
 	// save demand here
 
 	FILE* st;
 	fopen_s(&st,input_sample_file_name,"w");
 	if(st==NULL)
 	{
-		//the file has exists.
-		m_pDoc->OpenCSVFileInExcel (input_sample_file_name);
 
+		AfxMessageBox("Please close file input_path_sample.csv in Excel.");
 		return;
 
 	}
@@ -1133,7 +1172,19 @@ void CDlgPathList::OnDataGeneratesampleinputpathcsv()
 	{
 
 
-		fprintf(st,"path_id,path_name,link_sequence_no,from_node_id,to_node_id,link_id,link_name\n");
+		fprintf(st,"path_id,path_name,link_sequence_no,from_node_id,to_node_id,link_id,link_name,");
+
+		for(int hour = m_pDoc->m_DemandLoadingStartTimeInMin /60; hour < m_pDoc->m_DemandLoadingEndTimeInMin /60; hour ++)
+		{
+		fprintf(st,"hour_%d,",hour);
+		}
+
+		for(int min  = m_pDoc->m_DemandLoadingStartTimeInMin /15*15; min < m_pDoc->m_DemandLoadingEndTimeInMin /15*15; min +=15)
+		{
+		fprintf(st,"min_%d,",min);
+		}
+
+		fprintf(st,"\n");
 
 		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
 		{
@@ -1143,7 +1194,6 @@ void CDlgPathList::OnDataGeneratesampleinputpathcsv()
 				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
 				if(pLink != NULL)
 				{
-
 					fprintf(st,"%d,path %d,%d,%d,%d,%d-%d,%s\n",
 						p+1,p+1,i+1,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,pLink->m_FromNodeNumber , pLink->m_ToNodeNumber, pLink->m_Name .c_str ());
 
@@ -1750,11 +1800,18 @@ void CDlgPathList::OnBnClickedAnalysis2()
 		}
 	}
 
-	CDlg_VehicleClassification dlg;
-	dlg.m_pDoc = m_pDoc;
+	CDlg_VehicleClassification* m_pDlg = new CDlg_VehicleClassification; 
+
+	m_pDlg->m_PresetChartTitle.Format ("End-to-End Path No.%d", m_pDoc->m_SelectPathNo+1);
+
+	m_pDlg->m_pDoc = m_pDoc;
 	m_pDoc->m_VehicleSelectionMode = CLS_path_partial_trip;
-	dlg.m_VehicleSelectionNo  = CLS_path_partial_trip;
-	dlg.DoModal ();
+	m_pDlg->m_XSelectionNo = CLS_time_interval_15_min;
+	m_pDlg->m_VehicleSelectionNo  = CLS_path_partial_trip;
+	m_pDlg->SetModelessFlag(true); // voila! this is all it takes to make your dlg modeless!
+	m_pDlg->Create(IDD_DIALOG_Summary); 
+	m_pDlg->ShowWindow(SW_SHOW); 
+
 }
 
 void CDlgPathList::OnBnClickedFreevalAnalysisGenerateData()
@@ -2936,4 +2993,31 @@ void CDlgPathList::OnBnClickedDynamicFlowContour()
 	}
 
 	HINSTANCE result = ShellExecute(NULL, _T("open"), export_plt_file_name, NULL,NULL, SW_SHOW);
+}
+
+void CDlgPathList::OnDataSavecurrentpath()
+{
+		if(m_pDoc->m_SelectPathNo >=0 && m_pDoc->m_SelectPathNo < m_pDoc->m_PathDisplayList.size())
+			m_pDoc->m_PathDisplayList [ m_pDoc->m_SelectPathNo].m_bSavedPath = true;
+}
+
+void CDlgPathList::OnDataExportfreevalsegmentfile()
+{
+	OnBnClickedFreevalAnalysisGenerateFile();
+}
+
+void CDlgPathList::OnBnClickedGoogleearth()
+{
+	m_pDoc->OnExportGenerateshapefilesPathData();
+}
+
+void CDlgPathList::OnBnClickedGoogleearthoutput()
+{
+	m_pDoc->OnExportGenerateshapefilesPathData();
+}
+
+void CDlgPathList::OnBnClickedButtonGoogleEarthKml()
+{
+	CWaitCursor wait;
+	m_pDoc->OnExportGenerateshapefilesPathData();
 }

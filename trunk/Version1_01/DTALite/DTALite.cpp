@@ -237,6 +237,7 @@ int g_ValidationDataEndTimeInMin =0;
 
 int g_number_of_warnings = 0;  // use a global count to avoid warning messages when running multiple scenarioss
 
+double g_number_of_intra_zone_trips = 0;
 ofstream g_scenario_short_description;
 
 int g_Number_of_CompletedVehicles = 0;
@@ -1731,6 +1732,7 @@ void g_ReadInputFiles(int scenario_no)
 	g_SummaryStatFile.WriteParameterValue ("\nDemand multiplier in setting file",g_DemandGlobalMultiplier);
 
 	g_SummaryStatFile.WriteParameterValue ("# of Vehicles to be simulated",g_VehicleVector.size());
+	g_SummaryStatFile.WriteParameterValue ("# of Intra-zone Vehicles (not be simulated)",g_number_of_intra_zone_trips);
 
 
 	if(g_VehicleVector.size()==0)
@@ -1815,8 +1817,10 @@ void g_ReadInputFiles(int scenario_no)
 int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, int PathIndex,bool bChangeHistDemandTable, int DepartureTimeIndex)
 {
 	if( origin_zone == destination_zone)  // do not simulate intra-zone traffic
+	{
+		g_number_of_intra_zone_trips += number_of_vehicles;
 		return 0; 
-
+	}
 	// reset the range of demand loading interval
 
 	int number_of_vehicles_generated = g_GetRandomInteger_SingleProcessorMode(number_of_vehicles);
@@ -3423,6 +3427,10 @@ void g_ReadDTALiteSettings()
 
 	//	g_ShortestPathWithMovementDelayFlag = g_GetPrivateProfileInt("simulation", "movement_delay_flag", 1, g_DTASettingFileName);	
 
+	g_AdjLinkSize = g_GetPrivateProfileInt("shortest_path", "max_size_of_adjacent_links", 30, g_DTASettingFileName);	
+	
+	if(g_AdjLinkSize < 30)
+		g_AdjLinkSize = 30;
 
 	g_settings.AdditionalYellowTimeForSignals = g_GetPrivateProfileInt("simulation", "additional_amber_time_per_link_per_cycle", 4, g_DTASettingFileName);	
 	//	g_settings.IteraitonNoStartSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "starting_iteration_no", 1, g_DTASettingFileName);
@@ -4692,7 +4700,121 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 				}
 
-			}else if(format_type.find("agent_csv")!= string::npos)
+			} else if (format_type.compare("full_matrix")== 0)
+			{
+				vector<int> LineIntegerVector;
+
+				CCSVParser parser;
+				parser.IsFirstLineHeader = false;
+				if (parser.OpenCSVFile(file_name))
+				{
+					int control_type_code;
+					int i=0;
+					if(parser.ReadRecord())
+					{
+						parser.ConvertLineStringValueToIntegers ();
+						LineIntegerVector = parser.LineIntegerVector ;
+					}
+
+				}
+
+				int number_of_zones = LineIntegerVector.size();
+
+
+				bool bFileReady = false;
+				int i;
+
+				FILE* st;
+				fopen_s(&st,file_name.c_str (), "r");
+				if (st!=NULL)
+				{
+					// read the first line
+					g_read_a_line(st);
+
+					cout << "number of zones to be read = " << number_of_zones << endl;
+
+
+					int line_no = 0;
+					for(int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
+					{
+						int origin_zone = g_read_integer(st); // read the origin zone number
+
+
+						cout << "Reading file " << file_name << " at zone "<< origin_zone << " ... "<< endl;
+
+						for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
+						{
+							int destination_zone = LineIntegerVector[destination_zone_index];
+							float value = g_read_float(st);
+
+							if(g_ZoneMap.find(origin_zone)== g_ZoneMap.end() || g_ZoneMap.find(destination_zone)== g_ZoneMap.end() )
+							{
+							continue; // origin zone or destination zone has not been defined, skipped. 
+							}
+
+
+							float number_of_vehicles =  value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
+
+							if(line_no<=5)  // read only one line, but has not reached the end of the line
+								cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
+
+							line_no++;
+							int type = 1;  // first demand type definition
+							if(demand_type_code[type]>=1)  // feasible demand type
+							{
+								total_demand_in_demand_file += number_of_vehicles;
+
+								g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
+								// condition 1: without time-dependent profile 
+
+								if(apply_additional_time_dependent_profile==1)  // use time-dependent profile
+								{
+									for(int time_interval = start_time_in_min/15; time_interval < end_time_in_min/15; time_interval++)
+									{
+										if(time_dependent_ratio [time_interval] > 0.000001) // this is the last one applicable
+										{
+											// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
+											double number_of_vehicles_to_be_loaded = time_dependent_ratio [time_interval] * number_of_vehicles;
+
+											CreateVehicles(origin_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type_code[type],time_interval*15,(time_interval+1)*15);
+										}
+									}
+								}else // do not use time-dependent profile
+								{
+
+									float number_of_time_dependent_intervals= max(1,(end_time_in_min-start_time_in_min)/15);
+
+									CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],start_time_in_min,end_time_in_min);
+
+								}
+
+
+							}
+
+						}
+						//
+						if(subtotal_in_last_column==1)
+							g_read_float(st); //read sub total value
+
+					}
+
+					if(total_demand_in_demand_file<0.5f)
+					{
+						cout << "Error: File " << file_name << " contain 0 trips."<< endl;
+						g_ProgramStop();					
+					}
+
+					fclose(st);
+				}else  //open file
+				{
+					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+					g_ProgramStop();
+
+				}
+
+			
+			}
+			else if(format_type.find("agent_csv")!= string::npos)
 			{
 				g_ReadDTALiteAgentCSVFile(file_name);
 				return;
@@ -4831,6 +4953,8 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
+
+	// allocate memory for zone-based vehicle array
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();

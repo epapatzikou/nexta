@@ -381,7 +381,7 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	}
 	else
 	{
-		if(m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize && m_ZoneNoSize >0  || m_OldProjectSize != m_ProjectSize)
+		if(  m_ZoneNoSize >0  && (m_ZoneNoSize !=  m_pDoc->m_ZoneNoSize  || m_OldProjectSize != m_ProjectSize))
 		{
 			Deallocate3DDynamicArray<VehicleStatistics>(m_ODMOEMatrix,m_OldProjectSize, m_ZoneNoSize );
 			m_ODMOEMatrix = Allocate3DDynamicArray<VehicleStatistics>(m_ProjectSize,m_pDoc->m_ZoneNoSize ,m_pDoc->m_ZoneNoSize );
@@ -448,6 +448,10 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 	CWaitCursor wait;
 	int i,j;
 	int p;
+
+	if(m_ODMOEMatrix ==NULL)
+		return;
+
 	for(p=0;p<m_ProjectSize; p++)
 	{
 	for(i=0; i < m_pDoc->m_ZoneNoSize  ; i++)

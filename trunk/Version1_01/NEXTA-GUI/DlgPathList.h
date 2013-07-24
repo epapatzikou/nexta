@@ -107,4 +107,9 @@ public:
 	afx_msg void OnBnClickedDynamicDensityContour();
 	afx_msg void OnBnClickedDynamicSpeedContour();
 	afx_msg void OnBnClickedDynamicFlowContour();
+	afx_msg void OnDataSavecurrentpath();
+	afx_msg void OnDataExportfreevalsegmentfile();
+	afx_msg void OnBnClickedGoogleearth();
+	afx_msg void OnBnClickedGoogleearthoutput();
+	afx_msg void OnBnClickedButtonGoogleEarthKml();
 };

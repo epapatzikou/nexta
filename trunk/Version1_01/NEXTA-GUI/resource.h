@@ -29,6 +29,7 @@
 #define ID_EXPORT_DATA3                 5
 #define IDDATA_Analysis2                5
 #define ID_TravelTimeReliability        5
+#define IDDATA_GoogleEarthOUTPUT        5
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDDATA_DYNAMIC_Density_Contour  6
 #define IDDATA_FREEVAL_Analysis_Generate_File 7
@@ -238,6 +239,7 @@
 #define IDC_EDIT_STREET_NAME            1008
 #define IDC_ADD                         1009
 #define ID_BTN_PRINT                    1009
+#define IDC_EDIT_NUMLANES_LEFT_TURN     1009
 #define IDC_PATH_LIST_CONTROL           1010
 #define IDC_DEL                         1010
 #define ID_BTN_SAVE_TO_FILE             1010
@@ -537,6 +539,8 @@
 #define IDC_COMBO_AGG_INTERVAL          1211
 #define IDC_COMBO_Height                1212
 #define IDC_COMBO_Zone_Height           1213
+#define IDC_COMBO_LEFT_TURN_TREATMENT   1213
+#define IDC_BUTTON_GOOGLE_EARTH_KML     1214
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1284,14 +1288,21 @@
 #define ID_TRAFFICCAPACITY_SETDEFAULT   33657
 #define ID_FILE_REMOVENONESSENTIALFILESTOREDUCEFOLDERSIZE 33658
 #define ID_ODMATRIX_VIEWTOP50ODPAIRSONLY 33659
+#define ID_TRANSIT_SHOWTRANSITACCESSIBILITY 33660
+#define ID_TRANSIT_CALCULATETRANSITACCESSSIBILITYFROMHERE 33661
+#define ID_DATA_SAVECURRENTPATH         33662
+#define ID_DATA_EXPORTFREEVALSEGMENTFILE 33663
+#define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_HOUR_LY 33664
+#define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_HOURLY 33665
+#define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_LANE_HOURLY 33666
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        250
-#define _APS_NEXT_COMMAND_VALUE         33660
-#define _APS_NEXT_CONTROL_VALUE         1213
+#define _APS_NEXT_RESOURCE_VALUE        251
+#define _APS_NEXT_COMMAND_VALUE         33667
+#define _APS_NEXT_CONTROL_VALUE         1215
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

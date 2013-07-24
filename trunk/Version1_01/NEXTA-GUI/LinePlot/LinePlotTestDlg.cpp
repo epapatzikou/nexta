@@ -19,7 +19,7 @@ static char THIS_FILE[] = __FILE__;
 // CLinePlotTestDlg dialog
 ;
 CLinePlotTestDlg::CLinePlotTestDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CLinePlotTestDlg::IDD, pParent)
+	: CBaseDialog(CLinePlotTestDlg::IDD, pParent)
 	, m_bZoomToLink(FALSE)
 {
 	m_pDoc = NULL;
@@ -45,7 +45,7 @@ void CLinePlotTestDlg::DoDataExchange(CDataExchange* pDX)
 }
 /////////////////////////////////////////////////////////////////////////////
 
-BEGIN_MESSAGE_MAP(CLinePlotTestDlg, CDialog)
+BEGIN_MESSAGE_MAP(CLinePlotTestDlg, CBaseDialog)
 	//{{AFX_MSG_MAP(CLinePlotTestDlg)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
@@ -76,7 +76,7 @@ BOOL CLinePlotTestDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	for(int hour = m_pDoc->m_calibration_data_start_time_in_min/60; hour <=m_pDoc->m_calibration_data_end_time_in_min/60; hour++)
+	for(int hour = m_pDoc->m_DemandLoadingStartTimeInMin  /60; hour <=m_pDoc->m_DemandLoadingEndTimeInMin /60; hour++)
 	{
 	CString str_hour;
 	str_hour.Format ("%d", hour);

@@ -425,13 +425,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			if(bTestFieldName==false) 
 			{
-				if(poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
+				if(node_node_id.size() > 0 && poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
 				{
 					FieldNameNotExistMessage(node_node_id, "section node: key node_id");
 					break;
 				}
 
-				if(node_control_type.size()>0 && poFeature->GetFieldIndex(node_control_type.c_str ())==-1)
+				int  control_type_index =  poFeature->GetFieldIndex(node_control_type.c_str ());
+				if(node_control_type.size()>0 && control_type_index ==-1)
 				{
 					FieldNameNotExistMessage(node_control_type, "section node: key control_type");
 					break;
@@ -490,7 +491,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			pNode->m_Name  = str_name;
 			pNode->m_NodeNumber = id;
-			pNode->m_NodeID = i;
+				pNode->m_NodeID = i;
 			pNode->m_ZoneID = TAZ;
 			pNode->m_ControlType = control_type;
 
@@ -738,6 +739,18 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value",mode_code_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value",direction_name);
 
+	if(direction_name.size () ==0)
+	{
+		if(default_link_direction.size() ==0)
+		{
+		
+			AfxMessageBox("No direction field is provided for the link layer. Please setup configuration key default_link_direction to oneway or twoway.");
+
+			return false; 
+		}
+	
+	}
+
 	parser.GetValueBySectionKeyFieldName(file_name,"link","length","value",length_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","number_of_lanes","value",number_of_lanes_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","hourly_capacity","value",capacity_in_vhc_per_hour_name);
@@ -854,19 +867,49 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					break;
 				}	
 
+				if(speed_limit_in_mph_name.size()>0 && use_default_speed_limit_from_link_type == "no")
+				{
+					AfxMessageBox("key number_of_lanes is empty, so NeXTA will use default speed limit from the input link type file..", MB_ICONINFORMATION);
+				}	
+
+
+
 				if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
 				{
 					FieldNameNotExistMessage(number_of_lanes_name, "section link; key number_of_lanes");
 					break;
 				}	
+
+				if(number_of_lanes_name.size() ==0 && use_default_number_of_lanes_from_link_type == "no") 
+				{
+				
+					AfxMessageBox("key number_of_lanes is empty, so NeXTA will use default number of lanes from the input link type file.", MB_ICONINFORMATION);
+
+				}
+
+
 				if(capacity_in_vhc_per_hour_name.size()>0 && poFeature->GetFieldIndex(capacity_in_vhc_per_hour_name.c_str ())==-1)
 				{
 					FieldNameNotExistMessage(capacity_in_vhc_per_hour_name,"section link; key hourly_capacity");
 					break;
 				}	
+
+				if(capacity_in_vhc_per_hour_name.size()==0 && use_default_lane_capacity_from_link_type == "no")
+				{
+					AfxMessageBox("key hourly_capacity is empty, so NeXTA will use default lane capacity from the input link type file.", MB_ICONINFORMATION);
+				}	
+
+
 				if(link_type_name.size()>0 && poFeature->GetFieldIndex(link_type_name.c_str ())==-1)
 				{
 					FieldNameNotExistMessage(link_type_name,"section link; key link_type");
+					break;
+				}	
+
+
+				if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(link_type_name,"section link; key length");
 					break;
 				}	
 
@@ -964,6 +1007,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			if(identify_from_node_id_and_to_node_id_based_on_geometry == "yes" )
 			{  
 
+				bool SplitLinksForOverlappingNodeOnLinks = false;
+
 				if(CoordinateVector.size() >=2)
 				{
 
@@ -978,7 +1023,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pt.y = CoordinateVector[0].Y;
 
 					bool ActivityLocationFlag = false;
-					DTANode* pNode =AddNewNode(pt, from_node_id, 0,ActivityLocationFlag);
+					DTANode* pNode =AddNewNode(pt, from_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
 					from_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
 					pNode->m_bCreatedbyNEXTA = true;
 
@@ -995,10 +1040,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					bool ActivityLocationFlag = false;
 
-					DTANode* pNode =AddNewNode(pt, to_node_id, 0,ActivityLocationFlag);
+					DTANode* pNode =AddNewNode(pt, to_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
 					to_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
 					pNode->m_bCreatedbyNEXTA = true;
 				}
+				
+
 				}
 
 	}else  // identify_from_node_id_and_to_node_id_based_on_geometry == no
@@ -1010,7 +1057,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 
-	int link_code_start = 1;
+	if(from_node_id == 10007 	&& to_node_id == 2511)
+	{
+	TRACE("");
+	}
+
+		int link_code_start = 1;
 	int link_code_end = 1;
 
 
@@ -1044,11 +1096,18 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 	int direction = 1;
+
 	if(direction_name.size()>0) 
 		direction = poFeature->GetFieldAsInteger(direction_name.c_str ());
 	else
-	{
-		// no direction field, we try to guess the link types
+	{  // no direction field
+		if(default_link_direction == "twoway")
+		{
+		direction = 0;
+		b_direction_0_as_twoway_flag = true;
+		}
+
+	// no direction field, we try to guess the link types
 		if(reverse_direction_field_flag==1)
 		{
 
@@ -1172,7 +1231,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	// if link_capacity_flag == 0, we give a default value
 	int r_number_of_lanes =0; 
-	int r_link_type = 0; 
+	int r_link_type = -1; 
 	float r_speed_limit_in_mph = 0; 
 	float r_capacity_in_pcphpl=0; 
 
@@ -1210,12 +1269,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		r_number_of_lanes = number_of_lanes;
 		r_speed_limit_in_mph = speed_limit_in_mph;
 		r_capacity_in_pcphpl= capacity_in_pcphpl;
-		r_link_type = 0;
-
-		if(m_LinkTypeMap[type ].IsConnector ()) // forward link is connector, r_link_type is not defined 
-		{
-			r_link_type = type; //reset r_link_type by type
-		}
+		r_link_type = type;
 
 
 
@@ -1252,7 +1306,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 
-	if (((direction == 0&&b_direction_0_as_twoway_flag) || direction ==2)&& (r_link_type >=1 )) // two-directional link and r_link_type is positive
+	if (((direction == 0&&b_direction_0_as_twoway_flag) || direction ==2)&& (r_link_type >=0 )) // two-directional link and r_link_type is positive
 	{
 		link_code_start = 1; link_code_end = 2;
 		bTwoWayLinkFlag = true;
@@ -1740,8 +1794,16 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 				}
 
 				// node id
-				int id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
+				int id = 0 ;
 
+				if(node_node_id.size() ==0)
+				{
+					id = GetUnusedNodeID()+1;
+				}
+				else
+				{
+					id = poFeature->GetFieldAsInteger(node_node_id.c_str ());
+				}
 				int TAZ =  0;
 				int value = poFeature->GetFieldAsInteger(node_TAZ_name.c_str ());
 
@@ -3165,8 +3227,10 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 		bool NewLinkFlag=false;
 
+		bool Lane_data_read_flag = false;
 		while(parser.ReadRecord())
 		{
+			Lane_data_read_flag = true;
 			int link_id = 0;
 			int from_node_id = -1;
 			int to_node_id = -1;
@@ -3573,7 +3637,15 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 				LaneDataMap.clear();  // clear data after adding a set of links
 			}
-		}
+		
+
+
+			}
+			if(Lane_data_read_flag == false)
+			{
+				AfxMessageBox("Please check if Lanes.csv follows CSV format, as 0 record has been read in NeXTA.");
+			
+			}
 	}
 
 	m_UnitMile  = 1.0f;
@@ -4087,8 +4159,7 @@ BOOL CTLiteDoc::ImportingTransportationPlanningDataSet(CString ProjectFileName, 
 	m_bFitNetworkInitialized  = false;
 
 
-	ReadTransitFiles(directory+"transit_data\\");  // read transit data
-
+	// ReadTransitFiles(directory+"transit_data\\");  // read transit data
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -4214,6 +4285,8 @@ void CTLiteDoc::OnImportSynchrocombinedcsvfile()
 		UpdateAllViews(0);
 
 	}
+
+
 }
 
 bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
@@ -4224,6 +4297,10 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 	file_name.Format ("%s", lpszFileName);
 	CString Synchro_directory = file_name.Left(file_name.ReverseFind('\\') + 1);
 	// read users' prespecified control type
+
+	CopyDefaultFile(m_DefaultDataFolder,Synchro_directory,Synchro_directory,"input_node_control_type.csv");
+	CopyDefaultFile(m_DefaultDataFolder,Synchro_directory,Synchro_directory,"input_link_type.csv");
+
 	if(ReadNodeControlTypeCSVFile(Synchro_directory+"input_node_control_type.csv") == false)
 	{
 		CString msg;

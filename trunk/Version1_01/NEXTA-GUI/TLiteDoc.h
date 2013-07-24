@@ -29,6 +29,9 @@
 #pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
 #pragma warning(disable:4995)  // warning C4995: 'CDaoDatabase': name was marked as #pragma deprecated
 #define _MAX_STRING_SIZE _MAX_PATH
+#define _MAX_TRANSIT_GRID_SIZE 100
+#define _MAX_TRANSIT_TIME_SIZE 1
+#define _MAX_TRANSIT_TIME_STEP_IN_MIN 60
 #include "afx.h"
 
 #include "atlimage.h"
@@ -370,11 +373,13 @@ public:
 
 };
 
-class CTLiteDoc : public CDocument
+
+	class CTLiteDoc : public CDocument
 {
 public: // create from serialization only
 
-	
+	GridNodeSet*** m_GridMatrix;
+
 	float m_PeakHourFactor;
 	CTLiteDoc();
 
@@ -428,7 +433,6 @@ public:
 
 	bool m_bRunCrashPredictionModel;
 	
-	GridNodeSet m_GridMatrix[100][100];
 	GDRect m_GridRect;
 
 	std::map<int,int> m_AccessibleTripIDMap;
@@ -436,7 +440,7 @@ public:
 	double m_max_walking_distance;
 	double m_max_accessible_transit_time_in_min;
 
-	void FindAccessibleTripID(double x, double y);
+	void FindAccessibleTripID(GDPoint pt, int timestamp_in_min);
 	int FindClosestNode(double x, double y, double min_distance = 99999, int step_size = 1,double time_stamp_in_min = 9999);
 	int FindClosestZone(double x, double y, double min_distance = 99999, int step_size = 1);
 
@@ -1264,6 +1268,9 @@ public:
 	{
 		std::vector<DTALink*> OverlappingLinks;
 
+		if(m_NodeIDMap.find(ThisNodeID)== m_NodeIDMap.end())
+			return;
+
 		GDPoint p0 = m_NodeIDMap[ThisNodeID]->pt ;
 
 		// step 1: find overlapping links
@@ -1330,12 +1337,25 @@ public:
 		pLink->m_FromNodeID = FromNodeID;
 		pLink->m_ToNodeID= ToNodeID;
 
+		if(m_NodeIDMap.find(FromNodeID) == m_NodeIDMap.end())
+		{
+		
+		return;
+		}
+
+		if(m_NodeIDMap.find(ToNodeID) == m_NodeIDMap.end())
+		{
+		
+		return;
+		}
 		pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
 		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
 
 		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
 
 		m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+
+
 
 		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
 
@@ -1437,6 +1457,14 @@ public:
 		pNode->pt = newpt;
 		pNode->m_LayerNo = LayerNo;
 		pNode->m_NodeID = GetUnusedNodeID();
+
+		TRACE("Adding Node ID: %d\n", pNode->m_NodeID );
+
+		if(pNode->m_NodeID ==31)
+		{
+		TRACE("");
+		}
+
 		if(NewNodeNumber ==0 )
 		{
 			pNode->m_NodeNumber = GetUnusedNodeNumber();
@@ -2125,6 +2153,8 @@ public:
 
 protected:
 
+	int m_sensor_data_aggregation_type;
+
 	// Generated message map functions
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -2383,6 +2413,8 @@ public:
 	afx_msg void OnSensortoolsImportsensordatafromimport();
 	afx_msg void OnTrafficcapacitySetdefault();
 	afx_msg void OnFileRemovenonessentialfilestoreducefoldersize();
+	afx_msg void OnMoeViewoddemandestimationsummaryplotHourly();
+	afx_msg void OnMoeViewoddemandestimationsummaryplotLaneHourly();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

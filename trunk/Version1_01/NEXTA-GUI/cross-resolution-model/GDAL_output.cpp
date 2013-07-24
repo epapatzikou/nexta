@@ -1345,7 +1345,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 
 			int current_los_code = 1;
 
-			if((*iLink)->KML_single_color_code >=1)  // single color defined
+			if((*iLink)->KML_single_color_code >= 6)  // single color defined
 			{
 			current_los_code = (*iLink)->KML_single_color_code;
 			
@@ -2109,7 +2109,7 @@ void CTLiteDoc::ExportPathLink3DLayerToKMLFiles(CString file_name, CString GISTy
 //	m_LinkBandWidthMode  = LBW_number_of_lanes;
 
 
-	float link_volume_height_ratio = 1;
+	float link_volume_height_ratio = 0.3;
 	float min_link_volume = 99999;
 
 	for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -2194,15 +2194,17 @@ void CTLiteDoc::ExportPathLink3DLayerToKMLFiles(CString file_name, CString GISTy
 		
 		int min_link_height = 10;
 
- 
-		float min_link_volume_threadshold= 50;
+ 		float min_link_volume_threadshold= 50;
 
 		int time_stamp = 0;
-		int time_step = 15;
+		int time_step = 60;
 		for(time_stamp = m_DemandLoadingStartTimeInMin;  time_stamp < m_DemandLoadingEndTimeInMin; time_stamp+=time_step)
 		{
 		for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
 		{
+			
+			if(p!= m_SelectPathNo)
+				continue;
 
 			DTAPath path_element = m_PathDisplayList[p];
 			
