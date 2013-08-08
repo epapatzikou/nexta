@@ -340,6 +340,60 @@ int read_2_integers_from_a_string(CString str, int &value1, int &value2)
 }
 
 
+int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
+// read an integer from the current pointer of the file, skip all spaces
+{
+
+	char string_line[1000];
+
+	int string_lenghth  = str.GetLength();
+	ASSERT(str.GetLength() < 100);
+
+	sprintf(string_line,"%s\n",str);
+
+	char ch, buf[ 32 ];
+	int i = 0;
+	int buffer_i = 0;
+	int flag = 1;
+	/* returns -1 if end of file is reached */
+
+	for(int i_try  =0 ; i_try < 200; i_try++)  // maximal 200 nodes
+	{
+		buffer_i = 0;
+	while(true)
+	{
+		ch = string_line[i++];
+		if( ch=='\n' || i > string_lenghth)
+		{
+			return -1; // * and $ are special characters for comments
+		}
+		if (isdigit(ch))
+			break;
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+	};
+	if( ch == '\n' )
+	{
+		return -1;
+	}
+	
+	while( isdigit( ch ))
+	{
+		buf[ buffer_i++ ] = ch;
+		ch =  string_line[i++];
+	}
+	buf[ buffer_i ] = 0;
+
+	int value = atoi( buf ) * flag;
+
+	vector.push_back (value);
+	}
+
+	return 0;
+}
+
 int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch )
 // read an integer from the current pointer of the file, skip all spaces
 {
@@ -477,7 +531,7 @@ void ReadDSm_pNetworkData(char fname[_MAX_PATH])
 
          // Create and insert the node
          pNode = new DTANode;
-         pNode->m_NodeID = i;
+         pNode->m_NodeNo = i;
          pNode->m_ZoneID = 0;
          g_NodeSet.insert(pNode);
          g_NodeMap[id] = pNode;
@@ -492,8 +546,8 @@ void ReadDSm_pNetworkData(char fname[_MAX_PATH])
          pLink->m_LinkNo = i;
          pLink->m_FromNodeNumber = g_read_integer(st);
          pLink->m_ToNodeNumber = g_read_integer(st);
-         pLink->m_FromNodeID = g_NodeMap[pLink->m_FromNodeNumber ]->m_NodeID;
-         pLink->m_ToNodeID= g_NodeMap[pLink->m_ToNodeNumber]->m_NodeID;
+         pLink->m_FromNodeID = g_NodeMap[pLink->m_FromNodeNumber ]->m_NodeNo;
+         pLink->m_ToNodeID= g_NodeMap[pLink->m_ToNodeNumber]->m_NodeNo;
 
          int m_LeftBays= g_read_integer(st);
          int m_RightBays= g_read_integer(st);

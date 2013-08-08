@@ -1597,9 +1597,11 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 void CTLiteDoc::ExportPathflowToCSVFiles()
 {
 
+	GeneratePathFromVehicleData();
+
 	CString directory = m_ProjectDirectory;
 	FILE* st = NULL;
-	fopen_s(&st,directory+"output_path_flow.csv","w");
+	fopen_s(&st,directory+"AMS_path_flow.csv","w");
 	if(st!=NULL)
 	{
 	fprintf(st,"route_index,vehicle_type,from_zone_id,from_node_id,to_zone_id,to_node_id,time_span_volume,day_volume,node_chain_number_of_nodes,node_chain_node_sequence\n");
@@ -1637,7 +1639,7 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 	fclose(st);
 	}
 // write to a common path file
-	fopen_s(&st,directory+"AMS_path_flow.csv","w");
+	fopen_s(&st,directory+"AMS_path_flow_compact_info.csv","w");
 	if(st!=NULL)
 	{
 	fprintf(st,"route_index,volume,node_chain_number_of_nodes,node_chain_node_sequence\n");
@@ -1671,7 +1673,7 @@ void CTLiteDoc::ExportPathflowToCSVFiles()
 
 	
 	// OD statistics
-		fopen_s(&st,directory+"output_od_flow.csv","w");
+		fopen_s(&st,directory+"AMS_od_flow.csv","w");
 	if(st!=NULL)
 	{
 	fprintf(st,"od_index,vehicle_type,from_zone_id,to_zone_id,time_span_volume,day_volume\n");

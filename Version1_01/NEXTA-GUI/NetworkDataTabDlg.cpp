@@ -42,7 +42,7 @@ IMPLEMENT_DYNAMIC(CNetworkDataTabDlg, CDialog)
 CNetworkDataTabDlg::CNetworkDataTabDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CNetworkDataTabDlg::IDD, pParent)
 {
-
+	m_SelectRowByUser = -1;
 }
 
 CNetworkDataTabDlg::CNetworkDataTabDlg(std::vector<std::string> Names, std::vector<CString> default_value,
@@ -51,6 +51,8 @@ CNetworkDataTabDlg::CNetworkDataTabDlg(std::vector<std::string> Names, std::vect
 	names = Names;
 	values = Values;
 	this->default_value = default_value;
+
+	m_SelectRowByUser = -1;
 }
 
 CNetworkDataTabDlg::~CNetworkDataTabDlg()
@@ -105,11 +107,17 @@ BOOL CNetworkDataTabDlg::OnInitDialog()
 
 	m_NumOfRows = values.size();
 
+	if(m_SelectRowByUser >=0 && m_SelectRowByUser < m_NumOfRows)
+	{
+		m_ListCtrl.SelectRow(m_SelectRowByUser,true);
+		m_ListCtrl.SetFocusRow(m_SelectRowByUser);
+	}
 
 	if(strcmp(m_TabText,"Sensor") ==0 && m_SelectedFromNodeName >=1 && m_SelectedToNodeName >=1)
 	{
 		AddRowForLink (m_SelectedFromNodeName, m_SelectedToNodeName);
 	}
+
 
 	return TRUE;
 }
@@ -372,7 +380,12 @@ CString CNetworkDataTabDlg::GenerateRecordString()
 		subStr += "\n";
 
 		Str += subStr;
+	
+
 	}
+
+
+
 
 	return Str.c_str();
 }

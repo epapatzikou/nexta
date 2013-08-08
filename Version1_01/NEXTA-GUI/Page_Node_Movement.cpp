@@ -82,9 +82,9 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	CPropertyPage::OnInitDialog();
 	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
 
-	m_CurrentNodeName = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_NodeNumber ;
+	m_CurrentNodeName = m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_NodeNumber ;
 
-	m_CycleLengthInSec = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
+	m_CycleLengthInSec = m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
 	// Give better margin to editors
 	m_ListCtrl.SetCellMargin(1.2);
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
@@ -192,7 +192,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	//Add Rows
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
@@ -200,12 +200,12 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
 		CString str;
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
+		str.Format ("%d", m_pDoc->m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
 
 		int column_index = 1;
 
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
+		str.Format ("%d", m_pDoc->m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
 		m_ListCtrl.SetItemText(Index, column_index++,str);
 
 		m_ListCtrl.SetItemText(Index, column_index++,m_pDoc->GetTurnString(movement.movement_turn)); //2: turn type
@@ -283,7 +283,7 @@ void CPage_Node_Movement::UpdateList()
 
 	//Add Rows
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
@@ -295,7 +295,7 @@ void CPage_Node_Movement::UpdateList()
 
 		CString str; 
 		int Index = i;
-		str.Format ("%d", m_pDoc->m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
+		str.Format ("%d", m_pDoc->m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNumber ); // 1: to node
 		m_ListCtrl.SetItemText(Index, column_index++,str);
 
 		m_ListCtrl.SetItemText(Index, column_index++,m_pDoc->GetTurnString(movement.movement_turn)); //2: turn type
@@ -414,7 +414,7 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 	CBrush  BrushLinkBand(RGB(152,245,255)); 
 	pDC->SelectObject(&BrushLinkBand);
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	int node_size = 10;
 	int node_set_back = 50;
@@ -437,9 +437,9 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 
 		GDPoint p1, p2, p3;
 		// 1: fetch all data
-		p1  = m_pDoc->m_NodeIDMap[movement.in_link_from_node_id ]->pt;
-		p2  = m_pDoc->m_NodeIDMap[movement.in_link_to_node_id ]->pt;
-		p3  = m_pDoc->m_NodeIDMap[movement.out_link_to_node_id]->pt;
+		p1  = m_pDoc->m_NodeNoMap[movement.in_link_from_node_id ]->pt;
+		p2  = m_pDoc->m_NodeNoMap[movement.in_link_to_node_id ]->pt;
+		p3  = m_pDoc->m_NodeNoMap[movement.out_link_to_node_id]->pt;
 
 		double DeltaX = p2.x - p1.x ;
 		double DeltaY = p2.y - p1.y ;
@@ -482,7 +482,7 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		p1_text.y= (-1)*(text_length)*sin(theta);
 
 		// 4: draw from node name
-		str.Format("%d",m_pDoc->m_NodeIDMap [movement.in_link_from_node_id]->m_NodeNumber );
+		str.Format("%d",m_pDoc->m_NodeNoMap [movement.in_link_from_node_id]->m_NodeNumber );
 		if(p1_text.y < -50)
 			p1_text.y +=10;
 
@@ -515,7 +515,7 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 
 
 		//draw to node name
-		str.Format("%d",m_pDoc->m_NodeIDMap [movement.out_link_to_node_id]->m_NodeNumber );
+		str.Format("%d",m_pDoc->m_NodeNoMap [movement.out_link_to_node_id]->m_NodeNumber );
 
 		if(p3_text.y < -100)
 			p3_text.y +=10;
@@ -599,7 +599,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 	// TODO: Add your message handler code here and/or call default
 	unsigned int i;
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 	for ( i=0;i< pNode->m_MovementVector.size();i++)
 	{
 		m_ListCtrl.SelectRow (i,false);
@@ -665,7 +665,7 @@ void CPage_Node_Movement::SaveData()
 
 	std::map<int, int> IncomingLinkMap;
 
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	if(	pNode->m_CycleLengthInSecond  != m_CycleLengthInSec)
 	{
@@ -799,7 +799,7 @@ void CPage_Node_Movement::RunQEM()
 
 	m_pDoc->Modify (true);
 
-	m_CycleLengthInSec = m_pDoc->m_NodeIDMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
+	m_CycleLengthInSec = m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
 	// update cycle length 
 	UpdateData(0);
 
@@ -807,7 +807,7 @@ void CPage_Node_Movement::RunQEM()
 
 void CPage_Node_Movement::OnBnClickedButtonQem()
 {	
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	bool SimuTurnVolume = false;
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
@@ -844,7 +844,7 @@ void CPage_Node_Movement::OnBnClickedButtonExtendcolumewidth()
 
 void CPage_Node_Movement::OnBnClickedButtonQem2()
 {
-	DTANode* pNode  = m_pDoc->m_NodeIDMap [m_CurrentNodeID];
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	bool ObservedTurnVolume = false;
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)

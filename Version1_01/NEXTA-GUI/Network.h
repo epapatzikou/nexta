@@ -1311,7 +1311,7 @@ public:
 	int m_NodeNumber;  //  original node number
 	int m_QEM_ReferenceNodeNumber;  //  original node number
 	int m_NodeOriginalNumber;  //  original node number
-	int m_NodeID;  ///id, starting from zero, continuous sequence
+	int m_NodeNo;  ///id, starting from zero, continuous sequence
 	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;
@@ -1348,7 +1348,7 @@ public:
 	GDPoint pt;
 	int m_LayerNo;
 	int m_NodeNumber;  //  original node number
-	int m_NodeID;  ///id, starting from zero, continuous sequence
+	int m_NodeNo;  ///id, starting from zero, continuous sequence
 	int m_ZoneID;  // If ZoneID > 0 --> centroid,  otherwise a physical node.
 	int m_ControlType; // Type: ....
 	float m_TotalCapacity;

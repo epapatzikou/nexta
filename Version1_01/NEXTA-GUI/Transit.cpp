@@ -35,7 +35,7 @@
 #include <algorithm>
 #include "TLiteDoc.h"
 #include "TLiteView.h"
-
+#include "MainFrm.h"
 bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 {
 
@@ -51,7 +51,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 	if (parser.OpenCSVFile(strStd))
 	{
 
-	//	AfxMessageBox("Start reading Google Transit Feed files...", MB_ICONINFORMATION);
+		//	AfxMessageBox("Start reading Google Transit Feed files...", MB_ICONINFORMATION);
 
 		int count =0;
 		PT_Route route;
@@ -88,6 +88,10 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 
 		}
 		parser.CloseCSVFile ();
+
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+		pMainFrame->m_bShowLayerMap[layer_transit] = true;
 
 	}else
 	{
@@ -157,6 +161,9 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 
 		}
 		parser.CloseCSVFile ();
+
+
+
 
 	}
 
@@ -284,7 +291,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 
 			}
 
-			//m_PT_StopTimeVector.push_back(TransitStopTime) ;
+		//	m_PT_StopTimeVector.push_back(TransitStopTime) ;
 			stop_times_count++;
 
 			//if(stop_times_count >=max_stop_times_record)  // for testing purposes
@@ -297,6 +304,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 
 		}
 		parser.CloseCSVFile ();
+
 	}
 
 	CString message;
@@ -313,7 +321,7 @@ bool PT_Network::ReadGTFFiles(GDRect network_rect)  // Google Transit files
 		AfxMessageBox(missing_stops_message);	
 	}
 
-/*
+	/*
 
 	//read transfer file
 	string str6 = m_ProjectDirectory +"transfers.txt";
@@ -359,11 +367,11 @@ bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
 
 
 
-/*	if( m_PT_network.m_PT_TripMap.size()>0 && AfxMessageBox("Do you want to generate bus trip data?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
+	/*	if( m_PT_network.m_PT_TripMap.size()>0 && AfxMessageBox("Do you want to generate bus trip data?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
 	{
-		TransitTripMatching();
+	TransitTripMatching();
 	}
-*/
+	*/
 	return true;
 }
 
@@ -435,12 +443,12 @@ bool CTLiteDoc::TransitTripMatching()
 				for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
 				{
 
-////					if( m_LinkTypeMap[(*iLink)->m_link_type].IsTransit())
-//					{
-//
-//						(*iLink)->m_Length = 999999; // // not using light rail link
-//
-//					}else
+					////					if( m_LinkTypeMap[(*iLink)->m_link_type].IsTransit())
+					//					{
+					//
+					//						(*iLink)->m_Length = 999999; // // not using light rail link
+					//
+					//					}else
 					{
 						double min_p_to_link_distance = 999999;
 

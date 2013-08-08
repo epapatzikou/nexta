@@ -540,17 +540,17 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 	for (int m=0; m<movement_size;m++)
 	{
-		int node_number = m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+		int node_number = m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 
-		int node_id = m_pDoc->m_NodeNumbertoIDMap[node_number];
+		int node_id = m_pDoc->m_NodeNumbertoNodeNoMap[node_number];
 
 
 		str.Format ("Processing node %d", node_number);
 		m_InfoList.AddString (str);
 
 
-		if(m_pDoc->m_NodeIDMap[node_id]->m_ControlType ==  m_pDoc->m_ControlType_PretimedSignal ||
-			m_pDoc->m_NodeIDMap[node_id]->m_ControlType ==  m_pDoc->m_ControlType_ActuatedSignal )  //this movement vector is the same as the current node
+		if(m_pDoc->m_NodeNoMap[node_id]->m_ControlType ==  m_pDoc->m_ControlType_PretimedSignal ||
+			m_pDoc->m_NodeNoMap[node_id]->m_ControlType ==  m_pDoc->m_ControlType_ActuatedSignal )  //this movement vector is the same as the current node
 		{
 			QEM_node_count++;
 			// stage 1: write UpNodeID and DestNodeID using original m_NodeNumber
@@ -563,7 +563,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 					m_InfoList.AddString ("Set Cell Value in Excel");
 
 					}
-					XL.SetCellValue(2,k,m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // street names
+					XL.SetCellValue(2,k,m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // street names
 				
 					if(bSetCellValue)
 					{
@@ -586,7 +586,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 			for(i=0; i<2; i++)  // upstream node, destination node
 			{
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+				fprintf(st, "%i,", m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
 
 
 				for(j=0; j<LaneColumnSize;j++)
@@ -601,7 +601,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 						if(NodeID>=0)  //this movement has been initialized
 						{
-							NodeNumber = m_pDoc->m_NodeIDMap[NodeID]->m_NodeNumber;
+							NodeNumber = m_pDoc->m_NodeNoMap[NodeID]->m_NodeNumber;
 						}
 						XL.SetCellValue(3+j,2+i,NodeNumber);  // input from node value to QEM spreadsheet
 						
@@ -610,7 +610,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 						XL.SetCellValue(3+j,38,NodeNumber);  // street names
 						}
 
-						fprintf(st, "%i,",m_pDoc->m_NodeIDMap[NodeID]->m_NodeNumber);  
+						fprintf(st, "%i,",m_pDoc->m_NodeNoMap[NodeID]->m_NodeNumber);  
 
 					}else
 					{
@@ -625,7 +625,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 			///	TurnVolume			
 			fprintf(st, "TurnVolume,");
-			fprintf(st, "%i,", m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+			fprintf(st, "%i,", m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
 
 			for(j=0; j<LaneColumnSize;j++)
 			{
@@ -635,13 +635,13 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 				int FromNodeNumber = 0;
 				int DestNodeNumber = 0;
-				int CurrentNodeNumber = m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+				int CurrentNodeNumber = m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 
 				if(FromNodeID > 0)
-					FromNodeNumber = m_pDoc->m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+					FromNodeNumber = m_pDoc->m_NodeNoMap[FromNodeID]->m_NodeNumber ;
 
 				if(DestNodeID > 0)
-					DestNodeNumber = m_pDoc->m_NodeIDMap[DestNodeID]->m_NodeNumber;
+					DestNodeNumber = m_pDoc->m_NodeNoMap[DestNodeID]->m_NodeNumber;
 
 				CString movement_label;
 				movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
@@ -679,7 +679,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 			for(i=2; i<9; i++)
 			{
 				fprintf(st, "%s,", lane_row_name_str[i].c_str());
-				fprintf(st, "%i,", m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
+				fprintf(st, "%i,", m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);
 
 				for(j=0; j<LaneColumnSize;j++)
 				{
@@ -688,14 +688,14 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 						int FromNodeID = (int)(m_pDoc->m_MovementVector[m].DataMatrix[0][j].m_text);
 						int FromNodeNumber = 0;
 						if(FromNodeID > 0)
-							FromNodeNumber = m_pDoc->m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+							FromNodeNumber = m_pDoc->m_NodeNoMap[FromNodeID]->m_NodeNumber ;
 
-						int CurrentNodeNumber = m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+						int CurrentNodeNumber = m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 						int DestNodeID = (int)(m_pDoc->m_MovementVector[m].DataMatrix[1][j].m_text);
 
 							int DestNodeNumber = 0;
 							if(DestNodeID > 0)
-								DestNodeNumber =m_pDoc->m_NodeIDMap[DestNodeID]->m_NodeNumber;
+								DestNodeNumber =m_pDoc->m_NodeNoMap[DestNodeID]->m_NodeNumber;
 
 							CString movement_label;
 							movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
@@ -787,13 +787,13 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 				int FromNodeNumber = 0;
 				int DestNodeNumber = 0;
-				int CurrentNodeNumber = m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+				int CurrentNodeNumber = m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 
 				if(FromNodeID > 0)
-					FromNodeNumber = m_pDoc->m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+					FromNodeNumber = m_pDoc->m_NodeNoMap[FromNodeID]->m_NodeNumber ;
 
 				if(DestNodeID > 0)
-					DestNodeNumber = m_pDoc->m_NodeIDMap[DestNodeID]->m_NodeNumber;
+					DestNodeNumber = m_pDoc->m_NodeNoMap[DestNodeID]->m_NodeNumber;
 
 				CString movement_label;
 				movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
@@ -844,21 +844,21 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 			for(int col = 0; col < 8; col++)  //8 phases
 			{
 			szValue = XL.GetCellValue(2+col, 41);  //   read timing data from QEM
-			m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]  = atoi(szValue);
+			m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]  = atoi(szValue);
 
 				for(int phase_attribute_no = 0;  phase_attribute_no< 23; phase_attribute_no++)
 				{
 					szValue = XL.GetCellValue(3+col, 43+phase_attribute_no);  //   read timing data from QEM
-					m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[phase_attribute_no][col] =  atof(szValue);
+					m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[phase_attribute_no][col] =  atof(szValue);
 
 				}
 
 			}
 
 			szValue = XL.GetCellValue(10, 41);
-			m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength  = atoi(szValue);
+			m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength  = atoi(szValue);
 
-			m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_bQEM_optimized = true;
+			m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_bQEM_optimized = true;
 
 			//log message
 			for(int i=0; i<9; i++) // 9 lines
@@ -882,7 +882,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 					fprintf(st, ",");
 				}
 
-				fprintf(st, "%i,",m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
+				fprintf(st, "%i,",m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber);  // current node id
 
 				for(j=0; j<LaneColumnSize;j++)
 				{
@@ -891,13 +891,13 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 					int FromNodeNumber = 0;
 					int DestNodeNumber = 0;
-					int CurrentNodeNumber =m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
+					int CurrentNodeNumber =m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_NodeNumber;
 
 					if(FromNodeID > 0)
-						FromNodeNumber =m_pDoc->m_NodeIDMap[FromNodeID]->m_NodeNumber ;
+						FromNodeNumber =m_pDoc->m_NodeNoMap[FromNodeID]->m_NodeNumber ;
 
 					if(DestNodeID > 0)
-						DestNodeNumber =m_pDoc->m_NodeIDMap[DestNodeID]->m_NodeNumber;
+						DestNodeNumber =m_pDoc->m_NodeNoMap[DestNodeID]->m_NodeNumber;
 
 					CString movement_label;
 					movement_label.Format ("%d;%d;%d",FromNodeNumber,CurrentNodeNumber,DestNodeNumber);
@@ -955,10 +955,10 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 
 			for(int col = 0; col < 8; col++)
 			{
-			fprintf(st,"%d,",m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]);
+			fprintf(st,"%d,",m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalPhaseNo[1+col]);
 			}
 
-			fprintf(st,"%d,",m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength);
+			fprintf(st,"%d,",m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_SignalCycleLength);
 
 			fprintf(st,"\n");
 
@@ -969,7 +969,7 @@ void CDlg_SignalDataExchange::OnBnClickedButtonQem()
 				fprintf(st,"%s,",phase_row_name_str[row].c_str() ); // phase attribute label
 				for (int col = 0; col < 8; col++)
 				{ 
-					fprintf(st,"%f,",m_pDoc->m_NodeIDMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[row][col]);
+					fprintf(st,"%f,",m_pDoc->m_NodeNoMap[m_pDoc->m_MovementVector[m].CurrentNodeID]->m_PhaseDataMatrix[row][col]);
 				}
 			fprintf(st,"\n");
 			}
@@ -1039,7 +1039,12 @@ void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 
    m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
 	m_pDoc->ExportPathflowToCSVFiles();
-	m_pDoc->ConstructandexportVISSIMdata();
+
+	if(AfxMessageBox("Do you need to use sequential node numbers in order to match with UTDF format?", MB_YESNO|MB_ICONINFORMATION)==IDYES )
+			m_pDoc->ConstructandexportVISSIMdata(true);
+	else
+			m_pDoc->ConstructandexportVISSIMdata(false);
+
 }
 
 

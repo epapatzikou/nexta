@@ -297,16 +297,16 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			pNode->pt.y = y;
 
 			pNode->m_NodeNumber = id;
-			pNode->m_NodeID = i;
+			pNode->m_NodeNo = i;
 			pNode->m_ZoneID = 0;
 			pNode->m_ControlType = control_type;
 
 			m_pDoc->m_NodeSet.push_back(pNode);
-			m_pDoc->m_NodeIDMap[i] = pNode;
-			m_pDoc->m_NodeIDtoNumberMap[i] = id;
+			m_pDoc->m_NodeNoMap[i] = pNode;
+			m_pDoc->m_NodeNotoNumberMap[i] = id;
 			m_pDoc->m_NodeNumberMap[id] = pNode;
 
-			m_pDoc->m_NodeNumbertoIDMap[id] = i;
+			m_pDoc->m_NodeNumbertoNodeNoMap[id] = i;
 			i++;
 
 			rsNode.MoveNext();
@@ -554,7 +554,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 
-				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(from_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoNodeNoMap.find(from_node_id)== m_pDoc->m_NodeNumbertoNodeNoMap.end())
 				{
 					str_msg.Format("from_node_id %d at row %d cannot be found in the link sheet!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
@@ -562,7 +562,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					continue;
 				}
 
-				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoIDMap.find(to_node_id)== m_pDoc->m_NodeNumbertoIDMap.end())
+				if(m_AutogenerateNodeFlag == false && m_pDoc->m_NodeNumbertoNodeNoMap.find(to_node_id)== m_pDoc->m_NodeNumbertoNodeNoMap.end())
 				{
 					str_msg.Format("to_node_id %d at row %d cannot be found in the link sheet!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
@@ -644,7 +644,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 
-				DTALink* pExistingLink =  m_pDoc->FindLinkWithNodeIDs(m_pDoc->m_NodeNumbertoIDMap[from_node_id],m_pDoc->m_NodeNumbertoIDMap[to_node_id]);
+				DTALink* pExistingLink =  m_pDoc->FindLinkWithNodeIDs(m_pDoc->m_NodeNumbertoNodeNoMap[from_node_id],m_pDoc->m_NodeNumbertoNodeNoMap[to_node_id]);
 
 				if(pExistingLink)
 				{
@@ -832,11 +832,11 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
-				cc_from.X = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNumbertoIDMap[from_node_id]]->pt.x;
-				cc_from.Y = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNumbertoIDMap[from_node_id]]->pt.y;
+				cc_from.X = m_pDoc->m_NodeNoMap[m_pDoc->m_NodeNumbertoNodeNoMap[from_node_id]]->pt.x;
+				cc_from.Y = m_pDoc->m_NodeNoMap[m_pDoc->m_NodeNumbertoNodeNoMap[from_node_id]]->pt.y;
 
-				cc_to.X = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNumbertoIDMap[to_node_id]]->pt.x;
-				cc_to.Y = m_pDoc->m_NodeIDMap[m_pDoc->m_NodeNumbertoIDMap[to_node_id]]->pt.y;
+				cc_to.X = m_pDoc->m_NodeNoMap[m_pDoc->m_NodeNumbertoNodeNoMap[to_node_id]]->pt.x;
+				cc_to.Y = m_pDoc->m_NodeNoMap[m_pDoc->m_NodeNumbertoNodeNoMap[to_node_id]]->pt.y;
 
 				CoordinateVector.push_back(cc_from);
 				CoordinateVector.push_back(cc_to);
@@ -860,8 +860,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_ToNodeNumber = to_node_id;
 						pLink->m_Direction  = 1;
 
-						pLink->m_FromNodeID = m_pDoc->m_NodeNumbertoIDMap[from_node_id];
-						pLink->m_ToNodeID= m_pDoc->m_NodeNumbertoIDMap[to_node_id];
+						pLink->m_FromNodeID = m_pDoc->m_NodeNumbertoNodeNoMap[from_node_id];
+						pLink->m_ToNodeID= m_pDoc->m_NodeNumbertoNodeNoMap[to_node_id];
 
 
 						for(unsigned si = 0; si < CoordinateVector.size(); si++)
@@ -879,8 +879,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						pLink->m_FromNodeNumber = to_node_id;
 						pLink->m_ToNodeNumber = from_node_id;
 						pLink->m_Direction  = 1;
-						pLink->m_FromNodeID = m_pDoc->m_NodeNumbertoIDMap[to_node_id];
-						pLink->m_ToNodeID= m_pDoc->m_NodeNumbertoIDMap[from_node_id];
+						pLink->m_FromNodeID = m_pDoc->m_NodeNumbertoNodeNoMap[to_node_id];
+						pLink->m_ToNodeID= m_pDoc->m_NodeNumbertoNodeNoMap[from_node_id];
 
 
 						for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
@@ -972,10 +972,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-					pLink->m_FromPoint = m_pDoc->m_NodeIDMap[pLink->m_FromNodeID]->pt;
-					pLink->m_ToPoint = m_pDoc->m_NodeIDMap[pLink->m_ToNodeID]->pt;
+					pLink->m_FromPoint = m_pDoc->m_NodeNoMap[pLink->m_FromNodeID]->pt;
+					pLink->m_ToPoint = m_pDoc->m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
 
 					//			pLink->SetupMOE();
@@ -988,7 +988,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					unsigned long LinkKey = m_pDoc->GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 
-					m_pDoc->m_NodeIDtoLinkMap[LinkKey] = pLink;
+					m_pDoc->m_NodeNotoLinkMap[LinkKey] = pLink;
 
 					__int64  LinkKey2 = m_pDoc->GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 					m_pDoc->m_NodeNumbertoLinkMap[LinkKey2] = pLink;
@@ -998,18 +998,18 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_pDoc->m_LinkIDtoLinkMap[link_id] = pLink;
 
 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+					m_pDoc->m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 					if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 					{ 
 						// mark them as activity location 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
-					m_pDoc->m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
+					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+					m_pDoc->m_NodeNoMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
 					}
 
 
-					m_pDoc->m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
 
 
 					i++;
@@ -1131,10 +1131,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	strSQL = m_pDoc->ConstructSQL("5-ACTIVITY-LOCATION");
 
 	//bool bNodeNonExistError = false;
-	m_pDoc->m_NodeIDtoZoneNameMap.clear ();
+	m_pDoc->m_NodeNotoZoneNameMap.clear ();
 
 	bool bNodeNonExistError = false;
-	m_pDoc->m_NodeIDtoZoneNameMap.clear ();
+	m_pDoc->m_NodeNotoZoneNameMap.clear ();
 	m_pDoc->m_ODSize = 0;
 
 	// Read record
@@ -1166,19 +1166,19 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				return;
 			}
 
-			map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoIDMap.find(node_name);
+			map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoNodeNoMap.find(node_name);
 
-			if(m_Iter == m_pDoc->m_NodeNumbertoIDMap.end( ))
+			if(m_Iter == m_pDoc->m_NodeNumbertoNodeNoMap.end( ))
 			{
 				CString m_Warning;
 				m_Warning.Format("Node Number %d in the zone tabe has not been defined in the node table", node_name);
 				AfxMessageBox(m_Warning);
 				return;
 			}
-			m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNumbertoIDMap[node_name]] = zone_number;
+			m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
 
-			m_pDoc->m_NodeIDMap [ m_pDoc->m_NodeNumbertoIDMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
-			m_pDoc->m_NodeIDMap [ m_pDoc->m_NodeNumbertoIDMap[node_name] ] -> m_ZoneID = zone_number;
+			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
+			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] -> m_ZoneID = zone_number;
 			// if there are multiple nodes for a zone, the last node id is recorded.
 
 
@@ -1335,7 +1335,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
 		{
 			if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
-				CentroidVector.push_back((*iNode )->m_NodeID );
+				CentroidVector.push_back((*iNode )->m_NodeNo );
 
 		}
 

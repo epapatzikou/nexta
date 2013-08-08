@@ -258,22 +258,23 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 		}
 	}
 
+	walking_distance_vector.push_back(0.01);
+	walking_distance_vector.push_back(0.05);
+	walking_distance_vector.push_back(0.10);
+	walking_distance_vector.push_back(0.15);
+	walking_distance_vector.push_back(0.20);
 	walking_distance_vector.push_back(0.25);
-	walking_distance_vector.push_back(0.5);
-	walking_distance_vector.push_back(0.75);
-	walking_distance_vector.push_back(1);
-	walking_distance_vector.push_back(1.25);
-	walking_distance_vector.push_back(1.5);
-	walking_distance_vector.push_back(2);
-	walking_distance_vector.push_back(3);
-	walking_distance_vector.push_back(4);
-	walking_distance_vector.push_back(5);
-	walking_distance_vector.push_back(10);
+	walking_distance_vector.push_back(0.30);
+	walking_distance_vector.push_back(0.35);
+	walking_distance_vector.push_back(0.40);
+	walking_distance_vector.push_back(0.45);
+	walking_distance_vector.push_back(0.50);
+	walking_distance_vector.push_back(1.00);
 
 	for(unsigned int i=0; i< walking_distance_vector.size(); i++)
 	{
 		CString str;
-		str.Format("%.1f",walking_distance_vector[i]);
+		str.Format("%.2f",walking_distance_vector[i]);
 		m_ComboxBox_WalkingDistance.AddString(str);
 
 		if(walking_distance_vector[i] == pView->GetDocument ()->m_max_walking_distance )
@@ -439,7 +440,7 @@ void CDlg_DisplayConfiguration::OnCbnSelchangeComboWalkingdistance()
 {
 	 pView->GetDocument ()->m_max_walking_distance  = walking_distance_vector [ m_ComboxBox_WalkingDistance.GetCurSel()];
 	 pView->FindAccessibleTripIDWithCurrentMousePoint();
-	pView->Invalidate ();
+	 pView->Invalidate ();
 }
 
 void CDlg_DisplayConfiguration::OnCbnSelchangeComboTransittime()

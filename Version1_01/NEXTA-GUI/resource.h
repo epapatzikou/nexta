@@ -29,7 +29,6 @@
 #define ID_EXPORT_DATA3                 5
 #define IDDATA_Analysis2                5
 #define ID_TravelTimeReliability        5
-#define IDDATA_GoogleEarthOUTPUT        5
 #define ID_EXPORT_VEHICLE_DATA          6
 #define IDDATA_DYNAMIC_Density_Contour  6
 #define IDDATA_FREEVAL_Analysis_Generate_File 7
@@ -525,7 +524,6 @@
 #define IDC_EDIT_L1                     1197
 #define IDC_EDIT_L7                     1198
 #define IDC_EDIT_HEIGHT_ZONE            1199
-#define IDC_EDIT_HEIGHT_MAX             1199
 #define IDC_EDIT_L2                     1200
 #define IDC_EDIT_L3                     1201
 #define IDC_EDIT_L4                     1202
@@ -1295,13 +1293,16 @@
 #define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_HOUR_LY 33664
 #define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_HOURLY 33665
 #define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_LANE_HOURLY 33666
+#define ID_TRANSIT_OUTPUTTRANSITACCESSSIBILITYFROMHERE 33667
+#define ID_TRANSIT_OUTPUTTRANSITACCESSSIBILITYFROMALLACTIVITYLOCATIONS 33668
+#define ID_DATA_DELETEEXISTINGPATHSININPUTPATHCSVFILE 33669
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        251
-#define _APS_NEXT_COMMAND_VALUE         33667
+#define _APS_NEXT_COMMAND_VALUE         33670
 #define _APS_NEXT_CONTROL_VALUE         1215
 #define _APS_NEXT_SYMED_VALUE           109
 #endif

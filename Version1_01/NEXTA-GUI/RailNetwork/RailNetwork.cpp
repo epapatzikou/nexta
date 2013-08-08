@@ -148,7 +148,7 @@ bool CTLiteDoc::ReadRailNodeCSVFile(LPCTSTR lpszFileName)
 
 			}
 
-			if(m_NodeNumbertoIDMap.find(node_id) != m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(node_id) != m_NodeNumbertoNodeNoMap.end())
 			{
 				CString error_message;
 				error_message.Format ("Node %d in input_node.csv has been defined twice. Please check.", node_id);
@@ -168,13 +168,13 @@ bool CTLiteDoc::ReadRailNodeCSVFile(LPCTSTR lpszFileName)
 			pNode->schedule_pt.y = Y;
 
 			pNode->m_NodeNumber = node_id;
-			pNode->m_NodeID = i;
+			pNode->m_NodeNo = i;
 			pNode->m_ZoneID = 0;
 			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
+			m_NodeNoMap[i] = pNode;
 			m_NodeNumberMap[node_id] = pNode;
-			m_NodeIDtoNumberMap[i] = node_id;
-			m_NodeNumbertoIDMap[node_id] = i;
+			m_NodeNotoNumberMap[i] = node_id;
+			m_NodeNumbertoNodeNoMap[node_id] = i;
 			i++;
 
 
@@ -285,7 +285,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 				break;
 			}
 
-			if(m_NodeNumbertoIDMap.find(from_node_id)== m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(from_node_id)== m_NodeNumbertoNodeNoMap.end())
 			{
 				if(bCreateNewNodeFlag == false)  // not create new node
 				{
@@ -325,7 +325,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 				}	
 			}
 
-			if(m_NodeNumbertoIDMap.find(to_node_id)== m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(to_node_id)== m_NodeNumbertoNodeNoMap.end())
 			{
 				if(bCreateNewNodeFlag == false)  // not create new node
 				{
@@ -366,7 +366,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 
 			}
 
-			DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+			DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[from_node_id],m_NodeNumbertoNodeNoMap[to_node_id]);
 
 			if(pExistingLink)
 			{
@@ -425,11 +425,11 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
-				cc_from.X = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->pt.x;
-				cc_from.Y = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->pt.y;
+				cc_from.X = m_NodeNoMap[m_NodeNumbertoNodeNoMap[from_node_id]]->pt.x;
+				cc_from.Y = m_NodeNoMap[m_NodeNumbertoNodeNoMap[from_node_id]]->pt.y;
 
-				cc_to.X = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->pt.x;
-				cc_to.Y = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->pt.y;
+				cc_to.X = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]]->pt.x;
+				cc_to.Y = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]]->pt.y;
 
 				CoordinateVector.push_back(cc_from);
 				CoordinateVector.push_back(cc_to);
@@ -449,8 +449,8 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			pLink->m_ToNodeNumber = to_node_id;
 			pLink->m_Direction  = 1;
 
-			pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-			pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+			pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[from_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[to_node_id];
 
 			int si;
 
@@ -473,13 +473,13 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			pLink->m_NumberOfLanes = 1;
 			pLink->m_TrackType = track_type;
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
-			m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 			unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 
-			m_NodeIDtoLinkMap[LinkKey] = pLink;
+			m_NodeNotoLinkMap[LinkKey] = pLink;
 
 			__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
 			m_NodeNumbertoLinkMap[LinkKey2] = pLink;
@@ -488,13 +488,13 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			m_LinkNotoLinkMap[i] = pLink;
 			m_LinkIDtoLinkMap[i] = pLink;
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-			pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-			pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+			pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+			pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
-			pLink->m_ScheduleFromPoint = m_NodeIDMap[pLink->m_FromNodeID]->schedule_pt;
-			pLink->m_ScheduleToPoint = m_NodeIDMap[pLink->m_ToNodeID]->schedule_pt;
+			pLink->m_ScheduleFromPoint = m_NodeNoMap[pLink->m_FromNodeID]->schedule_pt;
+			pLink->m_ScheduleToPoint = m_NodeNoMap[pLink->m_ToNodeID]->schedule_pt;
 
 			default_distance_sum+= pLink->DefaultDistance();
 			length_sum += pLink ->m_Length;

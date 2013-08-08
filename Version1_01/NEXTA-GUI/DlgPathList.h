@@ -112,4 +112,5 @@ public:
 	afx_msg void OnBnClickedGoogleearth();
 	afx_msg void OnBnClickedGoogleearthoutput();
 	afx_msg void OnBnClickedButtonGoogleEarthKml();
+	afx_msg void OnDataDeleteexistingpathsininputpathcsvfile();
 };

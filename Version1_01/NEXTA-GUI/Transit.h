@@ -39,8 +39,11 @@ public:
 	PT_Stop()
 	{
 	mapped_node_id = -1;
-	int stop_id = -1;
+	stop_id = -1;
+	number_of_nearby_transfer_stations = 0;
 	}
+
+	int number_of_nearby_transfer_stations;
 	int stop_id;
 	int stop_code;
 	string stop_name;
@@ -61,6 +64,7 @@ public:
 	PT_StopTime()
 	{
 	stop_id = -1;
+	number_of_nearby_transfer_stop_time = 0;
 	}
 	int trip_id;
 	int arrival_time;  
@@ -72,6 +76,9 @@ public:
 	int drop_off_type;
 	float shape_dist_traveled;
 	int timepoint;
+
+	int number_of_nearby_transfer_stop_time;
+
 
 	GDPoint pt;
 

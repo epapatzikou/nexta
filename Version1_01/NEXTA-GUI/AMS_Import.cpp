@@ -491,7 +491,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			pNode->m_Name  = str_name;
 			pNode->m_NodeNumber = id;
-				pNode->m_NodeID = i;
+				pNode->m_NodeNo = i;
 			pNode->m_ZoneID = TAZ;
 			pNode->m_ControlType = control_type;
 
@@ -526,14 +526,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
+			m_NodeNoMap[i] = pNode;
 			m_NodeNumberMap[id] = pNode;
-			m_NodeIDtoNumberMap[i] = id;
+			m_NodeNotoNumberMap[i] = id;
 			if(id == 54170)
 			{
 				TRACE("");
 			}
-			m_NodeNumbertoIDMap[id] = i;
+			m_NodeNumbertoNodeNoMap[id] = i;
 			i++;
 
 			m_AMSLogFile  << endl;
@@ -1197,10 +1197,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 			int node_id  =0 ;
 
-			if(m_NodeNumbertoIDMap.find (from_node_id) != m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find (from_node_id) != m_NodeNumbertoNodeNoMap.end())
 			{
-				node_id =  m_NodeNumbertoIDMap[from_node_id];
-				DTANode* pFromNode = m_NodeIDMap[node_id];
+				node_id =  m_NodeNumbertoNodeNoMap[from_node_id];
+				DTANode* pFromNode = m_NodeNoMap[node_id];
 				if(pFromNode->m_ZoneID >=1)
 				{
 					// from node is a zone centroid, then the link is a connector
@@ -1363,7 +1363,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 
-	DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+	DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[from_node_id],m_NodeNumbertoNodeNoMap[to_node_id]);
 
 	// error checking 
 	CString str_msg;
@@ -1440,8 +1440,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pLink->m_ToNodeNumber = to_node_id;
 			pLink->m_Direction  = 1;
 
-			pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-			pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+			pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[from_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[to_node_id];
 
 
 
@@ -1458,12 +1458,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}else	// without shape point data 
 			{
 				// use position data from upstream node
-				GDPoint	pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+				GDPoint	pt =  m_NodeNoMap[pLink->m_FromNodeID]->pt;
 				pLink->m_Original_ShapePoints .push_back (pt);
 				pLink->m_ShapePoints .push_back (pt);
 
 				// use position data from downstream node
-				pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+				pt =  m_NodeNoMap[pLink->m_ToNodeID]->pt;
 				pLink->m_Original_ShapePoints .push_back (pt);
 				pLink->m_ShapePoints .push_back (pt);
 
@@ -1476,8 +1476,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pLink->m_FromNodeNumber = to_node_id;
 			pLink->m_ToNodeNumber = from_node_id;
 			pLink->m_Direction  = 1;
-			pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
-			pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
+			pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[to_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[from_node_id];
 
 
 			if(CoordinateVector.size() >=2) // with shape point data 
@@ -1493,12 +1493,12 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}else // without shape point data 
 			{
 				// use position data from downstream node
-				GDPoint	pt =  m_NodeIDMap[pLink->m_ToNodeID]->pt;
+				GDPoint	pt =  m_NodeNoMap[pLink->m_ToNodeID]->pt;
 				pLink->m_Original_ShapePoints .push_back (pt);
 				pLink->m_ShapePoints .push_back (pt);
 
 				// use position data from upstream node
-				pt =  m_NodeIDMap[pLink->m_FromNodeID]->pt;
+				pt =  m_NodeNoMap[pLink->m_FromNodeID]->pt;
 				pLink->m_Original_ShapePoints .push_back (pt);
 				pLink->m_ShapePoints .push_back (pt);
 
@@ -1556,10 +1556,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 		pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-		m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+		m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-		pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+		pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
 
 		if(pLink->m_FromNodeNumber ==0 || pLink->m_ToNodeNumber ==0 )
@@ -1577,30 +1577,30 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		m_LinkNoMap[index]  = pLink;
 		m_LinkSet.push_back (pLink);
-		m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-		m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+		m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+		m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 		if(m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 		{ 
 			// mark them as activity location 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
-			m_NodeIDMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_bZoneActivityLocationFlag = true;					
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
-			m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_NoControl;  // no control
 
 		}
 
 
-		m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(index);
-		m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(index);
+		m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(index);
+		m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(index);
 
 		if(m_LinkTypeMap[pLink->m_link_type].IsConnector  () == false )
-			m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors++;
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors++;
 
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-		m_NodeIDtoLinkMap[LinkKey] = pLink;
+		m_NodeNotoLinkMap[LinkKey] = pLink;
 
 
 		__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
@@ -1645,18 +1645,18 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 				{  // reset default value
 					if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
 						pLink->m_SpeedLimit> minimum_speed_limit_for_signals && pLink->m_SpeedLimit<= maximum_speed_limit_for_signals && 
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors >=3 && 
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors == m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size()/*no incoming connectors*/) 
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_ControlType == 0 && 
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors >=3 && 
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors == m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector .size()/*no incoming connectors*/) 
 					{ // speed range between 30 and 60, arterial streets, intersection has at least 3 legs
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_PretimedSignal;  // signal control
 						number_of_signals++;
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_CycleLengthInSecond = default_cycle_length_in_second;	
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_CycleLengthInSecond = default_cycle_length_in_second;	
 
-						for(unsigned int i = 0; i< m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.size(); i++)
+						for(unsigned int i = 0; i< m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.size(); i++)
 						{
 
-							DTALink* pLink0 = m_LinkNoMap[m_NodeIDMap[pLink->m_ToNodeID ]->m_IncomingLinkVector[i]];
+							DTALink* pLink0 = m_LinkNoMap[m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector[i]];
 
 							TRACE("%d -> %d\n",pLink0->m_FromNodeNumber,pLink0->m_ToNodeNumber);
 
@@ -1667,9 +1667,9 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 					}
 
-					if(pLink->m_SpeedLimit<=30 && m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType == 0)
+					if(pLink->m_SpeedLimit<=30 && m_NodeNoMap[pLink->m_ToNodeID ]->m_ControlType == 0)
 					{
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_ControlType = m_ControlType_4wayStopSign;  // signal control
 					}
 
 				}
@@ -1683,7 +1683,7 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 			if((*iLink)->m_LayerNo == 0 )
 			{
 				int ToNodeID = (*iLink)->m_ToNodeID ;
-				DTANode* pNode = m_NodeIDMap[ToNodeID];
+				DTANode* pNode = m_NodeNoMap[ToNodeID];
 				//set default green time 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
 					pNode->m_ControlType == m_ControlType_ActuatedSignal)
@@ -1842,7 +1842,7 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 				pNode->m_NodeNumber = id;
 
 				m_NodeNumberMap[id] = pNode;
-				pNode->m_NodeID = i;
+				pNode->m_NodeNo = i;
 				pNode->m_ZoneID = TAZ;
 				pNode->m_ControlType = m_ControlType_NoControl;
 
@@ -1865,18 +1865,18 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 				}
 
 
-				if(m_NodeNumbertoIDMap.find(id) == m_NodeNumbertoIDMap.end())  // no duplicated nodes
+				if(m_NodeNumbertoNodeNoMap.find(id) == m_NodeNumbertoNodeNoMap.end())  // no duplicated nodes
 				{
 					m_NodeSet.push_back(pNode);
-					m_NodeIDMap[i] = pNode;
-					m_NodeIDtoNumberMap[i] = id;
+					m_NodeNoMap[i] = pNode;
+					m_NodeNotoNumberMap[i] = id;
 
 					if(id == 54170)
 					{
 						TRACE("");
 					}
 
-					m_NodeNumbertoIDMap[id] = i;
+					m_NodeNumbertoNodeNoMap[id] = i;
 					i++;
 				}
 
@@ -2228,8 +2228,8 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 								pLink->m_Direction  = 1;
 
-								pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-								pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+								pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[from_node_id];
+								pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[to_node_id];
 
 
 
@@ -2271,8 +2271,8 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 								pLink->m_ToNodeNumber = from_node_id;
 								pLink->m_Direction  = 1;
-								pLink->m_FromNodeID = m_NodeNumbertoIDMap[to_node_id];
-								pLink->m_ToNodeID= m_NodeNumbertoIDMap[from_node_id];
+								pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[to_node_id];
+								pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[from_node_id];
 
 
 								for(int si = CoordinateVector.size()-1; si >=0; si--)  // we need to put int here as si can be -1. 
@@ -2348,10 +2348,10 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 							pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 							pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+							m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-							pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-							pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+							pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+							pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
 
 							pLink->input_line_no  = line_no;
@@ -2384,16 +2384,16 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 
 							m_LinkSet.push_back (pLink);
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-							m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+							m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+							m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 							// mark them as activity location 
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
-							m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+							m_NodeNoMap[pLink->m_FromNodeID ]->m_bZoneActivityLocationFlag = true;					
+							m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
 
 
 							unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-							m_NodeIDtoLinkMap[LinkKey] = pLink;
+							m_NodeNotoLinkMap[LinkKey] = pLink;
 
 
 							__int64  LinkKey2 = pLink-> m_FromNodeNumber* pLink->m_ToNodeNumber;
@@ -2896,7 +2896,7 @@ bool  CTLiteDoc::RunGravityModel()
 		{
 			for(unsigned int i = 0; i< itr_o->second.m_ActivityLocationVector.size(); i++)
 			{
-				DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[itr_o->second.m_ActivityLocationVector[i].NodeNumber]];
+				DTANode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[itr_o->second.m_ActivityLocationVector[i].NodeNumber]];
 
 				total_production += itr_o->second .m_Production;
 				total_attraction += itr_o->second .m_Attraction;
@@ -3070,12 +3070,12 @@ bool  CTLiteDoc::ReadSynchroLayoutFile_And_AddOutgoingLinks_For_ExternalNodes(LP
 					if(parser.GetValueByFieldName(direction_vector[direction],outgoing_node_number))// value exits
 					{
 						// add a new link
-						int from_node_id = m_NodeNumbertoIDMap[node_id];
-						int to_node_id = m_NodeNumbertoIDMap[outgoing_node_number];
+						int from_node_id = m_NodeNumbertoNodeNoMap[node_id];
+						int to_node_id = m_NodeNumbertoNodeNoMap[outgoing_node_number];
 
-						if(m_NodeIDMap.find(to_node_id) != m_NodeIDMap.end())
+						if(m_NodeNoMap.find(to_node_id) != m_NodeNoMap.end())
 						{
-							//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
+							//if(m_NodeNoMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
 							{  // add new link if the outbound node is an external node
 								AddNewLink(from_node_id, to_node_id,false, false);
 								AddNewLink(to_node_id,from_node_id,false, false);
@@ -3138,7 +3138,7 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			bool bFieldX_Exist = parser.GetValueByFieldName("X",X,false);
 			parser.GetValueByFieldName("Y",Y,false);
 
-			if(m_NodeNumbertoIDMap.find(node_id) != m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(node_id) != m_NodeNumbertoNodeNoMap.end())
 			{
 				CString error_message;
 				error_message.Format ("Node %d in input_node.csv has been defined twice. Please check.", node_id);
@@ -3161,12 +3161,12 @@ bool CTLiteDoc::ReadSynchroLayoutFile(LPCTSTR lpszFileName)
 			pNode->pt.y = Y/5280.0f;  // feet to mile
 
 			pNode->m_NodeNumber = node_id;
-			pNode->m_NodeID = i;
+			pNode->m_NodeNo = i;
 			pNode->m_ZoneID = 0;
 			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNumberMap[i] = node_id;
-			m_NodeNumbertoIDMap[node_id] = i;
+			m_NodeNoMap[i] = pNode;
+			m_NodeNotoNumberMap[i] = node_id;
+			m_NodeNumbertoNodeNoMap[node_id] = i;
 			i++;
 
 			TRACE("node = %d, X: %f, Y: %f\n", node_id, X, Y);
@@ -3513,7 +3513,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 							continue;
 
 						// add link
-						DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+						DTALink* pExistingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[from_node_id],m_NodeNumbertoNodeNoMap[to_node_id]);
 
 						if(pExistingLink)
 						{
@@ -3555,11 +3555,11 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						if(pLink->m_FromNodeNumber == 12 && pLink->m_ToNodeNumber == 2)
 							TRACE("");
 
-						pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-						pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+						pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[from_node_id];
+						pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[to_node_id];
 
-						pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-						pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+						pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+						pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 						float length_in_mile =  pLink->DefaultDistance();  // cooridnates have been changed to mile for unit
 
 						pLink->m_bToBeShifted = bToBeShifted; 
@@ -3584,23 +3584,23 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						pLink->m_Kjam = k_jam;
 						pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
-						m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-						m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
-						m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+						m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+						m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+						m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
-						pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-						pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+						pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+						pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
 						unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
 
-						m_NodeIDtoLinkMap[LinkKey] = pLink;
+						m_NodeNotoLinkMap[LinkKey] = pLink;
 
 						__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 						m_NodeNumbertoLinkMap[LinkKey2] = pLink;
 
 						m_LinkNotoLinkMap[m_LinkSet.size()] = pLink;
 
-						m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+						m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
 
 						default_distance_sum+= pLink->DefaultDistance();
@@ -3626,7 +3626,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 				} // for each movement
 
-				DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
+				DTANode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]];	
 
 				for(int p  = 1; p <= max_phase_number; p++)
 				{
@@ -3917,25 +3917,25 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 						DTANodeMovement element;
 
-						element.in_link_from_node_id = m_NodeNumbertoIDMap[from_node_id];		
-						element.in_link_to_node_id = m_NodeNumbertoIDMap[to_node_id];						
-						element.out_link_to_node_id = m_NodeNumbertoIDMap[dest_node_id];	
+						element.in_link_from_node_id = m_NodeNumbertoNodeNoMap[from_node_id];		
+						element.in_link_to_node_id = m_NodeNumbertoNodeNoMap[to_node_id];						
+						element.out_link_to_node_id = m_NodeNumbertoNodeNoMap[dest_node_id];	
 
-						DTALink* pIncomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[from_node_id],m_NodeNumbertoIDMap[to_node_id]);
+						DTALink* pIncomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[from_node_id],m_NodeNumbertoNodeNoMap[to_node_id]);
 
 						if(pIncomingLink)
 							element.IncomingLinkID = pIncomingLink->m_LinkNo  ;
 
-						DTALink* pOutcomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoIDMap[to_node_id],m_NodeNumbertoIDMap[dest_node_id]);
+						DTALink* pOutcomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[to_node_id],m_NodeNumbertoNodeNoMap[dest_node_id]);
 
 						if(pOutcomingLink)
 							element.OutgoingLinkID = pOutcomingLink->m_LinkNo ;
 
 
 						GDPoint p1, p2, p3;
-						p1  = m_NodeIDMap[element.in_link_from_node_id]->pt;
-						p2  = m_NodeIDMap[element.in_link_to_node_id]->pt;
-						p3  = m_NodeIDMap[element.out_link_to_node_id]->pt;
+						p1  = m_NodeNoMap[element.in_link_from_node_id]->pt;
+						p2  = m_NodeNoMap[element.in_link_to_node_id]->pt;
+						p3  = m_NodeNoMap[element.out_link_to_node_id]->pt;
 
 						int relative_angel_difference_from_main_direction = 0;
 						element.movement_direction = Find_Angle_to_Approach_4_direction(Find_P2P_Angle(p1,p2),relative_angel_difference_from_main_direction);
@@ -3983,7 +3983,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						}
 
 
-						DTANode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]];	
+						DTANode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]];	
 
 						ASSERT(pNode!=NULL);
 
@@ -4382,13 +4382,13 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 				pNode->m_NodeNumber = node_number_estimator; // intid is the name used , start from 1
 				m_INTIDMap [intid] = i;
 				m_NodeOrgNumber2INTIDMap[intid] = node_number_estimator;
-				pNode->m_NodeID = i;
+				pNode->m_NodeNo = i;
 				pNode->m_ZoneID = 0;
 				pNode->m_CycleLengthInSecond = 0;
 				m_NodeSet.push_back(pNode);
-				m_NodeIDMap[i] = pNode;
-				m_NodeIDtoNumberMap[i] = node_number_estimator; // start from 1
-				m_NodeNumbertoIDMap[node_number_estimator] = i;
+				m_NodeNoMap[i] = pNode;
+				m_NodeNotoNumberMap[i] = node_number_estimator; // start from 1
+				m_NodeNumbertoNodeNoMap[node_number_estimator] = i;
 				m_NodeOrgNumber2NodeNoMap[intid] = i;
 				i++;
 				j++;
@@ -4431,11 +4431,11 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 							int to_node_id = m_INTIDMap[intid];
 
 
-							if(m_NodeNumbertoIDMap.find(incoming_node_number) != m_NodeNumbertoIDMap.end() )
+							if(m_NodeNumbertoNodeNoMap.find(incoming_node_number) != m_NodeNumbertoNodeNoMap.end() )
 							{
-								int from_node_id = m_NodeNumbertoIDMap[incoming_node_number];
+								int from_node_id = m_NodeNumbertoNodeNoMap[incoming_node_number];
 								from_node_id_map[direction] = from_node_id;
-								//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
+								//if(m_NodeNoMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
 								// add new link if the outbound node is an external node
 								AddNewLink(from_node_id, to_node_id,false, false);
 
@@ -4447,7 +4447,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 									int from_node_id = m_NodeOrgNumber2NodeNoMap[incoming_node_number];
 									from_node_id_map[direction] = from_node_id;
-									//if(m_NodeIDMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
+									//if(m_NodeNoMap[to_node_id]->m_ControlType == m_ControlType_ExternalNode) XUESONG
 									// add new link if the outbound node is an external node
 									AddNewLink(from_node_id, to_node_id,false);
 								}
@@ -4504,7 +4504,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 					std::list<DTANode*>::iterator iNode;
 					for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 					{
-						if((*iNode)->m_NodeID  == 7)
+						if((*iNode)->m_NodeNo  == 7)
 						{
 							TRACE("");
 
@@ -4516,9 +4516,9 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 							DTANodeMovement movement = (*iNode)->m_MovementVector[m];
 
 							CString label;
-							int up_node_id = m_NodeIDMap[movement.in_link_from_node_id]->m_NodeID     ;
-							int dest_node_id = m_NodeIDMap[movement.out_link_to_node_id ]->m_NodeID ;
-							label.Format("%d;%d;%d", up_node_id,(*iNode)->m_NodeID ,dest_node_id);
+							int up_node_id = m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNo     ;
+							int dest_node_id = m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNo ;
+							label.Format("%d;%d;%d", up_node_id,(*iNode)->m_NodeNo ,dest_node_id);
 
 							m_MovementPointerMap[label] = &((*iNode)->m_MovementVector[m]); // store pointer
 
@@ -4624,9 +4624,9 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 							int UpNodeNo = -1;
 
-							if(m_NodeNumbertoIDMap.find(UpNodeNumberMap[direction]) != m_NodeNumbertoIDMap.end())
+							if(m_NodeNumbertoNodeNoMap.find(UpNodeNumberMap[direction]) != m_NodeNumbertoNodeNoMap.end())
 							{
-								UpNodeNo = m_NodeNumbertoIDMap[UpNodeNumberMap[direction]];
+								UpNodeNo = m_NodeNumbertoNodeNoMap[UpNodeNumberMap[direction]];
 
 							}else
 							{
@@ -4641,9 +4641,9 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 							int DestNodeNo = -1;
 
-							if(m_NodeNumbertoIDMap.find(DestNodeNumberMap[direction]) != m_NodeNumbertoIDMap.end())
+							if(m_NodeNumbertoNodeNoMap.find(DestNodeNumberMap[direction]) != m_NodeNumbertoNodeNoMap.end())
 							{
-								DestNodeNo = m_NodeNumbertoIDMap[DestNodeNumberMap[direction]];
+								DestNodeNo = m_NodeNumbertoNodeNoMap[DestNodeNumberMap[direction]];
 
 							}else
 							{
@@ -4657,9 +4657,9 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 
 							int CurrentNodeNo = -1;
-							if(m_NodeNumbertoIDMap.find(intid) != m_NodeNumbertoIDMap.end())
+							if(m_NodeNumbertoNodeNoMap.find(intid) != m_NodeNumbertoNodeNoMap.end())
 							{
-								CurrentNodeNo = m_NodeNumbertoIDMap[intid];
+								CurrentNodeNo = m_NodeNumbertoNodeNoMap[intid];
 
 							}else
 							{
@@ -4771,10 +4771,10 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 					if(parser.GetValueByFieldName("DATA",data) == false)
 						continue;
 
-					m_NodeIDMap[node_id]->m_CycleLengthInSecond = data;
+					m_NodeNoMap[node_id]->m_CycleLengthInSecond = data;
 
 					if(data > 10)  // set 
-						m_NodeIDMap[node_id]->m_ControlType = m_ControlType_PretimedSignal;
+						m_NodeNoMap[node_id]->m_ControlType = m_ControlType_PretimedSignal;
 				}
 
 				if(name == "Offset")
@@ -4789,7 +4789,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 					if(parser.GetValueByFieldName("DATA",data) == false)
 						continue;
 
-					m_NodeIDMap[node_id]->m_SignalOffsetInSecond  = data;
+					m_NodeNoMap[node_id]->m_SignalOffsetInSecond  = data;
 
 				}
 
@@ -4990,12 +4990,12 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 						DTANode* pRefNode = NULL;
 						int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
 
-						if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
+						if( pReferenceDoc->m_NodeNumbertoNodeNoMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoNodeNoMap.end())
 						{
-							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
+							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoNodeNoMap[reference_node_id];
 
-							(*iNode)->m_CycleLengthInSecond = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_CycleLengthInSecond ;
-							(*iNode)->m_SignalOffsetInSecond =pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_SignalOffsetInSecond  ;
+							(*iNode)->m_CycleLengthInSecond = pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_CycleLengthInSecond ;
+							(*iNode)->m_SignalOffsetInSecond =pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_SignalOffsetInSecond  ;
 							fprintf(st,"Baseline,Node,%d,use reference node:,%d,obtains cycle length =,%d,offset,%d,%s,%s\n",  baseline_node_id,reference_node_id,(*iNode)->m_CycleLengthInSecond,(*iNode)->m_SignalOffsetInSecond,CrossReferenceNodeInfoMap [baseline_node_id].intersection_name.c_str (),CrossReferenceNodeInfoMap [baseline_node_id].intersection_name2.c_str () );
 							count++;
 
@@ -5029,28 +5029,28 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 						DTANode* pRefNode = NULL;
 						int reference_node_id =  CrossReferenceNodeInfoMap [baseline_node_id].reference_node_id;
 
-						if( pReferenceDoc->m_NodeNumbertoIDMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoIDMap.end())
+						if( pReferenceDoc->m_NodeNumbertoNodeNoMap.find(reference_node_id) !=  pReferenceDoc->m_NodeNumbertoNodeNoMap.end())
 						{
 
-							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoIDMap[reference_node_id];
+							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoNodeNoMap[reference_node_id];
 
 							for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
 							{
 
 								DTANodeMovement baseline_movement = (*iNode)->m_MovementVector[m];
 
-								int MovementIndex = pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_approach_turn );
+								int MovementIndex = pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_approach_turn );
 
 								if(baseline_movement.movement_approach_turn >=0 && MovementIndex>=0)
 								{
 									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementVector[m]);
-									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
+									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
 									pThisMovement->QEM_TurnVolume = reference_movement.QEM_TurnVolume;
 
 
 									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
 									pThisMovement->QEM_LinkVolume  =
-										pReferenceDoc->m_NodeIDMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_direction);
+										pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_direction);
 
 									pThisMovement->QEM_Lanes = reference_movement.QEM_Lanes;
 									pThisMovement->QEM_Shared = reference_movement.QEM_Shared;
@@ -5073,8 +5073,8 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 
 									fprintf(st,"Baseline,Node,%d,Up Node,%d,Dest Node,%d,%s,%s, obtains # of lanes =,%d,shared=,%d,Width=,%d,Storage=,%d\n",  
 										baseline_node_id, 
-										m_NodeIDMap[pThisMovement-> in_link_from_node_id]->m_NodeNumber,
-										m_NodeIDMap[pThisMovement-> out_link_to_node_id]->m_NodeNumber,
+										m_NodeNoMap[pThisMovement-> in_link_from_node_id]->m_NodeNumber,
+										m_NodeNoMap[pThisMovement-> out_link_to_node_id]->m_NodeNumber,
 										GetTurnDirectionString( pThisMovement-> movement_approach_turn),
 										GetTurnString( pThisMovement->movement_turn),
 										pThisMovement->QEM_Lanes,
@@ -5085,8 +5085,8 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 								{
 									fprintf(st,"Baseline,Node,%d,Up Node,%d,Dest Node,%d,%s,%s,does not find reference movement.\n",  
 										baseline_node_id, 
-										m_NodeIDMap[(*iNode)->m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
-										m_NodeIDMap[(*iNode)->m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
+										m_NodeNoMap[(*iNode)->m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
+										m_NodeNoMap[(*iNode)->m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
 										GetTurnDirectionString((*iNode)->m_MovementVector[m]. movement_approach_turn),
 										GetTurnString((*iNode)->m_MovementVector[m].movement_turn));
 
@@ -5220,14 +5220,14 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 	{
 		DTALink * pLink = (*iLink);
 		if( m_LinkTypeMap[pLink->m_link_type].IsFreeway () 
-			&&  m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size()==1)  // freeway or highway
+			&&  m_NodeNoMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size()==1)  // freeway or highway
 		{
 			int FromID = pLink->m_FromNodeID;
 			int ToID   = pLink->m_ToNodeID;
 
-			for(int i=0; i< m_NodeIDMap[ToID]->m_OutgoingLinkVector.size(); i++)
+			for(int i=0; i< m_NodeNoMap[ToID]->m_OutgoingLinkVector.size(); i++)
 			{
-				DTALink* pNextLink =  m_LinkNoMap[m_NodeIDMap[ToID]->m_OutgoingLinkVector[i]];
+				DTALink* pNextLink =  m_LinkNoMap[m_NodeNoMap[ToID]->m_OutgoingLinkVector[i]];
 				if(m_LinkTypeMap[pNextLink->m_link_type ].IsFreeway () && pNextLink->m_NumberOfLanes  < pLink->m_NumberOfLanes && pNextLink->m_ToNodeID != FromID)
 				{
 					//					pLink->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
@@ -5248,7 +5248,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 		int incoming_link_freeway_and_ramp_count = 0;
 		bool no_arterial_incoming_link = true;
 
-		DTANode* pFromNode = m_NodeIDMap[pLink->m_FromNodeID];
+		DTANode* pFromNode = m_NodeNoMap[pLink->m_FromNodeID];
 
 		for(int incoming_link = 0; incoming_link <  pFromNode->m_IncomingLinkVector .size(); incoming_link++) // one outgoing link without considering u-turn
 		{
@@ -5283,7 +5283,7 @@ void CTLiteDoc::IdentifyBottleNeckAndOnOffRamps()
 	{
 		DTALink * pLink = (*iLink);
 		int FromID = pLink->m_FromNodeID;
-		DTANode* pFromNode = m_NodeIDMap[FromID];
+		DTANode* pFromNode = m_NodeNoMap[FromID];
 		if(pLink->m_bMergeFlag ==1 && pFromNode->m_IncomingLinkVector .size() == 2)  // is a merge bottlebeck link with two incoming links
 		{
 			int il;
