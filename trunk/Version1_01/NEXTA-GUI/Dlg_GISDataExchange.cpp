@@ -157,7 +157,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 				pDTAPoint->pt.y = poPoint->getY();
 
 				pDTAPoint->m_NodeNumber = id;
-				pDTAPoint->m_NodeID = point_index;
+				pDTAPoint->m_NodeNo = point_index;
 				pDTAPoint->m_ZoneID = 0;
 				pDTAPoint->m_ControlType = 0;
 
@@ -216,7 +216,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 						pDTANode->pt = start_pt;
 
 						pDTANode->m_NodeNumber = m_pDoc->m_NodeSet.size() +1;
-						pDTANode->m_NodeID = m_pDoc->m_NodeSet.size();
+						pDTANode->m_NodeNo = m_pDoc->m_NodeSet.size();
 						pDTANode->m_ZoneID = 0;
 						pDTANode->m_ControlType = 0;
 
@@ -238,7 +238,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsShapeFile()
 						pDTANode->pt = end_pt;
 
 						pDTANode->m_NodeNumber = m_pDoc->m_NodeSet.size() +1;
-						pDTANode->m_NodeID = m_pDoc->m_NodeSet.size();
+						pDTANode->m_NodeNo = m_pDoc->m_NodeSet.size();
 						pDTANode->m_ZoneID = 0;
 						pDTANode->m_ControlType = 0;
 
@@ -1235,7 +1235,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 									{
 																				
 											DTANode* pNode = m_pDoc->AddNewNode(pt_start, from_node_id, 0,false);
-											from_node_id = pNode->m_NodeID;  // update to_node_id after creating new node
+											from_node_id = pNode->m_NodeNo;  // update to_node_id after creating new node
 											pNode->m_bCreatedbyNEXTA = true;
 
 									}
@@ -1246,7 +1246,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 									if(to_node_id==0)
 									{
 											DTANode* pNode = m_pDoc->AddNewNode(pt_end, to_node_id, 0,false);
-											to_node_id = pNode->m_NodeID;  // update to_node_id after creating new node
+											to_node_id = pNode->m_NodeNo;  // update to_node_id after creating new node
 											pNode->m_bCreatedbyNEXTA = true;
 									}
 
@@ -1281,7 +1281,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 				//pDTAPoint->pt.y = poPoint->getY();
 
 				//pDTAPoint->m_NodeNumber = point_index;
-				//pDTAPoint->m_NodeID = point_index;
+				//pDTAPoint->m_NodeNo = point_index;
 				//pDTAPoint->m_ZoneID = 0;
 				//pDTAPoint->m_ControlType = 0;
 				//m_pDoc->m_DTAPointSet.push_back(pDTAPoint);
@@ -1349,7 +1349,7 @@ void CDlg_GISDataExchange::OnBnClickedImportGpsOsmPointShapeFile2()
 
 			element.External_OD_flag = 0;
 
-			m_pDoc->m_NodeIDtoZoneNameMap[m_pDoc->m_NodeNumbertoIDMap[node_name]] = zone_number;
+			m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
 			(*iNode) -> m_ZoneID = zone_number;
 			(*iNode) ->m_External_OD_flag = element.External_OD_flag;
 

@@ -98,8 +98,8 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 			pTrain->m_TrainType =  g_read_integer(st);
 			pTrain->m_OriginNodeNumber =  g_read_integer(st);
 			pTrain->m_DestinationNodeNumber =  g_read_integer(st);
-			pTrain->m_OriginNodeID =  m_NodeNumbertoIDMap[pTrain->m_OriginNodeNumber];
-			pTrain->m_DestinationNodeID =  m_NodeNumbertoIDMap[pTrain->m_DestinationNodeNumber ];
+			pTrain->m_OriginNodeID =  m_NodeNumbertoNodeNoMap[pTrain->m_OriginNodeNumber];
+			pTrain->m_DestinationNodeID =  m_NodeNumbertoNodeNoMap[pTrain->m_DestinationNodeNumber ];
 
 			pTrain->m_DepartureTime=  g_read_integer(st);
 			pTrain->m_NodeSize	=  g_read_integer(st);
@@ -112,7 +112,7 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 				for(int i =0; i< pTrain->m_NodeSize; i++)
 				{
 					int NodeNumber = g_read_integer(st);
-					pTrain->m_aryTN[i].NodeID = m_NodeNumbertoIDMap[NodeNumber];
+					pTrain->m_aryTN[i].NodeID = m_NodeNumbertoNodeNoMap[NodeNumber];
 					pTrain->m_aryTN[i].NodeTimestamp = g_read_integer(st);
 					g_read_float(st);  // read position number
 
@@ -124,7 +124,7 @@ bool CTLiteDoc::ReadTimetableCVSFile(LPCTSTR lpszFileName)
 						if(pLink==NULL)
 						{
 							CString msg;
-							msg.Format("train %d's link %d -> %d does not exist",pTrain->m_TrainID ,m_NodeIDtoNumberMap[pTrain->m_aryTN[i-1].NodeID],m_NodeIDtoNumberMap[pTrain->m_aryTN[i].NodeID]);
+							msg.Format("train %d's link %d -> %d does not exist",pTrain->m_TrainID ,m_NodeNotoNumberMap[pTrain->m_aryTN[i-1].NodeID],m_NodeNotoNumberMap[pTrain->m_aryTN[i].NodeID]);
 							AfxMessageBox(msg);
 							fclose(st);
 							return false;

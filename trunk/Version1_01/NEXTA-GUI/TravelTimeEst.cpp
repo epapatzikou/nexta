@@ -843,7 +843,7 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 
 					pLink->m_OverlappingCost = 30;  // min
 
-					TRACE("  %d-> %d",m_NodeIDtoNumberMap[m_PathNodeVectorSP[i]], m_NodeIDtoNumberMap[m_PathNodeVectorSP[i-1]]);
+					TRACE("  %d-> %d",m_NodeNotoNumberMap[m_PathNodeVectorSP[i]], m_NodeNotoNumberMap[m_PathNodeVectorSP[i-1]]);
 					if(pLink!=NULL)
 					{
 						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ; //starting from m_NodeSizeSP-2, to 0
@@ -936,7 +936,7 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 					}
 
 
-					//                                      TRACE("  %d-> %d",m_NodeIDtoNumberMap[m_PathNodeVectorSP[i]], m_NodeIDtoNumberMap[m_PathNodeVectorSP[i-1]]);
+					//                                      TRACE("  %d-> %d",m_NodeNotoNumberMap[m_PathNodeVectorSP[i]], m_NodeNotoNumberMap[m_PathNodeVectorSP[i-1]]);
 					if(pLink!=NULL)
 					{
 						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ;  //starting from m_NodeSizeSP-2, to 0
@@ -1150,7 +1150,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 
 					for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 					{
-						(*iNode)->m_DistanceToRoot  = m_pNetwork->LabelCostAry[(*iNode)->m_NodeID ];
+						(*iNode)->m_DistanceToRoot  = m_pNetwork->LabelCostAry[(*iNode)->m_NodeNo ];
 					}
 		
 				return 0;

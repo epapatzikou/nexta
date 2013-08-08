@@ -266,7 +266,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			node_id			= g_read_integer(pFile);
 			zoneNum	= g_read_integer(pFile);
 
-			m_NodeIDtoZoneNameMap[node_id] = zoneNum;
+			m_NodeNotoZoneNameMap[node_id] = zoneNum;
 			NodeIDtoZoneNameMap[node_id] = zoneNum;
 
 			// Create and insert the node
@@ -283,13 +283,13 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			pNode->pt.y = g_read_float(pFileNodeXY)*m_YCorridonateFlag;
 
 			pNode->m_NodeNumber = node_id;
-			pNode->m_NodeID = i;
+			pNode->m_NodeNo = i;
 			pNode->m_ZoneID = 0;
 			m_NodeSet.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNumberMap[i] = node_id;
+			m_NodeNoMap[i] = pNode;
+			m_NodeNotoNumberMap[i] = node_id;
 			m_NodeNumberMap[node_id] = pNode;
-			m_NodeNumbertoIDMap[node_id] = i;
+			m_NodeNumbertoNodeNoMap[node_id] = i;
 		}
 
 		m_NodeDataLoadingStatus.Format ("%d nodes are loaded.",m_NodeSet.size());
@@ -313,8 +313,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			pLink->m_FromNodeNumber = g_read_integer(pFile);
 			pLink->m_ToNodeNumber = g_read_integer(pFile);
-			pLink->m_FromNodeID = m_NodeNumbertoIDMap[pLink->m_FromNodeNumber];
-			pLink->m_ToNodeID= m_NodeNumbertoIDMap[pLink->m_ToNodeNumber];
+			pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[pLink->m_FromNodeNumber];
+			pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[pLink->m_ToNodeNumber];
 
 			int m_LeftBays= g_read_integer(pFile);
 
@@ -349,19 +349,19 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			int m_grade= g_read_integer(pFile);
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_Connections+=1;
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
 
-			m_NodeIDMap[pLink->m_ToNodeID ]->m_Connections+=1;
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
 			unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-			m_NodeIDtoLinkMap[LinkKey] = pLink;
+			m_NodeNotoLinkMap[LinkKey] = pLink;
 			m_LinkNotoLinkMap[i] = pLink;
 
-			m_NodeIDMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+			m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
 
-			pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-			pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+			pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+			pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 			default_distance_sum+= pLink->DefaultDistance();
 			length_sum += pLink ->m_Length;
 			//			pLink->SetupMOE();
@@ -578,21 +578,21 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			{
 				int destination_node = g_read_integer(pFile);
 
-				map <int, int> :: iterator m_Iter = m_NodeNumbertoIDMap.find(destination_node);
+				map <int, int> :: iterator m_Iter = m_NodeNumbertoNodeNoMap.find(destination_node);
 
-				if(m_Iter == m_NodeNumbertoIDMap.end( ))
+				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 				{
 					m_WarningFile<< "Node Number "  << destination_node << " in destination.dat has not been defined in network.csv"  << endl; 
 					fclose(pFile);
 					return false;
 				}
 
-				int node_id  = m_NodeNumbertoIDMap[destination_node];
-				m_NodeIDtoZoneNameMap[node_id] = zone_number;
+				int node_id  = m_NodeNumbertoNodeNoMap[destination_node];
+				m_NodeNotoZoneNameMap[node_id] = zone_number;
 				NodeIDtoZoneNameMap[node_id] = zone_number;
-				m_NodeIDMap [node_id ] -> m_ZoneID = zone_number;
+				m_NodeNoMap [node_id ] -> m_ZoneID = zone_number;
 
-				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
+				m_NodeNoMap[node_id]->m_ZoneID = zone_number;
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
 				if(m_ZoneMap [zone_number].FindANode(node_id,-1) == false)
@@ -603,7 +603,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					element.NodeNumber = destination_node;
 
 					element.External_OD_flag = -1;
-					element.pt = m_NodeIDMap [node_id ]  ->pt;
+					element.pt = m_NodeNoMap [node_id ]  ->pt;
 
 
 					m_ZoneMap [zone_number].m_ZoneID = zone_number;
@@ -635,9 +635,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				int from_node = g_read_integer(pFile);
 				int to_node = g_read_integer(pFile);
 
-				int node_id  = m_NodeNumbertoIDMap[to_node];
-				m_NodeIDtoZoneNameMap[node_id] = zone_number;
-				m_NodeIDMap[node_id]->m_ZoneID = zone_number;
+				int node_id  = m_NodeNumbertoNodeNoMap[to_node];
+				m_NodeNotoZoneNameMap[node_id] = zone_number;
+				m_NodeNoMap[node_id]->m_ZoneID = zone_number;
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
 
@@ -653,9 +653,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				float loading_ratio = g_read_float(pFile);
 
-				map <int, int> :: iterator m_Iter = m_NodeNumbertoIDMap.find(to_node);
+				map <int, int> :: iterator m_Iter = m_NodeNumbertoNodeNoMap.find(to_node);
 
-				if(m_Iter == m_NodeNumbertoIDMap.end( ))
+				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 				{
 					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
 					fclose(pFile);
@@ -1400,15 +1400,15 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 					m_PathNodeVectorSP[i] = g_read_integer(pFile);
 
 					//// update origin destination data based on TAZ
-					//		if(i==0 && m_NodeIDMap.find(m_PathNodeVectorSP[i]) != m_NodeIDMap.end())
+					//		if(i==0 && m_NodeNoMap.find(m_PathNodeVectorSP[i]) != m_NodeNoMap.end())
 					//		{
-					//			pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+					//			pVehicle->m_OriginZoneID = m_NodeNoMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 					//		
 					//		}
 
-					//		if(i== pVehicle->m_NodeSize -1 && m_NodeIDMap.find(m_PathNodeVectorSP[i]) != m_NodeIDMap.end())
+					//		if(i== pVehicle->m_NodeSize -1 && m_NodeNoMap.find(m_PathNodeVectorSP[i]) != m_NodeNoMap.end())
 					//		{
-					//			pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+					//			pVehicle->m_DestinationZoneID = m_NodeNoMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 					//		
 					//		}
 
@@ -1595,13 +1595,13 @@ bool CTLiteDoc::ReadDYNASMARTVehicleTrajectoryFile(LPCTSTR lpszFileName, int dat
 				//// update origin destination data based on TAZ
 				//if(i==0 )
 				//{
-				//	pVehicle->m_OriginZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+				//	pVehicle->m_OriginZoneID = m_NodeNoMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 
 				//}
 
 				//if(i== pVehicle->m_NodeSize -1 )
 				//{
-				//	pVehicle->m_DestinationZoneID = m_NodeIDMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
+				//	pVehicle->m_DestinationZoneID = m_NodeNoMap[m_PathNodeVectorSP[i] ]-> m_ZoneID;
 
 				//}
 
@@ -1709,7 +1709,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 			last_good_node_number = node_name;
 
-			DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+			DTANode*  pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_name]];
 			pNode->m_ControlType  = g_read_integer(st);
 			pNode->m_NumberofPhases = g_read_integer(st);
 			pNode->m_CycleLengthInSecond = g_read_integer(st);
@@ -1738,7 +1738,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 						TRACE("");
 					}
 
-					if(m_NodeNumbertoIDMap.find(node_name) == m_NodeNumbertoIDMap.end())
+					if(m_NodeNumbertoNodeNoMap.find(node_name) == m_NodeNumbertoNodeNoMap.end())
 					{
 						CString str;
 						str.Format("Error in reading the signal data block of control.dat. Last valid node number = %d ", last_good_node_number);
@@ -1748,7 +1748,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 					last_good_node_number = node_name;
 
 
-					DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+					DTANode*  pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_name]];
 
 					int phase_ID = g_read_integer(st);
 
@@ -1779,8 +1779,8 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 						int in_link_from_node_number = g_read_integer(st);
 						int in_link_to_node_number = g_read_integer(st);
-						int in_link_from_node_id = m_NodeNumbertoIDMap[in_link_from_node_number];
-						int in_link_to_node_id = m_NodeNumbertoIDMap[in_link_to_node_number];
+						int in_link_from_node_id = m_NodeNumbertoNodeNoMap[in_link_from_node_number];
+						int in_link_to_node_id = m_NodeNumbertoNodeNoMap[in_link_to_node_number];
 
 						DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
 						if(pLink!=NULL)
@@ -1796,7 +1796,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 						for(int k=0; k<movement_size; k++)
 						{
-							int out_link_to_node_id = m_NodeNumbertoIDMap[g_read_integer(st)];
+							int out_link_to_node_id = m_NodeNumbertoNodeNoMap[g_read_integer(st)];
 
 							int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
 							if(movement_index>=0)
@@ -1871,9 +1871,9 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 
 			last_good_node_number = node_name;
 
-			if(m_NodeNumbertoIDMap.find(node_name)!=m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(node_name)!=m_NodeNumbertoNodeNoMap.end())
 			{
-				DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+				DTANode*  pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_name]];
 				pNode->m_ControlType  = g_read_integer(st);
 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
@@ -1907,9 +1907,9 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 		{
 
 			int node_name = DSP_signal_node_vector[i];
-			if(m_NodeNumbertoIDMap.find(node_name)!=m_NodeNumbertoIDMap.end())
+			if(m_NodeNumbertoNodeNoMap.find(node_name)!=m_NodeNumbertoNodeNoMap.end())
 			{
-				DTANode*  pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_name]];
+				DTANode*  pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_name]];
 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
 				{
@@ -1952,8 +1952,8 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 
 							int in_link_from_node_number = g_read_integer(st);
 							int in_link_to_node_number = g_read_integer(st);
-							int in_link_from_node_id = m_NodeNumbertoIDMap[in_link_from_node_number];
-							int in_link_to_node_id = m_NodeNumbertoIDMap[in_link_to_node_number];
+							int in_link_from_node_id = m_NodeNumbertoNodeNoMap[in_link_from_node_number];
+							int in_link_to_node_id = m_NodeNumbertoNodeNoMap[in_link_to_node_number];
 
 							DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
 							if(pLink!=NULL)
@@ -1969,7 +1969,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 
 							for(int k=0; k<movement_size; k++)
 							{
-								int out_link_to_node_id = m_NodeNumbertoIDMap[g_read_integer(st)];
+								int out_link_to_node_id = m_NodeNumbertoNodeNoMap[g_read_integer(st)];
 
 								int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
 								if(movement_index>=0)

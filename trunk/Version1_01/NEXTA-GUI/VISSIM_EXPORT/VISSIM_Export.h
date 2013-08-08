@@ -1,5 +1,5 @@
 #pragma once
-//  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn
+//  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn 
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -133,7 +133,7 @@ public:
 	~MLane();
 public:
 	int		m_LinkID;
-	int		m_NodeID;   // only the ToNode
+	int		m_NodeNo;   // only the ToNode
 	int		m_SCNO;		// redundant from node
 	int		m_Index;
 	float	m_PocketLength;
@@ -219,7 +219,7 @@ public:
 	GDPoint		pt;				// ground position
 	GDPoint		ptLL;			// latitude and longitude
 	int			m_NodeNumber;	// old, original node number
-	int			m_NodeID;		// old, id, starting from zero, continuous sequence
+	int			m_NodeNo;		// old, id, starting from zero, continuous sequence
 	int			m_ZoneID;		// old, If ZoneID > 0 --> centriod,  otherwise a physical node.
 	int			nControlType;	// default = 1, Signalized; 2, TwoWayStop; 0, Unknown
 	int			nSCNO;			// Signal control no
@@ -276,12 +276,13 @@ public:
 	float m_vti1;
 	float m_vti2;
 };
-class Mustang
+class MicroSimulatorInterface
 {
 public:
-	Mustang();
-	Mustang(CTLiteDoc* pDoc);
-	~Mustang();
+	bool m_bUseSequentialNodeNumber;
+	MicroSimulatorInterface();
+	MicroSimulatorInterface(CTLiteDoc* pDoc);
+	~MicroSimulatorInterface();
 public:
 	float refLongi; // reference longitude, set by the first node
 	float refLati;  // reference latitude, set by the first node
@@ -295,9 +296,10 @@ public:
 	std::ofstream m_logFile;
 	// core data structure for network
 	std::list<MNode*> m_NodeList;
-	std::map<int, MNode*> m_NodeIDMap;
-	std::map<int, int> m_NodeIDtoNumberMap;
-	std::map<int, int> m_NodeNumbertoIDMap;
+	std::map<int, MNode*> m_NodeNoMap;
+	std::map<int, int> m_NodeNotoNumberMap;
+	std::map<int, int> m_NodeNumbertoNodeNoMap;
+	std::map<int, int> m_OriginalNodeNumbertoNodeNumberMap;
 	std::list<MLink*> m_LinkList;
 	std::map<int, MLink*> m_LinkNotoLinkMap;
 
@@ -351,7 +353,7 @@ public:
 	int  GetMLinkApproach(std::string dir,int* nAppr);
 	void ReadInputZoneCentroid(std::string strFileName);
 	GDPoint GetZoneCentroid(int nZoneID);
-	bool ReadInputZoneCSV(std::string strFileName);
+	bool ReadInputActivityLocationCSV(std::string strFileName);
 	bool ReadInputZoneCSV2(std::string strFileName);
 	bool ReadInputLaneCSV(std::string strFileName);
 	bool ReadInputSignalCSV(std::string strFileName);

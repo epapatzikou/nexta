@@ -63,7 +63,6 @@ BEGIN_MESSAGE_MAP(CDlg_KML_Configuration, CDialog)
 	ON_BN_CLICKED(IDOK3, &CDlg_KML_Configuration::OnBnClickedOk3)
 	ON_BN_CLICKED(IDOK4, &CDlg_KML_Configuration::OnBnClickedOk4)
 	ON_CBN_SELCHANGE(IDC_COMBO_Height, &CDlg_KML_Configuration::OnCbnSelchangeComboHeight)
-	ON_EN_CHANGE(IDC_EDIT_HEIGHT_MAX, &CDlg_KML_Configuration::OnEnChangeEditHeightMax)
 
 END_MESSAGE_MAP()
 

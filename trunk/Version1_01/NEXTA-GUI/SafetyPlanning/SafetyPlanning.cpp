@@ -101,9 +101,9 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 			
 			TRACE("");
 			}
-		for(int incoming_link = 0; incoming_link <  m_NodeIDMap[pLink->m_FromNodeID ]->m_IncomingLinkVector.size(); incoming_link++) // one outgoing link without considering u-turn
+		for(int incoming_link = 0; incoming_link <  m_NodeNoMap[pLink->m_FromNodeID ]->m_IncomingLinkVector.size(); incoming_link++) // one outgoing link without considering u-turn
 		{
-			int incoming_link_id = m_NodeIDMap[pLink->m_FromNodeID ]->m_IncomingLinkVector[incoming_link];
+			int incoming_link_id = m_NodeNoMap[pLink->m_FromNodeID ]->m_IncomingLinkVector[incoming_link];
 				
 			
 			//incoming ramp exits
@@ -132,9 +132,9 @@ void CTLiteDoc::IdentifyLinkGroupCode()
 		
 		}
 
-		for(int outgoing_link = 0; outgoing_link <  m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size(); outgoing_link++) // one outgoing link without considering u-turn
+		for(int outgoing_link = 0; outgoing_link <  m_NodeNoMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector.size(); outgoing_link++) // one outgoing link without considering u-turn
 		{
-			int outgoing_link_id = m_NodeIDMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector[outgoing_link];
+			int outgoing_link_id = m_NodeNoMap[pLink->m_ToNodeID ]->m_OutgoingLinkVector[outgoing_link];
 				if (m_LinkNotoLinkMap.find(outgoing_link_id)!= m_LinkNotoLinkMap.end() && m_LinkTypeMap[m_LinkNotoLinkMap[outgoing_link_id]->m_link_type].IsRamp ())
 				{
 				
@@ -380,9 +380,9 @@ void CTLiteDoc::OnSafetyplanningtoolsRun()
 			unsigned long ReversedLinkKey = GetLinkKey(pLink->m_ToNodeID, pLink->m_FromNodeID);
 
 			int reversed_link_id = 0;
-			if ( m_NodeIDtoLinkMap.find ( ReversedLinkKey) != m_NodeIDtoLinkMap.end())
+			if ( m_NodeNotoLinkMap.find ( ReversedLinkKey) != m_NodeNotoLinkMap.end())
 			{
-				  pReversedLink = m_NodeIDtoLinkMap[ReversedLinkKey];
+				  pReversedLink = m_NodeNotoLinkMap[ReversedLinkKey];
 			}
 
 	

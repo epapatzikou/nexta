@@ -40,6 +40,8 @@ public:
 	int m_SelectedFromNodeName;
 	int m_SelectedToNodeName;
 	BOOL m_ZoomToSelectedObject;
+	int m_SelectRowByUser;
+
 	CString m_TabText;
 
 	CImageList m_ImageList;

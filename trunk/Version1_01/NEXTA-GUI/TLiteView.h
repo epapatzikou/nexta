@@ -381,7 +381,7 @@ public:
 
 	bool m_bUpdateLinkAttributeBasedOnType;
 	bool bShowVehiclesWithIncompleteTrips;
-		Mustang m_ms;
+		MicroSimulatorInterface m_ms;
 		int m_msStatus;
 
 		void CreateDefaultJunction();
@@ -514,7 +514,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 
 		CTLiteDoc* pDoc = GetDocument();
 
-		DTANode * pNode = pDoc->m_NodeIDMap[NodeID];
+		DTANode * pNode = pDoc->m_NodeNoMap[NodeID];
 		
 
 		// update node's position
@@ -527,13 +527,13 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 		{
 
 			bool bConnected = false;
-			if((*iLink)->m_FromNodeID == pNode->m_NodeID )
+			if((*iLink)->m_FromNodeID == pNode->m_NodeNo )
 			{
 				(*iLink)->m_FromPoint = pNode->pt;
 				bConnected = true;
 			}
 
-			if((*iLink)->m_ToNodeID == pNode->m_NodeID )
+			if((*iLink)->m_ToNodeID == pNode->m_NodeNo )
 			{
 				(*iLink)->m_ToPoint = pNode->pt;
 				bConnected = true;
@@ -826,6 +826,7 @@ public:
 	afx_msg void OnTransitShowtransitaccessibility();
 	afx_msg void OnUpdateTransitShowtransitaccessibility(CCmdUI *pCmdUI);
 	afx_msg void OnTransitCalculatetransitaccesssibilityfromhere();
+	afx_msg void OnTransitOutputtransitaccesssibilityfromhere();
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

@@ -25,6 +25,8 @@ public:
 	afx_msg void OnBnClickedOk();
 	CTLiteDoc* m_pDoc;
 	int m_SelectTab;
+
+	int m_SelectRowByUser;
 	
 	int m_SelectedFromNodeName;
 	int m_SelectedToNodeName;

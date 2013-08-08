@@ -441,6 +441,9 @@ public:
 	double m_max_accessible_transit_time_in_min;
 
 	void FindAccessibleTripID(GDPoint pt, int timestamp_in_min);
+	
+	void PrintOutAccessibleMap(GDPoint pt, bool bAllLocations);
+
 	int FindClosestNode(double x, double y, double min_distance = 99999, int step_size = 1,double time_stamp_in_min = 9999);
 	int FindClosestZone(double x, double y, double min_distance = 99999, int step_size = 1);
 
@@ -479,7 +482,7 @@ public:
 			double distance = pow((cx*cx + cy*cy),0.5);
 			if( distance < min_distance)
 			{
-				SelectedNodeID = (*iNode)->m_NodeID ;
+				SelectedNodeID = (*iNode)->m_NodeNo ;
 				min_distance = distance;
 			}
 
@@ -992,7 +995,7 @@ public:
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
 
-	std::map<int, DTANode*> m_NodeIDMap;
+	std::map<int, DTANode*> m_NodeNoMap;
 	std::map<int, DTANode*> m_NodeNumberMap;
 
 	std::map<int, DTANode*> m_SubareaNodeIDMap;
@@ -1066,9 +1069,9 @@ public:
 	long m_NodeSizeSP;
 
 	std::map<int, int> m_VehicleType2PricingTypeMap;
-	std::map<int, int> m_NodeIDtoNumberMap;
-	std::map<int, int> m_NodeNumbertoIDMap;
-	std::map<int, int> m_NodeIDtoZoneNameMap;
+	std::map<int, int> m_NodeNotoNumberMap;
+	std::map<int, int> m_NodeNumbertoNodeNoMap;
+	std::map<int, int> m_NodeNotoZoneNameMap;
 
 	int m_SelectedLinkNo;
 	bool m_ZoomToSelectedObject;
@@ -1130,13 +1133,13 @@ public:
 		int FromNodeID =  -1;
 			if (m_NodeNumberMap.find(FromNodeNumber)!= m_NodeNumberMap.end())
 			{
-			FromNodeID = m_NodeNumberMap[FromNodeNumber]->m_NodeID ;
+			FromNodeID = m_NodeNumberMap[FromNodeNumber]->m_NodeNo ;
 			}
 
 		int ToNodeID = -1;
 			if (m_NodeNumberMap.find(ToNodeNumber)!= m_NodeNumberMap.end())
 			{
-			ToNodeID = m_NodeNumberMap[ToNodeNumber]->m_NodeID ;
+			ToNodeID = m_NodeNumberMap[ToNodeNumber]->m_NodeNo ;
 			}
 
 			if(FromNodeID>=0 && ToNodeID>=0)
@@ -1161,29 +1164,29 @@ public:
 		pLink = new DTALink(1);
 		pLink->m_AVISensorFlag = false;
 		pLink->m_LinkNo = (int)(m_LinkSet.size());
-		pLink->m_FromNodeNumber = m_NodeIDtoNumberMap[FromNodeID];
-		pLink->m_ToNodeNumber = m_NodeIDtoNumberMap[ToNodeID];
+		pLink->m_FromNodeNumber = m_NodeNotoNumberMap[FromNodeID];
+		pLink->m_ToNodeNumber = m_NodeNotoNumberMap[ToNodeID];
 		pLink->m_FromNodeID = FromNodeID;
 		pLink->m_ToNodeID= ToNodeID;
 
-		pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+		pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
-		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
+		m_NodeNoMap[FromNodeID ]->m_Connections+=1;
 
-		m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+		m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
 
-		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
+		m_NodeNoMap[ToNodeID ]->m_Connections+=1;
 
 		if( m_LinkTypeMap[pLink->m_link_type].IsFreeway () ||  m_LinkTypeMap[pLink->m_link_type].IsRamp  ())
 		{
-		m_NodeIDMap[pLink->m_FromNodeID ]->m_bConnectedToFreewayORRamp = true;
-		m_NodeIDMap[pLink->m_ToNodeID ]->m_bConnectedToFreewayORRamp = true;
+		m_NodeNoMap[pLink->m_FromNodeID ]->m_bConnectedToFreewayORRamp = true;
+		m_NodeNoMap[pLink->m_ToNodeID ]->m_bConnectedToFreewayORRamp = true;
 		}
 
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-		m_NodeIDtoLinkMap[LinkKey] = pLink;
+		m_NodeNotoLinkMap[LinkKey] = pLink;
 
 		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
@@ -1211,9 +1214,9 @@ public:
 		pLink->m_LaneCapacity  = m_DefaultCapacity;
 		pLink->m_link_type= m_DefaultLinkType;
 
-		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
-		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
-		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
+		m_NodeNoMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+		pLink->m_FromPoint = m_NodeNoMap[FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeNoMap[ToNodeID]->pt;
 
 	
 		if(bOffset)
@@ -1268,10 +1271,10 @@ public:
 	{
 		std::vector<DTALink*> OverlappingLinks;
 
-		if(m_NodeIDMap.find(ThisNodeID)== m_NodeIDMap.end())
+		if(m_NodeNoMap.find(ThisNodeID)== m_NodeNoMap.end())
 			return;
 
-		GDPoint p0 = m_NodeIDMap[ThisNodeID]->pt ;
+		GDPoint p0 = m_NodeNoMap[ThisNodeID]->pt ;
 
 		// step 1: find overlapping links
 
@@ -1332,35 +1335,35 @@ public:
 		pLink = new DTALink(1);
 		pLink->m_AVISensorFlag = false;
 		pLink->m_LinkNo = (int)(m_LinkSet.size());
-		pLink->m_FromNodeNumber = m_NodeIDtoNumberMap[FromNodeID];
-		pLink->m_ToNodeNumber = m_NodeIDtoNumberMap[ToNodeID];
+		pLink->m_FromNodeNumber = m_NodeNotoNumberMap[FromNodeID];
+		pLink->m_ToNodeNumber = m_NodeNotoNumberMap[ToNodeID];
 		pLink->m_FromNodeID = FromNodeID;
 		pLink->m_ToNodeID= ToNodeID;
 
-		if(m_NodeIDMap.find(FromNodeID) == m_NodeIDMap.end())
+		if(m_NodeNoMap.find(FromNodeID) == m_NodeNoMap.end())
 		{
 		
 		return;
 		}
 
-		if(m_NodeIDMap.find(ToNodeID) == m_NodeIDMap.end())
+		if(m_NodeNoMap.find(ToNodeID) == m_NodeNoMap.end())
 		{
 		
 		return;
 		}
-		pLink->m_FromPoint = m_NodeIDMap[pLink->m_FromNodeID]->pt;
-		pLink->m_ToPoint = m_NodeIDMap[pLink->m_ToNodeID]->pt;
+		pLink->m_FromPoint = m_NodeNoMap[pLink->m_FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeNoMap[pLink->m_ToNodeID]->pt;
 
-		m_NodeIDMap[FromNodeID ]->m_Connections+=1;
+		m_NodeNoMap[FromNodeID ]->m_Connections+=1;
 
-		m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+		m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
 
 
 
-		m_NodeIDMap[ToNodeID ]->m_Connections+=1;
+		m_NodeNoMap[ToNodeID ]->m_Connections+=1;
 
 		unsigned long LinkKey = GetLinkKey( pLink->m_FromNodeID, pLink->m_ToNodeID);
-		m_NodeIDtoLinkMap[LinkKey] = pLink;
+		m_NodeNotoLinkMap[LinkKey] = pLink;
 
 		__int64  LinkKey2 = GetLink64Key(pLink-> m_FromNodeNumber,pLink->m_ToNodeNumber);
 		m_NodeNumbertoLinkMap[LinkKey2] = pLink;
@@ -1385,9 +1388,9 @@ public:
 		pLink->m_LaneCapacity  = OverlappingLinks[i]->m_LaneCapacity;
 		pLink->m_link_type= OverlappingLinks[i]->m_link_type;
 
-		m_NodeIDMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
-		pLink->m_FromPoint = m_NodeIDMap[FromNodeID]->pt;
-		pLink->m_ToPoint = m_NodeIDMap[ToNodeID]->pt;
+		m_NodeNoMap[FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
+		pLink->m_FromPoint = m_NodeNoMap[FromNodeID]->pt;
+		pLink->m_ToPoint = m_NodeNoMap[ToNodeID]->pt;
 
 
 		if(bOffset)
@@ -1456,11 +1459,11 @@ public:
 		DTANode* pNode = new DTANode;
 		pNode->pt = newpt;
 		pNode->m_LayerNo = LayerNo;
-		pNode->m_NodeID = GetUnusedNodeID();
+		pNode->m_NodeNo = GetUnusedNodeID();
 
-		TRACE("Adding Node ID: %d\n", pNode->m_NodeID );
+		TRACE("Adding Node ID: %d\n", pNode->m_NodeNo );
 
-		if(pNode->m_NodeID ==31)
+		if(pNode->m_NodeNo ==31)
 		{
 		TRACE("");
 		}
@@ -1478,14 +1481,14 @@ public:
 		pNode->m_ZoneID = 0;
 		pNode->m_bZoneActivityLocationFlag = ActivityLocation;
 		m_NodeSet.push_back(pNode);
-		m_NodeIDMap[pNode->m_NodeID] = pNode;
+		m_NodeNoMap[pNode->m_NodeNo] = pNode;
 		m_NodeNumberMap[pNode->m_NodeNumber] = pNode;
-		m_NodeIDtoNumberMap[pNode->m_NodeID ] = pNode->m_NodeNumber;
-		m_NodeNumbertoIDMap[pNode->m_NodeNumber] = pNode->m_NodeID;
+		m_NodeNotoNumberMap[pNode->m_NodeNo ] = pNode->m_NodeNumber;
+		m_NodeNumbertoNodeNoMap[pNode->m_NodeNumber] = pNode->m_NodeNo;
 
 		if(bSplitLink)
 		{
-		SplitLinksForOverlappingNodeOnLinks(pNode->m_NodeID,false,false);
+		SplitLinksForOverlappingNodeOnLinks(pNode->m_NodeNo,false,false);
 		}
 		return pNode;
 	}
@@ -1496,17 +1499,17 @@ public:
 
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeID  == NodeID)
+			if((*iNode)->m_Connections  == 0 && (*iNode)->m_NodeNo  == NodeID)
 			{
 
 				int ZoneID = (*iNode)->m_ZoneID;
 
 				m_ZoneMap[ZoneID].RemoveNodeActivityMode ((*iNode)->m_NodeNumber);
 				
-				m_NodeIDMap[(*iNode)->m_NodeID ] = NULL;
-				m_NodeIDMap.erase ((*iNode)->m_NodeID);
+				m_NodeNoMap[(*iNode)->m_NodeNo ] = NULL;
+				m_NodeNoMap.erase ((*iNode)->m_NodeNo);
 	
-				m_NodeNumbertoIDMap[(*iNode)->m_NodeNumber  ] = -1;
+				m_NodeNumbertoNodeNoMap[(*iNode)->m_NodeNumber  ] = -1;
 
 				m_NodeSet.erase  (iNode);
 				return true;
@@ -1522,22 +1525,22 @@ public:
 		int ToNodeID   = pLink->m_ToNodeID ;
 		unsigned long LinkKey = GetLinkKey( FromNodeID , ToNodeID );
 		
-		m_NodeIDtoLinkMap.erase (LinkKey);  
-		m_NodeIDtoLinkMap[LinkKey] =NULL;
+		m_NodeNotoLinkMap.erase (LinkKey);  
+		m_NodeNotoLinkMap[LinkKey] =NULL;
 
-		m_NodeIDMap[FromNodeID ]->m_Connections-=1;
+		m_NodeNoMap[FromNodeID ]->m_Connections-=1;
 
-		for(int ii = 0; ii< m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.size();ii++)
+		for(int ii = 0; ii< m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.size();ii++)
 		{
-			if(m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector[ii] == pLink->m_LinkNo)
+			if(m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector[ii] == pLink->m_LinkNo)
 			{
-				m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.erase(m_NodeIDMap[FromNodeID ]->m_OutgoingLinkVector.begin()+ii);
+				m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.erase(m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.begin()+ii);
 
 				break;
 			}
 		}
 
-		m_NodeIDMap[ToNodeID ]->m_Connections-=1;
+		m_NodeNoMap[ToNodeID ]->m_Connections-=1;
 		m_LinkNoMap.erase (pLink->m_LinkNo);  
 
 		m_LinkNoMap[pLink->m_LinkNo]  = NULL;
@@ -1607,8 +1610,8 @@ public:
 
 		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			if(NewNodeID <= (*iNode)->m_NodeID)
-				NewNodeID = (*iNode)->m_NodeID +1;
+			if(NewNodeID <= (*iNode)->m_NodeNo)
+				NewNodeID = (*iNode)->m_NodeNo +1;
 		}
 
 		return NewNodeID;
@@ -1711,7 +1714,7 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	std::map<unsigned long, DTALink*> m_NodeIDtoLinkMap;
+	std::map<unsigned long, DTALink*> m_NodeNotoLinkMap;
 	std::map<__int64, DTALink*> m_NodeNumbertoLinkMap;
 
 	std::map<long, DTALink*> m_LinkNotoLinkMap;
@@ -1820,7 +1823,7 @@ public:
 			}
 		}
 		if(pNode != NULL)
-			return pNode->m_NodeID;
+			return pNode->m_NodeNo;
 		else
 			return NULL;
 	}
@@ -1906,14 +1909,14 @@ public:
 
 	//DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	//{
-	//	int FromNodeID = m_NodeNumbertoIDMap[FromNodeNumber];
-	//	int ToNodeID = m_NodeNumbertoIDMap[ToNodeNumber];
+	//	int FromNodeID = m_NodeNumbertoNodeNoMap[FromNodeNumber];
+	//	int ToNodeID = m_NodeNumbertoNodeNoMap[ToNodeNumber];
 
 	//	unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
 
-	//	map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeIDtoLinkMap.find(LinkKey);
+	//	map <unsigned long, DTALink*> :: const_iterator m_Iter = m_NodeNotoLinkMap.find(LinkKey);
 
-	//	if(m_Iter == m_NodeIDtoLinkMap.end( ) && bWarmingFlag)
+	//	if(m_Iter == m_NodeNotoLinkMap.end( ) && bWarmingFlag)
 	//	{
 	//		CString msg;
 
@@ -1927,7 +1930,7 @@ public:
 	//		AfxMessageBox(msg);
 	//		return NULL;
 	//	}
-	//	return m_NodeIDtoLinkMap[LinkKey];
+	//	return m_NodeNotoLinkMap[LinkKey];
 	//}
 
 	void ClearNetworkData();
@@ -1936,8 +1939,8 @@ public:
 	{
 
 		unsigned long LinkKey = GetLinkKey( FromNodeID, ToNodeID);
-		if(m_NodeIDtoLinkMap.find(LinkKey)!=m_NodeIDtoLinkMap.end())
-			return m_NodeIDtoLinkMap[LinkKey];
+		if(m_NodeNotoLinkMap.find(LinkKey)!=m_NodeNotoLinkMap.end())
+			return m_NodeNotoLinkMap[LinkKey];
 		else
 			return NULL;
 	}
@@ -2004,7 +2007,7 @@ public:
 	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
-	void ConstructandexportVISSIMdata();
+	void ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber);
 	void ReadSynchroUniversalDataFiles();
 
 	bool ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName);
@@ -2415,6 +2418,7 @@ public:
 	afx_msg void OnFileRemovenonessentialfilestoreducefoldersize();
 	afx_msg void OnMoeViewoddemandestimationsummaryplotHourly();
 	afx_msg void OnMoeViewoddemandestimationsummaryplotLaneHourly();
+	afx_msg void OnTransitOutputtransitaccesssibilityfromallactivitylocations();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

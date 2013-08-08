@@ -1,4 +1,4 @@
-//  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn
+//  Portions Copyright 2010 Peng @ pdu@bjtu.edu.cn; xzhou99@gmail.com
 //
 
 //   If you help write or modify the code, please also list your names here.
@@ -51,13 +51,13 @@
 #include "VISSIM_Export.h"
 
 // This function is the interface with the main program
-void CTLiteDoc::ConstructandexportVISSIMdata()
+void CTLiteDoc::ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber)
 {
-
 	CWaitCursor cursor;
-	Mustang ms(this);
+	MicroSimulatorInterface ms(this);
 	CString strFolder  = m_ProjectDirectory;
 	ms.m_strFolder = strFolder;
+	ms.m_bUseSequentialNodeNumber = bUseSequentialNodeNumber;
 	CString strNodeCSV = strFolder + _T("input_node.csv");;
 	CString strLinkCSV = strFolder + _T("input_link.csv");
 	CString strLinkTypeCSV = strFolder + _T("input_link_type.csv");
@@ -65,8 +65,8 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 	CString strANMRoutesFile = strFolder + _T("simulation.anmRoutes");
 	CString strLogFile = strFolder + _T("msLog.log");
 	CString strZoneCSV = strFolder + _T("input_zone.csv");
-	CString strODCSV = strFolder + _T("output_od_flow.csv");
-	CString strPathCSV = strFolder + _T("output_path_flow.csv");
+	CString strODCSV = strFolder + _T("AMS_od_flow.csv");
+	CString strPathCSV = strFolder + _T("AMS_path_flow.csv");
 
 	std::string strNodeFileName,strLinkFileName,strLinkTypeFileName,strANMFileName,strODFileName,strPathFileName,strANMRoutesFileName,strLogFileName,strZoneFileName;
 	USES_CONVERSION;
@@ -101,6 +101,7 @@ void CTLiteDoc::ConstructandexportVISSIMdata()
 	ms.CreateANMRoutesFile(strANMRoutesFileName);
 	ms.CloseLogFile();
 
+	AfxMessageBox("Files simulation.anm and simulation.anmRoutes have been generated.\n", MB_ICONINFORMATION);
 	OnToolsProjectfolder();	
 }
 ////////////////////////////////////////////////////////
@@ -139,16 +140,18 @@ PhaseRecord::PhaseRecord(int PhaseNo, CString Name,int PhaseType, int Angle, int
 ////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////
-//		realization of Mustang
+//		realization of MicroSimulatorInterface
 ///////////////////////////////////////////////////////////////////////////////////////
-Mustang::Mustang()
+MicroSimulatorInterface::MicroSimulatorInterface()
 {
 }
-Mustang::Mustang(CTLiteDoc* pDoc)
+MicroSimulatorInterface::MicroSimulatorInterface(CTLiteDoc* pDoc)
 {
 	m_pDoc = pDoc;
+	m_bUseSequentialNodeNumber = false;
+
 }
-Mustang::~Mustang()
+MicroSimulatorInterface::~MicroSimulatorInterface()
 {
 	std::list<MNode*>::iterator iNode;
 	for (iNode = m_NodeList.begin(); iNode != m_NodeList.end(); iNode++)
@@ -247,7 +250,7 @@ MPath::MPath()
 MPath::~MPath()
 {
 }
-CString Mustang::Minutes2PTString(int nMin)
+CString MicroSimulatorInterface::Minutes2PTString(int nMin)
 {
 	CString	szRt = _T("");
 	int mm = nMin / 60;
@@ -266,26 +269,26 @@ MLaneTurn::~MLaneTurn()
 }
 MDemand::MDemand(){}
 MDemand::~MDemand(){}
-float Mustang::L2X(float longitude,float latitude)
+float MicroSimulatorInterface::L2X(float longitude,float latitude)
 {
 	float x = 0.0;
 	x = (longitude - refLongi) * refScale * cos(latitude / 180);
 	return x;
 }
-float Mustang::L2Y(float latitude)
+float MicroSimulatorInterface::L2Y(float latitude)
 {
 	float y = 0.0;
 	y = (latitude - refLati) * refScale;
 	return y;
 }
-bool Mustang::CloseLogFile()
+bool MicroSimulatorInterface::CloseLogFile()
 {
 	if (m_logFile.is_open())
 		m_logFile.close();
 	return true;
 
 }
-bool Mustang::OpenLogFile(std::string strLogFileName)
+bool MicroSimulatorInterface::OpenLogFile(std::string strLogFileName)
 {
 	m_logFile.open (strLogFileName.c_str(), ios::out);
 	if (m_logFile.is_open())
@@ -302,7 +305,7 @@ bool Mustang::OpenLogFile(std::string strLogFileName)
 	}
 
 }
-bool Mustang::ReadInputNodeCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputNodeCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputNodeCSV function called!"<<endl;
 	CCSVParser parser;
@@ -321,6 +324,13 @@ bool Mustang::ReadInputNodeCSV(std::string strFileName)
 			if(parser.GetValueByFieldName("node_id",node_id) == false)
 				break;
 
+
+			m_OriginalNodeNumbertoNodeNumberMap[node_id] = i+1;
+
+			if(m_bUseSequentialNodeNumber)  // replace the original node number by the sequential node no. 
+			{
+						node_id = i+1;
+			}
 			if(!parser.GetValueByFieldName("name",name))
 				name = "";
 
@@ -367,12 +377,12 @@ bool Mustang::ReadInputNodeCSV(std::string strFileName)
 			pNode->pt.y = L2Y(Y);
 
 			pNode->m_NodeNumber = node_id;
-			pNode->m_NodeID = i;
+			pNode->m_NodeNo = i;
 			pNode->m_ZoneID = 0;
 			m_NodeList.push_back(pNode);
-			m_NodeIDMap[i] = pNode;
-			m_NodeIDtoNumberMap[i] = node_id;
-			m_NodeNumbertoIDMap[node_id] = i;
+			m_NodeNoMap[i] = pNode;
+			m_NodeNotoNumberMap[i] = node_id;
+			m_NodeNumbertoNodeNoMap[node_id] = i;
 			i++;
 
 			//			cout << "node = " << node << ", X= " << X << ", Y = " << Y << endl;
@@ -390,7 +400,7 @@ bool Mustang::ReadInputNodeCSV(std::string strFileName)
 		return false;
 	}
 }
-bool Mustang::ReadInputLinkCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputLinkCSV(std::string strFileName)
 {
 	CCSVParser parser;
 	CString error_message;
@@ -431,8 +441,25 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 				AfxMessageBox("Field to_node_id has not been defined in file input_link.csv. Please check.");
 				break;
 			}
-			if (m_NodeNumbertoIDMap.find(from_node_id)==m_NodeNumbertoIDMap.end() ||
-				m_NodeNumbertoIDMap.find(to_node_id)	==m_NodeNumbertoIDMap.end() )
+
+
+			if(m_bUseSequentialNodeNumber  )  // replace the original node number by the sequential node no. 
+			{
+				if (m_OriginalNodeNumbertoNodeNumberMap.find(from_node_id)==m_OriginalNodeNumbertoNodeNumberMap.end() ||
+					m_OriginalNodeNumbertoNodeNumberMap.find(to_node_id)	==m_OriginalNodeNumbertoNodeNumberMap.end() )
+				{
+					AfxMessageBox("Either from_node or to_node_id is not found in node list. Please check.");
+					break;
+				}
+
+
+				from_node_id = m_OriginalNodeNumbertoNodeNumberMap[from_node_id];
+				to_node_id = m_OriginalNodeNumbertoNodeNumberMap[to_node_id];
+			
+			}
+
+			if (m_NodeNumbertoNodeNoMap.find(from_node_id)==m_NodeNumbertoNodeNoMap.end() ||
+				m_NodeNumbertoNodeNoMap.find(to_node_id)	==m_NodeNumbertoNodeNoMap.end() )
 			{
 				AfxMessageBox("Either from_node or to_node_id is not found in node list. Please check.");
 				break;
@@ -457,11 +484,11 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 			{
 				// no geometry information
 				CCoordinate cc_from, cc_to; 
-				cc_from.X = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->ptLL.x;
-				cc_from.Y = m_NodeIDMap[m_NodeNumbertoIDMap[from_node_id]]->ptLL.y;
+				cc_from.X = m_NodeNoMap[m_NodeNumbertoNodeNoMap[from_node_id]]->ptLL.x;
+				cc_from.Y = m_NodeNoMap[m_NodeNumbertoNodeNoMap[from_node_id]]->ptLL.y;
 
-				cc_to.X = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->ptLL.x;
-				cc_to.Y = m_NodeIDMap[m_NodeNumbertoIDMap[to_node_id]]->ptLL.y;
+				cc_to.X = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]]->ptLL.x;
+				cc_to.Y = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]]->ptLL.y;
 
 				CoordinateVector.push_back(cc_from);
 				CoordinateVector.push_back(cc_to);
@@ -484,8 +511,8 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 			pLink->m_LinkID = link_id;
 			pLink->m_FromNodeNumber = from_node_id;
 			pLink->m_ToNodeNumber = to_node_id;
-			pLink->m_FromNodeID = m_NodeNumbertoIDMap[from_node_id];
-			pLink->m_ToNodeID= m_NodeNumbertoIDMap[to_node_id];
+			pLink->m_FromNodeID = m_NodeNumbertoNodeNoMap[from_node_id];
+			pLink->m_ToNodeID= m_NodeNumbertoNodeNoMap[to_node_id];
 
 			for(int si = 0; si < CoordinateVector.size(); si++)
 			{
@@ -513,15 +540,15 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 			pLink->m_ReverseLinkID		= reverse_link_id;
 
 			//calculate angles
-			pLink->nInAngle = m_pDoc->Find_P2P_Angle( m_NodeIDMap[pLink->m_FromNodeID]->pt,m_NodeIDMap[pLink->m_ToNodeID]->pt);
-			pLink->nOutAngle = m_pDoc->Find_P2P_Angle( m_NodeIDMap[pLink->m_ToNodeID]->pt,m_NodeIDMap[pLink->m_FromNodeID]->pt);
+			pLink->nInAngle = m_pDoc->Find_P2P_Angle( m_NodeNoMap[pLink->m_FromNodeID]->pt,m_NodeNoMap[pLink->m_ToNodeID]->pt);
+			pLink->nOutAngle = m_pDoc->Find_P2P_Angle( m_NodeNoMap[pLink->m_ToNodeID]->pt,m_NodeNoMap[pLink->m_FromNodeID]->pt);
 
-			m_NodeIDMap[pLink->m_FromNodeID]->AddOutLink(pLink);
-			m_NodeIDMap[pLink->m_ToNodeID]->AddInLink(pLink);
-			//m_NodeIDMap[pLink->m_FromNodeID]->outLinks.push_back(pLink);
-			//m_NodeIDMap[pLink->m_ToNodeID]->inLinks.push_back(pLink);
-			//m_NodeIDMap[pLink->m_FromNodeID]->outLinkMap[pLink->m_FromNodeApproach] = pLink;
-			//m_NodeIDMap[pLink->m_ToNodeID]->inLinkMap[pLink->m_ToNodeApproach] = pLink;
+			m_NodeNoMap[pLink->m_FromNodeID]->AddOutLink(pLink);
+			m_NodeNoMap[pLink->m_ToNodeID]->AddInLink(pLink);
+			//m_NodeNoMap[pLink->m_FromNodeID]->outLinks.push_back(pLink);
+			//m_NodeNoMap[pLink->m_ToNodeID]->inLinks.push_back(pLink);
+			//m_NodeNoMap[pLink->m_FromNodeID]->outLinkMap[pLink->m_FromNodeApproach] = pLink;
+			//m_NodeNoMap[pLink->m_ToNodeID]->inLinkMap[pLink->m_ToNodeApproach] = pLink;
 
 			//m_LinkNotoLinkMap[i] = pLink;
 			i++;
@@ -535,7 +562,7 @@ bool Mustang::ReadInputLinkCSV(std::string strFileName)
 		return false;
 	}
 }
-bool Mustang::CheckDuplicateLink(int link_id)
+bool MicroSimulatorInterface::CheckDuplicateLink(int link_id)
 {
 	std::list<MLink*>::iterator iLink;
 	for(iLink = m_LinkList.begin();iLink != m_LinkList.end();iLink++)
@@ -545,13 +572,13 @@ bool Mustang::CheckDuplicateLink(int link_id)
 	}
 	return true;
 }
-void Mustang::DumpNodeLink2Log()
+void MicroSimulatorInterface::DumpNodeLink2Log()
 {
 	std::list<MNode*>::iterator iNode;
 	for(iNode=m_NodeList.begin();iNode!=m_NodeList.end();iNode++)
 	{
 		MNode *pNode = (*iNode);
-		m_logFile<<"NodeID:"<<pNode->m_NodeID<<" NodeNumber:"<<pNode->m_NodeNumber<<" ProcsType: "<<pNode->m_nProcessType<<" inLink "<<pNode->inLinks.size()<<" outLink "<<pNode->outLinks.size()<<endl;
+		m_logFile<<"NodeID:"<<pNode->m_NodeNo<<" NodeNumber:"<<pNode->m_NodeNumber<<" ProcsType: "<<pNode->m_nProcessType<<" inLink "<<pNode->inLinks.size()<<" outLink "<<pNode->outLinks.size()<<endl;
 		std::vector<MLink*>::iterator iLink;
 		for(iLink=pNode->inLinks.begin();iLink!=pNode->inLinks.end();iLink++)
 			m_logFile<<"inLinkID: "<<(*iLink)->m_LinkID<<" toAppr: "<<(*iLink)->m_ToNodeApproach<<endl;
@@ -648,7 +675,7 @@ int MLink::GetLaneCount(int nInOut, int RTL /* = 0*/)
 
 	return nCount;
 }
-int Mustang::GetMLinkApproach(std::string dir,int* nAppr)
+int MicroSimulatorInterface::GetMLinkApproach(std::string dir,int* nAppr)
 {
 	std::string nn("N");
 	std::string ee("E");
@@ -668,7 +695,7 @@ int Mustang::GetMLinkApproach(std::string dir,int* nAppr)
 
 	return *nAppr;
 }
-int Mustang::GetNeighborApproach(int la, int RTL,int *appr)
+int MicroSimulatorInterface::GetNeighborApproach(int la, int RTL,int *appr)
 {
 	int neighbor=0;
 	switch (RTL)
@@ -700,11 +727,11 @@ int Mustang::GetNeighborApproach(int la, int RTL,int *appr)
 	return neighbor;
 }
 
-bool Mustang::ReadInputLaneCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputLaneCSV(std::string strFileName)
 {
 	return true;
 }
-bool Mustang::ReadInputLinkTypeCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputLinkTypeCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputLinkTypeCSV function called!"<<endl;
 	m_szLinkTypes = _T("");     // This string is reserved for attributes of LINKTYPES. The following 3 are in groups
@@ -741,7 +768,7 @@ bool Mustang::ReadInputLinkTypeCSV(std::string strFileName)
 	}
 	return true;
 }
-bool Mustang::ReadInputDemandCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputDemandCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputDemandCSV function called!"<<endl;
 	CCSVParser parser;
@@ -804,7 +831,7 @@ bool Mustang::ReadInputDemandCSV(std::string strFileName)
 		return false;
 	}
 }
-void Mustang::ReadInputZoneCentroid(std::string strFileName)
+void MicroSimulatorInterface::ReadInputZoneCentroid(std::string strFileName)
 {
 	m_logFile<< "ReadInputZoneCentroid function called!"<<endl;
 	CCSVParser parser;
@@ -844,7 +871,7 @@ void Mustang::ReadInputZoneCentroid(std::string strFileName)
 	m_logFile<< "ReadInputZoneCentroid function ended!"<<endl;
 	return ;
 }
-GDPoint Mustang::GetZoneCentroid(int nZoneID)
+GDPoint MicroSimulatorInterface::GetZoneCentroid(int nZoneID)
 {
 	GDPoint pt;
 	pt.x=0;pt.y=0;
@@ -859,7 +886,7 @@ GDPoint Mustang::GetZoneCentroid(int nZoneID)
 	}
 	return pt;
 }
-bool Mustang::ReadInputZoneCSV2(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputZoneCSV2(std::string strFileName)
 {
 	// 读入zone后，判断zone中节点的类型，剔除！
 	// 一种是纯虚拟点，其所衔接的link均应为(connector)，该node应从物理node中剔除，同时所有衔接的物理node均为该zone包含的点
@@ -881,6 +908,7 @@ bool Mustang::ReadInputZoneCSV2(std::string strFileName)
 			if(parser.GetValueByFieldName("node_id",node_id) == false)
 				break;
 
+	
 			if(parser.GetValueByFieldName("zone_id",zone_id) == false)
 				break;
 
@@ -891,7 +919,7 @@ bool Mustang::ReadInputZoneCSV2(std::string strFileName)
 				old_zone_id = zone_id;
 				m_ZoneVector.push_back(pZone);
 				i++;
-				MNode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_id]];
+				MNode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_id]];
 				if (!pNode)
 				{
 					CString strError;
@@ -910,7 +938,7 @@ bool Mustang::ReadInputZoneCSV2(std::string strFileName)
 			}
 			else
 			{
-				MNode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_id]];
+				MNode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_id]];
 				if (!pNode)
 				{
 					CString strError;
@@ -939,7 +967,7 @@ bool Mustang::ReadInputZoneCSV2(std::string strFileName)
 	}
 }
 
-bool Mustang::ReadInputZoneCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputActivityLocationCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputZoneCSV function called!"<<endl;
 	CCSVParser parser;
@@ -956,6 +984,19 @@ bool Mustang::ReadInputZoneCSV(std::string strFileName)
 
 			if(parser.GetValueByFieldName("node_id",node_id) == false)
 				break;
+			
+			
+			if(m_bUseSequentialNodeNumber  )  // replace the original node number by the sequential node no. 
+			{
+				if (m_OriginalNodeNumbertoNodeNumberMap.find(node_id)==m_OriginalNodeNumbertoNodeNumberMap.end())
+				{
+					break;
+				}
+
+
+				node_id = m_OriginalNodeNumbertoNodeNumberMap[node_id];
+			}
+			
 
 			if(parser.GetValueByFieldName("zone_id",zone_id) == false)
 				break;
@@ -967,7 +1008,7 @@ bool Mustang::ReadInputZoneCSV(std::string strFileName)
 				old_zone_id = zone_id;
 				m_ZoneVector.push_back(pZone);
 				i++;
-				MNode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_id]];
+				MNode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_id]];
 				if (!pNode)
 				{
 					CString strError;
@@ -986,7 +1027,7 @@ bool Mustang::ReadInputZoneCSV(std::string strFileName)
 			}
 			else
 			{
-				MNode* pNode = m_NodeIDMap[m_NodeNumbertoIDMap[node_id]];
+				MNode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[node_id]];
 				if (!pNode)
 				{
 					CString strError;
@@ -1014,7 +1055,7 @@ bool Mustang::ReadInputZoneCSV(std::string strFileName)
 		return false;
 	}
 }
-bool Mustang::ReadInputSignalCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadInputSignalCSV(std::string strFileName)
 {
 	m_logFile<< "ReadInputSignalCSV function called!"<<endl;
 	CCSVParser parser;
@@ -1075,12 +1116,12 @@ bool Mustang::ReadInputSignalCSV(std::string strFileName)
 	m_logFile<<strLine;
 	return true;
 }
-int  Mustang::GetSCNO(int nNodeNumber)
+int  MicroSimulatorInterface::GetSCNO(int nNodeNumber)
 {
 	int n = 9133;
 	return n;
 }
-int  Mustang::GetSGNO(int nNodeNumber, int appr, int RTL)
+int  MicroSimulatorInterface::GetSGNO(int nNodeNumber, int appr, int RTL)
 {
 	//int		SG_NORTH_RIGHT	=1;
 	//int		SG_NORTH_THROUGH=1;
@@ -1112,7 +1153,7 @@ int  Mustang::GetSGNO(int nNodeNumber, int appr, int RTL)
 	}
 	return SigGroupNo;
 }
-bool Mustang::ClassifyNodes(void)
+bool MicroSimulatorInterface::ClassifyNodes(void)
 {
 	m_logFile<< "ClassifyNodes function called!"<<endl;
 	// classify node types
@@ -1212,7 +1253,7 @@ bool Mustang::ClassifyNodes(void)
 	m_logFile<< strMsg<<endl;
 	return true;
 }
-bool Mustang::CreateMovement(void)
+bool MicroSimulatorInterface::CreateMovement(void)
 {
 	std::list<MNode*>::iterator iNode;
 	MNode* pNode;
@@ -1260,7 +1301,7 @@ bool Mustang::CreateMovement(void)
 	m_logFile<< strMsg<<endl;
 	return true;
 }
-void Mustang::CreateSignal(void)
+void MicroSimulatorInterface::CreateSignal(void)
 {
 	std::list<MNode*>::iterator iNode;
 	MNode* pNode;
@@ -1349,7 +1390,7 @@ void Mustang::CreateSignal(void)
 		}
 	}
 }
-bool Mustang::CreateDefaultLanes(void)
+bool MicroSimulatorInterface::CreateDefaultLanes(void)
 {
 	// create by default leftturn pocket for standard crossing and T junction
 	std::list<MNode*>::iterator iNode;
@@ -1364,7 +1405,7 @@ bool Mustang::CreateDefaultLanes(void)
 	for (iNode = m_NodeList.begin(); iNode != m_NodeList.end(); iNode++)
 	{
 		pNode = (*iNode);
-		//if (pNode->m_NodeID == 27 || pNode->m_NodeID == 38)
+		//if (pNode->m_NodeNo == 27 || pNode->m_NodeNo == 38)
 		//{
 		//	int abc;
 		//	abc = 1 * 200;
@@ -1380,24 +1421,24 @@ bool Mustang::CreateDefaultLanes(void)
 					pLink->inLanes.push_back(pLane);
 					pLane->m_Index = i;
 					pLane->m_LinkID = pLink->m_LinkID;
-					pLane->m_NodeID = pNode->m_NodeID;
+					pLane->m_NodeNo = pNode->m_NodeNo;
 					pLane->through = 1;
 					pLane->m_PocketLength = 0.0;
 					pLane->leftTurn = 0;
 					pLane->rightTurn = (1==i)?1:0; // 第一条lane准右转
-					m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+					m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 						<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 				}
 				pLane = new MLane(); // extra leftturn pocket
 				pLink->inLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = pLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 0;
 				pLane->m_PocketLength = 15.0;
 				pLane->leftTurn = 1;
 				pLane->rightTurn = 0; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 			for( iLink = pNode->outLinks.begin(); iLink != pNode->outLinks.end(); iLink++)// out lane
@@ -1409,12 +1450,12 @@ bool Mustang::CreateDefaultLanes(void)
 					pLink->outLanes.push_back(pLane);
 					pLane->m_Index = i;
 					pLane->m_LinkID = pLink->m_LinkID;
-					pLane->m_NodeID = pNode->m_NodeID;
+					pLane->m_NodeNo = pNode->m_NodeNo;
 					pLane->through = 1;         
 					pLane->m_PocketLength = 0.0;
 					pLane->leftTurn = 1;
 					pLane->rightTurn = 1; 
-					m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+					m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 						<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 				}
 			}
@@ -1447,24 +1488,24 @@ bool Mustang::CreateDefaultLanes(void)
 				piBLink->inLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = piBLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 0;
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 0;
 				pLane->rightTurn =1; // 第一条lane准右转
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 			pLane = new MLane(); // extra leftturn pocket
 			piBLink->inLanes.push_back(pLane);
 			pLane->m_Index = i;
 			pLane->m_LinkID = piBLink->m_LinkID;
-			pLane->m_NodeID = pNode->m_NodeID;
+			pLane->m_NodeNo = pNode->m_NodeNo;
 			pLane->through = 0;
 			pLane->m_PocketLength = 15.0;
 			pLane->leftTurn = 1;
 			pLane->rightTurn = 0; 
-			m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+			m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 				<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			for(i=1;i<=poBLink->m_NumberOfLanes;i++)// branch out
 			{
@@ -1472,12 +1513,12 @@ bool Mustang::CreateDefaultLanes(void)
 				poBLink->outLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = poBLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 1;         
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 1;
 				pLane->rightTurn = 1; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 
@@ -1487,24 +1528,24 @@ bool Mustang::CreateDefaultLanes(void)
 				piRLink->inLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = piRLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 1;
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 0;
 				pLane->rightTurn =0; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 			pLane = new MLane(); // extra leftturn pocket
 			piRLink->inLanes.push_back(pLane);
 			pLane->m_Index = i;
 			pLane->m_LinkID = piRLink->m_LinkID;
-			pLane->m_NodeID = pNode->m_NodeID;
+			pLane->m_NodeNo = pNode->m_NodeNo;
 			pLane->through = 0;
 			pLane->m_PocketLength = 15.0;
 			pLane->leftTurn = 1;
 			pLane->rightTurn = 0; 
-			m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+			m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 				<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 
 			for(i=1;i<=poRLink->m_NumberOfLanes;i++)// right out
@@ -1513,12 +1554,12 @@ bool Mustang::CreateDefaultLanes(void)
 				poRLink->outLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = poRLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 1;         
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 1;
 				pLane->rightTurn = 1; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}	
 
@@ -1528,12 +1569,12 @@ bool Mustang::CreateDefaultLanes(void)
 				piLLink->inLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = piLLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 1;
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 0;
 				pLane->rightTurn =(1==i)?1:0; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] in, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}
 			for(i=1;i<=poLLink->m_NumberOfLanes;i++)// right out
@@ -1542,12 +1583,12 @@ bool Mustang::CreateDefaultLanes(void)
 				poLLink->outLanes.push_back(pLane);
 				pLane->m_Index = i;
 				pLane->m_LinkID = poLLink->m_LinkID;
-				pLane->m_NodeID = pNode->m_NodeID;
+				pLane->m_NodeNo = pNode->m_NodeNo;
 				pLane->through = 1;         
 				pLane->m_PocketLength = 0.0;
 				pLane->leftTurn = 1;
 				pLane->rightTurn = 1; 
-				m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+				m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 					<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 			}	
 		}
@@ -1562,12 +1603,12 @@ bool Mustang::CreateDefaultLanes(void)
 					pLink->inLanes.push_back(pLane);
 					pLane->m_Index = i;
 					pLane->m_LinkID = pLink->m_LinkID;
-					pLane->m_NodeID = pNode->m_NodeID;
+					pLane->m_NodeNo = pNode->m_NodeNo;
 					pLane->through = 1;
 					pLane->m_PocketLength = 0.0;
 					pLane->leftTurn = (i==pLink->m_NumberOfLanes)?1:0; //最后一条准左转
 					pLane->rightTurn = (1==i)?1:0; // 第一条lane准右转
-					m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+					m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 						<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 				}
 			}
@@ -1580,12 +1621,12 @@ bool Mustang::CreateDefaultLanes(void)
 					pLink->outLanes.push_back(pLane);
 					pLane->m_Index = i;
 					pLane->m_LinkID = pLink->m_LinkID;
-					pLane->m_NodeID = pNode->m_NodeID;
+					pLane->m_NodeNo = pNode->m_NodeNo;
 					pLane->through = 0;
 					pLane->m_PocketLength = 0.0;
 					pLane->leftTurn = 0; 
 					pLane->rightTurn = 0; 
-					m_logFile<<"Lane created: NodeNumber["<<m_NodeIDtoNumberMap[pLane->m_NodeID]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
+					m_logFile<<"Lane created: NodeNumber["<<m_NodeNotoNumberMap[pLane->m_NodeNo]<<"] out, linkID: ["<<pLane->m_LinkID<<"] index: "<<pLane->m_Index
 						<<" RTL ["<<pLane->rightTurn<<","<<pLane->through<<","<<pLane->leftTurn<<"] pocket: "<<pLane->m_PocketLength<<endl;
 				}
 			}
@@ -1594,7 +1635,7 @@ bool Mustang::CreateDefaultLanes(void)
 
 	return true;
 }
-bool Mustang::ProcessLanes(void)
+bool MicroSimulatorInterface::ProcessLanes(void)
 {
 	// 生成所有laneTurn，标准十字路口和T路口同时生成信号
 	// inLinks的循环；outLinks的循环；根据方向判断RTL、如为u turn则continue; new一个turn；同时判断phase，简易和NEMA
@@ -1965,7 +2006,7 @@ bool Mustang::ProcessLanes(void)
 	} // end of for node list
 	return true;
 }
-bool Mustang::CreateANMFile2(std::string strFileName)
+bool MicroSimulatorInterface::CreateANMFile2(std::string strFileName)
 {
 	CString fromTime,toTime;
 
@@ -2007,7 +2048,7 @@ bool Mustang::CreateANMFile2(std::string strFileName)
 	m_rf.close();
 	return true;
 }
-bool Mustang::WriteVehTypes()
+bool MicroSimulatorInterface::WriteVehTypes()
 {	
 	CString strVTCSV = m_strFolder + _T("ms_vehtypes.csv");
 	std::string strFileName;
@@ -2044,7 +2085,7 @@ bool Mustang::WriteVehTypes()
 		return false;
 	}
 }
-bool Mustang::WriteVehClasses()
+bool MicroSimulatorInterface::WriteVehClasses()
 {	
 	CString strVCCSV = m_strFolder + _T("ms_vehclasses.csv");
 	std::string strFileName;
@@ -2095,7 +2136,7 @@ bool Mustang::WriteVehClasses()
 		return false;
 	}
 }
-bool Mustang::WriteNodes()
+bool MicroSimulatorInterface::WriteNodes()
 {
 	std::list<MNode*>::iterator iMNode;
 	CString strLine;
@@ -2189,7 +2230,7 @@ bool Mustang::WriteNodes()
 	}
 	return true;
 }
-bool Mustang::WriteZones()
+bool MicroSimulatorInterface::WriteZones()
 {
 	CString strLine;
 
@@ -2214,7 +2255,7 @@ bool Mustang::WriteZones()
 	}
 	return true;
 }
-bool Mustang::WriteLinkTypes()
+bool MicroSimulatorInterface::WriteLinkTypes()
 {
 	CString strLTCSV = m_strFolder + _T("ms_linktypes.csv");
 	std::string strFileName;
@@ -2251,7 +2292,7 @@ bool Mustang::WriteLinkTypes()
 		return false;
 	}
 }
-bool Mustang::WriteLinks()
+bool MicroSimulatorInterface::WriteLinks()
 {
 	std::list<MLink*>::iterator iMLink;
 	for(iMLink = m_LinkList.begin();iMLink!=m_LinkList.end();iMLink++)
@@ -2332,15 +2373,15 @@ bool Mustang::WriteLinks()
 	}
 	return true;
 }
-bool Mustang::WritePTStops()
+bool MicroSimulatorInterface::WritePTStops()
 {
 	return true;
 }
-bool Mustang::WritePTLines()
+bool MicroSimulatorInterface::WritePTLines()
 {
 	return true;
 }
-bool Mustang::WriteSignalControls()
+bool MicroSimulatorInterface::WriteSignalControls()
 {
 	for(int i=0;i<m_SCs.size();i++)
 	{
@@ -2384,7 +2425,7 @@ bool Mustang::WriteSignalControls()
 	}
 	return true;
 }
-bool Mustang::WritePhases(std::vector<PhaseRecord*> phases)
+bool MicroSimulatorInterface::WritePhases(std::vector<PhaseRecord*> phases)
 {
 	PhaseRecord *p = phases[0];
 	int		nSCNo	= p->nSCNo;
@@ -2435,7 +2476,7 @@ bool Mustang::WritePhases(std::vector<PhaseRecord*> phases)
 
 	return true;
 }
-std::vector<string> Mustang::GetSignalControls()
+std::vector<string> MicroSimulatorInterface::GetSignalControls()
 {// get those signal files
 	_finddata_t file;
 	long lf;
@@ -2455,7 +2496,7 @@ std::vector<string> Mustang::GetSignalControls()
 	_findclose(lf);
 	return files;
 }
-bool Mustang::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases)
+bool MicroSimulatorInterface::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases)
 {
 	CString strCSV= m_strFolder + sigFileName.c_str();
 	std::string strFileName;
@@ -2535,7 +2576,7 @@ bool Mustang::GetPhases(std::string sigFileName,std::vector<PhaseRecord*> phases
 		return false;
 	}	
 }
-void Mustang::CreateDefaultData()
+void MicroSimulatorInterface::CreateDefaultData()
 {
 	int i;
 
@@ -2543,7 +2584,7 @@ void Mustang::CreateDefaultData()
 	m_szVersNo = _T("1.0");
 	m_szFromTime = _T("00:00:00");
 	m_szToTime = _T("10:00:00");
-	m_szName = _T("Mustang.ver");
+	m_szName = _T("MicroSimulatorInterface.ver");
 	m_nLeftHandTraffic=0;
 
 	m_szVehTypes = _T("");      // This string is reserved for attributes of VEHTYPES. The following 3 are in groups
@@ -2643,7 +2684,7 @@ void Mustang::CreateDefaultData()
 		pSG->szSignalControlType = _T("Cycle");
 	}
 }
-bool Mustang::CreateANMRoutesFile(std::string strFileName)
+bool MicroSimulatorInterface::CreateANMRoutesFile(std::string strFileName)
 {
 	char elem[256];
 	std::ofstream rf;
@@ -2755,9 +2796,9 @@ element.UpNodeID = m_Network.m_FromIDAry[LinkID];
 element.DestNodeID = m_Network.m_OutboundNodeAry [i][outbound_i];
 
 GDPoint p1, p2, p3;
-p1  = m_NodeIDMap[element.UpNodeID]->pt;
-p2  = m_NodeIDMap[element.CurrentNodeID]->pt;
-p3  = m_NodeIDMap[element.DestNodeID]->pt;
+p1  = m_NodeNoMap[element.UpNodeID]->pt;
+p2  = m_NodeNoMap[element.CurrentNodeID]->pt;
+p3  = m_NodeNoMap[element.DestNodeID]->pt;
 
 element.movement_direction = g_Angle_to_Approach_New(Find_P2P_Angle(p1,p2));
 element.movement_turn = Find_PPP_to_Turn(p1,p2,p3);
@@ -2876,7 +2917,7 @@ int MNode::CheckMissingApproach(void)
 
 	return 10-sumIn;
 }
-bool Mustang::ReadOutputODFlowCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadOutputODFlowCSV(std::string strFileName)
 {
 	CCSVParser parser;
 	CString error_message;
@@ -2884,7 +2925,7 @@ bool Mustang::ReadOutputODFlowCSV(std::string strFileName)
 
 	if (parser.OpenCSVFile(strFileName))
 	{
-		m_logFile<<"output_od_flow.csv reading...."<<endl;
+		m_logFile<<"AMS_od_flow.csv reading...."<<endl;
 		while(parser.ReadRecord())
 		{
 			int od_index = 0;
@@ -2897,7 +2938,7 @@ bool Mustang::ReadOutputODFlowCSV(std::string strFileName)
 			if(!parser.GetValueByFieldName("vehicle_type",vehicle_type))		vehicle_type = 1;
 			if(!parser.GetValueByFieldName("from_zone_id",from_zone_id) || !parser.GetValueByFieldName("to_zone_id",to_zone_id)) 
 			{
-				AfxMessageBox("Field from_zone_id or to_zone_id has not been defined in file output_od_flow.csv. Please check.");
+				AfxMessageBox("Field from_zone_id or to_zone_id has not been defined in file AMS_od_flow.csv. Please check.");
 				break;
 			}
 			if(!parser.GetValueByFieldName("time_span_volume",time_span_volume)) time_span_volume = 0.0;   
@@ -2922,11 +2963,11 @@ bool Mustang::ReadOutputODFlowCSV(std::string strFileName)
 	}
 	else
 	{
-		AfxMessageBox("Error: File output_od_flow.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
+		AfxMessageBox("Error: File AMS_od_flow.csv cannot be opened.\n It might be currently used and locked by EXCEL.");
 		return false;
 	}
 }
-bool Mustang::CheckDuplicateODDemand(int fromZoneID,int toZoneID,int nVehType /*=1*/)
+bool MicroSimulatorInterface::CheckDuplicateODDemand(int fromZoneID,int toZoneID,int nVehType /*=1*/)
 {
 	bool bDuplicate = false;
 
@@ -2940,7 +2981,7 @@ bool Mustang::CheckDuplicateODDemand(int fromZoneID,int toZoneID,int nVehType /*
 	}
 	return bDuplicate;
 }
-bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
+bool MicroSimulatorInterface::ReadOutputPathFlowCSV(std::string strFileName)
 {
 	CCSVParser parser;
 	CString error_message;
@@ -2948,7 +2989,7 @@ bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
 
 	if (parser.OpenCSVFile(strFileName))
 	{
-		m_logFile<<"output_path_flow.csv reading...."<<endl;
+		m_logFile<<"AMS_path_flow.csv reading...."<<endl;
 		while(parser.ReadRecord())
 		{
 			int route_index = 0;
@@ -2967,7 +3008,7 @@ bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
 				!parser.GetValueByFieldName("to_zone_id",to_zone_id)	 ||
 				!parser.GetValueByFieldName("to_node_id",to_node_id)     )
 			{
-				AfxMessageBox("Field from_id or to_id has not been defined in file output_path_flow.csv. Please check.");
+				AfxMessageBox("Field from_id or to_id has not been defined in file AMS_path_flow.csv. Please check.");
 				break;
 			}
 			if(!parser.GetValueByFieldName("time_span_volume",time_span_volume)) time_span_volume = 0.0;   
@@ -2997,6 +3038,22 @@ bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
 				pPath->m_vti1 = day_volume;
 			else
 				pPath->m_vti2 = day_volume;
+
+
+			if(m_bUseSequentialNodeNumber  )  // replace the original node number by the sequential node no. 
+			{
+				for(unsigned i = 0; i < nodeVector.size(); i++)
+				{
+					int node_id = nodeVector[i];
+					if (m_OriginalNodeNumbertoNodeNumberMap.find(node_id)==m_OriginalNodeNumbertoNodeNumberMap.end() )
+					{
+						break;
+					}
+
+					nodeVector[i] = m_OriginalNodeNumbertoNodeNumberMap[node_id]; 
+				}
+			}
+
 			pPath->m_nodes = nodeVector;
 			m_pathDemand.push_back(pPath);
 
@@ -3011,7 +3068,7 @@ bool Mustang::ReadOutputPathFlowCSV(std::string strFileName)
 		return false;
 	}
 }
-std::vector<int> Mustang::GetNodeVector(std::string s)
+std::vector<int> MicroSimulatorInterface::GetNodeVector(std::string s)
 {
 	std::vector<int> nodes;
 	int node_id=0;
@@ -3107,7 +3164,7 @@ void MNode::OrderLink(MLink *pMLink /* = 0*/)
 	if ( pMLink )
 	{
 		int nNewAngle;
-		if ( pMLink->m_FromNodeID == this->m_NodeID ) // out
+		if ( pMLink->m_FromNodeID == this->m_NodeNo ) // out
 			nNewAngle = pMLink->nOutAngle;
 		else
 			nNewAngle = pMLink->nInAngle;
@@ -3117,10 +3174,10 @@ void MNode::OrderLink(MLink *pMLink /* = 0*/)
 
 		for(iLink = orderedLinks.begin();iLink!=orderedLinks.end();iLink++)
 		{
-			int nAngle = ((*iLink)->m_FromNodeID==this->m_NodeID) ? (*iLink)->nOutAngle : (*iLink)->nInAngle;
+			int nAngle = ((*iLink)->m_FromNodeID==this->m_NodeNo) ? (*iLink)->nOutAngle : (*iLink)->nInAngle;
 			if (nNewAngle <= nAngle)
 			{
-				if ( (nNewAngle < nAngle) || (nNewAngle == nAngle && (*iLink)->m_FromNodeID==this->m_NodeID))
+				if ( (nNewAngle < nAngle) || (nNewAngle == nAngle && (*iLink)->m_FromNodeID==this->m_NodeNo))
 				{ // insert before this pos
 					orderedLinks.insert(iLink,pMLink);
 				}
@@ -3152,13 +3209,13 @@ void MNode::OrderLink(MLink *pMLink /* = 0*/)
 	}
 	return;
 }
-MNode* Mustang::GetMNodebyID(int nMNodeID)
+MNode* MicroSimulatorInterface::GetMNodebyID(int nMNodeID)
 {
 	MNode* p=NULL;
 	std::list<MNode*>::iterator iNode;
 	for(iNode=m_NodeList.begin();iNode!=m_NodeList.end();iNode++)
 	{
-		if ( (*iNode)->m_NodeID == nMNodeID )
+		if ( (*iNode)->m_NodeNo == nMNodeID )
 		{
 			p = (*iNode);
 			break;
@@ -3166,7 +3223,7 @@ MNode* Mustang::GetMNodebyID(int nMNodeID)
 	}
 	return p;
 }
-MLink* Mustang::GetMLinkbyID(int nMLinkID)
+MLink* MicroSimulatorInterface::GetMLinkbyID(int nMLinkID)
 {
 	MLink* p=NULL;
 	std::list<MLink*>::iterator iLink;
@@ -3180,7 +3237,7 @@ MLink* Mustang::GetMLinkbyID(int nMLinkID)
 	}
 	return p;
 }
-void Mustang::CreateLanes(bool bPocket /* = true*/)
+void MicroSimulatorInterface::CreateLanes(bool bPocket /* = true*/)
 {// create lanes according to movement
 	float fPocketLength = 40.0;
 	std::list<MNode*>::iterator iNode;
@@ -3200,7 +3257,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 					pLane->leftTurn = true;
 					pLane->m_ChannelLength = 0;
 					pLane->m_LinkID = pLink->m_LinkID;
-					pLane->m_NodeID = p->m_NodeID;
+					pLane->m_NodeNo = p->m_NodeNo;
 					pLane->m_PocketLength = fPocketLength;
 					pLane->through = false;
 					pLane->rightTurn = false;
@@ -3219,7 +3276,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 				pLane->leftTurn = false;
 				pLane->m_ChannelLength = 0;
 				pLane->m_LinkID = pLink->m_LinkID;
-				pLane->m_NodeID = p->m_NodeID;
+				pLane->m_NodeNo = p->m_NodeNo;
 				pLane->m_PocketLength = 0;
 				pLane->through = true;
 				pLane->rightTurn = j==pLink->m_NumberOfLanes ? true : false;
@@ -3236,7 +3293,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 				pLane->leftTurn = false;
 				pLane->m_ChannelLength = 0;
 				pLane->m_LinkID = pLink->m_LinkID;
-				pLane->m_NodeID = p->m_NodeID;
+				pLane->m_NodeNo = p->m_NodeNo;
 				pLane->m_PocketLength = 0;
 				pLane->through = false;
 				pLane->rightTurn = false;
@@ -3245,7 +3302,7 @@ void Mustang::CreateLanes(bool bPocket /* = true*/)
 		}		
 	}
 }
-void Mustang::CreateLaneTurns(void)
+void MicroSimulatorInterface::CreateLaneTurns(void)
 {
 	m_logFile<<"CreateLaneTurns function called!"<<endl;
 
@@ -3253,7 +3310,7 @@ void Mustang::CreateLaneTurns(void)
 	for(iNode=m_NodeList.begin();iNode!=m_NodeList.end();iNode++)
 	{
 		MNode* pNode = (*iNode);
-		m_logFile<<"node id "<<pNode->m_NodeID<<endl;
+		m_logFile<<"node id "<<pNode->m_NodeNo<<endl;
 		for(int i=0;i<pNode->Movements.size();i++)
 		{
 			MMovement* pm = pNode->Movements[i];
@@ -3347,7 +3404,7 @@ void Mustang::CreateLaneTurns(void)
 	}
 	m_logFile<<"CreateLaneTurns function ended!"<<endl;
 }
-void Mustang::LoadData4Editing()
+void MicroSimulatorInterface::LoadData4Editing()
 {//在当前目录下读三个ms文件创建路口信息
 	CWaitCursor cursor;
 	if ( ! m_pDoc ) return;
@@ -3385,7 +3442,7 @@ void Mustang::LoadData4Editing()
 
 	//WriteMSSignal(strMSSignalFileName);
 }
-void Mustang::Create2Files()
+void MicroSimulatorInterface::Create2Files()
 {// this function use memory content to create files, in the future should be replaced by dlls
 	CWaitCursor cursor;
 	if ( ! m_pDoc ) return;
@@ -3408,7 +3465,7 @@ void Mustang::Create2Files()
 	CreateANMFile2(strANMFileName);
 	CreateANMRoutesFile(strANMRoutesFileName);
 }
-void Mustang::SaveJunctions()
+void MicroSimulatorInterface::SaveJunctions()
 {//create 3 ms_*.csv files
 	CWaitCursor cursor;
 	if ( ! m_pDoc ) return;
@@ -3430,7 +3487,7 @@ void Mustang::SaveJunctions()
 	WriteMSLane(strMSLaneFileName);
 	WriteMSLaneturn(strMSLaneturnFileName);
 }
-void Mustang::PrepareData4Editing()
+void MicroSimulatorInterface::PrepareData4Editing()
 {
 	CWaitCursor cursor;
 	if ( ! m_pDoc ) return;
@@ -3445,8 +3502,8 @@ void Mustang::PrepareData4Editing()
 	CString strLogFile = strFolder + _T("msLog.log");
 	CString strZoneCentroid = strFolder + _T("input_zone.csv");
 	CString strZoneCSV = strFolder + _T("input_activity_location.csv");
-	CString strODCSV = strFolder + _T("output_od_flow.csv");
-	CString strPathCSV = strFolder + _T("output_path_flow.csv");
+	CString strODCSV = strFolder + _T("AMS_od_flow.csv");
+	CString strPathCSV = strFolder + _T("AMS_path_flow.csv");
 	CString strMSSignal= strFolder + _T("ms_signal.csv");
 	CString strMSLane  = strFolder + _T("ms_lane.csv");
 	CString strMSLaneturn= strFolder + _T("ms_laneturn.csv");
@@ -3472,7 +3529,7 @@ void Mustang::PrepareData4Editing()
 	ReadInputLinkCSV(strLinkFileName);
 	ReadInputLinkTypeCSV(strLinkTypeFileName);
 	//ReadInputZoneCentroid(strZoneCentroidFileName);
-	ReadInputZoneCSV(strZoneFileName);
+	ReadInputActivityLocationCSV(strZoneFileName);
 	FillReverseMLinkID();
 	ReadInputSignalCSV(strMSSignalFileName);
 	bool bReturn = ClassifyNodes();
@@ -3495,7 +3552,7 @@ void Mustang::PrepareData4Editing()
 	//CreateANMRoutesFile(strANMRoutesFileName);//debug only
 	CloseLogFile();
 }
-void Mustang::FillReverseMLinkID()
+void MicroSimulatorInterface::FillReverseMLinkID()
 {
 	// 同时赋anmID的值
 	//	m_logFile<< "FillReverseMLinkID function called!"<<endl;
@@ -3517,7 +3574,7 @@ void Mustang::FillReverseMLinkID()
 	}
 	//	m_logFile<< "FillReverseMLinkID function Ended!"<<endl;
 }
-int  Mustang::GetReverseMLinkID(int nMLinkID)
+int  MicroSimulatorInterface::GetReverseMLinkID(int nMLinkID)
 {
 	// classify node types
 	std::list<MLink*>::iterator iLink;
@@ -3536,7 +3593,7 @@ int  Mustang::GetReverseMLinkID(int nMLinkID)
 	}
 	return nReverseMLinkID;
 }
-void Mustang::WriteMSLane(std::string strFileName)
+void MicroSimulatorInterface::WriteMSLane(std::string strFileName)
 {
 	FILE* f = NULL;
 	fopen_s(&f,m_strFolder+"ms_lane.csv","w");
@@ -3557,14 +3614,14 @@ void Mustang::WriteMSLane(std::string strFileName)
 					if (pLane->leftTurn ) nTurn+=1;
 					if (pLane->through )  nTurn+=2;
 					if (pLane->rightTurn) nTurn+=4;
-					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeID,pLink->m_LinkID,1,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
+					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeNo,pLink->m_LinkID,1,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
 						pLane->m_PocketLength+pLane->m_ChannelLength,nTurn,0);
 				}
 				for(int k=0;k<pLink->outLanes.size();k++)
 				{
 					int nTurn=0;
 					MLane* pLane = pLink->outLanes[k];
-					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeID,pLink->m_LinkID,0,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
+					fprintf(f,"%d,%d,%d,%d,%d,%d,%.2f,%d,%d\n",pNode->m_NodeNo,pLink->m_LinkID,0,pLink->nInAngle,pLink->nOutAngle,pLane->m_Index,
 						0.00,nTurn,0);
 				}
 			}
@@ -3576,7 +3633,7 @@ void Mustang::WriteMSLane(std::string strFileName)
 		AfxMessageBox("Error: cannot create ms_lane.csv file!");
 	}
 }
-void Mustang::WriteMSLaneturn(std::string strFileName)
+void MicroSimulatorInterface::WriteMSLaneturn(std::string strFileName)
 {
 	FILE* f = NULL;
 	fopen_s(&f,m_strFolder+"ms_laneturn.csv","w");
@@ -3592,7 +3649,7 @@ void Mustang::WriteMSLaneturn(std::string strFileName)
 				MLaneTurn* pTurn = pNode->LaneTurns[j];
 				MLink* pFromLink = GetMLinkbyID(pTurn->nFromLinkId);
 				MLink* pToLink   = GetMLinkbyID(pTurn->nToLinkId);
-				fprintf(f,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",pNode->m_NodeID,pFromLink->m_LinkID,pToLink->m_LinkID,pTurn->nRTL,
+				fprintf(f,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",pNode->m_NodeNo,pFromLink->m_LinkID,pToLink->m_LinkID,pTurn->nRTL,
 					pTurn->bForbid ? 1 : 0,pTurn->nFromIndex,pTurn->nToIndex,pTurn->nSCNO,pTurn->nSignalGroupNo,0);
 			}
 		}
@@ -3603,7 +3660,7 @@ void Mustang::WriteMSLaneturn(std::string strFileName)
 		AfxMessageBox("Error: cannot create ms_laneturn.csv file!");
 	}
 }
-void Mustang::WriteMSSignal(std::string strFileName)
+void MicroSimulatorInterface::WriteMSSignal(std::string strFileName)
 {
 	FILE* f = NULL;
 	fopen_s(&f,m_strFolder+"ms_signal.csv","w");
@@ -3628,7 +3685,7 @@ void Mustang::WriteMSSignal(std::string strFileName)
 		AfxMessageBox("Error: cannot create ms_signal.csv file!");
 	}
 }
-void Mustang::ReadMSLane(std::string strFileName)
+void MicroSimulatorInterface::ReadMSLane(std::string strFileName)
 {
 	// lane是记录在link上的，所以之前link已经有值
 	if ( m_LinkList.size() == 0 || m_NodeList.size() == 0 ) return;
@@ -3669,7 +3726,7 @@ void Mustang::ReadMSLane(std::string strFileName)
 			MLane* pLane = new MLane();
 			pLane->m_Index	= lane_no;
 			pLane->m_LinkID = link_id;
-			pLane->m_NodeID = node_id;
+			pLane->m_NodeNo = node_id;
 			if ( turn >= 4 )
 			{
 				pLane->rightTurn = 1;
@@ -3716,7 +3773,7 @@ void Mustang::ReadMSLane(std::string strFileName)
 	}
 	return;
 }
-void Mustang::ReadMSLaneturn(std::string strFileName)
+void MicroSimulatorInterface::ReadMSLaneturn(std::string strFileName)
 {
 	// lane是记录在link上的，所以之前link已经有值
 	if ( m_LinkList.size() == 0 || m_NodeList.size() == 0 ) return;

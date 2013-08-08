@@ -46,6 +46,7 @@ CNetworkDataSettingDlg::CNetworkDataSettingDlg(CWnd* pParent /*=NULL*/)
 	, m_ZoomToSelectedObject(FALSE)
 {
 	m_SelectTab = 0;
+	m_SelectRowByUser = -1;
 
 	m_SelectedFromNodeName = -1;
 	m_SelectedToNodeName = -1;
@@ -86,13 +87,20 @@ BOOL CNetworkDataSettingDlg::OnInitDialog()
 		m_TabCtrl.InsertItem(i, &tcItem);
 
 		p_SubTabs[i] = new CNetworkDataTabDlg(name_vector, DefaultValue, value_vector);
+
+		if(i == m_SelectTab)
+		{
+		p_SubTabs[i]->m_SelectRowByUser = m_SelectRowByUser;
+		}
+
 		p_SubTabs[i]->m_pDoc = m_pDoc;
 
 		p_SubTabs[i]->m_SelectedFromNodeName = this->m_SelectedFromNodeName;  // copy data
 		p_SubTabs[i]->m_SelectedToNodeName = this->m_SelectedToNodeName;  // copy data
 		p_SubTabs[i]->SetTabText(NetworkData_Element[i]);
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
-		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject;
+		p_SubTabs[i]->m_ZoomToSelectedObject = m_ZoomToSelectedObject; 
+
 
 
 	}
