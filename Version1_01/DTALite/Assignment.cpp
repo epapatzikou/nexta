@@ -93,8 +93,8 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	if(number_of_threads > max_number_of_threads)
 		number_of_threads = max_number_of_threads ;
 
-	if(g_NodeVector.size() > 2000 || g_ODZoneNumberSize >2000 )  // large network or subare cut with large node number, reset to single thread mode
-		number_of_threads = 1;
+	//if(g_NodeVector.size() > 2000 || g_ZoneMap.size() >2000 )  // large network or subare cut with large node number, reset to single thread mode
+	//	number_of_threads = 1;
 
 	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
 	{ 
@@ -165,6 +165,9 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
 			{
 
+				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
+					continue;
+
 				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 				{
 
@@ -172,7 +175,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 					{
 
-						if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
+						if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
 						{
 
 							if(g_ODZoneNumberSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
@@ -242,9 +245,9 @@ void DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_tim
 	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
-	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 
 		pVeh->m_bConsiderToSwitch = false;
@@ -634,9 +637,9 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 	PathArray = new PathArrayForEachODT[g_ODZoneIDSize]; // remember to release memory
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
-	for (int vi = 0; vi < g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi < g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 
@@ -853,9 +856,9 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 	int DepartureTimeInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths... : iteration 0: for all vehicles
-	for (int vi = 0; vi<g_TDOVehicleArray[zone][DepartureTimeInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][DepartureTimeInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][DepartureTimeInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][DepartureTimeInterval].VehicleArray[vi];
 
 		{
 			DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
@@ -962,6 +965,8 @@ void g_ComputeFinalGapValue()
 	//#pragma omp parallel for
 	for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
 	{
+				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
+					continue;
 		if(g_ZoneMap[CurZoneID].m_Demand>0)  // only this origin zone has vehicles, then we build the network
 		{
 			// create network for shortest path calculation at this processor
@@ -972,7 +977,7 @@ void g_ComputeFinalGapValue()
 			// scan all possible departure times
 			for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 			{
-				if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray.size() > 0)
+				if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size() > 0)
 				{
 					// loop through the TDOVehicleArray to obtain the least experienced trip time for each OD pair and each departure time interval
 					/*
@@ -982,9 +987,9 @@ void g_ComputeFinalGapValue()
 					for(int DestZoneID=1; DestZoneID <= g_ODZoneNumberSize; DestZoneID++)
 					LeastExperiencedTimes[DestZoneID] = 1000000.0; // initialized with a big number
 
-					for (int vi = 0; vi<g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
+					for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
 					{
-					int VehicleID = g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
+					int VehicleID = g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
 					DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 					ASSERT(pVeh!=NULL);
 
@@ -1004,9 +1009,9 @@ void g_ComputeFinalGapValue()
 						ConstructPathArrayForEachODT(PathArray, CurZoneID, AssignmentInterval);
 					}
 
-					for (int vi = 0; vi < g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
+					for (int vi = 0; vi < g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
 					{
-						int VehicleID = g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
+						int VehicleID = g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
 						DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 						ASSERT(pVeh!=NULL);
 
@@ -1090,9 +1095,9 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 	}
 
 	// Scan all vehicles and construct path array for each destination
-	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 

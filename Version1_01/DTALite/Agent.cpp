@@ -43,7 +43,7 @@ void g_ReadDSPVehicleFile(string file_name)
 	}
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 /*     5311320           1    # of vehicles in the file, Max # of stops
         #   usec   dsec   stime vehcls vehtype ioc #ONode #IntDe info ribf    comp   izone Evac InitPos    VoT  tFlag pArrTime TP IniGas
@@ -219,7 +219,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			{
 				AssignmentInterval = g_AggregationTimetIntervalSize - 1;
 			}
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
 
 			i++;
@@ -300,7 +300,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 	}
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 	CCSVParser parser_agent;
 
@@ -516,7 +516,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 				ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
 
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
 				i++;
 			}
@@ -543,7 +543,7 @@ bool g_ReadAgentBinFile(string file_name)
 	int path_node_sequence[MAX_NODE_SIZE_IN_A_PATH];
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 	FILE* st = NULL;
 	fopen_s(&st,file_name.c_str (),"rb");
@@ -703,7 +703,7 @@ bool g_ReadAgentBinFile(string file_name)
 				{
 					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
 				}
-				g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
 				count++;
 

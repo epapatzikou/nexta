@@ -2009,7 +2009,7 @@ void g_ConvertDemandToVehicles()
 			{
 				AssignmentInterval = g_AggregationTimetIntervalSize - 1;
 			}
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][AssignmentInterval].VehicleArray .push_back(i);
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(i);
 			i++;
 		}
 		kvhc++;
@@ -2186,7 +2186,7 @@ void g_ReadDemandFile_Parser()
 
 
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval)+1; // "+1" in case  rounding downs errors. 
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();
 }
@@ -3065,7 +3065,7 @@ void FreeMemory()
 
 	if(g_TDOVehicleArray!=NULL && g_ODZoneNumberSize > 0);
 	{
-		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
+		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ZoneMap.size(), g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
 		g_TDOVehicleArray = NULL;
 	}
 }
@@ -5004,7 +5004,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
 
 	// allocate memory for zone-based vehicle array
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ODZoneNumberSize+1, g_AggregationTimetIntervalSize);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 	g_ConvertDemandToVehicles();
 }

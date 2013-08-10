@@ -99,6 +99,8 @@ void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip
 
 			for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
 			{
+				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
+					continue;
 
 				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 				{
@@ -107,7 +109,7 @@ void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip
 					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < CurrentTime; departure_time += g_AggregationTimetInterval)
 					{
 
-						if(g_TDOVehicleArray[CurZoneID][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
+						if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
 						{
 
 							g_network_MP[id].AgentBasedPathAdjustment(DayNo, CurZoneID,departure_time,CurrentTime);
@@ -145,9 +147,9 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 	}
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
-	for (int vi = 0; vi<g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
