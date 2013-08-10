@@ -3036,6 +3036,10 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				mode_code = '"' + mode_code + '"' ;
 			}
 
+			string prohibited_node_list;
+
+			if(!parser.GetValueByFieldName("prohibited_node_list",prohibited_node_list))
+				prohibited_node_list  = "";
 
 			std::string group_1_code,group_2_code, group_3_code;
 
@@ -3159,6 +3163,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 				pLink->m_LinkKey = link_key.c_str ();
 
 				pLink->m_Mode_code = mode_code;
+				pLink->m_prohibited_node_list = prohibited_node_list;
+
+				read_multiple_integers_from_a_string(prohibited_node_list.c_str (), pLink->m_prohibited_node_number_vector);
 
 				pLink->m_NumberOfLeftTurnLanes =  number_of_left_turn_lanes ;
 				pLink->m_NumberOfRightTurnLanes =  number_of_right_turn_lanes ;
@@ -4637,7 +4644,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,link_key,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,observed_AADT,observed_peak_hourly_volume,AADT_conversion_factor,mode_code,grade,geometry,original_geometry,");
+		fprintf(st,"name,link_id,link_key,TMC,from_node_id,to_node_id,link_type_name,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,effective_green_time_length_in_second,green_start_time_in_second,observed_AADT,observed_peak_hourly_volume,AADT_conversion_factor,mode_code,prohibited_node_list,grade,geometry,original_geometry,");
 		fprintf(st,"transit_travel_time_in_min,transit_transfer_time_in_min,transit_waiting_time_in_min,transit_fare_in_dollar,BPR_alpha_term,BPR_beta_term,");
 
 		// ANM output
@@ -4732,7 +4739,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 
 				std::replace( (*iLink)->m_Name.begin(), (*iLink)->m_Name.end(), ',', ' '); 
 
-				fprintf(st,"%s,%d,%s,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%d,%d,%.3f,\"%s\",%.1f,",
+				fprintf(st,"%s,%d,%s,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,%d,%d,%d,%d,%.3f,\"%s\",%s,%.1f,",
 					(*iLink)->m_Name.c_str (),
 					(*iLink)->m_LinkID, 
 					(*iLink)->m_LinkKey , 
@@ -4749,7 +4756,10 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 					(*iLink)->m_observed_AADT,
 					(*iLink)->m_observed_peak_hourly_volume,
 					(*iLink)->m_AADT_conversion_factor ,
-					(*iLink)->m_Mode_code.c_str (), (*iLink)->m_Grade);
+					(*iLink)->m_Mode_code.c_str (), 
+					(*iLink)->m_prohibited_node_list.c_str (), 
+				
+					(*iLink)->m_Grade);
 
 				// geometry
 				fprintf(st,"\"<LineString><coordinates>");
@@ -4988,6 +4998,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	SaveLinkData(directory+"input_link.csv",false,SelectedLayNo);
 
 	SaveMovementData("AMS_movement.csv", -1);
+	SavePhasingData();
 	SaveQEMMovementData("QEM_movement_simu_counts.csv", true);
 	SaveQEMMovementData("QEM_movement_obs_counts.csv", false);
 
@@ -6141,7 +6152,7 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 			{
 				DTANodeMovement* pMovement = m_MovementPointerMap[label];
 
-				parser_movement.GetValueByFieldName ("prohibitted_flag",pMovement->turning_prohibition_flag);
+				parser_movement.GetValueByFieldName ("prohibited_flag",pMovement->turning_prohibition_flag);
 				parser_movement.GetValueByFieldName ("protected_flag",pMovement->turning_protected_flag );
 				parser_movement.GetValueByFieldName ("permitted_flag",pMovement->turning_permitted_flag);
 
@@ -15758,7 +15769,7 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 		MovementFile.SetFieldName ("turn_type");
 		MovementFile.SetFieldName ("turn_direction");
 
-		MovementFile.SetFieldName ("prohibitted_flag");
+		MovementFile.SetFieldName ("prohibited_flag");
 		MovementFile.SetFieldName ("protected_flag");
 		MovementFile.SetFieldName ("permitted_flag");
 
@@ -15810,6 +15821,8 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 			}
 			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
 			{
+				if( (*iNode)->IsEmptyPhaseNumber() == true)
+					(*iNode)->ResetToDefaultPhaseNumbers(); 
 
 				DTANodeMovement movement = (*iNode)->m_MovementVector[m];
 
@@ -15837,7 +15850,7 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 				int dest_node_id = m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNumber ;
 				MovementFile.SetValueByFieldName ("dest_node_id",dest_node_id);
 
-				MovementFile.SetValueByFieldName ("prohibitted_flag",movement.turning_prohibition_flag);
+				MovementFile.SetValueByFieldName ("prohibited_flag",movement.turning_prohibition_flag);
 				MovementFile.SetValueByFieldName ("protected_flag",movement.turning_prohibition_flag);
 				MovementFile.SetValueByFieldName ("permitted_flag",movement.turning_prohibition_flag);
 
@@ -16036,6 +16049,75 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 
 		} // for each node
 		fclose(st);	}	
+}
+
+void CTLiteDoc::SavePhasingData()
+{
+
+
+	CString phasing_str = m_ProjectDirectory + "input_phasing.csv";
+
+	FILE* st = NULL;
+
+	fopen_s(&st,phasing_str,"w");
+	if(st!=NULL)
+	{
+
+
+		fprintf(st, "node_id,key,D1,D2,D3,D4,D5,D6,D7,D8\n");
+
+		std::list<DTANode*>::iterator iNode;
+		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+		{
+
+//		node_id	key	D1	D2	D3	D4	D5	D6	D7	D8
+
+			if((*iNode)->m_ControlType == m_ControlType_PretimedSignal || 
+				(*iNode)->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+				fprintf(st,"%d,",(*iNode)->m_NodeNumber);
+	
+				fprintf(st,"MinGreen,");
+
+				for(int p = 1; p<=8; p++)
+				{
+					if((*iNode)->m_SignalData.phase_vector[p].min_green >=1)
+						fprintf(st,"%d,", (*iNode)->m_SignalData.phase_vector[p].min_green) ;
+					else
+						fprintf(st,",") ;
+
+				}
+				
+				fprintf(st,"\n%d,",(*iNode)->m_NodeNumber);
+				fprintf(st,"MaxGreen,");
+
+				for(int p = 1; p<=8; p++)
+				{
+					if((*iNode)->m_SignalData.phase_vector[p].min_green >=1)
+						fprintf(st,"%d,", (*iNode)->m_SignalData.phase_vector[p].max_green) ;
+					else
+						fprintf(st,",");
+				}
+				fprintf(st,"\n%d,",(*iNode)->m_NodeNumber);
+				fprintf(st,"VehExt1,");
+
+				for(int p = 1; p<=8; p++)
+				{
+					if((*iNode)->m_SignalData.phase_vector[p].min_green >=1)
+					fprintf(st,"%.1f,", (*iNode)->m_SignalData.phase_vector[p].VehExt1);
+					else
+					fprintf(st,",");
+				}			
+				fprintf(st,"\n");
+			}
+
+
+		} // for each node
+		fclose(st);	
+	}else
+	{
+	 AfxMessageBox("File input_phasing.csv cannot be opened.");
+	}
 }
 
 void CTLiteDoc::OnImportShapefile()

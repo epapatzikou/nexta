@@ -1060,15 +1060,18 @@ int signal_group_no; // micro-scopic, lane-based
    public:
       DTANodePhase()
 	  {
-      min_green = 5;
-	  max_green = 60;
-	  amber = 2;
+      min_green = 0;
+	  max_green = 0;
+	  amber = 0;
+	  VehExt1 = 0;
 	  }
 
       int phase_number;
       int min_green;
 	  int max_green;
 	  int amber;
+	  float VehExt1;
+
 
       std::vector<int> movement_index_vector;
       std::vector<int> movement_type_vector;  // prohibited, permitted, protected, free
@@ -1094,11 +1097,22 @@ int signal_group_no; // micro-scopic, lane-based
 class DTANodeSignal
 {
 public:
-   DTANodeSignal();
-   ~DTANodeSignal();
+   DTANodeSignal()
+   {
 
-  int cycle_length;
-   std::vector<DTANodePhase> phase_vector;
+	   phase_vector [2].min_green = 20;
+	   phase_vector [2].max_green = 30;
+	   phase_vector [2].VehExt1  = 2;
+
+	   phase_vector [4].min_green = 20;
+	   phase_vector [4].max_green = 30;
+	   phase_vector [4].VehExt1  = 2;
+   
+   };
+
+
+	  int cycle_length;
+   DTANodePhase phase_vector[17];
 
 };
 extern bool compare_MovementData (DTANodeMovement first, DTANodeMovement second);
@@ -1146,6 +1160,8 @@ public:
 		m_GPS_arrival_time = 0;
 	};
 
+
+	DTANodeSignal  m_SignalData;
 	bool m_bCreatedbyNEXTA;  // not by users
 	double m_min_distance_from_GPS_point;
 	double m_GPS_arrival_time;
@@ -1166,9 +1182,39 @@ public:
 	std::vector<int> m_OutgoingLinkVector;
 	std::vector<int> m_IncomingLinkVector;
 	int m_IncomingNonConnectors;
+
+
 	std::vector <DTANodeMovement> m_MovementVector;
 
+	bool IsEmptyPhaseNumber()
+	{
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+			if(m_MovementVector[i].QEM_Phase1 >0)
+			{
+				return false;
+			}
+		}
 
+		return true;
+	
+	}
+
+
+	void ResetToDefaultPhaseNumbers()
+	{
+		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		{
+			if(m_MovementVector[i].movement_direction == DTA_North || m_MovementVector[i].movement_direction == DTA_South)
+			{
+				m_MovementVector[i].QEM_Phase1 = 2;
+			}else
+			{
+				m_MovementVector[i].QEM_Phase1 = 4;
+			}
+		}
+	
+	}
 	void SortMovementVector()
 	{
 	std::sort(m_MovementVector.begin(), m_MovementVector.end(), compare_MovementData);
@@ -1673,7 +1719,6 @@ public:
 	{
 	    m_LeftTurnLanes = 0;
 		m_RightTurnLanes = 0;
-		m_LeftTurnTreatment = 0;
 
 		KML_single_color_code = -1;
 		m_UserDefinedHeight = 1;
@@ -1840,7 +1885,6 @@ public:
 
 	int m_LeftTurnLanes;
 	int m_RightTurnLanes;
-	int m_LeftTurnTreatment;  // 0: not defined: 1: protected, 2: permitted, 3: protected, + permitted,
 
 
 	float m_UserDefinedHeight;
@@ -2398,6 +2442,9 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_EffectiveGreenTimeInSecond;
 	int m_GreenStartTimetInSecond;
 	string m_Mode_code;
+	string m_prohibited_node_list;
+
+	std::vector<int> m_prohibited_node_number_vector;
 
 
 	int m_DisplayLinkID;

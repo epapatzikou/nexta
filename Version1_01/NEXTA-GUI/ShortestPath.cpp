@@ -74,7 +74,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 			}
 		}
 
-		if((*iterLink)->m_AdditionalCost >1)  // skip prevented links (defined by users)
+		if((*iterLink)->m_AdditionalCost >1)  // skip prohibited links (defined by users)
 			continue;
 
 

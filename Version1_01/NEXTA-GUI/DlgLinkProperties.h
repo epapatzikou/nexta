@@ -82,6 +82,6 @@ public:
 	afx_msg void OnEnChangeEditPeakhourlyvolume();
 	afx_msg void OnClose();
 	int m_NumLeftTurnLanes;
-	int m_LeftTurnTreatment; 
-	CComboBox m_LeftTurnTreatmentComboBox;
+	CString m_Prohibited_Node_List;
+	int m_NumRightTurnLanes;
 };

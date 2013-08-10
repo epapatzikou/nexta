@@ -12,7 +12,6 @@
 
 
 
-
 using namespace std;
 
 
@@ -344,6 +343,9 @@ int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
 // read an integer from the current pointer of the file, skip all spaces
 {
 
+	if(str.GetLength () ==0 )
+		return 0;
+
 	char string_line[1000];
 
 	int string_lenghth  = str.GetLength();
@@ -357,7 +359,7 @@ int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
 	int flag = 1;
 	/* returns -1 if end of file is reached */
 
-	for(int i_try  =0 ; i_try < 200; i_try++)  // maximal 200 nodes
+	for(int i_try  =0 ; i_try < 200; i_try++)  // maximal 200 numbers
 	{
 		buffer_i = 0;
 	while(true)
