@@ -348,7 +348,6 @@ void g_MultiScenarioTrafficAssignment()
 				//			getchar();
 			}
 
-			g_ShortestPathWithMovementDelayFlag = 0;
 			if(parser_scenario.GetValueByFieldName("routing_movement_delay_mode",g_ShortestPathWithMovementDelayFlag)==false)
 			{
 				//cout << "Field routing_movement_delay_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;

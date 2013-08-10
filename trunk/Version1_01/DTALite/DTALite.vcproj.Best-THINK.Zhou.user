@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Work\I205Cor_with_result"
+				WorkingDirectory="C:\Temp\Module 5_3-Corridor_Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Julian_data0722"
+				WorkingDirectory="C:\Work\I205LatLong"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Julian_data0722"
+				WorkingDirectory="C:\Temp\Module 5_3-Corridor_Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Julian_data0722"
+				WorkingDirectory="C:\Work\I205LatLong"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

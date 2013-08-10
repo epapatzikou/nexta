@@ -143,7 +143,7 @@ enum movement_text_display_mode
    movement_display_turn_up_node_number, 
    movement_display_turn_dest_node_number, 
    movement_display_turn_three_node_numbers, 
-   movement_display_turn_protected_permited_prohibitted,
+   movement_display_turn_protected_permited_prohibited,
    movement_display_sim_turn_count, 
    movement_display_sim_turn_hourly_count,
    movement_display_sim_turn_percentage, 
@@ -676,6 +676,7 @@ void ArrowTo(HDC hDC, const POINT *lpTo, ARROWSTRUCT *pA)
 }
 
 bool m_bShowTransitAccessibility;
+bool m_bShowProhibittedMovements;
 // Overrides
 public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
@@ -827,6 +828,8 @@ public:
 	afx_msg void OnUpdateTransitShowtransitaccessibility(CCmdUI *pCmdUI);
 	afx_msg void OnTransitCalculatetransitaccesssibilityfromhere();
 	afx_msg void OnTransitOutputtransitaccesssibilityfromhere();
+	afx_msg void OnMovementHighlightprohibitedmovements();
+	afx_msg void OnUpdateMovementHighlightprohibitedmovements(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

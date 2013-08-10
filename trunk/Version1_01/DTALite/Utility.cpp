@@ -395,6 +395,64 @@ int g_read_integer_with_char_O(FILE* f)
 
 }
 
+
+int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
+// read an integer from the current pointer of the file, skip all spaces
+{
+
+	if(str.GetLength () ==0 )
+		return 0;
+
+	char string_line[1000];
+
+	int string_lenghth  = str.GetLength();
+	ASSERT(str.GetLength() < 100);
+
+	sprintf(string_line,"%s\n",str);
+
+	char ch, buf[ 32 ];
+	int i = 0;
+	int buffer_i = 0;
+	int flag = 1;
+	/* returns -1 if end of file is reached */
+
+	for(int i_try  =0 ; i_try < 200; i_try++)  // maximal 200 numbers
+	{
+		buffer_i = 0;
+	while(true)
+	{
+		ch = string_line[i++];
+		if( ch=='\n' || i > string_lenghth)
+		{
+			return -1; // * and $ are special characters for comments
+		}
+		if (isdigit(ch))
+			break;
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+	};
+	if( ch == '\n' )
+	{
+		return -1;
+	}
+	
+	while( isdigit( ch ))
+	{
+		buf[ buffer_i++ ] = ch;
+		ch =  string_line[i++];
+	}
+	buf[ buffer_i ] = 0;
+
+	int value = atoi( buf ) * flag;
+
+	vector.push_back (value);
+	}
+
+	return 0;
+}
+
 void g_ProgramStop()
 {
 	getchar();

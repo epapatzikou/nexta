@@ -245,6 +245,8 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_TRANSIT_SHOWTRANSITACCESSIBILITY, &CTLiteView::OnUpdateTransitShowtransitaccessibility)
 	ON_COMMAND(ID_TRANSIT_CALCULATETRANSITACCESSSIBILITYFROMHERE, &CTLiteView::OnTransitCalculatetransitaccesssibilityfromhere)
 	ON_COMMAND(ID_TRANSIT_OUTPUTTRANSITACCESSSIBILITYFROMHERE, &CTLiteView::OnTransitOutputtransitaccesssibilityfromhere)
+	ON_COMMAND(ID_MOVEMENT_HIGHLIGHTPROHIBITTEDMOVEMENTS, &CTLiteView::OnMovementHighlightprohibitedmovements)
+	ON_UPDATE_COMMAND_UI(ID_MOVEMENT_HIGHLIGHTPROHIBITTEDMOVEMENTS, &CTLiteView::OnUpdateMovementHighlightprohibitedmovements)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -472,6 +474,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_bShowProhibittedMovements = false;
 	m_bShowTransitAccessibility  = false;
 	m_bShowTop10ODOnly = false;
 
@@ -4002,7 +4005,7 @@ void CTLiteView::OnLinkEditlink()
 		dlg.ToNode = pLink->m_ToNodeNumber ;
 
 		dlg.m_NumLeftTurnLanes  = pLink-> m_LeftTurnLanes;
-		dlg.m_LeftTurnTreatment = pLink-> m_LeftTurnTreatment;
+		dlg.m_Prohibited_Node_List = pLink->m_prohibited_node_list .c_str ();
 
 
 		if(pDoc->m_bUseMileVsKMFlag)
@@ -4060,6 +4063,8 @@ void CTLiteView::OnLinkEditlink()
 			// construct a std::string using the LPCSTR input
 			std::string strStd (pszConvertedAnsiString);
 
+
+
 			pLink->m_Name  = strStd;
 
 			pLink->m_LaneCapacity  = dlg.LaneCapacity;
@@ -4082,7 +4087,6 @@ void CTLiteView::OnLinkEditlink()
 			}
 			
 		    pLink-> m_LeftTurnLanes = dlg.m_NumLeftTurnLanes ;
-			pLink-> m_LeftTurnTreatment = dlg.m_LeftTurnTreatment;
 
 
 			if(pLink->m_link_type != dlg.LinkType)
@@ -4104,6 +4108,20 @@ void CTLiteView::OnLinkEditlink()
 			pDoc->m_DefaultSpeedLimit = dlg.DefaultSpeedLimit;
 			pDoc->m_DefaultCapacity = dlg.DefaultCapacity;
 			pDoc->m_DefaultNumLanes = dlg.DefaultnLane;
+
+
+			CT2CA pszConvertedAnsiString2 (dlg.m_Prohibited_Node_List);
+			// construct a std::string using the LPCSTR input
+			std::string strStd2(pszConvertedAnsiString2);
+
+			std::replace(strStd2.begin (), strStd2.end(), ',', ';'); 
+			std::replace(strStd2.begin (), strStd2.end(), ' ', ';'); 
+
+
+			pLink->m_prohibited_node_list =  strStd2;
+
+			// error checking here
+
 
 			if(dlg.m_bEditChange)
 				pDoc->Modify();
@@ -6018,6 +6036,27 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		DTALink* pInLink  = pDoc->m_LinkNoMap [movement.IncomingLinkID];
 		DTALink* pOutLink  = pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
 
+		int destination_node  = pOutLink->m_ToNodeNumber; 
+		if(m_bShowProhibittedMovements)
+		{
+			bool bAllowed = true;
+			for(unsigned int pn = 0; pn < pInLink->m_prohibited_node_number_vector.size(); pn ++)
+			{
+
+				if(pInLink->m_prohibited_node_number_vector[pn] == destination_node)
+				{
+				bAllowed = false;
+				break;
+				}
+			
+			}
+
+			if(bAllowed == true)
+				break; // no drawing
+		
+		}
+
+
 		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
 		if( !pMainFrame->m_bShowLayerMap[layer_connector] &&  pDoc->m_LinkTypeMap[pInLink->m_link_type  ].IsConnector ())
@@ -6191,7 +6230,7 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		case movement_display_turn_three_node_numbers: str_text.Format("%d,%d,%d", pInLink->m_FromNodeNumber,pInLink->m_ToNodeNumber,pOutLink->m_ToNodeNumber); break;
 
 		case movement_display_turn_type: str_text.Format("%s", pDoc->GetTurnString(movement.movement_turn)); break;
-		case movement_display_turn_protected_permited_prohibitted: str_text.Format("%d", movement.turning_prohibition_flag  ); break;
+		case movement_display_turn_protected_permited_prohibited: str_text.Format("%d", movement.turning_prohibition_flag  ); break;
 
 
 		case movement_display_sim_turn_count: 
@@ -6541,4 +6580,15 @@ void CTLiteView::OnTransitOutputtransitaccesssibilityfromhere()
 	pDoc->PrintOutAccessibleMap(pt, false);
 
 
+}
+
+void CTLiteView::OnMovementHighlightprohibitedmovements()
+{
+	m_bShowProhibittedMovements = !m_bShowProhibittedMovements;
+	Invalidate();
+}
+
+void CTLiteView::OnUpdateMovementHighlightprohibitedmovements(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowProhibittedMovements);
 }

@@ -33,6 +33,8 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_PeakHourlyVolume(0)
 	, m_bUpdateLinkAttributeBasedOnType(FALSE)
 	, m_NumLeftTurnLanes(0)
+	, m_Prohibited_Node_List(_T(""))
+	, m_NumRightTurnLanes(0)
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -79,7 +81,8 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_PeakHourlyVolume, 0, 100000);
 	DDX_Check(pDX, IDC_CHECK_UseDefaultData, m_bUpdateLinkAttributeBasedOnType);
 	DDX_Text(pDX, IDC_EDIT_NUMLANES_LEFT_TURN, m_NumLeftTurnLanes);
-	DDX_Control(pDX, IDC_COMBO_LEFT_TURN_TREATMENT, m_LeftTurnTreatmentComboBox);
+	DDX_Text(pDX, IDC_EDIT3, m_Prohibited_Node_List);
+	DDX_Text(pDX, IDC_EDIT_NUMLANES_RIGHT_TURN, m_NumRightTurnLanes);
 }
 
 
@@ -138,11 +141,6 @@ BOOL CDlgLinkProperties::OnInitDialog()
 		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(km)");
 		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(km/h)");
 	}
-
-	m_LeftTurnTreatmentComboBox.AddString ("Not Defined");
-	m_LeftTurnTreatmentComboBox.AddString ("Protected");
-	m_LeftTurnTreatmentComboBox.AddString ("Permitted");
-	m_LeftTurnTreatmentComboBox.AddString ("Protected + Permitted");
 
 	EnableDataBasedOnLinkType();
 
@@ -234,8 +232,6 @@ void CDlgLinkProperties::OnBnClickedOk()
 		sscanf_s(m_Text, "%d,%s", &LinkType, LinkTypeString,sizeof(LinkTypeString));
 	
 	}
-
-	m_LeftTurnTreatment = m_LeftTurnTreatmentComboBox.GetCurSel();
 
 	OnOK();
 }

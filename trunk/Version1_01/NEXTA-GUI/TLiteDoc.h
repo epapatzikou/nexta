@@ -2139,6 +2139,7 @@ public:
 
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
 	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
+	void SavePhasingData();
 	void RunQEMTool(CString MovementFileName, int NodeNumber);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);

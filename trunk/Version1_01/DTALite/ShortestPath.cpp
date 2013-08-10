@@ -180,7 +180,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		FromID = pLink->m_FromNodeID;
 		ToID   = pLink->m_ToNodeID;
 
-			if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+			if( pLink->m_FromNodeNumber == 8081 && pLink->m_ToNodeNumber == 80125)
 			{
 			TRACE("");
 			}
@@ -192,19 +192,29 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = pLink->m_LinkNo ;
 
 		int link_id = pLink->m_LinkNo ;
+
+
 		if(g_LinkTypeMap[g_LinkVector[link_id]->m_link_type].IsConnector())
 		{
+			m_LinkConnectorFlag[link_id] = 1 ;
 			m_OutboundConnectorOriginZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
 			m_OutboundConnectorDestinationZoneIDAry[FromID][m_OutboundSizeAry[FromID]] = g_NodeVector[g_LinkVector[link_id]->m_ToNodeID ].m_ZoneID ;
-			
-			m_OutboundLinkConnectorZoneIDAry[link_id] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
+			m_LinkConnectorOriginZoneIDAry[link_id] = g_NodeVector[g_LinkVector[link_id]->m_FromNodeID ].m_ZoneID ;
+			m_LinkConnectorDestinationZoneIDAry [link_id] = g_NodeVector[g_LinkVector[link_id]->m_ToNodeID ].m_ZoneID ;
+
 	
 		}else
 		{
+			m_LinkConnectorFlag[link_id] = 0 ;
 			m_OutboundConnectorOriginZoneIDAry[FromID][m_OutboundSizeAry[FromID]]  = -1; // default values
 			m_OutboundConnectorDestinationZoneIDAry[FromID][m_OutboundSizeAry[FromID]]  = -1; // default values
-			m_OutboundLinkConnectorZoneIDAry[link_id]  = -1;  // default values
+			m_LinkConnectorOriginZoneIDAry[link_id] = -1;
+			m_LinkConnectorDestinationZoneIDAry [link_id] = -1 ;
+		
 		}
+
+		if(m_OutboundConnectorOriginZoneIDAry[985][1] >=1)
+		TRACE("");
 
 		if(FromID == 0) 
 		{
@@ -649,6 +659,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			int ToNodeNumber = g_NodeVector[ToID].m_NodeNumber;
 
+			if(m_LinkConnectorFlag[LinkID] ==1 )  // only check the following speical condition when a link is a connector
+			{
 			int OriginTAZ  = m_OutboundConnectorOriginZoneIDAry[FromID][i];
 			int DestinationTAZ  = m_OutboundConnectorDestinationZoneIDAry[FromID][i];
 
@@ -663,7 +675,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if(ToID == origin) // special feature 2: no detour at origin
 			continue;
-
+			}
 			int link_entering_time_interval = int(LabelTimeAry[FromID])/g_AggregationTimetInterval;
 			if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
 				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
@@ -804,6 +816,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
+
 	// checking boundary condition for departure time changes
 	if(departure_time < g_DemandLoadingStartTimeInMin)
 		departure_time = g_DemandLoadingStartTimeInMin;
@@ -811,6 +824,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(departure_time > g_DemandLoadingEndTimeInMin)
 		departure_time = g_DemandLoadingEndTimeInMin;
 
+	if(g_NodeVector[origin].m_NodeNumber  == 94 && g_NodeVector[destination].m_NodeNumber  == 626)
+	{
+		debug_flag = 1; 
+	
+	}
 		int i;
 		float AdditionalCostInMin = 0;
 
@@ -828,7 +846,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 		// Initialization for origin node: for all outgoing links from origin node
 
-		m_ScanLinkList.clear();
+		LinkBasedSEList_clear();
 		for(i=0; i< m_OutboundSizeAry[origin];i++)
 		{
 			int LinkID = m_OutboundLinkAry[origin][i];
@@ -836,7 +854,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			int link_entering_time_interval = int(departure_time)/g_AggregationTimetInterval;
 			LinkLabelTimeAry[LinkID] =  departure_time + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
 			LinkLabelCostAry[LinkID] =  departure_time + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
-			m_ScanLinkList.push_back (LinkID);
+			LinkBasedSEList_push_back (LinkID);
 
 			if(m_ToIDAry[LinkID] == destination)  //reach destination on the first link
 			{
@@ -850,10 +868,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		float CostUpperBound = MAX_SPLABEL;
 
 		float NewTime, NewCost;
-		while(m_ScanLinkList.size()>0)
+		while(!LinkBasedSEList_empty())
 		{
-			FromLinkID  = m_ScanLinkList.front ();
-			m_ScanLinkList.pop_front ();
+
+			FromLinkID  = LinkBasedSEList_front();
+			LinkBasedSEList_pop_front();
 
 			if(debug_flag) 
 			{
@@ -865,18 +884,28 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			for(i=0; i<m_OutboundMovementSizeAry[FromLinkID];  i++)  // for each arc (i,j) belong to A(i)
 			{
 				ToLinkID = m_OutboundMovementAry[FromLinkID][i];
+			int FromID = m_FromIDAry[FromLinkID];
 
 				if(debug_flag )  // physical nodes
 				{
-					TRACE("\n   to link %d, downstream node %d ", ToLinkID,m_ToIDAry[ToLinkID]);
+					if(g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber ==80125)
+					{
+					TRACE("Trace!");
+					}
+					TRACE("\n   to link %d, from node: %d, downstream node %d ", ToLinkID, g_NodeVector[FromID].m_NodeNumber, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber );
 				}
 				// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
 
-			int FromID = m_FromIDAry[FromLinkID];
-
-			int OriginTAZ  = m_OutboundConnectorOriginZoneIDAry[FromID][i];
-			int DestinationTAZ  = m_OutboundConnectorDestinationZoneIDAry[FromID][i];
+	if(debug_flag ==1 && g_NodeVector[m_FromIDAry[ToLinkID]].m_NodeNumber  == 80106 && g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber  == 626)
+	{
+		TRACE("");
+	
+	}
+			if(m_LinkConnectorFlag[ToLinkID] ==1)  // only check the following speical condition when a link is a connector
+			{
+			int OriginTAZ  = m_LinkConnectorOriginZoneIDAry[ToLinkID];
+			int DestinationTAZ  = m_LinkConnectorDestinationZoneIDAry[ToLinkID];
 
 			if( OriginTAZ >=1 /* TAZ >=1*/  && DestinationTAZ <=0 && OriginTAZ != origin_zone)
 			continue;  // special feature 1: skip connectors with origin TAZ only and do not belong to this origin zone
@@ -887,9 +916,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			if( OriginTAZ >=1 /* TAZ >=1*/ && OriginTAZ != origin_zone  && DestinationTAZ >=1 /* TAZ >=1*/ && DestinationTAZ != destination_zone)
 			continue;  // special feature 3: skip connectors (with both TAZ at two ends) that do not belong to the origin/destination zones
 
-			if(m_ToIDAry[ToLinkID] == origin) // special feature 2: no detour at origin
-			continue;
+			}
 
+		if(m_ToIDAry[ToLinkID] == origin) // special feature 2: no detour at origin
+			continue;
 
 				int link_entering_time_interval = int(LinkLabelTimeAry[FromLinkID])/g_AggregationTimetInterval;
 				if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
@@ -908,7 +938,15 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				if(pricing_type ==4)  // transit // special feature 3: transit travel time
 					NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTransitTimeAry[ToLinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 				else  // road users
+				{
 					NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
+
+					double movement_delay_in_min  = m_OutboundMovementDelayAry[FromLinkID][i];
+					if(movement_delay_in_min >=100 && debug_flag)
+					{
+					TRACE("prohibited movement!");
+					}
+				}
 			}
 
 
@@ -940,7 +978,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				{
 					if(debug_flag )  // physical nodes
 					{
-						TRACE("\n         UPDATE to link %d, downstream node %d, cost: %f, link travel time %f", ToLinkID, m_ToIDAry[ToLinkID],NewCost, m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
+						TRACE("\n         UPDATE to link %d, downstream node %d, cost: %f, link travel time %f", ToLinkID, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber,NewCost, m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
 					}
 
 					if(NewTime > g_PlanningHorizon -1)
@@ -959,12 +997,12 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					//
 					if(LinkStatusAry[ToLinkID]==2) // in the SEList_TD before
 					{
-						m_ScanLinkList.push_back (ToLinkID);
+						LinkBasedSEList_push_front (ToLinkID);
 						LinkStatusAry[ToLinkID] = 1;
 					}
 					if(LinkStatusAry[ToLinkID]==0)  // not be reached
 					{
-						m_ScanLinkList.push_back (ToLinkID);
+						LinkBasedSEList_push_back (ToLinkID);
 						LinkStatusAry[ToLinkID] = 1;
 					}
 
@@ -992,7 +1030,12 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			}
 		}
 
-		ASSERT(link_id_with_min_cost >=0);
+		if(link_id_with_min_cost <0)
+		{
+			int node_number = g_NodeVector[destination].m_NodeNumber ;
+		cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
+		g_ProgramStop();
+		}
 
 		//step 2 trace the incoming link to the first link in origin node
 

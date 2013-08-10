@@ -407,7 +407,7 @@ public:
 		starting_time_in_min = 0;
 		ending_time_in_min = 1440;
 		turnning_percentage = 0;
-		turning_prohibition_flag = 1;
+		b_turning_prohibited = false;
 		signal_control_no = 0;
 		signal_group_no = 0;
 		phase_index = 0;
@@ -422,21 +422,24 @@ public:
 
 	float GetAvgDelay_In_Min()
 	{
+		if(b_turning_prohibited == true)  // movement is prohibited. 
+			return 9999;  // this is still lower than 99999 as maximal cost
+
 		float avg_delay = total_vehicle_delay/ max(1, total_vehicle_count );
 
 		if(movement_hourly_capacity<=0.1)
-			avg_delay = 99999;
+			avg_delay = 9999;
 
 		return avg_delay;
 	}
 
 
-	int IncomingLinkID;
-	int OutgoingLinkID;
-	string turning_direction;
+		
 	int in_link_from_node_id;
 	int in_link_to_node_id;  // this equals to the current node number
 	int out_link_to_node_id;
+
+	string turning_direction;
 
 	int total_vehicle_count;
 	float total_vehicle_delay;
@@ -449,7 +452,7 @@ public:
 	int starting_time_in_min;
 	int ending_time_in_min;
 	float turnning_percentage;
-	int turning_prohibition_flag;
+	bool b_turning_prohibited;
 	int phase_index;
 	int signal_control_no;  // for meso-scopic, link -based
 	int signal_group_no;  // for meso-scopic, link -based
@@ -1065,6 +1068,8 @@ public:
 	int m_NumberOfLeftTurnBays;
 	int m_NumberOfRightTurnBays;
 	char m_Direction;
+
+	std::vector<int> m_ProhibitedNodeNumberVector;
 
 
 	std::string m_geometry_string, m_original_geometry_string;
@@ -2550,18 +2555,29 @@ public:
 
 	int m_NodeSize;
 	int m_PhysicalNodeSize;
-
-	int m_ListFront;
-	int m_ListTail;
 	int m_LinkSize;
 
-	int* m_LinkList;  // dimension number of nodes
+// the following is for node-based scan eligible list
+	int m_NodeBasedSEListFront;
+	int m_NodeBasedSEListTail;
+	int* m_NodeBasedSEList;  // dimension: number of nodes
+
+// the following is for link-based scan eligible list
+	int m_LinkBasedSEListFront;
+	int m_LinkBasedSEListTail;
+	int* m_LinkBasedSEList;  // dimension: number of links
+
 
 	int** m_OutboundNodeAry; //Outbound node array
 	int** m_OutboundLinkAry; //Outbound link array
+	
 	int** m_OutboundConnectorOriginZoneIDAry; //Outbound connector array
 	int** m_OutboundConnectorDestinationZoneIDAry; //Outbound connector array (destination zone)
-	int* m_OutboundLinkConnectorZoneIDAry; //Outbound connector array
+	
+	int* m_LinkConnectorFlag; //Outbound connector array
+	int* m_LinkConnectorOriginZoneIDAry; 
+	int* m_LinkConnectorDestinationZoneIDAry; 
+
 	int* m_OutboundSizeAry;  //Number of outbound links
 
 	int** m_OutboundMovementAry; //Outbound link movement array: for each link
@@ -2607,7 +2623,7 @@ public:
 	int** TD_NodePredAry;  // pointer to previous NODE INDEX from the current label at current node and time
 	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
 
-	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
+//	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
 
 	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
@@ -2636,7 +2652,10 @@ public:
 		m_OutboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundConnectorOriginZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
 		m_OutboundConnectorDestinationZoneIDAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
-		m_OutboundLinkConnectorZoneIDAry = new int[m_LinkSize];
+		m_LinkConnectorFlag = new int[m_LinkSize];
+		m_LinkConnectorOriginZoneIDAry = new int[m_LinkSize];
+		m_LinkConnectorDestinationZoneIDAry = new int[m_LinkSize];
+
 
 
 		m_InboundLinkAry = AllocateDynamicArray<int>(m_NodeSize,m_AdjLinkSize+1);
@@ -2646,7 +2665,8 @@ public:
 		m_OutboundMovementDelayAry = AllocateDynamicArray<float>(m_LinkSize,m_AdjLinkSize+1);
 		m_OutboundMovementSizeAry = new int[m_LinkSize];
 
-		m_LinkList = new int[m_NodeSize];
+		m_NodeBasedSEList = new int[m_NodeSize];
+		m_LinkBasedSEList = new int[m_LinkSize];
 
 		m_LinkTDDistanceAry = new float[m_LinkSize];
 
@@ -2705,8 +2725,11 @@ public:
 		DeallocateDynamicArray<int>(m_OutboundConnectorDestinationZoneIDAry,m_NodeSize, m_AdjLinkSize+1);
 
 		if(m_LinkSize>=1)
-			delete m_OutboundLinkConnectorZoneIDAry;
-
+		{
+			delete m_LinkConnectorFlag;
+			delete m_LinkConnectorOriginZoneIDAry; 
+			delete m_LinkConnectorDestinationZoneIDAry; 
+		}
 		DeallocateDynamicArray<int>(m_InboundLinkAry,m_NodeSize, m_AdjLinkSize+1);
 
 		// delete movement array
@@ -2715,7 +2738,8 @@ public:
 		DeallocateDynamicArray<float>(m_OutboundMovementDelayAry,m_LinkSize, m_AdjLinkSize+1);
 
 
-		if(m_LinkList) delete m_LinkList;
+		if(m_NodeBasedSEList) delete m_NodeBasedSEList;
+		if(m_LinkBasedSEList) delete m_LinkBasedSEList;
 
 		DeallocateDynamicArray<float>(m_LinkTDTimeAry,m_LinkSize,m_NumberOfSPCalculationIntervals);
 		DeallocateDynamicArray<float>(m_LinkTDTransitTimeAry,m_LinkSize,m_NumberOfSPCalculationIntervals);
@@ -2744,8 +2768,6 @@ public:
 		if(LinkPredAry) delete LinkPredAry;
 		if(LinkLabelTimeAry) delete LinkLabelTimeAry;
 		if(LinkLabelCostAry) delete LinkLabelCostAry;
-
-		m_ScanLinkList.clear();
 
 
 	};
@@ -2781,58 +2803,116 @@ public:
 	// SEList: Scan List implementation: the reason for not using STL-like template is to avoid overhead associated pointer allocation/deallocation
 	void SEList_clear()
 	{
-		m_ListFront= -1;
-		m_ListTail= -1;
+		m_NodeBasedSEListFront= -1;
+		m_NodeBasedSEListTail= -1;
 	}
 
 	void SEList_push_front(int node)
 	{
-		if(m_ListFront == -1)  // start from empty
+		if(m_NodeBasedSEListFront == -1)  // start from empty
 		{
-			m_LinkList[node] = -1;
-			m_ListFront  = node;
-			m_ListTail  = node;
+			m_NodeBasedSEList[node] = -1;
+			m_NodeBasedSEListFront  = node;
+			m_NodeBasedSEListTail  = node;
 		}
 		else
 		{
-			m_LinkList[node] = m_ListFront;
-			m_ListFront  = node;
+			m_NodeBasedSEList[node] = m_NodeBasedSEListFront;
+			m_NodeBasedSEListFront  = node;
 		}
 
 	}
 	void SEList_push_back(int node)
 	{
-		if(m_ListFront == -1)  // start from empty
+		if(m_NodeBasedSEListFront == -1)  // start from empty
 		{
-			m_ListFront = node;
-			m_ListTail  = node;
-			m_LinkList[node] = -1;
+			m_NodeBasedSEListFront = node;
+			m_NodeBasedSEListTail  = node;
+			m_NodeBasedSEList[node] = -1;
 		}
 		else
 		{
-			m_LinkList[m_ListTail] = node;
-			m_LinkList[node] = -1;
-			m_ListTail  = node;
+			m_NodeBasedSEList[m_NodeBasedSEListTail] = node;
+			m_NodeBasedSEList[node] = -1;
+			m_NodeBasedSEListTail  = node;
 		}
 	}
 
 	bool SEList_empty()
 	{
-		return(m_ListFront== -1);
+		return(m_NodeBasedSEListFront== -1);
 	}
 
 	int SEList_front()
 	{
-		return m_ListFront;
+		return m_NodeBasedSEListFront;
 	}
 
 	void SEList_pop_front()
 	{
-		int tempFront = m_ListFront;
-		m_ListFront = m_LinkList[m_ListFront];
-		m_LinkList[tempFront] = -1;
+		int tempFront = m_NodeBasedSEListFront;
+		m_NodeBasedSEListFront = m_NodeBasedSEList[m_NodeBasedSEListFront];
+		m_NodeBasedSEList[tempFront] = -1;
 	}
 
+	////////// link based SE List
+
+		// SEList: Scan List implementation: the reason for not using STL-like template is to avoid overhead associated pointer allocation/deallocation
+	void LinkBasedSEList_clear()
+	{
+		m_LinkBasedSEListFront= -1;
+		m_LinkBasedSEListTail= -1;
+	}
+
+	void LinkBasedSEList_push_front(int link)
+	{
+		if(m_LinkBasedSEListFront == -1)  // start from empty
+		{
+			m_LinkBasedSEList[link] = -1;
+			m_LinkBasedSEListFront  = link;
+			m_LinkBasedSEListTail  = link;
+		}
+		else
+		{
+			m_LinkBasedSEList[link] = m_LinkBasedSEListFront;
+			m_LinkBasedSEListFront  = link;
+		}
+
+	}
+	void LinkBasedSEList_push_back(int link)
+	{
+		if(m_LinkBasedSEListFront == -1)  // start from empty
+		{
+			m_LinkBasedSEListFront = link;
+			m_LinkBasedSEListTail  = link;
+			m_LinkBasedSEList[link] = -1;
+		}
+		else
+		{
+			m_LinkBasedSEList[m_LinkBasedSEListTail] = link;
+			m_LinkBasedSEList[link] = -1;
+			m_LinkBasedSEListTail  = link;
+		}
+	}
+
+	bool LinkBasedSEList_empty()
+	{
+		return(m_LinkBasedSEListFront== -1);
+	}
+
+	int LinkBasedSEList_front()
+	{
+		return m_LinkBasedSEListFront;
+	}
+
+	void LinkBasedSEList_pop_front()
+	{
+		int tempFront = m_LinkBasedSEListFront;
+		m_LinkBasedSEListFront = m_LinkBasedSEList[m_LinkBasedSEListFront];
+		m_LinkBasedSEList[tempFront] = -1;
+	}
+
+	/////////////// end of link-based SE list
 	int  GetLinkNoByNodeIndex(int usn_index, int dsn_index);
 
 };
@@ -2841,6 +2921,7 @@ public:
 
 int g_read_integer(FILE* f, bool special_char_handling = true);
 int g_read_integer_with_char_O(FILE* f);
+int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector);
 
 
 float g_read_float(FILE *f);
@@ -3398,6 +3479,7 @@ extern int g_InitializeLogFiles();
 extern void g_ReadDTALiteSettings();
 extern int g_AgentBasedAssignmentFlag;
 extern float g_DemandGlobalMultiplier;
+extern int g_ProhibitUTurnOnFeewayLinkFlag;
 
 extern void g_TrafficAssignmentSimulation();
 extern void g_OutputSimulationStatistics(int Iteration);
