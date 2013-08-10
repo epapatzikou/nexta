@@ -409,9 +409,9 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 
 	//step 2: construct path array
 	// Scan all vehicles and construct path array for each destination
-	for (int vi = 0; vi<g_TDOVehicleArray[origin_zone][AssignmentInterval].VehicleArray.size(); vi++)
+	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[origin_zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
 	{
-		int VehicleID = g_TDOVehicleArray[origin_zone][AssignmentInterval].VehicleArray[vi];
+		int VehicleID = g_TDOVehicleArray[g_ZoneMap[origin_zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 		ASSERT(pVeh!=NULL);
 
@@ -795,7 +795,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 			*/
 
 			PathArrayForEachODTK element;
-			int PathIndex  = g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.size();
+			int PathIndex  = g_TDOVehicleArray[g_ZoneMap[origin_zone].m_ZoneSequentialNo][AssignmentInterval].m_ODTKPathVector.size();
 
 
 			element.Setup (PathIndex,origin_zone, DestZoneNumber, 1, AssignmentInterval *g_AggregationTimetInterval, (AssignmentInterval+1) *g_AggregationTimetInterval,
@@ -810,7 +810,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 
 			g_HistDemand.AddUpdatedValue(origin_zone,DestZoneNumber,AssignmentInterval, PathArray[DestZoneNo].NewNumberOfVehicles[p]); // to store the initial table as hist database
 
-			g_TDOVehicleArray[origin_zone][AssignmentInterval].m_ODTKPathVector.push_back(element);
+			g_TDOVehicleArray[g_ZoneMap[origin_zone].m_ZoneSequentialNo][AssignmentInterval].m_ODTKPathVector.push_back(element);
 
 
 			//			g_AssignmentLogFile << "OED: O: " << origin_zone << ", D:" << DestZoneID << "Demand Dev: " << PathArray[DestZoneNo].DeviationNumOfVehicles << ", Path:" << p << ", marginal: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << ", AvgTT: "<< PathArray[DestZoneNo].AvgPathTimes[p]<< ", Gap : "<< PathArray[DestZoneNo].AvgPathGap[p]<<  ", VehicleSize:" << PathArray[DestZoneNo].NewNumberOfVehicles[p] << ", flow adjustment" << FlowAdjustment << endl;
@@ -861,12 +861,12 @@ void g_GenerateVehicleData_ODEstimation()
 		{
 
 			if(g_ZoneNumber2NoVector[z]<0)  // no such Zone ID
-				continue;g_TDOVehicleArray[z][di].VehicleArray.clear ();
+				continue;g_TDOVehicleArray[g_ZoneMap[z].m_ZoneSequentialNo][di].VehicleArray.clear ();
 
 
-			for(int pi = 0; pi< g_TDOVehicleArray[z][di].m_ODTKPathVector .size(); pi++)  // for each path
+			for(int pi = 0; pi< g_TDOVehicleArray[g_ZoneMap[z].m_ZoneSequentialNo][di].m_ODTKPathVector .size(); pi++)  // for each path
 			{
-				PathArrayForEachODTK element = g_TDOVehicleArray[z][di].m_ODTKPathVector[pi];
+				PathArrayForEachODTK element = g_TDOVehicleArray[g_ZoneMap[z].m_ZoneSequentialNo][di].m_ODTKPathVector[pi];
 
 				CreateVehicles(element.m_OriginZoneID,element.m_DestinationZoneID ,
 					element.m_VehicleSize ,
@@ -950,12 +950,12 @@ void g_GenerateVehicleData_ODEstimation()
 
 
 
-			if( kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
+			if( kvhc->m_PathIndex  >= g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
 			{
-				cout << "kvhc->m_PathIndex  >= g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size()" << endl;
+				cout << "kvhc->m_PathIndex  >= g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size()" << endl;
 				g_ProgramStop();
 			}
-			PathArrayForEachODTK element = g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector[kvhc->m_PathIndex ];
+			PathArrayForEachODTK element = g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector[kvhc->m_PathIndex ];
 
 			//				PathArrayForEachODTK element = g_ODTKPathVector[kvhc->m_PathIndex ];
 
@@ -991,7 +991,7 @@ void g_GenerateVehicleData_ODEstimation()
 			g_VehicleVector.push_back(pVehicle);
 			g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
 
-			g_TDOVehicleArray[pVehicle->m_OriginZoneID][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
 
 
 			i++;
@@ -1008,7 +1008,7 @@ void g_GenerateVehicleData_ODEstimation()
 
 		for(int di = 0; di < g_AggregationTimetIntervalSize; di++)
 		{
-			g_TDOVehicleArray[z][di].m_ODTKPathVector.clear();
+			g_TDOVehicleArray[g_ZoneMap[z].m_ZoneSequentialNo][di].m_ODTKPathVector.clear();
 
 		}
 	}
