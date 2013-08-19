@@ -168,7 +168,7 @@ int g_AdjLinkSize = 30; // initial value of adjacent links
 
 int g_ODZoneNumberSize = 0;
 int g_ODZoneIDSize = 0;
-
+int g_number_of_prohibited_movements = 0; 
 int g_StartIterationsForOutputPath = 2;
 int g_EndIterationsForOutputPath = 2;
 
@@ -549,9 +549,11 @@ void g_ReadInputFiles(int scenario_no)
 	}
 
 	g_SummaryStatFile.WriteParameterValue ("# of Nodes",g_NodeVector.size());
+	g_SummaryStatFile.WriteParameterValue ("# of Prohibited Movements", g_number_of_prohibited_movements);
 
-	g_SummaryStatFile.WriteParameterValue ("# of Pretimed Signal", NodeControlTypeCount[g_settings.pretimed_signal_control_type_code]);
-	g_SummaryStatFile.WriteParameterValue ("# of Actuated Signal", NodeControlTypeCount[g_settings.actuated_signal_control_type_code]);
+	g_SummaryStatFile.WriteParameterValue ("# of Pretimed Signals", NodeControlTypeCount[g_settings.pretimed_signal_control_type_code]);
+	g_SummaryStatFile.WriteParameterValue ("# of Actuated Signals", NodeControlTypeCount[g_settings.actuated_signal_control_type_code]);
+
 
 	//*******************************
 	// step 2: link type input
@@ -879,10 +881,18 @@ void g_ReadInputFiles(int scenario_no)
 			if(!parser_link.GetValueByFieldName("mode_code",mode_code))
 				mode_code  = "";
 
+			if(mode_code.compare ("w") == 0)   // do not model walking-only link in this version
+				continue;
 
-			std::string prohibited_node_list;
+			if(mode_code.compare ("t") == 0)   // do not model trainsit-only link in this version
+				continue;
 
-			parser_link.GetValueByFieldName("prohibited_node_list",prohibited_node_list);
+			if(mode_code.compare ("t") == 0)   // do not model pedestran-only link in this version
+				continue;
+
+			int ProhibitedU_Turn = 0;
+
+			parser_link.GetValueByFieldName("prohibited_u-turn,",ProhibitedU_Turn);
 
 
 
@@ -960,6 +970,24 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->m_ToNodeNumber = ToID;
 				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
 				pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
+
+				pLink->m_ProhibitedU_Turn = ProhibitedU_Turn;
+
+				if(ProhibitedU_Turn ==1)
+				{
+					g_ShortestPathWithMovementDelayFlag = true; // with movement input
+						string movement_id = GetMovementStringID(FromID, ToID , FromID);
+						int middle_node_id = g_NodeNametoIDMap[ToID ];
+
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = FromID;
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = ToID ; 
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = FromID;
+
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
+
+						g_number_of_prohibited_movements++;
+				}
+
 
 				pLink->m_BPR_Alpha = BPR_Alpha;
 				pLink->m_BPR_Beta = BPR_Beta;
@@ -1157,27 +1185,6 @@ void g_ReadInputFiles(int scenario_no)
 				g_NodeVector[pLink->m_FromNodeID ].m_TotalCapacity += (pLink->m_LaneCapacity* pLink->m_NumLanes);
 				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkVector.push_back(i);
 
-
-				if(prohibited_node_list.size() >=1)
-				{
-					g_ShortestPathWithMovementDelayFlag = true; // with movement input
-					read_multiple_integers_from_a_string(prohibited_node_list.c_str (), pLink->m_ProhibitedNodeNumberVector );
-
-					for(unsigned m = 0; m< pLink->m_ProhibitedNodeNumberVector .size(); m++)
-					{
-						string movement_id = GetMovementStringID(pLink->m_FromNodeNumber, pLink->m_ToNodeNumber , pLink->m_ProhibitedNodeNumberVector[m]);
-						int middle_node_id = g_NodeNametoIDMap[pLink->m_ToNodeNumber ];
-
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = pLink->m_FromNodeNumber;
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = pLink->m_ToNodeNumber ; 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = pLink->m_ProhibitedNodeNumberVector[m];
-
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
-
-
-					}
-				}
-
 				// prevent U turns on freeway links
 				if(g_ProhibitUTurnOnFeewayLinkFlag == 1 && g_LinkTypeMap[pLink->m_link_type].IsFreeway () == true)
 				{
@@ -1255,11 +1262,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	// step 3.2 movement input
 
-
-	if(g_MovementCapacityModelFlag == 1)
-	{
-		g_ReadAMSMovementData();
-	}
+	g_ReadAMSMovementData();
 	//*******************************
 	// step 4: zone input
 

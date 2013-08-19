@@ -74,6 +74,7 @@ extern int g_MovementCapacityModelFlag;
 
 extern int g_ODZoneNumberSize;
 extern int g_ODZoneIDSize;
+extern int g_number_of_prohibited_movements;
 
 enum SPEED_BIN {VSP_0_25mph=0, VSP_25_50mph, VSP_GT50mph, MAX_SPEED_BIN};
 enum VSP_BIN {VSP_LT0=0,VSP_0_3, VSP_3_6, VSP_6_9, VSP_9_12, VSP_12_18, VSP_18_24, VSP_24_30, VSP_GT30, MAX_VSP_BIN};
@@ -423,12 +424,12 @@ public:
 	float GetAvgDelay_In_Min()
 	{
 		if(b_turning_prohibited == true)  // movement is prohibited. 
-			return 9999;  // this is still lower than 99999 as maximal cost
+			return 99;  // this is still lower than 99999 as maximal cost
 
 		float avg_delay = total_vehicle_delay/ max(1, total_vehicle_count );
 
 		if(movement_hourly_capacity<=0.1)
-			avg_delay = 9999;
+			avg_delay = 99;
 
 		return avg_delay;
 	}
@@ -831,6 +832,7 @@ public:
 	DTALink(int TimeSize)  // TimeSize's unit: per min
 	{
 
+		m_ProhibitedU_Turn = 0;
 		m_LeftTurn_DestNodeNumber = -1;
 		m_LeftTurn_NumberOfLanes = 0; 
 		m_LeftTurn_EffectiveGreenTime_In_Second = 0;
@@ -1048,6 +1050,7 @@ public:
 	float m_CumulativeLeftOutCapacityCount; 
 	float m_CumulativeMergeOutCapacityCount; 
 
+	int m_ProhibitedU_Turn;
 
 	float m_CumulativeInCapacityCount;
 
@@ -1068,9 +1071,6 @@ public:
 	int m_NumberOfLeftTurnBays;
 	int m_NumberOfRightTurnBays;
 	char m_Direction;
-
-	std::vector<int> m_ProhibitedNodeNumberVector;
-
 
 	std::string m_geometry_string, m_original_geometry_string;
 	double m_Intersection_NumberOfCrashes, m_Intersection_NumberOfFatalAndInjuryCrashes,m_Intersection_NumberOfPDOCrashes;
