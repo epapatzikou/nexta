@@ -160,7 +160,25 @@ void g_ReadAMSMovementData()
 			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
 
 
+			int prohibited_flag = 0;
 
+			parser_movement.GetValueByFieldName ("prohibited_flag",prohibited_flag );
+
+
+				if(prohibited_flag ==1)
+				{
+					g_ShortestPathWithMovementDelayFlag = true; // with movement input
+						string movement_id = GetMovementStringID(up_node_id, node_id , dest_node_id);
+						int middle_node_id = g_NodeNametoIDMap[node_id ];
+
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = up_node_id;
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = node_id ; 
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = dest_node_id;
+
+						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
+
+						g_number_of_prohibited_movements++;
+				}
 				std::string turn_type;
 
 				parser_movement.GetValueByFieldName ("turn_type",turn_type );
@@ -177,6 +195,10 @@ void g_ReadAMSMovementData()
 					//find link
 					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
 					{
+						if(g_LinkMap.find(GetLinkStringID(up_node_id,node_id)) == g_LinkMap.end())  // no such link
+							continue; 
+
+
 						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
 
 						if(pLink->m_bArterialType == true && QEM_EffectiveGreen>=1 && QEM_SatFlow>=100 )  // only for arterial streets

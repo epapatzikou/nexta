@@ -824,7 +824,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(departure_time > g_DemandLoadingEndTimeInMin)
 		departure_time = g_DemandLoadingEndTimeInMin;
 
-	if(g_NodeVector[origin].m_NodeNumber  == 94 && g_NodeVector[destination].m_NodeNumber  == 626)
+	if(g_NodeVector[origin].m_NodeNumber  == 104 && g_NodeVector[destination].m_NodeNumber  == 115542)
 	{
 		debug_flag = 1; 
 	
@@ -897,7 +897,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
 
-	if(debug_flag ==1 && g_NodeVector[m_FromIDAry[ToLinkID]].m_NodeNumber  == 80106 && g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber  == 626)
+	if(debug_flag ==1 && g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber  == 115542)
 	{
 		TRACE("");
 	
@@ -942,7 +942,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
 
 					double movement_delay_in_min  = m_OutboundMovementDelayAry[FromLinkID][i];
-					if(movement_delay_in_min >=100 && debug_flag)
+					if(movement_delay_in_min >=90 && debug_flag)
 					{
 					TRACE("prohibited movement!");
 					}
@@ -1007,6 +1007,14 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					}
 
 					//another condition: in the SEList now: there is no need to put this node to the SEList, since it is already there.
+				}else
+				{
+				
+					if(debug_flag )  // physical nodes
+					{
+						TRACE("\n        not-UPDATEd to link %d, downstream node %d, new cost %f, old cost: %f, link travel time %f", ToLinkID, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber,NewCost, LinkLabelCostAry[ToLinkID] , m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
+					}
+				
 				}
 
 			}      // end of for each link
@@ -1034,6 +1042,21 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		{
 			int node_number = g_NodeVector[destination].m_NodeNumber ;
 		cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
+		
+		//find shortest path without movement penality
+		g_ShortestPathWithMovementDelayFlag = false;
+
+		int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, pricing_type, 
+			VOT,PathLinkList,TotalCost, distance_flag, debug_flag);
+		// check if the link(s) have the predecesssor
+
+		for(int ii=0; ii<number_of_nodes -1; ii++)
+		{
+		
+			cout << "Link " << g_LinkVector[PathLinkList[ii]]->m_FromNodeNumber  << "->" << g_LinkVector[PathLinkList[ii]]->m_ToNodeNumber  << " with cost " << LinkLabelCostAry[PathLinkList[ii]] << endl;
+		}
+
+		
 		g_ProgramStop();
 		}
 
