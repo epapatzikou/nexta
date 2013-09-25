@@ -37,14 +37,15 @@
 #ifndef _WIN64
 #include "Data-Interface//include//ogrsf_frmts.h"
 #endif 
-class SynchroLaneData
+class AMSMovementData
 {
 public:
+
 	int UpNode,DestNode,Lanes,Speed,SatFlow,Volume,Grade;
 
 	int Phase1, Phase2,Phase3,Phase4;
 	int PermPhase1,PermPhase2,PermPhase3,PermPhase4;
-	SynchroLaneData ()
+	AMSMovementData ()
 	{
 		UpNode = 0;
 		DestNode = 0;
@@ -622,7 +623,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	bool b_RectangleInitialized = false;
 
-	// the following step initialize the coordinate region of network. 
+	// the following step initializes the coordinate region of network. 
 	{
 		CString link_shape_file_name;
 		link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
@@ -771,6 +772,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 
 
+	std::map<int, bool> link_type_waring_map;
 	CString link_shape_file_name;
 	link_shape_file_name = m_ProjectDirectory + link_table_file_name.c_str ();
 
@@ -867,11 +869,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					break;
 				}	
 
-				if(speed_limit_in_mph_name.size()>0 && use_default_speed_limit_from_link_type == "no")
-				{
-					AfxMessageBox("key number_of_lanes is empty, so NeXTA will use default speed limit from the input link type file..", MB_ICONINFORMATION);
-				}	
-
 
 
 				if(number_of_lanes_name.size()>0 && poFeature->GetFieldIndex(number_of_lanes_name.c_str ())==-1)
@@ -883,7 +880,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 				if(number_of_lanes_name.size() ==0 && use_default_number_of_lanes_from_link_type == "no") 
 				{
 				
-					AfxMessageBox("key number_of_lanes is empty, so NeXTA will use default number of lanes from the input link type file.", MB_ICONINFORMATION);
+					AfxMessageBox("Section Link: key number_of_lanes is empty, so NeXTA will use default number of lanes from the input link type file.", MB_ICONINFORMATION);
 
 				}
 
@@ -896,20 +893,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				if(capacity_in_vhc_per_hour_name.size()==0 && use_default_lane_capacity_from_link_type == "no")
 				{
-					AfxMessageBox("key hourly_capacity is empty, so NeXTA will use default lane capacity from the input link type file.", MB_ICONINFORMATION);
+					AfxMessageBox("Section key hourly_capacity is empty, so NeXTA will use default lane capacity from the input link type file.", MB_ICONINFORMATION);
 				}	
 
 
 				if(link_type_name.size()>0 && poFeature->GetFieldIndex(link_type_name.c_str ())==-1)
 				{
-					FieldNameNotExistMessage(link_type_name,"section link; key link_type");
+					FieldNameNotExistMessage(link_type_name,"section link: key link_type");
 					break;
 				}	
 
 
 				if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
 				{
-					FieldNameNotExistMessage(link_type_name,"section link; key length");
+					FieldNameNotExistMessage(link_type_name,"section link: key length");
 					break;
 				}	
 
@@ -943,7 +940,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}
 
 			//***************************************//
-			// first, we read geometry information
+			// first, we read geometry information, 
 
 			OGRGeometry *poGeometry;
 			std::vector<CCoordinate> CoordinateVector;
@@ -1057,12 +1054,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	}
 
 
-	if(from_node_id == 10007 	&& to_node_id == 2511)
-	{
-	TRACE("");
-	}
 
-		int link_code_start = 1;
+
+	int link_code_start = 1;
 	int link_code_end = 1;
 
 
@@ -1078,6 +1072,20 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int type = 0;
 	//				if(link_type_name.size() >=1)
 	type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
+
+	if(m_LinkTypeMap.find(type) == m_LinkTypeMap.end() && link_type_waring_map.find(type) ==link_type_waring_map.end() )
+	{
+		CString link_type_warning; 
+
+		link_type_warning.Format ("link type %d (Field %s) in the link layer file has not been defined. Please check.", type, link_type_name.c_str () );
+
+		AfxMessageBox(link_type_warning);
+
+		link_type_waring_map[type] = true;
+
+	}
+
+
 
 	CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
@@ -1614,9 +1622,34 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 }  // feature
 
 m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl; 
-m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
+
+// count of # of transit and walking links
+
+		int transit_link_count = 0;
+		int walking_link_count = 0;
+		std::list<DTALink*>::iterator iLink;
+
+		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
 
 
+				if (m_LinkTypeMap[(*iLink)->m_link_type ].IsTransit  ())
+					transit_link_count++;
+			
+				if (m_LinkTypeMap[(*iLink)->m_link_type ].IsWalking  ())
+					walking_link_count++;
+
+		}
+
+		if( walking_link_count >0 || transit_link_count >0)
+		{
+		m_LinkDataLoadingStatus.Format ("%d links (%d transit links, %d walking links) are loaded from file %s.",
+		m_LinkSet.size(),transit_link_count, walking_link_count,link_shape_file_name);
+		
+		}else
+		{
+		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),link_shape_file_name);
+		}
 		}  // layer
 		// to do: # of nodes: control: two-way stop signs....
 
@@ -1625,22 +1658,18 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 		// determine control type for nodes
 
-		std::list<DTALink*>::iterator iLink;
 
 		if(b_identify_signal_intersection)
 		{
 
 			number_of_signals = 0;
+			std::list<DTALink*>::iterator  iLink ;
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 
 				DTALink* pLink = (*iLink);
 
-				if( pLink->m_ToNodeNumber == 3000)
-				{
-					TRACE("");
-				}
 
 				{  // reset default value
 					if( m_LinkTypeMap[pLink->m_link_type ].IsArterial () == true &&
@@ -1685,20 +1714,11 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 				int ToNodeID = (*iLink)->m_ToNodeID ;
 				DTANode* pNode = m_NodeNoMap[ToNodeID];
 				//set default green time 
-				if(pNode->m_ControlType == m_ControlType_PretimedSignal || 
-					pNode->m_ControlType == m_ControlType_ActuatedSignal)
-				{
-
-					// from given BPR capacity to determine the effective green time
-					(*iLink)->m_EffectiveGreenTimeInSecond = (int)(pNode->m_CycleLengthInSecond * (*iLink)->m_LaneCapacity / (*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
-					number_of_links_with_effective_green_time++;
-
-
-				}
+		
 			}
 		}
 
-		m_SignalDataLoadingStatus.Format("%d nodes are signalized intersections; %d links have postive effective green time.",number_of_signals, number_of_links_with_effective_green_time );
+		m_SignalDataLoadingStatus.Format("%d nodes are signalized intersections; ",number_of_signals );
 
 	int number_of_new_connectors = 0;
 
@@ -1917,6 +1937,8 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 		if(use_optional_connector_layer == 1)
 		{
 
+			string mode_code_name, link_type_name;
+
 			parser.GetValueBySectionKeyFieldName(file_name,"file_name","connector","value",connector_table_file_name);
 
 			parser.GetValueBySectionKeyFieldName(file_name,"connector","zone_end","value",from_node_id_name);
@@ -1926,6 +1948,8 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 			parser.GetValueBySectionKeyFieldName(file_name,"connector","number_of_lanes","value",number_of_lanes_name);
 			parser.GetValueBySectionKeyFieldName(file_name,"connector","hourly_capacity","value",capacity_in_vhc_per_hour_name);
 			parser.GetValueBySectionKeyFieldName(file_name,"connector","speed_limit","value",speed_limit_in_mph_name);
+			parser.GetValueBySectionKeyFieldName(file_name,"connector","mode_code","value",mode_code_name);
+
 
 			m_AMSLogFile << "starting converting connector from file " << connector_table_file_name;
 
@@ -1954,13 +1978,12 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 			}
 
+		
 			from_node_id_name.clear();
 			to_node_id_name.clear();
 			to_link_id_name.clear();
 			link_id_name.clear();
 			link_name.clear();
-			link_type_name.clear();
-			mode_code_name.clear();
 			direction_name.clear();
 			length_name.clear();
 			number_of_lanes_name.clear();
@@ -2095,6 +2118,7 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 					}
 
+					CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str());
 
 					long link_id =  0;
 					int type = default_link_type;  // find default connectors type.
@@ -2196,6 +2220,15 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 							pLink->m_Name  = "connector";
 							pLink->m_OrgDir = direction;
 							pLink->m_LinkID = link_id;
+
+
+							CT2CA pszConvertedAnsiString (mode_code);
+							// construct a std::string using the LPCSTR input
+							std::string  strStd (pszConvertedAnsiString);
+
+							std::replace( strStd.begin(), strStd.end(), ',', ';'); 
+
+							pLink->m_Mode_code = strStd;
 
 
 							if(to_link_id == 3522905)
@@ -2427,7 +2460,7 @@ m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.si
 
 		// post-processing link information
 
-		Construct4DirectionMovementVector();
+		ConstructMovementVector();
 		AssignUniqueLinkIDForEachLink();
 
 		if(bTwoWayLinkFlag == true)
@@ -3209,7 +3242,8 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 	const int LaneColumnSize = 32;
 	//	string lane_Column_name_str[LaneColumnSize] = { "NBL2","NBL","NBT","NBR","NBR2","SBL2","SBL","SBT","SBR","SBR2","EBL2","EBL","EBT","EBR","EBR2","WBL2","WBL","WBT","WBR","WBR2","NEL","NET","NER","NWL","NWT","NWR","SEL","SET","SER","SWL","SWT","SWR"};
-	string lane_Column_name_str[LaneColumnSize] = { "NBT","NBL2","NBL","NBR","NBR2",
+	string lane_Column_name_str[LaneColumnSize] = {
+		"NBT","NBL2","NBL","NBR","NBR2",
 		"SBT","SBL2","SBL","SBR","SBR2",
 		"EBT","EBL2","EBL","EBR","EBR2",
 		"WBT","WBL2","WBL","WBR","WBR2",
@@ -3223,7 +3257,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 	{
 		bool bNodeNonExistError = false;
 
-		std::map<string,SynchroLaneData> LaneDataMap;
+		std::map<string,AMSMovementData> LaneDataMap;
 
 		bool NewLinkFlag=false;
 
@@ -3665,7 +3699,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 	{
 		bool bNodeNonExistError = false;
 
-		std::map<string,SynchroLaneData> LaneDataMap;
+		std::map<string,AMSMovementData> LaneDataMap;
 
 		bool NewLinkFlag=false;
 
@@ -3924,12 +3958,12 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						DTALink* pIncomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[from_node_id],m_NodeNumbertoNodeNoMap[to_node_id]);
 
 						if(pIncomingLink)
-							element.IncomingLinkID = pIncomingLink->m_LinkNo  ;
+							element.IncomingLinkNo = pIncomingLink->m_LinkNo  ;
 
 						DTALink* pOutcomingLink =  FindLinkWithNodeIDs(m_NodeNumbertoNodeNoMap[to_node_id],m_NodeNumbertoNodeNoMap[dest_node_id]);
 
 						if(pOutcomingLink)
-							element.OutgoingLinkID = pOutcomingLink->m_LinkNo ;
+							element.OutgoingLinkNo = pOutcomingLink->m_LinkNo ;
 
 
 						GDPoint p1, p2, p3;
@@ -4050,8 +4084,8 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 		(*iNode)->SortMovementVector();
 
 	}
-	//Construct4DirectionMovementVector();
-	//		GenerateOffsetLinkBand();
+	ConstructMovementVector();
+//		GenerateOffsetLinkBand();
 	return 1;
 }
 
@@ -4497,7 +4531,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 				if(m_bMovementAvailableFlag==0)  // has not been initialized. 
 				{
-					Construct4DirectionMovementVector();
+					ConstructMovementVector();
 
 					m_MovementPointerMap.clear();
 
@@ -4810,13 +4844,13 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
 			{
 				DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
-				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkID  ];
+				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkNo  ];
 
 				int total_link_count = 0;
 				for(unsigned int j = 0; j< (*iNode)->m_MovementVector .size(); j++)
 				{
 
-					if((*iNode)->m_MovementVector[j].IncomingLinkID == pMovement->IncomingLinkID )
+					if((*iNode)->m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
 					{
 						total_link_count+= (*iNode)->m_MovementVector[j].QEM_TurnVolume ;
 					}

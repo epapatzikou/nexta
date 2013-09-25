@@ -161,7 +161,6 @@ void CDlgLinkList::ReloadData()
 		m_Column_names.push_back ("Speed Limit (km/h)");
 
 	m_Column_names.push_back ("Lane Capacity");
-	m_Column_names.push_back ("Effective Green");
 	m_Column_names.push_back ("Link Type");
 
 	m_Column_names.push_back ("VOC");
@@ -182,14 +181,6 @@ void CDlgLinkList::ReloadData()
 	m_Column_names.push_back ("Observed Peak Hourly Volume");
 
 
-	m_Column_names.push_back ("# Crashes Per Year");
-	m_Column_names.push_back ("# FI Crashes Per Year");
-	m_Column_names.push_back ("# PTO Crashes Per Year");
-
-	m_Column_names.push_back ("PM # Crashes");
-	m_Column_names.push_back ("PM # FI Crashes");
-	m_Column_names.push_back ("PM # PTO Crashes");
-
 	m_Column_names.push_back ("Obs Volume");
 	m_Column_names.push_back ("Volume Error");
 	m_Column_names.push_back ("Error %");
@@ -200,14 +191,6 @@ void CDlgLinkList::ReloadData()
 		m_Column_names.push_back ("P2 SimuVolume");
 		m_Column_names.push_back ("P2 AADT");
 		m_Column_names.push_back ("P2 Speed");
-		m_Column_names.push_back ("P2 Total Crash");
-		m_Column_names.push_back ("P2 Total FI Crash");
-		m_Column_names.push_back ("P2 PTO Crashes");
-		m_Column_names.push_back ("P2 PM Total Crash");
-		m_Column_names.push_back ("P2 PM Total FI Crash");
-		m_Column_names.push_back ("P2 PM PTO Crashes");
-
-
 
 		CString DiffStr;
 		DiffStr.Format("Diff Volume: [P2,%s]-[P1,%s]", m_pDoc->m_ProjectTitle , m_pDoc2->m_ProjectTitle); 
@@ -216,9 +199,6 @@ void CDlgLinkList::ReloadData()
 		m_Column_names.push_back ("Diff AADT");
 		m_Column_names.push_back ("Diff Speed");
 		m_Column_names.push_back ("Diff Total Travel time (hour)");
-		m_Column_names.push_back ("Diff Total Crash Per Year");
-		m_Column_names.push_back ("Diff Total Fatal/Injury  Per Year");
-		m_Column_names.push_back ("Diff PTO Crashes  Per Year");
 	}
 
 	//Add Columns and set headers
@@ -319,9 +299,6 @@ void CDlgLinkList::ReloadData()
 		sprintf_s(text, "%4.0f",pLink1->m_LaneCapacity  );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
-		sprintf_s(text, "%d",pLink1->m_EffectiveGreenTimeInSecond   );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
 		if(m_pDoc->m_LinkTypeMap.find(pLink1->m_link_type) != m_pDoc->m_LinkTypeMap.end())
 		{
 			sprintf_s(text, "%s", m_pDoc->m_LinkTypeMap[pLink1->m_link_type].link_type_name.c_str ());
@@ -378,25 +355,6 @@ void CDlgLinkList::ReloadData()
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
 
-		sprintf_s(text, "%.4f",pLink1->m_number_of_all_crashes        );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-		sprintf_s(text, "%.4f",pLink1->m_num_of_fatal_and_injury_crashes_per_year        );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-		sprintf_s(text, "%.4f",pLink1->m_num_of_PDO_crashes_per_year        );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-		sprintf_s(text, "%.4f",pLink1->m_number_of_all_crashes/max(0.01,  pLink1->m_Length )      );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-		sprintf_s(text, "%.4f",pLink1->m_num_of_fatal_and_injury_crashes_per_year /max(0.01,  pLink1->m_Length )        );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-		sprintf_s(text, "%.4f",pLink1->m_num_of_PDO_crashes_per_year/max(0.01,  pLink1->m_Length )        );
-		m_ListCtrl.SetItemText(Index,column_index++,text);
-
-
 		sprintf_s(text, "%.0f",pLink1->m_total_sensor_link_volume        );
 		m_ListCtrl.SetItemText(Index,column_index++,text);
 
@@ -427,26 +385,7 @@ void CDlgLinkList::ReloadData()
 				sprintf_s(text, "%5.2f",pLink2->m_avg_simulated_speed*1.60934        );
 
 				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_number_of_all_crashes        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_fatal_and_injury_crashes_per_year        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_PDO_crashes_per_year        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_number_of_all_crashes/max(0.01,  pLink1->m_Length )      );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_fatal_and_injury_crashes_per_year /max(0.01,  pLink1->m_Length )        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_PDO_crashes_per_year/max(0.01,  pLink1->m_Length )        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				// calculate difference
+			// calculate difference
 				sprintf_s(text, "%.0f",pLink2->m_total_link_volume  - pLink1->m_total_link_volume     );
 				m_ListCtrl.SetItemText(Index,column_index++,text);
 
@@ -459,15 +398,6 @@ void CDlgLinkList::ReloadData()
 				double total_travel_time = pLink2->m_total_link_volume* pLink2->m_Length / max (0.1, pLink2->m_avg_simulated_speed);
 				double total_travel_time_2 = pLink1 ->m_total_link_volume*pLink1->m_Length / max (0.1, pLink1->m_avg_simulated_speed);
 				sprintf_s(text, "%.2f",total_travel_time -  total_travel_time_2   );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_number_of_all_crashes  - pLink1->m_number_of_all_crashes        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_fatal_and_injury_crashes_per_year  - pLink1->m_num_of_fatal_and_injury_crashes_per_year        );
-				m_ListCtrl.SetItemText(Index,column_index++,text);
-
-				sprintf_s(text, "%.4f",pLink2->m_num_of_PDO_crashes_per_year - pLink1->m_num_of_PDO_crashes_per_year        );
 				m_ListCtrl.SetItemText(Index,column_index++,text);
 
 			}

@@ -50,4 +50,8 @@ public:
 	afx_msg void OnBnClickedCheckEmissionData();
 	float m_DemandLoadingMultipler;
 	afx_msg void OnEnChangeEditDemandLoadingmultiplier();
+	CListBox m_Signal_Control_List;
+	afx_msg void OnLbnSelchangeListSignalControlRepresentation();
+	afx_msg void OnEnChangeEditNumberIterations3();
+	int m_NumberReportingDays;
 };

@@ -182,8 +182,8 @@ void CPage_Node_LaneTurn::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
 		DTANodeMovement movement = pNode->m_MovementVector[i];
-		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkID];
-		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
+		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkNo];
+		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];
 
 		GDPoint p1, p2, p3;
 		// 1: fetch all data

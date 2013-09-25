@@ -46,7 +46,8 @@
 #include "Dlg_ImportODDemand.h"
 #include "DlgNetworkAlignment.h"
 #include "Dlg_VehEmissions.h"
-
+#include "DlgPathList.h"
+extern CDlgPathList* g_pPathListDlg;
 extern CDlgPathMOE	*g_pPathMOEDlg;
 /******************************
 External calling functions
@@ -175,7 +176,7 @@ bool CTLiteDoc::ReadSensorData()
 {
 
 	CString SensorFileName;
-	SensorFileName.Format("%s//input_sensor.csv", m_ProjectDirectory);
+	SensorFileName.Format("%sinput_sensor.csv", m_ProjectDirectory);
 
 	CCSVParser parser;
 	int error_count = 0;
@@ -188,13 +189,13 @@ bool CTLiteDoc::ReadSensorData()
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
 			(*iLink)->m_bSensorData = false;
+			(*iLink)->m_total_sensor_link_volume = 0;
 			}
 
-	int sensor_count = 0;
+			int sensor_count = 0;
+			CString error_message;
 
-	CString error_message;
-
-	CString prev_error_message;
+			CString prev_error_message;
 		while(parser.ReadRecord())
 		{
 			DTA_sensor sensor;
@@ -207,20 +208,24 @@ bool CTLiteDoc::ReadSensorData()
 			if(!parser.GetValueByFieldName("sensor_type",sensor.SensorType)) 
 				continue;
 
+			int day_no = 0;
+
+			parser.GetValueByFieldName("day_no",day_no ); 
+
+			g_SensorDayDataMap[ day_no] = true;
+
+
+			g_SensorLastDayNo= max(g_SensorLastDayNo,  day_no);
+			g_SensorDayNo = g_SensorLastDayNo;
+
+
+
 			parser.GetValueByFieldName("x_coord",sensor.pt.x );
 			parser.GetValueByFieldName("y_coord",sensor.pt.y );
 			
 
 			DTALink* pLink;
-/*			int link_id = 0;
-			parser.GetValueByFieldName("link_id",link_id );
-			if(link_id >0)
-				pLink = m_LinkNoMap[link_id -1];
-			else 
-*/
 			pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber);
-
-
 			if(pLink!=NULL)
 			{
 				sensor.LinkID = pLink->m_LinkNo ;
@@ -297,28 +302,21 @@ bool CTLiteDoc::ReadSensorData()
 				element.end_time_in_min = end_time_in_min;
 				element.count = volume_count;
 				pLink->m_SensorDataVector.push_back(element);
+				pLink->m_total_sensor_link_volume += volume_count;
 
 
 				for(int t = start_time_in_min; t< min (1440,end_time_in_min); t++)
 				{
-					if(pLink->m_FromNodeNumber == 54656 && pLink->m_ToNodeNumber == 56154 && t>=720)
-					{
-						TRACE("");
-					}
 
-					int time = t;  // allow shift of start time
-					if(time>=0 && (unsigned int)time < pLink->m_LinkMOEAry.size())
-					{
-
-//						if(!sensor.SensorType.empty () && sensor.SensorType.find("count")!= string::npos)
-						{
-
-							pLink->m_LinkMOEAry[ time].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
-						}
+		
+					int time = day_no*1440 + t;  // allow shift of start time
+					// day specific value	
+					pLink->m_LinkMOEAry[ time].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					// overall value 
+					pLink->m_LinkMOEAry[ t].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
 
 
 
-					}
 				}
 			}else
 			{
@@ -1093,8 +1091,6 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 	CWaitCursor cws;
 	m_NodeSizeSP = 0;  // reset 
 
-	m_PathDisplayList.clear ();		
-
 	std::list<DTALink*>::iterator iLink;
 
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
@@ -1104,6 +1100,11 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 			if(m_LinkTypeMap[(*iLink)->m_link_type].IsConnector ())
 				(*iLink)->m_bConnector = true;
 
+			if(m_LinkTypeMap[(*iLink)->m_link_type].IsTransit  ())
+				(*iLink)->m_bTransit  = true;
+	
+			if(m_LinkTypeMap[(*iLink)->m_link_type].IsConnector ())
+				(*iLink)->m_bWalking  = true;
 
 		// consider intermediate destination here
 	}
@@ -1214,9 +1215,25 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 						}
 				}
 			}  // for each origin sequence
-				m_PathDisplayList.push_back  (path_element);
-				m_SelectPathNo = 0;  // select the first path
+
+
+			m_SelectPathNo = min( m_SelectPathNo, m_PathDisplayList.size()-1);
+			if(m_PathDisplayList.size()> 0) 
+			{
+				string old_path_name  = m_PathDisplayList[m_SelectPathNo] .m_path_name ;
+				m_PathDisplayList[m_SelectPathNo]  = path_element;
+				m_PathDisplayList[m_SelectPathNo].m_path_name = old_path_name;
+			
+			}else{
+					m_PathDisplayList.push_back (path_element);
+					m_SelectPathNo = 0;
+				}
+			
 				UpdateAllViews(0);
+
+				if( g_pPathListDlg!= NULL && g_pPathListDlg->GetSafeHwnd())
+					 g_pPathListDlg ->ReloadData();
+
 
 	// calculate time-dependent travel time
 

@@ -10,6 +10,7 @@ class CDlgLinkProperties : public CDialog
 
 public:
 
+	int m_NumLeftTurnLanes, m_NumRightTurnLanes;
 	bool m_bEditChange;
 	CDlgLinkProperties(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlgLinkProperties();
@@ -53,12 +54,7 @@ public:
 	afx_msg void OnCbnSelchangeCombo1();
 	long m_LinkID;
 	int SaturationFlowRate;
-	int EffectiveGreenTime;
 	CString StreetName;
-	float m_TransitTravelTime;
-	float m_TransitTransferTime;
-	float m_TransitWaitingTime;
-	float m_TransitFare;
 	float m_BPR_Alpha;
 	float m_BPR_Beta;
 	afx_msg void OnEnChangeEditLength();
@@ -81,7 +77,14 @@ public:
 	afx_msg void OnEnChangeEditAadt();
 	afx_msg void OnEnChangeEditPeakhourlyvolume();
 	afx_msg void OnClose();
-	int m_NumLeftTurnLanes;
-	CString m_Prohibited_Node_List;
-	int m_NumRightTurnLanes;
+	afx_msg void OnEnChangeEditNumlanesLeftTurn();
+	afx_msg void OnEnChangeEditNumlanesRightTurn();
+	CString m_ModeCode;
+	afx_msg void OnEnChangeEdit8();
+	BOOL m_prohibited_u_turn;
+	afx_msg void OnBnClickedCheck2();
+	double m_LeftTurnLength;
+	double m_RightTurnLength;
+	double m_KJam;
+	double m_Grade;
 };

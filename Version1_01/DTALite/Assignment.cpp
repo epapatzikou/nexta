@@ -142,10 +142,6 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 				g_HistDemand.ResetUpdatedValue(); // reset update hist table
 
 
-		//if( iteration >=6)
-		//	g_SimulateSignals = 1;  // enable signal after the path flow has been stabalizied. 
-
-		// initialize for each iteration
 		g_CurrentGapValue = 0.0;
 		g_CurrentRelativeGapValue  = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;

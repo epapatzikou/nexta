@@ -165,10 +165,8 @@
 #define IDB_SEGMENT_ONRAMP              198
 #define IDD_DIALOG_EXCEL_DATA_IMPORT    199
 #define IDD_DIALOG_NODE_MOVEMENT        200
-#define IDD_DIALOG_NODE_LANE            200
 #define IDB_SEGMENT_OFFRAMP             200
 #define IDD_NGSIM_DIALOG                202
-#define IDD_DIALOG_NODE_PHASE           203
 #define IDD_DIALOG_NODE_LANETURN        205
 #define IDR_MENU4                       205
 #define IDD_DIALOG_PATH_LIST            206
@@ -177,10 +175,7 @@
 #define IDD_DIALOG_GISLayer             209
 #define IDD_UNIT_TESTING_DIALOG         212
 #define IDD_DIALOG_UNIT_TEST_LIST       213
-#define IDD_DIALOG_NODE_LANE1           219
-#define IDD_DIALOG_NODE_LANE2           220
 #define IDD_DIALOG_Demand_Type          221
-#define IDD_DIALOG_NODE_PHASE2          222
 #define IDR_MENU_PATH_INFO              222
 #define IDD_DIALOG_ASSIGNMENTSIM_SETTINGS 223
 #define IDR_MENU5                       223
@@ -245,13 +240,16 @@
 #define IDC_EDIT_SATURATION_FLOW_RATE   1010
 #define IDC_MODIFY                      1011
 #define IDC_EDIT_EFFECTIVE_GREEN_TIME   1011
-#define IDC_EDIT_NUMLANES_LEFT_TURN2    1012
+#define IDC_EDIT_LANELENGTH_LEFT_TURN   1011
 #define IDC_EDIT_NUMLANES_RIGHT_TURN    1012
 #define IDC_TRAIN_LIST_CONTROL          1013
+#define IDC_EDIT_JAM_DENSITY            1013
 #define IDC_LIST_NETEWORK_FILE          1014
+#define IDC_EDIT_Grade                  1014
 #define IDC_LIST_NETEWORK_FILE2         1015
 #define IDC_LIST_SENSOR_FILE            1015
 #define IDC_LIST_OUTPUTDTA              1016
+#define IDC_EDIT_LANELENGTH_RIGHT_TURN  1016
 #define IDC_COMBO1                      1018
 #define ID_CANCEL                       1019
 #define IDC_COMBO_YAxis                 1019
@@ -266,6 +264,7 @@
 #define IDC_GRIDLISTCTRLEX              1023
 #define IDC_EDIT_Simulation_Horizon     1023
 #define IDC_GRID_CTRL                   1023
+#define IDC_EDIT_Number_ReportingDays   1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_EDIT_WIDTH                  1026
@@ -327,17 +326,12 @@
 #define IDC_BUTTON_DELETE               1056
 #define IDC_COMBO_VOT_LB                1056
 #define IDC_BUTTON_READ_Signal_Timing   1056
-#define IDC_BUTTON_DEL_PHASE            1056
 #define IDC_COMBO_VOT_UB                1057
 #define IDC_BUTTON3                     1057
 #define IDC_BUTTON_LINK_WEB             1057
-#define IDC_BUTTON_NEW_SC               1057
-#define IDC_BTN_ADDTURN                 1057
 #define IDC_BUTTON_ADD_SCENARIO         1057
 #define IDC_GRIDLIST_MOE                1058
 #define IDC_BUTTON_LINK_WEB_Subarea     1058
-#define IDC_BUTTON_SAVE_SC              1058
-#define IDC_BTN_DELTURN                 1058
 #define IDC_BUTTON_EDIT_DATA_IN_EXCEL   1058
 #define IDC_COMBO_DayNo                 1058
 #define IDC_EDIT_NodeShapeFile          1059
@@ -381,9 +375,7 @@
 #define IDC_BUTTON_GENERATE_DATA2       1083
 #define IDC_BUTTON_GENERATE_VISSIM_DATA 1083
 #define IDC_BUTTON_Import_Sample_File   1083
-#define IDC_LANE_C                      1083
 #define IDC_DEMAND_PROFILE_LIST         1084
-#define IDC_LANE_D                      1084
 #define IDC_BUTTON_ExtendColumeWidth    1084
 #define IDC_VEHICLE_CHART1              1085
 #define IDC_BUTTON_QEM2                 1085
@@ -443,10 +435,6 @@
 #define IDC_BUTTON_Database             1124
 #define IDC_BUTTON_Configuration        1125
 #define IDC_TaskLIST                    1126
-#define IDC_CHECK_NORM                  1127
-#define IDC_LANE_P                      1128
-#define IDC_BUTTON_NEW_PHASE            1129
-#define IDC_COMBO_SC                    1130
 #define IDC_EDIT_CYCLE_LENGTH           1131
 #define IDC_SETTING_TAB                 1132
 #define IDC_BUTTON_COPY                 1133
@@ -471,6 +459,7 @@
 #define IDC_CHECK_ZOOM_TO_LINK          1148
 #define IDC_CHECK1                      1150
 #define IDC_CHECK_UseDefaultData        1150
+#define IDC_CHECK_SIGNAL_NODE_ONLY      1150
 #define IDC_CHECK2                      1151
 #define IDC_COMBO_StartTime             1151
 #define IDC_COMBO_EndTime               1152
@@ -478,8 +467,11 @@
 #define IDC_COMBO_AggInterval           1153
 #define IDC_COMBO_EndHour               1153
 #define IDC_COMBO_AggIntrevalList       1154
+#define IDC_COMBO_SimuDayNo             1154
 #define IDC_COMBO3                      1155
 #define IDC_COMBO_PLOT_TYPE             1155
+#define IDC_COMBO_SimuDayNo2            1155
+#define IDC_COMBO_SensorDayNo           1155
 #define IDC_EDIT_Left                   1157
 #define IDC_EDIT_Top                    1158
 #define IDC_Image_File_Messge           1159
@@ -499,9 +491,13 @@
 #define IDC_STATIC_UNIT_SPEED_LIMIT     1170
 #define IDC_COMBO_MAX_COLUMNS           1171
 #define IDC_EDIT_AADT                   1171
+#define IDC_STATIC_UNIT_DENSITY         1171
 #define IDC_STATIC_MESSAGE              1172
 #define IDC_EDIT_PeakHourlyVolume       1172
+#define IDC_STATIC_UNIT_LENGTH2         1172
 #define IDC_LIST_DEMAND_FORMAT          1173
+#define IDC_EDIT8                       1173
+#define IDC_STATIC_UNIT_LENGTH3         1174
 #define IDC_BUTTONOK                    1175
 #define IDC_EDIT_LatLongA               1178
 #define IDC_EDIT_LatLongA2              1179
@@ -540,6 +536,16 @@
 #define IDC_COMBO_Height                1212
 #define IDC_COMBO_Zone_Height           1213
 #define IDC_BUTTON_GOOGLE_EARTH_KML     1214
+#define IDC_LIST_Signal_Control_Representation 1215
+#define IDC_EDIT_DisplayLabel           1216
+#define IDC_BUTTON_INCREASE_SIZE        1217
+#define IDC_BUTTON_DECREASE_SIZE        1218
+#define IDC_BUTTON_INCREASE_TEXT_SIZE   1219
+#define IDC_BUTTON_DECREASE_TEXT_SIZE   1222
+#define IDC_BUTTON_INCREASE_NODE_TEXT_SIZE 1223
+#define IDC_BUTTON_DECREASE_NODE_TEXT_SIZE 1224
+#define IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2 1225
+#define IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2 1226
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1297,15 +1303,36 @@
 #define ID_TRANSIT_OUTPUTTRANSITACCESSSIBILITYFROMHERE 33667
 #define ID_TRANSIT_OUTPUTTRANSITACCESSSIBILITYFROMALLACTIVITYLOCATIONS 33668
 #define ID_DATA_DELETEEXISTINGPATHSININPUTPATHCSVFILE 33669
-#define ID_MOVEMENT_HIGHLIGHTPROHIBITTEDMOVEMENTS 33670
+#define ID_MOVEMENT_HIGHLIGHTPROHIBITEDMOVEMENTS 33670
+#define ID_DATA_VIEWINPUTPATHFILEINEXCEL 33671
+#define ID_DATA_ADDANEWPATH             33672
+#define ID_DATA_CHANGEPATHNAMEFORSELECTEDPATH 33673
+#define ID_DATA_DELETESELECTEDPATH      33674
+#define ID_LINK_APPLYDEFAULTPARAMETERS  33675
+#define ID_Menu33676                    33676
+#define ID_TRANSIT_HIGHLIGHTTRANSITLINKS 33677
+#define ID_TRANSIT_HIGH                 33678
+#define ID_TRANSIT_SHOWTRANSITLINKSONLY 33679
+#define ID_TRANSIT_SHOWWALKLINKSONLY    33680
+#define ID_MOVEMENT_HIDENON             33681
+#define ID_TOOLS_GISTOOLS33682          33682
+#define ID_TOOLS_GISTOOLS33683          33683
+#define ID_TOOLS_GISTOOLS33684          33684
+#define ID_TOOLS_GISTOOLS33685          33685
+#define ID_TOOLS_GISTOOLS33686          33686
+#define ID_TOOLS_FREEWAYTOOLS33687      33687
+#define ID_RAMP                         33688
+#define ID_RAMP_RAMPDATA                33689
+#define ID_Menu33690                    33690
+#define ID_Menu33691                    33691
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        251
-#define _APS_NEXT_COMMAND_VALUE         33671
-#define _APS_NEXT_CONTROL_VALUE         1215
+#define _APS_NEXT_COMMAND_VALUE         33692
+#define _APS_NEXT_CONTROL_VALUE         1218
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

@@ -64,7 +64,7 @@ void CTLiteDoc::ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber)
 	CString strANMFile = strFolder + _T("simulation.anm");
 	CString strANMRoutesFile = strFolder + _T("simulation.anmRoutes");
 	CString strLogFile = strFolder + _T("msLog.log");
-	CString strZoneCSV = strFolder + _T("input_zone.csv");
+	CString strZoneCSV = strFolder + _T("input_activity_location.csv");
 	CString strODCSV = strFolder + _T("AMS_od_flow.csv");
 	CString strPathCSV = strFolder + _T("AMS_path_flow.csv");
 
@@ -85,7 +85,7 @@ void CTLiteDoc::ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber)
 	CWaitCursor wait;
 	ms.ReadInputLinkCSV(strLinkFileName);
 	ms.ReadInputLinkTypeCSV(strLinkTypeFileName);
-	//ms.ReadInputZoneCSV(strZoneFileName);
+	ms.	ReadInputActivityLocationCSV(strZoneFileName);
 
 	ms.ReadInputSignalCSV("ms_signal.csv");
 
@@ -424,13 +424,15 @@ bool MicroSimulatorInterface::ReadInputLinkCSV(std::string strFileName)
 
 			if(!parser.GetValueByFieldName("name",name))				name = "";
 
-			if(!parser.GetValueByFieldName("link_id",link_id))
-			{
-				AfxMessageBox("Field link_id has not been defined in file input_link.csv. Please check.");
-				break;
-			}
+			link_id = m_LinkList.size()+1;
+
+			//if(!parser.GetValueByFieldName("link_id",link_id))
+			//{
+			//	AfxMessageBox("Field link_id has not been defined in file input_link.csv. Please check.");
+			//	break;
+			//}
 			// 检查link_id的唯一性
-			if ( !CheckDuplicateLink(link_id)) continue;
+			//if ( !CheckDuplicateLink(link_id)) continue;
 			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
 			{
 				AfxMessageBox("Field from_node_id has not been defined in file input_link.csv. Please check.");
@@ -2257,7 +2259,7 @@ bool MicroSimulatorInterface::WriteZones()
 }
 bool MicroSimulatorInterface::WriteLinkTypes()
 {
-	CString strLTCSV = m_strFolder + _T("ms_linktypes.csv");
+	CString strLTCSV = m_strFolder + _T("input_link_type.csv");
 	std::string strFileName;
 	strFileName = T2A(strLTCSV.GetBuffer());
 
@@ -2271,14 +2273,20 @@ bool MicroSimulatorInterface::WriteLinkTypes()
 			string name;
 			string drivingbehavior;
 
-			if(!parser.GetValueByFieldName("linktype_no",linktype_no))
+			if(!parser.GetValueByFieldName("link_type",linktype_no))
 				linktype_no = 0;
 
-			if(!parser.GetValueByFieldName("name",name))
-				name = "Unknown Error";
+			//if(!parser.GetValueByFieldName("link_type_name",name))
+			//	name = "Unknown Error";
 
-			if(!parser.GetValueByFieldName("drivingbehavior",drivingbehavior))
-				drivingbehavior = "Unknown Error";
+			//std::replace( name.begin(), name.end(), ' ', '_'); 
+
+			CString str_name;
+			str_name.Format("linktype%d",  linktype_no);
+			
+			name = T2A(str_name.GetBuffer()); ;
+
+			drivingbehavior = "Urban";
 
 			CString strLine;
 			strLine.Format("\t\t<LINKTYPE NO = \"%d\" NAME = \"%s\" DRIVINGBEHAVIOR = \"%s\" />\n",linktype_no,name.c_str(),drivingbehavior.c_str());
@@ -2300,7 +2308,7 @@ bool MicroSimulatorInterface::WriteLinks()
 		MLink* pLink=(*iMLink);
 		CString strLine;
 
-		if(pLink->m_ReverseLinkID==0 || pLink->m_ReverseLinkID==pLink->m_LinkID) //Xuesong: ReserseLinkID is null
+	//	if(pLink->m_ReverseLinkID==0 || pLink->m_ReverseLinkID==pLink->m_LinkID) //Xuesong: ReserseLinkID is null
 		{
 			if ( pLink->m_ShapePoints.size() == 2 )
 			{
@@ -2343,33 +2351,33 @@ bool MicroSimulatorInterface::WriteLinks()
 				m_rf<<strLine;
 			}
 		}
-		else
-		{
-			if ( pLink->m_ShapePoints.size() == 2 )
-			{
-				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" />\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID );
-				m_rf<<strLine;
-			}
-			else
-			{
-				strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" >\n",
-					pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID);
-				m_rf<<strLine;
-				strLine.Format("\t\t\t\t<LINKPOLY>\n");
-				m_rf<<strLine;
-				for(int i=1 ; i< pLink->m_ShapePoints.size()-1 ; i++)
-				{
-					GDPoint GDP = pLink->m_ShapePoints[i];
-					strLine.Format("\t\t\t\t\t<POINT INDEX=\"%d\" XCOORD=\"%.4f\" YCOORD=\"%.4f\" />\n",i,GDP.x,GDP.y);
-					m_rf<<strLine;
-				}
-				strLine.Format("\t\t\t\t</LINKPOLY>\n");
-				m_rf<<strLine;
-				strLine.Format("\t\t\t</LINK>\n");
-				m_rf<<strLine;
-			}
-		}
+		//else
+		//{
+		//	if ( pLink->m_ShapePoints.size() == 2 )
+		//	{
+		//		strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" />\n",
+		//			pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID );
+		//		m_rf<<strLine;
+		//	}
+		//	else
+		//	{
+		//		strLine.Format("\t\t\t<LINK ID=\"%d\" FROMNODENO=\"%d\" TONODENO=\"%d\" LINKTYPENO=\"%d\" SPEED=\"%.4f\" NUMLANES=\"%d\" REVERSELINK=\"%d\" >\n",
+		//			pLink->m_LinkID ,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber,pLink->m_LinkType,pLink->m_SpeedLimit,pLink->m_NumberOfLanes,pLink->m_ReverseLinkID);
+		//		m_rf<<strLine;
+		//		strLine.Format("\t\t\t\t<LINKPOLY>\n");
+		//		m_rf<<strLine;
+		//		for(int i=1 ; i< pLink->m_ShapePoints.size()-1 ; i++)
+		//		{
+		//			GDPoint GDP = pLink->m_ShapePoints[i];
+		//			strLine.Format("\t\t\t\t\t<POINT INDEX=\"%d\" XCOORD=\"%.4f\" YCOORD=\"%.4f\" />\n",i,GDP.x,GDP.y);
+		//			m_rf<<strLine;
+		//		}
+		//		strLine.Format("\t\t\t\t</LINKPOLY>\n");
+		//		m_rf<<strLine;
+		//		strLine.Format("\t\t\t</LINK>\n");
+		//		m_rf<<strLine;
+		//	}
+		//}
 	}
 	return true;
 }
@@ -3414,17 +3422,19 @@ void MicroSimulatorInterface::LoadData4Editing()
 	CString strNodeCSV = strFolder + _T("input_node.csv");
 	CString strLinkCSV = strFolder + _T("input_link.csv");
 	CString strLinkTypeCSV = strFolder + _T("input_link_type.csv");
+	CString strZoneCSV = strFolder + _T("input_activity_location.csv");
 
 	CString strMSSignal= strFolder + _T("ms_signal.csv");
 	CString strMSLane  = strFolder + _T("ms_lane.csv");
 	CString strMSLaneturn= strFolder + _T("ms_laneturn.csv");
 
-	std::string strNodeFileName,strLinkFileName,strLinkTypeFileName,strMSSignalFileName,strMSLaneFileName,strMSLaneturnFileName;
+	std::string strNodeFileName,strLinkFileName,strLinkTypeFileName,strZoneFileName,strMSSignalFileName,strMSLaneFileName,strMSLaneturnFileName;
 	USES_CONVERSION;
 
 	strNodeFileName = T2A(strNodeCSV.GetBuffer());
 	strLinkFileName = T2A(strLinkCSV.GetBuffer());
 	strLinkTypeFileName = T2A(strLinkTypeCSV.GetBuffer());
+	strZoneFileName = T2A(strZoneCSV.GetBuffer());
 
 	strMSSignalFileName = T2A(strMSSignal.GetBuffer());
 	strMSLaneFileName = T2A(strMSLane.GetBuffer());
@@ -3433,6 +3443,7 @@ void MicroSimulatorInterface::LoadData4Editing()
 	ReadInputNodeCSV(strNodeFileName);
 	ReadInputLinkCSV(strLinkFileName);
 	ReadInputLinkTypeCSV(strLinkTypeFileName);
+	ReadInputActivityLocationCSV(strZoneFileName);
 	FillReverseMLinkID();
 	ReadInputSignalCSV(strMSSignalFileName);
 	ClassifyNodes();

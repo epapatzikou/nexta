@@ -68,15 +68,15 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		{
 			if(FromID!=OriginNodeID && ToID !=DestinationNodeID)
 				continue; 
-			else
-			{
-			 TRACE("Do not skip this connector");
-			}
 		}
 
 		if((*iterLink)->m_AdditionalCost >1)  // skip prohibited links (defined by users)
 			continue;
 
+		int link_type = (*iterLink)->m_link_type ;
+
+		if( (*iterLink)->m_bTransit  || (*iterLink)->m_bWalking )  
+			continue;
 
 		m_FromIDAry[(*iterLink)->m_LinkNo] = FromID;
 		m_ToIDAry[(*iterLink)->m_LinkNo]   = ToID;

@@ -24,6 +24,7 @@
 //    along with NEXTA.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 #include <vector>
+#include <math.h>
 int g_read_integer(FILE* f, bool speicial_char_handling=false);
 int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, char special_ch);
 
@@ -39,3 +40,4 @@ double  g_FindClosestYResolution(double Value);
 int  g_FindClosestTimeResolution(double Value);
 
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
+

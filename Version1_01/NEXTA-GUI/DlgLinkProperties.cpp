@@ -21,20 +21,20 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, nLane(0)
 	, m_LinkID(0)
 	, SaturationFlowRate(0)
-	, EffectiveGreenTime(0)
 	, StreetName(_T(""))
-	, m_TransitTravelTime(0)
-	, m_TransitTransferTime(0)
-	, m_TransitWaitingTime(0)
-	, m_TransitFare(0)
 	, m_BPR_Alpha(0)
 	, m_BPR_Beta(0)
 	, m_AADT(0)
 	, m_PeakHourlyVolume(0)
 	, m_bUpdateLinkAttributeBasedOnType(FALSE)
 	, m_NumLeftTurnLanes(0)
-	, m_Prohibited_Node_List(_T(""))
 	, m_NumRightTurnLanes(0)
+	, m_ModeCode(_T(""))
+	, m_prohibited_u_turn(FALSE)
+	, m_LeftTurnLength(0)
+	, m_RightTurnLength(0)
+	, m_KJam(200)
+	, m_Grade(0)
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -64,25 +64,21 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_LINKID, m_LinkID);
 	DDX_Text(pDX, IDC_EDIT_SATURATION_FLOW_RATE, SaturationFlowRate);
 	DDV_MinMaxInt(pDX, SaturationFlowRate, 0, 5000);
-	DDX_Text(pDX, IDC_EDIT_EFFECTIVE_GREEN_TIME, EffectiveGreenTime);
-	DDV_MinMaxInt(pDX, EffectiveGreenTime, 0, 400);
 	DDX_Text(pDX, IDC_EDIT_STREET_NAME, StreetName);
 	DDV_MaxChars(pDX, StreetName, 100);
 
-	DDX_Text(pDX, IDC_EDIT1, m_TransitTravelTime);
-	DDX_Text(pDX, IDC_EDIT2, m_TransitTransferTime);
-	DDX_Text(pDX, IDC_EDIT4, m_TransitWaitingTime);
-	DDX_Text(pDX, IDC_EDIT5, m_TransitFare);
 	DDX_Text(pDX, IDC_EDIT6, m_BPR_Alpha);
 	DDX_Text(pDX, IDC_EDIT7, m_BPR_Beta);
-	DDX_Text(pDX, IDC_EDIT_AADT, m_AADT);
-	DDV_MinMaxInt(pDX, m_AADT, 0, 1000000);
-	DDX_Text(pDX, IDC_EDIT_PeakHourlyVolume, m_PeakHourlyVolume);
-	DDV_MinMaxInt(pDX, m_PeakHourlyVolume, 0, 100000);
 	DDX_Check(pDX, IDC_CHECK_UseDefaultData, m_bUpdateLinkAttributeBasedOnType);
 	DDX_Text(pDX, IDC_EDIT_NUMLANES_LEFT_TURN, m_NumLeftTurnLanes);
-	DDX_Text(pDX, IDC_EDIT3, m_Prohibited_Node_List);
 	DDX_Text(pDX, IDC_EDIT_NUMLANES_RIGHT_TURN, m_NumRightTurnLanes);
+	DDX_Text(pDX, IDC_EDIT8, m_ModeCode);
+	DDX_Check(pDX, IDC_CHECK2, m_prohibited_u_turn);
+	DDX_Text(pDX, IDC_EDIT_LANELENGTH_LEFT_TURN, m_LeftTurnLength);
+	DDX_Text(pDX, IDC_EDIT_LANELENGTH_RIGHT_TURN, m_RightTurnLength);
+	DDX_Text(pDX, IDC_EDIT_JAM_DENSITY, m_KJam);
+	DDV_MinMaxDouble(pDX, m_KJam, 0, 10000);
+	DDX_Text(pDX, IDC_EDIT_Grade, m_Grade);
 }
 
 
@@ -99,7 +95,6 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_NUMLANES, &CDlgLinkProperties::OnEnChangeEditNumlanes)
 	ON_EN_CHANGE(IDC_EDIT_LANE_CAPACITY, &CDlgLinkProperties::OnEnChangeEditLaneCapacity)
 	ON_EN_CHANGE(IDC_EDIT_SATURATION_FLOW_RATE, &CDlgLinkProperties::OnEnChangeEditSaturationFlowRate)
-	ON_EN_CHANGE(IDC_EDIT_EFFECTIVE_GREEN_TIME, &CDlgLinkProperties::OnEnChangeEditEffectiveGreenTime)
 	ON_EN_CHANGE(IDC_EDIT6, &CDlgLinkProperties::OnEnChangeEdit6)
 	ON_EN_CHANGE(IDC_EDIT7, &CDlgLinkProperties::OnEnChangeEdit7)
 	ON_EN_CHANGE(IDC_EDIT1, &CDlgLinkProperties::OnEnChangeEdit1)
@@ -109,6 +104,10 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_AADT, &CDlgLinkProperties::OnEnChangeEditAadt)
 	ON_EN_CHANGE(IDC_EDIT_PeakHourlyVolume, &CDlgLinkProperties::OnEnChangeEditPeakhourlyvolume)
 	ON_WM_CLOSE()
+	ON_EN_CHANGE(IDC_EDIT_NUMLANES_LEFT_TURN, &CDlgLinkProperties::OnEnChangeEditNumlanesLeftTurn)
+	ON_EN_CHANGE(IDC_EDIT_NUMLANES_RIGHT_TURN, &CDlgLinkProperties::OnEnChangeEditNumlanesRightTurn)
+	ON_EN_CHANGE(IDC_EDIT8, &CDlgLinkProperties::OnEnChangeEdit8)
+	ON_BN_CLICKED(IDC_CHECK2, &CDlgLinkProperties::OnBnClickedCheck2)
 END_MESSAGE_MAP()
 
 
@@ -134,12 +133,19 @@ BOOL CDlgLinkProperties::OnInitDialog()
 
 	if(m_pDoc->m_bUseMileVsKMFlag)
 	{
-		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(Miles)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(mile)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH2,"(feet)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH3,"(feet)");
 		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(mph)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_DENSITY,"(vhc/mile/ln)");
 	}else
 	{
 		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH,"(km)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH2,"(meter)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_LENGTH3,"(meter)");
 		SetDlgItemTextA(IDC_STATIC_UNIT_SPEED_LIMIT,"(km/h)");
+		SetDlgItemTextA(IDC_STATIC_UNIT_DENSITY,"(vhc/km/ln)");
+		
 	}
 
 	EnableDataBasedOnLinkType();
@@ -170,48 +176,6 @@ void CDlgLinkProperties::EnableDataBasedOnLinkType()
 
 	if(link_type ==-1)
 		return ;
-
-		if(m_pDoc->m_LinkTypeMap[link_type].IsTransit () ||  m_pDoc->m_LinkTypeMap[link_type].IsWalking  ())
-		{
-		CEdit* pEdit_flow_rate = (CEdit*)GetDlgItem(IDC_EDIT_SATURATION_FLOW_RATE);
-		pEdit_flow_rate->ShowWindow(SW_HIDE);
-		
-		CEdit* pEdit_green_time = (CEdit*)GetDlgItem(IDC_EDIT_EFFECTIVE_GREEN_TIME);
-		pEdit_green_time->ShowWindow(SW_HIDE);
-
-		CEdit* pEdit1 = (CEdit*)GetDlgItem(IDC_EDIT1);
-		pEdit1->ShowWindow(SW_SHOW);
-
-		CEdit* pEdit2 = (CEdit*)GetDlgItem(IDC_EDIT2);
-		pEdit2->ShowWindow(SW_SHOW);
-
-		CEdit* pEdit4 = (CEdit*)GetDlgItem(IDC_EDIT4);
-		pEdit4->ShowWindow(SW_SHOW);
-
-		CEdit* pEdit5 = (CEdit*)GetDlgItem(IDC_EDIT5);
-		pEdit5->ShowWindow(SW_SHOW);	
-		}else
-		{
-
-		CEdit* pEdit_flow_rate = (CEdit*)GetDlgItem(IDC_EDIT_SATURATION_FLOW_RATE);
-		pEdit_flow_rate->ShowWindow(SW_SHOW);
-		
-		CEdit* pEdit_green_time = (CEdit*)GetDlgItem(IDC_EDIT_EFFECTIVE_GREEN_TIME);
-		pEdit_green_time->ShowWindow(SW_SHOW);
-
-		CEdit* pEdit1 = (CEdit*)GetDlgItem(IDC_EDIT1);
-		pEdit1->ShowWindow(SW_HIDE);
-
-		CEdit* pEdit2 = (CEdit*)GetDlgItem(IDC_EDIT2);
-		pEdit2->ShowWindow(SW_HIDE);
-
-		CEdit* pEdit4 = (CEdit*)GetDlgItem(IDC_EDIT4);
-		pEdit4->ShowWindow(SW_HIDE);
-
-		CEdit* pEdit5 = (CEdit*)GetDlgItem(IDC_EDIT5);
-		pEdit5->ShowWindow(SW_HIDE);	
-	
-	}
 }
 void CDlgLinkProperties::OnCbnEditchangeCombo1()
 {
@@ -386,5 +350,26 @@ void CDlgLinkProperties::OnClose()
 
    int nRet = 5; 
    EndDialog(nRet); 
+
+}
+
+void CDlgLinkProperties::OnEnChangeEditNumlanesLeftTurn()
+{
+	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnEnChangeEditNumlanesRightTurn()
+{
+	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnEnChangeEdit8()
+{
+	m_bEditChange = true;
+}
+
+void CDlgLinkProperties::OnBnClickedCheck2()
+{
+	m_bEditChange = true;
 
 }

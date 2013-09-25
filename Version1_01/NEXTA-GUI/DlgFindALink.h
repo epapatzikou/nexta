@@ -59,10 +59,12 @@ public:
 
 	CString m_StrFind;
 	virtual BOOL OnInitDialog();
+	BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnBnClickedFindVehicle();
-	CComboBox m_ComboBox;
 	CListBox m_FindObjectList;
 	afx_msg void OnBnClickedButtonFind();
 	afx_msg void OnLbnSelchangeList1();
 	afx_msg void OnCbnSelchangeCombo1();
+	CString m_UserInputString;
+	CEdit m_EditorControl;
 };

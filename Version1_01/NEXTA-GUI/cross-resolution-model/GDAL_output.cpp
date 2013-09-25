@@ -320,7 +320,7 @@ void CTLiteDoc::OnExportAms()
 
 void CTLiteDoc::RunExcelAutomation() 
 {
-	ExportQEMData(0);
+	ExportQEMData(-1);
 }
 #ifndef _WIN64
 void AddGISField(std::vector<OGRFieldDefn> &OGRFieldVector, CString field_name,  OGRFieldType type)
@@ -494,7 +494,6 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 		OGRFieldDefn oField9 ("link_capacity", OFTInteger); 
 		OGRFieldDefn oField10 ("link_type_name", OFTString); 
 		OGRFieldDefn oField11 ("FFTT", OFTReal); 
-		OGRFieldDefn oField12 ("effective_green_time", OFTReal); 
 
 
 
@@ -510,7 +509,6 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 		if( poLayer->CreateField( &oField9 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField9.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField10 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField10.GetNameRef()); AfxMessageBox(str); return ;	}
 		if( poLayer->CreateField( &oField11 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField11.GetNameRef()); AfxMessageBox(str); return ;	}
-		if( poLayer->CreateField( &oField12 ) != OGRERR_NONE ) {  str.Format("Creating field %s failed", oField12.GetNameRef()); AfxMessageBox(str); return ;	}
 
 
 		std::list<DTALink*>::iterator iLink;
@@ -541,8 +539,6 @@ void CTLiteDoc::ExportLinkLayerToGISFiles(CString file_name, CString GISTypeStri
 				poFeature->SetField("link_type_name", link_type_name );
 
 				poFeature->SetField("FFTT", (*iLink)->m_FreeFlowTravelTime );
-				poFeature->SetField("effective_green_time", (*iLink)->m_EffectiveGreenTimeInSecond  );
-
 
 				int hour = 0;
 

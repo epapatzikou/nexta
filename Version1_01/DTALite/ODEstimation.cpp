@@ -347,7 +347,8 @@ bool g_ReadLinkMeasurementFile()
 		if(count==0 && g_ODEstimationFlag==1)
 		{
 
-			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record. Please check input_scenario_settings.csv and input_sensor.csv." << endl;
+			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record with min " << g_ValidationDataStartTimeInMin << " -> min " << 
+				g_ValidationDataEndTimeInMin << ". Please check input_scenario_settings.csv and input_sensor.csv." << endl;
 
 			if(g_ValidationDataEndTimeInMin < early_start_time_in_min || late_end_time_in_min < g_ValidationDataStartTimeInMin ) 
 			{

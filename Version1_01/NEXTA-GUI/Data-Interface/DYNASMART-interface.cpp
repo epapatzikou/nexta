@@ -404,7 +404,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		m_UnitFeet = m_UnitMile/5280.0f;  
 
 		m_LinkDataLoadingStatus.Format ("%d links are loaded.",m_LinkSet.size());
-		Construct4DirectionMovementVector();
+		ConstructMovementVector();
 
 
 
@@ -602,7 +602,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					element.ZoneID  = zone_number;
 					element.NodeNumber = destination_node;
 
-					element.External_OD_flag = -1;
+					element.External_OD_flag = 0;
 					element.pt = m_NodeNoMap [node_id ]  ->pt;
 
 
@@ -646,7 +646,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 					DTAActivityLocation element;
 					element.ZoneID  = zone_number;
 					element.NodeNumber = to_node;
-					element.External_OD_flag = 1;
+					element.External_OD_flag = 0;
 
 					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 				}
@@ -922,6 +922,9 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 		(*iLink)->ResetMOEAry(m_SimulationStartTime_in_min + g_Simulation_Time_Horizon);  // use one day horizon as the default value
 	}
 
+		g_SimulatedDayDataMap[ 0] = true;  // day 0 as default
+
+
 	bool bHighresoltutionFlag = false;
 
 	if(bHighresoltutionFlag)
@@ -954,7 +957,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 			int t = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN+1;
 
 			// timt t is the timestamp from the current link to the next link, in min 
-			if(pLinkCurrent!=NULL && t< pLinkCurrent->m_LinkMOEAry.size())
+			if(pLinkCurrent!=NULL)
 			{
 				pLinkCurrent->m_LinkMOEAry[t].VehicleOutflowCount+=1;
 
@@ -973,7 +976,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 			if(i==1)  // first link 
 			{
 				int dep_t = pVehicle->m_DepartureTime+1;
-				if(pLinkCurrent!=NULL && dep_t< pLinkCurrent->m_LinkMOEAry.size())
+				if(pLinkCurrent!=NULL )
 				{
 					pLinkCurrent->m_LinkMOEAry[dep_t].VehicleInflowCount+=1;
 
@@ -986,7 +989,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 
 				DTALink* pLinkNext = m_LinkNoMap[ pVehicle->m_NodeAry[i+1].LinkNo];
 
-				if(pLinkNext!=NULL && t< pLinkNext->m_LinkMOEAry.size())
+				if(pLinkNext!=NULL)
 				{
 					pLinkNext->m_LinkMOEAry[t].VehicleInflowCount+=1;
 
@@ -1782,14 +1785,6 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 						int in_link_from_node_id = m_NodeNumbertoNodeNoMap[in_link_from_node_number];
 						int in_link_to_node_id = m_NodeNumbertoNodeNoMap[in_link_to_node_number];
 
-						DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
-						if(pLink!=NULL)
-						{
-							pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
-						}
-
-
-
 						int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
 
 						int movement_size  = g_read_integer(st);
@@ -1954,14 +1949,6 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 							int in_link_to_node_number = g_read_integer(st);
 							int in_link_from_node_id = m_NodeNumbertoNodeNoMap[in_link_from_node_number];
 							int in_link_to_node_id = m_NodeNumbertoNodeNoMap[in_link_to_node_number];
-
-							DTALink* pLink =  FindLinkWithNodeNumbers(in_link_from_node_number, in_link_to_node_number);
-							if(pLink!=NULL)
-							{
-								pLink->m_EffectiveGreenTimeInSecond+= max(phase.max_green,phase.min_green);
-							}
-
-
 
 							int phase_ID2 = g_read_integer(st);	// remember to read redundant phase id
 

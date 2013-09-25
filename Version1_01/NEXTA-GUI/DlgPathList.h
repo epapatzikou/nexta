@@ -113,4 +113,9 @@ public:
 	afx_msg void OnBnClickedGoogleearthoutput();
 	afx_msg void OnBnClickedButtonGoogleEarthKml();
 	afx_msg void OnDataDeleteexistingpathsininputpathcsvfile();
+	afx_msg void OnDataViewinputpathfileinexcel();
+	afx_msg void OnDataAddanewpath();
+	afx_msg void OnDataChangepathnameforselectedpath();
+	afx_msg void OnDataDeleteselectedpath();
+	afx_msg void OnLbnDblclkList1();
 };

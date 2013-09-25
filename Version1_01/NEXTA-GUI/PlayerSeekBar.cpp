@@ -48,33 +48,16 @@ CString g_time_to_string(long timestamp)
    int day, hour, min, h_day, h_hour, h_min;
    int current_day, current_hour, current_min;
 
-   day = timestamp /1440;
-   hour = (timestamp-day*1440)/60;
-   min =  timestamp- hour*60 - day*1440;
+   day = g_SimulatedLastDayNo;
+   hour = timestamp/60;
+   min =  timestamp- hour*60;
 
-   current_day = g_Simulation_Time_Stamp /1440;
-   current_hour = (g_Simulation_Time_Stamp-current_day*1440)/60;
-   current_min =  g_Simulation_Time_Stamp- current_hour*60 - current_day*1440;
+   str.Format("day [%d] %02d:%02d ", day,hour, min);
 
-   h_day = g_Simulation_Time_Horizon/1440;
-   h_hour = (g_Simulation_Time_Horizon- day*1440)/60 ;
-   h_min =  g_Simulation_Time_Horizon - day*1440 - h_hour*60;
-
-   if(timestamp == g_Simulation_Time_Stamp)
+ /*  }else
    {
-	if(day>=1)
-	   str.Format("d%d:%02d:%02d / d%d:%02d:%02d", day,hour, min, h_day, h_hour, h_min);
-	else
-	   str.Format("%02d:%02d / %02d:%02d", hour, min, h_hour, h_min);
-
-   }else
-   {
-
-	if(day>=1)
 	   str.Format("prediction: d%d:%02d:%02d (+%d)", current_day,current_hour, current_min, timestamp - g_Simulation_Time_Stamp);
-	else
-		str.Format("prediction: %02d:%02d (+%d)", current_hour, current_min, timestamp - g_Simulation_Time_Stamp);
-   }
+   }*/
 
    return str;
 }
@@ -338,9 +321,9 @@ void CPlayerSeekBar::OnPaint()
 	dc.SetTextColor(RGB(190,190,190));
 
 	CRect r = GetChannelRect();
-	  for(int time = m_start; time < m_stop; time +=60)
+	  for(int time = m_start; time < m_stop; time +=30)
 	  {
-		if(time >= this->m_DemandLoadingStartTimeInMin && time <= this->m_DemandLoadingEndTimeInMin )
+		if( time >= this->m_DemandLoadingStartTimeInMin && time <= this->m_DemandLoadingEndTimeInMin )
 		{
 		dc.SetTextColor(RGB(0,0,0));
 		}else
@@ -351,9 +334,22 @@ void CPlayerSeekBar::OnPaint()
 	int x = r.left + float(time)/(m_stop-m_start)*(r.right - r.left);
 		int y = r.top;
 		CString str;
+
+		if(time%60==0)
+		{
 			str.Format("%dh",time/60);
+
 		dc.SetBkMode(TRANSPARENT);
 		dc.TextOutA (x,y,str);
+		}else
+		{  // time == 30 min interval
+			str.Format(".");
+			dc.SetBkMode(TRANSPARENT);
+			dc.TextOutA (x,y,str);
+		
+		}
+
+
 	  }
    }
 

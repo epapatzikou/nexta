@@ -98,6 +98,11 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_DATA_EXPORTFREEVALSEGMENTFILE, &CDlgPathList::OnDataExportfreevalsegmentfile)
 	ON_BN_CLICKED(IDC_BUTTON_GOOGLE_EARTH_KML, &CDlgPathList::OnBnClickedButtonGoogleEarthKml)
 	ON_COMMAND(ID_DATA_DELETEEXISTINGPATHSININPUTPATHCSVFILE, &CDlgPathList::OnDataDeleteexistingpathsininputpathcsvfile)
+	ON_COMMAND(ID_DATA_VIEWINPUTPATHFILEINEXCEL, &CDlgPathList::OnDataViewinputpathfileinexcel)
+	ON_COMMAND(ID_DATA_ADDANEWPATH, &CDlgPathList::OnDataAddanewpath)
+	ON_COMMAND(ID_DATA_CHANGEPATHNAMEFORSELECTEDPATH, &CDlgPathList::OnDataChangepathnameforselectedpath)
+	ON_COMMAND(ID_DATA_DELETESELECTEDPATH, &CDlgPathList::OnDataDeleteselectedpath)
+	ON_LBN_DBLCLK(IDC_LIST1, &CDlgPathList::OnLbnDblclkList1)
 END_MESSAGE_MAP()
 
 
@@ -205,10 +210,10 @@ void CDlgPathList::ReloadData()
 	{
 		CString str;
 
-		if(m_pDoc->m_PathDisplayList[i].m_bSavedPath)
-			str.Format("Path ID.%d: %s, %d links ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+		if(m_pDoc->m_PathDisplayList[i].m_LinkVector .size() ==0 )
+			str.Format("Path No.%d: %s, %d link ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
 		else
-			str.Format("Path ID.%d: %s, %d links ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
+			str.Format("Path No.%d: %s, %d links ",i+1, m_pDoc->m_PathDisplayList[i].m_path_name.c_str (), m_pDoc->m_PathDisplayList[i].m_LinkVector .size());
 
 		m_PathList.AddString (str);
 
@@ -854,157 +859,15 @@ void CDlgPathList::OnPathDataExportCSV()
 
 void CDlgPathList::OnDataImportCsv()
 {
+	OnDataCleanallpaths();
+	m_pDoc->ReadInputPathCSVFile(m_pDoc->m_ProjectDirectory  + "input_path.csv");
+
+	ReloadData();
+
+	Invalidate();
+	m_pDoc->UpdateAllViews (0);
 
 
-	CString ErrorMessageVector;
-
-	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
-	{
-
-		m_pDoc->m_PathDisplayList[p].m_LinkVector.clear();
-	}
-
-
-		m_pDoc->m_PathDisplayList.clear();
-		m_pDoc->m_SelectPathNo=0;
-
-
-		char lpszFileName[_MAX_PATH];
-
-		sprintf(lpszFileName,"%sinput_path.csv",m_pDoc->m_ProjectDirectory);
-
-
-		int prev_path_id = -1;
-		CCSVParser parser;
-		if (parser.OpenCSVFile(lpszFileName))
-		{
-			bool bNodeNonExistError = false;
-
-			m_pDoc->m_OriginNodeID = -1;
-			m_pDoc->m_DestinationNodeID = -1;
-
-			int count = 0;
-			DTALink* pLink =NULL;
-			while(parser.ReadRecord())
-			{
-				int link_id = 0;
-				int from_node_id;
-				int to_node_id;
-
-				int path_id = count;
-
-
-				string path_name;
-				parser.GetValueByFieldName("path_name",path_name);
-				//find reference travel time
-				DTAPath path_element;
-
-				path_element.m_path_name  = path_name;
-
-				m_pDoc->m_PathDisplayList.push_back (path_element);
-
-
-				string node_sequence; 
-				parser.GetValueByFieldName("node_sequence",node_sequence);\
-
-					std::vector<int> node_sequence_vector;
-
-				read_multiple_integers_from_a_string(node_sequence.c_str (), node_sequence_vector);
-
-				int route_no = m_pDoc->m_PathDisplayList.size()-1;
-
-				for(unsigned int i = 0; i < node_sequence_vector.size()-1; i++)
-				{
-				
-					pLink = m_pDoc->FindLinkWithNodeNumbers(node_sequence_vector[i],node_sequence_vector[i+1],lpszFileName);
-			
-
-					if(pLink==NULL)
-					{
-						CString ErrorMessage;
-						ErrorMessage.Format("Path Name %s: %d->%d does not exist.\n", path_name,node_sequence_vector[i],node_sequence_vector[i+1]);
-
-						ErrorMessageVector+= ErrorMessage;
-						return;
-					}
-
-					if(count==0)
-					{
-						m_pDoc->m_OriginNodeID  = pLink->m_FromNodeID ;
-					}
-
-					m_pDoc->m_PathDisplayList[route_no].m_LinkVector.push_back (pLink->m_LinkNo );
-
-				}
-
-
-
-				if(node_sequence_vector.size()>=2)
-				{
-					for(int t = 0 ; t< 1440; t+= 15)  // for each starting time
-					{
-						CString str = 		m_pDoc->GetTimeStampStrFromIntervalNo (t,true);
-
-						std::string str_time = m_pDoc->CString2StdString (str);
-
-						float travel_time = 0;
-						parser.GetValueByFieldName(str_time,travel_time);
-
-
-						if(travel_time >0.1f)
-						{
-							m_pDoc->m_PathDisplayList[route_no].m_bWithSensorTravelTime = true;
-							for(int s = 0; s<15; s++)
-							{
-								m_pDoc->m_PathDisplayList[route_no].m_SensorTimeDependentTravelTime[t+s] = travel_time;
-							}
-						}
-
-					}
-
-				}
-
-
-				CString c_path_name;
-				c_path_name.Format("%d",route_no+1);
-
-
-				count++;
-			}
-
-			if(pLink!=NULL)  // last link
-			{
-				m_pDoc->m_DestinationNodeID  = pLink->m_ToNodeID ;	
-			}
-
-		}else
-		{
-			AfxMessageBox("File input_path.csv cannot be opened.");
-		}
-		ReloadData();
-
-		if(	m_PathList.GetCount() >=1)
-		{
-
-			CString msg;
-			msg.Format("%d path(s) have been imported from file input_path.csv.", m_PathList.GetCount());
-
-			AfxMessageBox(msg, MB_ICONINFORMATION);
-
-			m_PathList.SetCurSel(0);
-			Invalidate();
-
-		}
-
-
-		if(ErrorMessageVector.GetLength ()>0)
-		{
-			m_pDoc->WriteStringToLogFile("error_log_path_list.csv", ErrorMessageVector);
-
-			ErrorMessageVector+= "Please check file error_log_path_list.csv in Excel.";
-			AfxMessageBox(ErrorMessageVector);
-
-		}
 }
 
 void CDlgPathList::OnBnClickedCheckZoomToSelectedLink()
@@ -1057,7 +920,7 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 
 	CDlg_VehicleClassification* m_pDlg = new CDlg_VehicleClassification; 
 
-	m_pDlg->m_PresetChartTitle.Format ("Path No.%d", m_pDoc->m_SelectPathNo+1);
+	m_pDlg->m_PresetChartTitle.Format ("Path No.%d %s", m_pDoc->m_SelectPathNo+1, m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_path_name .c_str());
 
 	m_pDlg->m_pDoc = m_pDoc;
 	m_pDoc->m_VehicleSelectionMode = CLS_path_trip;
@@ -1072,119 +935,23 @@ void CDlgPathList::OnBnClickedDataAnalysis()
 void CDlgPathList::OnDataGeneratesampleinputpathcsv()
 {
 	// calculate time-dependent travel time
-
-	int time_step = 1;
-
-	CString input_sample_file_name;
-
-	input_sample_file_name.Format("%sinput_path.csv",m_pDoc->m_ProjectDirectory);
-	// add path record
-
-	// if the file is empty, add field titles
-
-	bool bEmptyFile = true;
-	FILE* pFile;
-	fopen_s(&pFile,input_sample_file_name,"rb");
-	if(pFile!=NULL)
-	{
-		fseek(pFile, 0, SEEK_END );
-		int Length = ftell(pFile);
-		fclose(pFile);
-		if(Length > 0 )
-			bEmptyFile = false;
-
-	}
-	// else we add a path record
-
-	FILE* st;
-
-	fopen_s(&st,input_sample_file_name,"a");
-	if(st==NULL)
-	{
-
-		AfxMessageBox("Please close file input_path.csv in Excel.");
-		return;
-
-	}
-
 	if(m_pDoc->m_PathDisplayList.size()==0)
 	{
 		AfxMessageBox("To generate the file input_path.csv, Please first define one path by selecting the origin and destination nodes.", MB_ICONINFORMATION);
 		return;
 	}
 
-	if(st!=NULL)
+	if(m_pDoc->m_ProjectDirectory.GetLength () == 0 )
 	{
-
-
-		if(bEmptyFile == true)
-		{
-			//write field titles
-		fprintf(st,"path_name,node_sequence,");
-
-
-		for(int min  = 0; min < 1440; min +=15)
-		{
-		CString str = 		m_pDoc->GetTimeStampStrFromIntervalNo (min,true);
-		fprintf(st,"%s,",str);
-
-		}
-
-
-		fprintf(st,"\n");
-		}
-
-		CDlg_UserInput dlg;
-		dlg.m_StrQuestion  = "Please specify the name of the path:";
-		dlg.m_InputValue = "sample: 101 NB";
-
-		CString path_name; 
-		if(dlg.DoModal ()==IDOK)
-		{
-			path_name = dlg.m_InputValue;
-		}else
-		{
-
-		fclose(st);
-		return;
-		}
-		// path name
-		fprintf(st,"%s,", path_name);
-
-
-		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
-		{
-			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
-			for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
-			{
-				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
-				if(pLink != NULL)
-				{
-					fprintf(st,"%d;",
-						pLink->m_FromNodeNumber);
-
-				}
-
-				if(i==path_element.m_LinkVector.size()-1)
-				{
-					if(pLink != NULL)
-					{
-						fprintf(st,"%d\n",
-							pLink->m_ToNodeNumber);
-
-					}
 	
-				}
+		AfxMessageBox("Please first specify a folder for the new project.", MB_ICONINFORMATION);
+		return;
 
-
-			}
-
-
-		} //for each path
-
-		fclose(st);
-		//m_pDoc->OpenCSVFileInExcel (input_sample_file_name);
 	}
+
+
+	m_pDoc->SaveInputPathCSVFile(m_pDoc->m_ProjectDirectory +"input_path.csv");
+
 }
 
 void CDlgPathList::OnDataCleanallpaths()
@@ -2279,15 +2046,7 @@ void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
 
 						ToNodeID = pLink->m_ToNodeID ;
 						pNode = m_pDoc->m_NodeNoMap[ToNodeID];
-						//set default green time 
-						if(pNode->m_ControlType == m_pDoc->m_ControlType_PretimedSignal || 
-							pNode->m_ControlType == m_pDoc->m_ControlType_ActuatedSignal)
-						{
-								
-							pLink->m_EffectiveGreenTimeInSecond = value; break;
-						}
-							
-					
+				
 					
 					}
 
@@ -2337,6 +2096,7 @@ void CDlgPathList::OnChangeattributesforlinksalongpathDeletelinksalongpath()
 
 void CDlgPathList::OnBnClickedDynamicDensityContour()
 {
+	CString PathTitle;
 
 	int ytics_stepsize  = 1;
 
@@ -2365,6 +2125,8 @@ void CDlgPathList::OnBnClickedDynamicDensityContour()
 				continue;
 
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+			PathTitle.Format("Path %d %s", p+1,  path_element.m_path_name.c_str () );
 
 			if(path_element.m_LinkVector.size() >=15)
 				ytics_stepsize = 4;
@@ -2432,7 +2194,7 @@ void CDlgPathList::OnBnClickedDynamicDensityContour()
 
 		CString xtics_str; 
 
-		fprintf(st_plt,"set title \"Dynamic Density Contour\" \n");
+		fprintf(st_plt,"set title \"Dynamic Density Contour (%s)\" \n", PathTitle);
 
 
 		fprintf(st_plt,"set xlabel \"Time\"\n");
@@ -2554,6 +2316,8 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 
 	int yrange = 0;
 
+	CString PathTitle;
+
 	int ytics_stepsize  = 1;
 	bool bFreewayFlag = true;
 	FILE* st;
@@ -2569,6 +2333,7 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 				continue;
 
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			PathTitle.Format("Path %d %s", p+1,  path_element.m_path_name.c_str () );
 
 
 			if(path_element.m_LinkVector.size() >=15)
@@ -2643,7 +2408,7 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 
 		CString xtics_str; 
 
-		fprintf(st_plt,"set title \"Dynamic Speed Contour\" \n");
+		fprintf(st_plt,"set title \"Dynamic Speed Contour (%s)\" \n", PathTitle);
 
 
 		fprintf(st_plt,"set xlabel \"Time\"\n");
@@ -2770,6 +2535,8 @@ void CDlgPathList::OnBnClickedDynamicFlowContour()
 	int yrange = 0;
 	int xrange = m_TimeRight - m_TimeLeft +1;
 
+	CString PathTitle;
+
 	FILE* st;
 	fopen_s(&st,export_file_name,"w");
 	if(st!=NULL)
@@ -2783,7 +2550,10 @@ void CDlgPathList::OnBnClickedDynamicFlowContour()
 			if(p != m_PathList.GetCurSel())
 				continue;
 
+
+
 			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+			PathTitle.Format("Path %d %s", p+1,  path_element.m_path_name.c_str () );
 
 			if(path_element.m_LinkVector.size() >=15)
 				ytics_stepsize = 4;
@@ -2866,7 +2636,7 @@ void CDlgPathList::OnBnClickedDynamicFlowContour()
 
 		CString xtics_str; 
 
-		fprintf(st_plt,"set title \"Dynamic Volume Over Capcity Contour\" \n");
+		fprintf(st_plt,"set title \"Dynamic Volume Over Capcity Contour (%s)\" \n", PathTitle);
 
 
 		fprintf(st_plt,"set xlabel \"Time\"\n");
@@ -3003,17 +2773,78 @@ void CDlgPathList::OnBnClickedButtonGoogleEarthKml()
 
 void CDlgPathList::OnDataDeleteexistingpathsininputpathcsvfile()
 {
-	CString input_path_file_name;
-
-	input_path_file_name.Format("%sinput_path.csv",m_pDoc->m_ProjectDirectory);
-
-	bool reval = DeleteFile(input_path_file_name);
-	if(reval)
+	if( AfxMessageBox("Are you sure to delete all the paths in the path file? Click on Yes to continue this task.", MB_YESNO| MB_ICONINFORMATION) == IDYES)
 	{
-	AfxMessageBox("File input_path.csv has been deleted.",  MB_ICONINFORMATION );
-	}else
-	{
-	AfxMessageBox("File input_path.csv cannot be deleted. Please check if the file is opened in Excel.",  MB_ICONINFORMATION );
-	
+		OnDataCleanallpaths();
+
+		if( m_pDoc->SaveInputPathCSVFile (m_pDoc->m_ProjectDirectory + "input_path.csv"))
+		{
+		AfxMessageBox("All paths in file input_path.csv have been deleted.",  MB_ICONINFORMATION );
+		}
 	}
+}
+
+void CDlgPathList::OnDataViewinputpathfileinexcel()
+{
+	m_pDoc->OpenCSVFileInExcel (m_pDoc->m_ProjectDirectory + "input_path.csv");
+
+}
+
+void CDlgPathList::OnDataAddanewpath()
+{
+	DTAPath path_element;
+
+	path_element.m_path_name  = "New Path";
+
+	m_pDoc->m_PathDisplayList.push_back (path_element);
+
+	m_pDoc->m_SelectPathNo = m_pDoc->m_PathDisplayList.size()- 1;
+	ReloadData();
+
+
+}
+
+void CDlgPathList::OnDataChangepathnameforselectedpath()
+{
+
+	CDlg_UserInput dlg;
+	dlg.m_StrQuestion  = "Please specify the name of the selected path.";
+
+	if(m_pDoc->m_SelectPathNo < m_pDoc->m_PathDisplayList.size())
+	dlg.m_InputValue = m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_path_name .c_str ();
+
+
+	if(dlg.DoModal ()==IDOK)
+	{
+
+		dlg.m_InputValue.Replace(",", "_");
+		m_pDoc->m_PathDisplayList[m_pDoc->m_SelectPathNo].m_path_name = dlg.m_InputValue;
+
+	}
+
+	ReloadData();
+}
+
+void CDlgPathList::OnDataDeleteselectedpath()
+{
+	std::vector<DTAPath>	m_TempPathDisplayList = m_pDoc->m_PathDisplayList;
+
+	m_pDoc->m_PathDisplayList.clear();
+
+	for(unsigned int p = 0; p< m_TempPathDisplayList.size(); p++)
+	{
+	 if(p!= m_pDoc->m_SelectPathNo)
+	 {
+		 m_pDoc->m_PathDisplayList.push_back (m_TempPathDisplayList[p]);
+	 }
+
+	}
+
+	 m_pDoc->m_SelectPathNo = min( m_pDoc->m_SelectPathNo, m_pDoc->m_PathDisplayList.size()-1);
+	 	ReloadData();
+}
+
+void CDlgPathList::OnLbnDblclkList1()
+{
+	OnDataChangepathnameforselectedpath();
 }

@@ -134,7 +134,9 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 
 		}
 	}
-				
+		
+
+
 	for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
 	{
 		if((*iLink) ->TollVector.size()>0)
@@ -144,6 +146,16 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 
 		}
 	}
+
+	if(m_pDoc->m_SelectedLinkNo >=0)
+	{
+		DTALink* pLink= m_pDoc->m_LinkNoMap [m_pDoc->m_SelectedLinkNo];
+
+			str.Format ("%d->%d, Selected Link", pLink ->m_FromNodeNumber,pLink ->m_ToNodeNumber );
+			m_ImpactLinkBox.AddString (str);
+
+	}
+
 	m_ImpactLinkBox.SetCurSel (0);
 
 	m_OriginBox.AddString("All");
@@ -561,7 +573,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			if(OrgNo>=0 && DesNo >=0  && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
 				if( 
-					(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+					(pVehicle->m_DayNo == DayNo || DayNo == 0 ) &&
 					(pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
 					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
@@ -574,7 +586,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 
 					if( (*iDoc)->m_bGPSDataSet )
 					{
-					m_ODMOEMatrix[p][OrgNo][DesNo].day_count[pVehicle->m_DateID ]+=1;
+					m_ODMOEMatrix[p][OrgNo][DesNo].day_count[pVehicle->m_DayNo ]+=1;
 					}
 
 					m_ODMOEMatrix[p][OrgNo][DesNo].TotalTravelTime += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
@@ -617,7 +629,7 @@ void CDlg_VehPathAnalysis::FilterOriginDestinationPairs()
 			if(OrgNo>=0 && DesNo >=0 /*pVehicle->m_NodeSize >= 2 && */ && pVehicle->m_bComplete && (pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB) )  // with physical path in the network
 			{
 				if( 
-					(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+					(pVehicle->m_DayNo == DayNo || DayNo == 0 ) &&
 					(pVehicle->m_OriginZoneID == Origin ||Origin ==0)&&
 					(pVehicle->m_DestinationZoneID  == Destination ||Destination ==0)&&
 					(pVehicle->m_DemandType  == DemandType ||DemandType ==0)&&
@@ -897,7 +909,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete &&(pVehicle->m_VOT >= VOT_LB && pVehicle->m_VOT < VOT_UB))  // with physical path in the network
 		{
 			if( 
-				(pVehicle->m_DateID == DayNo || DayNo == 0 ) &&
+				(pVehicle->m_DayNo == DayNo || DayNo == 0 ) &&
 				(pVehicle->m_OriginZoneID == Origin)&&
 				(pVehicle->m_DestinationZoneID  == Destination)&&
 				(pVehicle->m_VehicleType  == VehicleType ||VehicleType ==0)&&
@@ -929,7 +941,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					if(pVehicle->m_NodeNumberSum == m_PathVector[p].NodeNumberSum  && pVehicle->m_NodeSize == m_PathVector[p].NodeSize )
 					{
 						
-						m_PathVector[p].date_id = pVehicle->m_DateID ;
+						m_PathVector[p].date_id = pVehicle->m_DayNo ;
 						m_PathVector[p].departure_time_in_min = pVehicle->m_DepartureTime ;
 						m_PathVector[p].TotalVehicleSize+=1;
 						m_PathVector[p].TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
@@ -959,7 +971,7 @@ void CDlg_VehPathAnalysis::FilterPaths()
 					PathStatistics ps_element;
 					ps_element.NodeNumberSum = pVehicle->m_NodeNumberSum;
 					ps_element.NodeSize = pVehicle->m_NodeSize;
-					ps_element.date_id = pVehicle->m_DateID ;
+					ps_element.date_id = pVehicle->m_DayNo ;
 					ps_element.departure_time_in_min = pVehicle->m_DepartureTime ;
 					ps_element.TotalVehicleSize = 1;
 					ps_element.TotalTravelTime  += (pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);

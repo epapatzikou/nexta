@@ -504,7 +504,7 @@ void CNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		}
 
 ///////////////////////////////////////////////
-		if(TabText.Find("Link")>=0 || TabText == "Calibration Data" || TabText.Find("Sensor")>=0 )
+		if(TabText.Find("Link")>=0 || TabText.Find("Sensor")>=0 )
 		{
 		int from_node_id = -1;
 		int to_node_id = -1;
