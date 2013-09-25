@@ -16,6 +16,7 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_DemandGlobalMultiplier(1.0f)
 	, m_SimulationHorizon(0)
 	, m_DemandLoadingMultipler(0)
+	, m_NumberReportingDays(1)
 {
 	m_bModifiedFlag  = false;
 }
@@ -36,6 +37,8 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE2, m_NetworkDataList);
 	DDX_Text(pDX, IDC_EDIT_Demand_LoadingMultiplier, m_DemandLoadingMultipler);
+	DDX_Control(pDX, IDC_LIST_Signal_Control_Representation, m_Signal_Control_List);
+	DDX_Text(pDX, IDC_EDIT_Number_ReportingDays, m_NumberReportingDays);
 }
 
 
@@ -48,6 +51,7 @@ BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_BN_CLICKED(IDOK2, &CDlgAssignmentSettings::OnBnClickedOk2)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_LOADING_MODE2, &CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode2)
 	ON_BN_CLICKED(IDC_CHECK_EMISSION_DATA, &CDlgAssignmentSettings::OnBnClickedCheckEmissionData)
+	ON_LBN_SELCHANGE(IDC_LIST_Signal_Control_Representation, &CDlgAssignmentSettings::OnLbnSelchangeListSignalControlRepresentation)
 END_MESSAGE_MAP()
 
 
@@ -84,24 +88,29 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	str.Format("%d link types", m_pDoc->m_LinkTypeMap.size());
 	m_NetworkDataList.AddString(str);
 
-	m_SimulationMethodControl.AddString ("1. BPR Function");
-	m_SimulationMethodControl.AddString ("2. Point Queue Model");
-	m_SimulationMethodControl.AddString ("3. Spatial Queue Model");
-	m_SimulationMethodControl.AddString ("4. Newell's N-Curve Model");
-	m_SimulationMethodControl.AddString ("5. Newell's Model+Emissions Output");
-	m_SimulationMethodControl.AddString ("6. Point Queue + Movement Capacity");
+	m_SimulationMethodControl.AddString ("0. BPR Function");
+	m_SimulationMethodControl.AddString ("1. Point Queue Model");
+	m_SimulationMethodControl.AddString ("2. Spatial Queue Model");
+	m_SimulationMethodControl.AddString ("3. Newell's Kinematic Wave Model");
+	m_SimulationMethodControl.AddString ("4. Newell's Model+Emissions Output");
 
 	m_SimulationMethodControl.SetCurSel(m_pDoc->m_traffic_flow_model);
 
 
-	m_AssignmentMethod.AddString("1. Method of Successive Average");
-	m_AssignmentMethod.AddString("2. Fixed switching Rate");
-	m_AssignmentMethod.AddString("3. Day-to-Day Learning with BR rule");
-	m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
-	m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
-	m_AssignmentMethod.AddString("6. Accessibility (Distance)");
-	m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
-	m_AssignmentMethod.AddString("8. OD Demand Estimation");
+	m_Signal_Control_List.AddString ("0: Continuous Flow with Link Capacity Constraint");
+	m_Signal_Control_List.AddString ("1: Cycle Length + Movement-based Effective Green Time");
+	m_Signal_Control_List.SetCurSel(m_pDoc->m_signal_reresentation_model);
+
+	m_AssignmentMethod.AddString("0. Method of Successive Average");
+	m_AssignmentMethod.AddString("1. Fixed Switching Rate");
+	m_AssignmentMethod.AddString("2. Day-to-Day Learning with Bounded Rationality Rule");
+	m_AssignmentMethod.AddString("3. OD Demand Matrix Estimation");
+
+	//m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
+	//m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
+	//m_AssignmentMethod.AddString("6. Accessibility (Distance)");
+	//m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
+
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
 	
@@ -126,6 +135,8 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 
 	m_NumberOfIterations = m_pDoc->m_number_of_assignment_days;
+	m_NumberReportingDays = m_pDoc->m_number_of_reporting_days ;
+
 
 	m_DemandLoadingMultipler = m_pDoc->m_demand_multiplier;
 
@@ -153,7 +164,6 @@ void CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod()
 void CDlgAssignmentSettings::OnBnClickedOk()
 {
 
-
 	UpdateData(true);
 
 
@@ -168,6 +178,11 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 		m_pDoc->m_traffic_flow_model = m_SimulationMethodControl.GetCurSel();
 	}
 	
+	if(m_pDoc->m_signal_reresentation_model != m_Signal_Control_List.GetCurSel())
+	{
+		m_bModifiedFlag = true;
+		m_pDoc->m_signal_reresentation_model = m_Signal_Control_List.GetCurSel();
+	}
 	
 	if(m_pDoc->m_traffic_assignment_method != m_AssignmentMethod.GetCurSel())
 	{
@@ -180,6 +195,13 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 		m_bModifiedFlag = true;
 		m_pDoc->m_number_of_assignment_days = m_NumberOfIterations;
 	}
+
+	if(m_NumberReportingDays != m_pDoc->m_number_of_reporting_days)
+	{
+		m_bModifiedFlag = true;
+		m_pDoc->m_number_of_reporting_days = m_NumberReportingDays;
+	}
+
 
 	if(fabs(m_DemandLoadingMultipler - m_pDoc->m_demand_multiplier)>0.00001)
 	{
@@ -240,3 +262,18 @@ void CDlgAssignmentSettings::OnBnClickedCheckEmissionData()
 
 }
 
+
+void CDlgAssignmentSettings::OnLbnSelchangeListSignalControlRepresentation()
+{
+	// TODO: Add your control notification handler code here
+}
+
+void CDlgAssignmentSettings::OnEnChangeEditNumberIterations3()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}

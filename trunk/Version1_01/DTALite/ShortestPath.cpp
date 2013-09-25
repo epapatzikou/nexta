@@ -213,8 +213,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		
 		}
 
-		if(m_OutboundConnectorOriginZoneIDAry[985][1] >=1)
-		TRACE("");
 
 		if(FromID == 0) 
 		{
@@ -360,8 +358,11 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		ToID   = g_LinkVector[li]->m_ToNodeID;
 		if(g_NodeVector[ToID].m_MovementMap.size()==0)  //without movement capacity input
 		{
+			ASSERT(m_AdjLinkSize >= m_OutboundSizeAry[ToID]);
+
 			for(int movement = 0; movement < m_OutboundSizeAry[ToID]; movement++)
 			{
+
 				int outbound_link = m_OutboundLinkAry[ToID][movement];
 				m_OutboundMovementAry[li][movement] = outbound_link;
 				m_OutboundMovementDelayAry[li][movement] = 0;   // we need to add time-dependent movement delay here
@@ -379,6 +380,11 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 				int from_node = g_LinkVector[li]->m_FromNodeNumber ;
 				int to_node = g_LinkVector[li]->m_ToNodeNumber ;
 				int dest_node =  g_LinkVector[outbound_link]->m_ToNodeNumber ;
+
+				if(to_node == 14854)
+					TRACE("");
+
+
 				string movement_id = GetMovementStringID(from_node, to_node,dest_node);
 				if(g_NodeVector[ToID].m_MovementMap.find(movement_id) != g_NodeVector[ToID].m_MovementMap.end()) // the capacity for this movement has been defined
 				{
@@ -591,6 +597,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 // time-dependent label correcting algorithm with deque implementation
 {
 	debug_flag = false;
+
+	if(origin == destination ) // origin and destination nodes are the same
+		return 0;
+
 
 	if(g_ShortestPathWithMovementDelayFlag)
 	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, pricing_type, VOT, PathLinkList, TotalCost,distance_flag, debug_flag);
@@ -824,11 +834,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	if(departure_time > g_DemandLoadingEndTimeInMin)
 		departure_time = g_DemandLoadingEndTimeInMin;
 
-	if(g_NodeVector[origin].m_NodeNumber  == 104 && g_NodeVector[destination].m_NodeNumber  == 115542)
-	{
-		debug_flag = 1; 
-	
-	}
+
 		int i;
 		float AdditionalCostInMin = 0;
 
@@ -876,7 +882,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if(debug_flag) 
 			{
-				TRACE("\nScan from link %d",FromLinkID);
+				TRACE("\nScan from link %d ->%d",g_NodeVector[m_FromIDAry[FromLinkID]].m_NodeNumber, g_NodeVector[m_ToIDAry[FromLinkID]].m_NodeNumber);
 			}
 
 			LinkStatusAry[FromLinkID] = 2;        //scaned
@@ -892,14 +898,14 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					{
 					TRACE("Trace!");
 					}
-					TRACE("\n   to link %d, from node: %d, downstream node %d ", ToLinkID, g_NodeVector[FromID].m_NodeNumber, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber );
+		//			TRACE("\n   to link %d, from node: %d, downstream node %d ", ToLinkID, g_NodeVector[FromID].m_NodeNumber, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber );
 				}
 				// need to check here to make sure  LabelTimeAry[FromID] is feasible.
 
 
-	if(debug_flag ==1 && g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber  == 115542)
+	if(debug_flag ==1 && g_NodeVector[m_FromIDAry[ToLinkID]].m_NodeNumber  == 15672)
 	{
-		TRACE("");
+		TRACE("problematic node!");
 	
 	}
 			if(m_LinkConnectorFlag[ToLinkID] ==1)  // only check the following speical condition when a link is a connector
@@ -1010,7 +1016,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				}else
 				{
 				
-					if(debug_flag )  // physical nodes
+					if(debug_flag ==1 && LinkLabelCostAry[ToLinkID] <=900)  // physical nodes
 					{
 						TRACE("\n        not-UPDATEd to link %d, downstream node %d, new cost %f, old cost: %f, link travel time %f", ToLinkID, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber,NewCost, LinkLabelCostAry[ToLinkID] , m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
 					}
@@ -1040,9 +1046,42 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 		if(link_id_with_min_cost <0)
 		{
+
+
 			int node_number = g_NodeVector[destination].m_NodeNumber ;
 		cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
 		
+		
+		std::map<int, int> path_node_vector;
+		path_node_vector[104] = path_node_vector.size();
+		path_node_vector[9664] = path_node_vector.size();
+		path_node_vector[8521] = path_node_vector.size();
+		path_node_vector[9015] = path_node_vector.size();
+		path_node_vector[9017] = path_node_vector.size();
+		path_node_vector[8946] = path_node_vector.size();
+		path_node_vector[8956] = path_node_vector.size();
+		path_node_vector[8958] = path_node_vector.size();
+		path_node_vector[8957] = path_node_vector.size();
+		path_node_vector[8952] = path_node_vector.size();
+		path_node_vector[14854] = path_node_vector.size();
+		path_node_vector[15672] = path_node_vector.size();
+		path_node_vector[15544] = path_node_vector.size();
+
+		path_node_vector[11126] = path_node_vector.size();
+		path_node_vector[11127] = path_node_vector.size();
+		path_node_vector[15542] = path_node_vector.size();
+		path_node_vector[115542] = path_node_vector.size();
+
+
+		for(int il = 0; il < g_LinkVector.size(); il++)
+		{
+			if(path_node_vector.find(g_NodeVector[m_ToIDAry[il]].m_NodeNumber) != path_node_vector.end())
+			{
+				int dsn  = g_NodeVector[m_ToIDAry[il]].m_NodeNumber;
+				TRACE("[no.%d] %d: %f\n", path_node_vector [dsn] , dsn, LinkLabelCostAry[il]);
+			}
+		
+		}
 		//find shortest path without movement penality
 		g_ShortestPathWithMovementDelayFlag = false;
 
@@ -1053,6 +1092,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		for(int ii=0; ii<number_of_nodes -1; ii++)
 		{
 		
+			if(PathLinkList[ii] <0 || PathLinkList[ii]> g_LinkVector.size())
+			{
+			g_ProgramStop();
+
+			}
 			cout << "Link " << g_LinkVector[PathLinkList[ii]]->m_FromNodeNumber  << "->" << g_LinkVector[PathLinkList[ii]]->m_ToNodeNumber  << " with cost " << LinkLabelCostAry[PathLinkList[ii]] << endl;
 		}
 

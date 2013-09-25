@@ -958,15 +958,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					if(BPR_beta_term > 0.00000001)
 					pLink->m_BPR_beta_term = BPR_beta_term;
 
-					transit_transfer_time_in_min = rsLink.GetDouble(CString("transit_transfer_time_in_min"),bExist,false);
-					pLink->m_TransitTransferTime  = transit_transfer_time_in_min;
-
-					transit_waiting_time_in_min = rsLink.GetDouble(CString("transit_waiting_time_in_min"),bExist,false);
-					pLink->m_TransitWaitingTime  = transit_waiting_time_in_min;
-
-					transit_fare = rsLink.GetDouble(CString("transit_fare"),bExist,false);
-					pLink->m_TransitFareInDollar   = transit_fare;
-
 
 					pLink->m_Kjam = k_jam;
 					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;

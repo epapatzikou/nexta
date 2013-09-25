@@ -31,7 +31,7 @@ public:
 	afx_msg void OnLbnSelchangeListLinkTextLabel();
 	node_display_mode m_ShowNodeTextMode;
 
-	CListBox m_Link_Label, m_Node_Label, m_Zone_Label;
+	CListBox m_Link_Label, m_Node_Label;
 	CListBox m_Movement_Label;
 
 	afx_msg void OnLbnSelchangeListNodeTextLabel();
@@ -45,17 +45,23 @@ public:
 	afx_msg void OnLbnSelchangeListMovementTextLabel();
 	CListBox m_GPS_Label;
 	afx_msg void OnLbnSelchangeListGpsTextLabel();
-	CComboBox m_ComboBox_MovementTextBoxSize;
-	afx_msg void OnCbnSelchangeComboMovementtextboxsize();
 	afx_msg void OnBnClickedButtonIncreasenodesize();
 	afx_msg void OnBnClickedButtonDecreasenodesize();
 	afx_msg void OnBnClickedButtonIncreasenodetextsize();
 	afx_msg void OnBnClickedButtonDecreasenodetextsize();
 	CListBox m_SizeTextControl_List;
 	afx_msg void OnLbnDblclkListSizeTextControl();
-	CComboBox m_ComboxBox_WalkingDistance;
-	CComboBox m_ComboxBox_TransitTime;
 	afx_msg void OnCbnSelchangeComboWalkingdistance();
 	afx_msg void OnCbnSelchangeComboTransittime();
 	afx_msg void OnLbnSelchangeListSizeTextControl();
+	afx_msg void OnBnClickedButtonIncreaseSize();
+	afx_msg void OnBnClickedButtonDecreaseSize();
+	BOOL m_bShowSignalNodeMovementOnly;
+	afx_msg void OnBnClickedCheckSignalNodeOnly();
+	afx_msg void OnBnClickedButtonIncreaseTextSize();
+	afx_msg void OnBnClickedButtonDecreaseTextSize();
+	afx_msg void OnBnClickedButtonIncreaseNodeTextSize();
+	afx_msg void OnBnClickedButtonDecreaseNodeTextSize();
+	afx_msg void OnBnClickedButtonIncreaseLinkTextSize2();
+	afx_msg void OnBnClickedButtonDecreaseLinkTextSize2();
 };

@@ -29,12 +29,21 @@
 #include "TLiteDoc.h"
 // CPage_Node_Movement dialog
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
+#include "afxwin.h"
 
+#define _max_phase_number 16
 class CPage_Node_Movement : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPage_Node_Movement)
 
 public:
+
+	std::vector<std::string> m_Column_names;
+
+	void UpdatePhaseData();
+
+	bool m_bAvailablePhaseVector[17]; 
+	int m_EffectiveGreenTime[17];
 
 	CPage_Node_Movement();
 	virtual ~CPage_Node_Movement();
@@ -70,6 +79,7 @@ public:
 	}
 	
 	bool m_bColumnWidthIncludeHeader;
+	int m_SelectedColumnIndex; 
 	CTLiteDoc* m_pDoc;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -105,4 +115,9 @@ public:
 	int m_CycleLengthInSec;
 	afx_msg void OnBnClickedButtonExtendcolumewidth();
 	afx_msg void OnBnClickedButtonQem2();
+	CComboBox m_PhaseNumber;
+	CListBox m_PhaseList;
+	afx_msg void OnLbnSelchangeList1();
+	afx_msg void OnLbnDblclkList1();
+	CString m_DisplayFieldName;
 };

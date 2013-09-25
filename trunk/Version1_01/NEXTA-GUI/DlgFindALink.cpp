@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(CDlgFindALink, CDialog)
 CDlgFindALink::CDlgFindALink(CWnd* pParent /*=NULL*/)
 	: CBaseDialog(CDlgFindALink::IDD, pParent)
 	, m_StrFind(_T(""))
+	, m_UserInputString(_T(""))
 {
 
 }
@@ -24,15 +25,15 @@ CDlgFindALink::~CDlgFindALink()
 void CDlgFindALink::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_COMBO1, m_ComboBox);
 	DDX_Control(pDX, IDC_LIST1, m_FindObjectList);
+	DDX_Text(pDX, IDC_EDIT1, m_UserInputString);
+	DDX_Control(pDX, IDC_EDIT1, m_EditorControl);
 }
 
 
 BEGIN_MESSAGE_MAP(CDlgFindALink, CBaseDialog)
 	ON_BN_CLICKED(IDC_BUTTON_FIND, &CDlgFindALink::OnBnClickedButtonFind)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CDlgFindALink::OnLbnSelchangeList1)
-	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlgFindALink::OnCbnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -51,14 +52,6 @@ BOOL CDlgFindALink::OnInitDialog()
 	m_FindObjectList.SetCurSel(m_SearchMode);
 
 
-	for(unsigned int i = 0; i <m_SearchHistoryVector.size() ; i++)
-	{
-
-		int index=  m_SearchHistoryVector.size() -1- i;
-		m_ComboBox.AddString(m_SearchHistoryVector[index]);
-	
-
-	}
 	UpdateData(false);
 
 
@@ -75,16 +68,28 @@ void CDlgFindALink::OnBnClickedFindVehicle()
 	OnOK();
 	
 }
-
+BOOL CDlgFindALink::PreTranslateMessage(MSG* pMsg)
+{
+    if (pMsg->message == WM_KEYDOWN &&
+        pMsg->wParam == VK_RETURN &&
+        GetFocus() == &(m_EditorControl))
+    {
+        // handle return pressed in edit control
+		OnBnClickedButtonFind();
+        return TRUE; // this doesn't need processing anymore
+    }
+    return FALSE; // all other cases still need default processing
+}
 void CDlgFindALink::OnBnClickedButtonFind()
 {
 	m_SearchMode = (eSEARCHMODE)m_FindObjectList.GetCurSel();
 	CString sItem;
-	m_ComboBox.GetWindowText(m_StrFind);
+	
+	UpdateData(true);
 
 	
-	m_ComboBox.AddString(m_StrFind);
-
+	m_StrFind = m_UserInputString;
+	
 	bool bFound = false;
 	for(unsigned int i = 0; i <m_SearchHistoryVector.size() ; i++)
 	{
@@ -127,7 +132,3 @@ void CDlgFindALink::OnLbnSelchangeList1()
 	// TODO: Add your control notification handler code here
 }
 
-void CDlgFindALink::OnCbnSelchangeCombo1()
-{
-	OnBnClickedButtonFind();
-}

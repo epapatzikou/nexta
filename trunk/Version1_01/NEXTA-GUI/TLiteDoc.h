@@ -73,7 +73,7 @@ enum layer_mode
 	layer_background_image,
 	layer_transit_accessibility,
 };
-enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
 enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
@@ -378,6 +378,8 @@ public:
 {
 public: // create from serialization only
 
+	bool m_hide_non_specified_movement_on_freeway_and_ramp;
+
 	GridNodeSet*** m_GridMatrix;
 
 	float m_PeakHourFactor;
@@ -632,6 +634,10 @@ public:
 	std::map<string, train_info> m_train_map;
 	std::vector<MaintenanceOfWay> m_RailMOW_vector;
 
+	float m_MovementTextBoxSizeInFeet;
+
+	bool m_bShowSignalNodeMovementOnly;
+
 
 	std::map<CString, DTADemandMetaDataType> DTADemandMetaDataTypeMap;
 	std::vector<CString> m_DemandMetaDataKeyVector;  // keep the order of meta demand database.
@@ -702,7 +708,9 @@ public:
 	//scenario data
 
 	int m_number_of_assignment_days;
+	int m_number_of_reporting_days;
 	int m_traffic_flow_model;
+	int m_signal_reresentation_model;
 	int m_traffic_assignment_method;
 
 	int m_ODME_mode;
@@ -841,7 +849,7 @@ public:
 		return str;
 	}
 
-	DTA_APPROACH_TURN GetTurnDirectionFromString(CString str) 
+	DTA_SIG_MOVEMENT GetTurnDirectionFromString(CString str) 
 	{
 		if(m_TurnDirectionStringMap.find(str) != m_TurnDirectionStringMap.end())
 		{
@@ -849,8 +857,8 @@ public:
 		}
 			return DTA_LANES_COLUME_init;
 	}
-	std::map<CString, DTA_APPROACH_TURN> m_TurnDirectionStringMap;
-	CString GetTurnDirectionString(DTA_APPROACH_TURN turn_dir)
+	std::map<CString, DTA_SIG_MOVEMENT> m_TurnDirectionStringMap;
+	CString GetTurnDirectionString(DTA_SIG_MOVEMENT turn_dir)
 	{
 		CString str;
 		switch (turn_dir)
@@ -1027,6 +1035,10 @@ public:
 	void ReadTrainProfileCSVFile(LPCTSTR lpszFileName);
 	void ReadVehicleCSVFile_Parser(LPCTSTR lpszFileName);
 	void ReadAMSPathCSVFile(LPCTSTR lpszFileName);
+
+	void ReadInputPathCSVFile(LPCTSTR lpszFileName);
+	bool SaveInputPathCSVFile(LPCTSTR lpszFileName);
+
 	int ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber);
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
@@ -1633,17 +1645,18 @@ public:
 		return c;
 	};
 
-	std::vector<DTA_NodeMovementSet> m_MovementVector;
-	std::vector<DTA_NodePhaseSet> m_PhaseVector;
+	void ConstructAMSMovementVector(DTANode* pNode);
+
+	std::map<CString, DTA_Movement_Data_Matrix> m_DTAMovementMap;
+	std::map<CString, DTA_Phasing_Data_Matrix> m_DTAPhasingMap;
 
 	// 	void ConstructMovementVector(bool flag_Template);
 	void Construct4DirectionMovementVector(bool ResetFlag = false);
 	void AssignUniqueLinkIDForEachLink();
 
 	// function declaration for Synchro /////////////////////////////////////////////////////////////////////////////////
-	void ConstructMovementVector(bool flag_Template);
-	bool LoadMovementTemplateFile(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
-	bool LoadMovementDefault(DTA_NodeMovementSet& MovementTemplate, DTA_NodePhaseSet& PhaseTemplate);
+	void ConstructMovementVector();
+
 	void ExportSingleSynchroFile(CString SynchroProjectFile);
 
 	void ExportNodeLayerToGISFiles(CString file_name, CString GIS_type_string, bool b_signal_data_only);
@@ -1675,9 +1688,16 @@ public:
 	void ConvertLinkCSV2ShapeFiles(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString, _GIS_DATA_TYPE GIS_data_type);
 	void SaveAMS_ODTable();
 
+	void ReadInputLanesFile(LPCTSTR lpszPathName);
+	void SaveInputLanesFile(LPCTSTR lpszPathName);
+
+	void ReadInputPhasingFile(LPCTSTR lpszPathName);
+	void SaveInputPhasingFile(LPCTSTR lpszPathName);
+
 	void ExportPathflowToCSVFiles();
 	std::map<std::string, DTALink*>  m_TMC2LinkMap;
 	CString m_GISMessage;
+
 
 	void ExportSynchroVersion6Files();
 	bool m_bMovementAvailableFlag;
@@ -1728,9 +1748,6 @@ public:
 	DTA_Turn Find_PPP_to_Turn(GDPoint p1, GDPoint p2, GDPoint p3);
 
 	DTA_Turn Find_PPP_to_Turn_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2);
-
-	DTA_Turn Find_PPP_to_All_Turns_with_DTAApproach(GDPoint p1, GDPoint p2, GDPoint p3,DTA_Direction approach1, DTA_Direction approach2);
-
 
 	eSEARCHMODE m_SearchMode;
 	int MaxNodeKey;
@@ -2139,7 +2156,6 @@ public:
 
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
 	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
-	void SavePhasingData();
 	void RunQEMTool(CString MovementFileName, int NodeNumber);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);
@@ -2158,6 +2174,7 @@ public:
 protected:
 
 	int m_sensor_data_aggregation_type;
+	void SensortoolsConverttoHourlyVolume();
 
 	// Generated message map functions
 protected:
@@ -2343,12 +2360,9 @@ public:
 	afx_msg void OnImportSynchrocombinedcsvfile();
 	afx_msg void OnToolsObtainCyclelengthfromNearbySignals();
 	afx_msg void OnToolsSaveprojectforexternallayer();
-	afx_msg void OnToolsUpdateeffectivegreentimebasedoncyclelength();
 	afx_msg void OnMoeTableDialog();
 	afx_msg void OnToolsReverseverticalcoordinate();
 	afx_msg void OnGenerategisshapefilesLoadlinkcsvfile();
-	afx_msg void OnSafetyplanningtoolsRun();
-	afx_msg void OnSafetyplanningtoolsGeneratenode();
 	afx_msg void OnSensortoolsConverttoHourlyVolume();
 	afx_msg void OnImportInrixshapefileandspeeddata();
 
@@ -2420,6 +2434,8 @@ public:
 	afx_msg void OnMoeViewoddemandestimationsummaryplotHourly();
 	afx_msg void OnMoeViewoddemandestimationsummaryplotLaneHourly();
 	afx_msg void OnTransitOutputtransitaccesssibilityfromallactivitylocations();
+	afx_msg void OnMovementHidenon();
+	afx_msg void OnUpdateMovementHidenon(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

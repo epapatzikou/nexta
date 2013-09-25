@@ -41,20 +41,25 @@ using namespace std;
 #define _MAX_NUMBER_OF_PROCESSORS  8
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
-enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, tfm_point_queue_with_movement_capacity};
+enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions};
+
+enum e_signal_representation_model {signal_model_continuous_flow = 0, signal_model_movement_effective_green_time };
+
 enum e_assignment_method { 
 assignment_MSA =0, 
 assignment_fixed_percentage, 
 assignment_day_to_day_learning_threshold_route_choice,
+assignment_OD_demand_estimation,
 assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
 assignment_gap_function_MSA_step_size,
 assignment_accessibility_distanance,
-assignment_accessibility_travel_time,
-assignment_OD_demand_estimation
+assignment_accessibility_travel_time
+
 };
 
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
-extern int g_MovementCapacityModelFlag;
+extern e_signal_representation_model g_SignalRepresentationFlag;
+
 // extention for multi-day equilibirum
 #define MAX_FIFO_QUEUESIZE 5000
 #define MAX_DAY_SIZE 1
@@ -87,9 +92,7 @@ enum Traffic_MOE {MOE_crashes,MOE_CO2, MOE_total_energy};
 
 enum Tolling_Method {no_toll,time_dependent_toll,VMT_toll,SO_toll};
 extern double g_DTASimulationInterval;
-extern int g_SimulateSignals;
-extern float g_DefaultArterialKJam;
-extern int g_DefaultCycleLength;
+
 
 extern int g_CalculateUEGapForAllAgents;
 
@@ -555,6 +558,8 @@ public:
 	float HC;
 	float TotalTravelTime;   // cumulative travel time for vehicles departing at this time interval
 	int TotalFlowCount;
+
+	
 	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
 	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
 
@@ -562,6 +567,10 @@ public:
 	int CumulativeDepartureCount;
 	int ExitQueueLength;
 	int LeftExit_QueueLength;
+
+	int IntervalLeftArrivalCount; 
+	int IntervalLeftDepartureCount;
+
 
 	int EndTimeOfPartialCongestion;  // time in min to the end of partial congestion
 	int TrafficStateCode;  // 0: free-flow: 1: partial congested: 2: fully congested
@@ -589,6 +598,10 @@ public:
 		CumulativeDepartureCount = 0;
 		ExitQueueLength = 0;
 		LeftExit_QueueLength = 0;
+
+		IntervalLeftArrivalCount  = 0;
+		IntervalLeftDepartureCount = 0;
+
 		EndTimeOfPartialCongestion = 0;
 		TrafficStateCode = 0;  // free-flow
 
@@ -809,19 +822,28 @@ public:
 class DTALinkOutCapacity
 {
 public:
-	DTALinkOutCapacity(double time_stamp, float out_capacity, int queue_size, int i_blocking_count, int i_blocking_node_number)	
+	DTALinkOutCapacity(double time_stamp, float out_capacity, int queue_size, int i_blocking_count, int i_blocking_node_number,
+	float i_out_left_capacity_in_vehicle_number,
+	int i_link_left_queue_size
+		)	
 	{
 		time_stamp_in_min = time_stamp;
 		out_capacity_in_vehicle_number = out_capacity;
 		link_queue_size = queue_size;
 		blocking_count = i_blocking_count;
 		blocking_node_number = i_blocking_node_number;
+
+		out_left_capacity_in_vehicle_number = i_out_left_capacity_in_vehicle_number;
+		link_left_queue_size = i_link_left_queue_size;
 	}
 	double time_stamp_in_min;
 	float out_capacity_in_vehicle_number;
 	int link_queue_size;
 	int blocking_count;
 	int blocking_node_number;
+
+	float out_left_capacity_in_vehicle_number;
+	int link_left_queue_size;
 
 
 };
@@ -904,6 +926,8 @@ public:
 		m_BPR_Alpha = 0.15f;
 		m_BPR_Beta = 4.0f;
 
+		m_GreenStartTime_In_Second = 0;
+
 
 	};
 
@@ -961,9 +985,6 @@ public:
 	{
 
 		int NumLanes = m_NumLanes;
-
-		if(OutputFlowFlag == true && g_MovementCapacityModelFlag == 0)  // when we use AMS movement capacity, we do not consider # of left-turn bays in outflow link capacity calculation
-			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
 
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
@@ -3290,9 +3311,9 @@ typedef struct
 	int age;
 	int version_no;
 
-	int number_of_VMS_response_links;
+	int day_no;
 	float reserverd_field2;
-	int reserverd_field3;
+	int number_of_VMS_response_links;
 
 } struct_VehicleInfo_Header;
 

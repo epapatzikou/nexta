@@ -16,7 +16,7 @@ public:
 
 	int m_NumberOfPhases;
 // Dialog Data
-	enum { IDD = IDD_DIALOG_NODE_PHASE };
+//	enum { IDD = IDD_DIALOG_NODE_PHASE };
 
 	CGridListCtrlEx m_ListCtrl;
 	
@@ -72,6 +72,7 @@ public:
 	afx_msg void OnPaint();
 	int m_CurrentNodeName;
 	afx_msg void OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonNewPhase();
 };
 
 

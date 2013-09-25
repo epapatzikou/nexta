@@ -649,10 +649,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Page_Node_Phase.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\PlayerSeekBar.cpp"
 				>
 			</File>
@@ -1045,11 +1041,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -1077,11 +1073,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\smallico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+						RelativePath=".\res\smallico.bmp"
 						>
 					</File>
 					<File
@@ -1089,11 +1085,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1121,11 +1117,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
@@ -1183,14 +1179,6 @@
 				</File>
 				<File
 					RelativePath=".\RailNetwork\RailNetwork.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="SafetyPlanning"
-				>
-				<File
-					RelativePath=".\SafetyPlanning\SafetyPlanning.cpp"
 					>
 				</File>
 			</Filter>
@@ -1489,19 +1477,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\page_node_lane.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Page_Node_LaneTurn.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Page_Node_Movement.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Page_Node_Phase.h"
 				>
 			</File>
 			<File
@@ -1514,10 +1490,6 @@
 			</File>
 			<File
 				RelativePath=".\Resource.h"
-				>
-			</File>
-			<File
-				RelativePath=".\SafetyPlanning\SafetyPlanning.h"
 				>
 			</File>
 			<File

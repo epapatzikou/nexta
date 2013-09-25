@@ -152,9 +152,6 @@ std::map<int, string> g_NodeControlTypeMap;
 
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
-int g_SimulateSignals = 1;
-float g_DefaultArterialKJam = 120; 
-int g_DefaultCycleLength =0;   // no value set
 
 double g_CarFollowingSimulationInterval = 1.0/600; // 1/ 600 min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
@@ -267,6 +264,8 @@ ofstream g_EstimationLogFile;
 ofstream g_WarningFile;
 
 e_traffic_flow_model g_TrafficFlowModelFlag = tfm_BPR;
+e_signal_representation_model g_SignalRepresentationFlag = signal_model_continuous_flow;
+
 int g_ShortestPathWithMovementDelayFlag = 1;
 int g_UseDefaultLaneCapacityFlag = 1;
 int g_UseFreevalRampMergeModelFlag = 0;
@@ -276,7 +275,6 @@ int g_OutputLinkCapacityStarting_Time =0;
 int g_OutputLinkCapacityEnding_Time =300;
 int g_CalculateUEGapForAllAgents = 0;
 int g_EmissionDataOutputFlag = 0;
-int g_MovementCapacityModelFlag = 0;
 int g_VehiclePathOutputFlag = 1;
 int g_TimeDependentODMOEOutputFlag = 0;
 int g_OutputSecondBySecondEmissionData =0;
@@ -751,9 +749,14 @@ void g_ReadInputFiles(int scenario_no)
 
 			if(!parser_link.GetValueByFieldName("length_in_mile",length_in_mile))
 			{
-				cout<< "Field length_in_mile has not been defined in file input_link.csv. Please check.";
+
+				if(!parser_link.GetValueByFieldName("length",length_in_mile))
+				{
+
+				cout<< "Field length has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 			}
 
 			if(length_in_mile>100)
@@ -775,9 +778,12 @@ void g_ReadInputFiles(int scenario_no)
 			if(!parser_link.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
 			{
 
+				if(!parser_link.GetValueByFieldName("speed_limit",speed_limit_in_mph))
+				{
 				cout << "Field speed_limit_in_mph has not been defined in file input_link.csv. Please check.";
 				getchar();
 				exit(0);
+				}
 			}
 
 			if(!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour",capacity))
@@ -809,13 +815,6 @@ void g_ReadInputFiles(int scenario_no)
 			parser_link.GetValueByFieldName("BPR_alpha_term",BPR_Alpha);
 			parser_link.GetValueByFieldName("BPR_beta_term",BPR_Beta);
 
-
-
-			int EffectiveGreenTimeInSecond = 0;
-			parser_link.GetValueByFieldName("effective_green_time_length_in_second",EffectiveGreenTimeInSecond);
-
-			int green_start_time_in_second = 0;
-			parser_link.GetValueByFieldName("green_start_time_in_second",green_start_time_in_second);
 
 
 			int NumberOfLeftTurnBays = 0;
@@ -868,12 +867,8 @@ void g_ReadInputFiles(int scenario_no)
 				AADT_conversion_factor = 0.1;
 
 			if(!parser_link.GetValueByFieldName("K_jam",K_jam))
-				K_jam = 180;
+				K_jam = 190;
 
-			if(g_DefaultArterialKJam>1 && g_LinkTypeMap[type].IsArterial()==true)
-			{
-				K_jam = g_DefaultArterialKJam;
-			}
 
 			if(!parser_link.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
 				wave_speed_in_mph = 12;
@@ -1125,39 +1120,22 @@ void g_ReadInputFiles(int scenario_no)
 						int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
 						int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
 
-						if(CycleLength_In_Second ==0 )  // use default cycle length only for zero cycle length
-							CycleLength_In_Second = max(15,g_DefaultCycleLength);
-
-						if(g_SimulateSignals && CycleLength_In_Second < 10  && g_number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
+						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength_In_Second < 10  && g_number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
 						{
-							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second <<  ", reset it to " << g_DefaultCycleLength <<" seconds." << endl;
+							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds." << endl;
 							getchar ();
-							CycleLength_In_Second = g_DefaultCycleLength; 
 							g_number_of_warnings++;
 
 						}
 
 
-						EffectiveGreenTimeInSecond += g_settings.AdditionalYellowTimeForSignals ;
-
-						if(EffectiveGreenTimeInSecond==0) // no value input
+						if(CycleLength_In_Second>=10)
 						{
-							EffectiveGreenTimeInSecond = (int)(CycleLength_In_Second * capacity / max(1700,SaturationFlowRate));
-
-							EffectiveGreenTimeInSecond = max(10,EffectiveGreenTimeInSecond);
-
-							if(EffectiveGreenTimeInSecond> CycleLength_In_Second)
-								EffectiveGreenTimeInSecond = CycleLength_In_Second;
-
-						}
 						pLink->m_bSignalizedArterialType = true;
-						pLink->m_EffectiveGreenTime_In_Second = EffectiveGreenTimeInSecond;
-						pLink->m_GreenStartTime_In_Second = green_start_time_in_second;
-
 						pLink->m_DownstreamNodeSignalOffset_In_Second = SignalOffSet_In_Second;
-
 						pLink->m_DownstreamCycleLength_In_Second = CycleLength_In_Second;
 
+						}
 						pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane  = max(capacity,SaturationFlowRate);
 					}else  // no
 					{
@@ -1171,14 +1149,8 @@ void g_ReadInputFiles(int scenario_no)
 
 					}
 				}
-				if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
-				{
-					pLink->m_VehicleSpaceCapacity = pLink->m_Length * pLink->m_NumLanes *K_jam; 
-				}else  // non freeway, use bump to bump density
-				{
-					pLink->m_VehicleSpaceCapacity = pLink->m_Length * pLink->m_NumLanes *g_DefaultArterialKJam; // bump to bump density
-				}
 
+				pLink->m_VehicleSpaceCapacity = pLink->m_Length * pLink->m_NumLanes *K_jam; 
 
 
 
@@ -1353,6 +1325,7 @@ void g_ReadInputFiles(int scenario_no)
 	int activity_location_count  = 0;
 	if (parser_activity_location.inFile .is_open () || parser_activity_location.OpenCSVFile("input_activity_location.csv"))
 	{
+		bool bMultipleZOneError = false;
 
 		while(parser_activity_location.ReadRecord())
 		{
@@ -1393,8 +1366,16 @@ void g_ReadInputFiles(int scenario_no)
 				g_ProgramStop();
 			}
 
+			if(	g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID > 0)
+			{
+				g_WarningFile  <<"warning: node  " << node_number  << " have been used by more than one zone in file input_activity_location. Please check."<< endl;
+		
+			   bMultipleZOneError = true;
+			}
+
 			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 
+			
 			if(external_od_flag != -1) // not external destination
 				g_ZoneMap[zone_number].m_OriginActivityVector.push_back(nodeid);
 
@@ -1414,6 +1395,7 @@ void g_ReadInputFiles(int scenario_no)
 		cout << "input_activity_location.csv cannot be opened."<< endl;
 		g_ProgramStop();
 	}
+
 
 
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -1972,6 +1954,7 @@ void g_ConvertDemandToVehicles()
 
 			pVehicle->m_OriginNodeID	= g_ZoneMap[kvhc->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
 			pVehicle->m_DestinationNodeID 	=  g_ZoneMap[kvhc->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
+
 
 			if(pVehicle->m_OriginNodeID==-1 )
 			{
@@ -3104,15 +3087,18 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		float exit_queue_length;
 		int cumulative_arrival_count;
 		int cumulative_departure_count;
-		int cumulative_SOV_count;
-		int cumulative_HOV_count;
-		int cumulative_truck_count;
-		int cumulative_intermodal_count;
+
+		int time_dependent_left_arrival_count;
+		int time_dependent_left_departure_count;
+		int number_of_through_and_right_queued_vehicles;
+		int number_of_left_queued_vehicles;
+		
 		int cumulative_SOV_revenue;
 		int cumulative_HOV_revenue;
 		int cumulative_truck_revenue;
-		int cumulative_intermodal_revenue;
-		float Energy;		float CO2;
+		int day_no;
+		float Energy;		
+		float CO2;
 		float NOX;
 		float CO;
 		float HC;
@@ -3123,7 +3109,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 	{
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length,cumulative_arrival_count,cumulative_departure_count,left_turn_queue_count,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermoda_count,cumulative_SOV_revenue,cumulative_HOV_revenue,cumulative_truck_revenue,cumulative_intermodal_revenue,EnergyCO2,NOX,CO,HC\n");
+		fprintf(st, "from_node_id,to_node_id,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,cumulative_arrival_count,cumulative_departure_count,time_dependent_left_arrival_count,time_dependent_left_departure_count,number_of_through_and_right_queued_vehicles,number_of_left_queued_vehicles,cumulative_SOV_revenue,cumulative_HOV_revenue,cumulative_intermodal_revenue,Energy,CO2,NOX,CO,HC\n");
 		}
 
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -3143,27 +3129,20 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					float queue_length_ratio  = 0 ;
 
 
-					if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
-					{
 						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
-					}else
-					{
-						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(g_DefaultArterialKJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
 
-					}
+					int day_no = Iteration +1;  //Iterations starts from 0
 
-
-					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,%d,",
-						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,time,
+					fprintf(st, "%d,%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,",
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
+						day_no,time,
 						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
 						LinkOutFlow*60.0/pLink->m_NumLanes ,LinkOutFlow*60.0,
 						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes,
 						pLink->GetSpeed(time),
 						queue_length_ratio,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
-						pLink->m_LinkMOEAry[time].CumulativeDepartureCount,
-						pLink->m_LinkMOEAry[time].LeftExit_QueueLength);
-
+						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
 					tdmoe_element. from_node_id = g_NodeVector[pLink->m_FromNodeID].m_NodeNumber;
 					tdmoe_element. to_node_id = g_NodeVector[pLink->m_ToNodeID].m_NodeNumber;
@@ -3177,14 +3156,18 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					tdmoe_element. exit_queue_length = queue_length_ratio; /* in ratio*/;
 					tdmoe_element. cumulative_arrival_count = pLink->m_LinkMOEAry[time].CumulativeArrivalCount;
 					tdmoe_element. cumulative_departure_count = pLink->m_LinkMOEAry[time].CumulativeDepartureCount;
-					tdmoe_element. cumulative_SOV_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[1];
-					tdmoe_element. cumulative_HOV_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[2];
-					tdmoe_element. cumulative_truck_count = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[3];
-					tdmoe_element. cumulative_intermodal_count  = pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[4];
+					
+	
+
+					tdmoe_element. time_dependent_left_arrival_count = pLink->m_LinkMOEAry [time].IntervalLeftArrivalCount;
+					tdmoe_element. time_dependent_left_departure_count = pLink->m_LinkMOEAry [time].IntervalLeftDepartureCount;
+					tdmoe_element. number_of_through_and_right_queued_vehicles = pLink->m_LinkMOEAry [time].ExitQueueLength;
+					tdmoe_element. number_of_left_queued_vehicles  = pLink->m_LinkMOEAry [time].LeftExit_QueueLength;
+					
+					
 					tdmoe_element. cumulative_SOV_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[1];
 					tdmoe_element. cumulative_HOV_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[2];
 					tdmoe_element. cumulative_truck_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[3];
-					tdmoe_element. cumulative_intermodal_revenue = pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[4];
 
 					tdmoe_element.  Energy = pLink->m_LinkMOEAry [time].Energy ;
 					tdmoe_element.  CO2 = pLink->m_LinkMOEAry [time].CO2 ;
@@ -3193,13 +3176,17 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					tdmoe_element.  HC = pLink->m_LinkMOEAry [time].HC ;
 
 
-					int pt;
-					for(pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
-					{
-						fprintf(st, "%d,",pLink->m_LinkMOEAry [time].CumulativeArrivalCount_PricingType[pt]); 
-					}
+					fprintf(st, "%d,",tdmoe_element. time_dependent_left_arrival_count); 
+					fprintf(st, "%d,",tdmoe_element. time_dependent_left_departure_count); 
+					fprintf(st, "%d,",tdmoe_element. number_of_through_and_right_queued_vehicles); 
+					fprintf(st, "%d,",tdmoe_element. number_of_left_queued_vehicles); 
 
-					for(pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
+
+					int pt;
+
+
+
+					for(pt = 1; pt < MAX_PRICING_TYPE_SIZE-1; pt++)  //SOV, HOV, Truck
 					{
 						fprintf(st, "%6.2f,",pLink->m_LinkMOEAry [time].CumulativeRevenue_PricingType[pt]); 
 					}
@@ -3265,15 +3252,7 @@ void OutputRealTimeLinkMOEData(std::string fname, int start_time_in_min,int curr
 
 				float queue_length_ratio  = 0 ;
 
-
-				if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
-				{
-					queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
-				}else
-				{
-					queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(g_DefaultArterialKJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
-				}
-
+				queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
 
 				if(bTravelTimeOnly)
 				{
@@ -3498,10 +3477,6 @@ void g_ReadDTALiteSettings()
 	g_settings.use_point_queue_model_for_on_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_on_ramps", 1, g_DTASettingFileName);
 	g_settings.use_point_queue_model_for_off_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_off_ramps", 1, g_DTASettingFileName);
 
-
-
-
-	g_SimulateSignals = g_GetPrivateProfileInt("simulation", "sumulate_signal_cycle_length", 1, g_DTASettingFileName);
 	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
 
 	if(!g_OutputEmissionOperatingModeData)
@@ -4939,13 +4914,16 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 									g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 
 
-
+									if(origin_zone!= destination_zone)
+									{
 									CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],DSP_start_time,DSP_end_time);
 									line_no++;
 
 									if((line_no/6) %100000 ==0)
 									{
 										cout << g_GetAppRunningTime() << "Reading file " << file_name << " at "<< line_no/60000 << "K lines..."<< endl;
+									}
+
 									}
 
 								}

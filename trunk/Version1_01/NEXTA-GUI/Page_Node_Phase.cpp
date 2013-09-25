@@ -228,8 +228,8 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect,  int CurrentP
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
 		DTANodeMovement movement = pNode->m_MovementVector[i];
-		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkID];
-		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
+		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkNo];
+		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];
 
 		GDPoint p1, p2, p3;
 		// 1: fetch all data
@@ -407,8 +407,8 @@ void CPage_Node_Phase::DrawPhaseMovements(CPaintDC* pDC,CRect PlotRect,  int Cur
 		if(CurrentPhaseIndex >=0 && movement.phase_index  == CurrentPhaseIndex)
 				continue;  // draw movements in a phase only
 
-		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkID];
-		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
+		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkNo];
+		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];
 
 		GDPoint p1, p2, p3;
 		// 1: fetch all data
@@ -635,4 +635,9 @@ void CPage_Node_Phase::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pR
 
 	}
 		Invalidate();
+}
+
+void CPage_Node_Phase::OnBnClickedButtonNewPhase()
+{
+	// TODO: Add your control notification handler code here
 }

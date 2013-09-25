@@ -102,7 +102,7 @@ public:
 	m_bShowEventLabel = true;
 	m_bShowWeatherLabel = false;
 	m_bShowPrediction = false;
-	m_bShowSimulationAndObservation  = false;
+	m_bShowSimulationAndObservation  = true;
 
 	m_ViewMode = 0;
 
@@ -236,4 +236,8 @@ public:
 	afx_msg void OnMoetype2Linkinandoutflow();
 	afx_msg void OnMoetype1Linktraveltime();
 	afx_msg void OnMoetype2Linktraveltime();
+	CComboBox m_SimuDayNo;
+	CComboBox m_SensorDayNo;
+	afx_msg void OnCbnSelchangeComboSimudayno();
+	afx_msg void OnCbnSelchangeComboSensordayno();
 };

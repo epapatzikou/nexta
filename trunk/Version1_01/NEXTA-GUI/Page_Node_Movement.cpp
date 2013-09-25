@@ -37,6 +37,7 @@
 #include <sstream>
 // CPage_Node_Movement dialog
 
+extern CPen g_PenProhibitedMovement;
 
 IMPLEMENT_DYNAMIC(CPage_Node_Movement, CPropertyPage)
 
@@ -44,11 +45,14 @@ CPage_Node_Movement::CPage_Node_Movement()
 : CPropertyPage(CPage_Node_Movement::IDD)
 , m_CurrentNodeName(0)
 , m_CycleLengthInSec(0)
+, m_DisplayFieldName(_T(""))
 {
 	m_bColumnWidthIncludeHeader = true;
 	m_SelectedMovementIndex = -1;
 	m_bModifiedFlag = false;
 	m_PeakHourFactor = 1.0;
+
+	m_SelectedColumnIndex = 0;
 
 }
 
@@ -62,6 +66,8 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODEID, m_CurrentNodeName);
 	DDX_Text(pDX, IDC_EDIT_CYCLE_LENGTH, m_CycleLengthInSec);
+	DDX_Control(pDX, IDC_LIST1, m_PhaseList);
+	DDX_Text(pDX, IDC_EDIT_DisplayLabel, m_DisplayFieldName);
 }
 
 
@@ -72,6 +78,8 @@ BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
 	ON_BN_CLICKED(IDC_BUTTON_QEM, &CPage_Node_Movement::OnBnClickedButtonQem)
 	ON_BN_CLICKED(IDC_BUTTON_ExtendColumeWidth, &CPage_Node_Movement::OnBnClickedButtonExtendcolumewidth)
 	ON_BN_CLICKED(IDC_BUTTON_QEM2, &CPage_Node_Movement::OnBnClickedButtonQem2)
+	ON_LBN_SELCHANGE(IDC_LIST1, &CPage_Node_Movement::OnLbnSelchangeList1)
+	ON_LBN_DBLCLK(IDC_LIST1, &CPage_Node_Movement::OnLbnDblclkList1)
 END_MESSAGE_MAP()
 
 
@@ -80,6 +88,13 @@ BOOL CPage_Node_Movement::OnInitDialog()
 {
 
 	CPropertyPage::OnInitDialog();
+
+	for(int p = 1; p <= 	_max_phase_number; p++)
+	{
+		m_bAvailablePhaseVector [p] = false; 
+		m_EffectiveGreenTime [p]= 0;
+	}
+
 	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
 
 	m_CurrentNodeName = m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_NodeNumber ;
@@ -90,7 +105,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
-	std::vector<std::string> m_Column_names;
+
 
 	m_Column_names.push_back ("Incoming Node");  //0
 	m_Column_names.push_back ("Outgoing Node");   //1
@@ -100,11 +115,13 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	m_Column_names.push_back ("Prohibition"); //4
 	m_Column_names.push_back ("# of Lanes"); //5
 
+	m_Column_names.push_back ("Phase #"); //6
+	m_Column_names.push_back ("Effective Green Time (sec)"); //7
+
 	m_Column_names.push_back ("Obs Hourly Volume");
 	m_Column_names.push_back ("Obs Delay (sec)"); 
 
 	//editable 
-	m_Column_names.push_back ("Effective Green Time (sec)"); //5
 	m_Column_names.push_back ("Saturation Flow Rate (veh/hour/lane)"); //6
 	m_Column_names.push_back ("Simu Total Volume"); //7
 	m_Column_names.push_back ("Simu Hourly Volume"); //8
@@ -117,9 +134,6 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	m_Column_names.push_back ("QEM Control Delay (sec)"); //8
 	m_Column_names.push_back ("QEM LOS"); //8
-	m_Column_names.push_back ("QEM Phase1"); //8
-
-
 
 
 	CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
@@ -199,6 +213,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 		DTANodeMovement movement = pNode->m_MovementVector[i];
 
+
 		CString str;
 		str.Format ("%d", m_pDoc->m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNumber  );  // 0: from node
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
@@ -223,6 +238,21 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		str.Format ("%d",movement.QEM_Lanes ); // 4: number of lanes 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
+		int phase_number = movement.QEM_Phase1;
+
+		if ( phase_number>=1 && phase_number < _max_phase_number)
+		{
+			m_bAvailablePhaseVector[phase_number] = true;
+			m_EffectiveGreenTime [phase_number] = max(m_EffectiveGreenTime [phase_number], movement.QEM_EffectiveGreen);
+		}
+
+		str.Format ("%d",phase_number ); // phase number
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+		str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // effective green time 
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+
 
 		str.Format ("%d",movement.obs_turn_hourly_count  ); // 4: turn hourly count
 		m_ListCtrl.SetItemText(Index, column_index++,str );
@@ -230,8 +260,6 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		str.Format ("%d",movement.obs_turn_delay ); // delay in second
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // 5: effective green time 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 
 		if(movement.QEM_SatFlow <1) // use default value
@@ -274,10 +302,79 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	}
 
+
+	UpdatePhaseData();
+
+
+
 	UpdateData(0);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
+
+
+void CPage_Node_Movement::UpdatePhaseData()
+{
+
+
+	for(int p = 1; p <= 	_max_phase_number; p++)
+	{
+		m_bAvailablePhaseVector [p] = false; 
+		m_EffectiveGreenTime [p]= 0;
+	}
+
+	m_CurrentNodeID =  m_pDoc->m_SelectedNodeID ;
+
+
+	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
+
+	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	{
+
+		DTANodeMovement movement = pNode->m_MovementVector[i];
+
+
+		int phase_number = movement.QEM_Phase1;
+
+		if ( phase_number>=1 && phase_number < _max_phase_number && movement.QEM_Lanes > 0 )
+		{
+			m_bAvailablePhaseVector[phase_number] = true;
+
+			if(movement.QEM_EffectiveGreen >0)
+			{
+			m_EffectiveGreenTime [phase_number] = max(m_EffectiveGreenTime [phase_number], movement.QEM_EffectiveGreen);
+			}
+		}
+
+	}
+
+
+	m_PhaseList.ResetContent ();
+	bool bWithPhaseNumber = false;
+	for(int p= 1; p <=_max_phase_number; p++)
+	{
+	
+		if(m_bAvailablePhaseVector[p] == true)
+		{
+			CString str;
+			str.Format("Phase %d: %d (sec)", p, m_EffectiveGreenTime[p]);
+
+			if(bWithPhaseNumber == false)
+			{
+			m_PhaseList.AddString ("All Phases");
+			bWithPhaseNumber = true;
+			}
+
+			m_PhaseList.AddString (str);
+			bWithPhaseNumber = true;
+		}
+
+	}
+
+
+
+}
+
 void CPage_Node_Movement::UpdateList()
 {
 
@@ -313,14 +410,17 @@ void CPage_Node_Movement::UpdateList()
 		str.Format ("%d",movement.QEM_Lanes ); // 4: number of lanes 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
+		str.Format ("%d",movement.QEM_Phase1    ); 
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
+		str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // 5: effective green time 
+		m_ListCtrl.SetItemText(Index, column_index++,str );
+
 
 		str.Format ("%d",movement.obs_turn_hourly_count  ); // 4: turn hourly count
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%d",movement.obs_turn_delay ); // delay in second
-		m_ListCtrl.SetItemText(Index, column_index++,str );
-
-		str.Format ("%.0f",movement.QEM_EffectiveGreen  ); // 5: effective green time 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 
@@ -361,8 +461,6 @@ void CPage_Node_Movement::UpdateList()
 		str.Format ("%s",movement.QEM_LOS    ); 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%d",movement.QEM_Phase1    ); 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 
 	}
@@ -395,12 +493,25 @@ void CPage_Node_Movement::OnPaint()
 void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 {
 
+	int SelectedPhaseNumberIndex  = m_PhaseList.GetCurSel ();
+
+	int SelectedPhaseNumber= 0;
+	if(SelectedPhaseNumberIndex>=1)
+	{
+	char str[100];
+	m_PhaseList.GetText (SelectedPhaseNumberIndex, str);
+
+	int EffectiveGreenTime = 0;
+
+	sscanf(str, "Phase %d: %d (sec)", &SelectedPhaseNumber, &EffectiveGreenTime);
+	
+	}
 	m_MovementBezierVector.clear();
 
 	CPen NormalPen(PS_SOLID,2,RGB(0,0,0));
 	CPen TimePen(PS_DOT,1,RGB(0,0,0));
 	CPen DataPen(PS_SOLID,0,RGB(0,0,0));
-	CPen SelectedPen(PS_SOLID,4,RGB(255,0,0));
+	CPen SelectedPen(PS_SOLID,2,RGB(255,0,0));
 	CPen SelectedPhasePen(PS_SOLID,4,RGB(0,0,255));
 
 	CBrush  WhiteBrush(RGB(255,255,255)); 
@@ -426,14 +537,21 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 	CString str;
 	str.Format("%d",m_CurrentNodeName);
 
-	pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
-
+	if(SelectedPhaseNumber <1)
+	{
+	   pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
+	}
 
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
 		DTANodeMovement movement = pNode->m_MovementVector[i];
-		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkID];
-		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkID ];
+
+		if( m_pDoc->m_hide_non_specified_movement_on_freeway_and_ramp && movement.bNonspecifiedTurnDirectionOnFreewayAndRamps && i != m_SelectedMovementIndex)
+			continue;
+
+
+		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkNo];
+		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];
 
 		GDPoint p1, p2, p3;
 		// 1: fetch all data
@@ -488,7 +606,10 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 
 		CPoint pt_text = NPtoSP(p1_text);
 
+		if(SelectedPhaseNumber <=1)
+		{
 		pDC->TextOutA(pt_text.x-10,pt_text.y,str);
+		}
 
 		DrawLink(pDC,p1_new,p2_new,pInLink->m_NumberOfLanes,theta,lane_width);
 
@@ -513,19 +634,26 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		p3_text.x= text_length*cos(theta);
 		p3_text.y= text_length*sin(theta);
 
+		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumberOfLanes,theta,lane_width);
 
-		//draw to node name
-		str.Format("%d",m_pDoc->m_NodeNoMap [movement.out_link_to_node_id]->m_NodeNumber );
+
+		//draw to node label
+
+		if(SelectedPhaseNumber>=1 && movement.QEM_Phase1 == SelectedPhaseNumber)  // seleted phase
+
+		{
+		CString Label = m_ListCtrl.GetItemText(i, m_SelectedColumnIndex);
+
+		str.Format("%s",Label );
 
 		if(p3_text.y < -100)
 			p3_text.y +=10;
 
-		pt_text = NPtoSP(p3_text);
-
+		pt_text = NPtoSP(p2_new);
 
 		pDC->TextOutA(pt_text.x-10 ,pt_text.y,str);
 
-		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumberOfLanes,theta,lane_width);
+		}
 
 
 		// draw movement 
@@ -533,11 +661,18 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		CPoint Point_Movement[4];
 
 
-		if(i == m_SelectedMovementIndex)
-			pDC->SelectObject(&SelectedPen);
-		else
-			pDC->SelectObject(&NormalPen);
 
+		if(i == m_SelectedMovementIndex)
+		{
+			pDC->SelectObject(&SelectedPen);
+		}
+		else
+		{
+			if(m_ListCtrl.GetItemText (i,4).Find("Prohibited") != -1) 			// select prohibited movement pen: 
+				pDC->SelectObject(&g_PenProhibitedMovement);
+			else
+				pDC->SelectObject(&NormalPen);
+		}
 
 
 		Point_Movement[0]= NPtoSP(pt_movement[0]);
@@ -555,8 +690,45 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		m_MovementBezierVector.push_back (element);
 
 
-		pDC->PolyBezier(Point_Movement,4);
+		if(SelectedPhaseNumber ==0 || SelectedPhaseNumber>=1 && movement.QEM_Phase1 == SelectedPhaseNumber)  // seleted phase
+		{
+			pDC->PolyBezier(Point_Movement,4);
 
+			bool bShowArrow = false;
+
+			if(SelectedPhaseNumber>=1 && movement.QEM_Phase1 == SelectedPhaseNumber)
+				bShowArrow = true;
+
+			if(bShowArrow)
+			{
+			CPoint FromPoint = Point_Movement[2] ; 
+			CPoint ToPoint = Point_Movement[3];
+
+
+			CPoint arrow_pts[3];
+			double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
+			double cosy = cos(slopy);
+			double siny = sin(slopy);   
+			double display_length  = sqrt((double)(FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y)+(double)(FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x));
+			double arrow_size = min(10,display_length/3.0);
+
+			if(arrow_size>0.2)
+			{
+
+				arrow_pts[0] = ToPoint;
+				arrow_pts[1].x = ToPoint.x + (int)(arrow_size * cosy - (arrow_size / 2.0 * siny) + 0.5);
+				arrow_pts[1].y = ToPoint.y + (int)(arrow_size * siny + (arrow_size / 2.0 * cosy) + 0.5);
+				arrow_pts[2].x = ToPoint.x + (int)(arrow_size * cosy + arrow_size / 2.0 * siny + 0.5);
+				arrow_pts[2].y = ToPoint.y - (int)(arrow_size / 2.0 * cosy - arrow_size * siny + 0.5);
+
+				pDC->Polygon(arrow_pts, 3);
+
+			}
+			}
+
+
+
+		}
 		//restore pen
 		pDC->SelectObject(&DataPen);
 
@@ -640,12 +812,28 @@ void CPage_Node_Movement::OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT 
 
 		int nSelectedRow = m_ListCtrl.GetNextSelectedItem(pos);
 
+		
 		char str[100];
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		m_SelectedMovementIndex = nSelectedRow;
 
 
 	}
+
+		int nSelectedColumn = m_ListCtrl.GetFocusCell();
+
+		if(nSelectedColumn > 0)
+		{
+		TRACE("");
+		}
+		m_SelectedColumnIndex = nSelectedColumn;
+
+		if(nSelectedColumn < m_Column_names.size())
+			{
+				m_DisplayFieldName = m_Column_names[nSelectedColumn].c_str ();
+				UpdateData(0);
+			}
+
 	Invalidate();
 }
 
@@ -677,11 +865,38 @@ void CPage_Node_Movement::SaveData()
 	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 	{
 		int turning_prohibition_flag=  pNode->m_MovementVector[i].turning_prohibition_flag;
-		int QEM_lanes=  pNode->m_MovementVector[i].QEM_Lanes ;
+		
+		int PrevQEM_lanes = pNode->m_MovementVector[i].QEM_Lanes;
+		int QEM_Phase1 =  pNode->m_MovementVector[i].QEM_Phase1;
+
+		CString LaneString =  m_ListCtrl.GetItemText (i,5); 
+		int QEM_lanes= atoi(LaneString);
+
+		// update # of lanes on link
+
+		if(PrevQEM_lanes != QEM_lanes)
+		{
+		DTALink* pLink0 = m_pDoc->m_LinkNoMap[pNode->m_MovementVector[i].IncomingLinkNo ];
+
+		switch (pNode->m_MovementVector[i].movement_turn)
+			{
+			case DTA_Through: pLink0->m_NumberOfLanes = QEM_lanes; break;
+
+
+			case DTA_LeftTurn: 
+			case DTA_LeftTurn2:
+			pLink0->m_NumberOfLeftTurnLanes = QEM_lanes  ; break;
+
+			
+			case DTA_RightTurn:
+			case DTA_RightTurn2: 
+			pLink0->m_NumberOfRightTurnLanes = QEM_lanes   ; break;
+			}
+		}
 		int obs_turn_hourly_count = pNode->m_MovementVector[i].obs_turn_hourly_count  ;
 		int obs_turn_delay = pNode->m_MovementVector[i].obs_turn_delay  ;
 
-		DTA_APPROACH_TURN movement_approach_turn = pNode->m_MovementVector[i].movement_approach_turn  ;
+		DTA_SIG_MOVEMENT movement_approach_turn = pNode->m_MovementVector[i].movement_approach_turn  ;
 		int effective_green=  (int)(pNode->m_MovementVector[i].QEM_EffectiveGreen);
 		int saturation_flow_rate=  (int)(pNode->m_MovementVector[i].QEM_SatFlow);
 
@@ -707,14 +922,20 @@ void CPage_Node_Movement::SaveData()
 		pNode->m_MovementVector[i].QEM_Lanes = atoi(str);
 
 		str = m_ListCtrl.GetItemText (i,colume_index++);
+		pNode->m_MovementVector[i].QEM_Phase1 = atoi(str);
+
+
+		str = m_ListCtrl.GetItemText (i,colume_index++);
+		pNode->m_MovementVector[i].QEM_EffectiveGreen =  atof(str);
+
+		str = m_ListCtrl.GetItemText (i,colume_index++);
 		pNode->m_MovementVector[i].obs_turn_hourly_count  = atoi(str);
 		pNode->m_MovementVector[i].obs_turn_count   = atoi(str);
 
 		str = m_ListCtrl.GetItemText (i,colume_index++);
 		pNode->m_MovementVector[i].obs_turn_delay = atoi(str);
 
-		str = m_ListCtrl.GetItemText (i,colume_index++);
-		pNode->m_MovementVector[i].QEM_EffectiveGreen =  atof(str);
+
 
 		str = m_ListCtrl.GetItemText (i,colume_index++);
 		pNode->m_MovementVector[i].QEM_SatFlow =  atof(str);
@@ -724,7 +945,9 @@ void CPage_Node_Movement::SaveData()
 			obs_turn_delay != pNode->m_MovementVector[i].obs_turn_delay  || 
 			turning_prohibition_flag != pNode->m_MovementVector[i].turning_prohibition_flag || 
 			QEM_lanes != pNode->m_MovementVector[i].QEM_Lanes ||
-			effective_green != pNode->m_MovementVector[i].QEM_EffectiveGreen)
+			effective_green != pNode->m_MovementVector[i].QEM_EffectiveGreen || 
+			QEM_Phase1 != pNode->m_MovementVector[i].QEM_Phase1)
+
 		{
 			m_bModifiedFlag = true;
 			m_pDoc->Modify (true);
@@ -732,7 +955,7 @@ void CPage_Node_Movement::SaveData()
 
 		if(obs_turn_hourly_count != pNode->m_MovementVector[i].obs_turn_hourly_count  )
 		{
-			IncomingLinkMap[pNode->m_MovementVector[i].IncomingLinkID ] = 1;
+			IncomingLinkMap[pNode->m_MovementVector[i].IncomingLinkNo ] = 1;
 			bTurnVolumeModified = true;
 		}
 
@@ -754,7 +977,7 @@ void CPage_Node_Movement::SaveData()
 				pLink0 ->m_observed_peak_hourly_volume = 0; // reset	
 				for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 				{
-					if(pNode->m_MovementVector[i].IncomingLinkID == linkid)
+					if(pNode->m_MovementVector[i].IncomingLinkNo == linkid)
 					{
 						pLink0 ->m_observed_peak_hourly_volume  += pNode->m_MovementVector[i].obs_turn_hourly_count  ;
 					}
@@ -762,7 +985,7 @@ void CPage_Node_Movement::SaveData()
 
 				for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
 				{
-					if(pNode->m_MovementVector[i].IncomingLinkID == linkid)
+					if(pNode->m_MovementVector[i].IncomingLinkNo == linkid)
 					{
 						pNode->m_MovementVector[i].obs_turn_percentage  =  pNode->m_MovementVector[i].obs_turn_hourly_count *100.0f/ max(1, pLink0 ->m_observed_peak_hourly_volume) ;
 					}
@@ -800,6 +1023,8 @@ void CPage_Node_Movement::RunQEM()
 	m_pDoc->Modify (true);
 
 	m_CycleLengthInSec = m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_CycleLengthInSecond ;
+
+	UpdatePhaseData();
 	// update cycle length 
 	UpdateData(0);
 
@@ -870,3 +1095,14 @@ void CPage_Node_Movement::OnBnClickedButtonQem2()
 
 	RunQEM();
 }
+
+
+void CPage_Node_Movement::OnLbnSelchangeList1()
+{
+	Invalidate();
+}
+void CPage_Node_Movement::OnLbnDblclkList1()
+{
+	Invalidate();
+}
+

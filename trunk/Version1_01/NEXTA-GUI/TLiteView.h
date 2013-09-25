@@ -49,29 +49,34 @@ enum tool
 enum link_text_display_mode
    { link_display_none = 0, 
    link_display_street_name, 
+   link_display_speed_limit_in_miles, 
+   link_display_length_in_miles, 
+   link_display_length_in_feet, 
+   link_display_number_of_lanes, 
+   link_display_number_of_left_turn_lanes, 
+   link_display_link_capacity_per_hour,
+   link_display_lane_capacity_per_hour,
+	link_display_total_link_volume,
+	link_display_LevelOfService,
+	link_display_avg_simulated_speed_mph,
+	link_display_avg_travel_time,
+	link_display_avg_delay,
    link_display_link_id, 
    link_display_TMC_code, 
    link_display_from_id_to_id, 
-   link_display_speed_limit_in_miles, 
-   link_display_speed_limit_in_km, 
-   link_display_length_in_miles, 
-   link_display_length_in_feet, 
-   link_display_length_in_km, 
-   link_display_length_in_meters, 
+
+
    link_display_free_flow_travel_time_in_min, 
    link_display_free_flow_travel_time_in_hour, 
-   link_display_number_of_lanes, 
-   link_display_number_of_left_turn_lanes, 
+
+
    link_display_number_of_right_turn_lanes, 
 
-   link_display_link_capacity_per_hour,
-   link_display_lane_capacity_per_hour,
+   link_display_length_of_left_turn_lanes, 
+   link_display_length_of_right_turn_lanes, 
 
    link_display_separator_1,
    link_display_saturation_flow_rate,
-   link_display_effective_green_time_length_in_second,
-   link_display_effective_green_time_length_in_second_positive_number_only,
-   link_display_green_start_time_in_second,
    link_display_link_grade,
    link_display_jam_density_in_vhc_pmpl,
    link_display_wave_speed_in_mph,
@@ -84,15 +89,12 @@ enum link_text_display_mode
     link_display_internal_link_id,
 
 	link_display_separator_3,
-	link_display_total_link_volume,
+
 	link_display_total_delay,
 	link_display_volume_over_capacity_ratio,
-	link_display_LevelOfService,
 
-	link_display_avg_simulated_speed_mph,
 	link_display_avg_simulated_speed_kmph,
-	link_display_avg_travel_time,
-	link_display_avg_delay,
+
 	link_display_avg_waiting_time_on_loading_buffer,
 
 	link_display_time_dependent_link_volume,
@@ -105,6 +107,7 @@ enum link_text_display_mode
 
 	link_display_separator_4,
 	link_display_total_sensor_link_volume,
+	link_display_total_sensor_vs_simulated_link_volume,
 	link_display_total_link_count_error,
 	link_display_simulated_AADT,
 	link_display_observed_AADT,
@@ -140,21 +143,27 @@ enum movement_text_display_mode
    { 
    movement_display_none = 0, 
    movement_display_turn_type, 
+   movement_display_QEM_Lanes,
+   movement_display_sim_turn_hourly_count,
+   movement_display_sim_turn_percentage, 
+   movement_display_sim_turn_delay, 
+   movement_display_QEM_Phase1,
+   movement_display_QEM_EffectiveGreen,
+
    movement_display_turn_up_node_number, 
    movement_display_turn_dest_node_number, 
    movement_display_turn_three_node_numbers, 
    movement_display_turn_protected_permited_prohibited,
    movement_display_sim_turn_count, 
-   movement_display_sim_turn_hourly_count,
-   movement_display_sim_turn_percentage, 
-   movement_display_sim_turn_delay, 
 
+
+
+   movement_display_sim_turn_delay_in_min, 
    movement_display_obs_turn_hourly_count,
    movement_display_obs_turn_percentage, 
    movement_display_obs_turn_delay, 
 
    movement_display_QEM_TurnDirection,
-   movement_display_QEM_Lanes,
    movement_display_QEM_Shared,
    movement_display_QEM_Width,
    movement_display_QEM_Storage,
@@ -163,13 +172,12 @@ enum movement_text_display_mode
    movement_display_QEM_Speed,
    movement_display_QEM_IdealFlow,
    movement_display_QEM_LostTime,
-   movement_display_QEM_Phase1,
    movement_display_QEM_PermPhase1,
    movement_display_QEM_DetectPhase1,
 
    movement_display_QEM_TurnVolume,
    movement_display_QEM_TurnPercentage,
-   movement_display_QEM_EffectiveGreen,
+
    movement_display_QEM_Capacity,
    movement_display_QEM_VOC,
    movement_display_QEM_SatFlow,
@@ -180,6 +188,7 @@ enum movement_text_display_mode
 enum node_display_mode
    { node_display_none = 0, 
    node_display_node_number, 
+   node_display_sequential_node_number, 
    node_display_zone_number, 
    node_display_cycle_length_in_second, 
    node_display_cycle_length_in_second_for_signal_only, 
@@ -448,7 +457,9 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 
 	link_text_display_mode m_ShowLinkTextMode;
 	movement_text_display_mode m_ShowMovementTextMode;
-	float m_MovementTextBoxSizeInFeet;
+
+	double 	m_MovmentTextSize;
+	double 	m_LinkTextSize;
 	int m_NodeDisplayBoundarySize; 
 
 	bool m_bShowVehicleNumber;
@@ -676,7 +687,12 @@ void ArrowTo(HDC hDC, const POINT *lpTo, ARROWSTRUCT *pA)
 }
 
 bool m_bShowTransitAccessibility;
-bool m_bShowProhibittedMovements;
+bool m_bShowProhibitedMovements;
+
+bool m_bShowTransitLinksOnly;
+bool m_bShowWalkLinksOnly;
+
+
 // Overrides
 public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
@@ -830,6 +846,10 @@ public:
 	afx_msg void OnTransitOutputtransitaccesssibilityfromhere();
 	afx_msg void OnMovementHighlightprohibitedmovements();
 	afx_msg void OnUpdateMovementHighlightprohibitedmovements(CCmdUI *pCmdUI);
+	afx_msg void OnTransitShowtransitlinksonly();
+	afx_msg void OnTransitShowwalklinksonly();
+	afx_msg void OnUpdateTransitShowtransitlinksonly(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateTransitShowwalklinksonly(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteView*>	g_ViewList;
 

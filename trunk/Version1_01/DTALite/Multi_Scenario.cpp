@@ -228,6 +228,12 @@ void g_MultiScenarioTrafficAssignment()
 				g_ProgramStop();
 			}
 
+			int SignalRepresentationFlag = 0;
+			
+			parser_scenario.GetValueByFieldName("signal_representation_model",SignalRepresentationFlag);
+
+			g_SignalRepresentationFlag =  (e_signal_representation_model) SignalRepresentationFlag;
+
 			g_TrafficFlowModelFlag = (e_traffic_flow_model)traffic_flow_model;
 
 			g_UEAssignmentMethod = assignment_fixed_percentage;
@@ -252,7 +258,6 @@ void g_MultiScenarioTrafficAssignment()
 			g_SummaryStatFile.WriteTextLabel("Traffic Flow Model =,");
 
 			g_EmissionDataOutputFlag  = 0; 
-			g_MovementCapacityModelFlag = 0;
  
 
 			switch( g_TrafficFlowModelFlag)
@@ -278,13 +283,6 @@ void g_MultiScenarioTrafficAssignment()
 
 				traffic_flow_model = tfm_newells_model;  // newell's model
 				g_EmissionDataOutputFlag  = 1;  // with emission data
-
-				break;
-
-			case tfm_point_queue_with_movement_capacity: 		g_LogFile << "Point Queue Model with Movement Capacity" << endl;
-				g_SummaryStatFile.WriteTextString("Point Queue Model with Movement Capacity");
-				traffic_flow_model = tfm_point_queue;  // point queue 
-				g_MovementCapacityModelFlag = 1;
 
 				break;
 

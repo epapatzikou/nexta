@@ -146,6 +146,7 @@ void g_ReadAMSMovementData()
 	CCSVParser parser_movement;
 
 	int count = 0;
+	int zero_effective_green_time_error_count = 0;
 
 	if (parser_movement.OpenCSVFile("AMS_movement.csv",false))  // not required
 	{
@@ -155,6 +156,8 @@ void g_ReadAMSMovementData()
 
 			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
 				break;
+
+			int middle_node_id = g_NodeNametoIDMap[node_id ];
 
 			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
 			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
@@ -169,7 +172,7 @@ void g_ReadAMSMovementData()
 				{
 					g_ShortestPathWithMovementDelayFlag = true; // with movement input
 						string movement_id = GetMovementStringID(up_node_id, node_id , dest_node_id);
-						int middle_node_id = g_NodeNametoIDMap[node_id ];
+
 
 						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = up_node_id;
 						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = node_id ; 
@@ -178,19 +181,76 @@ void g_ReadAMSMovementData()
 						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
 
 						g_number_of_prohibited_movements++;
+
+						continue; // do not need to check further 
 				}
+
+				if(node_id  == 76 && up_node_id == 141)
+				{
+				TRACE("");
+				}
+
+				// do not need to read signal timing data 
+				if(	g_NodeVector[middle_node_id].m_ControlType != g_settings.pretimed_signal_control_type_code &&
+					g_NodeVector[middle_node_id].m_ControlType != g_settings.actuated_signal_control_type_code )
+					continue;
+
 				std::string turn_type;
 
 				parser_movement.GetValueByFieldName ("turn_type",turn_type );
 
+				string strid = GetLinkStringID(up_node_id,node_id);
+				if(g_LinkMap.find(strid)!= g_LinkMap.end())
+				{
+
+				int QEM_EffectiveGreen = 0;
+				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
+					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
+
+					if(QEM_EffectiveGreen == 0 )
+					{
+						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << " has an effective green time of 0. Please check # of lanes for this movement." << endl;
+						zero_effective_green_time_error_count++;
+					}
+
+
 				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
 				{
 					int QEM_Lanes = 0;
-					int QEM_EffectiveGreen = 0;
 					int QEM_SatFlow = 1900;
 					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
-					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
-					parser_movement.GetValueByFieldName ("QEM_SatFlow",QEM_SatFlow );
+
+					//find link
+					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
+					{
+						if(g_LinkMap.find(GetLinkStringID(up_node_id,node_id)) == g_LinkMap.end())  // no such link
+							continue; 
+
+
+
+						if(pLink->m_bSignalizedArterialType == true )  // only for arterial streets
+						{
+
+	
+						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
+						pLink->m_EffectiveGreenTime_In_Second = max(QEM_EffectiveGreen,pLink->m_EffectiveGreenTime_In_Second );
+
+						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
+						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
+						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
+						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane ;
+						}
+
+					}
+
+
+				}
+
+				if(turn_type.find("Through") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
+				{
+					int QEM_Lanes = 0;
+					int QEM_SatFlow = 1900;
+					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
 
 					//find link
 					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
@@ -201,12 +261,13 @@ void g_ReadAMSMovementData()
 
 						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
 
-						if(pLink->m_bArterialType == true && QEM_EffectiveGreen>=1 && QEM_SatFlow>=100 )  // only for arterial streets
+						if(pLink->m_bSignalizedArterialType == true )  // only for arterial streets
 						{
-						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
-						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
-						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
-						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow;
+
+						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
+						pLink->m_EffectiveGreenTime_In_Second = max(QEM_EffectiveGreen,pLink->m_EffectiveGreenTime_In_Second );
+
+						//					pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow; // we use link based saturation flow rate
 						}
 
 					}
@@ -214,8 +275,14 @@ void g_ReadAMSMovementData()
 
 				}
 
+				}
 		}
 		
+	}
+
+	if(zero_effective_green_time_error_count >=1)
+	{
+	g_ProgramStop();
 	}
 
 	// step 4: from dual ring structure: find the start_time for both through and left-turn movement
