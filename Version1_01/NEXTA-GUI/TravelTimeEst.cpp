@@ -77,11 +77,6 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 	float SpeedSum = 0;
 
 
-	if( m_LinkMOEAry.size() < 1440)
-	{   // no enought data to calculate historical average
-		return;
-	}
-
 	for( t=0; t< 1440; t++)
 	{
 		SLinkMOE element; 

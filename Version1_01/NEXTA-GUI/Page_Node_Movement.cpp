@@ -600,7 +600,10 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		p1_text.y= (-1)*(text_length)*sin(theta);
 
 		// 4: draw from node name
+		
 		str.Format("%d",m_pDoc->m_NodeNoMap [movement.in_link_from_node_id]->m_NodeNumber );
+
+	
 		if(p1_text.y < -50)
 			p1_text.y +=10;
 
@@ -635,6 +638,26 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		p3_text.y= text_length*sin(theta);
 
 		DrawLink(pDC,p2_new,p3_new,pOutLink->m_NumberOfLanes,theta,lane_width);
+
+		DTALink * pRevLink = NULL; //reversed link
+		unsigned long ReversedLinkKey = m_pDoc->GetLinkKey(pOutLink->m_ToNodeID, pOutLink->m_FromNodeID);
+
+		int reversed_link_id = 0;
+		if ( m_pDoc->m_NodeNotoLinkMap.find ( ReversedLinkKey) == m_pDoc->m_NodeNotoLinkMap.end())
+		{
+		str.Format("%d",m_pDoc->m_NodeNoMap [movement.out_link_to_node_id ]->m_NodeNumber );
+	
+		if(p3_text.y < -50)
+			p3_text.y +=10;
+
+		pt_text = NPtoSP(p3_text);
+
+		if(SelectedPhaseNumber <=1)
+		{
+		pDC->TextOutA(pt_text.x-10,pt_text.y,str);
+		}
+		
+		}
 
 
 		//draw to node label

@@ -2595,7 +2595,17 @@ void AdjustLinkEndpointsWithSetBack()
 	int m_TotalTravelTime;
 	int m_TotalDiffValue;
 
-	float GetSimulationSpeed(int current_time)
+
+	bool IsSimulatedDataAvailable(int time)
+	{
+		if(m_LinkMOEAry.find(time + g_SimulatedDayNo*1440)!= m_LinkMOEAry.end())
+		return true;
+			else
+		return false;
+	}
+
+
+	float GetSimulatedSpeed(int current_time)
 	{
 		float total_value = 0;
 		int total_count = 0;
@@ -3000,7 +3010,7 @@ void AdjustLinkEndpointsWithSetBack()
 //		}
 
 	}
-	float GetSimulationDensity(int current_time)
+	float GetSimulatedDensity(int current_time)
 	{
 
 		float total_value = 0;
@@ -3029,7 +3039,7 @@ void AdjustLinkEndpointsWithSetBack()
 
 }		
 
-	float GetSimulationDensityMOE(int start_time, int end_time, float &maximum)
+	float GetSimulatedDensityMOE(int start_time, int end_time, float &maximum)
 	{
 		maximum = 0;
 		float average = 0;

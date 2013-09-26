@@ -622,7 +622,7 @@ void CDlgPathList::OnPathDataExportCSV()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f,", pLink->GetSimulationSpeed (t));
+								fprintf(st, "%.1f,", pLink->GetSimulatedSpeed (t));
 
 							}
 							fprintf(st,"\n");
@@ -668,7 +668,7 @@ void CDlgPathList::OnPathDataExportCSV()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f,", pLink->GetSimulationDensity (t));
+								fprintf(st, "%.1f,", pLink->GetSimulatedDensity (t));
 
 							}
 							fprintf(st,"\n");
@@ -2158,7 +2158,7 @@ void CDlgPathList::OnBnClickedDynamicDensityContour()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f ", pLink->GetSimulationDensity (t));
+								fprintf(st, "%.1f ", pLink->GetSimulatedDensity (t));
 
 							}
 							fprintf(st,"\n");
@@ -2372,7 +2372,7 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f ", pLink->GetSimulationSpeed (t));
+								fprintf(st, "%.1f ", pLink->GetSimulatedSpeed (t));
 
 							}
 							fprintf(st,"\n");
