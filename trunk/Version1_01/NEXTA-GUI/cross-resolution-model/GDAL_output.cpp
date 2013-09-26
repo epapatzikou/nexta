@@ -996,8 +996,8 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 
 			float total_speed = 0;
-			int start_time_in_min = min((*iLink)->m_LinkMOEAry.size()-1,DemandLoading_StartHour*60+30);
-			int end_time_in_min = min((*iLink)->m_LinkMOEAry.size(),DemandLoading_EndHour*60);
+			int start_time_in_min = DemandLoading_StartHour*60+30;
+			int end_time_in_min = DemandLoading_EndHour*60;
 
 			if(start_time_in_min> end_time_in_min)
 				end_time_in_min = start_time_in_min;
@@ -1005,7 +1005,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 			for(int t = start_time_in_min; t<end_time_in_min ; t++)
 			{
-			total_speed += (*iLink)->m_LinkMOEAry[t].SimulationSpeed ;
+			total_speed += (*iLink)->GetSimulatedSpeed(t) ;
 			}
 			float avg_speed = total_speed/max(1,end_time_in_min-start_time_in_min);
 			float speed_limit_ratio =  avg_speed/max(1,(*iLink)->m_SpeedLimit);

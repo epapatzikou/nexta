@@ -3131,7 +3131,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_NumLanes); /* in ratio*/
 
-					int day_no = Iteration +1;  //Iterations starts from 0
+					int day_no = Iteration ; 
 
 					fprintf(st, "%d,%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
@@ -3144,6 +3144,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
+					tdmoe_element.day_no = day_no;
 					tdmoe_element. from_node_id = g_NodeVector[pLink->m_FromNodeID].m_NodeNumber;
 					tdmoe_element. to_node_id = g_NodeVector[pLink->m_ToNodeID].m_NodeNumber;
 					tdmoe_element. timestamp_in_min = time;

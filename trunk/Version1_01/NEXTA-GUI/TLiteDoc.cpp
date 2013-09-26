@@ -1081,6 +1081,12 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 
 			g_SimulatedDayDataMap[ element.day_no] = true;
 
+			if( element.day_no < 0)
+				 element.day_no = 0;
+
+			if( element.day_no > 300)
+				 element.day_no = 300;
+
 			g_SimulatedLastDayNo= max(g_SimulatedLastDayNo,  element.day_no);
 			g_SimulatedDayNo = g_SimulatedLastDayNo;
 
@@ -7168,7 +7174,8 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 
 		for(CurrentTime  = StartTime; CurrentTime < EndTime; CurrentTime ++)
 		{
-				if(pLink->m_LinkMOEAry.find(CurrentTime)!= pLink->m_LinkMOEAry.end() && pLink->m_LinkMOEAry[CurrentTime].SimulationLinkFlow>=1 || pLink->m_LinkMOEAry[CurrentTime].SimulationDensity >=0.1)
+				if(pLink->IsSimulatedDataAvailable (CurrentTime) && pLink->GetSimulatedLinkVolume (CurrentTime)>=1 ||
+					pLink->GetSimulatedDensity(CurrentTime) >=0.1)
 				{
 					total_measurement_count++;
 
@@ -7176,28 +7183,25 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 					{
 					case MOE_volume:  
 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationLinkFlow;
+						total_value+= pLink->GetSimulatedLinkVolume (CurrentTime);
 
 						break;
 					case MOE_speed: 
 					case MOE_reliability: 
 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationSpeed;
+						total_value+= pLink->GetSimulatedSpeed(CurrentTime);
 
 						break;
 					case MOE_traveltime:
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulatedTravelTime;
+						total_value+= pLink->GetSimulatedTravelTime (CurrentTime);
 						break;
 					case MOE_density:
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationDensity;
+						total_value+= pLink->GetSimulatedDensity(CurrentTime);
 						break;
 					case MOE_queue_length: 
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].SimulationQueueLength;
-						break;
+						total_value+= pLink->GetSimulationQueueLength(CurrentTime);
+					break;
 
-					case MOE_emissions:
-						total_value+= pLink->m_LinkMOEAry[CurrentTime].Energy ;
-						break;
 
 					}
 
@@ -8975,13 +8979,6 @@ void CTLiteDoc::OnFileImportDemandFromCsv()
 
 void CTLiteDoc::OnImportSensorData()
 {
-	CDlg_ImportPointSensor dlg;
-	dlg.m_pDoc = this;
-	dlg.DoModal();
-
-	CalculateDrawingRectangle();
-	m_bFitNetworkInitialized  = false;
-	UpdateAllViews(0);
 }
 
 void CTLiteDoc::OnImportLinkmoe()
@@ -13393,7 +13390,7 @@ void CTLiteDoc::SensortoolsConverttoHourlyVolume()
 								if( pReferenceDoc->m_LinkNoMap.find(linkid) != pReferenceDoc->m_LinkNoMap.end())
 								{
 									pReferenceLink = pReferenceDoc->m_LinkNoMap [linkid];
-									reference_avg_speed = pReferenceLink->GetSimulationSpeed(start_time_in_hour);
+									reference_avg_speed = pReferenceLink->GetSimulatedSpeed(start_time_in_hour);
 
 									int reference_from_node_id = pReferenceLink->m_FromNodeNumber ;
 									int reference_to_node_id = pReferenceLink->m_ToNodeNumber ;
@@ -15689,8 +15686,8 @@ void CTLiteDoc::PerformPathTravelTimeReliabilityAnalysis()
 			DTALink* pLink = m_LinkNoMap[pPath->m_LinkVector[i]];
 
 			float linkcapacity = pLink->m_LaneCapacity;
-			float linktraveltime = pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime)*60;
-			float density = pLink->GetSimulationDensity(CurrentTime);
+			float linktraveltime = pLink->m_Length/pLink->GetSimulatedSpeed(CurrentTime)*60;
+			float density = pLink->GetSimulatedDensity(CurrentTime);
 
 			if (density > max_density) BottleneckIdx = i;
 
@@ -15723,7 +15720,7 @@ void CTLiteDoc::PerformPathTravelTimeReliabilityAnalysis()
 				}
 			}
 
-			CurrentTime += (pLink->m_Length/pLink->GetSimulationSpeed(CurrentTime))*60;
+			CurrentTime += (pLink->m_Length/pLink->GetSimulatedSpeed(CurrentTime))*60;
 		}
 	}
 

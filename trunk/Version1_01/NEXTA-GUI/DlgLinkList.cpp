@@ -337,7 +337,7 @@ void CDlgLinkList::ReloadData()
 
 		float max_density , avg_density;
 
-		avg_density = pLink1->GetSimulationDensityMOE(MOE_start_time_in_min,MOE_end_time_in_min,max_density);
+		avg_density = pLink1->GetSimulatedDensityMOE(MOE_start_time_in_min,MOE_end_time_in_min,max_density);
 
 		sprintf_s(text, "%.1f",avg_density );
 		m_ListCtrl.SetItemText(Index,column_index++,text);

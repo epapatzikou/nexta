@@ -1068,6 +1068,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	fopen_s(&pFile,directory+"fort.900","r");
 	std::list<DTALink*>::iterator iLink;
 
+	CString str;
+	str.Format ("Start loading speed data...");
+	SetStatusText(str);
 
 	if(pFile!=NULL)
 	{
@@ -1096,6 +1099,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		fclose(pFile);
 	}
 
+	str.Format ("Start loading queue length data...");
+	SetStatusText(str);
+
 	// read queue length data
 	fopen_s(&pFile,directory+"fort.600","r");
 	if(pFile!=NULL)
@@ -1122,6 +1128,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		}
 		fclose(pFile);
 	}
+
+	str.Format ("Start loading density data...");
+	SetStatusText(str);
 
 	// read density data
 	fopen_s(&pFile,directory+"fort.700","r");
@@ -1151,6 +1160,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		}
 		fclose(pFile);
 	}
+
+	str.Format ("Start loading volume data...");
+	SetStatusText(str);
 
 
 	bool CumulativeFlag = true;
@@ -1251,6 +1263,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileDouble("simulation_result", "simulation_start_time_in_min",0,m_ProjectFile));	
 	//	ReadSensorData(directory+"input_sensor.csv",simulation_start_time_in_min);
 
+
+	str.Format ("Start loading vehicle trajectory data...");
+	SetStatusText(str);
 
 	fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
@@ -1468,9 +1483,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 				if(m_VehicleSet.size()%10000==0)
 				{
-					CString str;
-					str.Format ("loading %d vehicles",m_VehicleSet.size());
-					SetStatusText(str);
+					CString str_veh;
+					str_veh.Format ("loading %d vehicles",m_VehicleSet.size());
+					SetStatusText(str_veh);
 				}
 
 				good_vehicle_id = m_VehicleID;
