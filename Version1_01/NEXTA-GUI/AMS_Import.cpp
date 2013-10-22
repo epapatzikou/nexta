@@ -3662,13 +3662,6 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 				DTANode* pNode = m_NodeNoMap[m_NodeNumbertoNodeNoMap[to_node_id]];	
 
-				for(int p  = 1; p <= max_phase_number; p++)
-				{
-					DTANodePhase node_phase;
-
-					pNode->m_PhaseVector.push_back(node_phase); // phase 1;
-				}
-
 				LaneDataMap.clear();  // clear data after adding a set of links
 			}
 		
@@ -4027,44 +4020,6 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						element.phase_index = max(LaneDataMap[lane_Column_name_str[m]].Phase1,LaneDataMap[lane_Column_name_str[m]].PermPhase1);
 
 						pNode->m_MovementVector.push_back(element);
-
-						//record the movement index into the right phase index
-
-						int PhaseIndex  = 0;
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase1;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase2;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase3;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].Phase4;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						////////////// permitted phase
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase1;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase2;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase3;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
-						PhaseIndex = LaneDataMap[lane_Column_name_str[m]].PermPhase4;
-						if(PhaseIndex>=1)
-							pNode->m_PhaseVector[PhaseIndex-1].movement_index_vector .push_back(movement_index);
-
 
 					}  // per major approach
 
@@ -4866,6 +4821,8 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 		}
 
+
+		UpdateAllMovementGreenStartAndEndTime(1);
 
 		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),lpszFileName);
 		return true;

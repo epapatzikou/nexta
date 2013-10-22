@@ -465,7 +465,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 					if(pLink->m_EffectiveGreenTime_In_Second==0)
 					{
-						cout <<"Link " << pLink->m_FromNodeNumber << " ->" <<  pLink->m_ToNodeNumber  << " has an effective green time of 0 but for simulated vehicles. Please check." << endl;
+						cout <<"Link " << pLink->m_FromNodeNumber << " ->" <<  pLink->m_ToNodeNumber  << " has an effective green time of 0 but for simulated vehicles. Please check the movement input data, and check if the movement has been prevented." << endl;
 						
 						g_ProgramStop();
 					}
@@ -1740,6 +1740,10 @@ float GetTimeDependentCapacityAtSignalizedIntersection(int CycleLength_in_second
 	int green_time_in_second = 0;
 
 	int simulation_start_time = CurrentTime*60;
+
+		// consider offset
+	if(simulation_start_time >= offset_in_second)
+		simulation_start_time -=offset_in_second; 
 
 	for(int t =simulation_start_time ; t< simulation_start_time +simulation_time_interval_in_second ; t++)
 	{

@@ -1260,14 +1260,12 @@ void CDlg_VehPathAnalysis::OnLbnDblclkListOd()
 
 void CDlg_VehPathAnalysis::OnBnClickedExport()
 {
-   CString str;
+	if(m_pDoc->m_ProjectDirectory .GetLength () > 0)
+	{
+	CString fname, str;
+	
+	fname = m_pDoc->m_ProjectDirectory + "export_OD_moe.csv"; 
 
-   CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
-		    "(*.csv)|*.csv||", NULL,0,false);
-   if(dlg.DoModal() == IDOK)
-   {
-      char fname[_MAX_PATH];
-      wsprintf(fname,"%s", dlg.GetPathName());
       CWaitCursor wait;
 
       if(!ExportDataToCSVFileAllOD(fname))
@@ -1278,9 +1276,9 @@ void CDlg_VehPathAnalysis::OnBnClickedExport()
 	  {
 		m_pDoc->OpenCSVFileInExcel(fname);
 	  }
-   }	
+	}
 }
-bool CDlg_VehPathAnalysis::ExportDataToCSVFileAllOD(char csv_file[_MAX_PATH])
+bool CDlg_VehPathAnalysis::ExportDataToCSVFileAllOD(CString csv_file)
 {
      FILE* st;
      fopen_s(&st,csv_file,"w");
@@ -1338,17 +1336,15 @@ void CDlg_VehPathAnalysis::OnBnClickedFindSingleVehicleId()
 
 void CDlg_VehPathAnalysis::OnBnClickedExportPathData()
 {
-   CString str;
-  CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
-		    "(*.csv)|*.csv||", NULL,0,false);
-   if(dlg.DoModal() == IDOK)
-   {
-      char fname[_MAX_PATH];
-      wsprintf(fname,"%s", dlg.GetPathName());
+	if(m_pDoc->m_ProjectDirectory .GetLength () > 0)
+	{
+	CString fname;
+	
+	fname = m_pDoc->m_ProjectDirectory + "export_path_moe.csv"; 
       CWaitCursor wait;
 
       if(!ExportPathDataToCSVFile(fname))
-      {
+      {  CString str;
 		 str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
 		 AfxMessageBox(str);
       }else
@@ -1356,11 +1352,10 @@ void CDlg_VehPathAnalysis::OnBnClickedExportPathData()
 	  m_pDoc->OpenCSVFileInExcel(fname);
 	  }
    }	
-
 }
 
 
-bool CDlg_VehPathAnalysis::ExportPathDataToCSVFile(char csv_file[_MAX_PATH])
+bool CDlg_VehPathAnalysis::ExportPathDataToCSVFile(CString csv_file)
 {
     FILE* st;
       fopen_s(&st,csv_file,"w");
@@ -1395,7 +1390,7 @@ bool CDlg_VehPathAnalysis::ExportPathDataToCSVFile(char csv_file[_MAX_PATH])
 	 return false;
 }
 
-bool CDlg_VehPathAnalysis::ExportVehicleDataToCSVFile(char csv_file[_MAX_PATH])
+bool CDlg_VehPathAnalysis::ExportVehicleDataToCSVFile(CString csv_file)
 {
 	int PathNo = m_SelectedPath;
 	if(PathNo>=0)
@@ -1407,18 +1402,16 @@ bool CDlg_VehPathAnalysis::ExportVehicleDataToCSVFile(char csv_file[_MAX_PATH])
 
 void CDlg_VehPathAnalysis::OnBnClickedExportVehicleData()
 {
-   CString str;
-  CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES|OFN_ENABLESIZING,
-		    "(*.csv)|*.csv||", NULL,0,false);
-   if(dlg.DoModal() == IDOK)
-   {
-      char fname[_MAX_PATH];
-      wsprintf(fname,"%s", dlg.GetPathName());
+	if(m_pDoc->m_ProjectDirectory .GetLength () > 0)
+	{
+	CString fname;
+	
+		fname = m_pDoc->m_ProjectDirectory + "export_vehicle_list.csv"; 
       CWaitCursor wait;
 
       if(!ExportVehicleDataToCSVFile(fname))
-      {
-		 str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
+      { CString str;
+		 str.Format("The data might not be available. \n The file %s might not be opened.\nPlease check if it is opened by Excel.", fname);
 		 AfxMessageBox(str);
       }else
 	  {

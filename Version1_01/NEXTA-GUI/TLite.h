@@ -43,23 +43,7 @@ enum eLanguageSupport
 } ;
 
 
-struct s_link_selection
-{
-public:
-	int link_no;
-	int document_no;
 
-	s_link_selection()
-	{
-		link_no = -1;
-		document_no = -1;
-
-	}
-
-};
-
-extern std::list<s_link_selection>	g_LinkDisplayList;
-extern void g_AddLinkIntoSelectionList(int link_no, int document_no, bool b_SelectOtherDocuments = false, double x = 0, double y = 0);
 extern void g_ClearLinkSelectionList();
 enum _cursor_type {_cursor_standard_arrow=0,_cursor_movement_network,_cursor_create_link,_cursor_create_node,_cursor_create_subarea,_cursor_create_zone,_cursor_wait};
 
@@ -81,6 +65,23 @@ public:
 	eVisulizationTemplate m_VisulizationTemplate;
 	eLanguageSupport m_LanguageSupport;
 	int m_NEXTA_use_flag;
+
+	COLORREF m_FreewayColor;
+	COLORREF m_RampColor;
+	COLORREF m_ArterialColor;
+	COLORREF m_ConnectorColor;
+	COLORREF m_TransitColor;
+	COLORREF m_WalkingColor;
+
+	COLORREF m_BackgroundColor;
+
+	COLORREF m_NodeColor;
+	COLORREF m_NodeBrushColor;
+	
+	COLORREF m_ZoneColor;
+
+	CString m_SimulatorString;
+
 
 	CTLiteApp();
 

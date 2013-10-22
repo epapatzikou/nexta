@@ -6,6 +6,8 @@
 //methods of the CXLAutoimation.
 //Only very basic set of methods is provided here.
 //
+//enhanced by Xuesong Zhou for reading Excel file as a CSV parser
+
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
@@ -30,6 +32,14 @@ CXLEzAutomation::CXLEzAutomation()
 {
 	//Starts Excel with bVisible = TRUE and creates empty worksheet 
 	m_pXLServer = new CXLAutomation;
+
+	Delimiter = ',';
+	IsFirstLineHeader = true;
+	m_bSkipFirstLine = false;
+	m_bSynchroSingleCSVFile = false;
+	m_bLastSectionRead = false;
+	m_EmptyLineCount++;
+
 }
 
 CXLEzAutomation::CXLEzAutomation(BOOL bVisible)
@@ -90,10 +100,19 @@ BOOL CXLEzAutomation::SaveFileAs(CString szFileName)
 	return m_pXLServer->SaveAs(szFileName, xlNormal,  _T(""), _T(""), FALSE, FALSE); 
 }
 //Returns Worksheet.Cells(nColumn, nRow).Value
-CString CXLEzAutomation::GetCellValue(int nColumn, int nRow)
+std::string CXLEzAutomation::GetCellValue(int nColumn, int nRow)
 {
-	return m_pXLServer->GetCellValueCString(nColumn, nRow);
+	CString str = m_pXLServer->GetCellValueCString(nColumn, nRow);
+
+	  CT2CA pszConvertedAnsiString (str);
+
+	  // construct a std::string using the LPCSTR input
+	  std::string strStd (pszConvertedAnsiString);
+
+	  return strStd;
 }
+
+
 //Insert picture from file. Position it at (Column, Row) on the worksheet. 
 //The method resizes the picture to 50% of the original size (see 0.5, 0.5)
 BOOL CXLEzAutomation::InsertPictureFromFile(CString szFileName, int Column, int Row)
@@ -112,12 +131,30 @@ BOOL CXLEzAutomation::PlacePictureToClipboard(BYTE *pImage)
 	return m_pXLServer->PlaceImageToClipboard(pImage);
 }
 //Open Excell file
-BOOL CXLEzAutomation::OpenExcelFile(CString szFileName)
+
+BOOL CXLEzAutomation::OpenExcelFile(CString szFileName, CString WorkSheetName, int ActiveSheet)
 {
 	m_CurrentFileName = szFileName;
-	return m_pXLServer->OpenExcelFile(szFileName);
+
+
+	if(m_pXLServer->OpenExcelFile(szFileName, WorkSheetName, ActiveSheet))
+	{
 
 	m_pXLServer->EnableAlert(false);
+	
+	return	true;
+	}else
+	return false;
+
+}
+BOOL CXLEzAutomation::OpenExcelFile(CString szFileName, int WorkSheet)
+{
+	m_CurrentFileName = szFileName;
+	m_pXLServer->OpenExcelFile(szFileName, WorkSheet);
+
+	m_pXLServer->EnableAlert(false);
+
+	return	true;
 
 }
 //Insert picture from buffer. If pImage = NULL, the picture from clipboard will be inserted.

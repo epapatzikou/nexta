@@ -43,6 +43,7 @@
 #include "Dlg_VehicleClassification.h"
 #include "Dlg_TravelTimeReliability.h"
 #include "Page_Node_Movement.h"
+#include "Page_Node_Phase.h"
 #include "MyPropertySheet.h"
 #include "CSVParser.h"
 #include "Dlg_BackgroundImageLocation.h"
@@ -282,14 +283,13 @@ CPen g_PenODColor(PS_SOLID,2,RGB(255,255,0));
 CPen g_PenSelectPath(PS_SOLID,3,RGB(0,0,255));  // blue
 
 CPen g_PenDisplayColor(PS_SOLID,2,RGB(255,255,0));
-CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
 
 CPen g_PenStopSignNodeColor(PS_SOLID,1,RGB(205,200,177));
 CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,0,0));
 
 CPen g_GPSTrajectoryColor(PS_SOLID, 1, RGB(255,105,180));
 
-
+CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
 
 CPen g_PenConnectorColor(PS_DASH,1,RGB(0,0,255));
 CPen g_PenCentroidColor(PS_SOLID,1,RGB(0,255,255));
@@ -307,7 +307,9 @@ CPen g_PenGreen(PS_SOLID,1,RGB(0,255,0));
 CBrush  g_BrushGreen(RGB(0,255,0)); //green
 
 
+CPen g_PenDashBlue(PS_DASH,1,RGB(0,0,255));
 CPen g_PenBlue(PS_SOLID,2,RGB(0,0,255));
+
 CBrush  g_BrushBlue(RGB(0,0,255));
 
 CPen g_PenSensorColor(PS_SOLID,0,RGB(0,255,0));
@@ -641,7 +643,7 @@ void CTLiteView::OnDraw(CDC* pDC)
 
 	CBrush brush;
 
-	if (!brush.CreateSolidBrush(pDoc->m_BackgroundColor))
+	if (!brush.CreateSolidBrush(theApp.m_BackgroundColor))
 		return;
 
 	brush.UnrealizeObject();
@@ -770,7 +772,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if(pDoc->m_bUseMileVsKMFlag==false && pDoc->m_LongLatFlag==false ) //use km
 		{
-			m_GridResolution/=1.60934;
+			m_GridResolution;
 		}
 
 		int LeftX  = int(SPtoNP(ScreenRect.TopLeft()).x)-1;
@@ -897,22 +899,22 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		CPen pen_freeway, pen_ramp, pen_arterial, pen_connector,pen_transit,pen_walking;
 		CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector,brush_walking;
 
-		pen_freeway.CreatePen (PS_SOLID, 1, pDoc->m_FreewayColor);
-		brush_freeway.CreateSolidBrush (pDoc->m_FreewayColor);
+		pen_freeway.CreatePen (PS_SOLID, 1, theApp.m_FreewayColor);
+		brush_freeway.CreateSolidBrush (theApp.m_FreewayColor);
 
-		pen_ramp.CreatePen (PS_SOLID, 1, pDoc->m_RampColor);
-		brush_ramp.CreateSolidBrush (pDoc->m_RampColor);
+		pen_ramp.CreatePen (PS_SOLID, 1, theApp.m_RampColor);
+		brush_ramp.CreateSolidBrush (theApp.m_RampColor);
 
-		pen_arterial.CreatePen (PS_SOLID, 1, pDoc->m_ArterialColor);
-		brush_arterial.CreateSolidBrush (pDoc->m_ArterialColor);
+		pen_arterial.CreatePen (PS_SOLID, 1, theApp.m_ArterialColor);
+		brush_arterial.CreateSolidBrush (theApp.m_ArterialColor);
 
-		pen_connector.CreatePen (PS_SOLID, 1, pDoc->m_ConnectorColor);
-		brush_connector.CreateSolidBrush (pDoc->m_ConnectorColor);
+		pen_connector.CreatePen (PS_SOLID, 1, theApp.m_ConnectorColor);
+		brush_connector.CreateSolidBrush (theApp.m_ConnectorColor);
 
-		pen_transit.CreatePen (PS_SOLID, 1, pDoc->m_TransitColor);
+		pen_transit.CreatePen (PS_SOLID, 1, theApp.m_TransitColor);
 
-		pen_walking.CreatePen (PS_SOLID, 1, pDoc->m_WalkingColor);
-		brush_walking.CreateSolidBrush (pDoc->m_WalkingColor);
+		pen_walking.CreatePen (PS_SOLID, 1, theApp.m_WalkingColor);
+		brush_walking.CreateSolidBrush (theApp.m_WalkingColor);
 
 		// recongenerate the lind band width offset only when chaning display mode or on volume mode
 		if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
@@ -1017,7 +1019,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				if(pDoc->m_LinkMOEMode == MOE_user_defined)
 				{ 
 					int current_time  =(int)g_Simulation_Time_Stamp;
-					if( (*iLink)->m_LinkMOEAry.find(current_time)!=  (*iLink)->m_LinkMOEAry.end())
+					if( current_time < (*iLink)->m_LinkMOEArySize )
+						
 					{
 					power = (*iLink)->m_LinkMOEAry [current_time].UserDefinedValue ;
 					value = (*iLink)->m_LinkMOEAry [current_time].UserDefinedValue ;
@@ -1460,7 +1463,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					break;
 				case link_display_avg_travel_time:
-					str_text.Format ("%.1f",(*iLink)->GetTravelTime(pDoc->m_DemandLoadingStartTimeInMin , pDoc->m_DemandLoadingEndTimeInMin - pDoc->m_DemandLoadingStartTimeInMin)  );
+					str_text.Format ("%.1f",(*iLink)->GetAggregatedSimulatedTravelTime(pDoc->m_DemandLoadingStartTimeInMin , pDoc->m_DemandLoadingEndTimeInMin - pDoc->m_DemandLoadingStartTimeInMin)  );
 				break;
 
 
@@ -1468,6 +1471,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				case link_display_time_dependent_link_volume:
 					
 					pDoc->GetLinkMOE((*iLink), MOE_volume,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+
+					value = max(0,value);
+
 						str_text.Format ("%.0f",value);
 						break;
 				
@@ -1657,6 +1663,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		int nODNodeSize = max(node_size,10);
 
 
+		CPen pen_node;
+		CBrush brush_node;
+		
+		pen_node.CreatePen (PS_SOLID, 1, theApp.m_NodeColor);
+		brush_node.CreateSolidBrush (theApp.m_NodeBrushColor);
+
+
 		int nODFontSize =  max(nODNodeSize * NodeTypeSize, 10);
 
 		m_NodeTextFontSize = nODFontSize; 
@@ -1674,9 +1687,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			if(RectIsInsideScreen(node_rect,ScreenRect) == false)  // not inside the screen boundary
 				continue;
 
-			pDC->SelectObject(&g_BlackBrush);
+			pDC->SelectObject(&brush_node);
 			pDC->SetTextColor(RGB(255,255,0));
-			pDC->SelectObject(&g_PenNodeColor);
+			pDC->SelectObject(&pen_node);
 			pDC->SetBkColor(RGB(0,0,0));
 
 			if((*iNode)->m_NodeNo == pDoc->m_SelectedNodeID)
@@ -1711,7 +1724,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 
 				//default;
-				pDC->SelectObject(&g_PenNodeColor);
+				pDC->SelectObject(&pen_node);
 
 				if((*iNode)->m_ControlType == pDoc->m_ControlType_YieldSign || 
 					(*iNode)->m_ControlType == pDoc->m_ControlType_2wayStopSign ||
@@ -2022,7 +2035,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	CPen ZonePen;
 
 	// Create a solid red pen of width 2.
-	ZonePen.CreatePen(PS_DASH, 1, pDoc->m_ZoneColor);
+	ZonePen.CreatePen(PS_DASH, 1, theApp.m_ZoneColor);
 
 	if(pMainFrame->m_bShowLayerMap[layer_zone])
 	{	
@@ -2100,6 +2113,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 	if(GetDocument()->m_SubareaShapePoints.size() > 0 && (pMainFrame->m_bShowLayerMap[layer_subarea]||pMainFrame->m_bShowLayerMap[layer_zone]))
 	{
 		CPoint point_0  = NPtoSP(GetDocument()->m_SubareaShapePoints[0]);
+
+
+		pDC->SelectObject(&g_PenDashBlue);
+		
 
 		pDC->MoveTo(point_0);
 
@@ -2496,7 +2513,10 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	{
 		if(zDelta > 0)
 		{
-			m_Resolution*=1.5f;
+			if(m_Resolution*1.6 * max(pDoc->m_NetworkRect.Width () , pDoc->m_NetworkRect.Height  () ) <  INT_MAX) 
+			{
+				m_Resolution*=1.5f;
+			}
 		}
 		else
 		{
@@ -2599,7 +2619,7 @@ BOOL CTLiteView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	if(pDoc->m_bUseMileVsKMFlag)
 		str.Format("width: %.1f mi; height: %.1f mi",  width, height);
 	else
-		str.Format("width: %.1f km; height: %.1f km",  width/1.60934, height/1.60934);
+		str.Format("width: %.1f km; height: %.1f km",  width, height);
 
 	pDoc->m_ScreenWidth_InMile = width;
 
@@ -2617,7 +2637,15 @@ BOOL CTLiteView::OnEraseBkgnd(CDC* pDC)
 
 void CTLiteView::OnViewZoomin()
 {
+
+	CTLiteDoc* pDoc = GetDocument();
+
+	if(m_Resolution*1.2 * max(pDoc->m_NetworkRect.Width () , pDoc->m_NetworkRect.Height  () ) <  INT_MAX) 
+	{
 	m_Resolution*=1.1f;
+
+	}
+
 	SetGlobalViewParameters();
 
 	Invalidate();
@@ -2784,6 +2812,10 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 			 {
 				 GetDocument()-> OnSubareaCreatezonefromsubarea();
 
+			 }else
+			 {
+			 
+			  GetDocument()->PushBackNetworkState ();
 			 }
 			 m_ToolMode = move_tool;
 			 ReleaseCapture();
@@ -2969,11 +3001,17 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 					element.Data.Format ("%d", pDoc->m_SelectedZoneID );
 					pMainFrame->m_FeatureInfoVector.push_back (element);
 
-				}
+					pDoc->m_SelectedLinkNo = -1;
+					for (std::list<DTALink*>::iterator iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
+					{
+						(*iLink)->m_DisplayLinkID = -1;
+					}
+
+					pDoc->m_SelectedNodeID = -1;
 
 
 				pMainFrame->FillFeatureInfo ();
-
+				}
 
 				break;
 			case layer_link:
@@ -3115,8 +3153,14 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 		if(abs(OffSet.cx) +  abs(OffSet.cy) < 3)  // clicking on the same point, do not create links
 			return;
 
+		pDoc->Modify();
+		pDoc->PushBackNetworkState();
+
+
 		DTANode* pFromNode = 0;// create from node if there is no overlapping node
 		float min_selection_distance = max(10,int(pDoc->m_NodeDisplaySize*pDoc->m_UnitFeet*m_Resolution));
+
+		min_selection_distance = min(50,min_selection_distance);  // 50 PiX FOR SELECTION 
 
 		int FromNodeID = FindClosestNode(m_TempLinkStartPoint, min_selection_distance);
 		if(FromNodeID ==-1)
@@ -3532,8 +3576,10 @@ void CTLiteView::OnClickLink(UINT nFlags, CPoint point)
 		if(!bFoundFlag)  //has not been selected;
 		{
 			GDPoint pt  = SPtoNP(point);
+		
+			DTALink* pLink = pDoc->m_LinkNoMap [pDoc->m_SelectedLinkNo];
 
-			g_AddLinkIntoSelectionList(pDoc->m_SelectedLinkNo, pDoc->m_DocumentNo, true, pt.x, pt.y);
+			g_AddLinkIntoSelectionList(pLink,pDoc->m_SelectedLinkNo, pDoc->m_DocumentNo, true, pt.x, pt.y);
 		}
 	}
 
@@ -3971,6 +4017,8 @@ void CTLiteView::OnLinkDelete()
 		return;
 	}
 	pDoc->Modify ();
+	pDoc->PushBackNetworkState();
+
 	pDoc->DeleteLink(pDoc->m_SelectedLinkNo);
 	pDoc->m_SelectedLinkNo = -1;
 	Invalidate();
@@ -4175,8 +4223,10 @@ void CTLiteView::OnLinkEditlink()
 
 
 			if(dlg.m_bEditChange)
+			{
 				pDoc->Modify();
-
+				pDoc->PushBackNetworkState();
+			}
 
 		}
 		Invalidate();
@@ -4207,6 +4257,8 @@ void CTLiteView::OnEditDeleteselectednode()
 {
 	CTLiteDoc* pDoc = GetDocument();
 	pDoc->Modify ();
+	pDoc->PushBackNetworkState();
+
 	if(pDoc->m_SelectedNodeID == -1)
 	{
 		AfxMessageBox("Please select a node first.");
@@ -4330,6 +4382,8 @@ void CTLiteView::OnToolsRemovenodesandlinksoutsidesubarea()
 	CTLiteDoc* pDoc = GetDocument();
 
 	pDoc->Modify ();
+	pDoc->PushBackNetworkState();
+
 
 	LPPOINT m_subarea_points = new POINT[pDoc->m_SubareaShapePoints.size()];
 	for (unsigned int sub_i= 0; sub_i < pDoc->m_SubareaShapePoints.size(); sub_i++)
@@ -4685,6 +4739,23 @@ void CTLiteView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 	// TODO: Add your message handler code here and/or call default
 
+        switch (nChar)
+        {
+        case 27:  //ESCAPE
+
+			m_ToolMode= select_feature_tool;
+							
+       break;
+		case 90 :   //'Z'
+			
+			if( GetKeyState(VK_CONTROL) < 0)
+			{
+			CTLiteDoc* pDoc =GetDocument();
+			pDoc->Undo();
+			}
+		
+		}
+
 	Invalidate();
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
@@ -4697,8 +4768,8 @@ void CTLiteView::OnViewIncreasenodesize()
 	{
 		pDoc->m_NodeDisplaySize = max(pDoc->m_NodeDisplaySize *1.2, pDoc->m_NodeDisplaySize+1);
 
-
-
+		
+		
 	}
 	else 
 	{
@@ -4810,7 +4881,7 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 			queue_ratio = 0;
 
 
-		if(pLink->m_FromNodeNumber == 139 && pLink->m_ToNodeNumber == 136)
+		if(pLink->m_FromNodeNumber == 11 && pLink->m_ToNodeNumber == 12)
 		{
 			TRACE("");
 
@@ -4967,7 +5038,15 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 	{
 		CPen * pOldPen  = pDC->SelectObject(&g_PenQueueColor);
 		float value;
-		float queue_ratio = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value);
+
+		if(pLink->m_FromNodeNumber == 11 && pLink->m_ToNodeNumber == 12)
+		{
+			TRACE("");
+
+		}
+		float queue_ratio = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode,(int)g_Simulation_Time_Stamp,g_MOEAggregationIntervalInMin, value)/100.0;
+
+
 
 		if(queue_ratio> 1)
 			queue_ratio = 1;
@@ -5555,18 +5634,33 @@ void CTLiteView::OnNodeMovementproperties()
 		CPropertySheet sheet("Node Movement Data");
 
 		CPage_Node_Movement MovementPage;
+		MovementPage.m_psp.pszTitle = _T("Movemnent");
+		MovementPage.m_psp.dwFlags |= PSP_USETITLE;
+
 		MovementPage.m_pDoc = pDoc;
+		MovementPage.m_PeakHourFactor = pDoc->m_PeakHourFactor ;
+		MovementPage.m_CurrentNodeNumber = pNode->m_NodeNumber;
+		MovementPage.m_CurrentNode_Name = pNode->m_Name.c_str () ;
+		MovementPage.m_Offset = pNode->m_SignalOffsetInSecond;
 		sheet.AddPage(&MovementPage);  // 0
 
-		//////CPage_Node_Phase PhasePage;
-		//////PhasePage.m_pDoc = pDoc;
-		//////PhasePage.m_pView= this;
-		//////PhasePage.m_psp.dwFlags |= PSP_USETITLE;
-		//////PhasePage.m_psp.pszTitle = _T("Phase");
-		//////sheet.AddPage(&PhasePage);  // 4
 
-		//// Change the caption of the CPropertySheet object 
-		//// from "Simple PropertySheet" to "Simple Properties".
+
+		CPage_Node_Phase PhasePage;
+
+		if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal
+		|| pNode->m_ControlType == pDoc->m_ControlType_ActuatedSignal)
+		{
+		PhasePage.m_psp.pszTitle = _T("Phase");
+		PhasePage.m_psp.dwFlags |= PSP_USETITLE;
+		PhasePage.m_pDoc = pDoc;
+		PhasePage.m_PeakHourFactor = pDoc->m_PeakHourFactor ;
+		PhasePage.m_CurrentNodeNumber = pNode->m_NodeNumber;
+		PhasePage.m_CurrentNode_Name = pNode->m_Name.c_str () ;
+		PhasePage.m_Offset = pNode->m_SignalOffsetInSecond;
+		sheet.AddPage(&PhasePage);  // 0
+		}
+
 		sheet.SetActivePage (0);
 		if(sheet.DoModal() == IDOK)
 		{
@@ -5664,10 +5758,10 @@ void CTLiteView::OnViewBackgroundcolor()
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	CColorDialog dlg(RGB(0, 0, 0), CC_FULLOPEN);
+	CColorDialog dlg(theApp.m_BackgroundColor, CC_FULLOPEN);
 	if (dlg.DoModal() == IDOK)
 	{
-		pDoc->m_BackgroundColor= dlg.GetColor();
+		theApp.m_BackgroundColor= dlg.GetColor();
 		pDoc->UpdateAllViews(0);
 	}
 	Invalidate();
@@ -6050,7 +6144,6 @@ void CTLiteView::OnNodeNodeproperties()
 
 		dlg.NodeID  = pNode->m_NodeNumber  ;
 		dlg.NodeName   = pNode->m_Name .c_str ();
-		dlg.CycleLength  = pNode->m_CycleLengthInSecond  ;
 		dlg.ZoneID  = pNode->m_ZoneID  ;
 		dlg.ControlType = pNode->m_ControlType ;
 
@@ -6062,16 +6155,14 @@ void CTLiteView::OnNodeNodeproperties()
 			std::string strStd (pszConvertedAnsiString);
 
 			if ( pNode ->m_ControlType != dlg.ControlType 
-				|| pNode->m_CycleLengthInSecond   != dlg.CycleLength
 				|| pNode->m_Name.compare (strStd)!=0
 				|| pNode->m_ZoneID != dlg.ZoneID
 				)
 			{
 				pDoc->Modify();
+				pDoc->PushBackNetworkState();
 				pNode->m_Name  = strStd;
 				pNode->m_ZoneID = dlg.ZoneID;
-
-				pNode->m_CycleLengthInSecond   = dlg.CycleLength;
 
 				pNode ->m_ControlType = dlg.ControlType;
 
@@ -6139,6 +6230,12 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 			)
 			continue;
 
+
+		if(pDoc->m_LinkNoMap.find(movement.IncomingLinkNo) ==  pDoc->m_LinkNoMap.end())
+			return;
+
+		if(pDoc->m_LinkNoMap.find(movement.OutgoingLinkNo) ==  pDoc->m_LinkNoMap.end())
+			return;
 
 		DTALink* pInLink  = pDoc->m_LinkNoMap [movement.IncomingLinkNo];
 		DTALink* pOutLink  = pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];

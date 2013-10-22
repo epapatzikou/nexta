@@ -871,7 +871,7 @@ public:
 
 		m_bOnRampType  = false;
 		m_bOffRampType = false;
-		m_EffectiveGreenTime_In_Second = 0;
+		m_EffectiveGreenTime_In_Second = 6;
 		m_DownstreamCycleLength_In_Second = 120;
 		m_DownstreamNodeSignalOffset_In_Second = 0;
 		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;

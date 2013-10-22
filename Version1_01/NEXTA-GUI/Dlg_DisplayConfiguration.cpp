@@ -108,8 +108,8 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Length (meter)");
 	}
 
-	m_Link_Label.AddString("# of Lanes (positive value only)");
-	m_Link_Label.AddString("# of Left Turn Lanes");
+	m_Link_Label.AddString("# of Lanes ");
+	m_Link_Label.AddString("# of Left Turn Lanes (positive value only)");
 
 	m_Link_Label.AddString("Link Capacity Per Hour");
 	m_Link_Label.AddString("Lane Capacity Per Hour");
@@ -157,10 +157,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	{
 	m_Link_Label.AddString("Jam Density (vhc/km/ln)");
 	m_Link_Label.AddString("Wave Speed (kmph)");
-	
 	}
-
-
 	m_Link_Label.AddString("BPR alpha term");
 	m_Link_Label.AddString("BPR beta term");
 
@@ -171,6 +168,11 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("-- Simulation/Assignment Results --");
 	m_Link_Label.AddString("Total Link Delay (hour)");
 	m_Link_Label.AddString("Total Volume over Capacity Ratio");
+
+	if(m_pDoc->m_bUseMileVsKMFlag)
+		m_Link_Label.AddString("Avg Simulated Speed (kmph)");
+	else
+		m_Link_Label.AddString("Avg Simulated Speed (mph)");
 
 	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
 

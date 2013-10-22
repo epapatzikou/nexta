@@ -33,7 +33,8 @@ class CXLAutomation
 
 public:
 
-	BOOL OpenExcelFile(CString szFileName);
+	BOOL OpenExcelFile(CString szFileName, CString WorkSheetName, int 	ActiveSheet);
+	BOOL OpenExcelFile(CString szFileName, int nWorkSheet);
 	BOOL InsertPictureToWorksheet(BYTE* pImage, int Column, int Row, double dPicWidth, double dPicHeight);
 	BOOL PlaceImageToClipboard(BYTE* pImage);
 	BOOL InsertPictureToWorksheet(CString szFileName, int Column, int Row, double dPicWidth, double dPicHeight);

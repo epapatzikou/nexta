@@ -36,8 +36,9 @@ int g_read_integer_with_char_O(FILE* f);
 float g_read_float(FILE *f);
 
 double  g_FindClosestYResolution(double Value);
+double g_FindClosestMOEYResolution(double Value);
 
 int  g_FindClosestTimeResolution(double Value);
 
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
-
+std::string string_format(const std::string fmt, ...);

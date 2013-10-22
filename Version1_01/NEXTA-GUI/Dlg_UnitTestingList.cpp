@@ -137,7 +137,9 @@ void CDlg_UnitTestingList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,0,str,20);
 		int LinkNo = atoi(str);
 			m_pDoc->m_SelectedLinkNo = LinkNo;
-			g_AddLinkIntoSelectionList(LinkNo, m_pDoc->m_DocumentNo);
+			DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
+
+			g_AddLinkIntoSelectionList(pLink,LinkNo, m_pDoc->m_DocumentNo);
 
 	}
 

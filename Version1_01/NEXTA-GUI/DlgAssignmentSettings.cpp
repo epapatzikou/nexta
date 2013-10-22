@@ -17,8 +17,11 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_SimulationHorizon(0)
 	, m_DemandLoadingMultipler(0)
 	, m_NumberReportingDays(1)
+	, m_SimulatorName(_T(""))
 {
 	m_bModifiedFlag  = false;
+
+	m_SimulatorName = "DTALite";
 }
 
 CDlgAssignmentSettings::~CDlgAssignmentSettings()
@@ -39,6 +42,8 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_Demand_LoadingMultiplier, m_DemandLoadingMultipler);
 	DDX_Control(pDX, IDC_LIST_Signal_Control_Representation, m_Signal_Control_List);
 	DDX_Text(pDX, IDC_EDIT_Number_ReportingDays, m_NumberReportingDays);
+	DDX_Control(pDX, IDC_LIST_SCENARIO, m_ScenarioList);
+	DDX_Text(pDX, IDC_EDIT1, m_SimulatorName);
 }
 
 
@@ -52,6 +57,8 @@ BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_LBN_SELCHANGE(IDC_LIST_DEMAND_LOADING_MODE2, &CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode2)
 	ON_BN_CLICKED(IDC_CHECK_EMISSION_DATA, &CDlgAssignmentSettings::OnBnClickedCheckEmissionData)
 	ON_LBN_SELCHANGE(IDC_LIST_Signal_Control_Representation, &CDlgAssignmentSettings::OnLbnSelchangeListSignalControlRepresentation)
+	ON_LBN_SELCHANGE(IDC_LIST_SCENARIO, &CDlgAssignmentSettings::OnLbnSelchangeListScenario)
+	ON_BN_CLICKED(IDC_CONFIG, &CDlgAssignmentSettings::OnBnClickedConfig)
 END_MESSAGE_MAP()
 
 
@@ -93,9 +100,26 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_SimulationMethodControl.AddString ("2. Spatial Queue Model");
 	m_SimulationMethodControl.AddString ("3. Newell's Kinematic Wave Model");
 	m_SimulationMethodControl.AddString ("4. Newell's Model+Emissions Output");
+	m_SimulationMethodControl.AddString ("5. User Define Traffic Flow Model");
 
-	m_SimulationMethodControl.SetCurSel(m_pDoc->m_traffic_flow_model);
 
+	if(m_pDoc->m_bDYNASMARTDataSet)
+	{
+		m_SimulationMethodControl.SetCurSel(5);
+		m_SimulatorName = "planning.exe";
+		UpdateData(0);
+	}
+	else
+	{
+		m_SimulationMethodControl.SetCurSel(m_pDoc->m_traffic_flow_model);
+	}
+
+	if(theApp.m_SimulatorString.GetLength () >0)
+	{
+		m_SimulatorName = m_pDoc->GetWorkspaceTitleName(theApp.m_SimulatorString);
+		UpdateData(0);
+
+	}
 
 	m_Signal_Control_List.AddString ("0: Continuous Flow with Link Capacity Constraint");
 	m_Signal_Control_List.AddString ("1: Cycle Length + Movement-based Effective Green Time");
@@ -139,6 +163,70 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 
 	m_DemandLoadingMultipler = m_pDoc->m_demand_multiplier;
+
+
+	int number_of_capactity_reductions = 0;
+	int number_of_tolls = 0;
+	int number_of_radiomssages = 0;
+	int number_of_VMSs = 0;
+
+	for (std::list<DTALink*>::iterator iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+	{
+	number_of_capactity_reductions+=  (*iLink)->CapacityReductionVector.size();
+	number_of_VMSs+=  (*iLink)->MessageSignVector.size();
+	number_of_radiomssages+=   (*iLink)->RadioMessageVector.size();
+	number_of_tolls+=(*iLink)->TollVector.size();
+	}
+
+	if(number_of_capactity_reductions>=1)
+	{
+	
+	str.Format ("%d links with reduced capacity.", number_of_capactity_reductions);
+
+	m_ScenarioList.AddString(str);
+	}
+
+	if(number_of_VMSs>=1)
+	{
+	
+	str.Format ("%d links with DMS.", number_of_VMSs);
+
+	m_ScenarioList.AddString(str);
+	}
+
+	if(number_of_radiomssages>=1)
+	{
+	
+	str.Format ("%d radio messages.", number_of_radiomssages);
+
+	m_ScenarioList.AddString(str);
+	}
+
+	if(number_of_tolls>=1)
+	{
+	
+	str.Format ("%d links with road toll.", number_of_tolls);
+	m_ScenarioList.AddString(str);
+	}
+
+	for(std::vector<DTADemandType>::iterator itr = m_pDoc->m_DemandTypeVector.begin(); itr != m_pDoc->m_DemandTypeVector.end(); itr++)
+		{
+		
+			if( (*itr).info_class_percentage [1] >0.1)
+			{
+				str.Format ("Demand type %s with %.1f%% pretrip info users.",  (*itr).demand_type_name, (*itr).info_class_percentage [1]);
+				m_ScenarioList.AddString(str);
+			
+			}
+			if( (*itr).info_class_percentage [2] >0.1)
+			{
+				str.Format ("demand type %s with %.1f%% enroute info users.",  (*itr).demand_type_name, (*itr).info_class_percentage [2]);
+				m_ScenarioList.AddString(str);
+			
+			}
+			
+		}
+
 
 	UpdateData(0);
 	// TODO:  Add extra initialization here
@@ -277,3 +365,21 @@ void CDlgAssignmentSettings::OnEnChangeEditNumberIterations3()
 
 	// TODO:  Add your control notification handler code here
 }
+
+void CDlgAssignmentSettings::OnLbnSelchangeListScenario()
+{
+	// TODO: Add your control notification handler code here
+}
+
+
+void CDlgAssignmentSettings::OnBnClickedConfig()
+{
+	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
+		_T("Traffic Simulator (*.exe;*.bat)|*.exe|*.bat|"),NULL,0,true);
+	if(dlg.DoModal() == IDOK)
+	{
+		theApp.m_SimulatorString = dlg.GetPathName();
+	} 
+}
+
+

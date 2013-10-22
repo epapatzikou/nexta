@@ -80,6 +80,21 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
+	m_FreewayColor = RGB(030,144,255);
+	m_RampColor = RGB(160,032,240); 
+	m_ArterialColor = RGB(034,139,034);
+	m_ConnectorColor = RGB(255,165,000);
+	m_TransitColor = RGB(255,0,255);
+	m_WalkingColor = RGB(127,255,0);
+
+	m_BackgroundColor =  RGB(255,255,255);
+
+	m_NodeColor = RGB(0,0,0);
+	m_NodeBrushColor = RGB(0,0,0);
+
+	m_ZoneColor = RGB(000,191,255);
+
+
 	m_NEXTA_use_flag = 0;
 	m_bLoadNetworkOnly = false;
 	//m_pTemplateGLView = false;
@@ -102,9 +117,79 @@ BOOL CTLiteApp::InitInstance()
 
 		CString NEXTASettingsPath;
 		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", CurrentDirectory);
-
+	
 		m_NEXTA_use_flag = (int)g_GetPrivateProfileDouble("initialization", "nexta", 0, NEXTASettingsPath);
 		WritePrivateProfileString("initialization", "nexta","1",NEXTASettingsPath);
+
+
+		m_FreewayColor = (DWORD )g_GetPrivateProfileDouble("initialization", "FreewayColor", -1, NEXTASettingsPath);
+
+		if(m_FreewayColor<0)
+			m_FreewayColor =  RGB(030,144,255);
+
+		m_RampColor = (DWORD )g_GetPrivateProfileDouble("initialization", "RampColor", -1, NEXTASettingsPath);
+
+		if(m_RampColor<0)
+			m_RampColor =  RGB(160,032,240); 
+
+		double value = g_GetPrivateProfileDouble("initialization", "ArterialColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_ArterialColor =  RGB(160,032,240); 
+		else
+			m_ArterialColor = (DWORD)  value;
+
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "ConnectorColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_ConnectorColor =  RGB(160,032,240); 
+		else
+			m_ConnectorColor = (DWORD)  value;
+
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "TransitColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_TransitColor =  RGB(160,032,240); 
+		else
+			m_TransitColor = (DWORD)  value;
+
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "WalkingColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_WalkingColor =  RGB(160,032,240); 
+		else
+			m_WalkingColor = (DWORD)  value;
+			
+
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "BackgroundColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_BackgroundColor =   RGB(255,255,255);
+		else
+			m_BackgroundColor = (DWORD)  value;
+			
+
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "NodeColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_NodeColor =   RGB(0,0,0);
+		else
+			m_NodeColor = (DWORD)  value;
+			
+		value = (DWORD )g_GetPrivateProfileDouble("initialization", "NodeBrushColor", -1, NEXTASettingsPath);
+
+		if(value<0)
+			m_NodeBrushColor =   RGB(0,0,0);
+		else
+			m_NodeBrushColor = (DWORD)  value;
+			
+
+   char lpbuffer[_MAX_PATH];
+   if(GetPrivateProfileString("initialization", "UserDefinedSimulator","",lpbuffer,sizeof(lpbuffer),NEXTASettingsPath)) 
+   {
+		m_SimulatorString.Format ("%s",lpbuffer);
+   }
+
 
 
 		int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
@@ -474,3 +559,4 @@ void CTLiteApp::OnHelpChecklatestsoftwarerelease()
 	g_OpenDocument("http://code.google.com/p/nexta/downloads/list", SW_SHOW);
 
 }
+

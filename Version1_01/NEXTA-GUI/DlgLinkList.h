@@ -20,7 +20,7 @@ class CDlgLinkList : public CBaseDialog
 	bool m_bDoc2Ready;
 
 
-	bool ExportDataToCSVFile(char csv_file[_MAX_PATH]);
+	bool ExportDataToCSVFile(CString csv_file);
 
 public:
 

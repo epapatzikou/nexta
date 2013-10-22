@@ -378,6 +378,9 @@ public:
 {
 public: // create from serialization only
 
+
+	std::vector <DTATimingPlanMetaData> m_DTATimingPlanMetaDataVector;
+
 	bool m_hide_non_specified_movement_on_freeway_and_ramp;
 
 	GridNodeSet*** m_GridMatrix;
@@ -400,6 +403,7 @@ public:
 {
 
    SetModifiedFlag(bModified);
+
 
    CString string_title = GetTitle();
 
@@ -521,12 +525,6 @@ public:
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
 	int m_ColorDirection;
 
-	COLORREF m_FreewayColor;
-	COLORREF m_RampColor;
-	COLORREF m_ArterialColor;
-	COLORREF m_ConnectorColor;
-	COLORREF m_TransitColor;
-	COLORREF m_WalkingColor;
 
 	float m_LOSBound[40][MAX_LOS_SIZE];
 	bool m_bShowLegend;
@@ -943,16 +941,19 @@ public:
 	std::list<DTANode*>		m_NodeSet;
 	std::list<DTALink*>		m_LinkSet;
 
+	std::vector<DTANode*>		m_SubareaNodeSet;
+	std::list<DTALink*>		m_SubareaLinkSet;
+	std::map<int, DTAZone>	m_ZoneMap;
+
 	std::list<DTAPoint*>	m_DTAPointSet;
 	std::list<DTALine*>		m_DTALineSet;
 
 
-	std::vector<DTANode*>		m_SubareaNodeSet;
-	std::list<DTALink*>		m_SubareaLinkSet;
 
 	bool m_bSaveProjectFromSubareaCut;
 
-	std::map<int, DTAZone>	m_ZoneMap;
+
+
 	int m_ActivityLocationCount;
 	std::vector<CString> m_DemandFileVector;
 	int m_CriticalOriginZone;
@@ -1003,13 +1004,58 @@ public:
 
 	std::map<long, CAVISensorPair> m_AVISensorMap;
 
+	
 	std::map<int, DTANode*> m_NodeNoMap;
 	std::map<int, DTANode*> m_NodeNumberMap;
+	std::map<long, DTALink*> m_LinkNoMap;
+	std::map<unsigned long, DTALink*> m_NodeNotoLinkMap;
+	std::map<__int64, DTALink*> m_NodeNumbertoLinkMap;
+	std::map<long, DTALink*> m_LinkNotoLinkMap;
+	std::map<long, DTALink*> m_LinkIDtoLinkMap;
+
+
+	class NetworkState
+	{
+	public:
+	std::map<int, DTANode*> l_NodeNoMap;
+	std::map<int, DTANode*> l_NodeNumberMap;
+	std::map<long, DTALink*> l_LinkNoMap;
+	std::map<unsigned long, DTALink*> l_NodeNotoLinkMap;
+	std::map<__int64, DTALink*> l_NodeNumbertoLinkMap;
+	std::map<long, DTALink*> l_LinkNotoLinkMap;
+	std::map<long, DTALink*> l_LinkIDtoLinkMap;
+
+	std::list<DTANode*>		l_NodeSet;
+	std::list<DTALink*>		l_LinkSet;
+
+	std::vector<DTANode*>	l_SubareaNodeSet;
+	std::list<DTALink*>		l_SubareaLinkSet;
+	std::map<int, DTAZone>	l_ZoneMap;
+
+	std::map<int, int> l_NodeNumbertoNodeNoMap;
+	std::map<int, int> l_NodeNotoZoneNameMap;
+
+	std::vector<GDPoint> l_SubareaShapePoints;
+
+	};
+
+
+
+
+	std::vector <NetworkState> m_NetworkState;
+	std::vector <NetworkState> m_RedoNetworkState;
+
+	void PushBackNetworkState();
+	void  Undo();
+	void Redo();
+
+	std::map<long, DTALink*> m_SensorIDtoLinkMap;
+	std::map<long, int> m_AVISensorIDtoNodeIDMap;
+
+
 
 	std::map<int, DTANode*> m_SubareaNodeIDMap;
 	bool CTLiteDoc::WriteSubareaFiles();
-
-	std::map<long, DTALink*> m_LinkNoMap;
 
 
 	bool m_EmissionDataFlag;
@@ -1043,6 +1089,7 @@ public:
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
+	void UpdateMovementDataFromVehicleTrajector();
 
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
@@ -1165,6 +1212,8 @@ public:
 
 		DTALink* AddNewLink(int FromNodeID, int ToNodeID, bool bOffset = false, bool bLongLatFlag = false)
 	{
+
+
 		Modify();
 		DTALink* pLink = 0;
 
@@ -1219,6 +1268,21 @@ public:
 		else 
 			length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 		pLink->m_Length = max(0.00001,length);  // alllow mimum link length
+
+
+		if(m_LinkSet.size()==0)  // first link created by user
+		{
+			if(m_bUseMileVsKMFlag)
+			{
+				m_NodeDisplaySize = max(100, pLink->m_Length *5280*0.05);  // in feet
+			}
+			else
+			{
+				m_NodeDisplaySize = max(100, pLink->m_Length /1.61*5280*0.05);  // in feet
+			}
+		}
+
+
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
@@ -1533,6 +1597,8 @@ public:
 
 	bool DeleteLink(DTALink* pLink)
 	{
+
+
 		int FromNodeID   = pLink->m_FromNodeID ;
 		int ToNodeID   = pLink->m_ToNodeID ;
 		unsigned long LinkKey = GetLinkKey( FromNodeID , ToNodeID );
@@ -1650,6 +1716,19 @@ public:
 	std::map<CString, DTA_Movement_Data_Matrix> m_DTAMovementMap;
 	std::map<CString, DTA_Phasing_Data_Matrix> m_DTAPhasingMap;
 
+	DTA_Phasing_Data_Matrix GetPhaseData(int node_id, int time_plan_no);
+
+	BOOL IfMovementIncludedInPhase(int node_id, int time_plan_no, int phase_no, int from_node_id, int destination_node_id); 
+
+	void SetupPhaseData(int node_id, int time_plan_no, int phase_numbr, DTA_SIG_PHASE_ROW attribute, float value);
+	void SetupPhaseData(int node_id, int time_plan_no, int phase_numbr, DTA_SIG_PHASE_ROW attribute, int value);
+	void SetupPhaseData(int node_id, int time_plan_no,int phase_numbr, DTA_SIG_PHASE_ROW attribute, std::string value_str);
+	void SetupPhaseData(int node_id, int time_plan_no,int phase_numbr, DTA_SIG_PHASE_ROW attribute, CString value_str);
+
+	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, float value);
+	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, int value);
+	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, CString value_str);
+
 	// 	void ConstructMovementVector(bool flag_Template);
 	void Construct4DirectionMovementVector(bool ResetFlag = false);
 	void AssignUniqueLinkIDForEachLink();
@@ -1733,15 +1812,6 @@ public:
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	std::map<unsigned long, DTALink*> m_NodeNotoLinkMap;
-	std::map<__int64, DTALink*> m_NodeNumbertoLinkMap;
-
-	std::map<long, DTALink*> m_LinkNotoLinkMap;
-	std::map<long, DTALink*> m_LinkIDtoLinkMap;
-
-	std::map<long, DTALink*> m_SensorIDtoLinkMap;
-	std::map<long, int> m_AVISensorIDtoNodeIDMap;
 
 
 	int Find_PPP_RelativeAngle(GDPoint p1, GDPoint p2, GDPoint p3);
@@ -1990,8 +2060,7 @@ public:
 
 	std::vector<CString> m_SearchHistoryVector;
 
-	COLORREF m_BackgroundColor;
-	COLORREF m_ZoneColor;
+
 	COLORREF m_ZoneTextColor;
 
 	bool m_BackgroundBitmapLoaded;
@@ -2143,6 +2212,7 @@ public:
 
 	void ResetBackgroundImageCoordinate();
 
+	void OnImportdataImportExcelFile();
 
 	void ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName,  _GIS_DATA_TYPE GIS_data_type );
 	int SelectLink(GDPoint point, double& final_matching_distance);
@@ -2156,6 +2226,10 @@ public:
 
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
 	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
+
+	void UpdateMovementGreenStartAndEndTimeFromPhasingData(int NodeNumber, int time_plan_no);
+	void UpdateAllMovementGreenStartAndEndTime(int time_plan_no);
+
 	void RunQEMTool(CString MovementFileName, int NodeNumber);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);
@@ -2436,6 +2510,24 @@ public:
 	afx_msg void OnTransitOutputtransitaccesssibilityfromallactivitylocations();
 	afx_msg void OnMovementHidenon();
 	afx_msg void OnUpdateMovementHidenon(CCmdUI *pCmdUI);
+	afx_msg void OnMovementSetpeakhourfactor();
+	afx_msg void OnZoneChangezonenumber();
+	afx_msg void OnUpdateZoneDeletezone(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateZoneChangezonenumber(CCmdUI *pCmdUI);
+	afx_msg void OnChangelinktypecolorFreeway();
+	afx_msg void OnChangelinktypecolorRamp();
+	afx_msg void OnChangelinktypecolorArterial();
+	afx_msg void OnChangelinktypecolorConnector();
+	afx_msg void OnChangelinktypecolorTransit();
+	afx_msg void OnChangelinktypecolorWalkingmode();
+	afx_msg void OnChangelinktypecolorResettodefaultcolorschema();
+	afx_msg void OnNodeChangenodecolor();
+	afx_msg void OnNodeChangenodebackgroundcolor();
+	afx_msg void OnZoneChangezonecolor();
+	afx_msg void OnEditUndo33707();
+	afx_msg void OnUpdateEditUndo33707(CCmdUI *pCmdUI);
+	afx_msg void OnEditRedo33709();
+	afx_msg void OnUpdateEditRedo33709(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

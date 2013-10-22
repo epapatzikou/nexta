@@ -449,8 +449,9 @@ void CDlgLinkList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 
 		if(m_pDoc2)
 			m_pDoc2->m_SelectedLinkNo = LinkNo;
+		DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
 
-		g_AddLinkIntoSelectionList(LinkNo,m_pDoc->m_DocumentNo );
+		g_AddLinkIntoSelectionList(pLink,LinkNo,m_pDoc->m_DocumentNo );
 
 	}
 
@@ -580,29 +581,28 @@ void CDlgLinkList::OnCbnSelchangeComboLinkSelection()
 
 void CDlgLinkList::OnBnClickedExport()
 {
-	CString str;
-	CFileDialog dlg (FALSE, "*.csv", "*.csv",OFN_HIDEREADONLY | OFN_NOREADONLYRETURN | OFN_LONGNAMES,
-		"(*.csv)|*.csv||", NULL);
-	if(dlg.DoModal() == IDOK)
+
+	if(m_pDoc->m_ProjectDirectory .GetLength () > 0)
 	{
-		char fname[_MAX_PATH];
-		wsprintf(fname,"%s", dlg.GetPathName());
+	CString fname;
+	
+		fname = m_pDoc->m_ProjectDirectory + "export_link_moe_list.csv"; 
 		CWaitCursor wait;
 
 		if(!ExportDataToCSVFile(fname))
-		{
+		{ CString str;
 			str.Format("The file %s could not be opened.\nPlease check if it is opened by Excel.", fname);
 			AfxMessageBox(str);
 		}else
 		{
 			m_pDoc->OpenCSVFileInExcel(fname);
 		}
-	}	
+	}
 
 }
 
 
-bool CDlgLinkList::ExportDataToCSVFile(char csv_file[_MAX_PATH])
+bool CDlgLinkList::ExportDataToCSVFile(CString csv_file)
 {
 	FILE* st;
 	fopen_s(&st,csv_file,"w");

@@ -36,7 +36,7 @@
 #include "DlgSensorDataLoading.h"
 #include "MainFrm.h"
 #include "Shellapi.h"
-
+#include "Data-Interface\\XLEzAutomation.h"
 
 // CDlg_ImportNetwork dialog
 
@@ -90,7 +90,7 @@ END_MESSAGE_MAP()
 
 void CDlg_ImportNetwork::OnBnClickedButtonFindExelFile()
 {
-	static char BASED_CODE szFilter[] = "Excel File (*.xls)|*.xls||";
+	static char BASED_CODE szFilter[] = "Excel File (*.xlsx)|*.xlsx||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 	if(dlg.DoModal() == IDOK)
@@ -133,11 +133,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	UpdateData(true);
 
-
-
 	bool bExist=true;
 
-	CString strSQL;
 	CString str_msg;
 
 	UpdateData(true);
@@ -150,77 +147,65 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		return;
 	}
 
-	if(m_pDoc->m_Database.IsOpen ())
-		m_pDoc->m_Database.Close ();
-
-	m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
-
 	// Open the EXCEL file
 	std::string itsErrorMessage;
 
 
-	// detetect if nodes will be automatically generated. 
 
-			// Read record
-		strSQL = m_pDoc->ConstructSQL("3-LINK");
-
-		if(strSQL.GetLength () > 0)
+	CXLEzAutomation rsConfiguration;
+		if(rsConfiguration.OpenFile(m_Edit_Excel_File, "Configuration", 1))
 		{
-			CRecordsetExt rsLink(&m_pDoc->m_Database);
-			rsLink.Open(dbOpenDynaset, strSQL);
-			int from_node_id;
-			while(!rsLink.IsEOF())
-			{
-			
-				from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
-
-				if(from_node_id==0)
-				{
-				m_AutogenerateNodeFlag = true;
-
-//				AfxMessageBox("Field from_node_id is empty, so from_node and to_node fields will be automatically generated based on the geometry data from the link layer.", MB_ICONINFORMATION);
-				}else
-				{
-				m_AutogenerateNodeFlag = false;
-				}
-
-				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
-				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit"),bExist,false);
-				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
+			int i = 1;
+		while(rsConfiguration.ReadRecord())
+		{
+		
+			CString category= rsConfiguration.GetCString("category");
+			CString str_key= rsConfiguration.GetCString("key");
+			CString str_value= rsConfiguration.GetCString("value");
 
 
-				if(number_of_lanes <=0 || speed_limit_in_mph <1 || capacity_in_pcphpl<1)
-				{
-				m_bUseLinkTypeForDefaultValues = true;
 
-				str_msg.Format ( "Fields number_of_lanes, speed_limit_in_mph or capacity_in_pcphpl might be empty, so those fields will be automatically generated based on link type from the link layer.");
-				m_MessageList.AddString (str_msg);
-
-				}
-
+			if(category.GetLength () == 0 )  // no category value being assigned
 				break;
 
-
+			if(category == "parameter")
+			{
+				if(str_key == "length_unit")
+				{
+				 if(str_value.MakeLower()== "km")
+				 {
+					m_pDoc->m_bUseMileVsKMFlag = false;
+					m_MessageList.AddString ("Unit of link length: km");
+				 }
+				 else //mile
+				 {
+					m_pDoc->m_bUseMileVsKMFlag = true;
+					m_MessageList.AddString ("Unit of link length: mile");
+				 }
+				}
+			
+			
 			}
+
+		
+		
+		
+		}
+	
+		
+			rsConfiguration.Close();
 		}
 
+	// detetect if nodes will be automatically generated. 
 
-	// this accesses first sheet regardless of name.
-	int i= 0;
-
-
-	// Read record
-
-	strSQL = m_pDoc->ConstructSQL("1-NODE");
-
-	if(strSQL.GetLength() > 0)
-	{
-		CRecordsetExt rsNode(&m_pDoc->m_Database);
-		rsNode.Open(dbOpenDynaset, strSQL);
-
-		while(!rsNode.IsEOF())
+	CXLEzAutomation rsNode;
+		if(rsNode.OpenFile(m_Edit_Excel_File, "Node", 2))
 		{
-			int id = rsNode.GetLong(CString("node_id"),bExist,false);
+
+		int i = 1;
+		while(rsNode.ReadRecord())
+		{
+			int id = rsNode.GetLong("node_id",bExist,false);
 
 			if(!bExist)
 			{
@@ -247,7 +232,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				std::vector<CCoordinate> CoordinateVector;
 
 				CString geometry_str;
-				geometry_str= rsNode.GetCString(CString("geometry"),false);
+				geometry_str= rsNode.GetCString("geometry");
 
 				if(geometry_str.GetLength () > 0 )
 				{
@@ -274,7 +259,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}else
 				{
 
-				 x = rsNode.GetDouble(CString("x"),bExist,false);
+				 x = rsNode.GetDouble("x",bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString ("Field x cannot be found in the node table.");
@@ -282,7 +267,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				y = rsNode.GetDouble(CString("y"),bExist,false);
+				y = rsNode.GetDouble("y",bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString ("Field y cannot be found in the node table.");
@@ -309,167 +294,156 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			m_pDoc->m_NodeNumbertoNodeNoMap[id] = i;
 			i++;
 
-			rsNode.MoveNext();
 		}	// end of while
 		rsNode.Close();
 
 	}else
 	{
-		str_msg.Format ( "Worksheet 1-node cannot be found in the given Excel file");
+		str_msg.Format ( "Worksheet node cannot be found in the given Excel file");
 		m_MessageList.AddString (str_msg);
 		return;
 	}
 
 	int connector_link_type =  0 ;
 
-	// Read record
-	strSQL = m_pDoc->ConstructSQL("2-LINK-TYPE");
-	if(strSQL.GetLength () > 0)
-	{
+	//// Read record
+	//	CXLEzAutomation rsLinkType;
+	//	rsLinkType.Open(dbOpenDynaset, strSQL);
 
-		CRecordsetExt rsLinkType(&m_pDoc->m_Database);
-		rsLinkType.Open(dbOpenDynaset, strSQL);
+	//	while(!rsLinkType.ReadRecord())
+	//	{
+	//		DTALinkType element;
+	//		int link_type_number = rsLinkType.GetLong("link_type",bExist,false);
+	//		if(!bExist) 
+	//		{
+	//			CString Message;
+	//			Message.Format("Field link_type cannot be found in the link-type sheeet.");
 
-		while(!rsLinkType.IsEOF())
-		{
-			DTALinkType element;
-			int link_type_number = rsLinkType.GetLong(CString("link_type"),bExist,false);
-			if(!bExist) 
-			{
-				CString Message;
-				Message.Format("Field link_type cannot be found in the link-type sheeet.");
+	//			m_MessageList.AddString (Message);
+	//			return;
+	//		}
+	//		if(link_type_number ==0)
+	//			break;
 
-				m_MessageList.AddString (Message);
-				return;
-			}
-			if(link_type_number ==0)
-				break;
+	//		element.link_type = link_type_number;
+	//		element.link_type_name  = rsLinkType.GetCString("link_type_name"));
+	//		element.type_code    = rsLinkType.GetCString ("type_code"));
 
-			element.link_type = link_type_number;
-			element.link_type_name  = rsLinkType.GetCString(CString("link_type_name"));
-			element.type_code    = rsLinkType.GetCString (CString("type_code"));
+	//		if(element.type_code.find("c") != string::npos)
+	//				connector_link_type = element.link_type;
 
-			if(element.type_code.find("c") != string::npos)
-					connector_link_type = element.link_type;
+	//		element.default_lane_capacity     = rsLinkType.GetLong("default_lane_capacity",bExist,false);
+	//		element.default_speed      = rsLinkType.GetFloat  ("default_speed_limit"));
+	//		element.default_number_of_lanes       = rsLinkType.GetLong ("default_number_of_lanes",bExist,false);
+	//		m_pDoc->m_LinkTypeMap[element.link_type] = element;
 
-			element.default_lane_capacity     = rsLinkType.GetLong(CString("default_lane_capacity"),bExist,false);
-			element.default_speed      = rsLinkType.GetFloat  (CString("default_speed_limit"));
-			element.default_number_of_lanes       = rsLinkType.GetLong (CString("default_number_of_lanes"),bExist,false);
-			m_pDoc->m_LinkTypeMap[element.link_type] = element;
+	//		rsLinkType.MoveNext ();
+	//	}
+	//	rsLinkType.Close();
+	//	str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeMap.size());
+	//	m_MessageList.AddString(str_msg);
+	//}else
+	//{
+	//	str_msg.Format ( "Worksheet 2-1-link-type cannot be found in the given Excel file");
+	//	m_MessageList.AddString (str_msg);
+	//	return;
+	//}
 
-			rsLinkType.MoveNext ();
-		}
-		rsLinkType.Close();
-		str_msg.Format ("%d link type definitions imported.",m_pDoc->m_LinkTypeMap.size());
-		m_MessageList.AddString(str_msg);
-	}else
-	{
-		str_msg.Format ( "Worksheet 2-1-link-type cannot be found in the given Excel file");
-		m_MessageList.AddString (str_msg);
-		return;
-	}
+	//if(m_pDoc->m_NodeSet.size() == 0 && m_AutogenerateNodeFlag == true)
+	//{
 
-	if(m_pDoc->m_NodeSet.size() == 0 && m_AutogenerateNodeFlag == true)
-	{
+	//	str_msg.Format ( "Worksheet 1-node contain 0 node.");
+	//	m_MessageList.AddString (str_msg);
+	//	str_msg.Format ( "The geometry field in the link table is used to generate node info.");
+	//	m_MessageList.AddString (str_msg);
 
-		str_msg.Format ( "Worksheet 1-node contain 0 node.");
-		m_MessageList.AddString (str_msg);
-		str_msg.Format ( "The geometry field in the link table is used to generate node info.");
-		m_MessageList.AddString (str_msg);
-
-	}else
-	{
-		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
-		m_MessageList.AddString (str_msg);
-	}
+	//}else
+	//{
+	//	str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
+	//	m_MessageList.AddString (str_msg);
+	//}
 	
 	/////////////////////////////////////////////////////////////////////
 
-		// Read record to obtain the overall max and min x and y;
+	//	// Read record to obtain the overall max and min x and y;
 
-	double min_x = 0;
-	double max_x = 0;
-	double min_y = 0;
-	double max_y = 0;
+	//double min_x = 0;
+	//double max_x = 0;
+	//double min_y = 0;
+	//double max_y = 0;
 
-	bool b_RectangleInitialized = false;
+	//bool b_RectangleInitialized = false;
 
-	if(m_AutogenerateNodeFlag)
-	{
-		strSQL = m_pDoc->ConstructSQL("3-LINK");
+	//if(m_AutogenerateNodeFlag)
+	//{
+	//		CXLEzAutomation rsLink;
+	//		rsLink.Open(dbOpenDynaset, strSQL);
 
-		if(strSQL.GetLength () > 0)
-		{
-			CRecordsetExt rsLink(&m_pDoc->m_Database);
-			rsLink.Open(dbOpenDynaset, strSQL);
+	//		int from_node_id;
+	//		int to_node_id ;
+	//		while(!rsLink.ReadRecord())
+	//		{
+	//			std::vector<CCoordinate> CoordinateVector;
 
-			int from_node_id;
-			int to_node_id ;
-			while(!rsLink.IsEOF())
-			{
-				std::vector<CCoordinate> CoordinateVector;
+	//			CString geometry_str;
+	//			geometry_str= rsLink.GetCString("geometry",false);
 
-				CString geometry_str;
-				geometry_str= rsLink.GetCString(CString("geometry"),false);
+	//			if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
+	//			{
+	//				m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
+	//				rsLink.Close();
+	//				return;
+	//			}
 
-				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
-				{
-					m_MessageList.AddString("Field geometry cannot be found in the link table. This is required when no node info is given.");
-					rsLink.Close();
-					return;
-				}
+	//			if(geometry_str.GetLength () > 0)
+	//			{
 
-				if(geometry_str.GetLength () > 0)
-				{
+	//			CT2CA pszConvertedAnsiString (geometry_str);
 
-				CT2CA pszConvertedAnsiString (geometry_str);
+	//			// construct a std::string using the LPCSTR input
+	//			std::string geo_string (pszConvertedAnsiString);
 
-				// construct a std::string using the LPCSTR input
-				std::string geo_string (pszConvertedAnsiString);
+	//			CGeometry geometry(geo_string);
+	//			CoordinateVector = geometry.GetCoordinateList();
 
-				CGeometry geometry(geo_string);
-				CoordinateVector = geometry.GetCoordinateList();
+	//			if(b_RectangleInitialized==false && CoordinateVector.size()>=1)
+	//			{
+	//			
+	//				min_x = max_x = CoordinateVector[0].X;
+	//				min_y = max_y = CoordinateVector[0].Y;
+	//				b_RectangleInitialized = true;
 
-				if(b_RectangleInitialized==false && CoordinateVector.size()>=1)
-				{
-				
-					min_x = max_x = CoordinateVector[0].X;
-					min_y = max_y = CoordinateVector[0].Y;
-					b_RectangleInitialized = true;
+	//			}else
+	//			{
 
-				}else
-				{
+	//					min_x= min(min_x,CoordinateVector[0].X);
+	//					min_x= min(min_x,CoordinateVector[CoordinateVector.size()-1].X);
 
-						min_x= min(min_x,CoordinateVector[0].X);
-						min_x= min(min_x,CoordinateVector[CoordinateVector.size()-1].X);
+	//					min_y= min(min_y,CoordinateVector[0].Y);
+	//					min_y= min(min_y,CoordinateVector[CoordinateVector.size()-1].Y);
 
-						min_y= min(min_y,CoordinateVector[0].Y);
-						min_y= min(min_y,CoordinateVector[CoordinateVector.size()-1].Y);
+	//					max_x= max(max_x,CoordinateVector[0].X);
+	//					max_x= max(max_x,CoordinateVector[CoordinateVector.size()-1].X);
 
-						max_x= max(max_x,CoordinateVector[0].X);
-						max_x= max(max_x,CoordinateVector[CoordinateVector.size()-1].X);
+	//					max_y= max(max_y,CoordinateVector[0].Y);
+	//					max_y= max(max_y,CoordinateVector[CoordinateVector.size()-1].Y);
+	//		
+	//			}
+	//			}
 
-						max_y= max(max_y,CoordinateVector[0].Y);
-						max_y= max(max_y,CoordinateVector[CoordinateVector.size()-1].Y);
-			
-				}
-				}
+	//
+	//			//				TRACE("reading line %d\n", line_no);
+	//		}
 
-	
-				rsLink.MoveNext();
-				//				TRACE("reading line %d\n", line_no);
-			}
+	//		rsLink.Close();
+	//	}
+	//}
 
-			rsLink.Close();
-		}
-	}
+//	double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))/100000.0;
 
-	double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))/100000.0;
-
+	double min_distance_threadshold_for_overlapping_nodes = 0.0001;
 	/////////////////////////////////////////////////////////////////////
 		// Read record
-		strSQL = m_pDoc->ConstructSQL("3-LINK");
-
 		bool b_default_number_of_lanes_used = false;
 		bool b_default_lane_capacity_used = false;
 
@@ -477,26 +451,21 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 		int line_no = 2;
 
-		if(strSQL.GetLength () > 0)
-		{
 			m_pDoc->m_bLinkToBeShifted = true;
-			CRecordsetExt rsLink(&m_pDoc->m_Database);
-			rsLink.Open(dbOpenDynaset, strSQL);
-			i = 0;
+			CXLEzAutomation rsLink;
+			if(rsLink.OpenFile(m_Edit_Excel_File, "Link", 3))
+			{
+			int i = 0;
 			float default_distance_sum = 0;
-			CString DTASettingsPath = m_pDoc->m_ProjectDirectory+"DTASettings.ini";
-			float default_AADT_conversion_factor = g_GetPrivateProfileDouble("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
-
-
 			float length_sum = 0;
 			int from_node_id;
 			int to_node_id ;
-			while(!rsLink.IsEOF())
+			while(rsLink.ReadRecord())
 			{
 				if(m_AutogenerateNodeFlag == false)
 				{
 
-				from_node_id = rsLink.GetLong(CString("from_node_id"),bExist,false);
+				from_node_id = rsLink.GetLong("from_node_id",bExist,false);
 				if(!bExist ) 
 				{
 					if(m_pDoc->m_LinkSet.size() ==0)
@@ -507,7 +476,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 					}else
 					{
-					rsLink.MoveNext();
 					break;
 					// moveon					
 					}
@@ -526,7 +494,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				}
 
-				to_node_id = rsLink.GetLong(CString("to_node_id"),bExist,false);
+				to_node_id = rsLink.GetLong("to_node_id",bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString("Field to_node_id cannot be found in the link table.");
@@ -540,16 +508,15 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 				}
-				long link_id =  rsLink.GetLong(CString("link_id"),bExist,false);
+				long link_id =  rsLink.GetLong("link_id",bExist,false);
 				if(!bExist)
 					link_id = 0;
 
-				int type = rsLink.GetLong(CString("link_type"),bExist,false);
+				int type = rsLink.GetLong("link_type",bExist,false);
 				if(!bExist) 
 				{
 					str_msg.Format("Field link_type cannot be found or has no value at row %d in the link sheet. Skip record.", line_no);
 					m_MessageList.AddString(str_msg);
-					rsLink.MoveNext();
 					continue;
 				}
 
@@ -558,7 +525,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format("from_node_id %d at row %d cannot be found in the link sheet!",from_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-					rsLink.MoveNext();
 					continue;
 				}
 
@@ -566,14 +532,13 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format("to_node_id %d at row %d cannot be found in the link sheet!",to_node_id, line_no);
 					m_MessageList.AddString(str_msg);
-					rsLink.MoveNext();
 					continue;
 				}
 
 				std::vector<CCoordinate> CoordinateVector;
 
 				CString geometry_str;
-				geometry_str= rsLink.GetCString(CString("geometry"),false);
+				geometry_str= rsLink.GetCString("geometry");
 
 				if(m_AutogenerateNodeFlag && geometry_str.GetLength () ==0)
 				{
@@ -639,7 +604,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				if(m_bRemoveConnectors && m_pDoc->m_LinkTypeMap[type ].IsConnector()) 
 				{  // skip connectors
-					rsLink.MoveNext();
 					continue;
 				}
 
@@ -652,12 +616,11 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					if(m_MessageList.GetCount () < 3000)  // not adding and showing too many links
 					{
 						m_MessageList.AddString (str_msg);
-						rsLink.MoveNext();
 						continue;
 					}
 				}
 
-				float length = rsLink.GetDouble(CString("length"),bExist,false);
+				float length = rsLink.GetDouble("length",bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString ("Field length cannot be found in the link table.");
@@ -672,7 +635,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				int number_of_lanes = rsLink.GetLong(CString("number_of_lanes"),bExist,false);
+				int number_of_lanes = rsLink.GetLong("number_of_lanes",bExist,false);
 				if(m_bUseLinkTypeForDefaultValues)
 				{
 				if(number_of_lanes<1)
@@ -690,7 +653,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 						}
 					}else
 					{
-						CString link_type_str = rsLink.GetCString(CString("link_type"));
+						CString link_type_str = rsLink.GetCString("link_type");
 
 
 						if(m_pDoc->m_LinkTypeMap.size()>0)
@@ -718,21 +681,13 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format ("number of lanes for link %d -> %d <= 0. Skip.",from_node_id,to_node_id);
 					m_MessageList.AddString(str_msg);
-					rsLink.MoveNext();
 					continue; 
 				}
 
 
 
 				float grade= 0;
-				float AADT_conversion_factor = 0.1;
-				if(!bExist)
-				{
-
-				AADT_conversion_factor = default_AADT_conversion_factor;
-				}
-
-				float speed_limit_in_mph= rsLink.GetLong(CString("speed_limit"),bExist,false);
+				float speed_limit_in_mph= rsLink.GetLong("speed_limit",bExist,false);
 
 				if(speed_limit_in_mph <1 && m_bUseLinkTypeForDefaultValues)
 				{
@@ -756,11 +711,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				{
 					str_msg.Format ("Link %d -> %d has a speed limit of 0. Skip.",from_node_id,to_node_id);
 					m_MessageList.AddString(str_msg);
-					rsLink.MoveNext();
 					continue; 
 				}
 
-				float capacity_in_pcphpl= rsLink.GetDouble(CString("lane_capacity_in_vhc_per_hour"),bExist,false);
+				float capacity_in_pcphpl= rsLink.GetDouble("lane_capacity_in_vhc_per_hour",bExist,false);
 				if(capacity_in_pcphpl<0.1 && m_bUseLinkTypeForDefaultValues)
 				{
 					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
@@ -789,7 +743,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				}
 
 
-				int direction = rsLink.GetLong(CString("direction"),bExist,false);
+				int direction = rsLink.GetLong("direction",bExist,false);
 				if(!bExist) 
 				{
 					m_MessageList.AddString("Field direction cannot be found in the link table.");
@@ -797,7 +751,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					return;
 				}
 
-				CString name = rsLink.GetCString(CString("name"));
+				CString name = rsLink.GetCString("name");
 
 				float k_jam, wave_speed_in_mph;
 
@@ -948,19 +902,18 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					double transit_fare = 1;
 
 
-					BPR_alpha_term = rsLink.GetDouble(CString("BPR_alpha_term"),bExist,false);
+					BPR_alpha_term = rsLink.GetDouble("BPR_alpha_term",bExist,false);
 
 					if(BPR_alpha_term > 0.000001)
 					pLink->m_BPR_alpha_term = BPR_alpha_term;
 
-					BPR_beta_term = rsLink.GetDouble(CString("BPR_beta_term"),bExist,false);
+					BPR_beta_term = rsLink.GetDouble("BPR_beta_term",bExist,false);
 
 					if(BPR_beta_term > 0.00000001)
 					pLink->m_BPR_beta_term = BPR_beta_term;
 
 
 					pLink->m_Kjam = k_jam;
-					pLink->m_AADT_conversion_factor  = AADT_conversion_factor;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
 					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_TotalCapacity += (pLink->m_MaximumServiceFlowRatePHPL* pLink->m_NumberOfLanes);
@@ -1007,7 +960,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 				}
 
-				rsLink.MoveNext();
 				//				TRACE("reading line %d\n", line_no);
 				line_no ++;
 				number_of_records_read ++;
@@ -1020,7 +972,21 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 			if(length_sum>0.000001f)
 				m_pDoc->m_UnitMile=  default_distance_sum /length_sum;
 
-			m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
+			double AvgLinkLength = length_sum / max(1,m_pDoc->m_LinkSet.size());
+
+			if(m_pDoc->m_bUseMileVsKMFlag)
+			{
+				m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/5280.0f;  
+				m_pDoc->m_NodeDisplaySize = max(100, AvgLinkLength*5280*0.05);  // in feet
+			}
+			else
+			{
+				m_pDoc->m_UnitFeet = m_pDoc->m_UnitMile/1000*3.28084f;  // meter to feet
+				m_pDoc->m_NodeDisplaySize = max(100, AvgLinkLength/1.61*5280*0.05);  // in feet
+			}
+
+
+			
 			m_pDoc->GenerateOffsetLinkBand();
 
 			/*
@@ -1039,17 +1005,14 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 		}else
 		{
-			str_msg.Format ( "Worksheet 3-link cannot be found in the given Excel file");
+			str_msg.Format ( "Worksheet link cannot be found in the given Excel file");
 			m_MessageList.AddString (str_msg);
 			return;
 		}
 
 
-		if(m_AutogenerateNodeFlag)  // generated when read shape files
-		{
 		str_msg.Format ( "%d nodes have been successfully imported.",m_pDoc->m_NodeSet.size());
 		m_MessageList.AddString (str_msg);
-		}
 
 		str_msg.Format ("%d links have been successfully imported from %d records.",m_pDoc->m_LinkSet.size(),number_of_records_read);
 		m_MessageList.AddString(str_msg);
@@ -1115,418 +1078,418 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	//test if activity location has been defined
 
 
-	if(m_ImportZoneData == false)
-		return;
+	//if(m_ImportZoneData == false)
+	//	return;
 
-	// activity location table
-	strSQL = m_pDoc->ConstructSQL("5-ACTIVITY-LOCATION");
+	//// activity location table
+	//strSQL = m_pDoc->ConstructSQL("5-ACTIVITY-LOCATION");
 
-	//bool bNodeNonExistError = false;
-	m_pDoc->m_NodeNotoZoneNameMap.clear ();
-
-	bool bNodeNonExistError = false;
-	m_pDoc->m_NodeNotoZoneNameMap.clear ();
-	m_pDoc->m_ODSize = 0;
-
-	// Read record
-	int activity_location_count = 0;
-
-	if(strSQL.GetLength () > 0)
-	{
-		CRecordsetExt rsZone(&m_pDoc->m_Database);
-		rsZone.Open(dbOpenDynaset, strSQL);
-
-
-		while(!rsZone.IsEOF())
-		{
-			int zone_number = rsZone.GetLong(CString("zone_id"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field zone_id cannot be found in the zone table.");
-				return;
-			}
-
-			if(zone_number ==0)
-				break;
-
-			int node_name = rsZone.GetLong(CString("node_id"),bExist,false);
-
-			if(!bExist) 
-			{
-				AfxMessageBox("Field node_id cannot be found in the zone table.");
-				return;
-			}
-
-			map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoNodeNoMap.find(node_name);
-
-			if(m_Iter == m_pDoc->m_NodeNumbertoNodeNoMap.end( ))
-			{
-				CString m_Warning;
-				m_Warning.Format("Node Number %d in the zone tabe has not been defined in the node table", node_name);
-				AfxMessageBox(m_Warning);
-				return;
-			}
-			m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
-
-			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
-			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] -> m_ZoneID = zone_number;
-			// if there are multiple nodes for a zone, the last node id is recorded.
-
-
-			DTAActivityLocation element;
-			element.ZoneID  = zone_number;
-			element.NodeNumber = node_name;
-
-			element.External_OD_flag  = rsZone.GetLong(CString("external_OD_flag"),bExist,false);
-
-			m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-
-			if(m_pDoc->m_ODSize < zone_number)
-				m_pDoc->m_ODSize = zone_number;
-
-			rsZone.MoveNext ();
-			activity_location_count++;
-		}
-		rsZone.Close();
-
-		str_msg.Format ( "%d activity location records imported.",activity_location_count);
-		m_MessageList.AddString (str_msg);
-	}
-
-	// ZONE table
-	strSQL = m_pDoc->ConstructSQL("4-ZONE");
-
-	// Read record
-	if(strSQL.GetLength () > 0)
-	{
-		CRecordsetExt rsZone(&m_pDoc->m_Database);
-		rsZone.Open(dbOpenDynaset, strSQL);
-
-		int count = 0;
-		while(!rsZone.IsEOF())
-		{
-			int zone_number = rsZone.GetLong(CString("zone_id"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field zone_id cannot be found in the zone table.");
-				return;
-			}
-
-			if(zone_number ==0)
-				break;
-
-			// if there are multiple nodes for a zone, the last node id is recorded.
-			//	std::vector<CCoordinate> CoordinateVector;
-
-			//	CString geometry_str = rsZone.GetCString(CString("geometry"));
-
-			//	if(geometry_str.GetLength () > 0)
-			//	{
-
-			//	CT2CA pszConvertedAnsiString (geometry_str);
-
-			//	// construct a std::string using the LPCSTR input
-			//	std::string geo_string (pszConvertedAnsiString);
-
-			//	CGeometry geometry(geo_string);
-			//	CoordinateVector = geometry.GetCoordinateList();
-
-			//	m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
-
-			//for(unsigned int f = 0; f < CoordinateVector.size(); f++)
-			//{
-			//	GDPoint pt;
-			//	pt.x = CoordinateVector[f].X;
-			//	pt.y = CoordinateVector[f].Y;
-			//	m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
-			//}
-
-			//	}
-			if(m_pDoc->m_ODSize < zone_number)
-				m_pDoc->m_ODSize = zone_number;
-				
-
-			rsZone.MoveNext ();
-			count++;
-		}
-		rsZone.Close();
-
-		str_msg.Format ( "%d zone boundary records are imported.",count);
-		m_MessageList.AddString (str_msg);
-	
-		// assign zone numbers to connectors
-
-		if(count>=1)  // with boundary
-		{
-		std::list<DTALink*>::iterator iLink;
-
-			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
-			{
-				if(m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // connectors
-				{
-					
-					GDPoint pt_from = (*iLink)->m_FromPoint ;
-					int ZoneID_from = m_pDoc->GetZoneID(pt_from);
-
-					// assign id according to upstream node zone number first
-					int ZoneID_to = 0;
-					if(ZoneID_from <=0)
-					{
-					GDPoint pt_to = (*iLink)->m_ToPoint ;
-					 ZoneID_to = m_pDoc->GetZoneID(pt_to);
-					}
-
-					// assign id according to downstream node zone number second
-
-					int ZoneID = max(ZoneID_from, ZoneID_to);  // get large zone id under two different zone numbers
-					if(ZoneID > 0)
-						(*iLink)->m_ConnectorZoneID = ZoneID;
-
-				}
-			}
-		}
-		}
-
-		// determine activity locations if no activity locations have been provided
-
-		if(activity_location_count == 0)
-		{
-		std::list<DTANode*>::iterator iNode;
-
-		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
-		{
-
-
-			if((*iNode )->m_bZoneActivityLocationFlag)
-			{
-					int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
-					if(ZoneID>0)
-					{
-						(*iNode )->m_ZoneID = ZoneID;
-						DTAActivityLocation element;
-						element.ZoneID  = ZoneID;
-						element.NodeNumber = (*iNode )->m_NodeNumber;
-						m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
-
-					}
-			
-				}
-		
-		}
-		str_msg.Format ( "%d activity locations identified",activity_location_count);
-		m_MessageList.AddString (str_msg);
-			
-		}
-
-		if(m_bRemoveConnectors)
-		{
-		std::list<DTANode*>::iterator iNode;
-
-		std::vector <int> CentroidVector;
-		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
-		{
-			if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
-				CentroidVector.push_back((*iNode )->m_NodeNo );
-
-		}
-
-		for(unsigned int i = 0; i < CentroidVector.size(); i++)
-		{
-			m_pDoc->DeleteNode (CentroidVector[i]);
-		}
-		
-		str_msg.Format ( "%d centroids deleted",CentroidVector.size());
-		m_MessageList.AddString (str_msg);
-		
-		}
-
-		//import demand
-
-		// restart the data base
-	if(m_pDoc->m_Database.IsOpen ())
-		m_pDoc->m_Database.Close ();
-
-	m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
-
-
-	int demand_type = 0;
-
-	m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
-	if(demand_type == 0)  // matrix
-	{
-	// activity location table
-
-	strSQL = m_pDoc->ConstructSQL("6-DEMAND-MATRIX");
+	////bool bNodeNonExistError = false;
+	//m_pDoc->m_NodeNotoZoneNameMap.clear ();
 
 	//bool bNodeNonExistError = false;
-	m_pDoc->m_ImportedDemandVector .clear ();
+	//m_pDoc->m_NodeNotoZoneNameMap.clear ();
+	//m_pDoc->m_ODSize = 0;
+
+	//// Read record
+	//int activity_location_count = 0;
+
+	//if(strSQL.GetLength () > 0)
+	//{
+	//	CXLEzAutomation rsZone;
+	//	rsZone.Open(dbOpenDynaset, strSQL);
 
 
-	if(strSQL.GetLength () > 0)
-	{
-		CRecordsetExt rsDemand(&m_pDoc->m_Database);
-		rsDemand.Open(dbOpenDynaset, strSQL);
+	//	while(!rsZone.ReadRecord())
+	//	{
+	//		int zone_number = rsZone.GetLong("zone_id",bExist,false);
+	//		if(!bExist) 
+	//		{
+	//			AfxMessageBox("Field zone_id cannot be found in the zone table.");
+	//			return;
+	//		}
 
-		while(!rsDemand.IsEOF())
-		{
-			int from_zone_id = rsDemand.GetLong(CString("zone_id"),bExist,false);
-			if(!bExist) 
-			{
-			demand_type = 1;
-			break;
-			}
+	//		if(zone_number ==0)
+	//			break;
 
-			if(from_zone_id==0)
-			{
-				if(m_pDoc->m_ImportedDemandVector.size() ==0)
-				{
-				demand_type = 1;
+	//		int node_name = rsZone.GetLong("node_id",bExist,false);
 
-				break;
-				}
+	//		if(!bExist) 
+	//		{
+	//			AfxMessageBox("Field node_id cannot be found in the zone table.");
+	//			return;
+	//		}
 
-				break; 
-			}
+	//		map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoNodeNoMap.find(node_name);
 
+	//		if(m_Iter == m_pDoc->m_NodeNumbertoNodeNoMap.end( ))
+	//		{
+	//			CString m_Warning;
+	//			m_Warning.Format("Node Number %d in the zone tabe has not been defined in the node table", node_name);
+	//			AfxMessageBox(m_Warning);
+	//			return;
+	//		}
+	//		m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
 
-			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
-			{
-				CString message;
-				message.Format("from_zone_id %d at line %d in the demand matrix has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
-				AfxMessageBox(message);
-				break;
-			}
-
-			if(from_zone_id ==0)
-				break;
-
-			int to_zone_id = 0;
-		std::map<int, DTAZone>	:: const_iterator itr;
-
-			int to_zone_index = 1;
-		for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++,to_zone_index++)
-		{
-			to_zone_id = itr->first;
-			double number_of_vehicles = rsDemand.GetDouble(to_zone_index,bExist,false);
-			if(!bExist) 
-			{
-				CString messsage;
-				messsage.Format("Field %d cannot be found in the demand matrix.", to_zone_id);
-				AfxMessageBox(messsage);
-				return;
-			}
-
-			if(number_of_vehicles < -0.1)
-			{
-				CString message;
-				message.Format("number_of_vehicles %f in the demand matrix is invalid.", number_of_vehicles);
-				AfxMessageBox(message);
-				break;
-			}
-
-			DTA_demand element;
-			element.from_zone_id = from_zone_id;
-			element.to_zone_id = to_zone_id;
-			element.number_of_vehicles = number_of_vehicles;
-
-			m_pDoc->m_ImportedDemandVector.push_back (element);
-
-		}  // for all to zone id
-
-		
-	
-			rsDemand.MoveNext ();
-
-		}
-		rsDemand.Close();
-
-		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
-		m_MessageList.AddString (str_msg);
-	}
-
-	}
-
-	if(demand_type == 1)
-	{
-	// activity location table
-
-	strSQL = m_pDoc->ConstructSQL("6-DEMAND-3-COLUMN");
-
-	//bool bNodeNonExistError = false;
-	m_pDoc->m_ImportedDemandVector .clear ();
+	//		m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
+	//		m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] -> m_ZoneID = zone_number;
+	//		// if there are multiple nodes for a zone, the last node id is recorded.
 
 
-	if(strSQL.GetLength () > 0)
-	{
-		CRecordsetExt rsDemand(&m_pDoc->m_Database);
-		rsDemand.Open(dbOpenDynaset, strSQL);
+	//		DTAActivityLocation element;
+	//		element.ZoneID  = zone_number;
+	//		element.NodeNumber = node_name;
 
-		while(!rsDemand.IsEOF())
-		{
-			int from_zone_id = rsDemand.GetLong(CString("from_zone_id"),bExist,false);
-			if(!bExist) 
-			{
-				AfxMessageBox("Field from_zone_id cannot be found in the demand table.\n Please make sure your demand input is three column-based format.");
-				return;
-			}
+	//		element.External_OD_flag  = rsZone.GetLong("external_OD_flag",bExist,false);
 
-			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
-			{
-				CString message;
-				message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
-				AfxMessageBox(message);
-				break;
-			}
+	//		m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
 
-			if(from_zone_id ==0)
-				break;
+	//		if(m_pDoc->m_ODSize < zone_number)
+	//			m_pDoc->m_ODSize = zone_number;
 
-			int to_zone_id = rsDemand.GetLong(CString("to_zone_id"),bExist,false);
+	//		rsZone.MoveNext ();
+	//		activity_location_count++;
+	//	}
+	//	rsZone.Close();
+
+	//	str_msg.Format ( "%d activity location records imported.",activity_location_count);
+	//	m_MessageList.AddString (str_msg);
+	//}
+
+	//// ZONE table
+	//strSQL = m_pDoc->ConstructSQL("4-ZONE");
+
+	//// Read record
+	//if(strSQL.GetLength () > 0)
+	//{
+	//	CXLEzAutomation rsZone;
+	//	rsZone.Open(dbOpenDynaset, strSQL);
+
+	//	int count = 0;
+	//	while(!rsZone.ReadRecord())
+	//	{
+	//		int zone_number = rsZone.GetLong("zone_id",bExist,false);
+	//		if(!bExist) 
+	//		{
+	//			AfxMessageBox("Field zone_id cannot be found in the zone table.");
+	//			return;
+	//		}
+
+	//		if(zone_number ==0)
+	//			break;
+
+	//		// if there are multiple nodes for a zone, the last node id is recorded.
+	//		//	std::vector<CCoordinate> CoordinateVector;
+
+	//		//	CString geometry_str = rsZone.GetCString("geometry"));
+
+	//		//	if(geometry_str.GetLength () > 0)
+	//		//	{
+
+	//		//	CT2CA pszConvertedAnsiString (geometry_str);
+
+	//		//	// construct a std::string using the LPCSTR input
+	//		//	std::string geo_string (pszConvertedAnsiString);
+
+	//		//	CGeometry geometry(geo_string);
+	//		//	CoordinateVector = geometry.GetCoordinateList();
+
+	//		//	m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
+
+	//		//for(unsigned int f = 0; f < CoordinateVector.size(); f++)
+	//		//{
+	//		//	GDPoint pt;
+	//		//	pt.x = CoordinateVector[f].X;
+	//		//	pt.y = CoordinateVector[f].Y;
+	//		//	m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
+	//		//}
+
+	//		//	}
+	//		if(m_pDoc->m_ODSize < zone_number)
+	//			m_pDoc->m_ODSize = zone_number;
+	//			
+
+	//		rsZone.MoveNext ();
+	//		count++;
+	//	}
+	//	rsZone.Close();
+
+	//	str_msg.Format ( "%d zone boundary records are imported.",count);
+	//	m_MessageList.AddString (str_msg);
+	//
+	//	// assign zone numbers to connectors
+
+	//	if(count>=1)  // with boundary
+	//	{
+	//	std::list<DTALink*>::iterator iLink;
+
+	//		for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+	//		{
+	//			if(m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // connectors
+	//			{
+	//				
+	//				GDPoint pt_from = (*iLink)->m_FromPoint ;
+	//				int ZoneID_from = m_pDoc->GetZoneID(pt_from);
+
+	//				// assign id according to upstream node zone number first
+	//				int ZoneID_to = 0;
+	//				if(ZoneID_from <=0)
+	//				{
+	//				GDPoint pt_to = (*iLink)->m_ToPoint ;
+	//				 ZoneID_to = m_pDoc->GetZoneID(pt_to);
+	//				}
+
+	//				// assign id according to downstream node zone number second
+
+	//				int ZoneID = max(ZoneID_from, ZoneID_to);  // get large zone id under two different zone numbers
+	//				if(ZoneID > 0)
+	//					(*iLink)->m_ConnectorZoneID = ZoneID;
+
+	//			}
+	//		}
+	//	}
+	//	}
+
+	//	// determine activity locations if no activity locations have been provided
+
+	//	if(activity_location_count == 0)
+	//	{
+	//	std::list<DTANode*>::iterator iNode;
+
+	//	for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+	//	{
 
 
-			if(!bExist) 
-			{
-				AfxMessageBox("Field node_id cannot be found in the demand table.");
-				return;
-			}
+	//		if((*iNode )->m_bZoneActivityLocationFlag)
+	//		{
+	//				int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
+	//				if(ZoneID>0)
+	//				{
+	//					(*iNode )->m_ZoneID = ZoneID;
+	//					DTAActivityLocation element;
+	//					element.ZoneID  = ZoneID;
+	//					element.NodeNumber = (*iNode )->m_NodeNumber;
+	//					m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
 
-			if(m_pDoc->m_ZoneMap.find(to_zone_id)== m_pDoc->m_ZoneMap.end())
-			{
-				CString message;
-				message.Format("to_zone_id %d at line %d  in the demand table has not been defined.", to_zone_id,  m_pDoc->m_ImportedDemandVector.size()+1);
-				AfxMessageBox(message);
-				break;
-			}
+	//				}
+	//		
+	//			}
+	//	
+	//	}
+	//	str_msg.Format ( "%d activity locations identified",activity_location_count);
+	//	m_MessageList.AddString (str_msg);
+	//		
+	//	}
 
-			double number_of_vehicles =  rsDemand.GetDouble(CString("number_of_vehicles"),bExist,false); 
+	//	if(m_bRemoveConnectors)
+	//	{
+	//	std::list<DTANode*>::iterator iNode;
 
-			if(number_of_vehicles < -0.1)
-			{
-				CString message;
-				message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
-				AfxMessageBox(message);
-				break;
-			}
+	//	std::vector <int> CentroidVector;
+	//	for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+	//	{
+	//		if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
+	//			CentroidVector.push_back((*iNode )->m_NodeNo );
 
-			DTA_demand element;
-			element.from_zone_id = from_zone_id;
-			element.to_zone_id = to_zone_id;
-			element.number_of_vehicles = number_of_vehicles;
+	//	}
 
-			m_pDoc->m_ImportedDemandVector.push_back (element);
-	
-			rsDemand.MoveNext ();
+	//	for(unsigned int i = 0; i < CentroidVector.size(); i++)
+	//	{
+	//		m_pDoc->DeleteNode (CentroidVector[i]);
+	//	}
+	//	
+	//	str_msg.Format ( "%d centroids deleted",CentroidVector.size());
+	//	m_MessageList.AddString (str_msg);
+	//	
+	//	}
 
-		}
-		rsDemand.Close();
+	//	//import demand
 
-		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
-		m_MessageList.AddString (str_msg);
-	}
+	//	// restart the data base
+	//if(m_pDoc->m_Database.IsOpen ())
+	//	m_pDoc->m_Database.Close ();
 
-	}
+	//m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
 
-	return;  // not reading sensor data for now.
+
+	//int demand_type = 0;
+
+	//m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
+	//if(demand_type == 0)  // matrix
+	//{
+	//// activity location table
+
+	//strSQL = m_pDoc->ConstructSQL("6-DEMAND-MATRIX");
+
+	////bool bNodeNonExistError = false;
+	//m_pDoc->m_ImportedDemandVector .clear ();
+
+
+	//if(strSQL.GetLength () > 0)
+	//{
+	//	CXLEzAutomation rsDemand;
+	//	rsDemand.Open(dbOpenDynaset, strSQL);
+
+	//	while(!rsDemand.ReadRecord())
+	//	{
+	//		int from_zone_id = rsDemand.GetLong("zone_id",bExist,false);
+	//		if(!bExist) 
+	//		{
+	//		demand_type = 1;
+	//		break;
+	//		}
+
+	//		if(from_zone_id==0)
+	//		{
+	//			if(m_pDoc->m_ImportedDemandVector.size() ==0)
+	//			{
+	//			demand_type = 1;
+
+	//			break;
+	//			}
+
+	//			break; 
+	//		}
+
+
+	//		if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
+	//		{
+	//			CString message;
+	//			message.Format("from_zone_id %d at line %d in the demand matrix has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
+	//			AfxMessageBox(message);
+	//			break;
+	//		}
+
+	//		if(from_zone_id ==0)
+	//			break;
+
+	//		int to_zone_id = 0;
+	//	std::map<int, DTAZone>	:: const_iterator itr;
+
+	//		int to_zone_index = 1;
+	//	for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++,to_zone_index++)
+	//	{
+	//		to_zone_id = itr->first;
+	//		double number_of_vehicles = rsDemand.GetDouble(to_zone_index,bExist,false);
+	//		if(!bExist) 
+	//		{
+	//			CString messsage;
+	//			messsage.Format("Field %d cannot be found in the demand matrix.", to_zone_id);
+	//			AfxMessageBox(messsage);
+	//			return;
+	//		}
+
+	//		if(number_of_vehicles < -0.1)
+	//		{
+	//			CString message;
+	//			message.Format("number_of_vehicles %f in the demand matrix is invalid.", number_of_vehicles);
+	//			AfxMessageBox(message);
+	//			break;
+	//		}
+
+	//		DTA_demand element;
+	//		element.from_zone_id = from_zone_id;
+	//		element.to_zone_id = to_zone_id;
+	//		element.number_of_vehicles = number_of_vehicles;
+
+	//		m_pDoc->m_ImportedDemandVector.push_back (element);
+
+	//	}  // for all to zone id
+
+	//	
+	//
+	//		rsDemand.MoveNext ();
+
+	//	}
+	//	rsDemand.Close();
+
+	//	str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
+	//	m_MessageList.AddString (str_msg);
+	//}
+
+	//}
+
+	//if(demand_type == 1)
+	//{
+	//// activity location table
+
+	//strSQL = m_pDoc->ConstructSQL("6-DEMAND-3-COLUMN");
+
+	////bool bNodeNonExistError = false;
+	//m_pDoc->m_ImportedDemandVector .clear ();
+
+
+	//if(strSQL.GetLength () > 0)
+	//{
+	//	CXLEzAutomation rsDemand;
+	//	rsDemand.Open(dbOpenDynaset, strSQL);
+
+	//	while(!rsDemand.ReadRecord())
+	//	{
+	//		int from_zone_id = rsDemand.GetLong("from_zone_id",bExist,false);
+	//		if(!bExist) 
+	//		{
+	//			AfxMessageBox("Field from_zone_id cannot be found in the demand table.\n Please make sure your demand input is three column-based format.");
+	//			return;
+	//		}
+
+	//		if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
+	//		{
+	//			CString message;
+	//			message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
+	//			AfxMessageBox(message);
+	//			break;
+	//		}
+
+	//		if(from_zone_id ==0)
+	//			break;
+
+	//		int to_zone_id = rsDemand.GetLong("to_zone_id",bExist,false);
+
+
+	//		if(!bExist) 
+	//		{
+	//			AfxMessageBox("Field node_id cannot be found in the demand table.");
+	//			return;
+	//		}
+
+	//		if(m_pDoc->m_ZoneMap.find(to_zone_id)== m_pDoc->m_ZoneMap.end())
+	//		{
+	//			CString message;
+	//			message.Format("to_zone_id %d at line %d  in the demand table has not been defined.", to_zone_id,  m_pDoc->m_ImportedDemandVector.size()+1);
+	//			AfxMessageBox(message);
+	//			break;
+	//		}
+
+	//		double number_of_vehicles =  rsDemand.GetDouble("number_of_vehicles",bExist,false); 
+
+	//		if(number_of_vehicles < -0.1)
+	//		{
+	//			CString message;
+	//			message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
+	//			AfxMessageBox(message);
+	//			break;
+	//		}
+
+	//		DTA_demand element;
+	//		element.from_zone_id = from_zone_id;
+	//		element.to_zone_id = to_zone_id;
+	//		element.number_of_vehicles = number_of_vehicles;
+
+	//		m_pDoc->m_ImportedDemandVector.push_back (element);
+	//
+	//		rsDemand.MoveNext ();
+
+	//	}
+	//	rsDemand.Close();
+
+	//	str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
+	//	m_MessageList.AddString (str_msg);
+	//}
+
+	//}
+
+	//return;  // not reading sensor data for now.
 
 }
 
@@ -1593,7 +1556,7 @@ void CDlg_ImportNetwork::OnBnClickedButtonLoadSampleFile()
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	CString SampleExcelNetworkFile = pMainFrame->m_CurrentDirectory + m_pDoc->m_SampleExcelNetworkFile;
 
-	static char BASED_CODE szFilter[] = "Excel File (*.xls)|*.xls||";
+	static char BASED_CODE szFilter[] = "Excel File (*.xlsx)|*.xlsx||";
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		szFilter);
 

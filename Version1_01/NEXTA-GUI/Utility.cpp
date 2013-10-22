@@ -14,6 +14,28 @@
 
 using namespace std;
 
+std::string string_format(const std::string fmt, ...)
+{
+    int size = 100;
+    std::string str;
+    va_list ap;
+    while (1) {
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {
+            str.resize(n);
+            return str;
+        }
+        if (n > -1)
+            size = n + 1;
+        else
+            size *= 2;
+    }
+    return str;
+}
+
 
 CString g_GetExcelColumnFromNumber(int column)
         {
@@ -706,6 +728,87 @@ double  g_FindClosestYResolution(double Value)
 				min_distance = fabs(Value-ResolutionVector[i]);
 				ClosestResolution = ResolutionVector[i];
 			}
+		}
+		return ClosestResolution;
+}
+
+double  g_FindClosestMOEYResolution(double Value)
+{
+	 vector<double> ResolutionVector;
+
+	 int j;
+
+
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(0.00001*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(0.0001*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(0.001*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(0.01*j);
+		 }
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(0.1*j);
+		 }
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(1*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(10*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(100*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(1000*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(10000*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(100000*j);
+		 }
+
+		 for(j = 1; j<10; j++)
+		 {
+		 ResolutionVector.push_back(1000000*j);
+		 }
+		 ResolutionVector.push_back(1000000);
+		 
+
+		double ClosestResolution=0.000001;
+		for(unsigned int i=0; i<ResolutionVector.size();i++)
+		{
+			ClosestResolution =  ResolutionVector[i];
+			if(	Value < ResolutionVector[i])
+			{
+			break;
+			}
+
 		}
 		return ClosestResolution;
 }

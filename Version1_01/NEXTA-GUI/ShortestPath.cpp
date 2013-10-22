@@ -285,7 +285,6 @@ void DTANetworkForSP::BuildSpaceTimeNetworkForTimetabling(std::list<DTANode*>* p
 		for(t=0; t <m_OptimizationHorizon; t+=m_OptimizationTimeInveral)
 		{
 			m_LinkTDTimeAry[(*iterLink)->m_LinkNo][t] = (*iterLink)->GetTrainRunningTime(TrainType);  // in the future, we can extend it to time-dependent running time
-			m_LinkTDCostAry[(*iterLink)->m_LinkNo][t]=  (*iterLink)->m_ResourceAry[t].Price;  // for all train types
 
 //			TRACE("Time %d, Travel Time %f, Cost %f\n", t,m_LinkTDTimeAry[(*iterLink)->m_LinkNo][t] ,m_LinkTDCostAry[(*iterLink)->m_LinkNo][t]);
 

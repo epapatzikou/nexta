@@ -28,6 +28,8 @@
 #include <vector>
 #include "TLiteDoc.h"
 // CPage_Node_Movement dialog
+#include "GridCtrl_src\\GridCtrl.h"
+#include "CGridListCtrlEx\\CGridListCtrlEx.h"
 #include "CGridListCtrlEx\\CGridListCtrlEx.h"
 #include "afxwin.h"
 
@@ -38,9 +40,20 @@ class CPage_Node_Movement : public CPropertyPage
 
 public:
 
-	std::vector<std::string> m_Column_names;
 
-	void UpdatePhaseData();
+  
+
+	int m_SelectedPhaseNumber;
+	int m_SelectedTimingPlanNo;
+
+	
+	std::vector<CString> MovementVectorString;
+
+	int m_SelectedTimingPlan;
+
+
+
+	std::vector<std::string> m_Column_names;
 
 	bool m_bAvailablePhaseVector[17]; 
 	int m_EffectiveGreenTime[17];
@@ -55,31 +68,16 @@ public:
 	CGridListCtrlEx m_ListCtrl;
 	int m_SelectedMovementIndex;
 	int m_CurrentNodeID;
+	int m_CurrentNodeNumber;
+
+
+
+
 
 	std::vector<MovementBezier> m_MovementBezierVector;
 
-	int FindClickedMovement(CPoint pt)
-	{
-	
-		float min_distance  = 50;
-		int SelectedMovement = -1;
-
-		for(unsigned int i = 0; i< m_MovementBezierVector.size(); i++)
-		{
-			float distance  = m_MovementBezierVector[i].GetMinDistance(pt) ;
-
-			if(distance < min_distance)
-			{
-				min_distance = distance;
-				SelectedMovement = i;
-			}
-		}
-
-		return SelectedMovement;
-	}
 	
 	bool m_bColumnWidthIncludeHeader;
-	int m_SelectedColumnIndex; 
 	CTLiteDoc* m_pDoc;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -99,25 +97,65 @@ public:
 	void SaveData();
 	void DisplayList();
 	void UpdateList();
-	void RunQEM();
 
 	virtual void OnOK( );
-	void DrawMovements(CPaintDC* pDC,CRect PlotRect);
+	virtual void OnCancel( );
+	void DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhaseWindow);
 	void DrawLink(CPaintDC* pDC,GDPoint pt1, GDPoint pt2, int NumberOfLanes,double theta, int lane_width);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
-	int m_CurrentNodeName;
 	afx_msg void OnLvnItemchangedGridlistctrlex(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnBnClickedButtonSave();
 	float m_PeakHourFactor;
-	afx_msg void OnBnClickedButtonQem();
 	int m_CycleLengthInSec;
 	afx_msg void OnBnClickedButtonExtendcolumewidth();
-	afx_msg void OnBnClickedButtonQem2();
 	CComboBox m_PhaseNumber;
-	CListBox m_PhaseList;
 	afx_msg void OnLbnSelchangeList1();
 	afx_msg void OnLbnDblclkList1();
-	CString m_DisplayFieldName;
-};
+
+    afx_msg void OnGridEndSelChange(NMHDR *pNotifyStruct, LRESULT* pResult);
+
+
+	BOOL m_bPhasingDataEditMode;
+	afx_msg void OnBnClickedEditMode();
+	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
+
+	CComboBox m_ComboTimingPlan;
+	afx_msg void OnCbnSelchangeComboTimingPlan();
+	CString m_CurrentNode_Name;
+	CString m_MovementMsg;
+	CComboBox m_ControlTypeComboBox;
+	CComboBox m_RingTypeComboBox;
+	afx_msg void OnCbnSelchangeCombo1();
+	afx_msg void OnCbnSelchangeCombo2();
+	int m_CycleLength;
+	int m_Offset;
+	BOOL m_bHideRightTurnMovement;
+	afx_msg void OnBnClickedEditMode2();
+
+	int FindClickedMovement(CPoint pt)
+	{
+	
+		float min_distance  = 50;
+		int SelectedMovement = -1;
+
+		DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
+		for(unsigned int i = 0; i< m_MovementBezierVector.size(); i++)
+		{
+		
+			if(m_bHideRightTurnMovement &&( pNode->m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementVector[i].movement_turn == DTA_RightTurn2))
+			continue;
+
+			float distance  = m_MovementBezierVector[i].GetMinDistance(pt) ;
+
+			if(distance < min_distance)
+			{
+				min_distance = distance;
+				SelectedMovement = i;
+			}
+		}
+
+		return SelectedMovement;
+	}
+	};
