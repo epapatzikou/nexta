@@ -432,7 +432,7 @@ void CSensorNetworkDataTabDlg::ZoomToSelectedObject()
 		if(pLink!=NULL)
 		{
 			m_pDoc->m_SelectedLinkNo = pLink->m_LinkNo;
-			g_AddLinkIntoSelectionList(pLink->m_LinkNo,m_pDoc->m_DocumentNo );
+			g_AddLinkIntoSelectionList(pLink, pLink->m_LinkNo,m_pDoc->m_DocumentNo );
 		}
 
 	
@@ -514,7 +514,7 @@ void CSensorNetworkDataTabDlg::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pRes
 		if(pLink!=NULL)
 		{
 			m_pDoc->m_SelectedLinkNo = pLink->m_LinkNo;
-			g_AddLinkIntoSelectionList(pLink->m_LinkNo,m_pDoc->m_DocumentNo );
+			g_AddLinkIntoSelectionList(pLink, pLink->m_LinkNo,m_pDoc->m_DocumentNo );
 		}
 			m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 

@@ -154,7 +154,7 @@ public:
 
 	void DrawEventCode(eLinkMOEMode  MOEType , CPaintDC* pDC, CRect PlotRect,bool TextFlag);
 	bool ExportDataToCSVFile(CString csv_file);
-    int GetMaxYValue(eLinkMOEMode MOEType);
+    float GetMaxYValue(eLinkMOEMode MOEType);
 
 	bool m_bFixYRange;
 // Dialog Data

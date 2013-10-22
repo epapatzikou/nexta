@@ -89,11 +89,10 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 
 		for(int day =0; day <number_of_weekdays; day ++)
 		{
-				m_HistLinkMOEAry[t].SimulationSpeed +=m_LinkMOEAry[day*1440+t].SensorSpeed;
-				m_HistLinkMOEAry[t].SimulationLinkFlow +=m_LinkMOEAry[day*1440+t].SensorLinkCount;
-				m_HistLinkMOEAry[t].SimuArrivalCumulativeFlow +=m_LinkMOEAry[day*1440+t].SensorArrivalCumulativeFlow;
-				m_HistLinkMOEAry[t].SimulationDensity += m_LinkMOEAry[day*1440+t].SensorDensity;
-				m_HistLinkMOEAry[t].SimulatedTravelTime += m_LinkMOEAry[day*1440+t].SimulatedTravelTimeCopy;
+				m_HistLinkMOEAry[t].Speed +=m_LinkMOEAry[day*1440+t].Speed;
+				m_HistLinkMOEAry[t].LinkFlow +=m_LinkMOEAry[day*1440+t].LinkFlow;
+				m_HistLinkMOEAry[t].Density += m_LinkMOEAry[day*1440+t].Density;
+				m_HistLinkMOEAry[t].TravelTime += m_LinkMOEAry[day*1440+t].TravelTime;
 
 				count++;
 
@@ -102,11 +101,11 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 				if((t>=8*60 && t<9*60)) //8-9AM
 				{
 					// update link-specific min and max speed
-					if(m_LinkMOEAry[day*1440+t].SimulationSpeed < m_MinSpeed)
-						m_MinSpeed = m_LinkMOEAry[day*1440+t].SensorSpeed;
+					if(m_LinkMOEAry[day*1440+t].Speed < m_MinSpeed)
+						m_MinSpeed = m_LinkMOEAry[day*1440+t].Speed;
 
-					if(m_LinkMOEAry[day*1440+t].SimulationSpeed > m_MaxSpeed)
-						m_MaxSpeed = m_LinkMOEAry[day*1440+t].SensorSpeed;
+					if(m_LinkMOEAry[day*1440+t].Speed > m_MaxSpeed)
+						m_MaxSpeed = m_LinkMOEAry[day*1440+t].Speed;
 
 
 				}
@@ -116,11 +115,11 @@ void DTALink::ComputeHistoricalAvg(int number_of_weekdays)
 		if(count>=1) 
 		{
 			// calculate final mean statistics
-			m_HistLinkMOEAry[t].SimulationSpeed /=count;
-			m_HistLinkMOEAry[t].SimulationLinkFlow /=count;
-			m_HistLinkMOEAry[t].SimuArrivalCumulativeFlow /=count;
-			m_HistLinkMOEAry[t].SimulationDensity /=count;
-			m_HistLinkMOEAry[t].SimulatedTravelTime /=count;
+			m_HistLinkMOEAry[t].Speed /=count;
+			m_HistLinkMOEAry[t].LinkFlow /=count;
+			m_HistLinkMOEAry[t].ArrivalCumulativeFlow /=count;
+			m_HistLinkMOEAry[t].Density /=count;
+			m_HistLinkMOEAry[t].TravelTime /=count;
 		}
 
 
@@ -135,7 +134,7 @@ struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHo
 
 	struc_traffic_state future_state;
 	// step 1: calculate delta w
-	float DeltaW =  m_LinkMOEAry[CurrentTime].SimulatedTravelTime -  m_HistLinkMOEAry[CurrentTime%1440].SimulatedTravelTime;
+	float DeltaW =  m_LinkMOEAry[CurrentTime].TravelTime -  m_HistLinkMOEAry[CurrentTime%1440].TravelTime;
 
 	// step 2: propogate delta w to Furture time
 	//this is the most tricky part
@@ -143,7 +142,7 @@ struc_traffic_state DTALink::GetPredictedState(int CurrentTime, int PredictionHo
 	float FutureDeltaW = max(0,(1-PredictionHorizon)/45.0f)*DeltaW;   // after 45 min, FutureDeltaW becomes zero, completely come back to historical pattern
 	// step 3: add future delta w to historical time at future time
 
-	future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].SimulatedTravelTime;
+	future_state.traveltime  = FutureDeltaW+ m_HistLinkMOEAry[(CurrentTime+PredictionHorizon)%1440].TravelTime;
 	// step 4: produce speed
 
 	future_state.speed = m_Length/max(m_FreeFlowTravelTime,future_state.traveltime);
@@ -209,7 +208,7 @@ bool CTLiteDoc::ReadSensorData()
 
 			g_SensorDayDataMap[ day_no] = true;
 
-
+		
 			g_SensorLastDayNo= max(g_SensorLastDayNo,  day_no);
 			g_SensorDayNo = g_SensorLastDayNo;
 
@@ -306,9 +305,9 @@ bool CTLiteDoc::ReadSensorData()
 		
 					int time = day_no*1440 + t;  // allow shift of start time
 					// day specific value	
-					pLink->m_LinkMOEAry[ time].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ time].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
 					// overall value 
-					pLink->m_LinkMOEAry[ t].SensorLinkCount = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ t].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
 
 
 
@@ -464,45 +463,45 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 						if(m_SimulationLinkMOEDataLoadingStatus.GetLength () == 0)  // simulation data not loaded
 						{
- 							pLink->m_LinkMOEAry[ t].SimulationLinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
-							pLink->m_LinkMOEAry[ t].SimulationSpeed = AvgLinkSpeed; 
-							pLink->m_LinkMOEAry[ t].SimulatedTravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+ 							pLink->m_LinkMOEAry[ t].LinkFlow = TotalFlow*60/m_SamplingTimeInterval/pLink->m_NumberOfLanes;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].Speed = AvgLinkSpeed; 
+							pLink->m_LinkMOEAry[ t].TravelTime = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
-								pLink->m_LinkMOEAry[t].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationLinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].SimulationSpeed);
+								pLink->m_LinkMOEAry[t].Density = pLink->m_LinkMOEAry[t].LinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].Speed);
 							else
-								pLink->m_LinkMOEAry[t].SimulationDensity = Occupancy * Occ_to_Density_Coef;
+								pLink->m_LinkMOEAry[t].Density = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
 							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
-								pLink->m_LinkMOEAry[ t+tt].SimulationLinkFlow = pLink->m_LinkMOEAry[t].SimulationLinkFlow ;
-								pLink->m_LinkMOEAry[t+tt].SimulationSpeed = pLink->m_LinkMOEAry[t].SimulationSpeed;
-								pLink->m_LinkMOEAry[t+tt].SimulationDensity = pLink->m_LinkMOEAry[t].SimulationDensity;
-								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTime = pLink->m_LinkMOEAry[t].SimulatedTravelTime;
+								pLink->m_LinkMOEAry[ t+tt].LinkFlow = pLink->m_LinkMOEAry[t].LinkFlow ;
+								pLink->m_LinkMOEAry[t+tt].Speed = pLink->m_LinkMOEAry[t].Speed;
+								pLink->m_LinkMOEAry[t+tt].Density = pLink->m_LinkMOEAry[t].Density;
+								pLink->m_LinkMOEAry[t+tt].TravelTime = pLink->m_LinkMOEAry[t].TravelTime;
 
 							}
 						}else // simulation data loaded
 						{
 
-							pLink->m_LinkMOEAry[ t].SensorLinkCount = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
-							pLink->m_LinkMOEAry[ t].SensorSpeed = AvgLinkSpeed; 
-							pLink->m_LinkMOEAry[ t].SimulatedTravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
+							pLink->m_LinkMOEAry[ t].LinkFlow = TotalFlow*60/m_SamplingTimeInterval;  // convert to per hour link flow
+							pLink->m_LinkMOEAry[ t].Speed = AvgLinkSpeed; 
+							pLink->m_LinkMOEAry[ t].TravelTimeCopy = pLink->m_SpeedLimit /max(1,AvgLinkSpeed)*100;
 
 
 							if(Occupancy <=0.001)
-								pLink->m_LinkMOEAry[t].SensorDensity = pLink->m_LinkMOEAry[t].SensorLinkCount / max(1.0f,pLink->m_LinkMOEAry[t].SensorSpeed);
+								pLink->m_LinkMOEAry[t].Density = pLink->m_LinkMOEAry[t].LinkFlow / max(1.0f,pLink->m_LinkMOEAry[t].Speed);
 							else
-								pLink->m_LinkMOEAry[t].SensorDensity = Occupancy * Occ_to_Density_Coef;
+								pLink->m_LinkMOEAry[t].Density = Occupancy * Occ_to_Density_Coef;
 
 							// copy data to other intervals
 							for(int tt = 1; tt<m_SamplingTimeInterval; tt++)
 							{
-								pLink->m_LinkMOEAry[ t+tt].SensorLinkCount = pLink->m_LinkMOEAry[t].SensorLinkCount ;
-								pLink->m_LinkMOEAry[t+tt].SensorSpeed = pLink->m_LinkMOEAry[t].SensorSpeed;
-								pLink->m_LinkMOEAry[t+tt].SensorDensity = pLink->m_LinkMOEAry[t].SensorDensity;
-								pLink->m_LinkMOEAry[t+tt].SimulatedTravelTimeCopy = pLink->m_LinkMOEAry[t].SimulatedTravelTimeCopy;
+								pLink->m_LinkMOEAry[ t+tt].LinkFlow = pLink->m_LinkMOEAry[t].LinkFlow ;
+								pLink->m_LinkMOEAry[t+tt].Speed = pLink->m_LinkMOEAry[t].Speed;
+								pLink->m_LinkMOEAry[t+tt].Density = pLink->m_LinkMOEAry[t].Density;
+								pLink->m_LinkMOEAry[t+tt].TravelTimeCopy = pLink->m_LinkMOEAry[t].TravelTimeCopy;
 
 							}
 						}
@@ -612,16 +611,16 @@ void CTLiteDoc::BuildHistoricalDatabase()
 			{
 				if(t%1440 ==0)
 				{  // reset at the begining of day
-					(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t].SimulationLinkFlow;
+					(*iLink)->m_LinkMOEAry[t].ArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t].LinkFlow;
 				}else
 				{
-					(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].SimuArrivalCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].SimulationLinkFlow ;
+					(*iLink)->m_LinkMOEAry[t].ArrivalCumulativeFlow = (*iLink)->m_LinkMOEAry[t-m_SamplingTimeInterval].ArrivalCumulativeFlow  + (*iLink)->m_LinkMOEAry[t].LinkFlow ;
 
 				}
 
 				for(int tt= 1; tt<m_SamplingTimeInterval;tt++)
 				{
-					(*iLink)->m_LinkMOEAry[t+tt].SimuArrivalCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow;
+					(*iLink)->m_LinkMOEAry[t+tt].ArrivalCumulativeFlow = 	(*iLink)->m_LinkMOEAry[t].ArrivalCumulativeFlow;
 				}
 
 			}
@@ -1232,7 +1231,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 
 	// calculate time-dependent travel time
 
-/*
+
 		for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
 		{
 			DTAPath path_element = m_PathDisplayList[p];
@@ -1241,7 +1240,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 			{
 				path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
 
-				for (int i=0 ; i < path_element.m_LinkSize; i++)  // for each pass link
+				for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 				{
 					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
 					if(pLink == NULL)
@@ -1288,7 +1287,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 					float CO2;
 
 
-					for (int i=0 ; i < path_element.m_LinkSize; i++)  // for each pass link
+					for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 					{
 						DTALink* pLink = m_LinkNoMap[path_element.m_LinkVector[i]];
 
@@ -1328,7 +1327,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 
 
 		}
-*/
+
 
 /*
 	if(g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())

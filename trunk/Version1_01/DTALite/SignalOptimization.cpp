@@ -37,85 +37,20 @@
 
 using namespace std;
 
-void DTANode::QuickSignalOptimization()
+extern int g_number_of_warnings ;
+
+void g_ProhibitMovement(int up_node_id, int node_id , int dest_node_id) 
 {
+			string movement_id = GetMovementStringID(up_node_id, node_id , dest_node_id);
 
-	if(m_NodeNumber == 54154 || m_NodeNumber == 56161)
-		TRACE("");
+			g_NodeVector[node_id].m_MovementMap[movement_id].in_link_from_node_id = up_node_id;
+			g_NodeVector[node_id].m_MovementMap[movement_id].in_link_to_node_id = node_id ; 
+			g_NodeVector[node_id].m_MovementMap[movement_id].out_link_to_node_id = dest_node_id;
 
-	if(m_ControlType != g_settings.pretimed_signal_control_type_code && m_ControlType != g_settings.actuated_signal_control_type_code)
-		return;
+			g_NodeVector[node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
 
-		m_CycleLength_In_Second = g_settings.DefaultCycleTimeSignalOptimization;
-
-//find direction 
-		int NSTotalPerLaneCount = 0;
-		int EWTotalPerLaneCount = 0;
-
-		int incoming_link_count = 0;
-
-		int NSCapacity = 0;
-		int EWCapacity = 0;
-
-		for(incoming_link_count=0;  incoming_link_count <  m_IncomingLinkVector.size(); incoming_link_count++)  // for each incoming link
-		{
-
-			int li = m_IncomingLinkVector[incoming_link_count];
-			DTALink* pLink = g_LinkVector[li];
-				if(pLink->m_Direction == 'N' || pLink->m_Direction == 'S' )
-				{
-				NSTotalPerLaneCount+= pLink->CFlowArrivalCount;
-				NSCapacity += pLink->m_LaneCapacity * pLink->GetNumberOfLanes ();
-				}
-
-				if(pLink->m_Direction == 'E' || pLink->m_Direction == 'W' )
-				{
-				EWTotalPerLaneCount+= pLink->CFlowArrivalCount;
-				EWCapacity += pLink->m_LaneCapacity * pLink->GetNumberOfLanes ();
-				}
-		}
-
-
-		// no data available
-		if(NSTotalPerLaneCount==0 )
-		{
-
-			NSTotalPerLaneCount = 0.5*NSCapacity;
-		
-		}
-
-		if(EWTotalPerLaneCount==0 )
-		{
-
-			EWTotalPerLaneCount = 0.5*EWCapacity;
-		
-		}
-
-		float total_intersection_volume = max(1,NSTotalPerLaneCount + EWTotalPerLaneCount);
-
-
-		for(incoming_link_count=0;  incoming_link_count <  m_IncomingLinkVector.size(); incoming_link_count++)  // for each incoming link
-		{
-
-			int li = m_IncomingLinkVector[incoming_link_count];
-			DTALink* pLink = g_LinkVector[li];
-				if(pLink->m_Direction == 'N' || pLink->m_Direction == 'S' )
-				{
-				pLink->m_EffectiveGreenTime_In_Second = (m_CycleLength_In_Second * NSTotalPerLaneCount/total_intersection_volume);
-				}
-
-				if(pLink->m_Direction == 'E' || pLink->m_Direction == 'W' )
-				{
-				pLink->m_EffectiveGreenTime_In_Second = (m_CycleLength_In_Second * EWTotalPerLaneCount/total_intersection_volume);
-				}
-
-				if(pLink->m_EffectiveGreenTime_In_Second <=1)  // in case zero effective green 
-					pLink->m_EffectiveGreenTime_In_Second = 5;
-
-		}
-
+			g_number_of_prohibited_movements++;
 }
-
 
 void g_ReadAMSMovementData()
 {
@@ -162,6 +97,15 @@ void g_ReadAMSMovementData()
 			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
 			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
 
+			int CycleLength = 0;
+			int Offset = 0;
+
+			parser_movement.GetValueByFieldName("CycleLength",CycleLength);
+			parser_movement.GetValueByFieldName("Offset",Offset);
+
+			g_NodeVector[middle_node_id].m_CycleLength_In_Second  = CycleLength;
+			g_NodeVector[middle_node_id].m_SignalOffset_In_Second = Offset;
+			
 
 			int prohibited_flag = 0;
 
@@ -171,21 +115,14 @@ void g_ReadAMSMovementData()
 				if(prohibited_flag ==1)
 				{
 					g_ShortestPathWithMovementDelayFlag = true; // with movement input
-						string movement_id = GetMovementStringID(up_node_id, node_id , dest_node_id);
 
+						g_ProhibitMovement(up_node_id, node_id , dest_node_id);
 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = up_node_id;
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = node_id ; 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = dest_node_id;
-
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
-
-						g_number_of_prohibited_movements++;
 
 						continue; // do not need to check further 
 				}
 
-				if(node_id  == 76 && up_node_id == 141)
+				if(node_id  == 84 && up_node_id == 6)
 				{
 				TRACE("");
 				}
@@ -203,11 +140,14 @@ void g_ReadAMSMovementData()
 				if(g_LinkMap.find(strid)!= g_LinkMap.end())
 				{
 
-				int QEM_EffectiveGreen = 0;
-				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
-					parser_movement.GetValueByFieldName ("QEM_EffectiveGreen", QEM_EffectiveGreen );
+				float QEM_GreenStartTime = 9999;
+				float QEM_GreenEndTime = 0;
 
-					if(QEM_EffectiveGreen == 0 )
+				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
+					parser_movement.GetValueByFieldName ("GreenStartTime", QEM_GreenStartTime );
+					parser_movement.GetValueByFieldName ("GreenEndTime", QEM_GreenEndTime );
+
+					if(g_SignalRepresentationFlag != 0 && QEM_GreenStartTime >=  QEM_GreenEndTime )
 					{
 						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << " has an effective green time of 0. Please check # of lanes for this movement." << endl;
 						zero_effective_green_time_error_count++;
@@ -227,17 +167,22 @@ void g_ReadAMSMovementData()
 							continue; 
 
 
-
 						if(pLink->m_bSignalizedArterialType == true )  // only for arterial streets
 						{
 
-	
-						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
-						pLink->m_EffectiveGreenTime_In_Second = max(QEM_EffectiveGreen,pLink->m_EffectiveGreenTime_In_Second );
+						if(QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
+						{
+							// we have to prevent this left-turn movement, as no green time being assigned. 
+							g_ProhibitMovement(up_node_id, node_id , dest_node_id);
+						
+						}
 
+	
 						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
 						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
-						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_EffectiveGreen;
+
+						pLink->m_LeftTurnGreenStartTime_In_Second = QEM_GreenStartTime;
+						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_GreenEndTime - QEM_GreenStartTime;
 						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane ;
 						}
 
@@ -264,8 +209,22 @@ void g_ReadAMSMovementData()
 						if(pLink->m_bSignalizedArterialType == true )  // only for arterial streets
 						{
 
+						if(QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
+						{
+							// we have to prevent this left-turn movement, as no green time being assigned. 
+							g_ProhibitMovement(up_node_id, node_id , dest_node_id);
+
+							cout << "In file AMS_movement.csv, through movement " << up_node_id << "->" << node_id << "->" <<  dest_node_id << " has no green time being assigned at this signalized node." << endl << "Please check if the left-turn approach has more than 1 lane with positive green time" << endl;
+
+							getchar();
+							g_number_of_warnings++;
+						
+						}
+
 						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
-						pLink->m_EffectiveGreenTime_In_Second = max(QEM_EffectiveGreen,pLink->m_EffectiveGreenTime_In_Second );
+						
+							pLink->m_GreenStartTime_In_Second = QEM_GreenStartTime;
+							pLink->m_EffectiveGreenTime_In_Second = QEM_GreenEndTime - QEM_GreenStartTime;
 
 						//					pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow; // we use link based saturation flow rate
 						}
@@ -280,9 +239,47 @@ void g_ReadAMSMovementData()
 		
 	}
 
+		//update link based cycle length and offset
+
+		for(int li = 0; li< g_LinkVector.size(); li++)
+		{
+
+			DTALink* pLink = g_LinkVector[li];
+
+
+				if(	g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code ||
+					g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.actuated_signal_control_type_code )
+				{
+
+
+						int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
+						int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
+
+						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength_In_Second < 10  )  // use approximate cycle length
+						{
+							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds." << endl;
+							getchar ();
+							g_number_of_warnings++;
+
+						}
+
+
+						if(CycleLength_In_Second>=10)
+						{
+						pLink->m_bSignalizedArterialType = true;
+						pLink->m_DownstreamNodeSignalOffset_In_Second = SignalOffSet_In_Second;
+						pLink->m_DownstreamCycleLength_In_Second = CycleLength_In_Second;
+						}
+				}
+
+		}
+
+
+
 	if(zero_effective_green_time_error_count >=1)
 	{
-	g_ProgramStop();
+	
+		cout << "press any key to continue..." <<endl;  
 	}
 
 	// step 4: from dual ring structure: find the start_time for both through and left-turn movement

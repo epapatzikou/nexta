@@ -645,6 +645,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Page_Node_Phase.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\PlayerSeekBar.cpp"
 				>
 			</File>
@@ -1474,6 +1478,10 @@
 			</File>
 			<File
 				RelativePath=".\Page_Node_Movement.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Page_Node_Phase.h"
 				>
 			</File>
 			<File

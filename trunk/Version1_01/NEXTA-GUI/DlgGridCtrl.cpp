@@ -399,7 +399,6 @@ BOOL CDlgODDemandGridCtrl::OnInitDialog()
 
 		UpdateData(0);
 
-
 		DisplayDemandTypeTable();
 		DisplayDemandMatrix();
 
@@ -811,7 +810,12 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 				if(type>m_pDoc->m_DemandTypeVector.size())
 					continue;
 
-		DTADemandType elment = m_pDoc->m_DemandTypeVector[type-1];
+		DTADemandType elment = m_pDoc->m_DemandTypeVector[0];
+
+		if(demand_type_code[type] <= m_pDoc->m_DemandTypeVector.size())
+		{
+		elment = m_pDoc->m_DemandTypeVector[demand_type_code[type]-1];
+		}
 
 
 				// can be also enhanced to edit the real time information percentage

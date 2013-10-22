@@ -54,4 +54,9 @@ public:
 	afx_msg void OnLbnSelchangeListSignalControlRepresentation();
 	afx_msg void OnEnChangeEditNumberIterations3();
 	int m_NumberReportingDays;
+	CListBox m_ScenarioList;
+	afx_msg void OnLbnSelchangeListScenario();
+	afx_msg void OnBnClickedButtonconfiguration();
+	afx_msg void OnBnClickedConfig();
+	CString m_SimulatorName;
 };

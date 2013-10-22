@@ -506,35 +506,18 @@ void g_ReadInputFiles(int scenario_no)
 			if(parser_node.GetValueByFieldNameRequired("node_id",node_id) == false)
 				break;
 
-			int cycle_length_in_second = 60;
-			parser_node.GetValueByFieldName("cycle_length_in_second",cycle_length_in_second);
-
 			int control_type = 0;
 			parser_node.GetValueByFieldName ("control_type",control_type);
 
-			if(control_type == g_settings.pretimed_signal_control_type_code ||
-				control_type == g_settings.actuated_signal_control_type_code )
-			{
-				if(cycle_length_in_second == 0)
-				{
-					cout << "Please input cycle length for signalized node " << node_id << endl;
-					g_ProgramStop();
-				}
 
-			}
-
-			int offset = 0;
-			parser_node.GetValueByFieldName ("offset",offset);
 
 			DTANode Node;
 			Node.m_NodeID = i;
 			Node.m_ZoneID = 0;
 			Node.m_NodeNumber = node_id;
 			Node.m_ControlType  = control_type;
-			Node.m_SignalOffset_In_Second = offset;
 
 			NodeControlTypeCount[control_type] +=1;
-			Node.m_CycleLength_In_Second = cycle_length_in_second;
 			g_NodeVector.push_back(Node);
 			g_NodeNametoIDMap[node_id] = i;
 			i++;
@@ -1117,25 +1100,7 @@ void g_ReadInputFiles(int scenario_no)
 
 						}
 
-						int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
-						int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
 
-						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength_In_Second < 10  && g_number_of_warnings<max_number_of_warnings_to_be_showed)  // use approximate cycle lenght
-						{
-							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds." << endl;
-							getchar ();
-							g_number_of_warnings++;
-
-						}
-
-
-						if(CycleLength_In_Second>=10)
-						{
-						pLink->m_bSignalizedArterialType = true;
-						pLink->m_DownstreamNodeSignalOffset_In_Second = SignalOffSet_In_Second;
-						pLink->m_DownstreamCycleLength_In_Second = CycleLength_In_Second;
-
-						}
 						pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane  = max(capacity,SaturationFlowRate);
 					}else  // no
 					{
@@ -3078,8 +3043,8 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		int from_node_id;
 		int to_node_id;
 		int timestamp_in_min;
-		int travel_time_in_min;
-		int delay_in_min;
+		float travel_time_in_min;
+		float delay_in_min;
 		float link_volume_in_veh_per_hour_per_lane;
 		float link_volume_in_veh_per_hour_for_all_lanes;
 		float density_in_veh_per_mile_per_lane;

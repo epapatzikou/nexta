@@ -341,6 +341,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			int DSP_link_type = g_read_integer(pFile);
 			pLink->m_link_type = DSP_link_type;
 
+
 			//if(DSP_link_type == 3 || DSP_link_type == 4) 
 			//	pLink->m_LaneCapacity  = 1400;
 
@@ -351,6 +352,8 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
 			m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+
+			m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(pLink->m_LinkNo);
 
 			m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
 
@@ -600,14 +603,32 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 					DTAActivityLocation element;
 					element.ZoneID  = zone_number;
+					
+					if(m_NodeNoMap[node_id]->m_IncomingLinkVector .size() > 0 || m_NodeNoMap[node_id]->m_OutgoingLinkVector .size() >0)
+					{
+					
 					element.NodeNumber = destination_node;
 
+
+
+					if(destination_node == 3688)
+						TRACE("");
+
 					element.External_OD_flag = 0;
+
+					if(m_NodeNoMap[node_id]->m_IncomingLinkVector .size()  ==0)
+					element.External_OD_flag = 1;
+
+					if(m_NodeNoMap[node_id]->m_OutgoingLinkVector .size()  ==0)
+					element.External_OD_flag = -1;
+		
+
 					element.pt = m_NodeNoMap [node_id ]  ->pt;
 
 
 					m_ZoneMap [zone_number].m_ZoneID = zone_number;
 					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+					}
 				}
 			}
 
@@ -744,7 +765,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 			// read the last value
 			int end_of_simulation_horizon = g_read_float(pFile);
+
 			TimeIntevalVector.push_back(end_of_simulation_horizon);
+			m_PeakHourFactor = 60.0/max(1,end_of_simulation_horizon);
 
 			long RecordCount = 0;
 			float total_demand = 0;
@@ -832,7 +855,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	m_LinkTypeMap[4] = element;
 
 	element.link_type = 5;
-	element.type_code = 'r';
+	element.type_code = 'a';
 	element.link_type_name = "Arterial";
 	m_LinkTypeMap[5] = element;
 
@@ -876,6 +899,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	// read control.dat
 
 	ReadDYNASMART_ControlFile();
+
 
 	CTime LoadingEndTime = CTime::GetCurrentTime();
 
@@ -959,7 +983,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 			// timt t is the timestamp from the current link to the next link, in min 
 			if(pLinkCurrent!=NULL)
 			{
-				pLinkCurrent->m_LinkMOEAry[t].VehicleOutflowCount+=1;
+				//pLinkCurrent->m_LinkMOEAry[t].VehicleOutflowCount+=1;
 
 				//int time_interval = int(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN*10); // convert min to 0.1 min
 
@@ -978,7 +1002,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 				int dep_t = pVehicle->m_DepartureTime+1;
 				if(pLinkCurrent!=NULL )
 				{
-					pLinkCurrent->m_LinkMOEAry[dep_t].VehicleInflowCount+=1;
+					////pLinkCurrent->m_LinkMOEAry[dep_t].VehicleInflowCount+=1;
 
 				}
 
@@ -991,7 +1015,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 
 				if(pLinkNext!=NULL)
 				{
-					pLinkNext->m_LinkMOEAry[t].VehicleInflowCount+=1;
+					//pLinkNext->m_LinkMOEAry[t].VehicleInflowCount+=1;
 
 				}
 			}
@@ -1081,18 +1105,31 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 			(*iLink)->ResetMOEAry(m_SimulationStartTime_in_min + g_Simulation_Time_Horizon);  // use one day horizon as the default value
 		}
 
+		float value = 0;
 		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
+			int timestamp = (int)(g_read_float(pFile));  // read timestamp in min
+
+			if(timestamp%10==0)
+			{
+			str.Format ("Start loading speed data at min %d", timestamp );
+			SetStatusText(str);
+
+			}
+
 
 			if(timestamp < 0)  // end of file
 				break;
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-				(*iLink)->m_LinkMOEAry[t+1].SimulationSpeed = g_read_float(pFile);  // speed;
+				value = g_read_float(pFile);  // speed;
 
-				(*iLink)->m_LinkMOEAry[t+1].SimulatedTravelTime = (*iLink)->m_Length * 60/ max(1,(*iLink)->m_LinkMOEAry[t+1].SimulationSpeed);
+				if(t < (*iLink)->m_LinkMOEArySize -1 )
+				{
+				(*iLink)->m_LinkMOEAry[t+1].Speed = value;
+				(*iLink)->m_LinkMOEAry[t+1].TravelTime = (*iLink)->m_Length * 60/ max(1,value);
+				}
 			}
 
 		}
@@ -1110,10 +1147,17 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
+			int timestamp = g_read_float(pFile);  // read timestamp in min
 
 			if(timestamp < 0)  // end of file
 				break;
+
+			if(timestamp%10==0)
+			{
+			str.Format ("Start loading queue length data at min %d", timestamp );
+			SetStatusText(str);
+
+			}
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
@@ -1121,8 +1165,10 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 				if(value < -0.5f)
 					break;
-				else
-					(*iLink)->m_LinkMOEAry[t+1].SimulationQueueLength = value;
+				else if(t < (*iLink)->m_LinkMOEArySize -1 )
+				{
+					(*iLink)->m_LinkMOEAry[t+1].QueueLength = value;
+				}
 			}
 
 		}
@@ -1140,10 +1186,17 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
+			int timestamp = g_read_float(pFile);  // read timestamp in min
 
 			if(timestamp < 0)  // end of file
 				break;
+
+			if(timestamp%10==0)
+			{
+			str.Format ("Start loading density data at min %d", timestamp );
+			SetStatusText(str);
+
+			}
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
@@ -1151,9 +1204,9 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 				if(value < -0.5f)
 					break;
-				else
+				else if(t < (*iLink)->m_LinkMOEArySize -1 )
 				{
-					(*iLink)->m_LinkMOEAry[t+1].SimulationDensity  = value;
+					(*iLink)->m_LinkMOEAry[t+1].Density  = value;
 				}
 			}
 
@@ -1189,23 +1242,36 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 		for(int t = m_SimulationStartTime_in_min; t < m_SimulationStartTime_in_min+g_Simulation_Time_Horizon; t++)
 		{
-			float timestamp = g_read_float(pFile);  // read timestamp in min
+			int timestamp = g_read_float(pFile);  // read timestamp in min
 
 			//		TRACE("timestamp = %f\n",timestamp);
 
 			if(timestamp < 0)  // end of file
 				break;
+
+			if(timestamp%10==0)
+			{
+			str.Format ("Start loading volume data at min %d", timestamp );
+			SetStatusText(str);
+
+			}
+
+
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-				if(CumulativeFlag)  // DSP 
+				if(CumulativeFlag && t < (*iLink)->m_LinkMOEArySize -1 )
+
 				{
-					(*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow = g_read_float(pFile);  // cumulative flow;
+					float value = g_read_float(pFile);  // cumulative flow;
+
+					if(t < (*iLink)->m_LinkMOEArySize -1 )
+						(*iLink)->m_LinkMOEAry[t].ArrivalCumulativeFlow = value;
 
 					if(t>=m_SimulationStartTime_in_min+1)
 					{
-						float value =  max(0,((*iLink)->m_LinkMOEAry[t].SimuArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].SimuArrivalCumulativeFlow));
+						float value =  max(0,((*iLink)->m_LinkMOEAry[t].ArrivalCumulativeFlow - (*iLink)->m_LinkMOEAry[t-1].ArrivalCumulativeFlow));
 
-						(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow = value *60;  //convert to hourly count
+						(*iLink)->m_LinkMOEAry[t].LinkFlow = value *60;  //convert to hourly count
 						if((*iLink)->m_FromNodeNumber == 58730 && (*iLink)->m_ToNodeNumber == 80639)
 						{
 							TRACE("%d,%f\n",t,value);
@@ -1213,9 +1279,13 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 						}
 
 					}
-				}else  // DYNASMART -P 
+				}else 
 				{
-					(*iLink)->m_LinkMOEAry[t].SimulationLinkFlow =  g_read_float(pFile);
+					float value  =  g_read_float(pFile);
+					 if( t < (*iLink)->m_LinkMOEArySize -1)
+					 {
+					(*iLink)->m_LinkMOEAry[t].LinkFlow = value;
+					 }
 
 				}
 			}
@@ -1289,7 +1359,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 	ReadBackgroundImageFile(m_ProjectFile);
 
-	LoadGPSData();
+	//LoadGPSData();
 
 
 	if(bLoadVehicleData)
@@ -1499,6 +1569,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		}
 	}
 
+	UpdateMovementDataFromVehicleTrajector();
 	return true;
 }
 
@@ -1699,11 +1770,8 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 	{
 		int num_timing_plan = g_read_integer(st);
 
-		if(num_timing_plan > 1)
+		for(int time_plan_no = 1; time_plan_no <= num_timing_plan; time_plan_no++)
 		{
-			AfxMessageBox("Number of signal timing plan is greater than 1.  Only one signal timing plan is allowed to generate the actuated control data in the current version.", MB_ICONINFORMATION);
-			fclose(st);
-		}
 
 		//		double start_time = g_read_float(st);
 		char  str_line[2000]; // input string
@@ -1732,12 +1800,27 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 			pNode->m_NumberofPhases = g_read_integer(st);
 			pNode->m_CycleLengthInSecond = g_read_integer(st);
 
+
+			if(pNode->m_ControlType == m_ControlType_PretimedSignal || pNode->m_ControlType == m_ControlType_ActuatedSignal)
+			{
+
+				if(pNode->m_ControlType == m_ControlType_PretimedSignal)
+					SetupSignalValue(node_name,time_plan_no,TIMING_ControlType, "pretimed");
+
+				if(pNode->m_ControlType == m_ControlType_ActuatedSignal)
+					SetupSignalValue(node_name,time_plan_no,TIMING_ControlType, "actuated");
+
+			SetupSignalValue(node_name,time_plan_no,TIMING_RingType, "single_ring");
+			SetupSignalValue(node_name,time_plan_no,TIMING_CycleLength, pNode->m_CycleLengthInSecond);
+			SetupSignalValue(node_name,time_plan_no,TIMING_Offset, 0);
+			}
 		}
 
 		// read the second block: Phase time and movement
 		// read node by node
 
 		int number_of_signals = 0;
+
 		for ( iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
 			DTANode* pNode = (*iNode);
@@ -1747,14 +1830,15 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 				pNode-> m_bSignalData = true;
 				number_of_signals++;
 
+				int time = 0; 
+				int start_time = 0;
+				int end_time = 0;
+
 				for(int p  = 0; p < pNode->m_NumberofPhases; p++)
 				{
-					int node_name = g_read_integer(st);
+					start_time = time;
 
-					if(node_name == 55303)
-					{
-						TRACE("");
-					}
+					int node_name = g_read_integer(st);
 
 					if(m_NodeNumbertoNodeNoMap.find(node_name) == m_NodeNumbertoNodeNoMap.end())
 					{
@@ -1770,17 +1854,28 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 					int phase_ID = g_read_integer(st);
 
-
-					if(node_name == 54154)
-					{
-						TRACE("");
-
-					}
-
 					DTANodePhase phase;
+				
+					if( pNode->m_ControlType == m_ControlType_ActuatedSignal)
+					{
 					phase.max_green  = g_read_integer(st);
 					phase.min_green   = g_read_integer(st);
+					}
+					if( pNode->m_ControlType == m_ControlType_PretimedSignal)
+					{
+					g_read_integer(st);  // offset
+					phase.max_green   = g_read_integer(st);
+					phase.min_green = phase.max_green ;
+					}
+
+					
 					phase.amber  = g_read_integer(st);
+
+					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_MinGreen,phase.min_green);
+					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_MaxGreen,phase.max_green);
+					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_Yellow,phase.amber);
+
+
 					int approach = g_read_integer(st);
 
 
@@ -1792,11 +1887,15 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 					//
 					// read all possible approaches
+
+					std::string movement_vector; 
+
 					for(int i=0; i< approach; i++)
 					{
 
 						int in_link_from_node_number = g_read_integer(st);
 						int in_link_to_node_number = g_read_integer(st);
+
 						int in_link_from_node_id = m_NodeNumbertoNodeNoMap[in_link_from_node_number];
 						int in_link_to_node_id = m_NodeNumbertoNodeNoMap[in_link_to_node_number];
 
@@ -1806,28 +1905,41 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 
 						for(int k=0; k<movement_size; k++)
 						{
-							int out_link_to_node_id = m_NodeNumbertoNodeNoMap[g_read_integer(st)];
+							int out_link_to_node_number =  g_read_integer(st);
+							int out_link_to_node_id = m_NodeNumbertoNodeNoMap[out_link_to_node_number];
 
-							int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
-							if(movement_index>=0)
-							{
-								phase.movement_index_vector .push_back(movement_index);
+							movement_vector += string_format("%d",in_link_from_node_number);
+							movement_vector += ":";
+							movement_vector += string_format("%d",out_link_to_node_number); 
+							movement_vector += ";";
 
-							}
+
 						}  // movement
+						
 					} // approach 
-					pNode->m_PhaseVector.push_back(phase);
 
+					time += (phase.max_green ) ;
+					end_time = time;
+					time += (phase.amber) ;
+
+					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_MOVEMENT_VECTOR, movement_vector);
+					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_Start, start_time);
+					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_End, end_time);
 				} // phase
 
 			}   // control data
 		}  // for each node
+
+				UpdateAllMovementGreenStartAndEndTime(time_plan_no);
+
+		}
 		fclose(st);
 
 
-		m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
+	//	m_SignalDataLoadingStatus.Format ("%d signals are loaded.",number_of_signals);
 	}
 
+	
 	return true;
 }
 
@@ -1836,6 +1948,7 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 	FILE* st;
 
 	int number_of_nodes = 0;
+		int number_of_signals = 0;
 
 	std::vector<int> DSP_signal_node_vector;
 	fopen_s(&st,m_ProjectDirectory+"dsp_control.dat","r");
@@ -1912,7 +2025,6 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 		// read the second block: Phase time and movement
 		// read node by node
 
-		int number_of_signals = 0;
 		for ( int i = 0; i< DSP_signal_node_vector.size(); i++)
 		{
 
@@ -1976,13 +2088,11 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile_ForAMSHub()
 								int movement_index = pNode->GetMovementIndex(in_link_from_node_id, in_link_to_node_id, out_link_to_node_id);
 								if(movement_index>=0)
 								{
-									phase.movement_index_vector .push_back(movement_index);
+									phase.movement_index_map[movement_index] = true;
 
 								}
 							}  // movement
 						} // approach 
-						pNode->m_PhaseVector.push_back(phase);
-
 					} // phase
 
 				}   // control data

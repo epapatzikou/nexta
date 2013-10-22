@@ -49,7 +49,6 @@ void CDlgPathList::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST, m_ListCtrl);
 	DDX_Check(pDX, IDC_CHECK_ZOOM_TO_SELECTED_LINK, m_ZoomToSelectedLink);
 	DDX_Text(pDX, IDC_PATHMOE, m_StrPathMOE);
-	DDX_Control(pDX, IDC_COMBO1, m_ComboRandomCoef);
 	DDX_Control(pDX, IDC_LIST1, m_PathList);
 	DDX_Control(pDX, IDC_COMBO_StartHour, m_StartHour);
 	DDX_Control(pDX, IDC_COMBO_EndHour, m_EndHour);
@@ -116,13 +115,13 @@ BOOL CDlgPathList::OnInitDialog()
 
 	m_PlotType.AddString ("Simulated Travel Time (min)");
 	m_PlotType.AddString ("Simulated and Observed Travel Time (min)");
-	m_PlotType.AddString ("Energy (KJ)");
-	m_PlotType.AddString ("CO2 (g)");
-	m_PlotType.AddString ("NOX (g)");
-	m_PlotType.AddString ("CO (g)");
-	m_PlotType.AddString ("HC (g)");
-	m_PlotType.AddString ("Gasline (Gallon)");
-	m_PlotType.AddString ("Miles Per Gallon");
+	//m_PlotType.AddString ("Energy (KJ)");
+	//m_PlotType.AddString ("CO2 (g)");
+	//m_PlotType.AddString ("NOX (g)");
+	//m_PlotType.AddString ("CO (g)");
+	//m_PlotType.AddString ("HC (g)");
+	//m_PlotType.AddString ("Gasline (Gallon)");
+	//m_PlotType.AddString ("Miles Per Gallon");
 	m_PlotType.SetCurSel (0);
 
 	m_TimeLeft = int(m_pDoc->m_SimulationStartTime_in_min/30)*30 ;
@@ -164,14 +163,6 @@ BOOL CDlgPathList::OnInitDialog()
 	}
 
 
-	for(int c = 0; c <=11; c++)
-	{
-		CString str;
-		str.Format ("%.1f",c*0.2f);
-		m_ComboRandomCoef.AddString(str);
-	}
-
-	m_ComboRandomCoef.SetCurSel (0);
 
 	// Give better margin to editors
 	m_ListCtrl.SetCellMargin(1.2);
@@ -317,8 +308,8 @@ void CDlgPathList::ReloadData()
 
 		if(m_PlotType.GetCurSel ()==0)
 		{
-			m_StrPathMOE.Format("Distance=%4.2f mi, Free-flow Travel Time=%4.2f min, # of Sensors = %d, detected count = %.4f ",
-				total_distance,total_travel_time, number_of_sensors,total_count);
+			m_StrPathMOE.Format("Distance=%4.2f mi, Free-flow Travel Time=%4.2f min",
+				total_distance,total_travel_time);
 		}
 
 
@@ -361,7 +352,9 @@ void CDlgPathList::OnLvnItemchangedList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_ListCtrl.GetItemText (nSelectedRow,2,str,20);
 		int LinkNo = atoi(str);
 		m_pDoc->m_SelectedLinkNo = LinkNo;
-		g_AddLinkIntoSelectionList(LinkNo, m_pDoc->m_DocumentNo );
+		DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
+
+		g_AddLinkIntoSelectionList(pLink, LinkNo, m_pDoc->m_DocumentNo );
 
 	}
 	if(m_ZoomToSelectedLink == true)

@@ -47,7 +47,8 @@ enum tool
    };
 
 enum link_text_display_mode
-   { link_display_none = 0, 
+   {
+   link_display_none = 0, 
    link_display_street_name, 
    link_display_speed_limit_in_miles, 
    link_display_length_in_miles, 
@@ -56,8 +57,8 @@ enum link_text_display_mode
    link_display_number_of_left_turn_lanes, 
    link_display_link_capacity_per_hour,
    link_display_lane_capacity_per_hour,
-	link_display_total_link_volume,
-	link_display_LevelOfService,
+   link_display_total_link_volume,
+   link_display_LevelOfService,
 	link_display_avg_simulated_speed_mph,
 	link_display_avg_travel_time,
 	link_display_avg_delay,

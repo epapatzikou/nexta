@@ -24,7 +24,6 @@ public:
 		CTLiteDoc* m_pDoc;
 	long NodeID;
 	CString NodeName;
-	int CycleLength;
 	long ZoneID;
 	int ControlType;
 	CComboBox m_ControlTypeComboBox;
@@ -35,4 +34,5 @@ public:
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedButton();
 
+	afx_msg void OnCbnSelchangeCombo1();
 };

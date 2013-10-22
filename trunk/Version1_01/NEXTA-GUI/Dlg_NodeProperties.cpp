@@ -14,7 +14,6 @@ CDlg_NodeProperties::CDlg_NodeProperties(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlg_NodeProperties::IDD, pParent)
 	, NodeID(0)
 	, NodeName(_T(""))
-	, CycleLength(0)
 	, ZoneID(0)
 
 {
@@ -31,8 +30,6 @@ void CDlg_NodeProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_NODE_ID, NodeID);
 	DDX_Text(pDX, IDC_EDIT_STREET_NAME, NodeName);
 	DDV_MaxChars(pDX, NodeName, 100);
-	DDX_Text(pDX, IDC_EDIT_LENGTH, CycleLength);
-	DDV_MinMaxInt(pDX, CycleLength, 0, 600);
 	DDX_Text(pDX, IDC_EDIT_SPEEDLIMIT, ZoneID);
 	DDV_MinMaxLong(pDX, ZoneID, 0, 1000000);
 	DDX_Control(pDX, IDC_COMBO1, m_ControlTypeComboBox);
@@ -42,6 +39,7 @@ void CDlg_NodeProperties::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlg_NodeProperties, CDialog)
 	ON_BN_CLICKED(IDOK, &CDlg_NodeProperties::OnBnClickedOk)
 	ON_BN_CLICKED(ID_CANCEL, &CDlg_NodeProperties::OnBnClickedCancel)
+	ON_CBN_SELCHANGE(IDC_COMBO1, &CDlg_NodeProperties::OnCbnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -55,11 +53,6 @@ void CDlg_NodeProperties::OnBnClickedOk()
 	if(ControlType== m_pDoc->m_ControlType_PretimedSignal || ControlType== m_pDoc-> m_ControlType_ActuatedSignal)
 	{
 
-		if(CycleLength==0)
-		{
-		AfxMessageBox("Please specify cycle length.");
-		return;
-		}
 	}
 
 
@@ -123,3 +116,8 @@ void CDlg_NodeProperties::OnBnClickedCancel()
 
 
 
+
+void CDlg_NodeProperties::OnCbnSelchangeCombo1()
+{
+	// TODO: Add your control notification handler code here
+}

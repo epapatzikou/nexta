@@ -302,12 +302,13 @@ void CLinePlotTestDlg::OnPlotSelChange(NMHDR* pNMHDR, LRESULT* pResult)
 		if(LinkNo>=0)
 		{
 		m_pDoc->m_SelectedLinkNo = LinkNo;
-		g_AddLinkIntoSelectionList(LinkNo,m_pDoc->m_DocumentNo );
+		DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
+
+		g_AddLinkIntoSelectionList(pLink,LinkNo,m_pDoc->m_DocumentNo );
 		m_pDoc->ZoomToSelectedLink(m_pDoc->m_SelectedLinkNo);
 
 		m_InfoList.ResetContent ();
 
-		DTALink* pLink = m_pDoc->m_LinkNoMap [LinkNo];
 		CString str;
 		str.Format("Link %d->%d is selected.", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
 

@@ -61,7 +61,7 @@ CXLAutomation::CXLAutomation()
 	m_pdispActiveChart = NULL;
 	InitOLE();
 	StartExcel();
-	SetExcelVisible(TRUE);
+	SetExcelVisible(false);
 	CreateWorkSheet();
 	//CreateXYChart();
 }
@@ -74,14 +74,14 @@ CXLAutomation::CXLAutomation(BOOL bVisible)
 	m_pdispActiveChart = NULL;
 	InitOLE();
 	StartExcel();
-	SetExcelVisible(bVisible);
+	SetExcelVisible(false);
 	CreateWorkSheet();
 	//CreateXYChart();
 }
 
 CXLAutomation::~CXLAutomation()
 {
-	//ReleaseExcel();
+	ReleaseExcel();
 	ReleaseDispatch();
 	OleUninitialize();
 }
@@ -1055,8 +1055,8 @@ CString CXLAutomation::GetCellValueCString(int nColumn, int nRow)
 		}
 	
 		
-//	ReleaseVariant(&vargRng);
-//	ReleaseVariant(&vargValue);
+	ReleaseVariant(&vargRng);
+	ReleaseVariant(&vargValue);
 	
 	return szValue;
 
@@ -1246,7 +1246,69 @@ BOOL CXLAutomation::InsertPictureToWorksheet(BYTE *pImage, int Column, int Row, 
 	return TRUE;
 }
 //Open Microsoft Excel file and switch to the firs available worksheet. 
-BOOL CXLAutomation::OpenExcelFile(CString szFileName)
+
+BOOL CXLAutomation::OpenExcelFile(CString szFileName, CString WorkSheetName, int 	ActiveSheet)
+	//	return false;)
+{
+	//Leave if the file cannot be open
+	if(NULL == m_pdispExcelApp)
+		return FALSE;
+	if(szFileName.IsEmpty())
+		return FALSE;
+
+	VARIANTARG varg1, vargWorkbook, vargWorksheet;
+	ClearAllArgs();
+	if (!ExlInvoke(m_pdispExcelApp, L"Workbooks", &varg1, DISPATCH_PROPERTYGET, 0))
+		return FALSE;
+		
+	ClearAllArgs();
+	AddArgumentCString(L"Filename", 0, szFileName);
+	if (!ExlInvoke(varg1.pdispVal, L"Open", &vargWorkbook, DISPATCH_PROPERTYGET, DISP_FREEARGS))
+		return FALSE;
+
+	
+	WorkSheetName.MakeLower();
+
+	int size = GetWorksheetsCount();
+
+	//Now let's get the first worksheet of this workbook
+	ClearAllArgs();
+	AddArgumentInt2(NULL, 0, ActiveSheet);
+	if (!ExlInvoke(vargWorkbook.pdispVal, L"Worksheets", &vargWorksheet, DISPATCH_PROPERTYGET, DISP_FREEARGS))
+		return FALSE;
+
+
+	//Close the empty worksheet
+	ClearAllArgs();
+	if (!ExlInvoke(m_pdispWorkbook, L"Close", NULL, DISPATCH_PROPERTYGET, DISP_FREEARGS))
+		return FALSE;
+	//Remember the newly open worksheet 
+	m_pdispWorkbook = vargWorkbook.pdispVal;
+	m_pdispWorksheet = vargWorksheet.pdispVal;
+
+	size = GetWorksheetsCount();
+
+
+	CString Title = GetWorksheetName(ActiveSheet);
+
+	Title.MakeLower();
+	WorkSheetName.MakeLower();
+
+	if(Title != WorkSheetName)
+	{
+
+		CString msg;
+		msg.Format("Please ensure the no.%d work sheet is called %s", ActiveSheet, WorkSheetName);
+	AfxMessageBox(msg);
+
+	return false;
+	}
+
+
+	return TRUE;	
+
+}
+BOOL CXLAutomation::OpenExcelFile(CString szFileName, int ActiveSheet = 1)
 {
 
 	//Leave if the file cannot be open
@@ -1267,7 +1329,7 @@ BOOL CXLAutomation::OpenExcelFile(CString szFileName)
 
 	//Now let's get the first worksheet of this workbook
 	ClearAllArgs();
-	AddArgumentInt2(NULL, 0, 1);
+	AddArgumentInt2(NULL, 0, ActiveSheet);
 	if (!ExlInvoke(vargWorkbook.pdispVal, L"Worksheets", &vargWorksheet, DISPATCH_PROPERTYGET, DISP_FREEARGS))
 		return FALSE;
 
@@ -1372,7 +1434,7 @@ BOOL CXLAutomation::SetActiveWorksheet(int nWorksheet)
 
 	VARIANTARG varg1, varg2;
 	ClearAllArgs();
-	AddArgumentInt2(NULL, 0, nActiveWorksheet);
+	AddArgumentInt2(NULL, 0, nWorksheet);
 	if(!ExlInvoke(m_pdispWorkbook, L"Worksheets",&varg1, DISPATCH_PROPERTYGET, DISP_FREEARGS)) //DISP_FREEARGS))
 		return FALSE;
 	ClearAllArgs();

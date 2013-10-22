@@ -5323,7 +5323,7 @@ void CGridCtrl::SetVirtualMode(BOOL bVirtual)
     {
         SetEditable(FALSE);
         SetAutoSizeStyle(GVS_HEADER);
-        SetFixedColumnSelection(FALSE);
+        SetFixedColumnSelection(TRUE);
         SetFixedRowSelection(FALSE);
 		ResetVirtualOrder();
     }

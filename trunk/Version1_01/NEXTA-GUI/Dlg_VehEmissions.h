@@ -40,11 +40,11 @@ public:
 	void ShowSelectedPath();
 	void ShowVehicles();
 
-	bool ExportDataToCSVFileAllOD(char fname[_MAX_PATH]);
-	bool ExportPathDataToCSVFile(char fname[_MAX_PATH]);
-	bool ExportVehicleDataToCSVFile(char fname[_MAX_PATH]);
+	bool ExportDataToCSVFileAllOD(CString fname);
+	bool ExportPathDataToCSVFile(CString fname);
+	bool ExportVehicleDataToCSVFile(CString fname);
 
-	void ExportData(char fname[_MAX_PATH]);
+	void ExportData(CString fname);
 
 // Dialog Data
 	enum { IDD = IDD_DIALOG_VEHICLE_PATH };

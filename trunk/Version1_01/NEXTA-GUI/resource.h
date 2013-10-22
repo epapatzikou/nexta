@@ -53,6 +53,7 @@
 #define IDS_STRING132                   132
 #define IDS_STRING10000                 132
 #define IDR_MENU1                       133
+#define IDS_STRING133                   133
 #define IDS_STRING10001                 134
 #define IDS_STRING10002                 135
 #define IDR_MENU_LINK_MOE               136
@@ -87,7 +88,6 @@
 #define IDR_MAINFRAME2                  151
 #define IDS_STRING10018                 151
 #define IDR_MENU_CARFOLLOWING           152
-#define IDR_DATA_TOOLBAR                152
 #define IDS_STRING10019                 152
 #define IDS_STRING10100                 152
 #define IDR_TLiteTYPE1                  153
@@ -118,6 +118,7 @@
 #define IDS_STRING10112                 164
 #define IDS_STRING10113                 165
 #define IDD_DIALOG_Visualization_Mode   166
+#define IDS_STRING166                   166
 #define IDD_DIALOG_NETWORK_ALIGNMENT    167
 #define IDR_MENU3                       168
 #define IDD_DIALOG_VEHICLE_EMISSIONS    169
@@ -143,7 +144,6 @@
 #define IDD_DIALOG_SIGNAL_DATA          188
 #define IDD_DIALOG_DemandPattern        189
 #define IDR_TOOLBAR1                    189
-#define IDR_AMS_TOOLBAR1                190
 #define IDD_TD_DEMAND_PROFILE_DIALOG    191
 #define IDR_TOOLBARLAYER                191
 #define IDD_NSCHART_VEHICLE_DIALOG      192
@@ -209,6 +209,7 @@
 #define IDD_DIALOG_NETWORK_SENSOR_DATA  250
 #define IDD_DIALOG_SENSOR_SETTING_TAB   251
 #define IDD_DIALOG_CONFIG_KML_ZONE      252
+#define IDD_DIALOG_NODE_PHASES          253
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -253,6 +254,7 @@
 #define IDC_COMBO1                      1018
 #define ID_CANCEL                       1019
 #define IDC_COMBO_YAxis                 1019
+#define IDC_COMBO2                      1019
 #define IDC_LinkTypeLIST                1020
 #define IDC_COMBO_VehicleSelection      1020
 #define IDC_EDIT_Number_Iterations      1021
@@ -267,6 +269,7 @@
 #define IDC_EDIT_Number_ReportingDays   1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
+#define IDC_GRID_Phasing                1025
 #define IDC_EDIT_WIDTH                  1026
 #define ID_GRID_SAVEQUIT2               1026
 #define IDC_EDIT_WIDTH2                 1027
@@ -283,6 +286,8 @@
 #define IDC_EDIT3                       1032
 #define IDC_LIST_DEMAND_LOADING_MODE2   1032
 #define IDC_EDIT_Occ_to_Density_Coef    1033
+#define IDC_LIST_SCENARIO               1033
+#define IDC_EDIT9                       1033
 #define IDC_EDIT_Number_of_Zones        1034
 #define IDC_EDIT_StartingTime_in_min    1034
 #define IDC_EDIT_TimeInterval_AVI       1034
@@ -412,6 +417,7 @@
 #define IDC_BUTTON_View_TRANSCADA_File  1106
 #define IDC_EDIT_CURRENT_NODEID         1106
 #define IDIMPORT_LINK                   1107
+#define IDC_EDIT_CURRENT_NODENAME       1107
 #define IDC_BUTTON_View_CUBE_File       1108
 #define IDC_CHECK_REMOVE_CONNECTOR      1108
 #define IDC_BUTTON_View_CUBE_File2      1109
@@ -460,8 +466,10 @@
 #define IDC_CHECK1                      1150
 #define IDC_CHECK_UseDefaultData        1150
 #define IDC_CHECK_SIGNAL_NODE_ONLY      1150
+#define IDC_EDIT_MODE                   1150
 #define IDC_CHECK2                      1151
 #define IDC_COMBO_StartTime             1151
+#define IDC_EDIT_MODE2                  1151
 #define IDC_COMBO_EndTime               1152
 #define IDC_COMBO_StartHour             1152
 #define IDC_COMBO_AggInterval           1153
@@ -470,8 +478,8 @@
 #define IDC_COMBO_SimuDayNo             1154
 #define IDC_COMBO3                      1155
 #define IDC_COMBO_PLOT_TYPE             1155
-#define IDC_COMBO_SimuDayNo2            1155
 #define IDC_COMBO_SensorDayNo           1155
+#define IDC_COMBO_PhaseMovementDiagram  1155
 #define IDC_EDIT_Left                   1157
 #define IDC_EDIT_Top                    1158
 #define IDC_Image_File_Messge           1159
@@ -537,12 +545,14 @@
 #define IDC_COMBO_Zone_Height           1213
 #define IDC_BUTTON_GOOGLE_EARTH_KML     1214
 #define IDC_LIST_Signal_Control_Representation 1215
-#define IDC_EDIT_DisplayLabel           1216
 #define IDC_BUTTON_INCREASE_SIZE        1217
 #define IDC_BUTTON_DECREASE_SIZE        1218
 #define IDC_BUTTON_INCREASE_TEXT_SIZE   1219
+#define IDC_COMBO_Timing_Plan           1219
+#define IDC_MOVEMENT_MSG                1220
 #define IDC_BUTTON_DECREASE_TEXT_SIZE   1222
 #define IDC_BUTTON_INCREASE_NODE_TEXT_SIZE 1223
+#define IDC_CONFIG                      1223
 #define IDC_BUTTON_DECREASE_NODE_TEXT_SIZE 1224
 #define IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2 1225
 #define IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2 1226
@@ -1325,14 +1335,31 @@
 #define ID_RAMP_RAMPDATA                33689
 #define ID_Menu33690                    33690
 #define ID_Menu33691                    33691
+#define ID_MOVEMENT_SETPEAKHOURFACTOR   33692
+#define ID_ZONE_CHANGEZONENUMBER        33693
+#define ID_LINK_CHANGELINKTYPECOLOR     33694
+#define ID_CHANGELINKTYPECOLOR_FREEWAY  33695
+#define ID_CHANGELINKTYPECOLOR_RAMP     33696
+#define ID_CHANGELINKTYPECOLOR_ARTERIAL 33697
+#define ID_CHANGELINKTYPECOLOR_CONNECTOR 33698
+#define ID_CHANGELINKTYPECOLOR_TRANSIT  33699
+#define ID_CHANGELINKTYPECOLOR_WALKINGMODE 33700
+#define ID_CHANGELINKTYPECOLOR_RESETTODEFAULTCOLORSCHEMA 33701
+#define ID_NODE_CHANGENODECOLOR         33702
+#define ID_NODE_CHANGENODE              33703
+#define ID_NODE_CHANGENODEBACKGROUNDCOLOR 33704
+#define ID_ZONE_CHANGEZONECOLOR         33705
+#define ID_EDIT_UNDO33707               33707
+#define ID_BUTTON33708                  33708
+#define ID_EDIT_REDO33709               33709
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        251
-#define _APS_NEXT_COMMAND_VALUE         33692
-#define _APS_NEXT_CONTROL_VALUE         1218
+#define _APS_NEXT_COMMAND_VALUE         33710
+#define _APS_NEXT_CONTROL_VALUE         1224
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

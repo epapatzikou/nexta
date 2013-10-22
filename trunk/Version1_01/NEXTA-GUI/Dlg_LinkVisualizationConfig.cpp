@@ -63,7 +63,7 @@ void CDlg_LinkVisualizationConfig::OnBnClickedBackGroundcolorbutton()
 	CColorDialog dlg(RGB(0, 0, 0), CC_FULLOPEN);
 	if (dlg.DoModal() == IDOK)
 	{
-		m_pDoc->m_BackgroundColor= dlg.GetColor();
+		theApp.m_BackgroundColor= dlg.GetColor();
 		m_pDoc->UpdateAllViews(0);
 	}
 }

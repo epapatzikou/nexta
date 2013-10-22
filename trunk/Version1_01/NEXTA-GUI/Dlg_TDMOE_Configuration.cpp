@@ -197,7 +197,7 @@ void CDlg_TDMOE_Configuration::UpdateCategoryValues()
 				float value2 = 0;
 				float value1= 0;
 
-			for(t = 0; t < pLink->m_LinkMOEAry.size(); t++)
+			for(t = 0; t < pLink->m_LinkMOEArySize; t++)
 			{
 				pLink->m_LinkMOEAry [t] .UserDefinedValue  = 0;
 					switch (m_KML_MOE_selection)
@@ -237,7 +237,7 @@ void CDlg_TDMOE_Configuration::UpdateCategoryValues()
 
 								for(int tt = t; tt < t+g_MOEAggregationIntervalInMin; tt++)
 								{
-									if(tt < pLink->m_LinkMOEAry.size())
+									if(tt < pLink->m_LinkMOEArySize)
 									{
 										pLink->m_LinkMOEAry [tt] .UserDefinedValue = value2 - value1;
 									}
