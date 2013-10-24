@@ -58,9 +58,6 @@ CDlg_ImportNetwork::CDlg_ImportNetwork(CWnd* pParent /*=NULL*/)
 
 CDlg_ImportNetwork::~CDlg_ImportNetwork()
 {
-	if(m_pDoc->m_Database.IsOpen ())
-		m_pDoc->m_Database.Close ();
-
 }
 
 void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
@@ -1005,7 +1002,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 		}else
 		{
-			str_msg.Format ( "Worksheet link cannot be found in the given Excel file");
+			str_msg.Format ( "Worksheet Link cannot be found in the given Excel file");
 			m_MessageList.AddString (str_msg);
 			return;
 		}
@@ -1078,418 +1075,271 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	//test if activity location has been defined
 
 
-	//if(m_ImportZoneData == false)
-	//	return;
+	if(m_ImportZoneData == false)
+		return;
 
-	//// activity location table
-	//strSQL = m_pDoc->ConstructSQL("5-ACTIVITY-LOCATION");
-
-	////bool bNodeNonExistError = false;
-	//m_pDoc->m_NodeNotoZoneNameMap.clear ();
-
+	// activity location table
 	//bool bNodeNonExistError = false;
-	//m_pDoc->m_NodeNotoZoneNameMap.clear ();
-	//m_pDoc->m_ODSize = 0;
+	m_pDoc->m_NodeNotoZoneNameMap.clear ();
 
-	//// Read record
-	//int activity_location_count = 0;
+	bool bNodeNonExistError = false;
+	m_pDoc->m_NodeNotoZoneNameMap.clear ();
+	m_pDoc->m_ODSize = 0;
 
-	//if(strSQL.GetLength () > 0)
-	//{
-	//	CXLEzAutomation rsZone;
-	//	rsZone.Open(dbOpenDynaset, strSQL);
+	// Read record
+	int activity_location_count = 0;
 
+		CXLEzAutomation rsActivityLocation;
+		rsActivityLocation.OpenFile(m_Edit_Excel_File, "ActivityLocation", 5);
 
-	//	while(!rsZone.ReadRecord())
-	//	{
-	//		int zone_number = rsZone.GetLong("zone_id",bExist,false);
-	//		if(!bExist) 
-	//		{
-	//			AfxMessageBox("Field zone_id cannot be found in the zone table.");
-	//			return;
-	//		}
 
-	//		if(zone_number ==0)
-	//			break;
+		while(rsActivityLocation.ReadRecord())
+		{
+			int zone_number = rsActivityLocation.GetLong("zone_id",bExist,false);
+			if(zone_number <=0)
+				break;
 
-	//		int node_name = rsZone.GetLong("node_id",bExist,false);
-
-	//		if(!bExist) 
-	//		{
-	//			AfxMessageBox("Field node_id cannot be found in the zone table.");
-	//			return;
-	//		}
+			int node_name = rsActivityLocation.GetLong("node_id",bExist,false);
 
-	//		map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoNodeNoMap.find(node_name);
-
-	//		if(m_Iter == m_pDoc->m_NodeNumbertoNodeNoMap.end( ))
-	//		{
-	//			CString m_Warning;
-	//			m_Warning.Format("Node Number %d in the zone tabe has not been defined in the node table", node_name);
-	//			AfxMessageBox(m_Warning);
-	//			return;
-	//		}
-	//		m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
-
-	//		m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
-	//		m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] -> m_ZoneID = zone_number;
-	//		// if there are multiple nodes for a zone, the last node id is recorded.
-
-
-	//		DTAActivityLocation element;
-	//		element.ZoneID  = zone_number;
-	//		element.NodeNumber = node_name;
-
-	//		element.External_OD_flag  = rsZone.GetLong("external_OD_flag",bExist,false);
-
-	//		m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-
-	//		if(m_pDoc->m_ODSize < zone_number)
-	//			m_pDoc->m_ODSize = zone_number;
-
-	//		rsZone.MoveNext ();
-	//		activity_location_count++;
-	//	}
-	//	rsZone.Close();
-
-	//	str_msg.Format ( "%d activity location records imported.",activity_location_count);
-	//	m_MessageList.AddString (str_msg);
-	//}
-
-	//// ZONE table
-	//strSQL = m_pDoc->ConstructSQL("4-ZONE");
-
-	//// Read record
-	//if(strSQL.GetLength () > 0)
-	//{
-	//	CXLEzAutomation rsZone;
-	//	rsZone.Open(dbOpenDynaset, strSQL);
-
-	//	int count = 0;
-	//	while(!rsZone.ReadRecord())
-	//	{
-	//		int zone_number = rsZone.GetLong("zone_id",bExist,false);
-	//		if(!bExist) 
-	//		{
-	//			AfxMessageBox("Field zone_id cannot be found in the zone table.");
-	//			return;
-	//		}
-
-	//		if(zone_number ==0)
-	//			break;
-
-	//		// if there are multiple nodes for a zone, the last node id is recorded.
-	//		//	std::vector<CCoordinate> CoordinateVector;
-
-	//		//	CString geometry_str = rsZone.GetCString("geometry"));
-
-	//		//	if(geometry_str.GetLength () > 0)
-	//		//	{
-
-	//		//	CT2CA pszConvertedAnsiString (geometry_str);
-
-	//		//	// construct a std::string using the LPCSTR input
-	//		//	std::string geo_string (pszConvertedAnsiString);
-
-	//		//	CGeometry geometry(geo_string);
-	//		//	CoordinateVector = geometry.GetCoordinateList();
-
-	//		//	m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
-
-	//		//for(unsigned int f = 0; f < CoordinateVector.size(); f++)
-	//		//{
-	//		//	GDPoint pt;
-	//		//	pt.x = CoordinateVector[f].X;
-	//		//	pt.y = CoordinateVector[f].Y;
-	//		//	m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
-	//		//}
-
-	//		//	}
-	//		if(m_pDoc->m_ODSize < zone_number)
-	//			m_pDoc->m_ODSize = zone_number;
-	//			
-
-	//		rsZone.MoveNext ();
-	//		count++;
-	//	}
-	//	rsZone.Close();
-
-	//	str_msg.Format ( "%d zone boundary records are imported.",count);
-	//	m_MessageList.AddString (str_msg);
-	//
-	//	// assign zone numbers to connectors
-
-	//	if(count>=1)  // with boundary
-	//	{
-	//	std::list<DTALink*>::iterator iLink;
-
-	//		for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
-	//		{
-	//			if(m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // connectors
-	//			{
-	//				
-	//				GDPoint pt_from = (*iLink)->m_FromPoint ;
-	//				int ZoneID_from = m_pDoc->GetZoneID(pt_from);
-
-	//				// assign id according to upstream node zone number first
-	//				int ZoneID_to = 0;
-	//				if(ZoneID_from <=0)
-	//				{
-	//				GDPoint pt_to = (*iLink)->m_ToPoint ;
-	//				 ZoneID_to = m_pDoc->GetZoneID(pt_to);
-	//				}
-
-	//				// assign id according to downstream node zone number second
-
-	//				int ZoneID = max(ZoneID_from, ZoneID_to);  // get large zone id under two different zone numbers
-	//				if(ZoneID > 0)
-	//					(*iLink)->m_ConnectorZoneID = ZoneID;
-
-	//			}
-	//		}
-	//	}
-	//	}
-
-	//	// determine activity locations if no activity locations have been provided
-
-	//	if(activity_location_count == 0)
-	//	{
-	//	std::list<DTANode*>::iterator iNode;
-
-	//	for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
-	//	{
-
-
-	//		if((*iNode )->m_bZoneActivityLocationFlag)
-	//		{
-	//				int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
-	//				if(ZoneID>0)
-	//				{
-	//					(*iNode )->m_ZoneID = ZoneID;
-	//					DTAActivityLocation element;
-	//					element.ZoneID  = ZoneID;
-	//					element.NodeNumber = (*iNode )->m_NodeNumber;
-	//					m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
-
-	//				}
-	//		
-	//			}
-	//	
-	//	}
-	//	str_msg.Format ( "%d activity locations identified",activity_location_count);
-	//	m_MessageList.AddString (str_msg);
-	//		
-	//	}
-
-	//	if(m_bRemoveConnectors)
-	//	{
-	//	std::list<DTANode*>::iterator iNode;
-
-	//	std::vector <int> CentroidVector;
-	//	for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
-	//	{
-	//		if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
-	//			CentroidVector.push_back((*iNode )->m_NodeNo );
-
-	//	}
-
-	//	for(unsigned int i = 0; i < CentroidVector.size(); i++)
-	//	{
-	//		m_pDoc->DeleteNode (CentroidVector[i]);
-	//	}
-	//	
-	//	str_msg.Format ( "%d centroids deleted",CentroidVector.size());
-	//	m_MessageList.AddString (str_msg);
-	//	
-	//	}
-
-	//	//import demand
-
-	//	// restart the data base
-	//if(m_pDoc->m_Database.IsOpen ())
-	//	m_pDoc->m_Database.Close ();
-
-	//m_pDoc->m_Database.Open(m_Edit_Excel_File, false, true, "excel 5.0; excel 97; excel 2000; excel 2003");
-
-
-	//int demand_type = 0;
-
-	//m_pDoc->m_ImportDemandColumnFormat = demand_type; // 0 : matrix, 1: column
-	//if(demand_type == 0)  // matrix
-	//{
-	//// activity location table
-
-	//strSQL = m_pDoc->ConstructSQL("6-DEMAND-MATRIX");
-
-	////bool bNodeNonExistError = false;
-	//m_pDoc->m_ImportedDemandVector .clear ();
-
-
-	//if(strSQL.GetLength () > 0)
-	//{
-	//	CXLEzAutomation rsDemand;
-	//	rsDemand.Open(dbOpenDynaset, strSQL);
-
-	//	while(!rsDemand.ReadRecord())
-	//	{
-	//		int from_zone_id = rsDemand.GetLong("zone_id",bExist,false);
-	//		if(!bExist) 
-	//		{
-	//		demand_type = 1;
-	//		break;
-	//		}
-
-	//		if(from_zone_id==0)
-	//		{
-	//			if(m_pDoc->m_ImportedDemandVector.size() ==0)
-	//			{
-	//			demand_type = 1;
-
-	//			break;
-	//			}
-
-	//			break; 
-	//		}
-
-
-	//		if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
-	//		{
-	//			CString message;
-	//			message.Format("from_zone_id %d at line %d in the demand matrix has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
-	//			AfxMessageBox(message);
-	//			break;
-	//		}
-
-	//		if(from_zone_id ==0)
-	//			break;
-
-	//		int to_zone_id = 0;
-	//	std::map<int, DTAZone>	:: const_iterator itr;
-
-	//		int to_zone_index = 1;
-	//	for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++,to_zone_index++)
-	//	{
-	//		to_zone_id = itr->first;
-	//		double number_of_vehicles = rsDemand.GetDouble(to_zone_index,bExist,false);
-	//		if(!bExist) 
-	//		{
-	//			CString messsage;
-	//			messsage.Format("Field %d cannot be found in the demand matrix.", to_zone_id);
-	//			AfxMessageBox(messsage);
-	//			return;
-	//		}
-
-	//		if(number_of_vehicles < -0.1)
-	//		{
-	//			CString message;
-	//			message.Format("number_of_vehicles %f in the demand matrix is invalid.", number_of_vehicles);
-	//			AfxMessageBox(message);
-	//			break;
-	//		}
-
-	//		DTA_demand element;
-	//		element.from_zone_id = from_zone_id;
-	//		element.to_zone_id = to_zone_id;
-	//		element.number_of_vehicles = number_of_vehicles;
-
-	//		m_pDoc->m_ImportedDemandVector.push_back (element);
-
-	//	}  // for all to zone id
-
-	//	
-	//
-	//		rsDemand.MoveNext ();
-
-	//	}
-	//	rsDemand.Close();
-
-	//	str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
-	//	m_MessageList.AddString (str_msg);
-	//}
-
-	//}
-
-	//if(demand_type == 1)
-	//{
-	//// activity location table
-
-	//strSQL = m_pDoc->ConstructSQL("6-DEMAND-3-COLUMN");
-
-	////bool bNodeNonExistError = false;
-	//m_pDoc->m_ImportedDemandVector .clear ();
-
-
-	//if(strSQL.GetLength () > 0)
-	//{
-	//	CXLEzAutomation rsDemand;
-	//	rsDemand.Open(dbOpenDynaset, strSQL);
-
-	//	while(!rsDemand.ReadRecord())
-	//	{
-	//		int from_zone_id = rsDemand.GetLong("from_zone_id",bExist,false);
-	//		if(!bExist) 
-	//		{
-	//			AfxMessageBox("Field from_zone_id cannot be found in the demand table.\n Please make sure your demand input is three column-based format.");
-	//			return;
-	//		}
-
-	//		if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
-	//		{
-	//			CString message;
-	//			message.Format("from_zone_id %d at line %d in the demand table has not been defined.", from_zone_id, m_pDoc->m_ImportedDemandVector.size() );
-	//			AfxMessageBox(message);
-	//			break;
-	//		}
-
-	//		if(from_zone_id ==0)
-	//			break;
-
-	//		int to_zone_id = rsDemand.GetLong("to_zone_id",bExist,false);
-
-
-	//		if(!bExist) 
-	//		{
-	//			AfxMessageBox("Field node_id cannot be found in the demand table.");
-	//			return;
-	//		}
-
-	//		if(m_pDoc->m_ZoneMap.find(to_zone_id)== m_pDoc->m_ZoneMap.end())
-	//		{
-	//			CString message;
-	//			message.Format("to_zone_id %d at line %d  in the demand table has not been defined.", to_zone_id,  m_pDoc->m_ImportedDemandVector.size()+1);
-	//			AfxMessageBox(message);
-	//			break;
-	//		}
-
-	//		double number_of_vehicles =  rsDemand.GetDouble("number_of_vehicles",bExist,false); 
-
-	//		if(number_of_vehicles < -0.1)
-	//		{
-	//			CString message;
-	//			message.Format("number_of_vehicles %f in the demand table is invalid.", number_of_vehicles);
-	//			AfxMessageBox(message);
-	//			break;
-	//		}
-
-	//		DTA_demand element;
-	//		element.from_zone_id = from_zone_id;
-	//		element.to_zone_id = to_zone_id;
-	//		element.number_of_vehicles = number_of_vehicles;
-
-	//		m_pDoc->m_ImportedDemandVector.push_back (element);
-	//
-	//		rsDemand.MoveNext ();
-
-	//	}
-	//	rsDemand.Close();
-
-	//	str_msg.Format ( "%d demand element records imported.", m_pDoc->m_ImportedDemandVector.size());
-	//	m_MessageList.AddString (str_msg);
-	//}
-
-	//}
-
-	//return;  // not reading sensor data for now.
+			map <int, int> :: const_iterator m_Iter = m_pDoc->m_NodeNumbertoNodeNoMap.find(node_name);
+
+			if(m_Iter == m_pDoc->m_NodeNumbertoNodeNoMap.end( ))
+			{
+				CString m_Warning;
+				m_Warning.Format("Node ID %d in the ActivityLocation sheet has not been defined in the Node sheet", node_name);
+				AfxMessageBox(m_Warning);
+				return;
+			}
+			m_pDoc->m_NodeNotoZoneNameMap[m_pDoc->m_NodeNumbertoNodeNoMap[node_name]] = zone_number;
+
+			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] ->m_bZoneActivityLocationFlag = true;
+			m_pDoc->m_NodeNoMap [ m_pDoc->m_NodeNumbertoNodeNoMap[node_name] ] -> m_ZoneID = zone_number;
+			// if there are multiple nodes for a zone, the last node id is recorded.
+
+
+			DTAActivityLocation element;
+			element.ZoneID  = zone_number;
+			element.NodeNumber = node_name;
+
+			element.External_OD_flag  = rsActivityLocation.GetLong("external_OD_flag",bExist,false);
+			element.ActivityType  = rsActivityLocation.GetCString ("activity_type");
+
+			m_pDoc->m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+
+			if(m_pDoc->m_ODSize < zone_number)
+				m_pDoc->m_ODSize = zone_number;
+
+			activity_location_count++;
+		}
+		rsActivityLocation.Close();
+
+		str_msg.Format ( "%d activity location records imported.",activity_location_count);
+		m_MessageList.AddString (str_msg);
+	
+
+		CXLEzAutomation rsZone;
+		int count = 0;
+		if(rsZone.OpenFile(m_Edit_Excel_File, "Zone", 4))
+		{
+
+		while(rsZone.ReadRecord())
+		{
+			int zone_number = rsZone.GetLong("zone_id",bExist,false);
+			if(!bExist) 
+			{
+				AfxMessageBox("Field zone_id cannot be found in the zone table.");
+				return;
+			}
+
+			if(zone_number ==0)
+				break;
+
+		//	 if there are multiple nodes for a zone, the last node id is recorded.
+				std::vector<CCoordinate> CoordinateVector;
+
+				CString geometry_str = rsZone.GetCString("geometry");
+
+				if(geometry_str.GetLength () > 0)
+				{
+
+				CT2CA pszConvertedAnsiString (geometry_str);
+
+				// construct a std::string using the LPCSTR input
+				std::string geo_string (pszConvertedAnsiString);
+
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+
+				m_pDoc->m_ZoneMap [zone_number].m_ZoneID = zone_number;
+
+			for(unsigned int f = 0; f < CoordinateVector.size(); f++)
+			{
+				GDPoint pt;
+				pt.x = CoordinateVector[f].X;
+				pt.y = CoordinateVector[f].Y;
+				m_pDoc->m_ZoneMap [zone_number].m_ShapePoints.push_back (pt);
+			}
+
+				}
+			if(m_pDoc->m_ODSize < zone_number)
+				m_pDoc->m_ODSize = zone_number;
+				
+
+			count++;
+		}
+		rsZone.Close();
+
+		str_msg.Format ( "%d zone boundary records are imported.",count);
+		m_MessageList.AddString (str_msg);
+	
+		}
+		// assign zone numbers to connectors
+
+		if(count>=1)  // with boundary
+		{
+		std::list<DTALink*>::iterator iLink;
+
+			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+			{
+				if(m_pDoc->m_LinkTypeMap[(*iLink)->m_link_type ].IsConnector ())  // connectors
+				{
+					
+					GDPoint pt_from = (*iLink)->m_FromPoint ;
+					int ZoneID_from = m_pDoc->GetZoneID(pt_from);
+
+					// assign id according to upstream node zone number first
+					int ZoneID_to = 0;
+					if(ZoneID_from <=0)
+					{
+					GDPoint pt_to = (*iLink)->m_ToPoint ;
+					 ZoneID_to = m_pDoc->GetZoneID(pt_to);
+					}
+
+					// assign id according to downstream node zone number second
+
+					int ZoneID = max(ZoneID_from, ZoneID_to);  // get large zone id under two different zone numbers
+					if(ZoneID > 0)
+						(*iLink)->m_ConnectorZoneID = ZoneID;
+
+				}
+			}
+		}
+		
+
+		// determine activity locations if no activity locations have been provided
+
+		if(activity_location_count == 0)
+		{
+		std::list<DTANode*>::iterator iNode;
+
+		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+		{
+
+
+			if((*iNode )->m_bZoneActivityLocationFlag)
+			{
+					int ZoneID = m_pDoc->GetZoneID((*iNode)->pt);
+					if(ZoneID>0)
+					{
+						(*iNode )->m_ZoneID = ZoneID;
+						DTAActivityLocation element;
+						element.ZoneID  = ZoneID;
+						element.NodeNumber = (*iNode )->m_NodeNumber;
+						m_pDoc->m_ZoneMap [ZoneID].m_ActivityLocationVector .push_back (element );
+
+					}
+			
+				}
+		
+		}
+		str_msg.Format ( "%d activity locations identified",activity_location_count);
+		m_MessageList.AddString (str_msg);
+			
+		}
+
+		if(m_bRemoveConnectors)
+		{
+		std::list<DTANode*>::iterator iNode;
+
+		std::vector <int> CentroidVector;
+		for (iNode = m_pDoc->m_NodeSet.begin(); iNode != m_pDoc->m_NodeSet.end(); iNode++)
+		{
+			if((*iNode )->m_bZoneActivityLocationFlag && (*iNode )->m_Connections ==0)  // has been as activity location but no link connected
+				CentroidVector.push_back((*iNode )->m_NodeNo );
+
+		}
+
+		for(unsigned int i = 0; i < CentroidVector.size(); i++)
+		{
+			m_pDoc->DeleteNode (CentroidVector[i]);
+		}
+		
+		str_msg.Format ( "%d centroids deleted",CentroidVector.size());
+		m_MessageList.AddString (str_msg);
+		
+		}
+
+		//import demand
+
+	int demand_type = 0;
+
+	m_pDoc->m_DemandMatrixMap .clear ();
+
+	CXLEzAutomation rsDemand;
+		if(rsDemand.OpenFile(m_Edit_Excel_File, "DemandMatrix", 6))
+		{
+
+		while(rsDemand.ReadRecord())
+		{
+			int from_zone_id = rsDemand.GetLong("zone_id",bExist,false);
+
+			if(from_zone_id==0)
+			{
+				break;
+			}
+
+
+			if(m_pDoc-> m_ZoneMap.find(from_zone_id)== m_pDoc->m_ZoneMap.end())
+			{
+				CString message;
+				message.Format("from_zone_id %d in the demand matrix has not been defined.", from_zone_id );
+				AfxMessageBox(message);
+				break;
+			}
+
+			int to_zone_id = 0;
+		std::map<int, DTAZone>	:: const_iterator itr;
+
+			int to_zone_index = 1;
+		for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++,to_zone_index++)
+		{
+			to_zone_id = itr->first;
+
+			CString str;
+			str.Format ("%d",to_zone_id);
+			std::string to_zone_str = m_pDoc->CString2StdString(str);
+
+			float number_of_vehicles = rsDemand.GetDouble(to_zone_str,bExist,false);
+
+			if(number_of_vehicles < -0.1)
+			{
+				CString message;
+				message.Format("number_of_vehicles %f in the demand matrix is invalid.", number_of_vehicles);
+				AfxMessageBox(message);
+				break;
+			}
+
+			m_pDoc->SetODDemandValue (1,from_zone_id,to_zone_id,number_of_vehicles);
+		}  // for all to zone id
+
+
+		}
+		rsDemand.Close();
+
+		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_DemandMatrixMap.size());
+		m_MessageList.AddString (str_msg);
+		
+		}
 
 }
 

@@ -338,6 +338,18 @@ bool OpenFile(CString fileName,CString WorksheetName, int ActiveSheet)
 					name = tmp_str.substr(start);
 					TRACE("%s,",name.c_str ());
 				}
+
+				if (std::string::npos != name.find_first_of("."))
+				{
+				  //digit(s)found in header
+					// we convert 2.0000 in header to 2 here
+						
+						unsigned found = name.find_last_of(".");
+						std::string str = name.substr(0,found);
+							name = str;
+				//
+				}
+
 				Headers.push_back(name);
 				FieldsIndices[name] = (int) i;
 			}

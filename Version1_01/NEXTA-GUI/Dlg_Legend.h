@@ -3,6 +3,7 @@
 #include "Network.h"
 #include "TLiteDoc.h"
 #include "BaseDialog.h"
+#include "afxwin.h"
 // CDlg_Legend dialog
 
 class CDlg_Legend : public CBaseDialog
@@ -28,4 +29,6 @@ public:
 
 	afx_msg void OnPaint();
    afx_msg void OnSize(UINT nType, int cx, int cy);
+   CComboBox m_ComboBox_EmissionType;
+   afx_msg void OnCbnSelchangeComboEmissiontype();
 };

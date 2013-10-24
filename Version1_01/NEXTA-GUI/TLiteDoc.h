@@ -76,8 +76,8 @@ enum layer_mode
 enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
-enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES};
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_emissions, MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy};
+enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES}; 
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy, MOE_emissions, MOE_CO2,MOE_NOX, MOE_CO,MOE_HC};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -425,7 +425,38 @@ public:
 	CString m_LatLongB;
 
 
-	std::vector<DTA_demand> m_ImportedDemandVector;
+	//	std::vector<DTA_demand> m_ImportedDemandVector;
+	std::map<CString, float> m_DemandMatrixMap;
+
+	CString GetODDemandKey(int FileNo, int OriginZone, int DestinationZone)
+	{
+		CString str;
+		str.Format("%d:%d:%d",FileNo,OriginZone,DestinationZone );
+
+		return str;
+	}
+
+	void ParseODDemandKey(CString Key, int& FileNo, int& OriginZone, int& DestinationZone)
+	{
+		scanf(Key,"%d:%d:%d",Key,FileNo,OriginZone,DestinationZone );
+	}
+
+	float GetODDemandValue(int FileNo, int OriginZone, int DestinationZone)
+	{
+		CString Key = GetODDemandKey(FileNo,OriginZone,DestinationZone);
+		if(m_DemandMatrixMap.find (Key)!= m_DemandMatrixMap.end())
+			return m_DemandMatrixMap[Key];
+		else
+			return 0;
+	
+	}
+
+	void SetODDemandValue(int FileNo, int OriginZone, int DestinationZone, float Value)
+	{
+		CString Key = GetODDemandKey(FileNo,OriginZone,DestinationZone);
+			m_DemandMatrixMap[Key] = Value;
+	}
+
 
 	bool m_ImportDemandColumnFormat;
 
@@ -901,14 +932,23 @@ public:
 		return str;
 	}
 
+
+	DTA_EMISSION_TYPE m_EmissionType;
 	int GetLOSCode(float Value)
 	{
 
-
+		int MOE_checking_index  = m_LinkMOEMode;
+		if(m_LinkMOEMode == MOE_emissions)  // modify the LOS checking index
+		{
+		MOE_checking_index+= this->m_EmissionType ;
+		
+		}
+			
+			
 		for(int los = 1; los < MAX_LOS_SIZE-1; los++)
 		{
-			if( (m_LOSBound[m_LinkMOEMode][los] <= Value && Value < m_LOSBound[m_LinkMOEMode][los+1]) ||
-				(m_LOSBound[m_LinkMOEMode][los] >= Value && Value > m_LOSBound[m_LinkMOEMode][los+1]))
+			if( (m_LOSBound[MOE_checking_index][los] <= Value && Value < m_LOSBound[MOE_checking_index][los+1]) ||
+				(m_LOSBound[MOE_checking_index][los] >= Value && Value > m_LOSBound[MOE_checking_index][los+1]))
 
 				return los;
 		}
@@ -916,17 +956,17 @@ public:
 		if(m_LinkMOEMode != MOE_speed )
 		{
 
-		if(Value < m_LOSBound[m_LinkMOEMode][1])
+		if(Value < m_LOSBound[MOE_checking_index][1])
 			return 1;
 
-		if(Value > m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
+		if(Value > m_LOSBound[MOE_checking_index][MAX_LOS_SIZE-2])
 			return MAX_LOS_SIZE-2;
 		}else
 		{ // m_LinkMOEMode != MOE_speed, reverse legend
-		if(Value > m_LOSBound[m_LinkMOEMode][1])
+		if(Value > m_LOSBound[MOE_checking_index][1])
 			return 1;
 
-		if(Value < m_LOSBound[m_LinkMOEMode][MAX_LOS_SIZE-2])
+		if(Value < m_LOSBound[MOE_checking_index][MAX_LOS_SIZE-2])
 			return MAX_LOS_SIZE-2;
 		
 		}
@@ -2440,9 +2480,6 @@ public:
 	afx_msg void OnSensortoolsConverttoHourlyVolume();
 	afx_msg void OnImportInrixshapefileandspeeddata();
 
-#ifndef _WIN64
-	CDaoDatabase m_Database;
-#endif
 	afx_msg void OnTrafficcontroltoolsTransfermovementdatafromreferencenetworktocurrentnetwork();
 	afx_msg void OnDemandtoolsGenerateinput();
 	afx_msg void OnDemandReconstructlinkmoeth();

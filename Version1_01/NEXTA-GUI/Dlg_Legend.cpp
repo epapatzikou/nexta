@@ -23,11 +23,13 @@ CDlg_Legend::~CDlg_Legend()
 void CDlg_Legend::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_COMBO_EMISSIONTYPE, m_ComboBox_EmissionType);
 }
 
 
 BEGIN_MESSAGE_MAP(CDlg_Legend, CBaseDialog)
 	ON_WM_PAINT()
+	ON_CBN_SELCHANGE(IDC_COMBO_EMISSIONTYPE, &CDlg_Legend::OnCbnSelchangeComboEmissiontype)
 END_MESSAGE_MAP()
 
 
@@ -35,6 +37,18 @@ END_MESSAGE_MAP()
 BOOL CDlg_Legend::OnInitDialog()
 {
      CBaseDialog::OnInitDialog();
+
+	 m_ComboBox_EmissionType.AddString ("Energy");
+	 m_ComboBox_EmissionType.AddString ("CO2");
+	 m_ComboBox_EmissionType.AddString ("NOX");
+	 m_ComboBox_EmissionType.AddString ("CO");
+	 m_ComboBox_EmissionType.AddString ("HC");
+
+	 m_ComboBox_EmissionType.SetCurSel (0);
+
+     m_ComboBox_EmissionType.ShowWindow (0); // not showing
+
+
      // Calculate your x and y coordinates of the upper-left corner 
      // of the dialog (in screen coordinates) based on some logic
 
@@ -63,12 +77,32 @@ void CDlg_Legend::OnPaint()
    SetBackgroundColor(RGB(255, 255, 255));
 
 
+
+   if(m_pDoc->m_LinkMOEMode == MOE_emissions)
+ 	 m_ComboBox_EmissionType.ShowWindow (1);
+   else
+   m_ComboBox_EmissionType.ShowWindow (0); // not showing
+
+
  switch(m_pDoc->m_LinkMOEMode )
  {
  case MOE_speed: SetWindowText("% of Speed Limit"); break;
  case MOE_density: SetWindowText("Density (vhc/mile/ln)"); break;
  case MOE_reliability: SetWindowText("Variability Ratio"); break;
- case MOE_emissions: SetWindowText("Avg Energy Per Mile"); break;
+ case MOE_emissions: 
+	 
+	 switch (m_pDoc->m_EmissionType )
+	 {
+	 case  DTA_Energy:  SetWindowText("Avg Energy (J) Per Mile"); break;	 
+	 case  DTA_CO2:  SetWindowText("Avg CO2 (g) Per Mile"); break;	 
+	 case  DTA_NOX:  SetWindowText("Avg NOX (g) Per Mile"); break;	 
+	 case  DTA_CO:  SetWindowText("Avg CO (g) Per Mile"); break;	 
+	 case  DTA_HC:  SetWindowText("Avg HC (g) er Mile"); break;	 
+	 default:  SetWindowText("Avg Energy (J) Per Mile"); 
+	 }
+	 
+
+	 break;
  case MOE_safety: SetWindowText("Annual Crash Frequency (per mile)"); break;
  default:  SetWindowText("Default Legend");
 
@@ -87,6 +121,16 @@ void CDlg_Legend::OnPaint()
 
 	  if(m_pDoc->m_LinkMOEMode < 0)
 		  return;
+
+
+	  int MOE_checking_index = m_pDoc->m_LinkMOEMode ;
+
+		  if(m_pDoc->m_LinkMOEMode == MOE_emissions )
+			 {
+
+				 MOE_checking_index =  m_pDoc->m_LinkMOEMode + m_pDoc->m_EmissionType;
+			 }
+
 	  for(i = 1; i< MAX_LOS_SIZE-1; i++)
    {
       dc.SelectObject(penLOS[i]);
@@ -94,13 +138,13 @@ void CDlg_Legend::OnPaint()
 	  CString lengend_interval_str;
 
 	  if(i != MAX_LOS_SIZE-2) 
-		  lengend_interval_str.Format(" %.2f - %.2f",m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i],m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i+1]);
+		  lengend_interval_str.Format(" %.2f - %.2f",m_pDoc->m_LOSBound[MOE_checking_index][i],m_pDoc->m_LOSBound[MOE_checking_index][i+1]);
 	  else
 	  {
-		if(m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i] > m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i+1])
-		   lengend_interval_str.Format(" < %.2f ",m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i]);
+		if(m_pDoc->m_LOSBound[MOE_checking_index][i] > m_pDoc->m_LOSBound[MOE_checking_index][i+1])
+		   lengend_interval_str.Format(" < %.2f ",m_pDoc->m_LOSBound[MOE_checking_index][i]);
 		else
-		   lengend_interval_str.Format(" > %.2f ",m_pDoc->m_LOSBound[m_pDoc->m_LinkMOEMode][i]);
+		   lengend_interval_str.Format(" > %.2f ",m_pDoc->m_LOSBound[MOE_checking_index][i]);
 	  }
 
 	  dc.TextOut(lr.right,lr.top,lengend_interval_str);
@@ -150,4 +194,15 @@ void CDlg_Legend::OnSize(UINT nType, int cx, int cy)
 {
    CBaseDialog::OnSize(nType, cx, cy);
    RedrawWindow();
+}
+
+void CDlg_Legend::OnCbnSelchangeComboEmissiontype()
+{
+	   if(m_pDoc->m_LinkMOEMode == MOE_emissions)
+	   {
+	   		m_pDoc->m_EmissionType = (DTA_EMISSION_TYPE) m_ComboBox_EmissionType.GetCurSel ();
+	   
+			Invalidate(1);
+			m_pDoc->UpdateAllViews (0);
+	   }
 }

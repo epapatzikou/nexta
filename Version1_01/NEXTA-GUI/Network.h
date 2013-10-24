@@ -47,7 +47,14 @@
 #include <sstream>
 using namespace std;
 // NB	SB	EB	WB	NE	NW SE	SW
-
+enum DTA_EMISSION_TYPE
+{
+DTA_Energy,
+DTA_CO2,
+DTA_NOX,
+DTA_CO,
+DTA_HC
+};
 enum DTA_Direction
 {
 	DTA_North = 0,
@@ -542,6 +549,8 @@ public:
 		m_bWithinSubarea = true;
 		External_OD_flag = 0;
 	}
+
+	CString ActivityType;
 
   int ZoneID;
   int NodeNumber;
@@ -1630,20 +1639,20 @@ public:
 
 	float UserDefinedValue;
 
-	//int time_dependent_left_arrival_count;
-	//int time_dependent_left_departure_count;
+	int time_dependent_left_arrival_count;
+	int time_dependent_left_departure_count;
 
-	//int cumulative_left_arrival_count;
-	//int cumulative_left_departure_count;
+	int cumulative_left_arrival_count;
+	int cumulative_left_departure_count;
 
-	//int number_of_through_and_right_queued_vehicles;
-	//int number_of_left_queued_vehicles;
+	int number_of_through_and_right_queued_vehicles;
+	int number_of_left_queued_vehicles;
 
-	//float Energy;
-	//float CO2;
-	//float NOX;
-	//float CO;
-	//float HC;
+	float Energy;
+	float CO2;
+	float NOX;
+	float CO;
+	float HC;
 
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
@@ -3128,6 +3137,35 @@ void AdjustLinkEndpointsWithSetBack()
 		else
 			return 0;
 	}		
+
+	float GetEmissions(int t, DTA_EMISSION_TYPE emission_type)
+	{
+
+		t = t + g_SensorDayNo*1440;
+
+		if(t < m_LinkMOEArySize)
+		{
+			float value = 0;
+			switch(emission_type)
+			{
+			case DTA_Energy: value = max(0, m_LinkMOEAry[t].Energy ); 
+				break;
+			case DTA_CO2:  value = max(0, m_LinkMOEAry[t].CO2  ); 
+				break;
+			case DTA_NOX: value = max(0, m_LinkMOEAry[t].NOX   ); 
+				break;
+			case DTA_CO: value = max(0, m_LinkMOEAry[t].CO   ); 
+				break;
+			case DTA_HC:  value = max(0, m_LinkMOEAry[t].HC    ); 
+				break;
+			default: 0;
+			
+			}
+			return value;
+		}
+		else
+			return 0;
+	}	
 
 	float GetSpeed(int time)
 	{
