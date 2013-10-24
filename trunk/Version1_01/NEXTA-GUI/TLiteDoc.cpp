@@ -462,6 +462,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 CTLiteDoc::CTLiteDoc()
 {
 
+	m_EmissionType = DTA_Energy;
 	DTATimingPlanMetaData default_item;
 
 	m_DTATimingPlanMetaDataVector.push_back (default_item);
@@ -1032,7 +1033,7 @@ void CTLiteDoc::ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName)
 bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 {
 
-	float max_engergy_per_mile = 0;
+	float max_emissions_per_mile[5] = {0};
 
 	typedef struct 
 	{
@@ -1171,19 +1172,34 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 					//pLink->m_LinkMOEAry[t].number_of_left_queued_vehicles = element.number_of_left_queued_vehicles;
 
 
-					//float per_min_in_flow_count = max(1,element.link_volume_in_veh_per_hour_for_all_lanes/60);
-					//pLink->m_LinkMOEAry[t].Energy = element.Energy/per_min_in_flow_count; /*  *60   to convert it to per min data */
-					//pLink->m_LinkMOEAry[t].CO2 = element.CO2*60/per_min_in_flow_count;
-					//pLink->m_LinkMOEAry[t].NOX = element.NOX*60/per_min_in_flow_count;
-					//pLink->m_LinkMOEAry[t].CO = element.CO*60/per_min_in_flow_count;
-					//pLink->m_LinkMOEAry[t].HC = element.HC*60/per_min_in_flow_count;
+					float total_length = max(0.0001,pLink->m_Length * pLink->m_NumberOfLanes );
+					pLink->m_LinkMOEAry[t].Energy = element.Energy/total_length; 
+					pLink->m_LinkMOEAry[t].CO2 = element.CO2/total_length;
+					pLink->m_LinkMOEAry[t].NOX = element.NOX/total_length;
+					pLink->m_LinkMOEAry[t].CO = element.CO/total_length;
+					pLink->m_LinkMOEAry[t].HC = element.HC/total_length;
 
-					//if(max_engergy_per_mile < pLink->m_LinkMOEAry[t].Energy )
-					//{
-					//	max_engergy_per_mile = pLink->m_LinkMOEAry[t].Energy;
-					//}
+					if(max_emissions_per_mile[0]< pLink->m_LinkMOEAry[t].Energy )
+					{
+						max_emissions_per_mile[0] = pLink->m_LinkMOEAry[t].Energy;
+					}
 
-					//				parser.GetValueByFieldName("cumulative_departure_count",pLink->m_LinkMOEAry[t].TravelTime);
+					if(max_emissions_per_mile[1]< pLink->m_LinkMOEAry[t].CO2  )
+					{
+						max_emissions_per_mile[1] = pLink->m_LinkMOEAry[t].CO2;
+					}
+					if(max_emissions_per_mile[2]< pLink->m_LinkMOEAry[t].NOX  )
+					{
+						max_emissions_per_mile[2] = pLink->m_LinkMOEAry[t].NOX;
+					}
+					if(max_emissions_per_mile[3]< pLink->m_LinkMOEAry[t].CO   )
+					{
+						max_emissions_per_mile[3] = pLink->m_LinkMOEAry[t].CO;
+					}
+					if(max_emissions_per_mile[4]< pLink->m_LinkMOEAry[t].HC   )
+					{
+						max_emissions_per_mile[4] = pLink->m_LinkMOEAry[t].HC;
+					}
 				i++;
 			}else
 			{
@@ -1195,13 +1211,18 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 
 		}
 
-		m_LOSBound[MOE_emissions][1] = max_engergy_per_mile*1/7.0;
-		m_LOSBound[MOE_emissions][2] =  max_engergy_per_mile*2/7.0;
-		m_LOSBound[MOE_emissions][3] = max_engergy_per_mile*3/7.0;;
-		m_LOSBound[MOE_emissions][4] = max_engergy_per_mile*4/7.0;;
-		m_LOSBound[MOE_emissions][5] = max_engergy_per_mile*5/7.0;;
-		m_LOSBound[MOE_emissions][6] = max_engergy_per_mile*6/7.0;;
-		m_LOSBound[MOE_emissions][7] =  max_engergy_per_mile*7/7.0;
+		for(int type = 0; type<=4; type++)
+		{
+		float max_value = max_emissions_per_mile[type];
+
+		m_LOSBound[MOE_emissions + type][1] = max_value*1/7.0;
+		m_LOSBound[MOE_emissions+ type][2] =  max_value*2/7.0;
+		m_LOSBound[MOE_emissions + type][3] = max_value*3/7.0;;
+		m_LOSBound[MOE_emissions+ type][4] = max_value*4/7.0;;
+		m_LOSBound[MOE_emissions+ type][5] = max_value*5/7.0;;
+		m_LOSBound[MOE_emissions+ type][6] = max_value*6/7.0;;
+		m_LOSBound[MOE_emissions+ type][7] =  max_value*7/7.0;
+		}
 
 
 		fclose(pFile);
@@ -4537,7 +4558,7 @@ void  CTLiteDoc::CopyDefaultFiles(CString directory)
 		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_node_control_type.csv");
 		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_link_type.csv");
 
-		if(m_ImportedDemandVector.size() >0)  // we have imported data, so we delete the file first
+		if(m_DemandMatrixMap.size() >0)  // we have imported data, so we delete the file first
 		{
 			DeleteFile(m_ProjectDirectory+"input_demand_meta_data.csv");
 		}
@@ -5295,7 +5316,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 
 
 	// save demand if a matrix has been imported 
-	if(m_ImportedDemandVector.size()>0)
+	if(m_DemandMatrixMap.size()>0)
 	{
 
 		CopyDefaultFiles(); // include input_demand_meta-database, input_vehicle type... 
@@ -5308,9 +5329,20 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 			{
 				fprintf(st,"from_zone_id,to_zone_id,number_of_vehicles\n");
 
-				for(unsigned int i = 0; i < m_ImportedDemandVector.size(); i++)
+
+				std::map<CString, float>	:: const_iterator itr;
+
+				for(itr = m_DemandMatrixMap.begin(); itr != m_DemandMatrixMap.end(); itr++)
 				{
-					fprintf(st,"%d,%d,%f\n", m_ImportedDemandVector[i].from_zone_id,  m_ImportedDemandVector[i].to_zone_id ,  m_ImportedDemandVector[i].number_of_vehicles  );
+					int FileNo, OriginZone, DestinationZone;
+
+					ParseODDemandKey((*itr).first ,FileNo, OriginZone, DestinationZone);
+
+					if(FileNo==1)
+					{
+					fprintf(st,"%d,%d,%f\n",OriginZone, DestinationZone ,  (*itr).second  );
+					}
+					
 				}
 				fclose(st);
 
@@ -5345,9 +5377,9 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 
 					for(itr_to_zone_id = m_ZoneMap.begin(); itr_to_zone_id != m_ZoneMap.end(); itr_to_zone_id++)
 					{
-						if(index< m_ImportedDemandVector.size())
+						float value = GetODDemandValue(1,itr->first,itr_to_zone_id->first );
 						{
-							fprintf(st,"%f,", m_ImportedDemandVector[index++].number_of_vehicles );
+							fprintf(st,"%f,", value);
 						}
 					}
 
@@ -7144,6 +7176,7 @@ void CTLiteDoc::OnMoeDensity()
 {
 	m_LinkMOEMode = MOE_density;
 	m_LinkBandWidthMode = LBW_link_volume;
+	ShowLegend(true);
 
 	GenerateOffsetLinkBand();
 	UpdateAllViews(0);
@@ -7168,7 +7201,7 @@ void CTLiteDoc::OnMoeEmissions()
 {
 	m_LinkMOEMode = MOE_emissions;
 	m_LinkBandWidthMode = LBW_link_volume;
-	ShowLegend(false);
+	ShowLegend(true);
 	UpdateAllViews(0);}
 
 void CTLiteDoc::OnUpdateMoeVolume(CCmdUI *pCmdUI)
@@ -7323,6 +7356,9 @@ float CTLiteDoc::GetLinkMOE(DTALink* pLink, Link_MOE LinkMOEMode,int CurrentTime
 						total_value+= pLink->GetQueueLengthPercentage(CurrentTime);
 					break;
 
+					case MOE_emissions: 
+						total_value+= pLink->GetEmissions(CurrentTime, this->m_EmissionType );
+					break;
 
 					}
 
@@ -8730,59 +8766,6 @@ float CTLiteDoc::FillODMatrixFromCSVFile(LPCTSTR lpszFileName)
 	return total_demand;
 }
 
-CString CTLiteDoc::GetTableName(CString Tablename)
-{
-	CString EmptyString;
-
-#ifndef _WIN64
-
-	int nTables = m_Database.GetTableDefCount();
-
-
-	for(int i = 0; i < 	nTables; i++)
-	{// this accesses first sheet regardless of name.
-		CDaoTableDefInfo TableInfo;
-
-		m_Database.GetTableDefInfo(i, TableInfo);
-
-		CString tablename=(TableInfo).m_strName;
-		tablename.MakeUpper();
-		if(tablename.Find(Tablename.MakeUpper(),0)>0)
-		{
-			return TableInfo.m_strName;
-		}
-
-	}
-
-	CString ErrorMessage;
-	ErrorMessage += "Table ";
-	ErrorMessage += Tablename;
-	ErrorMessage += " cannot be found in the given Excel file. Pleaes check.";
-
-	AfxMessageBox(ErrorMessage, MB_ICONINFORMATION);
-
-#endif
-	return EmptyString;
-
-}
-
-CString CTLiteDoc::ConstructSQL(CString Tablename)
-{
-	CString strSQL;
-
-	CString table_name  = GetTableName(Tablename);
-	if(table_name.GetLength () > 0)
-	{
-		strSQL = "select * from [";
-		strSQL += table_name;
-		strSQL += "]";
-		return strSQL;
-	}
-	return strSQL;
-
-}
-bool CTLiteDoc::CreateNetworkFromExcelFile()
-{return true;}
 
 bool CTLiteDoc::ImportSensorData()
 {
@@ -9159,9 +9142,9 @@ void CTLiteDoc::OnImportVehiclefile()
 void CTLiteDoc::OnLinkmoeEmissions()
 {
 
+	ShowLegend(true);
 	m_LinkMOEMode = MOE_emissions;
 	GenerateOffsetLinkBand();
-	ShowLegend(false);
 
 	UpdateAllViews(0);
 }

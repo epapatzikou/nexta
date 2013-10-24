@@ -148,6 +148,7 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 
 				parser.GetValueByFieldName("file_name",file_name);
 				m_DemandFileGrid.SetItemText(Index,1,file_name.c_str ());
+				DemandFileNameVector.push_back (file_name.c_str ());
 
 				parser.GetValueByFieldName("format_type",format_type);
 				m_DemandFileGrid.SetItemText(Index,2,format_type.c_str ());
@@ -186,6 +187,66 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 			if(FirstDemandTypeIndex >= 0)
 				m_DemandFileGrid.SetItemState(FirstDemandTypeIndex,LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
 
+		}else if(m_pDoc->m_ZoneMap.size()>0)  // no such file but with zones
+		{
+			//generate default meta database record
+			char text[500];
+				int file_sequence_no = 1;
+				string file_name = "input_demand.csv";
+				string format_type = "matrix";
+				int number_of_lines_to_be_skipped = 0;
+				int subtotal_in_last_column = 0;
+				float loading_multiplier =1;
+				int start_time_in_min = 480; 
+				int end_time_in_min = 540;
+				int number_of_demand_types = 1;
+				float local_demand_loading_multiplier = 1;
+				char demand_type_field_name[20];
+				int demand_type_code[20]={0};
+
+				int demand_format_flag = 0;
+
+				int i = 0;
+				int Index = m_DemandFileGrid.InsertItem(LVIF_TEXT,i,text , 0, 0, 0, NULL);
+
+				sprintf_s(text, "%d",file_sequence_no);
+				m_DemandFileGrid.SetItemText(Index,0,text);
+
+				parser.GetValueByFieldName("file_name",file_name);
+				DemandFileNameVector.push_back (file_name.c_str ());
+				m_DemandFileGrid.SetItemText(Index,1,file_name.c_str ());
+
+				parser.GetValueByFieldName("format_type",format_type);
+				m_DemandFileGrid.SetItemText(Index,2,format_type.c_str ());
+
+				parser.GetValueByFieldName("loading_multiplier",local_demand_loading_multiplier);
+				sprintf_s(text, "%.3f",local_demand_loading_multiplier);
+
+				m_DemandFileGrid.SetItemText(Index,3,text);
+
+
+				parser.GetValueByFieldName("start_time_in_min",start_time_in_min);
+				parser.GetValueByFieldName("end_time_in_min",end_time_in_min);
+
+				// can be also enhanced to edit the real time information percentage
+
+				m_DemandFileGrid.SetItemText(Index,4,m_pDoc->GetTimeStampString(start_time_in_min));
+				m_DemandFileGrid.SetItemText(Index,5,m_pDoc->GetTimeStampString(end_time_in_min));
+
+				int apply_additional_time_dependent_profile =0;	
+				parser.GetValueByFieldName("apply_additional_time_dependent_profile",apply_additional_time_dependent_profile);
+
+				if(apply_additional_time_dependent_profile)
+					m_DemandFileGrid.SetItemText(Index,6,"Yes");
+				else
+					m_DemandFileGrid.SetItemText(Index,6,"No");
+
+
+				parser.GetValueByFieldName("number_of_demand_types",number_of_demand_types);
+				sprintf_s(text, "%d",number_of_demand_types);
+				m_DemandFileGrid.SetItemText(Index,7,text);
+		
+		
 		}
 
 	static _TCHAR *_gColumnTypeLabel[11] =
@@ -1051,7 +1112,30 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 		}  // for each meta data record
 
 	} // open csv file for parser
+		else if (m_pDoc->m_ZoneMap .size() > 0)
+		{  //default matrix data (not in file yet)
 
+			DemandFileNameVector.push_back ("input_demand.csv");
+
+				int line_no = 0;
+				std::map<int, DTAZone>	:: const_iterator itr;
+
+					for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++)
+					{
+
+					std::map<int, DTAZone>	:: const_iterator itr_to_zone_id;
+
+						int index = 0;
+						for(itr_to_zone_id =m_pDoc-> m_ZoneMap.begin(); itr_to_zone_id != m_pDoc->m_ZoneMap.end(); itr_to_zone_id++)
+						{
+
+							float value =m_pDoc-> GetODDemandValue(1,itr->first,itr_to_zone_id->first );
+							
+							SetODMatrx(itr->first,itr_to_zone_id->first,value);
+			
+						}
+					}
+		}
 	// cout << "Total demand volume = " << total_demand_in_demand_file << endl;
 
 	// create vehicle heres...
@@ -1133,7 +1217,11 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
 		CWaitCursor wait;
 		LoadDemandMatrixFromDemandFile(nSelectedRow,1);
 
-		m_SelectedFileName = DemandFileNameVector[nSelectedRow];
+		m_SelectedFileName =  "input_demand.csv";
+		
+		if(nSelectedRow < DemandFileNameVector .size())
+m_SelectedFileName = DemandFileNameVector[nSelectedRow];
+
 		DisplayDemandMatrix();
 		return;
 	}

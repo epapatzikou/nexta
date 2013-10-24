@@ -554,6 +554,7 @@
 #define IDC_BUTTON_INCREASE_NODE_TEXT_SIZE 1223
 #define IDC_CONFIG                      1223
 #define IDC_BUTTON_DECREASE_NODE_TEXT_SIZE 1224
+#define IDC_COMBO_EMISSIONTYPE          1224
 #define IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2 1225
 #define IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2 1226
 #define ID_NODE_ORIGIN                  32771
@@ -1350,7 +1351,6 @@
 #define ID_NODE_CHANGENODEBACKGROUNDCOLOR 33704
 #define ID_ZONE_CHANGEZONECOLOR         33705
 #define ID_EDIT_UNDO33707               33707
-#define ID_BUTTON33708                  33708
 #define ID_EDIT_REDO33709               33709
 
 // Next default values for new objects
@@ -1359,7 +1359,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        251
 #define _APS_NEXT_COMMAND_VALUE         33710
-#define _APS_NEXT_CONTROL_VALUE         1224
+#define _APS_NEXT_CONTROL_VALUE         1225
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

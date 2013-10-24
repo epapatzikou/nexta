@@ -5945,7 +5945,7 @@ void CTLiteView::SetGlobalViewParameters()
 void CTLiteView::OnUpdateLinkIncreasebandwidth(CCmdUI *pCmdUI)
 {
 	CTLiteDoc* pDoc = GetDocument();
-	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none) && m_bLineDisplayConditionalMode  == false);
+	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_emissions|| pDoc->m_LinkMOEMode == MOE_none) && m_bLineDisplayConditionalMode  == false);
 
 }
 
@@ -5953,7 +5953,7 @@ void CTLiteView::OnUpdateLinkDecreasebandwidth(CCmdUI *pCmdUI)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_density|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
+	pCmdUI->Enable ((pDoc->m_LinkMOEMode == MOE_volume || pDoc->m_LinkMOEMode == MOE_user_defined || pDoc->m_LinkMOEMode == MOE_speed || pDoc->m_LinkMOEMode == MOE_density || pDoc->m_LinkMOEMode == MOE_emissions|| pDoc->m_LinkMOEMode == MOE_none)&& m_bLineDisplayConditionalMode  == false);
 }
 
 
