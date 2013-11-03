@@ -112,7 +112,7 @@ public:
 		for(unsigned int i = 0; i< m_MovementBezierVector.size(); i++)
 		{
 		
-			if(m_bHideRightTurnMovement &&( pNode->m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementVector[i].movement_turn == DTA_RightTurn2))
+			if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 			float distance  = m_MovementBezierVector[i].GetMinDistance(pt) ;
@@ -152,7 +152,7 @@ public:
 	virtual void OnOK( );
 	virtual void OnCancel( );
 	void DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhaseWindow);
-	void DrawPhaseGreenTimeBand(CPaintDC* pDC,CRect PlotRect,int CycleLength, int GreenStartTime,int GreenEndTime);
+	void DrawPhaseGreenTimeBand(CPaintDC* pDC,CRect PlotRect,int CycleLength, float PhaseStartTime,float PhaseEndTime, float Yellow, float Red );
 	void DrawLink(CPaintDC* pDC,GDPoint pt1, GDPoint pt2, int NumberOfLanes,double theta, int lane_width);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	virtual BOOL OnInitDialog();
@@ -160,7 +160,6 @@ public:
 	afx_msg void OnBnClickedButtonSave();
 	float m_PeakHourFactor;
 	afx_msg void OnBnClickedButtonQem();
-	int m_CycleLengthInSec;
 	afx_msg void OnBnClickedButtonQem2();
 	CComboBox m_PhaseNumber;
 	afx_msg void OnLbnSelchangeList1();
@@ -186,7 +185,11 @@ public:
 	int m_Offset;
 	BOOL m_bHideRightTurnMovement;
 	afx_msg void OnBnClickedEditMode2();
-	CComboBox m_PhaseMovementDisplayMode;
 	afx_msg void OnCbnSelchangeComboPhasemovementdiagram();
 	afx_msg void OnBnClickedButtonQemView();
+	afx_msg void OnBnClickedCheckMultiplePhaseDiagram();
+	BOOL m_bMultiPhaseDisplay;
+	BOOL m_bOptimizationMethod;
+	afx_msg void OnBnClickedCheckOptimizationmethod();
+	float m_VolumeAdjustmentFactor;
 };

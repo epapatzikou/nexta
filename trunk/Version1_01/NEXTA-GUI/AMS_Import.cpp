@@ -145,17 +145,17 @@ float ComputeCapacity(float capacity_in_pcphpl,int link_capacity_flag, float spe
 	return capacity_in_pcphpl;
 }
 
-void CTLiteDoc::FieldNameNotExistMessage(CString FieldName, CString KeyName)
+void CTLiteDoc::FieldNameNotExistMessage(CString FieldName, CString KeyName, CString FileName = "import_GIS_settings.csv")
 {
 	CString message;
-	message.Format("Field %s does not exist for %s. Please check.",FieldName, KeyName);
+	message.Format("Field %s does not exist for %s. Please check file %s.",FieldName, KeyName, FileName);
 	AfxMessageBox(message);
 }
 
-void CTLiteDoc::FieldNameNotExistMessage(std::string FieldName, std::string KeyName)
+void CTLiteDoc::FieldNameNotExistMessage(std::string FieldName, std::string KeyName, std::string FileName = "import_GIS_settings.csv")
 {
 	CString message;
-	message.Format("Field %s does not exist for %s. Please check.",FieldName.c_str(), KeyName.c_str() );
+	message.Format("Field %s does not exist for %s. Please check file %s.",FieldName.c_str(), KeyName.c_str(), FileName.c_str () );
 	AfxMessageBox(message);
 }
 
@@ -3467,7 +3467,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 			}
 
 
-			if (name == "SatFlow")
+			if (name == "SatFlowRatePerLaneGroup")
 			{
 				for(m = 0; m< LaneColumnSize; m++)
 				{
@@ -3899,7 +3899,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 				}
 			}
 
-			if (name == "SatFlow")
+			if (name == "SatFlowRatePerLaneGroup")
 			{
 				for(m = 0; m< LaneColumnSize; m++)
 				{
@@ -4014,12 +4014,12 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 						ASSERT(pNode!=NULL);
 
-						int movement_index = pNode->m_MovementVector.size();
+						int movement_index = pNode->m_MovementDataMap["FREE"].m_MovementVector.size();
 
 						// educated guess about the associatd phase, as a movement can be associated with multiple phases 
 						element.phase_index = max(LaneDataMap[lane_Column_name_str[m]].Phase1,LaneDataMap[lane_Column_name_str[m]].PermPhase1);
 
-						pNode->m_MovementVector.push_back(element);
+						pNode->m_MovementDataMap["FREE"].m_MovementVector.push_back(element);
 
 					}  // per major approach
 
@@ -4032,13 +4032,20 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 		}
 	}
 
-	std::list<DTANode*>::iterator iNode;
-	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
-	{
+		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		{
 
-		(*iNode)->SortMovementVector();
+		std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
 
-	}
+
+			std::list<DTANode*>::iterator iNode;
+			for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+			{
+
+				(*iNode)->SortMovementVector(timing_plan_name);
+
+			}
+		}
 	ConstructMovementVector();
 //		GenerateOffsetLinkBand();
 	return 1;
@@ -4499,17 +4506,17 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 						}
 
-						for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+						for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 						{
 
-							DTANodeMovement movement = (*iNode)->m_MovementVector[m];
+							DTANodeMovement movement = (*iNode)->m_MovementDataMap["FREE"]. m_MovementVector[m];
 
 							CString label;
 							int up_node_id = m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNo     ;
 							int dest_node_id = m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNo ;
 							label.Format("%d;%d;%d", up_node_id,(*iNode)->m_NodeNo ,dest_node_id);
 
-							m_MovementPointerMap[label] = &((*iNode)->m_MovementVector[m]); // store pointer
+							m_MovementPointerMap[label] = &((*iNode)->m_MovementDataMap["FREE"]. m_MovementVector[m]); // store pointer
 
 
 						}
@@ -4524,7 +4531,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 				string lane_att_name_str[28] = {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
 					"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime",
-					"SatFlow","Volume","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
+					"SatFlowRatePerLaneGroup","Volume","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 
 				int intid;
 				string name;
@@ -4685,7 +4692,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 
 									/* {"Lanes","Shared","Width","Storage","StLanes","Grade","Speed",
-									"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlow",
+									"FirstDetect","LastDetect","Phase1","PermPhase1","DetectPhase1","IdealFlow","LostTime","SatFlowRatePerLaneGroup",
 									14 "SatFlowPerm","SatFlowRTOR","HeadwayFact","Volume","Peds","Bicycles","PHF","Growth","HeavyVehicles","BusStops","Midblock","Distance","TravelTime"};
 									*/
 									switch(attribute_index)
@@ -4714,7 +4721,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 										pMovement->QEM_IdealFlow = value; break;
 									case  13:// "LostTime"
 										pMovement->QEM_LostTime = value; break;
-									case  14:// "SatFlow"
+									case  14:// "SatFlowRatePerLaneGroup"
 										pMovement->QEM_SatFlow = value; break;
 									case  15:// "Volume"
 										pMovement->QEM_TurnVolume  = value; break;
@@ -4796,18 +4803,18 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 			{
-				DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
+				DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
 				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkNo  ];
 
 				int total_link_count = 0;
-				for(unsigned int j = 0; j< (*iNode)->m_MovementVector .size(); j++)
+				for(unsigned int j = 0; j< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); j++)
 				{
 
-					if((*iNode)->m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
+					if((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
 					{
-						total_link_count+= (*iNode)->m_MovementVector[j].QEM_TurnVolume ;
+						total_link_count+= (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].QEM_TurnVolume ;
 					}
 
 				}
@@ -4822,7 +4829,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 		}
 
 
-		UpdateAllMovementGreenStartAndEndTime(1);
+		UpdateAllMovementGreenStartAndEndTime("FREE");
 
 		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),lpszFileName);
 		return true;
@@ -5025,23 +5032,23 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 
 							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoNodeNoMap[reference_node_id];
 
-							for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+							for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 							{
 
-								DTANodeMovement baseline_movement = (*iNode)->m_MovementVector[m];
+								DTANodeMovement baseline_movement = (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m];
 
 								int MovementIndex = pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_approach_turn );
 
 								if(baseline_movement.movement_approach_turn >=0 && MovementIndex>=0)
 								{
-									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementVector[m]);
-									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_MovementVector[MovementIndex];
+									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
+									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex];
 									pThisMovement->QEM_TurnVolume = reference_movement.QEM_TurnVolume;
 
 
 									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
 									pThisMovement->QEM_LinkVolume  =
-										pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindHourlyCountFromDirection(reference_movement.movement_direction);
+										pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindHourlyCountFromDirection("FREE",reference_movement.movement_direction);
 
 									pThisMovement->QEM_Lanes = reference_movement.QEM_Lanes;
 									pThisMovement->QEM_Shared = reference_movement.QEM_Shared;
@@ -5076,10 +5083,10 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 								{
 									fprintf(st,"Baseline,Node,%d,Up Node,%d,Dest Node,%d,%s,%s,does not find reference movement.\n",  
 										baseline_node_id, 
-										m_NodeNoMap[(*iNode)->m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
-										m_NodeNoMap[(*iNode)->m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
-										GetTurnDirectionString((*iNode)->m_MovementVector[m]. movement_approach_turn),
-										GetTurnString((*iNode)->m_MovementVector[m].movement_turn));
+										m_NodeNoMap[(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
+										m_NodeNoMap[(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
+										GetTurnDirectionString((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. movement_approach_turn),
+										GetTurnString((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].movement_turn));
 
 								}
 

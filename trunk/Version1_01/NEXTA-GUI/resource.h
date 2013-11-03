@@ -201,7 +201,6 @@
 #define IDD_DIALOG_SETTING_TAB_GIS_IMPORT 243
 #define IDD_DIALOG_SETTING_DATA_GIS_IMPORT 244
 #define IDD_DIALOG_INFORMATION_WITH_HELP 245
-#define IDD_DIALOG_SIGNAL_DATA_MANAGEMENT 246
 #define IDD_DIALOG_GIS_IMPORT_SHAPE_EXPORT 247
 #define IDD_DIALOG_CONFIG_KML_LINK      248
 #define IDB_COLOR_RAMP                  249
@@ -210,6 +209,7 @@
 #define IDD_DIALOG_SENSOR_SETTING_TAB   251
 #define IDD_DIALOG_CONFIG_KML_ZONE      252
 #define IDD_DIALOG_NODE_PHASES          253
+#define IDD_DIALOG_LEFT_TURN_LANES      254
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -296,7 +296,6 @@
 #define IDC_LIST_Mapping                1037
 #define IDC_LIST1                       1038
 #define IDC_EDIT_NODEA                  1039
-#define IDC_LIST4                       1039
 #define IDC_EDIT_NODEB                  1040
 #define IDC_EDIT_A_Lat                  1041
 #define IDC_LIST_TimeWindow             1041
@@ -479,7 +478,6 @@
 #define IDC_COMBO3                      1155
 #define IDC_COMBO_PLOT_TYPE             1155
 #define IDC_COMBO_SensorDayNo           1155
-#define IDC_COMBO_PhaseMovementDiagram  1155
 #define IDC_EDIT_Left                   1157
 #define IDC_EDIT_Top                    1158
 #define IDC_Image_File_Messge           1159
@@ -493,6 +491,7 @@
 #define IDC_EDIT2                       1164
 #define IDC_EDIT4                       1165
 #define IDC_EDIT5                       1166
+#define IDC_EDIT_1                      1166
 #define IDC_EDIT6                       1167
 #define IDC_EDIT7                       1168
 #define IDC_STATIC_UNIT_LENGTH          1169
@@ -520,9 +519,7 @@
 #define IDC_BUTTON_SampleFile           1188
 #define IDC_BUTTON_COMBINE_SEGMENT_LEFT 1191
 #define IDC_BUTTON_SPLIT_SEGMENTS       1192
-#define IDC_BUTTON_INPUT_DEFAULT_Cycle_Length 1192
 #define IDC_BUTTON_COMBINE_SEGMENT_RIGHT 1193
-#define IDC_BUTTON_UPDATE_EFFECTIVE_GREEN_TIME 1193
 #define IDC_CHECK_VMS_RESPONSIVE        1193
 #define IDC_EDIT_PEAK_HOUR_FACTOR       1194
 #define IDC_EDIT_HEIGHT                 1195
@@ -556,7 +553,10 @@
 #define IDC_BUTTON_DECREASE_NODE_TEXT_SIZE 1224
 #define IDC_COMBO_EMISSIONTYPE          1224
 #define IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2 1225
+#define IDC_CHECK_MULTIPLE_PHASE_DIAGRAM 1225
 #define IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2 1226
+#define IDC_CHECK_OPTIMIZATIONMETHOD    1226
+#define IDC_HIDE_RIGHT_TURN             1228
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1352,14 +1352,20 @@
 #define ID_ZONE_CHANGEZONECOLOR         33705
 #define ID_EDIT_UNDO33707               33707
 #define ID_EDIT_REDO33709               33709
+#define ID_MOVEMENT_OPTIMIZEPHASINGANDTIMINGDATAFORALLTRAFFICSIGNALSTHROUGHQEM 33710
+#define ID_MOVEMENT_AUTOMATICALLLYSETUPNUMBEROFLEFTTURNLANESFORSIGNALIZEDNODES 33711
+#define ID_MOVEMENT_AUTOMATICALLLYSETUPNUMBEROFLEFTTURNLANESFORSIGNALIZEDNODES33712 33712
+#define ID_MOVEMENT_AUTOMATICALLLYSETUPNUMBEROFLEFTTURNLANESFORSIGNALIZEDNODES33713 33713
+#define ID_MOVEMENT_SETUPNUMBEROFLEFTTURNLANESFORSIGNALIZEDNODES 33714
+#define ID_IMPORT_GOOGLEFUSIONTABLE     33715
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        251
-#define _APS_NEXT_COMMAND_VALUE         33710
-#define _APS_NEXT_CONTROL_VALUE         1225
+#define _APS_NEXT_RESOURCE_VALUE        255
+#define _APS_NEXT_COMMAND_VALUE         33716
+#define _APS_NEXT_CONTROL_VALUE         1229
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

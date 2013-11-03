@@ -59,6 +59,8 @@ BEGIN_MESSAGE_MAP(CDlg_GoogleFusionTable, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_ExcelFile5, &CDlg_GoogleFusionTable::OnEnChangeEditExcelfile5)
 	ON_BN_CLICKED(IDC_BUTTON_LINK_WEB, &CDlg_GoogleFusionTable::OnBnClickedButtonLinkWeb)
 	ON_BN_CLICKED(IDC_BUTTON_LINK_WEB_Subarea, &CDlg_GoogleFusionTable::OnBnClickedButtonLinkWebSubarea)
+	ON_EN_CHANGE(IDC_EDIT_ExcelFile, &CDlg_GoogleFusionTable::OnEnChangeEditExcelfile)
+	ON_EN_CHANGE(IDC_EDIT_ExcelFile2, &CDlg_GoogleFusionTable::OnEnChangeEditExcelfile2)
 END_MESSAGE_MAP()
 
 
@@ -427,7 +429,7 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonUpload()
 		{
 			sql_str += string("INSERT INTO ") + m_UploadLinkTableID.GetBuffer(0) 
 				+ " (congestion_index,link_id,from_node_id,to_node_id,direction,length_in_mile,"
-				+ "number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,"
+				+ "number_of_lanes,speed_limit_in_mph,capacity_in_vhc_per_hour_per_lane,link_type,"
 				+ "jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry)" 
 				+ "VALUES (";
 			for (size_t m=0;m<value_vector.at(n).size();m++)
@@ -575,4 +577,24 @@ void CDlg_GoogleFusionTable::OnBnClickedButtonLinkWebSubarea()
 	on_line_address.Format ("http://www.google.com/fusiontables/DataSource?dsrcid=%s",m_UploadLinkTableID);
 
    HINSTANCE result = ShellExecute(NULL, _T("open"), on_line_address, NULL,NULL, SW_SHOW);;
+}
+
+void CDlg_GoogleFusionTable::OnEnChangeEditExcelfile()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}
+
+void CDlg_GoogleFusionTable::OnEnChangeEditExcelfile2()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
 }

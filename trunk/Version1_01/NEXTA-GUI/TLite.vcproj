@@ -465,6 +465,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_LeftTurnLaneSetup.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_Legend.cpp"
 				>
 			</File>
@@ -1041,11 +1045,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
+						RelativePath=".\res\mainfram.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\mainfram.bmp"
+						RelativePath="..\..\temp\rowlist\res\mainfram.bmp"
 						>
 					</File>
 					<File
@@ -1073,11 +1077,11 @@
 						>
 					</File>
 					<File
-						RelativePath=".\res\smallico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\smallico.bmp"
+						RelativePath=".\res\smallico.bmp"
 						>
 					</File>
 					<File
@@ -1085,11 +1089,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
+						RelativePath=".\res\stateico.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\stateico.bmp"
+						RelativePath="..\..\..\temp\rowlist\res\stateico.bmp"
 						>
 					</File>
 					<File
@@ -1117,11 +1121,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
+						RelativePath=".\res\toolbar1.bmp"
 						>
 					</File>
 					<File
-						RelativePath=".\res\toolbar1.bmp"
+						RelativePath="..\..\temp\rowlist\res\toolbar1.bmp"
 						>
 					</File>
 					<File
@@ -1274,6 +1278,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_KML_Configuration_Zone.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_LeftTurnLaneSetup.h"
 				>
 			</File>
 			<File

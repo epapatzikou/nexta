@@ -147,8 +147,6 @@ bool CTLiteDoc::ReadGPSData(string FileName)
 			//	}
 			//	pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 			//	
-			//	pLink->m_total_link_volume +=1;
-			//}
 
 
 			//// ==>Node Exit Time Point
@@ -1770,8 +1768,9 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 	{
 		int num_timing_plan = g_read_integer(st);
 
-		for(int time_plan_no = 1; time_plan_no <= num_timing_plan; time_plan_no++)
+		for(int timing_plan  = 1; timing_plan <= num_timing_plan; timing_plan++)
 		{
+			std::string timing_plan_name = string_format("%d",timing_plan );
 
 		//		double start_time = g_read_float(st);
 		char  str_line[2000]; // input string
@@ -1805,14 +1804,14 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 			{
 
 				if(pNode->m_ControlType == m_ControlType_PretimedSignal)
-					SetupSignalValue(node_name,time_plan_no,TIMING_ControlType, "pretimed");
+					SetupSignalValue(node_name,timing_plan_name,TIMING_ControlType, "pretimed");
 
 				if(pNode->m_ControlType == m_ControlType_ActuatedSignal)
-					SetupSignalValue(node_name,time_plan_no,TIMING_ControlType, "actuated");
+					SetupSignalValue(node_name,timing_plan_name,TIMING_ControlType, "actuated");
 
-			SetupSignalValue(node_name,time_plan_no,TIMING_RingType, "single_ring");
-			SetupSignalValue(node_name,time_plan_no,TIMING_CycleLength, pNode->m_CycleLengthInSecond);
-			SetupSignalValue(node_name,time_plan_no,TIMING_Offset, 0);
+			SetupSignalValue(node_name,timing_plan_name,TIMING_RingType, "single_ring");
+			SetupSignalValue(node_name,timing_plan_name,TIMING_CycleLength, pNode->m_CycleLengthInSecond);
+			SetupSignalValue(node_name,timing_plan_name,TIMING_Offset, 0);
 			}
 		}
 
@@ -1871,9 +1870,9 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 					
 					phase.amber  = g_read_integer(st);
 
-					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_MinGreen,phase.min_green);
-					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_MaxGreen,phase.max_green);
-					SetupPhaseData(node_name, time_plan_no, p+1, PHASE_Yellow,phase.amber);
+					SetupPhaseData(node_name, timing_plan_name, p+1, PHASE_MinGreen,phase.min_green);
+					SetupPhaseData(node_name, timing_plan_name, p+1, PHASE_MaxGreen,phase.max_green);
+					SetupPhaseData(node_name, timing_plan_name, p+1, PHASE_Yellow,phase.amber);
 
 
 					int approach = g_read_integer(st);
@@ -1922,15 +1921,15 @@ bool CTLiteDoc::ReadDYNASMART_ControlFile()
 					end_time = time;
 					time += (phase.amber) ;
 
-					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_MOVEMENT_VECTOR, movement_vector);
-					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_Start, start_time);
-					SetupPhaseData(node_name,time_plan_no, p+1, PHASE_End, end_time);
+					SetupPhaseData(node_name,timing_plan_name, p+1, PHASE_MOVEMENT_VECTOR, movement_vector);
+					SetupPhaseData(node_name,timing_plan_name, p+1, PHASE_Start, start_time);
+					SetupPhaseData(node_name,timing_plan_name, p+1, PHASE_End, end_time);
 				} // phase
 
 			}   // control data
 		}  // for each node
 
-				UpdateAllMovementGreenStartAndEndTime(time_plan_no);
+				UpdateAllMovementGreenStartAndEndTime(timing_plan_name);
 
 		}
 		fclose(st);

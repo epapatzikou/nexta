@@ -281,7 +281,7 @@ void CTLiteDoc::OnExportAms()
 				{
 					if((*iLink)->m_AVISensorFlag == false)
 					{
-						//		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
+						//		fprintf(st,"name,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,capacity_in_vhc_per_hour_per_lane,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry\n");
 						fprintf(st,"%d,",(*iLink)->m_LinkID);
 
 						fprintf(st,"\"<LineString><coordinates>");

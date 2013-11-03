@@ -33,4 +33,6 @@ public:
 	afx_msg void OnBnClickedButtonLinkWeb();
 	afx_msg void OnBnClickedButtonLinkWebSubarea();
 	long m_SubareaLinkSize;
+	afx_msg void OnEnChangeEditExcelfile();
+	afx_msg void OnEnChangeEditExcelfile2();
 };

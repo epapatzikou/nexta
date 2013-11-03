@@ -40,8 +40,24 @@ class CPage_Node_Movement : public CPropertyPage
 
 public:
 
+	bool m_bSigalizedNode;
 
-  
+
+	int GetColumnIndex(std::string str)
+	{
+		for(int i=0; i< m_Column_names.size(); i++)
+		{
+
+			if(m_Column_names[i].compare (str) ==0)
+
+				return i;
+	
+		}
+		return 0;
+	
+	}
+
+
 
 	int m_SelectedPhaseNumber;
 	int m_SelectedTimingPlanNo;
@@ -144,7 +160,7 @@ public:
 		for(unsigned int i = 0; i< m_MovementBezierVector.size(); i++)
 		{
 		
-			if(m_bHideRightTurnMovement &&( pNode->m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementVector[i].movement_turn == DTA_RightTurn2))
+			if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 			float distance  = m_MovementBezierVector[i].GetMinDistance(pt) ;
@@ -158,4 +174,5 @@ public:
 
 		return SelectedMovement;
 	}
-	};
+	afx_msg void OnBnClickedHideRightTurn();
+};

@@ -49,16 +49,18 @@ CPage_Node_Movement::CPage_Node_Movement()
 , m_MovementMsg(_T(""))
 , m_CycleLength(0)
 , m_Offset(0)
-, m_bHideRightTurnMovement(TRUE)
+, m_bHideRightTurnMovement(FALSE)
 {
 	m_bColumnWidthIncludeHeader = true;
 	m_SelectedMovementIndex = -1;
 	m_bModifiedFlag = false;
 	m_PeakHourFactor = 1.0;
 
-	m_SelectedTimingPlanNo = 1;
+	m_SelectedTimingPlanNo = 0;
 
 	m_SelectedPhaseNumber = 0;
+
+	m_bSigalizedNode = false;
 
 }
 
@@ -72,7 +74,7 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX,IDC_GRIDLISTCTRLEX,m_ListCtrl);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODEID, m_CurrentNodeNumber);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODENAME, m_CurrentNode_Name);
-	DDX_Check(pDX, IDC_EDIT_MODE2, m_bHideRightTurnMovement);
+	DDX_Check(pDX, IDC_HIDE_RIGHT_TURN, m_bHideRightTurnMovement);
 }
 
 
@@ -84,6 +86,7 @@ BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
 	ON_LBN_SELCHANGE(IDC_LIST1, &CPage_Node_Movement::OnLbnSelchangeList1)
 	ON_LBN_DBLCLK(IDC_LIST1, &CPage_Node_Movement::OnLbnDblclkList1)
 	ON_WM_LBUTTONDBLCLK()
+	ON_BN_CLICKED(IDC_HIDE_RIGHT_TURN, &CPage_Node_Movement::OnBnClickedHideRightTurn)
 END_MESSAGE_MAP()
 
 
@@ -119,18 +122,21 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	m_Column_names.push_back ("Prohibition"); //4
 	m_Column_names.push_back ("# of Lanes"); //5
 
-	m_Column_names.push_back ("Simu Total Volume"); //7
-	m_Column_names.push_back ("Simu Hourly Volume"); //8
+	m_Column_names.push_back ("Simu Total Volume"); //6
+	m_Column_names.push_back ("Simu Hourly Volume"); //7
 	m_Column_names.push_back ("Simu Delay (sec)"); //8
 
-	m_Column_names.push_back ("Green Start Time"); //7
-	m_Column_names.push_back ("Green End Time"); //7
+	if(m_bSigalizedNode == true)
+	{
+	m_Column_names.push_back ("Green Start Time"); //9
+	m_Column_names.push_back ("Green End Time"); //10
 
-	m_Column_names.push_back ("QEM Capacity"); //8
+	m_Column_names.push_back ("Sat Flow Rate Per Lane Group"); //11
 	m_Column_names.push_back ("QEM VOC"); //8
 	m_Column_names.push_back ("QEM Control Delay (sec)"); //8
 	m_Column_names.push_back ("QEM LOS"); //8
 
+	}
 
 	CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
 	if( pHeader!=NULL)
@@ -149,6 +155,21 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		{
 			pTrait = new CGridColumnTraitEdit();
 		}
+
+		if(m_Column_names[i].find ("Sat Flow Rate Per Lane Group")!=  string::npos)
+		{
+			pTrait = new CGridColumnTraitEdit();
+		}
+
+		if(m_Column_names[i].find ("Green Start Time")!=  string::npos)
+		{
+			pTrait = new CGridColumnTraitEdit();
+		}
+		if(m_Column_names[i].find ("Green End Time")!=  string::npos)
+		{
+			pTrait = new CGridColumnTraitEdit();
+		}
+
 
 		if(m_Column_names[i].find ("Turn Type")!=  string::npos)
 		{
@@ -184,10 +205,10 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
 	{
 
-		DTANodeMovement movement = pNode->m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
 
 
 		CString str;
@@ -217,7 +238,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		str.Format ("%.0f",movement.sim_turn_count   ); // 7: simulated volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor   ); // 7: simulated volume
+		str.Format ("%.0f",movement.sim_turn_hourly_count); // 7: simulated volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.1f",movement.sim_turn_delay*60   ); // simulated turn delay
@@ -229,7 +250,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		str.Format ("%.1f",movement.QEM_EndTime  ); // green end green time 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.QEM_Capacity    ); 
+		str.Format ("%.0f",movement.QEM_SatFlow     ); 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.0f",movement.QEM_VOC    ); 
@@ -261,10 +282,10 @@ void CPage_Node_Movement::UpdateList()
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
 	{
 
-		DTANodeMovement movement = pNode->m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
 
 		int column_index = 1;
 
@@ -305,7 +326,7 @@ void CPage_Node_Movement::UpdateList()
 		str.Format ("%.1f",movement.QEM_EndTime  ); // green end green time 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.QEM_Capacity    ); 
+		str.Format ("%.0f",movement.QEM_SatFlow    ); 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.0f",movement.QEM_VOC    ); 
@@ -400,9 +421,9 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhas
   if(bPhaseWindow == false || m_SelectedPhaseNumber == 1)
    pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
 
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
 	{
-		DTANodeMovement movement = pNode->m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
 
 		if( m_pDoc->m_hide_non_specified_movement_on_freeway_and_ramp && movement.bNonspecifiedTurnDirectionOnFreewayAndRamps && i != m_SelectedMovementIndex)
 			continue;
@@ -588,14 +609,14 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhas
 
 		m_MovementBezierVector.push_back (element);
 
-		if(m_bHideRightTurnMovement &&( pNode->m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementVector[i].movement_turn == DTA_RightTurn2))
+		if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 		bool bMovementIncluded = false;
 	
 		if(m_SelectedPhaseNumber >=1)
 		{
-		bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber , m_SelectedTimingPlanNo,m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
+		bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber , m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo],m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
 		}
 
 		if(m_SelectedPhaseNumber <=0 ||  /* all phases*/
@@ -707,7 +728,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 	unsigned int i;
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
-	for ( i=0;i< pNode->m_MovementVector.size();i++)
+	for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
 	{
 		m_ListCtrl.SelectRow (i,false);
 	}
@@ -716,7 +737,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 
 	if(m_SelectedMovementIndex >=0)
 	{
-		for ( i=0;i< pNode->m_MovementVector.size();i++)
+		for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
 		{
 			char str[100];
 			m_ListCtrl.GetItemText (i,0,str,20);
@@ -776,23 +797,23 @@ void CPage_Node_Movement::SaveData()
 	}
 
 
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
 	{
-		int turning_prohibition_flag=  pNode->m_MovementVector[i].turning_prohibition_flag;
+		int turning_prohibition_flag=  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag;
 		
-		int PrevQEM_lanes = pNode->m_MovementVector[i].QEM_Lanes;
-		int QEM_Phase1 =  pNode->m_MovementVector[i].QEM_Phase1;
+		int PrevQEM_lanes = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes;
+		int QEM_Phase1 =  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Phase1;
 
-		CString LaneString =  m_ListCtrl.GetItemText (i,5); 
+		CString LaneString =  m_ListCtrl.GetItemText (i,GetColumnIndex("# of Lanes")); 
 		int QEM_lanes= atoi(LaneString);
 
 		// update # of lanes on link
 
 		if(PrevQEM_lanes != QEM_lanes)
 		{
-		DTALink* pLink0 = m_pDoc->m_LinkNoMap[pNode->m_MovementVector[i].IncomingLinkNo ];
+		DTALink* pLink0 = m_pDoc->m_LinkNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[i].IncomingLinkNo ];
 
-		switch (pNode->m_MovementVector[i].movement_turn)
+		switch (pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn)
 			{
 			case DTA_Through: pLink0->m_NumberOfLanes = QEM_lanes; break;
 
@@ -807,41 +828,52 @@ void CPage_Node_Movement::SaveData()
 			pLink0->m_NumberOfRightTurnLanes = QEM_lanes   ; break;
 			}
 		}
-		int obs_turn_hourly_count = pNode->m_MovementVector[i].obs_turn_hourly_count  ;
-		int obs_turn_delay = pNode->m_MovementVector[i].obs_turn_delay  ;
+		int obs_turn_hourly_count = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_hourly_count  ;
+		int obs_turn_delay = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_delay  ;
 
-		DTA_SIG_MOVEMENT movement_approach_turn = pNode->m_MovementVector[i].movement_approach_turn  ;
-		int effective_green=  (int)(pNode->m_MovementVector[i].QEM_EffectiveGreen);
-		int saturation_flow_rate=  (int)(pNode->m_MovementVector[i].QEM_SatFlow);
+		DTA_SIG_MOVEMENT movement_approach_turn = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn  ;
+		int effective_green=  (int)(pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_EffectiveGreen);
+		int saturation_flow_rate=  (int)(pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_SatFlow);
 
-		DTANodeMovement movement = pNode->m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
 
 		int colume_index = 3;
 
 		CString str;
 
-		str = m_ListCtrl.GetItemText (i,colume_index++);
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Direction"));
 
-		pNode->m_MovementVector[i].movement_approach_turn = m_pDoc->GetTurnDirectionFromString(str);
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn = m_pDoc->GetTurnDirectionFromString(str);
 
-		str = m_ListCtrl.GetItemText (i,colume_index++);
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Prohibition"));
 
 		if(str.Find("Prohibited") == -1)  // not found 
-			pNode->m_MovementVector[i].turning_prohibition_flag  = 0;
+			pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag  = 0;
 		else
-			pNode->m_MovementVector[i].turning_prohibition_flag  = 1;
+			pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag  = 1;
 
 
-		str = m_ListCtrl.GetItemText (i,colume_index++);
-		pNode->m_MovementVector[i].QEM_Lanes = atoi(str);
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("# of Lanes"));
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes = atoi(str);
 
 
+		if(m_bSigalizedNode == true)
+		{
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Green Start Time"));
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_StartTime  = atoi(str);
 
-		if(movement_approach_turn != pNode->m_MovementVector[i].movement_approach_turn ||
-			obs_turn_hourly_count != pNode->m_MovementVector[i].obs_turn_hourly_count  ||
-			obs_turn_delay != pNode->m_MovementVector[i].obs_turn_delay  || 
-			turning_prohibition_flag != pNode->m_MovementVector[i].turning_prohibition_flag || 
-			QEM_lanes != pNode->m_MovementVector[i].QEM_Lanes
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Green End Time"));
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_EndTime  = atoi(str);
+
+		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Sat Flow Rate Per Lane Group"));
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_SatFlow   = atoi(str);
+		}
+
+		if(movement_approach_turn != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn ||
+			obs_turn_hourly_count != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_hourly_count  ||
+			obs_turn_delay != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_delay  || 
+			turning_prohibition_flag != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag || 
+			QEM_lanes != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes
 	)
 
 		{
@@ -891,3 +923,9 @@ void CPage_Node_Movement::OnLbnDblclkList1()
 }
 
 
+
+void CPage_Node_Movement::OnBnClickedHideRightTurn()
+{
+	UpdateData(1);
+	Invalidate();
+}

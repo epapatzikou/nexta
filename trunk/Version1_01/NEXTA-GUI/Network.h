@@ -176,7 +176,8 @@ enum DTA_SIG_MOVEMENT_ROW
 
 enum DTA_SIG_PHASE
    {
-		DTA_SIG_PHASE_NODE_ID = 0,
+		DTA_SIG_PHASE_TIMING_PLAN_NAME = 0,
+		DTA_SIG_PHASE_NODE_ID,
 		DTA_SIG_PHASE_KEY,
 		DTA_SIG_PHASE_VALUE,
 		DTA_SIG_PHASE_D1,
@@ -197,9 +198,13 @@ enum DTA_SIG_PHASE
 		DTA_SIG_PHASE_D16,
 		DTA_SIG_PHASE_D17,
 		DTA_SIG_PHASE_D18,
+		DTA_SIG_PHASE_P1,
 		DTA_SIG_PHASE_P2,
+		DTA_SIG_PHASE_P3,
 		DTA_SIG_PHASE_P4,
+		DTA_SIG_PHASE_P5,
 		DTA_SIG_PHASE_P6,
+		DTA_SIG_PHASE_P7,
 		DTA_SIG_PHASE_P8,
 		DTA_SIG_Geometry,
 		DTA_SIG_PHASE_MAX_COLUMN
@@ -239,10 +244,11 @@ enum DTA_SIG_PHASE_ROW
 	TIMING_Reference_Phase,
 	TIMING_Offset,
 	TIMING_Master,
-	TIMING_Yield,
 	TIMING_Node_0,
 	TIMING_Node_1,
 	TIMING_RingType,
+	TIMING_OptimizationMethod,
+	TIMING_VolumeAdjustmentFactor,
 	PHASE_MOVEMENT_CODE_VECTOR,
 	PHASE_MOVEMENT_VECTOR,
 	DTA_PHASE_ATTRIBUTE_MAX_ROW};
@@ -1095,7 +1101,6 @@ public:
 		HourlyCount[h] = 0;
 
 
-
 sim_turn_count = 0;
 sim_turn_hourly_count = 0;
 sim_turn_percentage = 0;
@@ -1107,7 +1112,7 @@ obs_turn_percentage = 0;
 obs_turn_delay = 0; 
 
 
-	  QEM_TurnVolume = 0;
+   QEM_TurnVolume = 0;
    QEM_LinkVolume = 0;
    QEM_Lanes = 0;
    QEM_Shared = 0;
@@ -1130,12 +1135,14 @@ obs_turn_delay = 0;
    QEM_Delay = 0;
    QEM_reference_node_number = 0;
    angle = -100;
-
    QEM_StartTime = 0;
    QEM_EndTime = 0;
 
+
    bNonspecifiedTurnDirectionOnFreewayAndRamps = false;
 	}
+
+std::vector<GDPoint> m_ShapePoints;
 
 bool bNonspecifiedTurnDirectionOnFreewayAndRamps;
 int pair_key;
@@ -1264,26 +1271,21 @@ class DTATimingPlanMetaData
 	public:
 		DTATimingPlanMetaData()
 		{
-			day_no= 0;
-			starting_time_in_min= 0;
-			ending_time_in_min= 1440;
-
-
-		
-		
+		scenario_no = 0;
+		start_day_no = 0;
+		end_day_no = 200;
 		}
-	int day_no;
 
 	int scenario_no;
-	int starting_time_in_min;
-	int ending_time_in_min;
-	std::string name;
-	std::string AMS_movement_file_name;
-	std::string AMS_phasing_file_name;
-
+	int start_day_no;
+	int end_day_no;
 };
 
 
+class DTANodeMovementVector {
+public:
+	std::vector <DTANodeMovement> m_MovementVector;
+};
 
 
 class DTANode
@@ -1353,14 +1355,65 @@ public:
 	std::vector<int> m_IncomingLinkVector;
 	int m_IncomingNonConnectors;
 
+	std::map<std::string, DTANodeMovementVector > m_MovementDataMap;  // key is the timing plan name; default is FREE
 
-	std::vector <DTANodeMovement> m_MovementVector;
-
-	bool IsEmptyPhaseNumber()
+	bool IfTrafficExistInThisTimingPlan(std::string TimingPlanName)
 	{
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+
+		if(m_MovementDataMap.find(TimingPlanName)!= m_MovementDataMap.end())
 		{
-			if(m_MovementVector[i].QEM_Phase1 >0)
+		for(unsigned int i  = 0; i < m_MovementDataMap[TimingPlanName]. m_MovementVector.size(); i++)
+		{
+			// there is some volume data
+			if(m_MovementDataMap[TimingPlanName]. m_MovementVector[i].sim_turn_count != 0 ||   
+				m_MovementDataMap[TimingPlanName]. m_MovementVector[i].obs_turn_count != 0)
+				return true;
+		}
+		}
+		return false;
+	
+	}
+
+	void ResetNodeMovementVector()
+	{
+		m_MovementDataMap.clear();
+	}
+
+	void SetupNodeMovementVector(std::vector<std::string> TimingPlanNameVector, DTANodeMovement movement_element)
+	{
+	
+		if(TimingPlanNameVector.size() ==0)
+		{
+		m_MovementDataMap["FREE"].m_MovementVector.push_back(movement_element);
+		
+		}else
+		{
+
+		for(int i= 0; i< TimingPlanNameVector.size(); i++)
+		{
+			m_MovementDataMap[TimingPlanNameVector[i]].m_MovementVector.push_back(movement_element);
+		}
+		}
+	}
+
+	DTANodeMovement GetNodeMovementVector(std::string TimingPlanName, int MovementIndex)
+	{
+		if(m_MovementDataMap.find(TimingPlanName) != m_MovementDataMap.end())
+		{
+			return m_MovementDataMap[TimingPlanName].m_MovementVector[MovementIndex];
+		}else
+		{
+			// FREE as the backup value
+			return m_MovementDataMap["FREE"].m_MovementVector[MovementIndex];
+		
+		}
+	}
+
+	bool IsEmptyPhaseNumber(std::string TimingPlanName)
+	{
+		for(unsigned int i  = 0; i < m_MovementDataMap[TimingPlanName].m_MovementVector.size(); i++)
+		{
+			if(m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_Phase1 >0)
 			{
 				return false;
 			}
@@ -1371,35 +1424,38 @@ public:
 	}
 
 
-	void ResetToDefaultPhaseNumbers()
+	void ResetToDefaultPhaseNumbers(std::string TimingPlanName)
 	{
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap[TimingPlanName]. m_MovementVector.size(); i++)
 		{
-			switch(m_MovementVector[i].movement_direction)
+			switch(m_MovementDataMap[TimingPlanName].m_MovementVector[i].movement_direction)
 			{
-			case DTA_North: m_MovementVector[i].QEM_Phase1 = 2; 
+			case DTA_North: m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_Phase1 = 2; 
 				break;
-			case DTA_South: m_MovementVector[i].QEM_Phase1 = 6; 
+			case DTA_South: m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_Phase1 = 6; 
 				break;
-			case DTA_East: m_MovementVector[i].QEM_Phase1 = 4; 
+			case DTA_East: m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_Phase1 = 4; 
 				break;
-			case DTA_West: m_MovementVector[i].QEM_Phase1 = 8; 
+			case DTA_West: m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_Phase1 = 8; 
 				break;
 			}
 	
 		}
 	}
-	void SortMovementVector()
+	void SortMovementVector(std::string TimingPlanName)
 	{
-	std::sort(m_MovementVector.begin(), m_MovementVector.end(), compare_MovementData);
+
+	std::sort(m_MovementDataMap[TimingPlanName].m_MovementVector.begin(), m_MovementDataMap[TimingPlanName].m_MovementVector.end(), compare_MovementData);
+	
+	
 	}
 
 	int FindMovementIndexFromDirecion(DTA_SIG_MOVEMENT movement_approach_turnection)
 	{
 	
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
 		{
-			if(m_MovementVector[i].movement_approach_turn == movement_approach_turnection)
+			if(m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn == movement_approach_turnection)
 				return i;
 
 		}
@@ -1407,15 +1463,15 @@ public:
 		return -1;
 	}
 
-	int FindHourlyCountFromDirection(DTA_Direction movement_approach)
+	int FindHourlyCountFromDirection(std::string TimingPlanName, DTA_Direction movement_approach)
 	{
 	
 		int link_count = 0;
 		// sum up all movement along the same approach
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap[TimingPlanName].m_MovementVector.size(); i++)
 		{
-			if(m_MovementVector[i].movement_direction   == movement_approach)
-				link_count+= m_MovementVector[i].QEM_TurnVolume;
+			if(m_MovementDataMap[TimingPlanName].m_MovementVector[i].movement_direction   == movement_approach)
+				link_count+= m_MovementDataMap[TimingPlanName].m_MovementVector[i].QEM_TurnVolume;
 
 		}
 
@@ -1436,54 +1492,54 @@ public:
 	void make_Link_Pair_to_Movement_Map()
 	{
 
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
 		{
-			int pair_key = get_link_pair_key( m_MovementVector[i].in_link_from_node_id,m_MovementVector[i].out_link_to_node_id);
+			int pair_key = get_link_pair_key( m_MovementDataMap["FREE"].m_MovementVector[i].in_link_from_node_id,m_MovementDataMap["FREE"].m_MovementVector[i].out_link_to_node_id);
 
 			m_Link_Pair_to_Movement_Map[pair_key] = i;
-			m_MovementVector[i].pair_key = pair_key;
+			m_MovementDataMap["FREE"].m_MovementVector[i].pair_key = pair_key;
 
 		}
 
 	}
 
-	void ResetMovementMOE()
+	void ResetMovementMOE(std::string TimingPlanName)
 	{
 
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap[TimingPlanName].m_MovementVector.size(); i++)
 		{
 
-			m_MovementVector[i].sim_turn_count  = 0;
-			m_MovementVector[i].turning_percentage   = 0;
-			m_MovementVector[i].sim_turn_delay = 0;
+			m_MovementDataMap[TimingPlanName].m_MovementVector[i].sim_turn_count  = 0;
+			m_MovementDataMap[TimingPlanName].m_MovementVector[i].turning_percentage   = 0;
+			m_MovementDataMap[TimingPlanName].m_MovementVector[i].sim_turn_delay = 0;
 		}
 
 	}
 
 	std::map<int, int > m_Link_Pair_to_Movement_Map;
 
-	void AddMovementCountAndDelay(int Hour,int in_link_from_node_id, int out_link_to_node_id, float delay)
+	void AddMovementCountAndDelay(int Hour,int in_link_from_node_id, int out_link_to_node_id, float delay, std::string TimingPlanName)
 	{
 	
 		if(m_Link_Pair_to_Movement_Map.size()==0)
 			make_Link_Pair_to_Movement_Map();
 
-		if(m_MovementVector.size()==0)
+		if(m_MovementDataMap[TimingPlanName].m_MovementVector.size()==0)
 			return;
 
 		int link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
 		int movement_index = m_Link_Pair_to_Movement_Map[link_pair_key];
 
-		if(link_pair_key == m_MovementVector[movement_index].pair_key ) // in case there is a U turn 
+		if(link_pair_key == m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].pair_key ) // in case there is a U turn 
 		{
 		
 		if(Hour<24)
 		{
-		m_MovementVector[movement_index].HourlyCount [Hour]++;
+		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].HourlyCount [Hour]++;
 		}
 
-		m_MovementVector[movement_index].sim_turn_count++;
-		m_MovementVector[movement_index].sim_turn_delay+=delay;
+		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].sim_turn_count++;
+		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].sim_turn_delay+=delay;
 
 
 		}
@@ -1508,12 +1564,12 @@ public:
 	int GetMovementNo(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
 	{
 
-		for(unsigned int i  = 0; i < m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
 		{
 
-		if( m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
-		&& m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
-		&& m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
+		if(m_MovementDataMap["FREE"]. m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
+		&& m_MovementDataMap["FREE"].m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
+		&& m_MovementDataMap["FREE"].m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
 		return i;
 		}
 
