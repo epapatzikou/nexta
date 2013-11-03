@@ -378,8 +378,44 @@ public:
 {
 public: // create from serialization only
 
+	std::vector<std::string> m_TimingPlanNameVector;
 
-	std::vector <DTATimingPlanMetaData> m_DTATimingPlanMetaDataVector;
+	CString GetPhasingMapKey(int NodeNumber, std::string TimingPlanName)
+	{
+
+		if(TimingPlanName.size() == 0)
+			TimingPlanName = "FREE";
+
+	CString str;
+	str.Format("%d:%s", NodeNumber, TimingPlanName.c_str ());
+
+	return str;
+	
+	}
+
+	bool AddNameIntoTimingPlanVector(std::string Name)
+	{
+		bool bDefined = false;
+
+		for(int i = 0; i< m_TimingPlanNameVector.size(); i++)
+		{
+			if(m_TimingPlanNameVector[i].compare (Name) ==0 )  //exist
+			{
+				bDefined =true;
+
+				return false;
+		
+			}
+		}
+	
+		if(!bDefined)
+			m_TimingPlanNameVector.push_back (Name);
+
+		return true;
+	}
+
+	void ScanAMSTimingPlanCSVFile(LPCTSTR lpszFileName, int scenario_no);
+
 
 	bool m_hide_non_specified_movement_on_freeway_and_ramp;
 
@@ -614,8 +650,8 @@ public:
 	ofstream m_AMSLogFile;
 
 	BOOL OnOpenDocument(CString FileName, bool bLoadNetworkOnly =false);
-	void FieldNameNotExistMessage(CString FieldName, CString KeyName);
-	void FieldNameNotExistMessage(std::string FieldName, std::string KeyName);
+	void FieldNameNotExistMessage(CString FieldName, CString KeyName, CString FileName);
+	void FieldNameNotExistMessage(std::string FieldName, std::string KeyName, std::string FileName);
 	BOOL OnOpenAMSDocument(CString FileName);
 	bool ReadTransCADDemandCSVFile(LPCTSTR lpszFileName);
 	bool ReadVISUMDemandCSVFile(LPCTSTR lpszFileName,int demand_type,int start_time_in_min,int end_time_in_min);
@@ -1088,6 +1124,8 @@ public:
 	void PushBackNetworkState();
 	void  Undo();
 	void Redo();
+
+	void GenerateMovementShapePoints();
 
 	std::map<long, DTALink*> m_SensorIDtoLinkMap;
 	std::map<long, int> m_AVISensorIDtoNodeIDMap;
@@ -1756,18 +1794,18 @@ public:
 	std::map<CString, DTA_Movement_Data_Matrix> m_DTAMovementMap;
 	std::map<CString, DTA_Phasing_Data_Matrix> m_DTAPhasingMap;
 
-	DTA_Phasing_Data_Matrix GetPhaseData(int node_id, int time_plan_no);
+	DTA_Phasing_Data_Matrix GetPhaseData(int node_id, std::string timing_plan_name);
 
-	BOOL IfMovementIncludedInPhase(int node_id, int time_plan_no, int phase_no, int from_node_id, int destination_node_id); 
+	BOOL IfMovementIncludedInPhase(int node_id, std::string timing_plan_name, int phase_no, int from_node_id, int destination_node_id); 
 
-	void SetupPhaseData(int node_id, int time_plan_no, int phase_numbr, DTA_SIG_PHASE_ROW attribute, float value);
-	void SetupPhaseData(int node_id, int time_plan_no, int phase_numbr, DTA_SIG_PHASE_ROW attribute, int value);
-	void SetupPhaseData(int node_id, int time_plan_no,int phase_numbr, DTA_SIG_PHASE_ROW attribute, std::string value_str);
-	void SetupPhaseData(int node_id, int time_plan_no,int phase_numbr, DTA_SIG_PHASE_ROW attribute, CString value_str);
+	void SetupPhaseData(int node_id, std::string timing_plan_name, int phase_numbr, DTA_SIG_PHASE_ROW attribute, float value);
+	void SetupPhaseData(int node_id, std::string timing_plan_name, int phase_numbr, DTA_SIG_PHASE_ROW attribute, int value);
+	void SetupPhaseData(int node_id, std::string timing_plan_name,int phase_numbr, DTA_SIG_PHASE_ROW attribute, std::string value_str);
+	void SetupPhaseData(int node_id, std::string timing_plan_name,int phase_numbr, DTA_SIG_PHASE_ROW attribute, CString value_str);
 
-	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, float value);
-	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, int value);
-	void SetupSignalValue(int node_id, int time_plan_no, DTA_SIG_PHASE_ROW attribute, CString value_str);
+	void SetupSignalValue(int node_id, std::string timing_plan_name, DTA_SIG_PHASE_ROW attribute, float value);
+	void SetupSignalValue(int node_id, std::string timing_plan_name, DTA_SIG_PHASE_ROW attribute, int value);
+	void SetupSignalValue(int node_id, std::string timing_plan_name, DTA_SIG_PHASE_ROW attribute, CString value_str);
 
 	// 	void ConstructMovementVector(bool flag_Template);
 	void Construct4DirectionMovementVector(bool ResetFlag = false);
@@ -1807,18 +1845,15 @@ public:
 	void ConvertLinkCSV2ShapeFiles(LPCTSTR lpszCSVFileName,LPCTSTR lpszShapeFileName, CString GISTypeString, _GIS_DATA_TYPE GIS_data_type);
 	void SaveAMS_ODTable();
 
-	void ReadInputLanesFile(LPCTSTR lpszPathName);
-	void SaveInputLanesFile(LPCTSTR lpszPathName);
-
-	void ReadInputPhasingFile(LPCTSTR lpszPathName);
-	void SaveInputPhasingFile(LPCTSTR lpszPathName);
+	void ReadAMSPhasingFile(LPCTSTR lpszPathName);
+	void SaveAMSPhasingData(LPCTSTR lpszPathName);
 
 	void ExportPathflowToCSVFiles();
 	std::map<std::string, DTALink*>  m_TMC2LinkMap;
 	CString m_GISMessage;
 
 
-	void ExportSynchroVersion6Files();
+	void ExportSynchroVersion6Files(std::string TimingPlanName = "FREE");
 	bool m_bMovementAvailableFlag;
 	void ExportQEMData(int NodeNumber);
 	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
@@ -2267,10 +2302,10 @@ public:
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
 	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
 
-	void UpdateMovementGreenStartAndEndTimeFromPhasingData(int NodeNumber, int time_plan_no);
-	void UpdateAllMovementGreenStartAndEndTime(int time_plan_no);
+	void UpdateMovementGreenStartAndEndTimeFromPhasingData(int NodeNumber, std::string timing_plan_name);
+	void UpdateAllMovementGreenStartAndEndTime(std::string timing_plan_name);
 
-	void RunQEMTool(CString MovementFileName, int NodeNumber);
+	void RunQEMTool(int NodeNumber);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);
 	// Implementation
@@ -2565,6 +2600,8 @@ public:
 	afx_msg void OnUpdateEditUndo33707(CCmdUI *pCmdUI);
 	afx_msg void OnEditRedo33709();
 	afx_msg void OnUpdateEditRedo33709(CCmdUI *pCmdUI);
+	afx_msg void OnMovementSetupnumberofleftturnlanesforsignalizednodes();
+	afx_msg void OnMovementOptimizephasingandtimingdataforalltrafficsignalsthroughqem();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

@@ -53,7 +53,6 @@ public:
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnCbnSelchangeCombo1();
 	long m_LinkID;
-	int SaturationFlowRate;
 	CString StreetName;
 	float m_BPR_Alpha;
 	float m_BPR_Beta;

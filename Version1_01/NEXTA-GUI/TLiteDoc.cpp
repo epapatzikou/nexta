@@ -95,6 +95,7 @@
 
 #include "Dlg_KML_Configuration.h"
 #include "Dlg_KML_Configuration_Zone.h"
+#include "Dlg_LeftTurnLaneSetup.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -454,6 +455,8 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_UNDO33707, &CTLiteDoc::OnUpdateEditUndo33707)
 	ON_COMMAND(ID_EDIT_REDO33709, &CTLiteDoc::OnEditRedo33709)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_REDO33709, &CTLiteDoc::OnUpdateEditRedo33709)
+	ON_COMMAND(ID_MOVEMENT_SETUPNUMBEROFLEFTTURNLANESFORSIGNALIZEDNODES, &CTLiteDoc::OnMovementSetupnumberofleftturnlanesforsignalizednodes)
+	ON_COMMAND(ID_MOVEMENT_OPTIMIZEPHASINGANDTIMINGDATAFORALLTRAFFICSIGNALSTHROUGHQEM, &CTLiteDoc::OnMovementOptimizephasingandtimingdataforalltrafficsignalsthroughqem)
 	END_MESSAGE_MAP()
 
 
@@ -464,8 +467,6 @@ CTLiteDoc::CTLiteDoc()
 
 	m_EmissionType = DTA_Energy;
 	DTATimingPlanMetaData default_item;
-
-	m_DTATimingPlanMetaDataVector.push_back (default_item);
 
 	m_MovementTextBoxSizeInFeet = 50;
 	m_bShowSignalNodeMovementOnly = true;
@@ -1273,8 +1274,11 @@ bool CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 			if(pLink!=NULL)
 			{
 
-				parser.GetValueByFieldName("speed_in_mph",pLink->m_avg_simulated_speed );
-		//		parser.GetValueByFieldName("total_link_volume",pLink->m_total_link_volume );
+				if(!parser.GetValueByFieldName("speed",pLink->m_avg_simulated_speed ))
+				{
+					parser.GetValueByFieldName("speed_in_mph",pLink->m_avg_simulated_speed );
+				}
+				parser.GetValueByFieldName("total_link_volume",pLink->m_total_link_volume );
 				parser.GetValueByFieldName("volume_over_capacity_ratio",pLink->m_volume_over_capacity_ratio );
 				parser.GetValueByFieldName("level_of_service",pLink->m_LevelOfService);
 
@@ -1285,16 +1289,6 @@ bool CTLiteDoc::ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName)
 
 				// we have to re-calculate this value as the users might change the AADT conversion factor in input_link.csv
 				pLink->m_simulated_AADT = pLink->m_total_link_volume / max(0.01,pLink->m_AADT_conversion_factor);
-
-				parser.GetValueByFieldName("num_of_crashes_per_year",pLink->m_number_of_all_crashes);
-				parser.GetValueByFieldName("num_of_fatal_and_injury_crashes_per_year",pLink->m_num_of_fatal_and_injury_crashes_per_year);
-				parser.GetValueByFieldName("num_of_PDO_crashes_per_year",pLink->m_num_of_PDO_crashes_per_year);
-
-				parser.GetValueByFieldName("num_of_intersection_crashes_per_year",pLink->m_number_of_intersection_crashes);
-				parser.GetValueByFieldName("num_of_intersection_fatal_and_injury_crashes_per_year",pLink->m_num_of_intersection_fatal_and_injury_crashes_per_year);
-				parser.GetValueByFieldName("num_of_intersection_PDO_crashes_per_year",pLink->m_num_of_intersection_PDO_crashes_per_year);
-
-
 				i++;
 			}else
 			{
@@ -1383,7 +1377,6 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 		ReadActivityLocationCSVFile(directory+"input_activity_location.csv");
 	}
 
-	ReadInputPhasingFile(directory+"AMS_phasing.csv");
 	CalculateZoneCapacity();
 
 	// try to read DSP control file, if it exists
@@ -2968,16 +2961,15 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			int yellow_height = 0;
 			parser.GetValueByFieldName("KML_yellow_height",yellow_height);
 
-			float saturation_flow_rate_in_vhc_per_hour_per_lane = 2000;
-			parser.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane",saturation_flow_rate_in_vhc_per_hour_per_lane);
-
 
 			if(!parser.GetValueByFieldName("lane_capacity_in_vhc_per_hour",capacity_in_pcphpl))
 			{
-				error_message.Format("Link %s: Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.",name.c_str ());
-				AfxMessageBox(error_message);
+					error_message.Format("Link %s: Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.",name.c_str ());
+					AfxMessageBox(error_message);
 				break;
 			}
+
+			
 
 			if(!parser.GetValueByFieldName("link_type",type))
 			{
@@ -2992,18 +2984,22 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			parser.GetValueByFieldName("observed_AADT",observed_AADT);
 			parser.GetValueByFieldName("observed_peak_hourly_volume",observed_peak_hourly_volume);
 
+			if(!parser.GetValueByFieldName("jam_density",k_jam))
+			{
 			if(!parser.GetValueByFieldName("jam_density_in_vhc_pmpl",k_jam))
 				k_jam = 180;
-
+			}
 			if(!parser.GetValueByFieldName("AADT_conversion_factor",AADT_conversion_factor))
 				AADT_conversion_factor = 0.1;
 
 			if(!parser.GetValueByFieldName("grade",grade))
 				grade = 0;
 
-			if(!parser.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
+			if(!parser.GetValueByFieldName("wave_speed",wave_speed_in_mph))
+			{
+				if(!parser.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
 				wave_speed_in_mph = 12;
-
+			}
 			if(!parser.GetValueByFieldName("mode_code",mode_code))
 				mode_code  = "";
 
@@ -3219,7 +3215,6 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 
 				pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
-				pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane  = saturation_flow_rate_in_vhc_per_hour_per_lane;
 				pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 				pLink->m_link_type= type;
 				pLink->m_Grade = grade;
@@ -3386,7 +3381,6 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 		m_LinkDataLoadingStatus.Format ("%d links are loaded from file %s.",m_LinkSet.size(),lpszFileName);
 		}
 		
-		ConstructMovementVector();
 
 		AssignUniqueLinkIDForEachLink();
 
@@ -4626,7 +4620,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"name,link_id,link_key,TMC,from_node_id,to_node_id,link_type_name,direction,length,number_of_lanes,speed_limit_in_mph,saturation_flow_rate_in_vhc_per_hour_per_lane,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,geometry,original_geometry,");
+		fprintf(st,"name,link_id,link_key,TMC,from_node_id,to_node_id,link_type_name,direction,length,number_of_lanes,speed_limit,lane_capacity_in_vhc_per_hour,link_type,jam_density,wave_speed,mode_code,grade,geometry,original_geometry,");
 		fprintf(st,"BPR_alpha_term,BPR_beta_term,");
 
 		// ANM output
@@ -4709,7 +4703,7 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 
 				std::replace( (*iLink)->m_Name.begin(), (*iLink)->m_Name.end(), ',', ' '); 
 
-				fprintf(st,"%s,%d,%s,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%.1f,%d,%.1f,%.1f,\"%s\",%.1f,",
+				fprintf(st,"%s,%d,%s,%s,%d,%d,%s,%d,%.5f,%d,%.1f,%.1f,%d,%.1f,%.1f,\"%s\",%.1f,",
 					(*iLink)->m_Name.c_str (),
 					(*iLink)->m_LinkID, 
 					(*iLink)->m_LinkKey , 
@@ -4718,9 +4712,10 @@ BOOL CTLiteDoc::SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input
 					(*iLink)->m_FromNodeNumber*sign_flag, 
 					(*iLink)->m_ToNodeNumber*sign_flag, 
 					link_type_name,
-					(*iLink)->m_Direction,(*iLink)->m_Length ,(*iLink)->m_NumberOfLanes ,
+					(*iLink)->m_Direction,
+					(*iLink)->m_Length ,
+					(*iLink)->m_NumberOfLanes ,
 					(*iLink)->m_SpeedLimit,
-					(*iLink)->m_Saturation_flow_rate_in_vhc_per_hour_per_lane,
 					(*iLink)->m_LaneCapacity ,(*iLink)->m_link_type,(*iLink)->m_Kjam, (*iLink)->m_Wave_speed_in_mph, 
 					(*iLink)->m_Mode_code.c_str (), 
 				
@@ -4952,12 +4947,8 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	SaveLinkData(directory+"input_link.csv",false,SelectedLayNo);
 
 //	SaveInputLanesFile(directory+"input_lanes.csv");
-	SaveMovementData("AMS_movement.csv", -1);
-	SaveInputPhasingFile(directory+"AMS_phasing.csv");
-	//SavePhasingData();
-	//SaveQEMMovementData("QEM_movement_simu_counts.csv", true);
-	//SaveQEMMovementData("QEM_movement_obs_counts.csv", false);
-
+	SaveMovementData(directory+"AMS_movement.csv", -1);
+	SaveAMSPhasingData(directory+"AMS_phasing.csv");
 
 	//fopen_s(&st,directory+"input_phase.csv","w");
 	//if(st!=NULL)
@@ -4973,7 +4964,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 	//				for(unsigned int m = 0; m< (*iNode)->m_PhaseVector[p].movement_index_vector.size() ; m++)
 	//				{
 	//					int movement_index = (*iNode)->m_PhaseVector[p].movement_index_vector[m];;
-	//					DTANodeMovement movement = (*iNode)->m_MovementVector[movement_index];
+	//					DTANodeMovement movement = (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[movement_index];
 
 
 	//					fprintf(st,"%s,%d,%d,%d,%d,%s\n",(*iNode)->m_Name.c_str (), 
@@ -6331,6 +6322,63 @@ void CTLiteDoc::ReadAMSPathCSVFile(LPCTSTR lpszFileName)
 
 }
 
+void CTLiteDoc::ScanAMSTimingPlanCSVFile(LPCTSTR lpszFileName, int scenario_no = 0)
+{
+
+	//reset
+	m_TimingPlanNameVector.clear();
+
+	// default value
+	AddNameIntoTimingPlanVector("FREE");
+
+	//scan each record
+	CCSVParser parser;
+
+	int count = 0;
+
+	if (parser.OpenCSVFile(lpszFileName))
+	{
+		while(parser.ReadRecord())
+		{
+			int scenario_no;
+			int start_day_no;
+			int end_day_no;
+
+
+			if(parser.GetValueByFieldName("scenario_no",scenario_no) == false)
+				break;
+			if(parser.GetValueByFieldName("start_day_no",start_day_no) == false)
+				break;
+			if(parser.GetValueByFieldName("end_day_no",end_day_no) == false)
+				break;
+
+			for(int time = 0; time <1440; time+=15)
+			{
+
+				CString str;
+				str.Format("'%s", GetTimeStampString24HourFormat (time));
+
+				std::string str_time =  CString2StdString(str);
+
+
+				std::string timing_plan_name;
+
+				parser.GetValueByFieldName(str_time,timing_plan_name);
+
+				if(timing_plan_name.size () > 0)
+				{
+				AddNameIntoTimingPlanVector(timing_plan_name);
+				}
+			
+			}
+
+
+		}
+
+	}
+
+
+}
 int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 {
 
@@ -6345,19 +6393,23 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 	{
 		if((*iNode)->m_LayerNo == 0) 
 		{
-			int TimingPlanNo = 0;
+		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		{
 
-			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+
+
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector .size(); m++)
 			{
 
-				DTANodeMovement movement = (*iNode)->m_MovementVector[m];
+				DTANodeMovement movement = (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m];
 
 				CString label;
 				int up_node_id = m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNumber  ;
 				int dest_node_id = m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNumber ;
-				label.Format("%d;%d;%d", up_node_id,(*iNode)->m_NodeNumber,dest_node_id);
+				label.Format("%d;%d;%d:%s", up_node_id,(*iNode)->m_NodeNumber,dest_node_id, timing_plan_name.c_str ());
 
-				m_MovementPointerMap[label] = &((*iNode)->m_MovementVector[m]); // store pointer
+				m_MovementPointerMap[label] = &((*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m]); // store pointer
 
 				// set default value for through turns
 
@@ -6365,25 +6417,27 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 					if(pLink !=NULL)
 					{
 
-					switch ((*iNode)->m_MovementVector[m].movement_turn)
+					switch ((*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].movement_turn)
 						{
-						case DTA_Through: (*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLanes; break;
+						case DTA_Through: (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLanes; break;
 						case DTA_LeftTurn: 
 						case DTA_LeftTurn2:
-						(*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLeftTurnLanes ; break;
+						(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfLeftTurnLanes ; break;
 
 						
 						case DTA_RightTurn:
 						case DTA_RightTurn2: 
-						(*iNode)->m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfRightTurnLanes ; break;
+						(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_Lanes = pLink->m_NumberOfRightTurnLanes ; break;
 						}
 
-					(*iNode)->m_MovementVector[m].QEM_Speed  = pLink->m_SpeedLimit ;
+					(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_Speed  = pLink->m_SpeedLimit ;
 					}else
 					{
 						return 0;
 					}
 				}
+
+		}
 
 
 			}
@@ -6400,8 +6454,14 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 		{
 			int up_node_id, node_id, dest_node_id;
 
+			std::string timing_plan_name;
+
+
 			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
 				break;
+
+			parser_movement.GetValueByFieldName("timing_plan_name",timing_plan_name);
+
 
 			if(current_node_id != node_id)
 			{
@@ -6409,13 +6469,6 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 				number_of_nodes++;
 			}
 
-			if(NodeNumber >=0) //selected node
-			{
-
-				if(node_id!= NodeNumber)  // skip this node
-					continue; 
-
-			}
 
 			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
 			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
@@ -6428,7 +6481,7 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 
 
 			CString label;
-			label.Format("%d;%d;%d", up_node_id,node_id,dest_node_id);
+			label.Format("%d;%d;%d:%s", up_node_id,node_id,dest_node_id,timing_plan_name.c_str ());
 
 			if(m_MovementPointerMap.find(label) != m_MovementPointerMap.end())
 			{
@@ -6558,16 +6611,16 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 	{
 		if((*iNode)->m_LayerNo == 0  && ((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal)) 
 		{
-			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 			{
-				if((*iNode)->m_MovementVector[m].QEM_Lanes >=1 && (*iNode)->m_MovementVector[m].QEM_EffectiveGreen  <=6 )
+				if((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].QEM_Lanes >=1 && (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].QEM_EffectiveGreen  <=6 )
 				{  // use default value
 
 					
-					DTALink* pLink0 = m_LinkNoMap[(*iNode)->m_MovementVector[m].IncomingLinkNo];
+					DTALink* pLink0 = m_LinkNoMap[(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].IncomingLinkNo];
 
 
-						(*iNode)->m_MovementVector[m].QEM_EffectiveGreen = 
+						(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].QEM_EffectiveGreen = 
 							(int) ((*iNode)->m_CycleLengthInSecond* pLink0->m_LaneCapacity 
 							/ pLink0->m_Saturation_flow_rate_in_vhc_per_hour_per_lane);
 			  
@@ -6813,7 +6866,6 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 						if( pVehicle->m_NodeAry[i].ArrivalTimeOnDSN <10000) //feasible arrival time
 						{
 
-							pLink->m_total_link_volume +=1;
 
 							float travel_time  =  0;
 
@@ -6873,9 +6925,16 @@ void  CTLiteDoc::UpdateMovementDataFromVehicleTrajector()
 {
 		// movement count
 		std::list<DTANode*>::iterator iNode;
+
+		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		{
+
+			std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			(*iNode)->ResetMovementMOE ();		
+			(*iNode)->ResetMovementMOE (timing_plan_name);		
+		}
 		}
 
 		std::list<DTAVehicle*>::iterator iVehicle;
@@ -6915,7 +6974,12 @@ void  CTLiteDoc::UpdateMovementDataFromVehicleTrajector()
 				if(pLink0 !=NULL && pLink1!=NULL &&Hour >=0 && Hour<24)
 				{
 					pLink0->m_TotalVolumeForMovementCount++;
-					pNode->AddMovementCountAndDelay(Hour, pLink0->m_FromNodeID, pLink1->m_ToNodeID, delay);
+
+					//
+					//TO DO: fetch timing_plan no according to day no and time period
+
+					std::string timing_plan_name = "FREE";
+					pNode->AddMovementCountAndDelay(Hour, pLink0->m_FromNodeID, pLink1->m_ToNodeID, delay , timing_plan_name);
 				}
 
 			}
@@ -6924,9 +6988,9 @@ void  CTLiteDoc::UpdateMovementDataFromVehicleTrajector()
 		// turning percentage
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 			{
-				DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
+				DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
 				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkNo  ];
 
 				if(pLink0->m_FromNodeNumber == 1)
@@ -6935,12 +6999,12 @@ void  CTLiteDoc::UpdateMovementDataFromVehicleTrajector()
 				}
 
 				int total_link_count = 0;
-				for(unsigned int j = 0; j< (*iNode)->m_MovementVector .size(); j++)
+				for(unsigned int j = 0; j< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); j++)
 				{
 
-					if((*iNode)->m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
+					if((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
 					{
-						total_link_count+= (*iNode)->m_MovementVector[j].sim_turn_count ;
+						total_link_count+= (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].sim_turn_count ;
 					}
 
 				}
@@ -7618,7 +7682,15 @@ void CTLiteDoc::LoadSimulationOutput()
 	g_Simulation_Time_Horizon = 1440;
 	SetStatusText("Loading output link time-dependent data");
 	SetStatusText("Loading AMS movement data");
+	
+
+	ScanAMSTimingPlanCSVFile(m_ProjectDirectory+"AMS_timing_plan.csv");
+
+	ConstructMovementVector();
+
 	ReadAMSMovementCSVFile(m_ProjectDirectory+"AMS_movement.csv");
+	ReadAMSPhasingFile(m_ProjectDirectory+"AMS_phasing.csv");
+	
 
 	ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory+"output_LinkMOE.csv");
 		if(ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin") == true)
@@ -9271,7 +9343,7 @@ bool CTLiteDoc::WriteSubareaFiles()
 
 		}
 
-		fprintf(st,"congestion_index,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit_in_mph,lane_capacity_in_vhc_per_hour,link_type,jam_density_in_vhc_pmpl,wave_speed_in_mph,mode_code,grade,prohibited_u-turn,geometry\n");
+		fprintf(st,"congestion_index,link_id,from_node_id,to_node_id,direction,length_in_mile,number_of_lanes,speed_limit,lane_capacity_in_vhc_per_hour,link_type,jam_density,wave_speed,mode_code,grade,prohibited_u-turn,geometry\n");
 		for (iLink = m_SubareaLinkSet.begin(); iLink != m_SubareaLinkSet.end(); iLink++)
 		{
 			if((*iLink)->m_AVISensorFlag == false)
@@ -13162,7 +13234,6 @@ bool CTLiteDoc::ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_dat
 
 						TRACE("\n%d->%d", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
 
-						pLink->m_total_link_volume +=1;
 						pVehicle->m_FreeflowTripTime += pLink->m_FreeFlowTravelTime ;
 
 						float travel_time  = PathNodeArrivalTimeVector[i+1] - PathNodeArrivalTimeVector[i];
@@ -14211,7 +14282,6 @@ bool CTLiteDoc::ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id)
 								if(pLink!=NULL)
 								{
 									pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo ;
-									pLink->m_total_link_volume +=1;
 									pVehicle->m_FreeflowTripTime += pLink->m_FreeFlowTravelTime ;
 									pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = valid_section_vector[i].timeSta;
 									pVehicle->m_NodeNumberSum += pLink->m_FromNodeNumber ;
@@ -15979,7 +16049,7 @@ void CTLiteDoc::OnSubareaGenerateworkzonescenariofilefromlinksinsidesubarea()
 	OpenCSVFileInExcel(m_ProjectDirectory + "Scenario_Work_Zone.csv");
 }
 
-void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
+void CTLiteDoc::RunQEMTool(int NodeNumber = -1)
 {
 
 	if(m_ProjectDirectory.GetLength () ==0)
@@ -15992,8 +16062,12 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 
 	g_SetCursor(_cursor_wait);
 
-	SaveMovementData(MovementFileName, NodeNumber);
-	SaveMovementData(MovementFileName+".input.csv", NodeNumber);
+	SaveMovementData(m_ProjectDirectory + "AMS_movement.csv", -1);
+	SaveMovementData(m_ProjectDirectory + "AMS_movement.input.csv", -1);  // as back up file
+
+	SaveAMSPhasingData(m_ProjectDirectory+"AMS_phasing.csv");
+	SaveAMSPhasingData(m_ProjectDirectory+"AMS_phasing.input.csv"); // as back up
+
 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
@@ -16001,15 +16075,40 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 
 	QEM_setting_file.Format ("%s\\QEM_Settings.ini",pMainFrame->m_CurrentDirectory);
 
-	CString file_name;
-	file_name  = m_ProjectDirectory + MovementFileName;
+	CString str;
 
-	CCSVWriter MovementFile;
-	if(MovementFile.Open(CString2StdString(QEM_setting_file)))
+	CCSVWriter SettingFile;
+	if(SettingFile.Open(CString2StdString(QEM_setting_file)))
 	{
 
-		MovementFile.WriteTextLabel (file_name);
-		MovementFile.CloseCSVFile ();
+		str.Format("%s\n",m_ProjectDirectory);
+		SettingFile.WriteTextLabel (str);
+
+		// timing plan to be optimized
+
+		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		{
+			std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+
+			SettingFile.WriteTextLabel (timing_plan_name.c_str() );
+			SettingFile.WriteTextLabel (";");
+		}
+			SettingFile.WriteTextLabel ("\n");
+
+		if(NodeNumber>=1)
+		{
+		str.Format ("%d\n",NodeNumber);
+		SettingFile.WriteTextLabel (str);
+		
+	DTA_Phasing_Data_Matrix element = GetPhaseData(NodeNumber ,"FREE");
+
+	if(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_RingType).Find("Single")!=-1)  // single ring
+		SettingFile.WriteTextLabel ("single_ring\n");
+	else
+		SettingFile.WriteTextLabel ("dual_ring\n");
+
+		}
+		SettingFile.CloseCSVFile ();
 
 		// run QEM utility
 		CString sCommand, strParam, strWorkingFolder;
@@ -16030,6 +16129,10 @@ void CTLiteDoc::RunQEMTool(CString MovementFileName, int NodeNumber = -1)
 
 	g_SetCursor(_cursor_standard_arrow);
 
+	ReadAMSMovementCSVFile( m_ProjectDirectory+"AMS_movement.csv");
+	ReadAMSPhasingFile(m_ProjectDirectory+"AMS_phasing.csv");
+
+
 }
 
 void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
@@ -16037,18 +16140,24 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 
 	CCSVWriter MovementFile;
 
-	CString movement_str = m_ProjectDirectory + MovementFileName;
+	CString movement_str = MovementFileName;
 
 	// Convert a TCHAR string to a LPCSTR
 	CT2CA pszConvertedAnsiString (movement_str);
 
 	// construct a std::string using the LPCSTR input
 	std::string strStd (pszConvertedAnsiString);
+	
+	if(NodeNumber<0)
+	{
+	GenerateMovementShapePoints();
+	}
 
 	if(MovementFile.Open(strStd))
 	{
 
 
+		MovementFile.SetFieldName ("timing_plan_name");
 		MovementFile.SetFieldName ("node_id");
 		MovementFile.SetFieldName ("QEM_reference_node_id");
 		MovementFile.SetFieldName ("CycleLength");
@@ -16074,33 +16183,34 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 		MovementFile.SetFieldName ("obs_turn_delay_in_second");
 
 
-		MovementFile.SetFieldName ("QEM_TurnDirection");
 		MovementFile.SetFieldName ("QEM_TurnVolume");
-		MovementFile.SetFieldName ("QEM_LinkVolume");
-		MovementFile.SetFieldName ("QEM_Lanes");
-		MovementFile.SetFieldName ("QEM_Shared");
-		MovementFile.SetFieldName ("QEM_Width");
-		MovementFile.SetFieldName ("QEM_Storage");
-		MovementFile.SetFieldName ("QEM_StLanes");
-		MovementFile.SetFieldName ("QEM_Grade");
-		MovementFile.SetFieldName ("QEM_Speed");
-		MovementFile.SetFieldName ("QEM_IdealFlow");
-		MovementFile.SetFieldName ("QEM_LostTime");
-		MovementFile.SetFieldName ("QEM_Phase1");
-		MovementFile.SetFieldName ("QEM_PermPhase1");
-		MovementFile.SetFieldName ("QEM_DetectPhase1");
+		MovementFile.SetFieldName ("LinkVolume");
+		MovementFile.SetFieldName ("Lanes");
+		MovementFile.SetFieldName ("Shared");
+		MovementFile.SetFieldName ("Width");
+		MovementFile.SetFieldName ("Storage");
+		MovementFile.SetFieldName ("StLanes");
+		MovementFile.SetFieldName ("Grade");
+		MovementFile.SetFieldName ("Speed");
+		MovementFile.SetFieldName ("IdealFlow");
+		MovementFile.SetFieldName ("LostTime");
+		MovementFile.SetFieldName ("Phase1");
+		MovementFile.SetFieldName ("PermPhase1");
+		MovementFile.SetFieldName ("DetectPhase1");
 
-		MovementFile.SetFieldName ("QEM_EffectiveGreen");
-		MovementFile.SetFieldName ("QEM_Capacity");
-		MovementFile.SetFieldName ("QEM_VOC");
-		MovementFile.SetFieldName ("QEM_Delay");
-		MovementFile.SetFieldName ("QEM_LOS");
-		MovementFile.SetFieldName ("QEM_SatFlow");
+		MovementFile.SetFieldName ("EffectiveGreen");
+		MovementFile.SetFieldName ("Capacity");
+		MovementFile.SetFieldName ("VOC");
+		MovementFile.SetFieldName ("Delay");
+		MovementFile.SetFieldName ("LOS");
+		MovementFile.SetFieldName ("SatFlowRatePerLaneGroup");
 
 		MovementFile.SetFieldName ("GreenStartTime");
 		MovementFile.SetFieldName ("GreenEndTime");
 
+		MovementFile.SetFieldName ("geometry");
 
+		
 		MovementFile.WriteHeader();
 
 		std::list<DTANode*>::iterator iNode;
@@ -16113,12 +16223,24 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 				if((*iNode)->m_NodeNumber != NodeNumber)
 					continue; // skip not selected node number
 			}
-			for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
-			{
-				if( (*iNode)->IsEmptyPhaseNumber() == true)
-					(*iNode)->ResetToDefaultPhaseNumbers(); 
 
-				DTANodeMovement movement = (*iNode)->m_MovementVector[m];
+
+		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		{
+
+			std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+
+
+			if((*iNode)->m_MovementDataMap.find(timing_plan_name) != (*iNode)->m_MovementDataMap.end() && (*iNode)->IfTrafficExistInThisTimingPlan(timing_plan_name) == true)
+			{
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector .size(); m++)
+			{
+				if( (*iNode)->IsEmptyPhaseNumber(timing_plan_name) == true)
+					(*iNode)->ResetToDefaultPhaseNumbers(timing_plan_name); 
+
+				(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_TurnVolume  =  (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].sim_turn_hourly_count ;
+
+				DTANodeMovement movement = (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m];
 
 				if( ((*iNode)->m_ControlType == m_ControlType_PretimedSignal ||  (*iNode)->m_ControlType == m_ControlType_ActuatedSignal) && movement.turning_prohibition_flag==0)
 				{  // overwite movement effective time for signalized intersections
@@ -16127,21 +16249,23 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 					if(movement.QEM_Lanes >=1 )
 					{
 						DTALink* pIncomingLink = m_LinkNoMap[movement.IncomingLinkNo ];
-						(*iNode)->m_MovementVector[m].QEM_EffectiveGreen =  max(12,(int)((*iNode)->m_CycleLengthInSecond* pIncomingLink->m_LaneCapacity / pIncomingLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane));
+						(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_EffectiveGreen =  max(12,(int)((*iNode)->m_CycleLengthInSecond* pIncomingLink->m_LaneCapacity / pIncomingLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane));
 					}else
 					{
-						(*iNode)->m_MovementVector[m].QEM_EffectiveGreen =  6;  // minimum effective green
+						(*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m].QEM_EffectiveGreen =  6;  // minimum effective green
 					
 					}
 
 					}
 
 				}
-				
 
 				//re-fetch data
-				 movement = (*iNode)->m_MovementVector[m];
+				movement = (*iNode)->m_MovementDataMap[timing_plan_name].m_MovementVector[m];
 
+				
+
+				MovementFile.SetValueByFieldName  ("timing_plan_name",timing_plan_name);
 				MovementFile.SetValueByFieldName  ("node_id",(*iNode)->m_NodeNumber);
 				MovementFile.SetValueByFieldName  ("CycleLength",(*iNode)->m_CycleLengthInSecond );
 				MovementFile.SetValueByFieldName  ("Offset",(*iNode)->m_SignalOffsetInSecond );
@@ -16190,49 +16314,69 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1)
 				MovementFile.SetValueByFieldName ("obs_turn_percentage",movement.obs_turn_percentage  );
 				MovementFile.SetValueByFieldName ("obs_turn_delay_in_second",movement.obs_turn_delay );
 
-				MovementFile.SetValueByFieldName ("QEM_TurnDirection", movement.QEM_dir_string );
 				MovementFile.SetValueByFieldName ("QEM_TurnVolume",movement.QEM_TurnVolume );
 
 
-				MovementFile.SetValueByFieldName ("QEM_LinkVolume", movement.QEM_LinkVolume);
+				MovementFile.SetValueByFieldName ("LinkVolume", movement.QEM_LinkVolume);
 
-				MovementFile.SetValueByFieldName ("QEM_Lanes",movement.QEM_Lanes );
-				MovementFile.SetValueByFieldName ("QEM_Shared",movement.QEM_Shared );
-				MovementFile.SetValueByFieldName ("QEM_Width",movement.QEM_Width );
-				MovementFile.SetValueByFieldName ("QEM_Storage",movement.QEM_Storage );
-				MovementFile.SetValueByFieldName ("QEM_StLanes",movement.QEM_StLanes );
-				MovementFile.SetValueByFieldName ("QEM_Grade",movement.QEM_Grade );
-				MovementFile.SetValueByFieldName ("QEM_Speed",movement.QEM_Speed );
-				MovementFile.SetValueByFieldName ("QEM_IdealFlow",movement.QEM_IdealFlow );
-				MovementFile.SetValueByFieldName ("QEM_LostTime",movement.QEM_LostTime );
-				MovementFile.SetValueByFieldName ("QEM_Phase1",movement.QEM_Phase1 );
-				MovementFile.SetValueByFieldName ("QEM_PermPhase1",movement.QEM_PermPhase1 );
-				MovementFile.SetValueByFieldName ("QEM_DetectPhase1",movement.QEM_DetectPhase1 );
+				MovementFile.SetValueByFieldName ("Lanes",movement.QEM_Lanes );
+				MovementFile.SetValueByFieldName ("Shared",movement.QEM_Shared );
+				MovementFile.SetValueByFieldName ("Width",movement.QEM_Width );
+				MovementFile.SetValueByFieldName ("Storage",movement.QEM_Storage );
+				MovementFile.SetValueByFieldName ("StLanes",movement.QEM_StLanes );
+				MovementFile.SetValueByFieldName ("Grade",movement.QEM_Grade );
+				MovementFile.SetValueByFieldName ("Speed",movement.QEM_Speed );
+				MovementFile.SetValueByFieldName ("IdealFlow",movement.QEM_IdealFlow );
+				MovementFile.SetValueByFieldName ("LostTime",movement.QEM_LostTime );
+				MovementFile.SetValueByFieldName ("Phase1",movement.QEM_Phase1 );
+				MovementFile.SetValueByFieldName ("PermPhase1",movement.QEM_PermPhase1 );
+				MovementFile.SetValueByFieldName ("DetectPhase1",movement.QEM_DetectPhase1 );
 
-				MovementFile.SetValueByFieldName ("QEM_EffectiveGreen",movement.QEM_EffectiveGreen );
+				MovementFile.SetValueByFieldName ("EffectiveGreen",movement.QEM_EffectiveGreen );
 
 				MovementFile.SetValueByFieldName ("MovementStartTime",movement.QEM_StartTime );
 				MovementFile.SetValueByFieldName ("MovementEndTime",movement.QEM_EndTime );
 
-				MovementFile.SetValueByFieldName ("QEM_Capacity",movement.QEM_Capacity );
-				MovementFile.SetValueByFieldName ("QEM_VOC",movement.QEM_VOC );
-				MovementFile.SetValueByFieldName ("QEM_Delay",movement.QEM_Delay );
+				MovementFile.SetValueByFieldName ("Capacity",movement.QEM_Capacity );
+				MovementFile.SetValueByFieldName ("VOC",movement.QEM_VOC );
+				MovementFile.SetValueByFieldName ("Delay",movement.QEM_Delay );
 
 				CT2CA pszConvertedAnsiString (movement.QEM_LOS);
 				// construct a std::string using the LPCSTR input
 				std::string strStd (pszConvertedAnsiString);
 
-				MovementFile.SetValueByFieldName ("QEM_LOS", strStd);
+				MovementFile.SetValueByFieldName ("LOS", strStd);
 
-				MovementFile.SetValueByFieldName ("QEM_SatFlow",movement.QEM_SatFlow );
+				MovementFile.SetValueByFieldName ("SatFlowRatePerLaneGroup",movement.QEM_SatFlow );
 				MovementFile.SetValueByFieldName ("GreenStartTime", movement.QEM_StartTime );
 				MovementFile.SetValueByFieldName ("GreenEndTime", movement.QEM_EndTime );
 
 
+				std::string str_geometry;
+
+				// geometry
+				str_geometry += "\"<LineString><coordinates>";
+
+				for(unsigned int si = 0; si< movement.m_ShapePoints.size(); si++)
+				{
+					CString str;
+					str.Format ("%f,%f,0.0",movement.m_ShapePoints[si].x, movement.m_ShapePoints[si].y);
+
+					str_geometry += CString2StdString(str);
+
+					if(si!=movement.m_ShapePoints.size()-1)
+						str_geometry +=" ";
+				}
+
+				str_geometry +="</coordinates></LineString>\",";
+
+				MovementFile.SetValueByFieldName ("geometry", str_geometry );
 				MovementFile.WriteRecord ();
 
 			}
+			}
 
+		}
 		}
 
 	}
@@ -16271,7 +16415,7 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 		std::list<DTANode*>::iterator iNode;
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			if((*iNode)->m_MovementVector .size() > 0)
+			if((*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size() > 0)
 			{
 
 				fprintf(st,"%d,%d,",(*iNode)->m_NodeNumber, (*iNode)->m_CycleLengthInSecond );
@@ -16282,7 +16426,7 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 					int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
 					if(MovementIndex >=0)
 					{  
-						fprintf(st,"%d,",(*iNode)->m_MovementVector[MovementIndex]. QEM_Lanes);
+						fprintf(st,"%d,",(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex]. QEM_Lanes);
 
 					}else
 					{
@@ -16299,9 +16443,9 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 					if(MovementIndex >=0)
 					{  
 						if(bSimulatedCountFlag) 
-							fprintf(st,"%.1f,",(*iNode)->m_MovementVector[MovementIndex]. sim_turn_hourly_count);
+							fprintf(st,"%.1f,",(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex]. sim_turn_hourly_count);
 						else // observed 
-							fprintf(st,"%d,",(*iNode)->m_MovementVector[MovementIndex]. obs_turn_hourly_count);
+							fprintf(st,"%d,",(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex]. obs_turn_hourly_count);
 
 
 					}else
@@ -16318,7 +16462,7 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 					int MovementIndex = (*iNode)->FindMovementIndexFromDirecion(Approach_vector[i]);
 					if(MovementIndex >=0)
 					{  
-						fprintf(st,"%.0f,",(*iNode)->m_MovementVector[MovementIndex].QEM_Speed);
+						fprintf(st,"%.0f,",(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex].QEM_Speed);
 
 
 					}else
@@ -16337,8 +16481,8 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 					{  
 
 						DTALink* pLink = FindLinkWithNodeIDs(
-							(*iNode)->m_MovementVector[MovementIndex].in_link_from_node_id,
-							(*iNode)->m_MovementVector[MovementIndex].in_link_to_node_id);
+							(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex].in_link_from_node_id,
+							(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex].in_link_to_node_id);
 
 						if(pLink!=NULL)
 							fprintf(st,"%s,", pLink->m_Name .c_str ());
@@ -16361,7 +16505,7 @@ void CTLiteDoc::SaveQEMMovementData(CString MovementFileName, bool bSimulatedCou
 					if(MovementIndex >=0)
 					{  
 
-						fprintf(st,"%.1f,", (*iNode)->m_MovementVector[MovementIndex].QEM_EffectiveGreen);
+						fprintf(st,"%.1f,", (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex].QEM_EffectiveGreen);
 
 					}else
 					{
@@ -17347,3 +17491,261 @@ NetworkState current_element;
 		
 	
 	}
+
+
+void CTLiteDoc::GenerateMovementShapePoints()
+{
+
+	std::list<DTANode*>::iterator iNode;
+	for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	{
+	DTANode* pNode = (*iNode);
+
+	double size_ratio= m_MovementTextBoxSizeInFeet/250;
+
+	double node_set_back = size_ratio*150 * m_UnitFeet;
+
+	double link_length = size_ratio*250 * m_UnitFeet;
+	double movement_length = size_ratio*100 * m_UnitFeet;
+	double lane_width = size_ratio*10 * m_UnitFeet;
+
+
+	double text_length =  m_MovementTextBoxSizeInFeet * 0.15 *  m_UnitFeet ;
+
+	std::map<CString, double> Turn_Degree_map;
+
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	{
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+
+		 pNode->m_MovementDataMap["FREE"].m_MovementVector[i].m_ShapePoints .clear ();
+
+
+		 if(pNode->m_ControlType != m_ControlType_PretimedSignal && 
+					pNode->m_ControlType != m_ControlType_ActuatedSignal)
+			continue;
+
+
+		if(m_LinkNoMap.find(movement.IncomingLinkNo) ==  m_LinkNoMap.end())
+			return;
+
+		if(m_LinkNoMap.find(movement.OutgoingLinkNo) ==  m_LinkNoMap.end())
+			return;
+
+		DTALink* pInLink  = m_LinkNoMap [movement.IncomingLinkNo];
+		DTALink* pOutLink  = m_LinkNoMap [movement.OutgoingLinkNo ];
+
+		int destination_node  = pOutLink->m_ToNodeNumber; 
+
+
+		GDPoint p1, p2, p3, p_text;
+		// 1: fetch all data
+		p1  = m_NodeNoMap[movement.in_link_from_node_id ]->pt;
+		p2  = m_NodeNoMap[movement.in_link_to_node_id ]->pt;
+		p3  = m_NodeNoMap[movement.out_link_to_node_id]->pt;
+
+		// reserved direction
+		double DeltaX = p2.x - p1.x ;
+		double DeltaY = p2.y - p1.y ;
+		double theta = atan2(DeltaY, DeltaX);
+
+		double movement_approach_turnection_theta = atan2(p3.y - p1.y, p3.x - p1.x);
+
+
+		GDPoint p1_new, p2_new, p3_new;
+		GDPoint p1_text, p3_text;
+		GDPoint pt_movement[3];
+
+
+		// 2. set new origin
+		p2_new.x = pNode->pt.x +(-1)*node_set_back*cos(theta);  
+		p2_new.y = pNode->pt.y + (-1)*node_set_back*sin(theta);
+
+		p1_new.x = pNode->pt.x +(-1)*link_length*cos(theta);
+		p1_new.y = pNode->pt.y + (-1)*link_length*sin(theta);
+
+		p_text.x = p1_new.x - text_length*cos(theta);
+		p_text.y = p1_new.y - text_length*sin(theta);
+
+
+		// 3 determine the control point for  PolyBezier
+		double lane_width =  size_ratio*3*m_LaneWidthInFeet * m_UnitFeet;
+		double movement_offset = 0;
+		double text_offset = 0.7*lane_width;
+		int mid_lane_number = 4+ pInLink->m_NumberOfLanes / 2;
+		float control_point_ratio = 0;
+
+		float MovementTextFontSize = 8;
+
+		CString movement_approach_turnection_label;
+		movement_approach_turnection_label.Format ("%d,%s", movement.in_link_from_node_id , GetTurnString(movement.movement_turn));
+
+		if(movement.movement_turn == DTA_Through ) 
+		{
+
+			if(Turn_Degree_map.find (movement_approach_turnection_label ) != Turn_Degree_map.end())
+			{  // this direction has been used/defined.
+
+				if( Turn_Degree_map[movement_approach_turnection_label ] <  movement_approach_turnection_theta)
+					movement_offset = lane_width * (mid_lane_number - 0.7);
+				else
+					movement_offset = lane_width * (mid_lane_number + 0.7);
+
+			}else
+			{
+				movement_offset = lane_width * mid_lane_number;
+
+			}
+
+		}else if(movement.movement_turn == DTA_LeftTurn || movement.movement_turn == DTA_LeftTurn2 ) 
+		{
+			movement_offset = lane_width * (mid_lane_number-1);
+		}else
+		{
+			movement_offset = lane_width * (mid_lane_number+1);
+		}
+
+		// keep a record
+		Turn_Degree_map[movement_approach_turnection_label] = movement_approach_turnection_theta;
+
+
+		GDPoint pt_from, pt_to, pt_text;
+		pt_from.x = p1_new.x + movement_offset* cos(theta-PI/2.0f);
+		pt_from.y = p1_new.y + movement_offset* sin(theta-PI/2.0f);
+
+
+		double alpha  = 0.3;
+
+		pt_to.x  = p2_new.x + movement_offset* cos(theta-PI/2.0f);
+		pt_to.y  =  p2_new.y + movement_offset* sin(theta-PI/2.0f);
+
+		// direction
+
+		DeltaX = p2.x - p3.x ;
+		DeltaY = p2.y - p3.y ;
+		theta = atan2(DeltaY, DeltaX);
+
+
+		if(movement.movement_turn == DTA_Through ) 
+		{
+			p3_new.x = pt_to.x - movement_length * cos(theta);
+			p3_new.y = pt_to.y - movement_length * sin(theta);
+
+		}else if(movement.movement_turn == DTA_LeftTurn ) 
+		{
+			p3_new.x = pt_to.x - movement_length * cos(theta -PI/4.0f);
+			p3_new.y = pt_to.y - movement_length * sin(theta -PI/4.0f);
+		}else
+		{
+			p3_new.x = pt_to.x - movement_length * cos(theta +PI/4.0f);
+			p3_new.y = pt_to.y - movement_length * sin(theta +PI/4.0f);
+		}
+
+		// 		GDPoint p1_new, p2_new, p3_new;
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].m_ShapePoints.push_back(p1_new);
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].m_ShapePoints.push_back(p2_new);
+		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].m_ShapePoints.push_back(p3_new);
+
+	}  // per movement
+	} // per node
+
+}
+void CTLiteDoc::OnMovementSetupnumberofleftturnlanesforsignalizednodes()
+{
+
+	//CDlg_LeftTurnLaneSetup dlg;
+
+ //   dlg.m_TimingPlanStringVector =   m_TimingPlanNameVector;
+
+	//if(dlg.DoModal() == IDOK)
+	//{
+
+	//	CWaitCursor wait;
+
+	//	int SelectedTimingPlanNo = dlg.m_SelectedTimingPlanNo;
+
+
+	//	for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+	//	{
+
+	//		std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+
+	//		for (std::list<DTANode*>::iterator  iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
+	//		{
+	//			if(((*iNode)->m_ControlType == m_ControlType_PretimedSignal || (*iNode)->m_ControlType == m_ControlType_ActuatedSignal) && 
+	//				(*iNode)->IfTrafficExistInThisTimingPlan(timing_plan_name) == true )  // volume data exists
+	//			{
+
+
+	//				CString node_key;
+	//				node_key.Format ("%d", (*iNode)->m_NodeNumber);
+
+
+	//				DTA_Phasing_Data_Matrix element_current = GetPhaseData((*iNode)->m_NodeNumber ,  m_TimingPlanNameVector[SelectedTimingPlanNo]);
+
+	//				if(element_current.GetValue (
+	//					DTA_SIG_PHASE_ROW row_no =  (DTA_SIG_PHASE_ROW)i;
+
+	//					m_DTAPhasingMap[phasing_map_key].SetString ( DTA_SIG_PHASE_TIMING_PLAN_NAME, row_no, timing_plan_name );
+	//					m_DTAPhasingMap[phasing_map_key].SetString ( DTA_SIG_PHASE_NODE_ID, row_no, CString2StdString(node_key) );
+	//					m_DTAPhasingMap[phasing_map_key].SetString ( DTA_SIG_PHASE_KEY, row_no, g_DTA_phasing_row_name[row_no]);
+	//				}
+
+
+
+	//				//check ring type
+	//				CString ring_type_str  = element_current.GetString (DTA_SIG_PHASE_VALUE, TIMING_RingType); 
+	//
+	//				if(ring_type_str.GetLength ()	 == 0 )  // no default value
+	//					SetupSignalValue((*iNode)->m_NodeNumber,timing_plan_name,TIMING_RingType, "dual_ring");
+
+
+	//				CString control_str  = element_current.GetString (DTA_SIG_PHASE_VALUE, TIMING_ControlType); 
+	//
+	//				if(control_str.Compare ("actuated_signal") !=0  )  // set default value as pretimed_signal
+	//					SetupSignalValue((*iNode)->m_NodeNumber,timing_plan_name,TIMING_ControlType, "pretimed_signal");
+
+
+	//				if(ring_type_str.GetLength ()	 == 0 )  // no default value
+	//					SetupSignalValue((*iNode)->m_NodeNumber,timing_plan_name,TIMING_RingType, "dual_ring");
+
+	//				//refetch data 
+	//				DTA_Phasing_Data_Matrix element = GetPhaseData((*iNode)->m_NodeNumber ,  timing_plan_name);
+
+	//				for(int i=0; i< DTA_PHASE_ATTRIBUTE_MAX_ROW;i++)
+	//				{
+	//					DTA_SIG_PHASE_ROW row_no =  (DTA_SIG_PHASE_ROW)i;
+
+	//					// node id 
+	//					fprintf(st, "%s,", timing_plan_name.c_str () );
+	//					// node id 
+	//					fprintf(st, "%d,", (*iNode)->m_NodeNumber );
+
+	//					for(int j=2; j< DTA_SIG_PHASE_MAX_COLUMN;j++)
+	//					{
+	//						fprintf(st, "%s,", element.m_AMSPhasingData[row_no][j].c_str() );
+
+	//					}
+	//					fprintf(st,"\n");
+	//				}
+
+
+	//			}
+	//		}
+	//	}
+	//	fclose(st);
+	//}else
+	//{
+	//	AfxMessageBox("File AMS_phasing.csv cannot be opened.");
+	//}
+
+	
+	
+}
+
+void CTLiteDoc::OnMovementOptimizephasingandtimingdataforalltrafficsignalsthroughqem()
+{
+	CDlg_SignalDataExchange dlg;
+	dlg.m_pDoc = this;
+	dlg.DoModal();
+}

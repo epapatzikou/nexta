@@ -267,7 +267,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		{
 			struc_vehicle_item vi = pLink->LoadingBuffer.front();
 			// we change the time stamp here to reflect the actual loading time into the network, especially for blocked link
-			if( vi.time_stamp < CurrentTime)
+			if( g_floating_point_value_less_than_or_eq_comparison(vi.time_stamp , CurrentTime))
 				vi.time_stamp = CurrentTime;
 
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
@@ -358,6 +358,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			struc_vehicle_item vi = pLink->EntranceQueue.front();
 			double PlannedArrivalTime = vi.time_stamp;
 
+			if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 )
+			{
+				TRACE("Time %f, PlannedArrivalTime = %f,  CurrentTime = %f, \n",
+					CurrentTime, PlannedArrivalTime, CurrentTime );
+			
+			}
 
 			if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
 			{
@@ -390,6 +396,14 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				TRACE("Step 3: Time %f, Link: %d -> %d: entrance queue length: %d, exit queue length %d\n",
 					CurrentTime, pLink->m_FromNodeNumber , pLink->m_ToNodeNumber,
 					pLink->LeftEntrance_Queue.size(),pLink->LeftExit_Queue.size());
+			}
+
+
+			if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 )
+			{
+				TRACE("Time %f, PlannedArrivalTime = %f,  CurrentTime = %f, \n",
+					CurrentTime, PlannedArrivalTime, CurrentTime );
+			
 			}
 
 			if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
@@ -517,9 +531,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			bool OutFlowFlag = true;
 
-			float MaximumFlowRate = PerHourCapacityAtCurrentSimulatioInterval *g_DTASimulationInterval/60.0f*pLink->GetNumberOfLanes(DayNo,CurrentTime,OutFlowFlag); //60 --> cap per min --> unit # of vehicle per simulation interval
+			float number_of_lanes  = pLink->GetNumberOfLanes(DayNo,CurrentTime,OutFlowFlag);
+			float number_vehicles_per_simulation_interval = PerHourCapacityAtCurrentSimulatioInterval *g_DTASimulationInterval/60.0f * number_of_lanes; //60 --> cap per min --> unit # of vehicle per simulation interval
 
-			float Capacity = MaximumFlowRate;
+			float Capacity = number_vehicles_per_simulation_interval;
 			// use integer number of vehicles as unit of capacity
 
 			if(g_RandomizedCapacityMode)
@@ -527,9 +542,21 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				pLink-> LinkOutCapacity = g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(Capacity,li);
 			}else
 			{
-				float PrevCumulativeOutCapacityCount = pLink->m_CumulativeOutCapacityCount;
-				pLink->m_CumulativeOutCapacityCount+= Capacity;
-				pLink-> LinkOutCapacity = (int)pLink->m_CumulativeOutCapacityCount - (int) PrevCumulativeOutCapacityCount;
+
+				pLink->m_CumulativeOutCapacityCount+= Capacity;  // floating point variable to record number of vehicles can be sent out based on floating point capacity
+
+				pLink-> LinkOutCapacity = (int)(pLink->m_CumulativeOutCapacityCount) - pLink-> m_CumulativeOutCapacityCountAtPreviousInterval;
+
+				if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 )
+				{
+					TRACE("\ntime %f, link capacity per simulation interval = %d, cumulative out capacity: %f, cumulative out capacity count: %d ", 
+						CurrentTime, pLink-> LinkOutCapacity , pLink->m_CumulativeOutCapacityCount,  pLink-> m_CumulativeOutCapacityCountAtPreviousInterval);
+				
+				}
+
+				pLink-> m_CumulativeOutCapacityCountAtPreviousInterval += pLink->LinkOutCapacity; // accumulate the # of out vehicles from the capacity, this is an inter number 
+
+
 			}
 
 
@@ -544,7 +571,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 
 				if(g_LinkTypeMap[pLink->m_link_type] .IsFreeway())
-					fLinkInCapacity = min (AvailableSpaceCapacity, pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+					fLinkInCapacity = min (AvailableSpaceCapacity, 1800 *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
 				else // non freeway links
 					fLinkInCapacity = AvailableSpaceCapacity;
 
@@ -557,7 +584,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// the inflow capcaity is the minimum of (1) incoming maximum flow rate (determined by the number of lanes) and (2) available space capacty  on the link.
 				// use integer number of vehicles as unit of capacity
 
-				if(TrafficFlowModelFlag == tfm_newells_model && g_LinkTypeMap[pLink->m_link_type] .IsFreeway())  // Newell's model on freeway only
+				//if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 && CurrentTime>=434.15)
+				//{
+				//TRACE("");
+				//}
+				if((TrafficFlowModelFlag == tfm_newells_model||TrafficFlowModelFlag == tfm_newells_model_with_emissions)  && g_LinkTypeMap[pLink->m_link_type] .IsFreeway())  // Newell's model on freeway only
 				{
 					if(simulation_time_interval_no >=pLink->m_BackwardWaveTimeInSimulationInterval ) /// we only apply backward wave checking after the simulation time is later than the backward wave speed interval
 					{
@@ -613,11 +644,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				}
 
 
-				float InflowRate = MaximumFlowRate *g_MinimumInFlowRatio;
+				float InflowRate = number_vehicles_per_simulation_interval *g_MinimumInFlowRatio;
 
 				if(CurrentTime >= (g_DemandLoadingEndTimeInMin + g_RelaxInFlowConstraintAfterDemandLoadingTime))  // g_RelaxInFlowConstraintAfterDemandLoadingTime min after demand loading period, do not apply in capacity constraint
 				{
-					InflowRate  = MaximumFlowRate;
+					InflowRate  = number_vehicles_per_simulation_interval;
 				}
 
 				if(fLinkInCapacity < InflowRate)  // minimum inflow capacity to keep the network flowing
@@ -637,9 +668,21 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				// new version with uniform inflow capa distribution 
 			}else
 			{
-				float PrevCumulativeInCap  = pLink-> m_CumulativeInCapacityCount;
+
+
 				pLink-> m_CumulativeInCapacityCount += fLinkInCapacity;
-				pLink-> LinkInCapacity = (int) pLink-> m_CumulativeInCapacityCount -(int)  PrevCumulativeInCap;
+				pLink-> LinkInCapacity = (int) pLink-> m_CumulativeInCapacityCount - pLink->m_CumulativeInCapacityCountAtPreviousInterval;
+
+				pLink->m_CumulativeInCapacityCountAtPreviousInterval += pLink->LinkInCapacity;
+
+
+				//if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 && CurrentTime>=434)
+				//{
+				//	TRACE("\ntime %f, link out capacity per simulation interval = %d, cumulative out capacity: %f, cumulative in capacity count: %d ", 
+				//		CurrentTime, pLink-> LinkInCapacity , pLink->m_CumulativeInCapacityCount,  pLink-> m_CumulativeInCapacityCountAtPreviousInterval);
+				//
+				//}
+
 			}
 			//
 

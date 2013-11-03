@@ -230,28 +230,27 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Movement_Label.AddString ("Observed Turning %");
 	m_Movement_Label.AddString ("Observed Turn Delay (sec)");
 
-	m_Movement_Label.AddString ("QEM Turn Direction");
-	m_Movement_Label.AddString ("QEM Shared Lane Flag");
-	m_Movement_Label.AddString ("QEM Lane Width");
-	m_Movement_Label.AddString ("QEM Storage");
-	m_Movement_Label.AddString ("QEM StLanes");
-	m_Movement_Label.AddString ("QEM Grade");
-	m_Movement_Label.AddString ("QEM Speed");
+	m_Movement_Label.AddString ("Shared Lane Flag");
+	m_Movement_Label.AddString ("Lane Width");
+	m_Movement_Label.AddString ("Storage");
+	m_Movement_Label.AddString ("StLanes");
+	m_Movement_Label.AddString ("Grade");
+	m_Movement_Label.AddString ("Speed");
 
-	m_Movement_Label.AddString ("QEM Ideal Flow");
-	m_Movement_Label.AddString ("QEM Lost Time");
-	m_Movement_Label.AddString ("QEM PermPhase1");
-	m_Movement_Label.AddString ("QEM DetectPhase1");
+	m_Movement_Label.AddString ("Ideal Flow");
+	m_Movement_Label.AddString ("Lost Time");
+	m_Movement_Label.AddString ("PermPhase1");
+	m_Movement_Label.AddString ("DetectPhase1");
 
-	m_Movement_Label.AddString ("QEM Volume");
-	m_Movement_Label.AddString ("QEM Turning %");
+	m_Movement_Label.AddString ("Volume");
+	m_Movement_Label.AddString ("Turning %");
 
 
-	m_Movement_Label.AddString ("QEM Capacity");
-	m_Movement_Label.AddString ("QEM VOC");
-	m_Movement_Label.AddString ("QEM DischargeRate");
-	m_Movement_Label.AddString ("QEM Control Delay (sec)");
-	m_Movement_Label.AddString ("QEM LOS");
+	m_Movement_Label.AddString ("Capacity");
+	m_Movement_Label.AddString ("VOC");
+	m_Movement_Label.AddString ("DischargeRate");
+	m_Movement_Label.AddString ("Control Delay (sec)");
+	m_Movement_Label.AddString ("LOS");
 
 	m_Movement_Label.SetCurSel ((int)(pView->m_ShowMovementTextMode));
 

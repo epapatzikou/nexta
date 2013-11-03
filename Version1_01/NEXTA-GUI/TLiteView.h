@@ -164,7 +164,6 @@ enum movement_text_display_mode
    movement_display_obs_turn_percentage, 
    movement_display_obs_turn_delay, 
 
-   movement_display_QEM_TurnDirection,
    movement_display_QEM_Shared,
    movement_display_QEM_Width,
    movement_display_QEM_Storage,

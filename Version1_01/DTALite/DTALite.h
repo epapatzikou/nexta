@@ -862,6 +862,9 @@ public:
 		m_LeftTurnGreenStartTime_In_Second = 0;
 
 		m_CumulativeOutCapacityCount = 0.0f;
+		m_CumulativeOutCapacityCountAtPreviousInterval =0;
+		m_CumulativeInCapacityCountAtPreviousInterval =0 ;
+		
 		m_CumulativeLeftOutCapacityCount = 0.0f;
 		m_CumulativeMergeOutCapacityCount = 0.0f;
 		m_CumulativeInCapacityCount = 0.0f;
@@ -874,7 +877,6 @@ public:
 		m_EffectiveGreenTime_In_Second = 6;
 		m_DownstreamCycleLength_In_Second = 120;
 		m_DownstreamNodeSignalOffset_In_Second = 0;
-		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1900;
 		m_bFreewayType = false;
 		m_bArterialType = false;
 		m_bSignalizedArterialType = false;
@@ -927,6 +929,7 @@ public:
 		m_BPR_Beta = 4.0f;
 
 		m_GreenStartTime_In_Second = 0;
+		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 0;
 
 
 	};
@@ -1068,6 +1071,9 @@ public:
 	}
 
 	float m_CumulativeOutCapacityCount; 
+	int m_CumulativeOutCapacityCountAtPreviousInterval; 
+	int m_CumulativeInCapacityCountAtPreviousInterval; 
+
 	float m_CumulativeLeftOutCapacityCount; 
 	float m_CumulativeMergeOutCapacityCount; 
 
@@ -1300,7 +1306,7 @@ public:
 	int m_GreenStartTime_In_Second;
 
 	int m_EffectiveGreenTime_In_Second;
-	int m_SaturationFlowRate_In_vhc_per_hour_per_lane; 
+	float m_SaturationFlowRate_In_vhc_per_hour_per_lane;
 
 
 	int m_LeftTurn_DestNodeNumber; 
@@ -1400,6 +1406,8 @@ public:
 	{
 
 		m_CumulativeOutCapacityCount = 0;
+		m_CumulativeOutCapacityCountAtPreviousInterval = 0;
+		m_CumulativeInCapacityCountAtPreviousInterval =0 ;
 		m_CumulativeLeftOutCapacityCount = 0;
 		m_CumulativeMergeOutCapacityCount = 0;
 		m_CumulativeInCapacityCount = 0;
@@ -3346,6 +3354,7 @@ public:
 class DTASettings
 {
 public:
+	int use_mile_or_km_as_length_unit;
 	int AdditionalYellowTimeForSignals;
 	int IteraitonNoStartSignalOptimization;
 	int IteraitonStepSizeSignalOptimization;
@@ -3361,6 +3370,7 @@ public:
 	DTASettings()
 	{
 
+		use_mile_or_km_as_length_unit = 1;
 		AdditionalYellowTimeForSignals = 0;
 		IteraitonNoStartSignalOptimization = 10000;
 		IteraitonStepSizeSignalOptimization = 5;

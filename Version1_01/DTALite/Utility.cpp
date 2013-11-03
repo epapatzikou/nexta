@@ -21,8 +21,8 @@ unsigned int g_RandomSeedForVehicleGeneration = 101;
 #define g_LCG_c 0
 #define g_LCG_M 65521  
 
-long g_precision_constant=100000L;
-long g_precision_constant2=1000L;
+long g_precision_constant=100L;
+long g_precision_constant2=100L;
 extern float g_DemandGlobalMultiplier;
 
 
@@ -155,7 +155,7 @@ bool g_floating_point_value_less_than_or_eq_comparison(double value1, double val
 	long lValue1 = (long) (value1*g_precision_constant);
 	long lValue2 = (long) (value2*g_precision_constant);
 
-	if(lValue1<=lValue2)
+	if( lValue1 < lValue2 + 2) // we take 2/100 sec accuracy
 		return true;
 	else 
 		return false;

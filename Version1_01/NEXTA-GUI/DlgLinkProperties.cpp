@@ -20,7 +20,6 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, LaneCapacity(0)
 	, nLane(0)
 	, m_LinkID(0)
-	, SaturationFlowRate(0)
 	, StreetName(_T(""))
 	, m_BPR_Alpha(0)
 	, m_BPR_Beta(0)
@@ -62,8 +61,6 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, nLane, 0, 10);
 	DDX_Control(pDX, IDC_COMBO1, m_LinkTypeComboBox);
 	DDX_Text(pDX, IDC_EDIT_LINKID, m_LinkID);
-	DDX_Text(pDX, IDC_EDIT_SATURATION_FLOW_RATE, SaturationFlowRate);
-	DDV_MinMaxInt(pDX, SaturationFlowRate, 0, 5000);
 	DDX_Text(pDX, IDC_EDIT_STREET_NAME, StreetName);
 	DDV_MaxChars(pDX, StreetName, 100);
 
@@ -94,7 +91,6 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_SPEEDLIMIT, &CDlgLinkProperties::OnEnChangeEditSpeedlimit)
 	ON_EN_CHANGE(IDC_EDIT_NUMLANES, &CDlgLinkProperties::OnEnChangeEditNumlanes)
 	ON_EN_CHANGE(IDC_EDIT_LANE_CAPACITY, &CDlgLinkProperties::OnEnChangeEditLaneCapacity)
-	ON_EN_CHANGE(IDC_EDIT_SATURATION_FLOW_RATE, &CDlgLinkProperties::OnEnChangeEditSaturationFlowRate)
 	ON_EN_CHANGE(IDC_EDIT6, &CDlgLinkProperties::OnEnChangeEdit6)
 	ON_EN_CHANGE(IDC_EDIT7, &CDlgLinkProperties::OnEnChangeEdit7)
 	ON_EN_CHANGE(IDC_EDIT1, &CDlgLinkProperties::OnEnChangeEdit1)

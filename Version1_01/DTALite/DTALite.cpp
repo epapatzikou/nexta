@@ -269,7 +269,6 @@ e_signal_representation_model g_SignalRepresentationFlag = signal_model_continuo
 int g_ShortestPathWithMovementDelayFlag = 1;
 int g_UseDefaultLaneCapacityFlag = 1;
 int g_UseFreevalRampMergeModelFlag = 0;
-int g_UseSaturationFlowRateAsCapacityForLinkwithNoControl = 1;
 int g_OutputLinkCapacityFlag = 0;
 int g_OutputLinkCapacityStarting_Time =0;
 int g_OutputLinkCapacityEnding_Time =300;
@@ -294,6 +293,7 @@ std::vector<NetworkMOE>  g_NetworkMOEAry;
 std::vector<NetworkLoadingOutput>  g_AssignmentMOEVector;
 std::map<int, RealTimeSimulationSettings>  g_RealTimeSimulationSettingsMap;
 
+float g_ratio_mile_to_km = 1.60934;
 DTASettings g_settings;  // global settings;
 
 
@@ -730,10 +730,10 @@ void g_ReadInputFiles(int scenario_no)
 			if(!parser_link.GetValueByFieldName("direction",direction))
 				direction = 1;
 
-			if(!parser_link.GetValueByFieldName("length_in_mile",length_in_mile))
+			if(!parser_link.GetValueByFieldName("length",length_in_mile))
 			{
 
-				if(!parser_link.GetValueByFieldName("length",length_in_mile))
+				if(!parser_link.GetValueByFieldName("length_in_mile",length_in_mile))
 				{
 
 				cout<< "Field length has not been defined in file input_link.csv. Please check.";
@@ -758,10 +758,10 @@ void g_ReadInputFiles(int scenario_no)
 				}
 			}
 
-			if(!parser_link.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
+			if(!parser_link.GetValueByFieldName("speed_limit",speed_limit_in_mph))
 			{
 
-				if(!parser_link.GetValueByFieldName("speed_limit",speed_limit_in_mph))
+				if(!parser_link.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
 				{
 				cout << "Field speed_limit_in_mph has not been defined in file input_link.csv. Please check.";
 				getchar();
@@ -780,17 +780,6 @@ void g_ReadInputFiles(int scenario_no)
 
 			}
 			int SaturationFlowRate;
-
-			if(!parser_link.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane",SaturationFlowRate))
-			{
-				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
-				{
-					cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane has not been defined in file input_link.csv. Please check.";
-					getchar();
-					exit(0);
-				}
-			}
-
 
 			float BPR_Alpha = 0.15f;
 			float BPR_Beta = 4.0f;
@@ -849,12 +838,26 @@ void g_ReadInputFiles(int scenario_no)
 			if(!parser_link.GetValueByFieldName("AADT_conversion_factor",AADT_conversion_factor))
 				AADT_conversion_factor = 0.1;
 
-			if(!parser_link.GetValueByFieldName("K_jam",K_jam))
-				K_jam = 190;
+			if(!parser_link.GetValueByFieldName("jam_density",K_jam))
+			{
+				if(!parser_link.GetValueByFieldName("jam_density_in_vhc_pmpl",K_jam))
+				if(g_settings.use_mile_or_km_as_length_unit == 1)
+					K_jam = 180;
+				else
+					K_jam = 180/g_ratio_mile_to_km;
+			}
 
-
+			if(!parser_link.GetValueByFieldName("wave_speed",wave_speed_in_mph))
+			{
 			if(!parser_link.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
-				wave_speed_in_mph = 12;
+			{
+				if(g_settings.use_mile_or_km_as_length_unit == 1)
+					wave_speed_in_mph = 12;
+				else
+					wave_speed_in_mph = 12/g_ratio_mile_to_km;
+
+			}
+			}
 
 			if(!parser_link.GetValueByFieldName("mode_code",mode_code))
 				mode_code  = "";
@@ -1069,50 +1072,6 @@ void g_ReadInputFiles(int scenario_no)
 						control_node_number= pLink->m_ToNodeNumber ;
 
 					//							signal_reset_count++;
-				}
-
-				pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane  = capacity;  // default rate
-
-				if(pLink->m_bArterialType)
-				{
-
-					if( g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code || g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.actuated_signal_control_type_code)
-					{
-						// only check SaturationFlowRate values for siganlized intersections
-						if(capacity <=1800 && SaturationFlowRate < capacity  && g_number_of_warnings<max_number_of_warnings_to_be_showed)
-						{
-
-							cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < lane_capacity_in_vhc_per_hour: " << SaturationFlowRate << " < "  << capacity << " for link " << 
-								from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
-							getchar();
-							g_number_of_warnings++;
-
-						}
-
-
-						if(SaturationFlowRate < 1000 && SaturationFlowRate > capacity -1  && g_number_of_warnings<max_number_of_warnings_to_be_showed)
-						{
-
-							cout << "Field saturation_flow_rate_in_vhc_per_hour_per_lane < 1000: " << SaturationFlowRate << " for link " << 
-								from_node_name << " -> " << to_node_name << " in file input_link.csv. Please check." << endl;
-							getchar();
-							g_number_of_warnings++;
-
-						}
-
-
-						pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane  = max(capacity,SaturationFlowRate);
-					}else  // no
-					{
-						if(g_UseSaturationFlowRateAsCapacityForLinkwithNoControl && g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.no_signal_control_type_code)
-						{
-							pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = SaturationFlowRate;
-							pLink->m_LaneCapacity = SaturationFlowRate;
-
-						}
-
-
-					}
 				}
 
 				pLink->m_VehicleSpaceCapacity = pLink->m_Length * pLink->m_NumLanes *K_jam; 
@@ -3436,12 +3395,13 @@ void g_ReadDTALiteSettings()
 
 	g_UseDefaultLaneCapacityFlag = g_GetPrivateProfileInt("simulation", "use_default_lane_capacity", 0, g_DTASettingFileName);	
 	//	g_UseFreevalRampMergeModelFlag = g_GetPrivateProfileInt("simulation", "use_freeval_merge_model", 0, g_DTASettingFileName);	
-	g_UseSaturationFlowRateAsCapacityForLinkwithNoControl = g_GetPrivateProfileInt("simulation", "use_saturation_flow_rate_as_capacity_for_link_with_no_control_downstream_node", 1, g_DTASettingFileName);	
 	g_OutputLinkCapacityFlag = g_GetPrivateProfileInt("simulation", "output_link_capacity_file", 0, g_DTASettingFileName);	
 	g_OutputLinkCapacityStarting_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_start_time_in_min", 0, g_DTASettingFileName);	
 	g_OutputLinkCapacityEnding_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_end_time_in_min", 300, g_DTASettingFileName);	
 	g_settings.use_point_queue_model_for_on_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_on_ramps", 1, g_DTASettingFileName);
 	g_settings.use_point_queue_model_for_off_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_off_ramps", 1, g_DTASettingFileName);
+
+	g_settings.use_mile_or_km_as_length_unit = g_GetPrivateProfileInt("simulation", "use_mile_or_km_as_length_unit", 1, g_DTASettingFileName);
 
 	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
 

@@ -144,9 +144,24 @@ void g_ReadAMSMovementData()
 				float QEM_GreenEndTime = 0;
 
 				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
+
 					parser_movement.GetValueByFieldName ("GreenStartTime", QEM_GreenStartTime );
 					parser_movement.GetValueByFieldName ("GreenEndTime", QEM_GreenEndTime );
 
+					int QEM_Lanes = 0;
+					parser_movement.GetValueByFieldName ("Lanes", QEM_Lanes );
+					float SatFlowRatePerLaneGroup = 1800*QEM_Lanes;
+					parser_movement.GetValueByFieldName ("SatFlowRatePerLaneGroup", SatFlowRatePerLaneGroup );
+
+					float SatFlowRatePerLane = SatFlowRatePerLaneGroup/max(1,QEM_Lanes);
+					if(QEM_Lanes >=1 )
+					{
+						if(SatFlowRatePerLane <=1) // no value
+							SatFlowRatePerLane = 1800; // use default
+						else if (SatFlowRatePerLane <=200)
+							SatFlowRatePerLane = 200; // set the minimum value
+
+					}
 					if(g_SignalRepresentationFlag != 0 && QEM_GreenStartTime >=  QEM_GreenEndTime )
 					{
 						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << " has an effective green time of 0. Please check # of lanes for this movement." << endl;
@@ -156,9 +171,6 @@ void g_ReadAMSMovementData()
 
 				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
 				{
-					int QEM_Lanes = 0;
-					int QEM_SatFlow = 1900;
-					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
 
 					//find link
 					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
@@ -183,7 +195,7 @@ void g_ReadAMSMovementData()
 
 						pLink->m_LeftTurnGreenStartTime_In_Second = QEM_GreenStartTime;
 						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = QEM_GreenEndTime - QEM_GreenStartTime;
-						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane ;
+						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = SatFlowRatePerLane ;
 						}
 
 					}
@@ -193,9 +205,6 @@ void g_ReadAMSMovementData()
 
 				if(turn_type.find("Through") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
 				{
-					int QEM_Lanes = 0;
-					int QEM_SatFlow = 1900;
-					parser_movement.GetValueByFieldName ("QEM_Lanes", QEM_Lanes );
 
 					//find link
 					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
@@ -226,7 +235,7 @@ void g_ReadAMSMovementData()
 							pLink->m_GreenStartTime_In_Second = QEM_GreenStartTime;
 							pLink->m_EffectiveGreenTime_In_Second = QEM_GreenEndTime - QEM_GreenStartTime;
 
-						//					pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = QEM_SatFlow; // we use link based saturation flow rate
+							pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = SatFlowRatePerLane; // we use link based saturation flow rate
 						}
 
 					}

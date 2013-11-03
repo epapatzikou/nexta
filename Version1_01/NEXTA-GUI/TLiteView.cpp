@@ -4080,7 +4080,6 @@ void CTLiteView::OnLinkEditlink()
 		dlg.nLane = pLink->m_NumberOfLanes ;
 		dlg.LinkType = pLink->m_link_type;
 
-		dlg.SaturationFlowRate = pLink ->m_Saturation_flow_rate_in_vhc_per_hour_per_lane ;
 		dlg.m_BPR_Alpha  = pLink->m_BPR_alpha_term  ;
 		dlg.m_BPR_Beta  = pLink->m_BPR_beta_term  ;
 
@@ -4111,7 +4110,6 @@ void CTLiteView::OnLinkEditlink()
 
 			pLink->m_LaneCapacity  = dlg.LaneCapacity;
 
-			pLink ->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = dlg.SaturationFlowRate;
 
 			pLink->m_Mode_code  = pDoc->CString2StdString(dlg.m_ModeCode) ;
 
@@ -4147,9 +4145,9 @@ void CTLiteView::OnLinkEditlink()
 
 				for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
 				{
-					for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+					for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 					{
-						DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
+						DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
 						DTALink* pLink0 = pDoc->m_LinkNoMap[pMovement->IncomingLinkNo  ];
 						if(pLink0->m_LinkNo  == pLink->m_LinkNo && (pMovement->movement_turn == DTA_LeftTurn || pMovement->movement_turn == DTA_LeftTurn2))
 						{
@@ -4167,9 +4165,9 @@ void CTLiteView::OnLinkEditlink()
 
 				for (iNode = pDoc->m_NodeSet.begin(); iNode != pDoc->m_NodeSet.end(); iNode++)
 				{
-					for(unsigned int m = 0; m< (*iNode)->m_MovementVector .size(); m++)
+					for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
 					{
-						DTANodeMovement* pMovement = &((*iNode)->m_MovementVector[m]);
+						DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
 						DTALink* pLink0 = pDoc->m_LinkNoMap[pMovement->IncomingLinkNo  ];
 						if(pLink0->m_LinkNo  == pLink->m_LinkNo && (pMovement->movement_turn == DTA_RightTurn || pMovement->movement_turn == DTA_RightTurn2))
 						{
@@ -4703,7 +4701,7 @@ void CTLiteView::OnUpdateViewShowAVISensor(CCmdUI *pCmdUI)
 
 void CTLiteView::OnFileDataexchangewithgooglefusiontables()
 {
-	CopyLinkSetInSubarea();
+//	CopyLinkSetInSubarea();
 	CDlg_GoogleFusionTable dlg;
 	dlg.m_pDoc= GetDocument();
 	dlg.DoModal ();
@@ -5642,6 +5640,13 @@ void CTLiteView::OnNodeMovementproperties()
 		MovementPage.m_CurrentNodeNumber = pNode->m_NodeNumber;
 		MovementPage.m_CurrentNode_Name = pNode->m_Name.c_str () ;
 		MovementPage.m_Offset = pNode->m_SignalOffsetInSecond;
+
+		if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal
+		|| pNode->m_ControlType == pDoc->m_ControlType_ActuatedSignal)
+		MovementPage.m_bSigalizedNode  = true;
+		else
+		MovementPage.m_bSigalizedNode  = false;
+
 		sheet.AddPage(&MovementPage);  // 0
 
 
@@ -6202,7 +6207,6 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 	double size_ratio= pDoc->m_MovementTextBoxSizeInFeet/250;
 
-
 	double node_set_back = size_ratio*150 * pDoc->m_UnitFeet;
 
 	double link_length = size_ratio*250 * pDoc->m_UnitFeet;
@@ -6212,13 +6216,11 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 	double text_length =  pDoc->m_MovementTextBoxSizeInFeet * 0.15 *  pDoc->m_UnitFeet ;
 
-
 	std::map<CString, double> Turn_Degree_map;
 
-
-	for (unsigned int i=0;i< pNode->m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
 	{
-		DTANodeMovement movement = pNode->m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
 
 		if( pDoc->m_hide_non_specified_movement_on_freeway_and_ramp && movement.bNonspecifiedTurnDirectionOnFreewayAndRamps )
 			continue;
@@ -6306,8 +6308,6 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		CString movement_approach_turnection_label;
 		movement_approach_turnection_label.Format ("%d,%s", movement.in_link_from_node_id , pDoc->GetTurnString(movement.movement_turn));
 
-
-
 		if(movement.movement_turn == DTA_Through ) 
 		{
 
@@ -6340,32 +6340,17 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 		movement_size = min(50,movement_size);
 
-//
 		int PointSize =  max(movement_size, 10)*m_MovmentTextSize;
-
-
 
 		GDPoint pt_from, pt_to, pt_text;
 		pt_from.x = p1_new.x + movement_offset* cos(theta-PI/2.0f);
 		pt_from.y = p1_new.y + movement_offset* sin(theta-PI/2.0f);
 
 
-
-
-
 		double alpha  = 0.3;
-
-
 
 		pt_to.x  = p2_new.x + movement_offset* cos(theta-PI/2.0f);
 		pt_to.y  =  p2_new.y + movement_offset* sin(theta-PI/2.0f);
-
-		CPoint DrawPoint[3];
-		DrawPoint[0] = NPtoSP(pt_from);
-		DrawPoint[1] = NPtoSP(pt_to);
-
-		pDC->MoveTo(DrawPoint[0]);
-		pDC->LineTo(DrawPoint[1]);
 
 		// direction
 
@@ -6389,7 +6374,15 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 			p3_new.y = pt_to.y - movement_length * sin(theta +PI/4.0f);
 		}
 
+		CPoint DrawPoint[3];
+		DrawPoint[0] = NPtoSP(pt_from);
+		DrawPoint[1] = NPtoSP(pt_to);
+
+		pDC->MoveTo(DrawPoint[0]);
+		pDC->LineTo(DrawPoint[1]);
 		DrawPoint[2] = NPtoSP(p3_new);
+
+
 		pDC->LineTo(DrawPoint[2]);
 
 		//restore pen
@@ -6481,7 +6474,7 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 
 			break;
 
-	/////////////////////
+	
 
 		case movement_display_obs_turn_hourly_count: 
 			//					if(movement.sim_turn_count>=1)
@@ -6502,8 +6495,6 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 			str_text.Format("%d", movement.obs_turn_delay  ); 
 
 			break;
-
-		case movement_display_QEM_TurnDirection: str_text.Format("%s",movement.QEM_dir_string.c_str () ); break;
 
 		case movement_display_QEM_Lanes: str_text.Format("%d",movement.QEM_Lanes ); break;
 		case movement_display_QEM_Shared: str_text.Format("%d",movement.QEM_Shared ); break;
