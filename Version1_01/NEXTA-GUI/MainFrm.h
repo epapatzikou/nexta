@@ -74,6 +74,7 @@ public:
 	bool m_bSynchronizedDisplay;
 	char m_CurrentDirectory[MAX_PATH+1];
 	void UpdateAllViews();
+	void UpdateLegendView();
 
 public:
 	CStatusBar  m_wndStatusBar;

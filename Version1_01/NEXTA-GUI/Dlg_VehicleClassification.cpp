@@ -84,7 +84,7 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	
 	// TODO: Add extra initialization here
 
-	m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
+	m_chart.PrepareColors(SimpleColors);
 	
 	if(m_PresetChartTitle.GetLength () > 0)
 		m_chart.m_Caption = m_PresetChartTitle;
@@ -361,10 +361,10 @@ void CDlg_VehicleClassification::OnRadioColors()
 	
 	switch(state){
 		case IDC_RADIO3:
-			m_chart.PrepareColors(CNSChartCtrl::GrayScale);
+			m_chart.PrepareColors(GrayScale);
 			break;
 		case IDC_RADIO4:
-			m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
+			m_chart.PrepareColors(SimpleColors);
 			break;
 		case IDC_RADIO5:
 			m_chart.ResetColors();

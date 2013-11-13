@@ -237,7 +237,7 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-	m_chart_7factors.PrepareColors(CNSChartCtrl::SimpleColors);
+	m_chart_7factors.PrepareColors(SimpleColors);
 
 	Display7FactorChart();
 
@@ -250,7 +250,7 @@ BOOL CDlg_TravelTimeReliability::OnInitDialog()
 	//*************************************************************//
 	// setup travel time chart
 	m_chart_traveltime.SubclassDlgItem(IDC_TravelTime_CHART,this);
-	m_chart_traveltime.PrepareColors(CNSChartCtrl::GrayScale);
+	m_chart_traveltime.PrepareColors(GrayScale);
 
 
 	m_ReliabilityMOEList.AddString ("Travel Time Histogram");
@@ -318,10 +318,10 @@ void CDlg_TravelTimeReliability::OnRadioColors()
 
 	switch(state){
 		case IDC_RADIO3:
-			m_chart_7factors.PrepareColors(CNSChartCtrl::GrayScale);
+			m_chart_7factors.PrepareColors(GrayScale);
 			break;
 		case IDC_RADIO4:
-			m_chart_7factors.PrepareColors(CNSChartCtrl::SimpleColors);
+			m_chart_7factors.PrepareColors(SimpleColors);
 			break;
 		case IDC_RADIO5:
 			m_chart_7factors.ResetColors();

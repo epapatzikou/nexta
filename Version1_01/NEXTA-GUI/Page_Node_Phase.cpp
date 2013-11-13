@@ -159,7 +159,7 @@ BOOL CPage_Node_Phase::OnInitDialog()
 	m_ControlTypeVector.push_back(m_pDoc->m_ControlType_Roundabout);
 
 
-	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo]);
+	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
 
 
 	m_CycleLength = atoi(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_CycleLength));
@@ -215,10 +215,10 @@ BOOL CPage_Node_Phase::OnInitDialog()
 	m_PhasingGrid.SetDoubleBuffering(1);
 
 
-	for(unsigned int i = 0; i < m_pDoc->m_TimingPlanNameVector.size(); i++)
+	for(unsigned int i = 0; i < m_pDoc->m_TimingPlanVector.size(); i++)
 	{
 
-		DTA_Phasing_Data_Matrix element_current = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanNameVector[i]);
+		DTA_Phasing_Data_Matrix element_current = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanVector[i].timing_plan_name);
 
 		CString VolumeAdjustmentFactor = element_current.GetString (DTA_SIG_PHASE_VALUE, TIMING_VolumeAdjustmentFactor);
 
@@ -226,7 +226,7 @@ BOOL CPage_Node_Phase::OnInitDialog()
 			VolumeAdjustmentFactor = "1";
 
 		CString TimingPlanStr;
-		TimingPlanStr.Format ("Plan %d: %s; Volume Adjustment Factor: %s", i+1, m_pDoc->m_TimingPlanNameVector[i].c_str (), VolumeAdjustmentFactor);
+		TimingPlanStr.Format ("Plan %d: %s", i+1, m_pDoc->m_TimingPlanVector[i].timing_plan_name.c_str ());
 		m_ComboTimingPlan.AddString(TimingPlanStr);
 
 		if(i==0)
@@ -343,12 +343,12 @@ void CPage_Node_Phase::OnPaint()
 			DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 
-			for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+			for (unsigned int i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector .size();i++)
 			{
 
-				DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+				DTANodeMovement movement = pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i];
 
-				bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanNameVector[ m_SelectedTimingPlanNo],m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
+				bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanVector[ m_SelectedTimingPlanNo].timing_plan_name,m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
 
 				if(bMovementIncluded)
 					break;
@@ -480,9 +480,9 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhaseWi
 	if(bPhaseWindow == false || m_SelectedPhaseNumber == 1)
 		pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector .size();i++)
 	{
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i];
 
 		if( m_pDoc->m_hide_non_specified_movement_on_freeway_and_ramp && movement.bNonspecifiedTurnDirectionOnFreewayAndRamps && i != m_SelectedMovementIndex)
 			continue;
@@ -650,14 +650,14 @@ void CPage_Node_Phase::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhaseWi
 
 		m_MovementBezierVector.push_back (element);
 
-		if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
+		if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 		bool bMovementIncluded = false;
 
 		if(m_SelectedPhaseNumber >=1)
 		{
-			bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanNameVector [ m_SelectedTimingPlanNo],m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
+			bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanVector [ m_SelectedTimingPlanNo].timing_plan_name,m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
 		}
 
 		if(m_SelectedPhaseNumber <=0 ||  /* all phases*/
@@ -802,7 +802,7 @@ void CPage_Node_Phase::SaveData()
 
 
 
-	std::string timing_plan_name = m_pDoc-> m_TimingPlanNameVector [m_SelectedTimingPlanNo];
+	std::string timing_plan_name = m_pDoc-> m_TimingPlanVector [m_SelectedTimingPlanNo].timing_plan_name;
 
 	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,timing_plan_name);
 
@@ -889,9 +889,9 @@ void CPage_Node_Phase::SaveData()
 			optimization_method_type = "no";
 
 	// for all timing plans
-	for(int tp  = 0; tp <  m_pDoc-> m_TimingPlanNameVector.size(); tp++)
+	for(int tp  = 0; tp <  m_pDoc-> m_TimingPlanVector.size(); tp++)
 	{
-	std::string timing_plan_name = m_pDoc-> m_TimingPlanNameVector [tp];
+	std::string timing_plan_name = m_pDoc-> m_TimingPlanVector [tp].timing_plan_name;
 
 	m_pDoc->SetupSignalValue(m_CurrentNodeNumber , timing_plan_name,TIMING_OptimizationMethod,optimization_method_type);
 	}
@@ -908,10 +908,10 @@ void CPage_Node_Phase::OnOK( )
 void CPage_Node_Phase::OnCancel( )
 {
 	int row = 1;
-	for(int tp = 0; tp< m_pDoc-> m_TimingPlanNameVector.size(); tp++)
+	for(int tp = 0; tp< m_pDoc-> m_TimingPlanVector.size(); tp++)
 	{
 
-		std::string timing_plan_name = m_pDoc-> m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+		std::string timing_plan_name = m_pDoc-> m_TimingPlanVector[tp].timing_plan_name;  // fetch timing_plan (unique) name
 
 		if(m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_ControlType == m_pDoc->m_ControlType_PretimedSignal
 			|| m_pDoc->m_NodeNoMap [m_CurrentNodeID]->m_ControlType == m_pDoc->m_ControlType_ActuatedSignal)
@@ -939,7 +939,7 @@ void CPage_Node_Phase::RunQEM()
 	SaveData();
 	m_pDoc->RunQEMTool(m_CurrentNodeNumber );
 
-	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo]);
+	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
 	m_CycleLength = atoi(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_CycleLength));
 
 	UpdateList();
@@ -959,11 +959,11 @@ void CPage_Node_Phase::OnBnClickedButtonQem()
 
 	bool SimuTurnVolume = false;
 
-for(int tp = 0; tp<  m_pDoc->m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+for(int tp = 0; tp<  m_pDoc->m_TimingPlanVector.size(); tp++)  // first loop for each timing plan
 {
-	for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector .size();i++)
 	{
-		if(pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector[i].sim_turn_count  >0)
+		if(pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].sim_turn_count  >0)
 		{
 
 			SimuTurnVolume = true;
@@ -977,12 +977,14 @@ for(int tp = 0; tp<  m_pDoc->m_TimingPlanNameVector.size(); tp++)  // first loop
 		AfxMessageBox("Simulated turning movement Counts are not available. ",MB_ICONINFORMATION);
 		return;
 	}
-	for(int tp = 0; tp<  m_pDoc->m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+	for(int tp = 0; tp<  m_pDoc->m_TimingPlanVector.size(); tp++)  // first loop for each timing plan
 	{
-		for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector .size();i++)
+		for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector .size();i++)
 		{
-			pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector[i].QEM_TurnVolume  = 
-				pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector[i].sim_turn_hourly_count  ;
+		
+			float number_of_hours = max(0.01,(m_pDoc->m_TimingPlanVector[tp].end_time_in_min - m_pDoc->m_TimingPlanVector[tp]. start_time_in_min )/60.0);
+			float sim_turn_hourly_count = pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].sim_turn_count/ number_of_hours;
+			pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].QEM_TurnVolume  = sim_turn_hourly_count  ;
 		}
 	}
 
@@ -995,9 +997,9 @@ void CPage_Node_Phase::OnBnClickedButtonQem2()
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	bool ObservedTurnVolume = false;
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector .size();i++)
 	{
-		if(pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_hourly_count >0)
+		if(pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i].obs_turn_hourly_count >0)
 		{
 
 			ObservedTurnVolume = true;
@@ -1011,11 +1013,12 @@ void CPage_Node_Phase::OnBnClickedButtonQem2()
 		AfxMessageBox("Observed turning movement counts are not available. ",MB_ICONINFORMATION);
 		return;
 	}
-for(int tp = 0; tp<  m_pDoc->m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+for(int tp = 0; tp<  m_pDoc->m_TimingPlanVector.size(); tp++)  // first loop for each timing plan
 {
-	for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector .size();i++)
 	{
-		pNode->m_MovementDataMap[m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector[i].QEM_TurnVolume  =  pNode->m_MovementDataMap[m_pDoc->m_TimingPlanNameVector[tp]].m_MovementVector[i].obs_turn_hourly_count;
+		pNode->m_MovementDataMap[m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].QEM_TurnVolume  =
+			pNode->m_MovementDataMap[m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].obs_turn_hourly_count;
 	}
 }
 	RunQEM();
@@ -1058,7 +1061,7 @@ void CPage_Node_Phase::DisplayPhasingGrid()
 	i=1;  // Green Time
 	p = 0;
 
-	std::string timing_plan_name = m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo];
+	std::string timing_plan_name = m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name;
 
 	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,timing_plan_name);
 
@@ -1138,7 +1141,7 @@ void CPage_Node_Phase::DisplayPhasingGrid()
 void CPage_Node_Phase::UpdatePhasingDataInGrid()
 {
 
-	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo]);
+	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
 
 	m_CycleLength = 0;
 	int time = 0;
@@ -1230,24 +1233,24 @@ void CPage_Node_Phase::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 			//Get Current status
 			BOOL bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber ,
-				m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo],m_SelectedPhaseNumber, 
-				pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id,
-				pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id );
+				m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name,m_SelectedPhaseNumber, 
+				pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id,
+				pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id );
 
-			DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo]);
+			DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
 
 			CString movement_vector = element.GetString  ( (DTA_SIG_PHASE)(DTA_SIG_PHASE_VALUE+ m_SelectedPhaseNumber), PHASE_MOVEMENT_VECTOR);
 			CString sub_movement_str;
 
-			sub_movement_str.Format("%d:%d;", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
-				m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber);
+			sub_movement_str.Format("%d:%d;", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
+				m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber);
 
 			if(bMovementIncluded)
 			{
 				movement_vector.Replace(sub_movement_str,_T(""));
 
-				m_MovementMsg.Format ("Movement %d->%d->%d has been deleted from phase %d.", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
-					m_CurrentNodeNumber,m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber,
+				m_MovementMsg.Format ("Movement %d->%d->%d has been deleted from phase %d.", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
+					m_CurrentNodeNumber,m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber,
 					m_SelectedPhaseNumber);
 
 			}
@@ -1255,8 +1258,8 @@ void CPage_Node_Phase::OnLButtonDblClk(UINT nFlags, CPoint point)
 			{
 				//select
 				movement_vector+= sub_movement_str;
-				m_MovementMsg.Format ("Movement %d->%d->%d has been added into phase %d.", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
-					m_CurrentNodeNumber,m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber,
+				m_MovementMsg.Format ("Movement %d->%d->%d has been added into phase %d.", m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].in_link_from_node_id]->m_NodeNumber,
+					m_CurrentNodeNumber,m_pDoc->m_NodeNoMap[pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[m_SelectedMovementIndex].out_link_to_node_id]->m_NodeNumber,
 					m_SelectedPhaseNumber);
 
 
@@ -1264,7 +1267,7 @@ void CPage_Node_Phase::OnLButtonDblClk(UINT nFlags, CPoint point)
 			}
 
 			//update movement vector string
-			m_pDoc->SetupPhaseData(m_CurrentNodeNumber,m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo],m_SelectedPhaseNumber, PHASE_MOVEMENT_VECTOR, movement_vector);
+			m_pDoc->SetupPhaseData(m_CurrentNodeNumber,m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name,m_SelectedPhaseNumber, PHASE_MOVEMENT_VECTOR, movement_vector);
 			UpdateData(false);
 			Invalidate();
 

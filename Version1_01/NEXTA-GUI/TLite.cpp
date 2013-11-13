@@ -37,7 +37,7 @@
 #include "DlgPathMOE.h"
 #include "DlgMainTemplate.h"
 #include "Dlg_VehicleClassification.h"
-
+#include "Dlg_Legend.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -46,7 +46,7 @@
 extern CDlgMOE *g_LinkMOEDlg;
 extern CDlgPathMOE	*g_pPathMOEDlg;
 extern std::vector<CDlg_VehicleClassification*>	g_SummaryDialogVector;
-
+extern CDlg_Legend* g_pLegendDlg;
 
 // CTLiteApp
 
@@ -395,6 +395,8 @@ int CTLiteApp::ExitInstance()
 
 void CTLiteApp::UpdateAllViews()
 	{
+
+
 	POSITION posTempl;
 	POSITION posDoc;
 
@@ -429,6 +431,12 @@ void CTLiteApp::UpdateAllViews()
 		g_pPathMOEDlg->InsertPathMOEItem();
 		g_pPathMOEDlg->Invalidate (true);
 	}	
+
+	if( g_pLegendDlg!=NULL && g_pLegendDlg->GetSafeHwnd()  && g_pLegendDlg->m_pDoc->m_LinkMOEMode == MOE_impact)
+	{
+		g_pLegendDlg->Invalidate (true);
+	}	
+
 }
 
 void CTLiteApp::OnResearchtoolsExporttodtalitesensordataformat()

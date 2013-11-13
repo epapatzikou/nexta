@@ -4014,12 +4014,12 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 
 						ASSERT(pNode!=NULL);
 
-						int movement_index = pNode->m_MovementDataMap["FREE"].m_MovementVector.size();
+						int movement_index = pNode->m_MovementDataMap["ALLDAY"].m_MovementVector.size();
 
 						// educated guess about the associatd phase, as a movement can be associated with multiple phases 
 						element.phase_index = max(LaneDataMap[lane_Column_name_str[m]].Phase1,LaneDataMap[lane_Column_name_str[m]].PermPhase1);
 
-						pNode->m_MovementDataMap["FREE"].m_MovementVector.push_back(element);
+						pNode->m_MovementDataMap["ALLDAY"].m_MovementVector.push_back(element);
 
 					}  // per major approach
 
@@ -4032,10 +4032,10 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 		}
 	}
 
-		for(int tp = 0; tp< m_TimingPlanNameVector.size(); tp++)  // first loop for each timing plan
+		for(int tp = 0; tp< m_TimingPlanVector.size(); tp++)  // first loop for each timing plan
 		{
 
-		std::string timing_plan_name = m_TimingPlanNameVector[tp];  // fetch timing_plan (unique) name
+		std::string timing_plan_name = m_TimingPlanVector[tp].timing_plan_name;  // fetch timing_plan (unique) name
 
 
 			std::list<DTANode*>::iterator iNode;
@@ -4506,17 +4506,17 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 						}
 
-						for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
+						for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector .size(); m++)
 						{
 
-							DTANodeMovement movement = (*iNode)->m_MovementDataMap["FREE"]. m_MovementVector[m];
+							DTANodeMovement movement = (*iNode)->m_MovementDataMap["ALLDAY"]. m_MovementVector[m];
 
 							CString label;
 							int up_node_id = m_NodeNoMap[movement.in_link_from_node_id]->m_NodeNo     ;
 							int dest_node_id = m_NodeNoMap[movement.out_link_to_node_id ]->m_NodeNo ;
 							label.Format("%d;%d;%d", up_node_id,(*iNode)->m_NodeNo ,dest_node_id);
 
-							m_MovementPointerMap[label] = &((*iNode)->m_MovementDataMap["FREE"]. m_MovementVector[m]); // store pointer
+							m_MovementPointerMap[label] = &((*iNode)->m_MovementDataMap["ALLDAY"]. m_MovementVector[m]); // store pointer
 
 
 						}
@@ -4803,18 +4803,18 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 
 		for (iNode = m_NodeSet.begin(); iNode != m_NodeSet.end(); iNode++)
 		{
-			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
+			for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector .size(); m++)
 			{
-				DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
+				DTANodeMovement* pMovement = &((*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m]);
 				DTALink* pLink0 = m_LinkNoMap[pMovement->IncomingLinkNo  ];
 
 				int total_link_count = 0;
-				for(unsigned int j = 0; j< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); j++)
+				for(unsigned int j = 0; j< (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector .size(); j++)
 				{
 
-					if((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
+					if((*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[j].IncomingLinkNo == pMovement->IncomingLinkNo )
 					{
-						total_link_count+= (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[j].QEM_TurnVolume ;
+						total_link_count+= (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[j].QEM_TurnVolume ;
 					}
 
 				}
@@ -4829,7 +4829,7 @@ bool CTLiteDoc::ReadSynchroCombinedCSVFile(LPCTSTR lpszFileName)
 		}
 
 
-		UpdateAllMovementGreenStartAndEndTime("FREE");
+		UpdateAllMovementGreenStartAndEndTime("ALLDAY");
 
 		m_NodeDataLoadingStatus.Format ("%d nodes are loaded from file %s.",m_NodeSet.size(),lpszFileName);
 		return true;
@@ -5032,23 +5032,23 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 
 							int ReferenceNodeNo = pReferenceDoc->m_NodeNumbertoNodeNoMap[reference_node_id];
 
-							for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["FREE"].m_MovementVector .size(); m++)
+							for(unsigned int m = 0; m< (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector .size(); m++)
 							{
 
-								DTANodeMovement baseline_movement = (*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m];
+								DTANodeMovement baseline_movement = (*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m];
 
 								int MovementIndex = pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindMovementIndexFromDirecion(baseline_movement.movement_approach_turn );
 
 								if(baseline_movement.movement_approach_turn >=0 && MovementIndex>=0)
 								{
-									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]);
-									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_MovementDataMap["FREE"].m_MovementVector[MovementIndex];
+									DTANodeMovement* pThisMovement  = &((*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m]);
+									DTANodeMovement reference_movement  =   pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->m_MovementDataMap["ALLDAY"].m_MovementVector[MovementIndex];
 									pThisMovement->QEM_TurnVolume = reference_movement.QEM_TurnVolume;
 
 
 									//we use this function as it is possible th movements in the current network is not fully matched with the synchro network
 									pThisMovement->QEM_LinkVolume  =
-										pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindHourlyCountFromDirection("FREE",reference_movement.movement_direction);
+										pReferenceDoc->m_NodeNoMap [ReferenceNodeNo] ->FindHourlyCountFromDirection("ALLDAY",reference_movement.movement_direction);
 
 									pThisMovement->QEM_Lanes = reference_movement.QEM_Lanes;
 									pThisMovement->QEM_Shared = reference_movement.QEM_Shared;
@@ -5083,10 +5083,10 @@ void CTLiteDoc::MapSignalDataAcrossProjects()
 								{
 									fprintf(st,"Baseline,Node,%d,Up Node,%d,Dest Node,%d,%s,%s,does not find reference movement.\n",  
 										baseline_node_id, 
-										m_NodeNoMap[(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
-										m_NodeNoMap[(*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
-										GetTurnDirectionString((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m]. movement_approach_turn),
-										GetTurnString((*iNode)->m_MovementDataMap["FREE"].m_MovementVector[m].movement_turn));
+										m_NodeNoMap[(*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m]. in_link_from_node_id]->m_NodeNumber,
+										m_NodeNoMap[(*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m]. out_link_to_node_id]->m_NodeNumber,
+										GetTurnDirectionString((*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m]. movement_approach_turn),
+										GetTurnString((*iNode)->m_MovementDataMap["ALLDAY"].m_MovementVector[m].movement_turn));
 
 								}
 

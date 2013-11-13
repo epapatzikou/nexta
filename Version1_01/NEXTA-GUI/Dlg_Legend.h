@@ -11,6 +11,7 @@ class CDlg_Legend : public CBaseDialog
 	DECLARE_DYNAMIC(CDlg_Legend)
 
 public:
+	void DrawObjects(CDC* pDC);
 	CDlg_Legend(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_Legend();
 
@@ -31,4 +32,11 @@ public:
    afx_msg void OnSize(UINT nType, int cx, int cy);
    CComboBox m_ComboBox_EmissionType;
    afx_msg void OnCbnSelchangeComboEmissiontype();
+   CComboBox m_AggregationTimeInterval;
+   afx_msg void OnCbnSelchangeComboAggregation();
+   CStatic m_TextCutOff;
+   afx_msg void OnStnClickedStaticQueueCutOff();
+   CStatic m_StudyPeriodText;
+   CComboBox m_ComboxStudyPeriod;
+   afx_msg void OnCbnSelchangeComboStudyPeriod();
 };

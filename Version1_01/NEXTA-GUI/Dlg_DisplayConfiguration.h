@@ -64,4 +64,6 @@ public:
 	afx_msg void OnBnClickedButtonDecreaseNodeTextSize();
 	afx_msg void OnBnClickedButtonIncreaseLinkTextSize2();
 	afx_msg void OnBnClickedButtonDecreaseLinkTextSize2();
+	CComboBox m_TimingPlanComboBox;
+	afx_msg void OnCbnSelchangeCombotimingplan();
 };

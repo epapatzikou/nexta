@@ -415,13 +415,17 @@ void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 	CWaitCursor wait;
 	UpdateData(1);
 
-   m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
+    m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
 	m_pDoc->ExportPathflowToCSVFiles();
 
 	if(AfxMessageBox("Do you need to use sequential node numbers in order to match with UTDF format?", MB_YESNO|MB_ICONINFORMATION)==IDYES )
 			m_pDoc->ConstructandexportVISSIMdata(true);
 	else
 			m_pDoc->ConstructandexportVISSIMdata(false);
+
+
+	m_pDoc->OpenCSVFileInExcel (m_pDoc->m_ProjectDirectory + "AMS_path_flow.csv");
+	m_pDoc->OpenCSVFileInExcel (m_pDoc->m_ProjectDirectory + "AMS_path_flow_compact_info.csv");
 
 }
 

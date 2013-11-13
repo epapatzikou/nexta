@@ -39,6 +39,7 @@
 #include "CSVParser.h"
 using namespace std;
 #define _MAX_NUMBER_OF_PROCESSORS  8
+#define PI 3.1415626
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions};
@@ -323,6 +324,8 @@ public:
 	std::vector<int> m_OriginActivityVector;
 	std::vector<int> m_DestinationActivityVector;
 
+	std::vector<GDPoint> m_ShapePoints;
+
 	float m_DemandGenerationRatio ;
 
 	int GetRandomOriginNodeIDInZone(float random_ratio)
@@ -477,12 +480,14 @@ public:
 
 		m_bOriginFlag = false;
 		m_bDestinationFlag = false;
-
+		m_TotalDelay = 0;
 	};
 	~DTANode()
 	{
 		m_DestinationVector.clear();
 	};
+
+	GDPoint m_pt;
 	int m_NodeID;
 	int m_NodeNumber;
 	int m_ZoneID;  // If ZoneID > 0 --> centriod,  otherwise a physical node.
@@ -494,12 +499,30 @@ public:
 	std::vector<DTADestination> m_DestinationVector;
 	std::vector<int> m_IncomingLinkVector;
 	std::vector<int> m_OutgoingLinkVector;
+
+	std::vector<double> m_IncomingLinkDelay;
+
+	void AddIncomingLinkDelay(int LinkID, double Delay)
+	{
+		for(int i = 0; i< m_IncomingLinkVector.size(); i++)
+		{
+		if(m_IncomingLinkVector[i]== LinkID)
+			m_IncomingLinkDelay[i]+= Delay;
+		
+		}
+	
+	}
+
+
+
+
 	std::map<string, DTANodeMovement> m_MovementMap;
 
 
 	bool m_bOriginFlag;
 	bool m_bDestinationFlag;
 
+	double m_TotalDelay;
 	void QuickSignalOptimization();
 
 };
@@ -869,8 +892,6 @@ public:
 		m_CumulativeMergeOutCapacityCount = 0.0f;
 		m_CumulativeInCapacityCount = 0.0f;
 		m_Direction;
-		m_NumberOfLeftTurnBays = 0;
-		m_NumberOfRightTurnBays = 0;
 
 		m_bOnRampType  = false;
 		m_bOffRampType = false;
@@ -1020,9 +1041,6 @@ public:
 
 		int NumLanes = m_NumLanes;
 
-		if(OutputFlowFlag == true)
-			NumLanes = m_NumLanes + m_NumberOfLeftTurnBays + m_NumberOfRightTurnBays;
-
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
 			if( (CapacityReductionVector[il].StartDayNo  <=DayNo && DayNo <= CapacityReductionVector[il].EndDayNo ) && (Time>= CapacityReductionVector[il].StartTime && Time<=CapacityReductionVector[il].EndTime))
@@ -1095,8 +1113,6 @@ public:
 	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 	float m_LoadingBufferWaitingTime;
 
-	int m_NumberOfLeftTurnBays;
-	int m_NumberOfRightTurnBays;
 	char m_Direction;
 
 	std::string m_geometry_string, m_original_geometry_string;
@@ -1424,6 +1440,7 @@ public:
 		m_BackwardWaveTimeInSimulationInterval = int(m_Length/m_BackwardWaveSpeed*60/g_DTASimulationInterval); // assume backwave speed is 20 mph, 600 conversts hour to simulation intervals
 
 		CFlowArrivalCount = 0;
+		CFlowImpactedCount = 0;
 
 		for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
 		{
@@ -1530,6 +1547,8 @@ public:
 
 	int CFlowArrivalCount;
 	int CFlowDepartureCount;
+
+	int CFlowImpactedCount;
 
 	int  A[MAX_TIME_INTERVAL_ADCURVE];
 	int  D[MAX_TIME_INTERVAL_ADCURVE];
@@ -2668,7 +2687,11 @@ public:
 
 		m_PlanningHorizonInMin = PlanningHorizonInMin;
 		m_StartTimeInMin = StartTimeInMin;
+
+		int size = int(m_PlanningHorizonInMin/g_AggregationTimetInterval);
+		cout <<"start to allocate network memory, size  = " << size << endl;
 		m_NumberOfSPCalculationIntervals = int(m_PlanningHorizonInMin/g_AggregationTimetInterval)+1;  // make sure it is not zero
+		
 		m_StartIntervalForShortestPathCalculation = int(m_StartTimeInMin/g_AggregationTimetInterval);
 
 		m_AdjLinkSize = AdjLinkSize;
@@ -2699,6 +2722,7 @@ public:
 
 		m_LinkTDDistanceAry = new float[m_LinkSize];
 
+		cout <<"start to allocate time-dependent network memory " << endl;
 		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_NumberOfSPCalculationIntervals);
 		m_LinkTDTransitTimeAry  =  AllocateDynamicArray<float>(m_LinkSize,m_NumberOfSPCalculationIntervals);
 		m_LinkTDCostAry   =  AllocateDynamicArray<DTALinkToll>(m_LinkSize,m_NumberOfSPCalculationIntervals);
@@ -2733,6 +2757,8 @@ public:
 			for(int z = 0; z < g_ODZoneIDSize; z++)
 				m_PathArray.push_back (element);
 		}
+		cout <<"end of network memory allocation. " << endl;
+
 	};
 	DTANetworkForSP(int NodeSize, int LinkSize, int PlanningHorizonInMin,int AdjLinkSize, int StartTimeInMin=0){
 
@@ -3439,6 +3465,8 @@ void g_DynamicTraffcAssignmentWithinInnerLoop(int iteration, bool NotConverged, 
 void InnerLoopAssignment(int zone,int departure_time_begin, int departure_time_end, int inner_iteration);
 
 void g_OutputLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
+void g_ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeString, int ColorCode, bool no_curve_flag, float height_ratio = 1);
+
 void g_OutputLinkOutCapacitySummary();
 void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
@@ -3548,5 +3576,5 @@ extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance
 										 int departure_starting_time	 = 0,int departure_ending_time= 1440, int entrance_starting_time=0,int inentrance_ending_time = 1440);
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
-
+extern double g_UnitOfMileOrKM;
 extern void g_ConvertDemandToVehicles() ;

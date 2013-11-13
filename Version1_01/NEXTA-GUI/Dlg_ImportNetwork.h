@@ -7,7 +7,6 @@
 #include "TLiteDoc.h"
 #include "afxwin.h"
 
-#ifndef _WIN64
 
 // CDlg_ImportNetwork dialog
 
@@ -60,4 +59,3 @@ public:
 	BOOL m_bUseLinkTypeForDefaultValues;
 };
 
-#endif 

@@ -1781,34 +1781,35 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_SummaryStatFile.WriteRecord ();
 
-//	if(0) //comment out day to day code
-	{
+////	if(0) //comment out day to day code
+//	{
+//
+//	unsigned li;
+//	for(li = 0; li< g_LinkVector.size(); li++)
+//	{
+//		DTALink* pLink = g_LinkVector[li];
+//
+//		Day2DayLinkMOE element;
+//		element.TotalFlowCount  = pLink->CFlowArrivalCount;
+//		element.AvgTravelTime= pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon,g_TrafficFlowModelFlag);
+//		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime) *60;  // unit: mph
+//
+//		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
+//		{
+//			element.CumulativeArrivalCount_PricingType[i] = pLink->CFlowArrivalCount_PricingType[i];
+//		}
+//
+//		element.m_NumberOfCrashes =  pLink->m_NumberOfCrashes;
+//		element.m_NumberOfFatalAndInjuryCrashes = pLink->m_NumberOfFatalAndInjuryCrashes;
+//		element.m_NumberOfPDOCrashes = pLink->m_NumberOfPDOCrashes;
+//
+//		pLink->m_Day2DayLinkMOEVector .push_back (element);
+//	}
+//
+//	}
 
-	unsigned li;
-	for(li = 0; li< g_LinkVector.size(); li++)
-	{
-		DTALink* pLink = g_LinkVector[li];
-
-		Day2DayLinkMOE element;
-		element.TotalFlowCount  = pLink->CFlowArrivalCount;
-		element.AvgTravelTime= pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon,g_TrafficFlowModelFlag);
-		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime) *60;  // unit: mph
-
-		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
-		{
-			element.CumulativeArrivalCount_PricingType[i] = pLink->CFlowArrivalCount_PricingType[i];
-		}
-
-		element.m_NumberOfCrashes =  pLink->m_NumberOfCrashes;
-		element.m_NumberOfFatalAndInjuryCrashes = pLink->m_NumberOfFatalAndInjuryCrashes;
-		element.m_NumberOfPDOCrashes = pLink->m_NumberOfPDOCrashes;
-
-		pLink->m_Day2DayLinkMOEVector .push_back (element);
-	}
-
-	}
-	if(g_ODEstimationFlag == 1)
-		cout << "Avg Gap: " << p_SimuOutput->AvgUEGap   << ", Demand Dev:"	<< p_SimuOutput->TotalDemandDeviation << ", Avg volume error: " << p_SimuOutput->LinkVolumeAvgAbsError << ", Avg % error: " << p_SimuOutput->LinkVolumeAvgAbsPercentageError << endl;
+	//if(g_ODEstimationFlag == 1)
+	//	cout << "Avg Gap: " << p_SimuOutput->AvgUEGap   << ", Demand Dev:"	<< p_SimuOutput->TotalDemandDeviation << ", Avg volume error: " << p_SimuOutput->LinkVolumeAvgAbsError << ", Avg % error: " << p_SimuOutput->LinkVolumeAvgAbsPercentageError << endl;
 
 
 

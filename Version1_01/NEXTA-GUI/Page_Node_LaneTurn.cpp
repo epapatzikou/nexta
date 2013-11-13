@@ -104,13 +104,13 @@ BOOL CPage_Node_LaneTurn::OnInitDialog()
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector .size();i++)
 	{
 		CString str;
 		str.Format("%d",i+1);
 		int Index = m_ListCtrl.InsertItem(LVIF_TEXT,i,str , 0, 0, 0, NULL);
 
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i];
 
 		str.Format ("%d", m_pDoc->m_NodeNotoNumberMap[movement.in_link_from_node_id] );
 		m_ListCtrl.SetItemText(Index, 1,str);
@@ -179,9 +179,9 @@ void CPage_Node_LaneTurn::DrawMovements(CPaintDC* pDC,CRect PlotRect)
 		pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
 
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector .size();i++)
 	{
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i];
 		DTALink* pInLink  = m_pDoc->m_LinkNoMap [movement.IncomingLinkNo];
 		DTALink* pOutLink  = m_pDoc->m_LinkNoMap [movement.OutgoingLinkNo ];
 
@@ -352,7 +352,7 @@ void CPage_Node_LaneTurn::OnLButtonDown(UINT nFlags, CPoint point)
 		unsigned int i;
 
 		DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
-		for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
+		for ( i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector.size();i++)
 		{
 		m_ListCtrl.SelectRow (i,false);
 		}
@@ -361,7 +361,7 @@ void CPage_Node_LaneTurn::OnLButtonDown(UINT nFlags, CPoint point)
 	
 	if(m_SelectedMovementIndex >=0)
 	{
-		for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
+		for ( i=0;i< pNode->m_MovementDataMap["ALLDAY"].m_MovementVector.size();i++)
 		{
 			char str[100];
 			m_ListCtrl.GetItemText (i,0,str,20);
