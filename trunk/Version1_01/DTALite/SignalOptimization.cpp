@@ -92,6 +92,13 @@ void g_ReadAMSMovementData()
 			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
 				break;
 
+			std::string timing_plan_name;
+			if(parser_movement.GetValueByFieldName("timing_plan_name",timing_plan_name) == false)
+				break;
+
+			if(timing_plan_name!="ALLDAY")  // we only simulate a single timing plan now
+				continue;
+
 			int middle_node_id = g_NodeNametoIDMap[node_id ];
 
 			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
@@ -125,6 +132,12 @@ void g_ReadAMSMovementData()
 				if(node_id  == 84 && up_node_id == 6)
 				{
 				TRACE("");
+				}
+
+				if(CycleLength <1)  // do not simulate node with zero signal length
+				{
+				g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
+				
 				}
 
 				// do not need to read signal timing data 
@@ -162,10 +175,14 @@ void g_ReadAMSMovementData()
 							SatFlowRatePerLane = 200; // set the minimum value
 
 					}
-					if(g_SignalRepresentationFlag != 0 && QEM_GreenStartTime >=  QEM_GreenEndTime )
+					if(g_SignalRepresentationFlag != 0 && CycleLength >=1 && QEM_GreenStartTime >=  QEM_GreenEndTime )
 					{
-						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << " has an effective green time of 0. Please check # of lanes for this movement." << endl;
+						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << 
+							" has green time interval" << QEM_GreenStartTime << ", " << QEM_GreenEndTime << endl << "Please check AMS_movement.csv." << endl << "DTALite will simulate this node as no-control." << endl;
 						zero_effective_green_time_error_count++;
+
+						g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
+
 					}
 
 
@@ -266,7 +283,7 @@ void g_ReadAMSMovementData()
 
 						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength_In_Second < 10  )  // use approximate cycle length
 						{
-							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds." << endl;
+							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds."<< endl << "Please any key to continue." << endl;
 							getchar ();
 							g_number_of_warnings++;
 

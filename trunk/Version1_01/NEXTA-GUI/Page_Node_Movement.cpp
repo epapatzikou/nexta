@@ -51,6 +51,8 @@ CPage_Node_Movement::CPage_Node_Movement()
 , m_Offset(0)
 , m_bHideRightTurnMovement(FALSE)
 {
+	m_SelectedTimingPlanNo = 0;
+	m_TimingPlanName = "ALLDAY";
 	m_bColumnWidthIncludeHeader = true;
 	m_SelectedMovementIndex = -1;
 	m_bModifiedFlag = false;
@@ -75,6 +77,7 @@ void CPage_Node_Movement::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODEID, m_CurrentNodeNumber);
 	DDX_Text(pDX, IDC_EDIT_CURRENT_NODENAME, m_CurrentNode_Name);
 	DDX_Check(pDX, IDC_HIDE_RIGHT_TURN, m_bHideRightTurnMovement);
+	DDX_Control(pDX, IDC_COMBO_Timing_Plan_2, m_ComboTimingPlan);
 }
 
 
@@ -87,6 +90,7 @@ BEGIN_MESSAGE_MAP(CPage_Node_Movement, CPropertyPage)
 	ON_LBN_DBLCLK(IDC_LIST1, &CPage_Node_Movement::OnLbnDblclkList1)
 	ON_WM_LBUTTONDBLCLK()
 	ON_BN_CLICKED(IDC_HIDE_RIGHT_TURN, &CPage_Node_Movement::OnBnClickedHideRightTurn)
+	ON_CBN_SELCHANGE(IDC_COMBO_Timing_Plan_2, &CPage_Node_Movement::OnCbnSelchangeComboTimingPlan2)
 END_MESSAGE_MAP()
 
 
@@ -95,6 +99,7 @@ BOOL CPage_Node_Movement::OnInitDialog()
 {
 
 	CPropertyPage::OnInitDialog();
+	int PlanNo = m_pDoc->GetTimingPlanNo("ALLDAY"); 
 
 	for(int p = 1; p <= 	_max_phase_number; p++)
 	{
@@ -205,10 +210,10 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector .size();i++)
 	{
 
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i];
 
 
 		CString str;
@@ -238,7 +243,9 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		str.Format ("%.0f",movement.sim_turn_count   ); // 7: simulated volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.sim_turn_hourly_count); // 7: simulated volume
+		float number_of_hours = max(0.01,(m_pDoc->m_TimingPlanVector[PlanNo].end_time_in_min -  m_pDoc->m_TimingPlanVector[PlanNo].start_time_in_min )/60.0);
+		float sim_turn_hourly_count = movement.sim_turn_count / number_of_hours;
+		str.Format ("%.0f",sim_turn_hourly_count); // simulated volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.1f",movement.sim_turn_delay*60   ); // simulated turn delay
@@ -265,8 +272,19 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	}
 
 
-	UpdateData(0);
+	for(unsigned int i = 0; i < m_pDoc->m_TimingPlanVector.size(); i++)
+	{
 
+		DTA_Phasing_Data_Matrix element_current = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanVector[i].timing_plan_name);
+
+		CString TimingPlanStr;
+		TimingPlanStr.Format ("Plan %d: %s", i+1, m_pDoc->m_TimingPlanVector[i].timing_plan_name.c_str ());
+		m_ComboTimingPlan.AddString(TimingPlanStr);
+	}
+
+
+
+	m_ComboTimingPlan.SetCurSel (PlanNo);
 
 	UpdateData(0);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -282,10 +300,11 @@ void CPage_Node_Movement::UpdateList()
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector .size();i++)
 	{
 
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i];
 
 		int column_index = 1;
 
@@ -314,7 +333,10 @@ void CPage_Node_Movement::UpdateList()
 		str.Format ("%.0f",movement.sim_turn_count   ); // 7: simulated volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
-		str.Format ("%.0f",movement.sim_turn_count*m_PeakHourFactor   ); // 7: simulated volume
+		float number_of_hours = max(0.01,(m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].end_time_in_min -  m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].start_time_in_min )/60.0);
+		float sim_turn_hourly_count = movement.sim_turn_count / number_of_hours;
+
+		str.Format ("%.0f",sim_turn_hourly_count   ); // simulated hourly volume
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.1f",movement.sim_turn_delay*60   ); // simulated turn delay
@@ -421,9 +443,9 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhas
   if(bPhaseWindow == false || m_SelectedPhaseNumber == 1)
    pDC->TextOutA( PlotRect.CenterPoint().x-5, PlotRect.CenterPoint().y-5,str);
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector .size();i++)
 	{
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i];
 
 		if( m_pDoc->m_hide_non_specified_movement_on_freeway_and_ramp && movement.bNonspecifiedTurnDirectionOnFreewayAndRamps && i != m_SelectedMovementIndex)
 			continue;
@@ -609,14 +631,14 @@ void CPage_Node_Movement::DrawMovements(CPaintDC* pDC,CRect PlotRect, bool bPhas
 
 		m_MovementBezierVector.push_back (element);
 
-		if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
+		if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 		bool bMovementIncluded = false;
 	
 		if(m_SelectedPhaseNumber >=1)
 		{
-		bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber , m_pDoc->m_TimingPlanNameVector[m_SelectedTimingPlanNo],m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
+		bMovementIncluded = m_pDoc->IfMovementIncludedInPhase(m_CurrentNodeNumber , m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name,m_SelectedPhaseNumber, movement.in_link_from_node_id,movement.out_link_to_node_id );
 		}
 
 		if(m_SelectedPhaseNumber <=0 ||  /* all phases*/
@@ -728,7 +750,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 	unsigned int i;
 
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
-	for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
+	for ( i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector.size();i++)
 	{
 		m_ListCtrl.SelectRow (i,false);
 	}
@@ -737,7 +759,7 @@ void CPage_Node_Movement::OnLButtonDown(UINT nFlags, CPoint point)
 
 	if(m_SelectedMovementIndex >=0)
 	{
-		for ( i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector.size();i++)
+		for ( i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector.size();i++)
 		{
 			char str[100];
 			m_ListCtrl.GetItemText (i,0,str,20);
@@ -797,12 +819,12 @@ void CPage_Node_Movement::SaveData()
 	}
 
 
-	for (unsigned int i=0;i< pNode->m_MovementDataMap["FREE"].m_MovementVector .size();i++)
+	for (unsigned int i=0;i< pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector .size();i++)
 	{
-		int turning_prohibition_flag=  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag;
+		int turning_prohibition_flag=  pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].turning_prohibition_flag;
 		
-		int PrevQEM_lanes = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes;
-		int QEM_Phase1 =  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Phase1;
+		int PrevQEM_lanes = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_Lanes;
+		int QEM_Phase1 =  pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_Phase1;
 
 		CString LaneString =  m_ListCtrl.GetItemText (i,GetColumnIndex("# of Lanes")); 
 		int QEM_lanes= atoi(LaneString);
@@ -811,9 +833,9 @@ void CPage_Node_Movement::SaveData()
 
 		if(PrevQEM_lanes != QEM_lanes)
 		{
-		DTALink* pLink0 = m_pDoc->m_LinkNoMap[pNode->m_MovementDataMap["FREE"].m_MovementVector[i].IncomingLinkNo ];
+		DTALink* pLink0 = m_pDoc->m_LinkNoMap[pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].IncomingLinkNo ];
 
-		switch (pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn)
+		switch (pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_turn)
 			{
 			case DTA_Through: pLink0->m_NumberOfLanes = QEM_lanes; break;
 
@@ -828,14 +850,14 @@ void CPage_Node_Movement::SaveData()
 			pLink0->m_NumberOfRightTurnLanes = QEM_lanes   ; break;
 			}
 		}
-		int obs_turn_hourly_count = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_hourly_count  ;
-		int obs_turn_delay = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_delay  ;
+		int obs_turn_hourly_count = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].obs_turn_hourly_count  ;
+		int obs_turn_delay = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].obs_turn_delay  ;
 
-		DTA_SIG_MOVEMENT movement_approach_turn = pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn  ;
-		int effective_green=  (int)(pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_EffectiveGreen);
-		int saturation_flow_rate=  (int)(pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_SatFlow);
+		DTA_SIG_MOVEMENT movement_approach_turn = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_approach_turn  ;
+		int effective_green=  (int)(pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_EffectiveGreen);
+		int saturation_flow_rate=  (int)(pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_SatFlow);
 
-		DTANodeMovement movement = pNode->m_MovementDataMap["FREE"].m_MovementVector[i];
+		DTANodeMovement movement = pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i];
 
 		int colume_index = 3;
 
@@ -843,37 +865,37 @@ void CPage_Node_Movement::SaveData()
 
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Direction"));
 
-		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn = m_pDoc->GetTurnDirectionFromString(str);
+		pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_approach_turn = m_pDoc->GetTurnDirectionFromString(str);
 
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Prohibition"));
 
 		if(str.Find("Prohibited") == -1)  // not found 
-			pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag  = 0;
+			pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].turning_prohibition_flag  = 0;
 		else
-			pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag  = 1;
+			pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].turning_prohibition_flag  = 1;
 
 
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("# of Lanes"));
-		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes = atoi(str);
+		pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_Lanes = atoi(str);
 
 
 		if(m_bSigalizedNode == true)
 		{
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Green Start Time"));
-		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_StartTime  = atoi(str);
+		pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_StartTime  = atoi(str);
 
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Green End Time"));
-		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_EndTime  = atoi(str);
+		pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_EndTime  = atoi(str);
 
 		str = m_ListCtrl.GetItemText (i,GetColumnIndex("Sat Flow Rate Per Lane Group"));
-		pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_SatFlow   = atoi(str);
+		pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_SatFlow   = atoi(str);
 		}
 
-		if(movement_approach_turn != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn ||
-			obs_turn_hourly_count != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_hourly_count  ||
-			obs_turn_delay != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].obs_turn_delay  || 
-			turning_prohibition_flag != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].turning_prohibition_flag || 
-			QEM_lanes != pNode->m_MovementDataMap["FREE"].m_MovementVector[i].QEM_Lanes
+		if(movement_approach_turn != pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].movement_approach_turn ||
+			obs_turn_hourly_count != pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].obs_turn_hourly_count  ||
+			obs_turn_delay != pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].obs_turn_delay  || 
+			turning_prohibition_flag != pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].turning_prohibition_flag || 
+			QEM_lanes != pNode->m_MovementDataMap[m_TimingPlanName].m_MovementVector[i].QEM_Lanes
 	)
 
 		{
@@ -928,4 +950,14 @@ void CPage_Node_Movement::OnBnClickedHideRightTurn()
 {
 	UpdateData(1);
 	Invalidate();
+}
+
+void CPage_Node_Movement::OnCbnSelchangeComboTimingPlan2()
+{
+	m_SelectedTimingPlanNo = m_ComboTimingPlan.GetCurSel ();
+
+	m_TimingPlanName = 	m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name;
+
+	UpdateList();
+
 }

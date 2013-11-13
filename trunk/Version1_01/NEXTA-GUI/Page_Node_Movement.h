@@ -40,6 +40,8 @@ class CPage_Node_Movement : public CPropertyPage
 
 public:
 
+	int m_SelectedTimingPlanNo;
+
 	bool m_bSigalizedNode;
 
 
@@ -60,12 +62,12 @@ public:
 
 
 	int m_SelectedPhaseNumber;
-	int m_SelectedTimingPlanNo;
 
 	
 	std::vector<CString> MovementVectorString;
 
 	int m_SelectedTimingPlan;
+	std::string m_TimingPlanName;
 
 
 
@@ -137,7 +139,6 @@ public:
 	afx_msg void OnBnClickedEditMode();
 	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
 
-	CComboBox m_ComboTimingPlan;
 	afx_msg void OnCbnSelchangeComboTimingPlan();
 	CString m_CurrentNode_Name;
 	CString m_MovementMsg;
@@ -160,7 +161,7 @@ public:
 		for(unsigned int i = 0; i< m_MovementBezierVector.size(); i++)
 		{
 		
-			if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["FREE"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
+			if(m_bHideRightTurnMovement &&( pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i].movement_turn == DTA_RightTurn ||  pNode->m_MovementDataMap["ALLDAY"].m_MovementVector[i].movement_turn == DTA_RightTurn2))
 			continue;
 
 			float distance  = m_MovementBezierVector[i].GetMinDistance(pt) ;
@@ -175,4 +176,6 @@ public:
 		return SelectedMovement;
 	}
 	afx_msg void OnBnClickedHideRightTurn();
+	CComboBox m_ComboTimingPlan;
+	afx_msg void OnCbnSelchangeComboTimingPlan2();
 };

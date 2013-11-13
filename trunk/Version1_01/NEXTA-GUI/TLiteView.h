@@ -105,6 +105,8 @@ enum link_text_display_mode
 	link_display_time_dependent_density,
 	link_display_time_dependent_queue_length,
 
+	link_display_time_dependent_congestion_duration,
+	link_display_time_dependent_congestion_start_time,
 
 	link_display_separator_4,
 	link_display_total_sensor_link_volume,
@@ -605,6 +607,9 @@ public:
 	int m_NodeTextFontSize;
 
 	void DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
+	void DrawNodeChart(CDC *pDC, DTANode* pNode, CPoint point, int chart_size, int LOS);
+
+
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
 	bool DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag);
@@ -851,6 +856,22 @@ public:
 	afx_msg void OnUpdateTransitShowtransitlinksonly(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateTransitShowwalklinksonly(CCmdUI *pCmdUI);
 };
+struct PieInfo
+{
+	public:
+
+    CString desc;
+    double percentage;
+    COLORREF color;
+    PieInfo() { }
+    PieInfo(CString d, double p, COLORREF c)
+    {
+        desc =d;
+        percentage = p;
+        color = c;
+    }
+};
+
 extern std::list<CTLiteView*>	g_ViewList;
 
 

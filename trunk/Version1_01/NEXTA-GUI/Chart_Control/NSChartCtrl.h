@@ -3,7 +3,9 @@
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif // _MSC_VER > 1000\
+
+
 // NSChartCtrl.h : header file
 //
 // Written by Ivan Cachicatari (ivancp@viabcp.com)
@@ -21,7 +23,7 @@
 // It's free - so you get what you pay for.
 
 #include <afxtempl.h>
-
+#define MAX_PIE_SIZE 7
 /////////////////////////////////////////////////////////////////////////////
 // CNSChartCtrl window
 
@@ -60,19 +62,20 @@ public:
 
 typedef CTypedPtrArray <CObArray, CNSChartValue*> CChartValueArray;
 
-class CNSChartCtrl : public CWnd
-{
-// Construction 
-
-public:
-	CNSChartCtrl();
-// Attributes
 	enum DefaultColors
 	{
 		EMPY,
 		GrayScale,
 		SimpleColors
 	};
+	
+	class CNSChartCtrl : public CWnd
+{
+// Construction 
+
+public:
+	CNSChartCtrl();
+// Attributes
 public:
 // Operations
 	bool m_bShowPercentage;
@@ -126,6 +129,52 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+private:
+	CBitmap m_bmpScreen;
+};
+
+class CNodeChart
+{
+// Construction 
+
+public:
+	CNodeChart();
+	~CNodeChart();
+
+	void DrawObject(CDC* pDC) ;
+
+	CRect m_DrawRect;
+// Attributes
+
+public:
+// Operations
+	bool m_bShowPercentage;
+	bool m_bIntegerValue;
+
+// Implementation 
+public:	
+	void ResetChart();
+	BOOL AddValue(DOUBLE dValue,LPCTSTR strLabel,BOOL bRepaint = FALSE);
+	void SetChartStyle(NSChart_STYLES dStyle);
+
+	CString m_Caption;
+
+protected:
+	CChartValueArray m_ChartValues;
+	CBrush m_BrushArray[MAX_PIE_SIZE];
+	COLORREF m_ColorArray[MAX_PIE_SIZE];
+
+
+	CFont m_boldFont;
+	int m_iCurSel;
+	CFont m_titleFont;
+	DOUBLE m_dMax;
+	void DrawBarChart(CDC *pDC);
+	CFont m_txtFont;
+	DOUBLE m_dTotal;
+	void DrawPieChart(CDC* pDC);
+	void DrawLineChart(CDC* pDC);
+	NSChart_STYLES m_dwStyle;
 private:
 	CBitmap m_bmpScreen;
 };

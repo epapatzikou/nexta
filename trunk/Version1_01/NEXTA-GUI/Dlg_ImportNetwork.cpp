@@ -31,7 +31,7 @@
 #include "stdafx.h"
 #include "TLite.h"
 
-#ifndef _WIN64
+
 #include "Dlg_ImportNetwork.h"
 #include "DlgSensorDataLoading.h"
 #include "MainFrm.h"
@@ -122,6 +122,9 @@ void CDlg_ImportNetwork::OnBnClickedButtonFindSensorFile()
 
 void CDlg_ImportNetwork::OnBnClickedImport()
 {
+
+	g_Simulation_Time_Horizon = 1440;
+
 	CWaitCursor cursor;
 	// Make sure the network is empty
 	m_pDoc->ClearNetworkData();
@@ -147,7 +150,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	// Open the EXCEL file
 	std::string itsErrorMessage;
 
-
+	int aggregation_time_interval_in_min = 1;
 
 	CXLEzAutomation rsConfiguration;
 		if(rsConfiguration.OpenFile(m_Edit_Excel_File, "Configuration", 1))
@@ -180,6 +183,15 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_MessageList.AddString ("Unit of link length: mile");
 				 }
 				}
+
+				if(str_key == "aggregation_time_interval_in_min")
+				{
+					aggregation_time_interval_in_min = max(1,atoi(str_value));
+					CString str;
+					str.Format("aggregation_time_interval_in_min=%d",aggregation_time_interval_in_min );
+					m_MessageList.AddString (str);
+					
+				}
 			
 			
 			}
@@ -199,7 +211,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		if(rsNode.OpenFile(m_Edit_Excel_File, "Node", 2))
 		{
 
-		int i = 1;
+		int i = 0;
 		while(rsNode.ReadRecord())
 		{
 			int id = rsNode.GetLong("node_id",bExist,false);
@@ -711,7 +723,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					continue; 
 				}
 
-				float capacity_in_pcphpl= rsLink.GetDouble("lane_capacity_in_vhc_per_hour",bExist,false);
+				float capacity_in_pcphpl= rsLink.GetDouble("lane_capacity_per_hour",bExist,false);
 				if(capacity_in_pcphpl<0.1 && m_bUseLinkTypeForDefaultValues)
 				{
 					if(m_pDoc->m_LinkTypeMap.find(type) != m_pDoc->m_LinkTypeMap.end())
@@ -804,6 +816,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_OrgDir = direction;
 					pLink->m_LinkID = link_id;
 
+					pLink->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
+
 					if(link_code == 1)  //AB link
 					{
 						pLink->m_FromNodeNumber = from_node_id;
@@ -857,7 +871,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					length_sum += pLink ->m_Length;
 	
 
-					pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
+					pLink->m_FreeFlowTravelTime = pLink->m_Length / max(1,pLink->m_SpeedLimit) *60.0f;
 					pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 
 					pLink->m_MaximumServiceFlowRatePHPL= capacity_in_pcphpl;
@@ -898,7 +912,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					double transit_waiting_time_in_min = 3;
 					double transit_fare = 1;
 
-
 					BPR_alpha_term = rsLink.GetDouble("BPR_alpha_term",bExist,false);
 
 					if(BPR_alpha_term > 0.000001)
@@ -908,6 +921,73 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					if(BPR_beta_term > 0.00000001)
 					pLink->m_BPR_beta_term = BPR_beta_term;
+
+					pLink->m_total_link_volume = rsLink.GetDouble("static_volume_per_hour",bExist,false); 
+
+
+					if(pLink->m_total_link_volume >=1)
+					{
+					pLink->m_avg_simulated_speed = rsLink.GetDouble("static_speed_per_hour",bExist,false); 
+					}else
+					{
+					pLink->m_avg_simulated_speed = pLink->m_SpeedLimit ;
+					}
+					
+					pLink->m_LevelOfService  = m_pDoc->CString2StdString(rsLink.GetCString ("static_level_of_service"));
+					pLink->m_volume_over_capacity_ratio = rsLink.GetDouble ("static_volume_over_capacity_ratio",bExist,false);
+
+
+					for(int t=0; t<g_Simulation_Time_Horizon; t++)
+					{
+					pLink->m_LinkMOEAry[t].TravelTime = pLink->m_Length / max(1,pLink->m_avg_simulated_speed) * 60;
+					pLink->m_LinkMOEAry[t].LinkFlow = pLink->m_total_link_volume;
+					pLink->m_LinkMOEAry[t].Density = 0;
+					pLink->m_LinkMOEAry[t].Speed = pLink->m_avg_simulated_speed;
+					pLink->m_LinkMOEAry[t].QueueLength = 0;
+					}
+
+					for(int t=0; t<g_Simulation_Time_Horizon; t+=aggregation_time_interval_in_min)
+					{
+						CString Field_travel_time, Field_speed, Field_density, Field_Queue_length_percentage,Field_link_volume;
+						Field_travel_time.Format("travel_time_min_%d",t);
+						Field_density.Format("density_min_%d",t);
+						Field_Queue_length_percentage.Format("queue_length_percentage_min_%d",t);
+						Field_link_volume.Format("link_volume_min_%d",t);
+						Field_speed.Format("speed_min_%d",t);
+			
+						double TravelTime = max(pLink->m_FreeFlowTravelTime , rsLink.GetDouble(m_pDoc->CString2StdString(Field_travel_time),bExist,false));
+						double LinkFlow =  rsLink.GetDouble(m_pDoc->CString2StdString(Field_link_volume),bExist,false);
+						double Density = rsLink.GetDouble(m_pDoc->CString2StdString(Field_density),bExist,false);
+
+						double Speed = rsLink.GetDouble(m_pDoc->CString2StdString(Field_speed),bExist,false);
+						double QueueLength = rsLink.GetDouble(m_pDoc->CString2StdString(Field_Queue_length_percentage),bExist,false);
+
+
+
+						if(TravelTime>0.001 || LinkFlow>=1 || Speed >=1 || QueueLength>=1) 
+						{
+							if(Density <1)
+								Density = 1;
+						}
+
+						if( Speed >=1 && LinkFlow <1)
+							LinkFlow = 1000; //default value;
+
+						for(int tt= 0; tt<aggregation_time_interval_in_min; tt++)
+						{
+						pLink->m_LinkMOEAry[t+tt].TravelTime = TravelTime;
+						pLink->m_LinkMOEAry[t+tt].LinkFlow =  LinkFlow;
+						pLink->m_LinkMOEAry[t+tt].Density = Density;
+						pLink->m_LinkMOEAry[t+tt].Speed = Speed;
+						pLink->m_LinkMOEAry[t+tt].QueueLength = QueueLength;
+						
+						}
+
+					}
+
+					
+
+
 
 
 					pLink->m_Kjam = k_jam;
@@ -941,6 +1021,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_Connections+=1;
 					m_pDoc->m_NodeNoMap[pLink->m_ToNodeID ]->m_Connections+=1;
+
+
+
 
 					if(m_pDoc->m_LinkTypeMap[type ].IsConnector ()) // adjacent node of connectors
 					{ 
@@ -1341,6 +1424,9 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		
 		}
 
+		m_MessageList.AddString ("Done.");
+
+
 }
 
 
@@ -1465,5 +1551,5 @@ BOOL CDlg_ImportNetwork::OnInitDialog()
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
-#endif
+
 

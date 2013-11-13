@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "Dlg_DisplayConfiguration.h"
-
+#include "MainFrm.h"
 
 // CDlg_DisplayConfiguration dialog
 
@@ -27,10 +27,11 @@ void CDlg_DisplayConfiguration::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST_LINK_TEXT_LABEL, m_Link_Label);
 	DDX_Control(pDX, IDC_LIST_NODE_TEXT_LABEL, m_Node_Label);
-//	DDX_Control(pDX, IDC_MOE_AGGREGATION_INTERVAL_LIST, m_AggregationIntervalList);
+	//	DDX_Control(pDX, IDC_MOE_AGGREGATION_INTERVAL_LIST, m_AggregationIntervalList);
 	DDX_Control(pDX, IDC_LIST_MOVEMENT_TEXT_LABEL, m_Movement_Label);
-//	DDX_Control(pDX, IDC_LIST_GPS_TEXT_LABEL, m_GPS_Label);
+	//	DDX_Control(pDX, IDC_LIST_GPS_TEXT_LABEL, m_GPS_Label);
 	DDX_Check(pDX, IDC_CHECK_SIGNAL_NODE_ONLY, m_bShowSignalNodeMovementOnly);
+	DDX_Control(pDX, IDC_COMBOTIMINGPLAN, m_TimingPlanComboBox);
 }
 
 
@@ -55,6 +56,7 @@ BEGIN_MESSAGE_MAP(CDlg_DisplayConfiguration, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_DECREASE_NODE_TEXT_SIZE, &CDlg_DisplayConfiguration::OnBnClickedButtonDecreaseNodeTextSize)
 	ON_BN_CLICKED(IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2, &CDlg_DisplayConfiguration::OnBnClickedButtonIncreaseLinkTextSize2)
 	ON_BN_CLICKED(IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2, &CDlg_DisplayConfiguration::OnBnClickedButtonDecreaseLinkTextSize2)
+	ON_CBN_SELCHANGE(IDC_COMBOTIMINGPLAN, &CDlg_DisplayConfiguration::OnCbnSelchangeCombotimingplan)
 END_MESSAGE_MAP()
 
 
@@ -77,6 +79,8 @@ void CDlg_DisplayConfiguration::OnLbnSelchangeListNodeTextLabel()
 BOOL CDlg_DisplayConfiguration::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+
+
 
 	m_Node_Label.AddString("None");
 	m_Node_Label.AddString("Node ID");
@@ -180,17 +184,14 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Time-dependent Link Volume");
 	m_Link_Label.AddString("Time-dependent Lane Volume");
 
-	if(m_pDoc->m_bUseMileVsKMFlag)
-	{
+
 	m_Link_Label.AddString("Time-dependent Speed (mph)");
-	m_Link_Label.AddString("Time-dependent Density (vhc/mile/ln)");
-	}else
-	{
 	m_Link_Label.AddString("Time-dependent Speed (km/h)");
-	m_Link_Label.AddString("Time-dependent Density (vhc/km/ln)");
+	m_Link_Label.AddString("Time-dependent Density (vhc/mile/ln)");
 	
-	}
 	m_Link_Label.AddString("Time-dependent Queue Length (%)");
+	m_Link_Label.AddString("Time-dependent Congestion Duration (min)");
+	m_Link_Label.AddString("Time-dependent Congestion Start Time");
 
 
 //	m_Link_Label.AddString("Total Assigned Link Volume");
@@ -206,6 +207,18 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 	
 	m_Link_Label.SetCurSel ((int)(pView->m_ShowLinkTextMode));
+
+		for(int tp = 0; tp< m_pDoc->m_TimingPlanVector.size(); tp++)  //  loop for all timing plans
+		{
+
+			std::string timing_plan_name = m_pDoc->m_TimingPlanVector[tp].timing_plan_name;  // fetch timing_plan (unique) name
+		
+			m_TimingPlanComboBox.AddString (timing_plan_name.c_str ());
+		}
+
+		if(m_TimingPlanComboBox.GetCount () >0)
+		m_TimingPlanComboBox.SetCurSel (0);
+	
 
 	m_Movement_Label.AddString("None");
 	m_Movement_Label.AddString ("Turn Type");
@@ -397,7 +410,10 @@ void CDlg_DisplayConfiguration::OnBnClickedButtonIncreasenodesize()
 	CTLiteDoc* pDoc = pView->GetDocument();
 
 	pDoc->m_NodeDisplaySize *=1.2;
+
 	pView->Invalidate ();
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	pMainFrame->UpdateLegendView();
 }
 
 void CDlg_DisplayConfiguration::OnBnClickedButtonDecreasenodesize()
@@ -406,6 +422,8 @@ void CDlg_DisplayConfiguration::OnBnClickedButtonDecreasenodesize()
 
 	pDoc->m_NodeDisplaySize /=1.2;
 	pView->Invalidate ();
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	pMainFrame->UpdateLegendView();
 
 }
 
@@ -525,4 +543,14 @@ void CDlg_DisplayConfiguration::OnBnClickedButtonDecreaseLinkTextSize2()
 {
 	pView->m_LinkTextSize/=1.1;
 	pView->Invalidate ();
+}
+
+void CDlg_DisplayConfiguration::OnCbnSelchangeCombotimingplan()
+{
+	CString str;
+	m_TimingPlanComboBox.GetLBText(m_TimingPlanComboBox.GetCurSel(), str);
+
+	CTLiteDoc* m_pDoc = pView->GetDocument();
+
+	 m_pDoc->m_CurrentDisplayTimingPlanName =  m_pDoc->CString2StdString (str); 
 }

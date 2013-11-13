@@ -32,7 +32,7 @@ T StringToNumber ( const string &Text )
 }
 class CCSVParser
 {
-private:
+public:
 	char Delimiter;
 	bool IsFirstLineHeader;
 	ifstream inFile;
@@ -41,9 +41,22 @@ private:
 	map<string,int> FieldsIndices;
 
 	vector<string> ParseLine(string line);
+	vector<int> LineIntegerVector;
 
 public:
+	void  ConvertLineStringValueToIntegers()
+	{
+		LineIntegerVector.clear();
+		for(unsigned i = 0; i < LineFieldsValue.size(); i++)
+		{
+			std::string si = LineFieldsValue[i];
+			int value = atoi(si.c_str ());
 
+			if(value>=1)
+				LineIntegerVector.push_back(value);
+
+		}
+	}
 	vector<string> GetHeaderVector()
 	{
 		return Headers;

@@ -65,7 +65,8 @@ enum DTA_Direction
 	DTA_NorthWest,
 	DTA_SouthEast,
 	DTA_SouthWest,
-	DTA_NotDefined
+	DTA_NotDefined,
+	DTA_MAX_Direction
 };
 
 enum DTA_Turn
@@ -379,11 +380,13 @@ using std::string;
 #define MAX_DAY_SIZE 1 
 
 extern int 	g_MOEAggregationIntervalInMin;
+extern int 	g_ImpactStudyPeriodInMin;
 extern int g_SimulationDayNo;
 extern int g_SensorDayNo;
 
 extern int g_SimulatedLastDayNo;
 extern int g_SensorLastDayNo;
+extern int g_ImpactThreshold_QueueLengthPercentage;
 
 extern std::map <int,bool> g_SimulatedDayDataMap;
 extern  std::map <int,bool> g_SensorDayDataMap;
@@ -656,6 +659,22 @@ public:
 
 };
 
+class DTAGenerationLink
+{
+public:
+int	FromNodeNumber;
+int	ToNodeNumber;
+float LoadingFactor;
+
+	DTAGenerationLink()
+	{
+	FromNodeNumber = 0;
+	ToNodeNumber = 0;
+	LoadingFactor = 0;
+		
+	}
+};
+
 class DTAZone
 { 
 public:
@@ -810,9 +829,11 @@ public:
 		return false;
 	}
 
-
+	int m_DSPZoneNo;
+	std::vector<DTAGenerationLink> m_DSPGenerationLinkVector;
 	DTAZone()
 	{
+		m_DSPZoneNo = 0;
 		m_OriginTotalTravelDistance = 0;
 		m_OriginTotalTravelTime = 0;
 		m_OriginTotalNumberOfVehicles = 0;
@@ -916,6 +937,7 @@ public:
 };
 
 
+
 class DTADemandProfile
 {
 public:
@@ -935,6 +957,24 @@ public:
 
 };
 
+class DTATimingPlan
+{
+	public:
+	int start_time_in_min;
+	int end_time_in_min;
+	std::string timing_plan_name;
+
+
+	DTATimingPlan()
+	{
+	start_time_in_min = 0;
+	end_time_in_min = 1440;
+	timing_plan_name = "ALLDAY";
+
+	}
+
+
+};
 class DTAVehicleType
 {
 public:
@@ -1086,7 +1126,7 @@ public:
 	{
 	bOverlappingTurnFlag = false;
 
-	pair_key = -1;
+	pair_key ="";
 	starting_time_in_min = 0;
 	ending_time_in_min = 1440;
 	turning_percentage = 0;
@@ -1102,7 +1142,6 @@ public:
 
 
 sim_turn_count = 0;
-sim_turn_hourly_count = 0;
 sim_turn_percentage = 0;
 sim_turn_delay = 0; 
 
@@ -1145,7 +1184,7 @@ obs_turn_delay = 0;
 std::vector<GDPoint> m_ShapePoints;
 
 bool bNonspecifiedTurnDirectionOnFreewayAndRamps;
-int pair_key;
+CString pair_key;
 int HourlyCount[24];
 
 
@@ -1174,7 +1213,6 @@ int turning_permitted_flag;
 
 
 float sim_turn_count; 
-float sim_turn_hourly_count;
 float sim_turn_percentage; 
 float sim_turn_delay; 
 
@@ -1247,21 +1285,13 @@ int out_lane_index;
 	  float VehExt1;
 
 
-      std::map<int,bool> movement_index_map;
+      std::map<CString,bool> movement_index_map;
       std::vector<int> movement_type_vector;  // prohibited, permitted, protected, free
 
 
 	  // if a link is added or deleted from a link, the corresponding movement array should be adjusted. 
 
-	  bool MovementIncluded(int MovementIndex)
-	  {
-		  
-			if(movement_index_map.find(MovementIndex) == movement_index_map.end() || movement_index_map[MovementIndex] == false)
-				return false;
-			else
-				return true;  // found it and the value is true;
-	  
-	  }
+
 	};
 
 extern bool compare_MovementData (DTANodeMovement first, DTANodeMovement second);
@@ -1286,7 +1316,6 @@ class DTANodeMovementVector {
 public:
 	std::vector <DTANodeMovement> m_MovementVector;
 };
-
 
 class DTANode
 {
@@ -1379,21 +1408,11 @@ public:
 		m_MovementDataMap.clear();
 	}
 
-	void SetupNodeMovementVector(std::vector<std::string> TimingPlanNameVector, DTANodeMovement movement_element)
+	void SetupNodeMovementVector(std::string TimingPlanName, DTANodeMovement movement_element)
 	{
 	
-		if(TimingPlanNameVector.size() ==0)
-		{
-		m_MovementDataMap["FREE"].m_MovementVector.push_back(movement_element);
+		m_MovementDataMap[TimingPlanName].m_MovementVector.push_back(movement_element);
 		
-		}else
-		{
-
-		for(int i= 0; i< TimingPlanNameVector.size(); i++)
-		{
-			m_MovementDataMap[TimingPlanNameVector[i]].m_MovementVector.push_back(movement_element);
-		}
-		}
 	}
 
 	DTANodeMovement GetNodeMovementVector(std::string TimingPlanName, int MovementIndex)
@@ -1404,7 +1423,7 @@ public:
 		}else
 		{
 			// FREE as the backup value
-			return m_MovementDataMap["FREE"].m_MovementVector[MovementIndex];
+			return m_MovementDataMap["ALLDAY"].m_MovementVector[MovementIndex];
 		
 		}
 	}
@@ -1453,9 +1472,9 @@ public:
 	int FindMovementIndexFromDirecion(DTA_SIG_MOVEMENT movement_approach_turnection)
 	{
 	
-		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["ALLDAY"].m_MovementVector.size(); i++)
 		{
-			if(m_MovementDataMap["FREE"].m_MovementVector[i].movement_approach_turn == movement_approach_turnection)
+			if(m_MovementDataMap["ALLDAY"].m_MovementVector[i].movement_approach_turn == movement_approach_turnection)
 				return i;
 
 		}
@@ -1478,12 +1497,13 @@ public:
 		return link_count;
 	}
 
-	int get_link_pair_key(int in_link_from_node_id, int out_link_to_node_id)
-	{
-	int id_1 = (in_link_from_node_id+1)%10000;  // make it like a short integer
-	int id_2 = (out_link_to_node_id+1)%10000;
+	CString pair_key;
 
-	int pair_key  = id_1 *10000+ id_2;
+	CString get_link_pair_key(int in_link_from_node_id, int out_link_to_node_id)
+	{
+
+	pair_key.Format ("%d,%d",in_link_from_node_id,out_link_to_node_id);
+		
 
 	return pair_key;
 	}
@@ -1492,13 +1512,20 @@ public:
 	void make_Link_Pair_to_Movement_Map()
 	{
 
-		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["ALLDAY"].m_MovementVector.size(); i++)
 		{
-			int pair_key = get_link_pair_key( m_MovementDataMap["FREE"].m_MovementVector[i].in_link_from_node_id,m_MovementDataMap["FREE"].m_MovementVector[i].out_link_to_node_id);
+			CString pair_key = get_link_pair_key( m_MovementDataMap["ALLDAY"].m_MovementVector[i].in_link_from_node_id,m_MovementDataMap["ALLDAY"].m_MovementVector[i].out_link_to_node_id);
 
 			m_Link_Pair_to_Movement_Map[pair_key] = i;
-			m_MovementDataMap["FREE"].m_MovementVector[i].pair_key = pair_key;
 
+			if(i <  m_MovementDataMap["ALLDAY"].m_MovementVector.size())
+			{
+			m_MovementDataMap["ALLDAY"].m_MovementVector[i].pair_key = pair_key;
+			}else
+			{
+			TRACE("");
+			
+			}
 		}
 
 	}
@@ -1516,29 +1543,32 @@ public:
 
 	}
 
-	std::map<int, int > m_Link_Pair_to_Movement_Map;
+	std::map<CString, int > m_Link_Pair_to_Movement_Map;
 
-	void AddMovementCountAndDelay(int Hour,int in_link_from_node_id, int out_link_to_node_id, float delay, std::string TimingPlanName)
+	void AddMovementCountAndDelay(int in_link_from_node_id, int out_link_to_node_id, float delay, DTATimingPlan TimingPlan)
 	{
 	
 		if(m_Link_Pair_to_Movement_Map.size()==0)
 			make_Link_Pair_to_Movement_Map();
 
+		std::string TimingPlanName  = TimingPlan.timing_plan_name ;
+
 		if(m_MovementDataMap[TimingPlanName].m_MovementVector.size()==0)
 			return;
 
-		int link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
+		CString link_pair_key = get_link_pair_key( in_link_from_node_id,out_link_to_node_id);
+
+		if(m_Link_Pair_to_Movement_Map.find(link_pair_key) == m_Link_Pair_to_Movement_Map.end())
+			return;
+
 		int movement_index = m_Link_Pair_to_Movement_Map[link_pair_key];
 
 		if(link_pair_key == m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].pair_key ) // in case there is a U turn 
 		{
 		
-		if(Hour<24)
-		{
-		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].HourlyCount [Hour]++;
-		}
-
 		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].sim_turn_count++;
+
+
 		m_MovementDataMap[TimingPlanName].m_MovementVector[movement_index].sim_turn_delay+=delay;
 
 
@@ -1549,14 +1579,14 @@ public:
 
 	
 
-	int GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
+	CString GetMovementIndex(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
 	{
-		if(m_Link_Pair_to_Movement_Map.size()==0)
+		if(m_Link_Pair_to_Movement_Map.size()==0) //movement vector empy
 			make_Link_Pair_to_Movement_Map();
 
 		return get_link_pair_key(in_link_from_node_id, out_link_to_node_id);
 
-		return -1;  //not found
+	//	return "1";  //not found
 
 	}
 
@@ -1564,12 +1594,12 @@ public:
 	int GetMovementNo(int in_link_from_node_id, int in_link_to_node_id, int out_link_to_node_id)
 	{
 
-		for(unsigned int i  = 0; i < m_MovementDataMap["FREE"].m_MovementVector.size(); i++)
+		for(unsigned int i  = 0; i < m_MovementDataMap["ALLDAY"].m_MovementVector.size(); i++)
 		{
 
-		if(m_MovementDataMap["FREE"]. m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
-		&& m_MovementDataMap["FREE"].m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
-		&& m_MovementDataMap["FREE"].m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
+		if(m_MovementDataMap["ALLDAY"]. m_MovementVector[i].in_link_from_node_id== in_link_from_node_id
+		&& m_MovementDataMap["ALLDAY"].m_MovementVector[i].in_link_to_node_id== in_link_to_node_id
+		&& m_MovementDataMap["ALLDAY"].m_MovementVector[i].out_link_to_node_id== out_link_to_node_id)
 		return i;
 		}
 
@@ -1689,9 +1719,9 @@ public:
 	float ArrivalCumulativeFlow;   // flow volume
 	float DepartureCumulativeFlow;   // flow volume
 
-	//float VehicleInflowCount;
+	float VehicleInflowCount;
 	//float QueueVehicleCount;
-	//float VehicleOutflowCount;
+	float VehicleOutflowCount;
 
 	float UserDefinedValue;
 
@@ -1710,12 +1740,18 @@ public:
 	float CO;
 	float HC;
 
+
+	float total_vehicle_delay;
+	int   number_of_vehicles_at_downstream;
+
 	//   Density can be derived from CumulativeArrivalCount and CumulativeDepartureCount
 	//   Flow can be derived from CumulativeDepartureCount
 	//   AvgTravel time can be derived from CumulativeArrivalCount and TotalTravelTime
 
 	SLinkMOE()
 	{
+	total_vehicle_delay = 0;
+	number_of_vehicles_at_downstream = 0;
 
 		//time_dependent_left_arrival_count = 0;
 		//time_dependent_left_departure_count  = 0;
@@ -1730,8 +1766,8 @@ public:
 		//EventCode = 0;
 		//EpisoDuration = 0;
 		//EpisodeNo = 0;
-		//VehicleInflowCount = 0;
-		//VehicleOutflowCount = 0;
+		VehicleInflowCount = 0;
+		VehicleOutflowCount = 0;
 		//QueueVehicleCount = 0;
 
 		QueueLength = 0;
@@ -1758,9 +1794,12 @@ public:
 
 	void SetupMOE(float FreeFlowTravelTime, float SpeedLimit)
 	{
-		//VehicleInflowCount = 0;
-		//VehicleOutflowCount = 0;
+		VehicleInflowCount = 0;
+		VehicleOutflowCount = 0;
 	
+		total_vehicle_delay = 0;
+		number_of_vehicles_at_downstream = 0;
+
 		QueueLength = 0;
 		TravelTime = FreeFlowTravelTime;
 
@@ -2069,12 +2108,26 @@ public:
 
 	m_FREEVALSegmentCode = FREEVAL_NONE;
 
+
+	m_DSPLeftNodeNumber = 0;
+	m_DSPThroughNodeNumber = 0;
+	m_DSPRightNodeNumber= 0;
+	m_DSPOther1NodeNumber =0;
+	m_DSPOther2NodeNumber = 0;
 	};
 
+
+	
 	int m_FromNodeNumber;
 	int m_ToNodeNumber;
 	int m_FromNodeID;  // index starting from 0
 	int m_ToNodeID;    // index starting from 0
+
+	int m_DSPLeftNodeNumber;
+	int m_DSPThroughNodeNumber;
+	int m_DSPRightNodeNumber;
+	int m_DSPOther1NodeNumber;
+	int m_DSPOther2NodeNumber;
 
 
 	std::string m_TMC_code;
@@ -2160,7 +2213,7 @@ public:
 	float m_total_link_volume_of_incomplete_trips;
 
 	float m_volume_over_capacity_ratio;
-	char m_LevelOfService;
+	std::string m_LevelOfService;
 	float m_avg_waiting_time_on_loading_buffer;
 	float m_avg_simulated_speed;
 	float m_total_sensor_link_volume;
@@ -2359,6 +2412,16 @@ public:
 		m_LinkMOEArySize = TimeHorizon;
 
 
+	};
+
+	void AddNodeDelay(int t, float VehicleDelay)
+	{
+			if(t < m_LinkMOEArySize)
+			{
+			m_LinkMOEAry[t].total_vehicle_delay += VehicleDelay;
+			m_LinkMOEAry[t].number_of_vehicles_at_downstream +=1;
+
+			}
 	};
 
 	void ComputeHistoricalAvg(int number_of_weekdays);
@@ -2688,6 +2751,31 @@ void AdjustLinkEndpointsWithSetBack()
 		return false;
 	}
 
+	float GetSimulatedNodeDelay(int current_time)  // time-mean delay
+	{
+		float total_value = 0;
+		int total_count = 0;
+
+		current_time = current_time + g_SimulationDayNo*1440;
+ 
+		for(int t = current_time - g_ImpactStudyPeriodInMin; t< current_time ; t++)
+		{
+			if(t>=0 && t < m_LinkMOEArySize)
+			{
+				if(t < m_LinkMOEArySize && m_LinkMOEAry[t].number_of_vehicles_at_downstream >=1) // with flow
+				{
+					total_value+= (m_LinkMOEAry[t].total_vehicle_delay/m_LinkMOEAry[t].number_of_vehicles_at_downstream);
+				}
+					total_count ++;
+			}
+		}
+
+			if(total_count>=1)
+				return total_value/total_count;
+			else
+				return 0 ;
+	}
+
 	float GetSimulatedSpeed(int current_time)
 	{
 		float total_value = 0;
@@ -2699,7 +2787,7 @@ void AdjustLinkEndpointsWithSetBack()
 		{
 			if(t < m_LinkMOEArySize)
 			{
-				if(t < m_LinkMOEArySize && m_LinkMOEAry[t].LinkFlow >=1) // with flow
+				if(t < m_LinkMOEArySize/* && m_LinkMOEAry[t].LinkFlow >=1*/) // with flow
 				{
 					total_count++;
 					total_value+= m_LinkMOEAry[t].Speed;
@@ -2718,8 +2806,7 @@ void AdjustLinkEndpointsWithSetBack()
 		t = t + g_SimulationDayNo * 1440;
 		if(t < m_LinkMOEArySize)
 		{
-			if(m_LinkMOEAry[t].LinkFlow >=1) // with flow
-				return m_LinkMOEAry[t].Speed;
+			return m_LinkMOEAry[t].Speed;
 		}
 			return this->m_SpeedLimit;
 	}
@@ -2729,7 +2816,6 @@ void AdjustLinkEndpointsWithSetBack()
 		t = t + g_SensorDayNo * 1440;
 		if(m_LinkSensorMOEMap.find(t)!= m_LinkSensorMOEMap.end())
 		{
-			if(m_LinkSensorMOEMap[t].LinkFlow >=1) // with flow
 				return m_LinkSensorMOEMap[t].Speed;
 		}
 			return this->m_SpeedLimit;
@@ -3000,46 +3086,46 @@ void AdjustLinkEndpointsWithSetBack()
 	
 	void RecalculateLinkMOEBasedOnVehicleCount()
 	{
-//		float ArrivalCumulativeFlow = 0;
-//		float DepartureCumulativeFlow = 0;
-//
-//
-//
-//		//cumulative arrival and deparutre counts
-//		for(int t =0; t< m_LinkMOEAry.size(); t++)
-//		{
-//
-//
-//			ArrivalCumulativeFlow = max(ArrivalCumulativeFlow, ArrivalCumulativeFlow + m_LinkMOEAry[t].VehicleInflowCount ); // in case there are empty flow volumes
-//			DepartureCumulativeFlow = max(DepartureCumulativeFlow, DepartureCumulativeFlow + m_LinkMOEAry[t].VehicleOutflowCount ); // in case there are empty flow volumes
-//
-//			m_LinkMOEAry[t].ArrivalCumulativeFlow = ArrivalCumulativeFlow;
-//			m_LinkMOEAry[t].DepartureCumulativeFlow = DepartureCumulativeFlow;
-//
-//			if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
-//			{
-//
-//				TRACE("\ntime t= %d, inflow  = %.1f,cumulative arrival count =%.1f, dep = %f, cd = %f ",t, m_LinkMOEAry[t].VehicleInflowCount,ArrivalCumulativeFlow,m_LinkMOEAry[t].VehicleOutflowCount, DepartureCumulativeFlow);
-//			
-//			}
-//
-//		}
-//		//Link inflow count
-//
-//		for(int t =0; t< m_LinkMOEAry.size(); t++)
-//		{
-//			m_LinkMOEAry[t].LinkFlow =  m_LinkMOEAry[t].VehicleInflowCount* 60;  //* 60 to convert from min to hourly counts
-//
-//					if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
-//			{
-//
-//				TRACE("\ntime t= %d, final inflow  = %.1f",t, m_LinkMOEAry[t].LinkFlow );
-//			
-//			}
-//
-//
-//		}
-//
+		float ArrivalCumulativeFlow = 0;
+		float DepartureCumulativeFlow = 0;
+
+
+
+		//cumulative arrival and deparutre counts
+		for(int t =0; t< m_LinkMOEArySize; t++)
+		{
+
+
+			ArrivalCumulativeFlow = max(ArrivalCumulativeFlow, ArrivalCumulativeFlow + m_LinkMOEAry[t].VehicleInflowCount ); // in case there are empty flow volumes
+			DepartureCumulativeFlow = max(DepartureCumulativeFlow, DepartureCumulativeFlow + m_LinkMOEAry[t].VehicleOutflowCount ); // in case there are empty flow volumes
+
+			m_LinkMOEAry[t].ArrivalCumulativeFlow = ArrivalCumulativeFlow;
+			m_LinkMOEAry[t].DepartureCumulativeFlow = DepartureCumulativeFlow;
+
+			if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
+			{
+
+				TRACE("\ntime t= %d, inflow  = %.1f,cumulative arrival count =%.1f, dep = %f, cd = %f ",t, m_LinkMOEAry[t].VehicleInflowCount,ArrivalCumulativeFlow,m_LinkMOEAry[t].VehicleOutflowCount, DepartureCumulativeFlow);
+			
+			}
+
+		}
+		//Link inflow count
+
+		for(int t =0; t< m_LinkMOEArySize; t++)
+		{
+			m_LinkMOEAry[t].LinkFlow =  m_LinkMOEAry[t].VehicleInflowCount* 60;  //* 60 to convert from min to hourly counts
+
+					if(this->m_FromNodeNumber == 48 && this->m_ToNodeNumber == 41)
+			{
+
+				TRACE("\ntime t= %d, final inflow  = %.1f",t, m_LinkMOEAry[t].LinkFlow );
+			
+			}
+
+
+		}
+
 //		//density
 //		for(int t =0; t< m_LinkMOEAry.size(); t++)
 //		{
@@ -3182,6 +3268,60 @@ void AdjustLinkEndpointsWithSetBack()
 			return 0;
 	}		
 
+
+	
+	int GetImpactFlag(int t)
+	{
+	if( ( m_Length < 0.2  && m_LinkMOEAry[t].QueueLength *100 >= 99)
+	|| (m_Length >= 0.2  && m_LinkMOEAry[t].QueueLength*100 >= g_ImpactThreshold_QueueLengthPercentage))
+	{
+						return 1;
+	}else
+	{
+		return 0;
+	}	
+	}
+
+	int GetImpactDuration(int current_time)
+	{
+		int total_count = 0;
+
+		current_time = current_time + g_SimulationDayNo*1440;
+
+		for(int t = current_time - g_ImpactStudyPeriodInMin; t<= current_time ; t++)
+		{
+		if(t>=0 && t < m_LinkMOEArySize)
+		{
+
+			if(GetImpactFlag(t))
+			{
+				total_count++;
+			}
+		}
+		}
+	
+			return total_count;
+	}		
+
+	int GetImpactRelativeStartTime(int current_time)
+	{
+		int total_count = 0;
+
+		current_time = current_time + g_SimulationDayNo*1440;
+
+		for(int t = current_time - g_ImpactStudyPeriodInMin; t<= current_time ; t++)
+		{
+			if(t>=0 && t < m_LinkMOEArySize)
+			{
+				if(GetImpactFlag(t))
+				{
+					return current_time -t;
+				}
+			}
+		}
+	
+			return 999999;
+	}		
 
 	float GetDensity(int t)
 	{

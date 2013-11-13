@@ -153,6 +153,8 @@ std::map<int, string> g_NodeControlTypeMap;
 // time inteval settings in assignment and simulation
 double g_DTASimulationInterval = 0.10000; // min
 
+double g_UnitOfMileOrKM = 1.0000;
+
 double g_CarFollowingSimulationInterval = 1.0/600; // 1/ 600 min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
 int g_number_of_car_following_intervals_per_min = 600; // round to nearest integer
@@ -507,11 +509,17 @@ void g_ReadInputFiles(int scenario_no)
 				break;
 
 			int control_type = 0;
-			parser_node.GetValueByFieldName ("control_type",control_type);
-
 
 
 			DTANode Node;
+			parser_node.GetValueByFieldName ("control_type",control_type);
+
+			parser_node.GetValueByFieldName("x",Node.m_pt .x);
+			parser_node.GetValueByFieldName("y",Node.m_pt .y);
+
+
+			
+
 			Node.m_NodeID = i;
 			Node.m_ZoneID = 0;
 			Node.m_NodeNumber = node_id;
@@ -669,6 +677,9 @@ void g_ReadInputFiles(int scenario_no)
 	CCSVParser parser_link;
 	int signal_reset_count = 0;
 	int control_node_number = 0;
+
+	double total_link_length = 0;
+	double total_link_coordinate_length = 0;
 	if (parser_link.OpenCSVFile(InputLinkFileName))
 	{
 		bool bNodeNonExistError = false;
@@ -730,6 +741,8 @@ void g_ReadInputFiles(int scenario_no)
 			if(!parser_link.GetValueByFieldName("direction",direction))
 				direction = 1;
 
+		
+
 			if(!parser_link.GetValueByFieldName("length",length_in_mile))
 			{
 
@@ -789,20 +802,12 @@ void g_ReadInputFiles(int scenario_no)
 
 
 
-			int NumberOfLeftTurnBays = 0;
-			int NumberOfRightTurnBays = 0;
 			int LeftTurnBayLengthInFeet  = 0;
 			int LeftTurnCapacity  = 0;
 			char link_direction;
 
 
-			parser_link.GetValueByFieldName("number_of_left_turn_lanes",NumberOfLeftTurnBays);
-			parser_link.GetValueByFieldName("number_of_right_turn_lanes",NumberOfRightTurnBays);
-			parser_link.GetValueByFieldName("length_of_bays_in_feet",LeftTurnBayLengthInFeet);
-			parser_link.GetValueByFieldName("left_turn_capacity_in_veh_per_hour",LeftTurnCapacity);
 			parser_link.GetValueByFieldName("from_approach",link_direction);
-
-
 
 
 			if(!parser_link.GetValueByFieldName("link_type",type))
@@ -942,6 +947,9 @@ void g_ReadInputFiles(int scenario_no)
 					exit(0);
 
 				}
+
+				parser_link.GetValueByFieldName("name",pLink->m_Name);
+
 				pLink->m_LinkNo = i;
 				pLink->m_RandomSeed = pLink->m_LinkNo; // assign a link specific random seed
 
@@ -973,9 +981,10 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->m_BPR_Alpha = BPR_Alpha;
 				pLink->m_BPR_Beta = BPR_Beta;
 
-				/* common out for now to speed up the process
 				std::vector<CCoordinate> CoordinateVector;
 				string geo_string;
+
+				double link_coordinate_length = 0;
 				if(parser_link.GetValueByFieldName("geometry",geo_string))
 				{
 				// overwrite when the field "geometry" exists
@@ -983,25 +992,28 @@ void g_ReadInputFiles(int scenario_no)
 				CoordinateVector = geometry.GetCoordinateList();
 				for(int si = 0; si < CoordinateVector.size(); si++)
 				{
-				GDPoint	pt;
-				pt.x = CoordinateVector[si].X;
-				pt.y = CoordinateVector[si].Y;
-				pLink->m_ShapePoints .push_back (pt);
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					pLink->m_ShapePoints .push_back (pt);
+
+					if(si>=1)
+					{
+						link_coordinate_length += pow( pow(CoordinateVector[si].X - CoordinateVector[si-1].X , 2) +  pow(CoordinateVector[si].Y - CoordinateVector[si-1].Y , 2),0.5);
+
+					}
 				}
+
 				}
-				*/
-				// read safety-related data
+				
 
 				parser_link.GetValueByFieldName("geometry",pLink->m_geometry_string);
 				parser_link.GetValueByFieldName("geometry",pLink->m_original_geometry_string);
 
 
-				parser_link.GetValueByFieldName("num_driveways_per_mile",pLink->m_Num_Driveways_Per_Mile);
-				parser_link.GetValueByFieldName("volume_proportion_on_minor_leg",pLink->m_volume_proportion_on_minor_leg);
-				parser_link.GetValueByFieldName("num_3SG_intersections",pLink->m_Num_3SG_Intersections);	
-				parser_link.GetValueByFieldName("num_3ST_intersections",pLink->m_Num_3ST_Intersections);
-				parser_link.GetValueByFieldName("num_4SG_intersections",pLink->m_Num_4SG_Intersections);
-				parser_link.GetValueByFieldName("num_4ST_intersections",pLink->m_Num_4ST_Intersections);
+				total_link_length += length_in_mile;
+				total_link_coordinate_length += link_coordinate_length;
+
 
 				pLink->m_SpeedLimit= speed_limit_in_mph;
 
@@ -1009,8 +1021,6 @@ void g_ReadInputFiles(int scenario_no)
 
 				pLink->m_NumLanes= number_of_lanes;
 
-				pLink->m_NumberOfLeftTurnBays = NumberOfLeftTurnBays;
-				pLink->m_NumberOfRightTurnBays = NumberOfRightTurnBays;
 				pLink->m_Direction = link_direction;
 
 				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distanance && g_TrafficFlowModelFlag != tfm_BPR)
@@ -1081,6 +1091,8 @@ void g_ReadInputFiles(int scenario_no)
 				g_NodeVector[pLink->m_FromNodeID ].m_TotalCapacity += (pLink->m_LaneCapacity* pLink->m_NumLanes);
 				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkVector.push_back(i);
 
+				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkDelay.push_back(0);
+
 				// prevent U turns on freeway links
 				if(g_ProhibitUTurnOnFeewayLinkFlag == 1 && g_LinkTypeMap[pLink->m_link_type].IsFreeway () == true)
 				{
@@ -1124,6 +1136,11 @@ void g_ReadInputFiles(int scenario_no)
 
 			}
 		}
+
+			g_UnitOfMileOrKM  =  	total_link_coordinate_length/max(0.1,total_link_length);
+
+
+
 	}else
 	{
 		cout << "Error: File input_link.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
@@ -1194,6 +1211,24 @@ void g_ReadInputFiles(int scenario_no)
 				max_zone_number = zone_number;
 
 			DTAZone zone;
+				std::vector<CCoordinate> CoordinateVector;
+				string geo_string;
+				if(parser_zone.GetValueByFieldName("geometry",geo_string))
+				{
+				// overwrite when the field "geometry" exists
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+					for(int si = 0; si < CoordinateVector.size(); si++)
+					{
+						GDPoint	pt;
+						pt.x = CoordinateVector[si].X;
+						pt.y = CoordinateVector[si].Y;
+						zone.m_ShapePoints .push_back (pt);
+
+					}
+
+				}
+
 
 			zone.m_ZoneSequentialNo = i++;
 			g_ZoneMap[zone_number] = zone;
@@ -3074,6 +3109,15 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					tdmoe_element. timestamp_in_min = time;
 					tdmoe_element. travel_time_in_min = travel_time;
 					tdmoe_element. delay_in_min = travel_time - pLink->m_FreeFlowTravelTime;
+
+//	count total node delay for each inbound link
+					g_NodeVector[pLink->m_ToNodeID].m_TotalDelay += tdmoe_element. delay_in_min;
+
+
+					g_NodeVector[pLink->m_ToNodeID].AddIncomingLinkDelay(li,tdmoe_element. delay_in_min);
+
+
+
 					tdmoe_element. link_volume_in_veh_per_hour_per_lane = LinkOutFlow*60.0/pLink->m_NumLanes;
 					tdmoe_element. link_volume_in_veh_per_hour_for_all_lanes = LinkOutFlow*60.0;
 					tdmoe_element.  density_in_veh_per_mile_per_lane = (pLink->m_LinkMOEAry[time].CumulativeArrivalCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes;

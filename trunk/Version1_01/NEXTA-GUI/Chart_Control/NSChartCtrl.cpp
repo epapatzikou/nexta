@@ -547,37 +547,13 @@ void CNSChartCtrl::DrawLineChart(CDC *pDC)
 
 void CNSChartCtrl::PrepareColors(DefaultColors defaultColor)
 {
-	switch(defaultColor){
-		case EMPY:
-			ResetColors();
-			break;
-		case GrayScale:
-			ResetColors();
-			AddSolidBrush(0x00666666);
-			AddSolidBrush(0x00DDDDDD);
-			AddSolidBrush(0x00888888);
-			AddSolidBrush(0x00444444);
-			AddSolidBrush(0x00CCCCCC);
-			AddSolidBrush(0x00AAAAAA);
-			//AddSolidBrush(0x00000000);
-			break;
-		case SimpleColors:
-			ResetColors();
-			AddSolidBrush(0x0000CC00);
+//			AddSolidBrush(0x0000CC00);
 			AddSolidBrush(0x00FF0000);
 			AddSolidBrush(0x00CCCC00);
 			AddSolidBrush(0x000000FF);
 			AddSolidBrush(0x000000CC);
 			AddSolidBrush(0x0000FF00);
 			AddSolidBrush(0x00FF00FF);
-			AddSolidBrush(0x00CC00CC);
-			AddSolidBrush(0x00CC0000);
-			AddSolidBrush(0x0000FFFF);
-			AddSolidBrush(0x0000CCCC);
-			AddSolidBrush(0x00FFFF00);
-
-			break;
-	};
 }
 
 BOOL CNSChartCtrl::AddSolidBrush(COLORREF cr)
@@ -880,3 +856,541 @@ bool CNSChartCtrl::DeleteItem(INT iItem)
 	}
 	return false;
 }
+
+
+//////////////////////////////////////////////////////////////////
+
+CNodeChart::CNodeChart()
+{
+	m_bShowPercentage = false;
+	m_bIntegerValue = false;
+	m_txtFont.CreateStockObject(DEFAULT_GUI_FONT);
+	m_boldFont.CreateStockObject(DEFAULT_GUI_FONT);
+	
+	LOGFONT lf;
+	if(m_txtFont.GetLogFont(&lf)){
+		lf.lfWeight = FW_BOLD;
+		lf.lfHeight = 15;
+		strcpy(lf.lfFaceName,"Arial");
+		m_titleFont.DeleteObject();
+		m_titleFont.CreateFontIndirect(&lf);
+	}
+
+	if(m_boldFont.GetLogFont(&lf)){
+		lf.lfWeight = FW_BOLD;
+		m_boldFont.DeleteObject();
+		m_boldFont.CreateFontIndirect(&lf);
+	}
+
+	m_dTotal = 0.0L;
+	m_dMax = 0.0l;
+	m_dwStyle = NSCS_PIE;
+
+	m_iCurSel = -1;
+
+
+
+	m_ColorArray[0] = RGB(190,190,190);
+	m_ColorArray[1] = RGB(0,255,0);
+	m_ColorArray[2] = RGB(255,250,117);
+	m_ColorArray[3] = RGB(255,250,0);
+	m_ColorArray[4] = RGB(255,216,0);
+	m_ColorArray[5] = RGB(255,153,0);
+	m_ColorArray[6] = RGB(255,0,0);
+	for(int i = 0; i<MAX_PIE_SIZE-1; i++)
+	{
+		m_BrushArray[i].CreateSolidBrush(m_ColorArray[i]);
+	}
+}
+
+CNodeChart::~CNodeChart()
+{
+	m_txtFont.DeleteObject();
+	m_boldFont.DeleteObject();
+
+	ResetChart();
+
+	if(m_bmpScreen.m_hObject != NULL) {
+		m_bmpScreen.DeleteObject();
+		m_bmpScreen.m_hObject = NULL;
+	}
+}
+
+
+
+void CNodeChart::DrawObject(CDC* pDC) 
+{
+
+	int iValues	= m_ChartValues.GetSize();
+	int iColors		= MAX_PIE_SIZE;
+
+	CString str;
+	CRect rect = m_DrawRect;
+
+	// Check values count
+	if(iValues <= 0 )
+	{
+		CFont* oldFont = pDC->SelectObject(&m_txtFont);
+
+		str = "No data are available...";
+		pDC->FillSolidRect(rect,RGB(255,255,255));
+		rect.top += 50;
+		pDC->DrawText(str,&rect,DT_CENTER|DT_VCENTER);
+		pDC->SelectObject(oldFont);
+		return;
+	}
+	// Check color count
+	if(iColors <= 1)
+	{
+		CFont* oldFont = pDC->SelectObject(&m_txtFont);
+		str = "Color count mus be > 1";
+		pDC->FillSolidRect(rect,RGB(255,255,255));
+		rect.top += 50;
+		pDC->DrawText(str,&rect,DT_CENTER|DT_VCENTER);
+		pDC->SelectObject(oldFont);
+		return;
+	}
+
+	// Drawing the chart
+	if(m_dwStyle == NSCS_BAR ){
+		DrawBarChart(pDC);
+	}
+	if(m_dwStyle == NSCS_PIE ){
+		DrawPieChart(pDC);
+	}
+	if(m_dwStyle == NSCS_LINE ){
+		DrawLineChart(pDC);
+	}
+	// Drawing the Title
+
+	str = m_Caption;
+
+
+
+	CFont* oldFont = pDC->SelectObject(&m_titleFont);
+	pDC->DrawText(str,rect,DT_CENTER);
+	pDC->SelectObject(oldFont);
+
+}
+
+
+
+void CNodeChart::DrawPieChart(CDC *pDC)
+{
+ 
+    //double xpos = rect.right + margin;
+    //double ypos = rect.top + margin;
+    //for(int i = 0; i < theSliceCount; i++)
+    //{
+    //    CPen p(PS_SOLID, 1, RGB(0,0,0));
+    //    pDC->SelectObject(&p);
+    //    CBrush br;
+    //    br.CreateSolidBrush(thePieInfo[i].color);
+    //    CRect r(xpos, ypos, xpos + 30, ypos + 25);
+    //    pDC->Rectangle(r);
+    //    r.DeflateRect(1, 1);
+    //    pDC->FillRect(r, &br);
+    //    pDC->TextOut(xpos + 35, ypos + 5, CString(thePieInfo[i].desc));
+    //    ypos += 35;
+    //}
+
+//	ASSERT(m_dTotal > 0.0L);
+//
+//	double pi	= 3.1415926535*2;
+//	int iValues	= m_ChartValues.GetSize();
+//	int iColors	= MAX_PIE_SIZE;
+//
+//	CNSChartValue* pTmp;
+//	CString str;
+//	CRect rect = m_DrawRect;
+//
+//	double dAngle = 0;
+//	double dMidAngle = 0;
+//	double r = 10;
+//	CPoint p1 = rect.CenterPoint();
+////	p1.y += 15;
+//	CPoint p2(p1.x + (int)r ,p1.y);
+//	CPoint p3;
+//	CPoint p4;
+//
+//	CBrush BlueBrush(RGB(0, 0, 255));
+//	pDC->SelectObject(BlueBrush);
+//	pDC->Ellipse(p1.x-(int)r,p1.y-(int)r,p1.x+(int)r,p2.y+(int)r);
+//
+//	pDC->MoveTo(p1);
+//	pDC->LineTo(p2);
+//	CFont *oldFont = pDC->SelectObject(&m_txtFont);
+//
+//	for (int i = 0; i < iValues; i++ )
+//	{
+//		pTmp	= m_ChartValues.GetAt(i);
+//		dMidAngle = pTmp->m_dValue * pi / m_dTotal;
+//		
+//		dAngle += dMidAngle;
+//		p2.x = (int)(cos(dAngle)*r + p1.x);
+//		p2.y = (int)(p1.y - sin(dAngle)*r );
+//
+//		pDC->MoveTo(p1);
+//		pDC->LineTo(p2);
+//
+//		dMidAngle = dAngle - dMidAngle/2;
+//		p3.x = (int)(cos(dMidAngle)*r + p1.x);
+//		p3.y = (int)(p1.y - sin(dMidAngle)*r );
+//
+//		p4.x = (int)(cos(dMidAngle)*(r*1.2) + p1.x);
+//		p4.y = (int)(p1.y - sin(dMidAngle)*(r*1.2) );
+//
+//		pDC->MoveTo(p3);
+//		pDC->LineTo(p4);
+//		pDC->MoveTo(p4);
+//		p4.x += 40*((p4.x > p1.x)?(1):(-1));
+//		pDC->LineTo(p4);
+//
+//		rect.left = p4.x - 60;
+//		rect.right = p4.x + 60;
+//		rect.top = p4.y - 15;
+//		rect.bottom = p4.y + 15;
+//
+//		//str.Format(_T("%s\n%.1f%%"),pTmp->m_sLabel,(pTmp->m_dValue*100.0)/m_dTotal);
+//		//if(m_iCurSel == i)
+//		//{
+//		//	CFont *tmpFont = pDC->SelectObject(&m_boldFont);
+//		//	rect.InflateRect(2,0);
+//		//	pDC->DrawText(str,&rect,DT_CENTER|DT_VCENTER);
+//		//	pDC->SelectObject(tmpFont);
+//		//}else{
+//		//	pDC->DrawText(str,&rect,DT_CENTER|DT_VCENTER);
+//		//} 
+//
+//		CPoint center = rect.CenterPoint();
+//		p4.x = (int)(cos(dMidAngle)*(r*0.8) + center.x);
+//		p4.y = (int)(center.y - sin(dMidAngle)*(r*0.8) );
+//
+//	//	if(pDC->GetPixel(p4) > 0x0)
+//		{
+//		pDC->FloodFill(p4.x,p4.y,m_ColorArray[i]);
+//
+//		}
+//	}
+//
+//	pDC->SelectObject(oldFont);
+}
+void CNodeChart::DrawBarChart(CDC *pDC)
+{
+	if(m_dTotal < 0.000001)
+	{
+	AfxMessageBox("error in drawing bar chart.");
+	return;
+	}
+
+	int iValues	= m_ChartValues.GetSize();
+	int iColors	= MAX_PIE_SIZE;
+	CString str;
+
+	CRect rect = m_DrawRect;
+	CRect reBar;
+
+	CNSChartValue* pTmp;
+
+    double t = 1.0L;
+	if(m_dMax >= 1.0L)
+	{
+		str.Format("%.0f",m_dMax);
+		int d = 1;
+		for(int i = 0;i<str.GetLength()-1;i++) d*=10;
+		t = max((((double)str.GetAt(0)-48)+1)*d,m_dMax);
+	}else
+	{
+	t = m_dMax;
+	}
+	
+	rect.DeflateRect(40,30,20,20);
+	
+	CRect rcBar;
+	rcBar.left   =  5; 
+	rcBar.right  = rcBar.left + 30; 
+	rcBar.top    = 25;
+	rcBar.bottom = rcBar.top + 15;
+	int i = rect.Height();
+
+	CFont *oldFont = pDC->SelectObject(&m_txtFont);
+
+	pDC->MoveTo(rect.left - 7,rect.top);
+	pDC->LineTo(rect.left + 7,rect.top);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t);
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+	
+	pDC->MoveTo(rect.left - 5,rect.top + i/4);
+	pDC->LineTo(rect.left + 5,rect.top + i/4);
+
+	pDC->MoveTo(rect.left - 7,rect.top + i/2);
+	pDC->LineTo(rect.left + 7,rect.top + i/2);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t/2);
+	rcBar.top    = rect.top + (int)(i/2);
+	rcBar.bottom = rcBar.top + 15;
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+
+	pDC->MoveTo(rect.left - 5,rect.top + i*3/4);
+	pDC->LineTo(rect.left + 5,rect.top + i*3/4);
+
+	rcBar = rect;
+	rcBar.DeflateRect(0,10,0,0);
+
+	pDC->MoveTo(rect.left  -15, rect.bottom);
+	pDC->LineTo(rect.right +15, rect.bottom);
+
+	pDC->MoveTo(rect.left , rect.top    -15);
+	pDC->LineTo(rect.left , rect.bottom +15);
+
+	int scale = rcBar.Width()/iValues;
+	int height = rcBar.Height();
+	CRect tmpRect;
+	
+	for ( i = 0; i < iValues; i++ )
+	{
+		pTmp = m_ChartValues.GetAt(i);
+		rcBar.left  = rect.left + scale*i + 2;
+		rcBar.right = rcBar.left + max(1,scale - 4);
+		rcBar.top = (rcBar.bottom - (long)(pTmp->m_dValue*height/t));
+		rcBar.bottom = rect.bottom+1;
+
+		//Drawing bar's
+
+		CBrush BlueBrush(RGB(0, 0, 255));
+		pDC->SelectObject(BlueBrush);
+		pDC->Rectangle(rcBar);
+
+		//Drawing top text percents
+		tmpRect = rcBar;
+		tmpRect.bottom = tmpRect.top - 1;
+		tmpRect.top = tmpRect.bottom - 15;
+
+		if(m_bShowPercentage)
+			str.Format("%.1f%%",100*pTmp->m_dValue/m_dTotal);
+		else
+		{
+			if(m_bIntegerValue)
+				str.Format("%5d",(int)(pTmp->m_dValue));
+			else
+				str.Format("%5.2f",pTmp->m_dValue);
+		}
+
+		
+		if(m_iCurSel == i)
+		{
+			CFont *tmpFont = pDC->SelectObject(&m_boldFont);			
+			pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER);
+			pDC->SelectObject(tmpFont);
+		}else{
+			pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER);
+		} 
+
+/*
+		//Drawing bar text values
+		tmpRect.top    = rcBar.top + 2;
+		tmpRect.bottom = tmpRect.top + 15;
+		str.Format((t<1.0)?("%.1f"):("%.0f"),pTmp->m_dValue);
+		pDC->Rectangle(tmpRect);
+		tmpRect.top += 1;
+		pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER);
+*/
+
+		//Drawing bottom text labels
+		tmpRect.top		= rcBar.bottom + 2;
+		tmpRect.bottom  = tmpRect.top + 15;
+		pDC->DrawText(pTmp->m_sLabel,tmpRect,DT_CENTER);
+	}
+
+	pDC->SelectObject(oldFont);
+}
+
+void CNodeChart::DrawLineChart(CDC *pDC)
+{
+	ASSERT(m_dTotal > 0.0L);
+
+	int iValues	= m_ChartValues.GetSize();
+	int iColors	= MAX_PIE_SIZE;
+	CString str;
+
+	CRect rcBar;
+	CRect rect = m_DrawRect;
+
+
+	CNSChartValue* pTmp;
+
+    double t = 1.0L;
+	if(m_dMax >= 1.0L){
+		str.Format("%.0f",m_dMax);
+		int d = 1;
+		for(int i = 0;i<str.GetLength()-1;i++) d*=10;
+		t = max((((double)str.GetAt(0)-48)+1)*d,m_dMax);
+	}
+	
+	rect.DeflateRect(40,30,20,20);
+	
+	rcBar.left   =  5; 
+	rcBar.right  = rcBar.left + 30; 
+	rcBar.top    = 25;
+	rcBar.bottom = rcBar.top + 15;
+	int i = rect.Height();
+
+	CFont *oldFont = pDC->SelectObject(&m_txtFont);
+
+	pDC->MoveTo(rect.left - 7,rect.top);
+	pDC->LineTo(rect.left + 7,rect.top);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t);
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+	
+	pDC->MoveTo(rect.left - 5,rect.top + i/4);
+	pDC->LineTo(rect.left + 5,rect.top + i/4);
+
+	pDC->MoveTo(rect.left - 7,rect.top + i/2);
+	pDC->LineTo(rect.left + 7,rect.top + i/2);
+	
+	str.Format((t<1.0)?("%.1f"):("%.0f"),t/2);
+	rcBar.top    = rect.top + (int)(i/2);
+	rcBar.bottom = rcBar.top + 15;
+	pDC->DrawText(str,rcBar,DT_RIGHT);
+
+	pDC->MoveTo(rect.left - 5,rect.top + i*3/4);
+	pDC->LineTo(rect.left + 5,rect.top + i*3/4);
+
+	rcBar = rect;
+	rcBar.DeflateRect(0,10,0,0);
+
+	pDC->MoveTo(rect.left  -15, rect.bottom);
+	pDC->LineTo(rect.right +15, rect.bottom);
+
+	pDC->MoveTo(rect.left , rect.top    -15);
+	pDC->LineTo(rect.left , rect.bottom +15);
+
+	int scale = rcBar.Width()/iValues;
+	int height = rcBar.Height();
+	CRect tmpRect;
+
+	pDC->MoveTo(rect.left, rect.bottom);  // start from origin of chart
+
+	int ValueStep = max(1,iValues/4);
+	for ( i = 0; i < iValues; i++ )
+	{
+		pTmp = m_ChartValues.GetAt(i);
+		rcBar.left  = rect.left + scale*i + 2;
+		rcBar.right = rcBar.left + max(1,scale - 4);
+		rcBar.top = (rcBar.bottom - (long)(pTmp->m_dValue*height/t));
+		rcBar.bottom = rect.bottom+1;
+
+		pDC->LineTo(rcBar.right, rcBar.top);
+
+		if(i%ValueStep ==0)    ////Drawing top text
+		{
+			//Drawing top text percents
+			tmpRect = rcBar;
+			tmpRect.bottom = tmpRect.top - 1;
+			tmpRect.top = tmpRect.bottom - 15;
+
+			if(m_bShowPercentage)
+				str.Format("%.1f%%",100*pTmp->m_dValue/m_dTotal);
+			else
+			{
+				if(m_bIntegerValue)
+					str.Format("%5d",(int)(pTmp->m_dValue));
+				else
+					str.Format("%.1f",pTmp->m_dValue);
+			}
+			if(m_iCurSel == i)
+			{
+				CFont *tmpFont = pDC->SelectObject(&m_boldFont);			
+				pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER|DT_NOCLIP);
+				pDC->SelectObject(tmpFont);
+			}else{
+				pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER|DT_NOCLIP);
+			} 
+
+			//Drawing bottom text labels
+			tmpRect.top		= rcBar.bottom + 2;
+			tmpRect.bottom  = tmpRect.top + 15;
+			pDC->DrawText(pTmp->m_sLabel,tmpRect,DT_CENTER|DT_NOCLIP);
+
+		}
+/*
+		//Drawing bar text values
+		tmpRect.top    = rcBar.top + 2;
+		tmpRect.bottom = tmpRect.top + 15;
+		str.Format((t<1.0)?("%.1f"):("%.0f"),pTmp->m_dValue);
+		pDC->Rectangle(tmpRect);
+		tmpRect.top += 1;
+		pDC->DrawText(str,tmpRect,DT_BOTTOM|DT_CENTER);
+*/
+
+	}
+
+	pDC->SelectObject(oldFont);
+}
+
+
+
+
+void CNodeChart::SetChartStyle(NSChart_STYLES dStyle)
+{
+	m_dwStyle = dStyle;	
+}
+
+
+
+
+BOOL CNodeChart::AddValue(DOUBLE dValue, LPCTSTR strLabel,BOOL bRepaint /*= FALSE*/)
+{
+	if(dValue <= 0)
+	{
+		TRACE("The double value in function AddValue must be > 0 (dValue = %lf)",dValue);
+		return FALSE;
+	}
+
+	CNSChartValue* newValue = new CNSChartValue;
+	newValue->m_dValue  = dValue;
+	newValue->m_sLabel  = strLabel;
+
+	try 
+	{
+		m_ChartValues.Add(newValue);
+		m_dTotal += dValue;
+		if(m_dMax < dValue)
+		{
+			m_dMax = dValue;
+		}
+		
+		m_iCurSel = -1;
+		return TRUE;
+	}
+	catch (CMemoryException* e)
+	{
+		if (newValue !=NULL) 
+		{
+			delete newValue;
+		}
+		e->Delete();
+		return FALSE;
+	}
+}
+
+void CNodeChart::ResetChart()
+{
+	int iSize = m_ChartValues.GetSize();
+	
+	for (int i = 0; i < iSize; i++ )
+	{
+		delete m_ChartValues.GetAt(i);
+	}
+	m_ChartValues.RemoveAll();
+
+		m_dTotal = 0;
+		m_dMax = 0;
+}
+
+
+
+
+

@@ -103,7 +103,7 @@ BOOL CDlg_TDDemandProfile::OnInitDialog()
 	
 	// TODO: Add extra initialization here
 
-	m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
+	m_chart.PrepareColors(SimpleColors);
 
 
 		for(unsigned int i = 0; i < m_pDoc->m_DemandProfileVector.size(); i++)
@@ -236,10 +236,10 @@ void CDlg_TDDemandProfile::OnRadioColors()
 	
 	switch(state){
 		case IDC_RADIO3:
-			m_chart.PrepareColors(CNSChartCtrl::GrayScale);
+			m_chart.PrepareColors(GrayScale);
 			break;
 		case IDC_RADIO4:
-			m_chart.PrepareColors(CNSChartCtrl::SimpleColors);
+			m_chart.PrepareColors(SimpleColors);
 			break;
 		case IDC_RADIO5:
 			m_chart.ResetColors();

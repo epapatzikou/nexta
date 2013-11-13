@@ -73,11 +73,11 @@ enum layer_mode
 	layer_background_image,
 	layer_transit_accessibility,
 };
-enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_DATA,_PHASING_DATA,_TIMING_PLAN_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
 enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES}; 
-enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length, MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy, MOE_emissions, MOE_CO2,MOE_NOX, MOE_CO,MOE_HC};
+enum Link_MOE {MOE_none,MOE_volume, MOE_speed, MOE_queue_length,MOE_impact, MOE_bottleneck,MOE_safety,MOE_user_defined,MOE_density,MOE_traveltime,MOE_capacity, MOE_speedlimit, MOE_reliability, MOE_fftt, MOE_length, MOE_queuelength,MOE_fuel,MOE_vehicle, MOE_volume_copy, MOE_speed_copy, MOE_density_copy, MOE_emissions, MOE_CO2,MOE_NOX, MOE_CO,MOE_HC};
 
 enum OD_MOE {odnone,critical_volume};
 
@@ -151,7 +151,7 @@ enum VEHICLE_Y_CLASSIFICATION {
 	CLS_avg_HC,
 	CLS_avg_mile
 };
-enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles};
+enum LINK_BAND_WIDTH_MODE {LBW_number_of_lanes = 0, LBW_link_volume,LBW_number_of_marked_vehicles, LBW_congestion_duration};
 
 
 class MovementBezier
@@ -373,18 +373,79 @@ public:
 
 };
 
-
-	class CTLiteDoc : public CDocument
+class CTLiteDoc : public CDocument
 {
 public: // create from serialization only
 
-	std::vector<std::string> m_TimingPlanNameVector;
+	float*** TDDemandSOVMatrix;
+	float*** TDDemandHOVMatrix;
+	float*** TDDemandTruckMatrix;
+
+	void SaveDSPDemandFiles(CString OriginDirectory, CString DestinationDirectory);
+
+	void CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, 
+		int demand_type, float starting_time_in_min, float ending_time_in_min);
+
+	std::string m_CurrentDisplayTimingPlanName;
+	
+	std::vector<DTATimingPlan> m_TimingPlanVector;
+
+	DTATimingPlan GetTimingPlanInfo(std::string timing_plan_name)
+	{ 
+		DTATimingPlan element;
+
+		for(int tp = 0 ; tp < m_TimingPlanVector.size(); tp++)
+		{
+			if(m_TimingPlanVector[tp].timing_plan_name == timing_plan_name)
+				return m_TimingPlanVector[tp];
+			
+		}
+	
+		return element;
+	}
+
+	int GetTimingPlanNo(std::string timing_plan_name)
+	{ 
+		for(int tp = 0 ; tp < m_TimingPlanVector.size(); tp++)
+		{
+			if(m_TimingPlanVector[tp].timing_plan_name == timing_plan_name)
+				return tp;
+			
+		}
+	
+		return 0;
+	}
+
+	DTATimingPlan FindTimingPlanFromStartTime(int vehicle_time_in_min)
+	{
+
+		DTATimingPlan element;
+
+		element.start_time_in_min = m_DemandLoadingStartTimeInMin;
+		element.end_time_in_min = m_DemandLoadingEndTimeInMin;
+
+		for(int i = 0; i< m_TimingPlanVector.size(); i++)
+		{
+			if(element.timing_plan_name !="ALLDAY" && vehicle_time_in_min >= m_TimingPlanVector[i].start_time_in_min && 
+				vehicle_time_in_min <= m_TimingPlanVector[i].end_time_in_min )  
+				{
+					
+					element = m_TimingPlanVector[i] ;
+
+				}
+		}
+
+		if(element.timing_plan_name .size() ==0)
+			element.timing_plan_name = "ALLDAY";
+		return element;
+	
+	}
 
 	CString GetPhasingMapKey(int NodeNumber, std::string TimingPlanName)
 	{
 
 		if(TimingPlanName.size() == 0)
-			TimingPlanName = "FREE";
+			TimingPlanName = "ALLDAY";
 
 	CString str;
 	str.Format("%d:%s", NodeNumber, TimingPlanName.c_str ());
@@ -393,15 +454,28 @@ public: // create from serialization only
 	
 	}
 
-	bool AddNameIntoTimingPlanVector(std::string Name)
+	bool AddNameIntoTimingPlanVector(int start_time_in_min, int end_time_in_min, std::string Name)
 	{
 		bool bDefined = false;
 
-		for(int i = 0; i< m_TimingPlanNameVector.size(); i++)
+		for(int i = 0; i< m_TimingPlanVector.size(); i++)
 		{
-			if(m_TimingPlanNameVector[i].compare (Name) ==0 )  //exist
+			if(m_TimingPlanVector[i].timing_plan_name.compare (Name) ==0 )  //exist
 			{
 				bDefined =true;
+
+				if(end_time_in_min > m_TimingPlanVector[i].end_time_in_min )  // update end_time in min
+				{
+				m_TimingPlanVector[i].end_time_in_min  = end_time_in_min;
+
+				}
+
+				if(start_time_in_min < m_TimingPlanVector[i].start_time_in_min )  // update end_time in min
+				{
+				m_TimingPlanVector[i].end_time_in_min  = start_time_in_min;
+				
+				}
+
 
 				return false;
 		
@@ -409,7 +483,14 @@ public: // create from serialization only
 		}
 	
 		if(!bDefined)
-			m_TimingPlanNameVector.push_back (Name);
+		{
+
+			DTATimingPlan element;
+			element.timing_plan_name = Name;
+			element.start_time_in_min = start_time_in_min;
+			element.end_time_in_min = end_time_in_min;
+			m_TimingPlanVector.push_back (element);
+		}
 
 		return true;
 	}
@@ -590,6 +671,9 @@ public:
 
 	int m_TrafficFlowModelFlag;
 	COLORREF m_colorLOS[MAX_LOS_SIZE];
+
+	COLORREF m_ColorDirectionVector[DTA_MAX_Direction];
+
 	int m_ColorDirection;
 
 
@@ -597,6 +681,8 @@ public:
 	bool m_bShowLegend;
 	bool m_bShowPathList;
 	float m_NodeDisplaySize;
+	float m_BottleneckDisplaySize;
+
 	float m_VehicleDisplaySize;
 	float m_NodeTextDisplayRatio;
 
@@ -662,6 +748,9 @@ public:
 
 	BOOL OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetworkOnly = false);
 	BOOL OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
+	BOOL SaveDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly = false);
+
+
 	bool ReadGPSData(string FileName);
 	bool m_bDYNASMARTDataSet;
 	int m_YCorridonateFlag;
@@ -749,10 +838,12 @@ public:
 	void GenerateOffsetLinkBand();
 
 	void ReCalculateLinkBandWidth();
+	float GetLinkBandWidth(float Value);
 	bool ReadZoneCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadActivityLocationCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadDemandCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadMetaDemandCSVFile(LPCTSTR lpszFileName);   // for road network
+	bool ReadMetaSignalCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadScenarioSettingCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool WriteScenarioSettingCSVFile(LPCTSTR lpszFileName);
 
@@ -1360,6 +1451,7 @@ public:
 			}
 		}
 
+		m_BottleneckDisplaySize = m_NodeDisplaySize;
 
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -1789,7 +1881,6 @@ public:
 		return c;
 	};
 
-	void ConstructAMSMovementVector(DTANode* pNode);
 
 	std::map<CString, DTA_Movement_Data_Matrix> m_DTAMovementMap;
 	std::map<CString, DTA_Phasing_Data_Matrix> m_DTAPhasingMap;
@@ -1853,7 +1944,7 @@ public:
 	CString m_GISMessage;
 
 
-	void ExportSynchroVersion6Files(std::string TimingPlanName = "FREE");
+	void ExportSynchroVersion6Files(std::string TimingPlanName = "ALLDAY");
 	bool m_bMovementAvailableFlag;
 	void ExportQEMData(int NodeNumber);
 	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
@@ -1993,6 +2084,7 @@ public:
 
 	int FindNonCentroidNodeNumberWithCoordinate(double x, double y, int this_node_name);
 
+	float GetNodeTotalDelay(int ToNodeNumber, int time, int& LOS);
 
 	DTALink* FindFreewayLinkWithFromNodeNumber(int FromNodeNumber)
 	{
@@ -2046,10 +2138,12 @@ public:
 
 		for(unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
 		{
-			
+			if(m_LinkNoMap.find (pFromNode->m_OutgoingLinkVector[i])== m_LinkNoMap.end())
+				return NULL;
+
 			DTALink* pLink = m_LinkNoMap[pFromNode->m_OutgoingLinkVector[i]];
 
-			if(pLink->m_ToNodeNumber == ToNodeNumber)
+			if( pLink->m_ToNodeNumber == ToNodeNumber)
 				return pLink;
 		
 		}
@@ -2300,7 +2394,6 @@ public:
 	bool FindObject(eSEARCHMODE SearchMode, int value1, int value12);
 
 	void SaveMovementData(CString MovementFileName,  int NodeNumber);
-	void SaveQEMMovementData(CString MovementFileName, bool bSimulatedCountFlag);
 
 	void UpdateMovementGreenStartAndEndTimeFromPhasingData(int NodeNumber, std::string timing_plan_name);
 	void UpdateAllMovementGreenStartAndEndTime(std::string timing_plan_name);
@@ -2602,6 +2695,10 @@ public:
 	afx_msg void OnUpdateEditRedo33709(CCmdUI *pCmdUI);
 	afx_msg void OnMovementSetupnumberofleftturnlanesforsignalizednodes();
 	afx_msg void OnMovementOptimizephasingandtimingdataforalltrafficsignalsthroughqem();
+	afx_msg void OnLinkmoedisplayImpact();
+	afx_msg void OnUpdateLinkmoedisplayImpact(CCmdUI *pCmdUI);
+	afx_msg void OnLinkmoedisplayBottleneck();
+	afx_msg void OnUpdateLinkmoedisplayBottleneck(CCmdUI *pCmdUI);
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

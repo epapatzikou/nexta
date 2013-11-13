@@ -6,6 +6,7 @@
 #include "math.h"
 #include "Network.h"
 #include "Utility.h"
+#include <vector>
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -13,6 +14,117 @@
 
 
 using namespace std;
+
+
+int g_read_number_of_numerical_values(char* line_string, int length, std::vector<float> & values)
+//read a floating point number from the current pointer of the file,
+//skip all spaces
+
+{
+	char ch, buf[ 32 ];
+
+	int number_count= 0;
+	int string_index = 0;
+
+	/* returns -1 if end of file is reached */
+	while(string_index<length)
+	{
+
+		int i = 0;
+		int flag = 1;
+
+		while(true)
+		{
+			if(string_index==length)
+			{
+				break;
+			}
+
+
+			ch = line_string[string_index++];
+			if( ch == EOF ) return number_count;
+			if (isdigit(ch))
+				break;
+
+			if (ch == '-')
+				flag = -1;
+			else
+				flag = 1;
+
+		};
+		if( ch == EOF ) return number_count;
+		while( isdigit( ch ) || ch == '.' ) {
+			buf[ i++ ] = ch;
+			ch = line_string[string_index++];
+
+		}
+		buf[ i ] = 0;
+
+		double value = atof( buf );
+
+		if(value>-0.0000001)  // positive values
+		{
+		values.push_back (value);
+
+			number_count++;
+		}
+	}
+
+	/* atof function converts a character string (char *) into a doubleing
+	pointer equivalent, and if the string is not a floting point number,
+	a zero will be return.
+	*/
+
+	return number_count;
+
+}
+
+float g_read_float_from_a_line(FILE *f)
+//read a floating point number from the current pointer of the file,
+//skip all spaces
+
+{
+	char ch, buf[ 32 ];
+	int i = 0;
+	int flag = 1;
+
+	/* returns -100 if end of line is reached */
+
+	while(true)
+	{
+		ch = getc( f );
+		if( ch == EOF || ch == '*' || ch == '$' ) 
+			return -1;
+
+		if( ch == '\n' ) 
+			return -100;
+
+		if (isdigit(ch))
+			break;
+
+		if (ch == '-')
+			flag = -1;
+		else
+			flag = 1;
+
+	};
+	if( ch == EOF ) return -1;
+	while( isdigit( ch ) || ch == '.' ) {
+		buf[ i++ ] = ch;
+		ch = fgetc( f );
+
+	}
+	buf[ i ] = 0;
+
+	/* atof function converts a character string (char *) into a doubleing
+	pointer equivalent, and if the string is not a floting point number,
+	a zero will be return.
+	*/
+
+	return (float)(atof( buf ) * flag);
+
+}
+
 
 std::string string_format(const std::string fmt, ...)
 {
