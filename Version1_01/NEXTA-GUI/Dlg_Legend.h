@@ -32,11 +32,14 @@ public:
    afx_msg void OnSize(UINT nType, int cx, int cy);
    CComboBox m_ComboBox_EmissionType;
    afx_msg void OnCbnSelchangeComboEmissiontype();
-   CComboBox m_AggregationTimeInterval;
+   CComboBox m_QueueCutOffComboBox;
    afx_msg void OnCbnSelchangeComboAggregation();
    CStatic m_TextCutOff;
    afx_msg void OnStnClickedStaticQueueCutOff();
    CStatic m_StudyPeriodText;
    CComboBox m_ComboxStudyPeriod;
    afx_msg void OnCbnSelchangeComboStudyPeriod();
+   BOOL m_bShowRadarChart;
+   CButton m_RadarChartButton;
+   afx_msg void OnBnClickedCheckRadarChart();
 };

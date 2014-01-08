@@ -32,7 +32,7 @@
 #include "stdafx.h"
 #include "DTALite.h"
 #include "GlobalData.h"
-
+int g_path_error = 0;
 void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  // build the network for shortest path calculation and fetch travel time and cost data from simulator
 {
 	// build a network from the current zone centriod (1 centriod here) to all the other zones' centriods (all the zones)
@@ -259,9 +259,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 			}
 
-
-			if (g_LinkTypeMap[pLink->m_link_type ].IsFreeway () == true)
-				AvgTravelTime*=g_FreewayBiasFactor;
+			AvgTravelTime*=g_LinkTypeMap[pLink->m_link_type ].link_type_bias_factor;
 
 			if(AvgTravelTime < 0.01f)  // to avoid possible loops
 				AvgTravelTime = 0.01f ;
@@ -1047,42 +1045,23 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		if(link_id_with_min_cost <0)
 		{
 
-
-			int node_number = g_NodeVector[destination].m_NodeNumber ;
+		int node_number = g_NodeVector[destination].m_NodeNumber ;
 		cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
-		
-		
-		std::map<int, int> path_node_vector;
-		path_node_vector[104] = path_node_vector.size();
-		path_node_vector[9664] = path_node_vector.size();
-		path_node_vector[8521] = path_node_vector.size();
-		path_node_vector[9015] = path_node_vector.size();
-		path_node_vector[9017] = path_node_vector.size();
-		path_node_vector[8946] = path_node_vector.size();
-		path_node_vector[8956] = path_node_vector.size();
-		path_node_vector[8958] = path_node_vector.size();
-		path_node_vector[8957] = path_node_vector.size();
-		path_node_vector[8952] = path_node_vector.size();
-		path_node_vector[14854] = path_node_vector.size();
-		path_node_vector[15672] = path_node_vector.size();
-		path_node_vector[15544] = path_node_vector.size();
-
-		path_node_vector[11126] = path_node_vector.size();
-		path_node_vector[11127] = path_node_vector.size();
-		path_node_vector[15542] = path_node_vector.size();
-		path_node_vector[115542] = path_node_vector.size();
+		g_LogFile << "Error: Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
 
 
-		for(int il = 0; il < g_LinkVector.size(); il++)
+	/*	if(g_path_error==0)
 		{
-			if(path_node_vector.find(g_NodeVector[m_ToIDAry[il]].m_NodeNumber) != path_node_vector.end())
-			{
-				int dsn  = g_NodeVector[m_ToIDAry[il]].m_NodeNumber;
-				TRACE("[no.%d] %d: %f\n", path_node_vector [dsn] , dsn, LinkLabelCostAry[il]);
-			}
-		
-		}
-		//find shortest path without movement penality
+
+				cout << endl << "Please check file output_simulation.log. Please any key to continue... " <<endl;
+
+			getchar();
+			g_path_error ++;
+		}*/
+
+
+		return false;
+			//find shortest path without movement penality
 		g_ShortestPathWithMovementDelayFlag = false;
 
 		int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, pricing_type, 
@@ -1101,7 +1080,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		}
 
 		
-		g_ProgramStop();
+		getchar();
 		}
 
 		//step 2 trace the incoming link to the first link in origin node

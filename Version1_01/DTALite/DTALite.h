@@ -38,7 +38,7 @@
 #include <list>
 #include "CSVParser.h"
 using namespace std;
-#define _MAX_NUMBER_OF_PROCESSORS  8
+#define _MAX_NUMBER_OF_PROCESSORS  64
 #define PI 3.1415626
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
@@ -672,7 +672,7 @@ class SLinkMeasurement  // time-dependent link measurement
 public:
 
 
-	int DestinationNode;
+	int MovementDestinationNode;
 	int StartTime;
 	int EndTime;
 	SENSOR_TYPE m_SensorType;
@@ -684,11 +684,13 @@ public:
 	float ObsFlowCount;
 	float ObsNumberOfVehicles;  // converted from density
 	float ObsTravelTime;   // converted from speed
+	float ObsDensity;  
 
 	// simulated
 	float SimuFlowCount;
 	float SimuNumberOfVehicles;  // density
 	float SimuTravelTime;   // departure time based
+	float SimuDensity;  
 
 	// Deviation
 	float DeviationOfFlowCount;
@@ -697,7 +699,10 @@ public:
 
 	SLinkMeasurement()
 	{
-		DestinationNode = -1;
+		ObsDensity = 0;
+		SimuDensity = 0;
+
+		MovementDestinationNode = -1;
 		ObsFlowCount = 0;
 		ObsNumberOfVehicles = 0;
 		ObsTravelTime = 0;
@@ -950,7 +955,7 @@ public:
 		m_BPR_Beta = 4.0f;
 
 		m_GreenStartTime_In_Second = 0;
-		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 0;
+		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1800;
 
 
 	};
@@ -1147,6 +1152,49 @@ public:
 
 	float SimultedHourlySpeed[25];
 
+
+	bool ContainObsDensity(float timestamp)
+	{
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsDensity >=1 )
+			{
+
+				return true;
+			}
+
+		}
+
+		return false;
+	}
+
+	float GetDeviationOfNumberOfVehicles(float timestamp)
+	{
+	
+			for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsDensity >=1 )
+			{
+
+				return m_LinkMeasurementAry[i].DeviationOfNumberOfVehicles ;
+			}
+
+		}
+
+			return 0;
+	}
+
+	float GetDeviationOfNumberOfVehicles(int start_time, int end_time)
+	{
+	
+		float total_deviation = 0;
+		for(int t = start_time; t < end_time; t++)
+		{
+				total_deviation+= GetDeviationOfNumberOfVehicles(t);
+		}
+			return total_deviation;
+	}
+
 	bool ContainFlowCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
@@ -1162,19 +1210,48 @@ public:
 		return false;
 	}
 
-	int GetDeviationOfFlowCount(float timestamp, int DestinationNodeNo = -1)
+	bool ContainMovementFlowCount(float timestamp,  int DestinationNode)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 &&
+				m_LinkMeasurementAry[i].MovementDestinationNode == DestinationNode )
+			{
+
+				return true;
+			}
+
+		}
+
+		return false;
+	}
+	int GetDeviationOfFlowCount(float timestamp, int DestinationNode = -1)
+	{
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(DestinationNode == -1)
+			{
 			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
 			{
 
 				return m_LinkMeasurementAry[i].DeviationOfFlowCount ;
 
+			}
+			
+			}else
+			{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 
+				&&m_LinkMeasurementAry[i].MovementDestinationNode == DestinationNode )
+			{
+
+				return m_LinkMeasurementAry[i].DeviationOfFlowCount ;
 
 			}
-
+			
+			
 		}
+
+	}
 		return 0;
 
 	}
@@ -1214,6 +1291,22 @@ public:
 	}
 
 
+	int GetSimulatedNumberOfVehicles(float timestamp)
+	{
+		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsDensity  >=1 )
+			{
+
+				int SimulatedNumberOfVehicles = m_LinkMOEAry[m_LinkMeasurementAry[i].StartTime].CumulativeArrivalCount  - m_LinkMOEAry[m_LinkMeasurementAry[i].StartTime ].CumulativeDepartureCount; 
+
+				return SimulatedNumberOfVehicles; 
+			}
+
+		}
+		return 0;
+
+	}
 	int GetSimulatedFlowCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
@@ -1272,8 +1365,6 @@ public:
 	std::vector<CapacityReduction> IncidentCapacityReductionVector;
 
 	std::vector<CapacityReduction> EvacuationImpactVector;
-
-
 
 
 	std::vector<MessageSign> MessageSignVector;
@@ -1825,10 +1916,34 @@ public:
 	string link_type_name;
 	string type_code;
 	int safety_prediction_model_id;
+	float link_type_bias_factor;
+	float capacity_adjustment_factor;
+	int approximate_cycle_length_in_second;
+	float saturation_flow_rate_in_vhc_per_hour_per_lane;
+
+	int number_of_links;
+
+	float total_lane_capacity;
+	float total_speed_limit;
+	float total_number_of_lanes;
+	float total_k_jam;
+	float total_length;
 
 	DTALinkType()
 	{
+		number_of_links = 0;
+		capacity_adjustment_factor = 1.0;
+		saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
+		approximate_cycle_length_in_second = 0;
+		link_type_bias_factor = 1.0;
 		default_lane_capacity = 1000;
+
+		total_lane_capacity = 0;
+		total_speed_limit = 0;
+		total_number_of_lanes =0 ;
+		total_k_jam = 0;
+		total_length = 0;
+
 	}
 	bool IsFreeway()
 	{
@@ -2018,6 +2133,7 @@ class DTAVehicle
 {
 public:
 
+	bool b_already_output_flag;
 	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
 
@@ -2037,6 +2153,7 @@ public:
 
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
+	int m_ExternalTripID;
 
 	int m_OriginZoneID;  
 	int m_DestinationZoneID; 
@@ -2129,6 +2246,10 @@ public:
 
 	DTAVehicle()
 	{
+
+		b_already_output_flag = false;
+
+		m_ExternalTripID = 0;
 		m_gap = 0;
 		m_gap_update = false;
 		m_bForcedSwitchAtFirstIteration  = false;
@@ -2689,7 +2810,7 @@ public:
 		m_StartTimeInMin = StartTimeInMin;
 
 		int size = int(m_PlanningHorizonInMin/g_AggregationTimetInterval);
-		cout <<"start to allocate network memory, size  = " << size << endl;
+//		cout <<"start to allocate network memory, size  = " << size << endl;
 		m_NumberOfSPCalculationIntervals = int(m_PlanningHorizonInMin/g_AggregationTimetInterval)+1;  // make sure it is not zero
 		
 		m_StartIntervalForShortestPathCalculation = int(m_StartTimeInMin/g_AggregationTimetInterval);
@@ -2722,7 +2843,7 @@ public:
 
 		m_LinkTDDistanceAry = new float[m_LinkSize];
 
-		cout <<"start to allocate time-dependent network memory " << endl;
+	//	cout <<"start to allocate time-dependent network memory " << endl;
 		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_NumberOfSPCalculationIntervals);
 		m_LinkTDTransitTimeAry  =  AllocateDynamicArray<float>(m_LinkSize,m_NumberOfSPCalculationIntervals);
 		m_LinkTDCostAry   =  AllocateDynamicArray<DTALinkToll>(m_LinkSize,m_NumberOfSPCalculationIntervals);
@@ -3423,7 +3544,7 @@ void OutputRealTimeLinkMOEData(std::string fname,int start_time_in_min,int curre
 void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int update_MOE_aggregation_time_interval_in_min);
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file);
-void OutputVehicleTrajectoryData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputVehicleTrajectoryData(char fname_agent[_MAX_PATH],char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmpty, bool bIncremental);
 void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1);
 void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int cut_off_volume = 1);
 void OutputEmissionData();
@@ -3450,6 +3571,8 @@ void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
+bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag);
+
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 

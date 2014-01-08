@@ -34,8 +34,8 @@ using std::vector;
 using std::string;
 
 
-static LPTSTR NetworkData_Element[MAX_NUM_OF_NETWORK_DATA_FILES] = {"Node", "Link", "Zone", "Activity Location", "Movement", "Sensor", "Signal Phasing", "Signal Timing Plan"};
-static LPTSTR NetworkData_FileName[MAX_NUM_OF_NETWORK_DATA_FILES] = {"input_node","input_link", "input_zone", "input_activity_location", "AMS_movement","input_sensor","AMS_phasing", "AMS_timing_plan"};
+static LPTSTR NetworkData_Element[MAX_NUM_OF_NETWORK_DATA_FILES] = {"Node", "Link", "Zone", "Activity Location", "Movement", "Sensor Speed", "Sensor Count", "Sensor Trajectory", "Model Link MOE", "Model Trip", "Model Trajectory","Signal Phasing", "Signal Timing Plan"};
+static LPTSTR NetworkData_FileName[MAX_NUM_OF_NETWORK_DATA_FILES] = {"input_node","input_link", "input_zone", "input_activity_location", "AMS_movement","sensor_speed","sensor_count","sensor_trajectory","model_linkMOE","model_trip","model_trajectory","AMS_phasing", "AMS_timing_plan"};
 
 // CNetworkDataSettingDlg dialog
 

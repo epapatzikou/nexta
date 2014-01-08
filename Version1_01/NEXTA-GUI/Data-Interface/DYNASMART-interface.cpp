@@ -440,7 +440,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 	}
 
 	ResetODMOEMatrix();
-	ReadSensorData();
+
 
 	// read link xy data
 	int ReadLinkXYFile = g_GetPrivateProfileInt("display","read_link_x_y",1,ProjectFileName);
@@ -638,9 +638,9 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				int to_node = g_read_integer(pFile);
 				float loading_ratio = g_read_float(pFile);
 
-				int node_id  = m_NodeNumbertoNodeNoMap[to_node];
-				m_NodeNotoZoneNameMap[node_id] = zone_number;
-				m_NodeNoMap[node_id]->m_ZoneID = zone_number;
+				int node_id  = m_NodeNumbertoNodeNoMap[from_node];
+				m_NodeNotoZoneNameMap[from_node] = zone_number;
+				m_NodeNumberMap[from_node]->m_ZoneID = zone_number;
 
 				// if there are multiple nodes for a zone, the last node id is recorded.
 
@@ -652,23 +652,43 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				m_ZoneMap [zone_number].m_DSPGenerationLinkVector.push_back (element);
 
-				if(m_ZoneMap [zone_number].FindANode(to_node,1) == false)
+				map <int, int> :: iterator m_Iter = m_NodeNumbertoNodeNoMap.find(from_node);
+				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
+				{
+					m_WarningFile<< "Node Number "  << from_node << " in origin.dat has not been defined in network.dat"  << endl; 
+					fclose(pFile);
+					return false;
+				}
+
+				m_Iter = m_NodeNumbertoNodeNoMap.find(to_node);
+				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
+				{
+					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
+					fclose(pFile);
+					return false;
+				}
+
+				// we only record the from node on a generation link as the activity node
+				if(m_ZoneMap [zone_number].FindANode(from_node,1) == false 
+					&& m_NodeNumberMap[from_node]->m_ControlType != m_ControlType_PretimedSignal 
+					&& m_NodeNumberMap[from_node]->m_ControlType != m_ControlType_ActuatedSignal)
+				{
+					DTAActivityLocation element;
+					element.ZoneID  = zone_number;
+					element.NodeNumber = from_node;
+					element.External_OD_flag = 0;
+					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
+				}
+
+				if(m_ZoneMap [zone_number].FindANode(to_node,1) == false
+					&& m_NodeNumberMap[to_node]->m_ControlType != m_ControlType_PretimedSignal 
+					&& m_NodeNumberMap[to_node]->m_ControlType != m_ControlType_ActuatedSignal)
 				{
 					DTAActivityLocation element;
 					element.ZoneID  = zone_number;
 					element.NodeNumber = to_node;
 					element.External_OD_flag = 0;
 					m_ZoneMap [zone_number].m_ActivityLocationVector .push_back (element);
-				}
-
-
-				map <int, int> :: iterator m_Iter = m_NodeNumbertoNodeNoMap.find(to_node);
-
-				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
-				{
-					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
-					fclose(pFile);
-					return false;
 				}
 
 
@@ -724,8 +744,6 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 		fclose(pFile);
 	}
 
-	if(ReadDemandFile)
-	{
 		// read demand.dat
 		fopen_s(&pFile,directory+"demand.dat","r");
 		if(pFile!=NULL)
@@ -754,8 +772,15 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 			// read the last value
 			int end_of_simulation_horizon = g_read_float(pFile);
 
+			// update demand loading period
+			m_DemandLoadingStartTimeInMin = 0;
+			m_DemandLoadingEndTimeInMin = end_of_simulation_horizon;
+
 			TimeIntevalVector.push_back(end_of_simulation_horizon);
 			m_PeakHourFactor = 60.0/max(1,end_of_simulation_horizon);
+
+		if(ReadDemandFile)
+		{
 
 			long RecordCount = 0;
 			float total_demand = 0;
@@ -788,8 +813,10 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				<< total_demand << endl;
 			m_DemandDataLoadingStatus.Format ("%d demand entries are loaded from file demand.dat. Total demand = %f",RecordCount,total_demand);
 
-			fclose(pFile);
 		}
+
+		if(pFile!=NULL)
+			fclose(pFile);
 	}
 	// set link type
 
@@ -1183,7 +1210,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 	// read additional data from sensor (AMS format)
 
 	m_SimulationStartTime_in_min = (int)(g_GetPrivateProfileDouble("simulation_result", "simulation_start_time_in_min",0,m_ProjectFile));   
-	//      ReadSensorData(directory+"input_sensor.csv",simulation_start_time_in_min);
+	//      ReadSensorCountData(directory+"sensor_count.csv",simulation_start_time_in_min);
 
 
 	str.Format ("Start loading vehicle trajectory data...");
@@ -1216,11 +1243,14 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 	if(bLoadVehicleData)
 	{
+
+		char  str_line[2000]; // input string
+		DTALink* m_pPathLinkVector[MAX_NODE_SIZE_IN_A_PATH];
+
 		fopen_s(&pFile,directory+"VehTrajectory.dat","r");
 
 		if(pFile != NULL)
 		{
-			char  str_line[2000]; // input string
 			int str_line_size;
 			g_read_a_line(pFile,str_line, str_line_size); //  skip the two line
 			g_read_a_line(pFile,str_line, str_line_size); //  skip the two line
@@ -1238,7 +1268,6 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 			int good_vehicle_id = 1;
 
 
-			DTALink* m_pPathLinkVector[MAX_NODE_SIZE_IN_A_PATH];
 
 			while(!feof(pFile) )
 			{
@@ -1284,7 +1313,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 					m_ODSize = pVehicle->m_DestinationZoneID ;
 
 
-				pVehicle->m_DepartureTime       = m_SimulationStartTime_in_min + g_read_float(pFile);
+				pVehicle->m_DepartureTime       = g_read_float(pFile);
 
 				if(g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
 					g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
@@ -1327,6 +1356,8 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 
 				//                      pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
 
+
+			TRACE("\nreading veh = %d",pVehicle->m_VehicleID );
 
 				pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
 
@@ -1372,7 +1403,7 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 				// ==>Node Exit Time Point
 				for(i=1; i< pVehicle->m_NodeSize + NodeSizeOffset; i++)
 				{
-					pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = m_SimulationStartTime_in_min + pVehicle->m_DepartureTime + g_read_float(pFile);
+					pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = pVehicle->m_DepartureTime + g_read_float(pFile);
 
 					if(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) // feasible arrival time
 					{
@@ -1426,12 +1457,26 @@ BOOL CTLiteDoc::ReadDYNASMARTSimulationResults()
 		}
 	}
 
-	RecalculateLinkMOEFromVehicleTrajectoryFile();
+		RecalculateLinkMOEFromVehicleTrajectoryFile();
+	if(m_VehicleSet.size() > 500000)
+	{
+	CString msg;
+	msg.Format("There are %d vehicles.\nIt could take quite a while to update movement data (for bottleneck visualization).\nWould you like to update movement data?",m_VehicleSet.size());
+		if(AfxMessageBox(msg,MB_YESNO|MB_ICONINFORMATION)==IDYES)
+		{
+		UpdateMovementDataFromVehicleTrajector();
+		}
+
+	}else
+	{
 	UpdateMovementDataFromVehicleTrajector();
+	}
+	
 	return true;
 }
 BOOL CTLiteDoc::SaveDYNASMARTProject(CString ProjectFileName, bool bNetworkOnly)
 {
+	CWaitCursor wait;
 	CString OriginDirectory = m_ProjectDirectory;
 
 	char format_string[100];
@@ -1873,6 +1918,9 @@ if(CheckIfFileExsits(directory + "control.dat" )==false)
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"vms.dat");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"WorkZone.dat");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"YieldCap.dat");
+	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"parameter.dat");
+
+
 
 	SaveDSPDemandFiles(OriginDirectory, directory);
 
@@ -2443,13 +2491,6 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 {
 	std::list<DTALink*>::iterator iLink ;
 
-	//for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	//{
-
-	//	(*iLink)->ResetMOEAry(m_SimulationStartTime_in_min + g_Simulation_Time_Horizon);  // use one day horizon as the default value
-	//}
-
-
 
 	int count  = 0;
 	std::list<DTAVehicle*>::iterator iVehicle;
@@ -2459,6 +2500,8 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 		DTAVehicle* pVehicle = (*iVehicle);
 
 		// ==>Node Exit Time Point
+
+		int previous_link_t = -1;  // initial value: - 1
 		for(int i=1; i< pVehicle->m_NodeSize ; i++)
 		{
 			if(pVehicle->m_NodeAry[i].LinkNo==-1) 
@@ -2467,37 +2510,38 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 
 			int t = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN+1;
 
+
 			// timt t is the timestamp from the current link to the next link, in min 
-			if(pLinkCurrent!=NULL)
+			if(pLinkCurrent!=NULL && t >=0 && t <  pLinkCurrent->m_LinkMOEArySize )
 			{
 				pLinkCurrent->m_LinkMOEAry[t].VehicleOutflowCount+=1;
 
+				if(previous_link_t>=0 && previous_link_t < pLinkCurrent->m_LinkMOEArySize  )
+				pLinkCurrent->m_LinkMOEAry[previous_link_t].VehicleInflowCount+=1;
 
+				
 			}
 
 
 			if(i==1)  // first link 
 			{
 				int dep_t = pVehicle->m_DepartureTime+1;
-				if(pLinkCurrent!=NULL )
+				if(pLinkCurrent!=NULL && dep_t>=0 && dep_t< pLinkCurrent->m_LinkMOEArySize  )
 				{
 					pLinkCurrent->m_LinkMOEAry[dep_t].VehicleInflowCount+=1;
 
 				}
 
 			}
+			previous_link_t = t;
 
-			if(i< (pVehicle->m_NodeSize-1)&& pVehicle->m_NodeAry[i+1].LinkNo!=-1) // next link
+			if(t>=1400)
 			{
-
-				DTALink* pLinkNext = m_LinkNoMap[ pVehicle->m_NodeAry[i+1].LinkNo];
-
-				if(pLinkNext!=NULL)
-				{
-					pLinkNext->m_LinkMOEAry[t].VehicleInflowCount+=1;
-
-				}
+			TRACE("");
+			
 			}
+
+
 
 		}
 	}
@@ -2509,54 +2553,7 @@ void CTLiteDoc::RecalculateLinkMOEFromVehicleTrajectoryFile()
 	}
 
 
-	//// output high resolution link out count file
-
-	//bool bLinkOutCapcaityFile = 0;
-	//if(bLinkOutCapcaityFile)
-	//{
-	//	ofstream LinkOutCapcaityFile;
-
-	//	LinkOutCapcaityFile.open (m_ProjectDirectory+"output_hr_link_out_count.csv", ios::out);
-
-	//	LinkOutCapcaityFile.precision(1) ;
-	//	LinkOutCapcaityFile.setf(ios::fixed);
-
-	//	std::set<DTALink*>::iterator iterLink;
-	//	bool bTitlePrintOut = false;
-
-	//	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-	//	{
-
-	//		unsigned int t;
-
-	//		DTALink* pLink = (*iLink);
-
-	//		if(!bTitlePrintOut)
-	//		{
-	//			LinkOutCapcaityFile << "time_stamp_in_0.1_min" << "," ;
-
-	//			for(t = 0; t < pLink->m_HighResoltionLinkOutCount.size(); t++)
-	//			{
-	//				float time_stamp = t*0.1f;
-	//				LinkOutCapcaityFile << time_stamp << "," ;
-	//			}
-	//			bTitlePrintOut = true;
-	//			LinkOutCapcaityFile << endl;    
-	//		}
-
-	//		LinkOutCapcaityFile << "link out count " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << ",";
-	//		for( t = 0; t < pLink->m_HighResoltionLinkOutCount.size(); t++)
-	//		{
-	//			LinkOutCapcaityFile << pLink->m_HighResoltionLinkOutCount[t] << "," ;
-	//		}
-	//		LinkOutCapcaityFile << endl;    
-
-	//		LinkOutCapcaityFile << endl;    
-	//	}
-
-
-	//	LinkOutCapcaityFile.close();
-	//}
+	
 
 }
 
@@ -2760,7 +2757,7 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 			{
 				for(int time_index = start_time_in_min/15; time_index < end_time_in_min/15; time_index++)  // / 15 converts min to 15-min interval for demand patterns
 				{
-					std::string time_stamp_str = GetTimeStampStrFromIntervalNo (time_index);
+					std::string time_stamp_str = "'" + GetTimeStampStrFromIntervalNo (time_index);
 
 					time_dependent_ratio[time_index] = 0;
 					parser.GetValueByFieldName(time_stamp_str,time_dependent_ratio[time_index]);
@@ -2770,7 +2767,7 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 
 				if( total_ratio < 0.001)
 				{
-					AfxMessageBox( "The total temporal ratio read from file input_temporal_demand_profile.csv is 0, which means no demand will be loaded. ");
+					AfxMessageBox( "The total temporal ratio read from file input_temporal_demand_profile is 0, which means no demand will be loaded. ");
 					return;
 				}
 
@@ -3212,6 +3209,15 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 
    if(st!=NULL)
    {
+	m_AMSLogFile.open ( m_ProjectDirectory + "DSP_data_conversion_log.csv", ios::out);
+	if (m_AMSLogFile.is_open())
+	{
+		m_AMSLogFile.width(12);
+		m_AMSLogFile.precision(3) ;
+		m_AMSLogFile.setf(ios::fixed);
+		m_AMSLogFile << "Start outputing demand.dat..." << endl;
+	}
+
       if(demand_factor < 0.00001)
 	  demand_factor =  1.0;
 
@@ -3231,10 +3237,15 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
       for(int dp = 0; dp < demand_data_size; dp++)
       {
 	 // start time line
-	 fprintf(st, "Start Time = %6.1f\n", dp*15.0);
+	 
+		  float start_time_in_min = dp*15.0;
+		  fprintf(st, "Start Time = %6.1f\n", start_time_in_min);
+		m_AMSLogFile << "Start Time = " << start_time_in_min << endl;
 
 	 for(int j = 1; j <= NumberOfZones; j++)
 	 {
+		m_AMSLogFile << "origin zone = " << j << endl;
+
 	    int i=1;
 	    // Destinations
 	    for(int k = 1; k <= NumberOfZones; k++)
@@ -3366,6 +3377,7 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
       AfxMessageBox(str_message);
    }
 
+m_AMSLogFile << " Deallocate3DDynamicArray.. " << endl;
    
    if(TDDemandSOVMatrix !=NULL)
 		Deallocate3DDynamicArray<float>(TDDemandSOVMatrix,NumberOfZones+1, NumberOfZones+1);
@@ -3375,9 +3387,38 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 
  	if(TDDemandTruckMatrix !=NULL)
 		Deallocate3DDynamicArray<float>(TDDemandTruckMatrix,NumberOfZones+1, NumberOfZones+1);
+
+m_AMSLogFile.close ();
 }
 
 
+void CTLiteDoc::WriteInputDemandMetaDataForDSP(CString DestinationProjectDirectory)
+{
+		FILE* st_meta_data = NULL;
+		CString str;
+		str.Format("%sinput_demand_meta_data.csv",DestinationProjectDirectory);
+
+		fopen_s(&st_meta_data,str,"w");
+
+
+		if(st_meta_data!=NULL)
+		{
+			fprintf(st_meta_data,"scenario_no,file_sequence_no,file_name,format_type,number_of_lines_to_be_skipped,loading_multiplier,start_time_in_min,end_time_in_min,apply_additional_time_dependent_profile,subtotal_in_last_column,number_of_demand_types,demand_type_1,demand_type_2,demand_type_3,demand_type_4,'00:00,'00:15,'00:30,'00:45,'01:00,'01:15,'01:30,'01:45,'02:00,'02:15,'02:30,'02:45,'03:00,'03:15,'03:30,'03:45,'04:00,'04:15,'04:30,'04:45,'05:00,'05:15,'05:30,'05:45,'06:00,'06:15,'06:30,'06:45,'07:00,'07:15,'07:30,'07:45,'08:00,'08:15,'08:30,'08:45,'09:00,'09:15,'09:30,'09:45,'10:00,'10:15,'10:30,'10:45,'11:00,'11:15,'11:30,'11:45,'12:00,'12:15,'12:30,'12:45,'13:00,'13:15,'13:30,'13:45,'14:00,'14:15,'14:30,'14:45,'15:00,'15:15,'15:30,'15:45,'16:00,'16:15,'16:30,'16:45,'17:00,'17:15,'17:30,'17:45,'18:00,'18:15,'18:30,'18:45,'19:00,'19:15,'19:30,'19:45,'20:00,'20:15,'20:30,'20:45,'21:00,'21:15,'21:30,'21:45,'22:00,'22:15,'22:30,'22:45,'23:00,'23:15,'23:30,'23:45\n");
+			fprintf(st_meta_data,"0,1,demand.dat,dynasmart,1,1,%d,%d,0,0,1,1\n",m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin);
+			fprintf(st_meta_data,"0,1,demand_hov.dat,dynasmart,1,1,%d,%d,0,0,1,2\n",m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin);
+			fprintf(st_meta_data,"0,1,demand_truck.dat,dynasmart,1,1,%d,%d,0,0,1,3\n",m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin);
+			// m_DemandLoadingStartTimeInMin,m_DemandLoadingEndTimeInMin are read from the original project
+			fclose(st_meta_data);
+		}else
+		{
+
+		CString msg;
+		msg.Format ("File %s cannot be opened. Please check.",str);
+		AfxMessageBox(msg);
+		
+		}
+
+} 
 void CTLiteDoc::CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min)
 {
 
@@ -3396,3 +3437,21 @@ void CTLiteDoc::CreateVehicles(int origin_zone, int destination_zone, float numb
 
 
 }
+void CTLiteDoc::OnFileTrafficdatasetting()
+{	
+	OpenCSVFileInExcel (m_ProjectDirectory + "AMS_traffic_data_settings.csv");
+}
+
+void CTLiteDoc::OnExportDynasmart()
+{
+	SaveDYNASMARTProject("Project.dws");
+
+}
+
+void CTLiteDoc::OnDemandUseroadcapacitytogeneratedefaultproductionandattractionforeachzone()
+{
+	// TODO: Add your command handler code here
+}
+
+
+

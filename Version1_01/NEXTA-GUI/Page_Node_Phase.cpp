@@ -51,6 +51,7 @@ CPage_Node_Phase::CPage_Node_Phase()
 , m_bHideRightTurnMovement(TRUE)
 , m_bMultiPhaseDisplay(FALSE)
 , m_bOptimizationMethod(FALSE)
+, m_bUsingObsHourlyCount(FALSE)
 {
 	m_bColumnWidthIncludeHeader = true;
 	m_SelectedMovementIndex = -1;
@@ -84,6 +85,7 @@ void CPage_Node_Phase::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EDIT_MODE2, m_bHideRightTurnMovement);
 	DDX_Check(pDX, IDC_CHECK_MULTIPLE_PHASE_DIAGRAM, m_bMultiPhaseDisplay);
 	DDX_Check(pDX, IDC_CHECK_OPTIMIZATIONMETHOD, m_bOptimizationMethod);
+	DDX_Check(pDX, IDC_CHECK_OPTIMIZATION_OBS, m_bUsingObsHourlyCount);
 }
 
 
@@ -103,6 +105,7 @@ BEGIN_MESSAGE_MAP(CPage_Node_Phase, CPropertyPage)
 	ON_BN_CLICKED(IDC_BUTTON_QEM, &CPage_Node_Phase::OnBnClickedButtonQem)
 	ON_BN_CLICKED(IDC_CHECK_MULTIPLE_PHASE_DIAGRAM, &CPage_Node_Phase::OnBnClickedCheckMultiplePhaseDiagram)
 	ON_BN_CLICKED(IDC_CHECK_OPTIMIZATIONMETHOD, &CPage_Node_Phase::OnBnClickedCheckOptimizationmethod)
+	ON_BN_CLICKED(IDC_CHECK_OPTIMIZATION_OBS, &CPage_Node_Phase::OnBnClickedCheckOptimizationObs)
 END_MESSAGE_MAP()
 
 
@@ -160,7 +163,6 @@ BOOL CPage_Node_Phase::OnInitDialog()
 
 
 	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,  m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
-
 
 	m_CycleLength = atoi(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_CycleLength));
 
@@ -837,14 +839,15 @@ void CPage_Node_Phase::SaveData()
 
 			row = 2;
 			time += atof( m_PhasingGrid.GetItemText(row++,p));
-			time += atof( m_PhasingGrid.GetItemText(row++,p));
 			end_time = time;
-			time += atof( m_PhasingGrid.GetItemText(row++,p));
 
+
+			m_pDoc->SaveNodeFile();
 
 
 			if(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_RingType).Find("Single")!=-1 && max_green >=1)  // single ring
 			{
+
 				m_pDoc->SetupPhaseData(m_CurrentNodeNumber , timing_plan_name, p, PHASE_Start,start_time);
 				m_pDoc->SetupPhaseData(m_CurrentNodeNumber , timing_plan_name, p, PHASE_End,end_time);
 
@@ -868,8 +871,9 @@ void CPage_Node_Phase::SaveData()
 
 		}	
 
-		int cycle_length = time;
-		m_pDoc->SetupSignalValue(m_CurrentNodeNumber , timing_plan_name,TIMING_CycleLength,cycle_length);
+
+
+		m_pDoc->SetupSignalValue(m_CurrentNodeNumber , timing_plan_name,TIMING_CycleLength,m_CycleLength);
 
 		CString str_ring_type;
 		m_RingTypeComboBox.GetLBText(m_RingTypeComboBox.GetCurSel(),str_ring_type);
@@ -936,8 +940,9 @@ void CPage_Node_Phase::OnBnClickedButtonSave()
 
 void CPage_Node_Phase::RunQEM()
 {	
+	UpdateData(1);
 	SaveData();
-	m_pDoc->RunQEMTool(m_CurrentNodeNumber );
+	m_pDoc->RunQEMTool(m_CurrentNodeNumber, m_bUsingObsHourlyCount);
 
 	DTA_Phasing_Data_Matrix element = m_pDoc->GetPhaseData(m_CurrentNodeNumber ,m_pDoc->m_TimingPlanVector[m_SelectedTimingPlanNo].timing_plan_name);
 	m_CycleLength = atoi(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_CycleLength));
@@ -955,6 +960,13 @@ void CPage_Node_Phase::RunQEM()
 
 void CPage_Node_Phase::OnBnClickedButtonQem()
 {	
+	UpdateData(1);
+	if(m_bUsingObsHourlyCount)
+	{
+	OnBnClickedButtonQem2();
+	return;
+	}
+
 	DTANode* pNode  = m_pDoc->m_NodeNoMap [m_CurrentNodeID];
 
 	bool SimuTurnVolume = false;
@@ -972,7 +984,7 @@ for(int tp = 0; tp<  m_pDoc->m_TimingPlanVector.size(); tp++)  // first loop for
 		}
 	}
 }
-	if(SimuTurnVolume == false)
+	if(SimuTurnVolume == false && m_bUsingObsHourlyCount == false)
 	{
 		AfxMessageBox("Simulated turning movement Counts are not available. ",MB_ICONINFORMATION);
 		return;
@@ -982,6 +994,7 @@ for(int tp = 0; tp<  m_pDoc->m_TimingPlanVector.size(); tp++)  // first loop for
 		for (unsigned int i=0;i< pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector .size();i++)
 		{
 		
+			
 			float number_of_hours = max(0.01,(m_pDoc->m_TimingPlanVector[tp].end_time_in_min - m_pDoc->m_TimingPlanVector[tp]. start_time_in_min )/60.0);
 			float sim_turn_hourly_count = pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].sim_turn_count/ number_of_hours;
 			pNode->m_MovementDataMap[ m_pDoc->m_TimingPlanVector[tp].timing_plan_name].m_MovementVector[i].QEM_TurnVolume  = sim_turn_hourly_count  ;
@@ -1008,7 +1021,7 @@ void CPage_Node_Phase::OnBnClickedButtonQem2()
 		}
 	}
 
-	if(ObservedTurnVolume == false)
+	if(ObservedTurnVolume == false && m_bUsingObsHourlyCount)
 	{
 		AfxMessageBox("Observed turning movement counts are not available. ",MB_ICONINFORMATION);
 		return;
@@ -1202,7 +1215,7 @@ void CPage_Node_Phase::OnGridEndSelChange(NMHDR *pNotifyStruct, LRESULT* /*pResu
 	//	if(pItem->iRow ==-1) // column selecetd
 	{
 		m_SelectedPhaseNumber = pItem->iColumn;
-		UpdatePhasingDataInGrid();
+	//	UpdatePhasingDataInGrid();
 		Invalidate();
 	}
 
@@ -1324,4 +1337,9 @@ void CPage_Node_Phase::OnBnClickedCheckOptimizationmethod()
 	UpdateData(1);
 	GetDlgItem(IDC_BUTTON_QEM) ->EnableWindow(m_bOptimizationMethod);
 
+}
+
+void CPage_Node_Phase::OnBnClickedCheckOptimizationObs()
+{
+	// TODO: Add your control notification handler code here
 }

@@ -49,16 +49,7 @@
 #include "DlgPathList.h"
 extern CDlgPathList* g_pPathListDlg;
 extern CDlgPathMOE	*g_pPathMOEDlg;
-/******************************
-External calling functions
-if(ReadSensorData() == true)
-{
-CWaitCursor wc;
-ReadSensorData();   // if there are sensor location data
-ReadEventData(directory); 
-}
 
-**********************************************/
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -166,23 +157,19 @@ void DTAPath::UpdateWithinDayStatistics()
 	}
 }
 
-bool CTLiteDoc::ReadSensorData()
+bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 {
-
-	CString SensorFileName;
-	SensorFileName.Format("%sinput_sensor.csv", m_ProjectDirectory);
 
 	CCSVParser parser;
 	int error_count = 0;
 
 	int data_count = 0;
-	if (parser.OpenCSVFile(CString2StdString(SensorFileName)))
+	if (parser.OpenCSVFile(CString2StdString(lpszFileName)))
 	{
 
 			std::list<DTALink*>::iterator iLink;
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
-			(*iLink)->m_bSensorData = false;
 			(*iLink)->m_total_sensor_link_volume = 0;
 			}
 
@@ -194,12 +181,9 @@ bool CTLiteDoc::ReadSensorData()
 		{
 			DTA_sensor sensor;
 
+			std::string count_sensor_id;
 
-			if(!parser.GetValueByFieldName("from_node_id",sensor.FromNodeNumber )) 
-				continue;
-			if(!parser.GetValueByFieldName("to_node_id",sensor.ToNodeNumber )) 
-				continue;
-			if(!parser.GetValueByFieldName("sensor_type",sensor.SensorType)) 
+			if(!parser.GetValueByFieldName("count_sensor_id",count_sensor_id)) 
 				continue;
 
 			int day_no = 0;
@@ -208,21 +192,28 @@ bool CTLiteDoc::ReadSensorData()
 
 			g_SensorDayDataMap[ day_no] = true;
 
-		
 			g_SensorLastDayNo= max(g_SensorLastDayNo,  day_no);
 			g_SensorDayNo = g_SensorLastDayNo;
-
-
+			sensor.SensorID = count_sensor_id;
 
 			parser.GetValueByFieldName("x_coord",sensor.pt.x );
 			parser.GetValueByFieldName("y_coord",sensor.pt.y );
-			
+	
 
-			DTALink* pLink;
-			pLink = FindLinkWithNodeNumbers(sensor.FromNodeNumber , sensor.ToNodeNumber);
-			if(pLink!=NULL)
+			DTALink* pLink = NULL;
+
+			if(count_sensor_id.size  () > 0 && m_CountSensorIDMap.find(count_sensor_id.c_str ())!=m_CountSensorIDMap.end())
+			{
+				pLink = m_CountSensorIDMap[count_sensor_id.c_str ()];
+			}
+
+				if(pLink!=NULL)
 			{
 				sensor.LinkID = pLink->m_LinkNo ;
+
+				sensor.FromNodeNumber = pLink->m_FromNodeNumber ;
+				sensor.ToNodeNumber = pLink->m_ToNodeNumber ;
+
 
 				if(m_SensorMap.find(sensor.SensorID) == m_SensorMap.end())
 				{
@@ -230,6 +221,7 @@ bool CTLiteDoc::ReadSensorData()
 				}
 
 				pLink->m_bSensorData  = true;
+				pLink->m_bCountSensorData  = true;
 
 				float start_time_in_min =0;
 				float end_time_in_min = 0;
@@ -238,33 +230,26 @@ bool CTLiteDoc::ReadSensorData()
 				parser.GetValueByFieldName("end_time_in_min",end_time_in_min );
 
 
-				int volume_count= 0;
+				int count= 0;
+				parser.GetValueByFieldName("link_count",count );
+
+				if(count ==0)
+					parser.GetValueByFieldName("count",count );
+
+
+				float travel_time_in_min = -1;
+				parser.GetValueByFieldName("travel_time_in_min",travel_time_in_min );
+				
 
 				pLink->m_SensorTypeString = sensor.SensorType;
-				if(sensor.SensorType.find("link_count")!= string::npos)
-				{
-					if(parser.GetValueByFieldName ("count",volume_count )==false)
-					{
-						AfxMessageBox("Field count is missing from file input_sensor.csv. Please check.");
-						return false;
-					}
-				}else if(sensor.SensorType.find("lane_count")!= string::npos)
-				{
-					if(parser.GetValueByFieldName ("count",volume_count ) == false)
-					{
-						AfxMessageBox("Field count is missing from file input_sensor.csv.  Please check.");
-						return false;
-					
-					}
-					volume_count = volume_count* pLink->m_NumberOfLanes;
-				} 
 
 				data_count++;
 
-				if(start_time_in_min <0 && error_message.GetLength () < 1000)
+				if(start_time_in_min > end_time_in_min && error_message.GetLength () < 1000)
 				{
 						CString msg;
-						msg.Format ("Sensor %d-> %d has an error of start_time_in_min <0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
+						msg.Format ("Sensor %d-> %d has an error of start_time_in_min = %d > end_time_in_min = %d.\n",
+							sensor.FromNodeNumber , sensor.ToNodeNumber,start_time_in_min > end_time_in_min);
 
 					if(prev_error_message!=msg)
 					{
@@ -274,29 +259,53 @@ bool CTLiteDoc::ReadSensorData()
 
 				}
 
-				if(end_time_in_min >1440)
-				 return false;
-
-
-				if(end_time_in_min < start_time_in_min+1 && error_message.GetLength () < 1000)
+				if(count ==0 && error_message.GetLength () < 1000)
 				{
-					CString msg;
-					msg.Format ("Sensor %d-> %d has an error of end_time_in_min <= start_time_in_min: %d < %d.\n",sensor.FromNodeNumber , sensor.ToNodeNumber,
-						end_time_in_min, start_time_in_min);
+						CString msg;
+						msg.Format ("Sensor %d-> %d has an error of link_count =0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
 
-				if(prev_error_message!=msg)
-				{
-					error_message+=msg;
-					prev_error_message=  msg;
+					if(prev_error_message!=msg)
+					{
+						error_message+=msg;
+						prev_error_message=  msg;
+					}
+
 				}
-				}
-			
+
+			std::string second_count_sensor_id;
+
+			parser.GetValueByFieldName("second_count_sensor_id",second_count_sensor_id); 
+
+			DTALink* pLink2 = NULL;
+
+			if(second_count_sensor_id.size  () > 0 && m_CountSensorIDMap.find(second_count_sensor_id.c_str ())!=m_CountSensorIDMap.end())
+			{
+				pLink2 = m_CountSensorIDMap[second_count_sensor_id.c_str ()];
+			}
+
+
 				DTASensorData element;
 				element.start_time_in_min = start_time_in_min;
 				element.end_time_in_min = end_time_in_min;
-				element.count = volume_count;
+				element.count = count;
+
+				element.second_count_sensor_id = second_count_sensor_id;
+
+
+				float density = -1;
+				parser.GetValueByFieldName("density",density );
+
+				float speed = -1;
+				parser.GetValueByFieldName("speed",speed );
+
+
+				if(speed >0.001)  // valid data
+				{
+				pLink->m_bSpeedSensorData  = true;
+				}
+
 				pLink->m_SensorDataVector.push_back(element);
-				pLink->m_total_sensor_link_volume += volume_count;
+				pLink->m_total_sensor_link_volume += count;
 
 
 				for(int t = start_time_in_min; t< min (1440,end_time_in_min); t++)
@@ -304,14 +313,41 @@ bool CTLiteDoc::ReadSensorData()
 
 		
 					int time = day_no*1440 + t;  // allow shift of start time
+
+					if(second_count_sensor_id.size() == 0 ) // link count only
+					{
 					// day specific value	
-					pLink->m_LinkSensorMOEMap[ time].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ time].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min))*60;  // convert to per hour link flow
 					// overall value 
-					pLink->m_LinkSensorMOEMap[ t].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ t].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min))*60;  // convert to per hour link flow
 
 
+					if(density>0.001)
+					{
+					pLink->m_LinkSensorMOEMap[ t].Density = density ;  // convert to per hour link flow
+					}
 
-				}
+					if(speed>0.001)
+					{
+					pLink->m_LinkSensorMOEMap[ t].Speed  = speed ;  // convert to per hour link flow
+					}
+
+					} // handle movement data later
+					else
+					{
+							
+							DTANodeMovement* pMovement = FindMovement(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , pLink2->m_ToNodeNumber );
+						
+							
+								if(pMovement !=NULL)
+								{
+									pMovement->obs_turn_hourly_count  =  count/(max(1.0,end_time_in_min-start_time_in_min))*60;
+
+									// mark the related movement has obs_turn_hourly_count
+								}						
+							}					
+					
+					}
 			}else
 			{
 				if(error_message.GetLength () < 1000)
@@ -320,7 +356,7 @@ bool CTLiteDoc::ReadSensorData()
 				CString msg;
 					if(sensor.FromNodeNumber!=5010 && sensor.ToNodeNumber!=4958)
 					{
-				msg.Format ("Link %d -> %d in input_sensor.csv does not exist in input_link.csv.\n", sensor.FromNodeNumber , sensor.ToNodeNumber);
+				msg.Format ("Link %d -> %d in sensor_count.csv does not exist in input_link.csv.\n", sensor.FromNodeNumber , sensor.ToNodeNumber);
 					}
 				if(prev_error_message!=msg)
 				{
@@ -349,7 +385,7 @@ bool CTLiteDoc::ReadSensorData()
 
 		if(m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file %s.",data_count,SensorFileName);
+			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file sensor_count.csv.",data_count);
 			return true;
 		}
 		else
@@ -404,7 +440,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 
 					for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 					{
-						if((*iLink)->m_bSensorData == true)  // identified in the input_sensor_location.csv
+						if((*iLink)->m_bSensorData == true)  // identified in the sensor_location.csv
 						{
 							(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);
 						}
@@ -442,7 +478,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 				}else
 				{
 					CString error_message;
-					error_message.Format ("Reading error: Sensor ID %d has not been defined in file input_sensor_location.csv.");
+					error_message.Format ("Reading error: Sensor ID %d has not been defined in file sensor_location.csv.");
 					AfxMessageBox(error_message);
 					fclose(st);
 					return true;
@@ -513,7 +549,7 @@ bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 				number_of_samples++;
 			}
 
-			m_SensorDataLoadingStatus.Format("%d sensor data records are loaded from file SensorDataDay***.csv.",number_of_samples);
+			m_SensorCountDataLoadingStatus.Format("%d sensor data records are loaded from file SensorDataDay***.csv.",number_of_samples);
 
 
 			fclose(st);
@@ -749,333 +785,7 @@ void CTLiteDoc::OnToolsExporttoHistDatabase()
 
 int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 {
-/*
-	CWaitCursor cws;
-	m_NodeSizeSP = 0;  // reset 
-	if(m_OriginNodeID>=0 && m_DestinationNodeID>=0)
-	{
-		if(m_pNetwork !=NULL)
-		{
-			delete m_pNetwork;
-			m_pNetwork = NULL;
-		}
 
-
-		unsigned int iPath;
-		for (iPath = 0; iPath < m_PathDisplayList.size(); iPath++)
-		{
-			DTAPath* pdp = m_PathDisplayList[iPath];
-
-			if(pdp) delete pdp;
-		}
-
-		m_PathDisplayList.clear ();
-
-		m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-
-		int NodeNodeSum = 0;
-
-		// randomize link cost to avoid overlapping
-
-		std::list<DTALink*>::iterator iLink;
-		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-		{
-			(*iLink)->m_OverlappingCost  = 0;
-
-		}
-
-		for(int p=0; p<NumberOfRoutes-1; p++)
-		{
-			NodeNodeSum = 0;
-			TRACE("Path %d\n",p);
-
-			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
-			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0,0);
-			int     NodeSize = 0;
-			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
-			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-			while(PredNode != m_OriginNodeID && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
-			{
-				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-				NodeNodeSum+= PredNode;
-				PredNode = m_pNetwork->NodePredAry[PredNode];
-			}
-			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-
-			m_NodeSizeSP = NodeSize;
-
-
-			// test overlapping path
-			bool bNonOverlapping = true;
-			for (iPath = 0; iPath < m_PathDisplayList.size(); iPath++)
-			{
-				DTAPath* pdp = m_PathDisplayList[iPath];
-
-				if(pdp->m_LinkSize==NodeSize-1 &&  pdp->m_NodeNodeSum == NodeNodeSum)
-				{
-					bNonOverlapping = false;
-					break;
-				}
-
-			}
-
-			if(bNonOverlapping)
-			{
-				// update m_PathDisplayList
-				DTAPath* pdp = new DTAPath(NodeSize-1,g_Simulation_Time_Horizon);
-
-
-				for (int i=1 ; i < m_NodeSizeSP; i++)
-				{
-					DTALink* pLink = FindLinkWithNodeIDs(m_PathNodeVectorSP[i], m_PathNodeVectorSP[i-1]);
-
-					if(pLink == NULL) // no link is found
-						break;
-
-					pLink->m_OverlappingCost = 30;  // min
-
-					TRACE("  %d-> %d",m_NodeNotoNumberMap[m_PathNodeVectorSP[i]], m_NodeNotoNumberMap[m_PathNodeVectorSP[i-1]]);
-					if(pLink!=NULL)
-					{
-						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ; //starting from m_NodeSizeSP-2, to 0
-
-						pdp->m_Distance += pLink->m_Length ;
-
-						if(i==1) // first link
-						{
-							pdp->m_TravelTime = g_Simulation_Time_Stamp + pLink->GetTravelTime(g_Simulation_Time_Stamp);
-						}else
-						{
-							pdp->m_TravelTime = pdp->m_TravelTime + pLink->GetTravelTime(pdp->m_TravelTime);
-
-						}
-
-					}
-
-				}
-				pdp->m_NodeNodeSum = NodeNodeSum;
-				m_PathDisplayList.push_back (pdp);
-
-				if(m_PathDisplayList.size() >=NUM_PATHS-1)
-					break;
-
-				TRACE("\n",p);
-
-			}
-
-
-		}
-		// find overlapping paths
-
-		for(int p=0; p<NumberOfRoutes-1; p++)
-		{
-			TRACE("Path %d\n",p);
-			NodeNodeSum=0;
-
-			m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, true);
-			m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID,0,0,0);
-			int     NodeSize = 0;
-			int PredNode = m_pNetwork->NodePredAry[m_DestinationNodeID];            
-			m_PathNodeVectorSP[NodeSize++] = m_DestinationNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-			while(PredNode != m_OriginNodeID && PredNode!=-1 && NodeSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
-			{
-				ASSERT(NodeSize< MAX_NODE_SIZE_IN_A_PATH-1);
-				m_PathNodeVectorSP[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-				NodeNodeSum+= PredNode;
-
-				PredNode = m_pNetwork->NodePredAry[PredNode];
-			}
-			m_PathNodeVectorSP[NodeSize++] = m_OriginNodeID;  // node index 0 is the physical node, we do not add Origincentroid into PathNodeList, so NodeSize contains all physical nodes.
-
-			m_NodeSizeSP = NodeSize;
-
-
-			// test overlapping path
-			bool bNonOverlapping = true;
-			for (iPath = 0; iPath < m_PathDisplayList.size(); iPath++)
-			{
-				DTAPath* pdp = m_PathDisplayList[iPath];
-
-				if(pdp->m_LinkSize==NodeSize-1 &&  pdp->m_NodeNodeSum == NodeNodeSum)
-				{
-					bNonOverlapping = false;
-					break;
-				}
-
-			}
-
-			if(bNonOverlapping)
-			{
-				// update m_PathDisplayList
-				DTAPath* pdp = new DTAPath(NodeSize-1,g_Simulation_Time_Horizon);
-
-				for (int i=1 ; i < m_NodeSizeSP; i++)
-				{
-					DTALink* pLink = FindLinkWithNodeIDs(m_PathNodeVectorSP[i], m_PathNodeVectorSP[i-1]);
-					if(pLink == NULL)
-						break;
-					pLink->m_OverlappingCost = 30.0f/NumberOfRoutes;  // min
-
-					pdp->m_Distance += pLink->m_Length ;
-
-					if(i==1) // first link
-					{
-						pdp->m_TravelTime = g_Simulation_Time_Stamp + pLink->GetTravelTime(g_Simulation_Time_Stamp);
-					}else
-					{
-						pdp->m_TravelTime = pdp->m_TravelTime + pLink->GetTravelTime(pdp->m_TravelTime);
-					}
-
-
-					//                                      TRACE("  %d-> %d",m_NodeNotoNumberMap[m_PathNodeVectorSP[i]], m_NodeNotoNumberMap[m_PathNodeVectorSP[i-1]]);
-					if(pLink!=NULL)
-					{
-						pdp->m_LinkVector [m_NodeSizeSP-1-i] = pLink->m_LinkNo ;  //starting from m_NodeSizeSP-2, to 0
-
-
-					}
-
-				}
-				pdp->m_NodeNodeSum = NodeNodeSum;
-
-
-				m_PathDisplayList.push_back (pdp);
-
-				//                              TRACE("\nLinkSize =  %d, NodeNodeSum =%d\n",pdp->m_LinkSize ,pdp->m_NodeNodeSum);
-
-				if(m_PathDisplayList.size() >=NUM_PATHS)
-					break;
-
-				TRACE("\n",p);
-
-				m_SelectPathNo = -1;
-
-			}
-
-
-		}
-
-		// calculate time-dependent travel time
-
-
-		for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
-		{
-			DTAPath* pdp = m_PathDisplayList[p];
-
-			for(int t=0; t< g_Simulation_Time_Horizon; t+= TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL)  // for each starting time
-			{
-				pdp->m_TimeDependentTravelTime[t] = t;  // t is the departure time
-
-				for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
-				{
-					DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
-					if(pLink == NULL)
-						break;
-
-					pdp->m_TimeDependentTravelTime[t] += pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]);
-
-					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
-
-
-					//			    TRACE("\n path %d, time at %f, TT = %f",p, pdp->m_TimeDependentTravelTime[t], pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]) );
-
-				}
-
-				pdp->m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
-
-				ASSERT(pdp->m_TimeDependentTravelTime[t]>=0);
-
-				if( pdp->m_MaxTravelTime < pdp->m_TimeDependentTravelTime[t])
-					pdp->m_MaxTravelTime = pdp->m_TimeDependentTravelTime[t];
-
-				for(int tt=1; tt<TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL; tt++)
-				{
-					pdp->m_TimeDependentTravelTime[t+tt] = pdp->m_TimeDependentTravelTime[t];
-				}
-
-
-				//                              TRACE("\n path %d, time at %d = %f",p, t,pdp->m_TimeDependentTravelTime[t]  );
-
-			}
-
-			pdp->UpdateWithinDayStatistics();
-
-			/// calculate fuel consumptions
-			for(unsigned int p = 0; p < m_PathDisplayList.size(); p++) // for each path
-			{
-				DTAPath* pdp = m_PathDisplayList[p];
-
-				for(int t=0; t< 1440; t+= TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL)  // for each starting time
-				{
-					float CurrentTime = t;
-					float FuelSum = 0;
-					float CO2EmissionsSum = 0;
-					float CO2;
-
-
-					for (int i=0 ; i < pdp->m_LinkSize; i++)  // for each pass link
-					{
-						DTALink* pLink = m_LinkNoMap[m_PathDisplayList[p].m_LinkVector[i]];
-
-						FuelSum += pLink->ObtainHistFuelConsumption(CurrentTime);
-						CO2= pLink->ObtainHistCO2Emissions(CurrentTime);
-						CO2EmissionsSum+=CO2;
-
-						CurrentTime += pLink->ObtainHistTravelTime(CurrentTime);
-
-						//                                      TRACE("\n path %d, time at %f, TT = %f, Fuel %f. FS %f",p, pdp->m_TimeDependentTravelTime[t], pLink->GetTravelTime(pdp->m_TimeDependentTravelTime[t]),Fuel, FuelSum );
-
-					}
-
-
-					pdp->m_WithinDayMeanTimeDependentFuelConsumption[t] = FuelSum;
-					pdp->m_WithinDayMeanTimeDependentEmissions[t]=CO2EmissionsSum;
-
-					float value_of_time = 6.5f/60.0f;   // per min
-					float value_of_fuel = 3.0f;  // per gallon
-					float value_of_emissions = 0.24f;  // per pounds
-
-					pdp->m_WithinDayMeanGeneralizedCost[t] = value_of_time* pdp->GetTimeDependentMOE(t,2)
-						+ value_of_fuel* pdp->m_WithinDayMeanTimeDependentFuelConsumption[t]
-					+ value_of_emissions*pdp->m_WithinDayMeanTimeDependentEmissions[t];
-
-					for(int tt=1; tt<TIME_DEPENDENT_TRAVLE_TIME_CALCULATION_INTERVAL; tt++)
-					{
-						pdp->m_WithinDayMeanTimeDependentFuelConsumption[t+tt] = pdp->m_WithinDayMeanTimeDependentFuelConsumption[t];
-						pdp->m_WithinDayMeanTimeDependentEmissions[t+tt] = pdp->m_WithinDayMeanTimeDependentEmissions[t];
-						pdp->m_WithinDayMeanGeneralizedCost[t+tt] = pdp->m_WithinDayMeanGeneralizedCost[t];
-
-					}
-				}
-
-			}
-
-
-		}
-
-		UpdateAllViews(0);
-
-	if(g_pPathMOEDlg  && g_pPathMOEDlg ->GetSafeHwnd ())
-	{
-		m_PathMOEDlgShowFlag = true;
-		if(m_PathDisplayList.size() > 0)
-		{
-			if(g_pPathMOEDlg==NULL)
-			{
-				g_pPathMOEDlg = new CDlgPathMOE();
-				g_pPathMOEDlg->m_pDoc  = this;
-
-				g_pPathMOEDlg->Create(IDD_DIALOG_PATHMOE);
-			}
-			g_pPathMOEDlg->InsertPathMOEItem();
-
-			g_pPathMOEDlg->ShowWindow(SW_SHOW);
-		}
-	}
-		return 1;
-	}
-*/
 	return 0;
 }
 
@@ -1200,10 +910,10 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 
 						if(path_element.m_LinkVector.size()==1) // first link
 						{
-							path_element.m_TravelTime = pLink->GetTravelTime(g_Simulation_Time_Stamp);
+							path_element.m_TravelTime = pLink->GetDynamicTravelTime(g_Simulation_Time_Stamp,m_PrimaryDataSource );
 						}else
 						{
-							path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetTravelTime(path_element.m_TravelTime);
+							path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetDynamicTravelTime(path_element.m_TravelTime,m_PrimaryDataSource );
 
 						}
 						}
@@ -1246,12 +956,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 					if(pLink == NULL)
 						break;
 
-					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
-
-					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
-
-
-					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
+					path_element.m_TimeDependentTravelTime[t] += pLink->GetDynamicTravelTime(path_element.m_TimeDependentTravelTime[t], m_PrimaryDataSource );
 
 				}
 
@@ -1298,7 +1003,7 @@ int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
 
 						CurrentTime += pLink->ObtainHistTravelTime(CurrentTime);
 
-						//                                      TRACE("\n path %d, time at %f, TT = %f, Fuel %f. FS %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]),Fuel, FuelSum );
+						//                                      TRACE("\n path %d, time at %f, TT = %f, Fuel %f. FS %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetDynamicTravelTime(path_element.m_TimeDependentTravelTime[t] ,m_pDoc->m_PrimaryDataSource ),Fuel, FuelSum );
 
 					}
 

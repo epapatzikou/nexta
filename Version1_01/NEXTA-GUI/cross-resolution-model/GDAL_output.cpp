@@ -1005,7 +1005,7 @@ void CTLiteDoc::ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeSt
 
 			for(int t = start_time_in_min; t<end_time_in_min ; t++)
 			{
-			total_speed += (*iLink)->GetSimulatedSpeed(t) ;
+			total_speed += (*iLink)->GetDynamicSpeed(t, m_PrimaryDataSource) ;
 			}
 			float avg_speed = total_speed/max(1,end_time_in_min-start_time_in_min);
 			float speed_limit_ratio =  avg_speed/max(1,(*iLink)->m_SpeedLimit);
@@ -1419,6 +1419,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 void CTLiteDoc::GeneratePathFromVehicleData()
 {
 	m_PathMap.clear();
+	m_ODMatrixMap.clear();
 
 	std::list<DTAVehicle*>::iterator iVehicle;
 
@@ -1446,6 +1447,10 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 
 								DTALink* pLink = m_LinkNoMap[pVehicle->m_NodeAry[link].LinkNo];
 
+
+								if(pLink!=NULL)
+								{
+
 								if(link==1) // first link
 								{
 									m_PathMap[label].m_NodeVector.push_back(pLink->m_FromNodeNumber );
@@ -1456,6 +1461,12 @@ void CTLiteDoc::GeneratePathFromVehicleData()
 								for(unsigned int si = 0; si < pLink ->m_ShapePoints .size(); si++)
 								{
 								m_PathMap[label].m_ShapePoints.push_back (pLink->m_ShapePoints[si]);
+								}
+
+								}else
+								{
+								
+								TRACE("");
 								}
 
 							}
@@ -1593,7 +1604,6 @@ void CTLiteDoc::ExportAgentLayerToKMLFiles(CString file_name, CString GISTypeStr
 void CTLiteDoc::ExportPathflowToCSVFiles()
 {
 
-	GeneratePathFromVehicleData();
 
 	CString directory = m_ProjectDirectory;
 	FILE* st = NULL;

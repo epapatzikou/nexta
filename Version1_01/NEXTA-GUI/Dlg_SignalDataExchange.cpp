@@ -416,6 +416,9 @@ void CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData()
 	UpdateData(1);
 
     m_pDoc->GenerateMovementCountFromVehicleFile(m_PeakHourFactor);
+
+	 m_pDoc->GeneratePathFromVehicleData();
+
 	m_pDoc->ExportPathflowToCSVFiles();
 
 	if(AfxMessageBox("Do you need to use sequential node numbers in order to match with UTDF format?", MB_YESNO|MB_ICONINFORMATION)==IDYES )

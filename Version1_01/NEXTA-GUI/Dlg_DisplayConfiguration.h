@@ -18,6 +18,8 @@ public:
 // Dialog Data
 	enum { IDD = IDD_DIALOG_CONFIG_GIS_TEXT_DISPLAY };
 
+	std::vector<int> aggregation_interval_vector;
+
 	std::vector<int> movement_text_size_vector;
 	std::vector<float> walking_distance_vector;
 	std::vector<int> transit_time_vector;
@@ -66,4 +68,8 @@ public:
 	afx_msg void OnBnClickedButtonDecreaseLinkTextSize2();
 	CComboBox m_TimingPlanComboBox;
 	afx_msg void OnCbnSelchangeCombotimingplan();
+	CComboBox m_ComboDataSourceType;
+	afx_msg void OnCbnSelchangeComboDatasource();
+	CComboBox m_Combo_Aggregation_Interval;
+	afx_msg void OnCbnSelchangeComboAggregationInterval();
 };

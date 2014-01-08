@@ -42,7 +42,7 @@ int g_Number_of_Weekdays = 23;
 
 
 
-CString g_time_to_string(long timestamp)
+CString g_time_to_string(float timestamp)
 {
    CString str;
    int day, hour, min, h_day, h_hour, h_min;
@@ -52,7 +52,10 @@ CString g_time_to_string(long timestamp)
    hour = timestamp/60;
    min =  timestamp- hour*60;
 
-   str.Format("day [%d] %02d:%02d ", day,hour, min);
+   int second = (int)((timestamp - hour*60 - min)*60+0.5);
+
+
+	   str.Format("day [%d] %02d:%02d:%02d", day,hour, min,second);
 
  /*  }else
    {
@@ -142,13 +145,15 @@ long CPlayerSeekBar::GetPosReal()
    return(m_posreal);
 }
 
-void CPlayerSeekBar::SetPos(long pos)
+void CPlayerSeekBar::SetPos(float pos)
 {
    CWnd* w = GetCapture();
    if(w && w->m_hWnd == m_hWnd) return;
 
    SetPosInternal(pos);
+   
    g_Simulation_Time_Stamp = pos;
+   
    ShowSimulationTime();
 
 }

@@ -53,7 +53,7 @@ public:
    void GetRange(long& start, long& stop);
    void SetRange(long start, long stop);
    long GetPos(), GetPosReal();
-   void SetPos(long pos);
+   void SetPos(float pos);
 
 
    // Overrides

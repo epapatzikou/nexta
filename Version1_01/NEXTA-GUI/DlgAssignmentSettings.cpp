@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "TLite.h"
 #include "DlgAssignmentSettings.h"
-
+#include "MainFrm.h"
 
 // CDlgAssignmentSettings dialog
 
@@ -22,6 +22,8 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	m_bModifiedFlag  = false;
 
 	m_SimulatorName = "DTALite";
+
+
 }
 
 CDlgAssignmentSettings::~CDlgAssignmentSettings()
@@ -103,23 +105,19 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_SimulationMethodControl.AddString ("5. User Define Traffic Flow Model");
 
 
-	if(m_pDoc->m_bDYNASMARTDataSet)
-	{
-		m_SimulationMethodControl.SetCurSel(5);
-		m_SimulatorName = "planning.exe";
-		UpdateData(0);
-	}
-	else
-	{
+#ifndef _WIN64
+	m_SimulatorName = theApp.m_SimulatorString_32;
+#else
+	m_SimulatorName = theApp.m_SimulatorString_64;
+
+#endif
+
+
+	UpdateData(0);
+
 		m_SimulationMethodControl.SetCurSel(m_pDoc->m_traffic_flow_model);
-	}
 
-	if(theApp.m_SimulatorString.GetLength () >0)
-	{
-		m_SimulatorName = m_pDoc->GetWorkspaceTitleName(theApp.m_SimulatorString);
-		UpdateData(0);
 
-	}
 
 	m_Signal_Control_List.AddString ("0: Continuous Flow with Link Capacity Constraint");
 	m_Signal_Control_List.AddString ("1: Cycle Length + Movement-based Effective Green Time");
@@ -374,11 +372,32 @@ void CDlgAssignmentSettings::OnLbnSelchangeListScenario()
 
 void CDlgAssignmentSettings::OnBnClickedConfig()
 {
+
+	AfxMessageBox("Please make sure the selected program is placed under the NeXTA Software_release folder.", MB_ICONINFORMATION);
+
 	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT|OFN_LONGNAMES|OFN_ENABLESIZING,
-		_T("Traffic Simulator (*.exe;*.bat)|*.exe|*.bat|"),NULL,0,true);
+		_T("User Defined Traffic Simulator (*.exe;*.bat)|*.exe|*.bat|"),NULL,0,true);
+
+	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+	CString NetworkFile = pMainFrame->m_CurrentDirectory;
+	dlg.m_ofn.lpstrInitialDir = NetworkFile;
+
 	if(dlg.DoModal() == IDOK)
 	{
-		theApp.m_SimulatorString = dlg.GetPathName();
+		CString m_SimulatorString = m_pDoc->GetLocalFileName (dlg.GetPathName());
+	
+		CString NEXTASettingsPath;
+		CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+		NEXTASettingsPath.Format ("%s\\NEXTA_Settings.ini", pMainFrame->m_CurrentDirectory);
+
+#ifndef _WIN64
+		WritePrivateProfileString("initialization", "UserDefinedSimulator_32",m_SimulatorString,NEXTASettingsPath);
+#else
+		WritePrivateProfileString("initialization", "UserDefinedSimulator_64",m_SimulatorString,NEXTASettingsPath);
+#endif
+		m_SimulatorName = m_pDoc->GetWorkspaceTitleName (m_SimulatorString) ;
+		
+		UpdateData(0);
 	} 
 }
 

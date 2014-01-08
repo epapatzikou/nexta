@@ -182,11 +182,11 @@ BOOL CDlg_VehicleClassification::OnInitDialog()
 	m_ComboY.AddString ("Total HC (g)");  
 	m_ComboY.AddString ("Total Gallon");  
 
-	m_ComboY.AddString ("Avg Energy (KJ/mile)");
-	m_ComboY.AddString ("Avg CO2 (g/mile)");
-	m_ComboY.AddString ("Avg NOx (g/mile)");
-	m_ComboY.AddString ("Avg CO (g/mile)");
-	m_ComboY.AddString ("Avg HC (g/mile)");
+	m_ComboY.AddString ("Avg Energy (KJ/vehicle/mile)");
+	m_ComboY.AddString ("Avg CO2 (g/vehicle/mile)");
+	m_ComboY.AddString ("Avg NOx (g/vehicle/mile)");
+	m_ComboY.AddString ("Avg CO (g/vehicle/mile)");
+	m_ComboY.AddString ("Avg HC (g/vehicle/mile)");
 	m_ComboY.AddString ("Avg Miles per Gallon");
 
 	m_ComboX.SetCurSel (m_XSelectionNo);

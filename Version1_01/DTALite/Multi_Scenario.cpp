@@ -339,13 +339,6 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_SummaryStatFile.WriteTextString(" ");
 
-			g_FreewayBiasFactor = 1;
-			if(parser_scenario.GetValueByFieldName("freeway_bias_factor",g_FreewayBiasFactor)==false)
-			{
-				//			cout << "Field freeway_bias_factor has not been specified in file input_scenario_settings.csv. A default factor of 1 is used." << endl;
-				//			getchar();
-			}
-
 			if(parser_scenario.GetValueByFieldName("routing_movement_delay_mode",g_ShortestPathWithMovementDelayFlag)==false)
 			{
 				//cout << "Field routing_movement_delay_mode has not been specified in file input_scenario_settings.csv. A default factor of 0 is used." << endl;
@@ -395,15 +388,6 @@ void g_MultiScenarioTrafficAssignment()
 					getchar();
 				}
 
-				if(ODEstimation_max_percentage_deviation_wrt_hist_demand<1 || ODEstimation_max_percentage_deviation_wrt_hist_demand>=100)
-				{
-					cout << "Field ODME_max_percentage_deviation_wrt_hist_demand =" << ODEstimation_max_percentage_deviation_wrt_hist_demand << ", which should be between 1 and 100%" << endl;
-					getchar();
-					ODEstimation_max_percentage_deviation_wrt_hist_demand = 20;
-
-				}
-
-
 				g_ODEstimation_StepSize = 0.05f;
 				if(parser_scenario.GetValueByFieldName("ODME_step_size",g_ODEstimation_StepSize)==false)
 				{
@@ -411,23 +395,16 @@ void g_MultiScenarioTrafficAssignment()
 					getchar();
 				}
 
-				if(g_ODEstimation_StepSize<0 || g_ODEstimation_StepSize>=0.2)
+				if(g_ODEstimation_StepSize<0 || g_ODEstimation_StepSize>=1)
 				{
-					cout << "Field ODME_step_size =" << g_ODEstimation_StepSize << ", which should be between 0 and 0.2" << endl;
+					cout << "Field ODME_step_size =" << g_ODEstimation_StepSize << ", which should be between 0 and 1" << endl;
 					getchar();
-					g_ODEstimation_StepSize = 0.05f;
+					g_ODEstimation_StepSize = 0.2f;
 
 				}
 
 			}
 
-
-			if(g_FreewayBiasFactor<0.1 || g_FreewayBiasFactor>2)
-			{
-				cout << "Field freeway_bias_factor in file input_scenario_settings.csv is out of feasible range. A default factor of 1 is used." << endl;
-				getchar();
-
-			}
 
 
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false )

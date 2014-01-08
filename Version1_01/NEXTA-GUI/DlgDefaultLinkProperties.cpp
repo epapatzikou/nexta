@@ -96,10 +96,7 @@ BOOL CDlgDefaultLinkProperties::OnInitDialog()
 		m_CoordinateSystemList.AddString ("Mile");
 		m_CoordinateSystemList.AddString ("Long/Lat");
 
-		if(m_pDoc->m_LongLatFlag==true)
-			m_CoordinateSystemList.SetCurSel (1);
-		else
-			m_CoordinateSystemList.SetCurSel (0);
+		m_CoordinateSystemList.SetCurSel (0);
 
 
 	
@@ -138,5 +135,5 @@ void CDlgDefaultLinkProperties::OnBnClickedCancel()
 
 void CDlgDefaultLinkProperties::OnCbnSelchangeCombo1()
 {
-	m_bLongLatSystem = m_CoordinateSystemList.GetCurSel();
+	m_bLongLatSystem = m_CoordinateSystemList.GetCurSel ();
 }

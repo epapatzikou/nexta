@@ -50,8 +50,11 @@ CDlg_ImportNetwork::CDlg_ImportNetwork(CWnd* pParent /*=NULL*/)
 , m_bRemoveConnectors(FALSE)
 , m_AutogenerateNodeFlag(FALSE)
 , m_ImportZoneData(TRUE)
-, m_bAddConnectorsForIsolatedNodes(FALSE)
+, m_bAddConnectorsForIsolatedNodes(TRUE)
 , m_bUseLinkTypeForDefaultValues(FALSE)
+, m_bLinkMOECheck(TRUE)
+, m_TMCSpeedCheck(TRUE)
+, m_SensorCountCheck(TRUE)
 {
 	m_bImportNetworkOnly = false;
 }
@@ -67,6 +70,9 @@ void CDlg_ImportNetwork::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST1, m_MessageList);
 	DDX_Check(pDX, IDC_CHECK_ZONE_DATA, m_ImportZoneData);
 
+	DDX_Check(pDX, IDC_CHECK_LINKMOE, m_bLinkMOECheck);
+	DDX_Check(pDX, IDC_CHECK_TMC_SPEED, m_TMCSpeedCheck);
+	DDX_Check(pDX, IDC_CHECK_SENSOR_COUNT, m_SensorCountCheck);
 }
 
 
@@ -128,6 +134,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 	CWaitCursor cursor;
 	// Make sure the network is empty
 	m_pDoc->ClearNetworkData();
+
 
 	m_MessageList.ResetContent ();
 
@@ -521,6 +528,7 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 				if(!bExist)
 					link_id = 0;
 
+
 				int type = rsLink.GetLong("link_type",bExist,false);
 				if(!bExist) 
 				{
@@ -543,6 +551,16 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					m_MessageList.AddString(str_msg);
 					continue;
 				}
+
+
+				CString SpeedSensorID_str;
+				SpeedSensorID_str= rsLink.GetCString("speed_sensor_id");
+
+				CString CountSensorID_str;
+				CountSensorID_str= rsLink.GetCString("count_sensor_id");
+
+				CString link_key_str;
+				link_key_str= rsLink.GetCString("link_key");
 
 				std::vector<CCoordinate> CoordinateVector;
 
@@ -815,6 +833,14 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_Name  = name;
 					pLink->m_OrgDir = direction;
 					pLink->m_LinkID = link_id;
+					pLink->m_SpeedSensorID  = m_pDoc->CString2StdString(SpeedSensorID_str);
+					pLink->m_LinkKey  = link_key_str;
+					pLink->m_CountSensorID = m_pDoc->CString2StdString(CountSensorID_str);
+
+					m_pDoc->m_LinkKeyMap[link_key_str] = pLink;
+					m_pDoc->m_SpeedSensorIDMap[pLink->m_SpeedSensorID ] = pLink;
+					m_pDoc->m_CountSensorIDMap[pLink->m_CountSensorID ] = pLink;
+
 
 					pLink->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
 
@@ -937,59 +963,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 					pLink->m_volume_over_capacity_ratio = rsLink.GetDouble ("static_volume_over_capacity_ratio",bExist,false);
 
 
-					for(int t=0; t<g_Simulation_Time_Horizon; t++)
-					{
-					pLink->m_LinkMOEAry[t].TravelTime = pLink->m_Length / max(1,pLink->m_avg_simulated_speed) * 60;
-					pLink->m_LinkMOEAry[t].LinkFlow = pLink->m_total_link_volume;
-					pLink->m_LinkMOEAry[t].Density = 0;
-					pLink->m_LinkMOEAry[t].Speed = pLink->m_avg_simulated_speed;
-					pLink->m_LinkMOEAry[t].QueueLength = 0;
-					}
-
-					for(int t=0; t<g_Simulation_Time_Horizon; t+=aggregation_time_interval_in_min)
-					{
-						CString Field_travel_time, Field_speed, Field_density, Field_Queue_length_percentage,Field_link_volume;
-						Field_travel_time.Format("travel_time_min_%d",t);
-						Field_density.Format("density_min_%d",t);
-						Field_Queue_length_percentage.Format("queue_length_percentage_min_%d",t);
-						Field_link_volume.Format("link_volume_min_%d",t);
-						Field_speed.Format("speed_min_%d",t);
-			
-						double TravelTime = max(pLink->m_FreeFlowTravelTime , rsLink.GetDouble(m_pDoc->CString2StdString(Field_travel_time),bExist,false));
-						double LinkFlow =  rsLink.GetDouble(m_pDoc->CString2StdString(Field_link_volume),bExist,false);
-						double Density = rsLink.GetDouble(m_pDoc->CString2StdString(Field_density),bExist,false);
-
-						double Speed = rsLink.GetDouble(m_pDoc->CString2StdString(Field_speed),bExist,false);
-						double QueueLength = rsLink.GetDouble(m_pDoc->CString2StdString(Field_Queue_length_percentage),bExist,false);
-
-
-
-						if(TravelTime>0.001 || LinkFlow>=1 || Speed >=1 || QueueLength>=1) 
-						{
-							if(Density <1)
-								Density = 1;
-						}
-
-						if( Speed >=1 && LinkFlow <1)
-							LinkFlow = 1000; //default value;
-
-						for(int tt= 0; tt<aggregation_time_interval_in_min; tt++)
-						{
-						pLink->m_LinkMOEAry[t+tt].TravelTime = TravelTime;
-						pLink->m_LinkMOEAry[t+tt].LinkFlow =  LinkFlow;
-						pLink->m_LinkMOEAry[t+tt].Density = Density;
-						pLink->m_LinkMOEAry[t+tt].Speed = Speed;
-						pLink->m_LinkMOEAry[t+tt].QueueLength = QueueLength;
-						
-						}
-
-					}
-
-					
-
-
-
-
 					pLink->m_Kjam = k_jam;
 					pLink->m_Wave_speed_in_mph  = wave_speed_in_mph;
 
@@ -1034,6 +1007,10 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 
 					m_pDoc->m_NodeNoMap[pLink->m_FromNodeID ]->m_OutgoingLinkVector.push_back(i);
+					m_pDoc->m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingLinkVector.push_back(i);
+
+					if(m_pDoc->m_LinkTypeMap[pLink->m_link_type].IsConnector  () == false )
+						m_pDoc->m_NodeNoMap[pLink->m_ToNodeID ]->m_IncomingNonConnectors++;
 
 
 					i++;
@@ -1157,9 +1134,6 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	//test if activity location has been defined
 
-
-	if(m_ImportZoneData == false)
-		return;
 
 	// activity location table
 	//bool bNodeNonExistError = false;
@@ -1366,6 +1340,8 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 
 	int demand_type = 0;
 
+	if(m_ImportZoneData)
+	{
 	m_pDoc->m_DemandMatrixMap .clear ();
 
 	CXLEzAutomation rsDemand;
@@ -1422,6 +1398,312 @@ void CDlg_ImportNetwork::OnBnClickedImport()
 		str_msg.Format ( "%d demand element records imported.", m_pDoc->m_DemandMatrixMap.size());
 		m_MessageList.AddString (str_msg);
 		
+		}
+	}
+/// simulation Link MOE
+		if(m_bLinkMOECheck)
+		{
+		CXLEzAutomation rsModelLinkMOE;
+		if(rsModelLinkMOE.OpenFile(m_Edit_Excel_File, "ModelLinkMOE", 7))
+		{
+
+	g_Simulation_Time_Horizon = 1440;
+
+		for (std::list<DTALink*>::iterator iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->ResetMOEAry(g_Simulation_Time_Horizon);  // use one day horizon as the default value
+		}
+
+			int count = 0;
+		while(rsModelLinkMOE.ReadRecord())
+		{
+			CString link_key = rsModelLinkMOE.GetCString("link_key");
+
+			if(link_key.GetLength ()==0)
+			{
+			break;
+			}
+
+		if(m_pDoc->m_LinkKeyMap.find(link_key)!= m_pDoc->m_LinkKeyMap.end())
+		{
+
+		int start_time_in_min = rsModelLinkMOE.GetLong("start_time_in_min",bExist,false);
+		int end_time_in_min = rsModelLinkMOE.GetLong("end_time_in_min",bExist,false);
+
+		if(start_time_in_min > end_time_in_min)
+		{
+		str_msg.Format ( "Error: simulation link MOE record No.%d, start_time_in_min > end_time_in_min", count);
+		m_MessageList.AddString (str_msg);
+		break;
+		
+		}
+
+			if(start_time_in_min <  m_pDoc->m_DemandLoadingStartTimeInMin)
+				m_pDoc->m_DemandLoadingStartTimeInMin = start_time_in_min;
+
+			if(end_time_in_min >  m_pDoc->m_DemandLoadingEndTimeInMin)
+				m_pDoc->m_DemandLoadingEndTimeInMin = end_time_in_min ;
+
+
+
+		float link_hourly_volume = rsModelLinkMOE.GetDouble ("link_hourly_volume",bExist,false);
+		float density = rsModelLinkMOE.GetDouble ("density",bExist,false);
+		float speed_per_hour = rsModelLinkMOE.GetDouble ("speed_per_hour",bExist,false);
+		float queue_length_percentage = rsModelLinkMOE.GetDouble ("queue_length_percentage",bExist,false);
+		float cumulative_arrival_count = rsModelLinkMOE.GetDouble ("cumulative_arrival_count",bExist,false);
+		float cumulative_departure_count = rsModelLinkMOE.GetDouble ("cumulative_departure_count",bExist,false);
+
+		float inflow_count = rsModelLinkMOE.GetDouble ("inflow_count",bExist,false);
+		float outflow_count = rsModelLinkMOE.GetDouble ("outflow_count",bExist,false);
+
+			DTALink* pLink = m_pDoc->m_LinkKeyMap[link_key];
+
+				if(pLink!=NULL)
+			{	
+
+				if(start_time_in_min >= g_Simulation_Time_Horizon)
+					start_time_in_min = g_Simulation_Time_Horizon -1;
+
+				if(end_time_in_min >= g_Simulation_Time_Horizon)
+					end_time_in_min = g_Simulation_Time_Horizon -1;
+
+				if(start_time_in_min<0)
+					start_time_in_min = 0;
+
+				if(end_time_in_min <0)
+					end_time_in_min = 0;
+
+
+				for(int t = start_time_in_min; t < end_time_in_min; t++)
+				{
+				pLink->m_LinkMOEAry[t].LinkFlow = link_hourly_volume;
+				pLink->m_LinkMOEAry[t].Density  = density;
+
+				pLink->m_LinkMOEAry[t].Speed = speed_per_hour;
+				pLink->m_LinkMOEAry[t].QueueLength = queue_length_percentage;
+
+
+				float incount = inflow_count/max(1,end_time_in_min-start_time_in_min);  // min count
+				float outcount = outflow_count/max(1,end_time_in_min-start_time_in_min);  // min count
+
+				if(t>=1)
+				{
+				pLink->m_LinkMOEAry[t].ArrivalCumulativeFlow = pLink->m_LinkMOEAry[t-1].ArrivalCumulativeFlow + incount;
+				pLink->m_LinkMOEAry[t].DepartureCumulativeFlow = pLink->m_LinkMOEAry[t-1].DepartureCumulativeFlow + outflow_count;
+				}
+
+
+				
+				pLink->m_LinkMOEAry[t].TravelTime = pLink->m_Length / max(0.01,speed_per_hour);
+				}
+			
+			}
+			count ++;
+
+			if(count%5000 == 0)
+			{
+				str_msg.Format ( "importing %d simulation link MOE records...", count);
+				m_MessageList.AddString (str_msg);
+	
+			}
+
+			}
+
+
+		}
+		rsModelLinkMOE.Close();
+
+		str_msg.Format ( "%d simulation link MOE records imported.", count);
+		m_MessageList.AddString (str_msg);
+		
+		}
+
+		}
+		//--- TMC
+
+		for (std::list<DTALink*>::iterator iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->m_LinkSensorMOEMap.clear ();  // use one day horizon as the default value
+		}
+
+		if(m_TMCSpeedCheck)
+		{
+		CXLEzAutomation rsTMCSpeed;
+
+		if(rsTMCSpeed.OpenFile(m_Edit_Excel_File, "SensorSpeed", 8))
+		{
+			int speed_data_aggregation_interval = 15;
+
+
+			int count = 0;
+		while(rsTMCSpeed.ReadRecord())
+		{
+			CString TMC = rsTMCSpeed.GetCString("speed_sensor_id");
+
+			if(TMC.GetLength () ==0)
+				break;
+
+		int day_no = rsTMCSpeed.GetLong ("day_no",bExist,false);
+
+		if(day_no <1)
+			day_no = 1;
+
+			g_SensorDayDataMap[ day_no] = true;
+			g_SensorLastDayNo= max(g_SensorLastDayNo,  day_no);
+			g_SensorDayNo = g_SensorLastDayNo;
+
+
+			DTALink* pLink = NULL;
+
+			if(m_pDoc->m_SpeedSensorIDMap.find(m_pDoc->CString2StdString(TMC))!=m_pDoc->m_SpeedSensorIDMap.end())
+			{
+				pLink = m_pDoc->m_SpeedSensorIDMap[m_pDoc->CString2StdString(TMC)];
+				pLink->m_bSensorData = true;
+				pLink->m_bSpeedSensorData  = true;
+
+				float max_speed = 10;
+				float min_speed = 100;
+
+				for (int t = 0; t< 1440; t+= speed_data_aggregation_interval)
+				{
+					CString timestamp;
+					timestamp.Format ("Min_%d",t);
+					std::string StdString = m_pDoc->CString2StdString(timestamp);
+					float speed_in_mph  = rsTMCSpeed.GetDouble (StdString,bExist,false);
+					
+						//TRACE("speed = %f,\n",speed_in_mph);
+						if(min_speed > speed_in_mph)
+							min_speed = speed_in_mph;
+
+						if(max_speed < speed_in_mph)
+							max_speed = speed_in_mph;
+
+						for(int s= 0 ; s<speed_data_aggregation_interval; s++)
+						{
+
+							int time = day_no*1440 + t +s;  // allow shift of start time
+							// day specific value-----	
+
+							if(pLink->m_LinkSensorMOEMap.find(time) == pLink->m_LinkSensorMOEMap.end()) // no traffic count data
+								pLink->m_LinkSensorMOEMap[ time].LinkFlow = 1000;
+
+							pLink->m_LinkSensorMOEMap[ time].Speed = speed_in_mph;
+
+						}
+
+					
+
+				}
+			count ++;
+
+			}
+			}
+		rsTMCSpeed.Close();
+
+		str_msg.Format ( "%d sensor speed records imported.", count);
+		m_MessageList.AddString (str_msg);
+		
+		}
+		}
+
+		if(m_SensorCountCheck)
+		{
+		CXLEzAutomation rsSensorCount;
+
+		if(rsSensorCount.OpenFile(m_Edit_Excel_File, "SensorCount", 9))
+		{
+			std::list<DTALink*>::iterator iLink;
+			for (iLink = m_pDoc->m_LinkSet.begin(); iLink != m_pDoc->m_LinkSet.end(); iLink++)
+			{
+			(*iLink)->m_total_sensor_link_volume = 0;
+			}
+
+			int count = 0;
+		while(rsSensorCount.ReadRecord())
+		{
+			CString sensor_id = rsSensorCount.GetCString("count_sensor_id");
+
+			if(sensor_id.GetLength () ==0)
+				break;
+
+		int day_no = rsSensorCount.GetLong ("day_no",bExist,false);
+
+		if(day_no <1)
+			day_no = 1;
+
+			g_SensorDayDataMap[ day_no] = true;
+			g_SensorLastDayNo= max(g_SensorLastDayNo,  day_no);
+			g_SensorDayNo = g_SensorLastDayNo;
+
+
+			DTALink* pLink = NULL;
+
+			if(m_pDoc->m_CountSensorIDMap .find(m_pDoc->CString2StdString(sensor_id))!=m_pDoc->m_CountSensorIDMap.end())
+			{
+				pLink = m_pDoc->m_CountSensorIDMap[m_pDoc->CString2StdString(sensor_id)];
+				pLink->m_bSensorData = true;
+				pLink->m_bCountSensorData  = true;
+
+
+
+			float volume_count = rsSensorCount.GetLong ("count",bExist,false);
+				pLink->m_total_sensor_link_volume +=volume_count;
+
+		int start_time_in_min = rsSensorCount.GetLong("start_time_in_min",bExist,false);
+		int end_time_in_min = rsSensorCount.GetLong("end_time_in_min",bExist,false);
+
+		if(start_time_in_min > end_time_in_min)
+		{
+		str_msg.Format ( "Error: SensorCount record No.%d, start_time_in_min > end_time_in_min", count);
+		m_MessageList.AddString (str_msg);
+		break;
+		
+		}
+
+			if(start_time_in_min <  m_pDoc->m_DemandLoadingStartTimeInMin)
+				m_pDoc->m_DemandLoadingStartTimeInMin = start_time_in_min;
+
+			if(end_time_in_min >  m_pDoc->m_DemandLoadingEndTimeInMin)
+				m_pDoc->m_DemandLoadingEndTimeInMin = end_time_in_min;
+
+
+				DTASensorData element;
+				element.start_time_in_min = start_time_in_min;
+				element.end_time_in_min = end_time_in_min;
+				element.count = volume_count;
+
+
+			CString second_count_sensor_id = rsSensorCount.GetCString("second_count_sensor_id");
+
+				if(second_count_sensor_id.GetLength () >0)
+				{
+				
+					element.second_count_sensor_id = second_count_sensor_id;
+				}
+			
+
+				pLink->m_SensorDataVector.push_back(element);
+
+
+				for(int t = max(0,start_time_in_min); t< min (1440,end_time_in_min); t++)
+				{
+					int time = day_no*1440 + t;  // allow shift of start time
+					// day specific value	
+					pLink->m_LinkSensorMOEMap[ time].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+					// overall value 
+					pLink->m_LinkSensorMOEMap[ t].LinkFlow = volume_count/(max(1.0,end_time_in_min-start_time_in_min));  // convert to per hour link flow
+
+				}
+			count ++;
+
+			}
+			}
+		rsSensorCount.Close();
+
+		str_msg.Format ( "%d sensor count records imported.", count);
+		m_MessageList.AddString (str_msg);
+		
+		}
 		}
 
 		m_MessageList.AddString ("Done.");

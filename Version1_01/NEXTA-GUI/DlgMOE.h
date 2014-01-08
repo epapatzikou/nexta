@@ -29,8 +29,6 @@
 #include "BaseDialog.h"
 #include "afxwin.h"
 
-enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_inflow_volume,link_outflow_volume,link_in_and_outflow_volume,link_travel_time,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count};
-
 // CDlgMOE dialog
 
 class CTimeSeriesLine 
@@ -102,7 +100,8 @@ public:
 	m_bShowEventLabel = true;
 	m_bShowWeatherLabel = false;
 	m_bShowPrediction = false;
-	m_bShowSimulationAndObservation  = true;
+	m_bShowSensorData  = true;
+	m_bShowSimulationData = true;
 
 	m_ViewMode = 0;
 
@@ -132,13 +131,19 @@ public:
    eLinkMOEMode Cur_MOE_type1;
    eLinkMOEMode Cur_MOE_type2;
 
-   bool m_bShowSimulationAndObservation;
-   bool m_bShowHistPattern;
+   bool m_bShowSensorData;
+   bool m_bShowSimulationData;
+   bool m_bShowGrid;
+  bool m_bShowHistPattern;
    bool m_bShowPrediction;
    bool m_bShowVariability;
    bool m_bShowEventLabel;
    bool m_bShowWeatherLabel;
    float m_UnitData, m_UnitTime;
+
+  int m_max_project_string_length;
+  void GetMaxLabelLength();
+
    int m_Range;
    bool m_bFirstLoadingFlag;
    int m_TimeLeft, m_TimeRight;
@@ -240,4 +245,18 @@ public:
 	CComboBox m_SensorDayNo;
 	afx_msg void OnCbnSelchangeComboSimudayno();
 	afx_msg void OnCbnSelchangeComboSensordayno();
+	afx_msg void OnMoe2Energy();
+	afx_msg void OnMoeEnergy();
+	afx_msg void OnMoeCo2();
+	afx_msg void OnMoeCo();
+	afx_msg void OnMoeHc();
+	afx_msg void OnMoeNox();
+	afx_msg void OnMoe2Co2();
+	afx_msg void OnMoe2Co();
+	afx_msg void OnMoe2Hc();
+	afx_msg void OnMoe2Nox();
+	afx_msg void OnDataShowsimulationtimeseries();
+	afx_msg void OnUpdateDataShowsimulationtimeseries(CCmdUI *pCmdUI);
+	afx_msg void OnDataShowgrid();
+	afx_msg void OnUpdateDataShowgrid(CCmdUI *pCmdUI);
 };

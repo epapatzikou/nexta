@@ -122,6 +122,7 @@ public:
 	CListBox m_ListDataSource;
 	CListBox m_ListStartHour;
 	afx_msg void OnLbnSelchangeListStarthour();
+	afx_msg void OnBnClickedCheckZoomToLink();
 };
 
 //{{AFX_INSERT_LOCATION}}

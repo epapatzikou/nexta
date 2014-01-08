@@ -64,6 +64,11 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
+		if((*iterLink)->m_FromNodeNumber == 7535)
+		{
+		TRACE("");
+		}
+
 		if((*iterLink)->m_bConnector)  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
 		{
 			if(FromID!=OriginNodeID && ToID !=DestinationNodeID)

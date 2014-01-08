@@ -1220,7 +1220,7 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonReload()
 		m_SelectedFileName =  "input_demand.csv";
 		
 		if(nSelectedRow < DemandFileNameVector .size())
-m_SelectedFileName = DemandFileNameVector[nSelectedRow];
+			m_SelectedFileName = DemandFileNameVector[nSelectedRow];
 
 		DisplayDemandMatrix();
 		return;
@@ -1233,35 +1233,37 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonExportMatrix()
 
 	CString AMS_File = m_pDoc->m_ProjectDirectory +"AMS_demand_matrix_format.csv";
 	fopen_s(&st,AMS_File,"w");
-	if(st!=NULL)
-	{
-		// first line 
-		fprintf(st,",");
-
-		for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
-		{
-			int origin = m_pDoc->m_ZoneNumberVector [i];
-			fprintf(st,"%d,",origin);
-		}
-		fprintf(st,"\n");
-
-		//matrix
-
-		for(int j=0; j <  m_pDoc->m_ZoneNoSize  ; j++)
-		{
-			int destination = m_pDoc->m_ZoneNumberVector [j];
-			fprintf(st,"%d,",destination);
-
-			for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
+			if(st!=NULL)
 			{
-				int origin = m_pDoc->m_ZoneNumberVector [i];
-				float value = GetODValue(origin,destination); 
-				fprintf(st,"%f", origin, destination, value);
+				fprintf(st,"zone_id");
+				std::map<int, DTAZone>	:: const_iterator itr;
 
-			}
-		fprintf(st,"\n");
-		
-		}
+				for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++)
+				{
+					fprintf(st,",%d",itr->first );
+				}
+
+
+				fprintf(st,"\n");
+
+				std::map<int, DTAZone>	:: const_iterator itr_to_zone_id;
+
+				int index = 0;
+				for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++)
+				{
+					fprintf(st,"%d,",itr->first );
+
+					for(itr_to_zone_id = m_pDoc->m_ZoneMap.begin(); itr_to_zone_id !=  m_pDoc->m_ZoneMap.end(); itr_to_zone_id++)
+					{
+						float value = GetODValue(itr->first,itr_to_zone_id->first );
+						{
+							fprintf(st,"%f,", value);
+						}
+					}
+
+					fprintf(st,"\n");
+
+				}
 
 
 		fclose(st);
@@ -1286,18 +1288,24 @@ void CDlgODDemandGridCtrl::OnBnClickedButtonExportColumn()
 		// first line 
 		fprintf(st,"origin,destination,volume\n");
 
-		for(int i=0; i <  m_pDoc->m_ZoneNoSize  ; i++)
-		for(int j=0; j <  m_pDoc->m_ZoneNoSize  ; j++)
-		{
-			int origin = m_pDoc->m_ZoneNumberVector [i];
-			int destination = m_pDoc->m_ZoneNumberVector [j];
-			float value = GetODValue(origin,destination); 
-			if(value>0.001)
-			{
-			fprintf(st,"%d,%d,%f\n", origin, destination, value);
-			}
+				std::map<int, DTAZone>	:: const_iterator itr;
 
-		}
+				std::map<int, DTAZone>	:: const_iterator itr_to_zone_id;
+
+
+				for(itr = m_pDoc->m_ZoneMap.begin(); itr != m_pDoc->m_ZoneMap.end(); itr++)
+				{
+
+					for(itr_to_zone_id = m_pDoc->m_ZoneMap.begin(); itr_to_zone_id !=  m_pDoc->m_ZoneMap.end(); itr_to_zone_id++)
+					{
+						float value = GetODValue(itr->first,itr_to_zone_id->first );
+						{
+							fprintf(st,"%d,%d,%f\n",itr->first,itr_to_zone_id->first,value );
+
+						}
+					}
+
+				}
 
 
 		fclose(st);

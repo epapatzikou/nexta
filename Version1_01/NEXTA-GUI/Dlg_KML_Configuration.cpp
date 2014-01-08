@@ -16,13 +16,13 @@ IMPLEMENT_DYNAMIC(CDlg_KML_Configuration, CDialog)
 
 CDlg_KML_Configuration::CDlg_KML_Configuration(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlg_KML_Configuration::IDD, pParent)
-	, m_KML_Height_Ratio(0)
+	, m_KML_Height_Ratio(0.01)
 	, m_Transparency(0)
 	, m_BandWidth(0)
 	, m_MaxHeightValue(1)
 {
 	m_BandWidth = 20;
-	m_KML_Height_Ratio = 1;
+	m_KML_Height_Ratio = 0.01;
 	m_Transparency = 50;
 
 	for(int i = 0; i <=7; i++)
@@ -64,6 +64,7 @@ BEGIN_MESSAGE_MAP(CDlg_KML_Configuration, CDialog)
 	ON_BN_CLICKED(IDOK4, &CDlg_KML_Configuration::OnBnClickedOk4)
 	ON_CBN_SELCHANGE(IDC_COMBO_Height, &CDlg_KML_Configuration::OnCbnSelchangeComboHeight)
 
+	ON_EN_CHANGE(IDC_EDIT_HEIGHT, &CDlg_KML_Configuration::OnEnChangeEditHeight)
 END_MESSAGE_MAP()
 
 
@@ -376,3 +377,13 @@ void CDlg_KML_Configuration::OnEnChangeEditHeightMax()
 	// TODO:  Add your control notification handler code here
 }
 
+
+void CDlg_KML_Configuration::OnEnChangeEditHeight()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
+}
