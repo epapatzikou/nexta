@@ -348,105 +348,7 @@ bool CTLiteDoc::ReadGPSCSVFile(LPCTSTR lpszFileName)
 
 void CTLiteDoc::OnToolsGpsmapmatching()
 {
-    //save the original code
-    //// create a network
-    //// for each link, define the distance cost
-    //// find the shortest path
-
-
-    //CWaitCursor wait; // let cursor waits
-
-    //std::list<DTALink*>::iterator iLink;
-
-    //for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  //m_LinkSet ?????????
-    //{
-    //    (*iLink)->m_OriginalLength = (*iLink)->m_Length ;  // keep the original link length
-    //}
-    //
-    //    for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-    //{
-    //    (*iLink)->m_DisplayLinkID = -1;
-    //}
-    //
-    //// for each vehicle
-    //std::list<DTAVehicle*>::iterator iVehicle;
-
-    ////each vehicle GPS data are stored in the list called m_VehicleSet
-
-    //for (iVehicle = m_VehicleSet.begin(); iVehicle != m_VehicleSet.end(); iVehicle++)
-    //{
-    //    DTAVehicle* pVehicle = (*iVehicle);
-    //    if(m_pNetwork ==NULL)  // we only build the network once
-    //    {
-    //      m_pNetwork = new DTANetworkForSP(m_NodeSet.size(), m_LinkSet.size(), 1, 1, m_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-    //    }
-    //    if(pVehicle->m_GPSLocationVector.size()>=2)
-    //    {
-    //       //find OD nodes for each vehicle
-    //       m_OriginNodeID = FindClosestNode(pVehicle->m_GPSLocationVector[0]);
-    //       m_DestinationNodeID = FindClosestNode(pVehicle->m_GPSLocationVector[pVehicle->m_GPSLocationVector.size()-1]);
-    //       // set new length for links
-    //       std::list<DTALink*>::iterator iLink;
-    //       int max_link_id = 1;
-    //       for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)  // for each link in this network
-    //       {
-    //         double min_distance = 999999;
-    //         GDPoint pfrom = (*iLink)->m_FromPoint;
-    //         GDPoint pto = (*iLink)->m_ToPoint;
-    //         for(int i = 0; i < pVehicle->m_GPSLocationVector.size(); i++ )
-    //         {
-    //           float distance = g_GetPoint2LineDistance(pVehicle->m_GPSLocationVector[i], pfrom, pto);  // go through each GPS location point
-    //           if(distance < min_distance)
-    //           {
- //                 min_distance = distance;
-    //           }
-    //         }
-    //         // determine the distance to GPS traces as length
-    //         (*iLink)->m_Length = min_distance; // keep the original link length
-    //       }
-    //       m_RandomRoutingCoefficient  = 0;  // no random cost
-    //       //build physical network
-    //       m_pNetwork->BuildPhysicalNetwork(&m_NodeSet, &m_LinkSet, m_RandomRoutingCoefficient, false);
-    //       int NodeNodeSum = 0;
-    //       int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];//save link ids in a path(a path means the trajactory of a vehicle obtained from GPS)
-    //       float TotalCost;
-    //       bool distance_flag = true;
-    //       int  NodeSize;
-    //       //get the total number of the nodes in the network we build,and give the link ids to PathLinkList
-    //       NodeSize= m_pNetwork->SimplifiedTDLabelCorrecting_DoubleQueue(m_OriginNodeID, 0, m_DestinationNodeID, 1, 10.0f,PathLinkList,TotalCost, distance_flag, false, false,m_RandomRoutingCoefficient);   // Pointer to previous node (node)    
-    //       //update m_PathDisplayList
-    //       if(NodeSize <= 1)
-    //       {
-    //          TRACE("error");
-    //       }
-    //        DTAPath path_element;
-    //        path_element.Init (NodeSize-1,g_Simulation_Time_Horizon);
-
-    //        std::vector<int> link_vector;// a vector to save link ids
-    //        for (int i=0 ; i < NodeSize-1; i++)
-    //        {
-    //            path_element.m_LinkVector [i] = PathLinkList[i] ; //starting from m_NodeSizeSP-2, to 0
-    //            link_vector.push_back (PathLinkList[i]);// save the link ids
-    //            DTALink* pLink = m_LinkNotoLinkMap[PathLinkList[i]];
-    //            if(pLink!=NULL)
-    //            { 
-    //                path_element.m_Distance += m_LinkNotoLinkMap[PathLinkList[i]]->m_Length ;
-    //                pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
-    //                if(i==0) // first link
-    //                {
-    //                    path_element.m_TravelTime = pLink->GetTravelTime(g_Simulation_Time_Stamp);
-    //                }
-    //                else
-    //                  {
-    //                    path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetTravelTime(path_element.m_TravelTime);
-    //                  }
-    //            }
-    //       }
-    //        HighlightPath(link_vector,m_PathDisplayList.size()); //highlight the path for each vehicle in different color.
-    //        m_PathDisplayList.push_back(path_element);
-    //    }
- //    }
-//save the original code
+ 
 
 // create a network
     // for each link, define the distance cost
@@ -536,11 +438,11 @@ void CTLiteDoc::OnToolsGpsmapmatching()
                     pLink->m_bIncludedBySelectedPath = true; // mark this link as a link along the selected path
                     if(i==0) // first link
                     {
-                        path_element.m_TravelTime = pLink->GetTravelTime(g_Simulation_Time_Stamp);
+                        path_element.m_TravelTime = pLink->GetSimulatedTravelTime(g_Simulation_Time_Stamp);
                     }
                     else
                       {
-                        path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetTravelTime(path_element.m_TravelTime);
+                        path_element.m_TravelTime = path_element.m_TravelTime + pLink->GetSimulatedTravelTime(path_element.m_TravelTime);
                       }
                 }
            }

@@ -63,7 +63,10 @@ enum link_text_display_mode
 	link_display_avg_travel_time,
 	link_display_avg_delay,
    link_display_link_id, 
-   link_display_TMC_code, 
+   link_display_speed_sensor_id, 
+   link_display_count_sensor_id, 
+   link_display_link_key, 
+
    link_display_from_id_to_id, 
 
 
@@ -164,7 +167,7 @@ enum movement_text_display_mode
    movement_display_sim_turn_delay_in_min, 
    movement_display_obs_turn_hourly_count,
    movement_display_obs_turn_percentage, 
-   movement_display_obs_turn_delay, 
+   movement_display_obs_turn_delay,
 
    movement_display_QEM_Shared,
    movement_display_QEM_Width,
@@ -184,7 +187,7 @@ enum movement_text_display_mode
    movement_display_QEM_VOC,
    movement_display_QEM_SatFlow,
    movement_display_QEM_Delay,
-   movement_display_QEM_LOS
+   movement_display_QEM_LOS,
 };
 
 enum node_display_mode
@@ -374,6 +377,13 @@ typedef struct tARROWSTRUCT
     };
 
 
+struct IncomingLinkAngle
+{ public:
+	DTALink* pLink; 
+	int Angle;
+};
+
+
 
 class CTLiteView : public CView
 {
@@ -470,6 +480,9 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bShowLinkType;
 
 	int m_VehicleSize;
+
+   virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
+   virtual void OnPrint(CDC* pDC, CPrintInfo* pInfo);
 
 
 	void FitNetworkToScreen();
@@ -607,8 +620,12 @@ public:
 	int m_NodeTextFontSize;
 
 	void DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,TEXTMETRIC tm);
-	void DrawNodeChart(CDC *pDC, DTANode* pNode, CPoint point, int chart_size, int LOS);
+	void DrawNodePieChart(CDC *pDC, DTANode* pNode, CPoint point, int chart_size, int LOS);
+	void DrawNodeRadarChart(CDC *pDC, DTANode* pNode, CPoint point, int chart_size, float delay_ratio, int LOS);
 
+
+
+	
 
 	void DrawLinkAsLine(DTALink* pLink, CDC* pDC);
 
@@ -855,6 +872,9 @@ public:
 	afx_msg void OnTransitShowwalklinksonly();
 	afx_msg void OnUpdateTransitShowtransitlinksonly(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateTransitShowwalklinksonly(CCmdUI *pCmdUI);
+	afx_msg void OnFilePrint();
+	afx_msg void OnFilePrintPreview();
+	afx_msg void OnFilePrintSetup();
 };
 struct PieInfo
 {

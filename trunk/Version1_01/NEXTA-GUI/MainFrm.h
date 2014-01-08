@@ -44,6 +44,8 @@ class CMainFrame : public CMDIFrameWnd
 {
 	DECLARE_DYNAMIC(CMainFrame)
 public:
+
+	float m_simulation_time_step;
 	CMainFrame();
 
 // Attributes
@@ -109,7 +111,6 @@ public:
 	afx_msg void On3ddisplayAnimation();
 	afx_msg void OnTimer(UINT_PTR  nIDEvent);
 
-	afx_msg void OnAnimationPlay();
 	afx_msg void OnAnimationRewind();
 	afx_msg void OnAnimationPause();
 	afx_msg void OnAnimationStop();
@@ -118,8 +119,15 @@ public:
 	afx_msg void OnWindowShowestimationview();
 	afx_msg void OnViewDatatoolbar();
 	afx_msg void OnUpdateViewDatatoolbar(CCmdUI *pCmdUI);
+	
+	afx_msg void OnAnimationPlay();
 	afx_msg void OnAnimationForward();
 	afx_msg void OnAnimationBackward();
+
+	afx_msg void OnAnimationPlay_second();
+	afx_msg void OnAnimationForward_second();
+	afx_msg void OnAnimationBackward_second();
+
 	afx_msg void OnAnimationSkipforward();
 	afx_msg void OnAnimationSkipbackward();
 	afx_msg void OnWindowSynchronizeddisplay();

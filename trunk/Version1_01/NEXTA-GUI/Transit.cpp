@@ -366,6 +366,7 @@ bool CTLiteDoc::ReadTransitFiles(CString TransitDataProjectFolder)
 	m_PT_network.ReadGTFFiles(m_NetworkRect);
 
 
+	m_TransitDataLoadingStatus.Format ("%d transit trips have been loaded.",m_PT_network.m_PT_TripMap.size() );
 
 	/*	if( m_PT_network.m_PT_TripMap.size()>0 && AfxMessageBox("Do you want to generate bus trip data?",MB_YESNO|MB_ICONINFORMATION)==IDYES)
 	{

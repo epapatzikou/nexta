@@ -20,7 +20,7 @@ static char THIS_FILE[] = __FILE__;
 ;
 CLinePlotTestDlg::CLinePlotTestDlg(CWnd* pParent /*=NULL*/)
 	: CBaseDialog(CLinePlotTestDlg::IDD, pParent)
-	, m_bZoomToLink(FALSE)
+	, m_bZoomToLink(TRUE)
 {
 	m_pDoc = NULL;
 	m_AggregationTimeIntervalInMin = 60;
@@ -61,6 +61,7 @@ BEGIN_MESSAGE_MAP(CLinePlotTestDlg, CBaseDialog)
 	ON_LBN_SELCHANGE(IDC_LIST_TimeWindow, &CLinePlotTestDlg::OnLbnSelchangeListTimewindow)
 	ON_LBN_SELCHANGE(IDC_LIST_DataSource, &CLinePlotTestDlg::OnLbnSelchangeListDatasource)
 	ON_LBN_SELCHANGE(IDC_LIST_StartHour, &CLinePlotTestDlg::OnLbnSelchangeListStarthour)
+	ON_BN_CLICKED(IDC_CHECK_ZOOM_TO_LINK, &CLinePlotTestDlg::OnBnClickedCheckZoomToLink)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -459,4 +460,9 @@ void CLinePlotTestDlg::OnLbnSelchangeListStarthour()
 	m_ListStartHour.GetText (m_ListStartHour.GetCurSel(),str);
 	m_LinePlot.m_StartHour  = atoi(str);
 	m_LinePlot.Invalidate ();
+}
+
+void CLinePlotTestDlg::OnBnClickedCheckZoomToLink()
+{
+	// TODO: Add your control notification handler code here
 }

@@ -562,8 +562,7 @@ void g_ReadRealTimeSimulationSettingsFile()
 
 
 		std::string output_TD_link_travel_time_file, output_TD_link_MOE_file,
-			output_agent_file,update_TD_link_attribute_file,
-			update_agent_file;
+			update_trip_file,update_TD_link_attribute_file;
 
 		int day_no = 0;
 		parser_RTSimulation_settings.GetValueByFieldName("day_no",day_no);
@@ -580,9 +579,9 @@ void g_ReadRealTimeSimulationSettingsFile()
 		parser_RTSimulation_settings.GetValueByFieldName("update_attribute_time_interval_in_min",update_attribute_aggregation_time_interval_in_min);
 	
 
-		parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",output_agent_file);
+		parser_RTSimulation_settings.GetValueByFieldName("update_trip_file",update_trip_file);
 		parser_RTSimulation_settings.GetValueByFieldName("update_TD_link_attribute_file",update_TD_link_attribute_file);
-		parser_RTSimulation_settings.GetValueByFieldName("update_agent_file",output_agent_file);
+		parser_RTSimulation_settings.GetValueByFieldName("update_trip_file",update_trip_file);
 
 			if(timestamp_in_min>=0)
 			{
@@ -596,18 +595,20 @@ void g_ReadRealTimeSimulationSettingsFile()
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].break_and_wait_flag   =true;
 					
 					}
+						parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file );
+						parser_RTSimulation_settings.GetValueByFieldName("output_trip_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file);
 
 
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file = output_TD_link_travel_time_file;
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_MOE_file = output_TD_link_MOE_file;
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_start_time_in_min = output_TD_start_time_in_min;
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_aggregation_time_in_min = output_MOE_aggregation_time_interval_in_min;
-					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file = output_agent_file;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file = update_trip_file;
 
 
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_attribute_aggregation_time_interval_in_min = update_attribute_aggregation_time_interval_in_min;
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file  = update_TD_link_attribute_file;
-					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file = update_agent_file;
+					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file = update_trip_file;
 
 					record_count ++;
 				}
@@ -647,9 +648,19 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 				false);
 	}
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file.size() >=1)
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file .size() >=1 || g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file .size() >=1 )
 	{
-		   // output agent file;
+		   // output agent and trip files;
+
+	char fname_agent[_MAX_PATH];
+	char fname_trip[_MAX_PATH];
+
+
+	sprintf(fname_agent,"%s",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file.c_str ());
+	sprintf(fname_trip,"%s",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file.c_str ());
+
+
+		OutputVehicleTrajectoryData(fname_agent, fname_trip,g_RealTimeSimulationSettingsMap[timestamp_in_min].day_no ,true,true);
 	}
 
 		if(g_RealTimeSimulationSettingsMap[timestamp_in_min].break_and_wait_flag)
@@ -700,10 +711,11 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 	}  // with input_TD_travel_time_file
 	
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_agent_file .size() >=1)
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file .size() >=1)
 	{
 		   // wait for input_agent_updating_file;
 
+			g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false);
 
 
 	}

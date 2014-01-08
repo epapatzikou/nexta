@@ -12,8 +12,9 @@ IMPLEMENT_DYNAMIC(CDlg_Legend, CBaseDialog)
 
 CDlg_Legend::CDlg_Legend(CWnd* pParent /*=NULL*/)
 : CBaseDialog(CDlg_Legend::IDD, pParent)
+, m_bShowRadarChart(FALSE)
 {
-
+	m_bShowRadarChart = false;
 }
 
 CDlg_Legend::~CDlg_Legend()
@@ -24,10 +25,12 @@ void CDlg_Legend::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_COMBO_EMISSIONTYPE, m_ComboBox_EmissionType);
-	DDX_Control(pDX, IDC_COMBO_AGGREGATION, m_AggregationTimeInterval);
+	DDX_Control(pDX, IDC_COMBO_AGGREGATION, m_QueueCutOffComboBox);
 	DDX_Control(pDX, IDC_STATIC_QUEUE_CUT_OFF, m_TextCutOff);
 	DDX_Control(pDX, IDC_STATIC_QUEUE_STUDY_PERIOD, m_StudyPeriodText);
 	DDX_Control(pDX, IDC_COMBO_STUDY_PERIOD, m_ComboxStudyPeriod);
+	DDX_Check(pDX, IDC_CHECK_RADAR_CHART, m_bShowRadarChart);
+	DDX_Control(pDX, IDC_CHECK_RADAR_CHART, m_RadarChartButton);
 }
 
 
@@ -37,6 +40,7 @@ BEGIN_MESSAGE_MAP(CDlg_Legend, CBaseDialog)
 	ON_CBN_SELCHANGE(IDC_COMBO_AGGREGATION, &CDlg_Legend::OnCbnSelchangeComboAggregation)
 	ON_STN_CLICKED(IDC_STATIC_QUEUE_CUT_OFF, &CDlg_Legend::OnStnClickedStaticQueueCutOff)
 	ON_CBN_SELCHANGE(IDC_COMBO_STUDY_PERIOD, &CDlg_Legend::OnCbnSelchangeComboStudyPeriod)
+	ON_BN_CLICKED(IDC_CHECK_RADAR_CHART, &CDlg_Legend::OnBnClickedCheckRadarChart)
 END_MESSAGE_MAP()
 
 
@@ -47,7 +51,7 @@ BOOL CDlg_Legend::OnInitDialog()
 
 	m_ComboBox_EmissionType.AddString ("Energy");
 	m_ComboBox_EmissionType.AddString ("CO2");
-	m_ComboBox_EmissionType.AddString ("NOX");
+	m_ComboBox_EmissionType.AddString ("NOx");
 	m_ComboBox_EmissionType.AddString ("CO");
 	m_ComboBox_EmissionType.AddString ("HC");
 
@@ -60,19 +64,19 @@ BOOL CDlg_Legend::OnInitDialog()
 	{
 		CString str;
 		str.Format("%d%%",p);
-		m_AggregationTimeInterval.AddString(str);
+		m_QueueCutOffComboBox.AddString(str);
 	}
 
 
-	for(int p = 1; p<=10; p++)
+	for(int p = 1; p<=24; p++)  //24 hours
 	{
 		CString str;
 		str.Format("%d",p);
 		m_ComboxStudyPeriod.AddString(str);
 	}
 
-	m_AggregationTimeInterval.SetCurSel(8-1); // 80%
-	m_AggregationTimeInterval.ShowWindow (0);
+	m_QueueCutOffComboBox.SetCurSel(8-1); // 80%
+	m_QueueCutOffComboBox.ShowWindow (0);
 	m_TextCutOff.ShowWindow (0);
 
 
@@ -147,41 +151,60 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 	else
 		m_ComboBox_EmissionType.ShowWindow (0); // not showing
 
-	if(m_pDoc->m_LinkMOEMode == MOE_impact || m_pDoc->m_LinkMOEMode == MOE_bottleneck )
+	if(m_pDoc->m_LinkMOEMode == MOE_impact || m_pDoc->m_LinkMOEMode == MOE_bottleneck  )
 	{
-
 
 		m_ComboxStudyPeriod.ShowWindow (1);
 		m_StudyPeriodText.ShowWindow (1);
 
-		m_AggregationTimeInterval.ShowWindow (1);
+	if(m_pDoc->m_LinkMOEMode == MOE_impact  )
+	{
+		m_QueueCutOffComboBox.ShowWindow (1);
 		m_TextCutOff.ShowWindow (1);
+	}else
+	{
+		m_TextCutOff.ShowWindow (0);
+		m_QueueCutOffComboBox.ShowWindow (0);
 
+	
+	}
 
 	}else
 	{
-		m_AggregationTimeInterval.ShowWindow (0); // not showing
+		m_QueueCutOffComboBox.ShowWindow (0); // not showing
 		m_TextCutOff.ShowWindow (0);
-		m_ComboxStudyPeriod.ShowWindow (0);
 		m_StudyPeriodText.ShowWindow (0);
+		m_ComboxStudyPeriod.ShowWindow (0);
 	}
+
+	if(m_pDoc->m_LinkMOEMode == MOE_bottleneck)
+	{
+	
+		m_RadarChartButton.ShowWindow(1);
+	}else
+	{
+	m_RadarChartButton.ShowWindow(0);
+	}
+
 
 	switch(m_pDoc->m_LinkMOEMode )
 	{
+	case MOE_volume: SetWindowText("Link Volume"); break;
 	case MOE_speed: SetWindowText("% of Speed Limit"); break;
 	case MOE_density: SetWindowText("Density (vhc/mile/ln)"); break;
 	case MOE_reliability: SetWindowText("Variability Ratio"); break;
-	case MOE_impact: SetWindowText("Congestion Start Time and Duration"); break;
+	case MOE_impact: SetWindowText("Queue Duration and Congestion Age"); break;
+	case MOE_bottleneck: SetWindowText("Bottleneck Charts and Congestion Age"); break;
 	case MOE_emissions: 
 
 		switch (m_pDoc->m_EmissionType )
 		{
-		case  DTA_Energy:  SetWindowText("Avg Energy (J) Per Mile"); break;	 
-		case  DTA_CO2:  SetWindowText("Avg CO2 (g) Per Mile"); break;	 
-		case  DTA_NOX:  SetWindowText("Avg NOX (g) Per Mile"); break;	 
-		case  DTA_CO:  SetWindowText("Avg CO (g) Per Mile"); break;	 
-		case  DTA_HC:  SetWindowText("Avg HC (g) er Mile"); break;	 
-		default:  SetWindowText("Avg Energy (J) Per Mile"); 
+		case  DTA_Energy:  SetWindowText("Avg Miles Per Gallon"); break;	 
+		case  DTA_CO2:  SetWindowText("Avg CO2 (kg) Per Vehicle Per Mile"); break;	 
+		case  DTA_NOX:  SetWindowText("Avg NOx (g) Per Vehicle Per Mile"); break;	 
+		case  DTA_CO:  SetWindowText("Avg CO (g) Per Vehicle Per Mile"); break;	 
+		case  DTA_HC:  SetWindowText("Avg HC (g) Per Vehicle Per Mile"); break;	 
+		default:  SetWindowText("Avg Energy (KJ) Per Vehicle Per Mile"); 
 		}
 
 
@@ -199,10 +222,10 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 		TimeBound[los] = g_Simulation_Time_Stamp + (m_pDoc->m_LOSBound[MOE_impact][los])/100.0*g_ImpactStudyPeriodInMin;
 	}
 
-	TimeStringVector[1] = "Current";
+	TimeStringVector[1] = "New Congestion";
 
 	int hour = g_ImpactStudyPeriodInMin/60;
-	TimeStringVector[6].Format("%d hour earlier", hour) ;
+	TimeStringVector[6].Format("%d-hour old", hour) ;
 
 
 	pDC->SetBkMode(TRANSPARENT);
@@ -342,8 +365,20 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 	{
 		BandWidthValue =  m_pDoc->GetLinkBandWidth(6000);
 		band_width_str = "Band Width: Link Volume Per Hour";
+
+		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
+
 		first_str = "3000";
 		second_str = "1500";
+		if(height>50)
+		{
+			BandWidthValue = 50/m_pDoc->m_Doc_Resolution/lane_offset;
+			first_str.Format ("%.0f",BandWidthValue);
+			second_str.Format ("%.0f",BandWidthValue/2);
+			
+
+		}
+
 
 	}else if (m_pDoc->m_LinkBandWidthMode == LBW_congestion_duration)
 	{
@@ -351,9 +386,17 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 		BandWidthValue =  m_pDoc->GetLinkBandWidth(g_ImpactStudyPeriodInMin);
 		band_width_str = "Band Width: Queue Duration";
 
+		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
 
-		first_str.Format ("%d min",g_ImpactStudyPeriodInMin);
-		second_str.Format ("%d min",g_ImpactStudyPeriodInMin/2);
+		if(height>50)
+		{
+			BandWidthValue = 50/m_pDoc->m_Doc_Resolution/lane_offset;
+		
+		}
+
+		first_str.Format ("%.0f min",BandWidthValue);
+		second_str.Format ("%.0f min",BandWidthValue/2);
+		
 	} 
 
 
@@ -378,11 +421,16 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 	}else
 	{
 
-	float avg_delay = 30;
-	float size = avg_delay/1000*m_pDoc->m_BottleneckDisplaySize;
+	float avg_delay = 60;
+	float size = avg_delay*m_pDoc->m_BottleneckDisplaySize;
 
-	if(size > 200)
-		size = 200;
+	//back calculate delay if there is a size constraint
+	if(size > 30)
+	{
+		size = 30;
+		avg_delay = size/m_pDoc->m_BottleneckDisplaySize;
+	}
+
 
 	CString first_str;
 	
@@ -431,7 +479,7 @@ void CDlg_Legend::OnCbnSelchangeComboAggregation()
 {
 	if(m_pDoc->m_LinkMOEMode == MOE_impact || m_pDoc->m_LinkMOEMode == MOE_bottleneck)
 	{
-		g_ImpactThreshold_QueueLengthPercentage= ( m_AggregationTimeInterval.GetCurSel () +1)*10;
+		g_ImpactThreshold_QueueLengthPercentage= ( m_QueueCutOffComboBox.GetCurSel () +1)*10;
 
 		Invalidate(1);
 		m_pDoc->UpdateAllViews (0);
@@ -454,4 +502,11 @@ void CDlg_Legend::OnCbnSelchangeComboStudyPeriod()
 		Invalidate(1);
 		m_pDoc->UpdateAllViews (0);
 	}
+}
+
+void CDlg_Legend::OnBnClickedCheckRadarChart()
+{
+	UpdateData(1);
+
+	g_bShowRadarChart = m_bShowRadarChart;
 }

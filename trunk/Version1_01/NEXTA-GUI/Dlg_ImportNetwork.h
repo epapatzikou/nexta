@@ -57,5 +57,8 @@ public:
 	BOOL m_ImportZoneData;
 	BOOL m_bAddConnectorsForIsolatedNodes;
 	BOOL m_bUseLinkTypeForDefaultValues;
+	BOOL m_bLinkMOECheck;
+	BOOL m_TMCSpeedCheck;
+	BOOL m_SensorCountCheck;
 };
 

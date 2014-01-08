@@ -149,7 +149,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
 	// load this vehicle into the ready queue
 
-	// comment: we use map here as the g_VehicleMap map is sorted by departure time.
+	// comment: we use std::map here as the g_VehicleMap map is sorted by departure time.
 	// At each iteration, we start  the last loaded id, and exit if the departure time of a vehicle is later than the current time.
 
 	for (iterVM = g_VehicleMap.find(g_LastLoadedVehicleID); iterVM != g_VehicleMap.end(); iterVM++)
@@ -258,7 +258,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	{
 		DTALink * pLink = g_LinkVector[li];
 
-		if(pLink->m_FromNodeNumber == 14890 && pLink->m_ToNodeNumber == 14966 && CurrentTime>=600 )
+		if(pLink->m_FromNodeNumber == 1 && pLink->m_ToNodeNumber == 5 && CurrentTime>=600 )
 		{
 			TRACE("");
 		}
@@ -284,7 +284,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				pLink->LoadingBuffer.pop_front ();
 
 
-				if(pLink->m_LeftTurn_NumberOfLanes >=1 && pLink->m_LeftTurn_DestNodeNumber == vi.veh_next_node_number  )
+				if(g_SignalRepresentationFlag ==1 && pLink->m_LeftTurn_NumberOfLanes >=1 && pLink->m_LeftTurn_DestNodeNumber == vi.veh_next_node_number  )
 				{
 					pLink->LeftEntrance_Queue.push_back(vi);
 
@@ -385,7 +385,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 		// left-turn entrance queue 
-		while(pLink->LeftEntrance_Queue.size() >0)  // if there are vehicles in the left-turn entrance queue
+		while(pLink->LeftEntrance_Queue.size() >0 && g_SignalRepresentationFlag ==1)  // if there are vehicles in the left-turn entrance queue
 		{
 
 			struc_vehicle_item vi = pLink->LeftEntrance_Queue.front();
@@ -473,9 +473,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				TRACE("");
 			}
 
-			if(pLink->m_bSignalizedArterialType == true && g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+			if(pLink->m_EffectiveGreenTime_In_Second >=1 || pLink->m_bSignalizedArterialType == true && g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
 			{
-
 
 					if(pLink->m_EffectiveGreenTime_In_Second==0)
 					{

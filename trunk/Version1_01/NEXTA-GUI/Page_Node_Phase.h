@@ -192,4 +192,6 @@ public:
 	BOOL m_bOptimizationMethod;
 	afx_msg void OnBnClickedCheckOptimizationmethod();
 	float m_VolumeAdjustmentFactor;
+	afx_msg void OnBnClickedCheckOptimizationObs();
+	BOOL m_bUsingObsHourlyCount;
 };

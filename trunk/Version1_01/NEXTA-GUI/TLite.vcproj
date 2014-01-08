@@ -405,6 +405,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_DataImportWizard.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_DemandType.cpp"
 				>
 			</File>
@@ -414,6 +418,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_Find_Vehicle.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_GIS_Setting_Config.cpp"
 				>
 			</File>
 			<File
@@ -1217,6 +1225,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Dlg_DataImportWizard.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Dlg_DemandType.h"
 				>
 			</File>
@@ -1226,6 +1238,10 @@
 			</File>
 			<File
 				RelativePath=".\Dlg_Find_Vehicle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dlg_GIS_Setting_Config.h"
 				>
 			</File>
 			<File

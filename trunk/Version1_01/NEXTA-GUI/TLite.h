@@ -62,6 +62,8 @@ class CTLiteApp : public CWinApp
 {
 public:
 
+	CString m_Simulator;
+
 	eVisulizationTemplate m_VisulizationTemplate;
 	eLanguageSupport m_LanguageSupport;
 	int m_NEXTA_use_flag;
@@ -80,7 +82,8 @@ public:
 	
 	COLORREF m_ZoneColor;
 
-	CString m_SimulatorString;
+	CString m_SimulatorString_32;
+	CString m_SimulatorString_64;
 
 
 	CTLiteApp();

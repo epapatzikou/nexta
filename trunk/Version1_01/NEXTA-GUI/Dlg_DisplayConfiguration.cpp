@@ -32,6 +32,8 @@ void CDlg_DisplayConfiguration::DoDataExchange(CDataExchange* pDX)
 	//	DDX_Control(pDX, IDC_LIST_GPS_TEXT_LABEL, m_GPS_Label);
 	DDX_Check(pDX, IDC_CHECK_SIGNAL_NODE_ONLY, m_bShowSignalNodeMovementOnly);
 	DDX_Control(pDX, IDC_COMBOTIMINGPLAN, m_TimingPlanComboBox);
+	DDX_Control(pDX, IDC_COMBO_DataSource, m_ComboDataSourceType);
+	DDX_Control(pDX, IDC_COMBO_Aggregation_Interval, m_Combo_Aggregation_Interval);
 }
 
 
@@ -57,6 +59,8 @@ BEGIN_MESSAGE_MAP(CDlg_DisplayConfiguration, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_INCREASE_LINK_TEXT_SIZE2, &CDlg_DisplayConfiguration::OnBnClickedButtonIncreaseLinkTextSize2)
 	ON_BN_CLICKED(IDC_BUTTON_DECREASE_LINK_TEXT_SIZE2, &CDlg_DisplayConfiguration::OnBnClickedButtonDecreaseLinkTextSize2)
 	ON_CBN_SELCHANGE(IDC_COMBOTIMINGPLAN, &CDlg_DisplayConfiguration::OnCbnSelchangeCombotimingplan)
+	ON_CBN_SELCHANGE(IDC_COMBO_DataSource, &CDlg_DisplayConfiguration::OnCbnSelchangeComboDatasource)
+	ON_CBN_SELCHANGE(IDC_COMBO_Aggregation_Interval, &CDlg_DisplayConfiguration::OnCbnSelchangeComboAggregationInterval)
 END_MESSAGE_MAP()
 
 
@@ -81,7 +85,6 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	CDialog::OnInitDialog();
 
 
-
 	m_Node_Label.AddString("None");
 	m_Node_Label.AddString("Node ID");
 	m_Node_Label.AddString("Sequential Node No.");
@@ -100,6 +103,20 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Street Name");
 
 	CTLiteDoc* m_pDoc = pView->GetDocument();
+
+
+
+	m_ComboDataSourceType.AddString ("Simulation Data");
+	m_ComboDataSourceType.AddString ("Sensor Data");
+
+	if(m_pDoc->m_PrimaryDataSource == eSimulationData)
+		m_ComboDataSourceType.SetCurSel (0);
+	else
+		m_ComboDataSourceType.SetCurSel (1);
+
+
+
+
 	if(m_pDoc->m_bUseMileVsKMFlag)
 	{
 	m_Link_Label.AddString("Speed Limit (mph)");
@@ -130,7 +147,11 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Avg Delay Per Vehicle (min)");
 
 	m_Link_Label.AddString("Link ID");
-	m_Link_Label.AddString("TMC Code");
+	m_Link_Label.AddString("Speed Sensor ID");
+	m_Link_Label.AddString("Count Sensor ID");
+	m_Link_Label.AddString("Link Key (for model MOE)");
+
+
 	m_Link_Label.AddString("From ID -> To ID");
 
 	m_Link_Label.AddString("Free Flow Travel Time (min)");
@@ -169,14 +190,14 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Link type In Number");
 	m_Link_Label.AddString("Internal Link id");
 
-	m_Link_Label.AddString("-- Simulation/Assignment Results --");
+	m_Link_Label.AddString("-- Link MOE --");
 	m_Link_Label.AddString("Total Link Delay (hour)");
 	m_Link_Label.AddString("Total Volume over Capacity Ratio");
 
 	if(m_pDoc->m_bUseMileVsKMFlag)
-		m_Link_Label.AddString("Avg Simulated Speed (kmph)");
+		m_Link_Label.AddString("Avg Speed (kmph)");
 	else
-		m_Link_Label.AddString("Avg Simulated Speed (mph)");
+		m_Link_Label.AddString("Avg Speed (mph)");
 
 	m_Link_Label.AddString("Avg Waiting Time on Loading Buffer");
 
@@ -231,7 +252,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 
 	m_Movement_Label.AddString ("Upstream Node Number");
-	m_Movement_Label.AddString ("Downtream Node Number");
+	m_Movement_Label.AddString ("Downstream Node Number");
 	m_Movement_Label.AddString ("Up,Current,Dest Node Numbers");
 	m_Movement_Label.AddString ("Protected//Permited//Prohibited");
 
@@ -303,6 +324,28 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	walking_distance_vector.push_back(0.45);
 	walking_distance_vector.push_back(0.50);
 	walking_distance_vector.push_back(1.00);
+
+
+	aggregation_interval_vector.push_back(1);
+	aggregation_interval_vector.push_back(5);
+	aggregation_interval_vector.push_back(15);
+	aggregation_interval_vector.push_back(30);
+	aggregation_interval_vector.push_back(60);
+	aggregation_interval_vector.push_back(120);
+	aggregation_interval_vector.push_back(1440);
+
+
+	for(int ia = 0; ia < aggregation_interval_vector.size(); ia++)
+	{
+		CString msg ;
+		msg.Format("%d",aggregation_interval_vector[ia]);
+		m_Combo_Aggregation_Interval.AddString (msg);
+
+		if(aggregation_interval_vector[ia] == g_MOEAggregationIntervalInMin)
+		{
+		m_Combo_Aggregation_Interval.SetCurSel  (ia);
+		}
+	}
 
 	/*for(unsigned int i=0; i< walking_distance_vector.size(); i++)
 	{
@@ -553,4 +596,24 @@ void CDlg_DisplayConfiguration::OnCbnSelchangeCombotimingplan()
 	CTLiteDoc* m_pDoc = pView->GetDocument();
 
 	 m_pDoc->m_CurrentDisplayTimingPlanName =  m_pDoc->CString2StdString (str); 
+}
+
+void CDlg_DisplayConfiguration::OnCbnSelchangeComboDatasource()
+{
+	CTLiteDoc* m_pDoc = pView->GetDocument();
+
+		if(m_ComboDataSourceType.GetCurSel()==0)
+			m_pDoc->m_PrimaryDataSource = eSimulationData;
+		else
+			m_pDoc->m_PrimaryDataSource = eSensorData;
+
+	pView->Invalidate ();
+}
+
+void CDlg_DisplayConfiguration::OnCbnSelchangeComboAggregationInterval()
+{
+
+	g_MOEAggregationIntervalInMin = aggregation_interval_vector [ m_Combo_Aggregation_Interval.GetCurSel()];
+
+	Invalidate ();
 }

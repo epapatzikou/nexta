@@ -46,5 +46,6 @@ public:
 	afx_msg void OnCbnSelchangeComboHeight();
 	float m_MaxHeightValue;
 	afx_msg void OnEnChangeEditHeightMax();
+	afx_msg void OnEnChangeEditHeight();
 };
 

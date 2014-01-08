@@ -538,6 +538,235 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 }
 
+bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
+{
+	float start_time_value = -100;
+
+	if(b_InitialLoadingFlag)
+	{ //allocate memory
+	
+	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
+
+	}
+
+	CCSVParser parser_agent;
+
+	float total_number_of_vehicles_to_be_generated = 0;
+
+	if (parser_agent.OpenCSVFile(file_name))
+	{
+
+		cout << "reading file " << file_name << endl;
+
+		int line_no = 1;
+
+		int i = 0;
+
+		int count = 0;
+
+		int count_for_sameOD = 0;
+		int count_for_not_defined_zones = 0;
+
+		while(parser_agent.ReadRecord())
+		{
+
+			if((count+1)%1000 ==0)
+			{
+			 cout << "reading " << count+1 << " records..." << endl;
+			
+			}
+			count ++;
+
+			int trip_id = 0;
+
+			parser_agent.GetValueByFieldNameRequired ("trip_id",trip_id);
+			DTAVehicle* pVehicle = 0;
+
+			pVehicle = new (std::nothrow) DTAVehicle;
+			if(pVehicle == NULL)
+			{
+				cout << "Insufficient memory...";
+				getchar();
+				exit(0);
+
+			}
+
+			pVehicle->m_VehicleID = g_VehicleVector.size();
+
+			pVehicle->m_ExternalTripID = trip_id;
+
+
+			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
+
+			parser_agent.GetValueByFieldNameRequired("from_zone_id",pVehicle->m_OriginZoneID);
+			parser_agent.GetValueByFieldNameRequired("to_zone_id",pVehicle->m_DestinationZoneID);
+
+			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)== g_ZoneMap.end() || g_ZoneMap.find( pVehicle->m_DestinationZoneID)== g_ZoneMap.end() )
+			{
+			count_for_not_defined_zones++;
+
+			continue;
+			}
+
+
+
+			int origin_node_id = -1;
+			int origin_node_number = -1;
+
+			parser_agent.GetValueByFieldName("origin_node_id",origin_node_number);
+
+			if(g_NodeNametoIDMap.find(origin_node_number)!= g_NodeNametoIDMap.end())  // convert node number to internal node id
+			{
+				origin_node_id = g_NodeNametoIDMap[origin_node_number];
+			}
+
+			int destination_node_id = -1;
+			int destination_node_number= -1;
+			parser_agent.GetValueByFieldName("destination_node_id",destination_node_number);
+
+			if(g_NodeNametoIDMap.find(destination_node_number)!= g_NodeNametoIDMap.end()) // convert node number to internal node id
+			{
+				destination_node_id = g_NodeNametoIDMap[destination_node_number];
+			}
+
+			if(origin_node_id==-1)  // no default origin node value, re-generate origin node
+				origin_node_id	= g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+
+			if(destination_node_id==-1)// no default destination node value, re-destination origin node
+				destination_node_id 	=  g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
+
+			pVehicle->m_OriginNodeID	= origin_node_id; 
+			pVehicle->m_DestinationNodeID 	=  destination_node_id;
+
+
+			if(origin_node_id == destination_node_id)
+			{  // do not simulate intra zone traffic
+
+				count_for_sameOD ++;
+			continue; 
+			}
+
+			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)!= g_ZoneMap.end())
+			{
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_Demand += 1;
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_OriginVehicleSize += 1;
+
+			}
+
+			float departure_time = 0;
+			parser_agent.GetValueByFieldNameRequired("start_time_in_min",departure_time);
+
+
+			if(	start_time_value < 0 )  // set first value
+				start_time_value = departure_time;
+			else if(start_time_value > departure_time +0.1)  // check if the departure times are sequential
+			{
+				cout << "start_time_in_min should be sequentially non-decreasing. Please check record " << i << " for trip_id " << trip_id << endl;
+			g_ProgramStop();
+			}else 
+				start_time_value = departure_time;
+
+
+
+
+			pVehicle->m_DepartureTime  = departure_time;
+			int beginning_departure_time = departure_time;
+
+
+			if( pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
+			{
+
+				cout << "Error: trip_id " <<  trip_id << " in file " << file_name << " has a start time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " << 
+					g_DemandLoadingStartTimeInMin << "->" << g_DemandLoadingEndTimeInMin << " (min)." << endl << "Please change the setting in section agent_input, demand_loading_end_time_in_min in file DTASettings.txt" ;
+				g_ProgramStop();
+			}
+
+			parser_agent.GetValueByFieldName("demand_type",pVehicle->m_DemandType);
+			parser_agent.GetValueByFieldName("pricing_type",pVehicle->m_PricingType);
+			parser_agent.GetValueByFieldName("vehicle_type",pVehicle->m_VehicleType);
+			parser_agent.GetValueByFieldName("information_type",pVehicle->m_InformationClass);
+			parser_agent.GetValueByFieldName("value_of_time",pVehicle->m_VOT);
+			parser_agent.GetValueByFieldName("vehicle_age",pVehicle->m_Age );
+
+
+			int number_of_nodes = 0;
+			parser_agent.GetValueByFieldName("number_of_nodes",number_of_nodes );
+
+			std::vector<int> path_node_sequence;
+			if(number_of_nodes >=2)
+			{
+			string path_node_sequence_str; 
+			parser_agent.GetValueByFieldName("path_node_sequence",path_node_sequence_str);
+
+			path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
+
+			AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
+			}
+
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+			pVehicle->m_ArrivalTime  = 0;
+			pVehicle->m_bComplete = false;
+			pVehicle->m_bLoaded  = false;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions  = 0;
+			pVehicle->m_Distance = 0;
+
+			pVehicle->m_NodeSize = 0;
+
+			pVehicle->m_NodeNumberSum =0;
+			pVehicle->m_Distance =0;
+
+			int number_of_agents = 1;
+
+			float ending_departure_time  = 0;
+
+			g_VehicleVector.push_back(pVehicle);
+			g_VehicleMap[pVehicle->m_VehicleID ]  = pVehicle;
+
+			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
+
+				if(AssignmentInterval >= g_AggregationTimetIntervalSize)
+				{
+					AssignmentInterval = g_AggregationTimetIntervalSize - 1;
+				}
+
+				ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+
+				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+
+				i++;
+			}
+			
+
+			line_no++;
+
+
+	
+			cout << count << " records have been read from file " << file_name << endl;
+
+			cout << i << " agents have been read from file " << file_name << endl;
+
+			if(count_for_sameOD >=1)
+				cout << "there are " << count_for_sameOD << " agents with the same from_zone_id and to_zone_id, which will not be simulated. " << endl;
+
+
+			if(count_for_not_defined_zones >=1)
+				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
+
+
+	}else
+	{
+		cout << "File " << file_name << " cannot be opened. Please check." << endl;
+		g_ProgramStop();
+
+		return false;
+	}
+
+	return true;
+
+}
+
 bool g_ReadAgentBinFile(string file_name)
 {
 	int path_node_sequence[MAX_NODE_SIZE_IN_A_PATH];

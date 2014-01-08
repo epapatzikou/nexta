@@ -71,15 +71,29 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_SensorData.AddString(m_pDoc->m_SensorLocationLoadingStatus);
 	}
 
-	if(m_pDoc->m_SensorDataLoadingStatus.GetLength() > 0)
+	if(m_pDoc->m_SensorCountDataLoadingStatus.GetLength() > 0)
 	{
-		m_ListBox_SensorData.AddString(m_pDoc->m_SensorDataLoadingStatus);
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorCountDataLoadingStatus);
 	}
 
+	if(m_pDoc->m_SensorSpeedDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorSpeedDataLoadingStatus);
+	}
+	
+
+	
 	if(m_pDoc->m_EventDataLoadingStatus.GetLength() > 0)
 	{
 		m_ListBox_NetworkData.AddString(m_pDoc->m_EventDataLoadingStatus);
 	}
+
+	
+	if(m_pDoc->m_TransitDataLoadingStatus.GetLength() > 0)
+	{
+		m_ListBox_NetworkData.AddString(m_pDoc->m_TransitDataLoadingStatus);
+	}
+
 
 	if(m_pDoc->m_ScenarioDataLoadingStatus.GetLength() > 0)
 	{
@@ -110,6 +124,12 @@ BOOL CDlgFileLoading::OnInitDialog()
 	m_ListBox_OutputData.AddString (m_pDoc->m_SimulationLinkMOEDataLoadingStatus);
 	}
 	
+	if(m_pDoc->m_SimulationLinkTDMOEDataLoadingStatus.GetLength ()>0)
+	{
+	m_ListBox_OutputData.AddString (m_pDoc->m_SimulationLinkTDMOEDataLoadingStatus);
+	}
+	
+	
 
 	if(m_pDoc->m_SimulationVehicleDataLoadingStatus.GetLength ()>0)
 	{
@@ -124,6 +144,11 @@ BOOL CDlgFileLoading::OnInitDialog()
 	if(m_pDoc->m_MovementDataLoadingStatus.GetLength ()>0)
 	{
 	m_ListBox_OutputData.AddString(m_pDoc->m_MovementDataLoadingStatus);
+	}
+
+	if(m_pDoc->m_AgentLocationLoadingStatus.GetLength ()>0)
+	{
+	m_ListBox_OutputData.AddString(m_pDoc->m_AgentLocationLoadingStatus);
 	}
 
 	m_ListBox_OutputData.AddString(m_pDoc->m_StrLoadingTime);

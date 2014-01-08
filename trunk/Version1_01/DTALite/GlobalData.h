@@ -32,6 +32,10 @@ extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
 extern std::map<string, DTALink*> g_LinkMap;
+extern std::map<std::string, DTALink*> g_CountSensorIDMap;
+extern std::map<std::string, DTALink*> g_LinkKeyMap;
+extern std::map<std::string, DTALink*> g_SpeedSensorIDMap;
+
 extern std::map<int, DTAZone> g_ZoneMap;
 extern std::vector<int> g_ZoneNumber2NoVector;
 extern std::vector<int> g_ZoneNo2NumberVector;
@@ -224,10 +228,10 @@ class RealTimeSimulationSettings
 
 		std::string output_TD_link_travel_time_file, 
 			output_TD_link_MOE_file,
-			output_agent_file,
+			output_agent_file,output_trip_file,
 
 			update_TD_link_attribute_file,
-			update_agent_file;
+			update_trip_file;
 
 
 		RealTimeSimulationSettings()
@@ -313,7 +317,6 @@ extern float g_VMTTollingRate;
 
 // for traffic assignment 
 extern e_assignment_method g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
-extern float g_FreewayBiasFactor; // 1: default value, 0.9 travel time on freeway will be weighted less
 
 extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration

@@ -115,13 +115,14 @@ BOOL CDlgPathList::OnInitDialog()
 
 	m_PlotType.AddString ("Simulated Travel Time (min)");
 	m_PlotType.AddString ("Simulated and Observed Travel Time (min)");
-	//m_PlotType.AddString ("Energy (KJ)");
-	//m_PlotType.AddString ("CO2 (g)");
-	//m_PlotType.AddString ("NOX (g)");
-	//m_PlotType.AddString ("CO (g)");
-	//m_PlotType.AddString ("HC (g)");
-	//m_PlotType.AddString ("Gasline (Gallon)");
-	//m_PlotType.AddString ("Miles Per Gallon");
+	m_PlotType.AddString ("Energy (KJ)");
+	m_PlotType.AddString ("CO2 (g)");
+	m_PlotType.AddString ("NOX (g)");
+	m_PlotType.AddString ("CO (g)");
+	m_PlotType.AddString ("HC (g)");
+	m_PlotType.AddString ("Gasline (Gallon)");
+	m_PlotType.AddString ("Miles Per Gallon");
+
 	m_PlotType.SetCurSel (0);
 
 	m_TimeLeft = int(m_pDoc->m_SimulationStartTime_in_min/30)*30 ;
@@ -615,7 +616,7 @@ void CDlgPathList::OnPathDataExportCSV()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f,", pLink->GetSimulatedSpeed (t));
+								fprintf(st, "%.1f,", pLink->GetSimulatedSpeed (t), m_pDoc->m_PrimaryDataSource);
 
 							}
 							fprintf(st,"\n");
@@ -700,7 +701,7 @@ void CDlgPathList::OnPathDataExportCSV()
 					if(pLink == NULL)
 						break;
 
-					path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
+					path_element.m_TimeDependentTravelTime[t] += pLink->GetDynamicTravelTime(path_element.m_TimeDependentTravelTime[t],m_pDoc->m_PrimaryDataSource );
 
 					if(i==0)// first link
 						path_element.m_TimeDependentCount[t] +=  pLink->GetSensorLaneVolume(t);
@@ -710,7 +711,7 @@ void CDlgPathList::OnPathDataExportCSV()
 
 					// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
 
-					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
+					//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetDynamicTravelTime(path_element.m_TimeDependentTravelTime[t]) );
 
 				}
 
@@ -813,7 +814,7 @@ void CDlgPathList::OnPathDataExportCSV()
 				fprintf(st,"%.2f,", path_element.m_TimeDependentCO2 [t]/max(0.1,path_element.total_distance ));
 			} 
 
-			fprintf(st,"\nPath,,path NOX  per mile,");
+			fprintf(st,"\nPath,,path NOx  per mile,");
 
 			for(int t = m_TimeLeft ; t<m_TimeRight; t+= time_step)  // for each starting time
 			{
@@ -1108,6 +1109,9 @@ void CDlgPathList::DrawPlot(CPaintDC* pDC,CRect PlotRect)
 	TimeInterval = 1;
 
 	int value_type = m_PlotType.GetCurSel ();
+
+	if(p <0)
+		return;
 
 	for(int t=m_TimeLeft;t<m_TimeRight;t+=TimeInterval)
 	{
@@ -1420,32 +1424,29 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 				if(pLink == NULL)
 					break;
 
-				path_element.m_TimeDependentTravelTime[t] += pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]);
+				path_element.m_TimeDependentTravelTime[t] += pLink->GetDynamicTravelTime(path_element.m_TimeDependentTravelTime[t],m_pDoc->m_PrimaryDataSource );
 
 				int current_time = path_element.m_TimeDependentTravelTime[t];
 				if(current_time >=1440)
 					current_time = 1439;
 
-				//path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
-				//path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
-				//path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
-				//path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
-				//path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
+				path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
+				path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
+				path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
+				path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
+				path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
 
 
-				// current arrival time at a link/node along the path, t in [t] is still index of departure time, t has a dimension of 0 to 1440* number of days
-
-				//			    TRACE("\n path %d, time at %f, TT = %f",p, path_element.m_TimeDependentTravelTime[t], pLink->GetTravelTime(path_element.m_TimeDependentTravelTime[t]) );
 
 			}
 
 			path_element.m_TimeDependentTravelTime[t] -= t; // remove the starting time, so we have pure travel time;
 			m_pDoc->m_PathDisplayList[p].m_TimeDependentTravelTime[t] =   path_element.m_TimeDependentTravelTime[t] ;
-			//m_pDoc->m_PathDisplayList[p].m_TimeDependentEnergy[t] =   path_element.m_TimeDependentEnergy[t] ;
-			//m_pDoc->m_PathDisplayList[p].m_TimeDependentCO2[t] =   path_element.m_TimeDependentCO2[t] ;
-			//m_pDoc->m_PathDisplayList[p].m_TimeDependentCO[t] =   path_element.m_TimeDependentCO[t] ;
-			//m_pDoc->m_PathDisplayList[p].m_TimeDependentHC[t] =   path_element.m_TimeDependentHC[t] ;
-			//m_pDoc->m_PathDisplayList[p].m_TimeDependentNOX[t] =   path_element.m_TimeDependentNOX[t] ;
+			m_pDoc->m_PathDisplayList[p].m_TimeDependentEnergy[t] =   path_element.m_TimeDependentEnergy[t] ;
+			m_pDoc->m_PathDisplayList[p].m_TimeDependentCO2[t] =   path_element.m_TimeDependentCO2[t] ;
+			m_pDoc->m_PathDisplayList[p].m_TimeDependentCO[t] =   path_element.m_TimeDependentCO[t] ;
+			m_pDoc->m_PathDisplayList[p].m_TimeDependentHC[t] =   path_element.m_TimeDependentHC[t] ;
+			m_pDoc->m_PathDisplayList[p].m_TimeDependentNOX[t] =   path_element.m_TimeDependentNOX[t] ;
 
 
 
@@ -2189,9 +2190,8 @@ void CDlgPathList::OnBnClickedDynamicDensityContour()
 
 		fprintf(st_plt,"set title \"Dynamic Density Contour (%s)\" \n", PathTitle);
 
-
-		fprintf(st_plt,"set xlabel \"Time\"\n");
-		fprintf(st_plt,"set ylabel \"Space\"  offset -3\n");
+		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
+		fprintf(st_plt,"set ylabel \"Space (Node Sequence)\"  offset -1\n");
 
 		int xtics_stepsize  = 30;
 
@@ -2365,7 +2365,7 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
 							{
 
-								fprintf(st, "%.1f ", pLink->GetSimulatedSpeed (t));
+								fprintf(st, "%.1f ", pLink->GetDynamicSpeed (t, m_pDoc->m_PrimaryDataSource));
 
 							}
 							fprintf(st,"\n");
@@ -2404,8 +2404,8 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 		fprintf(st_plt,"set title \"Dynamic Speed Contour (%s)\" \n", PathTitle);
 
 
-		fprintf(st_plt,"set xlabel \"Time\"\n");
-		fprintf(st_plt,"set ylabel \"Space\" offset -3\n");
+		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
+		fprintf(st_plt,"set ylabel \"Space (Node Sequence)\"  offset -1\n");
 
 		int xtics_stepsize  = 30;
 
@@ -2632,8 +2632,8 @@ void CDlgPathList::OnBnClickedDynamicFlowContour()
 		fprintf(st_plt,"set title \"Dynamic Volume Over Capcity Contour (%s)\" \n", PathTitle);
 
 
-		fprintf(st_plt,"set xlabel \"Time\"\n");
-		fprintf(st_plt,"set ylabel \"Space\" offset -3\n");
+		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
+		fprintf(st_plt,"set ylabel \"Space (Node Sequence)\"  offset -1\n");
 
 		int xtics_stepsize  = 30;
 

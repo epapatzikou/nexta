@@ -16,6 +16,43 @@
 using namespace std;
 
 
+int g_ParserIntSequence(std::string str, std::vector<int> &vect) 
+{
+
+std::stringstream ss(str);
+
+int i;
+
+	while (ss >> i)
+	{
+		vect.push_back(i);
+
+		if (ss.peek() == ';')
+			ss.ignore();
+	}
+
+	return vect.size();
+}
+
+
+int g_ParserFloatSequence(std::string str, std::vector<float> &vect) 
+{
+
+std::stringstream ss(str);
+
+int i;
+
+	while (ss >> i)
+	{
+		vect.push_back(i);
+
+		if (ss.peek() == ';')
+			ss.ignore();
+	}
+
+	return vect.size();
+}
+
 int g_read_number_of_numerical_values(char* line_string, int length, std::vector<float> & values)
 //read a floating point number from the current pointer of the file,
 //skip all spaces

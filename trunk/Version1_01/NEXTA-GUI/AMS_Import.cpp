@@ -199,10 +199,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_lane_capacity_from_link_type","value",use_default_lane_capacity_from_link_type);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_number_of_lanes_from_link_type","value",use_default_number_of_lanes_from_link_type);
 
-
 	std::string default_link_direction, identify_from_node_id_and_to_node_id_based_on_geometry,
 		create_connectors_for_isolated_centroids,
 		multiplier_for_obtaining_hourly_capacity;
+
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","default_link_direction","value",default_link_direction);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","identify_from_node_id_and_to_node_id_based_on_geometry","value",identify_from_node_id_and_to_node_id_based_on_geometry);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","create_connectors_for_isolated_centroids","value",create_connectors_for_isolated_centroids);
@@ -583,7 +583,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	string link_name;
 	string link_type_name;
-	string TMC_name;
+	string TMC_code_name;
+	string sensor_id_name;
+
 	string mode_code_name;
 	string direction_name;
 	string length_name;
@@ -736,7 +738,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_id","value",link_id_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","name","value",link_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_name);
-	parser.GetValueBySectionKeyFieldName(file_name,"link","TMC","value",TMC_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","speed_sensor_id","value",TMC_code_name);
+	parser.GetValueBySectionKeyFieldName(file_name,"link","count_sensor_id","value",sensor_id_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","mode_code","value",mode_code_name);
 	parser.GetValueBySectionKeyFieldName(file_name,"link","direction","value",direction_name);
 
@@ -762,12 +765,18 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	string r_lane_capacity_in_vhc_per_hour_name;
 	string r_speed_limit_in_mph_name;
 	string r_link_type_name;
+	string r_TMC_code_name;
+	string r_sensor_id_name;
+
 	if(reverse_direction_field_flag)
 	{
 		parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_name);
 		parser.GetValueBySectionKeyFieldName(file_name,"link","r_hourly_capacity","value",r_lane_capacity_in_vhc_per_hour_name);
 		parser.GetValueBySectionKeyFieldName(file_name,"link","r_speed_limit","value",r_speed_limit_in_mph_name);
 		parser.GetValueBySectionKeyFieldName(file_name,"link","r_link_type","value",r_link_type_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_TMC_code","value",r_TMC_code_name);
+		parser.GetValueBySectionKeyFieldName(file_name,"link","r_sensor_id","value",r_sensor_id_name);
+
 	}
 
 
@@ -936,6 +945,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					FieldNameNotExistMessage(r_link_type_name,  "section link; key r_link_type");
 					break;
 				}	
+
+				if(r_TMC_code_name.size()>0 && poFeature->GetFieldIndex(r_TMC_code_name.c_str ())==-1)
+				{
+					FieldNameNotExistMessage(r_TMC_code_name,  "section link; key r_sensor_id");
+					break;
+				}	
+
+
 				bTestFieldName = true;
 			}
 
@@ -1089,7 +1106,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 	CString mode_code = poFeature->GetFieldAsString(mode_code_name.c_str ());
 
-	CString TMC_code = poFeature->GetFieldAsString(TMC_name.c_str ());
+	CString TMC_code = poFeature->GetFieldAsString(TMC_code_name.c_str ());
+	CString sensor_id = poFeature->GetFieldAsString(sensor_id_name.c_str ());
 
 
 	float speed_limit_in_mph = poFeature->GetFieldAsDouble(speed_limit_in_mph_name.c_str ());
@@ -1242,6 +1260,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	int r_link_type = -1; 
 	float r_speed_limit_in_mph = 0; 
 	float r_capacity_in_pcphpl=0; 
+	CString r_TMC_code, r_sensor_id;
 
 	if(reverse_direction_field_flag)  // with reserved direction field
 	{
@@ -1270,6 +1289,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			r_link_type = type; //reset r_link_type by type
 		}
 
+	r_TMC_code = poFeature->GetFieldAsString(r_TMC_code_name.c_str ());
+	r_sensor_id =  poFeature->GetFieldAsString(r_sensor_id_name.c_str ());
+
 
 
 	}else
@@ -1278,6 +1300,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		r_speed_limit_in_mph = speed_limit_in_mph;
 		r_capacity_in_pcphpl= capacity_in_pcphpl;
 		r_link_type = type;
+		r_TMC_code = TMC_code;
+		r_sensor_id = sensor_id;
+		
 
 
 
@@ -1325,7 +1350,14 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	float length = 0;
 
 	if(length_name.size() > 0)
+	{
 		length = poFeature->GetFieldAsDouble(length_name.c_str ());
+
+		if(length_unit=="km")
+			length = length/1.609344;
+
+
+	}
 	else
 	{
 		GDPoint pt1; 
@@ -1438,7 +1470,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 		// 
 
-		pLink->m_TMC_code = CString2StdString(TMC_code);
+		pLink->m_SpeedSensorID = CString2StdString(TMC_code);
+		pLink->m_CountSensorID  = CString2StdString(sensor_id);
 
 
 		if(link_code == 1)  //AB link
@@ -1555,8 +1588,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
 			pLink->m_LaneCapacity  = pLink->m_MaximumServiceFlowRatePHPL;
 			pLink->m_link_type= max(type,r_link_type);  // commmented by Jeff Taylor. to be safe, so we take the max in case  type or r_link_type is 0
-
-
+			pLink->m_SpeedSensorID = r_TMC_code;
+			pLink->m_CountSensorID  = r_sensor_id;
 
 		}
 
@@ -2619,8 +2652,6 @@ m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl;
 
 #else  // 64 bit
 
-	AfxMessageBox("NEXTA 64-bit version does not support shape file importing function. Please use NEXTA_32.exe ");
-
 #endif
 	return true;
 }
@@ -3017,8 +3048,6 @@ bool  CTLiteDoc::RunGravityModel()
 		}
 
 	} // for each origin
-
-
 
 	return true;
 }
@@ -5142,7 +5171,7 @@ void  CTLiteDoc::ConvertOriginBasedDemandFile(LPCTSTR lpszFileName)
 
 
 	FILE* st=fopen(lpszFileName,"r");
-	FILE* outfile=fopen(directory+"input_demand.csv","w");
+	FILE* outfile=fopen(directory+"input_demand_converted.csv","w");
 
 	if(outfile==NULL)
 	{

@@ -80,6 +80,9 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
+	m_SimulatorString_32 = "DTALite_32.exe";
+	m_SimulatorString_64 = "DTALite_64.exe";
+
 	m_FreewayColor = RGB(030,144,255);
 	m_RampColor = RGB(160,032,240); 
 	m_ArterialColor = RGB(034,139,034);
@@ -120,7 +123,6 @@ BOOL CTLiteApp::InitInstance()
 	
 		m_NEXTA_use_flag = (int)g_GetPrivateProfileDouble("initialization", "nexta", 0, NEXTASettingsPath);
 		WritePrivateProfileString("initialization", "nexta","1",NEXTASettingsPath);
-
 
 		m_FreewayColor = (DWORD )g_GetPrivateProfileDouble("initialization", "FreewayColor", -1, NEXTASettingsPath);
 
@@ -185,19 +187,21 @@ BOOL CTLiteApp::InitInstance()
 			
 
    char lpbuffer[_MAX_PATH];
-   if(GetPrivateProfileString("initialization", "UserDefinedSimulator","",lpbuffer,sizeof(lpbuffer),NEXTASettingsPath)) 
+   if(GetPrivateProfileString("initialization", "UserDefinedSimulator_32","",lpbuffer,sizeof(lpbuffer),NEXTASettingsPath)) 
    {
-		m_SimulatorString.Format ("%s",lpbuffer);
+		m_SimulatorString_32.Format ("%s",lpbuffer);
    }
 
+   if(GetPrivateProfileString("initialization", "UserDefinedSimulator_64","",lpbuffer,sizeof(lpbuffer),NEXTASettingsPath)) 
+   {
+		m_SimulatorString_64.Format ("%s",lpbuffer);
+   }
 
+	int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
 
-		int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
-
-		if( visualization_template == 1)
 			m_VisulizationTemplate = e_traffic_assignment;
-		else
-			m_VisulizationTemplate = e_train_scheduling;
+
+		//m_VisulizationTemplate = e_train_scheduling;
 
 		m_LanguageSupport = (eLanguageSupport)g_GetPrivateProfileInt("template", "LanguageSupport", 0, NEXTASettingsPath);
 

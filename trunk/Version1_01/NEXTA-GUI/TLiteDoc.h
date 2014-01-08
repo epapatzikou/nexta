@@ -73,7 +73,7 @@ enum layer_mode
 	layer_background_image,
 	layer_transit_accessibility,
 };
-enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_DATA,_PHASING_DATA,_TIMING_PLAN_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
+enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_SPEED_DATA,_SENSOR_DATA,_SENSOR_TRAJECTORY_DATA,_MODEL_LINK_MOE_DATA,_MODEL_TRIP_DATA,_MODEL_TRAJECTORY_DATA, _SENSOR_DATA_SETTINGS,PHASING_DATA,_TIMING_PLAN_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
 enum Sensor_Network_Data_Settings {_SENSOR_LINK_DATA=0, _SENSOR_MOVEMENT_DATA,_CALIBRATION_RESULT_DATA,MAX_NUM_OF_SENSOR_NETWORK_DATA_FILES};
 enum Corridor_Data_Settings {_CORRIDOR_NODE_DATA = 0,_CORRIDOR_LINK_DATA, _CORRIDOR_SEGMENT_DATA, MAX_NUM_OF_CORRIDOR_DATA_FILES};
 enum GIS_IMPORT_Data_Settings {_GIS_IMPORT_NODE_DATA = 0,_GIS_IMPORT_LINK_DATA, _GIS_IMPORT_DEMAND_META_DATA,_GIS_IMPORT_GIS_LAYER_DATA, MAX_NUM_OF_GIS_IMPORT_DATA_FILES}; 
@@ -159,6 +159,9 @@ class MovementBezier
 public: 
 	CPoint P0,P1,P2;
 
+
+
+
 	MovementBezier(CPoint p0, CPoint p1, CPoint p2)
 	{
 		P0 = p0;
@@ -222,7 +225,7 @@ public:
 	std::vector<float> m_TravelTimeVector;
 	std::vector<float> m_TravelTimePerMileVector;
 
-	float GetTravelTimeStandardDeviation()
+	float GetSimulatedTravelTimeStandardDeviation()
 	{
 		if( m_TravelTimeVector.size() ==0)
 			return 0;
@@ -245,7 +248,7 @@ public:
 
 	}
 
-	float GetTravelTimePerMileStandardDeviation()
+	float GetSimulatedTravelTimePerMileStandardDeviation()
 	{
 		if( m_TravelTimePerMileVector.size() ==0)
 			return 0;
@@ -300,6 +303,8 @@ public:
 	int	  Destination;
 	int   NodeNumberSum;
 	int   NodeSize;
+
+
 
 	CString GetPathLabel()
 	{
@@ -377,6 +382,7 @@ class CTLiteDoc : public CDocument
 {
 public: // create from serialization only
 
+	eLinkDataType m_PrimaryDataSource;
 	float*** TDDemandSOVMatrix;
 	float*** TDDemandHOVMatrix;
 	float*** TDDemandTruckMatrix;
@@ -574,8 +580,6 @@ public:
 			m_DemandMatrixMap[Key] = Value;
 	}
 
-
-	bool m_ImportDemandColumnFormat;
 
 	bool m_bSummaryDialog;
 	int m_DocumentNo;
@@ -917,10 +921,12 @@ public:
 	// additional input
 	void LoadSimulationOutput();
 	void LoadGPSData();
+	bool ReadSensorTrajectoryData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData(LPCTSTR lpszFileName);
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
+	void ReadModelLinkMOEData_Parser(LPCTSTR lpszFileName);
 	bool ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
-	void ReadTMCSpeedData(LPCTSTR lpszFileName); 
+	void ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggregation_interval); 
 	bool ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
@@ -934,7 +940,7 @@ public:
 	int m_SimulationEndTime_in_min;
 
 
-	bool ReadSensorData();
+	bool ReadSensorCountData(LPCTSTR lpszFileName);
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
 
@@ -972,6 +978,7 @@ public:
 	CString m_BackgroundImageFileLoadingStatus;
 
 	CString m_SimulationLinkMOEDataLoadingStatus;
+	CString m_SimulationLinkTDMOEDataLoadingStatus;
 	bool m_bSimulationDataLoaded;
 	CString m_SimulationVehicleDataLoadingStatus;
 	CString m_PathDataLoadingStatus;
@@ -979,7 +986,11 @@ public:
 
 	CString m_SensorLocationLoadingStatus;
 
-	CString m_SensorDataLoadingStatus;
+	CString m_AgentLocationLoadingStatus;
+
+	CString m_SensorCountDataLoadingStatus;
+	CString m_SensorSpeedDataLoadingStatus;
+	CString m_TransitDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
 	CString m_StrLoadingTime;
 
@@ -1118,6 +1129,7 @@ public:
 
 
 	bool m_bSaveProjectFromSubareaCut;
+	bool m_bSaveProjectFromImporting;
 
 
 
@@ -1242,6 +1254,7 @@ public:
 	int AlternativeRouting(int NumberOfRoutes);
 
 	CString GetWorkspaceTitleName(CString strFullPath);
+	CString GetLocalFileName(CString strFullPath);
 	CString m_ProjectTitle;
 
 	float FillODMatrixFromCSVFile(LPCTSTR lpszFileName);
@@ -1259,6 +1272,19 @@ public:
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
 	void UpdateMovementDataFromVehicleTrajector();
+
+
+
+	std::map<long,VehicleLocationTimeIndexedMap> m_VehicleLocationMap;
+
+	void AddLocationRecord(VehicleLocationRecord element)
+	{
+
+		m_VehicleLocationMap[element.time_stamp_in_second].VehicleLocationMapAtThisTime[element.agent_id] = element;
+	
+	}
+
+	bool ReadModelAgentTrajectory(LPCTSTR lpszFileName);
 
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
@@ -1434,24 +1460,26 @@ public:
 			m_UnitMile = 1.0/62;
 			m_UnitFeet = 1.0/62/5280;
 		}
-		else 
+		else
+		{
 			length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
-		pLink->m_Length = max(0.00001,length);  // alllow mimum link length
+		}
+
+			pLink->m_Length = max(0.00001,length);  // alllow mimum link length
 
 
 		if(m_LinkSet.size()==0)  // first link created by user
 		{
-			if(m_bUseMileVsKMFlag)
-			{
-				m_NodeDisplaySize = max(100, pLink->m_Length *5280*0.05);  // in feet
-			}
-			else
-			{
-				m_NodeDisplaySize = max(100, pLink->m_Length /1.61*5280*0.05);  // in feet
-			}
+			//if(m_bUseMileVsKMFlag)
+			//{
+			//	m_NodeDisplaySize = max(100, pLink->m_Length *5280*0.05);  // in feet
+			//}
+			//else
+			//{
+			//	m_NodeDisplaySize = max(100, pLink->m_Length /1.61*5280*0.05);  // in feet
+			//}
 		}
 
-		m_BottleneckDisplaySize = m_NodeDisplaySize;
 
 		pLink->m_FreeFlowTravelTime = pLink->m_Length / pLink->m_SpeedLimit *60.0f;
 		pLink->m_StaticTravelTime = pLink->m_FreeFlowTravelTime;
@@ -1524,7 +1552,11 @@ public:
 
 		// step 1: find overlapping links
 
-		double threshold_in_feet = max(150,m_ScreenWidth_InMile*5280/600); // 150 feet, 50 meters or 1/600 screen width, about 2 pixels given a 1200 pixels for screen width
+
+		
+
+
+		double threshold_in_pixels = 3;
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
@@ -1536,9 +1568,9 @@ public:
 			pto =  (*iLink)->m_ShapePoints[si+1];
 
 
-			float distance_in_feet =  g_GetPoint2LineDistance(p0, pfrom, pto,m_UnitMile)/max(0.0000001,m_UnitFeet);
+			float distance_in_screen_unit =  g_GetPoint2LineDistance(p0, pfrom, pto,m_UnitMile)*m_Doc_Resolution;
 
-			if(distance_in_feet< threshold_in_feet) 
+			if(distance_in_screen_unit<= 3) 
 			{
 			OverlappingLinks.push_back((*iLink));
 			}
@@ -1619,10 +1651,10 @@ public:
 		pLink->m_ReversedSpeedLimit =  OverlappingLinks[i]->m_SpeedLimit ;
 		pLink->m_avg_simulated_speed =  OverlappingLinks[i]->m_SpeedLimit ;
 
-		double length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
+		double length;  
 
 		if(bLongLatFlag || m_LongLatFlag)  // bLongLatFlag is user input,  m_LongLatFlag is the system input from the project file 
-			length  =  g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_FromPoint , pLink->m_ToPoint);
+			length  = g_CalculateP2PDistanceInMileFromLatitudeLongitude(pLink->m_FromPoint , pLink->m_ToPoint);
 		else 
 			length  = pLink->DefaultDistance()/max(0.0000001,m_UnitMile);
 
@@ -1917,6 +1949,9 @@ public:
 	void ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CString GIS_type_string, int BandWidth, int Transparency,float ColorCategoryValue[10], float KML_Height_Ratio);
 
 	std::map<CString, PathStatistics> m_PathMap;
+	std::map<CString, DTALink*> m_LinkKeyMap;
+	std::map<std::string, DTALink*> m_SpeedSensorIDMap;
+	std::map<std::string, DTALink*> m_CountSensorIDMap;
 
 	std::map<CString, PathStatistics> m_ODMatrixMap;
 
@@ -1929,6 +1964,25 @@ public:
 
 
 	std::map<CString, DTANodeMovement*> m_MovementPointerMap;  // turnning movement pointer
+
+
+	DTANodeMovement* FindMovement(int FromNodeNumber,int ToNodeNumber, int DestNodeNumber)
+	{
+		DTANodeMovement*  pMovement = NULL;
+
+	
+			CString label;
+		int up_node_id = m_NodeNoMap[FromNodeNumber]->m_NodeNo     ;
+		int to_node_id = m_NodeNoMap[ToNodeNumber]->m_NodeNo     ;
+		int dest_node_id = m_NodeNoMap[DestNodeNumber ]->m_NodeNo ;
+		label.Format("%d;%d;%d", up_node_id,to_node_id,dest_node_id);
+
+		if(m_MovementPointerMap.find(label)!= m_MovementPointerMap.end())
+		{
+		pMovement = m_MovementPointerMap[label]; // store pointer
+		}
+		return pMovement;
+	}
 
 	void GeneratePathFromVehicleData();
 	void ExportAgentLayerToKMLFiles(CString file_name, CString GIS_type_string);
@@ -2254,6 +2308,7 @@ public: // subarea
 	bool EditTrafficAssignmentOptions();
 	void SendTexttoStatusBar(CString str,int Index = 0);
 	bool SaveSubareaDemandFile();
+	bool SaveNewDemandMatrixFile();
 
 	// Overrides
 public:
@@ -2284,6 +2339,7 @@ public:
 	virtual void Serialize(CArchive& ar);
 	bool m_bExport_Link_MOE_in_input_link_CSF_File;
 	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo=0);
+	BOOL SaveNodeFile();
 	BOOL SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input_link_CSF_File, int SelectedLayNo);
 	void CopyDefaultFiles(CString directory = "");
 
@@ -2318,18 +2374,19 @@ public:
 		}
 	}
 
-	bool CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString DestinationProjectDirectory, CString FileName, CString TargetFileName = "")
+	void WriteInputDemandMetaDataForDSP(CString DestinationProjectDirectory);
+	bool CopyDefaultFile(CString DefaultDataFolder,CString CurrentProjectFolder, CString DestinationProjectDirectory, CString SourceFileName, CString TargetFileName = "", bool bOverwriteFlag = false)
 	{
 		if(TargetFileName.IsEmpty ())
-			TargetFileName = FileName;
+			TargetFileName = SourceFileName;
 
-		if(CheckIfFileExsits(DestinationProjectDirectory+FileName )==false)
+		if(bOverwriteFlag || CheckIfFileExsits(DestinationProjectDirectory+TargetFileName )==false)
 		{
 			int succeed_return;
-			if(CheckIfFileExsits(CurrentProjectFolder+FileName )==true)
-				succeed_return = CopyFile(CurrentProjectFolder+FileName, DestinationProjectDirectory+TargetFileName, FALSE);
+			if(CheckIfFileExsits(CurrentProjectFolder+TargetFileName )==true)
+				succeed_return = CopyFile(CurrentProjectFolder+SourceFileName, DestinationProjectDirectory+TargetFileName, FALSE);
 			else
-				succeed_return = CopyFile(DefaultDataFolder+FileName, DestinationProjectDirectory+TargetFileName, FALSE);
+				succeed_return = CopyFile(DefaultDataFolder+SourceFileName, DestinationProjectDirectory+TargetFileName, FALSE);
 
 			return true; // copy success 
 		}
@@ -2393,12 +2450,12 @@ public:
 
 	bool FindObject(eSEARCHMODE SearchMode, int value1, int value12);
 
-	void SaveMovementData(CString MovementFileName,  int NodeNumber);
+	void SaveMovementData(CString MovementFileName,  int NodeNumber, bool bObservationFlag);
 
 	void UpdateMovementGreenStartAndEndTimeFromPhasingData(int NodeNumber, std::string timing_plan_name);
 	void UpdateAllMovementGreenStartAndEndTime(std::string timing_plan_name);
 
-	void RunQEMTool(int NodeNumber);
+	void RunQEMTool(int NodeNumber,bool bObservationFlag);
 
 	void RegenerateactivitylocationsForEmptyZone(int zoneid);
 	// Implementation
@@ -2414,6 +2471,8 @@ public:
 #endif
 
 protected:
+
+	void RunNEXTA_32();
 
 	int m_sensor_data_aggregation_type;
 	void SensortoolsConverttoHourlyVolume();
@@ -2699,6 +2758,11 @@ public:
 	afx_msg void OnUpdateLinkmoedisplayImpact(CCmdUI *pCmdUI);
 	afx_msg void OnLinkmoedisplayBottleneck();
 	afx_msg void OnUpdateLinkmoedisplayBottleneck(CCmdUI *pCmdUI);
+	afx_msg void OnFileTrafficdatasetting();
+	afx_msg void OnExportDynasmart();
+	afx_msg void OnDemandUseroadcapacitytogeneratedefaultproductionandattractionforeachzone();
+	afx_msg void OnGisplanningdatasetConfigureimportingsettingfile();
+	afx_msg void OnSubareaExporttotalnumberofvehiclesinsubarea();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

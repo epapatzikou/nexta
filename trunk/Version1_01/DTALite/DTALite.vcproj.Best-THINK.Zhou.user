@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\nexta_semcog\nexta_semcog"
+				WorkingDirectory="C:\NEXTA_OpenSource\Software_release\sample_data_sets\7. Calibrating_Dynamic Origin_Demand Demand_Matrix_from_Link_Count_Data\ODME_6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Salt_Lake_City_West_Jordan - BaseLine_V2\Salt_Lake_City_West_Jordan - BaseLine"
+				WorkingDirectory="C:\Temp\New_PHXsubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\sample_data_sets\Salt_Lake_City_West_Jordan - BaseLine"
+				WorkingDirectory="C:\NEXTA_OpenSource\Software_release\sample_data_sets\7. Calibrating_Dynamic Origin_Demand Demand_Matrix_from_Link_Count_Data\ODME_6-Node Network"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\Module 5_3-Corridor_Network-1024\Module 5_3-Corridor_Network"
+				WorkingDirectory="C:\Temp\New_PHXsubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

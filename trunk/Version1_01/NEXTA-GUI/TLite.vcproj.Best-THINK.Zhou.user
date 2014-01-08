@@ -2,7 +2,7 @@
 <VisualStudioUserFile
 	ProjectType="Visual C++"
 	Version="9.00"
-	ShowAllFiles="false"
+	ShowAllFiles="true"
 	>
 	<Configurations>
 		<Configuration
@@ -10,7 +10,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release\"
+				WorkingDirectory="C:\NEXTA_OpenSource\Software_release"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -66,7 +66,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Internal_release"
+				WorkingDirectory="C:\NEXTA_OpenSource\Software_release"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_DTALite_SoftwareRelease"
+				WorkingDirectory="C:\NEXTA_OpenSource\Software_release\"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

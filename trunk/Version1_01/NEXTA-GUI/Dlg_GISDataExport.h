@@ -17,6 +17,8 @@ class CDlg_GISDataExport : public CDialog
 
 public:
 
+	
+
 	_GIS_DATA_TYPE m_GIS_data_type;
 	CDlg_GISDataExport(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDlg_GISDataExport();

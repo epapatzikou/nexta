@@ -1014,8 +1014,8 @@ void CDlg_VehPathAnalysis::FilterPaths()
 		float AvgTravelTime = m_PathVector[p].TotalTravelTime /m_PathVector[p].TotalVehicleSize;
 		float AvgTravelCost = m_PathVector[p].TotalCost /m_PathVector[p].TotalVehicleSize;
 
-		float TravelTimeSTD = m_PathVector[p].GetTravelTimeStandardDeviation();
-		float TravelTimePerMileSTD = m_PathVector[p].GetTravelTimePerMileStandardDeviation();
+		float TravelTimeSTD = m_PathVector[p].GetSimulatedTravelTimeStandardDeviation();
+		float TravelTimePerMileSTD = m_PathVector[p].GetSimulatedTravelTimePerMileStandardDeviation();
 
 		float AvgEnergy = m_PathVector[p].emissiondata .Energy / m_PathVector[p].TotalVehicleSize;
 		float AvgCO2 = m_PathVector[p].emissiondata.CO2  / m_PathVector[p].TotalVehicleSize;
