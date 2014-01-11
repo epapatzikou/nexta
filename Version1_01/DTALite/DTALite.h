@@ -42,7 +42,7 @@ using namespace std;
 #define PI 3.1415626
 
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
-enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions};
+enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
 
 enum e_signal_representation_model {signal_model_continuous_flow = 0, signal_model_movement_effective_green_time };
 
@@ -137,6 +137,14 @@ string GetLinkStringID(int FromNodeName, int ToNodeName);
 //////////////////
 
 
+struct struc_VehicleLocationRecord
+{
+	double within_link_distance;
+	double time_stamp_in_second;
+	int vehicle_id;
+	int link_id;
+
+};
 
 struct SensorDataPoint
 {
@@ -530,9 +538,8 @@ public:
 // event structure in this "event-based" traffic simulation
 typedef struct{
 	int veh_id;
-	int veh_car_following_no;
 	int veh_next_node_number; // next link's downstream node number
-	float time_stamp;
+	float event_time_stamp;
 
 }struc_vehicle_item;
 
@@ -850,12 +857,12 @@ public:
 class DTALinkOutCapacity
 {
 public:
-	DTALinkOutCapacity(double time_stamp, float out_capacity, int queue_size, int i_blocking_count, int i_blocking_node_number,
+	DTALinkOutCapacity(double event_time_stamp, float out_capacity, int queue_size, int i_blocking_count, int i_blocking_node_number,
 	float i_out_left_capacity_in_vehicle_number,
 	int i_link_left_queue_size
 		)	
 	{
-		time_stamp_in_min = time_stamp;
+		time_stamp_in_min = event_time_stamp;
 		out_capacity_in_vehicle_number = out_capacity;
 		link_queue_size = queue_size;
 		blocking_count = i_blocking_count;
@@ -900,7 +907,7 @@ public:
 
 		m_bOnRampType  = false;
 		m_bOffRampType = false;
-		m_EffectiveGreenTime_In_Second = 6;
+		m_EffectiveGreenTime_In_Second = 0;
 		m_DownstreamCycleLength_In_Second = 120;
 		m_DownstreamNodeSignalOffset_In_Second = 0;
 		m_bFreewayType = false;
@@ -1093,6 +1100,61 @@ public:
 		return float(m_RandomSeed)/LCG_M;
 	}
 
+
+		
+	std::vector<struc_VehicleLocationRecord> m_VehicleLocationVector;  // used for microscopic traffic simulation
+	void AddVehicleLocation(int vehicle_id,  int link_id, double time_stamp_in_second, double within_link_distance)
+	{
+		struc_VehicleLocationRecord element;
+		element.link_id = link_id;
+		element.vehicle_id = vehicle_id;
+		element.time_stamp_in_second = time_stamp_in_second;
+		element.within_link_distance = within_link_distance;
+		m_VehicleLocationVector.push_back(element);
+
+	}
+
+	GDPoint GetRelativePosition(float ratio)
+	{
+
+		GDPoint Pt;
+		Pt.x = 0;
+		Pt.y = 0;
+
+
+		Pt.x= (m_ShapePoints[0].x+ m_ShapePoints[m_ShapePoints .size()-1].x)/2;
+		Pt.y= (m_ShapePoints[0].y+ m_ShapePoints[m_ShapePoints .size()-1].y)/2;
+
+		unsigned	int si;
+
+		if(m_ShapePointRatios.size() == m_ShapePoints.size())
+		{
+
+			for(si = 0; si < m_ShapePoints .size()-1; si++)
+			{
+
+				if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
+				{
+
+					float SectionRatio = m_ShapePointRatios[si+1] - m_ShapePointRatios[si];
+
+					float RelateveRatio = 0;
+					if(SectionRatio >0)
+						RelateveRatio = (ratio - m_ShapePointRatios[si])/SectionRatio;
+
+					Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si+1].x - m_ShapePoints[si].x);
+					Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si+1].y - m_ShapePoints[si].y);
+
+					return Pt;
+				}
+			}
+
+		}
+		return Pt;
+	}
+
+// end of microsimulation 
+
 	float m_CumulativeOutCapacityCount; 
 	int m_CumulativeOutCapacityCountAtPreviousInterval; 
 	int m_CumulativeInCapacityCountAtPreviousInterval; 
@@ -1127,6 +1189,41 @@ public:
 	string m_LinkTypeName;
 	std::map<int, int> m_OperatingModeCount;
 	std::vector<GDPoint> m_ShapePoints;
+	std::vector<float> m_ShapePointRatios;
+
+double GetPoint2Point_Distance(GDPoint p1, GDPoint p2)
+{
+return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
+}
+	void CalculateShapePointRatios()
+	{
+
+		m_ShapePointRatios.clear();
+
+		float total_distance = 0; 
+		unsigned int si;
+
+		if(m_ShapePoints.size()==0)
+			return;
+
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			total_distance += GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
+		}
+
+		if(total_distance < 0.0000001f)
+			total_distance = 0.0000001f;
+
+		float distance_ratio = 0;
+		float P2Origin_distance = 0;
+		m_ShapePointRatios.push_back(0.0f);
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			P2Origin_distance += GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]);
+			m_ShapePointRatios.push_back(P2Origin_distance/total_distance);
+		}
+	}
+
 	std::vector <SLinkMOE> m_LinkMOEAry;
 
 
@@ -1385,7 +1482,8 @@ public:
 	std::list<struc_vehicle_item> EntranceQueue;  //link-in queue  of each link
 	std::list<struc_vehicle_item> ExitQueue;      // link-out queue of each link
 
-// for left turn queues
+
+	// for left turn queues
 	std::list<struc_vehicle_item> LeftEntrance_Queue;  // left-turn in queue  of each link
 	std::list<struc_vehicle_item> LeftExit_Queue;      // left-turn out  queue of each link
 //
@@ -1525,6 +1623,8 @@ public:
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
 		m_FFTT_simulation_interval = int(m_FreeFlowTravelTime/g_DTASimulationInterval);
 		LoadingBufferVector = NULL;
+
+		MicroSimulationLastVehiclePassingTimeStamp = 0;
 
 		LoadingBufferSize = 0;
 
@@ -1678,6 +1778,7 @@ public:
 	int LinkLeftOutCapacity;  // unit: number of vehiles
 	int LinkInCapacity;   // unit: number of vehiles
 
+	double MicroSimulationLastVehiclePassingTimeStamp;
 	int VehicleCount;
 
 	int departure_count;
@@ -2133,9 +2234,14 @@ class DTAVehicle
 {
 public:
 
+	double within_link_driving_distance;  // unit: mile
+	double within_link_driving_speed_per_hour;  // unit: mile per hour
+
+
 	bool b_already_output_flag;
 	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
+
 
 	int m_EvacuationTime_in_min;
 	int m_EvacuationDestinationZone;

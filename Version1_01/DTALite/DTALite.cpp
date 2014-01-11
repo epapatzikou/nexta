@@ -1131,6 +1131,7 @@ void g_ReadInputFiles(int scenario_no)
 					}
 				}
 
+
 				pLink->m_LaneCapacity= capacity * g_LinkTypeMap[type].capacity_adjustment_factor ;
 
 				if(g_LinkTypeMap[type].approximate_cycle_length_in_second >=1) // if movement data are used, then this effective green time will be overwritten.
@@ -1195,6 +1196,7 @@ void g_ReadInputFiles(int scenario_no)
 				}
 
 
+				pLink->CalculateShapePointRatios();
 				pLink->SetupMOE();
 
 		// tally statics for each link type
@@ -3165,6 +3167,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 {
 	FILE* st = NULL;
 	FILE* st_struct = NULL;
+	FILE* st_trajectory = NULL;
 
 	if(bStartWithEmpty)
 		fopen_s(&st,fname,"w");
@@ -3172,6 +3175,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		fopen_s(&st,fname,"a");
 
 	fopen_s(&st_struct,"output_LinkTDMOE.bin","wb");
+	fopen_s(&st_trajectory,"model_trajectory.csv","w");
 
 	std::set<DTALink*>::iterator iterLink;
 
@@ -3356,6 +3360,38 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		cin.get();  // pause
 	}
 
+	if(st_trajectory!=NULL)
+	{
+		fprintf(st_trajectory, "agent_id,time_stamp_in_second,time_stamp_in_min,x,y,to_x,to_y,link_key,within_link_distance,within_link_distance_percentage\n");
+
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		{
+
+			DTALink* pLink = g_LinkVector[li];
+			
+			for(unsigned v = 0; v< pLink->m_VehicleLocationVector .size(); v++)
+			{
+				struc_VehicleLocationRecord element  = pLink->m_VehicleLocationVector[v] ;
+
+				element.within_link_distance;
+
+
+				double ratio  = element.within_link_distance/pLink->m_Length; 
+				GDPoint pt ;
+				pt = pLink->GetRelativePosition(ratio);
+				fprintf(st_trajectory, "%d,%.1f,%.3f,%f,%f,,,%d->%d,%f,%f\n",  element.vehicle_id,element.time_stamp_in_second,element.time_stamp_in_second/60.0, pt.x ,pt.y,pLink->m_FromNodeNumber ,
+					pLink->m_ToNodeNumber , element.within_link_distance, ratio*100);
+			
+			}
+			
+		}
+		fclose(st_trajectory);
+	}else
+	{
+		fprintf(g_ErrorFile, "File model_trajectory.csv cannot be opened. It might be currently used and locked by EXCEL.");
+		cout << "Error: File model_trajectory.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cin.get();  // pause
+	}
 
 }
 

@@ -363,35 +363,55 @@ void CDlg_Legend::DrawObjects(CDC* pDC)
 
 	}else if (m_pDoc->m_LinkBandWidthMode == LBW_link_volume)
 	{
-		BandWidthValue =  m_pDoc->GetLinkBandWidth(6000);
+
+		double base_bandwidth_value = 3000;
+
+		//first check
+	
+		BandWidthValue =  m_pDoc->GetLinkBandWidth(base_bandwidth_value);
+		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
+
+		while(height>50)
+		{
+		base_bandwidth_value = base_bandwidth_value/2;
+		BandWidthValue =  m_pDoc->GetLinkBandWidth(base_bandwidth_value);
+		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
+
+		
+		}
+		//second check
+
+		// final calculation
 		band_width_str = "Band Width: Link Volume Per Hour";
 
 		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
 
-		first_str = "3000";
-		second_str = "1500";
-		if(height>50)
-		{
-			BandWidthValue = 50/m_pDoc->m_Doc_Resolution/lane_offset;
-			first_str.Format ("%.0f",BandWidthValue);
-			second_str.Format ("%.0f",BandWidthValue/2);
-			
+		first_str.Format("%.0f",base_bandwidth_value);
+		second_str.Format("%.0f",base_bandwidth_value/2);
+		//if(height>50)
+		//{
+		//	BandWidthValue = 50/m_pDoc->m_Doc_Resolution/lane_offset;
+		//	first_str.Format ("%.0f",BandWidthValue);
+		//	second_str.Format ("%.0f",BandWidthValue/2);
+		//	
 
-		}
+		//}
 
 
 	}else if (m_pDoc->m_LinkBandWidthMode == LBW_congestion_duration)
 	{
-
-		BandWidthValue =  m_pDoc->GetLinkBandWidth(g_ImpactStudyPeriodInMin);
 		band_width_str = "Band Width: Queue Duration";
 
+		double base_bandwidth_value = g_ImpactStudyPeriodInMin;
+
+		BandWidthValue =  m_pDoc->GetLinkBandWidth(base_bandwidth_value);
 		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
 
-		if(height>50)
+		while(height>50)
 		{
-			BandWidthValue = 50/m_pDoc->m_Doc_Resolution/lane_offset;
-		
+		base_bandwidth_value = base_bandwidth_value/2;
+		BandWidthValue =  m_pDoc->GetLinkBandWidth(base_bandwidth_value);
+		height = max(1,lane_offset * BandWidthValue *1 *m_pDoc->m_Doc_Resolution);
 		}
 
 		first_str.Format ("%.0f min",BandWidthValue);

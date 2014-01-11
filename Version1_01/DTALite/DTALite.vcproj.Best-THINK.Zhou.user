@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\New_PHXsubarea"
+				WorkingDirectory="C:\test\Base"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\Temp\New_PHXsubarea"
+				WorkingDirectory="C:\test\Base"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

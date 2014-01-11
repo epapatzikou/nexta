@@ -1552,10 +1552,6 @@ public:
 
 		// step 1: find overlapping links
 
-
-		
-
-
 		double threshold_in_pixels = 3;
 		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{

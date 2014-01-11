@@ -262,7 +262,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				if(count ==0 && error_message.GetLength () < 1000)
 				{
 						CString msg;
-						msg.Format ("Sensor %d-> %d has an error of link_count =0.\n",sensor.FromNodeNumber , sensor.ToNodeNumber);
+						msg.Format ("Sensor %s has an error of link_count =0.\n",sensor.SensorID);
 
 					if(prev_error_message!=msg)
 					{
@@ -317,9 +317,9 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 					if(second_count_sensor_id.size() == 0 ) // link count only
 					{
 					// day specific value	
-					pLink->m_LinkSensorMOEMap[ time].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min))*60;  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ time].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min)); 
 					// overall value 
-					pLink->m_LinkSensorMOEMap[ t].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min))*60;  // convert to per hour link flow
+					pLink->m_LinkSensorMOEMap[ t].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min));  
 
 
 					if(density>0.001)
@@ -356,7 +356,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				CString msg;
 					if(sensor.FromNodeNumber!=5010 && sensor.ToNodeNumber!=4958)
 					{
-				msg.Format ("Link %d -> %d in sensor_count.csv does not exist in input_link.csv.\n", sensor.FromNodeNumber , sensor.ToNodeNumber);
+				msg.Format (" %s in sensor_count.csv does not exist in input_link.csv.\n", sensor.SensorID);
 					}
 				if(prev_error_message!=msg)
 				{

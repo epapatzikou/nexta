@@ -214,7 +214,7 @@ enum GPS_display_mode
 };
 
 enum link_display_mode
-   { link_display_mode_line, link_display_mode_band, link_display_mode_lane_group };
+   { link_display_mode_line, link_display_mode_band };
 
 // ARROWSTRUCT
 //
