@@ -1274,12 +1274,12 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 		int time_dependent_left_departure_count;
 		int number_of_through_and_right_queued_vehicles;
 		int number_of_left_queued_vehicles;
-
+		
 		int cumulative_SOV_revenue;
 		int cumulative_HOV_revenue;
 		int cumulative_truck_revenue;
 		int day_no;
-		float Energy;
+		float Energy;		
 		float CO2;
 		float NOX;
 		float CO;
@@ -2614,7 +2614,7 @@ float CTLiteDoc::GetLinkBandWidth(float Value)
 	float VolumeRatio = 1/m_MaxLinkWidthAsLinkVolume;  // 1000 vehicles flow rate as 1 lanes
 
 	float LaneVolumeEquivalent = 200;
-	float DurationInMinEquivalent = 200;
+	float DurationInMinEquivalent = 20;
 
 	float link_volume = 0;
 	// default mode
@@ -2668,7 +2668,7 @@ void CTLiteDoc::ReCalculateLinkBandWidth()
 	float TotalVolumeRatio = VolumeRatio;
 
 	float LaneVolumeEquivalent = 200;
-	float DurationInMinEquivalent = 200;
+	float DurationInMinEquivalent = 20;
 	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 	{
 
@@ -5705,8 +5705,11 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 
 
 	SaveSubareaDemandFile();
-	SaveNewDemandMatrixFile();
 
+if(m_DemandMatrixMap.size()>0)
+{
+	SaveNewDemandMatrixFile();
+}
 
 	//// save demand if a matrix has been imported 
 	//if(m_DemandMatrixMap.size()>0)
@@ -14768,7 +14771,7 @@ void CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggrega
 				for(unsigned i = 0; i < Missing_TMC_vector.size(); i++)
 				{
 
-					DataFile.SetValueByFieldName ("TMC",Missing_TMC_vector[i] );
+					DataFile.SetValueByFieldName ("speed_sensor_id",Missing_TMC_vector[i] );
 
 					DataFile.WriteRecord ();
 				}
@@ -14788,7 +14791,7 @@ void CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggrega
 		m_SimulationEndTime_in_min = 1440;
 
 		m_TrafficFlowModelFlag = 3; //enable dynamic moe display
-		m_SensorSpeedDataLoadingStatus.Format ("%d TMC speed records are loaded from file %s.\n",i,lpszFileName);
+		m_SensorSpeedDataLoadingStatus.Format ("%d speed records are loaded from file %s.\n",i,lpszFileName);
 
 
 

@@ -3239,7 +3239,7 @@ void AdjustLinkEndpointsWithSetBack()
 				case link_density: value= GetSimulatedDensity(i); break;
 				case link_queue_length: value= GetQueueLengthPercentage(i); break;
 				case link_traveltime: value= GetSimulatedTravelTime(i); break;
-				case energy_miles_per_gallon: GetSimulatedEnergy (i)  ; break;
+				case energy_miles_per_gallon: value= GetSimulatedEnergy (i)  ; break;
 				case emission_CO: value= GetSimulatedCO (i)  ; break;
 				case emission_CO2: value= GetSimulatedCO2 (i)  ; break;
 				case emission_NOX: value= GetSimulatedNOX (i)  ; break;
@@ -3685,8 +3685,6 @@ void AdjustLinkEndpointsWithSetBack()
 
 float GetEmissions(int t, DTA_EMISSION_TYPE emission_type)
 	{
-
-		t = t + g_SensorDayNo*1440;
 
 		if(t < m_LinkMOEArySize)
 		{

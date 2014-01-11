@@ -521,9 +521,8 @@ CTLiteView::CTLiteView()
 	if(theApp.m_VisulizationTemplate == e_traffic_assignment) 
 		m_bLineDisplayConditionalMode = false;
 
-	m_link_display_mode = link_display_mode_line; // 
+	m_link_display_mode = link_display_mode_band; // 
 
-	m_bLineDisplayConditionalMode = true;
 	m_NodeTypeFaceName      = "Arial";
 
 	m_bShowAVISensor = true;
@@ -926,7 +925,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		if( pDoc->m_LinkMOEMode == MOE_vehicle || pDoc->m_LinkMOEMode== MOE_queuelength  || pDoc->m_LinkMOEMode == MOE_bottleneck)
 				m_link_display_mode = link_display_mode_line;
-		else if( pDoc->m_LinkMOEMode == MOE_volume ||pDoc->m_LinkMOEMode ==  MOE_density ||  pDoc->m_LinkMOEMode ==  MOE_speed )
+		else if( pDoc->m_LinkMOEMode == MOE_volume ||pDoc->m_LinkMOEMode ==  MOE_density ||  pDoc->m_LinkMOEMode ==  MOE_speed ||  pDoc->m_LinkMOEMode ==  MOE_emissions || pDoc->m_LinkMOEMode == MOE_impact )
 				m_link_display_mode = link_display_mode_band;
 		else if(pDoc->m_LinkMOEMode == MOE_none)
 		{
@@ -1104,7 +1103,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				LOS = pDoc->GetLOSCode(power);
 
 				//draw link as lines
-				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
+				if(m_link_display_mode == link_display_mode_line )
 				{
 					if(pDoc->m_LinkMOEMode != MOE_volume) // not volume display
 					{
@@ -1210,11 +1209,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				// calibration mode, do not show volume
 				DrawLinkAsLine((*iLink),pDC);
 			}
-			else if (m_link_display_mode == link_display_mode_lane_group)
+			else 
 			{
-				DrawLinkAsLaneGroup((*iLink),pDC);
-			}else  // as lane group
-			{
+				
 				if(DrawLinkAsBand((*iLink),pDC,false)==false)
 					return;
 			}
@@ -2858,7 +2855,7 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				LOS = pDoc->GetLOSCode(power);
 
 				//draw link as lines
-				if(m_link_display_mode == link_display_mode_line  || m_link_display_mode == link_display_mode_lane_group)
+				if(m_link_display_mode == link_display_mode_line )
 				{
 					if(pDoc->m_LinkMOEMode != MOE_volume) // not volume display
 					{
@@ -2963,10 +2960,6 @@ void CTLiteView::DrawObjects(CDC* pDC)
 			{
 				// calibration mode, do not show volume
 				DrawLinkAsLine((*iLink),pDC);
-			}
-			else if (m_link_display_mode == link_display_mode_lane_group)
-			{
-				DrawLinkAsLaneGroup((*iLink),pDC);
 			}else  // as lane group
 			{
 				if(DrawLinkAsBand((*iLink),pDC,false)==false)

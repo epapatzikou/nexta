@@ -213,11 +213,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		
 		}
 
-
-		if(FromID == 0) 
-		{
-		TRACE(" m_OutboundSizeAry[FromID] =  %d for node %d \n", m_OutboundSizeAry[FromID], g_NodeVector[ToID].m_NodeNumber  );
-		}
 		m_OutboundSizeAry[FromID] +=1;
 
 		m_InboundLinkAry[ToID][m_InboundSizeAry[ToID]] = pLink->m_LinkNo  ;

@@ -247,7 +247,7 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 				{
 
 					int node_id;
-					float time_stamp,travel_time, emissions;
+					float event_time_stamp,travel_time, emissions;
 
 				 	pVehicle->m_NodeNumberSum += path_node_sequence[i];
 
@@ -868,7 +868,7 @@ bool g_ReadAgentBinFile(string file_name)
 				{
 
 					int node_id;
-					float time_stamp,travel_time, emissions;
+					float event_time_stamp,travel_time, emissions;
 
 					struct_Vehicle_Node node_element;
 					fread(&node_element,sizeof(node_element),1,st);

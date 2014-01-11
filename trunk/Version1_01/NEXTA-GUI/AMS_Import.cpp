@@ -174,6 +174,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	CCSVParser parser;
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","length_unit","value",length_unit);
 
+	double ratio_of_network_for_identifying_overlapping_nodes = 0;
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","minimum_network_size_ratio_for_overlapping_nodes","value",ratio_of_network_for_identifying_overlapping_nodes);
+
+	ratio_of_network_for_identifying_overlapping_nodes = max(ratio_of_network_for_identifying_overlapping_nodes, 1/100000.0);
+
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","with_decimal_long_lat","value",decimal_degrees);
 
 	parser.GetValueBySectionKeyFieldName(file_name,"link","r_number_of_lanes","value",r_number_of_lanes_field);
@@ -181,6 +186,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","lane_capacity_vs_link_capacity","value",lane_vs_link);
 
 	parser.GetValueBySectionKeyFieldName(file_name,"link","link_type","value",link_type_field);
+
 
 
 	// new data fields
@@ -198,6 +204,15 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_speed_limit_from_link_type","value",use_default_speed_limit_from_link_type);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_lane_capacity_from_link_type","value",use_default_lane_capacity_from_link_type);
 	parser.GetValueBySectionKeyFieldName(file_name,"configuration","use_default_number_of_lanes_from_link_type","value",use_default_number_of_lanes_from_link_type);
+
+	std::string split_links_for_overlapping_nodes;
+	parser.GetValueBySectionKeyFieldName(file_name,"configuration","split_links_for_overlapping_nodes","value",split_links_for_overlapping_nodes);
+
+	bool SplitLinksForOverlappingNodeOnLinks = false;
+
+	if(split_links_for_overlapping_nodes=="yes")
+		SplitLinksForOverlappingNodeOnLinks = true;
+
 
 	std::string default_link_direction, identify_from_node_id_and_to_node_id_based_on_geometry,
 		create_connectors_for_isolated_centroids,
@@ -1016,10 +1031,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			int from_node_id = 0;
 			int to_node_id = 0; 
 
-			double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))/100000.0;
+			double min_distance_threadshold_for_overlapping_nodes = ((max_y- min_y) + (max_x - min_x))*ratio_of_network_for_identifying_overlapping_nodes;
 
 			if(identify_from_node_id_and_to_node_id_based_on_geometry == "yes" )
 			{  
+
+		int	defined_from_node_id = poFeature->GetFieldAsInteger(from_node_id_name.c_str ());
+		int defined_to_node_id = poFeature->GetFieldAsInteger(to_node_id_name.c_str ());
 
 				bool SplitLinksForOverlappingNodeOnLinks = false;
 
@@ -1037,9 +1055,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 					pt.y = CoordinateVector[0].Y;
 
 					bool ActivityLocationFlag = false;
-					DTANode* pNode =AddNewNode(pt, from_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
+					DTANode* pNode =AddNewNode(pt, defined_from_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
 					from_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
 					pNode->m_bCreatedbyNEXTA = true;
+
 
 				}
 
@@ -1054,9 +1073,10 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 					bool ActivityLocationFlag = false;
 
-					DTANode* pNode =AddNewNode(pt, to_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
+					DTANode* pNode =AddNewNode(pt, defined_to_node_id, 0,ActivityLocationFlag,SplitLinksForOverlappingNodeOnLinks);
 					to_node_id = pNode->m_NodeNumber;  // update to_node_id after creating new node
 					pNode->m_bCreatedbyNEXTA = true;
+
 				}
 				
 

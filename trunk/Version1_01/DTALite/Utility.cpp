@@ -176,7 +176,7 @@ bool g_floating_point_value_less_than(double value1, double value2)
 
 bool g_Compare_Vehicle_Item(struc_vehicle_item item1, struc_vehicle_item item2)
 {
-	if(item1.time_stamp < item2.time_stamp)  // item1 is earlier than item2
+	if(item1.event_time_stamp < item2.event_time_stamp)  // item1 is earlier than item2
 		return true;
 	else 
 		return false;

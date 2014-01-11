@@ -34,12 +34,12 @@
 #include "GlobalData.h"
 #include "SafetyPlanning.h"
 
-extern bool g_VehicularSimulation_BasedOnADCurves(int DayNo, double CurrentTime, int simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag);
-extern bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag);
+extern bool g_VehicularSimulation_BasedOnADCurves(int DayNo, double CurrentTime, int meso_simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag);
+extern bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int meso_simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag);
 extern  int NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND;
 extern ofstream g_LogFile;
 
-bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag)
+bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag)
 {
 	int trace_step = 14;
 
@@ -51,7 +51,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	CString trace_msg;
 
-	trace_msg.Format ("time %f, interval %d",CurrentTime,simulation_time_interval_no);
+	trace_msg.Format ("time %f, interval %d",CurrentTime,meso_simulation_time_interval_no);
 	g_ProgramTrace(trace_msg);
 
 	std::list<struc_vehicle_item>::iterator vii;
@@ -66,7 +66,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	bool bRadioMessageActive  = false;
 	float network_wide_RadioMessageResponsePercentage = 0; 
 
-	if((simulation_time_interval_no)%10 == 0)  // every one minute
+	if((meso_simulation_time_interval_no)%10 == 0)  // every one minute
 	{
 		for(unsigned li = 0; li< g_LinkVector.size(); li++)
 		{
@@ -89,7 +89,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	// we update departure based information every 5 min
 	if(g_bInformationUpdatingAndReroutingFlag && g_ODEstimationFlag !=1)
 	{
-		if((simulation_time_interval_no)%(10*g_information_updating_interval_in_min) == 0)
+		if((meso_simulation_time_interval_no)%(10*g_information_updating_interval_in_min) == 0)
 		{
 			// reset statistics for departure-time-based travel time collection
 
@@ -121,7 +121,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 
 
-		if(simulation_time_interval_no%10 ==0) //update routes for pre-trip or en-route information users, every min, (10 simulation time intervlas)
+		if(meso_simulation_time_interval_no%10 ==0) //update routes for pre-trip or en-route information users, every min, (10 simulation time intervlas)
 		{
 
 			g_AgentBasedPathAdjustment(DayNo, CurrentTime);
@@ -135,8 +135,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	// user_defined information updating 
 
-	int time_clock_in_min  = simulation_time_interval_no/10;
-	if(simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
+	int time_clock_in_min  = meso_simulation_time_interval_no/10;
+	if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
 	{  // we need to update travel time and agent file
 
 		g_ExchangeRealTimeSimulationData(DayNo,time_clock_in_min);
@@ -182,16 +182,19 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					vi.veh_id = pVeh->m_VehicleID ;
 					g_LastLoadedVehicleID = pVeh->m_VehicleID ;
 
-					vi.time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, DayNo, CurrentTime);  // unit: min
+					vi.event_time_stamp = pVeh->m_DepartureTime + p_link->GetFreeMovingTravelTime(TrafficFlowModelFlag, DayNo, CurrentTime);  // unit: min
 
 
 					vi.veh_next_node_number = -1;  // initialization 
+					pVeh->within_link_driving_distance = 0;
+					pVeh->within_link_driving_speed_per_hour = p_link->m_SpeedLimit ;
 					if(pVeh->m_NodeSize >=3)   // fetch the next link's downstream node number
 					{
 						int NextLink =pVeh->m_NodeAry[1].LinkNo;
 
 						DTALink* p_next_link = g_LinkVector[NextLink];
 						vi.veh_next_node_number = p_next_link->m_ToNodeNumber ;
+						pVeh->within_link_driving_distance = 0;
 					}
 
 
@@ -199,7 +202,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					pVeh->m_SimLinkSequenceNo = 0;
 
 					if(debug_flag && vi.veh_id == vehicle_id_trace )
-						TRACE("Step 1: Load vhc %d to link %d with departure time time %5.2f -> %5.2f\n",vi.veh_id,FirstLink,pVeh->m_DepartureTime,vi.time_stamp);
+						TRACE("Step 1: Load vhc %d to link %d with departure time time %5.2f -> %5.2f\n",vi.veh_id,FirstLink,pVeh->m_DepartureTime,vi.event_time_stamp);
 
 					p_link->LoadingBuffer.push_back(vi);  // need to fine-tune
 					g_Number_of_GeneratedVehicles +=1;
@@ -249,7 +252,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	}
 
 	// loading buffer
-	if(simulation_time_interval_no>=trace_step)
+	if(meso_simulation_time_interval_no>=trace_step)
 		g_ProgramTrace("loading buffer");
 
 	int link_size = g_LinkVector.size();
@@ -267,8 +270,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		{
 			struc_vehicle_item vi = pLink->LoadingBuffer.front();
 			// we change the time stamp here to reflect the actual loading time into the network, especially for blocked link
-			if( g_floating_point_value_less_than_or_eq_comparison(vi.time_stamp , CurrentTime))
-				vi.time_stamp = CurrentTime;
+			if( g_floating_point_value_less_than_or_eq_comparison(vi.event_time_stamp , CurrentTime))
+				vi.event_time_stamp = CurrentTime;
 
 			if(debug_flag && vi.veh_id == vehicle_id_trace )
 				TRACE("Step 1: Time %f: Load vhc %d from buffer to physical link %d->%d\n",CurrentTime,vi.veh_id,pLink->m_FromNodeNumber,pLink->m_ToNodeNumber);
@@ -283,12 +286,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			{
 				pLink->LoadingBuffer.pop_front ();
 
-
 				if(g_SignalRepresentationFlag ==1 && pLink->m_LeftTurn_NumberOfLanes >=1 && pLink->m_LeftTurn_DestNodeNumber == vi.veh_next_node_number  )
 				{
 					pLink->LeftEntrance_Queue.push_back(vi);
 
-					int t_link_arrival_time = vi.time_stamp ; 
+					int t_link_arrival_time = vi.event_time_stamp ; 
 					if(t_link_arrival_time < pLink->m_LinkMOEAry.size())
 					{
 					pLink->m_LinkMOEAry[t_link_arrival_time].IntervalLeftArrivalCount++;
@@ -340,7 +342,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	}
 
 	// step 2: move vehicles from EntranceQueue To ExitQueue, if ReadyTime <= CurrentTime)
-	if(simulation_time_interval_no>=trace_step)
+	if(meso_simulation_time_interval_no>=trace_step)
 		g_ProgramTrace("move vehicles from EntranceQueue To ExitQueue");
 
 
@@ -351,12 +353,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		DTALink * pLink = g_LinkVector[li];
 
 
-
+	if(g_TrafficFlowModelFlag != trm_car_following) // queue based model 
+	{
 		while(pLink->EntranceQueue.size() >0)  // if there are vehicles in the entrance queue
 		{
 
 			struc_vehicle_item vi = pLink->EntranceQueue.front();
-			double PlannedArrivalTime = vi.time_stamp;
+			double PlannedArrivalTime = vi.event_time_stamp;
 
 			if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 )
 			{
@@ -365,9 +368,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			
 			}
 
-			if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
+	if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
 			{
 				pLink->EntranceQueue.pop_front ();
+
 				pLink->ExitQueue.push_back(vi);
 
 				if(debug_flag && vi.veh_id == vehicle_id_trace )
@@ -382,14 +386,65 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}
 
 		}
+	}else   // car following
+	{
 
 
-		// left-turn entrance queue 
-		while(pLink->LeftEntrance_Queue.size() >0 && g_SignalRepresentationFlag ==1)  // if there are vehicles in the left-turn entrance queue
+		// scan through the list of vehicles on the link
+		  for (std::list<struc_vehicle_item>::iterator  i =  pLink->EntranceQueue.begin(); i != pLink->EntranceQueue.end(); ++i)
+		  {
+		  
+					struc_vehicle_item vi = (*i);
+					DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
+
+					pLink->AddVehicleLocation(vi.veh_id, pLink->m_LinkNo, CurrentTime*60,pVehicle->within_link_driving_distance);
+
+
+					
+					std::list<struc_vehicle_item>::iterator  i_leader = i;
+					++i_leader;
+
+					if(i_leader!=pLink->EntranceQueue.end())
+					{
+					struc_vehicle_item vi_leader = (*i_leader);
+					DTAVehicle* pVehicle_leader = g_VehicleMap[vi_leader.veh_id];
+
+					double spacing =  1.0/pLink->m_KJam/pLink->m_NumLanes;
+					
+					pVehicle->within_link_driving_distance = max(0, min(pVehicle_leader->within_link_driving_distance - spacing ,  pVehicle->within_link_driving_speed_per_hour* 1/3600)); // 3600 second per hour
+					
+					}else
+					{
+					
+					}
+
+	
+		 }
+
+		  // decide if the head of the queue is available to move into the exit queue
+
+		if(pLink->EntranceQueue.size() >0)  // if there are vehicles in the entrance queue
+		{
+					struc_vehicle_item vi = pLink->EntranceQueue.front();
+					DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
+
+					if( g_floating_point_value_less_than_or_eq_comparison(pLink->m_Length , pVehicle->within_link_driving_distance) )  // link (downstream) arrival time within the simulation time interval
+					{
+						pLink->EntranceQueue.pop_front ();
+						 pVehicle->within_link_driving_distance = 0;
+						pLink->ExitQueue.push_back(vi);
+
+					}
+		}
+
+		}	// left-turn entrance queue 
+				if(g_TrafficFlowModelFlag != trm_car_following) // queue based model 
+			{
+				while(pLink->LeftEntrance_Queue.size() >0 && g_SignalRepresentationFlag ==1)  // if there are vehicles in the left-turn entrance queue
 		{
 
 			struc_vehicle_item vi = pLink->LeftEntrance_Queue.front();
-			double PlannedArrivalTime = vi.time_stamp;
+			double PlannedArrivalTime = vi.event_time_stamp;
 
 			if(debug_flag && pLink->m_FromNodeNumber == 1 &&  pLink->m_ToNodeNumber == 5 && CurrentTime >=10)
 			{
@@ -406,23 +461,27 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			
 			}
 
-			if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
-			{
-				pLink->LeftEntrance_Queue.pop_front ();
-				pLink->LeftExit_Queue.push_back(vi);
 
-				if(debug_flag && vi.veh_id == vehicle_id_trace )
+				if( g_floating_point_value_less_than_or_eq_comparison(PlannedArrivalTime, CurrentTime) )  // link (downstream) arrival time within the simulation time interval
 				{
-					TRACE("Step 2: Time %f: Vhc %d moves from entrance queue to exit queue on link %d->%d\n",PlannedArrivalTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
-					//					link_id_trace = li;
-				}
+					pLink->LeftEntrance_Queue.pop_front ();
+					pLink->LeftExit_Queue.push_back(vi);
 
-			}else
-			{
-				break;  // the vehicle's actual arrival time is later than the current time, so we exit from the loop, stop searching
-			}
+
+					if(debug_flag && vi.veh_id == vehicle_id_trace )
+					{
+						TRACE("Step 2: Time %f: Vhc %d moves from entrance queue to exit queue on link %d->%d\n",PlannedArrivalTime,vi.veh_id,g_LinkVector[li]->m_FromNodeNumber,g_LinkVector[li]->m_ToNodeNumber);
+						//					link_id_trace = li;
+					}
+
+				}else
+				{
+					break;  // the vehicle's actual arrival time is later than the current time, so we exit from the loop, stop searching
+				}
+			
 
 		}
+				}
 
 	}
 
@@ -448,6 +507,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		{
 
 			DTALink* pLink = g_LinkVector[li];
+
+				if(pLink->m_FromNodeNumber == 139 && pLink->m_ToNodeNumber == 136 )
+				{
+					TRACE("");				
+				
+				}
 			float PerHourCapacity = pLink->GetHourlyPerLaneCapacity(CurrentTime);  // static capacity from BRP function
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
 
@@ -456,7 +521,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			if(g_LinkTypeMap [pLink->m_link_type].IsFreeway())  
 			{
-				if(g_StochasticCapacityMode &&  pLink->m_StochaticCapcityFlag >=1 && simulation_time_interval_no%150 ==0)  // update stochastic capacity every 15 min
+				if(g_StochasticCapacityMode &&  pLink->m_StochaticCapcityFlag >=1 && meso_simulation_time_interval_no%150 ==0)  // update stochastic capacity every 15 min
 				{
 					bool QueueFlag = false;
 
@@ -542,11 +607,24 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			}else
 			{
 
+				if(g_TrafficFlowModelFlag != trm_car_following) // queue based model 
+				{
 				pLink->m_CumulativeOutCapacityCount+= Capacity;  // floating point variable to record number of vehicles can be sent out based on floating point capacity
-
 				pLink-> LinkOutCapacity = (int)(pLink->m_CumulativeOutCapacityCount) - pLink-> m_CumulativeOutCapacityCountAtPreviousInterval;
+				}else  // car following
+				{
+					double car_headway_in_min  = 60.0/Capacity;
 
-				if(pLink->m_FromNodeNumber == 9 && pLink->m_ToNodeNumber == 10 )
+					if(CurrentTime -  pLink->MicroSimulationLastVehiclePassingTimeStamp >= car_headway_in_min)
+					{
+					pLink-> LinkOutCapacity  = 1; // at least one vehicle can use the link to exit
+					}
+				
+				
+				}
+
+
+				if(pLink->m_FromNodeNumber == 139 && pLink->m_ToNodeNumber == 136 )
 				{
 					TRACE("\ntime %f, link capacity per simulation interval = %d, cumulative out capacity: %f, cumulative out capacity count: %d ", 
 						CurrentTime, pLink-> LinkOutCapacity , pLink->m_CumulativeOutCapacityCount,  pLink-> m_CumulativeOutCapacityCountAtPreviousInterval);
@@ -589,10 +667,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 				//}
 				if((TrafficFlowModelFlag == tfm_newells_model||TrafficFlowModelFlag == tfm_newells_model_with_emissions)  && g_LinkTypeMap[pLink->m_link_type] .IsFreeway())  // Newell's model on freeway only
 				{
-					if(simulation_time_interval_no >=pLink->m_BackwardWaveTimeInSimulationInterval ) /// we only apply backward wave checking after the simulation time is later than the backward wave speed interval
+					if(meso_simulation_time_interval_no >=pLink->m_BackwardWaveTimeInSimulationInterval ) /// we only apply backward wave checking after the simulation time is later than the backward wave speed interval
 					{
 
-						int t_residual_minus_backwardwaveTime = max(0,simulation_time_interval_no - pLink->m_BackwardWaveTimeInSimulationInterval)% MAX_TIME_INTERVAL_ADCURVE ;
+						int t_residual_minus_backwardwaveTime = max(0,meso_simulation_time_interval_no - pLink->m_BackwardWaveTimeInSimulationInterval)% MAX_TIME_INTERVAL_ADCURVE ;
 
 						float VehCountUnderJamDensity = pLink->m_Length * pLink->GetNumberOfLanes(DayNo,CurrentTime) *pLink->m_KJam;
 						// when there is a capacity reduction, in the above model, we assume the space capacity is also reduced proportional to the out flow discharge capacity, 
@@ -602,14 +680,14 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						// to do list: we should add another parameter of space capacity reduction ratio to represent the fact that the space capacity reduction magnitude is different from the outflow capacity reduction level,
 						// particularly for road construction areas on long links, with smooth barrier on the merging section. 
 						int N_Arrival_Now_Constrainted = (int)(pLink->m_CumuDeparturelFlow[t_residual_minus_backwardwaveTime] + VehCountUnderJamDensity);  //pLink->m_Length 's unit is mile
-						int t_residual_minus_1 = max(0, simulation_time_interval_no - 1)% MAX_TIME_INTERVAL_ADCURVE ;
+						int t_residual_minus_1 = max(0, meso_simulation_time_interval_no - 1)% MAX_TIME_INTERVAL_ADCURVE ;
 
 						ASSERT(t_residual_minus_1>=0);
 						ASSERT(t_residual_minus_1<MAX_TIME_INTERVAL_ADCURVE);
 						int N_Now_minus_1 = (int)pLink->m_CumuArrivalFlow[t_residual_minus_1];
 						int Flow_allowed = N_Arrival_Now_Constrainted - N_Now_minus_1;
 
-						//TRACE("\ntime %d, D:%d,A%d",simulation_time_interval_no,pLink->m_CumuDeparturelFlow[t_residual_minus_1],pLink->m_CumuArrivalFlow[t_residual_minus_1]);
+						//TRACE("\ntime %d, D:%d,A%d",meso_simulation_time_interval_no,pLink->m_CumuDeparturelFlow[t_residual_minus_1],pLink->m_CumuArrivalFlow[t_residual_minus_1]);
 
 						if(Flow_allowed < 0)
 							Flow_allowed  = 0;
@@ -791,15 +869,15 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 	// step 4: move vehicles from ExitQueue to next link's EntranceQueue, if there is available capacity
 	// NewTime = ReadyTime + FFTT(next link)
-	if(simulation_time_interval_no>=trace_step)
+	if(meso_simulation_time_interval_no>=trace_step)
 		g_ProgramTrace("step 4: move vehicles from ExitQueue to next link's EntranceQueue");
 
 	// step 4.1: calculate movement capacity per simulation interval for movements defined in input_movement.csv
 
 	int node_size = g_NodeVector.size();
 
-	//for each node, we scan each incoming link in a randomly sequence, based on simulation_time_interval_no
-	if(simulation_time_interval_no>=trace_step)
+	//for each node, we scan each incoming link in a randomly sequence, based on meso_simulation_time_interval_no
+	if(meso_simulation_time_interval_no>=trace_step)
 		g_ProgramTrace("step 5: for each node, we scan each incoming link in a randomly sequence");
 
 #pragma omp parallel for
@@ -812,7 +890,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 		int IncomingLinkSize = g_NodeVector[node].m_IncomingLinkVector.size();
 		int incoming_link_count = 0;
 
-		int incoming_link_sequence = simulation_time_interval_no%max(1,IncomingLinkSize);  // random start point
+		int incoming_link_sequence = meso_simulation_time_interval_no%max(1,IncomingLinkSize);  // random start point
 
 
 		while(incoming_link_count < IncomingLinkSize)
@@ -821,7 +899,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 			int li = g_NodeVector[node].m_IncomingLinkVector[incoming_link_sequence];
 
 			DTALink* pLink = g_LinkVector[li];
-			if(debug_flag && (pLink->m_FromNodeNumber  == 56619 && pLink->m_ToNodeNumber == 60306) && CurrentTime >=5)
+			if(debug_flag && (pLink->m_FromNodeNumber  == 1 && pLink->m_ToNodeNumber == 3) && CurrentTime >=421)
 			{
 				TRACE("Step 3: Time %f, Link: %d -> %d: tracing queue: capacity: %d, queue size %d \n", 
 					CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeNumber , g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
@@ -845,7 +923,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 			//			g_LogFile << "link out capaity:"<< CurrentTime << " "  << g_NodeVector[pLink->m_FromNodeID] << " ->" << g_NodeVector[pLink->m_ToNodeID]<<" Cap:" << vehicle_out_count<< "queue:" << pLink->ExitQueue.size() << endl;
 
-			if(pLink->m_FromNodeNumber == 1 && CurrentTime >=30 )
+			if(pLink->m_FromNodeNumber == 1 && CurrentTime >=421 )
 			{      // under capacity, constrained by existing left queue size
 				TRACE("%f, %d, queue = %d\n",CurrentTime,pLink-> LinkLeftOutCapacity, pLink->LeftExit_Queue.size() );
 			}
@@ -943,16 +1021,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 					if(p_Nextlink->LinkInCapacity > 0) // if there is available spatial capacity on next link, then move to next link, otherwise, stay on the current link
 					{
 						float ArrivalTimeOnDSN = 0;
-						if(g_floating_point_value_less_than_or_eq_comparison(CurrentTime-g_DTASimulationInterval,vi.time_stamp)) 
+						if(g_floating_point_value_less_than_or_eq_comparison(CurrentTime-g_DTASimulationInterval,vi.event_time_stamp)) 
 							// arrival at previous interval
 						{  // no delay 
-							ArrivalTimeOnDSN = vi.time_stamp;
+							ArrivalTimeOnDSN = vi.event_time_stamp;
 						}else
 						{  // delayed at previous time interval, discharge at CurrentTime 
 							ArrivalTimeOnDSN = CurrentTime; 
 						}
 
-
+						pLink->MicroSimulationLastVehiclePassingTimeStamp  = CurrentTime; // for car following, record timestamp of last passing vehicle
+						
 						float TimeOnNextLink = 0;
 
 						// update statistics for traveled link
@@ -971,6 +1050,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						}
 						g_VehicleMap[vehicle_id]->m_Delay += (TravelTime-pLink->m_FreeFlowTravelTime);
 						g_VehicleMap[vehicle_id]->m_TripFFTT+=pLink->m_FreeFlowTravelTime;
+
+
 
 						// finally move to next link
 						g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1;
@@ -1008,9 +1089,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							TRACE("");
 						}
-						vi.time_stamp = ArrivalTimeOnDSN + FFTT;
+
+
+						vi.event_time_stamp = ArrivalTimeOnDSN + FFTT;
 
 						vi.veh_next_node_number  = -1;  // initialization 
+						g_VehicleMap[vehicle_id]->within_link_driving_distance = 0;
 
 						if(g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo < number_of_links-2)  // not reach the previous link before the destination yet
 						{
@@ -1025,6 +1109,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 							}
 
 							vi.veh_next_node_number  = p_NextNextlink->m_ToNodeNumber ;
+							g_VehicleMap[vehicle_id]->within_link_driving_distance = 0;
 						}
 
 						// remark: when - TimeOnNextLink < 0, it means there are few seconds of left over on current link, which should be spent on next link
@@ -1035,7 +1120,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							TRACE("Step 4: Time %f, Link: %d -> %d: vi %d, exit time: %f, FFTT = %f\n",
 								CurrentTime, p_Nextlink->m_FromNodeNumber , p_Nextlink->m_ToNodeNumber,
-								vi.veh_id , vi.time_stamp, FFTT );
+								vi.veh_id , vi.event_time_stamp, FFTT );
 						}
 
 						// branch for left-turn queue
@@ -1045,7 +1130,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 							p_Nextlink->LeftEntrance_Queue.push_back(vi);
 
-					int t_link_arrival_time = vi.time_stamp ; 
+					int t_link_arrival_time = vi.event_time_stamp ; 
 					if(t_link_arrival_time < p_Nextlink->m_LinkMOEAry.size())
 					{
 					p_Nextlink->m_LinkMOEAry[t_link_arrival_time].IntervalLeftArrivalCount++;
@@ -1066,7 +1151,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 						{
 							pLink->LeftExit_Queue.pop_front();
 
-							int t_link_departure_time = vi.time_stamp ; 
+							int t_link_departure_time = vi.event_time_stamp ; 
 							if(t_link_departure_time < pLink->m_LinkMOEAry.size())
 							{
 							pLink->m_LinkMOEAry[t_link_departure_time].IntervalLeftDepartureCount ++;
@@ -1248,7 +1333,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 	} // for each node
 
 	//	step 5: statistics collection
-	if(simulation_time_interval_no>=trace_step)
+	if(meso_simulation_time_interval_no>=trace_step)
 		g_ProgramTrace("step 5: step 5: statistics collection");
 
 #pragma omp parallel for
@@ -1257,13 +1342,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int simulation_time_in
 
 		// Cumulative flow counts
 
-		int t_residual = simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
+		int t_residual = meso_simulation_time_interval_no % MAX_TIME_INTERVAL_ADCURVE;
 
 		DTALink* pLink = g_LinkVector[li];
 		pLink->m_CumuArrivalFlow[t_residual] = pLink->CFlowArrivalCount;
 		pLink->m_CumuDeparturelFlow[t_residual] = pLink->CFlowDepartureCount;
 
-		if(simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
+		if(meso_simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
 		{
 			pLink->VehicleCount = pLink->CFlowArrivalCount - pLink->CFlowDepartureCount;
 
@@ -1443,7 +1528,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	cout << "start simulation process..."  << endl;
 
 	double time;
-	int simulation_time_interval_no = 0;
+	int meso_simulation_time_interval_no = 0;
 	bool bPrintOut = true;
 
 	if(g_VehicleMap.size()>0)
@@ -1459,16 +1544,29 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 	g_SimululationReadyToEnd = g_PlanningHorizon;
 
-	for(time = g_DemandLoadingStartTimeInMin ; time< min(g_PlanningHorizon,g_SimululationReadyToEnd); simulation_time_interval_no++)  // the simulation time clock is advanced by 0.1 seconds
+	int micro_simulation_time_interval_no = 0;
+
+
+	for(time = g_DemandLoadingStartTimeInMin ; time< min(g_PlanningHorizon,g_SimululationReadyToEnd); meso_simulation_time_interval_no++)  // the simulation time clock is advanced by 0.1 seconds
 	{
-		time= g_DemandLoadingStartTimeInMin+ simulation_time_interval_no*g_DTASimulationInterval;
 
-		//if(TrafficFlowModelFlag ==1) // point queue
-		//	g_VehicularSimulation_BasedOnADCurves(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
-		//else // , spatial queue and Newell's model
+		//if(g_TrafficFlowModelFlag == trm_car_following) // car following model
+		//{
+		//time= g_DemandLoadingStartTimeInMin+ micro_simulation_time_interval_no*1.0/60.0;
+		//meso_simulation_time_interval_no = micro_simulation_time_interval_no/6;
+		//}else
+		//{
+		//time= g_DemandLoadingStartTimeInMin+ meso_simulation_time_interval_no*g_DTASimulationInterval;
+		//
+		//}
 
 
-		g_VehicularSimulation(Iteration,time, simulation_time_interval_no, TrafficFlowModelFlag);
+		time= g_DemandLoadingStartTimeInMin+ meso_simulation_time_interval_no*g_DTASimulationInterval;
+
+
+
+
+		g_VehicularSimulation(Iteration,time, meso_simulation_time_interval_no, TrafficFlowModelFlag);
 
 		if(bPrintOut && g_Number_of_GeneratedVehicles > 0 && g_Number_of_CompletedVehicles == g_VehicleMap.size())
 		{		
@@ -1478,7 +1576,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			bPrintOut = false;
 			g_SimululationReadyToEnd = time + 10; // run for another 10 min for simulator to tally all statstics (for every 1 or 5 min)
 		}
-		if(simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
+		if(meso_simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
 		{
 			int hour = ((int)(time))/60;
 			int min = time - hour*60;
