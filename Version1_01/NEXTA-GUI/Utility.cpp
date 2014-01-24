@@ -38,15 +38,17 @@ int i;
 int g_ParserFloatSequence(std::string str, std::vector<float> &vect) 
 {
 
+std::replace( str.begin(), str.end(), '<', ' '); 
+std::replace( str.begin(), str.end(), '>', ' '); 
 std::stringstream ss(str);
 
-int i;
+float i;
 
 	while (ss >> i)
 	{
 		vect.push_back(i);
 
-		if (ss.peek() == ';')
+		if (ss.peek() == ';' || ss.peek() == ':')
 			ss.ignore();
 	}
 

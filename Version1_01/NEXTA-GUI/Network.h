@@ -2046,6 +2046,7 @@ public:
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
 		m_total_link_volume = 0;
+		m_total_travel_time = 0;
 		m_total_delay = 0;
 
 		m_TotalVolumeForMovementCount = 0;
@@ -2103,6 +2104,7 @@ public:
 		m_avg_simulated_speed = 0;
 		m_total_sensor_link_volume = 0;
 		m_total_link_volume = 0;
+		m_total_travel_time = 0;
 		m_total_link_count_error = 0;
 		m_simulated_AADT = 0;
 		m_volume_over_capacity_ratio  = 0;
@@ -2234,6 +2236,7 @@ public:
 	// overall information
 
 	float m_total_link_volume;
+	float m_total_travel_time;
 	float m_total_delay;
 	float m_total_assigned_link_volume;
 	float m_total_link_volume_of_incomplete_trips;
@@ -4031,7 +4034,7 @@ class VehicleLocationRecord
 class VehicleLocationTimeIndexedMap
 {
 	public:
-		std::map<std::string,VehicleLocationRecord> VehicleLocationMapAtThisTime;  //  std::string refers to agent id
+		std::vector<VehicleLocationRecord> VehicleLocationRecordVector;  
 				
 };
 
