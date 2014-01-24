@@ -1809,13 +1809,13 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 		{
 			DTAVehicle* pVehicle = iterVM->second;
-			pVehicle->Day2DayPathMap[Iteration].Distance = pVehicle->m_Distance;
-			pVehicle->Day2DayPathMap[Iteration].TravelTime =(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
+			//pVehicle->Day2DayPathMap[Iteration].Distance = pVehicle->m_Distance;
+			//pVehicle->Day2DayPathMap[Iteration].TravelTime =(pVehicle->m_ArrivalTime-pVehicle->m_DepartureTime);
 
-			if(Iteration>=g_StartIterationsForOutputPath &&  Iteration<=g_EndIterationsForOutputPath)
-			{
-				pVehicle->StorePath(Iteration);
-			}
+			//if(Iteration>=g_StartIterationsForOutputPath &&  Iteration<=g_EndIterationsForOutputPath)
+			//{
+			//	pVehicle->StorePath(Iteration);
+			//}
 
 		}
 	}

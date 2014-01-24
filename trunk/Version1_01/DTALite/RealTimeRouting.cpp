@@ -154,7 +154,6 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
 
-
 		bool b_switch_flag = false;
 
 
@@ -597,6 +596,8 @@ void g_ReadRealTimeSimulationSettingsFile()
 					}
 						parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file );
 						parser_RTSimulation_settings.GetValueByFieldName("output_trip_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file);
+						parser_RTSimulation_settings.GetValueByFieldName("output_od_moe_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file);
+
 
 
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file = output_TD_link_travel_time_file;
@@ -715,9 +716,28 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 	{
 		   // wait for input_agent_updating_file;
 
-			g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false);
+			g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false, false);
+
+			int iteration  = 0;
+			g_BuildPathsForAgents(iteration,false);
 
 
+	}
+
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
+	{
+
+		ofstream output_ODMOE_file;
+
+		output_ODMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.c_str());
+		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
+		if(output_ODMOE_file.is_open ())
+		{
+
+			int cut_off_volume = 1;
+			OutputODMOEData(output_ODMOE_file,cut_off_volume,timestamp_in_min - 15);
+		}
 	}
 }
 

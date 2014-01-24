@@ -73,13 +73,126 @@ bool g_GetSequentialUEAdjustmentTimePeriod(int iteration,float DepartureTime)
 
 }
 
+DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+
+void g_BuildPathsForAgents( int iteration , bool bOutputLog)
+{
+
+	// assign different zones to different processors
+	int number_of_threads = omp_get_max_threads ( );
+
+//	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
+//		number_of_threads = 1;
+
+	if(bOutputLog)
+	{
+		cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
+	}
+
+	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+
+	if(number_of_threads > max_number_of_threads)
+		number_of_threads = max_number_of_threads ;
+
+	//if(g_NodeVector.size() > 2000 || g_ZoneMap.size() >2000 )  // large network or subare cut with large node number, reset to single thread mode
+	//	number_of_threads = 1;
+
+	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
+	{ 
+		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
+		g_ProgramStop();
+	}
+	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
+
+	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
+	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
+
+
+#pragma omp parallel for
+		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+		{
+			// create network for shortest path calculation at this processor
+			int	id = omp_get_thread_num( );  // starting from 0
+
+			//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
+			network_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+
+	if(bOutputLog)
+	{
+			cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
+	}
+	for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
+			{
+
+				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
+					continue;
+
+				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
+				{
+
+					// scan all possible departure times
+					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
+					{
+
+						if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
+						{
+
+							if(g_ODZoneNumberSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
+							{
+
+								if(bOutputLog)
+								{
+							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+								cout <<  "Processor " << id << " is adjusting OD demand table for zone " << CurZoneID << endl;
+							else
+								cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
+
+								}
+							}
+
+									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+										network_MP[id].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+									else
+										network_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+
+						}
+					}  // for each departure time
+				}
+			}  // for each zone
+		} // for each computer processor
+
+	if(bOutputLog)
+	{
+		cout<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
+		g_LogFile<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
+
+	}
+}
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	// reset random number seeds
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
-	// assign different zones to different processors
+	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
+	g_LogFile<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
+
+
+	int iteration = 0;
+	bool NotConverged = true;
+	int TotalNumOfVehiclesGenerated = 0;
+
+
+
+		//cout << "------- Allocating memory for networks for " number_of_threads << " CPU threads" << endl;
+		//cout << "Tips: If your computer encounters a memory allocation problem, please open file DTASettings.txt in the project folder " << endl;
+		//cout << "find section [computation], set max_number_of_threads_to_be_used=1 or a small value to reduce memory usage. " << endl;
+		//cout << "This modification could significantly increase the total runing time as a less number of CPU threads will be used. " << endl;
+
+
+			//
+			//" number_of_threads << " CPU threads" << endl;
+
 	int number_of_threads = omp_get_max_threads ( );
 
 //	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
@@ -101,31 +214,6 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
 		g_ProgramStop();
 	}
-	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
-
-	g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
-	g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
-
-
-	cout<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
-	g_LogFile<< ":: start assignment "  << g_GetAppRunningTime()  << endl; 
-
-
-	int iteration = 0;
-	bool NotConverged = true;
-	int TotalNumOfVehiclesGenerated = 0;
-
-
-	DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
-
-		//cout << "------- Allocating memory for networks for " number_of_threads << " CPU threads" << endl;
-		//cout << "Tips: If your computer encounters a memory allocation problem, please open file DTASettings.txt in the project folder " << endl;
-		//cout << "find section [computation], set max_number_of_threads_to_be_used=1 or a small value to reduce memory usage. " << endl;
-		//cout << "This modification could significantly increase the total runing time as a less number of CPU threads will be used. " << endl;
-
-
-			//
-			//" number_of_threads << " CPU threads" << endl;
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
@@ -148,57 +236,15 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0;
 
-#pragma omp parallel for
-		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-		{
-			// create network for shortest path calculation at this processor
-			int	id = omp_get_thread_num( );  // starting from 0
 
-			//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-			network_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+		////
 
-			cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
-			for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
-			{
+		g_BuildPathsForAgents(iteration,true);
 
-				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
-					continue;
-
-				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
-				{
-
-					// scan all possible departure times
-					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
-					{
-
-						if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
-						{
-
-							if(g_ODZoneNumberSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
-							{
-
-							if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-								cout <<  "Processor " << id << " is adjusting OD demand table for zone " << CurZoneID << endl;
-							else
-								cout << "Processor " << id << " is calculating the shortest paths for zone " << CurZoneID << endl;
-
-							}
-
-									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										network_MP[id].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
-									else
-										network_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
-
-						}
-					}  // for each departure time
-				}
-			}  // for each zone
-		} // for each computer processor
-
-		cout<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
-		g_LogFile<< ":: complete assignment "  << g_GetAppRunningTime()  << endl; 
-
-			if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // re-generate vehicles based on global path set
+		////
+		
+		
+		if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // re-generate vehicles based on global path set
 			{
 				g_GenerateVehicleData_ODEstimation();
 			}
