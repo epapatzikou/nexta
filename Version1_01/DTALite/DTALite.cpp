@@ -1826,10 +1826,16 @@ void g_ReadInputFiles(int scenario_no)
 	g_SummaryStatFile.WriteParameterValue ("# of Intra-zone Vehicles (not be simulated)",g_number_of_intra_zone_trips);
 
 
-	if(g_VehicleVector.size()==0)
+
+	CCSVParser parser_RTSimulation_settings;
+	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv",false) == false)
+	{
+	
+	if(g_VehicleVector.size()==0) // if input_real_time_simulation_settings does not exist
 	{
 		cout << "no vehicle to be simulated. Please check input data." << endl;
 		g_ProgramStop();
+	}
 	}
 
 	g_SummaryStatFile.WriteTextLabel ("Starting Time of Demand Loading (min)=,");
@@ -3640,6 +3646,11 @@ void g_ReadDTALiteSettings()
 	if(g_AdjLinkSize < 30)
 		g_AdjLinkSize = 30;
 
+	g_AggregationTimetInterval = g_GetPrivateProfileInt("shortest_path", "travel_time_aggregation_interval_in_min", 15, g_DTASettingFileName);	
+	
+	if(g_AggregationTimetInterval <1)
+		g_AggregationTimetInterval = 1;
+
 	g_settings.AdditionalYellowTimeForSignals = g_GetPrivateProfileInt("simulation", "additional_amber_time_per_link_per_cycle", 4, g_DTASettingFileName);	
 	//	g_settings.IteraitonNoStartSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "starting_iteration_no", 1, g_DTASettingFileName);
 	//	g_settings.IteraitonStepSizeSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "number_of_iterations_per_optimization", 5, g_DTASettingFileName);
@@ -4233,47 +4244,47 @@ void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes)
 
 
 
-void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration)
-{
-
-	ofstream output_path_file;
-	output_path_file.open(fname);
-	if(output_path_file.is_open ())
-	{
-		output_path_file << "from_zone_id,to_zone_id,departure_time,vehicle_id,day_no,node_sum,number_of_nodes,path_sequence" << endl;
-
-		std::map<int, DTAVehicle*>::iterator iterVM;
-		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
-		{
-			DTAVehicle* pVeh = iterVM->second;
-			for(int DayNo = g_StartIterationsForOutputPath; DayNo<= g_EndIterationsForOutputPath; DayNo++)
-			{
-				DTAPath element = pVeh->Day2DayPathMap [DayNo];
-				output_path_file << pVeh->m_OriginZoneID << "," << pVeh->m_DestinationZoneID << "," << pVeh->m_DepartureTime  << ",v" << pVeh->m_VehicleID  << "," << DayNo << "," <<
-					element.NodeSum << "," << (int)(element.LinkSequence .size()) << ",{";
-
-				if(element.LinkSequence.size()>=1)
-				{
-					int LinkID_0 = element.LinkSequence [0];
-					output_path_file << g_LinkVector[LinkID_0]->m_FromNodeNumber << ";";
-
-					for(int j = 0; j< element.LinkSequence.size()-1; j++)
-					{
-						int LinkID = element.LinkSequence[j];
-						output_path_file << g_LinkVector[LinkID]->m_ToNodeNumber<< ";";
-					}
-
-				}
-
-
-				output_path_file << "}" <<endl;
-			} // for each day
-		} // for each vehicle
-
-
-		output_path_file.close();
-	}
-}
+//void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration)
+//{
+//
+//	ofstream output_path_file;
+//	output_path_file.open(fname);
+//	if(output_path_file.is_open ())
+//	{
+//		output_path_file << "from_zone_id,to_zone_id,departure_time,vehicle_id,day_no,node_sum,number_of_nodes,path_sequence" << endl;
+//
+//		std::map<int, DTAVehicle*>::iterator iterVM;
+//		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+//		{
+//			DTAVehicle* pVeh = iterVM->second;
+//			for(int DayNo = g_StartIterationsForOutputPath; DayNo<= g_EndIterationsForOutputPath; DayNo++)
+//			{
+//				DTAPath element = pVeh->Day2DayPathMap [DayNo];
+//				output_path_file << pVeh->m_OriginZoneID << "," << pVeh->m_DestinationZoneID << "," << pVeh->m_DepartureTime  << ",v" << pVeh->m_VehicleID  << "," << DayNo << "," <<
+//					element.NodeSum << "," << (int)(element.LinkSequence .size()) << ",{";
+//
+//				if(element.LinkSequence.size()>=1)
+//				{
+//					int LinkID_0 = element.LinkSequence [0];
+//					output_path_file << g_LinkVector[LinkID_0]->m_FromNodeNumber << ";";
+//
+//					for(int j = 0; j< element.LinkSequence.size()-1; j++)
+//					{
+//						int LinkID = element.LinkSequence[j];
+//						output_path_file << g_LinkVector[LinkID]->m_ToNodeNumber<< ";";
+//					}
+//
+//				}
+//
+//
+//				output_path_file << "}" <<endl;
+//			} // for each day
+//		} // for each vehicle
+//
+//
+//		output_path_file.close();
+//	}
+//}
 
 
 void g_ReadVOTProfile()
@@ -5135,7 +5146,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			}else if(format_type.find("trip_csv")!= string::npos)
 			{
-				g_ReadTripCSVFile(file_name,true);
+				g_ReadTripCSVFile(file_name,true, true);
 				return;
 			}else 
 			{

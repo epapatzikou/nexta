@@ -538,7 +538,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 }
 
-bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
+bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag)
 {
 	float start_time_value = -100;
 
@@ -557,8 +557,10 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
 	if (parser_agent.OpenCSVFile(file_name))
 	{
 
+		if(bOutputLogFlag)
+		{
 		cout << "reading file " << file_name << endl;
-
+		}
 		int line_no = 1;
 
 		int i = 0;
@@ -571,7 +573,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
 		while(parser_agent.ReadRecord())
 		{
 
-			if((count+1)%1000 ==0)
+			if((count+1)%1000 ==0 && bOutputLogFlag)
 			{
 			 cout << "reading " << count+1 << " records..." << endl;
 			
@@ -742,6 +744,9 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
 			line_no++;
 
 
+
+			if(bOutputLogFlag)
+			{
 	
 			cout << count << " records have been read from file " << file_name << endl;
 
@@ -755,6 +760,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag)
 				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
 
 
+			}
 	}else
 	{
 		cout << "File " << file_name << " cannot be opened. Please check." << endl;

@@ -28,6 +28,8 @@
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 
 #include "resource.h"
+#define _large_memory_usage
+
 
 #include <math.h>
 #include <deque>
@@ -1187,6 +1189,7 @@ public:
 	bool m_bOnRampType;
 	bool m_bOffRampType;
 	string m_LinkTypeName;
+
 	std::map<int, int> m_OperatingModeCount;
 	std::vector<GDPoint> m_ShapePoints;
 	std::vector<float> m_ShapePointRatios;
@@ -2239,23 +2242,34 @@ public:
 
 
 	bool b_already_output_flag;
+
+#define _large_memory_usage
 	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
-
-
 	int m_EvacuationTime_in_min;
 	int m_EvacuationDestinationZone;
-
 	bool m_bEvacuationMode;
 	bool m_bEvacuationResponse;
+	std::map<int, int> m_OperatingModeCount;
+	std::map<int, int> m_SpeedCount;
+	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
+	//std::map<int,DTAPath> Day2DayPathMap;
+	//// multi-day equilibrium
+	//bool m_bETTFlag;
+	//int m_DayDependentLinkSize[MAX_DAY_SIZE];
+	//std::map<int, int> m_DayDependentAryLink;  // first key: day*MAX_PATH_LINK_SIZE + index, second element; return link index
+	//float m_DayDependentTripTime[MAX_DAY_SIZE];
+	//int m_DayDependentNodeNumberSum[MAX_DAY_SIZE];  // used for comparing two paths
+	//float m_DayDependentGap[MAX_DAY_SIZE];  // used for gap analysis
+	//float m_AvgDayTravelTime;
+	//float m_DayTravelTimeSTD;
+
+
 	int m_NodeSize;
 	int m_NodeNumberSum;  // used for comparing two paths
 	SVehicleLink *m_NodeAry; // link list arrary of a vehicle path  // to do list, change this to a STL vector for better readability
 
 	float m_PrevSpeed;
-	std::map<int, int> m_OperatingModeCount;
-	std::map<int, int> m_SpeedCount;
-	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
 
 	unsigned int m_RandomSeed;
 	int m_VehicleID;  //range: +2,147,483,647
@@ -2307,19 +2321,8 @@ public:
 	bool m_bDetailedEmissionOutput;
 	float Energy,CO2,NOX,CO,HC;
 
-	// multi-day equilibrium
-	bool m_bETTFlag;
-	int m_DayDependentLinkSize[MAX_DAY_SIZE];
-	std::map<int, int> m_DayDependentAryLink;  // first key: day*MAX_PATH_LINK_SIZE + index, second element; return link index
-	float m_DayDependentTripTime[MAX_DAY_SIZE];
-	int m_DayDependentNodeNumberSum[MAX_DAY_SIZE];  // used for comparing two paths
-	float m_DayDependentGap[MAX_DAY_SIZE];  // used for gap analysis
-	float m_AvgDayTravelTime;
-	float m_DayTravelTimeSTD;
-
 	int m_DestinationZoneID_Updated; 
 	int m_attribute_update_time_in_min;
-
 
 	int m_Age;
 	float m_VOT;        // range 0 to 255
@@ -2330,17 +2333,16 @@ public:
 	float m_TravelTimeVariance;
 	unsigned short m_NumberOfSamples;  // when switch a new path, the number of samples starts with 0
 
-	std::map<int,DTAPath> Day2DayPathMap;
 
-	void StorePath(int DayNo)
-	{
+	//void StorePath(int DayNo)
+	//{
 
-		Day2DayPathMap[DayNo].NodeSum = m_NodeNumberSum;
+	//	Day2DayPathMap[DayNo].NodeSum = m_NodeNumberSum;
 
-		for(int i = 0; i < m_NodeSize; i++)
-			Day2DayPathMap[DayNo].LinkSequence.push_back (m_NodeAry[i].LinkNo );
+	//	for(int i = 0; i < m_NodeSize; i++)
+	//		Day2DayPathMap[DayNo].LinkSequence.push_back (m_NodeAry[i].LinkNo );
 
-	};
+	//};
 
 	void PostTripUpdate(float TripTime)   
 	{
@@ -2410,7 +2412,7 @@ public:
 			delete m_NodeAry;
 
 		m_OperatingModeCount.clear();
-		m_DayDependentAryLink.clear();
+		//m_DayDependentAryLink.clear();
 
 		m_SpeedCount.clear();
 		m_SpeedProfile.clear();
@@ -2819,6 +2821,7 @@ class DTANetworkForSP  // mainly for shortest path calculation, not just physica
 	// different shortest path calculations have different network structures, depending on their origions/destinations
 {
 public:
+	
 
 	std::vector<PathArrayForEachODT> m_PathArray;
 
@@ -3651,8 +3654,8 @@ void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int 
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file);
 void OutputVehicleTrajectoryData(char fname_agent[_MAX_PATH],char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmpty, bool bIncremental);
-void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1);
-void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int cut_off_volume = 1);
+void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1, int arrival_time_window_begin_time_in_min =0 );
+void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int cut_off_volume = 1 );
 void OutputEmissionData();
 void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file, int cut_off_volume = 50);
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
@@ -3677,7 +3680,7 @@ void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
-bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag);
+bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag);
 
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
