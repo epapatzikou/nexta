@@ -1320,6 +1320,9 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 
 		for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 		{
+
+			if((*iLink)->m_total_link_volume>=1)
+			{
 			fprintf(st,"\t<Placemark>\n");
 			fprintf(st,"\t\t<name>%d</name>\n",(*iLink)->m_LayerNo +1);
 /*			fprintf(st,"\t\t\t<TimeSpan>\n");
@@ -1407,6 +1410,7 @@ void CTLiteDoc::ExportLinkSingleAttributeLayerToKMLFiles(CString file_name, CStr
 
 			fprintf(st,"\t\t</Polygon>\n");
 			fprintf(st,"\t</Placemark>\n");
+			}
 		}  // for each link
 
 		   	fprintf(st,"</Folder>\n");

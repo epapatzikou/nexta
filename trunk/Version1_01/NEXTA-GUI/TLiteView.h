@@ -720,6 +720,9 @@ public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 
+
+	bool m_bShowCompleteTrajectory;
+	bool m_bShowAllCompleteTrajectory;
 protected:
 
 // Implementation
@@ -875,6 +878,10 @@ public:
 	afx_msg void OnFilePrint();
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnFilePrintSetup();
+	afx_msg void OnVehicledataShowcompletetrajectory();
+	afx_msg void OnUpdateVehicledataShowcompletetrajectory(CCmdUI *pCmdUI);
+	afx_msg void OnVehicledataShow();
+	afx_msg void OnUpdateVehicledataShow(CCmdUI *pCmdUI);
 };
 struct PieInfo
 {

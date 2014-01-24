@@ -1504,13 +1504,15 @@
 #define ID_ANIMATION_BACKWARD_second    33745
 #define ID_ANIMATION_PLAY_Second        33746
 #define ID_VIEW_PLAYINSECOND            33747
+#define ID_VEHICLEDATA_SHOWCOMPLETETRAJECTORY 33748
+#define ID_VEHICLEDATA_SHOW             33749
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        257
-#define _APS_NEXT_COMMAND_VALUE         33748
+#define _APS_NEXT_COMMAND_VALUE         33750
 #define _APS_NEXT_CONTROL_VALUE         1325
 #define _APS_NEXT_SYMED_VALUE           109
 #endif

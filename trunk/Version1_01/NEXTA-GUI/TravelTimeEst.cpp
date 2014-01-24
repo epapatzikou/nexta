@@ -354,10 +354,8 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				{
 
 				CString msg;
-					if(sensor.FromNodeNumber!=5010 && sensor.ToNodeNumber!=4958)
-					{
-				msg.Format (" %s in sensor_count.csv does not exist in input_link.csv.\n", sensor.SensorID);
-					}
+				msg.Format (" %s in sensor_count.csv does not exist in input_link.csv.\n", sensor.SensorID.c_str());
+
 				if(prev_error_message!=msg)
 				{
 					error_message+=msg;
@@ -366,8 +364,6 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 				error_count++;
 
-				if(error_count >=2)  // no more than two errors
-					break;
 
 				continue;
 				}

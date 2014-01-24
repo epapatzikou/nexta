@@ -261,6 +261,10 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_COMMAND(ID_FILE_PRINT, &CTLiteView::OnFilePrint)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, &CTLiteView::OnFilePrintPreview)
 	ON_COMMAND(ID_FILE_PRINT_SETUP, &CTLiteView::OnFilePrintSetup)
+	ON_COMMAND(ID_VEHICLEDATA_SHOWCOMPLETETRAJECTORY, &CTLiteView::OnVehicledataShowcompletetrajectory)
+	ON_UPDATE_COMMAND_UI(ID_VEHICLEDATA_SHOWCOMPLETETRAJECTORY, &CTLiteView::OnUpdateVehicledataShowcompletetrajectory)
+	ON_COMMAND(ID_VEHICLEDATA_SHOW, &CTLiteView::OnVehicledataShow)
+	ON_UPDATE_COMMAND_UI(ID_VEHICLEDATA_SHOW, &CTLiteView::OnUpdateVehicledataShow)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -500,6 +504,9 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+
+	m_bShowCompleteTrajectory = false;
+	m_bShowAllCompleteTrajectory = false;
 	m_bShowTransitLinksOnly = false;
 	m_bShowWalkLinksOnly = false;
 	m_bShowProhibitedMovements = false;
@@ -2052,19 +2059,100 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		
 		long timestamp_in_second = (long)(g_Simulation_Time_Stamp*60 + 0.5); // *60 convert min to second, +0.5, round to nearest integer
 
+
+		if(m_bShowAllCompleteTrajectory)
+		{
+					//with vehicle location data at this time stamp
+
+				std::map<std::string,VehicleLocationTimeIndexedMap>::iterator itr2;
+
+				for(itr2 = pDoc->m_VehicleWithLocationVectorMap.begin();
+					itr2 != pDoc->m_VehicleWithLocationVectorMap .end(); itr2++)
+				{		//scan all vehicle records at this timestamp
+
+				std::vector<VehicleLocationRecord>::iterator itr;
+
+
+				bool b_ini_flag = false;
+				CPoint point, to_point;
+
+				for(itr = (*itr2).second .VehicleLocationRecordVector.begin ();
+					itr != (*itr2).second .VehicleLocationRecordVector.end (); itr++)
+
+				{
+	
+					GDPoint pt;
+					pt.x = (*itr).x ; 
+					pt.y = (*itr).y;
+
+
+					node_size = 3;
+					/// starting drawing nodes in normal mode
+						pDC->Ellipse(point.x - node_size, point.y + node_size,
+							point.x + node_size, point.y - node_size);
+			
+
+					GDPoint to_pt;
+					to_pt.x = (*itr).x ; 
+					to_pt.y = (*itr).y;
+
+					 to_point = NPtoSP(to_pt);
+
+					if(b_ini_flag)
+						{
+						pDC->MoveTo (point);
+
+						pDC->LineTo (to_point);
+
+						CPoint FromPoint = point;
+						CPoint ToPoint  = to_point;
+
+						double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
+						double cosy = cos(slopy);
+						double siny = sin(slopy);   
+						double display_length  = sqrt((double)(FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y)+(double)(FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x));
+						double arrow_size = min(7,display_length/5.0);
+
+						if(arrow_size>0.2)
+						{
+
+							m_arrow_pts[0] = ToPoint;
+							m_arrow_pts[1].x = ToPoint.x + (int)(arrow_size * cosy - (arrow_size / 2.0 * siny) + 0.5);
+							m_arrow_pts[1].y = ToPoint.y + (int)(arrow_size * siny + (arrow_size / 2.0 * cosy) + 0.5);
+							m_arrow_pts[2].x = ToPoint.x + (int)(arrow_size * cosy + arrow_size / 2.0 * siny + 0.5);
+							m_arrow_pts[2].y = ToPoint.y - (int)(arrow_size / 2.0 * cosy - arrow_size * siny + 0.5);
+
+							pDC->Polygon(m_arrow_pts, 3);
+						}
+
+						}
+					
+					point = NPtoSP(pt);
+
+
+					b_ini_flag = true;
+				
+				}
+				}
+	
+		
+		
+		}
+
 			if(pDoc->m_VehicleLocationMap.find(timestamp_in_second) != pDoc->m_VehicleLocationMap.end())
 			{
 				//with vehicle location data at this time stamp
 
-				std::map<std::string,VehicleLocationRecord>::iterator itr;
 
-				for(itr = pDoc->m_VehicleLocationMap[timestamp_in_second].VehicleLocationMapAtThisTime .begin();
-					itr != pDoc->m_VehicleLocationMap[timestamp_in_second].VehicleLocationMapAtThisTime .end(); itr++)
+				std::vector<VehicleLocationRecord>::iterator itr;
+
+				for(itr = pDoc->m_VehicleLocationMap[timestamp_in_second].VehicleLocationRecordVector .begin();
+					itr != pDoc->m_VehicleLocationMap[timestamp_in_second].VehicleLocationRecordVector .end(); itr++)
 				{		//scan all vehicle records at this timestamp
 
 					GDPoint pt;
-					pt.x = itr->second.x ; 
-					pt.y = itr->second.y;
+					pt.x = (*itr).x ; 
+					pt.y = (*itr).y;
 
 					CPoint point = NPtoSP(pt);
 
@@ -2074,14 +2162,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 							point.x + node_size, point.y - node_size);
 
 						
-					if(itr->second.b_to_data_flag == true)
+					if(itr->b_to_data_flag == true)
 					{ 
 						pDC->MoveTo (point);
 				
 
 					GDPoint to_pt;
-					to_pt.x = itr->second.to_x ; 
-					to_pt.y = itr->second.to_y;
+					to_pt.x = itr->to_x ; 
+					to_pt.y = itr->to_y;
 
 					CPoint to_point = NPtoSP(to_pt);
 
@@ -8126,4 +8214,26 @@ void CTLiteView::OnFilePrintPreview()
 void CTLiteView::OnFilePrintSetup()
 {
 	// TODO: Add your command handler code here
+}
+
+void CTLiteView::OnVehicledataShowcompletetrajectory()
+{
+		m_bShowCompleteTrajectory = !m_bShowCompleteTrajectory;
+		Invalidate();
+
+}
+
+void CTLiteView::OnUpdateVehicledataShowcompletetrajectory(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowCompleteTrajectory);
+}
+
+void CTLiteView::OnVehicledataShow()
+{
+	m_bShowAllCompleteTrajectory = !m_bShowAllCompleteTrajectory;
+}
+
+void CTLiteView::OnUpdateVehicledataShow(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_bShowAllCompleteTrajectory);
 }

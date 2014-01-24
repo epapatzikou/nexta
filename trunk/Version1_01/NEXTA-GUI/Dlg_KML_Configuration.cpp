@@ -332,6 +332,9 @@ void CDlg_KML_Configuration::OnBnClickedOk3()
 	if(SelNo == 1)  // volume 
 	{
 		pLink->m_UserDefinedHeight = pLink->m_total_link_volume/hour;
+
+		if(pLink->m_total_link_volume < 1)
+			pLink->m_UserDefinedHeight = 0;
 	}
 		
 	if(SelNo == 2)  // delay

@@ -1273,14 +1273,16 @@ public:
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
 	void UpdateMovementDataFromVehicleTrajector();
 
-
-
 	std::map<long,VehicleLocationTimeIndexedMap> m_VehicleLocationMap;
+	std::map<std::string,VehicleLocationTimeIndexedMap> m_VehicleWithLocationVectorMap;
 
 	void AddLocationRecord(VehicleLocationRecord element)
 	{
 
-		m_VehicleLocationMap[element.time_stamp_in_second].VehicleLocationMapAtThisTime[element.agent_id] = element;
+		m_VehicleLocationMap[element.time_stamp_in_second].VehicleLocationRecordVector.push_back(element);
+
+
+		m_VehicleWithLocationVectorMap[element.agent_id ].VehicleLocationRecordVector.push_back(element);
 	
 	}
 

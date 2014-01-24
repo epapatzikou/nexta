@@ -2563,6 +2563,8 @@ BEGIN
     BEGIN
         MENUITEM "View Vehicle-Path Dialog",    ID_MOE_VEHICLEPATHANALAYSIS
         MENUITEM "View Summary Chart",          ID_TOOLS_VIEWSIMULATIONSUMMARY
+        MENUITEM "Show Complete Trajectory for Each Trip", ID_VEHICLEDATA_SHOWCOMPLETETRAJECTORY
+        MENUITEM "Show All Location Points",    ID_VEHICLEDATA_SHOW
     END
     POPUP "Transit"
     BEGIN
@@ -2872,6 +2874,26 @@ BEGIN
         BEGIN
             MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
             MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+        END
+        POPUP "NGSIM  Tools"
+        BEGIN
+            MENUITEM "Activate Space-Time View for Visualizing NGSIM Data", ID_NGSIMMENU_ACTIVATESPACE
+            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
+            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
+            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
+            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
+            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
+            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
+            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
+            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
+            MENUITEM SEPARATOR
+            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
+            MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
+            MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
+            MENUITEM SEPARATOR
+            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
+            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
+            MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
     END
     POPUP "&Window"
