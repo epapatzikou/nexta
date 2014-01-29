@@ -554,7 +554,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 	float total_number_of_vehicles_to_be_generated = 0;
 
-	if (parser_agent.OpenCSVFile(file_name))
+	if (parser_agent.OpenCSVFile(file_name,false))
 	{
 
 		if(bOutputLogFlag)
@@ -759,13 +759,11 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 			if(count_for_not_defined_zones >=1)
 				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
 
-
 			}
 	}else
 	{
-		cout << "File " << file_name << " cannot be opened. Please check." << endl;
-		g_ProgramStop();
-
+		cout << "File " << file_name << " cannot be opened." << endl;
+		
 		return false;
 	}
 

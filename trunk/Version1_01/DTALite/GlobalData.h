@@ -228,7 +228,7 @@ class RealTimeSimulationSettings
 
 		std::string output_TD_link_travel_time_file, 
 			output_TD_link_MOE_file,
-			output_agent_file,output_trip_file, output_od_moe_file,
+			output_agent_file,output_trip_file, output_od_moe_file, output_td_od_moe_file,
 
 			update_TD_link_attribute_file,
 			update_trip_file;

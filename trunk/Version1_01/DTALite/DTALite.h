@@ -2242,7 +2242,7 @@ public:
 
 
 	bool b_already_output_flag;
-
+	bool b_od_already_output_flag;
 #define _large_memory_usage
 	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
@@ -2356,6 +2356,7 @@ public:
 	{
 
 		b_already_output_flag = false;
+		b_od_already_output_flag = false;
 
 		m_ExternalTripID = 0;
 		m_gap = 0;
@@ -3487,13 +3488,7 @@ public:
 
 };
 
-class D2DODStatistics
-{
-public: 
 
-	std::map<int,ODStatistics> D2DODStatisticsMap;
-
-};
 
 class PathStatistics
 {
@@ -3654,8 +3649,9 @@ void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int 
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file);
 void OutputVehicleTrajectoryData(char fname_agent[_MAX_PATH],char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmpty, bool bIncremental);
+bool OutputTripFile(char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmpty, bool bIncremental);
 void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1, int arrival_time_window_begin_time_in_min =0 );
-void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int cut_off_volume = 1 );
+void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int end_time_in_min = 1440, int cut_off_volume = 1 );
 void OutputEmissionData();
 void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file, int cut_off_volume = 50);
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
@@ -3731,7 +3727,7 @@ extern CString g_GetTimeStampString(int time_stamp_in_mine);
 extern void g_FreeMemoryForVehicleVector();
 
 void g_AgentBasedShortestPathGeneration();
-void g_AgentBasedAccessibilityMatrixGeneration();
+void g_AgentBasedAccessibilityMatrixGeneration(string file_name);
 
 extern bool g_ReadLinkMeasurementFile();
 //extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);

@@ -597,6 +597,7 @@ void g_ReadRealTimeSimulationSettingsFile()
 						parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file );
 						parser_RTSimulation_settings.GetValueByFieldName("output_trip_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file);
 						parser_RTSimulation_settings.GetValueByFieldName("output_od_moe_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file);
+						parser_RTSimulation_settings.GetValueByFieldName("output_td_od_moe_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file);
 
 
 
@@ -649,19 +650,31 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 				false);
 	}
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file .size() >=1 || g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file .size() >=1 )
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file .size() >=1 )
 	{
 		   // output agent and trip files;
 
-	char fname_agent[_MAX_PATH];
-	char fname_trip[_MAX_PATH];
+		while (1)
+		{
+		char fname_trip[_MAX_PATH];
 
+		sprintf(fname_trip,"%s",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file.c_str ());
 
-	sprintf(fname_agent,"%s",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file.c_str ());
-	sprintf(fname_trip,"%s",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file.c_str ());
+		bool FileOutput = OutputTripFile( fname_trip,g_RealTimeSimulationSettingsMap[timestamp_in_min].day_no ,true,true);
+		
+			if(FileOutput)
+			{
+				break;
+			}
+			else 
+			{
+				 Sleep(5000); // wait for 5 second
+		
+			 cout << "wait for 5 seconds... " << endl;
+		
+			}
+		}
 
-
-		OutputVehicleTrajectoryData(fname_agent, fname_trip,g_RealTimeSimulationSettingsMap[timestamp_in_min].day_no ,true,true);
 	}
 
 		if(g_RealTimeSimulationSettingsMap[timestamp_in_min].break_and_wait_flag)
@@ -699,10 +712,10 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 				break;
 			}else
 			{
-			 Sleep(5000); // wait for 5 second
 		
 			 cout << "wait for 5 seconds... " << endl;
 			  
+			 Sleep(5000); // wait for 5 second
 			
 			}
 		
@@ -715,17 +728,33 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file .size() >=1)
 	{
 		   // wait for input_agent_updating_file;
+		while(1)
+		{
 
-			g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false, false);
+			bool b_trip_file_ready = g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false, false);
 
 			int iteration  = 0;
 			g_BuildPathsForAgents(iteration,false);
 
+			if( b_trip_file_ready)
+			{		
+				break;
+			}else
+			{
+			Sleep(5000); // wait for 5 second
+			 cout << "wait for 5 seconds... " << endl;
+			  
+			}
 
+
+		}
 	}
 
-
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
+	if(timestamp_in_min == 0 && g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
+	{
+		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file);
+	
+	}else if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
 	{
 
 		ofstream output_ODMOE_file;
@@ -739,6 +768,38 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 			OutputODMOEData(output_ODMOE_file,cut_off_volume,timestamp_in_min - 15);
 		}
 	}
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file.size() >=1)
+	{
+		
+		while(1)
+		{
+
+			ofstream output_ODTDMOE_file;
+
+		output_ODTDMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file.c_str ());
+		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
+		int department_time_interval = 15;
+		if(output_ODTDMOE_file.is_open ())
+		{
+			cout << "     outputing " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file << endl;
+			OutputTimeDependentODMOEData(output_ODTDMOE_file,department_time_interval, timestamp_in_min, 1);
+			output_ODTDMOE_file.close();
+			break;
+		}else
+		{
+			
+			cout << "Error: File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+
+			cout << "wait for 5 seconds..." << endl;
+			Sleep(5000);
+		}
+		}
+
+	}
+
+		
+
 }
 
 
