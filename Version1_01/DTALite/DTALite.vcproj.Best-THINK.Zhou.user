@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Software_release\sample_data_sets\1.Introduction_to_Traffic_Modeling_Lession1.1_West_Jordan\Salt_Lake_City_West_Jordan"
+				WorkingDirectory="C:\Temp\New_PHXsubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"

@@ -1261,7 +1261,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
 	{
-		g_AgentBasedAccessibilityMatrixGeneration();
+		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv");
 		exit(0);
 	}
 
