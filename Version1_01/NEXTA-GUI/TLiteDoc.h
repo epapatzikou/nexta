@@ -899,6 +899,7 @@ public:
 	int ReadVMSScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadRadioMessageScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
+	int ReadRampMeterScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadIncidentScenarioData(int RemoveLinkFromNodeNumber= -1, int RemoveLinkToNodeNumber= -1);
 	int ReadLink_basedTollScenarioData();
 
@@ -907,6 +908,7 @@ public:
 	bool WriteRadioMessageScenarioData();
 	bool WriteIncidentScenarioData();
 	bool WriteWorkZoneScenarioData();
+	bool WriteRampMeterScenarioData();
 	bool WriteCapacityReductionScenarioDataFromSubareaLinks(CString Scenario_File_Name);
 
 	bool ReadNodeGeoFile(LPCTSTR lpszFileName); 
@@ -967,6 +969,7 @@ public:
 	CString m_SignalDataLoadingStatus;
 	CString m_LinkDataLoadingStatus;
 	CString m_ConnectorDataLoadingStatus;
+	CString m_ActivityLocationDataLoadingStatus;
 	CString m_ZoneDataLoadingStatus;
 	CString m_DemandDataLoadingStatus;
 	CString m_ScenarioDataLoadingStatus;
@@ -1433,6 +1436,7 @@ public:
 		m_NodeNoMap[FromNodeID ]->m_Connections+=1;
 
 		m_NodeNoMap[FromNodeID ]->m_OutgoingLinkVector.push_back(pLink->m_LinkNo);
+		m_NodeNoMap[ToNodeID]->m_IncomingLinkVector.push_back(pLink->m_LinkNo);
 
 		m_NodeNoMap[ToNodeID ]->m_Connections+=1;
 
@@ -2761,6 +2765,9 @@ public:
 	afx_msg void OnDemandUseroadcapacitytogeneratedefaultproductionandattractionforeachzone();
 	afx_msg void OnGisplanningdatasetConfigureimportingsettingfile();
 	afx_msg void OnSubareaExporttotalnumberofvehiclesinsubarea();
+	afx_msg void OnRampRampdata();
+	afx_msg void OnLinkAddRampmeter();
+	afx_msg void OnDeleteRampmeter();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

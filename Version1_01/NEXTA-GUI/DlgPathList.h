@@ -58,6 +58,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	void GenerateDynamicMOEContour(DTA_EMISSION_TYPE emission_type );
 	afx_msg void OnPaint();
 	CGridListCtrlEx m_ListCtrl;
 	virtual BOOL OnInitDialog();
@@ -118,4 +119,11 @@ public:
 	afx_msg void OnDataChangepathnameforselectedpath();
 	afx_msg void OnDataDeleteselectedpath();
 	afx_msg void OnLbnDblclkList1();
+	afx_msg void OnDataGenerateemissiondetourplots();
+	afx_msg void OnDataCo2contourplot();
+	afx_msg void OnDataCocontourplot();
+	afx_msg void OnContourNoxcontourplot();
+	afx_msg void OnContourHccontourplot();
+	afx_msg void OnDataGenerateenergyuse();
+	afx_msg void OnBnClickedPathDataExportCsv();
 };

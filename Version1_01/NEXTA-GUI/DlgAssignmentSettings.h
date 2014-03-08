@@ -38,6 +38,7 @@ public:
 	afx_msg void OnLbnSelchangeListSimulationMethod();
 	CListBox m_DemandLoadingModeList;
 	afx_msg void OnBnClickedOk();
+	void UpdateScenarioFile();
 	afx_msg void OnBnClickedButtonCopyVehicleFile();
 	int m_SimulationHorizon;
 	int m_agent_based_assignment_flag;
@@ -59,4 +60,8 @@ public:
 	afx_msg void OnBnClickedButtonconfiguration();
 	afx_msg void OnBnClickedConfig();
 	CString m_SimulatorName;
+	afx_msg void OnBnClickedButtonViewEditScenarioSetting();
+	CString m_msg_assignment;
+	CString m_msg_traffic_flow_model;
+	CString m_msg_signal_control;
 };

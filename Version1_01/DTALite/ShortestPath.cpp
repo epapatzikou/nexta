@@ -80,7 +80,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 
 		for(int t= m_StartIntervalForShortestPathCalculation; t < m_NumberOfSPCalculationIntervals; t+=1)
 		{
-			m_LinkTDTimeAry[LinkID][t] = 0;
+			m_LinkTDTimeAry[LinkID][t] = 0.01;
 
 			// copy pricing type dependent link toll values
 
@@ -127,11 +127,11 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 
 				ASSERT(g_AdjLinkSize >  m_OutboundSizeAry[FromID]);
 
-				m_LinkTDDistanceAry[LinkID] = 0;
+				m_LinkTDDistanceAry[LinkID] = 0.01;
 
 				for( t= m_StartIntervalForShortestPathCalculation; t <m_NumberOfSPCalculationIntervals; t+=1)
 				{
-					m_LinkTDTimeAry[LinkID][t] = 0;
+					m_LinkTDTimeAry[LinkID][t] = 0.01;
 				}
 
 				// construct outbound movement vector: no outgoing movement 
@@ -148,7 +148,10 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 	//CurrentZoneNo >=0: called by zone based assignment 
 
-	bool bDebug = false;
+	if(m_OutboundSizeAry ==NULL)
+		return;
+
+	bool bDebug = true;
 
 	std::set<DTANode*>::iterator iterNode;
 	std::set<DTALink*>::iterator iterLink;
@@ -180,7 +183,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		FromID = pLink->m_FromNodeID;
 		ToID   = pLink->m_ToNodeID;
 
-			if( pLink->m_FromNodeNumber == 8081 && pLink->m_ToNodeNumber == 80125)
+			if( pLink->m_FromNodeNumber == 6 && pLink->m_ToNodeNumber == 7)
 			{
 			TRACE("");
 			}
@@ -220,20 +223,30 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 		if(g_AdjLinkSize <= m_OutboundSizeAry[FromID])
 		{
-			cout << "node " <<  g_NodeVector[FromID].m_NodeNumber  << " have more than 30 outbound links. Please check." << endl;
-			cout << "node " <<  g_NodeVector[FromID].m_NodeNumber  << " have more than 30 outbound links. Please check." << endl;
-		
+			cout << "node " <<  g_NodeVector[FromID].m_NodeNumber  << " have more than " << m_OutboundSizeAry[FromID] << " outbound links. Please check." << endl;
+	
 			g_ProgramStop();
 		}
 
 		m_LinkTDDistanceAry[pLink->m_LinkNo] = pLink->m_Length ;
 
 		int link_entering_time_interval;
+
+		//initialization
+		for(int ti = 0; ti < m_NumberOfSPCalculationIntervals; ti += 1)
+		{
+		m_LinkTDTimeAry[pLink->m_LinkNo][ti]=0.01;
+		}
+		
+
 		for(t = m_StartTimeInMin; t < m_PlanningHorizonInMin; t += g_AggregationTimetInterval)
 		{
 			link_entering_time_interval= t/g_AggregationTimetInterval;
 			if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)
 				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
+
+			if(link_entering_time_interval < m_StartIntervalForShortestPathCalculation)  // limit the size
+				link_entering_time_interval = m_StartIntervalForShortestPathCalculation;
 
 			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
 			float AvgTravelTime = pLink->GetTravelTimeByMin (DayNo,t,g_AggregationTimetInterval, TraffcModelFlag);
@@ -261,8 +274,9 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 			ASSERT(AvgTravelTime < 99999);
 
-			if(bDebug) 
+			if(bDebug )
 			{
+				if(g_NodeVector[FromID].m_NodeNumber == 97898|| g_NodeVector[FromID].m_NodeNumber ==1035 || g_NodeVector[ToID].m_NodeNumber == 97898|| g_NodeVector[ToID].m_NodeNumber ==1035  ) 
 				TRACE("FromID %d -> ToID %d, time: %d, %f\n", g_NodeVector[FromID].m_NodeNumber, g_NodeVector[ToID].m_NodeNumber, t,AvgTravelTime );
 			}
 
@@ -330,9 +344,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 				m_LinkTDTransitTimeAry[pLink->m_LinkNo][link_entering_time_interval] = m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval];  // calculated from speed limit of bus
 
 			}
-
-
-
 
 		}
 
@@ -411,14 +422,6 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, float 
 
 	int i;
 
-	// add physical links
-	m_PhysicalNodeSize = g_NodeVector.size();
-
-	for(i=0; i< m_PhysicalNodeSize; i++)
-	{
-		m_OutboundSizeAry[i] = 0;
-		m_InboundSizeAry[i] =0;
-	}
 
 
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -481,12 +484,14 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 		LabelTimeAry[i] = MAX_SPLABEL;
 		LabelCostAry[i] = MAX_SPLABEL;
+		LabelDistanceAry[i] = MAX_SPLABEL;
 
 	}
 
 	// Initialization for origin node
 	LabelTimeAry[origin] = float(departure_time);
 	LabelCostAry[origin] = 0;
+	LabelDistanceAry[origin] = 0;
 
 	SEList_clear();
 	SEList_push_front(origin);
@@ -494,7 +499,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 	int FromID, LinkID, ToID;
 
 
-	float NewTime, NewCost;
+	float NewTime, NewCost, NewDistance;
 	while(!SEList_empty())
 	{
 		FromID  = SEList_front();
@@ -526,8 +531,10 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
 				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
 
-			if(link_entering_time_interval < 0)  // limit the size
-				link_entering_time_interval = 0;
+			if(link_entering_time_interval < m_StartIntervalForShortestPathCalculation)  // limit the size
+				link_entering_time_interval = m_StartIntervalForShortestPathCalculation;
+
+			NewDistance    = LabelDistanceAry[FromID] + m_LinkTDDistanceAry[LinkID];
 
 			if(distance_cost_flag)
 				NewTime	= LabelTimeAry[FromID];
@@ -557,6 +564,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
+				LabelDistanceAry[ToID] = NewDistance;
 				NodePredAry[ToID]   = FromID;
 				LinkNoAry[ToID] = LinkID;
 
@@ -631,11 +639,13 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 		LabelTimeAry[i] = MAX_SPLABEL;
 		LabelCostAry[i] = MAX_SPLABEL;
+		LabelDistanceAry[i] = MAX_SPLABEL;
 	}
 
 	// Initialization for origin node
 	LabelTimeAry[origin] = float(departure_time);
 	LabelCostAry[origin] = 0;
+	LabelDistanceAry[origin] = 0;
 
 	SEList_clear();
 	SEList_push_front(origin);
@@ -643,7 +653,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	int FromID, LinkID, ToID;
 	float CostUpperBound = MAX_SPLABEL;
 
-	float NewTime, NewCost;
+	float NewTime, NewCost, NewDistance;
 	while(!SEList_empty())
 	{
 		FromID  = SEList_front();
@@ -683,8 +693,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
 				link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
 
-			if(link_entering_time_interval < 0)  // limit the size
-				link_entering_time_interval = 0;
+			if(link_entering_time_interval < m_StartIntervalForShortestPathCalculation)  // limit the size
+				link_entering_time_interval = m_StartIntervalForShortestPathCalculation;
 
 			if(distance_flag)
 				NewTime	= LabelTimeAry[FromID];
@@ -712,6 +722,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			// end of road pricing module
 										 // special feature 6: update cost
 
+				NewDistance    = LabelDistanceAry[FromID] + m_LinkTDDistanceAry[LinkID];  // do not take into account toll value
+
 				if(distance_flag)
 					NewCost    = LabelCostAry[FromID] + m_LinkTDDistanceAry[LinkID];  // do not take into account toll value
 				else 
@@ -733,6 +745,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 					LabelTimeAry[ToID] = NewTime;
 					LabelCostAry[ToID] = NewCost;
+					LabelDistanceAry[ToID] = NewDistance;
 					NodePredAry[ToID]   = FromID;
 					LinkNoAry[ToID] = LinkID;
 
@@ -819,7 +832,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
-
+		debug_flag = false;
+	if(g_NodeVector[origin].m_NodeNumber  == 3303 && g_NodeVector[destination].m_NodeNumber == 10224 )
+	{
+	debug_flag = true;
+	}
 	// checking boundary condition for departure time changes
 	if(departure_time < g_DemandLoadingStartTimeInMin)
 		departure_time = g_DemandLoadingStartTimeInMin;
@@ -832,7 +849,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		float AdditionalCostInMin = 0;
 
 		if(m_OutboundSizeAry[origin]== 0)
-			return false;
+			return 0;
+
+		if(m_InboundSizeAry[destination]== 0)
+			return 0;
 
 		for(i=0; i <m_LinkSize; i++) // Initialization for all links
 		{
@@ -924,8 +944,8 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				if(link_entering_time_interval >= m_NumberOfSPCalculationIntervals)  // limit the size
 					link_entering_time_interval = m_NumberOfSPCalculationIntervals-1;
 
-				if(link_entering_time_interval < 0)  // limit the size
-					link_entering_time_interval = 0;
+				if(link_entering_time_interval < m_StartIntervalForShortestPathCalculation)  // limit the size
+					link_entering_time_interval = m_StartIntervalForShortestPathCalculation;
 
 //  original code				NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
 
@@ -1040,42 +1060,42 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		if(link_id_with_min_cost <0)
 		{
 
-		int node_number = g_NodeVector[destination].m_NodeNumber ;
-		cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
-		g_LogFile << "Error: Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
+			int node_number = g_NodeVector[destination].m_NodeNumber ;
+			cout << "Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
+    		g_LogFile << "Error: Destination Node " << node_number << " cannot be reached from Origin Node " <<  g_NodeVector[origin].m_NodeNumber  << endl;
 
 
-	/*	if(g_path_error==0)
-		{
-
-				cout << endl << "Please check file output_simulation.log. Please any key to continue... " <<endl;
-
-			getchar();
-			g_path_error ++;
-		}*/
-
-
-		return false;
-			//find shortest path without movement penality
-		g_ShortestPathWithMovementDelayFlag = false;
-
-		int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, pricing_type, 
-			VOT,PathLinkList,TotalCost, distance_flag, debug_flag);
-		// check if the link(s) have the predecesssor
-
-		for(int ii=0; ii<number_of_nodes -1; ii++)
-		{
-		
-			if(PathLinkList[ii] <0 || PathLinkList[ii]> g_LinkVector.size())
+		/*	if(g_path_error==0)
 			{
-			g_ProgramStop();
 
+					cout << endl << "Please check file output_simulation.log. Please any key to continue... " <<endl;
+
+				getchar();
+				g_path_error ++;
+			}*/
+
+
+			return 0;
+				//find shortest path without movement penality
+			g_ShortestPathWithMovementDelayFlag = false;
+
+			int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, pricing_type, 
+				VOT,PathLinkList,TotalCost, distance_flag, debug_flag);
+			// check if the link(s) have the predecesssor
+
+			for(int ii=0; ii<number_of_nodes -1; ii++)
+			{
+			
+				if(PathLinkList[ii] <0 || PathLinkList[ii]> g_LinkVector.size())
+				{
+				g_ProgramStop();
+
+				}
+				cout << "Link " << g_LinkVector[PathLinkList[ii]]->m_FromNodeNumber  << "->" << g_LinkVector[PathLinkList[ii]]->m_ToNodeNumber  << " with cost " << LinkLabelCostAry[PathLinkList[ii]] << endl;
 			}
-			cout << "Link " << g_LinkVector[PathLinkList[ii]]->m_FromNodeNumber  << "->" << g_LinkVector[PathLinkList[ii]]->m_ToNodeNumber  << " with cost " << LinkLabelCostAry[PathLinkList[ii]] << endl;
-		}
 
-		
-		getchar();
+			
+			getchar();
 		}
 
 		//step 2 trace the incoming link to the first link in origin node

@@ -46,7 +46,7 @@ using namespace std;
 enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
 
-enum e_signal_representation_model {signal_model_continuous_flow = 0, signal_model_movement_effective_green_time };
+enum e_signal_representation_model {signal_model_continuous_flow = 0,  signal_model_link_effective_green_time, signal_model_movement_effective_green_time };
 
 enum e_assignment_method { 
 assignment_MSA =0, 
@@ -128,6 +128,7 @@ extern float g_DefaultSaturationFlowRate_in_vehphpl;
 #define LCG_M 65521  // it should be 2^32, but we use a small 16-bit number to save memory
 
 void g_ProgramStop();
+extern int g_ProgramStopFlag;
 void g_ProgramTrace(CString str);
 float g_RNNOF();
 bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT, int &Age);
@@ -399,7 +400,8 @@ public:
 	int destination_number;
 	int destination_node_index;
 	float destination_node_distance;
-	float destination_node_travel_time;
+	std::vector<float> destination_node_travel_time_vector;
+	std::vector<float> destination_node_travel_distance_vector;
 
 	DTADestination()
 	{
@@ -409,8 +411,6 @@ public:
 		destination_number = 0;
 		destination_node_index= 0;
 		destination_node_distance = 0;
-		destination_node_travel_time= 0;
-
 
 	}
 };
@@ -1513,7 +1513,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	int m_GreenStartTime_In_Second;
 
-	int m_EffectiveGreenTime_In_Second;
+	float m_EffectiveGreenTime_In_Second;
 	float m_SaturationFlowRate_In_vhc_per_hour_per_lane;
 
 
@@ -1621,6 +1621,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 		m_CumulativeInCapacityCount = 0;
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
+		total_departure_based_travel_time = m_FreeFlowTravelTime;
 		m_prevailing_travel_time = m_FreeFlowTravelTime;
 		m_BPRLinkVolume = 0;
 		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
@@ -1850,7 +1851,6 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 		if(GetNumberOfLanes(DayNo,CurrentTime,false,bConsiderIncident)<=0.001)   // road blockage by work zone, less than 0.1 lanes, or about 2000 capacity
 			return 1440; // unit min
-
 
 		for(int i = 0; i < m_RadioMessageVector.size(); i++)
 		{
@@ -2233,6 +2233,8 @@ public:
 	}
 
 };
+
+
 class DTAVehicle
 {
 public:
@@ -2240,19 +2242,15 @@ public:
 	double within_link_driving_distance;  // unit: mile
 	double within_link_driving_speed_per_hour;  // unit: mile per hour
 
-
 	bool b_already_output_flag;
 	bool b_od_already_output_flag;
-#define _large_memory_usage
-	std::vector<DTAVMSRespone> m_VMSResponseVector;
-	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
+
+
+
 	int m_EvacuationTime_in_min;
 	int m_EvacuationDestinationZone;
 	bool m_bEvacuationMode;
 	bool m_bEvacuationResponse;
-	std::map<int, int> m_OperatingModeCount;
-	std::map<int, int> m_SpeedCount;
-	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
 	//std::map<int,DTAPath> Day2DayPathMap;
 	//// multi-day equilibrium
 	//bool m_bETTFlag;
@@ -2352,8 +2350,18 @@ public:
 		m_NumberOfSamples +=1;
 	};
 
+	std::vector<DTAVMSRespone> m_VMSResponseVector;
+	std::vector<DTAEvacuationRespone> m_EvacuationResponseVector;
+	std::map<int, int> m_OperatingModeCount;
+	std::map<int, int> m_SpeedCount;
+	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
+
+
 	DTAVehicle()
 	{
+		m_OriginNodeID = -1;
+		m_DestinationNodeID = -1;
+
 
 		b_already_output_flag = false;
 		b_od_already_output_flag = false;
@@ -2412,12 +2420,6 @@ public:
 		if(m_NodeAry != NULL && m_NodeSize > 0)
 			delete m_NodeAry;
 
-		m_OperatingModeCount.clear();
-		//m_DayDependentAryLink.clear();
-
-		m_SpeedCount.clear();
-		m_SpeedProfile.clear();
-
 	};
 
 	void PreTripReset()
@@ -2462,6 +2464,18 @@ public:
 class DTA_vhc_simple // used in STL sorting only
 {
 public:
+
+	DTA_vhc_simple()
+	{
+	m_DemandType = 1;
+	m_VehicleType = 1;
+	m_PricingType = 1;
+	m_InformationClass = 1;
+	m_Age = 0;
+	m_TimeToRetrieveInfo = 0;
+	
+	m_VOT = 10;
+	}
 
 	int m_OriginZoneID;
 	int m_DestinationZoneID;
@@ -2884,6 +2898,7 @@ public:
 	float** LabelCostVectorPerType;
 
 	float* LabelCostAry;
+	float* LabelDistanceAry;
 
 	int* LinkNoAry;  //record link no according to NodePredAry
 
@@ -2904,6 +2919,8 @@ public:
 
 //	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
 
+	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
+	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH];
 	int temp_reversed_PathLinkList[MAX_NODE_SIZE_IN_A_PATH];  // tempory reversed path node list
 
 	DTANetworkForSP()
@@ -2975,6 +2992,7 @@ public:
 		LinkNoAry = new int[m_NodeSize];
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
+		LabelDistanceAry = new float[m_NodeSize];                     // label - distance
 
 		LinkStatusAry = new int[m_LinkSize];                    // Node status array used in KSP;
 		LinkPredAry = new int[m_LinkSize];
@@ -3049,6 +3067,7 @@ public:
 		if(LinkNoAry) delete LinkNoAry;
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
+		if(LabelDistanceAry) delete LabelDistanceAry;
 
 		if(LinkStatusAry) delete LinkStatusAry;                 // Node status array used in KSP;
 		if(LinkPredAry) delete LinkPredAry;
@@ -3057,6 +3076,7 @@ public:
 
 
 	};
+
 
 	float GetTollRateInMin(int LinkID, float Time, int PricingType);  // built-in function for each network_SP to avoid conflicts with OpenMP parallel computing
 
@@ -3079,7 +3099,10 @@ public:
 
 
 	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
-	void AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
+	float AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
+	
+	
+	
 	void VehicleBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
 	void AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
@@ -3677,14 +3700,17 @@ void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name);
 bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag);
+bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag);
 
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
 
-void g_ODBasedDynamicTrafficAssignment();
+void g_ZoneBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
 void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime ) ;
-void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
+void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
+void g_UpdateRealTimeInformation(double CurrentTime);
+void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
 void g_MultiDayTrafficAssisnment();
 void OutputMultipleDaysVehicleTrajectoryData(char fname[_MAX_PATH]);
 int g_OutputSimulationSummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed,float& AvgCost, EmissionStatisticsData &emission_data,
@@ -3727,7 +3753,7 @@ extern CString g_GetTimeStampString(int time_stamp_in_mine);
 extern void g_FreeMemoryForVehicleVector();
 
 void g_AgentBasedShortestPathGeneration();
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name);
+void g_AgentBasedAccessibilityMatrixGeneration(string file_name,  bool bTimeDependentFlag, double CurrentTime);
 
 extern bool g_ReadLinkMeasurementFile();
 //extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
@@ -3759,6 +3785,7 @@ extern CCSVWriter g_SummaryStatFile;
 
 extern ofstream g_AssignmentLogFile;
 extern ofstream g_EstimationLogFile;
+extern float g_LearningPercVector[400];
 void g_DTALiteMain();
 void g_DTALiteMultiScenarioMain();
 
@@ -3770,7 +3797,7 @@ extern int g_ProhibitUTurnOnFeewayLinkFlag;
 
 extern void g_TrafficAssignmentSimulation();
 extern void g_OutputSimulationStatistics(int Iteration);
-extern void g_FreeMemory();
+extern void g_FreeMemory(bool exit_flag);
 extern void g_CloseFiles();
 
 extern NetworkSimulationResult g_SimulationResult;
@@ -3783,6 +3810,8 @@ void ReadVMSScenarioFile(string FileName,int scenario_no=0);
 void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
 void ReadRadioMessageScenarioFile(string FileName,int scenario_no=0);
 void ReadWorkZoneScenarioFile(string FileName,int scenario_no=0);
+void ReadRampMeterScenarioFile(string FileName,int scenario_no=0);
+
 
 void ReadEvacuationScenarioFile(string FileName,int scenario_no=0);
 void ReadWeatherScenarioFile(string FileName,int scenario_no=0);
@@ -3806,3 +3835,8 @@ extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 extern double g_UnitOfMileOrKM;
 extern void g_ConvertDemandToVehicles() ;
+extern int g_FindAssignmentInterval(int departure_time_begin);
+extern DTANetworkForSP g_network_VMS;
+extern std::string CString2StdString(CString str);
+
+extern void g_ResetInformationClass();

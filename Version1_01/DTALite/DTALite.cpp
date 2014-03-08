@@ -225,6 +225,7 @@ float g_RelativeTravelTimePercentageDifferenceForSwitching = 15;  // min
 
 
 int g_RandomizedCapacityMode = 0;
+double g_CapacityLoadingFactor = 1.0;
 int g_StochasticCapacityMode = 0;
 int g_UseRandomCapacityMode = 0;
 float g_MinimumInFlowRatio = 0.1f;
@@ -272,6 +273,7 @@ ofstream g_WarningFile;
 
 e_traffic_flow_model g_TrafficFlowModelFlag = tfm_BPR;
 e_signal_representation_model g_SignalRepresentationFlag = signal_model_continuous_flow;
+float g_LearningPercVector[400] = {10};
 
 int g_ShortestPathWithMovementDelayFlag = 1;
 int g_UseDefaultLaneCapacityFlag = 1;
@@ -849,6 +851,11 @@ void g_ReadInputFiles(int scenario_no)
 				}
 
 			}
+
+			if(g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
+				capacity*=g_CapacityLoadingFactor;
+
+	
 			int SaturationFlowRate;
 
 			float BPR_Alpha = 0.15f;
@@ -908,6 +915,9 @@ void g_ReadInputFiles(int scenario_no)
 				else
 					K_jam = 180/g_ratio_mile_to_km;
 			}
+
+			if(g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
+				K_jam*=g_CapacityLoadingFactor;
 
 			if(!parser_link.GetValueByFieldName("wave_speed",wave_speed_in_mph))
 			{
@@ -1134,14 +1144,6 @@ void g_ReadInputFiles(int scenario_no)
 
 				pLink->m_LaneCapacity= capacity * g_LinkTypeMap[type].capacity_adjustment_factor ;
 
-				if(g_LinkTypeMap[type].approximate_cycle_length_in_second >=1) // if movement data are used, then this effective green time will be overwritten.
-				{
-					pLink->m_DownstreamCycleLength_In_Second = g_LinkTypeMap[type].approximate_cycle_length_in_second; 
-					pLink->m_EffectiveGreenTime_In_Second = pLink->m_LaneCapacity / max(100,g_LinkTypeMap[type].saturation_flow_rate_in_vhc_per_hour_per_lane) * g_LinkTypeMap[type].approximate_cycle_length_in_second;
-					pLink->m_GreenStartTime_In_Second = 0;   
-					pLink->m_DownstreamNodeSignalOffset_In_Second = 0; 
-				}
-
 
 				pLink->m_LinkTypeName  = g_LinkTypeMap[type].link_type_name;
 
@@ -1261,7 +1263,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
 	{
-		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv");
+		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv",false, 0);
 		exit(0);
 	}
 
@@ -1748,10 +1750,14 @@ void g_ReadInputFiles(int scenario_no)
 	g_ReadVOTProfile();
 
 	// done with zone.csv
+
+	if(g_TrafficFlowModelFlag != tfm_BPR && g_TrafficFlowModelFlag != tfm_point_queue) 
+	{
 	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
 	PhysicalNetwork.Setup(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag);
 	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+	}
 	//	ConnectivityChecking(&PhysicalNetwork);
 
 	g_ReadLinkMeasurementFile();
@@ -1938,7 +1944,7 @@ void g_ReadInputFiles(int scenario_no)
 		g_SummaryStatFile.SetValueByFieldName("number_of_links",itr->second.number_of_links );
 
 		float avg_lane_capacity = itr->second.total_lane_capacity / max(1, itr->second.number_of_links);
-		float avg_number_of_lanes = itr->second.total_length  / max(1, itr->second.number_of_links);
+		float avg_number_of_lanes = itr->second.total_number_of_lanes  / max(1, itr->second.number_of_links);
 		float avg_speed_limit = itr->second.total_speed_limit  / max(1, itr->second.number_of_links);
 		float avg_K_jam = itr->second.total_k_jam   / max(1, itr->second.number_of_links);
 		float avg_link_length = itr->second.total_length    / max(1, itr->second.number_of_links);
@@ -2099,11 +2105,7 @@ void g_ConvertDemandToVehicles()
 			g_VehicleVector.push_back(pVehicle);
 			g_VehicleMap[i]  = pVehicle;
 
-			int AssignmentInterval = int(pVehicle->m_DepartureTime/g_AggregationTimetInterval);
-			if(AssignmentInterval >= g_AggregationTimetIntervalSize)
-			{
-				AssignmentInterval = g_AggregationTimetIntervalSize - 1;
-			}
+			int AssignmentInterval = g_FindAssignmentInterval(pVehicle->m_DepartureTime);
 			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(i);
 			i++;
 		}
@@ -2419,6 +2421,7 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 
 
 }
+
 void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 {
 	for(unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -2529,6 +2532,116 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 		cout << "Work zone records = 0 " << endl;
 
 		if(FileName.size()>0 && FileName.compare ("Scenario_Work_Zone.csv")!=0)
+		{
+			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!"  <<  endl;
+			getchar();	
+		
+		}
+	}
+
+}
+void ReadRampMeterScenarioFile(string FileName, int scenario_no)
+{
+
+
+	FILE* st = NULL;
+	fopen_s(&st,FileName.c_str(),"r"); /// 
+	if(st!=NULL)
+	{
+		cout << "Reading file " << FileName << endl;
+		g_LogFile << "Reading file " << FileName << endl;
+		int count = 0;
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn <=0) 
+				break;
+			int dsn =  g_read_integer(st);
+
+			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			{
+				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+
+			if(pLink!=NULL)
+			{
+				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				{
+					TRACE("");
+				}
+
+				int local_scenario_no = g_read_integer(st);
+
+				CapacityReduction cs;
+				cs.StartDayNo = g_read_integer(st)-1; // start from zero
+				cs.EndDayNo = g_read_integer(st)-1;
+
+				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
+				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+
+				if(cs.EndDayNo < cs.StartDayNo )
+				{
+					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Day >= Start Day." <<endl;
+					g_ProgramStop();
+				}
+
+
+				cs.StartTime = g_read_integer(st);
+				cs.EndTime = g_read_integer(st);
+
+				if(cs.StartTime >= cs.EndTime )
+				{
+					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Time >= Start Time." <<endl;
+					g_ProgramStop();
+				}
+
+				float service_rate = g_read_float(st);
+
+				if(service_rate < 1.1f || service_rate > 4000)
+				{
+					cout << "Lane Capacity (vph) = " <<  service_rate << " % in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please check!" <<endl;
+
+					g_ProgramStop();
+
+				}
+
+
+				cs.LaneClosureRatio= (1 - service_rate/pLink->m_LaneCapacity);
+
+				cs.SpeedLimit = g_read_float(st);
+
+				if(cs.SpeedLimit < -0.1f)
+				{
+					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please check!" <<endl;
+
+					g_ProgramStop();
+
+				}
+				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				{
+					pLink->CapacityReductionVector.push_back(cs);
+					count++;
+				}
+
+			}
+		}
+
+		g_scenario_short_description << "with " << count << "ramp meter  records;";
+		g_LogFile << "ramp meter records = " << count << endl;
+		g_SummaryStatFile.WriteTextLabel("# of ramp meter records=");
+		g_SummaryStatFile.WriteNumber(count);
+
+
+		fclose(st);
+	}else
+	{
+
+		cout << "Ramp meter  records = 0 " << endl;
+
+		if(FileName.size()>0 && FileName.compare ("Scenario_Ramp_Meter.csv")!=0)
 		{
 			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!"  <<  endl;
 			getchar();	
@@ -3097,6 +3210,7 @@ void ReadScenarioInputFiles(int scenario_no)
 	ReadIncidentScenarioFile("Scenario_Incident.csv",scenario_no);
 	ReadLinkTollScenarioFile("Scenario_Link_Based_Toll.csv",scenario_no);
 	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv",scenario_no);
+	ReadRampMeterScenarioFile("Scenario_Ramp_Meter.csv",scenario_no);
 
 	if(g_ODEstimationFlag == false)
 	{
@@ -3114,8 +3228,7 @@ void FreeMemory()
 {
 	// Free pointers
 
-	//exit(0);
-	//  use windows system to release memory
+
 
 	try
 	{
@@ -3142,7 +3255,6 @@ void FreeMemory()
 	cout << "Free node set... " << endl;
 	g_NodeVector.clear();
 
-	g_LinkVector.clear();
 	g_LinkVector.clear();
 	g_VehicleTypeVector.clear();
 	g_NodeNametoIDMap.clear();
@@ -3254,7 +3366,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 					int day_no = Iteration ; 
 
-					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%d,%d,",
+					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
@@ -3264,7 +3376,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						LinkInFlow,LinkOutFlow,LinkInFlow*60.0/pLink->m_NumLanes ,LinkInFlow*60.0,
 						(pLink->m_LinkMOEAry[time].CumulativeDepartureCount-pLink->m_LinkMOEAry[time].CumulativeDepartureCount)/pLink->m_Length /pLink->m_NumLanes,
 						pLink->GetSpeed(time),
-						queue_length_ratio,
+						queue_length_ratio*100,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
@@ -3691,6 +3803,7 @@ void g_ReadDTALiteSettings()
 
 
 	g_RandomizedCapacityMode = g_GetPrivateProfileInt("simulation", "ramdomized_capacity",0, g_DTASettingFileName);
+	g_CapacityLoadingFactor = g_GetPrivateProfileInt("simulation", "capcaity_loading_factor",1, g_DTASettingFileName);
 
 	g_StochasticCapacityMode = g_GetPrivateProfileInt("simulation", "stochatic_capacity_mode", 1, g_DTASettingFileName);
 
@@ -3781,9 +3894,16 @@ void g_ReadDTALiteSettings()
 }
 
 
-void g_FreeMemory()
+void g_FreeMemory(bool exit_flag = true)
 {
 	cout << "Free memory... " << endl;
+
+	//if(exit_flag)
+	//{
+	////  use windows system to release memory
+	//exit(0);
+
+	//}
 	FreeMemory();
 
 }
@@ -3812,7 +3932,7 @@ void g_TrafficAssignmentSimulation()
 	if(g_AgentBasedAssignmentFlag==0)
 	{
 		cout << "OD Demand based dynamic traffic assignment... " << endl;
-		g_ODBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
+		g_ZoneBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
 	}else
 	{
 		cout << "Agent based dynamic traffic assignment... " << endl;
@@ -3858,11 +3978,6 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 
 	g_DTALiteMultiScenarioMain();
-
-	//{
-	//	g_DTALiteMain();
-
-	//}
 
 	exit(0);   // rely on operating system to release all memory
 	return nRetCode;
@@ -5148,7 +5263,11 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			{
 				g_ReadTripCSVFile(file_name,true, true);
 				return;
-			}else 
+			}else if(format_type.find("transims_trip_file")!= string::npos)
+			{
+				g_ReadTRANSIMSTripFile(file_name,true, true);
+
+			}else	
 			{
 				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, dynasmart, agent_csv, agent_bin, trip_csv."<< endl;
 				g_ProgramStop();

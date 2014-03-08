@@ -37,9 +37,9 @@
 #include <string>
 #include <sstream>
 
-#define _MAX_SCENARIO_SIZE 7
+#define _MAX_SCENARIO_SIZE 8
 // CDlgScenario dialog
-static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Evacuation_Zone","Weather", "Radio_Message"};
+static LPTSTR SCENARIO_ELEMENTS[_MAX_SCENARIO_SIZE] = {"Work_Zone","Dynamic_Message_Sign","Incident","Link_Based_Toll","Evacuation_Zone","Weather", "Radio_Message", "Ramp_Meter"};
 
 IMPLEMENT_DYNAMIC(CDlgScenario, CDialog)
 
@@ -161,7 +161,28 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("1440");
 		DefaultList.push_back("100");
 		DefaultList.push_back("999");
-		break;		break;
+		break;		
+	case 7:  //ramp meter
+		HeaderList.push_back("Link");
+		HeaderList.push_back("Scenario No");
+		HeaderList.push_back("Start Day No");
+		HeaderList.push_back("End Day No");
+		HeaderList.push_back("Start Time in Min");
+		HeaderList.push_back("End Time in min");
+		HeaderList.push_back("Capacity (vph)");
+		HeaderList.push_back("Speed Limit (mph)");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1");
+		DefaultList.push_back("100");
+
+		DefaultList.push_back("0");
+		DefaultList.push_back("1440");
+		DefaultList.push_back("50");
+		DefaultList.push_back("50");
+		break;
+		
+		break;
 	}
 }
 void CDlgScenario::DoDataExchange(CDataExchange* pDX)

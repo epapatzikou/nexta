@@ -366,6 +366,8 @@ void CPage_Node_Phase::OnPaint()
 				row = 6;
 				float PhaseEndTime = atof(m_PhasingGrid.GetItemText(row,p));
 
+				if(PhaseEndTime <= GreenStartTime +1)  //skip empty movement
+					continue;
 
 				row = 3;
 				float Yellow = atof(m_PhasingGrid.GetItemText(row,p));

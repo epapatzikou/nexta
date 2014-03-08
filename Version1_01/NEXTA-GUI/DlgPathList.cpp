@@ -102,6 +102,13 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_DATA_CHANGEPATHNAMEFORSELECTEDPATH, &CDlgPathList::OnDataChangepathnameforselectedpath)
 	ON_COMMAND(ID_DATA_DELETESELECTEDPATH, &CDlgPathList::OnDataDeleteselectedpath)
 	ON_LBN_DBLCLK(IDC_LIST1, &CDlgPathList::OnLbnDblclkList1)
+	ON_COMMAND(ID_DATA_GENERATEEMISSIONDETOURPLOTS, &CDlgPathList::OnDataGenerateemissiondetourplots)
+	ON_COMMAND(ID_DATA_CO2CONTOURPLOT, &CDlgPathList::OnDataCo2contourplot)
+	ON_COMMAND(ID_DATA_COCONTOURPLOT, &CDlgPathList::OnDataCocontourplot)
+	ON_COMMAND(ID_CONTOUR_NOXCONTOURPLOT, &CDlgPathList::OnContourNoxcontourplot)
+	ON_COMMAND(ID_CONTOUR_HCCONTOURPLOT, &CDlgPathList::OnContourHccontourplot)
+	ON_COMMAND(ID_DATA_GENERATEENERGYUSE, &CDlgPathList::OnDataGenerateenergyuse)
+	ON_BN_CLICKED(ID_PATH_DATA_EXPORT_CSV, &CDlgPathList::OnBnClickedPathDataExportCsv)
 END_MESSAGE_MAP()
 
 
@@ -1399,7 +1406,13 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 		for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 		{
-			DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+			DTALink* pLink = NULL;
+			int link_id = m_pDoc->m_PathDisplayList[p].m_LinkVector[i];
+			if(m_pDoc->m_LinkNoMap.find(link_id)== m_pDoc->m_LinkNoMap.end())
+				return;
+
+			pLink= m_pDoc->m_LinkNoMap[link_id];
+
 			if(pLink == NULL)
 				break;
 
@@ -1408,8 +1421,9 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 		}
 
-		for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< m_pDoc->m_SimulationEndTime_in_min; t+= time_step)  // for each starting time
+		for(int t = m_pDoc->m_SimulationStartTime_in_min ; t< min(1440,m_pDoc->m_SimulationEndTime_in_min); t+= time_step)  // for each starting time
 		{
+
 			path_element.m_TimeDependentCount[t] = 0;
 			path_element.m_TimeDependentTravelTime[t] = t;  // t is the departure time
 			path_element.m_TimeDependentEnergy[t]= 0;
@@ -1420,7 +1434,14 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 
 			for (int i=0 ; i < path_element.m_LinkVector.size(); i++)  // for each pass link
 			{
-				DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+			DTALink* pLink = NULL;
+			int link_id = m_pDoc->m_PathDisplayList[p].m_LinkVector[i];
+			if(m_pDoc->m_LinkNoMap.find(link_id)== m_pDoc->m_LinkNoMap.end())
+				return;
+
+			pLink= m_pDoc->m_LinkNoMap[link_id];
 				if(pLink == NULL)
 					break;
 
@@ -1430,12 +1451,15 @@ void CDlgPathList::CalculateTimeDependentTravelTime()
 				if(current_time >=1440)
 					current_time = 1439;
 
+
+				if(current_time < pLink->m_LinkMOEArySize -1 )
+				{
 				path_element.m_TimeDependentEnergy[t] += pLink->m_LinkMOEAry [current_time].Energy;
 				path_element.m_TimeDependentCO2[t] += pLink->m_LinkMOEAry [current_time].CO2;
 				path_element.m_TimeDependentCO[t] += pLink->m_LinkMOEAry [current_time].CO;
 				path_element.m_TimeDependentHC[t] += pLink->m_LinkMOEAry [current_time].HC;
 				path_element.m_TimeDependentNOX[t] += pLink->m_LinkMOEAry [current_time].NOX;
-
+				}
 
 
 			}
@@ -2188,7 +2212,7 @@ void CDlgPathList::OnBnClickedDynamicDensityContour()
 
 		CString xtics_str; 
 
-		fprintf(st_plt,"set title \"Dynamic Density Contour (%s)\" \n", PathTitle);
+		fprintf(st_plt,"set title \"Dynamic Density Contour (%s) Unit: veh/mile/lane\" \n", PathTitle);
 
 		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
 		fprintf(st_plt,"set ylabel \"Space (Node Sequence)\"  offset -1\n");
@@ -2401,7 +2425,7 @@ void CDlgPathList::OnBnClickedDynamicSpeedContour()
 
 		CString xtics_str; 
 
-		fprintf(st_plt,"set title \"Dynamic Speed Contour (%s)\" \n", PathTitle);
+		fprintf(st_plt,"set title \"Dynamic Speed Contour (%s) Unit: mph\" \n", PathTitle);
 
 
 		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
@@ -2840,4 +2864,289 @@ void CDlgPathList::OnDataDeleteselectedpath()
 void CDlgPathList::OnLbnDblclkList1()
 {
 	OnDataChangepathnameforselectedpath();
+}
+
+
+void CDlgPathList::GenerateDynamicMOEContour(DTA_EMISSION_TYPE emission_type )
+{
+	CString PathTitle, UnitStr;
+
+	int ytics_stepsize  = 1;
+
+	CString export_file_name, export_plt_file_name;
+
+	CString emission_type_str;
+
+			switch(emission_type)
+			{
+			case DTA_Energy: emission_type_str = "Energy Use"; UnitStr = "miles per gallon";
+				break;
+			case DTA_CO2:  emission_type_str = "CO2"; UnitStr = "kg/vehicle/mile";
+				break;
+			case DTA_NOX: emission_type_str = "NoX"; UnitStr = "g/vehicle/mile";
+				break;
+			case DTA_CO: emission_type_str = "CO"; UnitStr = "g/vehicle/mile";
+				break;
+			case DTA_HC:  emission_type_str = "HC"; UnitStr = "g/vehicle/mile";
+				break;
+			}
+
+
+	export_file_name = m_pDoc->m_ProjectDirectory + "export_path_" + emission_type_str +".txt";
+
+	export_plt_file_name = m_pDoc->m_ProjectDirectory +  "export_path_" + emission_type_str +".plt";
+
+
+	int yrange = 0;
+	int xrange = m_TimeRight - m_TimeLeft +1;
+
+			double min_value = 1000000;
+			double max_value = 0;
+	FILE* st;
+	fopen_s(&st,export_file_name,"w");
+	if(st!=NULL)
+	{
+		
+	int step_size = 1;
+
+	
+	for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+			PathTitle.Format("Path %d %s", p+1,  path_element.m_path_name.c_str () );
+
+			if(path_element.m_LinkVector.size() >=15)
+				ytics_stepsize = 4;
+
+			if(path_element.m_LinkVector.size() >=30)
+				ytics_stepsize = 10;
+
+			min_value = 1000000;
+			max_value = 0;
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							 
+							CString label = pLink->m_Name .c_str ();
+
+							//if(pLink->m_Name  == "(null)")
+							//{
+							//label.Format ("%d->%d",pLink->m_FromNodeNumber , pLink->m_ToNodeNumber);
+							//}
+
+							//fprintf(st,"%d->%d,%s,%s,", pLink->m_FromNodeNumber , pLink->m_ToNodeNumber , m_pDoc->m_LinkTypeMap[pLink->m_link_type ].link_type_name.c_str (),label);
+
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								double value = pLink->GetEmissions (t,emission_type);
+								fprintf(st, "%.4f ",value);
+								if(value > max_value) max_value = value;
+								if(value < max_value) min_value = value;
+
+
+							}
+							fprintf(st,"\n");
+
+							yrange++;
+						}
+
+					}
+
+
+				}
+
+							// last line with zero
+							for(int t = m_TimeLeft ; t< m_TimeRight; t+= step_size)  // for each starting time
+							{
+
+								fprintf(st, "0.0 ");
+
+							}
+
+							fprintf(st,"\n");
+
+			} //for each path
+		
+	fclose(st);
+	}
+
+
+	FILE* st_plt;
+	fopen_s(&st_plt,export_plt_file_name,"w");
+	if(st_plt!=NULL)
+	{
+
+		CString xtics_str; 
+
+		fprintf(st_plt,"set title \"Dynamic %s Contour (%s) Unit:%s\" \n", emission_type_str, PathTitle,UnitStr);
+
+		fprintf(st_plt,"set xlabel \"Time Horizon\"\n");
+		fprintf(st_plt,"set ylabel \"Space (Node Sequence)\"  offset -1\n");
+
+		int xtics_stepsize  = 30;
+
+		if(xrange/xtics_stepsize >20)
+			xtics_stepsize = 120;  // 2 hour interval
+		else if(xrange/xtics_stepsize >10)
+			xtics_stepsize = 60;   // 1 hour interval
+		else if(xrange/xtics_stepsize < 5)
+			xtics_stepsize = 10;   // 1 hour interval
+
+			 
+		for(int t = m_TimeLeft ; t<= m_TimeRight; t+= xtics_stepsize)  
+		{
+			CString str;
+			str.Format("\"%s\" %d ",m_pDoc->GetTimeStampString24HourFormat (t), t-m_TimeLeft);
+
+			if(t+ xtics_stepsize> m_TimeRight ) 
+				xtics_str += str;
+			else 
+			{
+				xtics_str += str ;
+				xtics_str += "," ;
+			}
+		}
+
+		fprintf(st_plt,"set xtics (%s) \n",xtics_str);
+
+		CString ytics_str; 
+
+		int yrange_i  = 0;
+
+		CString last_node_number = " ";
+
+		for(unsigned int p = 0; p < m_pDoc->m_PathDisplayList.size(); p++) // for each path
+		{
+
+			if(p != m_PathList.GetCurSel())
+				continue;
+
+			DTAPath path_element = m_pDoc->m_PathDisplayList[p];
+
+				for (int i= 0 ; i < path_element.m_LinkVector.size() ; i++)  // for each pass link
+				{
+					DTALink* pLink = m_pDoc->m_LinkNoMap[m_pDoc->m_PathDisplayList[p].m_LinkVector[i]];
+
+					if(pLink != NULL)
+					{
+
+						for(int s = 0; s< pLink->m_Length / 0.1; s++)
+						{
+
+							CString label = pLink->m_Name .c_str ();
+
+
+							if(pLink->m_Name  == "(null)" || pLink->m_Name.size() ==0)
+							{
+							label.Format ("%d",pLink->m_FromNodeNumber);
+
+							last_node_number.Format ("%d",pLink->m_ToNodeNumber);
+							}
+
+							if(s==0 && (i%ytics_stepsize) ==0)   // first segment 
+							{
+							CString str;
+							str.Format("\"%s\" %d, ",label, yrange_i) ;
+
+							ytics_str += str;
+							
+							}
+
+							yrange_i++;
+						}
+
+					}
+
+
+				}
+
+				
+			} //for each path
+
+
+		CString str;
+		str.Format("\"%s\" %d", last_node_number, yrange_i);
+		ytics_str +=str;
+		fprintf(st_plt,"set ytics (%s)\n",ytics_str);
+
+		fprintf(st_plt,"set xrange [0:%d] \n",xrange);
+		fprintf(st_plt,"set yrange [0:%d] \n",yrange);
+
+		if(emission_type == DTA_Energy)
+			fprintf(st_plt,"set palette defined (0 \"white\", 1 \"red\", 15 \"yellow\", 50 \"green\")\n");
+		else
+			fprintf(st_plt,"set palette defined (0 \"white\", %f \"green\", %f \"yellow\", %f \"red\")\n",0.2*max_value,0.6*max_value,max_value);
+
+
+		fprintf(st_plt,"set pm3d map\n");
+		fprintf(st_plt,"splot '%s' matrix\ notitle\n",export_file_name);
+
+		fclose(st_plt);
+	}else
+	{
+
+		CString error_msg;
+		error_msg.Format("File %s cannot be opened. Please check",export_plt_file_name);
+
+		
+	AfxMessageBox(error_msg);
+	}
+
+	HINSTANCE result = ShellExecute(NULL, _T("open"), export_plt_file_name, NULL,NULL, SW_SHOW);
+	
+
+}
+void CDlgPathList::OnDataGenerateemissiondetourplots()
+{
+
+	GenerateDynamicMOEContour(DTA_Energy);
+	GenerateDynamicMOEContour(DTA_CO2);
+	GenerateDynamicMOEContour(DTA_NOX);
+	GenerateDynamicMOEContour(DTA_CO);
+	GenerateDynamicMOEContour(DTA_HC);
+
+}
+
+void CDlgPathList::OnDataCo2contourplot()
+{
+	GenerateDynamicMOEContour(DTA_CO2);
+}
+
+void CDlgPathList::OnDataCocontourplot()
+{
+	GenerateDynamicMOEContour(DTA_CO);
+}
+
+void CDlgPathList::OnContourNoxcontourplot()
+{
+	GenerateDynamicMOEContour(DTA_NOX);
+}
+
+void CDlgPathList::OnContourHccontourplot()
+{
+	GenerateDynamicMOEContour(DTA_HC);
+}
+
+void CDlgPathList::OnDataGenerateenergyuse()
+{
+	GenerateDynamicMOEContour(DTA_Energy);
+}
+
+void CDlgPathList::OnBnClickedPathDataExportCsv()
+{
+	// TODO: Add your control notification handler code here
 }

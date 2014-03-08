@@ -756,3 +756,5 @@ void CDlgPathMOE::OnMoetype2Cost()
 	Cur_MOE_type2 = 6;
 	Invalidate();
 }
+
+

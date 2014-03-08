@@ -319,6 +319,12 @@ class DTA_Phasing_Data_Matrix
 		return m_AMSPhasingData[attribute_index][phase_index]. c_str();
 	}
 
+	std::string GetSTDString(DTA_SIG_PHASE phase_index, DTA_SIG_PHASE_ROW attribute_index)
+	{
+	
+		return m_AMSPhasingData[attribute_index][phase_index];
+	}
+
 	void SetValue(DTA_SIG_PHASE phase_index, DTA_SIG_PHASE_ROW attribute_index, float value)
 	{
 
@@ -1366,8 +1372,13 @@ public:
 
 		m_IncomingNonConnectors = 0;
 
-		for(int si = 0; si <10; si++)
-			m_SignalPhaseNo[si] = 0;
+		for(int si = 0; si <=16; si++)
+		{
+			m_SignalPhaseStartTime[si] = 0;
+			m_SignalPhaseGreenTime[si] = 0;
+		
+		}
+
 
 		m_bQEM_optimized = false;
 
@@ -1661,8 +1672,9 @@ public:
 
 	// signal data
 
-	int m_SignalPhaseNo[10];//optimized by QEM
-	float m_PhaseDataMatrix[23][8]; //optimized by QEM
+	int m_SignalPhaseStartTime[17];//optimized by QEM
+	int m_SignalPhaseGreenTime[17];//optimized by QEM
+
 	bool m_bQEM_optimized;
 	
 };
@@ -1884,10 +1896,12 @@ public:
 
 		bWorkzone = false;
 		bIncident = false;
+		bRampMeter = false;
 	}
 
 	bool bWorkzone;
 	bool bIncident;
+	bool bRampMeter;
 
 	float StartTime;
 	float EndTime;
@@ -2516,10 +2530,27 @@ void AdjustLinkEndpointsWithSetBack()
 	{ // if DepartureTime < -1, then we ignore the depature time attribute and show that any way
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
-			if( bWorkZone&&CapacityReductionVector[il].bWorkzone || !bWorkZone&&CapacityReductionVector[il].bIncident )
+
+		if( bWorkZone&&CapacityReductionVector[il].bWorkzone || !bWorkZone&&CapacityReductionVector[il].bIncident )
 			{
 				if(DepartureTime<=-1 || (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime ))
 						return CapacityReductionVector[il].LaneClosurePercentage;
+			}
+		}
+
+		return 0;
+	}
+
+
+float 	GetRampImpactedFlag(int DepartureTime = -1)
+	{ // if DepartureTime < -1, then we ignore the depature time attribute and show that any way
+		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+		{
+
+		if(CapacityReductionVector[il].bRampMeter)
+			{
+				if(DepartureTime<=-1 || (DepartureTime >= CapacityReductionVector[il].StartTime && DepartureTime<=CapacityReductionVector[il].EndTime ))
+						return CapacityReductionVector[il].ServiceFlowRate;
 			}
 		}
 
@@ -3237,7 +3268,7 @@ void AdjustLinkEndpointsWithSetBack()
 				case link_inflow_volume: value= GetSimulatedLinkInVolume(i); break;
 				case link_outflow_volume: value= GetSimulatedLinkOutVolume (i); break;
 				case link_in_and_outflow_volume: value= max(GetSimulatedLinkInVolume (i), GetSimulatedLinkOutVolume (i)); break;
-				case link_travel_time: value= GetSensorTravelTime (i); break;
+				case link_travel_time: value= GetSimulatedTravelTime (i); break;
 				case speed_mph: value= GetSimulatedSpeed (i); break;
 				case link_density: value= GetSimulatedDensity(i); break;
 				case link_queue_length: value= GetQueueLengthPercentage(i); break;
@@ -3872,6 +3903,7 @@ public:
 
 	float GetTimeDependentMOEBy1Min(int time, int MOEType)
 	{
+		return 1;
 
 		switch(MOEType)
 		{

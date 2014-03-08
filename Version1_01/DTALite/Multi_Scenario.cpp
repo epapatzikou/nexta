@@ -170,6 +170,17 @@ void g_MultiScenarioTrafficAssignment()
 
 	int line_no = 1;
 
+	int total_scenarios = 0;
+	{
+	CCSVParser parser_sce;
+	if (parser_sce.OpenCSVFile("input_scenario_settings.csv"))
+	{
+		while(parser_sce.ReadRecord())
+		{
+		total_scenarios++;
+		}	
+	}
+	}
 	CCSVParser parser_scenario;
 	if (parser_scenario.OpenCSVFile("input_scenario_settings.csv"))
 	{
@@ -217,10 +228,6 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_NumberOfIterations = TotalUEIterationNumber-1;			// 0+1 iterations
 
-			g_AgentBasedAssignmentFlag = 1;  // default value
-			//		parser_scenario.GetValueByFieldName("agent_based_assignment",g_AgentBasedAssignmentFlag);
-
-
 			int traffic_flow_model = 3;
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("traffic_flow_model",traffic_flow_model)==false)
 			{
@@ -233,6 +240,35 @@ void g_MultiScenarioTrafficAssignment()
 			parser_scenario.GetValueByFieldName("signal_representation_model",SignalRepresentationFlag);
 
 			g_SignalRepresentationFlag =  (e_signal_representation_model) SignalRepresentationFlag;
+
+			g_SummaryStatFile.WriteTextLabel("Signal Control Representation =,");
+
+			g_EmissionDataOutputFlag  = 0; 
+ 
+
+			switch( g_SignalRepresentationFlag)
+			{
+
+			case signal_model_continuous_flow: 		g_LogFile << "BPR Function" << endl;
+				g_SummaryStatFile.WriteTextString("Continuous Flow with Link Capacity Constraint");
+				break;
+
+			case signal_model_link_effective_green_time: 		g_LogFile << "Cycle Length + Link-based Effective Green Time" << endl;
+				g_SummaryStatFile.WriteTextString("Cycle Length + Link-based Effective Green Time");
+				break;
+			case signal_model_movement_effective_green_time: 		g_LogFile << "Cycle Length + Movement-based Effective Green Time" << endl;
+				g_SummaryStatFile.WriteTextString("Cycle Length + Movement-based Effective Green Time");
+				break;
+
+				break;
+
+
+			default: 		g_LogFile << "No Valid Model is Selected" << endl;
+				g_SummaryStatFile.WriteTextString("Invalid Model");
+				break; 
+			}
+
+
 
 			g_TrafficFlowModelFlag = (e_traffic_flow_model)traffic_flow_model;
 
@@ -309,7 +345,7 @@ void g_MultiScenarioTrafficAssignment()
 
 				break;
 			case assignment_day_to_day_learning_threshold_route_choice:
-				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning with bounded rationality rule");
+				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning");
 				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
 				break;
 			case assignment_day_to_day_learning_threshold_route_and_departure_time_choice:
@@ -333,6 +369,10 @@ void g_MultiScenarioTrafficAssignment()
 
 			default: 
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
+
+				cout << "Assignment method in input_scenario_settings.csv =  " << g_UEAssignmentMethod << " which is unsupported. Please check." << endl;
+
+				g_ProgramStop();
 
 			}
 
@@ -406,6 +446,25 @@ void g_MultiScenarioTrafficAssignment()
 			}
 
 
+			if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice)
+			{
+				if(parser_scenario.GetValueByFieldName("day2day_learning_percentage_day_1",g_LearningPercVector[1])==false)
+					g_LearningPercVector[1] = 10;
+		
+				for(int day = 2; day <= TotalUEIterationNumber; day ++)
+				{
+					CString str_learning;
+					str_learning.Format ("day_%d",day);
+
+					string str = CString2StdString(str_learning);
+					if(parser_scenario.GetValueByFieldName(str,g_LearningPercVector[day]) == false)
+						g_LearningPercVector[day] = 10;
+				}
+
+			
+			
+			}
+			
 
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false )
 			{
@@ -421,10 +480,10 @@ void g_MultiScenarioTrafficAssignment()
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
 
-			if(g_AgentBasedAssignmentFlag==1)
+			if(g_AgentBasedAssignmentFlag==1 )
 				g_AgentBasedAssisnment();  // agent-based assignment
 			else
-				g_ODBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
+				g_ZoneBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
 
 			g_OutputSimulationStatistics(g_NumberOfIterations);
 
@@ -526,9 +585,8 @@ void g_MultiScenarioTrafficAssignment()
 
 			csv_output.WriteRecord ();
 
-
 			//
-			g_FreeMemory();
+			g_FreeMemory(line_no == total_scenarios);  // free memory at the end of multiple scenarios
 			line_no++;
 		}  // for each scenario
 
@@ -549,7 +607,5 @@ void g_DTALiteMultiScenarioMain()
 {
 
 	g_MultiScenarioTrafficAssignment();
-
-
 
 }

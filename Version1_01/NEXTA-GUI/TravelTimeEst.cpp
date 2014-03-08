@@ -183,8 +183,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 			std::string count_sensor_id;
 
-			if(!parser.GetValueByFieldName("count_sensor_id",count_sensor_id)) 
-				continue;
+			parser.GetValueByFieldName("count_sensor_id",count_sensor_id);
 
 			int day_no = 0;
 
@@ -205,6 +204,17 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 			if(count_sensor_id.size  () > 0 && m_CountSensorIDMap.find(count_sensor_id.c_str ())!=m_CountSensorIDMap.end())
 			{
 				pLink = m_CountSensorIDMap[count_sensor_id.c_str ()];
+			}
+			
+			if(pLink==NULL)
+			{
+				int from_node_id = 0;
+				int to_node_id = 0; 
+				parser.GetValueByFieldName("from_node_id",from_node_id );
+				parser.GetValueByFieldName("to_node_id",to_node_id );
+
+				pLink = FindLinkWithNodeNumbers(from_node_id,to_node_id);
+			
 			}
 
 				if(pLink!=NULL)
@@ -236,6 +246,9 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				if(count ==0)
 					parser.GetValueByFieldName("count",count );
 
+				if(count<=1)  //skip data
+					continue;
+
 
 				float travel_time_in_min = -1;
 				parser.GetValueByFieldName("travel_time_in_min",travel_time_in_min );
@@ -262,7 +275,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				if(count ==0 && error_message.GetLength () < 1000)
 				{
 						CString msg;
-						msg.Format ("Sensor %s has an error of link_count =0.\n",sensor.SensorID);
+						msg.Format ("Sensor %d->%d has an error of link_count =0.\n",pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
 
 					if(prev_error_message!=msg)
 					{

@@ -206,6 +206,7 @@
 #define IDB_COLOR_RAMP                  249
 #define IDD_DIALOG_CONFIG_TDMOE         249
 #define IDD_DIALOG_NETWORK_SENSOR_DATA  250
+#define IDB_RAMP                        250
 #define IDD_DIALOG_SENSOR_SETTING_TAB   251
 #define IDD_DIALOG_CONFIG_KML_ZONE      252
 #define IDD_DIALOG_NODE_PHASES          253
@@ -268,7 +269,6 @@
 #define IDC_GRIDLISTCTRLEX              1023
 #define IDC_EDIT_Simulation_Horizon     1023
 #define IDC_GRID_CTRL                   1023
-#define IDC_EDIT_Number_ReportingDays   1023
 #define ID_GRID_SAVEQUIT                1024
 #define ID_GRID_QUIT                    1025
 #define IDC_GRID_Phasing                1025
@@ -670,7 +670,11 @@
 #define IDC_EDIT_Message                1323
 #define IDC_BUTTONOPEN_FOLDER           1324
 #define IDC_EDIT_SAMPLE_DATA            1325
+#define IDC_BUTTON_View_Edit_Scenario_Setting 1325
 #define IDC_BUTTONOPEN_FOLDER2          1326
+#define IDC_EDIT_Assignment             1326
+#define IDC_EDIT_Traffic_Flow_Model     1327
+#define IDC_EDIT_Signal_Control         1328
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
 #define ID_VIEW_ZOOMIN                  32773
@@ -1506,14 +1510,24 @@
 #define ID_VIEW_PLAYINSECOND            33747
 #define ID_VEHICLEDATA_SHOWCOMPLETETRAJECTORY 33748
 #define ID_VEHICLEDATA_SHOW             33749
+#define ID_LINK_ADD_RAMPMETER           33750
+#define ID_DELETE_RAMPMETER             33751
+#define ID_DATA_GENERATEEMISSIONDETOURPLOTS 33752
+#define ID_DATA_GENERATEENERGYUSE       33753
+#define ID_DATA_CO2CONTOURPLOT          33754
+#define ID_DATA_COCONTOURPLOT           33755
+#define ID_DATA_NOXCONTOURPLOT          33756
+#define ID_CONTOUR_NOXCONTOURPLOT       33757
+#define ID_CONTOUR_HXCONTOURPLOT        33758
+#define ID_CONTOUR_HCCONTOURPLOT        33759
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        257
-#define _APS_NEXT_COMMAND_VALUE         33750
-#define _APS_NEXT_CONTROL_VALUE         1325
+#define _APS_NEXT_COMMAND_VALUE         33760
+#define _APS_NEXT_CONTROL_VALUE         1327
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif
