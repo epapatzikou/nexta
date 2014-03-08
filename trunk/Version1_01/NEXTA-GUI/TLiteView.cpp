@@ -1229,6 +1229,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,true)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetImpactedFlag(-1,true)>=0.01)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_WORKZONE);
 
+			if( pMainFrame->m_bShowLayerMap[layer_ramp] == true && 
+				((*iLink) ->GetRampImpactedFlag(g_Simulation_Time_Stamp)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetRampImpactedFlag(-1)>=0.01)))
+				DrawBitmap(pDC, ScenarioPoint, IDB_RAMP);
+
 			if( pMainFrame->m_bShowLayerMap[layer_incident] == true && 
 				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,false)>=0.01 || (g_Simulation_Time_Stamp <=0.1 &&(*iLink) ->GetImpactedFlag(-1,false)>=0.01)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
@@ -3060,6 +3064,10 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,true)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetImpactedFlag(-1,true)>=0.01)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_WORKZONE);
 
+			if( pMainFrame->m_bShowLayerMap[layer_ramp] == true && 
+				((*iLink) ->GetRampImpactedFlag(g_Simulation_Time_Stamp)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetRampImpactedFlag(-1)>=0.01)))
+				DrawBitmap(pDC, ScenarioPoint, IDB_RAMP);
+
 			if( pMainFrame->m_bShowLayerMap[layer_incident] == true && 
 				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,false)>=0.01 || (g_Simulation_Time_Stamp <=0.1 &&(*iLink) ->GetImpactedFlag(-1,false)>=0.01)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
@@ -4064,6 +4072,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 			case layer_link_MOE:
 			case layer_detector:
 			case layer_workzone:
+			case layer_ramp:
 			case layer_incident:
 
 

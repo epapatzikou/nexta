@@ -77,10 +77,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			{
 				// use maximum response percentage when there are multiple messages
 				network_wide_RadioMessageResponsePercentage = max(network_wide_RadioMessageResponsePercentage, ResponsePercentage);
-
 			}
 
 		}
+
 	}
 	//DTALite:
 	// vertical queue data structure
@@ -117,32 +117,21 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 				g_LinkVector[li]-> departure_count = 0;
 				g_LinkVector[li]-> total_departure_based_travel_time = 0;
 			}
+		
+		g_network_VMS.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
+	
 		}
-
-
 
 		if(meso_simulation_time_interval_no%10 ==0) //update routes for pre-trip or en-route information users, every min, (10 simulation time intervlas)
 		{
 
-			g_AgentBasedPathAdjustment(DayNo, CurrentTime);
-
-			g_AgentBasedVMSRoutingInitialization(DayNo, CurrentTime);
+			g_UpdateRealTimeInformation(CurrentTime);
 
 		}
 
 	}
 
 
-	// user_defined information updating 
-
-	int time_clock_in_min  = meso_simulation_time_interval_no/10;
-	if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
-	{  // we need to update travel time and agent file
-
-		g_ExchangeRealTimeSimulationData(DayNo,time_clock_in_min);
-
-
-	}
 
 	// load vehicle into network
 
@@ -152,11 +141,23 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	// comment: we use std::map here as the g_VehicleMap map is sorted by departure time.
 	// At each iteration, we start  the last loaded id, and exit if the departure time of a vehicle is later than the current time.
 
+
+
 	for (iterVM = g_VehicleMap.find(g_LastLoadedVehicleID); iterVM != g_VehicleMap.end(); iterVM++)
 	{
 		DTAVehicle* pVeh = iterVM->second;
 		if(pVeh->m_bLoaded == false && g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime))  // not being loaded
 		{
+
+			if(pVeh->m_InformationClass == info_pre_trip || 
+				pVeh->m_InformationClass == info_en_route )
+				{  // vehicle rerouting
+					#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
+					{
+							g_AgentBasedPathAdjustmentWithRealTimeInfo(pVeh->m_VehicleID  ,CurrentTime);
+					}
+			}
+
 			if(pVeh->m_PricingType == 4)
 			{
 				//transit route simulation
@@ -212,13 +213,17 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					// access VMS information from the first link: 
 					// condition 1: VMS is active on the first link
 					// condition 2: Radio message is active throughout the network
+
+
 					int IS_id  = p_link->GetInformationResponseID(DayNo,CurrentTime);
 					if(IS_id >= 0)
 					{
-						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
+						if(	g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
-
-							g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+							#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
+							{
+							g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+							}
 						}
 
 					}
@@ -228,7 +233,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
 						{  // vehicle rerouting
 
-							g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+											#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
+											{
+												g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+											}
 						}
 						// check if a radio message has been enabled
 					}
@@ -286,7 +294,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			{
 				pLink->LoadingBuffer.pop_front ();
 
-				if(g_SignalRepresentationFlag ==1 && pLink->m_LeftTurn_NumberOfLanes >=1 && pLink->m_LeftTurn_DestNodeNumber == vi.veh_next_node_number  )
+				if(g_SignalRepresentationFlag ==2 && pLink->m_LeftTurn_NumberOfLanes >=1 && pLink->m_LeftTurn_DestNodeNumber == vi.veh_next_node_number  )
 				{
 					pLink->LeftEntrance_Queue.push_back(vi);
 
@@ -440,7 +448,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		}	// left-turn entrance queue 
 				if(g_TrafficFlowModelFlag != trm_car_following) // queue based model 
 			{
-				while(pLink->LeftEntrance_Queue.size() >0 && g_SignalRepresentationFlag ==1)  // if there are vehicles in the left-turn entrance queue
+				while(pLink->LeftEntrance_Queue.size() >0 && g_SignalRepresentationFlag >=1)  // if there are vehicles in the left-turn entrance queue
 		{
 
 			struc_vehicle_item vi = pLink->LeftEntrance_Queue.front();
@@ -538,7 +546,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 				TRACE("");
 			}
 
-			if(pLink->m_EffectiveGreenTime_In_Second >=1 || pLink->m_bSignalizedArterialType == true && g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+			if(pLink->m_EffectiveGreenTime_In_Second >=1 || pLink->m_bSignalizedArterialType == true && g_SignalRepresentationFlag != signal_model_continuous_flow)
 			{
 
 					if(pLink->m_EffectiveGreenTime_In_Second==0)
@@ -873,6 +881,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		g_ProgramTrace("step 4: move vehicles from ExitQueue to next link's EntranceQueue");
 
 	// step 4.1: calculate movement capacity per simulation interval for movements defined in input_movement.csv
+	int number_of_threads = omp_get_max_threads ( );
+
+	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+
+	if(number_of_threads > max_number_of_threads)
+		number_of_threads = max_number_of_threads ;
+
 
 	int node_size = g_NodeVector.size();
 
@@ -1056,29 +1071,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						// finally move to next link
 						g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo = g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo+1;
 
-						// access VMS information here! p_Nextlink is now the current link
-						int IS_id  = p_Nextlink->GetInformationResponseID(DayNo,CurrentTime);
-						if(IS_id >= 0)
-						{
-							if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage )
-							{  // vehicle rerouting
-
-								g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
-							}
-
-						}
-
-						//check if radio message is active 
-						if(bRadioMessageActive)
-						{
-							if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
-							{  // vehicle rerouting
-
-								g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
-							}
-							// check if a radio message has been enabled
-						}
-
+							//check if radio message is active 
 
 
 						vi.veh_id = vehicle_id;
@@ -1195,6 +1188,26 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 						p_Nextlink->LinkInCapacity -=1; // reduce available space capacity by 1
 
+
+						// access VMS information here! p_Nextlink is now the current link
+						// we now can can update g_VehicleMap[vehicle_id]->m_SimLinkSequenceNo , number_of_links; as those two variables have been updated when moving this vehicle to the next link
+
+
+
+
+
+							int IS_id  = p_Nextlink->GetInformationResponseID(DayNo,CurrentTime);
+
+						if(pVehicle->m_InformationClass == info_en_route ||
+						(IS_id >= 0 && pVehicle->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage)||
+						(bRadioMessageActive && pVehicle->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage ))
+						{  // vehicle rerouting
+					#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
+							{
+								g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(pVehicle->m_VehicleID  ,CurrentTime);
+							}
+							
+							}
 
 
 
@@ -1527,6 +1540,8 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 	cout << "start simulation process..."  << endl;
 
+	g_AgentBasedVMSRoutingInitialization(Iteration, g_DemandLoadingStartTimeInMin);
+
 	double time;
 	int meso_simulation_time_interval_no = 0;
 	bool bPrintOut = true;
@@ -1578,6 +1593,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		}
 		if(meso_simulation_time_interval_no%50 == 0 && bPrintOut) // every 5 min
 		{
+
 			int hour = ((int)(time))/60;
 			int min = time - hour*60;
 

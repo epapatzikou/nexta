@@ -58,8 +58,9 @@ BOOL CDlgFileLoading::OnInitDialog()
 	
 	}
 
-	
 	m_ListBox_NetworkData.AddString (m_pDoc->m_ZoneDataLoadingStatus);
+	
+	m_ListBox_NetworkData.AddString (m_pDoc->m_ActivityLocationDataLoadingStatus);
 
 	m_ListBox_NetworkData.AddString (m_pDoc->m_DemandDataLoadingStatus);
 	

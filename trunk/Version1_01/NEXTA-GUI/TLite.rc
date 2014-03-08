@@ -178,34 +178,36 @@ BEGIN
     LTEXT           "",IDC_STATIC_UNIT_LENGTH3,383,110,23,8,NOT WS_VISIBLE
 END
 
-IDD_DIALOG_Settings DIALOGEX 0, 0, 558, 221
+IDD_DIALOG_Settings DIALOGEX 0, 0, 558, 239
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Review Simulation/Assignment Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    PUSHBUTTON      "Exit",IDCANCEL,501,201,50,14
-    DEFPUSHBUTTON   "Run Simulation",IDOK,333,193,94,14
-    LTEXT           "# of Iterations/Days:",IDC_STATIC,7,159,70,8
-    EDITTEXT        IDC_EDIT_Number_Iterations,7,169,45,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Exit",IDCANCEL,501,219,50,14
+    DEFPUSHBUTTON   "Run Simulation",IDOK,333,212,94,14
+    LTEXT           "# of Iterations/Days:",IDC_STATIC,7,175,70,8
+    EDITTEXT        IDC_EDIT_Number_Iterations,7,186,45,14,ES_AUTOHSCROLL
     LTEXT           "Link Traffic Flow Model:",IDC_STATIC,7,74,76,8
     LISTBOX         IDC_LIST_SIMULATION_METHOD,7,85,132,67,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Demand Data Summary:",IDC_STATIC,155,7,78,8
     LISTBOX         IDC_LIST_DEMAND_LOADING_MODE,154,18,192,45,LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
-    LTEXT           "",IDC_STATIC,7,207,8,8
+    LTEXT           "",IDC_STATIC,7,225,8,8
     LTEXT           "Traffic Assignment Method:",IDC_STATIC,355,73,89,8
     LISTBOX         IDC_LIST_Routing_METHOD,354,84,197,67,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Network Data Summary:",IDC_STATIC,7,7,79,8
     LISTBOX         IDC_LIST_DEMAND_LOADING_MODE2,7,18,131,45,LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
-    LTEXT           "Demand Loading Multiplier:",IDC_STATIC,95,158,86,8
-    EDITTEXT        IDC_EDIT_Demand_LoadingMultiplier,93,167,45,14,ES_AUTOHSCROLL
+    LTEXT           "Demand Loading Multiplier:",IDC_STATIC,95,175,86,8
+    EDITTEXT        IDC_EDIT_Demand_LoadingMultiplier,93,183,45,14,ES_AUTOHSCROLL
     LTEXT           "Signal Control Representation:",IDC_STATIC,153,75,99,8
     LISTBOX         IDC_LIST_Signal_Control_Representation,154,84,192,67,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "# of Statistics Reporting Days:",IDC_STATIC,419,156,100,8,NOT WS_VISIBLE
-    EDITTEXT        IDC_EDIT_Number_ReportingDays,419,166,45,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
     LTEXT           "Traffic Management Scenario Summary:",IDC_STATIC,354,7,128,8
     LISTBOX         IDC_LIST_SCENARIO,355,18,196,45,LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
-    PUSHBUTTON      "Select Simulator",IDC_CONFIG,7,191,69,14
-    EDITTEXT        IDC_EDIT1,249,193,79,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "Select Simulator",IDC_CONFIG,7,209,69,14
+    EDITTEXT        IDC_EDIT1,249,212,79,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "View/Edit Scenario Setting File in Excel",IDC_BUTTON_View_Edit_Scenario_Setting,353,174,146,14
+    EDITTEXT        IDC_EDIT_Assignment,354,154,197,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_Traffic_Flow_Model,7,158,131,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDIT_Signal_Control,154,156,191,14,ES_AUTOHSCROLL | ES_READONLY
 END
 
 IDD_DIALOG_DefaultLinkProperties DIALOGEX 0, 0, 238, 296
@@ -813,8 +815,7 @@ BEGIN
     PUSHBUTTON      "Density Contour",IDDATA_DYNAMIC_Density_Contour,281,173,59,15
     PUSHBUTTON      "Speed Contour",IDDATA_DYNAMIC_Speed_Contour,221,173,57,14
     PUSHBUTTON      "V/C Contour",IDDATA_DYNAMIC_Flow_Contour,344,173,61,14
-    PUSHBUTTON      "Google Earth",IDC_BUTTON_GOOGLE_EARTH_KML,475,173,50,14
-    PUSHBUTTON      "Export",ID_PATH_DATA_EXPORT_CSV,528,172,34,14
+    PUSHBUTTON      "Google Earth",IDC_BUTTON_GOOGLE_EARTH_KML,475,172,50,14
 END
 
 IDD_DIALOG_GISLayer DIALOGEX 0, 0, 130, 393
@@ -948,14 +949,14 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_SYSMENU
 EXSTYLE WS_EX_RIGHT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,212,669,126
+    CONTROL         "",IDC_GRIDLISTCTRLEX,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,234,669,104
     LTEXT           "Node ID:",IDC_STATIC,6,9,30,8
     EDITTEXT        IDC_EDIT_CURRENT_NODEID,37,7,47,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "Resize Column Width",IDC_BUTTON_ExtendColumeWidth,7,198,71,14
+    PUSHBUTTON      "Resize Column Width",IDC_BUTTON_ExtendColumeWidth,7,218,71,14
     EDITTEXT        IDC_EDIT_CURRENT_NODENAME,93,7,107,14,ES_AUTOHSCROLL | ES_READONLY
-    CONTROL         "Hide Right Turn Movements",IDC_HIDE_RIGHT_TURN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,547,198,129,10
-    LTEXT           "Timing Plans:",IDC_STATIC,89,201,46,10
-    COMBOBOX        IDC_COMBO_Timing_Plan_2,141,200,206,104,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Hide Right Turn Movements",IDC_HIDE_RIGHT_TURN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,547,218,129,10
+    LTEXT           "Timing Plans:",IDC_STATIC,89,221,46,10
+    COMBOBOX        IDC_COMBO_Timing_Plan_2,141,220,206,104,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_DIALOG_SHAPEFILE DIALOGEX 0, 0, 562, 286
@@ -1407,7 +1408,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 551
         TOPMARGIN, 7
-        BOTTOMMARGIN, 215
+        BOTTOMMARGIN, 233
     END
 
     IDD_DIALOG_DefaultLinkProperties, DIALOG
@@ -1971,6 +1972,7 @@ IDR_VIEW_TOOLBAR_NU     BITMAP                  "res\\view_too.bmp"
 IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 IDR_MAINFRAME4          BITMAP                  "res\\bmp00006.bmp"
 IDB_RADIOMESSAGE        BITMAP                  "res\\vms1.bmp"
+IDB_RAMP                BITMAP                  "res\\ramp.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2557,7 +2559,10 @@ BEGIN
     END
     POPUP "Ramp"
     BEGIN
-        MENUITEM "Ramp Data",                   ID_RAMP_RAMPDATA
+        MENUITEM "View Ramp Data Table",        ID_RAMP_RAMPDATA
+        MENUITEM "Add Ramp Meter on Selected Link", ID_LINK_ADD_RAMPMETER
+        MENUITEM SEPARATOR
+        MENUITEM "Delete Ramp Meter on Selected Link", ID_DELETE_RAMPMETER
     END
     POPUP "Vehicle Data"
     BEGIN
@@ -2874,26 +2879,6 @@ BEGIN
         BEGIN
             MENUITEM "View Validation Summary Plot", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
             MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
-        END
-        POPUP "NGSIM  Tools"
-        BEGIN
-            MENUITEM "Activate Space-Time View for Visualizing NGSIM Data", ID_NGSIMMENU_ACTIVATESPACE
-            MENUITEM "Load Vehicle Trajactory File", ID_TOOLS_LOADVEHICLETRAJACTORYFILE
-            MENUITEM "Lane 1",                      ID_NGSIMDATA_LANE1
-            MENUITEM "Lane 2",                      ID_NGSIMDATA_LANE2
-            MENUITEM "Lane 3",                      ID_NGSIMDATA_LANE3
-            MENUITEM "Lane 4",                      ID_NGSIMDATA_LANE4
-            MENUITEM "Lane 5",                      ID_NGSIMDATA_LANE5
-            MENUITEM "Lane 6",                      ID_NGSIMDATA_LANE6
-            MENUITEM "Lane 7",                      ID_NGSIMDATA_LANE7
-            MENUITEM SEPARATOR
-            MENUITEM "Show Vehicle ID",             ID_NGSIMDATA_SHOWVEHICLEID
-            MENUITEM "Show Calculated Cumulative Flow Count and Density", ID_NGSIMMENU_SHOWCALCULATEDCUMULATIVEFLOWCOUNTANDDENSITY
-            MENUITEM "Show Space-Time Density Contour", ID_NGSIMMENU_SHOWSPACETIME_CONTOUR
-            MENUITEM SEPARATOR
-            MENUITEM "Export Data to Text File",    ID_NGSIMDATA_CARFOLLOWINGDATAEXTRACTION
-            MENUITEM "Search by Vehicle ID",        ID_NGSIMDATA_SEARCH_BY_VEHICLE_ID
-            MENUITEM "Show CDF/PDF Plot",           ID_NGSIMMENU_SHOWCDFPLOT
         END
     END
     POPUP "&Window"
@@ -3482,6 +3467,15 @@ BEGIN
         MENUITEM "Effective Green Time (sec)",  ID_CHANGEATTRIBUTESFORLINKSALONGPATH_EFFECTIVEGREENTIME
         MENUITEM SEPARATOR
         MENUITEM "Delete Links Along Path",     ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DELETELINKSALONGPATH
+    END
+    POPUP "Contour"
+    BEGIN
+        MENUITEM "Generate All Emission Contour Plots", ID_DATA_GENERATEEMISSIONDETOURPLOTS
+        MENUITEM "           Energy Use Contour Plot", ID_DATA_GENERATEENERGYUSE
+        MENUITEM "            CO2 Contour Plot", ID_DATA_CO2CONTOURPLOT
+        MENUITEM "              CO Contour Plot", ID_DATA_COCONTOURPLOT
+        MENUITEM "                NoX Contour Plot", ID_CONTOUR_NOXCONTOURPLOT
+        MENUITEM "                  HC Contour Plot", ID_CONTOUR_HCCONTOURPLOT
     END
 END
 

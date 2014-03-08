@@ -24,7 +24,7 @@ unsigned int g_RandomSeedForVehicleGeneration = 101;
 long g_precision_constant=100L;
 long g_precision_constant2=100L;
 extern float g_DemandGlobalMultiplier;
-
+int g_ProgramStopFlag = 0;
 
 #include<iostream>
 #include<cmath>
@@ -51,7 +51,11 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 
 	if(DataVector.size()<1 && g_ODEstimationFlag ==1)
 	{
-		cout << "OD demand estiation mode: No sensor data are available for the simulation time period. Please check file input_sensor.csv." << endl;
+		cout << "OD demand estiation mode: No sensor data are available for the simulation time period." << endl;
+		cout << " Please check if sensor_count.csv has the correct data in fields start_time_in_min, and end_time_in_min." << endl;
+		cout << " Please check if input_scenario_settings.csv has the correct calibration_data_start_time_in_min, and calibration_data_start_time_in_min which should at least cover a certain time period of sensor data." << endl;
+	
+
 		g_ProgramStop();
 		return result;
 	}
@@ -455,6 +459,9 @@ int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
 
 void g_ProgramStop()
 {
+	if(g_ProgramStopFlag ==0)
+		g_ProgramStopFlag = 1;
+	cout << "DTALite Program stops. Press any key to terminate. Thanks!" <<endl;
 	getchar();
 	exit(0);
 };

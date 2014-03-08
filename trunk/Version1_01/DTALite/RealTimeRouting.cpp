@@ -50,79 +50,6 @@ DTANetworkForSP g_network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance fo
 
 DTANetworkForSP g_network_VMS;
 
-void g_AgentBasedPathAdjustment(int DayNo, double CurrentTime )  // for pre-trip and en-route information user classes
-{
-	if(g_ODEstimationFlag==1)
-		return;
-	int number_of_threads = omp_get_max_threads ( );
-
-
-	if(DayNo==0 && g_network_MP[0].m_NodeSize ==0 )  // allocate memory once 
-	{
-	// reset random number seeds
-	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
-	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-
-	// assign different zones to different processors
-
-//	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
-//		number_of_threads = 1;
-
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
-
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
-
-
-	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
-	{ 
-		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-		g_ProgramStop();
-	}
-
-	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-	{
-		g_network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
-	}
-
-	}
-
-//#pragma omp parallel for
-		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-		{
-			// create network for shortest path calculation at this processor
-			int	id = omp_get_thread_num( );  // starting from 0
-
-			//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-			g_network_MP[ProcessID].BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
-
-
-			for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
-			{
-				if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
-					continue;
-
-				if((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
-				{
-
-					// scan all possible departure times
-					for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < CurrentTime; departure_time += g_AggregationTimetInterval)
-					{
-
-						if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size() > 0)
-						{
-
-							g_network_MP[id].AgentBasedPathAdjustment(DayNo, CurZoneID,departure_time,CurrentTime);
-
-						}
-					}  // for each departure time
-				}
-			}  // for each zone
-		} // for each computer processor
-
-
-}
-
 
 void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time)
  // for pre-trip and en-route information user classes, for each departure time interval
@@ -137,14 +64,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 	int NodeSize;
 	int TempNodeSize;
 
-	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
+	int AssignmentInterval = g_FindAssignmentInterval(departure_time_begin);  // starting assignment interval
 
-	if(AssignmentInterval>= g_DemandLoadingEndTimeInMin/g_AggregationTimetInterval)
-	{
-		// reset assignment time interval 
-	AssignmentInterval = g_DemandLoadingEndTimeInMin/g_AggregationTimetInterval-1;
-	
-	}
 
 	// loop through the TDOVehicleArray to assign or update vehicle paths...
 	for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size(); vi++)
@@ -185,9 +106,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 				DTAEvacuationRespone response;
 				response.LinkNo = CurrentLinkID;
 				response.ResponseTime = current_time;
-				
-				pVeh->m_EvacuationResponseVector.push_back (response);
-
+				//pVeh->m_EvacuationResponseVector.push_back (response);
 				}
 			}
 		
@@ -304,9 +223,9 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 			if(pVeh->m_NodeSize>=2)  // for feasible path
 			{
 
-				if(NodeSize>=900)
+				if(NodeSize>=MAX_NODE_SIZE_IN_A_PATH)
 				{
-					cout << "PATH Size >900 " << NodeSize;
+					cout << "PATH Size is out of bound of " << MAX_NODE_SIZE_IN_A_PATH << ": "<< NodeSize;
 					g_ProgramStop();
 				}
 
@@ -351,29 +270,65 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 }
 
+
 void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )  
 // for VMS responsive vehicles
 {
 	if(g_ODEstimationFlag==1)
 		return;
-	if(DayNo==0 && g_network_VMS.m_NodeSize == 0)  // allocate memory once 
-	{
+
+
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-
-		g_network_VMS.Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
+	g_network_VMS.Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-
-	}
 	g_network_VMS.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
 
+	int number_of_threads = omp_get_max_threads ( );
+
+	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+
+	if(number_of_threads > max_number_of_threads)
+		number_of_threads = max_number_of_threads ;
+
+
+	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
+	{ 
+		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
+		g_ProgramStop();
+	}
+
+	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+	{
+	g_network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
+	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
+	g_network_MP[ProcessID].BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
+	}
 }
+void g_UpdateRealTimeInformation(double CurrentTime)
+{
+	int number_of_threads = omp_get_max_threads ( );
+
+	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+
+	if(number_of_threads > max_number_of_threads)
+		number_of_threads = max_number_of_threads ;
 
 
-void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
+	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
+	{ 
+		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
+		g_ProgramStop();
+	}
+
+	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+	{
+		g_network_MP[ProcessID].BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );	
+	}
+}
+void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
 // for VMS resonsive information
 {
-
 	if(g_ODEstimationFlag==1)
 		return;
 
@@ -387,6 +342,13 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 
 
 		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
+
+
+		if( pVeh->m_NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1 )
+		{
+		cout << "pVeh->m_NodeSize > MAX_NODE_SIZE_IN_A_PATH" << endl;
+		g_ProgramStop();
+		}
 
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
 
@@ -403,7 +365,6 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 				return;
 
 			// copy existing link number (and remaining links)
-
 
 			for(int i = 0; i< pVeh->m_NodeSize -1; i++)
 			{
@@ -426,6 +387,14 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 
 			//}
 
+		if(pVeh->m_OriginNodeID < 0 || pVeh->m_DestinationNodeID <0)
+		{
+
+		cout << "m_OriginNodeID < 0 || m_DestinationNodeID <0" << endl;
+		getchar();
+		
+		}
+		 
 		NodeSize = g_network_VMS.FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
@@ -454,28 +423,29 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 			return;
 
 
-			// add link to VMS respons link
-
-			bool bLinkAdded = false;
-			for(int i =0; i< pVeh->m_VMSResponseVector.size(); i++)
-			{
-				if(pVeh->m_VMSResponseVector[i].LinkNo == CurrentLinkID)
-				{
-					bLinkAdded = true;
-					break;
-				}
-
-			}
-
-			if(!bLinkAdded)
-			{
-				DTAVMSRespone vms;
-				vms.LinkNo = CurrentLinkID;
-				vms.ResponseTime = current_time;
-				vms.SwitchFlag = bSwitchFlag;
-				pVeh->m_VMSResponseVector.push_back (vms);
-
-			}
+//			// add link to VMS respons link
+//#ifdef  _large_memory_usage
+//			bool bLinkAdded = false;
+//			for(int i =0; i< pVeh->m_VMSResponseVector.size(); i++)
+//			{
+//				if(pVeh->m_VMSResponseVector[i].LinkNo == CurrentLinkID)
+//				{
+//					bLinkAdded = true;
+//					break;
+//				}
+//
+//			}
+//
+//			if(!bLinkAdded)
+//			{
+//				DTAVMSRespone vms;
+//				vms.LinkNo = CurrentLinkID;
+//				vms.ResponseTime = current_time;
+//				vms.SwitchFlag = bSwitchFlag;
+//				pVeh->m_VMSResponseVector.push_back (vms);
+//
+//			}
+//#endif
 
 		if(bSwitchFlag==0)
 			return;
@@ -494,9 +464,9 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 			if(pVeh->m_NodeSize>=2)  // for feasible path
 			{
 
-				if(NodeSize>=900)
+				if(NodeSize>=MAX_NODE_SIZE_IN_A_PATH)
 				{
-					cout << "PATH Size >900 " << NodeSize;
+					cout << "PATH Size is out of bound: " << MAX_NODE_SIZE_IN_A_PATH << NodeSize;
 					g_ProgramStop();
 				}
 
@@ -534,7 +504,189 @@ void g_AgentBasedVMSPathAdjustmentWithRealTimeInfo(int VehicleID , double curren
 				pVeh->m_Distance  = Distance;
 				pVeh->m_NodeNumberSum = NodeNumberSum;
 			}
+}
 
+void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
+// for VMS resonsive information
+{
+	if(g_ODEstimationFlag==1)
+		return;
+
+	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
+	int CurrentPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
+	int TempPathLinkList[MAX_NODE_SIZE_IN_A_PATH]={0};
+	float AbsArrivalTimeOnDSNVector[MAX_NODE_SIZE_IN_A_PATH]={0};
+	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
+	int NodeSize;
+	int TempNodeSize;
+
+
+		DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
+
+
+		if( pVeh->m_NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1 )
+		{
+		cout << "pVeh->m_NodeSize > MAX_NODE_SIZE_IN_A_PATH" << endl;
+		g_ProgramStop();
+		}
+
+		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
+
+		float TotalCost = 0;
+		bool bDistanceFlag = false;
+		bool bDebugFlag = false;
+
+		int StartingNodeID = pVeh->m_OriginNodeID;
+
+			int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
+			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
+
+			if(StartingNodeID == pVeh->m_DestinationNodeID )  // you will reach the destination (on the last link).
+				return;
+
+			// copy existing link number (and remaining links)
+
+			for(int i = 0; i< pVeh->m_NodeSize -1; i++)
+			{
+				CurrentPathLinkList[i] = 	pVeh->m_NodeAry[i].LinkNo;
+				AbsArrivalTimeOnDSNVector[i]= pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN ;
+			}
+
+
+		int count = pVeh->m_SimLinkSequenceNo;
+
+			//if(is.Type == 2) // detour VMS
+			//{
+			//for(int ll = 0; ll < is.DetourLinkSize ; ll++)
+			//{
+			//PathLinkList[l++] = is.DetourLinkArray [ll];
+			//CurrentTime+= g_LinkVector[is.DetourLinkArray [ll]]->m_FreeFlowTravelTime;  // add travel time along the path to get the starting time at the end of subpath
+			//}
+
+			//CurrentNodeID = g_LinkVector[is.DetourLinkArray [is.DetourLinkSize -1]]->m_ToNodeID;
+
+			//}
+
+		if(pVeh->m_OriginNodeID < 0 || pVeh->m_DestinationNodeID <0)
+		{
+
+		cout << "m_OriginNodeID < 0 || m_DestinationNodeID <0" << endl;
+		getchar();
+		
+		}
+
+		int	processor_id = omp_get_thread_num( );  // starting from 0
+
+	//	NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_network_VMS.FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+
+		int bSwitchFlag = 0;
+		for(int i = 0; i<NodeSize-1; i++)
+		{
+			count  +=1;  // add link no from the new path starting from the current position 
+
+			if(CurrentPathLinkList[count] != PathLinkList[i])
+				bSwitchFlag = 1;
+				
+
+			CurrentPathLinkList[count] = 	PathLinkList[i];
+
+		}
+
+		NodeSize = count+2;
+
+		for(int i = 0; i< NodeSize-1; i++)  // copy back
+		{		
+			PathLinkList[i] = CurrentPathLinkList[i];
+		}
+	
+		
+		if(NodeSize<=1)
+			return;
+
+
+//			// add link to VMS respons link
+//#ifdef  _large_memory_usage
+//			bool bLinkAdded = false;
+//			for(int i =0; i< pVeh->m_VMSResponseVector.size(); i++)
+//			{
+//				if(pVeh->m_VMSResponseVector[i].LinkNo == CurrentLinkID)
+//				{
+//					bLinkAdded = true;
+//					break;
+//				}
+//
+//			}
+//
+//			if(!bLinkAdded)
+//			{
+//				DTAVMSRespone vms;
+//				vms.LinkNo = CurrentLinkID;
+//				vms.ResponseTime = current_time;
+//				vms.SwitchFlag = bSwitchFlag;
+//				pVeh->m_VMSResponseVector.push_back (vms);
+//
+//			}
+//#endif
+
+		if(bSwitchFlag==0)
+			return;
+
+			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			{
+				delete pVeh->m_NodeAry;
+			}
+
+
+
+
+			pVeh->m_NodeSize = NodeSize;
+
+
+			if(pVeh->m_NodeSize>=2)  // for feasible path
+			{
+
+				if(NodeSize>=MAX_NODE_SIZE_IN_A_PATH)
+				{
+					cout << "PATH Size is out of bound: " << MAX_NODE_SIZE_IN_A_PATH << NodeSize;
+					g_ProgramStop();
+				}
+
+				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
+
+				if(pVeh->m_NodeAry==NULL)
+				{
+					cout << "Insufficient memory for allocating vehicle arrays!";
+					g_ProgramStop();
+				}
+
+				int NodeNumberSum =0;
+				float Distance =0;
+
+				for(int i = 0; i< NodeSize-1; i++)
+				{
+					pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
+
+					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
+					NodeNumberSum += PathLinkList[i];
+
+					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
+					{
+					cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
+					getchar();
+					exit(0);
+					}
+					*/
+					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
+					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
+
+				}
+				
+					
+				pVeh->m_Distance  = Distance;
+				pVeh->m_NodeNumberSum = NodeNumberSum;
+			}
 }
 
 void g_ReadRealTimeSimulationSettingsFile()
@@ -542,6 +694,9 @@ void g_ReadRealTimeSimulationSettingsFile()
 	CCSVParser parser_RTSimulation_settings;
 	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv",false))
 	{
+
+		// we enable information updating for real-time simulation mode
+		g_bInformationUpdatingAndReroutingFlag  = true;
 
 		int record_count = 0;
 
@@ -597,7 +752,7 @@ void g_ReadRealTimeSimulationSettingsFile()
 						parser_RTSimulation_settings.GetValueByFieldName("output_agent_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_agent_file );
 						parser_RTSimulation_settings.GetValueByFieldName("output_trip_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_trip_file);
 						parser_RTSimulation_settings.GetValueByFieldName("output_od_moe_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file);
-						parser_RTSimulation_settings.GetValueByFieldName("output_td_od_moe_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file);
+						parser_RTSimulation_settings.GetValueByFieldName("output_td_skim_file",g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file);
 
 
 
@@ -750,9 +905,10 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		}
 	}
 
-	if(timestamp_in_min == 0 && g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
+	if(day_no == 0 && timestamp_in_min == 0 && g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)  
+		// at the first time interval  based on free_flow travel time
 	{
-		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file);
+		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file,false,timestamp_in_min);
 	
 	}else if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
 	{
@@ -769,7 +925,7 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		}
 	}
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file.size() >=1)
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.size() >=1)
 	{
 		
 		while(1)
@@ -777,19 +933,19 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 
 			ofstream output_ODTDMOE_file;
 
-		output_ODTDMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file.c_str ());
+		output_ODTDMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.c_str ());
 		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
 		int department_time_interval = 15;
 		if(output_ODTDMOE_file.is_open ())
 		{
-			cout << "     outputing " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file << endl;
+			cout << "     outputing " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << endl;
 			OutputTimeDependentODMOEData(output_ODTDMOE_file,department_time_interval, timestamp_in_min, 1);
 			output_ODTDMOE_file.close();
 			break;
 		}else
 		{
 			
-			cout << "Error: File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_od_moe_file << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+			cout << "Error: File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
 
 			cout << "wait for 5 seconds..." << endl;
 			Sleep(5000);

@@ -475,6 +475,9 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_DEMAND_USEROADCAPACITYTOGENERATEDEFAULTPRODUCTIONANDATTRACTIONFOREACHZONE, &CTLiteDoc::OnDemandUseroadcapacitytogeneratedefaultproductionandattractionforeachzone)
 	ON_COMMAND(ID_GISPLANNINGDATASET_CONFIGUREIMPORTINGSETTINGFILE, &CTLiteDoc::OnGisplanningdatasetConfigureimportingsettingfile)
 	ON_COMMAND(ID_SUBAREA_EXPORTTOTALNUMBEROFVEHICLESINSUBAREA, &CTLiteDoc::OnSubareaExporttotalnumberofvehiclesinsubarea)
+	ON_COMMAND(ID_RAMP_RAMPDATA, &CTLiteDoc::OnRampRampdata)
+	ON_COMMAND(ID_LINK_ADD_RAMPMETER, &CTLiteDoc::OnLinkAddRampmeter)
+	ON_COMMAND(ID_DELETE_RAMPMETER, &CTLiteDoc::OnDeleteRampmeter)
 	END_MESSAGE_MAP()
 
 
@@ -1351,12 +1354,16 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 			if(t > m_SimulationEndTime_in_min)
 				m_SimulationEndTime_in_min =t;
 
-
+			m_SimulationEndTime_in_min = min (m_SimulationEndTime_in_min,1440);
 
 			DTALink* pLink = FindLinkWithNodeNumbers(from_node_number , to_node_number, lpszFileName );
 
-			if(pLink!=NULL && t <=g_Simulation_Time_Horizon-1 )
+			if(pLink!=NULL  )
 			{	
+
+				if( t <=g_Simulation_Time_Horizon-1)
+				{
+
 				//travel_time_in_min, delay_in_min, link_volume_in_veh, link_volume_in_vehphpl,
 				//density_in_veh_per_mile_per_lane, speed_in_mph, queue_length_in_, cumulative_arrival_count, cumulative_departure_count
 				pLink->m_LinkMOEAry[t].TravelTime = element.travel_time_in_min;
@@ -1381,8 +1388,9 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 				pLink->m_LinkMOEAry[t].NOX = element.NOX;
 				pLink->m_LinkMOEAry[t].CO = element.CO;
 				pLink->m_LinkMOEAry[t].HC = element.HC;
-
 				i++;
+				}
+
 			}else
 			{
 				//CString msg;
@@ -2972,6 +2980,13 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 	float AADT_conversion_factor = g_GetPrivateProfileDouble("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
 
 
+	bool length_field_warning = false;
+	bool number_of_lanes_field_warning = false;
+	bool speed_limit_field_warning = false;
+	bool capacity_field_warning = false;
+	bool type_field_warning = false;
+
+
 	CCSVParser parser;
 	if (parser.OpenCSVFile(lpszFileName))
 	{
@@ -3133,8 +3148,13 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			{
 				if(!parser.GetValueByFieldName("length",length_in_mile))
 				{
-					AfxMessageBox("Field length_in_mile has not been defined in file input_link.csv. Please check.");
-					break;
+					if(!length_field_warning)
+					{					
+						AfxMessageBox("Field length_in_mile or length has not been defined in file input_link.csv. Please check.");
+						length_field_warning = true;
+					}
+				
+					length_in_mile = 1;
 				}
 
 			}
@@ -3147,8 +3167,13 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 			if(!parser.GetValueByFieldName("number_of_lanes",number_of_lanes))
 			{
-				AfxMessageBox("Field number_of_lanes has not been defined in file input_link.csv. Please check.");
-				break;
+					if(!number_of_lanes_field_warning)
+					{
+						AfxMessageBox("Field number_of_lanes has not been defined in file input_link.csv. Please check.");
+						number_of_lanes_field_warning = true;
+					}
+					number_of_lanes = 1;
+
 			}
 
 			int NumberOfLeftTurnLanes = 0;
@@ -3167,9 +3192,13 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 			{
 				if(!parser.GetValueByFieldName("speed_limit",speed_limit_in_mph))
 				{
+					if(!speed_limit_field_warning)
+					{
 					error_message.Format ("Link %s: Field speed_limit has not been defined in file input_link.csv. Please check.",name.c_str ());
 					AfxMessageBox(error_message);
-					break;
+					speed_limit_field_warning = true;
+					}
+					speed_limit_in_mph = 60;
 				}
 			}
 
@@ -3189,17 +3218,27 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 			if(!parser.GetValueByFieldName("lane_capacity_in_vhc_per_hour",capacity_in_pcphpl))
 			{
+				if(!capacity_field_warning)
+				{
 				error_message.Format("Link %s: Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.",name.c_str ());
 				AfxMessageBox(error_message);
-				break;
+				capacity_field_warning = true;
+				}
+
+				capacity_in_pcphpl = 1800;
 			}
 
 
 
 			if(!parser.GetValueByFieldName("link_type",type))
 			{
+				if(!type_field_warning)
+				{
 				AfxMessageBox("Field link_type has not been defined in file input_link.csv. Please check.");
-				break;
+				type_field_warning = true;
+				}
+
+				type = 1;
 			}
 
 
@@ -3798,11 +3837,11 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 			m_ActivityLocationCount++;
 		}
 
-		m_ZoneDataLoadingStatus.Format ("%d node-zone mapping entries are loaded from file %s.",lineno,lpszFileName);
+		m_ActivityLocationDataLoadingStatus.Format ("%d activity location entries are loaded from file %s.",lineno,lpszFileName);
 		return true;
 	}else
 	{
-		m_ZoneDataLoadingStatus.Format ("File input_activity_location.csv does not exist. Use default node-zone mapping table.");
+		m_ActivityLocationDataLoadingStatus.Format ("File input_activity_location.csv does not exist. Use default node-zone mapping table.");
 
 		return false;
 	}
@@ -3935,6 +3974,7 @@ bool CTLiteDoc::WriteScenarioSettingCSVFile(LPCTSTR lpszFileName)
 	int routing_movement_delay_mode;
 
 	int accessibility_mode;
+	int LearningRate[400] = {5};
 
 	CCSVParser parser_scenario;
 	if (parser_scenario.OpenCSVFile(lpszFileName))
@@ -3962,7 +4002,29 @@ bool CTLiteDoc::WriteScenarioSettingCSVFile(LPCTSTR lpszFileName)
 			parser_scenario.GetValueByFieldName("calibration_data_start_time_in_min",calibration_data_start_time_in_min);
 			parser_scenario.GetValueByFieldName("calibration_data_end_time_in_min",calibration_data_end_time_in_min);
 			parser_scenario.GetValueByFieldName("routing_movement_delay_mode",routing_movement_delay_mode);
-			//	parser_scenario.GetValueByFieldName("accessibility_calculation_mode",accessibility_mode);
+			parser_scenario.GetValueByFieldName("day2day_learning_percentage_day_1",LearningRate[1]);
+
+			for(int day = 0; day <= 300; day ++)
+			{
+				LearningRate[day] = 5;
+			}
+				
+			for(int day = 2; day <= 300; day ++)
+			{
+				CString str_learning;
+				str_learning.Format ("day_%d",day);
+
+				string str = CString2StdString(str_learning);
+				if(parser_scenario.GetValueByFieldName(str,LearningRate[day]) == false)
+					LearningRate[day] = 10;
+			
+				if(LearningRate[day]<0)
+					LearningRate[day] = 5;
+
+				if(LearningRate[day]>100)
+					LearningRate[day] = 100;
+
+			}
 
 			m_NumberOfSecenarioSettings++;
 		}
@@ -4002,6 +4064,17 @@ bool CTLiteDoc::WriteScenarioSettingCSVFile(LPCTSTR lpszFileName)
 			ScenarioFile.SetFieldNameAndValue("routing_movement_delay_mode",routing_movement_delay_mode);
 			//		ScenarioFile.SetFieldNameAndValue("accessibility_calculation_mode",accessibility_mode);
 
+			ScenarioFile.SetFieldNameAndValue("day2day_learning_percentage_day_1",LearningRate[1]);
+			for(int day = 2; day <= 300; day ++)
+			{
+				CString str_learning;
+				str_learning.Format ("day_%d",day);
+
+				string str = CString2StdString(str_learning);
+
+			ScenarioFile.SetFieldNameAndValue(str,LearningRate[day]);
+
+			}
 
 			ScenarioFile.WriteHeader ();
 			ScenarioFile.WriteRecord ();
@@ -4780,6 +4853,7 @@ bool CTLiteDoc::ReadScenarioData()
 	int i =0;
 	i+=ReadIncidentScenarioData();
 	i+=ReadWorkZoneScenarioData();
+	i+=ReadRampMeterScenarioData();
 	i+=ReadVMSScenarioData();
 	i+=ReadLink_basedTollScenarioData();
 
@@ -6924,6 +6998,14 @@ int CTLiteDoc::ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber = -1)
 
 			DTANode* pNode = FindNodeWithNodeNumber (node_id);
 
+
+			if(m_NodeNumbertoNodeNoMap.find(up_node_id)== m_NodeNumbertoNodeNoMap.end() 
+				|| m_NodeNumbertoNodeNoMap.find(node_id)== m_NodeNumbertoNodeNoMap.end() 
+				|| m_NodeNumbertoNodeNoMap.find(dest_node_id)== m_NodeNumbertoNodeNoMap.end() )
+			{
+			continue;
+			
+			}
 			CString movement_index = pNode->GetMovementIndex(m_NodeNumbertoNodeNoMap[up_node_id],
 				m_NodeNumbertoNodeNoMap[node_id], m_NodeNumbertoNodeNoMap[dest_node_id]);
 
@@ -8721,7 +8803,7 @@ bool CTLiteDoc::CheckControlData()
 		}
 	}
 
-	if(NodeVector.size()>0 && m_signal_reresentation_model ==1)
+	if(NodeVector.size()>0 && m_signal_reresentation_model >=1)
 	{
 
 		CString message;
@@ -9993,6 +10075,7 @@ void CTLiteDoc::OnLinkAddIncident()
 		}
 		ReadIncidentScenarioData();
 		ReadWorkZoneScenarioData();
+		ReadRampMeterScenarioData();
 
 		CapacityReduction cs;
 		cs.bWorkzone  = false; 
@@ -10038,7 +10121,7 @@ void CTLiteDoc::OnLinkAddWorkzone()
 		}
 		ReadIncidentScenarioData();
 		ReadWorkZoneScenarioData();
-
+		ReadRampMeterScenarioData();
 		CapacityReduction cs;
 		cs.bWorkzone  = true; 
 
@@ -10279,6 +10362,40 @@ bool CTLiteDoc::WriteWorkZoneScenarioData()
 	return true;
 }
 
+bool CTLiteDoc::WriteRampMeterScenarioData()
+{
+	FILE* st = NULL;
+	int i =0;
+	//  incident scenario
+	fopen_s(&st,m_ProjectDirectory+"Scenario_Ramp_Meter.csv","w");
+	if(st!=NULL)
+	{
+		// reset
+
+		fprintf(st, "Link,Scenario No,Start Day,End Day,Start Time in Min,End Time in min,Lane Capacity (vph),Speed Limit (mph)\n");
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+
+			for(unsigned int i = 0; i < (*iLink)->CapacityReductionVector  .size(); i++)
+			{
+
+				CapacityReduction element  = (*iLink)->CapacityReductionVector[i];
+
+				if(element.bRampMeter == true)
+				{
+					fprintf(st,"\"[%d,%d]\",%d,%d,%d,%3.0f,%3.0f,%3.1f,%3.1f\n", (*iLink)->m_FromNodeNumber , (*iLink)->m_ToNodeNumber ,
+						element.ScenarioNo,element.StartDayNo  , element.EndDayNo , element.StartTime , element.EndTime ,element.ServiceFlowRate, element.SpeedLimit );
+				}
+			}
+		}
+
+		fclose(st);
+	}
+
+	return true;
+}
+
 int CTLiteDoc::ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber, int RemoveLinkToNodeNumber)
 {
 
@@ -10311,6 +10428,61 @@ int CTLiteDoc::ReadWorkZoneScenarioData(int RemoveLinkFromNodeNumber, int Remove
 				cs.StartTime = g_read_float(st);
 				cs.EndTime = g_read_float(st);
 				cs.LaneClosurePercentage= g_read_float(st);
+				cs.SpeedLimit = g_read_float(st);
+
+				if(RemoveLinkFromNodeNumber==usn && RemoveLinkToNodeNumber== dsn)
+				{
+					//skip
+				}else
+				{
+					plink->CapacityReductionVector.push_back(cs);
+					i++;
+				}
+			}else
+			{
+				error_count ++;
+				if(error_count >= 3) break; // no more than 3 warnings
+
+			}
+		}
+		fclose(st);
+	}
+
+	return i;
+}
+
+int CTLiteDoc::ReadRampMeterScenarioData(int RemoveLinkFromNodeNumber, int RemoveLinkToNodeNumber)
+{
+
+	int i = 0;
+
+	CString workzone_file = m_ProjectDirectory+"Scenario_Ramp_Meter.csv";
+	int error_count  = 0; 
+	FILE* st =NULL;
+	fopen_s(&st,workzone_file,"r");
+	if(st!=NULL)
+	{
+		while(true)
+		{
+			int usn  = g_read_integer(st);
+			if(usn == -1)
+				break;
+
+			int dsn =  g_read_integer(st);
+
+			DTALink* plink = FindLinkWithNodeNumbers(usn,dsn,workzone_file );
+
+			if(plink!=NULL)
+			{
+				CapacityReduction cs;
+				cs.bRampMeter  = true; 
+
+				cs.ScenarioNo =  g_read_integer(st); 
+				cs.StartDayNo  = g_read_integer(st);
+				cs.EndDayNo	   = g_read_integer(st);
+				cs.StartTime = g_read_float(st);
+				cs.EndTime = g_read_float(st);
+				cs.ServiceFlowRate= g_read_float(st);
 				cs.SpeedLimit = g_read_float(st);
 
 				if(RemoveLinkFromNodeNumber==usn && RemoveLinkToNodeNumber== dsn)
@@ -12077,7 +12249,7 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 		}else
 		{
-			AfxMessageBox("No matching sensor data are available from file input_sesnor.csv. Please prepare file sensor_count.csv.");
+			AfxMessageBox("No matching sensor data are available from file sesnor_count.csv. Please prepare file sensor_count.csv.");
 		}
 }
 
@@ -17206,6 +17378,7 @@ void CTLiteDoc::OnDeleteWorkzone()
 		}
 		ReadIncidentScenarioData();
 		ReadWorkZoneScenarioData(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+		ReadRampMeterScenarioData();
 
 
 		WriteWorkZoneScenarioData();
@@ -17234,7 +17407,7 @@ void CTLiteDoc::OnCrashDeleteincidentonselectedlink()
 		}
 		ReadIncidentScenarioData(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
 		ReadWorkZoneScenarioData();
-
+		ReadRampMeterScenarioData();
 
 		WriteWorkZoneScenarioData();
 
@@ -17466,6 +17639,8 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1, 
 
 						if( ((*iNode)->m_ControlType == m_ControlType_PretimedSignal ||  (*iNode)->m_ControlType == m_ControlType_ActuatedSignal) && movement.turning_prohibition_flag==0)
 						{  // overwite movement effective time for signalized intersections
+							
+							
 							if(movement.QEM_EffectiveGreen < 6)
 							{
 								if(movement.QEM_Lanes >=1 )
@@ -17499,6 +17674,13 @@ void CTLiteDoc::SaveMovementData(CString MovementFileName, int NodeNumber = -1, 
 
 						//fetch cycle length value
 						int CycleLength = atoi(element.GetString (DTA_SIG_PHASE_VALUE, TIMING_CycleLength));
+
+						if( ((*iNode)->m_ControlType == m_ControlType_PretimedSignal ||  (*iNode)->m_ControlType == m_ControlType_ActuatedSignal) && movement.turning_prohibition_flag==0)
+						{
+							if(CycleLength == 0)
+								CycleLength = 60;
+						
+						}
 
 
 						MovementFile.SetValueByFieldName  ("CycleLength",CycleLength );
@@ -18969,6 +19151,93 @@ void CTLiteDoc::OnSubareaExporttotalnumberofvehiclesinsubarea()
 
 	this->OpenCSVFileInExcel (file_name);
 
+	}
+
+}
+
+void CTLiteDoc::OnLinkAddRampmeter()
+{
+	if(m_SelectedLinkNo==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink= m_LinkNoMap [m_SelectedLinkNo];
+	if(pLink!=NULL)
+	{
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->CapacityReductionVector .clear();
+
+		}
+		ReadIncidentScenarioData();
+		ReadWorkZoneScenarioData();
+		ReadRampMeterScenarioData();
+
+		CapacityReduction cs;
+		cs.bRampMeter  = true; 
+
+		cs.ScenarioNo =  0; 
+		cs.StartDayNo  = 0;
+		cs.EndDayNo	   = 100;
+		cs.StartTime = 0;
+		cs.EndTime = 1440;
+		cs.ServiceFlowRate = 1400;
+		cs.SpeedLimit = 50;
+
+		pLink->CapacityReductionVector.push_back(cs);
+
+
+		WriteRampMeterScenarioData();
+
+		CDlgScenario dlg(_RAMPMETER);
+		dlg.m_pDoc = this;
+
+		dlg.DoModal();
+
+		UpdateAllViews(0);
+	}
+}
+
+
+void CTLiteDoc::OnRampRampdata()
+{
+	CDlgScenario dlg;
+	dlg.m_pDoc = this;
+	dlg.m_SelectTab = _RAMPMETER;
+	dlg.DoModal();
+}
+
+
+
+void CTLiteDoc::OnDeleteRampmeter()
+{
+	if(m_SelectedLinkNo==-1)
+	{
+		AfxMessageBox("Please select a link first.");
+		return;
+	}
+
+	DTALink* pLink= m_LinkNoMap [m_SelectedLinkNo];
+	if(pLink!=NULL)
+	{
+
+		for (std::list<DTALink*>::iterator iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			(*iLink)->CapacityReductionVector .clear();
+
+		}
+		ReadIncidentScenarioData();
+		ReadWorkZoneScenarioData();
+		ReadRampMeterScenarioData(pLink->m_FromNodeNumber , pLink->m_ToNodeNumber );
+
+
+		WriteRampMeterScenarioData();
+
+
+		UpdateAllViews(0);
 	}
 
 }

@@ -57,9 +57,9 @@ public : ifstream inFile;
 	 string mFileName;
 	 vector<int> LineIntegerVector;
 	bool IsFirstLineHeader;
+	char Delimiter;
 
 private:
-	char Delimiter;
 	vector<string> LineFieldsValue;
 
 	map<string,int> FieldsIndices;

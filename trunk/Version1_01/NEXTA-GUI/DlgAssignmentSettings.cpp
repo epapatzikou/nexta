@@ -18,6 +18,9 @@ CDlgAssignmentSettings::CDlgAssignmentSettings(CWnd* pParent /*=NULL*/)
 	, m_DemandLoadingMultipler(0)
 	, m_NumberReportingDays(1)
 	, m_SimulatorName(_T(""))
+	, m_msg_assignment(_T(""))
+	, m_msg_traffic_flow_model(_T(""))
+	, m_msg_signal_control(_T(""))
 {
 	m_bModifiedFlag  = false;
 
@@ -43,9 +46,11 @@ void CDlgAssignmentSettings::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_DEMAND_LOADING_MODE2, m_NetworkDataList);
 	DDX_Text(pDX, IDC_EDIT_Demand_LoadingMultiplier, m_DemandLoadingMultipler);
 	DDX_Control(pDX, IDC_LIST_Signal_Control_Representation, m_Signal_Control_List);
-	DDX_Text(pDX, IDC_EDIT_Number_ReportingDays, m_NumberReportingDays);
 	DDX_Control(pDX, IDC_LIST_SCENARIO, m_ScenarioList);
 	DDX_Text(pDX, IDC_EDIT1, m_SimulatorName);
+	DDX_Text(pDX, IDC_EDIT_Assignment, m_msg_assignment);
+	DDX_Text(pDX, IDC_EDIT_Traffic_Flow_Model, m_msg_traffic_flow_model);
+	DDX_Text(pDX, IDC_EDIT_Signal_Control, m_msg_signal_control);
 }
 
 
@@ -61,6 +66,7 @@ BEGIN_MESSAGE_MAP(CDlgAssignmentSettings, CDialog)
 	ON_LBN_SELCHANGE(IDC_LIST_Signal_Control_Representation, &CDlgAssignmentSettings::OnLbnSelchangeListSignalControlRepresentation)
 	ON_LBN_SELCHANGE(IDC_LIST_SCENARIO, &CDlgAssignmentSettings::OnLbnSelchangeListScenario)
 	ON_BN_CLICKED(IDC_CONFIG, &CDlgAssignmentSettings::OnBnClickedConfig)
+	ON_BN_CLICKED(IDC_BUTTON_View_Edit_Scenario_Setting, &CDlgAssignmentSettings::OnBnClickedButtonViewEditScenarioSetting)
 END_MESSAGE_MAP()
 
 
@@ -120,18 +126,19 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 
 	m_Signal_Control_List.AddString ("0: Continuous Flow with Link Capacity Constraint");
-	m_Signal_Control_List.AddString ("1: Cycle Length + Movement-based Effective Green Time");
+	m_Signal_Control_List.AddString ("1: Cycle Length + Link-based Effective Green Time");
+	m_Signal_Control_List.AddString ("2: Cycle Length + Movement-based Effective Green Time");
 	m_Signal_Control_List.SetCurSel(m_pDoc->m_signal_reresentation_model);
 
 	m_AssignmentMethod.AddString("0. Method of Successive Average");
 	m_AssignmentMethod.AddString("1. Fixed Switching Rate");
-	m_AssignmentMethod.AddString("2. Day-to-Day Learning with Bounded Rationality Rule");
+	m_AssignmentMethod.AddString("2. Day-to-Day Specific Learning Rate");
 	m_AssignmentMethod.AddString("3. OD Demand Matrix Estimation");
 
-	//m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
-	//m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
-	//m_AssignmentMethod.AddString("6. Accessibility (Distance)");
-	//m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
+	m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
+	m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
+	m_AssignmentMethod.AddString("6. Accessibility (Distance)");	
+//	m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
 
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
@@ -236,6 +243,8 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 void CDlgAssignmentSettings::OnLbnSelchangeListSimulationMethod()
 {
+
+
 }
 void CDlgAssignmentSettings::OnLbnSelchangeListDemandLoadingMode()
 {
@@ -247,9 +256,8 @@ void CDlgAssignmentSettings::OnLbnSelchangeListRoutingMethod()
 
 }
 
-void CDlgAssignmentSettings::OnBnClickedOk()
+void CDlgAssignmentSettings::UpdateScenarioFile()
 {
-
 	UpdateData(true);
 
 
@@ -295,12 +303,17 @@ void CDlgAssignmentSettings::OnBnClickedOk()
 		m_pDoc->m_demand_multiplier = m_DemandLoadingMultipler;
 	}
 
-
 	if(m_bModifiedFlag == true)
 	{
-	
 		m_pDoc->WriteScenarioSettingCSVFile(m_pDoc->m_ProjectDirectory +"input_scenario_settings.csv");
 	}
+
+}
+
+void CDlgAssignmentSettings::OnBnClickedOk()
+{
+
+	UpdateScenarioFile();
 
 	OnOK();
 }
@@ -402,3 +415,10 @@ void CDlgAssignmentSettings::OnBnClickedConfig()
 }
 
 
+
+void CDlgAssignmentSettings::OnBnClickedButtonViewEditScenarioSetting()
+{
+
+	UpdateScenarioFile();
+	m_pDoc->OpenCSVFileInExcel (m_pDoc->m_ProjectDirectory +"input_scenario_settings.csv");
+}

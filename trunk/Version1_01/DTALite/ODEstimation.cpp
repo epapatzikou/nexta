@@ -191,24 +191,39 @@ bool g_ReadLinkMeasurementFile()
 
 			std::string count_sensor_id;
 
-			if(!parser.GetValueByFieldName("count_sensor_id",count_sensor_id)) 
-				continue;
+			parser.GetValueByFieldName("count_sensor_id",count_sensor_id); 
 
 			int day_no = 0;
 
 
 			DTALink* pLink = NULL;
 
-			if(count_sensor_id.size  () > 0 && g_CountSensorIDMap.find(count_sensor_id.c_str ())!=g_CountSensorIDMap.end())
+			if(count_sensor_id.size  () > 0 )
 			{
-				pLink = g_CountSensorIDMap[count_sensor_id.c_str ()];
-			}else
- 			{
-				cout << "count_sensor_id " << count_sensor_id <<": at line " << count+1 << " of file sensor_count.csv  has not been defined in sensor_count.csv. Please check." << endl;
-				g_LogFile << "count_sensor_id " << count_sensor_id <<": at line " << count+1 << " of file sensor_count.csv  has not been defined in sensor_count.csv. Please check." << endl;
-	
-				error_count ++;
-				continue;
+					if(g_CountSensorIDMap.find(count_sensor_id.c_str ())!=g_CountSensorIDMap.end())
+				{
+					pLink = g_CountSensorIDMap[count_sensor_id.c_str ()];
+				}else
+ 				{
+					cout << "count_sensor_id " << count_sensor_id <<": at line " << count+1 << " of file sensor_count.csv  has not been defined in sensor_count.csv. Please check." << endl;
+					g_LogFile << "count_sensor_id " << count_sensor_id <<": at line " << count+1 << " of file sensor_count.csv  has not been defined in sensor_count.csv. Please check." << endl;
+		
+					error_count ++;
+					continue;
+				}
+			}
+
+			if(pLink == NULL)
+			{
+				int  from_node_id = 0;
+				int to_node_id = 0;
+			parser.GetValueByFieldName("from_node_id",from_node_id); 
+			parser.GetValueByFieldName("to_node_id",to_node_id); 
+
+			if(g_LinkMap.find(GetLinkStringID(from_node_id,to_node_id))!= g_LinkMap.end())
+			{
+				pLink =  g_LinkMap[GetLinkStringID(from_node_id,to_node_id)];
+			}
 			}
 
 			int start_time_in_min = 0;
@@ -225,7 +240,7 @@ bool g_ReadLinkMeasurementFile()
 				late_end_time_in_min =  end_time_in_min;
 
 			int dest_node_id = -1;
-			parser.GetValueByFieldName ("count",volume_count );
+			parser.GetValueByFieldName ("link_count",volume_count );
 
 			float avg_speed = 0;
 			parser.GetValueByFieldName ("speed",avg_speed );
@@ -297,14 +312,14 @@ bool g_ReadLinkMeasurementFile()
 		if(count==0 && g_ODEstimationFlag==1)
 		{
 
-			cout << "ODME mode is used, but file input_sensor.csv has 0 valid sensor record with min " << g_ValidationDataStartTimeInMin << " -> min " << 
-				g_ValidationDataEndTimeInMin << ". Please check input_scenario_settings.csv and input_sensor.csv." << endl;
+			cout << "ODME mode is used, but file sensor_count.csv has 0 valid sensor record with min " << g_ValidationDataStartTimeInMin << " -> min " << 
+				g_ValidationDataEndTimeInMin << ". Please check input_scenario_settings.csv and sensor_count.csv." << endl;
 
 			if(g_ValidationDataEndTimeInMin < early_start_time_in_min || late_end_time_in_min < g_ValidationDataStartTimeInMin ) 
 			{
 				cout << "calibration_data_start_time_in_min = " << g_ValidationDataStartTimeInMin << endl;
 				cout << "calibration_data_end_time_in_min = " << g_ValidationDataEndTimeInMin << endl;
-				cout << "time period in input_sensor.csv = [" << early_start_time_in_min << "," << late_end_time_in_min << "]"  <<endl;
+				cout << "time period in input_scenario_settings = [" << early_start_time_in_min << "," << late_end_time_in_min << "]"  <<endl;
 	
 			}
 
@@ -319,13 +334,6 @@ bool g_ReadLinkMeasurementFile()
 	}
 
 
-	//cout << "DTALite will perform OD demand estimation, please review the above settings." << endl;
-	//cout << "Please press 'n' if you want to exit and edit files ODME_Settings.txt and input_sensor.csv. Pleaes press the other key to continue." << endl;
-	//char ret = getchar();
-	//if(ret=='n')
-	//	exit(0);
-
-	//getchar(); // for return key
 	return true;
 }
 
@@ -836,8 +844,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,in
 
 	int PathNodeList[MAX_NODE_SIZE_IN_A_PATH]={0};
 	std::vector<DTAVehicle*>::iterator iterVehicle = g_VehicleVector.begin();
-	int AssignmentInterval = int(departure_time_begin/g_AggregationTimetInterval);  // starting assignment interval
-
+	int AssignmentInterval = g_FindAssignmentInterval(departure_time_begin);  // starting assignment interval
 	// g_VehcileIDPerAssignmentIntervalMap is more like a cursor to record the last scanned position
 
 	if(g_ZoneNumber2NoVector[origin_zone]<0)  // no such zone number

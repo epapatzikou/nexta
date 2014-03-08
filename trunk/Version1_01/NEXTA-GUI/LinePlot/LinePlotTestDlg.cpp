@@ -77,6 +77,16 @@ BOOL CLinePlotTestDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+
+	if( m_pDoc->m_DemandLoadingStartTimeInMin > m_pDoc->m_DemandLoadingEndTimeInMin)
+	{
+	
+		m_pDoc->m_DemandLoadingEndTimeInMin = 1440;
+		m_pDoc->m_DemandLoadingStartTimeInMin = 0;
+
+	
+	}
+
 	for(int hour = m_pDoc->m_DemandLoadingStartTimeInMin  /60; hour <=m_pDoc->m_DemandLoadingEndTimeInMin /60; hour++)
 	{
 	CString str_hour;
@@ -84,6 +94,8 @@ BOOL CLinePlotTestDlg::OnInitDialog()
 	m_ListStartHour .AddString (str_hour);
 	
 	}
+
+
 
 	m_TimeWindowList .AddString ("24");
 	m_TimeWindowList .AddString ("1");

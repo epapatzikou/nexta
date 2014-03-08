@@ -164,6 +164,16 @@ void g_ReadAMSMovementData()
 				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
 				pLink->m_bSignalizedArterialType = true;
 
+
+			if(g_SignalRepresentationFlag == signal_model_link_effective_green_time && CycleLength >=1)
+			{
+
+				pLink->m_EffectiveGreenTime_In_Second = pLink->m_LaneCapacity /  pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane*60.0 ;
+				pLink->m_GreenStartTime_In_Second = 0;   
+				pLink->m_DownstreamNodeSignalOffset_In_Second = 0; 
+
+			}
+
 					parser_movement.GetValueByFieldName ("GreenStartTime", QEM_GreenStartTime );
 					parser_movement.GetValueByFieldName ("GreenEndTime", QEM_GreenEndTime );
 				
@@ -187,7 +197,7 @@ void g_ReadAMSMovementData()
 							SatFlowRatePerLane = 200; // set the minimum value
 
 					}
-					if(g_SignalRepresentationFlag != 0 && CycleLength >=1 && QEM_GreenStartTime >=  QEM_GreenEndTime && turn_type.find("Right") == string::npos)
+					if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength >=1 && QEM_GreenStartTime >=  QEM_GreenEndTime && turn_type.find("Right") == string::npos)
 					{
 						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << 
 							" has green time interval" << QEM_GreenStartTime << ", " << QEM_GreenEndTime << endl << "Please check AMS_movement.csv." << endl << "DTALite will simulate this node as no-control." << endl;
@@ -242,7 +252,7 @@ void g_ReadAMSMovementData()
 						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
 
 
-						if(g_SignalRepresentationFlag ==1 && CycleLength>=10 && QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
+						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength>=10 && QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
 						{
 							// we have to prevent this left-turn movement, as no green time being assigned. 
 							g_ProhibitMovement(up_node_id, node_id , dest_node_id);
@@ -254,12 +264,16 @@ void g_ReadAMSMovementData()
 						
 						}
 
+
+						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+						{
 						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
 						
 							pLink->m_GreenStartTime_In_Second = QEM_GreenStartTime;
 							pLink->m_EffectiveGreenTime_In_Second = (QEM_EffectiveGreenTime + QEM_GreenEndTime - QEM_GreenStartTime)/2.0;  // consider the lost time for permitted phases.
 
 							pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = SatFlowRatePerLane; // we use link based saturation flow rate
+						}
 						}
 
 
