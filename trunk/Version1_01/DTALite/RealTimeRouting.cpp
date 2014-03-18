@@ -735,7 +735,6 @@ void g_ReadRealTimeSimulationSettingsFile()
 
 		parser_RTSimulation_settings.GetValueByFieldName("update_trip_file",update_trip_file);
 		parser_RTSimulation_settings.GetValueByFieldName("update_TD_link_attribute_file",update_TD_link_attribute_file);
-		parser_RTSimulation_settings.GetValueByFieldName("update_trip_file",update_trip_file);
 
 			if(timestamp_in_min>=0)
 			{
@@ -765,7 +764,7 @@ void g_ReadRealTimeSimulationSettingsFile()
 
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_attribute_aggregation_time_interval_in_min = update_attribute_aggregation_time_interval_in_min;
 					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file  = update_TD_link_attribute_file;
-					g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file = update_trip_file;
+
 
 					record_count ++;
 				}
@@ -841,6 +840,41 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		// press any key will continue
 
 		}
+
+	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.size() >=1)
+	{
+		
+
+		if(timestamp_in_min == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
+			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,timestamp_in_min);
+		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
+			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,timestamp_in_min);
+
+		//ofstream output_ODTDMOE_file;
+
+		//output_ODTDMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.c_str ());
+		////	output_ODImpact_file.open ("output_ImpactedOD.csv");
+		//int department_time_interval = 15;
+		//if(output_ODTDMOE_file.is_open ())
+		//{
+		//	cout << "     outputing " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << endl;
+		//	OutputTimeDependentODMOEData(output_ODTDMOE_file,department_time_interval, timestamp_in_min, 1);
+		//	output_ODTDMOE_file.close();
+		//	break;
+		//}else
+		//{
+		//	
+		//	cout << "Error: File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+
+		//	cout << "wait for 5 seconds..." << endl;
+		//	Sleep(5000);
+		//}
+		//}
+
+		
+
+	}
+
 
 	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_TD_link_attribute_file .size() >=1)
 	{
@@ -925,36 +959,6 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		}
 	}
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.size() >=1)
-	{
-		
-		while(1)
-		{
-
-			ofstream output_ODTDMOE_file;
-
-		output_ODTDMOE_file.open (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.c_str ());
-		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
-		int department_time_interval = 15;
-		if(output_ODTDMOE_file.is_open ())
-		{
-			cout << "     outputing " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << endl;
-			OutputTimeDependentODMOEData(output_ODTDMOE_file,department_time_interval, timestamp_in_min, 1);
-			output_ODTDMOE_file.close();
-			break;
-		}else
-		{
-			
-			cout << "Error: File " << g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-
-			cout << "wait for 5 seconds..." << endl;
-			Sleep(5000);
-		}
-		}
-
-	}
-
-		
 
 }
 

@@ -15,6 +15,7 @@
 #include <algorithm>
 
 using namespace std;
+extern DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
 vector<int> ParseLineToIntegers(string line)
 {
@@ -26,11 +27,11 @@ vector<int> ParseLineToIntegers(string line)
 	char Delimiter = ';';
 
 
-		while (std::getline(ss,subStr,Delimiter))
-		{
-			int integer = atoi(subStr.c_str ());
-			SeperatedIntegers.push_back(integer);
-		}
+	while (std::getline(ss,subStr,Delimiter))
+	{
+		int integer = atoi(subStr.c_str ());
+		SeperatedIntegers.push_back(integer);
+	}
 	return SeperatedIntegers;
 }
 
@@ -45,12 +46,12 @@ void g_ReadDSPVehicleFile(string file_name)
 	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
 	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
-/*     5311320           1    # of vehicles in the file, Max # of stops
-        #   usec   dsec   stime vehcls vehtype ioc #ONode #IntDe info ribf    comp   izone Evac InitPos    VoT  tFlag pArrTime TP IniGas
-        1  11261   3248    0.00     3     1     1     1     1     0  0.0000  1.0000 1110    0  0.26324894    1.12    2   21.0    7  0.0
-         294  20.59
+	/*     5311320           1    # of vehicles in the file, Max # of stops
+	#   usec   dsec   stime vehcls vehtype ioc #ONode #IntDe info ribf    comp   izone Evac InitPos    VoT  tFlag pArrTime TP IniGas
+	1  11261   3248    0.00     3     1     1     1     1     0  0.0000  1.0000 1110    0  0.26324894    1.12    2   21.0    7  0.0
+	294  20.59
 
-	 */
+	*/
 
 	FILE* st = NULL;
 
@@ -65,10 +66,10 @@ void g_ReadDSPVehicleFile(string file_name)
 		g_read_integer(st);
 		// Max # of stops 
 		g_read_integer(st);
-	float total_number_of_vehicles_to_be_generated = 0;
+		float total_number_of_vehicles_to_be_generated = 0;
 
-	int i = 0;
-	int line_no =1;
+		int i = 0;
+		int line_no =1;
 		while(true)
 		{
 
@@ -77,7 +78,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			if(line_no%1000 ==0)
 				cout << "loading " << line_no/1000 << " k lines" << endl;
 
-		 // #
+			// #
 			int agent_id =  g_read_integer(st);
 
 			if(agent_id<0)
@@ -101,7 +102,7 @@ void g_ReadDSPVehicleFile(string file_name)
 
 			int origin_node_number =  g_read_integer(st);
 			pVehicle->m_OriginNodeID	= g_NodeNametoIDMap[origin_node_number];
-			
+
 			//dsec  
 
 			g_read_integer(st);
@@ -123,15 +124,15 @@ void g_ReadDSPVehicleFile(string file_name)
 
 			//vehicle class
 			pVehicle->m_PricingType =  g_read_integer(st);
-			
+
 			pVehicle->m_DemandType = pVehicle->m_PricingType; 
 			//vehicle type 
-			
+
 			pVehicle->m_VehicleType = g_read_integer(st);
 			//information class  
 
 			pVehicle->m_InformationClass = g_read_integer(st);
-			 
+
 
 			//#ONode 
 			g_read_integer(st);
@@ -145,7 +146,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			//comp 
 			g_read_float(st);
 			//izone 
-			
+
 			pVehicle->m_OriginZoneID =  g_read_integer(st);
 
 			//Evac
@@ -171,7 +172,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			// stop time?
 			float travel_time_value = g_read_float(st);
 
-	
+
 			pVehicle->m_DestinationNodeID 	=   g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); ;
 
 			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)!= g_ZoneMap.end())
@@ -197,18 +198,18 @@ void g_ReadDSPVehicleFile(string file_name)
 
 			if(pVehicle->m_OriginZoneID == pVehicle->m_DestinationZoneID)
 			{  // do not simulate intra zone traffic
-			continue; 
+				continue; 
 			}
-				if(g_DemandGlobalMultiplier<0.9999)
+			if(g_DemandGlobalMultiplier<0.9999)
+			{
+				double random_value = g_GetRandomRatio();
+				if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
 				{
-					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
-					{
 
-						delete pVehicle;
-						continue;
-					}
+					delete pVehicle;
+					continue;
 				}
+			}
 
 			g_VehicleVector.push_back(pVehicle);
 			g_VehicleMap[i]  = pVehicle;
@@ -236,42 +237,42 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 	pVehicle->m_NodeSize = path_node_sequence.size();
 
 	if(pVehicle->m_NodeSize>=1)  // in case reading error
+	{
+		pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+		pVehicle->m_NodeNumberSum = 0;
+		for(int i=0; i< pVehicle->m_NodeSize; i++)
+		{
+
+			int node_id;
+			float event_time_stamp,travel_time, emissions;
+
+			pVehicle->m_NodeNumberSum += path_node_sequence[i];
+
+			if(i==0)
+				pVehicle->m_OriginNodeID = g_NodeNametoIDMap[path_node_sequence[0]];
+
+			if(i==pVehicle->m_NodeSize-1)
+				pVehicle->m_DestinationNodeID   = g_NodeNametoIDMap[path_node_sequence[pVehicle->m_NodeSize-1]];
+
+			if(i>=1)
 			{
-				pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
-				pVehicle->m_NodeNumberSum = 0;
-				for(int i=0; i< pVehicle->m_NodeSize; i++)
+				DTALink* pLink = g_LinkMap[GetLinkStringID(path_node_sequence[i-1],path_node_sequence[i])];
+				if(pLink==NULL)
 				{
+					CString msg;
+					msg.Format("Error in reading link %d->%d for vehicle id %d  in file %s.", path_node_sequence[i-1],path_node_sequence[i],pVehicle->m_VehicleID,FileName);
+					cout << msg << endl;
 
-					int node_id;
-					float event_time_stamp,travel_time, emissions;
-
-				 	pVehicle->m_NodeNumberSum += path_node_sequence[i];
-
-					if(i==0)
-						pVehicle->m_OriginNodeID = g_NodeNametoIDMap[path_node_sequence[0]];
-
-					if(i==pVehicle->m_NodeSize-1)
-						pVehicle->m_DestinationNodeID   = g_NodeNametoIDMap[path_node_sequence[pVehicle->m_NodeSize-1]];
-
-					if(i>=1)
-					{
-						DTALink* pLink = g_LinkMap[GetLinkStringID(path_node_sequence[i-1],path_node_sequence[i])];
-						if(pLink==NULL)
-						{
-							CString msg;
-							msg.Format("Error in reading link %d->%d for vehicle id %d  in file %s.", path_node_sequence[i-1],path_node_sequence[i],pVehicle->m_VehicleID,FileName);
-							cout << msg << endl;
-
-							return false;
-						}
-
-						pVehicle->m_Distance+= pLink ->m_Length ;
-
-						pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo  ; // start from 0
-					}
-
-
+					return false;
 				}
+
+				pVehicle->m_Distance+= pLink ->m_Length ;
+
+				pVehicle->m_NodeAry[i-1].LinkNo  = pLink->m_LinkNo  ; // start from 0
+			}
+
+
+		}
 
 	}
 	return true;
@@ -319,15 +320,15 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			DTAVehicle* pVehicle = 0;
 
 
-				if(g_DemandGlobalMultiplier<0.9999)
+			if(g_DemandGlobalMultiplier<0.9999)
+			{
+				double random_value = g_GetRandomRatio();
+				if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
 				{
-					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
-					{
 
-						continue;
-					}
+					continue;
 				}
+			}
 			pVehicle = new (std::nothrow) DTAVehicle;
 			if(pVehicle == NULL)
 			{
@@ -374,7 +375,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 			if(origin_node_id == destination_node_id)
 			{  // do not simulate intra zone traffic
-			continue; 
+				continue; 
 			}
 
 			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)!= g_ZoneMap.end())
@@ -416,12 +417,12 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 				if(g_ZoneMap.find(pVehicle->m_DestinationZoneID_Updated) == g_ZoneMap.end())
 				{
-				
+
 
 					cout << "updated_to_zone_id " << pVehicle->m_DestinationZoneID_Updated << " does not exist for vehicle " << pVehicle->m_VehicleID << endl;
 					g_ProgramStop();
-						
-				
+
+
 				}
 				g_bVehicleAttributeUpdatingFlag = true;
 				g_bInformationUpdatingAndReroutingFlag = true;
@@ -435,12 +436,12 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			std::vector<int> path_node_sequence;
 			if(number_of_nodes >=2)
 			{
-			string path_node_sequence_str; 
-			parser_agent.GetValueByFieldNameRequired("path_node_sequence",path_node_sequence_str);
+				string path_node_sequence_str; 
+				parser_agent.GetValueByFieldNameRequired("path_node_sequence",path_node_sequence_str);
 
-			path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
+				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
-			AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
+				AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
 			}
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
@@ -461,11 +462,11 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			float ending_departure_time  = 0;
 			if(agent_group_flag==true)
 			{
-			parser_agent.GetValueByFieldName("number_of_agents",number_of_agents);
+				parser_agent.GetValueByFieldName("number_of_agents",number_of_agents);
 
-			ending_departure_time = departure_time;
+				ending_departure_time = departure_time;
 
-			parser_agent.GetValueByFieldName ("ending_departure_time",ending_departure_time);
+				parser_agent.GetValueByFieldName ("ending_departure_time",ending_departure_time);
 			}
 
 
@@ -474,7 +475,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 				if(agent_i>=1 && agent_group_flag)
 				{
-			
+
 					DTAVehicle* pNewVehicle = new (std::nothrow) DTAVehicle;
 					if(pNewVehicle == NULL)
 					{
@@ -504,8 +505,8 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 				}else
 				{
-				g_VehicleVector.push_back(pVehicle);
-				g_VehicleMap[pVehicle->m_VehicleID ]  = pVehicle;
+					g_VehicleVector.push_back(pVehicle);
+					g_VehicleMap[pVehicle->m_VehicleID ]  = pVehicle;
 
 				}
 
@@ -521,14 +522,14 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 				i++;
 			}
-			
+
 
 			line_no++;
 		}
 
 
 
-			cout << i << " agents have been read from file " << file_name << endl;
+		cout << i << " agents have been read from file " << file_name << endl;
 
 	}else
 	{
@@ -545,9 +546,9 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 	if(b_InitialLoadingFlag)
 	{ //allocate memory
-	
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
+
+		g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
+		g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
 
 	}
 
@@ -560,7 +561,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 		if(bOutputLogFlag)
 		{
-		cout << "reading file " << file_name << endl;
+			cout << "reading file " << file_name << endl;
 		}
 		int line_no = 1;
 
@@ -576,8 +577,8 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 			if((count+1)%1000 ==0 && bOutputLogFlag)
 			{
-			 cout << "reading " << count+1 << " records..." << endl;
-			
+				cout << "reading " << count+1 << " records..." << endl;
+
 			}
 			count ++;
 
@@ -607,9 +608,9 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)== g_ZoneMap.end() || g_ZoneMap.find( pVehicle->m_DestinationZoneID)== g_ZoneMap.end() )
 			{
-			count_for_not_defined_zones++;
+				count_for_not_defined_zones++;
 
-			continue;
+				continue;
 			}
 
 
@@ -647,7 +648,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 			{  // do not simulate intra zone traffic
 
 				count_for_sameOD ++;
-			continue; 
+				continue; 
 			}
 
 			if(g_ZoneMap.find( pVehicle->m_OriginZoneID)!= g_ZoneMap.end())
@@ -695,12 +696,12 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 			std::vector<int> path_node_sequence;
 			if(number_of_nodes >=2)
 			{
-			string path_node_sequence_str; 
-			parser_agent.GetValueByFieldName("path_node_sequence",path_node_sequence_str);
+				string path_node_sequence_str; 
+				parser_agent.GetValueByFieldName("path_node_sequence",path_node_sequence_str);
 
-			path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
+				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
-			AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
+				AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
 			}
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
@@ -725,21 +726,21 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 
 			int AssignmentInterval = g_FindAssignmentInterval(pVehicle->m_DepartureTime);
 
-				ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+			ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
 
-				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(pVehicle->m_VehicleID);
 
-				i++;
-			}
-			
-
-			line_no++;
+			i++;
+		}
 
 
+		line_no++;
 
-			if(bOutputLogFlag)
-			{
-	
+
+
+		if(bOutputLogFlag)
+		{
+
 			cout << count << " records have been read from file " << file_name << endl;
 
 			cout << i << " agents have been read from file " << file_name << endl;
@@ -751,11 +752,11 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 			if(count_for_not_defined_zones >=1)
 				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
 
-			}
+		}
 	}else
 	{
 		cout << "Waiting for file " << file_name << "... " << endl;
-		
+
 		return false;
 	}
 
@@ -769,7 +770,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 	CCSVParser parser_agent;
 
 
-		parser_agent.Delimiter = '\t';
+	parser_agent.Delimiter = '\t';
 
 	float total_number_of_vehicles_to_be_generated = 0;
 
@@ -778,7 +779,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 
 		if(bOutputLogFlag)
 		{
-		cout << "reading file " << file_name << endl;
+			cout << "reading file " << file_name << endl;
 		}
 		int line_no = 1;
 
@@ -794,20 +795,20 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 
 			if((count+1)%1000 ==0 && bOutputLogFlag)
 			{
-			 cout << "reading " << count+1 << " records..." << endl;
-			
+				cout << "reading " << count+1 << " records..." << endl;
+
 			}
 			count ++;
 
-				if(g_DemandGlobalMultiplier<0.9999)
+			if(g_DemandGlobalMultiplier<0.9999)
+			{
+				double random_value = g_GetRandomRatio();
+				if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
 				{
-					double random_value = g_GetRandomRatio();
-					if(random_value>g_DemandGlobalMultiplier) // if random value is less than demand multiplier, then skip, not generate vehicles
-					{
 
-						continue;
-					}
+					continue;
 				}
+			}
 
 			int trip_id = 0;
 
@@ -818,9 +819,9 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 
 			if(g_ZoneMap.find( vhc.m_OriginZoneID)== g_ZoneMap.end() || g_ZoneMap.find( vhc.m_DestinationZoneID)== g_ZoneMap.end() )
 			{
-			count_for_not_defined_zones++;
+				count_for_not_defined_zones++;
 
-			continue;
+				continue;
 			}
 
 
@@ -829,7 +830,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 			{  // do not simulate intra zone traffic
 
 				count_for_sameOD ++;
-			continue; 
+				continue; 
 			}
 
 			if(g_ZoneMap.find( vhc.m_OriginZoneID)!= g_ZoneMap.end())
@@ -844,10 +845,10 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 			parser_agent.GetValueByFieldNameRequired("START",START_TIME);
 
 			int hour, min, second;
-		     sscanf(START_TIME.c_str (), "%d:%d:%d",&hour,&min, &second);
-		 
-			 
-			 vhc.m_DepartureTime = hour * 60 + min +second/60.0 ;
+			sscanf(START_TIME.c_str (), "%d:%d:%d",&hour,&min, &second);
+
+
+			vhc.m_DepartureTime = hour * 60 + min +second/60.0 ;
 
 
 			if( vhc.m_DepartureTime < g_DemandLoadingStartTimeInMin || vhc.m_DepartureTime > g_DemandLoadingEndTimeInMin)
@@ -867,7 +868,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 			//parser_agent.GetValueByFieldName("vehicle_age",pVehicle->m_Age );
 
 
-	/*		int number_of_nodes = 0;
+			/*		int number_of_nodes = 0;
 			parser_agent.GetValueByFieldName("number_of_nodes",number_of_nodes );
 
 			std::vector<int> path_node_sequence;
@@ -898,24 +899,24 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 
 			//
 
-		int demand_type  = 1;
-		vhc.m_DemandType = demand_type;
+			int demand_type  = 1;
+			vhc.m_DemandType = demand_type;
 
 
-		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass , vhc.m_VOT, vhc.m_Age );
+			g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass , vhc.m_VOT, vhc.m_Age );
 
-		g_simple_vector_vehicles.push_back(vhc);
+			g_simple_vector_vehicles.push_back(vhc);
 
-		//// debug info
-		//if(g_simple_vector_vehicles.size() == 100000)
-		//	break;
+			//// debug info
+			//if(g_simple_vector_vehicles.size() == 100000)
+			//	break;
 
 
 
-	}
-				if(bOutputLogFlag)
-			{
-	
+		}
+		if(bOutputLogFlag)
+		{
+
 			cout << count << " records have been read from file " << file_name << endl;
 
 			cout << i << " agents have been read from file " << file_name << endl;
@@ -927,13 +928,13 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bO
 			if(count_for_not_defined_zones >=1)
 				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
 
-			}
+		}
 
 	}
 	else
 	{
 		cout << "Waiting for file " << file_name << "... " << endl;
-		
+
 		return false;
 	}
 
@@ -1071,11 +1072,11 @@ bool g_ReadAgentBinFile(string file_name)
 							return false;
 						}
 
-							if(pLink->GetNumberOfLanes () <0.01)  // this is a blocked link by work zone
-							{
-								pVehicle->m_bForcedSwitchAtFirstIteration = true;
-							
-							}
+						if(pLink->GetNumberOfLanes () <0.01)  // this is a blocked link by work zone
+						{
+							pVehicle->m_bForcedSwitchAtFirstIteration = true;
+
+						}
 
 						pVehicle->m_Distance+= pLink ->m_Length ;
 
@@ -1121,8 +1122,8 @@ bool g_ReadAgentBinFile(string file_name)
 		cout << "File input_agent.bin cannot be found. Please check."  << endl;
 		g_ProgramStop();
 
-		
-	
+
+
 	}
 	return false;
 }
@@ -1130,19 +1131,19 @@ bool g_ReadAgentBinFile(string file_name)
 void g_ResetInformationClass()
 {
 	std::map<int, DTAVehicle*>::iterator iterVM;
-		for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+	{
+		DTAVehicle* pVehicle = iterVM->second;
+		pVehicle->m_InformationClass  = 1;
+		double RandomPercentage= g_GetRandomRatio() * 100; 
+		for(int in= 1; in< MAX_INFO_CLASS_SIZE; in++)
 		{
-			DTAVehicle* pVehicle = iterVM->second;
-				pVehicle->m_InformationClass  = 1;
-				double RandomPercentage= g_GetRandomRatio() * 100; 
-				for(int in= 1; in< MAX_INFO_CLASS_SIZE; in++)
-				{
-					if(RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType ].cumulative_info_class_percentage[in-1] && 
-						RandomPercentage < g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in])
-						pVehicle->m_InformationClass  = in+1; // return pretrip as 2 or enoute as 3
-				}
+			if(RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType ].cumulative_info_class_percentage[in-1] && 
+				RandomPercentage < g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in])
+				pVehicle->m_InformationClass  = in+1; // return pretrip as 2 or enoute as 3
 		}
 	}
+}
 
 void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, double CurrentTime)
 {
@@ -1176,143 +1177,261 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 	int node_size  = g_NodeVector.size();
 	int link_size  = g_LinkVector.size();
 
-		bool  bUseCurrentInformation = true;
+	cout<< "calculation interval "<< g_DemandLoadingStartTimeInMin << " -> " <<  g_DemandLoadingEndTimeInMin << "min; with an aggregation time interval of " << g_AggregationTimetInterval <<endl;
+	bool  bUseCurrentInformation = true;
 
-		int DemandLoadingStartTimeInMin= g_DemandLoadingStartTimeInMin;
-		int DemandLoadingEndTimeInMin= g_DemandLoadingEndTimeInMin;
+	int DemandLoadingStartTimeInMin= g_DemandLoadingStartTimeInMin;
+	int DemandLoadingEndTimeInMin= g_DemandLoadingEndTimeInMin;
 
-		if(bTimeDependentFlag)
-		{
-			bUseCurrentInformation = false;  // then time dependent travel time wil be used
-		}
+	if(bTimeDependentFlag)
+	{
+		bUseCurrentInformation = false;  // then time dependent travel time wil be used
+	}
 
 
-		if(bUseCurrentInformation == true)
-		{
+	if(bUseCurrentInformation == true)
+	{
 		DemandLoadingStartTimeInMin = CurrentTime;
 		DemandLoadingEndTimeInMin = CurrentTime+1;
-	
-		}
 
-	int line = 0;
+	}
+
+
+	int StatisticsIntervalSize = (DemandLoadingEndTimeInMin - DemandLoadingStartTimeInMin)/g_AggregationTimetInterval;
+	cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << StatisticsIntervalSize << " 15-min time intervals" << endl;
+	float*** ODTravelTime = NULL;
+	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize+1,g_ODZoneIDSize+1,StatisticsIntervalSize);
+
+	float*** ODDistance = NULL;
+	ODDistance = Allocate3DDynamicArray<float>(g_ODZoneIDSize+1,g_ODZoneIDSize+1,StatisticsIntervalSize);
+
+	for(int i = 0; i<=g_ODZoneNumberSize; i++)
+		for(int j = 0; j<=g_ODZoneNumberSize; j++)
+			for(int t=0; t<StatisticsIntervalSize; t++)
+			{
+
+				if(i==j)
+				{
+				ODTravelTime[i][j][t] = 0.5;
+				ODDistance[i][j][t] = 0.5;
+				}
+				else
+				{
+				ODTravelTime[i][j][t] = 0;
+				ODDistance[i][j][t] = 0;
+				}
+			}
+
 
 #pragma omp parallel for
-	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-	{
-		// create network for shortest path calculation at this processor
-		int	id = omp_get_thread_num( );  // starting from 0
-
-		//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-	
-
-
-
-		network_MP[id].BuildPhysicalNetwork (0,-1,g_TrafficFlowModelFlag,bUseCurrentInformation,CurrentTime);  // build network for this zone, because different zones have different connectors...
-
-
-		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
-		{
-
-			if((iterZone->first%number_of_threads) == ProcessID) 
-			{ // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
-				
-				int origin_node_indx = iterZone->second .GetRandomOriginNodeIDInZone ((0)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
-
-			if(origin_node_indx>=0) // convert node number to internal node id
+			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 			{
-				g_NodeVector[origin_node_indx].m_DestinationVector.clear();   // remove memory
+				// create network for shortest path calculation at this processor
+				int	id = omp_get_thread_num( );  // starting from 0
 
-				for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
+				//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
+
+
+				network_MP[id].BuildPhysicalNetwork (0,-1,g_TrafficFlowModelFlag,bUseCurrentInformation,CurrentTime);  // build network for this zone, because different zones have different connectors...
+
+
+
+				// from each origin zone
+				for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 				{
-					DTADestination element;
 
-					element.from_TAZ = iterZone->first ;
-					element.to_TAZ = iterZone2->first ;
+					if((iterZone->first%number_of_threads) == ProcessID) 
+					{ // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
+
+						int origin_node_indx = iterZone->second .GetRandomOriginNodeIDInZone ((0)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
 
 
-						int dest_node_index =  iterZone2->second .GetRandomDestinationIDInZone ((line%100)/100.0f); 
-						if(dest_node_index>=0) // convert node number to internal node id
+					if(bTimeDependentFlag)
+						cout<< "calculating TD shortest path tree for zone "<< iterZone->first << " on processor " << id << "... " << endl;
+					else 
+						cout<< "calculating RT shortest path tree for zone "<< iterZone->first << " on processor " << id << "... " << endl;
+
+						if(origin_node_indx>=0) // convert node number to internal node id
 						{
-
-							//distance measure
-
-							bDistanceCost = true;
-							network_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,0,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-							element.destination_node_index = dest_node_index;
-							element.destination_node_distance = network_MP[id].LabelCostAry[dest_node_index];
 
 							bDistanceCost = false;
 							for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 							{
-							network_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-							element.destination_node_travel_time_vector.push_back (network_MP[id].LabelCostAry[dest_node_index]);
-							element.destination_node_travel_distance_vector.push_back (network_MP[id].LabelDistanceAry[dest_node_index]);
-							}
-							// travel time measure
-							g_NodeVector[origin_node_indx].m_DestinationVector.push_back(element);
-							g_NodeVector[origin_node_indx].m_bOriginFlag  = true;
+								network_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
-						}
+								// to each destination zone
+								for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
+								{
+
+									int dest_node_index =  iterZone2->second .GetRandomDestinationIDInZone ((0)/100.0f); 
+									if(dest_node_index>=0) // convert node number to internal node id
+									{
+
+											int time_interval_no = ( departure_time-DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
+											ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = network_MP[id].LabelCostAry[dest_node_index];
+											ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = network_MP[id].LabelDistanceAry[dest_node_index];
 
 
-					}
+									}
 
-				}  // destination zone
-			} // current thread
-		}  // origin zone
+								} //for each destination zone
+								}  // departure time
+							}  // with origin node numbers 
+					} // current thread	
+				
+					}  // origin zone
 
-	}  // multiple threads
-
-
-	unsigned int i;
-
-	cout<< "# of OD pairs = "  << line << endl; 
-	cout<< "# of processors = "  << number_of_threads  << endl; 
-
-	g_LogFile<< "# of OD pairs = "  << line << endl; 
-	g_LogFile <<  g_GetAppRunningTime() << "# of processors = "  << number_of_threads  << endl; 
+				}  // multiple threads
 
 
-	// calculate travel time 
-
-
-	FILE* st = NULL;
-	fopen_s(&st,file_name.c_str (),"w");
-	if(st!=NULL)
-	{
-		fprintf(st, "from_zone_id,to_zone_id,departure_time_in_min,trip_distance_in_mile,trip_time_in_min\n");
-
-		for(int node_index  = 0; node_index < node_size; node_index++)
-		{
-			for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
+			if(bTimeDependentFlag == true) // time-dependent skim files
 			{
-				int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
-
-				int ti = 0;
 				for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 				{
-				fprintf(st, "%d,%d,%d,%4.2f,%4.2f\n", 
-					g_NodeVector[node_index].m_DestinationVector[dest_no].from_TAZ,
-					g_NodeVector[node_index].m_DestinationVector[dest_no].to_TAZ,
-					departure_time,
-					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_travel_time_vector[ti],
-					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_travel_distance_vector[ti]);
-
-					ti++;
 				
+					CString str;
+					int time_interval_no = departure_time/g_AggregationTimetInterval;
+					str.Format("skim%d.csv",time_interval_no);
+					FILE* st = NULL;
+					fopen_s(&st,str,"w");
+					if(st!=NULL)
+					{
+
+
+					// from each origin zone
+					for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+					{
+						// to each destination zone
+						for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
+						{	
+
+								int time_interval_no = ( departure_time-DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
+								fprintf(st, "%d,%d,%4.2f,%4.2f\n",  
+									iterZone->first,
+									iterZone2->first,
+									ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no],
+									ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no]);
+								 
+						}
+					}
+
+					
+					fclose(st);
+					}
+
+				}			
+			
+			}
+			else // real time skim file
+			{
+
+				// step w: calculate experienced travel time for complete vehile trips
+
+	ODStatistics** ODMOEArray = NULL;
+
+	int total_number_of_zones = g_ZoneMap.size();
+
+	ODMOEArray = AllocateDynamicArray<ODStatistics>(total_number_of_zones,total_number_of_zones);
+
+	int i,j;
+	for(i = 0; i< total_number_of_zones; i++)
+		for(j = 0; j< total_number_of_zones; j++)
+		{
+
+					ODMOEArray[i][j].OriginZoneNumber  = 0;
+					ODMOEArray[i][j].DestinationZoneNumber  = 0; 
+					ODMOEArray[i][j].TotalVehicleSize = 0;
+					ODMOEArray[i][j].TotalCompleteVehicleSize = 0;
+					ODMOEArray[i][j].TotalTravelTime = 0;
+					ODMOEArray[i][j].TotalDistance =0;
+			
+		}
+
+	std::map<int, DTAVehicle*>::iterator iterVM;
+	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+	{
+
+		DTAVehicle* pVehicle = iterVM->second;
+
+		int origin_zone_no = g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo;
+		int destination_zone_no = g_ZoneMap[pVehicle->m_DestinationZoneID].m_ZoneSequentialNo;
+
+		ODMOEArray[origin_zone_no][destination_zone_no].TotalVehicleSize+=1;
+		int arrival_time_window_begin_time_in_min = CurrentTime - g_AggregationTimetInterval; 
+		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && pVehicle-> m_ArrivalTime >=   arrival_time_window_begin_time_in_min)  // with physical path in the network
+		{
+
+
+			ODMOEArray[origin_zone_no][destination_zone_no].OriginZoneNumber = pVehicle->m_OriginZoneID;
+			ODMOEArray[origin_zone_no][destination_zone_no].DestinationZoneNumber = pVehicle->m_DestinationZoneID;
+
+
+			ODMOEArray[origin_zone_no][destination_zone_no].TotalCompleteVehicleSize+=1;
+			ODMOEArray[origin_zone_no][destination_zone_no].TotalTravelTime += pVehicle->m_TripTime;
+			ODMOEArray[origin_zone_no][destination_zone_no].TotalDistance += pVehicle->m_Distance;
+		}
+	}
+
+
+	for(i = 0; i< total_number_of_zones; i++)
+		for(j = 0; j< total_number_of_zones; j++)
+		{
+
+			if(ODMOEArray[i][j].TotalCompleteVehicleSize>=1)
+			{
+
+				ODTravelTime[i][j][0]
+				=  ODMOEArray[i][j].TotalTravelTime/ max(1,ODMOEArray[i][j].TotalCompleteVehicleSize);
+				
+				ODDistance[i][j][0] 
+				=  ODMOEArray[i][j].TotalDistance /  max(1,ODMOEArray[i][j].TotalCompleteVehicleSize);
+			}
+		}
+		if(ODMOEArray !=NULL)
+			DeallocateDynamicArray<ODStatistics>(ODMOEArray,total_number_of_zones,total_number_of_zones);
+
+				//
+			
+			FILE* st = NULL;
+				fopen_s(&st,file_name.c_str (),"w");
+				if(st!=NULL)
+				{
+					//fprintf(st, "from_zone_id,to_zone_id,trip_time_in_min,trip_distance_in_mile\n");
+
+					// from each origin zone
+					for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+					{
+						// to each destination zone
+						for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
+						{	
+
+							for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
+							{
+								int time_interval_no = ( departure_time-DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
+								fprintf(st, "%d,%d,%4.2f,%4.2f\n",  
+									iterZone->first,
+									iterZone2->first,
+									ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no],
+									ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no]
+							);
+
+							}
+
+						}
+					}
+				}else
+				{
+					cout << "File "<< file_name << " cannot be opened. Please check." <<endl;
+
+					fclose(st);
+					g_ProgramStop();
 				}
+
+				fclose(st);
 
 			}
 
-		}
-
-	fclose(st);
-	}else
-	{
-		cout << "File "<< file_name << " cannot be opened. Please check." <<endl;
-		g_ProgramStop();
-	}
 }
 
 

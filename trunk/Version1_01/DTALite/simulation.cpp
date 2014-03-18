@@ -132,7 +132,16 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	}
 
 
+        // user_defined information updating 
 
+        int time_clock_in_min  = meso_simulation_time_interval_no/10;
+        if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
+        {  // we need to update travel time and agent file
+
+                g_ExchangeRealTimeSimulationData(DayNo,time_clock_in_min);
+
+
+        }
 	// load vehicle into network
 
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,

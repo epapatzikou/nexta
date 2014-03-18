@@ -101,6 +101,8 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	//y itercept or a0
 	y_intercept = average_y - slope * average_x;
 
+	double total_absolute_error = 0;
+	double total_percentage_error = 0;
 
 	//calculate squared residues, their sum_ etc.
 	for (int i = 0; i <  DataVector.size(); i++) 
@@ -117,6 +119,9 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 		//sum of squared residues
 		sum_residue += res;
 
+		total_absolute_error += fabs(DataVector[i].y - DataVector[i].x);
+		total_percentage_error +=  fabs(DataVector[i].y - DataVector[i].x)/max(0.1,DataVector[i].x)*100;
+
 	}
 
 	//calculate r^2 coefficient of determination
@@ -129,6 +134,10 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 	result.slope = slope; 
 	result.y_intercept = y_intercept;
 	result.avg_y_to_x_ratio = average_y / max(0.0001,average_x);  // directly calculate bias slope 
+
+	result.avg_absolute_error = total_absolute_error / max(1,DataVector.size());
+	result.avg_percentage_error = total_percentage_error / max(1,DataVector.size());
+
 
 	return result;
 

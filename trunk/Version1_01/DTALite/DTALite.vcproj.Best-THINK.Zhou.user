@@ -38,7 +38,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\DataSets\TC"
+				WorkingDirectory="C:\DataSets\New_PHXsubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
@@ -94,7 +94,7 @@
 			>
 			<DebugSettings
 				Command="$(TargetPath)"
-				WorkingDirectory="C:\NEXTA_OpenSource\Software_release\sample_data_sets\Advanced Topics_on_Traffic Flow Model and Simulation\Real_time_simulation_6-Node Network"
+				WorkingDirectory="C:\DataSets\New_PHXsubarea"
 				CommandArguments=""
 				Attach="false"
 				DebuggerType="3"
