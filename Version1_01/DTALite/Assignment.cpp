@@ -1514,10 +1514,21 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		//		{
 		//			g_SummaryStatFile.SetFieldName ("Demand Deviation");
 		g_SummaryStatFile.SetFieldName ("ODME: number of data points");
+
 		g_SummaryStatFile.SetFieldName ("ODME: Absolute link count error");
 		g_SummaryStatFile.SetFieldName ("ODME: % link count error");
-		g_SummaryStatFile.SetFieldName ("ODME: slope =observed/estimated");
-		g_SummaryStatFile.SetFieldName ("ODME: r_squared");
+		g_SummaryStatFile.SetFieldName ("ODME: slope =observed/estimated link count");
+		g_SummaryStatFile.SetFieldName ("ODME: r_squared link count");
+
+
+		if(g_ObsDensityAvailableFlag)
+		{
+		g_SummaryStatFile.SetFieldName ("ODME: Absolute lane density error");
+		g_SummaryStatFile.SetFieldName ("ODME: % lane density error");
+		g_SummaryStatFile.SetFieldName ("ODME: slope =observed/estimated lane density");
+		g_SummaryStatFile.SetFieldName ("ODME: r_squared lane density");		
+		}
+
 //		g_SummaryStatFile.SetFieldName ("ODME: avg_simulated_to_avg_obs");
 		//		}
 
@@ -1553,7 +1564,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	}
 
-	int time_dependent_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_skim_file_output", 1, g_DTASettingFileName);
+	int time_dependent_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_skim_file_output", 0, g_DTASettingFileName);
 
 	if(time_dependent_skim_file_output>0)
 	{
@@ -1600,13 +1611,21 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		p_SimuOutput->AvgUEGap = 0;
 		p_SimuOutput->AvgRelativeUEGap = 0;
 
-		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",p_SimuOutput->ODME_result .data_size );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: number of data points",p_SimuOutput->ODME_result_link_count .data_size );
 		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute link count error",p_SimuOutput->LinkVolumeAvgAbsError);
 		g_SummaryStatFile.SetValueByFieldName ("ODME: % link count error",p_SimuOutput->LinkVolumeAvgAbsPercentageError );
 
-		g_SummaryStatFile.SetValueByFieldName ("ODME: slope =observed/estimated",p_SimuOutput->ODME_result .slope );
-		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared",p_SimuOutput->ODME_result .rsqr );
-//		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",p_SimuOutput->ODME_result.avg_y_to_x_ratio  );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: slope =observed/estimated link count",p_SimuOutput->ODME_result_link_count .slope );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared link count",p_SimuOutput->ODME_result_link_count .rsqr );
+
+		if(g_ObsDensityAvailableFlag)
+		{
+		g_SummaryStatFile.SetValueByFieldName ("ODME: slope =observed/estimated lane density",p_SimuOutput->ODME_result_lane_density .slope );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: r_squared lane density",p_SimuOutput->ODME_result_lane_density .rsqr );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: Absolute lane density error",p_SimuOutput->ODME_result_lane_density.avg_absolute_error );
+		g_SummaryStatFile.SetValueByFieldName ("ODME: % lane density error",p_SimuOutput->ODME_result_lane_density.avg_percentage_error );
+		}
+//		g_SummaryStatFile.SetValueByFieldName ("ODME: avg_simulated_to_avg_obs",p_SimuOutput->ODME_result_link_count.avg_y_to_x_ratio  );
 	}
 
 	if(g_ODEstimationFlag == 1 && iteration>=g_ODEstimation_StartingIteration)

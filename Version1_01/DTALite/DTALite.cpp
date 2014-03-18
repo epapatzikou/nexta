@@ -2414,8 +2414,9 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 	{
 		if(FileName.size()>0 && FileName.compare ("Scenario_Incident.csv")==0)  // external input files from multi-scenario runs
 		{
-			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!"  <<  endl;
-			getchar();				
+			cout << "File " << FileName << " cannot be opened. "  <<  endl;
+			g_LogFile  << "File " << FileName << " cannot be opened. "  <<  endl;
+//			getchar();				
 		}
 	}
 
@@ -3345,6 +3346,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 			{
 
 				//				if((pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) > 0) // there are vehicles on the link
+				if(time < pLink->m_LinkMOEAry.size())
 				{
 					float LinkInFlow = float(pLink->GetArrivalFlow(time));
 					float LinkOutFlow = float(pLink->GetDepartureFlow(time));
@@ -3465,10 +3467,9 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 				}
 
-
+			}
 
 			}
-		}
 		fclose(st);
 		fclose(st_struct);
 	}else

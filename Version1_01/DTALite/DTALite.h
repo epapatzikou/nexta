@@ -164,7 +164,14 @@ public:
 	double y_intercept;
 	double rsqr;
 	double average_residue;
+	
+	double avg_absolute_error;
+	double avg_percentage_error;
+	
+
 	int data_size;
+
+
 
 	struc_LinearRegressionResult()
 	{
@@ -175,6 +182,9 @@ public:
 	average_residue = 0;
 	data_size = 0;
 	
+	avg_absolute_error = 0;
+	avg_percentage_error = 0;
+
 	}
 
 };
@@ -1390,6 +1400,20 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	}
 
+	int GetSimulateAvgDensityPerLane(int start_timestamp, int end_timestamp)
+	{
+
+		if(start_timestamp < end_timestamp && start_timestamp >= 0 && start_timestamp < m_LinkMOEAry.size() &&  end_timestamp < m_LinkMOEAry.size()  )
+			{
+
+				int TotalSimulatedNumberOfVehicles = m_LinkMOEAry[start_timestamp].CumulativeArrivalCount  - m_LinkMOEAry[end_timestamp].CumulativeDepartureCount; 
+
+				return TotalSimulatedNumberOfVehicles/max(1,this->m_NumLanes)/(end_timestamp -start_timestamp)  ; 
+
+			}
+		return 0;
+
+	}
 
 	int GetSimulatedNumberOfVehicles(float timestamp)
 	{
@@ -3315,7 +3339,9 @@ struct NetworkLoadingOutput
 {
 public:
 
-	struc_LinearRegressionResult ODME_result;
+	struc_LinearRegressionResult ODME_result_link_count;  
+	struc_LinearRegressionResult ODME_result_lane_density;
+
 	NetworkLoadingOutput()
 	{
 		ResetStatistics();
@@ -3760,6 +3786,7 @@ extern bool g_ReadLinkMeasurementFile();
 
 // for OD estimation
 extern float    g_ODEstimation_WeightOnHistODDemand;
+extern bool g_ObsDensityAvailableFlag;
 extern float    g_ODEstimation_Weight_Flow;
 extern float    g_ODEstimation_Weight_NumberOfVehicles;
 extern float    g_ODEstimation_Weight_TravelTime;
