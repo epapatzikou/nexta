@@ -1382,7 +1382,8 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		if(length_unit=="km")
 			length = length/1.609344;
 
-
+		if(length_unit=="meter")
+			length = length/1609.344;
 	}
 	else
 	{
@@ -1400,8 +1401,6 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	if(length < minimum_length_for_importing_links)
 		continue;
 
-	if(bMileFlag == false)
-		length*=0.621371;
 
 	m_AMSLogFile << "," << from_node_id << "," << to_node_id << "," << link_id << "," << name << "," << type << "," << direction << ",";
 	m_AMSLogFile << length << "," << number_of_lanes << "," << speed_limit_in_mph << ","  << capacity_in_pcphpl << ",";

@@ -585,11 +585,14 @@ public:
 
 	std::string second_count_sensor_id;
 
-	float count; 
+	float count;  // link count
+	float density; //lane density;
+
 	DTASensorData()
 	{
 	start_time_in_min = end_time_in_min = 0;
 	count = 0;
+	density = 0;
 	}
 
 
@@ -3903,7 +3906,6 @@ public:
 
 	float GetTimeDependentMOEBy1Min(int time, int MOEType)
 	{
-		return 1;
 
 		switch(MOEType)
 		{

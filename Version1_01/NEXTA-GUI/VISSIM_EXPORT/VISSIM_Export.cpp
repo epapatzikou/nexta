@@ -300,7 +300,7 @@ bool MicroSimulatorInterface::OpenLogFile(std::string strLogFileName)
 	}
 	else
 	{
-		AfxMessageBox("File warning.log cannot be opened, and it might be locked by another program!");
+		AfxMessageBox("File NeXTA.log cannot be opened, and it might be locked by another program!");
 		return false;
 	}
 

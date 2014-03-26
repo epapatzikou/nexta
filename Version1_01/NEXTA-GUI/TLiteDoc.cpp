@@ -478,6 +478,7 @@ BEGIN_MESSAGE_MAP(CTLiteDoc, CDocument)
 	ON_COMMAND(ID_RAMP_RAMPDATA, &CTLiteDoc::OnRampRampdata)
 	ON_COMMAND(ID_LINK_ADD_RAMPMETER, &CTLiteDoc::OnLinkAddRampmeter)
 	ON_COMMAND(ID_DELETE_RAMPMETER, &CTLiteDoc::OnDeleteRampmeter)
+	ON_COMMAND(ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_LaneDensity, &CTLiteDoc::OnMoeViewoddemandestimationsummaryplotLanedensity)
 	END_MESSAGE_MAP()
 
 
@@ -759,11 +760,11 @@ CTLiteDoc::CTLiteDoc()
 	m_UnitFeet = m_UnitMile/5280.0;
 
 
-	m_OffsetInFeet = 0;
+	m_OffsetInFeet = 15;
 	m_LaneWidthInFeet = 10;
 	m_bFitNetworkInitialized = false; 
 
-	m_DefaultNumLanes = 3;
+	m_DefaultNumLanes = 1;
 	m_DefaultSpeedLimit = 65.0f;
 	m_DefaultCapacity = 1900.0f;
 	m_DefaultLinkType = 1;
@@ -978,7 +979,7 @@ CTLiteDoc::~CTLiteDoc()
 		iDoc++;
 	}
 
-	m_WarningFile.close();
+	m_NEXTALOGFile.close();
 
 	if(m_pNetwork!=NULL)
 		delete m_pNetwork;
@@ -1510,7 +1511,7 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	m_ProjectTitle = GetWorkspaceTitleName(ProjectFileName);
 	SetTitle(m_ProjectTitle);
 
-	CopyDefaultFiles();
+	//CopyDefaultFiles();
 
 	ReadModelAgentTrajectory(m_ProjectDirectory + "model_trajectory.csv");
 
@@ -2976,8 +2977,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 	bool bTwoWayLinkFlag = false;
 
-	CString DTASettingsPath = m_ProjectDirectory+"DTASettings.txt";
-	float AADT_conversion_factor = g_GetPrivateProfileDouble("safety_planning", "default_AADT_conversion_factor", 0.1, DTASettingsPath);	
+	float AADT_conversion_factor = 0.1;	
 
 
 	bool length_field_warning = false;
@@ -3570,7 +3570,7 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 		{
 			ofstream m_WarningLogFile;
 
-			m_WarningLogFile.open ( m_ProjectDirectory + "warning.log", ios::out);
+			m_WarningLogFile.open ( m_ProjectDirectory + "NeXTA.log", ios::out);
 			if (m_WarningLogFile.is_open())
 			{
 				m_WarningLogFile.width(12);
@@ -3583,9 +3583,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 			m_WarningLogFile.close ();
 
-			if(AfxMessageBox("Some nodes in input_link.csv have not been defined in input_node.csv. Do you want to view warning.log?",  MB_YESNO) == IDYES )
+			if(AfxMessageBox("Some nodes in input_link.csv have not been defined in input_node.csv. Do you want to view NeXTA.log?",  MB_YESNO) == IDYES )
 			{
-				OpenCSVFileInExcel(m_ProjectDirectory + "warning.log");
+				OpenCSVFileInExcel(m_ProjectDirectory + "NeXTA.log");
 			}
 		}
 
@@ -3619,9 +3619,9 @@ bool CTLiteDoc::ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag = 
 
 		}
 
-		CString SettingsFile;
-		SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
-		int long_lat_coordinate_flag = (int)(g_GetPrivateProfileDouble("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
+		//CString SettingsFile;
+		//SettingsFile.Format ("%sDTASettings.txt",m_ProjectDirectory);
+		//int long_lat_coordinate_flag = (int)(g_GetPrivateProfileDouble("GUI", "long_lat_coordinate_flag", 1, SettingsFile));	
 
 		/*		if(m_UnitMile<1/50)  // long/lat must be very large and greater than 1/62!
 		{
@@ -3797,7 +3797,7 @@ bool CTLiteDoc::ReadActivityLocationCSVFile(LPCTSTR lpszFileName)
 
 			if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 			{
-				m_WarningFile<< "Node Number "  << node_name << " in input_activity_location.csv has not been defined in input_node.csv. Please check."  << endl; 
+				m_NEXTALOGFile<< "Node Number "  << node_name << " in input_activity_location.csv has not been defined in input_node.csv. Please check."  << endl; 
 
 				CString str;
 				str.Format("Node Number %d in input_activity_location.csv has not been defined in input_node.csv", node_name );
@@ -3919,7 +3919,7 @@ bool CTLiteDoc::ReadZoneCSVFile(LPCTSTR lpszFileName)
 		}
 
 		if(bNodeNonExistError)
-			AfxMessageBox("Some nodes in input_zone.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
+			AfxMessageBox("Some nodes in input_zone.csv have not been defined in input_node.csv. Please check NeXTA.log in the project folder.");
 
 		m_ZoneDataLoadingStatus.Format ("%d zone info records are loaded from file %s.",lineno,lpszFileName);
 		return true;
@@ -3953,8 +3953,11 @@ bool CTLiteDoc::ReadScenarioSettingCSVFile(LPCTSTR lpszFileName)
 			m_NumberOfSecenarioSettings++;
 		}
 
+		if(m_NumberOfSecenarioSettings >=1)
+			return true;
+
 	}
-	return true;
+	return false;
 }
 
 
@@ -4513,7 +4516,7 @@ bool CTLiteDoc::ReadVehicleTypeCSVFile(LPCTSTR lpszFileName)
 		return true;
 	}else
 	{
-		AfxMessageBox("Error: File input_vehicle_type.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
+	//	AfxMessageBox("Error: File input_vehicle_type.csv cannot be found or opened.\n It might be currently used and locked by EXCEL.");
 		return false;
 		//		g_ProgramStop();
 	}
@@ -5017,7 +5020,7 @@ void  CTLiteDoc::CopyDefaultFiles(CString directory)
 
 	}else
 	{
-		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"AMS_traffic_data_settings.csv");
+		//CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"AMS_traffic_data_settings.csv");
 		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_node_control_type.csv");
 		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_link_type.csv");
 
@@ -5030,14 +5033,9 @@ void  CTLiteDoc::CopyDefaultFiles(CString directory)
 
 	}
 
-
-
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand_type.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_pricing_type.csv");
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_emission_rate.csv");
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_scenario_settings.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"sensor_count.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"sensor_speed.csv");
@@ -5045,23 +5043,12 @@ void  CTLiteDoc::CopyDefaultFiles(CString directory)
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_VOT.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_zone.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_activity_location.csv");
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_MOE_settings.csv");
 	//	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"sensor_count.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_demand.csv");
-
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_base_cycle_fraction_of_OpMode.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_cycle_emission_factor.csv");
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"input_vehicle_emission_rate.csv");
-
-
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_vehtypes.csv");
-	//	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_linktypes.csv");
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_signal.csv");
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ms_vehclasses.csv");
-	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"ODME_settings.txt");
-
 	CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,directory,"background_image.bmp");
 
 }
@@ -6849,7 +6836,7 @@ void CTLiteDoc::ScanAMSTimingPlanCSVFile(LPCTSTR lpszFileName, int scenario_no =
 
 		DefaultDataFolder.Format ("%s\\default_data_folder\\",pMainFrame->m_CurrentDirectory);
 
-		CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,m_ProjectDirectory,"AMS_timing_plan.csv","AMS_timing_plan.csv");
+		//CopyDefaultFile(DefaultDataFolder,m_ProjectDirectory,m_ProjectDirectory,"AMS_timing_plan.csv","AMS_timing_plan.csv");
 
 	}
 
@@ -7384,7 +7371,7 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 
 						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
 
-						if(pLink->m_FromNodeNumber == 758 && pLink->m_ToNodeNumber == 491)
+						if(pLink->m_FromNodeNumber == 4 && pLink->m_ToNodeNumber == 36)
 						{
 							TRACE("checking link; %f, %d\n", pLink->m_total_link_volume, pVehicle->m_VehicleID);
 
@@ -7530,7 +7517,7 @@ void  CTLiteDoc::UpdateMovementDataFromVehicleTrajector()
 
 			DTANode* pNode = m_NodeNoMap[ pLink0->m_ToNodeID ];
 
-			if(pNode->m_NodeNumber == 2)
+			if(pNode->m_NodeNumber == 36)
 			{
 				TRACE("");
 			}
@@ -8302,28 +8289,28 @@ void CTLiteDoc::LoadSimulationOutput()
 	CCSVParser parser;
 
 
-	std::string AMS_traffic_data_settings = CString2StdString (m_ProjectDirectory)+"AMS_traffic_data_settings.csv";
+	//std::string AMS_traffic_data_settings = CString2StdString (m_ProjectDirectory)+"AMS_traffic_data_settings.csv";
 
 
-	string model_static_link_MOE = "output_LinkMOE.csv";
-	parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","static_link_MOE","file_name",model_static_link_MOE);
+	//string model_static_link_MOE = "output_LinkMOE.csv";
+	//parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","static_link_MOE","file_name",model_static_link_MOE);
 
-	string loading_flag = "yes";
-	parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","static_link_MOE","loading_flag",loading_flag);
+	//string loading_flag = "yes";
+	//parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","static_link_MOE","loading_flag",loading_flag);
 
-	if(loading_flag=="yes")
-	{
-		ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory + model_static_link_MOE.c_str ());
-	}
+	//if(loading_flag=="yes")
+	//{
+	//}
 
-	string model_time_dependent_link_MOE = "output_LinkTDMOE.bin";
-	parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","file_name",model_time_dependent_link_MOE);
+	//string model_time_dependent_link_MOE = "output_LinkTDMOE.bin";
+	//parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","file_name",model_time_dependent_link_MOE);
 
-	string model_time_dependent_link_MOE_format = "binary";
-	parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","format",model_time_dependent_link_MOE_format);
+	//string model_time_dependent_link_MOE_format = "binary";
+	//parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","format",model_time_dependent_link_MOE_format);
 
-	parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","loading_flag",loading_flag);
+	//parser.GetValueBySectionKeyFieldName(AMS_traffic_data_settings,"model","model_time_dependent_link_MOE","loading_flag",loading_flag);
 
+		ReadSimulationLinkOvarvallMOEData(m_ProjectDirectory + "output_linkMOE.csv");
 		ReadSimulationLinkMOEData_Bin(m_ProjectDirectory+"output_LinkTDMOE.bin");
 		ReadVehicleBinFile(m_ProjectDirectory+ "agent.bin",2); // try version 2 format first
 
@@ -9177,15 +9164,15 @@ void CTLiteDoc::OnFileChangecoordinatestolong()
 
 void CTLiteDoc::OpenWarningLogFile(CString directory)
 {
-	m_WarningFile.open (directory+"warning.log", ios::out);
-	if (m_WarningFile.is_open())
+	m_NEXTALOGFile.open (directory+"NeXTA.log", ios::out);
+	if (m_NEXTALOGFile.is_open())
 	{
-		m_WarningFile.width(12);
-		m_WarningFile.precision(3) ;
-		m_WarningFile.setf(ios::fixed);
+		m_NEXTALOGFile.width(12);
+		m_NEXTALOGFile.precision(3) ;
+		m_NEXTALOGFile.setf(ios::fixed);
 	}else
 	{
-		AfxMessageBox("File warning.log cannot be opened, and it might be locked by another program!");
+		AfxMessageBox("File NeXTA.log cannot be opened, and it might be locked by another program!");
 	}
 }
 void CTLiteDoc::OnToolsExportopmodedistribution()
@@ -12249,7 +12236,85 @@ void CTLiteDoc::OnMoeViewoddemandestimationsummaryplot()
 
 		}else
 		{
-			AfxMessageBox("No matching sensor data are available from file sesnor_count.csv. Please prepare file sensor_count.csv.");
+			AfxMessageBox("No matching sensor data are available from file sensor_count.csv. Please prepare file sensor_count.csv.");
+		}
+}
+
+void CTLiteDoc::OnMoeViewoddemandestimationsummaryplotLanedensity()
+{
+	CLinePlotTestDlg dlg;
+	dlg.m_pDoc  = this;
+
+		COLORREF crColor1 = RGB (100, 149, 237);
+		CLinePlotData element_lane_density;
+		element_lane_density.crPlot = crColor1;
+
+			element_lane_density.szName  = "Lane Density";
+			dlg.m_XCaption = "Observed Lane Density";
+			dlg.m_YCaption = "Simulated Lane Density";
+
+			element_lane_density.lineType = enum_LpScatter;
+
+		int count =0;
+		for (std::list<DTALink*>::iterator iLink  = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+		{
+			DTALink* pLink = (*iLink);
+
+			if(pLink->m_SensorDataVector.size()>0 )
+			{
+				for(unsigned i = 0; i< pLink->m_SensorDataVector.size(); i++)
+				{
+					DTASensorData element = pLink->m_SensorDataVector[i];
+
+					float SensorDensity  = element.density ;
+					if( SensorDensity>1)
+					{
+						float max_density = 300;
+						float avg_density = pLink->GetSimulatedDensityMOE(element.start_time_in_min,element.end_time_in_min,max_density);
+						FLOATPOINT data;
+
+						data.x = SensorDensity;
+						data.y = avg_density;
+
+						data.LinkNo = pLink->m_LinkNo ;
+						if( m_LinkTypeMap[pLink->m_link_type].IsFreeway ())
+						{   
+							data.LinkType = _lp_freeway;
+							data.crColor  = theApp.m_FreewayColor;
+
+						}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsArterial  ())
+				{
+					data.LinkType = _lp_arterial;
+					data.crColor = theApp.m_ArterialColor;
+				}
+
+				if( m_LinkTypeMap[pLink->m_link_type].IsHighway   ())
+				{
+					data.LinkType = _lp_ramp;
+					data.crColor = theApp.m_ArterialColor;
+				}
+
+
+				element_lane_density.vecData.push_back(data);
+
+				count++;
+
+				}
+		}
+			}
+		}
+
+		if(count >=1)
+		{
+
+			dlg.m_PlotDataVector.push_back(element_lane_density);
+			dlg.DoModal();
+
+		}else
+		{
+			AfxMessageBox("No matching sensor data are available from file sensor_count.csv. Please prepare lane density data in file sensor_count.csv.");
 		}
 }
 
@@ -13410,6 +13475,16 @@ void CTLiteDoc::OnAssignmentSimulatinSettinsClicked()
 		AfxMessageBox("The project has not been loaded.");
 		return;
 	}
+
+	
+	if(ReadScenarioSettingCSVFile(m_ProjectDirectory+"input_scenario_settings.csv") == false)
+	{
+		AfxMessageBox("The project does not have scenario data. If this is a data set prepared for traffic assignment/simulation, please save the project first to create scenario files.");
+		return;
+	
+	}
+
+
 	CAssignmentSimulationSettingDlg dlg;
 	dlg.m_pDoc = this;
 	dlg.DoModal();
@@ -14774,6 +14849,8 @@ void CTLiteDoc::SensortoolsConverttoHourlyVolume()
 		DataFile.SetFieldName ("link_type_name");
 		DataFile.SetFieldName ("observed_link_count");
 		DataFile.SetFieldName ("simulated_link_count");
+		DataFile.SetFieldName ("observed_lane_density");
+		DataFile.SetFieldName ("simulated_lane_density");
 		DataFile.SetFieldName ("start_time_in_min");
 		DataFile.SetFieldName ("end_time_in_min");
 		DataFile.SetFieldName ("sensor_type");
@@ -14841,7 +14918,7 @@ void CTLiteDoc::SensortoolsConverttoHourlyVolume()
 						DataFile.SetValueByFieldName ("name", pLink->m_Name);
 						DataFile.SetValueByFieldName ("link_key", pLink->m_LinkKey);
 						DataFile.SetValueByFieldName ("link_type_name", m_LinkTypeMap[pLink->m_link_type].link_type_name);
-						DataFile.SetValueByFieldName ("sensor_type","link_count_speed");
+						DataFile.SetValueByFieldName ("sensor_type","point detector");
 
 
 						DataFile.SetValueByFieldName ("start_time_in_min", element.start_time_in_min);
@@ -14855,6 +14932,13 @@ void CTLiteDoc::SensortoolsConverttoHourlyVolume()
 						DataFile.SetValueByFieldName ("aggregation_interval", AggregationTimeIntervalInMin);
 						DataFile.SetValueByFieldName ("observed_link_count", SensorCount);
 						DataFile.SetValueByFieldName ("simulated_link_count", SimulatedCount);
+						DataFile.SetValueByFieldName ("observed_lane_density", element.density);
+
+						float max_density = 0 ;
+						float SimulatedDensity = pLink->GetSimulatedDensityMOE  (element.start_time_in_min,element.end_time_in_min,max_density);
+
+
+						DataFile.SetValueByFieldName ("simulated_lane_density", SimulatedDensity);
 
 						float reference_avg_speed = 0;
 
@@ -14991,9 +15075,13 @@ void CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggrega
 				i++;
 			}else
 			{
+
+				if(speed_sensor_id.size() > 0)
+				{
 				TRACE("speed_sensor_id not found: %s\n",speed_sensor_id.c_str ());
 
 				Missing_TMC_vector.push_back(speed_sensor_id);
+				}
 
 			}
 
@@ -15006,13 +15094,13 @@ void CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggrega
 		{
 			CCSVWriter DataFile;
 
-			CString data_str = m_ProjectDirectory +"log_missing_TMC.csv";
+			CString data_str = m_ProjectDirectory +"missing_speed_sensor_id.log";
 
 			// Convert a TCHAR string to a LPCSTR
 			if(DataFile.Open(CString2StdString(data_str)))
 			{
 
-				DataFile.SetFieldName ("TMC");
+				DataFile.SetFieldName ("speed_sensor_id");
 				DataFile.WriteHeader ();
 
 
@@ -15040,7 +15128,6 @@ void CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggrega
 
 		m_TrafficFlowModelFlag = 3; //enable dynamic moe display
 		m_SensorSpeedDataLoadingStatus.Format ("%d speed records are loaded from file %s.\n",i,lpszFileName);
-
 
 
 	}

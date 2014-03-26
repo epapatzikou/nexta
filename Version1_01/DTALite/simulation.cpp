@@ -118,15 +118,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 				g_LinkVector[li]-> total_departure_based_travel_time = 0;
 			}
 		
-		g_network_VMS.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
-	
-		}
-
-		if(meso_simulation_time_interval_no%10 ==0) //update routes for pre-trip or en-route information users, every min, (10 simulation time intervlas)
-		{
-
-			g_UpdateRealTimeInformation(CurrentTime);
-
+			g_UpdateRealTimeInformation	(CurrentTime);
 		}
 
 	}
@@ -161,11 +153,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			if(pVeh->m_InformationClass == info_pre_trip || 
 				pVeh->m_InformationClass == info_en_route )
 				{  // vehicle rerouting
-					#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
-					{
-							g_AgentBasedPathAdjustmentWithRealTimeInfo(pVeh->m_VehicleID  ,CurrentTime);
-					}
-			}
+					g_AgentBasedPathAdjustmentWithRealTimeInfo(pVeh->m_VehicleID  ,CurrentTime);
+				}
 
 			if(pVeh->m_PricingType == 4)
 			{
@@ -229,10 +218,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					{
 						if(	g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
-							#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
-							{
 							g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
-							}
 						}
 
 					}
@@ -242,10 +228,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
 						{  // vehicle rerouting
 
-											#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
-											{
-												g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
-											}
+							g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
 						}
 						// check if a radio message has been enabled
 					}
@@ -1211,12 +1194,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						(IS_id >= 0 && pVehicle->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage)||
 						(bRadioMessageActive && pVehicle->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage ))
 						{  // vehicle rerouting
-					#pragma omp critical  // keep this section as a single thread as it involves network-wide statistics collection
-							{
 								g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(pVehicle->m_VehicleID  ,CurrentTime);
-							}
-							
-							}
+						}
 
 
 
@@ -1609,8 +1588,14 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 			CString time_str;
 			time_str.Format("%2d:%02d",hour, min);
 
-			cout << "simu clock: " << time_str << ",# of veh -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+			cout << "simu clock: " << time_str << ",# of veh --Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
 			g_LogFile << "simulation clock: " << time_str << ", # of vehicles  -- Generated: "<< g_Number_of_GeneratedVehicles << ", In network: "<<g_Number_of_GeneratedVehicles-g_Number_of_CompletedVehicles << endl;
+		}
+
+		if(meso_simulation_time_interval_no%600 == 0 && bPrintOut) // every 60 min
+		{
+		cout << " -- " <<  g_GetAppRunningTime() << endl;
+		g_LogFile << " -- " << g_GetAppRunningTime() << endl;
 		}
 	}
 
@@ -1620,6 +1605,8 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 	{
 
 		DTALink* pLink = g_LinkVector[li];
+
+		pLink->ResetUserDefinedTravelTime();  // as we will not use userdefined travel time after simulation
 
 		int NextCongestionTransitionTimeStamp = g_PlanningHorizon+10;  // // start with the initial value, no queue
 

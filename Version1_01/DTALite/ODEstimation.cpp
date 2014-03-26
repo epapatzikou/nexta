@@ -216,18 +216,31 @@ bool g_ReadLinkMeasurementFile()
 				}
 			}
 
-			if(pLink == NULL)
-			{
 				int  from_node_id = 0;
 				int to_node_id = 0;
-			parser.GetValueByFieldName("from_node_id",from_node_id); 
+				if(pLink == NULL)
+			{
+		parser.GetValueByFieldName("from_node_id",from_node_id); 
 			parser.GetValueByFieldName("to_node_id",to_node_id); 
 
 			if(g_LinkMap.find(GetLinkStringID(from_node_id,to_node_id))!= g_LinkMap.end())
 			{
 				pLink =  g_LinkMap[GetLinkStringID(from_node_id,to_node_id)];
 			}
+
+
 			}
+
+			if(pLink == NULL)
+			{
+				
+				cout << "link " << from_node_id << "->" << to_node_id <<": at line " << count+1 << " of file sensor_count.csv  has not been defined in input_link.csv." <<endl; 
+				error_count ++;
+				continue;
+		
+			
+			}
+
 
 			int start_time_in_min = 0;
 			int end_time_in_min  = 0;
@@ -847,7 +860,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 
 
 
-void DTANetworkForSP::VehicleBasedPathAssignment_ODEstimation(int origin_zone,int departure_time_begin, int departure_time_end, int iteration)
+void DTANetworkForSP::ZoneBasedPathAssignment_ODEstimation(int origin_zone,int departure_time_begin, int departure_time_end, int iteration)
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
 
@@ -1219,7 +1232,10 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 	float mean_sqared_error = output.LinkVolumeRootMeanSquaredError/max(1,TotaMOESampleSize);
 	output.LinkVolumeRootMeanSquaredError = sqrt(mean_sqared_error);
 
-	output.ODME_result_lane_density = LeastRegression(SensorDataVector_lane_density, true);
+	if(g_ObsDensityAvailableFlag)
+	{	
+		output.ODME_result_lane_density = LeastRegression(SensorDataVector_lane_density, true);
+	}
 
 	if(TotaMOESampleSize > 0) 
 		g_AssignmentLogFile << "Avg abs MOE error=, " << TotalMOEAbsError /max(1,TotaMOESampleSize)  << "Average Path flow Estimation MAPE =," << TotalMOEPercentageError / max(1,TotaMOESampleSize) << " %" << endl;

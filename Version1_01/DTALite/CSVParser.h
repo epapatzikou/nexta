@@ -196,7 +196,7 @@ public:
 		}
 	}
 
-	template <class T> bool GetValueByFieldName(string field_name, T& value)
+	template <class T> bool GetValueByFieldName(string field_name, T& value, bool with_whitespace = false)
 	{
 		if (FieldsIndices.find(field_name) == FieldsIndices.end())
 		{
@@ -222,7 +222,10 @@ public:
 
 			istringstream ss(str_value);
 
+			if(with_whitespace)
+			{
 			ss >> std::noskipws;
+			}
 			T converted_value;
 			ss >> converted_value;
 

@@ -289,7 +289,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			{
 				if(bCreateNewNodeFlag == false)  // not create new node
 				{
-					m_WarningFile<< "A Node ID "  << from_node_id << " in input_rail_link.csv has not been defined in input_node.csv"  << endl; 
+					m_NEXTALOGFile<< "A Node ID "  << from_node_id << " in input_rail_link.csv has not been defined in input_node.csv"  << endl; 
 					bNodeNonExistError = true;
 					break;
 				}else  // need to create a new node with geometry information
@@ -329,7 +329,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			{
 				if(bCreateNewNodeFlag == false)  // not create new node
 				{
-					m_WarningFile<< "B Node ID "  << to_node_id << " in input_rail_arc.csv has not been defined in input_node.csv"  << endl; 
+					m_NEXTALOGFile<< "B Node ID "  << to_node_id << " in input_rail_arc.csv has not been defined in input_node.csv"  << endl; 
 					bNodeNonExistError = true;
 					break;
 				}else  // create new node
@@ -510,7 +510,7 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 		}
 
 		if(bNodeNonExistError)
-			AfxMessageBox("Some nodes in input_rail_arc.csv have not been defined in input_node.csv. Please check warning.log in the project folder.");
+			AfxMessageBox("Some nodes in input_rail_arc.csv have not been defined in input_node.csv. Please check NeXTA.log in the project folder.");
 
 		m_UnitMile  = 1.0f;
 

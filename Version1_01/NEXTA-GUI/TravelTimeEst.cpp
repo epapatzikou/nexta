@@ -182,6 +182,9 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 			DTA_sensor sensor;
 
 			std::string count_sensor_id;
+			int from_node_id = 0;
+			int to_node_id = 0; 
+
 
 			parser.GetValueByFieldName("count_sensor_id",count_sensor_id);
 
@@ -208,8 +211,6 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 			
 			if(pLink==NULL)
 			{
-				int from_node_id = 0;
-				int to_node_id = 0; 
 				parser.GetValueByFieldName("from_node_id",from_node_id );
 				parser.GetValueByFieldName("to_node_id",to_node_id );
 
@@ -240,7 +241,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				parser.GetValueByFieldName("end_time_in_min",end_time_in_min );
 
 
-				int count= 0;
+				int count= -1;  // no data
 				parser.GetValueByFieldName("link_count",count );
 
 				if(count ==0)
@@ -306,7 +307,11 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 
 				float density = -1;
-				parser.GetValueByFieldName("density",density );
+				parser.GetValueByFieldName("lane_density_per_mile",density );
+
+				if(density >=1)
+					element.density = density;
+				
 
 				float speed = -1;
 				parser.GetValueByFieldName("speed",speed );
@@ -329,11 +334,15 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 					if(second_count_sensor_id.size() == 0 ) // link count only
 					{
+
+
+					if(count>=1)
+					{
 					// day specific value	
 					pLink->m_LinkSensorMOEMap[ time].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min)); 
 					// overall value 
 					pLink->m_LinkSensorMOEMap[ t].LinkFlow = count/(max(1.0,end_time_in_min-start_time_in_min));  
-
+					}
 
 					if(density>0.001)
 					{
@@ -367,8 +376,16 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				{
 
 				CString msg;
-				msg.Format (" %s in sensor_count.csv does not exist in input_link.csv.\n", sensor.SensorID.c_str());
 
+
+				if(count_sensor_id.size() >0)
+				{			
+				msg.Format ("count_sensor_id %s in sensor_count.csv does not exist in input_link.csv.\n", count_sensor_id.c_str ());
+				}else
+				{
+				msg.Format ("link %d->%d in sensor_count.csv does not exist in input_link.csv.\n", from_node_id,to_node_id );
+				}
+	
 				if(prev_error_message!=msg)
 				{
 					error_message+=msg;

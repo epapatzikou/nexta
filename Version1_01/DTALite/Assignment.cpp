@@ -87,11 +87,11 @@ bool g_GetSequentialUEAdjustmentTimePeriod(int iteration,float DepartureTime)
 
 }
 
-DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+DTANetworkForSP TDNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
-void g_BuildPathsForAgents( int iteration , bool bOutputLog)
+void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime)
 {
-
+ bool bZoneBasedPathFlag = false;
 	// assign different zones to different processors
 	int number_of_threads = omp_get_max_threads ( );
 
@@ -103,23 +103,9 @@ void g_BuildPathsForAgents( int iteration , bool bOutputLog)
 		cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 	}
 
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
 
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
+	number_of_threads =g_number_of_CPU_threads() ;
 
-	//if(g_NodeVector.size() > 2000 || g_ZoneMap.size() >2000 )  // large network or subare cut with large node number, reset to single thread mode
-	//	number_of_threads = 1;
-
-	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
-	{ 
-		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-		g_ProgramStop();
-	}
-	g_LogFile << "Number of iterations = " << g_NumberOfIterations << endl;
-
-	//g_SummaryStatFile.WriteParameterValue ("# of assignment iterations",g_NumberOfIterations);
-	//g_SummaryStatFile.WriteParameterValue ("# of CPU threads",number_of_threads);
 
 
 #pragma omp parallel for
@@ -129,8 +115,10 @@ void g_BuildPathsForAgents( int iteration , bool bOutputLog)
 		int	id = omp_get_thread_num( );  // starting from 0
 
 		//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-		network_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
-
+		if(bRebuildNetwork || TDNetwork_MP[id].m_NodeSize ==0)
+		{
+		TDNetwork_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+		}
 		if(bOutputLog)
 		{
 			cout << "---- agent-based routing and assignment at processor " << ProcessID+1 << endl;
@@ -145,17 +133,35 @@ void g_BuildPathsForAgents( int iteration , bool bOutputLog)
 			{
 
 				// scan all possible departure times
-				for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
+				for(int departure_time = DemandLoadingStartTime; departure_time < DemandLoadingEndTime; departure_time += g_AggregationTimetInterval)
 				{
 					int vehicle_size  = g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray .size();
 					if( vehicle_size > 0)
 					{
 
-							float node_size = 1;
-						if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-							network_MP[id].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
-						else
-							node_size = network_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+						if(bZoneBasedPathFlag == true)
+						{
+							bool debug_flag =false;
+							for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
+									{
+										TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+									}
+
+									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+										TDNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+									else
+										TDNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
+
+					}else
+						{
+
+									float node_size = 1;
+								if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+									TDNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+								else
+									node_size = TDNetwork_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+
+					}
 
 						if(g_ODZoneNumberSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
 						{
@@ -216,23 +222,11 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
 
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
-
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
-
-	//if(g_NodeVector.size() > 2000 || g_ZoneMap.size() >2000 )  // large network or subare cut with large node number, reset to single thread mode
-	//	number_of_threads = 1;
-
-	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
-	{ 
-		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-		g_ProgramStop();
-	}
+	number_of_threads =g_number_of_CPU_threads() ;
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
-		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
+		TDNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
 	}
 	cout << "------- Memory allocation completed.-------" << endl;
 
@@ -254,7 +248,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		////
 
-		g_BuildPathsForAgents(iteration,true);
+		g_BuildPathsForAgents(iteration,true, true,g_DemandLoadingStartTimeInMin, g_DemandLoadingEndTimeInMin );
 
 		////
 
@@ -360,11 +354,6 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_ti
 
 		
 		}
-
-
-
-
-
 
 		if(pVeh->m_OriginZoneID == pVeh->m_DestinationZoneID)
 		{  // do not simulate intra zone traffic
@@ -683,7 +672,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_ti
 
 
 
-void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration, bool debug_flag  = false)
+void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration, bool debug_flag  = false)
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
 
@@ -714,7 +703,8 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 		{
 			cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
 			g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. " << endl;
-			g_ProgramStop();
+			pVeh->m_NodeSize = 0;
+			continue;
 
 		}
 
@@ -758,30 +748,27 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
 			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
 
-			float switching_rate;
-			// switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
+		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
+		if(g_UEAssignmentMethod == assignment_MSA)  // MSA
+		{
+			switching_rate = 1.0f/(iteration+1);
+		}
+		if(g_UEAssignmentMethod== assignment_fixed_percentage) // day to day learning
+		{
+			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+		}
+		if(g_UEAssignmentMethod==assignment_gap_function_MSA_step_size) // gap function based method,
+		{
+			switching_rate = 1.0f/(iteration+1);
 
-
-			switch (g_UEAssignmentMethod)
+			if(iteration > 20 )
 			{
-			case assignment_MSA: switching_rate = 1.0f/(iteration+1); // 0: MSA 
-				break;
-			case assignment_fixed_percentage: switching_rate = float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
-
-				if(pVeh->m_TripTime > TotalCost + g_TravelTimeDifferenceForSwitching || pVeh->m_TripTime > TotalCost*(1+g_RelativeTravelTimePercentageDifferenceForSwitching/100))
-				{
-					switching_rate = 1.0f;
-				}
-
-				break;
-			case 2: switching_rate = m_gap / ExperiencedTravelTime; // 2: GAP-based switching rule for UE
-				//case 2: switching_rate = (1.0f/(iteration+1)) * (m_gap / ExperiencedTravelTime); // 2: GAP-based switching rule for UE + Mixed Step-Size Scheme
-				break;
-			case 3: switching_rate = (1.0f/(iteration+1)) * (m_gap / ExperiencedTravelTime); // 3: Gap-based switching rule + MSA step size for UE
-				break;
-			default: switching_rate = 1.0f/(iteration+1); // default is MSA 
-				break;
+				if(g_GetSequentialUEAdjustmentTimePeriod (iteration, pVeh->m_DepartureTime))
+					switching_rate = 0.05;
+				else
+					switching_rate = 0.001;
 			}
+		}
 
 			double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 
@@ -910,7 +897,7 @@ void DTANetworkForSP::VehicleBasedPathAssignment(int zone,int departure_time_beg
 
 
 
-void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end)
+void DTANetworkForSP::HistInfoZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end)
 // for vehicles starting from departure_time_begin to departure_time_end, assign them to shortest path using a proportion according to MSA or graident-based algorithms
 {
 
@@ -943,7 +930,8 @@ void DTANetworkForSP::HistInfoVehicleBasedPathAssignment(int zone,int departure_
 		{
 			cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
 			g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. " << endl;
-			g_ProgramStop();
+			pVeh->m_NodeSize = 0;
+			continue;
 
 		}
 
@@ -1037,9 +1025,9 @@ void g_ComputeFinalGapValue()
 		if(g_ZoneMap[CurZoneID].m_Demand>0)  // only this origin zone has vehicles, then we build the network
 		{
 			// create network for shortest path calculation at this processor
-			DTANetworkForSP network_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
+			DTANetworkForSP TDNetwork_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
 			int id = omp_get_thread_num( );  // starting from 0
-			network_MP.BuildNetworkBasedOnZoneCentriod(g_NumberOfIterations,CurZoneID);  // build network for this zone, because different zones have different connectors...
+			TDNetwork_MP.BuildNetworkBasedOnZoneCentriod(g_NumberOfIterations,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 			// scan all possible departure times
 			for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
@@ -1066,7 +1054,7 @@ void g_ComputeFinalGapValue()
 					}					
 					*/
 
-					network_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+					TDNetwork_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 					int AssignmentInterval = g_FindAssignmentInterval(departure_time);
 
@@ -1085,12 +1073,13 @@ void g_ComputeFinalGapValue()
 						int OriginCentriod =  g_NodeVector.size();
 						int DestinationCentriod = g_NodeVector.size() + pVeh->m_DestinationZoneID;
 
-						float TotalCost = network_MP.LabelCostAry[DestinationCentriod];
+						float TotalCost = TDNetwork_MP.LabelCostAry[DestinationCentriod];
 						if(TotalCost > MAX_SPLABEL-10)
 						{
 							cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
 							g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. " << endl;
-							g_ProgramStop();
+							pVeh->m_NodeSize = 0;
+							continue;
 
 						}
 
@@ -1383,9 +1372,9 @@ void g_AgentBasedShortestPathGeneration()
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
 		// create network for shortest path calculation at this processor
-		DTANetworkForSP network_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
+		DTANetworkForSP TDNetwork_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 		int	cpu_id = omp_get_thread_num( );  // starting from 0
-		network_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+		TDNetwork_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 
 		for(int node_index  = 0; node_index < node_size; node_index++)
 		{
@@ -1402,12 +1391,12 @@ void g_AgentBasedShortestPathGeneration()
 				}
 
 				// this generate the one-to-all shortest path tree
-				network_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				TDNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
 					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
-					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_distance = network_MP.LabelCostAry[dest_node_index];
+					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_distance = TDNetwork_MP.LabelCostAry[dest_node_index];
 					//					 TRACE("Label: %f: \n",g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label);
 
 				}
@@ -1769,23 +1758,12 @@ void g_ZoneBasedDynamicTrafficAssignment()
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
 
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
+	number_of_threads =g_number_of_CPU_threads() ;
 
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
-
-	//if(g_NodeVector.size() > 2000 || g_ZoneMap.size() >2000 )  // large network or subare cut with large node number, reset to single thread mode
-	//	number_of_threads = 1;
-
-	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
-	{ 
-		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-		g_ProgramStop();
-	}
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
-		network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
+		TDNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
 	}
 
 
@@ -1844,7 +1822,7 @@ void g_ZoneBasedDynamicTrafficAssignment()
 						if(g_ZoneMap[CurZoneID].m_OriginVehicleSize >0)  // only this origin zone has vehicles, then we build the network
 						{
 							// create network for shortest path calculation at this processor
-							network_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
+							TDNetwork_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 							if(Actual_ODZoneSize > 300)  // only for large networks
 							{
@@ -1861,13 +1839,13 @@ void g_ZoneBasedDynamicTrafficAssignment()
 
 									for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
 									{
-										network_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+										TDNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 									}
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										network_MP[ProcessID].VehicleBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+										TDNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 									else
-										network_MP[ProcessID].VehicleBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
+										TDNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
 
 								}
 							} // for each departure time

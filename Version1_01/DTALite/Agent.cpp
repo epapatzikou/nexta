@@ -15,7 +15,7 @@
 #include <algorithm>
 
 using namespace std;
-extern DTANetworkForSP network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+extern DTANetworkForSP TDNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
 vector<int> ParseLineToIntegers(string line)
 {
@@ -1177,7 +1177,6 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 	int node_size  = g_NodeVector.size();
 	int link_size  = g_LinkVector.size();
 
-	cout<< "calculation interval "<< g_DemandLoadingStartTimeInMin << " -> " <<  g_DemandLoadingEndTimeInMin << "min; with an aggregation time interval of " << g_AggregationTimetInterval <<endl;
 	bool  bUseCurrentInformation = true;
 
 	int DemandLoadingStartTimeInMin= g_DemandLoadingStartTimeInMin;
@@ -1195,10 +1194,14 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 		DemandLoadingEndTimeInMin = CurrentTime+1;
 
 	}
+	cout<< "calculation interval "<< DemandLoadingStartTimeInMin << " -> " <<  DemandLoadingEndTimeInMin << "min; with an aggregation time interval of " << g_AggregationTimetInterval <<endl;
 
 
-	int StatisticsIntervalSize = (DemandLoadingEndTimeInMin - DemandLoadingStartTimeInMin)/g_AggregationTimetInterval;
-	cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << StatisticsIntervalSize << " 15-min time intervals" << endl;
+	int StatisticsIntervalSize = max(1,(DemandLoadingEndTimeInMin - DemandLoadingStartTimeInMin)/g_AggregationTimetInterval);
+
+
+	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
+	//	StatisticsIntervalSize << " 15-min time intervals" << endl;
 	float*** ODTravelTime = NULL;
 	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize+1,g_ODZoneIDSize+1,StatisticsIntervalSize);
 
@@ -1223,18 +1226,24 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 			}
 
 
+					if(bTimeDependentFlag)
+						cout<< "calculating time-dependent skim matrix on "  << number_of_threads << " processors ... " << endl;
+					else 
+						cout<< "calculating real-time skim matrix on "  << number_of_threads << " processors ... " << endl;
+
+
 #pragma omp parallel for
 			for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 			{
+
+
 				// create network for shortest path calculation at this processor
 				int	id = omp_get_thread_num( );  // starting from 0
 
+
 				//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 
-
-				network_MP[id].BuildPhysicalNetwork (0,-1,g_TrafficFlowModelFlag,bUseCurrentInformation,CurrentTime);  // build network for this zone, because different zones have different connectors...
-
-
+				TDNetwork_MP[id].BuildPhysicalNetwork (0,-1,g_TrafficFlowModelFlag,bUseCurrentInformation,CurrentTime);  // build network for this zone, because different zones have different connectors...
 
 				// from each origin zone
 				for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -1245,19 +1254,13 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 						int origin_node_indx = iterZone->second .GetRandomOriginNodeIDInZone ((0)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
 
-
-					if(bTimeDependentFlag)
-						cout<< "calculating TD shortest path tree for zone "<< iterZone->first << " on processor " << id << "... " << endl;
-					else 
-						cout<< "calculating RT shortest path tree for zone "<< iterZone->first << " on processor " << id << "... " << endl;
-
 						if(origin_node_indx>=0) // convert node number to internal node id
 						{
 
 							bDistanceCost = false;
 							for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 							{
-								network_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+								TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 								// to each destination zone
@@ -1269,8 +1272,8 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 									{
 
 											int time_interval_no = ( departure_time-DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
-											ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = network_MP[id].LabelCostAry[dest_node_index];
-											ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = network_MP[id].LabelDistanceAry[dest_node_index];
+											ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = TDNetwork_MP[id].LabelCostAry[dest_node_index];
+											ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = TDNetwork_MP[id].LabelDistanceAry[dest_node_index];
 
 
 									}

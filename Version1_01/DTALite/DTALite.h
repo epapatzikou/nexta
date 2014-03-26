@@ -28,7 +28,7 @@
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 
 #include "resource.h"
-#define _large_memory_usage
+//#define _large_memory_usage
 
 
 #include <math.h>
@@ -591,7 +591,7 @@ class SLinkMOE  // time-dependent link MOE
 {
 public:
 
-	float PredictedTravelTime_in_min;
+	float UserDefinedTravelTime_in_min;
 
 	float Energy;
 	float CO2;
@@ -627,7 +627,7 @@ public:
 
 	SLinkMOE()
 	{
-		PredictedTravelTime_in_min = -1;
+		UserDefinedTravelTime_in_min = -1;
 		Energy = 0;
 		CO2 = 0;
 		NOX = 0;
@@ -655,10 +655,9 @@ public:
 
 	};
 
+
 	void SetupMOE(float FreeflowTravelTime)
 	{
-
-		PredictedTravelTime_in_min = -1;  // no updated data
 
 		Energy = 0;
 		CO2 = 0;
@@ -1712,13 +1711,20 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	}
 
+	void ResetUserDefinedTravelTime()
+	{
+			for(int t=0; t<m_LinkMOEAry.size(); t++)
+		{
+			m_LinkMOEAry[t] .UserDefinedTravelTime_in_min = -1;
+		}
+	}
 	void UpdateFutureLinkAttribute(int start_time_in_min, int time_step_in_min, float travel_time = -1, float toll_value_in_dollar = -1, float lane_capacity = -1) 
 	{
 		for(int t = max(0,start_time_in_min); t<= min(start_time_in_min + time_step_in_min, m_SimulationHorizon); t++)
 		{
 			if(travel_time >=0.1)  // minimum simulation time  = 0.1 min
 			{
-			m_LinkMOEAry[t].PredictedTravelTime_in_min  = travel_time;
+			m_LinkMOEAry[t].UserDefinedTravelTime_in_min  = travel_time;
 			}
 		}
 	
@@ -3122,13 +3128,13 @@ public:
 	int  FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool ResponseToRadioMessage=false, bool bDebugFlag = false);
 
 
-	void VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
+	void ZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
 	float AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	
 	
 	
-	void VehicleBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration);
-	void HistInfoVehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
+	void ZoneBasedPathAssignment_ODEstimation(int zone,int departure_time_begin, int departure_time_end, int iteration);
+	void HistInfoZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end);
 	void AgentBasedVMSPathAdjustment(int VehicleID , double current_time);
 
 	void AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time);
@@ -3852,6 +3858,7 @@ void ReadMovementCapacityScenarioFile(string FileName,int scenario_no=0);
 
 extern void g_CreateLinkTollVector();
 extern void g_ReadDemandFile_Parser();
+extern void g_ReadInputLinkTravelTime_Parser();
 extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);
 
 extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance, float& AvgSpeed, float & AvgCost, EmissionStatisticsData &emission_data, LinkMOEStatisticsData &link_data,
@@ -3863,7 +3870,7 @@ extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 extern double g_UnitOfMileOrKM;
 extern void g_ConvertDemandToVehicles() ;
 extern int g_FindAssignmentInterval(int departure_time_begin);
-extern DTANetworkForSP g_network_VMS;
 extern std::string CString2StdString(CString str);
 
 extern void g_ResetInformationClass();
+extern int g_number_of_CPU_threads();
