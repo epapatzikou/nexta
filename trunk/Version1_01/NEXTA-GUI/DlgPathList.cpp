@@ -127,8 +127,8 @@ BOOL CDlgPathList::OnInitDialog()
 	m_PlotType.AddString ("NOX (g)");
 	m_PlotType.AddString ("CO (g)");
 	m_PlotType.AddString ("HC (g)");
-	m_PlotType.AddString ("Gasline (Gallon)");
-	m_PlotType.AddString ("Miles Per Gallon");
+	//m_PlotType.AddString ("Gasline (Gallon)");
+	//m_PlotType.AddString ("Miles Per Gallon");
 
 	m_PlotType.SetCurSel (0);
 

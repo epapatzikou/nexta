@@ -69,7 +69,7 @@ TDLabelCorrecting_DoubleQueue(int origin, int departure_time)
 
 step 5: assign path to vehicles
 GetLinkNoByNodeIndex(int usn_index, int dsn_index)
-VehicleBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration)
+ZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration)
 
 step 6: integerate network building, shortest path algorithm and path assignment to dynamic traffic assignment
 
@@ -948,8 +948,6 @@ void g_ReadInputFiles(int scenario_no)
 			parser_link.GetValueByFieldName("prohibited_u-turn,",ProhibitedU_Turn);
 
 
-
-
 			if(from_node_name == 58987 && to_node_name == 54430) 
 			{
 				TRACE(" ");
@@ -1015,7 +1013,7 @@ void g_ReadInputFiles(int scenario_no)
 
 				}
 
-				parser_link.GetValueByFieldName("name",pLink->m_Name);
+				parser_link.GetValueByFieldName("name",pLink->m_Name,true);
 
 				std::string link_key, count_sensor_id,speed_sensor_id;
 
@@ -1068,7 +1066,7 @@ void g_ReadInputFiles(int scenario_no)
 				string geo_string;
 
 				double link_coordinate_length = 0;
-				if(parser_link.GetValueByFieldName("geometry",geo_string))
+				if(parser_link.GetValueByFieldName("geometry",geo_string, true))
 				{
 				// overwrite when the field "geometry" exists
 				CGeometry geometry(geo_string);
@@ -1090,8 +1088,8 @@ void g_ReadInputFiles(int scenario_no)
 				}
 				
 
-				parser_link.GetValueByFieldName("geometry",pLink->m_geometry_string);
-				parser_link.GetValueByFieldName("geometry",pLink->m_original_geometry_string);
+				parser_link.GetValueByFieldName("geometry",pLink->m_geometry_string,true);
+				parser_link.GetValueByFieldName("geometry",pLink->m_original_geometry_string,true);
 
 
 				total_link_length += length_in_mile;
@@ -1201,6 +1199,9 @@ void g_ReadInputFiles(int scenario_no)
 				pLink->CalculateShapePointRatios();
 				pLink->SetupMOE();
 
+
+
+
 		// tally statics for each link type
 		g_LinkTypeMap[pLink->m_link_type].number_of_links ++;
 		g_LinkTypeMap[pLink->m_link_type].total_lane_capacity += pLink->m_LaneCapacity ;
@@ -1251,6 +1252,8 @@ void g_ReadInputFiles(int scenario_no)
 	cout << " total # of links loaded = " << g_LinkVector.size() << endl;
 
 	g_SummaryStatFile.WriteParameterValue ("# of Links", g_LinkVector.size());
+
+
 
 	// freeway, types
 
@@ -1305,7 +1308,7 @@ void g_ReadInputFiles(int scenario_no)
 			DTAZone zone;
 				std::vector<CCoordinate> CoordinateVector;
 				string geo_string;
-				if(parser_zone.GetValueByFieldName("geometry",geo_string))
+				if(parser_zone.GetValueByFieldName("geometry",geo_string,true))
 				{
 				// overwrite when the field "geometry" exists
 				CGeometry geometry(geo_string);
@@ -1960,6 +1963,13 @@ void g_ReadInputFiles(int scenario_no)
 		g_SummaryStatFile.WriteRecord ();
 		}
 
+	int use_input_link_travel_time_from_previous_iteration = g_GetPrivateProfileInt("ABM_integeration", "use_input_link_travel_time_from_previous_iteration", 0, g_DTASettingFileName);
+
+	if(use_input_link_travel_time_from_previous_iteration)
+	{
+	// read input link travel times
+	g_ReadInputLinkTravelTime_Parser();
+	}
 }
 
 // debug:
@@ -2288,6 +2298,70 @@ void g_ReadDemandFile_Parser()
 	g_ConvertDemandToVehicles();
 }
 
+void g_ReadInputLinkTravelTime_Parser()
+{
+	int line_no = 0;
+
+	CCSVParser parser_link_travel_time;
+
+	if (parser_link_travel_time.OpenCSVFile("input_link_travel_time.csv",false))
+	{
+
+		while(parser_link_travel_time.ReadRecord())
+		{
+			int from_node_id, to_node_id;
+
+			int starting_time_in_min = 0;
+			int ending_time_in_min = 1440;
+			float travel_time_in_min = 0;
+		
+			if(parser_link_travel_time.GetValueByFieldName("from_node_id",from_node_id) == false)
+				break;
+			if(parser_link_travel_time.GetValueByFieldName("to_node_id",to_node_id) == false)
+				break;
+
+
+			if(parser_link_travel_time.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
+				break;
+			if(parser_link_travel_time.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
+				break;
+
+			if(parser_link_travel_time.GetValueByFieldName("travel_time_in_min",travel_time_in_min) == false)
+				break;
+
+			if(g_LinkMap.find(GetLinkStringID(from_node_id,to_node_id))== g_LinkMap.end())
+			{
+				cout << "Link " << from_node_id << "-> " << to_node_id << " at line " << line_no+1 << " of file input_link_travel_time.csv"  << " has not been defined in input_link.csv. Please check.";
+				g_ProgramStop();
+			}
+
+			DTALink* pLink = g_LinkMap[GetLinkStringID(from_node_id,to_node_id)];
+
+			if(pLink!=NULL)
+			{
+
+				if(starting_time_in_min>=0 && starting_time_in_min < ending_time_in_min && ending_time_in_min <  pLink->m_LinkMOEAry.size()
+					&& travel_time_in_min >=0.01)
+				{
+					for(int t = starting_time_in_min ; t < ending_time_in_min; t++)
+					{
+					pLink->m_LinkMOEAry[t]. UserDefinedTravelTime_in_min = travel_time_in_min;
+					}
+				}
+			}
+
+			if(line_no %100000 ==0)
+			{
+				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
+			}
+			line_no++;
+
+		}
+	}
+		cout << " total # of link travel time records loaded = " << line_no << endl;
+		g_SummaryStatFile.WriteParameterValue ("# of Input Link Travel Time Records", line_no);
+
+}
 
 void g_CreateLinkTollVector()
 {
@@ -3229,8 +3303,6 @@ void FreeMemory()
 {
 	// Free pointers
 
-
-
 	try
 	{
 		cout << "Free link set... " << endl;
@@ -3259,9 +3331,6 @@ void FreeMemory()
 	g_LinkVector.clear();
 	g_VehicleTypeVector.clear();
 	g_NodeNametoIDMap.clear();
-
-	//	FreeClearMap(g_ZoneMap);
-	g_ZoneMap.clear ();
 	g_DemandTypeMap.clear();
 	g_TimeDependentDemandProfileVector.clear();
 	g_FreeMemoryForVehicleVector();
@@ -3277,6 +3346,9 @@ void FreeMemory()
 		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ZoneMap.size(), g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
 		g_TDOVehicleArray = NULL;
 	}
+
+	//free zone map after g_TDOVehicleArray as g_ZoneMap is still used in DeallocateDynamicArray for g_TDOVehicleArray
+	g_ZoneMap.clear ();
 }
 
 
@@ -3287,11 +3359,14 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 	FILE* st = NULL;
 	FILE* st_struct = NULL;
 	FILE* st_trajectory = NULL;
+	FILE* st_link_travel_time = NULL;
 
 	if(bStartWithEmpty)
 		fopen_s(&st,fname,"w");
 	else
 		fopen_s(&st,fname,"a");
+
+	fopen_s(&st_link_travel_time,"input_link_travel_time.csv","w");
 
 	fopen_s(&st_struct,"output_LinkTDMOE.bin","wb");
 	fopen_s(&st_trajectory,"model_trajectory.csv","w");
@@ -3479,6 +3554,41 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		cin.get();  // pause
 	}
 
+	if(st_link_travel_time!=NULL)
+	{
+
+		fprintf(st_link_travel_time, "from_node_id,to_node_id,day_no,starting_time_in_min,ending_time_in_min,travel_time_in_min\n");
+
+		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		{
+
+			DTALink* pLink = g_LinkVector[li];
+			for(int time = g_DemandLoadingStartTimeInMin; time<= g_SimululationReadyToEnd;time+=15)
+			{
+				if(time < pLink->m_LinkMOEAry.size())
+				{
+					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,15,g_TrafficFlowModelFlag);
+					int day_no = Iteration ; 
+
+					if(fabs(travel_time - pLink->m_FreeFlowTravelTime )>=0.01)
+					{
+					fprintf(st_link_travel_time, "%d,%d,%d,%d,%d,%.2f\n",
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
+						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
+						0,time,time+15,
+						travel_time);
+					}
+					}
+				}
+		}
+		fclose(st_link_travel_time);
+	}else
+	{
+		fprintf(g_ErrorFile, "File input_link_travel_time.csv cannot be opened. It might be currently used and locked by EXCEL.");
+		cout << "Error: File input_link_travel_time.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cin.get();  // pause
+	}
+
 	if(st_trajectory!=NULL)
 	{
 		fprintf(st_trajectory, "agent_id,time_stamp_in_second,time_stamp_in_min,x,y,to_x,to_y,link_key,within_link_distance,within_link_distance_percentage\n");
@@ -3502,7 +3612,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 					pLink->m_ToNodeNumber , element.within_link_distance, ratio*100);
 			
 			}
-			
+	
 		}
 		fclose(st_trajectory);
 	}else

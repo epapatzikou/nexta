@@ -353,7 +353,7 @@ extern float g_GetRandomRatioForVehicleGeneration();
 extern struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &DataVector, bool bSetYInterceptTo0 = true);
 extern std::string GetTimeClockString(int time);
 extern void g_ReadRealTimeSimulationSettingsFile();
-extern void g_BuildPathsForAgents(int iteration, bool bOutputLog);
+extern void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,  int DemandLoadingStartTime, int DemandLoadingEndTime);
 
 extern void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min);
 

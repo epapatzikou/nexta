@@ -50,8 +50,10 @@ BOOL CAssignmentSimulationSettingDlg::OnInitDialog()
 		DefaultValue.clear();
 		LinkString.clear();
 
-		ReadScenarioCSVFile(Setting_FileName[i],name_vector,value_vector);
+		bool ReturnFlag = ReadScenarioCSVFile(Setting_FileName[i],name_vector,value_vector);
 
+		if(ReturnFlag == true && name_vector.size() > 0)
+		{
 		TCITEM tcItem;
 		tcItem.mask = TCIF_TEXT;
 		tcItem.pszText = _T(Setting_Element[i]);
@@ -61,7 +63,7 @@ BOOL CAssignmentSimulationSettingDlg::OnInitDialog()
 		p_SubTabs[i]->SetTabText(Setting_Element[i]);
 		p_SubTabs[i]->m_FileName = Setting_FileName[i];
 		p_SubTabs[i]->Create(IDD_DIALOG_SCENARIO_TAB,&m_TabCtrl);
-
+		}
 	}
 
 	m_SelectTab = 0;

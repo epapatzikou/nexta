@@ -48,9 +48,6 @@ using namespace std;
 
 DTANetworkForSP g_network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
-DTANetworkForSP g_network_VMS;
-
-
 void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time)
  // for pre-trip and en-route information user classes, for each departure time interval
 {
@@ -270,20 +267,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 }
 
-
-void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )  
-// for VMS responsive vehicles
+int g_number_of_CPU_threads()
 {
-	if(g_ODEstimationFlag==1)
-		return;
-
-
-	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
-	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-	g_network_VMS.Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
-	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-	g_network_VMS.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
-
 	int number_of_threads = omp_get_max_threads ( );
 
 	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
@@ -297,6 +282,20 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
 		g_ProgramStop();
 	}
+
+	return number_of_threads;
+
+}
+void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )  
+// for VMS responsive vehicles
+{
+	if(g_ODEstimationFlag==1)
+		return;
+
+
+	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
+	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
+	int number_of_threads = g_number_of_CPU_threads();
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
@@ -307,19 +306,7 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 }
 void g_UpdateRealTimeInformation(double CurrentTime)
 {
-	int number_of_threads = omp_get_max_threads ( );
-
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
-
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
-
-
-	if(number_of_threads > _MAX_NUMBER_OF_PROCESSORS)
-	{ 
-		cout<< "the number of threads is "<< number_of_threads << ", which is greater than _MAX_NUMBER_OF_PROCESSORS. Please contact developers!" << endl; 
-		g_ProgramStop();
-	}
+	int number_of_threads =g_number_of_CPU_threads() ;
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
@@ -395,7 +382,10 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 		
 		}
 		 
-		NodeSize = g_network_VMS.FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+
+		int	processor_id = omp_get_thread_num( );  // starting from 0
+
+		NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -576,9 +566,7 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 		}
 
 		int	processor_id = omp_get_thread_num( );  // starting from 0
-
-	//	NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
-		NodeSize = g_network_VMS.FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -923,7 +911,13 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 			bool b_trip_file_ready = g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false, false);
 
 			int iteration  = 0;
-			g_BuildPathsForAgents(iteration,false);
+
+			bool bRebuildNetwork = false;
+			
+			//if(timestamp_in_min%15 ==0)  //rebuild the shoret path network every 15 min
+			//	bRebuildNetwork = true;
+
+			g_BuildPathsForAgents(iteration,bRebuildNetwork,false,timestamp_in_min, timestamp_in_min+15);
 
 			if( b_trip_file_ready)
 			{		

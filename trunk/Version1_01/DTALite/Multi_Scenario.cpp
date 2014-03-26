@@ -249,7 +249,7 @@ void g_MultiScenarioTrafficAssignment()
 			switch( g_SignalRepresentationFlag)
 			{
 
-			case signal_model_continuous_flow: 		g_LogFile << "BPR Function" << endl;
+			case signal_model_continuous_flow: 		g_LogFile << "Continuous Flow with Link Capacity Constrai" << endl;
 				g_SummaryStatFile.WriteTextString("Continuous Flow with Link Capacity Constraint");
 				break;
 

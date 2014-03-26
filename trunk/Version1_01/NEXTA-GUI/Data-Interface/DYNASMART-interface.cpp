@@ -566,7 +566,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 
 				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 				{
-					m_WarningFile<< "Node Number "  << destination_node << " in destination.dat has not been defined in network.csv"  << endl; 
+					m_NEXTALOGFile<< "Node Number "  << destination_node << " in destination.dat has not been defined in network.csv"  << endl; 
 					fclose(pFile);
 					return false;
 				}
@@ -655,7 +655,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				map <int, int> :: iterator m_Iter = m_NodeNumbertoNodeNoMap.find(from_node);
 				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 				{
-					m_WarningFile<< "Node Number "  << from_node << " in origin.dat has not been defined in network.dat"  << endl; 
+					m_NEXTALOGFile<< "Node Number "  << from_node << " in origin.dat has not been defined in network.dat"  << endl; 
 					fclose(pFile);
 					return false;
 				}
@@ -663,7 +663,7 @@ BOOL CTLiteDoc::OnOpenDYNASMARTProject(CString ProjectFileName, bool bNetworkOnl
 				m_Iter = m_NodeNumbertoNodeNoMap.find(to_node);
 				if(m_Iter == m_NodeNumbertoNodeNoMap.end( ))
 				{
-					m_WarningFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
+					m_NEXTALOGFile<< "Node Number "  << to_node << " in origin.dat has not been defined in network.dat"  << endl; 
 					fclose(pFile);
 					return false;
 				}
@@ -3452,6 +3452,7 @@ void CTLiteDoc::OnDemandUseroadcapacitytogeneratedefaultproductionandattractionf
 {
 	// TODO: Add your command handler code here
 }
+
 
 
 

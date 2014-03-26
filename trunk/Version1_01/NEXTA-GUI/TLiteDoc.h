@@ -767,7 +767,7 @@ public:
 	void OGDF_WriteGraph(CString FileName);
 
 
-	std::ofstream m_WarningFile;
+	std::ofstream m_NEXTALOGFile;
 
 	void OpenWarningLogFile(CString directory);
 	// two basic input
@@ -2768,6 +2768,7 @@ public:
 	afx_msg void OnRampRampdata();
 	afx_msg void OnLinkAddRampmeter();
 	afx_msg void OnDeleteRampmeter();
+	afx_msg void OnMoeViewoddemandestimationsummaryplotLanedensity();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);
