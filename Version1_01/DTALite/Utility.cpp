@@ -303,7 +303,7 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 
 	//step 3: information type
 	// default to historical info as class 1
-	InformationClass = 1;
+	InformationClass = 0;
 	RandomPercentage= g_GetRandomRatio() * 100; 
 	for(i= 1; i< MAX_INFO_CLASS_SIZE; i++)
 	{

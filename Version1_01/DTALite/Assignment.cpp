@@ -161,7 +161,7 @@ void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputL
 								else
 									node_size = TDNetwork_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 
-					}
+						}
 
 						if(g_ODZoneNumberSize > 1000 && departure_time == g_DemandLoadingStartTimeInMin)  // only for large networks and zones with data
 						{
@@ -332,11 +332,11 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_ti
 		}
 		if(g_UEAssignmentMethod== assignment_fixed_percentage) // day to day learning
 		{
-			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+			switching_rate =  float(g_LearningPercVector[iteration+1])/100.0f; // 1: day-to-day learning
 		}
 		if(g_UEAssignmentMethod==assignment_gap_function_MSA_step_size) // gap function based method,
 		{
-			switching_rate = 1.0f/(iteration+1);
+			switching_rate = 1.0f/(iteration+1) ;
 
 			if(iteration > 20 )
 			{
@@ -349,7 +349,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone,int departure_ti
 		if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
 			g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  			
 		{
-			switching_rate =  float(g_LearningPercVector[iteration])/100.0f; // 1: day-to-day learning
+			switching_rate =  float(g_LearningPercVector[iteration+1])/100.0f; // 1: day-to-day learning
 			// all agents have also to subject to bounded rationality rules
 
 		
@@ -718,35 +718,8 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin,
 		{
 
 
-			float m_gap;
-			float ExperiencedTravelTime = pVeh->m_TripTime;
+		pVeh->SetMinCost(TotalCost);
 
-
-			m_gap = ExperiencedTravelTime - TotalCost;
-
-			pVeh->SetMinCost(TotalCost);
-
-			if(m_gap < 0) m_gap = 0.0;			
-
-			//if(NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
-			//	m_gap = 0.0;	
-
-
-			pVeh->m_gap_update = true;
-			pVeh->m_gap = m_gap;
-
-			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
-			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
-
-			
-
-			pVeh->SetMinCost(TotalCost);
-
-			if(m_gap < 0) m_gap = 0.0;			
-
-			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
 
 		float switching_rate = 1.0f/(iteration+1);   // default switching rate from MSA
 		if(g_UEAssignmentMethod == assignment_MSA)  // MSA
@@ -755,7 +728,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin,
 		}
 		if(g_UEAssignmentMethod== assignment_fixed_percentage) // day to day learning
 		{
-			switching_rate =  float(g_LearningPercentage)/100.0f; // 1: day-to-day learning
+			switching_rate =  float(g_LearningPercVector[iteration+1])/100.0f; // 1: day-to-day learning
 		}
 		if(g_UEAssignmentMethod==assignment_gap_function_MSA_step_size) // gap function based method,
 		{
@@ -768,6 +741,15 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin,
 				else
 					switching_rate = 0.001;
 			}
+		}
+
+		if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
+			g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  			
+		{
+			switching_rate =  float(g_LearningPercVector[iteration+1])/100.0f; // 1: day-to-day learning
+			// all agents have also to subject to bounded rationality rules
+
+		
 		}
 
 			double RandomNumber= pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
@@ -785,7 +767,13 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin,
 		}else	// iteration = 0;  at iteration 0, every vehicle needs a path for simulation, so every vehicle switches
 		{
 
-			bSwitchFlag = true;
+			if(pVeh->m_NodeSize == 0)  // no external path at the first iteration 
+				bSwitchFlag = true;
+			else
+			{
+			
+			
+			}
 		}
 
 		if(bSwitchFlag)  
@@ -821,11 +809,30 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone,int departure_time_begin,
 
 			int j = 0;
 
+			int NodeNumberSum = 0;
 			for( int i = NodeSize-1; i>=0; i--)
 			{
+				NodeNumberSum += temp_reversed_PathLinkList[i];
 				PathNodeList[j++] = temp_reversed_PathLinkList[i];
+
 				ASSERT(PathNodeList[j] < m_PhysicalNodeSize);
 			}
+
+			float m_gap;
+			float ExperiencedTravelTime = pVeh->m_TripTime;
+
+
+			m_gap = ExperiencedTravelTime - TotalCost;
+			if(m_gap < 0) m_gap = 0.0;			
+
+			if(NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
+				m_gap = 0.0;	
+		
+
+			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+			g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
+			g_CurrentNumOfVehiclesForUEGapCalculation +=1;
+
 
 
 			// Jason : accumulate number of vehicles switching paths
@@ -1003,134 +1010,6 @@ void DTANetworkForSP::HistInfoZoneBasedPathAssignment(int zone,int departure_tim
 }
 
 
-void g_ComputeFinalGapValue()
-{
-	int node_size  = g_NodeVector.size() + 1 + g_ODZoneNumberSize;
-	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-
-	g_CurrentGapValue = 0.0;
-	g_CurrentRelativeGapValue = 0.0;
-
-	g_CurrentNumOfVehiclesForUEGapCalculation = 0;
-	g_CurrentNumOfVehiclesSwitched = 0;
-
-	//PathArrayForEachODT *PathArray = NULL;
-	//PathArray = new PathArrayForEachODT[g_ODZoneIDSize]; // remember to release memory
-
-	//#pragma omp parallel for
-	for(int CurZoneID=1;  CurZoneID <= g_ODZoneNumberSize; CurZoneID++)
-	{
-		if(g_ZoneMap.find(CurZoneID) == g_ZoneMap.end())  // no such zone being defined
-			continue;
-		if(g_ZoneMap[CurZoneID].m_Demand>0)  // only this origin zone has vehicles, then we build the network
-		{
-			// create network for shortest path calculation at this processor
-			DTANetworkForSP TDNetwork_MP(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin); //  network instance for single processor in multi-thread environment
-			int id = omp_get_thread_num( );  // starting from 0
-			TDNetwork_MP.BuildNetworkBasedOnZoneCentriod(g_NumberOfIterations,CurZoneID);  // build network for this zone, because different zones have different connectors...
-
-			// scan all possible departure times
-			for(int departure_time = g_DemandLoadingStartTimeInMin; departure_time < g_DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
-			{
-				if(g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size() > 0)
-				{
-					// loop through the TDOVehicleArray to obtain the least experienced trip time for each OD pair and each departure time interval
-					/*
-					float* LeastExperiencedTimes;
-					LeastExperiencedTimes = new float[g_ODZoneNumberSize + 1];				
-
-					for(int DestZoneID=1; DestZoneID <= g_ODZoneNumberSize; DestZoneID++)
-					LeastExperiencedTimes[DestZoneID] = 1000000.0; // initialized with a big number
-
-					for (int vi = 0; vi<g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
-					{
-					int VehicleID = g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
-					DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
-					ASSERT(pVeh!=NULL);
-
-					int VehicleDestZoneID = pVeh->m_DestinationZoneID;
-					if(pVeh->m_TripTime < LeastExperiencedTimes[VehicleDestZoneID])
-					LeastExperiencedTimes[VehicleDestZoneID] = pVeh->m_TripTime;
-					}					
-					*/
-
-					TDNetwork_MP.TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), departure_time,1,DEFAULT_VOT,false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-
-					int AssignmentInterval = g_FindAssignmentInterval(departure_time);
-
-					//if(g_VehicleExperiencedTimeGap == 0)
-					//{
-					//	// loop through the TDOVehicleArray to obtain the avg experienced path time for each OD pair and each departure time interval
-					//	ConstructPathArrayForEachODT(PathArray, CurZoneID, AssignmentInterval);
-					//}
-
-					for (int vi = 0; vi < g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray.size(); vi++)
-					{
-						int VehicleID = g_TDOVehicleArray[g_ZoneMap[CurZoneID].m_ZoneSequentialNo][departure_time/g_AggregationTimetInterval].VehicleArray[vi];
-						DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
-						ASSERT(pVeh!=NULL);
-
-						int OriginCentriod =  g_NodeVector.size();
-						int DestinationCentriod = g_NodeVector.size() + pVeh->m_DestinationZoneID;
-
-						float TotalCost = TDNetwork_MP.LabelCostAry[DestinationCentriod];
-						if(TotalCost > MAX_SPLABEL-10)
-						{
-							cout  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
-							g_WarningFile  << "Warning: vehicle " <<  pVeh->m_VehicleID << " from zone " << pVeh ->m_OriginZoneID << " to zone "  << pVeh ->m_DestinationZoneID << " does not have a physical path. " << endl;
-							pVeh->m_NodeSize = 0;
-							continue;
-
-						}
-
-						float m_gap;
-						float ExperiencedTravelTime = pVeh->m_TripTime;						
-						pVeh->SetMinCost(TotalCost);
-
-						//if(g_VehicleExperiencedTimeGap == 1) 
-						//{
-						//	m_gap = ExperiencedTravelTime - TotalCost;
-						//}
-						//else{
-						//	int VehicleDest = pVeh->m_DestinationZoneID;
-						//	int NodeSum = pVeh->m_NodeNumberSum;
-						//	int PathIndex = 0;
-
-						//	for(int p=1; p<=PathArray[VehicleDest].NumOfPaths; p++)
-						//	{
-						//		if(NodeSum == PathArray[VehicleDest].PathNodeSums[p])
-						//		{
-						//			PathIndex = p;
-						//			break;
-						//		}
-						//	}
-
-						//	float AvgPathTime = PathArray[VehicleDest].AvgPathTimes[PathIndex];
-						//	float MinTime = PathArray[VehicleDest].AvgPathTimes[PathArray[VehicleDest].BestPathIndex];
-						//	// m_gap = AvgPathTime - MinTime;
-						//	m_gap = AvgPathTime - TotalCost;
-
-						//}						
-
-						m_gap = ExperiencedTravelTime - TotalCost; // Jason : use least experienced times instead of shortest path times
-
-						if(m_gap < 0) m_gap = 0.0;
-
-						g_CurrentGapValue += m_gap;
-						g_CurrentRelativeGapValue += m_gap/max(0.1,ExperiencedTravelTime);
-
-					}
-
-					// delete LeastExperiencedTimes; // Jason : release memory
-
-				}
-			} // for each departure time interval
-		}
-	}
-
-	//if(PathArray!=NULL);
-	//delete PathArray;
-}
 
 void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int AssignmentInterval)
 {  // this function has been enhanced for path flow adjustment
@@ -1269,8 +1148,6 @@ void g_AgentBasedShortestPathGeneration()
 	int link_size  = g_LinkVector.size();
 
 	int line = 0;
-
-
 
 	FILE* st_input = NULL;
 	fopen_s(&st_input,"input_od_pairs.csv","r");
@@ -1567,9 +1444,26 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	skim_file_name = "OD_skim_day" + CString2StdString(day_str) + ".csv";
 	cout << "outputing skim file"  << skim_file_name << " ..." << endl;
-	g_AgentBasedAccessibilityMatrixGeneration(skim_file_name,true,0);
+	g_AgentBasedAccessibilityMatrixGeneration(skim_file_name,true,1,0);
 	}
 
+
+	int time_dependent_HOV_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_HOV_skim_file_output", 0, g_DTASettingFileName);
+
+	if(time_dependent_HOV_skim_file_output>0)
+	{
+	//
+	std::string skim_file_name;
+	int day = iteration + 1;
+
+	CString day_str;
+	day_str.Format("%d",day);
+
+
+	skim_file_name = "OD_HOV_skim_day" + CString2StdString(day_str) + ".csv";
+	cout << "outputing HOV skim file"  << skim_file_name << " ..." << endl;
+	g_AgentBasedAccessibilityMatrixGeneration(skim_file_name,true,2,0);
+	}
 	int day_no = iteration+1;
 
 	g_SummaryStatFile.SetValueByFieldName ("Iteration #",day_no);  // iteration from 0
@@ -1776,9 +1670,6 @@ void g_ZoneBasedDynamicTrafficAssignment()
 	{
 		cout << "------- Iteration = "<<  iteration << "--------" << endl;
 
-
-	if(iteration == 20)
-			TRACE("");
 		// initialize for each iteration
 		g_CurrentGapValue = 0.0;
 		g_CurrentRelativeGapValue = 0.0;

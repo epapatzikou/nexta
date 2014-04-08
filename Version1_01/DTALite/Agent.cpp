@@ -234,6 +234,12 @@ void g_ReadDSPVehicleFile(string file_name)
 
 bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence, CString FileName) 
 {
+
+	if( pVehicle->m_NodeSize >=1 && pVehicle->m_NodeAry != NULL )
+	{
+		delete pVehicle->m_NodeAry;
+	}
+		 
 	pVehicle->m_NodeSize = path_node_sequence.size();
 
 	if(pVehicle->m_NodeSize>=1)  // in case reading error
@@ -257,7 +263,7 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 			if(i>=1)
 			{
 				DTALink* pLink = g_LinkMap[GetLinkStringID(path_node_sequence[i-1],path_node_sequence[i])];
-				if(pLink==NULL)
+				if(pLink==NULL && FileName.GetLength() > 0)
 				{
 					CString msg;
 					msg.Format("Error in reading link %d->%d for vehicle id %d  in file %s.", path_node_sequence[i-1],path_node_sequence[i],pVehicle->m_VehicleID,FileName);
@@ -540,6 +546,43 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 }
 
+void g_UseExternalPath(DTAVehicle* pVehicle)
+{
+
+		if(g_ODPathSetVector ==NULL)
+			return;
+
+		int OrgZoneSequentialNo = g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo;
+		int DestZoneSequentialNo = g_ZoneMap[pVehicle->m_DestinationZoneID].m_ZoneSequentialNo;
+
+		float random_value = pVehicle->GetRandomRatio();
+
+		// loop through the path set
+		if(g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo]. PathSet.size() >=1)
+		{
+			int i = 0;
+			for(i = 0; i < g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo]. PathSet.size(); i++)
+			{
+
+				if(random_value <= g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo].PathSet[i].CumulativeRatio  )
+				{
+					i = i -1;
+					break;
+				}
+			
+			}
+
+			if(i< 0 )
+				i = 0;
+
+			if(i == g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo]. PathSet.size())
+				i = g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo]. PathSet.size() -1;
+		
+			AddPathToVehicle(pVehicle, g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo].PathSet[i].m_NodeNumberArray,NULL);
+		
+		}
+
+}
 bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag)
 {
 	float start_time_value = -100;
@@ -702,7 +745,18 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
 				AddPathToVehicle(pVehicle, path_node_sequence,file_name.c_str ());
+			}else
+			{
+				if(g_use_routing_policy_from_external_input && pVehicle->m_InformationClass != info_hist_learning)
+				{
+					g_UseExternalPath(pVehicle);
+				}
 			}
+			//} else if (pVehicle->m_InformationClass == info_hist_learning)
+			//{
+			//	//fetch new path later
+			//
+			//}
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 			pVehicle->m_ArrivalTime  = 0;
@@ -1134,9 +1188,9 @@ void g_ResetInformationClass()
 	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 	{
 		DTAVehicle* pVehicle = iterVM->second;
-		pVehicle->m_InformationClass  = 1;
+		pVehicle->m_InformationClass  = info_hist;
 		double RandomPercentage= g_GetRandomRatio() * 100; 
-		for(int in= 1; in< MAX_INFO_CLASS_SIZE; in++)
+		for(int in= 0; in< MAX_INFO_CLASS_SIZE; in++)
 		{
 			if(RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType ].cumulative_info_class_percentage[in-1] && 
 				RandomPercentage < g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in])
@@ -1145,7 +1199,7 @@ void g_ResetInformationClass()
 	}
 }
 
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, double CurrentTime)
+void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, int PricingType, double CurrentTime)
 {
 	bool bDistanceCost = false;
 
@@ -1208,8 +1262,8 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 	float*** ODDistance = NULL;
 	ODDistance = Allocate3DDynamicArray<float>(g_ODZoneIDSize+1,g_ODZoneIDSize+1,StatisticsIntervalSize);
 
-	for(int i = 0; i<=g_ODZoneNumberSize; i++)
-		for(int j = 0; j<=g_ODZoneNumberSize; j++)
+	for(int i = 0; i<=g_ODZoneIDSize; i++)
+		for(int j = 0; j<=g_ODZoneIDSize; j++)
 			for(int t=0; t<StatisticsIntervalSize; t++)
 			{
 
@@ -1260,7 +1314,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 							bDistanceCost = false;
 							for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 							{
-								TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,1,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+								TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,PricingType,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 								// to each destination zone
@@ -1295,7 +1349,18 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 				
 					CString str;
 					int time_interval_no = departure_time/g_AggregationTimetInterval;
-					str.Format("skim%d.csv",time_interval_no);
+
+
+					if(PricingType == 1)
+						str.Format("skim%d.csv",time_interval_no);
+					if(PricingType == 2)
+						str.Format("skim_HOV_%d.csv",time_interval_no);
+					if(PricingType == 3)
+						str.Format("skim_truck_%d.csv",time_interval_no);
+					if(PricingType == 4)
+						str.Format("skim_transit_%d.csv",time_interval_no);
+					
+					
 					FILE* st = NULL;
 					fopen_s(&st,str,"w");
 					if(st!=NULL)
@@ -1362,7 +1427,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 		ODMOEArray[origin_zone_no][destination_zone_no].TotalVehicleSize+=1;
 		int arrival_time_window_begin_time_in_min = CurrentTime - g_AggregationTimetInterval; 
-		if(pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && pVehicle-> m_ArrivalTime >=   arrival_time_window_begin_time_in_min)  // with physical path in the network
+		if(pVehicle->m_PricingType == PricingType && pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && pVehicle-> m_ArrivalTime >=   arrival_time_window_begin_time_in_min)  // with physical path in the network
 		{
 
 
