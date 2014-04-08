@@ -130,10 +130,18 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
         if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
         {  // we need to update travel time and agent file
 
-                g_ExchangeRealTimeSimulationData(DayNo,time_clock_in_min);
+                g_ExchangeRealTimeSimulationData(DayNo,(int)(CurrentTime));
 
 
         }
+
+	if(g_use_routing_policy_from_external_input == 1 && meso_simulation_time_interval_no%10 == 0 && DayNo ==0 && time_clock_in_min%g_AggregationTimetInterval == 0 )
+	{ // read input path ratio every 15 min
+	
+		ReadTimeDependentRoutingPolicyData((int)(CurrentTime));
+	
+	}
+
 	// load vehicle into network
 
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
@@ -1481,7 +1489,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 		DTAVehicle* pVeh = (*iterVehicle);
 		pVeh->PreTripReset();
 
-		if(pVeh->m_InformationClass >=2)  // with real-time information group
+		if(pVeh->m_InformationClass >= info_pre_trip)  // with real-time information group
 		{
 			g_bInformationUpdatingAndReroutingFlag = true;
 		}

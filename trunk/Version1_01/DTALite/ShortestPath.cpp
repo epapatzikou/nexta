@@ -128,6 +128,8 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 				ASSERT(g_AdjLinkSize >  m_OutboundSizeAry[FromID]);
 
 				m_LinkTDDistanceAry[LinkID] = 0.01;
+				m_LinkFFTTAry[LinkID] = 0.01;
+				m_LinkTDTimePerceptionErrorAry [LinkID] = 0.00;
 
 				for( t= m_StartIntervalForShortestPathCalculation; t <m_NumberOfSPCalculationIntervals; t+=1)
 				{
@@ -229,6 +231,8 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 		}
 
 		m_LinkTDDistanceAry[pLink->m_LinkNo] = pLink->m_Length ;
+		m_LinkFFTTAry[pLink->m_LinkNo] = pLink->m_FreeFlowTravelTime  ; 
+		m_LinkTDTimePerceptionErrorAry [pLink->m_LinkNo] = 0.00;
 
 		int link_entering_time_interval;
 
@@ -597,6 +601,8 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
+
+	TotalCost  = 0;
 	debug_flag = false;
 
 	if(origin == destination ) // origin and destination nodes are the same
@@ -640,8 +646,16 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		LabelTimeAry[i] = MAX_SPLABEL;
 		LabelCostAry[i] = MAX_SPLABEL;
 		LabelDistanceAry[i] = MAX_SPLABEL;
+
 	}
 
+	if(g_UserClassPerceptionErrorRatio[1]>=0.001)  //probit loading 
+	{
+		for(i=0; i <m_LinkSize; i++) // Initialization for all links
+		{
+			m_LinkTDTimePerceptionErrorAry[i] =  m_LinkFFTTAry[i]* g_RNNOF()* g_UserClassPerceptionErrorRatio[1];
+		}
+	}
 	// Initialization for origin node
 	LabelTimeAry[origin] = float(departure_time);
 	LabelCostAry[origin] = 0;
@@ -700,11 +714,14 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				NewTime	= LabelTimeAry[FromID];
 			else 
 			{// non- distance
+					float preceived_travel_time  = m_LinkTDTimePerceptionErrorAry[LinkID]  + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
+					if(preceived_travel_time< m_LinkFFTTAry[LinkID]*0.5)
+						preceived_travel_time< m_LinkFFTTAry[LinkID]*0.5;
 
 				if(pricing_type ==4)  // transit // special feature 3: transit travel time
 					NewTime	= LabelTimeAry[FromID] + m_LinkTDTransitTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 				else  // road users
-					NewTime	= LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
+					NewTime	= LabelTimeAry[FromID] + preceived_travel_time;  // time-dependent travel times come from simulator
 			}
 
 			//  road pricing module
@@ -800,7 +817,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			PathLinkList[j++] = temp_reversed_PathLinkList[i];
 		}
 
-		TotalCost = LabelCostAry[destination];
+		TotalCost = LabelCostAry[destination]-departure_time;
 
 		if(debug_flag)
 		{
@@ -832,6 +849,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
+		TotalCost = 0;
 		debug_flag = false;
 	if(g_NodeVector[origin].m_NodeNumber  == 3303 && g_NodeVector[destination].m_NodeNumber == 10224 )
 	{
@@ -861,6 +879,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			LinkLabelTimeAry[i] = MAX_SPLABEL;
 			LinkLabelCostAry[i] = MAX_SPLABEL;
+
+		if(g_UserClassPerceptionErrorRatio[1]>=0.001)  //probit loading 
+		{	
+			m_LinkTDTimePerceptionErrorAry[i] =  m_LinkFFTTAry[i]* g_RNNOF()* g_UserClassPerceptionErrorRatio[1];
+		}
 		}
 
 		// Initialization for origin node: for all outgoing links from origin node
@@ -958,7 +981,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTransitTimeAry[ToLinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 				else  // road users
 				{
-					NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
+					float preceived_travel_time  = m_LinkTDTimePerceptionErrorAry[ToLinkID]  + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval];
+					if(preceived_travel_time< m_LinkFFTTAry[ToLinkID]*0.5)
+						preceived_travel_time< m_LinkFFTTAry[ToLinkID]*0.5;
+
+					NewTime	= LinkLabelTimeAry[FromLinkID] +  preceived_travel_time + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
 
 					double movement_delay_in_min  = m_OutboundMovementDelayAry[FromLinkID][i];
 					if(movement_delay_in_min >=90 && debug_flag)
@@ -1056,6 +1083,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				link_id_with_min_cost = incoming_link;
 			}
 		}
+
+
+		TotalCost = min_cost - departure_time;
 
 		if(link_id_with_min_cost <0)
 		{

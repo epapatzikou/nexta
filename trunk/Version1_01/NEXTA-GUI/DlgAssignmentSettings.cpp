@@ -136,9 +136,9 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 	m_AssignmentMethod.AddString("3. OD Demand Matrix Estimation");
 
 	m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
-	m_AssignmentMethod.AddString("5. Gap funciton-based MSA");
+	m_AssignmentMethod.AddString("5. Accessibility (Travel Time)");
 	m_AssignmentMethod.AddString("6. Accessibility (Distance)");	
-//	m_AssignmentMethod.AddString("7. Accessibility (Travel Time)");
+
 
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 

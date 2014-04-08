@@ -357,7 +357,14 @@ extern void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOut
 
 extern void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min);
 
-
+extern DTANetworkForSP g_network_MP[_MAX_NUMBER_OF_PROCESSORS];
+extern ODPathSet** g_ODPathSetVector;
+extern vector<int> ParseLineToIntegers(string line);
+extern void ReadTimeDependentRoutingPolicyData(int DemandLoadingStartTimeInMin);
+extern int g_use_routing_policy_from_external_input;
+extern int g_output_routing_policy_file;
+extern void g_UseExternalPath(DTAVehicle* pVehicle);
+extern void g_ApplyExternalPathInput(int departure_time_begin);
 
 
 

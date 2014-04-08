@@ -47,6 +47,7 @@ using namespace std;
 
 
 DTANetworkForSP g_network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+ODPathSet** g_ODPathSetVector = NULL;
 
 void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time)
  // for pre-trip and en-route information user classes, for each departure time interval
@@ -73,9 +74,6 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
 
 		bool b_switch_flag = false;
-
-
-
 
 		if(g_bVehicleAttributeUpdatingFlag ==true)  // if some vehicles' attribute might need updating
 		{
@@ -267,6 +265,29 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 }
 
+void g_ApplyExternalPathInput(int departure_time_begin)
+ // for pre-trip and en-route information user classes, for each departure time interval
+{
+	if(g_ODEstimationFlag==1)
+		return;
+	int AssignmentInterval = g_FindAssignmentInterval(departure_time_begin);  // starting assignment interval
+
+	for(int origin_zone_index = 0; origin_zone_index <g_ODZoneIDSize; origin_zone_index++)
+	{
+		// loop through the TDOVehicleArray to assign or update vehicle paths...
+		for (int vi = 0; vi<g_TDOVehicleArray[origin_zone_index][AssignmentInterval].VehicleArray.size(); vi++)
+		{
+			int VehicleID = g_TDOVehicleArray[origin_zone_index][AssignmentInterval].VehicleArray[vi];
+			DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
+
+			if(pVeh->m_InformationClass == info_hist)
+			{
+			g_UseExternalPath(pVeh);
+			}			
+		} // for each vehicle on this OD pair
+	}
+}
+
 int g_number_of_CPU_threads()
 {
 	int number_of_threads = omp_get_max_threads ( );
@@ -292,6 +313,11 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 	if(g_ODEstimationFlag==1)
 		return;
 
+
+	if(g_use_routing_policy_from_external_input == 1)
+	{	
+		g_ODPathSetVector = AllocateDynamicArray<ODPathSet>(g_ODZoneIDSize+1,g_ODZoneIDSize+1);
+	}
 
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
@@ -772,6 +798,9 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 	// update timestamp using day no
 	timestamp_in_min = day_no*1440+ timestamp_in_min;
 
+
+
+
 	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_TD_link_travel_time_file.size() >=1)
 	{
 		  OutputRealTimeLinkMOEData(
@@ -834,9 +863,19 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		
 
 		if(timestamp_in_min == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
-			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,timestamp_in_min);
+			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,1,timestamp_in_min);
 		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
-			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,timestamp_in_min);
+			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,1,timestamp_in_min);
+
+	int time_dependent_HOV_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_HOV_skim_file_output", 0, g_DTASettingFileName);
+
+	if(time_dependent_HOV_skim_file_output==1)
+	{
+		if(timestamp_in_min == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
+			g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,2,timestamp_in_min);
+		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
+			g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,2,timestamp_in_min);
+	}
 
 		//ofstream output_ODTDMOE_file;
 
@@ -917,6 +956,7 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 			//if(timestamp_in_min%15 ==0)  //rebuild the shoret path network every 15 min
 			//	bRebuildNetwork = true;
 
+			// use input link travel time 
 			g_BuildPathsForAgents(iteration,bRebuildNetwork,false,timestamp_in_min, timestamp_in_min+15);
 
 			if( b_trip_file_ready)
@@ -936,7 +976,14 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 	if(day_no == 0 && timestamp_in_min == 0 && g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)  
 		// at the first time interval  based on free_flow travel time
 	{
-		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file,false,timestamp_in_min);
+		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file,false,1,timestamp_in_min);
+
+		int time_dependent_HOV_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_HOV_skim_file_output", 0, g_DTASettingFileName);
+
+		if(time_dependent_HOV_skim_file_output == 1)
+		{
+			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file,false,2,timestamp_in_min);
+		}
 	
 	}else if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_od_moe_file.size() >=1)
 	{

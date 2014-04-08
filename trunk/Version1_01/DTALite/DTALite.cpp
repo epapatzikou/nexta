@@ -210,6 +210,10 @@ float g_UpdatedDemandPrintOutThreshold = 5;
 float g_TotalMeasurementDeviation = 0; 
 
 float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
+int g_output_OD_path_MOE_file = 1;
+int g_output_OD_TD_path_MOE_file = 1;
+int g_output_OD_path_MOE_cutoff_volume = 1;
+float g_OverallPerceptionErrorRatio = 0;
 float g_VMSPerceptionErrorRatio;
 
 int g_information_updating_interval_in_min;
@@ -255,7 +259,8 @@ int g_start_iteration_for_MOEoutput = 0;
 
 // for fast data acessing
 int g_LastLoadedVehicleID = 0; // scan vehicles to be loaded in a simulation interval
-
+int g_use_routing_policy_from_external_input = 0;
+int g_output_routing_policy_file = 0;
 VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray =NULL; // TDO for time-dependent origin
 
 std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle, not pointer!;
@@ -273,7 +278,7 @@ ofstream g_WarningFile;
 
 e_traffic_flow_model g_TrafficFlowModelFlag = tfm_BPR;
 e_signal_representation_model g_SignalRepresentationFlag = signal_model_continuous_flow;
-float g_LearningPercVector[400] = {10};
+float g_LearningPercVector[1000] = {10};
 
 int g_ShortestPathWithMovementDelayFlag = 1;
 int g_UseDefaultLaneCapacityFlag = 1;
@@ -1266,7 +1271,7 @@ void g_ReadInputFiles(int scenario_no)
 
 	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
 	{
-		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv",false, 0);
+		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv",false, 1, 0);
 		exit(0);
 	}
 
@@ -1645,11 +1650,13 @@ void g_ReadInputFiles(int scenario_no)
 			parser_demand_type.GetValueByFieldName("demand_type_name",element.demand_type_name );
 
 			element.pricing_type = pricing_type;
-			element.info_class_percentage[1] = ratio_pretrip;
-			element.info_class_percentage[2] = ratio_enroute;
+
+			element.info_class_percentage[1] = 0;  //learning 
+			element.info_class_percentage[2] = ratio_pretrip;
+			element.info_class_percentage[3] = ratio_enroute;
 			element.info_class_percentage[0] = 100 - ratio_enroute - ratio_pretrip;
 
-			for(int ic = 1; ic < MAX_INFO_CLASS_SIZE; ic++)
+			for(int ic = 0; ic < MAX_INFO_CLASS_SIZE; ic++)
 			{
 				element.cumulative_info_class_percentage[ic] = element.cumulative_info_class_percentage[ic-1] + element.info_class_percentage[ic];
 			}
@@ -1963,9 +1970,9 @@ void g_ReadInputFiles(int scenario_no)
 		g_SummaryStatFile.WriteRecord ();
 		}
 
-	int use_input_link_travel_time_from_previous_iteration = g_GetPrivateProfileInt("ABM_integeration", "use_input_link_travel_time_from_previous_iteration", 0, g_DTASettingFileName);
+	int use_link_travel_time_from_external_input = g_GetPrivateProfileInt("assignment", "use_link_travel_time_from_external_input", 0, g_DTASettingFileName);
 
-	if(use_input_link_travel_time_from_previous_iteration)
+	if(use_link_travel_time_from_external_input)
 	{
 	// read input link travel times
 	g_ReadInputLinkTravelTime_Parser();
@@ -3302,6 +3309,7 @@ void ReadScenarioInputFiles(int scenario_no)
 void FreeMemory()
 {
 	// Free pointers
+	return;
 
 	try
 	{
@@ -3349,6 +3357,22 @@ void FreeMemory()
 
 	//free zone map after g_TDOVehicleArray as g_ZoneMap is still used in DeallocateDynamicArray for g_TDOVehicleArray
 	g_ZoneMap.clear ();
+
+	int number_of_threads = omp_get_max_threads ( );
+
+	if(g_ODEstimationFlag == 0)
+	{
+		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
+		{
+		g_network_MP[ProcessID].Clean ();
+		}
+
+
+		if(	g_use_routing_policy_from_external_input == 1 && g_ODPathSetVector!=NULL)
+			DeallocateDynamicArray<ODPathSet>(g_ODPathSetVector,g_ODZoneIDSize+1,g_ODZoneIDSize+1);
+
+
+	}
 }
 
 
@@ -3890,6 +3914,8 @@ void g_ReadDTALiteSettings()
 	g_settings.use_mile_or_km_as_length_unit = g_GetPrivateProfileInt("simulation", "use_mile_or_km_as_length_unit", 1, g_DTASettingFileName);
 
 	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
+	g_use_routing_policy_from_external_input = g_GetPrivateProfileInt("assignment", "use_routing_policy_from_external_input", 0, g_DTASettingFileName);
+	g_output_routing_policy_file = g_GetPrivateProfileInt("output", "external_routing_policy", 0, g_DTASettingFileName);
 
 	if(!g_OutputEmissionOperatingModeData)
 		g_OutputSecondBySecondEmissionData = 0;
@@ -3972,11 +3998,25 @@ void g_ReadDTALiteSettings()
 	g_start_iteration_for_MOEoutput = g_GetPrivateProfileInt("output", "start_iteration_for_MOE", -1, g_DTASettingFileName);	
 
 	g_UserClassPerceptionErrorRatio[1] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_historical_info_travelers_perception_error",0.3f,g_DTASettingFileName);	
+	
+	if( g_UserClassPerceptionErrorRatio[1] <=-0.01 || g_UserClassPerceptionErrorRatio[1] >=1.0)
+	{
+	
+		cout << "Input error: coefficient_of_variation_of_historical_info_travelers_perception_error should be between 0 and 1." <<endl << "The current value in configuration file DTASettings.txt is " <<  g_UserClassPerceptionErrorRatio[1] << endl;
+		g_ProgramStop();
+	
+	}
+	
 	g_UserClassPerceptionErrorRatio[2] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_pretrip_info_travelers_perception_error",0.05f,g_DTASettingFileName);	
 	g_UserClassPerceptionErrorRatio[3] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_en-route_info_travelers_perception_error",0.05f,g_DTASettingFileName);	
 
 	g_VMSPerceptionErrorRatio          = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_VMS_perception_error",0.05f,g_DTASettingFileName);	
 	g_information_updating_interval_in_min = g_GetPrivateProfileInt("traveler_information", "information_updating_interval",5,g_DTASettingFileName);	
+
+	g_output_OD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file",0,g_DTASettingFileName);
+	g_output_OD_TD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file",0,g_DTASettingFileName);
+
+	g_output_OD_path_MOE_cutoff_volume =  g_GetPrivateProfileInt("output", "OD_path_MOE_cutoff_volume",1,g_DTASettingFileName); 
 
 
 	if(g_UEAssignmentMethod == assignment_accessibility_distanance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 

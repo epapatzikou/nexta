@@ -43,7 +43,7 @@ using namespace std;
 #define _MAX_NUMBER_OF_PROCESSORS  64
 #define PI 3.1415626
 
-enum e_traffic_information_class { info_hist =1, info_pre_trip, info_en_route};
+enum e_traffic_information_class { info_hist =0,info_hist_learning,info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
 
 enum e_signal_representation_model {signal_model_continuous_flow = 0,  signal_model_link_effective_green_time, signal_model_movement_effective_green_time };
@@ -54,9 +54,9 @@ assignment_fixed_percentage,
 assignment_day_to_day_learning_threshold_route_choice,
 assignment_OD_demand_estimation,
 assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
-assignment_gap_function_MSA_step_size,
+assignment_accessibility_travel_time,
 assignment_accessibility_distanance,
-assignment_accessibility_travel_time
+assignment_gap_function_MSA_step_size
 
 };
 
@@ -2312,7 +2312,7 @@ public:
 	int m_DemandType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
 	int m_PricingType;     // 1: passenger,  2, HOV, 3, truck, 3: bus
 	int m_VehicleType;    // for emissions analysis
-	int m_InformationClass;  // 1: historical, 2: pre-trip, 3: en-route
+	int m_InformationClass;  // 0: historical path (no change), 1: historical learning using time-dependent travel time from the previous day, 2: pre-trip, 3: en-route
 
 	int m_SimLinkSequenceNo; //  range 0, 65535
 
@@ -2389,6 +2389,7 @@ public:
 
 	DTAVehicle()
 	{
+		m_NodeNumberSum = 0;
 		m_OriginNodeID = -1;
 		m_DestinationNodeID = -1;
 
@@ -2426,7 +2427,7 @@ public:
 		m_NodeAry = NULL;
 		m_NodeSize	= 0;
 		m_bImpacted = false; 
-		m_InformationClass = 1;
+		m_InformationClass = info_hist;
 		m_DemandType = 1;
 		m_VehicleType = 1;
 		m_PricingType = 0;
@@ -2500,7 +2501,7 @@ public:
 	m_DemandType = 1;
 	m_VehicleType = 1;
 	m_PricingType = 1;
-	m_InformationClass = 1;
+	m_InformationClass = info_hist;
 	m_Age = 0;
 	m_TimeToRetrieveInfo = 0;
 	
@@ -2914,10 +2915,13 @@ public:
 	int* m_ToIDAry;
 
 	float** m_LinkTDTimeAry;
+	float* m_LinkTDTimePerceptionErrorAry;
 
 	float** m_LinkTDTransitTimeAry;
 
 	float*  m_LinkTDDistanceAry;
+	float*  m_LinkFFTTAry;
+
 	DTALinkToll** m_LinkTDCostAry;
 
 	int* NodeStatusAry;                // Node status array used in KSP;
@@ -2999,6 +3003,9 @@ public:
 		m_LinkBasedSEList = new int[m_LinkSize];
 
 		m_LinkTDDistanceAry = new float[m_LinkSize];
+		m_LinkFFTTAry  = new float[m_LinkSize];
+
+		m_LinkTDTimePerceptionErrorAry = new float[m_LinkSize];
 
 	//	cout <<"start to allocate time-dependent network memory " << endl;
 		m_LinkTDTimeAry   =  AllocateDynamicArray<float>(m_LinkSize,m_NumberOfSPCalculationIntervals);
@@ -3044,13 +3051,9 @@ public:
 		Setup(NodeSize, LinkSize, PlanningHorizonInMin,AdjLinkSize,StartTimeInMin=0);
 	};
 
-
-	~DTANetworkForSP()
+	void Clean()
 	{
-		if(m_NodeSize==0)
-			return;
-
-		if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
+			if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry && m_NodeSize>=1)  delete m_InboundSizeAry;
 
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
@@ -3079,6 +3082,14 @@ public:
 		DeallocateDynamicArray<float>(m_LinkTDTransitTimeAry,m_LinkSize,m_NumberOfSPCalculationIntervals);
 		DeallocateDynamicArray<DTALinkToll>(m_LinkTDCostAry,m_LinkSize,m_NumberOfSPCalculationIntervals);
 		if(m_LinkTDDistanceAry) delete m_LinkTDDistanceAry;
+		if(m_LinkFFTTAry) delete m_LinkFFTTAry;
+
+
+		
+		if(m_LinkTDTimePerceptionErrorAry) delete m_LinkTDTimePerceptionErrorAry;
+
+
+		
 
 		DeallocateDynamicArray<float>(TD_LabelCostAry,m_NodeSize,m_NumberOfSPCalculationIntervals);
 		DeallocateDynamicArray<int>(TD_NodePredAry,m_NodeSize,m_NumberOfSPCalculationIntervals);
@@ -3103,6 +3114,15 @@ public:
 		if(LinkPredAry) delete LinkPredAry;
 		if(LinkLabelTimeAry) delete LinkLabelTimeAry;
 		if(LinkLabelCostAry) delete LinkLabelCostAry;
+
+	}
+
+	~DTANetworkForSP()
+	{
+		if(m_NodeSize==0)
+			return;
+
+		Clean();
 
 
 	};
@@ -3555,9 +3575,18 @@ public:
 		TotalDistance = 0;
 		TotalCost = 0;
 		TotalEmissions = 0;
+		TotalFFTT = 0;
+		Ratio = 0;
+		CumulativeRatio = 0;
+		NodeSums = 0;
+		m_LinkSize = 0;
 	}
+	int Origin_ZoneID;
+	int Destination_ZoneID;
 
 	int   NodeSums;
+	float Ratio; 
+	float CumulativeRatio;
 
 	int m_LinkSize;
 	std::vector<int> m_LinkNoArray;
@@ -3565,6 +3594,7 @@ public:
 
 	int   TotalVehicleSize;
 	float TotalTravelTime;
+	float TotalFFTT;
 	float TotalDistance;
 	float TotalCost;
 	float TotalEmissions;
@@ -3708,7 +3738,8 @@ bool OutputTripFile(char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmp
 void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1, int arrival_time_window_begin_time_in_min =0 );
 void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int end_time_in_min = 1440, int cut_off_volume = 1 );
 void OutputEmissionData();
-void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file, int cut_off_volume = 50);
+void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file,int DemandLoadingStartTimeInMin, int DemandLoadingEndTimeInMin, int cut_off_volume = 50);
+void OutputTimeDependentRoutingPolicyData(ofstream &output_PathMOE_file,int DemandLoadingStartTimeInMin, int DemandLoadingEndTimeInMin, int cut_off_volume = 50);
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 
 
@@ -3758,9 +3789,15 @@ void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
 
 extern CString g_GetAppRunningTime(bool with_title = true);
-void g_ComputeFinalGapValue();
+
 
 extern float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS];
+extern int g_output_OD_path_MOE_file;
+extern int g_output_OD_TD_path_MOE_file;
+extern int g_output_OD_path_MOE_cutoff_volume;
+extern float g_OverallPerceptionErrorRatio;
+
+
 extern float g_VMSPerceptionErrorRatio;
 extern int g_information_updating_interval_in_min;
 extern bool g_bInformationUpdatingAndReroutingFlag;
@@ -3785,7 +3822,7 @@ extern CString g_GetTimeStampString(int time_stamp_in_mine);
 extern void g_FreeMemoryForVehicleVector();
 
 void g_AgentBasedShortestPathGeneration();
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name,  bool bTimeDependentFlag, double CurrentTime);
+void g_AgentBasedAccessibilityMatrixGeneration(string file_name,  bool bTimeDependentFlag, int PricingType, double CurrentTime);
 
 extern bool g_ReadLinkMeasurementFile();
 //extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
@@ -3818,7 +3855,7 @@ extern CCSVWriter g_SummaryStatFile;
 
 extern ofstream g_AssignmentLogFile;
 extern ofstream g_EstimationLogFile;
-extern float g_LearningPercVector[400];
+extern float g_LearningPercVector[1000];
 void g_DTALiteMain();
 void g_DTALiteMultiScenarioMain();
 

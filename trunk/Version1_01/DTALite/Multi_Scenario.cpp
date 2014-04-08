@@ -185,6 +185,12 @@ void g_MultiScenarioTrafficAssignment()
 	if (parser_scenario.OpenCSVFile("input_scenario_settings.csv"))
 	{
 
+		for(int day = 0; day < 1000; day ++)
+		{
+		
+			g_LearningPercVector[day] =  g_LearningPercentage;
+		}
+
 
 		g_ODEstimationFlag = 0; 			// no OD estimation
 
@@ -329,6 +335,36 @@ void g_MultiScenarioTrafficAssignment()
 			}
 
 
+		if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice )
+			{
+				if(parser_scenario.GetValueByFieldName("day2day_learning_percentage_day_1",g_LearningPercVector[1])==false)
+					g_LearningPercVector[1] = g_LearningPercentage;
+
+				if( TotalUEIterationNumber >= 1000)
+				{
+					cout << "Too many iterations/days. Please contact the developer at xzhou99@gmail.com." << endl; 					
+					g_ProgramStop();
+				}
+		
+				for(int day = 2; day <= TotalUEIterationNumber; day ++)
+				{
+					CString str_learning;
+					str_learning.Format ("day_%d",day);
+
+					string str = CString2StdString(str_learning);
+					if(parser_scenario.GetValueByFieldName(str,g_LearningPercVector[day]) == false)  // no data
+						g_LearningPercVector[day] = g_LearningPercentage;
+
+					if(g_LearningPercVector[day]>100)
+						g_LearningPercVector[day] = 100;
+
+					if(g_LearningPercVector[day]<0)
+						g_LearningPercVector[day] = 0;
+				}
+
+			
+			
+			}
 
 				g_ODEstimationFlag = 0;
 
@@ -346,11 +382,29 @@ void g_MultiScenarioTrafficAssignment()
 				break;
 			case assignment_day_to_day_learning_threshold_route_choice:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning");
-				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+
+				for(int day = 2; day <= TotalUEIterationNumber; day ++)
+				{
+
+					CString str_day2day;
+					str_day2day.Format("Day No.%d: Perc of considering to switch routes",day);
+
+					g_SummaryStatFile.WriteParameterValue (str_day2day,g_LearningPercVector[day]);
+			
+				}
+
 				break;
 			case assignment_day_to_day_learning_threshold_route_and_departure_time_choice:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning with departure time choice and bounded rationality rule");
-				g_SummaryStatFile.WriteParameterValue ("Percentage of considering to switch routes",g_LearningPercentage);
+				for(int day = 2; day <= TotalUEIterationNumber; day ++)
+				{
+
+					CString str_day2day;
+					str_day2day.Format("Day No.%d: Perc of considering to switch routes",day);
+
+					g_SummaryStatFile.WriteParameterValue (str_day2day,g_LearningPercVector[day]);
+			
+				}
 				break;
 			case assignment_gap_function_MSA_step_size:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap-funciton with step size based adjustment");
@@ -446,24 +500,7 @@ void g_MultiScenarioTrafficAssignment()
 			}
 
 
-			if(g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice)
-			{
-				if(parser_scenario.GetValueByFieldName("day2day_learning_percentage_day_1",g_LearningPercVector[1])==false)
-					g_LearningPercVector[1] = 10;
-		
-				for(int day = 2; day <= TotalUEIterationNumber; day ++)
-				{
-					CString str_learning;
-					str_learning.Format ("day_%d",day);
-
-					string str = CString2StdString(str_learning);
-					if(parser_scenario.GetValueByFieldName(str,g_LearningPercVector[day]) == false)
-						g_LearningPercVector[day] = 10;
-				}
-
-			
-			
-			}
+	
 			
 
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("demand_multiplier",g_DemandGlobalMultiplier)==false )
