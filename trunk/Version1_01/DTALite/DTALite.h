@@ -26,7 +26,7 @@
 #pragma once
 
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
-
+#pragma warning(disable:4996)  // stop warning: 'MBCS_Support_Deprecated_In_MFC': MBCS support in MFC is deprecated 
 #include "resource.h"
 //#define _large_memory_usage
 
@@ -1919,9 +1919,9 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 	{
 		float travel_time  = 0.0f;
 
-		// condition 1:road blockage caused by work zones
-		if(GetNumberOfLanes_ImpactedByWorkZoneConditions(DayNo,starting_time)<=0.001)   // 
-			return 9999; // unit min
+		//// condition 1:road blockage caused by work zones
+		//if(GetNumberOfLanes_ImpactedByWorkZoneConditions(DayNo,starting_time)<=0.001)   // 
+		//	return 9999; // unit min
 
 		ASSERT(m_SimulationHorizon < m_LinkMOEAry.size());
 
@@ -3053,7 +3053,7 @@ public:
 
 	void Clean()
 	{
-			if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
+		if(m_OutboundSizeAry && m_NodeSize>=1)  delete m_OutboundSizeAry;
 		if(m_InboundSizeAry && m_NodeSize>=1)  delete m_InboundSizeAry;
 
 		DeallocateDynamicArray<int>(m_OutboundNodeAry,m_NodeSize, m_AdjLinkSize+1);
@@ -3135,6 +3135,7 @@ public:
 	void BuildHistoricalInfoNetwork(int CurZoneID, int CurrentTime, float Perception_error_ratio);
 	void BuildTravelerInfoNetwork(int DayNo,int CurrentTime, float Perception_error_ratio);
 	void BuildPhysicalNetwork(int DayNo, int CurZoneID, e_traffic_flow_model TraffcModelFlag, bool bUseCurrentInformation = false, double CurrentTime = 0);
+	void UpdateCurrentTravelTime(int DayNo, double CurrentTime = 0);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
@@ -3770,7 +3771,7 @@ void g_ReadDemandFileBasedOnUserSettings();
 
 void g_ZoneBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
-void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime ) ;
+void g_ShortestPathDataMemoryAllocation() ;
 void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
 void g_UpdateRealTimeInformation(double CurrentTime);
 void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
@@ -3852,7 +3853,7 @@ extern int g_LastLoadedVehicleID; // scan vehicles to be loaded in a simulation 
 extern FILE* g_ErrorFile;
 extern ofstream g_LogFile;
 extern CCSVWriter g_SummaryStatFile;
-
+extern CCSVWriter g_MultiScenarioSummaryStatFile;
 extern ofstream g_AssignmentLogFile;
 extern ofstream g_EstimationLogFile;
 extern float g_LearningPercVector[1000];
@@ -3874,7 +3875,8 @@ extern NetworkSimulationResult g_SimulationResult;
 extern void g_RunStaticExcel();
 extern TCHAR g_DTASettingFileName[_MAX_PATH];
 extern void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes);
-extern void g_ReadInputFiles(int scenario_no);
+extern void g_ReadInputFiles();
+extern void g_ReadScenarioInputFiles(int scenario_no);
 void  ReadIncidentScenarioFile(string FileName,int scenario_no=0);
 void ReadVMSScenarioFile(string FileName,int scenario_no=0);
 void ReadLinkTollScenarioFile(string FileName,int scenario_no=0);
@@ -3909,5 +3911,8 @@ extern void g_ConvertDemandToVehicles() ;
 extern int g_FindAssignmentInterval(int departure_time_begin);
 extern std::string CString2StdString(CString str);
 
-extern void g_ResetInformationClass();
+extern void g_ResetVehicleAttributeUsingDemandType();
+
+
 extern int g_number_of_CPU_threads();
+extern void g_AllocateDynamicArrayForVehicles();

@@ -87,7 +87,7 @@ bool g_GetSequentialUEAdjustmentTimePeriod(int iteration,float DepartureTime)
 
 }
 
-DTANetworkForSP TDNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+DTANetworkForSP g_TimeDependentNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 
 void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime)
 {
@@ -115,9 +115,9 @@ void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputL
 		int	id = omp_get_thread_num( );  // starting from 0
 
 		//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-		if(bRebuildNetwork || TDNetwork_MP[id].m_NodeSize ==0)
+		if(bRebuildNetwork || g_TimeDependentNetwork_MP[id].m_NodeSize ==0)
 		{
-		TDNetwork_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+		g_TimeDependentNetwork_MP[id].BuildPhysicalNetwork (iteration,-1,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 		}
 		if(bOutputLog)
 		{
@@ -144,22 +144,22 @@ void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputL
 							bool debug_flag =false;
 							for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
 									{
-										TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+										g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 									}
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										TDNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+										g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 									else
-										TDNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
+										g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
 
 					}else
 						{
 
 									float node_size = 1;
 								if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-									TDNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+									g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 								else
-									node_size = TDNetwork_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+									node_size = g_TimeDependentNetwork_MP[id].AgentBasedPathFindingAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 
 						}
 
@@ -224,11 +224,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	number_of_threads =g_number_of_CPU_threads() ;
 
-	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-	{
-		TDNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
-	}
-	cout << "------- Memory allocation completed.-------" << endl;
+
 
 	// ----------* start of outer loop *----------
 	for(iteration=0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
@@ -269,6 +265,7 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 		g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,&SimuOutput);
+		g_WriteUserDefinedMOE(g_SummaryStatFile, iteration + 1);
 
 	}  // for each assignment iteration
 
@@ -1249,9 +1246,9 @@ void g_AgentBasedShortestPathGeneration()
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
 		// create network for shortest path calculation at this processor
-		DTANetworkForSP TDNetwork_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
+		DTANetworkForSP g_TimeDependentNetwork_MP(node_size, link_size, 1,g_AdjLinkSize); //  network instance for single processor in multi-thread environment
 		int	cpu_id = omp_get_thread_num( );  // starting from 0
-		TDNetwork_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
+		g_TimeDependentNetwork_MP.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);  // build network for this zone, because different zones have different connectors...
 
 		for(int node_index  = 0; node_index < node_size; node_index++)
 		{
@@ -1268,12 +1265,12 @@ void g_AgentBasedShortestPathGeneration()
 				}
 
 				// this generate the one-to-all shortest path tree
-				TDNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				g_TimeDependentNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
 					int dest_node_index =  g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_index;
-					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_distance = TDNetwork_MP.LabelCostAry[dest_node_index];
+					g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_distance = g_TimeDependentNetwork_MP.LabelCostAry[dest_node_index];
 					//					 TRACE("Label: %f: \n",g_NodeVector[node_index].m_DestinationVector[dest_no].destination_node_cost_label);
 
 				}
@@ -1570,8 +1567,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		}
 	}
 
-
 	g_SummaryStatFile.WriteRecord ();
+	g_WriteUserDefinedMOE(g_MultiScenarioSummaryStatFile, iteration + 1);
 
 	////	if(0) //comment out day to day code
 	//	{
@@ -1646,21 +1643,6 @@ void g_ZoneBasedDynamicTrafficAssignment()
 	int TotalNumOfVehiclesGenerated = 0;
 	int number_of_threads = omp_get_max_threads();
 
-	//	if(g_ODEstimationFlag==1)  // single thread mode for ODME 
-	//		number_of_threads = 1;
-
-	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
-
-
-	number_of_threads =g_number_of_CPU_threads() ;
-
-
-	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-	{
-		TDNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin,g_ODEstimationFlag);
-	}
-
-
 
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 
@@ -1713,7 +1695,7 @@ void g_ZoneBasedDynamicTrafficAssignment()
 						if(g_ZoneMap[CurZoneID].m_OriginVehicleSize >0)  // only this origin zone has vehicles, then we build the network
 						{
 							// create network for shortest path calculation at this processor
-							TDNetwork_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
+							g_TimeDependentNetwork_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration,CurZoneID);  // build network for this zone, because different zones have different connectors...
 
 							if(Actual_ODZoneSize > 300)  // only for large networks
 							{
@@ -1730,13 +1712,13 @@ void g_ZoneBasedDynamicTrafficAssignment()
 
 									for(int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
 									{
-										TDNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+										g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(),departure_time,pricing_type,g_PricingTypeMap[pricing_type].default_VOT,false,debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 									}
 
 									if(g_ODEstimationFlag && iteration>=g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										TDNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
+										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration);
 									else
-										TDNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
+										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID,departure_time,departure_time+g_AggregationTimetInterval,iteration,debug_flag);
 
 								}
 							} // for each departure time

@@ -80,8 +80,8 @@ CTLiteApp theApp;
 // CTLiteApp initialization
 CTLiteApp::CTLiteApp()
 {
-	m_SimulatorString_32 = "Planning.exe";
-	m_SimulatorString_64 = "Planning_64.exe";
+	m_SimulatorString_32 = "DTALite_32.exe";
+	m_SimulatorString_64 = "DTALite_64.exe";
 
 	m_FreewayColor = RGB(030,144,255);
 	m_RampColor = RGB(160,032,240); 

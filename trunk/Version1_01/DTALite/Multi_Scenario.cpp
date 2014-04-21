@@ -37,6 +37,114 @@
 
 using namespace std;
 
+void g_WriteUserDefinedMOE(CCSVWriter  &g_MultiScenarioSummaryStatFile, int day_no = -1)
+{
+	
+	if (day_no >= 1)
+	{
+		g_MultiScenarioSummaryStatFile.SetValueByFieldName("day_no", day_no);
+	}
+	else
+	{
+		g_MultiScenarioSummaryStatFile.SetValueByFieldName("day_no","");
+	}
+
+
+	CCSVParser parser_MOE_settings;
+	if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv", false))
+	{
+
+		
+
+		while (parser_MOE_settings.ReadRecord())
+		{
+			string moe_type, moe_category_label;
+
+			int demand_type = 0;
+			int vehicle_type = 0;
+			int information_type = 0;
+			int from_node_id = 0;
+			int mid_node_id = 0;
+			int to_node_id = 0;
+			int origin_zone_id = 0;
+			int destination_zone_id = 0;
+			int departure_starting_time = 0;
+			int departure_ending_time = 1440;
+			int entrance_starting_time = 0;
+			int entrance_ending_time = 1440;
+
+
+			parser_MOE_settings.GetValueByFieldName("moe_type", moe_type);
+			parser_MOE_settings.GetValueByFieldName("moe_category_label", moe_category_label);
+
+			cout << " outputing MOE type " << moe_type << ", " << moe_category_label << endl;
+			parser_MOE_settings.GetValueByFieldName("demand_type", demand_type);
+			parser_MOE_settings.GetValueByFieldName("vehicle_type", vehicle_type);
+			parser_MOE_settings.GetValueByFieldName("information_type", information_type);
+			parser_MOE_settings.GetValueByFieldName("from_node_id", from_node_id);
+			parser_MOE_settings.GetValueByFieldName("mid_node_id", mid_node_id);
+			parser_MOE_settings.GetValueByFieldName("to_node_id", to_node_id);
+			parser_MOE_settings.GetValueByFieldName("origin_zone_id", origin_zone_id);
+			parser_MOE_settings.GetValueByFieldName("destination_zone_id", destination_zone_id);
+			parser_MOE_settings.GetValueByFieldName("departure_starting_time_in_min", departure_starting_time);
+			parser_MOE_settings.GetValueByFieldName("departure_ending_time_in_min", departure_ending_time);
+			parser_MOE_settings.GetValueByFieldName("entrance_starting_time_in_min", entrance_starting_time);
+			parser_MOE_settings.GetValueByFieldName("entrance_ending_time_in_min", entrance_ending_time);
+
+
+			int Count = 0;
+			float AvgTripTime, AvgDistance, AvgSpeed, AvgCost;
+			EmissionStatisticsData emission_data;
+			LinkMOEStatisticsData  link_data;
+			Count = g_OutputSimulationMOESummary(AvgTripTime, AvgDistance, AvgSpeed, AvgCost, emission_data, link_data,
+				demand_type, vehicle_type, information_type, origin_zone_id, destination_zone_id,
+				from_node_id, mid_node_id, to_node_id,
+				departure_starting_time, departure_ending_time, entrance_starting_time, entrance_ending_time);
+
+			float percentage = Count*100.0f / max(1, g_SimulationResult.number_of_vehicles);
+
+
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("percentage_" + g_DemandTypeMap[demand_type].demand_type_name, percentage);
+
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("#_of_vehicles_" + moe_category_label, Count);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("percentage_" + moe_category_label, percentage);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_travel_time(min)_" + moe_category_label, AvgTripTime);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_distance_" + moe_category_label, AvgDistance);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_speed_" + moe_category_label, AvgSpeed);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_toll_cost_" + moe_category_label, AvgCost);
+
+
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_energy_" + moe_category_label, emission_data.AvgEnergy);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_CO2_" + moe_category_label, emission_data.AvgCO2);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_NOX_" + moe_category_label, emission_data.AvgNOX);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_CO_" + moe_category_label, emission_data.AvgCO);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_HC_" + moe_category_label, emission_data.AvgHC);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_MilesPerGallon_" + moe_category_label, emission_data.AvgMilesPerGallon);
+
+
+			std::transform(moe_type.begin(), moe_type.end(), moe_type.begin(), ::tolower);
+
+			if (moe_type.find("link") != string::npos) // Link MOE
+			{
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("SOV_volume" + moe_category_label, link_data.SOV_volume);
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("HOV_volume" + moe_category_label, link_data.HOV_volume);
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("Truck_volume" + moe_category_label, link_data.Truck_volume);
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("Intermodal_volume" + moe_category_label, link_data.Intermodal_volume);
+
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("number_of_crashes_per_year" + moe_category_label, link_data.number_of_crashes_per_year);
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("number_of_fatal_and_injury_crashes_per_year" + moe_category_label, link_data.number_of_fatal_and_injury_crashes_per_year);
+				g_MultiScenarioSummaryStatFile.SetValueByFieldName("number_of_property_damage_only_crashes_per_year" + moe_category_label, link_data.number_of_property_damage_only_crashes_per_year);
+
+			}
+
+
+		}
+
+	}  // input MOE settings
+
+	g_MultiScenarioSummaryStatFile.WriteRecord();
+
+}
 void g_MultiScenarioTrafficAssignment() 
 {
 
@@ -50,6 +158,8 @@ void g_MultiScenarioTrafficAssignment()
 	g_SummaryStatFile.WriteTextLabel("Software Version =,1.1.0\nRelease Date=,");
 	g_SummaryStatFile.WriteTextLabel(__DATE__);
 	g_SummaryStatFile.WriteTextLabel("\n");
+
+	
 
 	cout << "DTALite: A Fast Open-Source DTA Simulation Engine"<< endl;
 	cout << "Version 1.1.0, Release Date " << __DATE__ << "."<< endl;
@@ -81,20 +191,22 @@ void g_MultiScenarioTrafficAssignment()
 	int NumberOfCriticalLinks = 3;
 	int NumberOfCriticalODPairs = 3;
 
-	CCSVWriter csv_output("output_multi_scenario_results.csv");
-	csv_output.WriteTextString("Unit of output:");
-	csv_output.WriteTextString(",,distance=,miles");
-	csv_output.WriteTextString(",,speed=,mph");
-	csv_output.WriteTextString(",,energy=,1000 joule");
-	csv_output.WriteTextString(",,CO2,NOX,CO,HC=,g");
+	g_MultiScenarioSummaryStatFile.Open ("output_multi_scenario_results.csv");
+	g_MultiScenarioSummaryStatFile.WriteTextString("Unit of output:");
+	g_MultiScenarioSummaryStatFile.WriteTextString(",,distance=,miles");
+	g_MultiScenarioSummaryStatFile.WriteTextString(",,speed=,mph");
+	g_MultiScenarioSummaryStatFile.WriteTextString(",,energy=,1000 joule");
+	g_MultiScenarioSummaryStatFile.WriteTextString(",,CO2,NOX,CO,HC=,g");
 
 	int cl;
 
-	csv_output.SetFieldName ("scenario_no");
-	csv_output.SetFieldName ("demand_multiplier");
-	csv_output.SetFieldName ("scenario_name");
-	csv_output.SetFieldName ("number_of_assignment_days");
-	csv_output.SetFieldName ("traffic_flow_model");
+	g_MultiScenarioSummaryStatFile.SetFieldName ("scenario_no");
+	g_MultiScenarioSummaryStatFile.SetFieldName ("demand_multiplier");
+	g_MultiScenarioSummaryStatFile.SetFieldName ("scenario_name");
+	g_MultiScenarioSummaryStatFile.SetFieldName("scenario_data");
+	g_MultiScenarioSummaryStatFile.SetFieldName("number_of_assignment_days");
+	g_MultiScenarioSummaryStatFile.SetFieldName("day_no");
+	g_MultiScenarioSummaryStatFile.SetFieldName("traffic_flow_model");
 
 
 	CCSVParser parser_MOE_settings;
@@ -128,34 +240,34 @@ void g_MultiScenarioTrafficAssignment()
 			}
 
 
-			csv_output.SetFieldNameWithCategoryName ("#_of_vehicles_"+moe_category_label,moe_category_label );
-			csv_output.SetFieldName ("percentage_"+moe_category_label );
-			csv_output.SetFieldName ("avg_distance_"+moe_category_label);
-			csv_output.SetFieldName ("avg_travel_time(min)_"+moe_category_label);
-			csv_output.SetFieldName ("avg_speed_"+moe_category_label);
-			csv_output.SetFieldName ("avg_toll_cost_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldNameWithCategoryName ("#_of_vehicles_"+moe_category_label,moe_category_label );
+			g_MultiScenarioSummaryStatFile.SetFieldName ("percentage_"+moe_category_label );
+			g_MultiScenarioSummaryStatFile.SetFieldName ("avg_distance_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName ("avg_travel_time(min)_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName ("avg_speed_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName ("avg_toll_cost_"+moe_category_label);
 
-			csv_output.SetFieldName("avg_energy_"+moe_category_label);
-			csv_output.SetFieldName("avg_CO2_"+moe_category_label);
-			csv_output.SetFieldName("avg_NOX_"+moe_category_label);
-			csv_output.SetFieldName("avg_CO_"+moe_category_label);
-			csv_output.SetFieldName("avg_HC_"+moe_category_label);
-			csv_output.SetFieldName("avg_MilesPerGallon_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_energy_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_CO2_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_NOX_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_CO_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_HC_"+moe_category_label);
+			g_MultiScenarioSummaryStatFile.SetFieldName("avg_MilesPerGallon_"+moe_category_label);
 
 			std::transform(moe_type.begin(), moe_type.end(), moe_type.begin(), ::tolower);
 
 			if(moe_type.find("link") != string::npos)  // Link MOE
 			{
-				//			csv_output.SetFieldName("level_of_service"+moe_category_label);
+				//			g_MultiScenarioSummaryStatFile.SetFieldName("level_of_service"+moe_category_label);
 
-				csv_output.SetFieldName("SOV_volume"+moe_category_label);
-				csv_output.SetFieldName("HOV_volume"+moe_category_label);
-				csv_output.SetFieldName("Truck_volume"+moe_category_label);
-				csv_output.SetFieldName("Intermodal_volume"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("SOV_volume"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("HOV_volume"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("Truck_volume"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("Intermodal_volume"+moe_category_label);
 
-				csv_output.SetFieldName("number_of_crashes_per_year"+moe_category_label);
-				csv_output.SetFieldName("number_of_fatal_and_injury_crashes_per_year"+moe_category_label);
-				csv_output.SetFieldName("number_of_property_damage_only_crashes_per_year"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("number_of_crashes_per_year"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("number_of_fatal_and_injury_crashes_per_year"+moe_category_label);
+				g_MultiScenarioSummaryStatFile.SetFieldName("number_of_property_damage_only_crashes_per_year"+moe_category_label);
 
 			}
 
@@ -166,9 +278,8 @@ void g_MultiScenarioTrafficAssignment()
 	}
 
 
-	csv_output.WriteHeader (true,false);
+	g_MultiScenarioSummaryStatFile.WriteHeader (true,false);
 
-	int line_no = 1;
 
 	int total_scenarios = 0;
 	{
@@ -182,6 +293,8 @@ void g_MultiScenarioTrafficAssignment()
 	}
 	}
 	CCSVParser parser_scenario;
+	int line_no = 1;
+
 	if (parser_scenario.OpenCSVFile("input_scenario_settings.csv"))
 	{
 
@@ -195,15 +308,13 @@ void g_MultiScenarioTrafficAssignment()
 		g_ODEstimationFlag = 0; 			// no OD estimation
 
 		int max_scenarios = 50000;
-		while(parser_scenario.ReadRecord())
+		//Read DTALite Settings first
+		g_ReadDTALiteSettings();
+
+		while (parser_scenario.ReadRecord())
 		{
 			if(line_no>= max_scenarios)
 				break;
-
-			//Read DTALite Settings first
-			g_ReadDTALiteSettings();
-
-
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("scenario_no",scenario_no)==false)
 			{
 				cout << "Field scenario_no cannot be found in file input_scenario_settings.csv. Please check." << endl;
@@ -478,10 +589,13 @@ void g_MultiScenarioTrafficAssignment()
 				float ODEstimation_max_percentage_deviation_wrt_hist_demand = 20;
 				if(parser_scenario.GetValueByFieldName("ODME_max_percentage_deviation_wrt_hist_demand",ODEstimation_max_percentage_deviation_wrt_hist_demand)==false)
 				{
+					
+
 					cout << "Field ODME_max_percentage_deviation_wrt_hist_demand has not been specified in file input_scenario_settings.csv. A default value of 30 (%) is used." << endl;
 					getchar();
 				}
 
+				g_ODEstimation_max_percentage_deviation_wrt_hist_demand = ODEstimation_max_percentage_deviation_wrt_hist_demand / 100.0;
 				g_ODEstimation_StepSize = 0.05f;
 				if(parser_scenario.GetValueByFieldName("ODME_step_size",g_ODEstimation_StepSize)==false)
 				{
@@ -511,7 +625,15 @@ void g_MultiScenarioTrafficAssignment()
 
 			string File_Link_Based_Toll,File_Incident,File_MessageSign,File_WorkZone;
 
-			g_ReadInputFiles(scenario_no);
+			if (line_no == 1)  // read it once
+			{
+				g_ReadInputFiles();
+				g_ShortestPathDataMemoryAllocation();
+
+
+			}
+	
+			g_ReadScenarioInputFiles(scenario_no);
 
 			cout << "Start Traffic Assignment/Simulation... " << endl;
 
@@ -524,110 +646,23 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_OutputSimulationStatistics(g_NumberOfIterations);
 
-			csv_output.SetValueByFieldName ("scenario_no",scenario_no);
-			csv_output.SetValueByFieldName ("scenario_name",scenario_name);
-			csv_output.SetValueByFieldName ("number_of_assignment_days",TotalUEIterationNumber);
-			csv_output.SetValueByFieldName ("demand_multiplier",g_DemandGlobalMultiplier);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName ("scenario_no",scenario_no);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName ("scenario_name",scenario_name);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName ("number_of_assignment_days",TotalUEIterationNumber);
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName ("demand_multiplier",g_DemandGlobalMultiplier);
 
-			csv_output.SetValueByFieldName ("traffic_flow_model",traffic_flow_model);
-
-			CCSVParser parser_MOE_settings;
-			if (parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
-			{
-				while(parser_MOE_settings.ReadRecord())
-				{
-					string moe_type, moe_category_label;
-
-					int demand_type =  0;
-					int vehicle_type = 0;
-					int information_type = 0;
-					int from_node_id = 0;
-					int mid_node_id	=0;
-					int to_node_id	=0;
-					int origin_zone_id	=0;
-					int destination_zone_id	=0;
-					int departure_starting_time	 = 0;
-					int departure_ending_time= 1440;
-					int entrance_starting_time	= 0;
-					int entrance_ending_time = 1440;
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName ("traffic_flow_model",traffic_flow_model);
 
 
-					parser_MOE_settings.GetValueByFieldName("moe_type",moe_type);
-					parser_MOE_settings.GetValueByFieldName("moe_category_label",moe_category_label);
 
-					cout << " outputing MOE type " << moe_type << ", " << moe_category_label << endl;
-					parser_MOE_settings.GetValueByFieldName("demand_type",demand_type);
-					parser_MOE_settings.GetValueByFieldName("vehicle_type",vehicle_type);
-					parser_MOE_settings.GetValueByFieldName("information_type",information_type);
-					parser_MOE_settings.GetValueByFieldName("from_node_id",from_node_id);
-					parser_MOE_settings.GetValueByFieldName("mid_node_id",mid_node_id);
-					parser_MOE_settings.GetValueByFieldName("to_node_id",to_node_id);
-					parser_MOE_settings.GetValueByFieldName("origin_zone_id",origin_zone_id);
-					parser_MOE_settings.GetValueByFieldName("destination_zone_id",destination_zone_id);
-					parser_MOE_settings.GetValueByFieldName("departure_starting_time_in_min",departure_starting_time);
-					parser_MOE_settings.GetValueByFieldName("departure_ending_time_in_min",departure_ending_time);
-					parser_MOE_settings.GetValueByFieldName("entrance_starting_time_in_min",entrance_starting_time);
-					parser_MOE_settings.GetValueByFieldName("entrance_ending_time_in_min",entrance_ending_time);
+			///
+			g_WriteUserDefinedMOE(g_MultiScenarioSummaryStatFile);
+			/// 
 
-
-					int Count=0; 
-					float AvgTripTime, AvgDistance, AvgSpeed, AvgCost;
-					EmissionStatisticsData emission_data;
-					LinkMOEStatisticsData  link_data;
-					Count = g_OutputSimulationMOESummary(AvgTripTime,AvgDistance, AvgSpeed,AvgCost, emission_data, link_data,
-						demand_type,vehicle_type, information_type, origin_zone_id,destination_zone_id,
-						from_node_id, mid_node_id, to_node_id,	
-						departure_starting_time,departure_ending_time,entrance_starting_time,entrance_ending_time );
-
-					float percentage = Count*100.0f/max(1,g_SimulationResult.number_of_vehicles);
-
-					csv_output.SetValueByFieldName ("percentage_"+g_DemandTypeMap[demand_type].demand_type_name, percentage );
-
-					csv_output.SetValueByFieldName ("#_of_vehicles_"+ moe_category_label,Count );
-					csv_output.SetValueByFieldName ("percentage_"+moe_category_label,percentage );
-					csv_output.SetValueByFieldName ("avg_travel_time(min)_"+moe_category_label,AvgTripTime);
-					csv_output.SetValueByFieldName ("avg_distance_"+moe_category_label,AvgDistance);
-					csv_output.SetValueByFieldName ("avg_speed_"+ moe_category_label,AvgSpeed);
-					csv_output.SetValueByFieldName ("avg_toll_cost_"+ moe_category_label,AvgCost);
-
-
-					csv_output.SetValueByFieldName("avg_energy_"+ moe_category_label,emission_data.AvgEnergy);
-					csv_output.SetValueByFieldName("avg_CO2_"+moe_category_label,emission_data.AvgCO2);
-					csv_output.SetValueByFieldName("avg_NOX_"+moe_category_label,emission_data.AvgNOX);
-					csv_output.SetValueByFieldName("avg_CO_"+moe_category_label,emission_data.AvgCO);
-					csv_output.SetValueByFieldName("avg_HC_"+moe_category_label,emission_data.AvgHC);
-					csv_output.SetValueByFieldName("avg_MilesPerGallon_"+moe_category_label,emission_data.AvgMilesPerGallon );
-
-
-					std::transform(moe_type.begin(), moe_type.end(), moe_type.begin(), ::tolower);
-					
-					if(moe_type.find("link")!=string::npos) // Link MOE
-					{
-						csv_output.SetValueByFieldName("SOV_volume"+moe_category_label,link_data.SOV_volume );
-						csv_output.SetValueByFieldName("HOV_volume"+moe_category_label,link_data.HOV_volume );
-						csv_output.SetValueByFieldName("Truck_volume"+moe_category_label,link_data.Truck_volume );
-						csv_output.SetValueByFieldName("Intermodal_volume"+moe_category_label,link_data.Intermodal_volume );
-
-						csv_output.SetValueByFieldName("number_of_crashes_per_year"+moe_category_label,link_data.number_of_crashes_per_year );
-						csv_output.SetValueByFieldName("number_of_fatal_and_injury_crashes_per_year"+moe_category_label,link_data.number_of_fatal_and_injury_crashes_per_year);
-						csv_output.SetValueByFieldName("number_of_property_damage_only_crashes_per_year"+moe_category_label,link_data.number_of_property_damage_only_crashes_per_year );
-
-					}
-
-
-				}
-
-			}  // input MOE settings
-
-
-			csv_output.WriteRecord ();
-
-			//
-			g_FreeMemory(line_no == total_scenarios);  // free memory at the end of multiple scenarios
 			line_no++;
 		}  // for each scenario
 
-		csv_output.WriteTextLabel (g_GetAppRunningTime());
+		g_MultiScenarioSummaryStatFile.WriteTextLabel (g_GetAppRunningTime());
 		parser_MOE_settings.CloseCSVFile ();
 
 	}else
@@ -638,6 +673,7 @@ void g_MultiScenarioTrafficAssignment()
 
 	}
 
+	g_FreeMemory(line_no == total_scenarios);  // free memory at the end of multiple scenarios
 }
 
 void g_DTALiteMultiScenarioMain()
