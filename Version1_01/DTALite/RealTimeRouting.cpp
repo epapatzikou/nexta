@@ -46,7 +46,7 @@
 using namespace std;
 
 
-DTANetworkForSP g_network_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
+DTANetworkForSP g_PrevailingTimeNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
 ODPathSet** g_ODPathSetVector = NULL;
 
 void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure_time_begin, double current_time)
@@ -307,11 +307,10 @@ int g_number_of_CPU_threads()
 	return number_of_threads;
 
 }
-void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )  
+void g_ShortestPathDataMemoryAllocation()  
 // for VMS responsive vehicles
 {
-	if(g_ODEstimationFlag==1)
-		return;
+
 
 
 	if(g_use_routing_policy_from_external_input == 1)
@@ -325,10 +324,19 @@ void g_AgentBasedVMSRoutingInitialization(int DayNo, double CurrentTime )
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
-	g_network_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
+	g_PrevailingTimeNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
 	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
-	g_network_MP[ProcessID].BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );
+	g_PrevailingTimeNetwork_MP[ProcessID].BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag, true, g_DemandLoadingStartTimeInMin);
 	}
+
+	for (int ProcessID = 0; ProcessID < number_of_threads; ProcessID++)
+	{
+		g_TimeDependentNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon, g_AdjLinkSize, g_DemandLoadingStartTimeInMin, g_ODEstimationFlag);
+	}
+
+
+	cout << "------- Memory allocation completed.-------" << endl;
+
 }
 void g_UpdateRealTimeInformation(double CurrentTime)
 {
@@ -336,7 +344,7 @@ void g_UpdateRealTimeInformation(double CurrentTime)
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
-		g_network_MP[ProcessID].BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag, true, CurrentTime );	
+		g_PrevailingTimeNetwork_MP[ProcessID].UpdateCurrentTravelTime(0, CurrentTime);
 	}
 }
 void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
@@ -411,7 +419,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 
 		int	processor_id = omp_get_thread_num( );  // starting from 0
 
-		NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_PrevailingTimeNetwork_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -592,7 +600,7 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 		}
 
 		int	processor_id = omp_get_thread_num( );  // starting from 0
-		NodeSize = g_network_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_PrevailingTimeNetwork_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -858,7 +866,10 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 
 		}
 
-	if(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.size() >=1)
+
+		int real_time_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "real_time_skim_file_output", 1, g_DTASettingFileName);
+
+		if (g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file.size() >= 1 && real_time_skim_file_output ==1)
 	{
 		
 
@@ -867,15 +878,15 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
 			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,1,timestamp_in_min);
 
-	int time_dependent_HOV_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "time_dependent_HOV_skim_file_output", 0, g_DTASettingFileName);
+		int real_time_HOV_skim_file_output = g_GetPrivateProfileInt("ABM_integeration", "real_time_HOV_skim_file_output", 1, g_DTASettingFileName);
 
-	if(time_dependent_HOV_skim_file_output==1)
-	{
-		if(timestamp_in_min == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
-			g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,2,timestamp_in_min);
-		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
-			g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,2,timestamp_in_min);
-	}
+		if (real_time_HOV_skim_file_output == 1)
+		{
+			if(timestamp_in_min == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
+				g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,true,2,timestamp_in_min);
+			else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
+				g_AgentBasedAccessibilityMatrixGeneration("HOV_"+g_RealTimeSimulationSettingsMap[timestamp_in_min].output_td_skim_file,false,2,timestamp_in_min);
+		}
 
 		//ofstream output_ODTDMOE_file;
 

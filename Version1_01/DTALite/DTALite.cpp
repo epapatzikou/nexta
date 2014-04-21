@@ -41,7 +41,7 @@
 #include <algorithm>
 
 using namespace std;
-void ReadScenarioInputFiles(int scenario_no);
+
 /*************************************
 How to build a simple DTA simulator
 
@@ -164,7 +164,7 @@ double g_CarFollowingSimulationInterval = 1.0/600; // 1/ 600 min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
 int g_number_of_car_following_intervals_per_min = 600; // round to nearest integer
 int g_AggregationTimetInterval = 15; // min
-int g_AggregationTimetIntervalSize = 2;
+int g_AggregationTimetIntervalSize = -1;  // no value
 float g_DemandGlobalMultiplier = 1.0f;
 int g_EmissionSmoothVehicleTrajectory = 1;
 // maximal # of adjacent links of a node (including physical nodes and centriods( with connectors))
@@ -271,6 +271,7 @@ FILE* g_ErrorFile = NULL;
 ofstream g_LogFile;
 
 CCSVWriter g_SummaryStatFile;
+CCSVWriter g_MultiScenarioSummaryStatFile;
 
 ofstream g_AssignmentLogFile;
 ofstream g_EstimationLogFile;
@@ -396,7 +397,7 @@ int FindNodeControlType(string control_type)
 	return 0;
 }
 
-void g_ReadInputFiles(int scenario_no)
+void g_ReadInputFiles()
 {
 	// set random number seed
 	// write version number (for agent.bin version control)
@@ -1783,18 +1784,17 @@ void g_ReadInputFiles(int scenario_no)
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
 	g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
 
-	ReadScenarioInputFiles(scenario_no);
 
 	g_ReadDemandFileBasedOnMetaDatabase();
 
-	g_LogFile << " -- zone-specific demand data -- " << endl; 
+	g_LogFile << " -- zone-specific demand data -- " << endl;
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
 
-		if(iterZone->second .m_Demand > 0.01)
+		if (iterZone->second.m_Demand > 0.01)
 		{
-			g_LogFile << "Zone " <<  iterZone->first  << ",demand =" <<  iterZone->second .m_Demand  << 
-				", agent count =" << iterZone->second .m_OriginVehicleSize << endl;
+			g_LogFile << "Zone " << iterZone->first << ",demand =" << iterZone->second.m_Demand <<
+				", agent count =" << iterZone->second.m_OriginVehicleSize << endl;
 		}
 	}
 
@@ -1829,64 +1829,64 @@ void g_ReadInputFiles(int scenario_no)
 	//	cout << "Global Loading Factor = "<< g_DemandGlobalMultiplier << endl;
 
 
-	cout << "Number of Zones = "<< g_ODZoneNumberSize  << endl;
-	cout << "Number of Nodes = "<< g_NodeVector.size() << endl;
-	cout << "Number of Links = "<< g_LinkVector.size() << endl;
+	cout << "Number of Zones = " << g_ODZoneNumberSize << endl;
+	cout << "Number of Nodes = " << g_NodeVector.size() << endl;
+	cout << "Number of Links = " << g_LinkVector.size() << endl;
 
-	cout << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
-	cout <<	"Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
+	cout << "Number of Vehicles to be Simulated = " << g_VehicleVector.size() << endl;
+	cout << "Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
 
-	g_SummaryStatFile.WriteParameterValue ("\nDemand multiplier in setting file",g_DemandGlobalMultiplier);
+	g_SummaryStatFile.WriteParameterValue("\nDemand multiplier in setting file", g_DemandGlobalMultiplier);
 
-	g_SummaryStatFile.WriteParameterValue ("# of Vehicles to be simulated",g_VehicleVector.size());
-	g_SummaryStatFile.WriteParameterValue ("# of Intra-zone Vehicles (not be simulated)",g_number_of_intra_zone_trips);
+	g_SummaryStatFile.WriteParameterValue("# of Vehicles to be simulated", g_VehicleVector.size());
+	g_SummaryStatFile.WriteParameterValue("# of Intra-zone Vehicles (not be simulated)", g_number_of_intra_zone_trips);
 
 
 
 	CCSVParser parser_RTSimulation_settings;
-	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv",false) == false)
+	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv", false) == false)
 	{
-	
-	if(g_VehicleVector.size()==0) // if input_real_time_simulation_settings does not exist
-	{
-		cout << "no vehicle to be simulated. Please check input data." << endl;
-		g_ProgramStop();
+
+		if (g_VehicleVector.size() == 0) // if input_real_time_simulation_settings does not exist
+		{
+			cout << "no vehicle to be simulated. Please check input data." << endl;
+			g_ProgramStop();
+		}
 	}
-	}
 
-	g_SummaryStatFile.WriteTextLabel ("Starting Time of Demand Loading (min)=,");
-	g_SummaryStatFile.WriteNumber (g_DemandLoadingStartTimeInMin);
+	g_SummaryStatFile.WriteTextLabel("Starting Time of Demand Loading (min)=,");
+	g_SummaryStatFile.WriteNumber(g_DemandLoadingStartTimeInMin);
 
-	g_SummaryStatFile.WriteTextLabel ("Ending Time of Demand Loading (min)=,");
-	g_SummaryStatFile.WriteNumber (g_DemandLoadingEndTimeInMin);
+	g_SummaryStatFile.WriteTextLabel("Ending Time of Demand Loading (min)=,");
+	g_SummaryStatFile.WriteNumber(g_DemandLoadingEndTimeInMin);
 
-	g_SummaryStatFile.WriteTextLabel ("Output Emission data=,");
-	if(g_EmissionDataOutputFlag)
-		g_SummaryStatFile.WriteTextLabel ("YES\n");
+	g_SummaryStatFile.WriteTextLabel("Output Emission data=,");
+	if (g_EmissionDataOutputFlag)
+		g_SummaryStatFile.WriteTextLabel("YES\n");
 	else
-		g_SummaryStatFile.WriteTextLabel ("NO\n");
+		g_SummaryStatFile.WriteTextLabel("NO\n");
 
-	if(g_EmissionDataOutputFlag==1)
+	if (g_EmissionDataOutputFlag == 1)
 	{
-		g_SummaryStatFile.WriteTextLabel ("Output second by second speed data=,");
-		if(g_OutputSecondBySecondEmissionData)
-			g_SummaryStatFile.WriteTextLabel ("YES\n");
+		g_SummaryStatFile.WriteTextLabel("Output second by second speed data=,");
+		if (g_OutputSecondBySecondEmissionData)
+			g_SummaryStatFile.WriteTextLabel("YES\n");
 		else
-			g_SummaryStatFile.WriteTextLabel ("NO\n");
+			g_SummaryStatFile.WriteTextLabel("NO\n");
 
-		g_SummaryStatFile.WriteParameterValue ("Vehicle ID with second by second speed data",g_TargetVehicleID_OutputSecondBySecondEmissionData);
+		g_SummaryStatFile.WriteParameterValue("Vehicle ID with second by second speed data", g_TargetVehicleID_OutputSecondBySecondEmissionData);
 	}
 
 
-	if(g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
+	if (g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
 	{
 		//reset simulation horizon to make sure it is longer than the demand loading horizon
-		g_PlanningHorizon = g_DemandLoadingEndTimeInMin+ 300;
+		g_PlanningHorizon = g_DemandLoadingEndTimeInMin + 300;
 
-		for(unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
+		for (unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
 		{
 			DTALink* pLink = g_LinkVector[link_index];
-			pLink ->ResizeData (g_PlanningHorizon);
+			pLink->ResizeData(g_PlanningHorizon);
 		}
 
 	}
@@ -1895,90 +1895,89 @@ void g_ReadInputFiles(int scenario_no)
 	// 
 	g_NetworkMOEAry.clear();
 
-	for(int time = 0; time <=  g_PlanningHorizon; time++)
+	for (int time = 0; time <= g_PlanningHorizon; time++)
 	{
 		NetworkMOE element;
-		g_NetworkMOEAry.push_back (element);
+		g_NetworkMOEAry.push_back(element);
 	}
 
 	g_AssignmentMOEVector.clear();
-	for(int iter = 0; iter <= g_NumberOfIterations; iter++)
+	for (int iter = 0; iter <= g_NumberOfIterations; iter++)
 	{
 		NetworkLoadingOutput element;
-		g_AssignmentMOEVector.push_back (element);
+		g_AssignmentMOEVector.push_back(element);
 	}
 
 
-	cout << "Number of Vehicle Types = "<< g_VehicleTypeVector.size() << endl;
-	cout << "Number of Demand Types = "<< g_DemandTypeMap.size() << endl;
-	cout << "Number of VOT records = "<< g_VOTDistributionVector.size() << endl;
+	cout << "Number of Vehicle Types = " << g_VehicleTypeVector.size() << endl;
+	cout << "Number of Demand Types = " << g_DemandTypeMap.size() << endl;
+	cout << "Number of VOT records = " << g_VOTDistributionVector.size() << endl;
 
-	g_LogFile << "Number of Zones = "<< g_ODZoneNumberSize  << endl;
-	g_LogFile << "Number of Nodes = "<< g_NodeVector.size() << endl;
-	g_LogFile << "Number of Links = "<< g_LinkVector.size() << endl;
-	g_LogFile << "Number of Vehicles to be Simulated = "<< g_VehicleVector.size() << endl;
+	g_LogFile << "Number of Zones = " << g_ODZoneNumberSize << endl;
+	g_LogFile << "Number of Nodes = " << g_NodeVector.size() << endl;
+	g_LogFile << "Number of Links = " << g_LinkVector.size() << endl;
+	g_LogFile << "Number of Vehicles to be Simulated = " << g_VehicleVector.size() << endl;
 	g_LogFile << "Demand Loading Period = " << g_DemandLoadingStartTimeInMin << " min -> " << g_DemandLoadingEndTimeInMin << " min." << endl;
-	g_LogFile << "Number of Vehicle Types = "<< g_VehicleTypeVector.size() << endl;
-	g_LogFile << "Number of Demand Types = "<< g_DemandTypeMap.size() << endl;
-	g_LogFile << "Number of VOT records = "<< g_VOTDistributionVector.size() << endl;
+	g_LogFile << "Number of Vehicle Types = " << g_VehicleTypeVector.size() << endl;
+	g_LogFile << "Number of Demand Types = " << g_DemandTypeMap.size() << endl;
+	g_LogFile << "Number of VOT records = " << g_VOTDistributionVector.size() << endl;
 
 	// link type summary
 
-		CString title_str;
-		title_str.Format ("\n--Link Type Statistics--");
-		g_SummaryStatFile.WriteTextString(title_str);
-		g_SummaryStatFile.Reset();
+	CString title_str;
+	title_str.Format("\n--Link Type Statistics--");
+	g_SummaryStatFile.WriteTextString(title_str);
+	g_SummaryStatFile.Reset();
 
-		g_SummaryStatFile.SetFieldName("link_type");
-		g_SummaryStatFile.SetFieldName("link_type_name");
-		g_SummaryStatFile.SetFieldName("link_type_code");
-		g_SummaryStatFile.SetFieldName("number_of_links");
-		g_SummaryStatFile.SetFieldName("avg_lane_capacity");
-		g_SummaryStatFile.SetFieldName("avg_number_of_lanes");
-		g_SummaryStatFile.SetFieldName("avg_speed_limit");
-		g_SummaryStatFile.SetFieldName("avg_link_length");
-		g_SummaryStatFile.SetFieldName("avg_K_jam");
-		g_SummaryStatFile.SetFieldName("total_link_length");
+	g_SummaryStatFile.SetFieldName("link_type");
+	g_SummaryStatFile.SetFieldName("link_type_name");
+	g_SummaryStatFile.SetFieldName("link_type_code");
+	g_SummaryStatFile.SetFieldName("number_of_links");
+	g_SummaryStatFile.SetFieldName("avg_lane_capacity");
+	g_SummaryStatFile.SetFieldName("avg_number_of_lanes");
+	g_SummaryStatFile.SetFieldName("avg_speed_limit");
+	g_SummaryStatFile.SetFieldName("avg_link_length");
+	g_SummaryStatFile.SetFieldName("avg_K_jam");
+	g_SummaryStatFile.SetFieldName("total_link_length");
 
-		g_SummaryStatFile.WriteHeader (false,false);
+	g_SummaryStatFile.WriteHeader(false, false);
 
-		for(std::map<int, DTALinkType>::iterator itr =g_LinkTypeMap.begin(); itr != g_LinkTypeMap.end(); itr++)
-		{
-			std::replace( itr->second .link_type_name.begin(), itr->second .link_type_name.end(), ',', ' '); 
+	for (std::map<int, DTALinkType>::iterator itr = g_LinkTypeMap.begin(); itr != g_LinkTypeMap.end(); itr++)
+	{
+		std::replace(itr->second.link_type_name.begin(), itr->second.link_type_name.end(), ',', ' ');
 
-		g_SummaryStatFile.SetValueByFieldName("link_type",itr->first );
-		std::string link_type_name = itr->second.link_type_name.c_str () ;
-		std::string type_code = itr->second.type_code.c_str ();
-		g_SummaryStatFile.SetValueByFieldName("link_type_name",link_type_name);
-		g_SummaryStatFile.SetValueByFieldName("link_type_code",type_code);
-		g_SummaryStatFile.SetValueByFieldName("number_of_links",itr->second.number_of_links );
+		g_SummaryStatFile.SetValueByFieldName("link_type", itr->first);
+		std::string link_type_name = itr->second.link_type_name.c_str();
+		std::string type_code = itr->second.type_code.c_str();
+		g_SummaryStatFile.SetValueByFieldName("link_type_name", link_type_name);
+		g_SummaryStatFile.SetValueByFieldName("link_type_code", type_code);
+		g_SummaryStatFile.SetValueByFieldName("number_of_links", itr->second.number_of_links);
 
 		float avg_lane_capacity = itr->second.total_lane_capacity / max(1, itr->second.number_of_links);
-		float avg_number_of_lanes = itr->second.total_number_of_lanes  / max(1, itr->second.number_of_links);
-		float avg_speed_limit = itr->second.total_speed_limit  / max(1, itr->second.number_of_links);
-		float avg_K_jam = itr->second.total_k_jam   / max(1, itr->second.number_of_links);
-		float avg_link_length = itr->second.total_length    / max(1, itr->second.number_of_links);
+		float avg_number_of_lanes = itr->second.total_number_of_lanes / max(1, itr->second.number_of_links);
+		float avg_speed_limit = itr->second.total_speed_limit / max(1, itr->second.number_of_links);
+		float avg_K_jam = itr->second.total_k_jam / max(1, itr->second.number_of_links);
+		float avg_link_length = itr->second.total_length / max(1, itr->second.number_of_links);
 		float total_link_length = avg_link_length * itr->second.number_of_links;
 
-		g_SummaryStatFile.SetValueByFieldName("avg_lane_capacity",avg_lane_capacity);
-		g_SummaryStatFile.SetValueByFieldName("avg_number_of_lanes",avg_number_of_lanes);
-		g_SummaryStatFile.SetValueByFieldName("avg_speed_limit",avg_speed_limit);
-		g_SummaryStatFile.SetValueByFieldName("avg_K_jam",avg_K_jam);
-		g_SummaryStatFile.SetValueByFieldName("avg_link_length",avg_link_length);
+		g_SummaryStatFile.SetValueByFieldName("avg_lane_capacity", avg_lane_capacity);
+		g_SummaryStatFile.SetValueByFieldName("avg_number_of_lanes", avg_number_of_lanes);
+		g_SummaryStatFile.SetValueByFieldName("avg_speed_limit", avg_speed_limit);
+		g_SummaryStatFile.SetValueByFieldName("avg_K_jam", avg_K_jam);
+		g_SummaryStatFile.SetValueByFieldName("avg_link_length", avg_link_length);
 		g_SummaryStatFile.SetValueByFieldName("total_link_length", total_link_length);
 
-		g_SummaryStatFile.WriteRecord ();
-		}
+		g_SummaryStatFile.WriteRecord();
+	}
 
 	int use_link_travel_time_from_external_input = g_GetPrivateProfileInt("assignment", "use_link_travel_time_from_external_input", 0, g_DTASettingFileName);
 
-	if(use_link_travel_time_from_external_input)
+	if (use_link_travel_time_from_external_input)
 	{
-	// read input link travel times
-	g_ReadInputLinkTravelTime_Parser();
+		// read input link travel times
+		g_ReadInputLinkTravelTime_Parser();
 	}
 }
-
 // debug:
 
 
@@ -2299,9 +2298,7 @@ void g_ReadDemandFile_Parser()
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
 
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval)+1; // "+1" in case  rounding downs errors. 
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+	g_AllocateDynamicArrayForVehicles();
 	g_ConvertDemandToVehicles();
 }
 
@@ -3287,7 +3284,7 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 
 	g_CreateLinkTollVector();
 }
-void ReadScenarioInputFiles(int scenario_no)
+void g_ReadScenarioInputFiles(int scenario_no)
 {
 	ReadIncidentScenarioFile("Scenario_Incident.csv",scenario_no);
 	ReadLinkTollScenarioFile("Scenario_Link_Based_Toll.csv",scenario_no);
@@ -3309,7 +3306,6 @@ void ReadScenarioInputFiles(int scenario_no)
 void FreeMemory()
 {
 	// Free pointers
-	return;
 
 	try
 	{
@@ -3337,6 +3333,8 @@ void FreeMemory()
 	g_NodeVector.clear();
 
 	g_LinkVector.clear();
+
+
 	g_VehicleTypeVector.clear();
 	g_NodeNametoIDMap.clear();
 	g_DemandTypeMap.clear();
@@ -3353,6 +3351,7 @@ void FreeMemory()
 	{
 		DeallocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_TDOVehicleArray,g_ZoneMap.size(), g_AggregationTimetIntervalSize);  // +1 is because the zone numbers start from 1 not from 0
 		g_TDOVehicleArray = NULL;
+		g_AggregationTimetIntervalSize = -1;
 	}
 
 	//free zone map after g_TDOVehicleArray as g_ZoneMap is still used in DeallocateDynamicArray for g_TDOVehicleArray
@@ -3362,15 +3361,9 @@ void FreeMemory()
 
 	if(g_ODEstimationFlag == 0)
 	{
-		for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
-		{
-		g_network_MP[ProcessID].Clean ();
-		}
-
 
 		if(	g_use_routing_policy_from_external_input == 1 && g_ODPathSetVector!=NULL)
 			DeallocateDynamicArray<ODPathSet>(g_ODPathSetVector,g_ODZoneIDSize+1,g_ODZoneIDSize+1);
-
 
 	}
 }
@@ -4075,7 +4068,7 @@ void g_CloseFiles()
 void g_TrafficAssignmentSimulation()
 {
 
-	g_ReadInputFiles(0);
+	g_ReadInputFiles();
 
 	cout << "Start Traffic Assignment/Simulation... " << endl;
 
@@ -4130,7 +4123,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 	g_DTALiteMultiScenarioMain();
 
-	exit(0);   // rely on operating system to release all memory
+//	exit(0);   // rely on operating system to release all memory
 	return nRetCode;
 }
 
@@ -5446,11 +5439,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-
-	// allocate memory for zone-based vehicle array
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+	g_AllocateDynamicArrayForVehicles();
 	g_ConvertDemandToVehicles();
 }
 

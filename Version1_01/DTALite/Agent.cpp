@@ -15,8 +15,14 @@
 #include <algorithm>
 
 using namespace std;
-extern DTANetworkForSP TDNetwork_MP[_MAX_NUMBER_OF_PROCESSORS]; //  network instance for single processor in multi-thread environment: no more than 8 threads/cores
-
+void g_AllocateDynamicArrayForVehicles()
+{
+	if (g_AggregationTimetIntervalSize <= 0)
+	{
+	g_AggregationTimetIntervalSize = max(1, (g_DemandLoadingEndTimeInMin + 1) / g_AggregationTimetInterval + 1);
+	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
+	}
+}
 vector<int> ParseLineToIntegers(string line)
 {
 	vector<int> SeperatedIntegers;
@@ -43,9 +49,7 @@ void g_ReadDSPVehicleFile(string file_name)
 		g_AggregationTimetInterval =  60;
 	}
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+	g_AllocateDynamicArrayForVehicles();
 	/*     5311320           1    # of vehicles in the file, Max # of stops
 	#   usec   dsec   stime vehcls vehtype ioc #ONode #IntDe info ribf    comp   izone Evac InitPos    VoT  tFlag pArrTime TP IniGas
 	1  11261   3248    0.00     3     1     1     1     1     0  0.0000  1.0000 1110    0  0.26324894    1.12    2   21.0    7  0.0
@@ -302,9 +306,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 		g_AggregationTimetInterval =  60;
 	}
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+	g_AllocateDynamicArrayForVehicles();
 	CCSVParser parser_agent;
 
 	float total_number_of_vehicles_to_be_generated = 0;
@@ -590,9 +592,7 @@ bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutput
 	if(b_InitialLoadingFlag)
 	{ //allocate memory
 
-		g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval+1);
-		g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+		g_AllocateDynamicArrayForVehicles();
 	}
 
 	CCSVParser parser_agent;
@@ -999,9 +999,7 @@ bool g_ReadAgentBinFile(string file_name)
 {
 	int path_node_sequence[MAX_NODE_SIZE_IN_A_PATH];
 
-	g_AggregationTimetIntervalSize = max(1,(g_DemandLoadingEndTimeInMin)/g_AggregationTimetInterval);
-	g_TDOVehicleArray = AllocateDynamicArray<VehicleArrayForOriginDepartrureTimeInterval>(g_ZoneMap.size(), g_AggregationTimetIntervalSize);
-
+	g_AllocateDynamicArrayForVehicles();
 	FILE* st = NULL;
 	fopen_s(&st,file_name.c_str (),"rb");
 	if(st!=NULL)
@@ -1166,7 +1164,7 @@ bool g_ReadAgentBinFile(string file_name)
 					cout << "reading " << count/1000 << "K agents from binary file " << file_name << endl;
 			} 
 		}
-		g_ResetInformationClass();
+		g_ResetVehicleAttributeUsingDemandType();
 
 		fclose(st);
 		return true;
@@ -1182,26 +1180,45 @@ bool g_ReadAgentBinFile(string file_name)
 	return false;
 }
 
-void g_ResetInformationClass()
+void g_ResetVehicleType()
 {
 	std::map<int, DTAVehicle*>::iterator iterVM;
 	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 	{
 		DTAVehicle* pVehicle = iterVM->second;
-		pVehicle->m_InformationClass  = info_hist;
-		double RandomPercentage= g_GetRandomRatio() * 100; 
-		for(int in= 0; in< MAX_INFO_CLASS_SIZE; in++)
+		pVehicle->m_InformationClass = info_hist;
+		double RandomPercentage = g_GetRandomRatio() * 100;
+		for (int in = 0; in< MAX_INFO_CLASS_SIZE; in++)
 		{
-			if(RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType ].cumulative_info_class_percentage[in-1] && 
+			if (RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in - 1] &&
 				RandomPercentage < g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in])
-				pVehicle->m_InformationClass  = in+1; // return pretrip as 2 or enoute as 3
+				pVehicle->m_InformationClass = in + 1; // return pretrip as 2 or enoute as 3
 		}
+	}
+
+}
+
+void g_ResetVehicleAttributeUsingDemandType()
+{
+	std::map<int, DTAVehicle*>::iterator iterVM;
+	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
+	{
+		DTAVehicle* pVehicle = iterVM->second;
+
+		g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_PricingType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+
 	}
 }
 
 void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, int PricingType, double CurrentTime)
 {
 	bool bDistanceCost = false;
+
+	bool bRebuildNetwork = false;
+
+	if (bTimeDependentFlag == true)
+		bRebuildNetwork = true;
+
 
 	// find unique origin node
 	// find unique destination node
@@ -1297,7 +1314,10 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 				//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 
-				TDNetwork_MP[id].BuildPhysicalNetwork (0,-1,g_TrafficFlowModelFlag,bUseCurrentInformation,CurrentTime);  // build network for this zone, because different zones have different connectors...
+				if (bRebuildNetwork || g_TimeDependentNetwork_MP[id].m_NodeSize == 0)
+				{
+					g_TimeDependentNetwork_MP[id].BuildPhysicalNetwork(0, -1, g_TrafficFlowModelFlag, bUseCurrentInformation, CurrentTime);  // build network for this zone, because different zones have different connectors...
+				}
 
 				// from each origin zone
 				for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -1314,7 +1334,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 							bDistanceCost = false;
 							for(int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
 							{
-								TDNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,PricingType,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+								g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx,departure_time,PricingType,DEFAULT_VOT,bDistanceCost,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 								// to each destination zone
@@ -1326,8 +1346,8 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 									{
 
 											int time_interval_no = ( departure_time-DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
-											ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = TDNetwork_MP[id].LabelCostAry[dest_node_index];
-											ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = TDNetwork_MP[id].LabelDistanceAry[dest_node_index];
+											ODTravelTime[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
+											ODDistance[iterZone->second .m_ZoneSequentialNo][iterZone2->second .m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
 
 
 									}

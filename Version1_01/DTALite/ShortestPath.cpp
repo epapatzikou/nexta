@@ -415,7 +415,65 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 	m_LinkSize = g_LinkVector.size();
 }
-void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo,int CurrentTime, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
+void DTANetworkForSP::UpdateCurrentTravelTime(int DayNo, double CurrentTime)  // for agent based 
+{
+
+	if (m_OutboundSizeAry == NULL)
+		return;
+	for (unsigned int li = 0; li < g_LinkVector.size(); li++)
+	{
+		DTALink* pLink = g_LinkVector[li];
+
+		for (int t = CurrentTime; t < m_PlanningHorizonInMin; t += g_AggregationTimetInterval)
+		{
+			// we obtain simulated time-dependent travel time measurments from simulator, use that for time-dependent shortest path calculation
+			float AvgTravelTime = pLink->GetPrevailingTravelTime(DayNo, CurrentTime);
+
+			AvgTravelTime *= g_LinkTypeMap[pLink->m_link_type].link_type_bias_factor;
+
+			if (AvgTravelTime < 0.01f)  // to avoid possible loops
+				AvgTravelTime = 0.01f;
+
+			ASSERT(AvgTravelTime < 99999);
+
+			int link_entering_time_interval = t / g_AggregationTimetInterval;
+
+			if (link_entering_time_interval >= m_NumberOfSPCalculationIntervals)
+				link_entering_time_interval = m_NumberOfSPCalculationIntervals - 1;
+
+			if (link_entering_time_interval < m_StartIntervalForShortestPathCalculation)  // limit the size
+				link_entering_time_interval = m_StartIntervalForShortestPathCalculation;
+
+
+			m_LinkTDTimeAry[pLink->m_LinkNo][link_entering_time_interval] = AvgTravelTime;
+
+			// copy pricing type dependent link toll values
+			for (int itoll = 0; itoll < pLink->TollVector.size(); itoll++)
+			{
+
+				if ((DayNo >= pLink->TollVector[itoll].StartDayNo && DayNo <= pLink->TollVector[itoll].EndDayNo) && m_StartTimeInMin >= pLink->TollVector[itoll].StartTime && m_StartTimeInMin <= pLink->TollVector[itoll].EndTime)
+				{
+					m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTollExist = true;
+
+					float speed = pLink->m_Length / AvgTravelTime * 60;
+
+
+					for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+					{
+
+						m_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->TollVector[itoll].TollRate[pricing_type];
+					}
+				}
+			}
+
+
+
+		}
+
+	}
+
+}
+void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo, int CurrentTime, float Perception_error_ratio)  // build the network for shortest path calculation and fetch travel time and cost real-time data from simulator
 {
 
 	std::set<DTANode*>::iterator iterNode;

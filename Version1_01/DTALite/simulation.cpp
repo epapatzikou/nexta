@@ -787,7 +787,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			}
 
 
-			if(debug_flag && pLink->m_FromNodeNumber ==60306 &&  pLink->m_ToNodeNumber ==54256 && CurrentTime>=5 )
+			if(debug_flag && pLink->m_FromNodeNumber ==8 &&  pLink->m_ToNodeNumber ==9 && CurrentTime>=360 )
 			{
 				TRACE("Step 3: Time %f, Link: %d -> %d: Incapacity int= %d, %f, OutCapacity: %d\n", CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeNumber , g_NodeVector[pLink->m_ToNodeID].m_NodeNumber ,pLink-> LinkInCapacity, fLinkInCapacity, pLink-> LinkOutCapacity);
 			}
@@ -1535,8 +1535,6 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag=
 
 
 	cout << "start simulation process..."  << endl;
-
-	g_AgentBasedVMSRoutingInitialization(Iteration, g_DemandLoadingStartTimeInMin);
 
 	double time;
 	int meso_simulation_time_interval_no = 0;
