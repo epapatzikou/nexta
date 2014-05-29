@@ -622,7 +622,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
 							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
-								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
+								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCountWithObsCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << endl;
 
@@ -637,7 +637,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
 							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
-								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
+								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCountWithObsCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << endl;
 
@@ -673,7 +673,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
 							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
-								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
+								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCountWithObsCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << endl;
 
@@ -695,7 +695,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 						if(origin_zone == CriticalOD_origin && DestZoneNumber == CriticalOD_destination)
 						{
 							g_EstimationLogFile << "Critical OD demand " << origin_zone << " -> " << DestZoneNumber << " passing link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber 
-								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCount (ArrivalTime) << ", Measurement Error: " 
+								<< " Obs link flow: "<< pLink->GetObsFlowCount (ArrivalTime) <<", Simulated link flow: " << pLink->GetSimulatedFlowCountWithObsCount (ArrivalTime) << ", Measurement Error: " 
 								<<  pLink->GetDeviationOfFlowCount(ArrivalTime)  << 
 								", " <<   pLink->GetDeviationOfFlowCount(ArrivalTime)/max(1, pLink->GetObsFlowCount (ArrivalTime))*100 << " %, cumulative error: " <<  PathArray[DestZoneNo].MeasurementDeviationPathMarginal[p] << endl;
 
@@ -1176,7 +1176,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 					//density measurement
 					if(pLink->m_LinkMeasurementAry[i].ObsDensity >=0.01)
 					{
-						pLink->m_LinkMeasurementAry[i].DeviationOfNumberOfVehicles  = pLink->GetSimulatedNumberOfVehicles(StartTime) - pLink->m_LinkMeasurementAry[i].ObsDensity * pLink->m_Length * pLink->m_NumLanes ; 
+						pLink->m_LinkMeasurementAry[i].DeviationOfNumberOfVehicles  = pLink->GetSimulatedNumberOfVehicles(StartTime) - pLink->m_LinkMeasurementAry[i].ObsDensity * pLink->m_Length * pLink->m_OutflowNumLanes ; 
 					}else
 					{
 						pLink->m_LinkMeasurementAry[i].DeviationOfTravelTime = 0;
@@ -1187,7 +1187,7 @@ void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Ite
 						int time_interval = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
 						float AbosolutePercentageError = abs((SimulatedInFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100);
 						float LaneFlowError = (SimulatedInFlowCount -  ObsFlowCount)*60.0f/
-							max(1,time_interval)/pLink->m_NumLanes;												
+							max(1,time_interval)/pLink->m_OutflowNumLanes;												
 
 						float obs_v_over_c_ratio = 0;
 						float simu_over_c_ratio = 0;
@@ -1329,7 +1329,7 @@ void g_OutputODMEResults()
 							int time_interval_in_min = pLink->m_LinkMeasurementAry[i].EndTime - pLink->m_LinkMeasurementAry[i].StartTime;
 							float PercentageError = (SimulatedInFlowCount -  ObsFlowCount)*1.0f/max(1,ObsFlowCount)*100;
 							float LaneFlowError = (SimulatedInFlowCount -  ObsFlowCount)*60.0f/
-								max(1,time_interval_in_min)/pLink->m_NumLanes;												
+								max(1,time_interval_in_min)/pLink->m_OutflowNumLanes;												
 
 							float obs_v_over_c_ratio = 0;
 							float simu_over_c_ratio = 0;

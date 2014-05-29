@@ -543,6 +543,7 @@ public:
 }
 
 	bool m_bUseMileVsKMFlag;
+	int m_bRightHandTrafficFlag;
 	double m_ScreenWidth_InMile;
 	CString m_LatLongA;
 	CString m_LatLongB;
@@ -686,6 +687,8 @@ public:
 	bool m_bShowPathList;
 	float m_NodeDisplaySize;
 	float m_BottleneckDisplaySize;
+
+	bool m_bLoadMovementData;
 
 	float m_VehicleDisplaySize;
 	float m_NodeTextDisplayRatio;
@@ -876,7 +879,7 @@ public:
 	int m_ODME_mode;
 	float m_demand_multiplier;
 
-	int m_NumberOfSecenarioSettings;
+	int m_NumberOfScenarioSettings;
 
 	//
 
@@ -928,7 +931,8 @@ public:
 	void ReadSimulationLinkMOEData_Parser(LPCTSTR lpszFileName);
 	void ReadModelLinkMOEData_Parser(LPCTSTR lpszFileName);
 	bool ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName);
-	void ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggregation_interval); 
+	bool ReadSimulationLinkMOEData_SimpleBin(LPCTSTR lpszFileName);
+	void ReadSensorSpeedData(LPCTSTR lpszFileName, int speed_data_aggregation_interval);
 	bool ReadSimulationLinkOvarvallMOEData(LPCTSTR lpszFileName);
 	void ReadObservationLinkVolumeData(LPCTSTR lpszFileName);
 
@@ -2219,6 +2223,17 @@ public:
 
 	}
 
+	DTALink* FastFindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
+	{
+			DTANode* pFromNode = m_NodeNumberMap[FromNodeNumber];
+			for (unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
+			{
+				DTALink* pLink = m_LinkNoMap[pFromNode->m_OutgoingLinkVector[i]];
+
+				if (pLink->m_ToNodeNumber == ToNodeNumber)
+					return pLink;
+			}
+	}
 	//DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	//{
 	//	int FromNodeID = m_NodeNumbertoNodeNoMap[FromNodeNumber];
@@ -2769,6 +2784,7 @@ public:
 	afx_msg void OnLinkAddRampmeter();
 	afx_msg void OnDeleteRampmeter();
 	afx_msg void OnMoeViewoddemandestimationsummaryplotLanedensity();
+	afx_msg void OnToolsConfiguration();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

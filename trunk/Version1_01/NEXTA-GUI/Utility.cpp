@@ -511,7 +511,26 @@ int read_2_integers_from_a_string(CString str, int &value1, int &value2)
 	return 0;
 }
 
+bool g_detect_if_a_file_is_column_format(LPCTSTR lpszFileName)
+{
+	FILE* st;
+	fopen_s(&st, lpszFileName, "r");
+	if (st != NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size = 1000;
+		g_read_a_line(st, str_line, str_line_size); 
 
+		fclose(st);
+
+		if (strstr(str_line, "number_of_trips_demand_type1") != NULL)
+			return true;
+		else
+			return false;
+
+	}
+	return false;
+}
 int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector)
 // read an integer from the current pointer of the file, skip all spaces
 {
@@ -820,6 +839,18 @@ int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR
 	   return value; 
 }
 
+
+
+int g_WritePrivateProfileInt(LPCTSTR section, LPCTSTR key, int value, LPCTSTR filename)
+{
+
+	char lpbuffer[64];
+
+	sprintf_s(lpbuffer, "%d", value);
+	WritePrivateProfileString(section, key, lpbuffer, filename);
+
+	return value;
+}
 double g_GetPrivateProfileDouble( LPCTSTR section, LPCTSTR key, double def_value, LPCTSTR filename) 
 {
    char lpbuffer[64];

@@ -41,7 +41,7 @@
 
 
 using namespace std;
-
+extern CTime g_AppLastIterationStartTime;
 
 int g_FindAssignmentInterval(int departure_time_begin)
 {
@@ -104,9 +104,7 @@ void g_BuildPathsForAgents( int iteration ,  bool bRebuildNetwork, bool bOutputL
 	}
 
 
-	number_of_threads =g_number_of_CPU_threads() ;
-
-
+number_of_threads =g_number_of_CPU_threads() ;
 
 #pragma omp parallel for
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
@@ -265,7 +263,6 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag,0,iteration);
 		g_GenerateSimulationSummary(iteration,NotConverged, TotalNumOfVehiclesGenerated,&SimuOutput);
-		g_WriteUserDefinedMOE(g_SummaryStatFile, iteration + 1);
 
 	}  // for each assignment iteration
 
@@ -924,7 +921,7 @@ void DTANetworkForSP::HistInfoZoneBasedPathAssignment(int zone,int departure_tim
 
 			BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime , g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 			//using historical short-term travel time
-			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_PricingType,pVeh->m_VOT,false, false );  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(),pVeh->m_DepartureTime ,pVeh->m_PricingType,pVeh->m_VOT,false, false,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 			int OriginCentriod = m_PhysicalNodeSize;  // as root node
 			int DestinationCentriod =  m_PhysicalNodeSize+ pVeh->m_DestinationZoneID ;  
@@ -1265,7 +1262,7 @@ void g_AgentBasedShortestPathGeneration()
 				}
 
 				// this generate the one-to-all shortest path tree
-				g_TimeDependentNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				g_TimeDependentNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index,0,1,DEFAULT_VOT,true,true,false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				for(int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
@@ -1358,13 +1355,14 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.Reset();
 		g_SummaryStatFile.SetFieldName ("Iteration #");
 		g_SummaryStatFile.SetFieldName ("CPU Running Time");
-		g_SummaryStatFile.SetFieldName ("# of agents");
+		g_SummaryStatFile.SetFieldName("Per Iteration CPU Running Time");
+		g_SummaryStatFile.SetFieldName("# of agents");
 		g_SummaryStatFile.SetFieldName ("Avg Travel Time (min)");
 		g_SummaryStatFile.SetFieldName ("Avg Trip Time (min)");
 		g_SummaryStatFile.SetFieldName ("Avg Waiting Time at Origin (min)");
 		g_SummaryStatFile.SetFieldName ("Avg Trip Time Index=(Mean TT/Free-flow TT)");
+		g_SummaryStatFile.SetFieldName("Avg Distance (miles)");
 		g_SummaryStatFile.SetFieldName ("Avg Speed (mph)");
-		g_SummaryStatFile.SetValueByFieldName ("Avg Distance (miles)",p_SimuOutput->AvgDistance);
 
 		g_SummaryStatFile.SetFieldName ("% considering to switch");
 		g_SummaryStatFile.SetFieldName ("% switched");
@@ -1442,6 +1440,13 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	skim_file_name = "OD_skim_day" + CString2StdString(day_str) + ".csv";
 	cout << "outputing skim file"  << skim_file_name << " ..." << endl;
 	g_AgentBasedAccessibilityMatrixGeneration(skim_file_name,true,1,0);
+	cout << "outputing skim file for all demand types" << skim_file_name << " ..." << endl;
+	skim_file_name = "output_OD_skim_day" + CString2StdString(day_str) + ".csv";
+	g_AccessibilityMatrixGenerationForAllDemandTypes(skim_file_name, true, 0);
+	
+	cout << "outputing link time-dependent MOE and trajectory data under skim outputting mode ..." << endl;
+	g_OutputMOEData(iteration); 
+	
 	}
 
 
@@ -1465,6 +1470,10 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_SummaryStatFile.SetValueByFieldName ("Iteration #",day_no);  // iteration from 0
 	g_SummaryStatFile.SetValueByFieldName  ("CPU Running Time",g_GetAppRunningTime(false));
+	g_SummaryStatFile.SetValueByFieldName("Per Iteration CPU Running Time", g_GetAppRunningTimePerIteration(false));
+
+	g_AppLastIterationStartTime = CTime::GetCurrentTime();
+
 	g_SummaryStatFile.SetValueByFieldName ("# of agents",p_SimuOutput->NumberofVehiclesGenerated);
 	g_SummaryStatFile.SetValueByFieldName ("Avg Travel Time (min)",p_SimuOutput->AvgTravelTime);
 	g_SummaryStatFile.SetValueByFieldName ("Avg Trip Time (min)",p_SimuOutput->AvgTripTime);
@@ -1641,8 +1650,7 @@ void g_ZoneBasedDynamicTrafficAssignment()
 	int iteration = 0;
 	bool NotConverged = true;
 	int TotalNumOfVehiclesGenerated = 0;
-	int number_of_threads = omp_get_max_threads();
-
+	int number_of_threads = g_number_of_CPU_threads();
 
 	cout<< "# of Computer Processors = "  << number_of_threads  << endl; 
 

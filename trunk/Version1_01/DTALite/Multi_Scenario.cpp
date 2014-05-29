@@ -34,7 +34,7 @@
 #include <fstream>
 #include <omp.h>
 #include <algorithm>
-
+TCHAR g_real_time_simulation_setting_FileName[_MAX_PATH] = _T("./real_time_data_exchange/real_time_simulation_settings.txt");
 using namespace std;
 
 void g_WriteUserDefinedMOE(CCSVWriter  &g_MultiScenarioSummaryStatFile, int day_no = -1)
@@ -334,8 +334,7 @@ void g_MultiScenarioTrafficAssignment()
 			g_SummaryStatFile.WriteTextLabel (scenario_name.c_str ());
 			g_SummaryStatFile.WriteTextLabel ("----------------------\n");
 
-			//		parser_scenario.GetValueByFieldNameWithPrintOut("demand_loading_mode",g_VehicleLoadingMode) ;
-			g_VehicleLoadingMode = 2;  // default meta data mode
+			g_VehicleLoadingMode = demand_matrix_file_mode;  // default meta data mode
 
 			if(parser_scenario.GetValueByFieldNameWithPrintOut("number_of_assignment_days",TotalUEIterationNumber)==false)
 			{
@@ -359,9 +358,6 @@ void g_MultiScenarioTrafficAssignment()
 			g_SignalRepresentationFlag =  (e_signal_representation_model) SignalRepresentationFlag;
 
 			g_SummaryStatFile.WriteTextLabel("Signal Control Representation =,");
-
-			g_EmissionDataOutputFlag  = 0; 
- 
 
 			switch( g_SignalRepresentationFlag)
 			{
@@ -409,9 +405,6 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_LogFile << "Traffic Flow Model =  ";
 			g_SummaryStatFile.WriteTextLabel("Traffic Flow Model =,");
-
-			g_EmissionDataOutputFlag  = 0; 
- 
 
 			switch( g_TrafficFlowModelFlag)
 			{
@@ -532,6 +525,23 @@ void g_MultiScenarioTrafficAssignment()
 				g_ODEstimationFlag = 1;
 				break;
 
+			case assignment_vehicle_binary_file_based_scenario_evaluation:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "Load binary agent file with demand type definition from scenarios files: Scenario_Demand_Type.csv, Scenario_Vehicle_Type.csv, Scenario_VOT.csv.");
+				break;
+
+
+			case assignment_real_time_simulation:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "Perform real time simulation. Required files: \\real_time_data_exchange\\real_time_simulation_settings.txt and other related data files per time interval");
+				break;
+
+			case assignment_integration_with_ABM:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "Perform real time simulation with ABM model. Required files: ____");
+				break;
+
+			case assignment_system_optimal:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "System Optimal Based on agent file. Required files: Scenario_Demand_Type.csv with fields: percentage_of_travel_time_system_optimal,percentage_of_emission_system_optimal");
+				break;
+
 			default: 
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
 
@@ -540,6 +550,62 @@ void g_MultiScenarioTrafficAssignment()
 				g_ProgramStop();
 
 			}
+
+
+
+			if (g_UEAssignmentMethod == assignment_real_time_simulation)
+			{
+
+
+			g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second
+					= g_GetPrivateProfileInt("synchronization", "sleep_time_interval_in_second ", 1, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.input_link_attribute_generated_from_external_program 
+				= g_GetPrivateProfileInt("input_link_attribute", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.input_link_attribute_updating_time_interval_in_second 
+				= g_GetPrivateProfileInt("input_link_attribute", "updating_time_interval_in_second", 6, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.input_routing_policy_generated_from_external_program 
+				= g_GetPrivateProfileInt("input_routing_policy", "updating_time_interval_in_second", 60, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.input_routing_policy_updating_time_interval_in_min
+				= g_GetPrivateProfileInt("input_routing_policy", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+
+			g_RealTimeSimulationSettings.input_trip_generated_from_external_program
+				= g_GetPrivateProfileInt("input_trip", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.input_trip_updating_time_interval_in_min 
+				= g_GetPrivateProfileInt("input_trip", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+
+			g_RealTimeSimulationSettings.output_link_performance_generated_to_external_program 
+				= g_GetPrivateProfileInt("output_link_performance", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_link_performance_updating_time_interval_in_min 
+				= g_GetPrivateProfileInt("output_link_performance", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_trip_generated_to_external_program 
+				= g_GetPrivateProfileInt("output_trip", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_trip_updating_time_interval_in_min 
+				= g_GetPrivateProfileInt("output_trip", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_travel_cost_skim_generated_to_external_program
+				= g_GetPrivateProfileInt("output_travel_cost_skim", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_travel_cost_skim_updating_time_interval_in_min
+				= g_GetPrivateProfileInt("output_travel_cost_skim", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_routing_policy_generated_to_external_program
+				= g_GetPrivateProfileInt("output_trip", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);
+
+			g_RealTimeSimulationSettings.output_routing_policy_updating_time_interval_in_min
+				= g_GetPrivateProfileInt("output_trip", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
+
+			}
+			
 
 
 			g_SummaryStatFile.WriteTextString(" ");

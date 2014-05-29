@@ -2990,6 +2990,15 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 
 			}else if (format_type.compare("matrix")== 0)
 			{
+
+				if (g_detect_if_a_file_is_column_format(file_name.c_str()) == true)
+				{
+					CString str;
+					str.Format("Demand input file %s looks to be based on column format but the format_type=matrix in input_demand_meta_data.csv.\nPlease check the demand file format, and change format_type=column in input_demand_meta_data.cv.", file_name);
+					AfxMessageBox(str);
+					return;
+
+				}
 				vector<int> LineIntegerVector;
 
 				CCSVParser parser;

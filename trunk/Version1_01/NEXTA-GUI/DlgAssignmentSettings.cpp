@@ -137,9 +137,13 @@ BOOL CDlgAssignmentSettings::OnInitDialog()
 
 	m_AssignmentMethod.AddString("4. Day-to-Day Route/Departure Time Choice with BR rule");
 	m_AssignmentMethod.AddString("5. Accessibility (Travel Time)");
-	m_AssignmentMethod.AddString("6. Accessibility (Distance)");	
-
-
+	m_AssignmentMethod.AddString("6. Accessibility (Distance)");
+	
+	m_AssignmentMethod.AddString("7. Scenario Evaluation based on agent binary file");
+	m_AssignmentMethod.AddString("8. Real Time Simulation based on external data exchanges");
+	m_AssignmentMethod.AddString("9. Real Time Simulation with Activity Based Model");
+	m_AssignmentMethod.AddString("10. System Optimal Based on agent binary file");
+		
 	m_AssignmentMethod.SetCurSel(m_pDoc->m_traffic_assignment_method);
 
 	

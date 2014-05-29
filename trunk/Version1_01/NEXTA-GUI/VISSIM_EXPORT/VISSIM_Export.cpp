@@ -367,7 +367,7 @@ bool MicroSimulatorInterface::ReadInputNodeCSV(std::string strFileName)
 			{
 				refLongi = X;
 				refLati  = Y;
-				refScale = 111700.0;
+				refScale = 1.0 / (m_pDoc->m_UnitFeet)*0.3048; // from feet to meter
 			}
 
 			pNode->ptLL.x = X;
@@ -532,7 +532,7 @@ bool MicroSimulatorInterface::ReadInputLinkCSV(std::string strFileName)
 			}
 
 			pLink->m_NumberOfLanes= max(1,number_of_lanes);
-			pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
+			pLink->m_SpeedLimit = max(20, speed_limit_in_mph*1.60934);  // minimum speed limit is 20 km per hour, 1.60934 from mile to meter	
 			pLink->m_LinkType= type; //type, default = 100;
 
 			GetMLinkApproach(from_approach,&nFrom);
@@ -2167,7 +2167,7 @@ bool MicroSimulatorInterface::WriteNodes()
 
 		std::vector<MLink*>::iterator iMLink;
 		std::vector<MLane*>::iterator iMLane;
-		double default_width = 3.75f;
+		double default_width = 3.5f; // meters
 
 		// in lanes in in links
 		for(iMLink=pMNode->inLinks.begin();iMLink!=pMNode->inLinks.end();iMLink++)

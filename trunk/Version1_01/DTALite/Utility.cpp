@@ -14,6 +14,7 @@
 using namespace std;
 
 extern CTime g_AppStartTime;
+extern CTime g_AppLastIterationStartTime;
 // polar form of the Box-Muller transformation to get two random numbers that follow a standard normal distribution 
 unsigned int g_RandomSeedForVehicleGeneration = 101;
 // Linear congruential generator 
@@ -374,7 +375,26 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	return true;
 }
 
+bool g_detect_if_a_file_is_column_format(LPCTSTR lpszFileName)
+{
+	FILE* st;
+	fopen_s(&st, lpszFileName, "r");
+	if (st != NULL)
+	{
+		char  str_line[2000]; // input string
+		int str_line_size = 1000;
+		g_read_a_line(st, str_line, str_line_size);
 
+		fclose(st);
+
+		if (strstr(str_line, "number_of_trips_demand_type1") != NULL)
+			return true;
+		else
+			return false;
+
+	}
+	return false;
+}
 int g_read_integer_with_char_O(FILE* f)
 // read an integer from the current pointer of the file, skip all spaces, if read "O", return 0;
 {
@@ -790,6 +810,19 @@ CString g_GetAppRunningTime(bool with_title)
 	return str;
 }
 
+CString g_GetAppRunningTimePerIteration(bool with_title)
+{
+	CString str;
+	CTime EndTime = CTime::GetCurrentTime();
+	CTimeSpan ts = EndTime - g_AppLastIterationStartTime;
+
+	if (with_title)
+		str = ts.Format("CPU Clock: %H:%M:%S --");
+	else
+		str = ts.Format("%H:%M:%S");
+	return str;
+}
+
 
 char g_GetLevelOfService(int PercentageOfSpeedLimit)
 {
@@ -895,7 +928,7 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	// starting with first node with origin nodes;
 	pPhysicalNetwork->BuildPhysicalNetwork(0,-1,g_TrafficFlowModelFlag);
 
-	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false);  // CurNodeID is the node ID
+	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false,false);  // CurNodeID is the node ID
 	// assign shortest path calculation results to label array
 
 

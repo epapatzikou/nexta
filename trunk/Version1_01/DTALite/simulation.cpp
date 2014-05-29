@@ -39,6 +39,91 @@ extern bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int
 extern  int NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND;
 extern ofstream g_LogFile;
 
+bool g_RealTimeSimulationDataExchange(int meso_simulation_time_interval_no)
+{
+	int time_clock_in_min = meso_simulation_time_interval_no / 10;
+	int time_clock_in_second = meso_simulation_time_interval_no * 6;
+
+	if (g_RealTimeSimulationSettings.input_link_attribute_generated_from_external_program == 1 &&
+		time_clock_in_second % g_RealTimeSimulationSettings.input_link_attribute_updating_time_interval_in_second == 0)
+	{
+		while (1)
+		{
+			if (g_ReadRealTimeLinkAttributeData(time_clock_in_second) == true)
+			{
+				cout << "File " << " has been read. Continue" << endl;
+				break;
+			}
+			else
+			{
+				cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
+				Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
+			}
+
+		}
+	}
+
+	if (g_RealTimeSimulationSettings.input_trip_generated_from_external_program == 1 &&
+		time_clock_in_min % g_RealTimeSimulationSettings.input_trip_updating_time_interval_in_min == 0)
+	{
+		while (1)
+		{
+			if (g_ReadRealTimeTripData(time_clock_in_min,false) == true)
+			{
+				cout << "File " << " has been read. Continue" << endl;
+				break;
+			}
+			else
+			{
+				cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
+				Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
+			}
+
+		}
+	}
+
+
+	if (g_RealTimeSimulationSettings.output_routing_policy_generated_to_external_program == 1 &&
+		time_clock_in_min % g_RealTimeSimulationSettings.output_routing_policy_updating_time_interval_in_min == 0)
+	{
+		CString str;
+		str.Format(".//real_time_data_exchange//output_routing_policy_min%d.csv", time_clock_in_min);
+
+		ofstream output_routing_policy_file;
+		int demand_look_up_window_in_min = 120;
+		int demand_start_time_in_min = max(0, time_clock_in_min - demand_look_up_window_in_min);
+		int demand_end_time_in_min = time_clock_in_min;
+
+		output_routing_policy_file.open(str);
+		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
+		if (output_routing_policy_file.is_open())
+		{
+
+			g_OutputTimeDependentRoutingPolicyData(output_routing_policy_file,
+				demand_start_time_in_min, demand_end_time_in_min, 1);
+
+			output_routing_policy_file.close();
+		}
+		else
+		{
+			cout << "Error: File " << str << " cannot be opened.\n" << endl;
+			g_ProgramStop();
+		}
+	}
+			
+	if (g_RealTimeSimulationSettings.output_routing_policy_generated_to_external_program == 1 &&
+		time_clock_in_min % g_RealTimeSimulationSettings.output_routing_policy_updating_time_interval_in_min == 0)
+	{
+		CString str;
+		str.Format(".//real_time_data_exchange//output_skim_data_min%d.csv", time_clock_in_min);
+
+		g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(CString2StdString(str), time_clock_in_min);
+	}
+
+	
+
+	return true;
+}
 bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag)
 {
 	int trace_step = 14;
@@ -47,6 +132,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	std::set<DTALink*>::iterator iterLink;
 	std::map<int, DTAVehicle*>::iterator iterVM;
 
+	std::vector<struc_real_time_path_computation_element> Vector_path_computation_elements;
 	int time_stamp_in_min = int(CurrentTime+0.0001);
 
 	CString trace_msg;
@@ -130,7 +216,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
         if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
         {  // we need to update travel time and agent file
 
-                g_ExchangeRealTimeSimulationData(DayNo,(int)(CurrentTime));
+                g_ExchangeRealTimeSimulationData(DayNo,(int)(CurrentTime));  // version 1
 
 
         }
@@ -142,6 +228,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	
 	}
 
+	// new real time data face
+	g_RealTimeSimulationDataExchange(meso_simulation_time_interval_no); // version 2
+	
+
+
 	// load vehicle into network
 
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
@@ -150,6 +241,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	// comment: we use std::map here as the g_VehicleMap map is sorted by departure time.
 	// At each iteration, we start  the last loaded id, and exit if the departure time of a vehicle is later than the current time.
 
+
+	struc_real_time_path_computation_element computation_element;
 
 
 	for (iterVM = g_VehicleMap.find(g_LastLoadedVehicleID); iterVM != g_VehicleMap.end(); iterVM++)
@@ -161,7 +254,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			if(pVeh->m_InformationClass == info_pre_trip || 
 				pVeh->m_InformationClass == info_en_route )
 				{  // vehicle rerouting
-					g_AgentBasedPathAdjustmentWithRealTimeInfo(pVeh->m_VehicleID  ,CurrentTime);
+					computation_element.veh_id = pVeh->m_VehicleID;
+					computation_element.current_time_stamp = CurrentTime;
+					//				g_AgentBasedPathAdjustmentWithRealTimeInfo(pVeh->m_VehicleID  ,CurrentTime);
+					Vector_path_computation_elements.push_back(computation_element);
+
 				}
 
 			if(pVeh->m_PricingType == 4)
@@ -226,7 +323,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					{
 						if(	g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < p_link->MessageSignVector [IS_id].ResponsePercentage )
 						{  // vehicle rerouting
-							g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+
+							computation_element.veh_id = vi.veh_id;
+							computation_element.current_time_stamp = CurrentTime;
+							// g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id, CurrentTime);
+							Vector_path_computation_elements.push_back(computation_element);
+
 						}
 
 					}
@@ -236,7 +338,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						if( g_VehicleMap[vi.veh_id]->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage )
 						{  // vehicle rerouting
 
-							g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id ,CurrentTime);
+							computation_element.veh_id = vi.veh_id;
+							computation_element.current_time_stamp = CurrentTime;
+							// g_AgentBasedPathAdjustmentWithRealTimeInfo(vi.veh_id, CurrentTime);
+							Vector_path_computation_elements.push_back(computation_element);
+
 						}
 						// check if a radio message has been enabled
 					}
@@ -258,6 +364,26 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 
 	}
+
+	int number_of_threads = g_number_of_CPU_threads();
+
+	int computation_vector_size = Vector_path_computation_elements.size();
+	// calculate pre-trip paths for vehicles 
+#pragma omp parallel for
+	for (int ProcessID = 0; ProcessID < number_of_threads; ProcessID++)
+	{
+		// create network for shortest path calculation at this processor
+		for (int i = 0; i < computation_vector_size; i++)
+		{
+
+			if ((i%number_of_threads) == ProcessID)  
+			{
+				g_AgentBasedPathAdjustmentWithRealTimeInfo(ProcessID, Vector_path_computation_elements[i].veh_id, Vector_path_computation_elements[i].current_time_stamp);
+			}
+		}
+	}
+
+
 
 	// loading buffer
 	if(meso_simulation_time_interval_no>=trace_step)
@@ -319,6 +445,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 				DTAVehicle* pVehicle  = g_VehicleMap[vi.veh_id];
 
+				int vehicle_type = g_VehicleMap[vi.veh_id]->m_VehicleType ;
+				pLink->CFlowArrivalCount_VehicleType[vehicle_type] += 1;
+
 				// mark the actual leaving time from the loading buffer, so that we can calculate the exact time for traversing the physical net
 				pVehicle->m_LeavingTimeFromLoadingBuffer = CurrentTime;
 				pLink->m_LoadingBufferWaitingTime+= (CurrentTime - pVehicle->m_DepartureTime );
@@ -363,6 +492,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 	if(g_TrafficFlowModelFlag != trm_car_following) // queue based model 
 	{
+
 		while(pLink->EntranceQueue.size() >0)  // if there are vehicles in the entrance queue
 		{
 
@@ -417,7 +547,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					struc_vehicle_item vi_leader = (*i_leader);
 					DTAVehicle* pVehicle_leader = g_VehicleMap[vi_leader.veh_id];
 
-					double spacing =  1.0/pLink->m_KJam/pLink->m_NumLanes;
+					double spacing =  1.0/pLink->m_KJam/pLink->m_OutflowNumLanes;
 					
 					pVehicle->within_link_driving_distance = max(0, min(pVehicle_leader->within_link_driving_distance - spacing ,  pVehicle->within_link_driving_speed_per_hour* 1/3600)); // 3600 second per hour
 					
@@ -656,7 +786,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 				float AvailableSpaceCapacity = pLink->m_VehicleSpaceCapacity - NumberOfVehiclesOnThisLinkAtCurrentTime;
 
 				if(g_LinkTypeMap[pLink->m_link_type] .IsFreeway())
-					fLinkInCapacity = min (AvailableSpaceCapacity, 1800 *g_DTASimulationInterval/60.0f* pLink->GetNumberOfLanes(DayNo,CurrentTime)); 
+					fLinkInCapacity = min(AvailableSpaceCapacity, 1800 * g_DTASimulationInterval / 60.0f* pLink->GetInflowNumberOfLanes(DayNo, CurrentTime));
 				else // non freeway links
 					fLinkInCapacity = AvailableSpaceCapacity;
 
@@ -881,13 +1011,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		g_ProgramTrace("step 4: move vehicles from ExitQueue to next link's EntranceQueue");
 
 	// step 4.1: calculate movement capacity per simulation interval for movements defined in input_movement.csv
-	int number_of_threads = omp_get_max_threads ( );
-
-	int max_number_of_threads = g_GetPrivateProfileInt("computation", "max_number_of_threads_to_be_used", 8, g_DTASettingFileName);
-
-	if(number_of_threads > max_number_of_threads)
-		number_of_threads = max_number_of_threads ;
-
 
 	int node_size = g_NodeVector.size();
 
@@ -1162,6 +1285,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						p_Nextlink->CFlowArrivalRevenue_PricingType[pricing_type] += p_Nextlink->GetTollRateInDollar(DayNo,CurrentTime,pricing_type);
 
 						DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
+						int vehicle_type = g_VehicleMap[vi.veh_id]->m_VehicleType;
+						p_Nextlink->CFlowArrivalCount_VehicleType[vehicle_type] += 1;
 
 
 
@@ -1384,6 +1509,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			{
 				pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount_PricingType[pt] = pLink->CFlowArrivalCount_PricingType[pt];
 				pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeRevenue_PricingType[pt] = pLink->CFlowArrivalRevenue_PricingType[pt];
+			}
+
+			for (int vt = 0; vt < MAX_VEHICLE_TYPE_SIZE; vt++)
+			{
+				pLink->m_LinkMOEAry[time_stamp_in_min].CumulativeArrivalCount_VehicleType[vt] = pLink->CFlowArrivalCount_VehicleType[vt];
 			}
 
 			pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeDepartureCount = pLink->CFlowDepartureCount;

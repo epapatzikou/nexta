@@ -245,6 +245,7 @@
     <ClCompile Include="Dlg_LeftTurnLaneSetup.cpp" />
     <ClCompile Include="Dlg_Legend.cpp" />
     <ClCompile Include="Dlg_LinkVisualizationConfig.cpp" />
+    <ClCompile Include="Dlg_NEXTA_Configuration.cpp" />
     <ClCompile Include="Dlg_NodeProperties.cpp" />
     <ClCompile Include="Dlg_PricingConfiguration.cpp" />
     <ClCompile Include="Dlg_RealWorldWidth.cpp" />
@@ -355,6 +356,7 @@
     <ClInclude Include="CGridListCtrlEx\CGridRowTraitVisitor.h" />
     <ClInclude Include="CGridListCtrlEx\CGridRowTraitXP.h" />
     <ClInclude Include="CGridListCtrlEx\ViewConfigSection.h" />
+    <ClInclude Include="Dlg_NEXTA_Configuration.h" />
     <ClInclude Include="LinePlot\LinePlot.h" />
     <ClInclude Include="LinePlot\LinePlotTestDlg.h" />
     <ClInclude Include="LinePlot\memdc.h" />
@@ -513,6 +515,7 @@
     <Image Include="res\workzone.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
     <None Include="res\create_l.cur" />
     <None Include="res\cur00001.cur" />
     <None Include="res\cur00002.cur" />

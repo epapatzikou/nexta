@@ -264,10 +264,11 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 			// use predicted travel time from user definded data file
 			//
 
-			if( pLink->m_LinkMOEAry [t].UserDefinedTravelTime_in_min >=0.1)  // with valid data
+			if (pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min >= 0.1 && DayNo==0)  // with valid data
 			{
 			
-			AvgTravelTime = pLink->m_LinkMOEAry [t].UserDefinedTravelTime_in_min;
+				AvgTravelTime = (1.0 - g_gain_factor_link_travel_time_from_external_input)* AvgTravelTime
+					+ pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min * g_gain_factor_link_travel_time_from_external_input;
 
 			}
 
@@ -525,12 +526,11 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo, int CurrentTime, float
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false, 
+	bool bDistanceCostByProductOutput = false)
 // time -dependent label correcting algorithm with deque implementation
 {
 	// this is the standard shortest path algorithm
-	debug_flag = false;
-
 	int i;
 	float AdditionalCostInMin = 0;
 
@@ -546,14 +546,29 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 		LabelTimeAry[i] = MAX_SPLABEL;
 		LabelCostAry[i] = MAX_SPLABEL;
-		LabelDistanceAry[i] = MAX_SPLABEL;
 
 	}
+
 
 	// Initialization for origin node
 	LabelTimeAry[origin] = float(departure_time);
 	LabelCostAry[origin] = 0;
-	LabelDistanceAry[origin] = 0;
+	
+	if (bDistanceCostByProductOutput)  // used mainly for accessibility calculation 
+	{
+
+		for (i = 0; i <m_NodeSize; i++) // Initialization for all nodes
+		{
+			LabelDistanceAry[i] = MAX_SPLABEL;
+			LabelDollarCostAry[i] = 0;
+		}
+
+		LabelDistanceAry[origin] = 0;
+		LabelDollarCostAry[origin] = 0;
+
+	
+	}
+	
 
 	SEList_clear();
 	SEList_push_front(origin);
@@ -561,7 +576,8 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 	int FromID, LinkID, ToID;
 
 
-	float NewTime, NewCost, NewDistance;
+	float NewTime, NewCost, NewDistance,NewDollarCost;
+	float DollarCost = 0;
 	while(!SEList_empty())
 	{
 		FromID  = SEList_front();
@@ -598,6 +614,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			NewDistance    = LabelDistanceAry[FromID] + m_LinkTDDistanceAry[LinkID];
 
+
 			if(distance_cost_flag)
 				NewTime	= LabelTimeAry[FromID];
 			else // distance
@@ -608,11 +625,15 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			else
 				NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] ;
 
+			DollarCost = 0;
 			if(VOT > 0.01 && m_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTollExist) 
 			{ // with VOT and toll
 				AdditionalCostInMin = m_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 				NewCost += AdditionalCostInMin;
+				DollarCost = m_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
 			}
+
+			NewDollarCost = LabelDollarCostAry[FromID] + DollarCost;
 
 			if(NewCost < LabelCostAry[ToID] ) // be careful here: we only compare cost not time
 			{
@@ -626,7 +647,18 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 				LabelTimeAry[ToID] = NewTime;
 				LabelCostAry[ToID] = NewCost;
-				LabelDistanceAry[ToID] = NewDistance;
+
+
+				if (bDistanceCostByProductOutput)
+				{
+					LabelDistanceAry[ToID] = NewDistance;
+					LabelDollarCostAry[ToID] = NewDollarCost;
+
+				
+				}
+
+				
+				
 				NodePredAry[ToID]   = FromID;
 				LinkNoAry[ToID] = LinkID;
 
@@ -651,6 +683,15 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 	} // end of while
 
+
+	//if (bDistanceCostByProductOutput)  // used mainly for accessibility calculation 
+	//{
+
+	//	for (i = 0; i < m_NodeSize; i++) // Initialization for all nodes
+	//	{
+	//		TRACE("Node %d, tt = %f, dist= %f,cost = %f\n", g_NodeVector[i].m_NodeNumber, LabelCostAry[i], LabelDistanceAry[i], LabelDollarCostAry[i]);
+	//	}
+	//}
 	return true;
 }
 
@@ -659,6 +700,9 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool distance_flag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
+
+	if (VOT <= 0.01)  // overwrite small VOT;
+		VOT = 1;
 
 	TotalCost  = 0;
 	debug_flag = false;

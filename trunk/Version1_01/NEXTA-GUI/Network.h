@@ -372,6 +372,7 @@ using std::string;
 #define MAX_AdjLinkSize 15
 #define	MAX_SPLABEL 99999
 #define MAX_NODE_SIZE_IN_A_PATH 4000
+#define _MAX_LINK_FOR_LOAD_MOVEMENT_DATA  20000
 
 #define NUM_PATHMOES 8  // Distance, Travel Time, Emissions, Safety
 #define NUM_VEHPATHMOES 8  // Distance, Travel Time, Emissions, Safety
@@ -1224,7 +1225,7 @@ string QEM_dir_string;
 int QEM_reference_node_number;
 
 int in_link_from_node_id;
-int in_link_to_node_id;  // this equals to the current node number
+int in_link_to_node_id;  
 int out_link_to_node_id;
 
 int movement_hourly_capacity;
@@ -1818,11 +1819,11 @@ public:
 		LinkFlow = 0;
 		Density = 0;
 
-		//Energy = 0;
-		//CO2  = 0;
-		//NOX  = 0;
-		//CO  = 0;
-		//HC  = 0;
+		Energy = 0;
+		CO2  = 0;
+		NOX  = 0;
+		CO  = 0;
+		HC  = 0;
 
 	};
 
@@ -3091,7 +3092,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 			if(m_LinkMOEAry[t].LinkFlow >=1) // with flow
 			{
 				total_count++;
-				total_value+= m_LinkMOEAry[t].LinkFlow/m_NumberOfLanes;
+				total_value+= max(0,m_LinkMOEAry[t].LinkFlow)/m_NumberOfLanes;
 			}
 		}
 		}
@@ -3116,7 +3117,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		{
 		
 		if(m_LinkSensorMOEMap.find(t)!= m_LinkSensorMOEMap.end())
-			total_volume += m_LinkSensorMOEMap[t].LinkFlow;
+			total_volume += max(0,m_LinkSensorMOEMap[t].LinkFlow);
 		}
 		return total_volume*60/max(1,end_time - start_time);
 	}
@@ -3134,7 +3135,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		
 		if(m_LinkSensorMOEMap.find(t)!= m_LinkSensorMOEMap.end() )
 		{
-			total_volume += m_LinkSensorMOEMap[t].LinkFlow;
+			total_volume += max(0,m_LinkSensorMOEMap[t].LinkFlow);
 			total_count ++;
 		
 		}
@@ -3157,7 +3158,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		{
 		
 		if(t < m_LinkMOEArySize)
-			total_volume += m_LinkMOEAry[t].LinkFlow;
+			total_volume += max(0,m_LinkMOEAry[t].LinkFlow);
 		}
 		return total_volume/max(1, end_time-start_time);
 	}

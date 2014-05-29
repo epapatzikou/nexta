@@ -28,7 +28,7 @@
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 #pragma warning(disable:4996)  // stop warning: 'MBCS_Support_Deprecated_In_MFC': MBCS support in MFC is deprecated 
 #include "resource.h"
-//#define _large_memory_usage
+#define _large_memory_usage
 
 
 #include <math.h>
@@ -45,7 +45,7 @@ using namespace std;
 
 enum e_traffic_information_class { info_hist =0,info_hist_learning,info_pre_trip, info_en_route};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
-
+enum e_demand_loading_mode { demand_matrix_file_mode = 0, vehicle_binary_file_mode, real_time_demand_matrix_file_mode, accessibility_demand_mode};
 enum e_signal_representation_model {signal_model_continuous_flow = 0,  signal_model_link_effective_green_time, signal_model_movement_effective_green_time };
 
 enum e_assignment_method { 
@@ -56,6 +56,10 @@ assignment_OD_demand_estimation,
 assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
 assignment_accessibility_travel_time,
 assignment_accessibility_distanance,
+assignment_vehicle_binary_file_based_scenario_evaluation,
+assignment_real_time_simulation,
+assignment_integration_with_ABM,
+assignment_system_optimal,
 assignment_gap_function_MSA_step_size
 
 };
@@ -135,6 +139,67 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 
 string GetLinkStringID(int FromNodeName, int ToNodeName);
 
+
+
+class C_RealTimeSimulationSettings
+{
+
+public:
+
+	int synchronization_sleep_time_interval_in_second;
+	int input_link_attribute_generated_from_external_program;
+	int input_link_attribute_updating_time_interval_in_second;
+
+	int input_trip_generated_from_external_program;
+	int input_trip_updating_time_interval_in_min;
+	
+	int input_routing_policy_generated_from_external_program;
+	int input_routing_policy_updating_time_interval_in_min;
+
+
+	int output_trip_generated_to_external_program;
+	int output_trip_updating_time_interval_in_min;
+
+	int output_routing_policy_generated_to_external_program;
+	int output_routing_policy_updating_time_interval_in_min;
+
+	int output_link_performance_generated_to_external_program;
+	int output_link_performance_updating_time_interval_in_min;
+
+	int output_travel_cost_skim_generated_to_external_program;
+	int output_travel_cost_skim_updating_time_interval_in_min;
+
+
+	C_RealTimeSimulationSettings()
+	{
+		 synchronization_sleep_time_interval_in_second = 1;
+		 input_link_attribute_generated_from_external_program = 0;
+		 input_link_attribute_updating_time_interval_in_second = 60;
+
+		 input_trip_generated_from_external_program = 0;
+		 input_trip_updating_time_interval_in_min = 1;
+
+		 input_routing_policy_generated_from_external_program = 0;
+		 input_routing_policy_updating_time_interval_in_min = 1;
+
+
+		 output_trip_generated_to_external_program = 0;
+		 output_trip_updating_time_interval_in_min = 1;
+
+		 output_routing_policy_generated_to_external_program = 0;
+		 output_routing_policy_updating_time_interval_in_min = 1;
+
+		 output_link_performance_generated_to_external_program = 0;
+		 output_link_performance_updating_time_interval_in_min = 1;
+
+		 output_travel_cost_skim_generated_to_external_program = 0;
+		 output_travel_cost_skim_updating_time_interval_in_min = 15;
+
+	
+	}
+
+
+};
 ///////////////////////////
 // linear regression
 //////////////////
@@ -375,10 +440,7 @@ public:
 		if(node_index >= ArraySize)
 			node_index = ArraySize -1;
 
-		if(node_index>=0)
 			return m_DestinationActivityVector[node_index];
-		else
-			return 0;
 	}
 
 	DTAZone()
@@ -583,6 +645,8 @@ public:
 			CumulativeArrivalCount_PricingType[i] = 0;
 			CumulativeRevenue_PricingType[i] = 0;
 		}
+
+
 	}
 
 };
@@ -604,6 +668,8 @@ public:
 	
 	int CumulativeArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
 	float CumulativeRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
+
+	int CumulativeArrivalCount_VehicleType[MAX_VEHICLE_TYPE_SIZE];
 
 	int CumulativeArrivalCount; 
 	int CumulativeDepartureCount;
@@ -653,6 +719,12 @@ public:
 			CumulativeRevenue_PricingType[i] = 0;
 		}
 
+		for (int i = 0; i < MAX_VEHICLE_TYPE_SIZE; i++)
+		{
+			CumulativeArrivalCount_VehicleType[i] = 0;
+
+		}
+
 	};
 
 
@@ -680,6 +752,11 @@ public:
 			CumulativeRevenue_PricingType[i] = 0;
 		}
 
+		for (int i = 0; i < MAX_VEHICLE_TYPE_SIZE; i++)
+		{
+			CumulativeArrivalCount_VehicleType[i] = 0;
+
+		}
 
 	}
 
@@ -748,7 +825,7 @@ public:
 	};
 	int m_LinkNo;
 	int m_link_type;
-	int m_NumLanes;
+	int m_OutflowNumLanes;
 	float m_LinkInCapacityRatio;
 	int m_LinkInRemainingCapaityPerSimuInterval;  // derived from other incoming  demand
 };
@@ -976,6 +1053,12 @@ public:
 		m_SaturationFlowRate_In_vhc_per_hour_per_lane = 1800;
 
 
+		for (int p = 0; p < MAX_PRICING_TYPE_SIZE; p++)
+		{
+		
+			RealTimePricingRate[p] = 0;
+		}
+
 	};
 
 	void ResizeData(int TimeSize)  // TimeSize's unit: per min
@@ -1028,10 +1111,40 @@ public:
 		return m_LaneCapacity;
 	}
 
+	float GetInflowNumberOfLanes(int DayNo = 0, int Time = 0, bool OutputFlowFlag = false, bool bConsiderIncident = true)  // with lane closure
+	{
+
+		int NumLanes = m_InflowNumLanes;
+
+		for (unsigned int il = 0; il< CapacityReductionVector.size(); il++)
+		{
+			if ((CapacityReductionVector[il].StartDayNo <= DayNo && DayNo <= CapacityReductionVector[il].EndDayNo) && (Time >= CapacityReductionVector[il].StartTime && Time <= CapacityReductionVector[il].EndTime))
+			{
+				return (1 - CapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+			}
+		}
+
+
+		if (bConsiderIncident == true)
+		{
+
+			for (unsigned int il = 0; il< IncidentCapacityReductionVector.size(); il++)
+			{
+				if ((IncidentCapacityReductionVector[il].StartDayNo <= DayNo && DayNo <= IncidentCapacityReductionVector[il].EndDayNo) && (Time >= IncidentCapacityReductionVector[il].StartTime && Time <= IncidentCapacityReductionVector[il].EndTime))
+				{
+					return (1 - IncidentCapacityReductionVector[il].LaneClosureRatio)*NumLanes;
+				}
+			}
+
+		}
+
+		return (float)NumLanes;
+
+	}
 	float GetNumberOfLanes(int DayNo=0, int Time=0, bool OutputFlowFlag = false, bool bConsiderIncident = true)  // with lane closure
 	{
 
-		int NumLanes = m_NumLanes;
+		int NumLanes = m_OutflowNumLanes;
 
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
@@ -1062,7 +1175,7 @@ public:
 	float GetNumberOfLanes_ImpactedByWorkZoneConditions(int DayNo=0, int Time=-1, bool OutputFlowFlag = false)  // with lane closure
 	{
 
-		int NumLanes = m_NumLanes;
+		int NumLanes = m_OutflowNumLanes;
 
 		for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
 		{
@@ -1183,13 +1296,17 @@ public:
 
 	float	m_Length;  // in miles
 	float   m_VehicleSpaceCapacity; // in vehicles
-	int	m_NumLanes;
+	int	m_OutflowNumLanes;
+	int m_InflowNumLanes;
 	float	m_SpeedLimit;
 	float m_KJam;
 	float m_AADTConversionFactor;
 	float m_BackwardWaveSpeed; // unit: mile/ hour
 	float	m_LaneCapacity;  //Capacity used in BPR for each link, reduced due to link type and other factors.
 	float m_LoadingBufferWaitingTime;
+
+	float RealTimePricingRate[MAX_PRICING_TYPE_SIZE];  // 4 is 3_+1 , as pricing 
+
 
 	char m_Direction;
 
@@ -1407,7 +1524,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 				int TotalSimulatedNumberOfVehicles = m_LinkMOEAry[start_timestamp].CumulativeArrivalCount  - m_LinkMOEAry[end_timestamp].CumulativeDepartureCount; 
 
-				return TotalSimulatedNumberOfVehicles/max(1,this->m_NumLanes)/(end_timestamp -start_timestamp)  ; 
+				return TotalSimulatedNumberOfVehicles/max(1,this->m_OutflowNumLanes)/(end_timestamp -start_timestamp)  ; 
 
 			}
 		return 0;
@@ -1430,7 +1547,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 		return 0;
 
 	}
-	int GetSimulatedFlowCount(float timestamp)
+	int GetSimulatedFlowCountWithObsCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
@@ -1666,6 +1783,11 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 			CFlowArrivalRevenue_PricingType[pt] = 0;
 		}
 
+		for (int i = 0; i < MAX_VEHICLE_TYPE_SIZE; i++)
+		{
+			CFlowArrivalCount_VehicleType[i] = 0;
+		}
+
 		for(int t=0; t<MAX_TIME_INTERVAL_ADCURVE; t++)
 		{
 			A[t] = 0;
@@ -1768,6 +1890,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 
 	int CFlowArrivalCount_PricingType[MAX_PRICING_TYPE_SIZE];
+	int CFlowArrivalCount_VehicleType[MAX_VEHICLE_TYPE_SIZE];
 	float CFlowArrivalRevenue_PricingType[MAX_PRICING_TYPE_SIZE];
 
 	int CFlowArrivalCount;
@@ -1819,46 +1942,29 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 	float total_departure_based_travel_time;
 	float m_prevailing_travel_time;
 
-	float GetSpeed(int time)
+	float GetSpeed(int time, int aggregation_time_interval=1)
 	{
-		return m_Length/max(0.1,GetTravelTimeByMin(-1,time,1,g_TrafficFlowModelFlag))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
+		return m_Length / max(0.1, GetTravelTimeByMin(-1, time, aggregation_time_interval, g_TrafficFlowModelFlag))*60.0f;  // 60.0f converts min to hour, unit of speed: mph
 	}
 
-	int GetArrivalFlow(int time)
+	int GetArrivalFlow(int time, int aggregation_time_interval=1)
 	{
-		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
-			return m_LinkMOEAry[time+1].CumulativeArrivalCount - m_LinkMOEAry[time].CumulativeArrivalCount;
+		if (time + aggregation_time_interval< m_SimulationHorizon - 1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
+			return max(0,m_LinkMOEAry[time + aggregation_time_interval].CumulativeArrivalCount - m_LinkMOEAry[time].CumulativeArrivalCount);
 		else
 			return 0;
 
 	};
 
-	int GetDepartureFlow(int time)
+	int GetDepartureFlow(int time, int aggregation_time_interval=1)
 	{
-		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
-			return m_LinkMOEAry[time+1].CumulativeDepartureCount - m_LinkMOEAry[time].CumulativeDepartureCount;
+		if (time + aggregation_time_interval < m_SimulationHorizon - 1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
+			return max(0,m_LinkMOEAry[time + aggregation_time_interval].CumulativeDepartureCount - m_LinkMOEAry[time].CumulativeDepartureCount);
 		else
 			return 0;
 
 	};
 
-	int GetDepartureFlow(int time, int aggregation_time_in_min)
-	{
-		int prev_departure_count = 0 ;
-		int prev_time =  time - aggregation_time_in_min;
-		if(prev_time >=0)
-			prev_departure_count = m_LinkMOEAry[prev_time].CumulativeDepartureCount;
-		else
-			prev_time = 0;
-
-			
-
-		if(time < m_SimulationHorizon-1)  // if time = m_SimulationHorizon-1, time+1 = m_SimulationHorizon  --> no data available
-			return m_LinkMOEAry[time].CumulativeDepartureCount - m_LinkMOEAry[prev_time].CumulativeDepartureCount;
-		else
-			return 0;
-
-	};
 
 	float GetRadioMessageResponsePercentage(int DayNo,int CurrentTime)
 	{
@@ -2546,17 +2652,24 @@ class DemandType
 {
 public:
 	int demand_type;
-	float vehicle_type_percentage[MAX_VEHICLE_TYPE_SIZE];
-	float cumulative_type_percentage[MAX_VEHICLE_TYPE_SIZE];
+	double demand_type_percentage;
+	double vehicle_trip_multiplier_factor;
+
+	double cumulative_demand_type_percentage;
+	double vehicle_type_percentage[MAX_VEHICLE_TYPE_SIZE];
+	double cumulative_type_percentage[MAX_VEHICLE_TYPE_SIZE];
 
 	int pricing_type; // 1: SOV, 2: HOV, 3, truck;
-	float info_class_percentage[MAX_INFO_CLASS_SIZE];
-	float cumulative_info_class_percentage[MAX_INFO_CLASS_SIZE];
+	double info_class_percentage[MAX_INFO_CLASS_SIZE];
+	double cumulative_info_class_percentage[MAX_INFO_CLASS_SIZE];
 
 	string demand_type_name;
 
 	DemandType()
 	{
+		vehicle_trip_multiplier_factor = 1;
+		cumulative_demand_type_percentage = 0;
+		demand_type_percentage = 0;
 		for(int vehicle_type =0; vehicle_type < MAX_VEHICLE_TYPE_SIZE; vehicle_type++)
 		{
 			vehicle_type_percentage[vehicle_type] = 0;
@@ -2718,6 +2831,77 @@ void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
 		delete[] dArray[x];
 	}
 
+	delete[] dArray;
+
+}
+
+
+
+template <typename T>
+T ****Allocate4DDynamicArray(int nM, int nX, int nY, int nZ)
+{
+	T ****dynamicArray;
+
+	dynamicArray = new (std::nothrow) T***[nX];
+
+	if (dynamicArray == NULL)
+	{
+		cout << "Error: insufficient memory.";
+		g_ProgramStop();
+	}
+	for (int m = 0; m < nM; m++)
+	{
+		dynamicArray[m] = new (std::nothrow) T**[nX];
+
+		if (dynamicArray[m] == NULL)
+		{
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
+		}
+
+		for (int x = 0; x < nX; x++)
+		{
+			dynamicArray[m][x] = new (std::nothrow) T*[nY];
+
+			if (dynamicArray[m][x] == NULL)
+			{
+				cout << "Error: insufficient memory.";
+				g_ProgramStop();
+			}
+
+			for (int y = 0; y < nY; y++)
+			{
+				dynamicArray[m][x][y] = new (std::nothrow) T[nZ];
+				if (dynamicArray[m][x][y] == NULL)
+				{
+					cout << "Error: insufficient memory.";
+					g_ProgramStop();
+				}
+			}
+		}
+	}
+	return dynamicArray;
+
+}
+
+template <typename T>
+void Deallocate4DDynamicArray(T**** dArray, int nM, int nX, int nY)
+{
+	if (!dArray)
+		return;
+	for (int m = 0; m < nM; m++)
+	{
+		for (int x = 0; x < nX; x++)
+		{
+			for (int y = 0; y < nY; y++)
+			{
+				delete[] dArray[m][x][y];
+			}
+
+			delete[] dArray[m][x];
+		}
+		delete[] dArray[m];
+	}
 	delete[] dArray;
 
 }
@@ -2932,6 +3116,8 @@ public:
 	float** LabelCostVectorPerType;
 
 	float* LabelCostAry;
+	float* LabelDollarCostAry;
+
 	float* LabelDistanceAry;
 
 	int* LinkNoAry;  //record link no according to NodePredAry
@@ -3030,6 +3216,7 @@ public:
 		LabelTimeAry = new float[m_NodeSize];                     // label - time
 		LabelCostAry = new float[m_NodeSize];                     // label - cost
 		LabelDistanceAry = new float[m_NodeSize];                     // label - distance
+		LabelDollarCostAry = new float[m_NodeSize];                  //lable dolloar cost
 
 		LinkStatusAry = new int[m_LinkSize];                    // Node status array used in KSP;
 		LinkPredAry = new int[m_LinkSize];
@@ -3109,6 +3296,7 @@ public:
 		if(LabelTimeAry) delete LabelTimeAry;
 		if(LabelCostAry) delete LabelCostAry;
 		if(LabelDistanceAry) delete LabelDistanceAry;
+		if (LabelDollarCostAry) delete LabelDollarCostAry;
 
 		if(LinkStatusAry) delete LinkStatusAry;                 // Node status array used in KSP;
 		if(LinkPredAry) delete LinkPredAry;
@@ -3138,7 +3326,7 @@ public:
 	void UpdateCurrentTravelTime(int DayNo, double CurrentTime = 0);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag, bool bDistanceCostOutput);   // Pointer to previous node (node)
 	bool TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 
 	//movement based shortest path
@@ -3281,6 +3469,7 @@ public:
 
 int g_read_integer(FILE* f, bool special_char_handling = true);
 int g_read_integer_with_char_O(FILE* f);
+bool g_detect_if_a_file_is_column_format(LPCTSTR lpszFileName);
 int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector);
 
 
@@ -3722,16 +3911,28 @@ public:
 	}
 
 };
+
+typedef struct{
+	int veh_id;
+	double current_time_stamp;
+
+}struc_real_time_path_computation_element;
+
 extern DTASettings g_settings;
 void Assignment_MP(int id, int nthreads, int node_size, int link_size, int iteration);
 
 void g_OutputMOEData(int iteration);
 
-void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+void OutputLinkMOEDataHybridFromat(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
+
+void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpty);
 
 void OutputRealTimeLinkMOEData(std::string fname,int start_time_in_min,int current_time_in_min, int output_MOE_aggregation_time_interval_in_min, bool bTravelTimeOnly = true);
 
 void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int update_MOE_aggregation_time_interval_in_min);
+
+bool g_ReadRealTimeLinkAttributeData(int current_time_in_second);
+bool g_ReadRealTimeTripData(int current_time_in_minute, bool b_InitialLoadingFlag);
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file);
 void OutputVehicleTrajectoryData(char fname_agent[_MAX_PATH],char fname_trip[_MAX_PATH], int Iteration,bool bStartWithEmpty, bool bIncremental);
@@ -3740,7 +3941,7 @@ void OutputODMOEData(ofstream &output_ODMOE_file,int cut_off_volume = 1, int arr
 void OutputTimeDependentODMOEData(ofstream &output_ODMOE_file,int department_time_intreval = 60, int end_time_in_min = 1440, int cut_off_volume = 1 );
 void OutputEmissionData();
 void OutputTimeDependentPathMOEData(ofstream &output_PathMOE_file,int DemandLoadingStartTimeInMin, int DemandLoadingEndTimeInMin, int cut_off_volume = 50);
-void OutputTimeDependentRoutingPolicyData(ofstream &output_PathMOE_file,int DemandLoadingStartTimeInMin, int DemandLoadingEndTimeInMin, int cut_off_volume = 50);
+void g_OutputTimeDependentRoutingPolicyData(ofstream &output_PathMOE_file,int DemandLoadingStartTimeInMin, int DemandLoadingEndTimeInMin, int cut_off_volume = 50);
 void OutputAssignmentMOEData(char fname[_MAX_PATH], int Iteration,bool bStartWithEmpty);
 
 
@@ -3762,9 +3963,9 @@ int g_GetRandomInteger_From_FloatingPointValue_BasedOnLinkIDAndTimeStamp(float V
 void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
-bool g_ReadAgentBinFile(string file_name);
-bool g_ReadTripCSVFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag);
-bool g_ReadTRANSIMSTripFile(string file_name, bool b_InitialLoadingFlag, bool bOutputLogFlag);
+bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info = false);
+bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount);
+bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag);
 
 void g_ReadDemandFile();
 void g_ReadDemandFileBasedOnUserSettings();
@@ -3772,7 +3973,7 @@ void g_ReadDemandFileBasedOnUserSettings();
 void g_ZoneBasedDynamicTrafficAssignment();
 void g_AgentBasedAssisnment();
 void g_ShortestPathDataMemoryAllocation() ;
-void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
+void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID, double current_time);
 void g_UpdateRealTimeInformation(double CurrentTime);
 void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time);
 void g_MultiDayTrafficAssisnment();
@@ -3790,6 +3991,9 @@ void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
 
 extern CString g_GetAppRunningTime(bool with_title = true);
+extern CString g_GetAppRunningTimePerIteration(bool with_title = true);
+
+
 
 
 extern float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS];
@@ -3824,6 +4028,8 @@ extern void g_FreeMemoryForVehicleVector();
 
 void g_AgentBasedShortestPathGeneration();
 void g_AgentBasedAccessibilityMatrixGeneration(string file_name,  bool bTimeDependentFlag, int PricingType, double CurrentTime);
+void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTimeDependentFlag, double CurrentTime);
+void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_name, double CurrentTime);
 
 extern bool g_ReadLinkMeasurementFile();
 //extern void g_ReadObservedLinkMOEData(DTANetworkForSP* pPhysicalNetwork);
@@ -3896,7 +4102,6 @@ void ReadLinkCapacityScenarioFile(string FileName,int scenario_no=0);
 void ReadMovementCapacityScenarioFile(string FileName,int scenario_no=0);
 
 extern void g_CreateLinkTollVector();
-extern void g_ReadDemandFile_Parser();
 extern void g_ReadInputLinkTravelTime_Parser();
 extern void g_OutputDay2DayVehiclePathData(char fname[_MAX_PATH],int StartIteration,int EndIteration);
 
@@ -3907,6 +4112,7 @@ extern	int g_OutputSimulationMOESummary(float& AvgTravelTime, float& AvgDistance
 
 extern std::vector<PathArrayForEachODTK> g_ODTKPathVector;
 extern double g_UnitOfMileOrKM;
+extern double g_gain_factor_link_travel_time_from_external_input;
 extern void g_ConvertDemandToVehicles() ;
 extern int g_FindAssignmentInterval(int departure_time_begin);
 extern std::string CString2StdString(CString str);
@@ -3916,3 +4122,5 @@ extern void g_ResetVehicleAttributeUsingDemandType();
 
 extern int g_number_of_CPU_threads();
 extern void g_AllocateDynamicArrayForVehicles();
+extern C_RealTimeSimulationSettings g_RealTimeSimulationSettings;
+extern bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence, CString FileName);
