@@ -30,6 +30,7 @@ int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, 
 
 int read_2_integers_from_a_string(CString str, int &value1, int &value2);
 int read_multiple_integers_from_a_string(CString str, std::vector<int> &vector);
+bool g_detect_if_a_file_is_column_format(LPCTSTR lpszFileName);
 int read_2_float_points_from_a_string(CString str, double &value1, double &value2);
 int g_read_integer_with_char_O(FILE* f);
 
@@ -41,4 +42,7 @@ double g_FindClosestMOEYResolution(double Value);
 int  g_FindClosestTimeResolution(double Value);
 
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename);
+int g_WritePrivateProfileInt(LPCTSTR section, LPCTSTR key, int value, LPCTSTR filename);
+
+
 std::string string_format(const std::string fmt, ...);

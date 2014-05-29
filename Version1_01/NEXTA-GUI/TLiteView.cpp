@@ -1009,9 +1009,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 		//	TRACE("connector layer: %d\n", pMainFrame->m_bShowLayerMap[layer_connector]);
 
+
 		for (iLink = pDoc->m_LinkSet.begin(); iLink != pDoc->m_LinkSet.end(); iLink++)
 		{
-
 
 			if( pMainFrame->m_bShowLayerMap[layer_transit] == true && m_bShowTransitLinksOnly )
 			{
@@ -1223,29 +1223,44 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					return;
 			}
 
-			CPoint ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
+			CPoint ScenarioPoint;
 
-			if( pMainFrame->m_bShowLayerMap[layer_workzone] == true && 
-				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,true)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetImpactedFlag(-1,true)>=0.01)))
+			if (pMainFrame->m_bShowLayerMap[layer_workzone] == true &&
+				((*iLink)->GetImpactedFlag(g_Simulation_Time_Stamp, true) >= 0.01 || (g_Simulation_Time_Stamp <= 0.1 && (*iLink)->GetImpactedFlag(-1, true) >= 0.01)))
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_WORKZONE);
+			}
 
-			if( pMainFrame->m_bShowLayerMap[layer_ramp] == true && 
-				((*iLink) ->GetRampImpactedFlag(g_Simulation_Time_Stamp)>=0.01 || (g_Simulation_Time_Stamp <=0.1 && (*iLink) ->GetRampImpactedFlag(-1)>=0.01)))
+			if (pMainFrame->m_bShowLayerMap[layer_ramp] == true &&
+				((*iLink)->GetRampImpactedFlag(g_Simulation_Time_Stamp) >= 0.01 || (g_Simulation_Time_Stamp <= 0.1 && (*iLink)->GetRampImpactedFlag(-1) >= 0.01)))
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_RAMP);
+			}
 
-			if( pMainFrame->m_bShowLayerMap[layer_incident] == true && 
-				((*iLink) ->GetImpactedFlag(g_Simulation_Time_Stamp,false)>=0.01 || (g_Simulation_Time_Stamp <=0.1 &&(*iLink) ->GetImpactedFlag(-1,false)>=0.01)))
+			if (pMainFrame->m_bShowLayerMap[layer_incident] == true &&
+				((*iLink)->GetImpactedFlag(g_Simulation_Time_Stamp, false) >= 0.01 || (g_Simulation_Time_Stamp <= 0.1 && (*iLink)->GetImpactedFlag(-1, false) >= 0.01)))
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_INCIDENT);
+			}
 
-			if(  pMainFrame->m_bShowLayerMap[layer_VMS] == true && ((*iLink) ->GetMessageSign(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->MessageSignVector.size()>0)))
+			if (pMainFrame->m_bShowLayerMap[layer_VMS] == true && ((*iLink)->GetMessageSign(g_Simulation_Time_Stamp) >= 0.1 || (g_Simulation_Time_Stamp == 0 && (*iLink)->MessageSignVector.size() > 0)))
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
-
-			if( pMainFrame->m_bShowLayerMap[layer_toll] == true &&  ((*iLink) ->GetTollValue(g_Simulation_Time_Stamp)>=0.1 || (g_Simulation_Time_Stamp ==0 && (*iLink) ->TollVector.size()>0)))
+			}
+			if (pMainFrame->m_bShowLayerMap[layer_toll] == true && ((*iLink)->GetTollValue(g_Simulation_Time_Stamp) >= 0.1 || (g_Simulation_Time_Stamp == 0 && (*iLink)->TollVector.size() > 0)))
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
-
-			if( (*iLink)->m_AdditionalCost>=1 && pMainFrame->m_bShowLayerMap[layer_path] == true )
+			}
+			if ((*iLink)->m_AdditionalCost >= 1 && pMainFrame->m_bShowLayerMap[layer_path] == true)
+			{
+				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_LINK_CLOSURE);
-
+			}
 
 			if(pMainFrame->m_bShowLayerMap[layer_ramp] == true)
 			{
@@ -2354,6 +2369,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					continue;
 				}
 
+
+
 				if(itr->first == pDoc->m_SelectedZoneID )
 				{
 					pDC->SelectObject(&g_PenSelectColor0);
@@ -2368,6 +2385,37 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				if(itr->second.m_ShapePoints .size() > 0)
 				{
+
+					int min_x, max_x, min_y, max_y;
+
+					for (int i = 0; i < itr->second.m_ShapePoints.size(); i++)
+					{
+						CPoint point = NPtoSP(itr->second.m_ShapePoints[i]);
+
+						if (i == 0)
+						{
+							min_x = max_x = point.x;
+							min_y = max_y = point.y;
+
+						}
+
+						min_x = min(point.x, min_x);
+						max_x = max(point.x, max_x);
+
+						min_y = min(point.y, min_y);
+						max_y = max(point.y, max_y);
+
+
+					}
+
+					int size = 100;
+					CRect zone_rect;
+					zone_rect.SetRect(min_x - size, min_y - size, max_x + size, max_y + size);
+
+
+					if (RectIsInsideScreen(zone_rect, ScreenRect) == false)  // zone not inside the screen boundary: do not draw
+						continue;
+
 
 					for(int i = 0; i< itr->second.m_ShapePoints .size(); i++)
 					{
@@ -2384,6 +2432,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 					}
 
+
+
 					CPoint point_0 =  NPtoSP(itr->second.m_ShapePoints[0]);  // back to the starting point
 
 					pDC->LineTo(point_0);
@@ -2391,10 +2441,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					center_x  = center_x/max(1,itr->second.m_ShapePoints .size());
 					center_y  = center_y/max(1,itr->second.m_ShapePoints .size()) - tm.tmHeight;
 
-					CString zone_id_str;
-					zone_id_str.Format("%d", itr->second.m_ZoneID) ;
+					if (zone_rect.Height() >= 10 || zone_rect.Width()>=10)
+					{
+						CString zone_id_str;
+						zone_id_str.Format("%d", itr->second.m_ZoneID);
 
-					pDC->TextOut(center_x , center_y , zone_id_str);
+						pDC->TextOut(center_x, center_y, zone_id_str);
+					}
 				}
 
 			}
@@ -3777,7 +3830,7 @@ void CTLiteView::OnLButtonDown(UINT nFlags, CPoint point)
 
 	CTLiteDoc* pDoc = GetDocument();
 
-	if(m_ToolMode == move_tool)
+	if (m_ToolMode == move_tool || (m_ToolMode == move_node_tool && pDoc->m_SelectedNodeID <= -1))
 	{
 		m_last_cpoint = point;
 		m_last_left_down_point  = point;
@@ -3901,7 +3954,7 @@ void CTLiteView::OnLButtonUp(UINT nFlags, CPoint point)
 	CTLiteDoc* pDoc = GetDocument();
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 
-	if(m_ToolMode == move_tool)
+	if (m_ToolMode == move_tool || (m_ToolMode == move_node_tool && pDoc->m_SelectedNodeID <= -1))
 	{
 		CSize OffSet = point - m_last_cpoint;
 		m_Origin.x -= OffSet.cx/m_Resolution;
@@ -4284,7 +4337,7 @@ void CTLiteView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	CTLiteDoc* pDoc = GetDocument();
 
-	if((m_ToolMode == move_tool || m_ToolMode == select_link_tool || m_ToolMode == select_feature_tool) && m_bMoveDisplay)
+	if ((m_ToolMode == move_tool || (m_ToolMode == move_node_tool && pDoc->m_SelectedNodeID <= -1) || m_ToolMode == select_link_tool || m_ToolMode == select_feature_tool) && m_bMoveDisplay)
 	{
 		CSize OffSet = point - m_last_cpoint;
 		//		if(!(OffSet.cx !=0 && OffSet.cy !=0))
@@ -5166,6 +5219,20 @@ void CTLiteView::OnLinkEditlink()
 
 		if(dlg.DoModal() == IDOK)
 		{
+			if (pLink->m_LinkID != dlg.m_LinkID)  // different link id
+			{
+				if (pDoc->m_LinkIDtoLinkMap.find(dlg.m_LinkID) != pDoc->m_LinkIDtoLinkMap.end())
+				{
+					CString msg;
+					msg.Format("Warning: Link ID %d is updated to %d but the new ID already exists. Please check carefully.",
+						pLink->m_LinkID, dlg.m_LinkID);
+				}
+
+				pDoc->m_LinkIDtoLinkMap[dlg.m_LinkID] = pDoc->m_LinkIDtoLinkMap[pLink->m_LinkID]; // update pointer to the link
+				pDoc->m_LinkIDtoLinkMap[pLink->m_LinkID] = NULL;
+				pLink->m_LinkID = dlg.m_LinkID;
+			}
+
 			m_bUpdateLinkAttributeBasedOnType = dlg.m_bUpdateLinkAttributeBasedOnType;
 
 			if(pDoc->m_bUseMileVsKMFlag)
@@ -5391,6 +5458,9 @@ void CTLiteView::OnEditCreatesubarea()
 	pMainFrame->m_bShowLayerMap[layer_subarea] = true;
 	pMainFrame-> m_iSelectedLayer = layer_subarea;
 	GetDocument()->m_SubareaShapePoints.clear();
+
+	CListCtrl * pGISLayerList = (CListCtrl *)(pMainFrame->m_GISLayerBar).GetDlgItem(IDC_LIST_GISLAYER);
+	pGISLayerList->Invalidate(1);  // update display of selected layer
 
 }
 
@@ -5909,9 +5979,16 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 	CTLiteDoc* pDoc = GetDocument();
 
 
-	if(pLink->m_FromNodeNumber == 54170 && pLink->m_ToNodeNumber == 54171)
+	FromPoint = NPtoSP(pLink->m_ShapePoints[0]);
+	ToPoint = NPtoSP(pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1]);
+
+	if (FromPoint.x == ToPoint.x && FromPoint.y == ToPoint.y)  // same node
+		return;
+
+	if (abs(FromPoint.x - ToPoint.x < 10) && abs(FromPoint.y - ToPoint.y) < 10)  // almost same locations 
 	{
-		TRACE("");
+		DrawLinkAsStraightLine(pLink, pDC);
+		return;
 	}
 
 	for(int si = 0; si < pLink->m_ShapePoints.size()-1; si++)
@@ -6046,6 +6123,96 @@ void CTLiteView::DrawLinkAsLine(DTALink* pLink, CDC* pDC)
 
 }
 
+void CTLiteView::DrawLinkAsStraightLine(DTALink* pLink, CDC* pDC)
+{
+	// 
+
+	if (pLink->m_ShapePoints.size() == 0)
+		return;
+
+	// normal line
+	CTLiteDoc* pDoc = GetDocument();
+
+		FromPoint = NPtoSP(pLink->m_ShapePoints[0]);
+		ToPoint = NPtoSP(pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1]);
+
+
+		if (pDoc->m_LinkMOEMode == MOE_queue_length)  // green color as background
+		{
+
+			if (pLink->m_LinkNo == pDoc->m_SelectedLinkNo)
+				pDC->SelectObject(&g_PenBlue);
+			else
+				pDC->SelectObject(&g_PenGreen);
+		}
+
+		pDC->MoveTo(FromPoint);
+		pDC->LineTo(ToPoint);
+
+		if (m_bShowLinkArrow)
+		{
+			double slopy = atan2((double)(FromPoint.y - ToPoint.y), (double)(FromPoint.x - ToPoint.x));
+			double cosy = cos(slopy);
+			double siny = sin(slopy);
+			double display_length = sqrt((double)(FromPoint.y - ToPoint.y)*(FromPoint.y - ToPoint.y) + (double)(FromPoint.x - ToPoint.x)*(FromPoint.x - ToPoint.x));
+			double arrow_size = min(7, display_length / 5.0);
+
+			if (arrow_size>0.2)
+			{
+
+				m_arrow_pts[0] = ToPoint;
+				m_arrow_pts[1].x = ToPoint.x + (int)(arrow_size * cosy - (arrow_size / 2.0 * siny) + 0.5);
+				m_arrow_pts[1].y = ToPoint.y + (int)(arrow_size * siny + (arrow_size / 2.0 * cosy) + 0.5);
+				m_arrow_pts[2].x = ToPoint.x + (int)(arrow_size * cosy + arrow_size / 2.0 * siny + 0.5);
+				m_arrow_pts[2].y = ToPoint.y - (int)(arrow_size / 2.0 * cosy - arrow_size * siny + 0.5);
+
+				pDC->Polygon(m_arrow_pts, 3);
+			}
+
+		}
+
+	
+
+	if (pDoc->m_LinkMOEMode == MOE_queue_length)   // queue length mode
+	{
+		CPen * pOldPen = pDC->SelectObject(&g_PenQueueColor);
+		float value;
+		float queue_ratio = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode, (int)g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, value);
+
+		if (queue_ratio> 1)
+			queue_ratio = 1;
+
+		if (queue_ratio<0)
+			queue_ratio = 0;
+
+
+			bool bDrawQueueCell = false;
+
+
+			if (queue_ratio < 0.005f)
+				return;
+
+
+			GDPoint pt;
+
+			pt.x = pLink->m_ShapePoints[0].x + (1 - queue_ratio) * (pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1].x - pLink->m_ShapePoints[0].x);
+			pt.y = pLink->m_ShapePoints[0].y + (1 - queue_ratio) * (pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1].y - pLink->m_ShapePoints[0].y);
+
+				FromPoint = NPtoSP(pt);  // new to point as the end of queue line
+				bDrawQueueCell = true;
+
+			if (bDrawQueueCell)
+			{
+				pDC->MoveTo(FromPoint);
+				pDC->LineTo(ToPoint);
+			}
+
+
+		pDC->SelectObject(pOldPen);
+	}
+
+
+}
 
 bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag =false)
 {
@@ -6065,6 +6232,19 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 	}
 	int si; // we should not use unsigned integer here as si-- 
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
+
+
+	FromPoint = NPtoSP(pLink->m_ShapePoints[0]);
+	ToPoint = NPtoSP(pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1]);
+
+	if (FromPoint.x == ToPoint.x && FromPoint.y == ToPoint.y)  // same node
+		return true;
+
+	if (abs(FromPoint.x - ToPoint.x < 10) && abs(FromPoint.y - ToPoint.y) < 10)  // almost same locations 
+	{
+		DrawLinkAsStraightBand(pLink, pDC, bObservationFlag);
+		return true;
+	}
 
 	if(bObservationFlag == false)
 	{  // simulated data
@@ -6216,6 +6396,141 @@ bool CTLiteView::DrawLinkAsBand(DTALink* pLink, CDC* pDC, bool bObservationFlag 
 
 	return true;
 }
+
+
+bool CTLiteView::DrawLinkAsStraightBand(DTALink* pLink, CDC* pDC, bool bObservationFlag = false)
+{
+	// draw queue length
+	CTLiteDoc* pDoc = GetDocument();
+
+
+	if (pLink->m_BandLeftShapePoints.size() == 0)
+		return false;
+
+	int band_point_index = 0;
+
+	if (pLink->m_ShapePoints.size() > 900)
+	{
+		AfxMessageBox("Too many shape points...");
+		return false;
+	}
+	int si; // we should not use unsigned integer here as si-- 
+	CMainFrame* pMainFrame = (CMainFrame*)AfxGetMainWnd();
+
+
+	FromPoint = NPtoSP(pLink->m_ShapePoints[0]);
+	ToPoint = NPtoSP(pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1]);
+
+	if (FromPoint.x == ToPoint.x && FromPoint.y == ToPoint.y)  // same node
+		return true;
+
+	if (bObservationFlag == false)
+	{  // simulated data
+
+		if (pLink->m_BandLeftShapePoints.size() > 0)
+		{
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[0]);
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[pLink->m_BandRightShapePoints.size() - 1]);
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[pLink->m_BandRightShapePoints.size() - 1]);
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandRightShapePoints[0]);
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_BandLeftShapePoints[0]);
+		}
+
+	}
+	else if (pMainFrame->m_bShowLayerMap[layer_detector])
+	{  //observed data
+		if (pLink->m_ReferenceBandLeftShapePoints.size() > 0)  // m_ReferenceBandLeftShapePoints has been initialized
+		{
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[pLink->m_ReferenceBandLeftShapePoints.size()-1]);
+
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[pLink->m_ReferenceBandLeftShapePoints.size() - 1]);
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandRightShapePoints[0]);
+
+				m_BandPoint[band_point_index++] = NPtoSP(pLink->m_ReferenceBandLeftShapePoints[0]);
+		}
+
+	}
+
+	if (pDoc->m_LinkMOEMode == MOE_queue_length)  // green color as background
+	{
+
+		if (pLink->m_LinkNo == pDoc->m_SelectedLinkNo)
+		{
+			pDC->SelectObject(&g_PenBlue);
+			pDC->SelectObject(&g_BrushBlue);
+
+
+		}
+		else
+		{
+			pDC->SelectObject(&g_PenGreen);
+			pDC->SelectObject(&g_BrushGreen);
+		}
+
+	}
+
+	pDC->Polygon(m_BandPoint, band_point_index);
+
+	// ****************************************/
+
+	if (pDoc->m_LinkMOEMode == MOE_queue_length)   // queue length mode
+	{
+		CPen * pOldPen = pDC->SelectObject(&g_PenQueueColor);
+		float value;
+
+		if (pLink->m_FromNodeNumber == 11 && pLink->m_ToNodeNumber == 12)
+		{
+			TRACE("");
+
+		}
+		float queue_ratio = pDoc->GetLinkMOE(pLink, pDoc->m_LinkMOEMode, (int)g_Simulation_Time_Stamp, g_MOEAggregationIntervalInMin, value) / 100.0;
+
+
+
+		if (queue_ratio> 1)
+			queue_ratio = 1;
+
+		if (queue_ratio<0)
+			queue_ratio = 0;
+
+
+
+			bool bDrawQueueCell = false;
+
+			if (FromPoint.x == ToPoint.x && FromPoint.y == ToPoint.y)  // same node
+				return true;
+
+
+			GDPoint pt;
+
+				if (queue_ratio < 0.01f)
+					return true;
+
+				pt.x = pLink->m_ShapePoints[0].x + (1 - queue_ratio) * (pLink->m_ShapePoints[pLink->m_ShapePoints.size()-1].x - pLink->m_ShapePoints[0].x);
+				pt.y = pLink->m_ShapePoints[0].y + (1 - queue_ratio) * (pLink->m_ShapePoints[pLink->m_ShapePoints.size() - 1].y - pLink->m_ShapePoints[0].y);
+
+				FromPoint = NPtoSP(pt);  // new to point as the end of queue line
+				bDrawQueueCell = true;
+
+			if (bDrawQueueCell)
+			{
+				pDC->MoveTo(FromPoint);
+				pDC->LineTo(ToPoint);
+			}
+
+				pDC->SelectObject(pOldPen);
+	}
+
+
+	return true;
+}
+
 
 bool CTLiteView::DrawLinkAsLaneGroup(DTALink* pLink, CDC* pDC)
 {
@@ -6851,6 +7166,18 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 	//}
 	CTLiteDoc* pDoc = GetDocument();
 
+	if (node_size < 2)  // node display size is too small to  show node labels 
+	{
+	
+		pDC->MoveTo(point.x, point.y);
+		pDC->LineTo(point.x, point.y);
+
+		return;
+	}
+else
+{
+
+
 	if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal || 
 		pNode->m_ControlType == pDoc->m_ControlType_ActuatedSignal)  // traffic signal control
 	{
@@ -6869,6 +7196,11 @@ void CTLiteView::DrawNode(CDC *pDC, DTANode* pNode, CPoint point, int node_size,
 		pDC->Ellipse(point.x - node_size, point.y + node_size,
 			point.x + node_size, point.y - node_size);
 	}
+}
+
+	// 
+	if (node_size < 4)  // node display size is too small to  show node labels 
+		return; 
 
 	if(m_ShowNodeTextMode != node_display_none)
 	{
@@ -7540,6 +7872,63 @@ void CTLiteView::OnNodeNodeproperties()
 
 			}
 
+			// if node id is changed by the users
+			
+			if (dlg.NodeID != pNode->m_NodeNumber)
+			{
+				if (pDoc->m_NodeNumberMap.find(dlg.NodeID) != pDoc->m_NodeNumberMap.end())
+				{
+					CString msg;
+					msg.Format("Node ID: %d that you just input has been used. Please select a new node ID.", dlg.NodeID);
+					AfxMessageBox(msg);
+				}
+				else
+				{
+					pDoc->Modify();
+					pDoc->PushBackNetworkState();
+
+
+					int old_node_id = pNode->m_NodeNumber;
+					int new_node_id = dlg.NodeID;
+					
+					pNode->m_NodeNumber = dlg.NodeID;
+					
+					//search related links,
+
+					DTANode* pNode = pDoc->m_NodeNumberMap[old_node_id];
+
+					for (int i = 0; i < pNode->m_OutgoingLinkVector.size(); i++)
+					{
+						DTALink* pLink = pDoc->m_LinkNoMap[pNode->m_OutgoingLinkVector[i]];
+						pLink->m_FromNodeNumber = new_node_id;
+					}
+					for (int i = 0; i < pNode->m_IncomingLinkVector.size(); i++)
+					{
+						DTALink* pLink = pDoc->m_LinkNoMap[pNode->m_IncomingLinkVector[i]];
+						pLink->m_ToNodeNumber = new_node_id;
+
+					}
+
+					// search activity locations for associated zone id
+				
+					if (pNode->m_ZoneID >= 1)  // with associated zone
+					{
+					
+					pDoc->m_ZoneMap[pNode->m_ZoneID].RemoveNodeActivityMode(old_node_id);
+
+					DTAActivityLocation element;
+					element.ZoneID = pNode->m_ZoneID;
+					element.NodeNumber = new_node_id;
+
+					pDoc->m_ZoneMap[pNode->m_ZoneID].m_ActivityLocationVector.push_back(element);
+				
+					}
+				
+				}
+
+			}
+			
+
 
 			// dlg.ZoneID // handing here
 		}
@@ -7965,6 +8354,9 @@ void CTLiteView::OnEditMovenode()
 	CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pMainFrame->m_iSelectedLayer = layer_node;
 
+	CListCtrl * pGISLayerList = (CListCtrl *)(pMainFrame->m_GISLayerBar).GetDlgItem(IDC_LIST_GISLAYER);
+	pGISLayerList->Invalidate(1);  // update display of selected layer
+
 	m_bMouseDownFlag = false;
 }
 
@@ -8070,6 +8462,9 @@ void CTLiteView::OnEditCreatezone()
 	pMainFrame->m_bShowLayerMap[layer_zone] = true;
 	pMainFrame-> m_iSelectedLayer = layer_zone;
 	GetDocument()->m_SubareaShapePoints.clear();
+
+	CListCtrl * pGISLayerList = (CListCtrl *)(pMainFrame->m_GISLayerBar).GetDlgItem(IDC_LIST_GISLAYER);
+	pGISLayerList->Invalidate(1);  // update display of selected layer
 }
 
 void CTLiteView::OnUpdateEditCreatezone(CCmdUI *pCmdUI)

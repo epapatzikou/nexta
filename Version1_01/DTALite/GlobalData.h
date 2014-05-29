@@ -298,7 +298,7 @@ extern int g_UseFreevalRampMergeModelFlag;
 extern int g_OutputLinkCapacityFlag;
 extern int g_OutputLinkCapacityStarting_Time;
 extern int g_OutputLinkCapacityEnding_Time;
-extern int g_VehicleLoadingMode;
+extern e_demand_loading_mode g_VehicleLoadingMode;
 extern int g_MergeNodeModelFlag;
 extern int g_FIFOConditionAcrossDifferentMovementFlag;
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
@@ -318,7 +318,16 @@ extern int g_TollingMethodFlag;
 extern float g_VMTTollingRate;
 
 // for traffic assignment 
-extern e_assignment_method g_UEAssignmentMethod; // 0: MSA, 1: day-to-day learning with fixed switch rate 2: GAP-based switching rule for UE, 3: Gap-based switching rule + MSA step size for UE, 4: departure time choice
+extern e_assignment_method g_UEAssignmentMethod; 
+// 0: MSA, 
+//1: day-to-day learning with fixed switch rate 
+//2: GAP-based switching rule for UE, 
+//3: OD demand estimation, 
+//4: departure time choice
+//5: accessibility: travel time
+//6: accessibility: distance
+//7: binary mode for fast scenario evalaution 
+
 
 extern float g_DepartureTimeChoiceEarlyDelayPenalty, g_DepartureTimeChoiceLateDelayPenalty;
 extern float g_CurrentGapValue; // total network gap value in the current iteration
@@ -345,6 +354,7 @@ extern void OutputMovementMOEData(ofstream &output_MovementMOE_file);
 extern bool g_floating_point_value_less_than_or_eq_comparison(double value1, double value2);
 extern bool g_floating_point_value_less_than(double value1, double value2);
 extern string GetMovementStringID(int FromNodeName, int ToNodeName, int DestNodeName);
+extern void g_DetermineDemandLoadingPeriod();
 extern void g_ReadDemandFileBasedOnMetaDatabase();
 extern void g_ReadAMSMovementData();
 extern void g_ReadTimeDependentDemandProfile();

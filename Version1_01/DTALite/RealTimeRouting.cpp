@@ -320,7 +320,20 @@ void g_ShortestPathDataMemoryAllocation()
 
 	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
-	int number_of_threads = g_number_of_CPU_threads();
+
+
+	// under zone based mode, we add connectors for each destination 
+	int number_of_connectors = 0;
+	std::map<int, DTAZone>::iterator iterZone;
+	for (iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+		DTAZone zone = iterZone->second;
+		number_of_connectors += zone.m_DestinationActivityVector.size();
+	}
+
+	link_size += number_of_connectors;
+
+	int number_of_threads = omp_get_max_threads();
 
 	for(int ProcessID=0;  ProcessID < number_of_threads; ProcessID++)
 	{
@@ -328,6 +341,8 @@ void g_ShortestPathDataMemoryAllocation()
 	//special notes: creating network with dynamic memory is a time-consumping task, so we create the network once for each processors
 	g_PrevailingTimeNetwork_MP[ProcessID].BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag, true, g_DemandLoadingStartTimeInMin);
 	}
+
+	g_PlanningHorizon = g_DemandLoadingEndTimeInMin;
 
 	for (int ProcessID = 0; ProcessID < number_of_threads; ProcessID++)
 	{
@@ -347,7 +362,7 @@ void g_UpdateRealTimeInformation(double CurrentTime)
 		g_PrevailingTimeNetwork_MP[ProcessID].UpdateCurrentTravelTime(0, CurrentTime);
 	}
 }
-void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_time)
+void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , double current_time)
 // for VMS resonsive information
 {
 	if(g_ODEstimationFlag==1)
@@ -371,13 +386,20 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 		g_ProgramStop();
 		}
 
-		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
+
+		int StartingNodeID = pVeh->m_OriginNodeID;
 
 		float TotalCost = 0;
 		bool bDistanceFlag = false;
 		bool bDebugFlag = false;
+		int count = 0;
 
-		int StartingNodeID = pVeh->m_OriginNodeID;
+		if (pVeh->m_NodeSize >= 1) // with path
+		{
+
+		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
+
+
 
 			int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
@@ -394,7 +416,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 			}
 
 
-		int count = pVeh->m_SimLinkSequenceNo;
+		count = pVeh->m_SimLinkSequenceNo;
 
 			//if(is.Type == 2) // detour VMS
 			//{
@@ -407,7 +429,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 			//CurrentNodeID = g_LinkVector[is.DetourLinkArray [is.DetourLinkSize -1]]->m_ToNodeID;
 
 			//}
-
+		}
 		if(pVeh->m_OriginNodeID < 0 || pVeh->m_DestinationNodeID <0)
 		{
 
@@ -417,9 +439,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double current_t
 		}
 		 
 
-		int	processor_id = omp_get_thread_num( );  // starting from 0
-
-		NodeSize = g_PrevailingTimeNetwork_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_PrevailingTimeNetwork_MP[ProcessID].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bDistanceFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -957,8 +977,8 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 		   // wait for input_agent_updating_file;
 		while(1)
 		{
-
-			bool b_trip_file_ready = g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str (),false, false);
+			int number_of_vehicles = 0;
+			bool b_trip_file_ready = g_ReadTripCSVFile(g_RealTimeSimulationSettingsMap[timestamp_in_min].update_trip_file.c_str(), false, number_of_vehicles);
 
 			int iteration  = 0;
 
@@ -1069,3 +1089,340 @@ void g_UpdateRealTimeLinkMOEData(std::string fname,int current_time_in_min, int 
 	}
 
 }
+
+bool g_ReadRealTimeLinkAttributeData(int current_time_in_second)
+{
+	
+	char fname[_MAX_PATH];
+
+	sprintf(fname,".//real_time_data_exchange//input_link_attribute_sec_%d.csv", current_time_in_second);
+
+	CCSVParser parser_RTLinkAttribute;
+	if (parser_RTLinkAttribute.OpenCSVFile(fname, false))
+	{
+
+		int record_count = 0;
+
+		cout << "File " << fname <<" is opened." << endl;
+		g_LogFile << "File " << fname << " is opened." << endl;
+
+		while (parser_RTLinkAttribute.ReadRecord())
+		{
+			std::string link_key;
+
+			parser_RTLinkAttribute.GetValueByFieldName("link_key", link_key);
+
+			if (g_LinkKeyMap.find(link_key) != g_LinkKeyMap.end())
+			{
+				DTALink* pLink = g_LinkKeyMap[link_key];
+					if (pLink != NULL)
+					{
+
+						//link_inflow_capacity, link_outflow_capacity, link_storage_capacity, speed_limit, pricing_demand_type%d
+
+						float link_inflow_capacity, link_outflow_capacity, link_storage_capacity, speed_limit;
+						if (parser_RTLinkAttribute.GetValueByFieldName("link_inflow_capacity", link_inflow_capacity) == true)
+						{
+							// update numnber of lanes, so the link in flow capacity is updated. 
+							pLink->m_OutflowNumLanes = link_inflow_capacity /1800; 
+						}
+
+						if (parser_RTLinkAttribute.GetValueByFieldName("link_outflow_capacity", link_outflow_capacity) == true)
+						{
+							// update numnber of lanes, so the link in flow capacity is updated. 
+							pLink->m_OutflowNumLanes = link_outflow_capacity / max(1, pLink->GetHourlyPerLaneCapacity(current_time_in_second));
+						}
+
+						if (parser_RTLinkAttribute.GetValueByFieldName("link_storage_capacity", link_storage_capacity) == true)
+						{
+							// update numnber of lanes, so the link in flow capacity is updated. 
+							pLink->m_VehicleSpaceCapacity = max(1,link_storage_capacity);
+						}
+
+						if (parser_RTLinkAttribute.GetValueByFieldName("speed_limit", speed_limit) == true)
+						{
+							// update numnber of lanes, so the link in flow capacity is updated. 
+							pLink->m_SpeedLimit  = max(1, speed_limit);
+						}					
+						
+						for (int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
+						{
+							char field_name[_MAX_PATH];
+							sprintf(field_name, "pricing_demand_type%d", i);
+
+							float pricing_rate = 0;
+							if (parser_RTLinkAttribute.GetValueByFieldName(field_name, pricing_rate) == true)
+							{
+								// update numnber of lanes, so the link in flow capacity is updated. 
+								pLink->RealTimePricingRate[i] = max(1, pricing_rate);
+							}
+						}
+
+					}
+			}
+		}
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+	return true;
+
+}
+
+
+
+bool g_ReadRealTimeTripData(int current_time_in_minute, bool b_InitialLoadingFlag)
+{
+	float start_time_value = -100;
+
+	if (b_InitialLoadingFlag)
+	{ //allocate memory
+
+		g_AllocateDynamicArrayForVehicles();
+	}
+
+	char file_name[_MAX_PATH];
+
+	sprintf(file_name, ".//real_time_data_exchange//input_trip_min_%d.csv", current_time_in_minute);
+
+	bool bOutputLogFlag = true;
+	CCSVParser parser_agent;
+
+
+	float total_number_of_vehicles_to_be_generated = 0;
+
+	if (parser_agent.OpenCSVFile(file_name, false))
+	{
+
+		if (bOutputLogFlag)
+		{
+			cout << "reading file " << file_name << endl;
+		}
+		int line_no = 1;
+
+		int i = 0;
+
+		int count = 0;
+
+		int count_for_sameOD = 0;
+		int count_for_not_defined_zones = 0;
+
+		while (parser_agent.ReadRecord())
+		{
+
+			if ((count + 1) % 1000 == 0 && bOutputLogFlag)
+			{
+				cout << "reading " << count + 1 << " records..." << endl;
+
+			}
+			count++;
+
+			int trip_id = 0;
+
+			parser_agent.GetValueByFieldNameRequired("trip_id", trip_id);
+			DTAVehicle* pVehicle = 0;
+
+			pVehicle = new (std::nothrow) DTAVehicle;
+			if (pVehicle == NULL)
+			{
+				cout << "Insufficient memory...";
+				getchar();
+				exit(0);
+
+			}
+
+			pVehicle->m_VehicleID = g_VehicleVector.size();
+
+			pVehicle->m_ExternalTripID = trip_id;
+
+
+			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
+
+			parser_agent.GetValueByFieldNameRequired("from_zone_id", pVehicle->m_OriginZoneID);
+			parser_agent.GetValueByFieldNameRequired("to_zone_id", pVehicle->m_DestinationZoneID);
+
+			if (g_ZoneMap.find(pVehicle->m_OriginZoneID) == g_ZoneMap.end() || g_ZoneMap.find(pVehicle->m_DestinationZoneID) == g_ZoneMap.end())
+			{
+				count_for_not_defined_zones++;
+
+				continue;
+			}
+
+
+
+			int origin_node_id = -1;
+			int origin_node_number = -1;
+
+			parser_agent.GetValueByFieldName("origin_node_id", origin_node_number);
+
+			if (g_NodeNametoIDMap.find(origin_node_number) != g_NodeNametoIDMap.end())  // convert node number to internal node id
+			{
+				origin_node_id = g_NodeNametoIDMap[origin_node_number];
+			}
+
+			int destination_node_id = -1;
+			int destination_node_number = -1;
+			parser_agent.GetValueByFieldName("destination_node_id", destination_node_number);
+
+			if (g_NodeNametoIDMap.find(destination_node_number) != g_NodeNametoIDMap.end()) // convert node number to internal node id
+			{
+				destination_node_id = g_NodeNametoIDMap[destination_node_number];
+			}
+
+			if (origin_node_id == -1)  // no default origin node value, re-generate origin node
+				origin_node_id = g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+
+			if (destination_node_id == -1)// no default destination node value, re-destination origin node
+				destination_node_id = g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);
+
+			pVehicle->m_OriginNodeID = origin_node_id;
+			pVehicle->m_DestinationNodeID = destination_node_id;
+
+
+			if (origin_node_id == destination_node_id)
+			{  // do not simulate intra zone traffic
+
+				count_for_sameOD++;
+				continue;
+			}
+
+			if (g_ZoneMap.find(pVehicle->m_OriginZoneID) != g_ZoneMap.end())
+			{
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_Demand += 1;
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_OriginVehicleSize += 1;
+
+			}
+
+			float departure_time = 0;
+			parser_agent.GetValueByFieldNameRequired("start_time_in_min", departure_time);
+
+
+			if (start_time_value < 0)  // set first value
+				start_time_value = departure_time;
+			else if (start_time_value > departure_time + 0.00001)  // check if the departure times are sequential
+			{
+				departure_time = start_time_value; // use a larger value 
+				start_time_value = departure_time;
+			}
+
+			pVehicle->m_DepartureTime = departure_time;
+			int beginning_departure_time = departure_time;
+
+
+			if (pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
+			{
+
+				cout << "Error: trip_id " << trip_id << " in file " << file_name << " has a start time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " <<
+					g_DemandLoadingStartTimeInMin << "->" << g_DemandLoadingEndTimeInMin << " (min)." << endl << "Please change the setting in section agent_input, demand_loading_end_time_in_min in file DTASettings.txt";
+				g_ProgramStop();
+			}
+
+			if (parser_agent.GetValueByFieldName("demand_type", pVehicle->m_DemandType) == true)
+			{
+				parser_agent.GetValueByFieldName("pricing_type", pVehicle->m_PricingType);
+				parser_agent.GetValueByFieldName("vehicle_type", pVehicle->m_VehicleType);
+				parser_agent.GetValueByFieldName("information_type", pVehicle->m_InformationClass);
+				parser_agent.GetValueByFieldName("value_of_time", pVehicle->m_VOT);
+				parser_agent.GetValueByFieldName("vehicle_age", pVehicle->m_Age);
+			}
+			else
+			{
+
+
+			}
+
+
+
+
+
+			int number_of_nodes = 0;
+			parser_agent.GetValueByFieldName("number_of_nodes", number_of_nodes);
+
+			std::vector<int> path_node_sequence;
+			if (number_of_nodes >= 2)
+			{
+				string path_node_sequence_str;
+				parser_agent.GetValueByFieldName("path_node_sequence", path_node_sequence_str);
+
+				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
+
+				AddPathToVehicle(pVehicle, path_node_sequence, file_name);
+			}
+			else
+			{
+				if (g_use_routing_policy_from_external_input && pVehicle->m_InformationClass != info_hist_learning)
+				{
+					g_UseExternalPath(pVehicle);
+				}
+			}
+			//} else if (pVehicle->m_InformationClass == info_hist_learning)
+			//{
+			//	//fetch new path later
+			//
+			//}
+
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+			pVehicle->m_ArrivalTime = 0;
+			pVehicle->m_bComplete = false;
+			pVehicle->m_bLoaded = false;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+			pVehicle->m_Distance = 0;
+
+			pVehicle->m_NodeSize = 0;
+
+			pVehicle->m_NodeNumberSum = 0;
+			pVehicle->m_Distance = 0;
+
+			int number_of_agents = 1;
+
+			float ending_departure_time = 0;
+
+			g_VehicleVector.push_back(pVehicle);
+			g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
+
+			int AssignmentInterval = g_FindAssignmentInterval(pVehicle->m_DepartureTime);
+
+			ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
+
+			i++;
+		}
+
+
+		line_no++;
+
+
+
+		if (bOutputLogFlag)
+		{
+
+			cout << count << " records have been read from file " << file_name << endl;
+
+			cout << i << " agents have been read from file " << file_name << endl;
+
+			if (count_for_sameOD >= 1)
+				cout << "there are " << count_for_sameOD << " agents with the same from_zone_id and to_zone_id, which will not be simulated. " << endl;
+
+
+			if (count_for_not_defined_zones >= 1)
+				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
+
+		}
+	}
+	else
+	{
+		cout << "Waiting for file " << file_name << "... " << endl;
+
+		return false;
+	}
+
+	return true;
+}
+
+

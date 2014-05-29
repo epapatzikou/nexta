@@ -48,6 +48,7 @@ END_MESSAGE_MAP()
 void CDlg_NodeProperties::OnBnClickedOk()
 {
 	UpdateData();
+
 	ControlType = m_ControlTypeVector[m_ControlTypeComboBox.GetCurSel ()];
 
 	if(ControlType== m_pDoc->m_ControlType_PretimedSignal || ControlType== m_pDoc-> m_ControlType_ActuatedSignal)

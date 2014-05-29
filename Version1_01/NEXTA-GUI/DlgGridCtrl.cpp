@@ -193,7 +193,7 @@ void CDlgODDemandGridCtrl::DisplayDemandTypeTable()
 			char text[500];
 				int file_sequence_no = 1;
 				string file_name = "input_demand.csv";
-				string format_type = "matrix";
+				string format_type = "column";
 				int number_of_lines_to_be_skipped = 0;
 				int subtotal_in_last_column = 0;
 				float loading_multiplier =1;
@@ -985,7 +985,14 @@ void CDlgODDemandGridCtrl::LoadDemandMatrixFromDemandFile(int DemandFileSequence
 
 			}else if (format_type.compare("matrix")== 0)
 			{
-
+				if (g_detect_if_a_file_is_column_format(m_pDoc->m_ProjectDirectory + file_name.c_str()) == true)
+				{
+					CString str;
+					str.Format("Demand input file %s looks to be based on column format but the format_type=matrix in input_demand_meta_data.csv.\nPlease check the demand file format, and change format_type=column in input_demand_meta_data.cv.", file_name.c_str());
+					AfxMessageBox(str);
+					return;
+				
+				}
 				bool bFileReady = false;
 				int i;
 

@@ -213,6 +213,7 @@
 #define IDD_DIALOG_LEFT_TURN_LANES      254
 #define IDD_DIALOG_GIS_IMPORTING_GUIDE  255
 #define IDD_DIALOG_GIS_IMPORTING_GUIDE_1 256
+#define IDD_DIALOG_NEXTA_CONFIG         257
 #define IDC_EDIT_FROM_NODE              1000
 #define IDC_EDIT_To_NODE                1001
 #define IDC_RADIO1                      1001
@@ -674,6 +675,7 @@
 #define IDC_BUTTONOPEN_FOLDER2          1326
 #define IDC_EDIT_Assignment             1326
 #define IDC_EDIT_Traffic_Flow_Model     1327
+#define IDC_COMBO_Side_Driving          1327
 #define IDC_EDIT_Signal_Control         1328
 #define ID_NODE_ORIGIN                  32771
 #define ID_NODE_DESTINATION             32772
@@ -1521,14 +1523,17 @@
 #define ID_CONTOUR_HXCONTOURPLOT        33758
 #define ID_CONTOUR_HCCONTOURPLOT        33759
 #define ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_LaneDensity 33760
+#define ID_TOOLS_CONFIGURATION          33761
+#define ID_CONFIGURATION_LEFTSIDEDRIVING 33762
+#define ID_CONFIGURATION_RIGHTSIDEDRIVING 33763
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        257
-#define _APS_NEXT_COMMAND_VALUE         33761
-#define _APS_NEXT_CONTROL_VALUE         1327
+#define _APS_NEXT_RESOURCE_VALUE        258
+#define _APS_NEXT_COMMAND_VALUE         33764
+#define _APS_NEXT_CONTROL_VALUE         1328
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif
