@@ -294,6 +294,12 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	//step 2: pricing type
 	PricingType = g_DemandTypeMap[demand_type].pricing_type; // pricing_type start from 1
 
+	if (PricingType < 0)
+	{
+		cout << "Error: PricingType < 0 in function g_GetVehicleAttributes()." << endl;
+		g_ProgramStop();
+
+	}
 
 	for(i= 1; i<= g_VehicleTypeVector.size(); i++)
 	{
@@ -304,12 +310,12 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 
 	//step 3: information type
 	// default to historical info as class 1
-	InformationClass = 0;
+	InformationClass = 1;
 	RandomPercentage= g_GetRandomRatio() * 100; 
 	for(i= 1; i< MAX_INFO_CLASS_SIZE; i++)
 	{
 		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i])
-			InformationClass = i+1; // return pretrip as 2 or enoute as 3
+			InformationClass = i; // return pretrip as 2 or enoute as 3
 	}
 
 	if(PricingType == 4) 
@@ -381,8 +387,8 @@ bool g_detect_if_a_file_is_column_format(LPCTSTR lpszFileName)
 	fopen_s(&st, lpszFileName, "r");
 	if (st != NULL)
 	{
-		char  str_line[2000]; // input string
-		int str_line_size = 1000;
+		char  str_line[_MAX_STRING_LINE]; // input string
+		int str_line_size = _MAX_STRING_LINE;
 		g_read_a_line(st, str_line, str_line_size);
 
 		fclose(st);
@@ -868,13 +874,13 @@ bool g_read_a_line(FILE* f)
 bool g_read_a_line(FILE* f, char* aline, int & size)
 /* read a line from the current line from the file */
 {
-
+	int max_size = size;
 	char ch;
 	size = 0;
 
-	while( 1 ) {
+	while (size < max_size) {
 		ch = getc( f );
-		if( ch != 13 && ch != 10 && ch != EOF )
+		if (ch != 13 && ch != 10 && ch != EOF)
 			aline[ size++ ] = ch;
 		else { /* terminate if it's end of line or end of file */
 			aline[ size ] = 0;
@@ -884,6 +890,7 @@ bool g_read_a_line(FILE* f, char* aline, int & size)
 			return true;
 		}
 	}
+	return false;
 }
 
 

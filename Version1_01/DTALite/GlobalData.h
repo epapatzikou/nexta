@@ -364,6 +364,8 @@ extern struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint
 extern std::string GetTimeClockString(int time);
 extern void g_ReadRealTimeSimulationSettingsFile();
 extern void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,  int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern void g_OptimizePathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
 
 extern void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min);
 
@@ -379,6 +381,18 @@ extern int g_output_routing_policy_file;
 extern void g_UseExternalPath(DTAVehicle* pVehicle);
 extern void g_ApplyExternalPathInput(int departure_time_begin);
 extern void g_WriteUserDefinedMOE(CCSVWriter  &csv_output, int day_no);
+
+extern void ReadInputEmissionRateFile();
+extern void ReadInputCycleAverageEmissionFactors();
+extern void ReadFractionOfOperatingModeForBaseCycle();
+extern void SetupOperatingModeVector();
+extern void g_CalculateEmissionMOE();
+extern void ConstructPathArrayForEachODT(PathArrayForEachODT *, int, int); // construct path array for each ODT
+extern void InnerLoopAssignment(int, int, int, int); // for inner loop assignment
+extern void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumOfVehiclesGenerated, NetworkLoadingOutput* SimuOutput);
+extern void g_OutputSimulationStatistics(int Iteration);
+extern void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern int g_SystemOptimalStartingTimeinMin;
 
 
 

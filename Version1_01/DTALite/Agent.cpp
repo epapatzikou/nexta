@@ -241,16 +241,16 @@ void g_ReadDSPVehicleFile(string file_name)
 bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence, CString FileName)
 {
 
-	if (pVehicle->m_NodeSize >= 1 && pVehicle->m_NodeAry != NULL)
+	if (pVehicle->m_NodeSize >= 1 && pVehicle->m_LinkAry != NULL)
 	{
-		delete pVehicle->m_NodeAry;
+		delete pVehicle->m_LinkAry;
 	}
 
 	pVehicle->m_NodeSize = path_node_sequence.size();
 
 	if (pVehicle->m_NodeSize >= 1)  // in case reading error
 	{
-		pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+		pVehicle->m_LinkAry = new SVehicleLink[pVehicle->m_NodeSize];
 		pVehicle->m_NodeNumberSum = 0;
 		for (int i = 0; i < pVehicle->m_NodeSize; i++)
 		{
@@ -280,7 +280,7 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 
 				pVehicle->m_Distance += pLink->m_Length;
 
-				pVehicle->m_NodeAry[i - 1].LinkNo = pLink->m_LinkNo; // start from 0
+				pVehicle->m_LinkAry[i - 1].LinkNo = pLink->m_LinkNo; // start from 0
 			}
 
 
@@ -1098,6 +1098,8 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 
 			float ratio_pretrip = 0;
 			float ratio_enroute = 0;
+			float ratio_personalized_info = 0;
+			float ratio_eco_so_info = 0;
 
 			if (parser_demand_type.GetValueByFieldName("pricing_type", pricing_type) == false)
 				break;
@@ -1121,7 +1123,14 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			}
 			parser_demand_type.GetValueByFieldName("percentage_of_pretrip_info", ratio_pretrip);
 			parser_demand_type.GetValueByFieldName("percentage_of_enroute_info", ratio_enroute);
+			parser_demand_type.GetValueByFieldName("percentage_of_personalized_info", ratio_personalized_info);
+			parser_demand_type.GetValueByFieldName("percentage_of_eco_so_info", ratio_eco_so_info);
 
+			if (ratio_eco_so_info >= 1)
+			{
+				g_EmissionDataOutputFlag = 2;  //enable emission output at each iteration
+			
+			}
 
 			element.demand_type = demand_type;
 
@@ -1132,7 +1141,13 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			element.info_class_percentage[1] = 0;  //learning 
 			element.info_class_percentage[2] = ratio_pretrip;
 			element.info_class_percentage[3] = ratio_enroute;
-			element.info_class_percentage[0] = 100 - ratio_enroute - ratio_pretrip;
+			element.info_class_percentage[4] = ratio_personalized_info;
+			element.info_class_percentage[5] = ratio_eco_so_info;
+
+			
+
+			 
+			element.info_class_percentage[0] = 100 - ratio_enroute - ratio_pretrip - ratio_personalized_info - ratio_eco_so_info;
 
 			for (int ic = 0; ic < MAX_INFO_CLASS_SIZE; ic++)
 			{
@@ -1479,7 +1494,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 
 			if (pVehicle->m_NodeSize >= 1)  // in case reading error
 			{
-				pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+				pVehicle->m_LinkAry = new SVehicleLink[pVehicle->m_NodeSize];
 
 				pVehicle->m_NodeNumberSum = 0;
 				for (int i = 0; i < pVehicle->m_NodeSize; i++)
@@ -1522,7 +1537,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 
 						pVehicle->m_Distance += pLink->m_Length;
 
-						pVehicle->m_NodeAry[i - 1].LinkNo = pLink->m_LinkNo; // start from 0
+						pVehicle->m_LinkAry[i - 1].LinkNo = pLink->m_LinkNo; // start from 0
 					}
 
 

@@ -428,7 +428,7 @@ void g_MultiScenarioTrafficAssignment()
 				g_SummaryStatFile.WriteTextString("Newell's Cumulative Flow Count Model  + Emissions Output");
 
 				traffic_flow_model = tfm_newells_model;  // newell's model
-				g_EmissionDataOutputFlag  = 1;  // with emission data
+				g_EmissionDataOutputFlag  = 2;  // with emission data
 
 				break;
 
@@ -527,6 +527,8 @@ void g_MultiScenarioTrafficAssignment()
 
 			case assignment_vehicle_binary_file_based_scenario_evaluation:
 				g_SummaryStatFile.WriteParameterValue("Assignment method", "Load binary agent file with demand type definition from scenarios files: Scenario_Demand_Type.csv, Scenario_Vehicle_Type.csv, Scenario_VOT.csv.");
+				
+				g_VehicleLoadingMode = vehicle_binary_file_mode;
 				break;
 
 
@@ -539,10 +541,15 @@ void g_MultiScenarioTrafficAssignment()
 				break;
 
 			case assignment_system_optimal:
-				g_SummaryStatFile.WriteParameterValue("Assignment method", "System Optimal Based on agent file. Required files: Scenario_Demand_Type.csv with fields: percentage_of_travel_time_system_optimal,percentage_of_emission_system_optimal");
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "System Optimal for all agents: Based on agent binary file.");
+	
+				g_VehicleLoadingMode = vehicle_binary_file_mode;
 				break;
 
-			default: 
+			case assignment_LR_agent_based_system_optimization:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "Lagrangian-relaxation based system optimization.");
+				break;
+			default:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
 
 				cout << "Assignment method in input_scenario_settings.csv =  " << g_UEAssignmentMethod << " which is unsupported. Please check." << endl;
@@ -705,10 +712,25 @@ void g_MultiScenarioTrafficAssignment()
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
 
-			if(g_AgentBasedAssignmentFlag==1 )
-				g_AgentBasedAssisnment();  // agent-based assignment
-			else
-				g_ZoneBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
+
+
+		if (g_UEAssignmentMethod == assignment_LR_agent_based_system_optimization)  // 12
+		{
+				g_AgentBasedOptimization();
+			
+		}
+		else
+		{
+	if (g_AgentBasedAssignmentFlag == 1)
+		g_AgentBasedAssisnment();  // agent-based assignment
+	else
+		g_ZoneBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
+
+		}
+
+
+
+
 
 			g_OutputSimulationStatistics(g_NumberOfIterations);
 
