@@ -423,7 +423,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 			// obtain path link sequence from vehicle link sequence
 			for(int i = 0; i< NodeSize-1; i++)
 			{
-				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back (pVeh->m_NodeAry[i].LinkNo); 
+				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back (pVeh->m_LinkAry[i].LinkNo); 
 
 			}
 			PathArray[VehicleDestZoneNo].PathSize[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSize;
@@ -455,7 +455,7 @@ void ConstructPathArrayForEachODT_ODEstimation(int iteration,std::vector<PathArr
 				PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.clear ();
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back(pVeh->m_NodeAry[i].LinkNo); 
+					PathArray[VehicleDestZoneNo].PathLinkSequences[PathArray[VehicleDestZoneNo].NumOfPaths].LinkNoVector.push_back(pVeh->m_LinkAry[i].LinkNo); 
 				}
 				PathArray[VehicleDestZoneNo].PathSize[PathArray[VehicleDestZoneNo].NumOfPaths] = NodeSize;
 			}
@@ -995,9 +995,9 @@ void g_GenerateVehicleData_ODEstimation()
 
 			int NodeSize = element.m_LinkSize+1;
 			pVehicle->m_NodeSize = NodeSize;
-			pVehicle->m_NodeAry = new SVehicleLink[pVehicle->m_NodeSize];
+			pVehicle->m_LinkAry = new SVehicleLink[pVehicle->m_NodeSize];
 
-			if(pVehicle->m_NodeAry==NULL)
+			if(pVehicle->m_LinkAry==NULL)
 			{
 				cout << "Insufficient memory for allocating vehicle arrays!";
 				g_ProgramStop();
@@ -1008,19 +1008,19 @@ void g_GenerateVehicleData_ODEstimation()
 
 			for(int j = 0; j< pVehicle->m_NodeSize-1; j++)
 			{
-				pVehicle->m_NodeAry[j].LinkNo = element.m_LinkNoArray[j];
+				pVehicle->m_LinkAry[j].LinkNo = element.m_LinkNoArray[j];
 
 				if(j==0)
 				{
-					pVehicle->m_OriginNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_FromNodeID ;
+					pVehicle->m_OriginNodeID  = g_LinkVector[pVehicle->m_LinkAry [j].LinkNo] ->m_FromNodeID ;
 				}
 
 				if(j==pVehicle->m_NodeSize-2)
 				{
-					pVehicle->m_DestinationNodeID  = g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_ToNodeID ;
+					pVehicle->m_DestinationNodeID  = g_LinkVector[pVehicle->m_LinkAry [j].LinkNo] ->m_ToNodeID ;
 				}
 
-				pVehicle->m_Distance+= g_LinkVector[pVehicle->m_NodeAry [j].LinkNo] ->m_Length ;
+				pVehicle->m_Distance+= g_LinkVector[pVehicle->m_LinkAry [j].LinkNo] ->m_Length ;
 			}
 			g_VehicleVector.push_back(pVehicle);
 			g_VehicleMap[i]  = pVehicle;  // i is the vehicle id

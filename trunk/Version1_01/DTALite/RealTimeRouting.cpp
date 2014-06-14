@@ -87,7 +87,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 				// change destination zone number
 
 				// check if the current link is still in evacuation zone
-				int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
+				int CurrentLinkID = pVeh->m_LinkAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 				
 				if( g_LinkVector[CurrentLinkID]->IsInsideEvacuationZoneFlag(DayNo, current_time))
 				{
@@ -101,7 +101,6 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 				DTAEvacuationRespone response;
 				response.LinkNo = CurrentLinkID;
 				response.ResponseTime = current_time;
-				//pVeh->m_EvacuationResponseVector.push_back (response);
 				}
 			}
 		
@@ -150,14 +149,14 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		TRACE("");
 		}
 		float TotalCost = 0;
-		bool bDistanceFlag = false;
+		bool bGeneralizedCostFlag = false;
 		bool bDebugFlag = false;
 
 		int StartingNodeID = pVeh->m_OriginNodeID;
 
 		if(pVeh->m_InformationClass == info_en_route  && pVeh->m_bLoaded == true )  // en route info, has not reached destination yet
 		{
-			int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
+			int CurrentLinkID = pVeh->m_LinkAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
 
 			if(pVeh->m_SimLinkSequenceNo == pVeh->m_NodeSize - 2)
@@ -169,8 +168,8 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 			// copy existing link number
 			for(int i = 0; i<= pVeh->m_SimLinkSequenceNo; i++)
 			{
-				CurrentPathLinkList[i] = 	pVeh->m_NodeAry[i].LinkNo;
-				AbsArrivalTimeOnDSNVector[i]= pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN ;
+				CurrentPathLinkList[i] = 	pVeh->m_LinkAry[i].LinkNo;
+				AbsArrivalTimeOnDSNVector[i]= pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN ;
 			}
 		}
 
@@ -180,7 +179,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		// step 2: call function BuildPhysicalNetwork again to use m_prevailing_travel_time to overwrite link travel time data
 		// step 3: use link travel time data in agent-based routing 
 
-		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bGeneralizedCostFlag, bDebugFlag);
 
 
 	if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true )  // en route info
@@ -207,9 +206,9 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		if(NodeSize<=1)
 			continue;
 
-			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			if( pVeh->m_LinkAry !=NULL)  // delete the old path
 			{
-				delete pVeh->m_NodeAry;
+				delete pVeh->m_LinkAry;
 			}
 
 			pVeh->m_NodeSize = NodeSize;
@@ -224,9 +223,9 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 					g_ProgramStop();
 				}
 
-				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
+				pVeh->m_LinkAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_NodeAry==NULL)
+				if(pVeh->m_LinkAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -237,20 +236,20 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
+					pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
 
-					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
+					pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
 					NodeNumberSum += PathLinkList[i];
 
-					if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]!=NULL)
+					if(g_LinkVector[pVeh->m_LinkAry [i].LinkNo]!=NULL)
 					{
-						DTALink* pLink = g_LinkVector[pVeh->m_NodeAry [i].LinkNo];
+						DTALink* pLink = g_LinkVector[pVeh->m_LinkAry [i].LinkNo];
 						TRACE("Prevailing Travel Time %f \n", pLink->m_prevailing_travel_time );
 
 					}
 					
-					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
-					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
+					ASSERT(pVeh->m_LinkAry [i].LinkNo < g_LinkVector.size());
+					Distance+= g_LinkVector[pVeh->m_LinkAry [i].LinkNo] ->m_Length ;
 
 				}
 				
@@ -342,8 +341,6 @@ void g_ShortestPathDataMemoryAllocation()
 	g_PrevailingTimeNetwork_MP[ProcessID].BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag, true, g_DemandLoadingStartTimeInMin);
 	}
 
-	g_PlanningHorizon = g_DemandLoadingEndTimeInMin;
-
 	for (int ProcessID = 0; ProcessID < number_of_threads; ProcessID++)
 	{
 		g_TimeDependentNetwork_MP[ProcessID].Setup(node_size, link_size, g_PlanningHorizon, g_AdjLinkSize, g_DemandLoadingStartTimeInMin, g_ODEstimationFlag);
@@ -390,7 +387,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 		int StartingNodeID = pVeh->m_OriginNodeID;
 
 		float TotalCost = 0;
-		bool bDistanceFlag = false;
+		bool bGeneralizedCostFlag = false;
 		bool bDebugFlag = false;
 		int count = 0;
 
@@ -401,7 +398,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 
 
 
-			int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
+			int CurrentLinkID = pVeh->m_LinkAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
 
 			if(StartingNodeID == pVeh->m_DestinationNodeID )  // you will reach the destination (on the last link).
@@ -411,8 +408,8 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 
 			for(int i = 0; i< pVeh->m_NodeSize -1; i++)
 			{
-				CurrentPathLinkList[i] = 	pVeh->m_NodeAry[i].LinkNo;
-				AbsArrivalTimeOnDSNVector[i]= pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN ;
+				CurrentPathLinkList[i] = 	pVeh->m_LinkAry[i].LinkNo;
+				AbsArrivalTimeOnDSNVector[i]= pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN ;
 			}
 
 
@@ -439,7 +436,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 		}
 		 
 
-		NodeSize = g_PrevailingTimeNetwork_MP[ProcessID].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bDistanceFlag, bDebugFlag);
+		NodeSize = g_PrevailingTimeNetwork_MP[ProcessID].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -494,9 +491,9 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 		if(bSwitchFlag==0)
 			return;
 
-			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			if( pVeh->m_LinkAry !=NULL)  // delete the old path
 			{
-				delete pVeh->m_NodeAry;
+				delete pVeh->m_LinkAry;
 			}
 
 
@@ -514,9 +511,9 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 					g_ProgramStop();
 				}
 
-				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
+				pVeh->m_LinkAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_NodeAry==NULL)
+				if(pVeh->m_LinkAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -527,20 +524,20 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
+					pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
 
-					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
+					pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
 					NodeNumberSum += PathLinkList[i];
 
-					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
+					/*if(g_LinkVector[pVeh->m_LinkAry [i].LinkNo]==NULL)
 					{
-					cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
+					cout << "Error: g_LinkVector[pVeh->m_LinkAry [i].LinkNo]==NULL", pVeh->m_LinkAry [i].LinkNo;
 					getchar();
 					exit(0);
 					}
 					*/
-					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
-					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
+					ASSERT(pVeh->m_LinkAry [i].LinkNo < g_LinkVector.size());
+					Distance+= g_LinkVector[pVeh->m_LinkAry [i].LinkNo] ->m_Length ;
 
 				}
 				
@@ -577,12 +574,12 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 		// if this is a pre-trip vehicle, and he has not obtained real-time information yet
 
 		float TotalCost = 0;
-		bool bDistanceFlag = false;
+		bool bGeneralizedCostFlag = false;
 		bool bDebugFlag = false;
 
 		int StartingNodeID = pVeh->m_OriginNodeID;
 
-			int CurrentLinkID = pVeh->m_NodeAry[pVeh->m_SimLinkSequenceNo].LinkNo;
+			int CurrentLinkID = pVeh->m_LinkAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
 
 			if(StartingNodeID == pVeh->m_DestinationNodeID )  // you will reach the destination (on the last link).
@@ -592,8 +589,8 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 
 			for(int i = 0; i< pVeh->m_NodeSize -1; i++)
 			{
-				CurrentPathLinkList[i] = 	pVeh->m_NodeAry[i].LinkNo;
-				AbsArrivalTimeOnDSNVector[i]= pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN ;
+				CurrentPathLinkList[i] = 	pVeh->m_LinkAry[i].LinkNo;
+				AbsArrivalTimeOnDSNVector[i]= pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN ;
 			}
 
 
@@ -620,7 +617,7 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 		}
 
 		int	processor_id = omp_get_thread_num( );  // starting from 0
-		NodeSize = g_PrevailingTimeNetwork_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bDistanceFlag, bDebugFlag);
+		NodeSize = g_PrevailingTimeNetwork_MP[processor_id].FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bGeneralizedCostFlag, bDebugFlag);
 
 
 		int bSwitchFlag = 0;
@@ -675,9 +672,9 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 		if(bSwitchFlag==0)
 			return;
 
-			if( pVeh->m_NodeAry !=NULL)  // delete the old path
+			if( pVeh->m_LinkAry !=NULL)  // delete the old path
 			{
-				delete pVeh->m_NodeAry;
+				delete pVeh->m_LinkAry;
 			}
 
 
@@ -695,9 +692,9 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 					g_ProgramStop();
 				}
 
-				pVeh->m_NodeAry = new SVehicleLink[NodeSize];
+				pVeh->m_LinkAry = new SVehicleLink[NodeSize];
 
-				if(pVeh->m_NodeAry==NULL)
+				if(pVeh->m_LinkAry==NULL)
 				{
 					cout << "Insufficient memory for allocating vehicle arrays!";
 					g_ProgramStop();
@@ -708,20 +705,20 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 
 				for(int i = 0; i< NodeSize-1; i++)
 				{
-					pVeh->m_NodeAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
+					pVeh->m_LinkAry[i].AbsArrivalTimeOnDSN = AbsArrivalTimeOnDSNVector[i];
 
-					pVeh->m_NodeAry[i].LinkNo = PathLinkList[i];
+					pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
 					NodeNumberSum += PathLinkList[i];
 
-					/*if(g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL)
+					/*if(g_LinkVector[pVeh->m_LinkAry [i].LinkNo]==NULL)
 					{
-					cout << "Error: g_LinkVector[pVeh->m_NodeAry [i].LinkNo]==NULL", pVeh->m_NodeAry [i].LinkNo;
+					cout << "Error: g_LinkVector[pVeh->m_LinkAry [i].LinkNo]==NULL", pVeh->m_LinkAry [i].LinkNo;
 					getchar();
 					exit(0);
 					}
 					*/
-					ASSERT(pVeh->m_NodeAry [i].LinkNo < g_LinkVector.size());
-					Distance+= g_LinkVector[pVeh->m_NodeAry [i].LinkNo] ->m_Length ;
+					ASSERT(pVeh->m_LinkAry [i].LinkNo < g_LinkVector.size());
+					Distance+= g_LinkVector[pVeh->m_LinkAry [i].LinkNo] ->m_Length ;
 
 				}
 				
