@@ -1,4 +1,4 @@
-//  Portions Copyright 2014 Xuesong Zhou, Tony Liu
+//  Portions Copyright 2014 Xuesong Zhou; Lagrangian-relaxation based, agent-based time-depenedent network optimization 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having Copyright info here is to ensure all the modified version, as a whole, under the GPL 
 //   and further prevent a violation of the GPL.
