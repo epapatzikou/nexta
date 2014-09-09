@@ -107,14 +107,15 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 
 	m_ComboDataSourceType.AddString ("Simulation Data");
-	m_ComboDataSourceType.AddString ("Sensor Data");
+	m_ComboDataSourceType.AddString ("Fixed Sensor Data");
+	m_ComboDataSourceType.AddString("Floating Car Data");
 
 	if(m_pDoc->m_PrimaryDataSource == eSimulationData)
 		m_ComboDataSourceType.SetCurSel (0);
-	else
+	else if (m_pDoc->m_PrimaryDataSource == eSimulationData)
 		m_ComboDataSourceType.SetCurSel (1);
-
-
+	else
+		m_ComboDataSourceType.SetCurSel(2);
 
 
 	if(m_pDoc->m_bUseMileVsKMFlag)
@@ -149,6 +150,9 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Link ID");
 	m_Link_Label.AddString("Speed Sensor ID");
 	m_Link_Label.AddString("Count Sensor ID");
+	m_Link_Label.AddString("Orientation Code");
+	m_Link_Label.AddString("Loop Code");
+
 	m_Link_Label.AddString("Link Key (for model MOE)");
 
 
@@ -188,7 +192,9 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 	m_Link_Label.AddString("Link type In Text");
 	m_Link_Label.AddString("Link type In Number");
-	m_Link_Label.AddString("Internal Link id");
+	m_Link_Label.AddString("Internal Link ID");
+	m_Link_Label.AddString("Baseline Speed Sensor ID + Refenece Link ID");
+
 
 	m_Link_Label.AddString("-- Link MOE --");
 	m_Link_Label.AddString("Total Link Delay (hour)");
@@ -243,6 +249,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 
 	m_Movement_Label.AddString("None");
 	m_Movement_Label.AddString ("Turn Type");
+	m_Movement_Label.AddString("Turn Direction");
 	m_Movement_Label.AddString ("# of Lanes");
 	m_Movement_Label.AddString ("Simulated Hourly Count");
 	m_Movement_Label.AddString ("Simulated Turning %");
@@ -604,8 +611,10 @@ void CDlg_DisplayConfiguration::OnCbnSelchangeComboDatasource()
 
 		if(m_ComboDataSourceType.GetCurSel()==0)
 			m_pDoc->m_PrimaryDataSource = eSimulationData;
-		else
+		else if(m_ComboDataSourceType.GetCurSel() == 1)
 			m_pDoc->m_PrimaryDataSource = eSensorData;
+		else
+			m_pDoc->m_PrimaryDataSource = eFloatingCarData;
 
 	pView->Invalidate ();
 }

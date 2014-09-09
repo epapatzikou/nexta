@@ -221,11 +221,24 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
         }
 
+		if (g_UEAssignmentMethod == assignment_metro_sim)
+		{
+			g_ExchangeVISSIM_RealTime_Link_Status(meso_simulation_time_interval_no);
+		}
+
+
 	if(g_use_routing_policy_from_external_input == 1 && meso_simulation_time_interval_no%10 == 0 && DayNo ==0 && time_clock_in_min%g_AggregationTimetInterval == 0 )
 	{ // read input path ratio every 15 min
 	
 		ReadTimeDependentRoutingPolicyData((int)(CurrentTime));
 	
+	}
+
+	if (g_use_global_path_set_flag == 1 && meso_simulation_time_interval_no % 10 == 0 && time_clock_in_min%g_AggregationTimetInterval == 0)
+	{  // every 15 min, output the current vehicle volume 
+
+		g_OutputCurrentGlobalPathSet((int)(CurrentTime));
+
 	}
 
 	// new real time data face
@@ -646,11 +659,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 			DTALink* pLink = g_LinkVector[li];
 
-				if(pLink->m_FromNodeNumber == 139 && pLink->m_ToNodeNumber == 136 )
-				{
-					TRACE("");				
-				
-				}
+
 			float PerHourCapacity = pLink->GetHourlyPerLaneCapacity(CurrentTime);  // static capacity from BRP function
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
 
@@ -1192,7 +1201,18 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 								g_VehicleMap[vehicle_id]->m_DepartureTime ;
 
 						}
-						g_VehicleMap[vehicle_id]->m_Delay += (TravelTime-pLink->m_FreeFlowTravelTime);
+
+						// apply minimum moving time constraints: add extra travel time
+
+						float minimum_moving_time = pLink->GetMinimumMovingTravelTime();
+						if (TravelTime < minimum_moving_time)
+						{
+							ArrivalTimeOnDSN += (minimum_moving_time - TravelTime);
+							TravelTime = minimum_moving_time;
+						}
+						
+
+						g_VehicleMap[vehicle_id]->m_Delay += (TravelTime- pLink->m_FreeFlowTravelTime);
 						g_VehicleMap[vehicle_id]->m_TripFFTT+=pLink->m_FreeFlowTravelTime;
 
 
@@ -1491,6 +1511,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		if(meso_simulation_time_interval_no%g_number_of_intervals_per_min==0 )  // per min statistics
 		{
 			pLink->VehicleCount = pLink->CFlowArrivalCount - pLink->CFlowDepartureCount;
+			pLink->UpdateMinimumMovingTravelTime(0.2);
 
 			// queue is the number of vehicles at the end of simulation interval
 

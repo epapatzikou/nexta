@@ -157,7 +157,7 @@ void DTAPath::UpdateWithinDayStatistics()
 	}
 }
 
-bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
+bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName, bool bErrorMessage )
 {
 
 	CCSVParser parser;
@@ -182,11 +182,24 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 			DTA_sensor sensor;
 
 			std::string count_sensor_id;
+			std::string direction;
 			int from_node_id = 0;
 			int to_node_id = 0; 
 
 
 			parser.GetValueByFieldName("count_sensor_id",count_sensor_id);
+
+			if (count_sensor_id.size() == 0)
+			{
+				parser.GetValueByFieldName("sensor_id", count_sensor_id);
+			}
+
+			if (count_sensor_id.size() == 0)
+			{
+				continue;  //skip empty line
+			}
+			parser.GetValueByFieldName("direction", direction);
+			
 
 			int day_no = 0;
 
@@ -198,9 +211,7 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 			g_SensorDayNo = g_SensorLastDayNo;
 			sensor.SensorID = count_sensor_id;
 
-			parser.GetValueByFieldName("x_coord",sensor.pt.x );
-			parser.GetValueByFieldName("y_coord",sensor.pt.y );
-	
+
 
 			DTALink* pLink = NULL;
 
@@ -209,14 +220,6 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				pLink = m_CountSensorIDMap[count_sensor_id.c_str ()];
 			}
 			
-			if(pLink==NULL)
-			{
-				parser.GetValueByFieldName("from_node_id",from_node_id );
-				parser.GetValueByFieldName("to_node_id",to_node_id );
-
-				pLink = FindLinkWithNodeNumbers(from_node_id,to_node_id);
-			
-			}
 
 				if(pLink!=NULL)
 			{
@@ -240,6 +243,10 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				parser.GetValueByFieldName("start_time_in_min",start_time_in_min );
 				parser.GetValueByFieldName("end_time_in_min",end_time_in_min );
 
+
+				// skip the data if the sensor data's time range is out of the calibration time window 
+				if (end_time_in_min <= m_calibration_data_start_time_in_min || start_time_in_min >= m_calibration_data_end_time_in_min)
+					continue;
 
 				int count= -1;  // no data
 				parser.GetValueByFieldName("link_count",count );
@@ -302,8 +309,19 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				element.start_time_in_min = start_time_in_min;
 				element.end_time_in_min = end_time_in_min;
 				element.count = count;
-
+				element.count_sensor_id = count_sensor_id;
+				element.day_no = day_no;
+				element.direction = direction;
 				element.second_count_sensor_id = second_count_sensor_id;
+
+				element.link_from_node_id = pLink->m_FromNodeNumber;
+				element.link_to_node_id = pLink->m_ToNodeNumber;
+
+				if (count_sensor_id == "41008_2" && day_no == 16 && start_time_in_min == 405)
+				{
+					TRACE("");
+				}
+				element.derived_lane_hourly_volume = count * 60 / max(1, end_time_in_min - start_time_in_min)/ pLink->m_NumberOfLanes ;
 
 
 				float density = -1;
@@ -323,13 +341,17 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 				}
 
 				pLink->m_SensorDataVector.push_back(element);
+
+				m_SensorCountVector.push_back(element);
 				pLink->m_total_sensor_link_volume += count;
+
+				pLink->m_sensor_hourly_lane_volume_min = min(pLink->m_sensor_hourly_lane_volume_min, element.derived_lane_hourly_volume);
+				pLink->m_sensor_hourly_lane_volume_max = max(pLink->m_sensor_hourly_lane_volume_max, element.derived_lane_hourly_volume);
 
 
 				for(int t = start_time_in_min; t< min (1440,end_time_in_min); t++)
 				{
-
-		
+	
 					int time = day_no*1440 + t;  // allow shift of start time
 
 					if(second_count_sensor_id.size() == 0 ) // link count only
@@ -401,17 +423,20 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 		}
 
-		if(error_message.GetLength ()>=1)
+		if (error_message.GetLength() >= 1 )
 		{
-		
-		AfxMessageBox(error_message);
-			
+			m_SensorCountDataErrorMessage = error_message;
+
+			if (bErrorMessage)
+			{
+				AfxMessageBox(error_message);
+			}
 		}
 
 
 		if(m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file sensor_count.csv.",data_count);
+			m_SensorCountDataLoadingStatus.Format("%d sensor records are loaded from file sensor_count.csv.", data_count);
 			return true;
 		}
 		else
@@ -420,6 +445,279 @@ bool CTLiteDoc::ReadSensorCountData(LPCTSTR lpszFileName)
 
 	return false;
 }
+
+
+
+bool CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, bool ErrorMessage)
+{
+
+	CCSVParser parser;
+	int error_count = 0;
+
+	int data_count = 0;
+	if (parser.OpenCSVFile(CString2StdString(lpszFileName)))
+	{
+
+		int sensor_count = 0;
+		CString error_message;
+
+		CString prev_error_message;
+		while (parser.ReadRecord())
+		{
+			DTA_sensor sensor;
+
+			std::string speed_sensor_id;
+
+			parser.GetValueByFieldName("speed_sensor_id", speed_sensor_id);
+
+
+			if (speed_sensor_id.size() == 0)
+			{
+				continue;  //skip empty line
+			}
+
+
+			int day_no = -1;
+
+			parser.GetValueByFieldName("day_no", day_no);
+
+			if (day_no == -1)
+			{
+			
+			CString msg;
+			msg.Format("Field day_no is missing in sensor_speed.csv.\n");
+			AfxMessageBox(msg);
+			return false; 
+
+			}
+
+			g_SensorDayDataMap[day_no] = true;
+
+			g_SensorLastDayNo = max(g_SensorLastDayNo, day_no);
+			g_SensorDayNo = g_SensorLastDayNo;
+			sensor.SensorID = speed_sensor_id;
+
+
+
+			DTALink* pLink = NULL;
+
+			if (speed_sensor_id.size() > 0 && m_SpeedSensorIDMap.find(speed_sensor_id.c_str()) != m_SpeedSensorIDMap.end())
+			{
+				pLink = m_SpeedSensorIDMap[speed_sensor_id.c_str()];
+			}
+
+
+			if (pLink != NULL)
+			{
+				sensor.LinkID = pLink->m_LinkNo;
+
+				sensor.FromNodeNumber = pLink->m_FromNodeNumber;
+				sensor.ToNodeNumber = pLink->m_ToNodeNumber;
+
+
+
+				pLink->m_bSensorData = true;
+				pLink->m_bSpeedSensorData = true;
+
+				float start_time_in_min = 0;
+				float end_time_in_min = 0;
+
+				parser.GetValueByFieldName("start_time_in_min", start_time_in_min);
+				parser.GetValueByFieldName("end_time_in_min", end_time_in_min);
+
+
+				// skip the data if the sensor data's time range is out of the calibration time window 
+				if (end_time_in_min <= m_calibration_data_start_time_in_min || start_time_in_min >= m_calibration_data_end_time_in_min)
+					continue;
+
+				float speed = -1;  // no data
+				parser.GetValueByFieldName("speed", speed);
+
+				if (speed <= 1)  //skip data
+					continue;
+
+				int population_count = 0;
+				parser.GetValueByFieldName("population_count", population_count);
+
+				pLink->m_SensorTypeString = sensor.SensorType;
+
+
+				if (start_time_in_min > end_time_in_min && error_message.GetLength() < 1000)
+				{
+					CString msg;
+					msg.Format("Sensor %d-> %d has an error of start_time_in_min = %d > end_time_in_min = %d.\n",
+						sensor.FromNodeNumber, sensor.ToNodeNumber, start_time_in_min > end_time_in_min);
+
+					if (prev_error_message != msg)
+					{
+						error_message += msg;
+						prev_error_message = msg;
+					}
+
+				}
+
+				if (speed <=1  && error_message.GetLength() < 1000)
+				{
+					CString msg;
+					msg.Format("Sensor %d->%d has an error of speed <=1.\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
+
+					if (prev_error_message != msg)
+					{
+						error_message += msg;
+						prev_error_message = msg;
+					}
+
+				}
+
+			
+				DTASensorData element;
+				element.start_time_in_min = start_time_in_min;
+				element.end_time_in_min = end_time_in_min;
+				element.speed = speed;
+				element.speed_sensor_id = speed_sensor_id;
+				element.day_no = day_no;
+				element.link_from_node_id = pLink->m_FromNodeNumber;
+				element.link_to_node_id = pLink->m_ToNodeNumber;
+
+			
+				
+
+				for (int t = start_time_in_min; t< min(1440, end_time_in_min); t++)
+				{
+
+					int time = day_no * 1440 + t;  // allow shift of start time
+
+						// day specific value	
+						pLink->m_LinkSensorMOEMap[time].Speed = speed;
+						pLink->m_LinkSensorMOEMap[time].PopulationFlow = population_count / max(1, end_time_in_min - start_time_in_min);
+						// overall value 
+						pLink->m_LinkSensorMOEMap[t].Speed = speed;
+						pLink->m_LinkSensorMOEMap[t].PopulationFlow = pLink->m_LinkSensorMOEMap[time].PopulationFlow;
+
+				}
+			}
+			else
+			{
+				if (error_message.GetLength() < 1000)
+				{
+
+					CString msg;
+
+
+					if (speed_sensor_id.size() >0)
+					{
+						msg.Format("speed_sensor_id %s in sensor_speed.csv does not exist in input_link.csv.\n", speed_sensor_id.c_str());
+					}
+					
+					if (prev_error_message != msg)
+					{
+						error_message += msg;
+						prev_error_message = msg;
+					}
+
+					error_count++;
+
+
+					continue;
+				}
+			}
+			data_count++;
+		}
+
+		if (error_message.GetLength() >= 1 )
+		{
+			m_SensorSpeedDataErrorMessage = error_message;
+			
+			if (ErrorMessage)
+			AfxMessageBox(error_message);
+
+		}
+
+
+			m_SensorSpeedDataLoadingStatus.Format("%d sensor records are loaded from file sensor_speed.csv.", data_count);
+			return true;
+	}
+
+	return false;
+}
+
+
+bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
+{
+
+	CCSVParser parser;
+	int error_count = 0;
+
+	int data_count = 0;
+	if (parser.OpenCSVFile(CString2StdString(lpszFileName)))
+	{
+
+		int sensor_count = 0;
+		CString error_message;
+
+		CString prev_error_message;
+		while (parser.ReadRecord())
+		{
+			DTA_sensor sensor;
+
+			std::string sensor_id;
+			int from_node_id = 0;
+			int to_node_id = 0;
+
+
+			parser.GetValueByFieldName("sensor_id", sensor_id);
+
+			sensor.SensorID = sensor_id;
+			parser.GetValueByFieldName("name", sensor.description);
+
+			parser.GetValueByFieldName("x", sensor.pt.x);
+			parser.GetValueByFieldName("y", sensor.pt.y);
+			parser.GetValueByFieldName("direction", sensor.direction);
+			parser.GetValueByFieldName("orientation_code", sensor.orientation_code);
+			parser.GetValueByFieldName("orientation2_code", sensor.orientation2_code);
+			parser.GetValueByFieldName("type_code", sensor.type_code);
+			parser.GetValueByFieldName("loop_code", sensor.loop_code);
+
+			parser.GetValueByFieldName("matched_from_node_id", sensor.matched_to_node_id);
+			parser.GetValueByFieldName("matched_to_node_id", sensor.matched_to_node_id);
+
+			DTALink* pLink = NULL;
+
+			if (sensor_id.size() > 0 && m_CountSensorIDMap.find(sensor_id.c_str()) != m_CountSensorIDMap.end())
+			{
+				pLink = m_CountSensorIDMap[sensor_id.c_str()];
+			}
+
+			if (pLink == NULL)
+			{
+				parser.GetValueByFieldName("from_node_id", from_node_id);
+				parser.GetValueByFieldName("to_node_id", to_node_id);
+
+				pLink = FindLinkWithNodeNumbers(from_node_id, to_node_id);
+			}
+
+			std::string sensor_key = sensor_id + "_" + sensor.direction;
+
+			if (m_SensorMap.find(sensor_key) == m_SensorMap.end())  // if the sensor id + direction has not been defined 
+			{
+				m_SensorMap[sensor_key] = sensor;
+			}
+
+
+		}
+
+		if (m_SensorMap.size()>0)
+		{
+			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file sensor_count.csv.", data_count);
+			return true;
+		}
+		else
+			return false; // no sensors have been specified
+	}
+
+	return false;
+}
+
 
 bool CTLiteDoc::ReadMultiDaySensorData(LPCTSTR lpszFileName)
 {
@@ -698,113 +996,72 @@ void CTLiteDoc::BuildHistoricalDatabase()
 void CTLiteDoc::OnToolsExporttoHistDatabase()
 {
 	CWaitCursor wc;
-
-	CFileDialog dlg(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Single-day file (*.csv)|*.csv|"));
-	if(dlg.DoModal() == IDOK)
-	{
 		bool bFormatFlag = true;
 		FILE* st = NULL;
-		fopen_s(&st,dlg.GetPathName(),"w");
-		if(st!=NULL)
-			{
-			fprintf(st,"parameter arcs(i,j,t_e,t_l) link travel time /\n");
+
+		CString file_name = this->m_ProjectDirectory + "gams_input.txt";
+		fopen_s(&st, file_name, "w");
+		if (st != NULL)
+		{
+			fprintf(st, "parameter arcs(i,j,t_e,t_l) link travel time /\n");
 			std::list<DTALink*>::iterator iLink;
 
 			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
 			{
+				int beg_time_index = m_DemandLoadingStartTimeInMin;
+				int end_time_index = m_DemandLoadingStartTimeInMin + 120;
 
-				int day = 0;
-
-						int beg_time_index = 0;
-						int end_time_index =  16;
-				   
-						for(int t= beg_time_index+1; t< end_time_index; t++)
-					{
-
-							fprintf(st,"%d. %d. ", (*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber );
-							float travel_time = int((*iLink)->m_Length /300*60/15+0.5);
-
-							int time_index_from = t- beg_time_index;
-							int time_index_to = t+ travel_time - beg_time_index;
-							fprintf(st,"%d. %d %4.1f\n", time_index_from,time_index_to,travel_time);
-
-					}
-
-				
-				}
-
-				fprintf(st,"/;\n");
-
-//	capacity
-
-				fprintf(st,"parameter TDcapacity(i,j,t_e) capacity /\n");
-
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-
-				int beg_time_index = 0;
-				int end_time_index =  20;
-				   
-				for(int t= beg_time_index+1; t< end_time_index; t++)
-					{
-							fprintf(st,"%d. %d. %d  6\n", (*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber,t );
-
-					}
-
-				
-			}
-
-		fprintf(st,"/;\n");
-
-		
-		fclose(st);
-
-	}
-	}
-
-
-
-	CFileDialog dlg2(TRUE, 0, 0, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("Multi-day file (*.csv)|*.csv|"));
-	if(dlg2.DoModal() == IDOK)
-	{
-		bool bFormatFlag = true;
-		FILE* st = NULL;
-		fopen_s(&st,dlg2.GetPathName(),"w");
-			fprintf(st,"parameter arcs(i,j,sc,t_e,t_l) link travel time /\n");
-			std::list<DTALink*>::iterator iLink;
-
-			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
-			{
-
-				for( int day = 1; day <= 10; day ++)
+				for (int t = beg_time_index + 1; t < end_time_index; t++)
 				{
 
-						int beg_time_index = 0;
-						int end_time_index =  100;
-				   
-						for(int t= beg_time_index+1; t< end_time_index; t++)
-					{
+					fprintf(st, "%d. %d. ", (*iLink)->m_FromNodeID+1, (*iLink)->m_ToNodeID+1);
+					int travel_time = max(1, int((*iLink)->m_FreeFlowTravelTime*2+0.5));
 
-							fprintf(st,"%d. %d. %d.", (*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber, day );
-							float travel_time = (*iLink)->m_FreeFlowTravelTime * (1 + g_GetRandomRatio());
-
-							int time_index_from = t- beg_time_index;
-							int time_index_to = t+ travel_time - beg_time_index;
-							fprintf(st,"%d. %d %4.1f\n", time_index_from,time_index_to,travel_time);
-
-					}
-
+					int time_index_from = t - beg_time_index;
+					int time_index_to = t + travel_time - beg_time_index;
+					fprintf(st, "%d. %d %d\n", time_index_from, time_index_to, travel_time);
 
 				}
-				
-				}
 
-				fprintf(st,"/;");
-		fclose(st);
 
-	}
+			}
+
+			fprintf(st, "/;\n");
+
+			fprintf(st, "--link list: from node no, to node no: from node number -> to node number--\n ");
+			for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			{
+
+				fprintf(st, "%d->%d: %d,%d\n", (*iLink)->m_FromNodeID + 1, (*iLink)->m_ToNodeID + 1, (*iLink) -> m_FromNodeNumber, (*iLink)->m_ToNodeNumber);
+
+
+			}
+
+
+			//	capacity
+
+			//		fprintf(st,"parameter capacity(i,j,t_e) capacity /\n");
+
+			//	for (iLink = m_LinkSet.begin(); iLink != m_LinkSet.end(); iLink++)
+			//	{
+
+			//		   
+			//		for(int t= beg_time_index+1; t< end_time_index; t++)
+			//			{
+			//					fprintf(st,"%d. %d. %d  6\n", (*iLink)->m_FromNodeNumber, (*iLink)->m_ToNodeNumber,t );
+
+			//			}
+
+			//		
+			//	}
+
+			//fprintf(st,"/;\n");
+
+
+			fclose(st);
+			HINSTANCE result = ShellExecute(NULL, _T("open"), file_name, NULL, NULL, SW_SHOW);
+
+		}
 
 }
 

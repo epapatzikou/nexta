@@ -43,7 +43,10 @@ enum tool
    create_node_tool, 
    subarea_tool,
    move_node_tool,
-   add_zone_tool
+   add_zone_tool,
+   sensor_location_move_tool,
+   network_location_move_tool
+
    };
 
 enum link_text_display_mode
@@ -65,6 +68,9 @@ enum link_text_display_mode
    link_display_link_id, 
    link_display_speed_sensor_id, 
    link_display_count_sensor_id, 
+   link_display_orientation_code,
+   link_display_loop_code,
+
    link_display_link_key, 
 
    link_display_from_id_to_id, 
@@ -91,6 +97,7 @@ enum link_text_display_mode
    link_display_link_type_in_text,
    link_display_link_type_in_number,
     link_display_internal_link_id,
+	link_display_link_id_speed_sensorid,
 
 	link_display_separator_3,
 
@@ -149,6 +156,8 @@ enum movement_text_display_mode
    { 
    movement_display_none = 0, 
    movement_display_turn_type, 
+   movement_display_turn_direction,
+
    movement_display_QEM_Lanes,
    movement_display_sim_turn_hourly_count,
    movement_display_sim_turn_percentage, 
@@ -444,7 +453,10 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 
 	bool m_bShowTransit;
 	bool m_bShowAVISensor;
-
+	
+	bool m_bShowReferenceNetwork;
+	bool m_bShowSensorDecription;
+	bool m_bShowSensorMatchedLink;
 	LPPOINT m_subarea_points;
 	// Create a polygonal region
     HRGN m_polygonal_region;
@@ -458,6 +470,7 @@ bool RectIsInsideScreen(CRect rect, CRect screen_bounds)
 	bool m_bMoveDisplay;
 
 	bool m_bMoveImage;
+	bool m_bMoveSensorMap;
 	bool m_bMoveNetwork;
 	bool m_bShowGrid;
 	bool m_bShowLinkArrow;
@@ -716,13 +729,16 @@ bool m_bShowProhibitedMovements;
 bool m_bShowTransitLinksOnly;
 bool m_bShowWalkLinksOnly;
 
+bool m_bShowFixedDetectorLocation;
+bool m_bShowSpeedSensorLocation;
+
 
 // Overrides
 public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 
-
+	int m_MoveLayerNo;
 	bool m_bShowCompleteTrajectory;
 	bool m_bShowAllCompleteTrajectory;
 protected:
@@ -884,6 +900,24 @@ public:
 	afx_msg void OnUpdateVehicledataShowcompletetrajectory(CCmdUI *pCmdUI);
 	afx_msg void OnVehicledataShow();
 	afx_msg void OnUpdateVehicledataShow(CCmdUI *pCmdUI);
+	afx_msg void OnDetectorUnlock();
+	afx_msg void OnUpdateDetectorUnlock(CCmdUI *pCmdUI);
+	afx_msg void OnDetectorShowsensordescription33769();
+	afx_msg void OnUpdateDetectorShowsensordescription33769(CCmdUI *pCmdUI);
+	afx_msg void OnDetectorShowmatchedlinkforsensor();
+	afx_msg void OnUpdateDetectorShowmatchedlinkforsensor(CCmdUI *pCmdUI);
+	afx_msg void OnGridUnlock();
+	afx_msg void OnUpdateGridUnlock(CCmdUI *pCmdUI);
+	afx_msg void OnLinkShowhidereferencenetwork();
+	afx_msg void OnUpdateLinkShowhidereferencenetwork(CCmdUI *pCmdUI);
+	afx_msg void OnEditMovereferencenetworkcoordinates();
+	afx_msg void OnUpdateEditMovereferencenetworkcoordinates(CCmdUI *pCmdUI);
+	afx_msg void OnReferenceShowreferencelinkidandbaselinespeedsensorid();
+	afx_msg void OnUpdateReferenceShowreferencelinkidandbaselinespeedsensorid(CCmdUI *pCmdUI);
+	afx_msg void OnDetectorShowspeedsensorlocation();
+	afx_msg void OnUpdateDetectorShowfixedcountdetectorlocation(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateDetectorShowspeedsensorlocation(CCmdUI *pCmdUI);
+	afx_msg void OnDetectorShowfixedcountdetectorlocation();
 };
 struct PieInfo
 {

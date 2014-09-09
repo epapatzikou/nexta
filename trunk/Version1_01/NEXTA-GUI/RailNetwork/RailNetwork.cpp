@@ -72,8 +72,8 @@ BOOL CTLiteDoc::OnOpenRailNetworkDocument(CString ProjectFileName, bool bNetwork
 	CWaitCursor wc;
 	OpenWarningLogFile(directory);
 
-	if(!ReadRailNodeCSVFile(directory+"input_rail_node.csv")) return false;
-	if(!ReadRailLinkCSVFile(directory+"input_rail_arc.csv",false,false))
+	if(!ReadRailNodeCSVFile(directory+"input_node.csv")) return false;
+	if(!ReadRailLinkCSVFile(directory+"input_link.csv",false,false))
 		return false;
 
 	CalculateDrawingRectangle();
@@ -128,8 +128,8 @@ bool CTLiteDoc::ReadRailNodeCSVFile(LPCTSTR lpszFileName)
 			control_type = 0;
 
 			// use the X and Y as default values first
-			parser.GetValueByFieldName("location_x",X);
-			parser.GetValueByFieldName("location_y",Y);
+			parser.GetValueByFieldName("x",X);
+			parser.GetValueByFieldName("y",Y);
 
 			string geo_string;
 
@@ -274,12 +274,12 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			if(!parser.GetValueByFieldName("name",name))
 				name = "";
 
-			if(!parser.GetValueByFieldName("A_node_id",from_node_id)) 
+			if(!parser.GetValueByFieldName("from_node_id",from_node_id)) 
 			{
 				AfxMessageBox("Field A_node_id has not been defined in file input_rail_arc.csv. Please check.");
 				break;
 			}
-			if(!parser.GetValueByFieldName("B_node_id",to_node_id))
+			if(!parser.GetValueByFieldName("to_node_id",to_node_id))
 			{
 				AfxMessageBox("Field B_node_id has not been defined in file input_rail_arc.csv. Please check.");
 				break;
@@ -381,28 +381,28 @@ bool CTLiteDoc::ReadRailLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFla
 			}
 
 
-			if(!parser.GetValueByFieldName("bidirectional_flag",bidirectional_flag))
+			if(!parser.GetValueByFieldName("direction",bidirectional_flag))
 				bidirectional_flag = 1;
 
-			if(!parser.GetValueByFieldName("default_AB_speed_per_hour",default_AB_speed_per_hour))
-			{
-				error_message.Format ("Link %s: Field default_AB_speed_per_hour has not been defined in file input_rail_arc.csv. Please check.",name.c_str ());
-				AfxMessageBox(error_message);
-				break;
-			}
+			//if(!parser.GetValueByFieldName("default_AB_speed_per_hour",default_AB_speed_per_hour))
+			//{
+			//	error_message.Format ("Link %s: Field default_AB_speed_per_hour has not been defined in file input_rail_arc.csv. Please check.",name.c_str ());
+			//	AfxMessageBox(error_message);
+			//	break;
+			//}
 
-			if(!parser.GetValueByFieldName("default_BA_speed_per_hour",default_BA_speed_per_hour))
-			{
-				error_message.Format ("Link %s: Field default_BA_speed_per_hour has not been defined in file input_rail_arc.csv. Please check.",name.c_str ());
-				AfxMessageBox(error_message);
-				break;
-			}
+			//if(!parser.GetValueByFieldName("default_BA_speed_per_hour",default_BA_speed_per_hour))
+			//{
+			//	error_message.Format ("Link %s: Field default_BA_speed_per_hour has not been defined in file input_rail_arc.csv. Please check.",name.c_str ());
+			//	AfxMessageBox(error_message);
+			//	break;
+			//}
 
-			if(!parser.GetValueByFieldName("track_type",track_type))
-			{
-				AfxMessageBox("Field track_type has not been defined in file input_rail_arc.csv. Please check.");
-				break;
-			}
+			//if(!parser.GetValueByFieldName("track_type",track_type))
+			//{
+			//	AfxMessageBox("Field track_type has not been defined in file input_rail_arc.csv. Please check.");
+			//	break;
+			//}
 
 
 			if(!parser.GetValueByFieldName("arc_id",link_id))  // no value

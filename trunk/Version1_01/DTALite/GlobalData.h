@@ -32,6 +32,8 @@ extern std::vector<DTANode> g_NodeVector;
 extern std::map<int, int> g_NodeNametoIDMap;
 extern std::vector<DTALink*> g_LinkVector;
 extern std::map<string, DTALink*> g_LinkMap;
+extern std::map<int, DTALink*> g_LinkIDMap;
+
 extern std::map<std::string, DTALink*> g_CountSensorIDMap;
 extern std::map<std::string, DTALink*> g_LinkKeyMap;
 extern std::map<std::string, DTALink*> g_SpeedSensorIDMap;
@@ -365,7 +367,10 @@ extern std::string GetTimeClockString(int time);
 extern void g_ReadRealTimeSimulationSettingsFile();
 extern void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,  int DemandLoadingStartTime, int DemandLoadingEndTime);
 extern void g_OptimizePathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern void g_GenerateUpperBoundFeasibleSolutionForAgents(int DemandLoadingStartTime, int DemandLoadingEndTime);
 extern void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern void g_NetworkDesignTestAllCombination(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
+extern void g_NetworkDesignEnemerateAllSolutions();
 
 extern void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min);
 
@@ -393,6 +398,10 @@ extern void g_GenerateSimulationSummary(int iteration, bool NotConverged, int To
 extern void g_OutputSimulationStatistics(int Iteration);
 extern void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bOutputLog, int DemandLoadingStartTime, int DemandLoadingEndTime);
 extern int g_SystemOptimalStartingTimeinMin;
+extern int g_use_global_path_set_flag;
+extern void g_BuildGlobalPathSet();
+extern void g_OutputCurrentGlobalPathSet(int SimulationTimeInMin);
+extern void g_ExchangeVISSIM_RealTime_Link_Status(int meso_simulation_time_interval_no);
 
 
 

@@ -936,7 +936,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 
 				if(length_name.size()>0 && poFeature->GetFieldIndex(length_name.c_str ())==-1)
 				{
-					FieldNameNotExistMessage(link_type_name,"section link: key length");
+					FieldNameNotExistMessage(length_name, "section link: key length");
 					break;
 				}	
 
@@ -1117,14 +1117,22 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
 
 	if(m_LinkTypeMap.find(type) == m_LinkTypeMap.end() && link_type_waring_map.find(type) ==link_type_waring_map.end() )
-	{
-		CString link_type_warning; 
+	{   
+		if (type != 0)
+		{
 
-		link_type_warning.Format ("link type %d (Field %s) in the link layer file has not been defined. Please check.", type, link_type_name.c_str () );
+			CString link_type_warning;
 
-		AfxMessageBox(link_type_warning);
+			link_type_warning.Format("link type %d (Field %s) in the link layer file has not been defined. Please check.", type, link_type_name.c_str());
+
+			AfxMessageBox(link_type_warning);
 
 		link_type_waring_map[type] = true;
+		}
+		else
+		{
+			continue;
+		}
 
 	}
 
@@ -1572,6 +1580,11 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 			}
 		}
 
+
+		if (m_LinkTypeMap[type].type_code.find('c') != string::npos && number_of_lanes == 0)
+		{
+			number_of_lanes = 7; // reset # of lanes for connectors to a positive value
+		}
 		pLink->m_NumberOfLanes= number_of_lanes;
 		pLink->m_SpeedLimit= speed_limit_in_mph;
 		pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
@@ -1849,6 +1862,18 @@ m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl;
 
 				if(bTestFieldName==false) 
 				{
+					if (node_node_id.size()==0)
+					{
+						FieldNameNotExistMessage(node_node_id, "section centroid: key node_id");
+						break;
+					}
+
+					if (node_TAZ_name.size()==0)
+					{
+						FieldNameNotExistMessage(node_TAZ_name, "section centroid: key TAZ");
+						break;
+					}
+
 					if(node_node_id.size()>0  && poFeature->GetFieldIndex(node_node_id.c_str ())==-1)
 					{
 						FieldNameNotExistMessage(node_node_id, "section centroid: key node_id");
@@ -2112,7 +2137,19 @@ m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl;
 
 					if(bTestFieldName==false) 
 					{
-						if(from_node_id_name.size()>0  && poFeature->GetFieldIndex(from_node_id_name.c_str ())==-1)
+						if (from_node_id_name.size() == 0)
+						{
+							FieldNameNotExistMessage(from_node_id_name, "section connector; key zone_end");
+							break;
+						}
+
+						if (to_node_id_name.size()==0 )
+						{
+							FieldNameNotExistMessage(to_node_id_name, "section connector; key node_end");
+							break;
+						}
+
+						if (from_node_id_name.size()>0 && poFeature->GetFieldIndex(from_node_id_name.c_str()) == -1)
 						{
 							FieldNameNotExistMessage(from_node_id_name,  "section connector; key zone_end");
 							break;
@@ -2611,7 +2648,7 @@ m_AMSLogFile << "imported " << m_LinkSet.size() << " links. " << endl;
 					{
 
 						CString str;
-						str.Format ("Reading field %s = 0 at record No. %d for field %s. This field might not exist.",zone_id_name, zone_record_count,zone_id_name);
+						str.Format ("Reading error for zone layer. Field %s = 0 at record No. %d. This field might not exist.",zone_id_name.c_str(), zone_record_count);
 
 						AfxMessageBox(str);
 						return false;
@@ -3653,7 +3690,7 @@ bool CTLiteDoc::ReadSynchroLaneFile(LPCTSTR lpszFileName)
 						pLink->m_bToBeShifted = bToBeShifted; 
 
 						pLink->m_NumberOfLanes= number_of_lanes;
-						pLink->m_SpeedLimit= max(20,speed_limit_in_mph);  // minimum speed limit is 20 mph
+						pLink->m_SpeedLimit= max(10,speed_limit_in_mph);  // minimum speed limit is 10 mph
 						pLink->m_avg_simulated_speed = pLink->m_SpeedLimit;
 
 						//				pLink->m_Length= max(length_in_mile, pLink->m_SpeedLimit*0.1f/60.0f);  // minimum distance, special note: we do not consider the minimum constraint here, but a vehicle cannot travel longer then 0.1 seconds

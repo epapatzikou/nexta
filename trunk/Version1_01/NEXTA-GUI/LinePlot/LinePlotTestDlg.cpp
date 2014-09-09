@@ -280,6 +280,7 @@ void CLinePlotTestDlg::OnResizePlot()
 	{
 
 		CLinePlotData element = m_PlotDataVector[i];
+
 		m_LinePlot.Add(element.szName, element.crPlot, element.lineType,  &(element.vecData));
 	}
 

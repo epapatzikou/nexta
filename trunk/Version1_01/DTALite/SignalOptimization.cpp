@@ -1,4 +1,4 @@
-//  Portions Copyright 2010 Xuesong Zhou, Jinjin Tang
+//  Portions Copyright 2010 Xuesong Zhou, Jinjin Tang, Pengfei (Taylor) Li
 
 //   If you help write or modify the code, please also list your names here.
 //   The reason of having copyright info here is to ensure all the modified version, as a whole, under the GPL 
@@ -34,6 +34,434 @@
 #include <omp.h>
 #include <algorithm>
 
+#define _max_number_of_movements  32
+static string g_movement_column_name[_max_number_of_movements] = { "NBL2", "NBL", "NBT", "NBR", "NBR2",
+"SBL2", "SBL", "SBT", "SBR", "SBR2",
+"EBL2", "EBL", "EBT", "EBR", "EBR2",
+"WBL2", "WBL", "WBT", "WBR", "WBR2",
+"NEL", "NET", "NER",
+"NWL", "NWT", "NWR",
+"SEL", "SET", "SER",
+"SWL", "SWT", "SWR" };
+
+
+
+class CCSVSignalParser
+{
+public:
+	char Delimiter;
+	bool IsFirstLineHeader;
+	ifstream inFile;
+	vector<string> LineFieldsValue;
+	vector<string> Headers;
+	map<string, int> FieldsIndices;
+
+	vector<int> LineIntegerVector;
+
+public:
+	void  ConvertLineStringValueToIntegers()
+	{
+		LineIntegerVector.clear();
+		for (unsigned i = 0; i < LineFieldsValue.size(); i++)
+		{
+			std::string si = LineFieldsValue[i];
+			int value = atoi(si.c_str());
+
+			if (value >= 1)
+				LineIntegerVector.push_back(value);
+
+		}
+	}
+	vector<string> GetHeaderVector()
+	{
+		return Headers;
+	}
+
+	int m_EmptyLineCount;
+	bool m_bSignalCSVFile;
+	string m_DataHubSectionName;
+	bool m_bLastSectionRead;
+
+	bool m_bSkipFirstLine;  // for DataHub CSV files
+
+	CCSVSignalParser::CCSVSignalParser(void)
+	{
+		Delimiter = ',';
+		IsFirstLineHeader = true;
+		m_bSkipFirstLine = false;
+		m_bSignalCSVFile = false;
+		m_bLastSectionRead = false;
+		m_EmptyLineCount++;
+	}
+
+	CCSVSignalParser::~CCSVSignalParser(void)
+	{
+		if (inFile.is_open()) inFile.close();
+	}
+
+
+	bool CCSVSignalParser::OpenCSVFile(string fileName, bool bIsFirstLineHeader)
+	{
+		inFile.clear();
+		inFile.open(fileName.c_str());
+
+		IsFirstLineHeader = bIsFirstLineHeader;
+		if (inFile.is_open())
+		{
+			if (m_bSkipFirstLine)
+			{
+				string s;
+				std::getline(inFile, s);
+			}
+			if (IsFirstLineHeader)
+			{
+				string s;
+				std::getline(inFile, s);
+
+				if (s.length() == 0)
+					return true;
+
+				vector<string> FieldNames = ParseLine(s);
+
+				for (size_t i = 0; i<FieldNames.size(); i++)
+				{
+					string tmp_str = FieldNames.at(i);
+					size_t start = tmp_str.find_first_not_of(" ");
+
+					string name;
+					if (start == string::npos)
+					{
+						name = "";
+					}
+					else
+					{
+						name = tmp_str.substr(start);
+						TRACE("%s,", name.c_str());
+					}
+					Headers.push_back(name);
+					FieldsIndices[name] = (int)i;
+				}
+			}
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool CCSVSignalParser::ReadSectionHeader(string s)
+	{
+		//skip // data 
+
+		Headers.clear();
+		FieldsIndices.clear();
+
+		if (s.length() == 0)
+			return true;
+
+		vector<string> FieldNames = ParseLine(s);
+
+		for (size_t i = 0; i<FieldNames.size(); i++)
+		{
+			string tmp_str = FieldNames.at(i);
+			size_t start = tmp_str.find_first_not_of(" ");
+
+			string name;
+			if (start == string::npos)
+			{
+				name = "";
+			}
+			else
+			{
+				name = tmp_str.substr(start);
+				TRACE("%s,", name.c_str());
+			}
+			Headers.push_back(name);
+			FieldsIndices[name] = (int)i;
+		}
+
+
+		return true;
+
+	}
+	void CCSVSignalParser::CloseCSVFile(void)
+	{
+		inFile.close();
+	}
+
+	vector<string> CCSVSignalParser::GetLineRecord()
+	{
+		return LineFieldsValue;
+	}
+
+	vector<string> CCSVSignalParser::GetHeaderList()
+	{
+		return Headers;
+	}
+
+	bool CCSVSignalParser::ReadRecord()
+	{
+		LineFieldsValue.clear();
+
+		if (inFile.is_open())
+		{
+			string s;
+			std::getline(inFile, s);
+			if (s.length() > 0)
+			{
+				if (m_bSignalCSVFile && s.find("node_id") != string::npos)  // DataHub single csv file
+				{
+					LineFieldsValue = ParseLine(s);
+
+					if (LineFieldsValue.size() >= 1 && LineFieldsValue[0].find("[") != string::npos)
+					{
+						m_DataHubSectionName = LineFieldsValue[0];
+
+					}
+
+					//re-read section header
+					ReadSectionHeader(s);
+					LineFieldsValue.clear();
+					std::getline(inFile, s);
+
+					LineFieldsValue = ParseLine(s);
+
+				}
+				else
+				{
+					LineFieldsValue = ParseLine(s);
+
+				}
+				return true;
+			}
+			else
+			{
+
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	vector<string> CCSVSignalParser::ParseLine(string line)
+	{
+		vector<string> SeperatedStrings;
+		string subStr;
+		istringstream ss(line);
+
+
+		if (line.find_first_of('"') == string::npos)
+		{
+
+			while (std::getline(ss, subStr, Delimiter))
+			{
+				SeperatedStrings.push_back(subStr);
+			}
+
+			if (line.at(line.length() - 1) == ',')
+			{
+				SeperatedStrings.push_back("");
+			}
+		}
+		else
+		{
+			while (line.length() > 0)
+			{
+				size_t n1 = line.find_first_of(',');
+				size_t n2 = line.find_first_of('"');
+
+				if (n1 == string::npos && n2 == string::npos) //last field without double quotes
+				{
+					subStr = line;
+					SeperatedStrings.push_back(subStr);
+					break;
+				}
+
+				if (n1 == string::npos && n2 != string::npos) //last field with double quotes
+				{
+					size_t n3 = line.find_first_of('"', n2 + 1); // second double quote
+
+					//extract content from double quotes
+					subStr = line.substr(n2 + 1, n3 - n2 - 1);
+					SeperatedStrings.push_back(subStr);
+
+					break;
+				}
+
+				if (n1 != string::npos && (n1 < n2 || n2 == string::npos))
+				{
+					subStr = line.substr(0, n1);
+					SeperatedStrings.push_back(subStr);
+					if (n1 < line.length() - 1)
+					{
+						line = line.substr(n1 + 1);
+					}
+					else // comma is the last char in the line string, push an empty string to the back of vector
+					{
+						SeperatedStrings.push_back("");
+						break;
+					}
+				}
+
+				if (n1 != string::npos && n2 != string::npos && n2 < n1)
+				{
+					size_t n3 = line.find_first_of('"', n2 + 1); // second double quote
+					subStr = line.substr(n2 + 1, n3 - n2 - 1);
+					SeperatedStrings.push_back(subStr);
+					size_t idx = line.find_first_of(',', n3 + 1);
+
+					if (idx != string::npos)
+					{
+						line = line.substr(idx + 1);
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+
+		}
+
+		return SeperatedStrings;
+	}
+	template <class T> bool GetValueBySectionKeyFieldName(string file_name, string section_name, string key_name, string field_name, T& value)
+	{
+		OpenCSVFile(file_name);
+		while (ReadRecord())
+		{
+			if (LineFieldsValue[0] != section_name || LineFieldsValue[1] != key_name)
+				continue;
+
+			if (FieldsIndices.find(field_name) == FieldsIndices.end())
+			{
+				CloseCSVFile();
+				return false;
+			}
+			else
+			{
+				if (LineFieldsValue.size() == 0)
+				{
+					CloseCSVFile();
+					return false;
+				}
+
+				int size = (int)(LineFieldsValue.size());
+				if (FieldsIndices[field_name] >= size)
+				{
+					CloseCSVFile();
+					return false;
+				}
+
+				string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+				if (str_value.length() <= 0)
+				{
+					CloseCSVFile();
+					return false;
+				}
+
+				istringstream ss(str_value);
+
+				T converted_value;
+				ss >> converted_value;
+
+				if (/*!ss.eof() || */ ss.fail())
+				{
+
+					CloseCSVFile();
+					return false;
+				}
+
+				value = converted_value;
+				CloseCSVFile();
+				return true;
+			}
+		}
+		CloseCSVFile();
+
+		return false;
+	}
+	template <class T> bool GetValueByFieldName(string field_name, T& value, bool NonnegativeFlag = true)
+	{
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				return false;
+			}
+
+			int size = (int)(LineFieldsValue.size());
+			if (FieldsIndices[field_name] >= size)
+			{
+				return false;
+			}
+
+			string str_value = LineFieldsValue[FieldsIndices[field_name]];
+
+			if (str_value.length() <= 0)
+			{
+				return false;
+			}
+
+			istringstream ss(str_value);
+
+			T converted_value;
+			ss >> converted_value;
+
+			if (/*!ss.eof() || */ ss.fail())
+			{
+				return false;
+			}
+
+			if (NonnegativeFlag && converted_value<0)
+				converted_value = 0;
+
+			value = converted_value;
+			return true;
+		}
+	}
+
+	bool GetValueByFieldName(string field_name, string& value)
+	{
+		if (FieldsIndices.find(field_name) == FieldsIndices.end())
+		{
+			return false;
+		}
+		else
+		{
+			if (LineFieldsValue.size() == 0)
+			{
+				return false;
+			}
+
+			unsigned int index = FieldsIndices[field_name];
+			if (index >= LineFieldsValue.size())
+			{
+				return false;
+			}
+			string str_value = LineFieldsValue[index];
+
+			if (str_value.length() <= 0)
+			{
+				return false;
+			}
+
+			value = str_value;
+			return true;
+		}
+	}
+
+};
 
 using namespace std;
 
@@ -56,6 +484,71 @@ void g_ProhibitMovement(int up_node_id, int node_id , int dest_node_id)
 }
 
 void g_ReadAMSMovementData()
+{
+
+
+	CCSVParser parser_movement;
+
+	int count = 0;
+	int zero_effective_green_time_error_count = 0;
+
+	if (parser_movement.OpenCSVFile("AMS_movement.csv", false))  // not required
+	{
+		int up_node_id = 0;
+		int dest_node_id = 0;
+
+
+		while (parser_movement.ReadRecord())
+		{
+			int node_id = 0;
+			parser_movement.GetValueByFieldName("node_id", node_id);
+			if (g_NodeNametoIDMap.find(node_id) == g_NodeNametoIDMap.end())
+				continue;  // skip this record
+
+
+			std::string turn_type;
+
+			parser_movement.GetValueByFieldName("turn_type", turn_type);
+
+			std::string turn_direction;
+			parser_movement.GetValueByFieldName("turn_direction", turn_direction);
+
+			parser_movement.GetValueByFieldName("up_node_id", up_node_id);
+			parser_movement.GetValueByFieldName("dest_node_id", dest_node_id);
+
+
+			string strid = GetLinkStringID(up_node_id, node_id);
+			if (g_LinkMap.find(strid) != g_LinkMap.end())
+			{
+				// map from turn direction to link id
+				g_NodeVector[g_NodeNametoIDMap[node_id]].m_Movement2LinkIDStringMap[turn_direction] = strid;
+
+			}
+
+			int prohibited_flag = 0;
+
+			parser_movement.GetValueByFieldName("prohibited_flag", prohibited_flag);
+
+
+			if (prohibited_flag == 1)
+			{
+				g_ShortestPathWithMovementDelayFlag = true; // with movement input
+
+				g_ProhibitMovement(up_node_id, node_id, dest_node_id);
+
+
+				continue; // do not need to check further 
+			}
+
+		}
+
+		parser_movement.CloseCSVFile();
+	}
+
+	
+}
+
+void g_ReadAMSSignalData()
 {
 
 	// read data block per node:
@@ -81,256 +574,132 @@ void g_ReadAMSMovementData()
 
 	// pLink->m_DownstreamCycleLength_In_Second
 
-	CCSVParser parser_movement;
+	CCSVSignalParser parser_signal;
 
 	int count = 0;
 	int zero_effective_green_time_error_count = 0;
 
-	if (parser_movement.OpenCSVFile("AMS_movement.csv",false))  // not required
+	if (parser_signal.OpenCSVFile("AMS_signal.csv", false))  // not required
 	{
-		while(parser_movement.ReadRecord())
+		int up_node_id = 0;
+		int dest_node_id = 0;
+
+
+		while (parser_signal.ReadRecord())
 		{
 			int up_node_id, node_id, dest_node_id;
 
-			if(parser_movement.GetValueByFieldName("node_id",node_id) == false)
-				break;
+			std::string parameter_key;
 
-			std::string timing_plan_name;
-			if(parser_movement.GetValueByFieldName("timing_plan_name",timing_plan_name) == false)
-				break;
 
-			if(timing_plan_name!="ALLDAY")  // we only simulate a single timing plan now
-				continue;
 
-			int middle_node_id = g_NodeNametoIDMap[node_id ];
-
-			parser_movement.GetValueByFieldName("up_node_id",up_node_id);
-			parser_movement.GetValueByFieldName("dest_node_id",dest_node_id);
 
 			int CycleLength = 0;
 			int Offset = 0;
 
-			parser_movement.GetValueByFieldName("CycleLength",CycleLength);
-			parser_movement.GetValueByFieldName("Offset",Offset);
+			parser_signal.GetValueByFieldName("node_id", node_id);
 
-			g_NodeVector[middle_node_id].m_CycleLength_In_Second  = CycleLength;
-			g_NodeVector[middle_node_id].m_SignalOffset_In_Second = Offset;
-			
-
-			int prohibited_flag = 0;
-
-			parser_movement.GetValueByFieldName ("prohibited_flag",prohibited_flag );
+			if (g_NodeNametoIDMap.find(node_id) == g_NodeNametoIDMap.end())
+				continue;  // skip this record
 
 
-				if(prohibited_flag ==1)
-				{
-					g_ShortestPathWithMovementDelayFlag = true; // with movement input
+			parser_signal.GetValueByFieldName("parameter_key", parameter_key);
 
-						g_ProhibitMovement(up_node_id, node_id , dest_node_id);
-
-
-						continue; // do not need to check further 
-				}
-
-				if(node_id  == 5 && up_node_id == 1)
-				{
-				TRACE("");
-				}
-
-				if(CycleLength <1)  // do not simulate node with zero signal length
-				{
-				g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
-				
-				}
-
-				// do not need to read signal timing data 
-				if(	g_NodeVector[middle_node_id].m_ControlType != g_settings.pretimed_signal_control_type_code &&
-					g_NodeVector[middle_node_id].m_ControlType != g_settings.actuated_signal_control_type_code )
-					continue;
-
-				
-
-				std::string turn_type;
-
-				parser_movement.GetValueByFieldName ("turn_type",turn_type );
-
-				string strid = GetLinkStringID(up_node_id,node_id);
-				if(g_LinkMap.find(strid)!= g_LinkMap.end())
-				{
-
-				float QEM_GreenStartTime = 9999;
-				float QEM_GreenEndTime = 0;
-
-				DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
-				pLink->m_bSignalizedArterialType = true;
-
-
-			if(g_SignalRepresentationFlag == signal_model_link_effective_green_time && CycleLength >=1)
+			if (parameter_key == "cycle_length")
 			{
-
-				pLink->m_EffectiveGreenTime_In_Second = pLink->m_LaneCapacity /  pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane*60.0 ;
-				pLink->m_GreenStartTime_In_Second = 0;   
-				pLink->m_DownstreamNodeSignalOffset_In_Second = 0; 
+				parser_signal.GetValueByFieldName("value", CycleLength);
+				g_NodeVector[node_id].m_CycleLength_In_Second = CycleLength;
 
 			}
 
-					parser_movement.GetValueByFieldName ("GreenStartTime", QEM_GreenStartTime );
-					parser_movement.GetValueByFieldName ("GreenEndTime", QEM_GreenEndTime );
-				
-				float QEM_EffectiveGreenTime  = 10;
-					parser_movement.GetValueByFieldName ("EffectiveGreen", QEM_EffectiveGreenTime );
+			if (parameter_key == "offset")
+			{
+				parser_signal.GetValueByFieldName("value", Offset);
+				g_NodeVector[node_id].m_SignalOffset_In_Second = Offset;
+
+			}
+
+			for (int m = 0; m < _max_number_of_movements; m++)
+			{
+				float value = 0;
+				parser_signal.GetValueByFieldName(g_movement_column_name[m], value);
+
+				string strid;
+				if (g_LinkMap.find(strid) != g_LinkMap.end())
+				{
+
+					if (g_NodeNametoIDMap.find(node_id) == g_NodeNametoIDMap.end())
+						continue;  // skip this record
+
+					strid = g_NodeVector[g_NodeNametoIDMap[node_id]].m_Movement2LinkIDStringMap[g_movement_column_name[m]];
 
 
-					int QEM_Lanes = 0;
-					parser_movement.GetValueByFieldName ("Lanes", QEM_Lanes );
-					float SatFlowRatePerLaneGroup = 1800*QEM_Lanes;
-					parser_movement.GetValueByFieldName ("SatFlowRatePerLaneGroup", SatFlowRatePerLaneGroup );
+					DTALink *pLink = NULL;
 
-					//float SatFlowRatePerLane = SatFlowRatePerLaneGroup/max(1,QEM_Lanes);
-					// we use a default value here as the QEM should provide a more reliable value in the future 
-					float SatFlowRatePerLane  = 1800;
-					if(QEM_Lanes >=1 )
+					if (strid.size() >= 1)
 					{
-						if(SatFlowRatePerLane <=1) // no value
-							SatFlowRatePerLane = 1800; // use default
-						else if (SatFlowRatePerLane <=200)
-							SatFlowRatePerLane = 200; // set the minimum value
-
-					}
-					if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength >=1 && QEM_GreenStartTime >=  QEM_GreenEndTime && turn_type.find("Right") == string::npos)
-					{
-						cout << "Movement " <<  up_node_id << " ->" << node_id << " ->" << dest_node_id << 
-							" has green time interval" << QEM_GreenStartTime << ", " << QEM_GreenEndTime << endl << "Please check AMS_movement.csv." << endl << "DTALite will simulate this node as no-control." << endl;
-						zero_effective_green_time_error_count++;
-
-						g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
+						pLink = g_LinkMap[strid];
 
 					}
 
 
-				if(turn_type.find("Left") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
-				{
-
-					//find link
-					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
+					if (parameter_key == "start_time")
 					{
-						if(g_LinkMap.find(GetLinkStringID(up_node_id,node_id)) == g_LinkMap.end())  // no such link
-							continue; 
-
-
-
-						if(QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
+						if (g_movement_column_name[m].find("T") != string::npos)
 						{
-							// we have to prevent this left-turn movement, as no green time being assigned. 
-							g_ProhibitMovement(up_node_id, node_id , dest_node_id);
-						
+							pLink->m_GreenStartTime_In_Second = value;  // movement start time;
 						}
-
-	
-						pLink->m_LeftTurn_DestNodeNumber = dest_node_id;
-						pLink->m_LeftTurn_NumberOfLanes = QEM_Lanes; 
-
-						pLink->m_LeftTurnGreenStartTime_In_Second = QEM_GreenStartTime;
-						pLink->m_LeftTurn_EffectiveGreenTime_In_Second = (QEM_EffectiveGreenTime + QEM_GreenEndTime - QEM_GreenStartTime)/2.0;  // consider the lost time for permitted phases.
-						pLink->m_LeftTurn_SaturationFlowRate_In_vhc_per_hour_per_lane = SatFlowRatePerLane ;
+						if (g_movement_column_name[m].find("L") != string::npos)
+						{
+							pLink->m_LeftTurnGreenStartTime_In_Second = value;  // movement start time;
 						}
+					}
 
-
-
-				}
-
-				if(turn_type.find("Through") != string::npos )  // the # of lanes and speed for through movements are determined by link attribute
-				{
-
-					//find link
-					if(QEM_Lanes >= 1 && GetLinkStringID(up_node_id,node_id).size()>0 )
+					if (parameter_key == "end_time")
 					{
-						if(g_LinkMap.find(GetLinkStringID(up_node_id,node_id)) == g_LinkMap.end())  // no such link
-							continue; 
-
-
-						DTALink* pLink = g_LinkMap[GetLinkStringID(up_node_id,node_id)];
-
-
-						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength>=10 && QEM_GreenStartTime >= QEM_GreenEndTime && QEM_Lanes >=1)
+						if (g_movement_column_name[m].find("T") != string::npos)
 						{
-							// we have to prevent this left-turn movement, as no green time being assigned. 
-							g_ProhibitMovement(up_node_id, node_id , dest_node_id);
-
-							cout << "In file AMS_movement.csv, through movement " << up_node_id << "->" << node_id << "->" <<  dest_node_id << " has no green time being assigned at this signalized node." << endl << "Please check if the left-turn approach has more than 1 lane with positive green time" << endl;
-
-							getchar();
-							g_number_of_warnings++;
-						
+							pLink->m_EffectiveGreenTime_In_Second = max(0, value - pLink->m_GreenStartTime_In_Second);  // consider the lost time for permitted phases.
 						}
 
-
-						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+						if (g_movement_column_name[m].find("L") != string::npos)
 						{
-						// take maximum of left-turn and through effective green time as link effective green time (for left and through as default value)
-						
-							pLink->m_GreenStartTime_In_Second = QEM_GreenStartTime;
-							pLink->m_EffectiveGreenTime_In_Second = (QEM_EffectiveGreenTime + QEM_GreenEndTime - QEM_GreenStartTime)/2.0;  // consider the lost time for permitted phases.
-
-							pLink->m_SaturationFlowRate_In_vhc_per_hour_per_lane = SatFlowRatePerLane; // we use link based saturation flow rate
+							pLink->m_LeftTurn_EffectiveGreenTime_In_Second = max(0, value - pLink->m_GreenStartTime_In_Second);  // consider the lost time for permitted phases.
 						}
-						}
-
+					}
 
 
 				}
 
-				}
-		}
-		
-	}
 
-		//update link based cycle length and offset
+					//int QEM_Lanes = 0;
+					//parser_signal.GetValueByFieldName("Lanes", QEM_Lanes);
+					//float SatFlowRatePerLaneGroup = 1800 * QEM_Lanes;
+					//parser_signal.GetValueByFieldName("SatFlowRatePerLaneGroup", SatFlowRatePerLaneGroup);
 
-		for(int li = 0; li< g_LinkVector.size(); li++)
-		{
+					////float SatFlowRatePerLane = SatFlowRatePerLaneGroup/max(1,QEM_Lanes);
+					//// we use a default value here as the QEM should provide a more reliable value in the future 
+					//float SatFlowRatePerLane = 1800;
+					//if (QEM_Lanes >= 1)
+					//{
+					//	if (SatFlowRatePerLane <= 1) // no value
+					//		SatFlowRatePerLane = 1800; // use default
+					//	else if (SatFlowRatePerLane <= 200)
+					//		SatFlowRatePerLane = 200; // set the minimum value
 
-			DTALink* pLink = g_LinkVector[li];
+					//}
+					//if (g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength >= 1 && QEM_GreenStartTime >= QEM_GreenEndTime && turn_type.find("Right") == string::npos)
+					//{
+					//	cout << "Movement " << up_node_id << " ->" << node_id << " ->" << dest_node_id <<
+					//		" has green time interval" << QEM_GreenStartTime << ", " << QEM_GreenEndTime << endl << "Please check AMS_movement.csv." << endl << "DTALite will simulate this node as no-control." << endl;
+					//	zero_effective_green_time_error_count++;
 
+					//	g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
 
-				if(	g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code ||
-					g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.actuated_signal_control_type_code )
-				{
+					//}
 
-
-						int CycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
-						int SignalOffSet_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
-
-						if(g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength_In_Second < 10  )  // use approximate cycle length
-						{
-							cout << "Input data warning: cycle length for signalized intersection " << g_NodeVector[pLink->m_ToNodeID]. m_NodeNumber << " = "<< CycleLength_In_Second << " seconds."<< endl << "Please any key to continue." << endl;
-							getchar ();
-							g_number_of_warnings++;
-
-						}
-
-
-						if(CycleLength_In_Second>=10)
-						{
-						pLink->m_DownstreamNodeSignalOffset_In_Second = SignalOffSet_In_Second;
-						pLink->m_DownstreamCycleLength_In_Second = CycleLength_In_Second;
-						}
-				}
-
-		}
-
-
-
-	if(zero_effective_green_time_error_count >=1)
-	{
-	
-		cout << "press any key to continue..." <<endl;  
-	}
-
-	// step 4: from dual ring structure: find the start_time for both through and left-turn movement
-	// given input:
-	// 1,2,3,4,: 5,6,7,8
-	// store internal phase number for each movement: 
-	// we use the standard phase sequence 
 
 }
+
+	
+

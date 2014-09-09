@@ -27,4 +27,5 @@ public:
 	CListBox m_ListBox_SensorData;
 	virtual BOOL OnInitDialog();
 	CListBox m_ListBox_OutputData;
+	afx_msg void OnLbnSelchangeListSensorFile();
 };

@@ -255,7 +255,7 @@ enum DTA_SIG_PHASE_ROW
 	DTA_PHASE_ATTRIBUTE_MAX_ROW};
 
 enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_inflow_volume,link_outflow_volume,link_in_and_outflow_volume,link_travel_time,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count, energy_miles_per_gallon, emission_CO,emission_CO2,emission_NOX,emission_HC};
-enum eLinkDataType {eSimulationData,eSensorData};
+enum eLinkDataType { eSimulationData, eSensorData, eFloatingCarData };
 
 class DTA_Movement_Data_Matrix
 {
@@ -552,7 +552,7 @@ extern double g_GetPoint2Point_Distance(GDPoint p1, GDPoint p2);
 
 extern DTA_Turn g_RelativeAngle_to_Turn(int RelativeAngle);
 
-extern double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitFeet=1);
+extern double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitFeet = 1, bool no_intersection_requirement = false);
 extern double g_CalculateP2PDistanceInMileFromLatitudeLongitude(GDPoint p1, GDPoint p2);
 extern bool g_get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y) ;
 
@@ -581,19 +581,39 @@ public:
 class DTASensorData
 {
 public:
+	bool b_valid_data;
 	int start_time_in_min;
 	int end_time_in_min;
 
+	std::string direction;
+	std::string count_sensor_id;
 	std::string second_count_sensor_id;
+	std::string speed_sensor_id;
+	int day_no;
+
+	int link_from_node_id;
+	int link_to_node_id;
+
 
 	float count;  // link count
 	float density; //lane density;
+	float speed;
+
+
+	float derived_lane_hourly_volume;
+	float matched_simulated_hourly_volume;
 
 	DTASensorData()
 	{
+	speed = -1;
+	b_valid_data = true;
 	start_time_in_min = end_time_in_min = 0;
 	count = 0;
 	density = 0;
+	day_no = 0;
+	derived_lane_hourly_volume = 0;
+	matched_simulated_hourly_volume = 0;
+
 	}
 
 
@@ -1717,19 +1737,84 @@ public:
 
 	DTALine ()
 	{
-	m_FromNodeNumber = 0;
-	m_ToNodeNumber = 0;
-	
+		line_type = 0;
+		direction = 1;
 	}
-	int LineID;
-	CString m_LinkKey;
-	double Miles;
 
-	int m_FromNodeNumber;
-	int m_ToNodeNumber;
+	int line_type;
+	int direction;
 
-	std::string TMC_code;
+	std::string m_geo_string;
+	std::string m_LineID;
 	std::vector<GDPoint> m_ShapePoints;
+
+	std::vector<float> m_ShapePointRatios;
+	void CalculateShapePointRatios()
+	{
+
+		m_ShapePointRatios.clear();
+
+		float total_distance = 0; 
+		unsigned int si;
+
+		if(m_ShapePoints.size()==0)
+			return;
+
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			total_distance += g_GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]); 
+		}
+
+		if(total_distance < 0.0000001f)
+			total_distance = 0.0000001f;
+
+		float distance_ratio = 0;
+		float P2Origin_distance = 0;
+		m_ShapePointRatios.push_back(0.0f);
+		for(si = 0; si < m_ShapePoints .size()-1; si++)
+		{
+			P2Origin_distance += g_GetPoint2Point_Distance(m_ShapePoints[si],m_ShapePoints[si+1]);
+			m_ShapePointRatios.push_back(P2Origin_distance/total_distance);
+		}
+	}
+	GDPoint GetRelativePosition(float ratio)
+	{
+
+		GDPoint Pt;
+		Pt.x = 0;
+		Pt.y = 0;
+
+
+		Pt.x = (m_ShapePoints[0].x + m_ShapePoints[m_ShapePoints.size() - 1].x) / 2;
+		Pt.y = (m_ShapePoints[0].y + m_ShapePoints[m_ShapePoints.size() - 1].y) / 2;
+
+		unsigned	int si;
+
+		if (m_ShapePointRatios.size() == m_ShapePoints.size())
+		{
+
+			for (si = 0; si < m_ShapePoints.size() - 1; si++)
+			{
+
+				if (ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si + 1])
+				{
+
+					float SectionRatio = m_ShapePointRatios[si + 1] - m_ShapePointRatios[si];
+
+					float RelateveRatio = 0;
+					if (SectionRatio >0)
+						RelateveRatio = (ratio - m_ShapePointRatios[si]) / SectionRatio;
+
+					Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si + 1].x - m_ShapePoints[si].x);
+					Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si + 1].y - m_ShapePoints[si].y);
+
+					return Pt;
+				}
+			}
+
+		}
+		return Pt;
+	}
 };
 // event structure in this "event-basd" traffic simulation
 typedef struct{
@@ -1750,6 +1835,7 @@ public:
 	float Speed;  // speed
 	float LinkFlow;   // flow volume
 	float Density;   // Density
+	float PopulationFlow;   // flow volume based on probe data
 
 	float ArrivalCumulativeFlow;   // flow volume
 	float DepartureCumulativeFlow;   // flow volume
@@ -1785,6 +1871,7 @@ public:
 
 	SLinkMOE()
 	{
+		PopulationFlow = 0;
 	total_vehicle_delay = 0;
 	number_of_vehicles_at_downstream = 0;
 
@@ -2029,6 +2116,9 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_b_invalid_sensor = false;
+		m_sensor_hourly_lane_volume_min = 99999;
+		m_sensor_hourly_lane_volume_max = 0;
 	
 		m_total_assigned_link_volume = 0;
 		m_total_link_volume_of_incomplete_trips = 0;
@@ -2060,6 +2150,7 @@ public:
 		m_SetBackStart = 0;
 		m_SetBackEnd = 0;
 		m_SpeedLimit  = 50;
+		m_SpeedAtCapacity = 30;
 		m_ReversedSpeedLimit  = 50;
 		m_Saturation_flow_rate_in_vhc_per_hour_per_lane = 1800;
 
@@ -2248,7 +2339,10 @@ public:
 	bool m_AVISensorFlag;
 	int m_LayerNo;
 	float m_Grade;
-	string m_Name;
+	string m_Name; 
+	string m_loop_code;
+	string m_orientation_code;
+
 
 
 	// overall information
@@ -2264,6 +2358,10 @@ public:
 	float m_avg_waiting_time_on_loading_buffer;
 	float m_avg_simulated_speed;
 	float m_total_sensor_link_volume;
+	float m_sensor_hourly_lane_volume_min;
+	float m_sensor_hourly_lane_volume_max;
+	bool m_b_invalid_sensor;
+
 	float m_total_link_count_error;
 	float m_simulated_AADT;
 
@@ -2355,51 +2453,6 @@ public:
 		}
 	}
 
-	GDPoint GetRelativePosition(float ratio)
-	{
-
-		GDPoint Pt;
-		Pt.x = 0;
-		Pt.y = 0;
-
-		if(m_ShapePoints.size() <2)
-		{
-		Pt.x = ratio * this->m_FromPoint .x + (1- ratio)* this->m_ToPoint .x;
-		Pt.y = ratio * this->m_FromPoint .y + (1- ratio)* this->m_ToPoint .y;
-		 return Pt; 
-		}
-
-
-		Pt.x= (m_ShapePoints[0].x+ m_ShapePoints[m_ShapePoints .size()-1].x)/2;
-		Pt.y= (m_ShapePoints[0].y+ m_ShapePoints[m_ShapePoints .size()-1].y)/2;
-
-		unsigned	int si;
-
-		if(m_ShapePointRatios.size() == m_ShapePoints.size())
-		{
-
-			for(si = 0; si < m_ShapePoints .size()-1; si++)
-			{
-
-				if(ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si+1])
-				{
-
-					float SectionRatio = m_ShapePointRatios[si+1] - m_ShapePointRatios[si];
-
-					float RelateveRatio = 0;
-					if(SectionRatio >0)
-						RelateveRatio = (ratio - m_ShapePointRatios[si])/SectionRatio;
-
-					Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si+1].x - m_ShapePoints[si].x);
-					Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si+1].y - m_ShapePoints[si].y);
-
-					return Pt;
-				}
-			}
-
-		}
-		return Pt;
-	}
 
 
 	//for timetabling use
@@ -2744,6 +2797,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 	float    m_VehicleSpaceCapacity; // in vehicles
 	int		m_NumberOfLanes;
 	float	m_SpeedLimit;
+	float   m_SpeedAtCapacity;
 	float	m_ReversedSpeedLimit;
 	int m_prohibited_u_turn;
 
@@ -2935,6 +2989,30 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 				return total_value/total_count;
 			else
 				return this->m_SpeedLimit;
+	}
+
+
+	float GetFloatingCarSpeed(int t)
+	{
+		t = t + g_SensorDayNo * 1440;
+		float total_value = 0;
+		int total_count = 0;
+
+		for (int tt = t; tt < t + g_MOEAggregationIntervalInMin; tt++)
+		{
+			//
+			if (m_LinkSensorMOEMap.find(tt) != m_LinkSensorMOEMap.end())
+			{
+				total_value += m_LinkSensorMOEMap[t].Speed;
+
+				total_count++;
+			}
+		}
+
+		if (total_count >= 1)
+			return total_value / total_count;
+		else
+			return this->m_SpeedLimit;
 	}
 
 		float GetSimulatedEnergy(int current_time)
@@ -3146,6 +3224,31 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		return total_volume;
 	}
 
+
+		float GetFloatingCarPopulationVolume(int start_time)
+		{
+
+			start_time = start_time + g_SensorDayNo * 1440;
+			int end_time = start_time + g_MOEAggregationIntervalInMin;
+
+			float total_volume = 0;
+			int total_count = 0;
+			for (int t = start_time; t< end_time; t++)
+			{
+
+				if (m_LinkSensorMOEMap.find(t) != m_LinkSensorMOEMap.end())
+				{
+					total_volume += max(0, m_LinkSensorMOEMap[t].PopulationFlow);
+					total_count++;
+
+				}
+
+			}
+
+
+			return total_volume;
+		}
+
 		float GetAvgLinkHourlyVolume(int start_time, int end_time)
 	{
 
@@ -3207,6 +3310,18 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		}
 	}
 
+	float GetProbeLaneHourlyVolume(int t)
+	{
+		t = t + g_SensorDayNo * 1440;
+
+		if (m_LinkSensorMOEMap.find(t) != m_LinkSensorMOEMap.end())
+			return m_LinkSensorMOEMap[t].PopulationFlow / m_NumberOfLanes * 60;
+		else
+		{
+			return 0;
+		}
+	}
+
 	float GetSimulatedLinkOutVolume(int current_time)
 	{
 
@@ -3256,6 +3371,22 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 
 					default: value = 0;
 					}
+		}
+
+		if (LinkDataType == eFloatingCarData)
+		{
+			switch (MOEType)
+			{
+			case lane_volume: value = GetProbeLaneHourlyVolume(i); break;
+			case speed_kmh: value = GetSensorSpeed(i) / 0.621371192; break;
+			case link_inflow_volume: value = GetProbeLinkHourlyVolume(i); break;
+			case link_outflow_volume: value = GetProbeLinkHourlyVolume(i); break;
+			case link_travel_time: value = GetSensorTravelTime(i); break;
+			case speed_mph: value = GetSensorSpeed(i); break;
+			case link_density: value = 0; break;
+
+			default: value = 0;
+			}
 		}
 
 		if(LinkDataType == eSimulationData)
@@ -3351,7 +3482,17 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		}
 	}
 
+	float GetProbeLinkHourlyVolume(int t)
+	{
+		t = t + g_SensorDayNo * 1440;
 
+		if (m_LinkSensorMOEMap.find(t) != m_LinkSensorMOEMap.end())
+			return m_LinkSensorMOEMap[t].PopulationFlow * 60;
+		else
+		{
+			return 0;
+		}
+	}
 
 	float GetSensorTravelTime(int current_time)
 	{
@@ -3409,9 +3550,11 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		float value = 0;
 		if(data_type == eSimulationData)
 			value =  GetSimulatedLinkVolume(current_time);
-		else // eSensorData
+		else if (data_type == eSensorData) // eSensorData
 			value = GetSensorVolume(current_time);
-	
+		else
+			value = GetFloatingCarPopulationVolume(current_time);
+
 		return value;
 	}
 	float GetDynamicTravelTime(int current_time, eLinkDataType data_type = eSimulationData)
@@ -3431,9 +3574,10 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 
 		if(data_type == eSimulationData)
 			value =  GetSimulatedSpeed(current_time);
-		else // eSensorData
+		else if (data_type == eSensorData)
 			value =  GetSensorSpeed(current_time);
-
+		else
+			value = GetFloatingCarSpeed(current_time);
 		return value;
 	}
 
@@ -3778,7 +3922,51 @@ float GetEmissions(int t, DTA_EMISSION_TYPE emission_type)
 		return max(0.0001f,travel_time);;
 
 	};
+	GDPoint GetRelativePosition(float ratio)
+	{
 
+		GDPoint Pt;
+		Pt.x = 0;
+		Pt.y = 0;
+
+		if (m_ShapePoints.size() <2)
+		{
+			Pt.x = ratio * this->m_FromPoint.x + (1 - ratio)* this->m_ToPoint.x;
+			Pt.y = ratio * this->m_FromPoint.y + (1 - ratio)* this->m_ToPoint.y;
+			return Pt;
+		}
+
+
+		Pt.x = (m_ShapePoints[0].x + m_ShapePoints[m_ShapePoints.size() - 1].x) / 2;
+		Pt.y = (m_ShapePoints[0].y + m_ShapePoints[m_ShapePoints.size() - 1].y) / 2;
+
+		unsigned	int si;
+
+		if (m_ShapePointRatios.size() == m_ShapePoints.size())
+		{
+
+			for (si = 0; si < m_ShapePoints.size() - 1; si++)
+			{
+
+				if (ratio > m_ShapePointRatios[si] && ratio < m_ShapePointRatios[si + 1])
+				{
+
+					float SectionRatio = m_ShapePointRatios[si + 1] - m_ShapePointRatios[si];
+
+					float RelateveRatio = 0;
+					if (SectionRatio >0)
+						RelateveRatio = (ratio - m_ShapePointRatios[si]) / SectionRatio;
+
+					Pt.x = m_ShapePoints[si].x + RelateveRatio*(m_ShapePoints[si + 1].x - m_ShapePoints[si].x);
+					Pt.y = m_ShapePoints[si].y + RelateveRatio*(m_ShapePoints[si + 1].y - m_ShapePoints[si].y);
+
+					return Pt;
+				}
+			}
+
+		}
+		return Pt;
+	}
 
 };
 
@@ -4269,8 +4457,24 @@ public:
 		LinkID = -1;
 		AADT = 0;
 		peak_hour_factor = 0;
+		matched_from_node_id = -1;
+		matched_to_node_id = -1;
+		pt.x = 0;
+		pt.y = 0;
 
 	}
+
+	string direction;
+	string orientation_code;
+	string orientation2_code;  // north east bound 
+
+	int matched_from_node_id;
+	int matched_to_node_id;
+
+	string type_code;
+	string loop_code;
+
+	string description;
 	int FromNodeNumber;
 	int ToNodeNumber;
 	int LinkID;

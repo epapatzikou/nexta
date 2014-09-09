@@ -28,7 +28,9 @@
 #pragma warning(disable:4244)  // stop warning: "conversion from 'int' to 'float', possible loss of data"
 #pragma warning(disable:4996)  // stop warning: 'MBCS_Support_Deprecated_In_MFC': MBCS support in MFC is deprecated 
 #include "resource.h"
-#define _large_memory_usage
+
+//#define _large_memory_usage_lr
+//#define _large_memory_usage
 
 
 #include <math.h>
@@ -44,7 +46,7 @@ using namespace std;
 #define PI 3.1415626
 #define _MAX_STRING_LINE 30000
 
-enum e_traffic_information_class { info_hist = 0, info_hist_learning, info_pre_trip, info_en_route, info_personalized_info, info_eco_so};
+enum e_traffic_information_class { info_hist_based_on_routing_policy = 0, learning_from_hist_travel_time, info_pre_trip, info_en_route, info_personalized_info, info_eco_so};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
 enum e_demand_loading_mode { demand_matrix_file_mode = 0, vehicle_binary_file_mode, real_time_demand_matrix_file_mode, accessibility_demand_mode};
 enum e_signal_representation_model {signal_model_continuous_flow = 0,  signal_model_link_effective_green_time, signal_model_movement_effective_green_time };
@@ -58,11 +60,13 @@ assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
 assignment_accessibility_travel_time,
 assignment_accessibility_distanance,
 assignment_vehicle_binary_file_based_scenario_evaluation,
-assignment_real_time_simulation,
+assignment_real_time_simulation,  /*8 for ABM+DTA integration*/
 assignment_integration_with_ABM,
 assignment_system_optimal,
 assignment_gap_function_MSA_step_size,
-assignment_LR_agent_based_system_optimization
+assignment_LR_agent_based_system_optimization,
+assignment_metro_sim_13, 
+assignment_metro_sim
 };
 
 extern e_traffic_flow_model g_TrafficFlowModelFlag;
@@ -106,7 +110,7 @@ extern int g_CalculateUEGapForAllAgents;
 
 extern double g_CarFollowingSimulationInterval;
 
-#define	MAX_SPLABEL 99999999.0f
+#define	MAX_SPLABEL 9999.0f  // this value cannot be further increase as an extremely large value could lead to overflow
 #define MAX_TIME_INTERVAL_ADCURVE 300  // 300 simulation intervals of data are stored to keep tract Cumulative flow counts of each link
 extern int g_AggregationTimetInterval;
 extern int g_TDSPTimetIntervalSizeForMin;
@@ -576,6 +580,7 @@ public:
 		m_bOriginFlag = false;
 		m_bDestinationFlag = false;
 		m_TotalDelay = 0;
+
 	};
 	~DTANode()
 	{
@@ -589,6 +594,7 @@ public:
 	int m_ControlType; // Type:
 	int m_SignalOffset_In_Second;
 	int m_CycleLength_In_Second;
+	std::map<std::string, std::string> m_Movement2LinkIDStringMap;
 	float m_TotalCapacity;
 
 	std::vector<DTADestination> m_DestinationVector;
@@ -1316,8 +1322,15 @@ public:
 	float	m_Length;  // in miles
 	float   m_VehicleSpaceCapacity; // in vehicles
 	int	m_OutflowNumLanes;
+
+	int m_Orginal_OutflowNumLanes;
+	int m_Orginal_InflowNumLane;
+
 	int m_InflowNumLanes;
 	float	m_SpeedLimit;
+	float	m_SpeedAtCapacity;
+	float	m_KCritical;
+
 	float m_KJam;
 	float m_AADTConversionFactor;
 	float m_BackwardWaveSpeed; // unit: mile/ hour
@@ -1438,6 +1451,20 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 			return total_deviation;
 	}
 
+	bool ContainTravelTimeObservation(float timestamp)
+	{
+		for (unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
+		{
+			if (m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsTravelTime  >= 0.1)
+			{
+
+				return true;
+			}
+
+		}
+
+		return false;
+	}
 	bool ContainFlowCount(float timestamp)
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
@@ -1503,7 +1530,8 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
-			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 &&  m_LinkMeasurementAry[i].ObsTravelTime>=0.001 )
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime 
+				&&  m_LinkMeasurementAry[i].ObsTravelTime>=0.001 )
 			{
 
 				return m_LinkMeasurementAry[i].DeviationOfTravelTime  ;
@@ -1586,7 +1614,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
-			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime )
 			{
 
 
@@ -1604,7 +1632,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 	{
 		for(unsigned i = 0; i< m_LinkMeasurementAry.size(); i++)
 		{
-			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime && m_LinkMeasurementAry[i].ObsFlowCount >=1 )
+			if(m_LinkMeasurementAry[i].StartTime <= timestamp && timestamp <= m_LinkMeasurementAry[i].EndTime )
 			{
 
 				return GetTravelTimeByMin(-1,timestamp,g_AggregationTimetInterval,g_TrafficFlowModelFlag); 
@@ -1695,7 +1723,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	// traffic flow propagation
 	float m_FreeFlowTravelTime; // min
-
+	float m_MinimMovingTravelTime; // min
 	float m_BPR_Alpha;
 	float m_BPR_Beta;
 
@@ -1766,9 +1794,35 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 					return m_Length/max(1,IncidentCapacityReductionVector[il].SpeedLimit)*60.0f;  // convert from hour to min;
 				}
 			}
-			return m_FreeFlowTravelTime;
+
+
+				return m_FreeFlowTravelTime;
+
 		}
 	}
+
+	float GetMinimumMovingTravelTime()
+	{
+		return m_MinimMovingTravelTime;
+	}
+	void UpdateMinimumMovingTravelTime(float gain_factor = 0.5)
+	{
+			float density = (CFlowArrivalCount - CFlowDepartureCount) / max(0.001, m_Length*m_OutflowNumLanes); 
+			float current_speed_above_capacity = max(m_SpeedAtCapacity, m_SpeedLimit - density* (m_SpeedLimit - m_SpeedAtCapacity) / m_KCritical);
+			float current_moving_travel_time = m_Length / max(0.1, current_speed_above_capacity)*60;  // unit: min
+
+			m_MinimMovingTravelTime = (1 - gain_factor) * m_MinimMovingTravelTime + gain_factor* current_moving_travel_time;
+
+	}
+
+	//if (TrafficModelFlag == 4)  // modified Newell's model
+	//{
+	//	float density = (CFlowArrivalCount - CFlowDepartureCount) / max(0.001, m_Length*m_OutflowNumLanes); 
+	//	float current_speed_above_capacity = max(m_SpeedAtCapacity, m_SpeedLimit - density* (m_SpeedLimit - m_SpeedAtCapacity) / m_KCritical);
+	//	return m_Length / max(0.1, current_speed_above_capacity)*60;  // unit: min
+	//}
+	//else
+	//{
 
 	float GetHistoricalTravelTime(int Time = -1)
 	{	// default value for now
@@ -1786,6 +1840,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 		m_CumulativeInCapacityCount = 0;
 		m_JamTimeStamp = (float) m_SimulationHorizon;
 		m_FreeFlowTravelTime = m_Length/m_SpeedLimit*60.0f;  // convert from hour to min
+		m_MinimMovingTravelTime = m_FreeFlowTravelTime;
 		total_departure_based_travel_time = m_FreeFlowTravelTime;
 		m_prevailing_travel_time = m_FreeFlowTravelTime;
 		m_BPRLinkVolume = 0;
@@ -2403,8 +2458,8 @@ class VehicleLinkPrice
 {
 public:
 	int LinkNo;
-	float RoadPrice;
-	int RoadUsageFlag;
+	float RoadPrice;    // pie variable 
+	int RoadUsageFlag;  // X variable 
 	float TotalTollColected;
 
 	VehicleLinkPrice()
@@ -2417,7 +2472,7 @@ public:
 
 	bool operator<(const VehicleLinkPrice &other) const
 	{
-		return RoadPrice < other.RoadPrice;
+		return RoadPrice > other.RoadPrice;   // reverse sorting, from large to small
 	}
 };
 
@@ -2495,6 +2550,7 @@ public:
 	bool m_bForcedSwitchAtFirstIteration; // used by agent model, if there is a newly added work zone, then we have to force the vehicles to switch (in order to avoid bloced links)
 	bool m_bSwitch;  // switch route in assignment
 	float m_gap;
+	bool m_bMeetTarget;
 	bool m_gap_update;
 	bool m_bConsiderToSwitch;  //consider to switch route in assignment
 
@@ -2536,17 +2592,26 @@ public:
 		m_NumberOfSamples +=1;
 	};
 
-	std::vector<DTAVMSRespone> m_VMSResponseVector;
 
+
+#ifdef _large_memory_usage_lr
 	std::vector<VehicleLinkPrice> m_PersonalizedRoadPriceVector;
+#endif 
 
+
+#ifdef _large_memory_usage_lr
+	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::map<int, int> m_OperatingModeCount;
 	std::map<int, int> m_SpeedCount;
 	std::map<int, VehicleSpeedProfileData> m_SpeedProfile;
+#endif 
+
 
 
 	DTAVehicle()
 	{
+
+		m_bMeetTarget = false;
 		m_NodeNumberSum = 0;
 		m_OriginNodeID = -1;
 		m_DestinationNodeID = -1;
@@ -2585,7 +2650,7 @@ public:
 		m_LinkAry = NULL;
 		m_NodeSize	= 0;
 		m_bImpacted = false; 
-		m_InformationClass = info_hist;
+		m_InformationClass = info_hist_based_on_routing_policy;
 		m_DemandType = 1;
 		m_VehicleType = 1;
 		m_PricingType = 0;
@@ -2665,7 +2730,7 @@ public:
 	m_DemandType = 1;
 	m_VehicleType = 1;
 	m_PricingType = 1;
-	m_InformationClass = info_hist;
+	m_InformationClass = info_hist_based_on_routing_policy;
 	m_Age = 0;
 	m_TimeToRetrieveInfo = 0;
 	
@@ -3012,7 +3077,7 @@ public:
 	std::vector<int>   PathNodeSums;            // max 100 path for each ODT
 	std::vector<int>   NumOfVehsOnEachPath; 	
 	std::vector<int>   PathSize;				// number of nodes on each path
-	std::vector<int>   MeasurementDeviationPathMarginal;            // max 100 path for each ODT
+	std::vector<float>   MeasurementDeviationPathMarginal;            // max 100 path for each ODT
 	std::vector<float> AvgPathTimes; 	       // average path travel time across different vehicles on the same path with the same departure time
 
 	std::vector<PathLinkStruct>   PathLinkSequences;	// max 300 links on each path
@@ -3066,9 +3131,11 @@ public:
 	int m_LinkSize;
 	std::vector<int> m_LinkNoArray;
 	float m_VehicleSize;
+	float FlowAdjustmentGradient;  // gradient of objective function with respect to path flow (o,d, tau, p)  
 
 	PathArrayForEachODTK()
 	{
+		FlowAdjustmentGradient = 0;
 		m_LinkSize = 0;
 		m_VehicleSize = 0;
 		m_DepartureTimeIndex = 0;
@@ -3192,6 +3259,7 @@ public:
 	float* LinkLabelCostAry;
 
 
+
 	int m_Number_of_CompletedVehicles;
 	int m_AdjLinkSize;
 
@@ -3201,10 +3269,24 @@ public:
 	int** TD_LinkPredAry;  // pointer to previous Link INDEX from the current label at current node and time
 	int** TD_TimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
 	float** TD_LinkCostAry;
+
 	int** TD_LinkTimeIntervalAry;
 	float** TD_LinkVolumeAry;  // to keep track of link volume for marginal cost calculation
 
-//	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
+	float** TD_InflowLinkLabelCostAry;
+	int** TD_InflowLinkTimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+	float** TD_InflowEntranceQueueLabelCostAry;
+	int** TD_InflowEntranceQueueTimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+	float** TD_OutflowLinkLabelCostAry;
+	int** TD_OutflowLinkTimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+	float** TD_OutflowExitQueueLabelCostAry;
+	int** TD_OutlowExitQueueTimePredAry;  // pointer to previous TIME INDEX from the current label at current node and time
+
+
+	//	std::list<int> m_ScanLinkList;  // used for movement-based scanning process, use a std implementation for simplicity
 
 	int PathLinkList[MAX_NODE_SIZE_IN_A_PATH];
 	int CurrentPathLinkList[MAX_NODE_SIZE_IN_A_PATH];
@@ -3274,7 +3356,7 @@ public:
 		TD_LabelCostAry = NULL;
 		TD_TimePredAry = NULL;
 
-#ifdef _large_memory_usage
+#ifdef _large_memory_usage_lr
 		TD_LabelCostAry = AllocateDynamicArray<float>(m_NodeSize, m_NumberOfTDSPCalculationIntervals);
 		TD_NodePredAry = AllocateDynamicArray<int>(m_NodeSize, m_NumberOfTDSPCalculationIntervals);
 		TD_LinkPredAry = AllocateDynamicArray<int>(m_NodeSize, m_NumberOfTDSPCalculationIntervals);
@@ -3283,7 +3365,17 @@ public:
 		TD_LinkTimeIntervalAry = AllocateDynamicArray<int>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
 		TD_LinkVolumeAry = AllocateDynamicArray<float>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
 
-		
+
+		TD_InflowLinkLabelCostAry = AllocateDynamicArray<float>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_InflowEntranceQueueLabelCostAry = AllocateDynamicArray<float>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_OutflowLinkLabelCostAry = AllocateDynamicArray<float>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_OutflowExitQueueLabelCostAry = AllocateDynamicArray<float>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+
+		TD_InflowLinkTimePredAry = AllocateDynamicArray<int>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_InflowEntranceQueueTimePredAry = AllocateDynamicArray<int>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_OutflowLinkTimePredAry = AllocateDynamicArray<int>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		TD_OutlowExitQueueTimePredAry = AllocateDynamicArray<int>(m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+
 #endif
 
 		m_FromIDAry = new int[m_LinkSize];
@@ -3365,7 +3457,7 @@ public:
 
 
 
-#ifdef _large_memory_usage
+#ifdef _large_memory_usage_lr
 		DeallocateDynamicArray<float>(TD_LabelCostAry, m_NodeSize, m_NumberOfTDSPCalculationIntervals);
 		DeallocateDynamicArray<int>(TD_NodePredAry, m_NodeSize, m_NumberOfTDSPCalculationIntervals);
 		DeallocateDynamicArray<int>(TD_LinkPredAry, m_NodeSize, m_NumberOfTDSPCalculationIntervals);
@@ -3373,6 +3465,18 @@ public:
 		DeallocateDynamicArray<float>(TD_LinkCostAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
 		DeallocateDynamicArray<int>(TD_LinkTimeIntervalAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
 		DeallocateDynamicArray<float>(TD_LinkVolumeAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+
+
+		DeallocateDynamicArray<float>(TD_InflowLinkLabelCostAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<float>(TD_InflowEntranceQueueLabelCostAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<float>(TD_OutflowLinkLabelCostAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<float>(TD_OutflowExitQueueLabelCostAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+
+		DeallocateDynamicArray<int>(TD_InflowLinkTimePredAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<int>(TD_InflowEntranceQueueTimePredAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<int>(TD_OutflowLinkTimePredAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+		DeallocateDynamicArray<int>(TD_OutlowExitQueueTimePredAry, m_LinkSize, m_NumberOfTDSPCalculationIntervals);
+
 #endif 
 		
 
@@ -3450,21 +3554,25 @@ public:
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
 	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag, bool bDistanceCostOutput);   // Pointer to previous node (node)
-	bool TDLabelCorrecting_DoubleQueue_PerPricingType(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue_PerPricingType(int CurZoneID, int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue_PerPricingType_Movement(int CurZoneID, int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 
 	//movement based shortest path
 	int FindBestPathWithVOT_Movement(int origin_zone, int origin, int departure_time,  int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool debug_flag);
 
-	int FindOptimalPath_TDLabelCorrecting_DQ(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, float TargetTravelTime, float &OptimialTravelTimeInMin, bool bDebugFlag = false);
-	int  FindOptimalSolution(int origin, int departure_time, int destination, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float TargetTravelTime,float &OptimialTravelTimeInMin);  // the last pointer is used to get the node array;
+	int FindOptimalNodePath_TDLabelCorrecting_DQ(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, float TargetTravelTime, float &OptimialTravelTimeInMin, bool bDebugFlag = false);
+	int FindOptimalLinkPath_TDLabelCorrecting_DQ(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, float TargetTravelTime, float &OptimialTravelTimeInMin, bool bDebugFlag = false);
+	int  FindOptimalSolution(int origin, int departure_time, int destination, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float TargetTravelTime, float &TotalCost, float &OptimialTravelTimeInMin);  // the last pointer is used to get the node array;
 	int  FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage=false, bool bDebugFlag = false);
 	int  FindBestSystemOptimalPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage = false, bool bDebugFlag = false);
+	int  FindOptimalLinkPathSolution(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage = false, bool bDebugFlag = false);
 
 
 	void ZoneBasedPathAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration,bool debug_flag);
 	float AgentBasedPathFindingAssignment(int zone,int departure_time_begin, int departure_time_end, int iteration);
 	
 	float AgentBasedPathOptimization(int zone, int departure_time_begin, int departure_time_end, int iteration);
+	float AgentBasedUpperBoundSolutionGeneration(int zone, int departure_time_begin, int departure_time_end, int iteration);
 
 	
 	
@@ -3604,6 +3712,7 @@ float g_read_float(FILE *f);
 float g_read_float_from_a_line(FILE *f);
 
 int g_read_number_of_numerical_values(char* line_string, int length);
+int g_read_numbers_from_a_line(FILE* f, std::vector<float> &ValueVector);
 
 void ReadNetworkTables();
 int CreateVehicles(int originput_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min,int PathIndex = -1, bool bChangeHistDemandTable=true, int departure_time_index = 0);
@@ -3681,6 +3790,7 @@ struct NetworkLoadingOutput
 {
 public:
 
+	struc_LinearRegressionResult ODME_result_link_speed;
 	struc_LinearRegressionResult ODME_result_link_count;  
 	struc_LinearRegressionResult ODME_result_lane_density;
 
@@ -3698,6 +3808,11 @@ public:
 		LinkVolumeAvgAbsPercentageError  =0 ;
 		LinkVolumeRootMeanSquaredError = 0;
 		CorrelationBetweenObservedAndSimulatedLinkVolume = 0;
+
+		LinkSpeedAvgAbsError = 0;
+		LinkSpeedAvgAbsPercentageError = 0;
+		LinkSpeedRootMeanSquaredError = 0;
+		CorrelationBetweenObservedAndSimulatedLinkSpeed = 0;
 
 		AvgTripTime = 0;
 		AvgTravelTime = 0;
@@ -3796,10 +3911,17 @@ public:
 		}
 	}
 	double TotalDemandDeviation;
+
 	double LinkVolumeAvgAbsError;
 	double LinkVolumeAvgAbsPercentageError;
 	double LinkVolumeRootMeanSquaredError;
 	double CorrelationBetweenObservedAndSimulatedLinkVolume;
+
+	double LinkSpeedAvgAbsError;
+	double LinkSpeedAvgAbsPercentageError;
+	double LinkSpeedRootMeanSquaredError;
+	double CorrelationBetweenObservedAndSimulatedLinkSpeed;
+
 };
 
 NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag, int SimulationMode, int Iteration);  // NetworkLoadingFlag = 0: static traffic assignment, 1: vertical queue, 2: spatial queue, 3: Newell's model, 
@@ -3905,7 +4027,7 @@ public:
 	float CumulativeRatio;
 
 	int m_LinkSize;
-	std::vector<int> m_LinkNoArray;
+	std::vector<int> m_LinkIDArray;
 	std::vector<int> m_NodeNumberArray;
 
 	int   TotalVehicleSize;
@@ -4144,6 +4266,8 @@ extern void ConstructPathArrayForEachODT_ODEstimation(int,std::vector<PathArrayF
 extern void g_UpdateLinkMOEDeviation_ODEstimation(NetworkLoadingOutput& output, int Iteration);
 extern void g_OutputODMEResults();
 extern void g_GenerateVehicleData_ODEstimation();
+extern void g_ZoneBasedAggregationAndAdjustment_ODEstimation();
+
 extern char g_GetLevelOfService(int PercentageOfSpeedLimit);
 extern bool g_read_a_line(FILE* f, char* aline, int & size);
 extern bool g_read_a_line(FILE* f);
@@ -4165,6 +4289,8 @@ extern bool g_ReadLinkMeasurementFile();
 // for OD estimation
 extern float    g_ODEstimation_WeightOnHistODDemand;
 extern bool g_ObsDensityAvailableFlag;
+extern bool g_ObsTravelTimeAvailableFlag;
+
 extern float    g_ODEstimation_Weight_Flow;
 extern float    g_ODEstimation_Weight_NumberOfVehicles;
 extern float    g_ODEstimation_Weight_TravelTime;
@@ -4252,3 +4378,6 @@ extern int g_number_of_CPU_threads();
 extern void g_AllocateDynamicArrayForVehicles();
 extern C_RealTimeSimulationSettings g_RealTimeSimulationSettings;
 extern bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence, CString FileName);
+
+extern int g_NetworkDesignOptimalLinkSize;
+extern float g_NetworkDesignTargetTravelTime;

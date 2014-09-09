@@ -312,7 +312,7 @@ float *X, float *Y)
   return true; 
 }
 
-double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitMile)
+double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double UnitMile, bool no_intersection_requirement)
 {
     float U;
     GDPoint Intersection;
@@ -321,9 +321,12 @@ double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double 
  
     U = (  (pt.x - ToPt.x) * (FromPt.x - ToPt.x ) + ( pt.y - ToPt.y ) * ( FromPt.y - ToPt.y ) ) /(LineLength * LineLength );
  
-    if( U < 0.0f || U > 1.0f )
-        return max(UnitMile*100,999999);   // intersection does not fall within the segment
- 
+	if (no_intersection_requirement == false)
+	{
+
+		if (U < 0.0f || U > 1.0f)
+			return max(UnitMile * 100, 999999);   // intersection does not fall within the segment
+	}
     Intersection.x = ToPt.x + U * ( FromPt.x - ToPt.x );
     Intersection.y = ToPt.y + U * ( FromPt.y - ToPt.y );
     
@@ -331,7 +334,12 @@ double g_GetPoint2LineDistance(GDPoint pt, GDPoint FromPt, GDPoint ToPt, double 
 	float distance_0 = g_GetPoint2Point_Distance( pt, FromPt );
 	float distance_2 = g_GetPoint2Point_Distance( pt, ToPt );
 
-	return distance_1;
+	if (no_intersection_requirement)
+	{
+		return min(min(distance_1, distance_0), distance_2) / max(0.000001,UnitMile);
+	}
+	else
+		return distance_1 / max(0.000001, UnitMile);
 }
 float g_GetRandomRatio()
 {

@@ -384,7 +384,7 @@ void CLinePlot::DrawPlotData(CDC* pDC, UINT uiIndex, CRect &rcBounds)
 			int size = 2;
 			
 			int hour  = m_lstPlotData[uiIndex].m_PointData[p].Hour;
-			if( hour == -1 || hour <  m_StartHour ||  hour > m_StartHour  + m_AggregationWindow)
+			if( hour == -1 || hour >=  m_StartHour ||  hour <= m_StartHour  + m_AggregationWindow)
 			{
 			CPen penPlot(PS_SOLID, 1, m_lstPlotData[uiIndex].m_PointData[p].crColor);
 			CPen *ppenOld = pDC->SelectObject(&penPlot);
@@ -1754,7 +1754,7 @@ void CLinePlot::OnLButtonDblClk(UINT nFlags, CPoint point)
 			for(int p = 0; p< m_lstPlotData[ii].m_uiPointCount; p++)
 			{
 			int hour  = m_lstPlotData[ii].m_PointData[p].Hour;
-				if( hour == -1 || hour <  m_StartHour ||  hour > m_StartHour  + m_AggregationWindow)
+				if( hour == -1 || hour >=  m_StartHour ||  hour <= m_StartHour  + m_AggregationWindow)
 				{
 
 				int x = m_lstPlotData[ii].m_pptScreen[p].x;

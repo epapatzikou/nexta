@@ -252,6 +252,8 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 	{
 		pVehicle->m_LinkAry = new SVehicleLink[pVehicle->m_NodeSize];
 		pVehicle->m_NodeNumberSum = 0;
+	
+		pVehicle->m_Distance = 0;  // reset distanace when there are new paths assigned. 
 		for (int i = 0; i < pVehicle->m_NodeSize; i++)
 		{
 
@@ -765,15 +767,11 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 			}
 
-
-
-
-
 			int number_of_nodes = 0;
 			parser_agent.GetValueByFieldName("number_of_nodes", number_of_nodes);
 
 			std::vector<int> path_node_sequence;
-			if (number_of_nodes >= 2)
+			if (number_of_nodes >= 2)  // condition 1: user external input in the min by min trip file
 			{
 				string path_node_sequence_str;
 				parser_agent.GetValueByFieldName("path_node_sequence", path_node_sequence_str);
@@ -782,18 +780,12 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 				AddPathToVehicle(pVehicle, path_node_sequence, file_name.c_str());
 			}
-			else
+			else if (g_use_routing_policy_from_external_input) // condition 2: use routing policy from external input (saved from pervious iterations)
 			{
-				if (g_use_routing_policy_from_external_input && pVehicle->m_InformationClass != info_hist_learning)
-				{
-					g_UseExternalPath(pVehicle);
-				}
-			}
-			//} else if (pVehicle->m_InformationClass == info_hist_learning)
-			//{
-			//	//fetch new path later
-			//
-			//}
+				
+						g_UseExternalPath(pVehicle);
+			}   // condition 3: no path is available from external input, before the simulation, DTALite will calculate the path into 
+			
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 			pVehicle->m_ArrivalTime = 0;
@@ -1193,6 +1185,7 @@ else
 	}
 	else
 	{
+
 		cout << "Error: File Scenario_Demand_Type.csv cannot be opened.\nThis file is required when setting format_type = agent_bin_with_updated_demand_vehicle_type_info in file input_demand_meta_data.csv." << endl;
 		g_ProgramStop();
 	}
@@ -1317,6 +1310,8 @@ else
 }
 bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 {
+
+	cout << "Reading Agent Bin File..." << endl;
 	g_VehicleLoadingMode = vehicle_binary_file_mode;
 
 	g_DetermineDemandLoadingPeriod();
@@ -1325,6 +1320,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 	{
 		g_ReadScenarioFilesUnderAgentBinaryMode();
 	}
+
 
 	int path_node_sequence[MAX_NODE_SIZE_IN_A_PATH];
 
@@ -1439,8 +1435,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 					if (RandomPercentage >= previous_cumulative_percentage && RandomPercentage <= cumulative_percentage)
 					{
 						vehicle_trip_multiplier_factor = iterDemandType->second.vehicle_trip_multiplier_factor;
-						demand_type = iterDemandType->first; // return pretrip as 2 or enoute as 3\
-																	}
+						demand_type = iterDemandType->first; // return pretrip as 2 or enoute as 3
 
 						previous_cumulative_percentage = cumulative_percentage;
 
@@ -1586,6 +1581,10 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 		}
 		g_ResetVehicleAttributeUsingDemandType();
 
+		if (g_use_global_path_set_flag == 1)
+			g_BuildGlobalPathSet();
+		
+		
 		fclose(st);
 		return true;
 
@@ -1607,7 +1606,7 @@ void g_ResetVehicleType()
 	for (iterVM = g_VehicleMap.begin(); iterVM != g_VehicleMap.end(); iterVM++)
 	{
 		DTAVehicle* pVehicle = iterVM->second;
-		pVehicle->m_InformationClass = info_hist;
+		pVehicle->m_InformationClass = info_hist_based_on_routing_policy;
 		double RandomPercentage = g_GetRandomRatio() * 100;
 		for (int in = 0; in < MAX_INFO_CLASS_SIZE; in++)
 		{

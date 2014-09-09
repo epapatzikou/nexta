@@ -30,6 +30,7 @@ void CDlgFileLoading::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CDlgFileLoading, CDialog)
+	ON_LBN_SELCHANGE(IDC_LIST_SENSOR_FILE, &CDlgFileLoading::OnLbnSelchangeListSensorFile)
 END_MESSAGE_MAP()
 
 
@@ -82,7 +83,15 @@ BOOL CDlgFileLoading::OnInitDialog()
 		m_ListBox_SensorData.AddString(m_pDoc->m_SensorSpeedDataLoadingStatus);
 	}
 	
-
+	if (m_pDoc->m_SensorCountDataErrorMessage.GetLength() > 0)
+	{
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorCountDataErrorMessage);
+	}
+	
+	if (m_pDoc->m_SensorSpeedDataErrorMessage.GetLength() > 0)
+	{
+		m_ListBox_SensorData.AddString(m_pDoc->m_SensorSpeedDataErrorMessage);
+	}
 	
 	if(m_pDoc->m_EventDataLoadingStatus.GetLength() > 0)
 	{
@@ -158,3 +167,9 @@ BOOL CDlgFileLoading::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
+
+
+void CDlgFileLoading::OnLbnSelchangeListSensorFile()
+{
+	// TODO: Add your control notification handler code here
+}
