@@ -34,6 +34,8 @@ CDlgLinkProperties::CDlgLinkProperties(CWnd* pParent /*=NULL*/)
 	, m_RightTurnLength(0)
 	, m_KJam(200)
 	, m_Grade(0)
+	, m_CountSensorID(_T(""))
+	, m_SpeedSensorID(_T(""))
 {
 m_bTransitModeFlag = false;
 m_bEditChange = false;
@@ -47,9 +49,7 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_FROM_NODE, FromNode);
-	DDV_MinMaxInt(pDX, FromNode, 1, 100000);
 	DDX_Text(pDX, IDC_EDIT_To_NODE, ToNode);
-	DDV_MinMaxInt(pDX, ToNode, 1, 1000000);
 	DDX_Text(pDX, IDC_EDIT_LENGTH, LinkLength);
 	DDV_MinMaxFloat(pDX, LinkLength, 0.0001f, 10000);
 	DDX_Text(pDX, IDC_EDIT_SPEEDLIMIT, SpeedLimit);
@@ -76,6 +76,8 @@ void CDlgLinkProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_JAM_DENSITY, m_KJam);
 	DDV_MinMaxDouble(pDX, m_KJam, 0, 10000);
 	DDX_Text(pDX, IDC_EDIT_Grade, m_Grade);
+	DDX_Text(pDX, IDC_EDIT_COUNT_SENSOR_ID, m_CountSensorID);
+	DDX_Text(pDX, IDC_EDIT_SPEED_SENSOR_ID, m_SpeedSensorID);
 }
 
 
@@ -104,6 +106,8 @@ BEGIN_MESSAGE_MAP(CDlgLinkProperties, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_NUMLANES_RIGHT_TURN, &CDlgLinkProperties::OnEnChangeEditNumlanesRightTurn)
 	ON_EN_CHANGE(IDC_EDIT8, &CDlgLinkProperties::OnEnChangeEdit8)
 	ON_BN_CLICKED(IDC_CHECK2, &CDlgLinkProperties::OnBnClickedCheck2)
+	ON_BN_CLICKED(IDADD_COUNTSENSOR_ID, &CDlgLinkProperties::OnBnClickedCountsensorId)
+	ON_BN_CLICKED(IDADD_SPEEDSENSOR_ID, &CDlgLinkProperties::OnBnClickedSpeedsensorId)
 END_MESSAGE_MAP()
 
 
@@ -368,4 +372,23 @@ void CDlgLinkProperties::OnBnClickedCheck2()
 {
 	m_bEditChange = true;
 
+}
+
+
+void CDlgLinkProperties::OnBnClickedCountsensorId()
+{
+	double min_distance = 99999999;
+	std::string sensor_id = m_pDoc->FindSensorWithCoordinate(m_LinkLocationX, m_LinkLocationY, 0, min_distance);
+	m_CountSensorID = sensor_id.c_str();
+	UpdateData(0);
+
+}
+
+
+void CDlgLinkProperties::OnBnClickedSpeedsensorId()
+{
+	double min_distance = 99999999;
+	std::string sensor_id = m_pDoc->FindSensorWithCoordinate(m_LinkLocationX, m_LinkLocationY, 0, min_distance);
+	m_SpeedSensorID = sensor_id.c_str();
+	UpdateData(0);
 }

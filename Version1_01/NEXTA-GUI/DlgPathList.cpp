@@ -109,6 +109,8 @@ BEGIN_MESSAGE_MAP(CDlgPathList, CDialog)
 	ON_COMMAND(ID_CONTOUR_HCCONTOURPLOT, &CDlgPathList::OnContourHccontourplot)
 	ON_COMMAND(ID_DATA_GENERATEENERGYUSE, &CDlgPathList::OnDataGenerateenergyuse)
 	ON_BN_CLICKED(ID_PATH_DATA_EXPORT_CSV, &CDlgPathList::OnBnClickedPathDataExportCsv)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_LOOPCODE, &CDlgPathList::OnChangeattributesforlinksalongpathLoopcode)
+	ON_COMMAND(ID_CHANGEATTRIBUTESFORLINKSALONGPATH_DIRECTIONCODE, &CDlgPathList::OnChangeattributesforlinksalongpathDirectioncode)
 END_MESSAGE_MAP()
 
 
@@ -2008,6 +2010,9 @@ void CDlgPathList::ChangeLinkAttributeDialog()
 					case eChangeLinkAttribute_backwardwave_speed_kmph: dlg.m_InputValue = "7.4"; break;
 					case eChangeLinkAttribute_saturation_flow_rate: dlg.m_InputValue = "1800"; break;
 					case eChangeLinkAttribute_effective_green_time : dlg.m_InputValue = "60"; break; 
+					case eChangeLinkAttribute_loop_code: dlg.m_InputValue = "inner or outter"; break;
+					case eChangeLinkAttribute_orientation_code: dlg.m_InputValue = "up or down"; break;
+
 					}
 		
 
@@ -2015,9 +2020,10 @@ void CDlgPathList::ChangeLinkAttributeDialog()
 		{
 			value = atof(dlg.m_InputValue) ;
 
+
 			if(AfxMessageBox("Are you sure to make the change?",  MB_YESNO|MB_ICONINFORMATION)==IDYES)
 			{
-				ChangeLinkAttributeAlongPath(value);
+				ChangeLinkAttributeAlongPath(value, dlg.m_InputValue);
 			}
 		}
 	
@@ -2025,7 +2031,7 @@ void CDlgPathList::ChangeLinkAttributeDialog()
 }
 
 
-void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
+void CDlgPathList::ChangeLinkAttributeAlongPath(float value, CString value_string)
 {
 		m_pDoc->m_SelectPathNo = m_PathList.GetCurSel();
 
@@ -2060,7 +2066,13 @@ void CDlgPathList::ChangeLinkAttributeAlongPath(float value)
 					case eChangeLinkAttribute_backwardwave_speed_mph: pLink->m_Wave_speed_in_mph = value; break;
 					case eChangeLinkAttribute_backwardwave_speed_kmph: pLink->m_Wave_speed_in_mph = value*0.621371; break;
 					case eChangeLinkAttribute_saturation_flow_rate: pLink->m_Saturation_flow_rate_in_vhc_per_hour_per_lane = value; break;
-					case eChangeLinkAttribute_effective_green_time : 
+
+					case eChangeLinkAttribute_loop_code:
+						pLink->m_loop_code = m_pDoc->CString2StdString(value_string); break;
+					case eChangeLinkAttribute_orientation_code: 
+						pLink->m_orientation_code = m_pDoc->CString2StdString(value_string); break;
+
+					case eChangeLinkAttribute_effective_green_time:
 
 						ToNodeID = pLink->m_ToNodeID ;
 						pNode = m_pDoc->m_NodeNoMap[ToNodeID];
@@ -3149,4 +3161,18 @@ void CDlgPathList::OnDataGenerateenergyuse()
 void CDlgPathList::OnBnClickedPathDataExportCsv()
 {
 	// TODO: Add your control notification handler code here
+}
+
+
+void CDlgPathList::OnChangeattributesforlinksalongpathLoopcode()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_loop_code;
+	ChangeLinkAttributeDialog();
+}
+
+
+void CDlgPathList::OnChangeattributesforlinksalongpathDirectioncode()
+{
+	m_ChangeLinkAttributeMode = eChangeLinkAttribute_orientation_code;
+	ChangeLinkAttributeDialog();
 }

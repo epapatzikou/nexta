@@ -549,6 +549,10 @@ void g_MultiScenarioTrafficAssignment()
 			case assignment_LR_agent_based_system_optimization:
 				g_SummaryStatFile.WriteParameterValue("Assignment method", "Lagrangian-relaxation based system optimization.");
 				break;
+			case assignment_metro_sim:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "MetroSim.");
+				g_use_global_path_set_flag = 1;
+				break;
 			default:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Unsupported");
 
@@ -572,13 +576,6 @@ void g_MultiScenarioTrafficAssignment()
 
 			g_RealTimeSimulationSettings.input_link_attribute_updating_time_interval_in_second 
 				= g_GetPrivateProfileInt("input_link_attribute", "updating_time_interval_in_second", 6, g_real_time_simulation_setting_FileName);
-
-			g_RealTimeSimulationSettings.input_routing_policy_generated_from_external_program 
-				= g_GetPrivateProfileInt("input_routing_policy", "updating_time_interval_in_second", 60, g_real_time_simulation_setting_FileName);
-
-			g_RealTimeSimulationSettings.input_routing_policy_updating_time_interval_in_min
-				= g_GetPrivateProfileInt("input_routing_policy", "updating_time_interval_in_min", 1, g_real_time_simulation_setting_FileName);
-
 
 			g_RealTimeSimulationSettings.input_trip_generated_from_external_program
 				= g_GetPrivateProfileInt("input_trip", "generated_from_external_program", 0, g_real_time_simulation_setting_FileName);

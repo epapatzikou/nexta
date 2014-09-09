@@ -49,7 +49,7 @@
 #include <afxdao.h>
 #endif
 enum _GIS_DATA_TYPE {GIS_Point_Type=0,GIS_Line_Type, GIS_Polygon_Type}; 
-enum eSEARCHMODE {efind_node = 0,efind_link,efind_path,efind_vehicle};
+enum eSEARCHMODE {efind_node = 0,efind_link,efind_path,efind_vehicle,efind_sensor};
 enum layer_mode
 { 
 	layer_node = 0,
@@ -71,6 +71,7 @@ enum layer_mode
 	layer_transit,
 	layer_grid,
 	layer_background_image,
+	layer_reference_line,
 	layer_transit_accessibility,
 };
 enum Network_Data_Settings {_NODE_DATA = 0,_LINK_DATA, _ZONE_DATA, _ACTIVITY_LOCATION_DATA,_MOVEMENT_DATA, _SENSOR_SPEED_DATA,_SENSOR_DATA,_SENSOR_TRAJECTORY_DATA,_MODEL_LINK_MOE_DATA,_MODEL_TRIP_DATA,_MODEL_TRAJECTORY_DATA, _SENSOR_DATA_SETTINGS,PHASING_DATA,_TIMING_PLAN_DATA,MAX_NUM_OF_NETWORK_DATA_FILES};
@@ -209,6 +210,8 @@ public:
 	int y_int;
 
 	std::vector<int> m_NodeVector;
+	std::vector<int> m_LinkNoVector;
+
 	std::vector<float> m_NodeX;
 	std::vector<float> m_NodeY;
 
@@ -777,6 +780,7 @@ public:
 	bool ReadNodeControlTypeCSVFile(LPCTSTR lpszFileName);   // for road network
 	bool ReadNodeCSVFile(LPCTSTR lpszFileName, int LayerNo=0);   // for road network
 	bool ReadLinkCSVFile(LPCTSTR lpszFileName, bool bCreateNewNodeFlag, int LayerNo);   // for road network
+	bool ReadReferenceLineCSVFile(LPCTSTR lpszFileName);   // for road network
 
 	void CalculateZoneCapacity();
 
@@ -945,8 +949,11 @@ public:
 	int m_SimulationStartTime_in_min;
 	int m_SimulationEndTime_in_min;
 
+	std::vector<DTASensorData> m_SensorCountVector;
 
-	bool ReadSensorCountData(LPCTSTR lpszFileName);
+	bool ReadSensorCountData(LPCTSTR lpszFileName, bool bErrorMessage = false);
+	bool ReadSensorSpeedData(LPCTSTR lpszFileName, bool bErrorMessage = false);
+	bool ReadSensorLocationData(LPCTSTR lpszFileName);
 	void ReadEventData(CString directory);
 	void BuildHistoricalDatabase();
 
@@ -997,12 +1004,19 @@ public:
 
 	CString m_SensorCountDataLoadingStatus;
 	CString m_SensorSpeedDataLoadingStatus;
+
+	CString m_SensorCountDataErrorMessage;
+	CString m_SensorSpeedDataErrorMessage;
+
 	CString m_TransitDataLoadingStatus;
 	CString m_EventDataLoadingStatus;
 	CString m_StrLoadingTime;
 
 
 	DTALink* FindLinkFromSensorLocation(float x, float y, CString orientation);
+
+	DTALink* FindLinkFromCoordinateLocation(float x1, float y1, float x2, float y2, float min_distance_in_mile);
+
 
 	int GetVehilePosition(DTAVehicle* pVehicle, double CurrentTime, float& ratio);
 	bool GetGPSVehilePosition(DTAVehicle* pVehicle, double CurrentTime, GDPoint & pt);
@@ -1340,6 +1354,7 @@ public:
 	bool m_ZoomToSelectedObject;
 	void ZoomToSelectedLink(int SelectedLinkNo);
 	void ZoomToSelectedNode(int SelectedNodeNumber);
+	void ZoomToSelectedSensor(std::string sensor_id);
 
 	int m_SelectedNodeID;
 	int m_SelectedZoneID;
@@ -1459,6 +1474,8 @@ public:
 
 		pLink->m_NumberOfLanes= m_DefaultNumLanes;
 		pLink->m_SpeedLimit= m_DefaultSpeedLimit;
+		pLink->m_SpeedAtCapacity = m_DefaultSpeedLimit - 20;
+		
 		pLink->m_ReversedSpeedLimit = m_DefaultSpeedLimit;
 		pLink->m_avg_simulated_speed = m_DefaultSpeedLimit;
 
@@ -2095,6 +2112,26 @@ public:
 		return pNode;
 	}
 
+		string FindSensorWithCoordinate(double x, double y, int LayerNo = 0, double min_distance = 9999999)
+		{
+			std::string sensor_id; 
+			std::map<string, DTA_sensor>::iterator iSensor;
+			for (iSensor = m_SensorMap.begin(); iSensor != m_SensorMap.end(); iSensor++)
+			{
+				double distance = sqrt(((*iSensor).second.pt.x - x)*((*iSensor).second.pt.x - x) +
+					((*iSensor).second.pt.y - y)*((*iSensor).second.pt.y - y));
+				if (distance <  min_distance)
+				{
+					min_distance = distance;
+					sensor_id = (*iSensor).second.SensorID;
+				}
+
+
+			}
+
+			return sensor_id;
+		}
+
 	int FindNodeNumberWithCoordinate(double x, double y, double min_distance = 0.0000001)
 	{
 		
@@ -2306,9 +2343,14 @@ public:
 	bool m_BackgroundBitmapLoaded;
 	bool m_LongLatCoordinateFlag;
 	CImage m_BackgroundBitmap;  // background bitmap
+	
 	double m_ImageX1,m_ImageX2,m_ImageY1,m_ImageY2, m_ImageWidth, m_ImageHeight;
 	double m_ImageXResolution, m_ImageYResolution;
 	double m_ImageMoveSize;
+
+	double m_SensorMapX, m_SensorMapY, m_SensorMapXResolution, m_SensorMapYResolution;
+	double m_SensorMapMoveSize;
+
 	double m_ImageWidthInMile;  // in mile
 
 	// Operations
@@ -2334,6 +2376,7 @@ public:
 	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
+	void ExportDataForQEMFile(CString filename);
 	void ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber);
 	void ReadSynchroUniversalDataFiles();
 
@@ -2358,6 +2401,7 @@ public:
 	BOOL SaveProject(LPCTSTR lpszPathName,int SelectedLayNo=0);
 	BOOL SaveNodeFile();
 	BOOL SaveLinkData(LPCTSTR lpszPathName,bool bExport_Link_MOE_in_input_link_CSF_File, int SelectedLayNo);
+	bool SaveSensorCountData(bool CheckInValidData = false);
 	void CopyDefaultFiles(CString directory = "");
 
 	bool CheckIfFileExsits(LPCTSTR lpszFileName)
@@ -2785,6 +2829,11 @@ public:
 	afx_msg void OnDeleteRampmeter();
 	afx_msg void OnMoeViewoddemandestimationsummaryplotLanedensity();
 	afx_msg void OnToolsConfiguration();
+	afx_msg void OnDetectorOverwritesensorlocationdata();
+	afx_msg void OnSensortoolsMapsensorlocationtomodellinks();
+	afx_msg void OnNetworktoolsGenerateloopcodeanddirectioncode();
+	afx_msg void OnSensortoolsCleansensordatawithreasonablerange();
+	afx_msg void OnReferenceCreatespeedsensormappingforbaselinenetwork();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

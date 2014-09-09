@@ -199,9 +199,7 @@ BOOL CTLiteApp::InitInstance()
 
 	int visualization_template = (int)g_GetPrivateProfileDouble("template", "traffic_assignment", 1, NEXTASettingsPath);
 
-			m_VisulizationTemplate = e_traffic_assignment;
-
-		//m_VisulizationTemplate = e_train_scheduling;
+	m_VisulizationTemplate = e_traffic_assignment;
 
 		m_LanguageSupport = (eLanguageSupport)g_GetPrivateProfileInt("template", "LanguageSupport", 0, NEXTASettingsPath);
 

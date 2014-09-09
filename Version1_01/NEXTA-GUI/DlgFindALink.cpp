@@ -49,6 +49,7 @@ BOOL CDlgFindALink::OnInitDialog()
 	m_FindObjectList.AddString("Link: FromNodeID ToNodeID");
 	m_FindObjectList.AddString("Path: FromNodeID ToNodeID");
 	m_FindObjectList.AddString("Vehicle: VehicleID");
+	m_FindObjectList.AddString("Sensor ID");
 	m_FindObjectList.SetCurSel(m_SearchMode);
 
 

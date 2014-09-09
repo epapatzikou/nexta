@@ -209,7 +209,11 @@ BOOL CDlg_VehPathAnalysis::OnInitDialog()
 	m_InformationClassBox.AddString ("All");
 	m_InformationClassBox.AddString ("Historical info");
 	m_InformationClassBox.AddString ("Pretrip info");
-	m_InformationClassBox.AddString ("En-route Info");
+	m_InformationClassBox.AddString ("En-route info");
+	m_InformationClassBox.AddString("Personalized");
+	m_InformationClassBox.AddString("Eco-SO info");
+
+
 	m_InformationClassBox.SetCurSel (0);
 
 

@@ -26,6 +26,10 @@ protected:
 public:
 	CTLiteDoc* m_pDoc;
 
+	float m_LinkLocationX;
+	float m_LinkLocationY;
+
+
 	bool m_bTransitModeFlag;
 
 
@@ -86,4 +90,8 @@ public:
 	double m_RightTurnLength;
 	double m_KJam;
 	double m_Grade;
+	CString m_CountSensorID;
+	CString m_SpeedSensorID;
+	afx_msg void OnBnClickedCountsensorId();
+	afx_msg void OnBnClickedSpeedsensorId();
 };

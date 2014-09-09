@@ -173,11 +173,11 @@ void CDlg_GISDataExport::OnBnClickedImportGpsShapeFile()
 				DTALine* pDTALine = new DTALine;
 
 				std::string name =  poFeature->GetFieldAsString("Tmc");
-				pDTALine->TMC_code = name;
+				//pDTALine->TMC_code = name;
 
-				double Miles = poFeature->GetFieldAsDouble("Miles");
+				////double Miles = poFeature->GetFieldAsDouble("Miles");
 
-				pDTALine->Miles =  Miles;
+				////pDTALine->Miles =  Miles;
 
 
 				OGRLineString *poLine = (OGRLineString *) poGeometry;
@@ -226,7 +226,7 @@ void CDlg_GISDataExport::OnBnClickedImportGpsShapeFile()
 						m_pDoc->m_NodeSet.push_back(pDTANode);
 						Node_Number = pDTANode->m_NodeNumber;
 					}
-					pDTALine->m_FromNodeNumber = Node_Number;
+					//pDTALine->m_FromNodeNumber = Node_Number;
 
 
 					//find or create to node number
@@ -249,10 +249,10 @@ void CDlg_GISDataExport::OnBnClickedImportGpsShapeFile()
 						Node_Number = pDTANode->m_NodeNumber;
 					}
 
-					pDTALine->m_ToNodeNumber = Node_Number;
+					//pDTALine->m_ToNodeNumber = Node_Number;
 				}
 
-				pDTALine->LineID = m_pDoc->m_DTALineSet.size()+1;
+				//pDTALine->LineID = m_pDoc->m_DTALineSet.size()+1;
 				//create link
 				m_pDoc->m_DTALineSet.push_back(pDTALine);
 
@@ -1057,22 +1057,19 @@ void CDlg_GISDataExport::SaveTNPProject()
 		return;
 	}
 
-	fopen_s(&st,directory+"input_link.csv","w");
+	fopen_s(&st,directory+"optional_reference_line.csv","w");
 	if(st!=NULL)
 	{
 		std::list<DTALink*>::iterator iLink;
-		fprintf(st,"link_id,TMC,from_node_id,to_node_id,length_in_mile,link_type,number_of_lanes,speed_limit_in_mph,capacity_in_vhc_per_hour_per_lane,geometry\n");
+		fprintf(st,"link_id,geometry\n");
 
 		std::list<DTALine*>::iterator iLine;
 
 		for (iLine = m_pDoc->m_DTALineSet.begin(); iLine != m_pDoc->m_DTALineSet.end(); iLine++)
 		{
 
-			fprintf(st,"%d,%s,%d,%d,%.3f,1,1,50,1000,",  // default value
-				(*iLine)->LineID , 
-				(*iLine)->TMC_code.c_str (), 
-				(*iLine)->m_FromNodeNumber ,
-				(*iLine)->m_ToNodeNumber ,(*iLine)->Miles);
+			fprintf(st, "%s,",  // default value
+				(*iLine)->m_LineID.c_str());
 
 			// geometry
 			fprintf(st,"\"<LineString><coordinates>");

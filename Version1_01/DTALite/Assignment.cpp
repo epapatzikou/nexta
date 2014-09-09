@@ -128,6 +128,11 @@ void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,
 			if ((CurZoneID%number_of_threads) == ProcessID)  // if the remainder of a zone id (devided by the total number of processsors) equals to the processor id, then this zone id is 
 			{
 
+				if (bZoneBasedPathFlag == true)  // zone based assignment
+				{
+					// create network for shortest path calculation at this processor
+					g_TimeDependentNetwork_MP[id].BuildNetworkBasedOnZoneCentriod(iteration, CurZoneID);  // build network for this zone, because different zones have different connectors...
+				}
 				// scan all possible departure times
 				for (int departure_time = DemandLoadingStartTime; departure_time < DemandLoadingEndTime; departure_time += g_AggregationTimetInterval)
 				{
@@ -135,20 +140,27 @@ void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,
 					if (vehicle_size > 0)
 					{
 
+
+
 						if (bZoneBasedPathFlag == true)  // zone based assignment
 						{
 							bool debug_flag = false;
-							for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
-							{
 
-								g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-							}
 
-							if (g_ODEstimationFlag && iteration >= g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-								g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration);
-							else
-								g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration, debug_flag);
+								if (g_ODEstimationFlag && iteration >= g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+									g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration);
+								else
+								{
+									for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
+									{
 
+
+										g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(CurZoneID, g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+										g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration, debug_flag);
+
+									}
+								}
+							
 						}    // agent based assignment
 						else
 						{
@@ -239,8 +251,6 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 		g_CurrentNumOfVehiclesSwitched = 0;
 		g_NewPathWithSwitchedVehicles = 0;
 
-
-		////
 
 		if (g_VehicleLoadingMode == vehicle_binary_file_mode && iteration == 0)
 		{
@@ -362,6 +372,11 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 			continue;
 		}
 
+		if (g_use_routing_policy_from_external_input == 1 && pVeh->m_NodeSize >= 1 && iteration == 0)
+		{
+			// no need to re-assign the traffic path when loading vehicle data from routing policy at first iteration 
+			continue;
+		}
 
 		double RandomNumber = pVeh->GetRandomRatio();  // vehicle-dependent random number generator, very safe for multi-thread applications			
 
@@ -654,11 +669,12 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 
 				pVeh->m_gap_update = true;
 				pVeh->m_gap = m_gap;
-
-				g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-				g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedGeneralizedTravelTime);
-				g_CurrentNumOfVehiclesForUEGapCalculation += 1;
-
+#pragma omp critical
+				{
+					g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+					g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedGeneralizedTravelTime);
+					g_CurrentNumOfVehiclesForUEGapCalculation += 1;
+				}
 
 
 				pVeh->m_Distance = Distance;
@@ -751,12 +767,13 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 
 				pVeh->m_gap_update = true;
 				pVeh->m_gap = m_gap;
+#pragma omp critical
+				{
+					g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+					g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedGeneralizedTravelTime);
+					g_CurrentNumOfVehiclesForUEGapCalculation += 1;
 
-				g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-				g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedGeneralizedTravelTime);
-				g_CurrentNumOfVehiclesForUEGapCalculation += 1;
-
-
+				}
 
 
 			}
@@ -870,6 +887,12 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 		}
 		else	// iteration = 0;  at iteration 0, every vehicle needs a path for simulation, so every vehicle switches
 		{
+			if (g_use_routing_policy_from_external_input == 1 && pVeh->m_NodeSize >= 1)
+			{
+				// no need to re-assign the traffic path when loading vehicle data from routing policy at first iteration 
+				continue;
+			}
+
 
 			if (pVeh->m_NodeSize == 0)  // no external path at the first iteration 
 				bSwitchFlag = true;
@@ -883,122 +906,274 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 		if (bSwitchFlag)
 		{
 			// get shortest path only when bSwitchFlag is true; no need to obtain shortest path for every vehicle
-			NodeSize = 0;
-			PredNode = NodePredVectorPerType[pVeh->m_PricingType][DestinationCentriod];
-			while (PredNode != OriginCentriod && PredNode != -1) // scan backward in the predessor array of the shortest path calculation results
+
+			if (g_ShortestPathWithMovementDelayFlag)  // consider movement delay
 			{
-				if (NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1)
+				//step 1: find the incoming link has the lowerest cost to the destinatin node
+				int destination = DestinationCentriod;
+				float min_cost = MAX_SPLABEL;
+				int link_id_with_min_cost = -1;
+				int i;
+				for (i = 0; i< m_InboundSizeAry[destination]; i++)
+				{
+					int incoming_link = m_InboundLinkAry[destination][i];
+					if (LinkLabelCostAry[incoming_link] < min_cost && LinkPredAry[incoming_link] >= 0)
+					{
+						min_cost = LinkLabelCostAry[incoming_link];
+						link_id_with_min_cost = incoming_link;
+					}
+				}
+
+
+				TotalCost = min_cost - pVeh->m_DepartureTime;
+
+				if (link_id_with_min_cost <0)
 				{
 
-					g_LogFile << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
+					int node_number = g_NodeVector[destination].m_NodeNumber;
+				//	cout << "Destination Node " << node_number << " cannot be reached from origin zone " << zone  << endl;
+					g_LogFile << "Error: Destination Node " << node_number << " cannot be reached from origin zone  " << zone << endl;
+							
+					continue;
+					
+				}
 
-					for (int i = 0; i < NodeSize; i++)
+				//step 2 trace the incoming link to the first link in origin node
+
+				int LinkSize = 0;
+				temp_reversed_PathLinkList[LinkSize] = link_id_with_min_cost;  // last link to destination  // skip the last link by not using LinkSize++
+				int PrevLinkID = LinkPredAry[link_id_with_min_cost];
+
+				if (PrevLinkID == -1)
+				{
+					TRACE("Error!");
+
+				}
+				temp_reversed_PathLinkList[LinkSize++] = PrevLinkID;   //second last link
+
+				while (PrevLinkID != -1 && LinkSize< MAX_NODE_SIZE_IN_A_PATH) // scan backward in the predessor array of the shortest path calculation results
+				{
+					ASSERT(LinkSize< MAX_NODE_SIZE_IN_A_PATH - 1);
+
+					if (LinkPredAry[PrevLinkID] != -1)
 					{
-						cout << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
-						cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+						temp_reversed_PathLinkList[LinkSize++] = LinkPredAry[PrevLinkID];
+					}
+					PrevLinkID = LinkPredAry[PrevLinkID];
+				}
 
+				int j = 0;
+				
+				LinkSize--;
+				// using LinkSize - 2 to avoid the first connnector
 
-						g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
-
+ 			for (i = LinkSize - 1; i >= 0; i--) 
+				{
+					PathLinkList[j++] = temp_reversed_PathLinkList[i];
+					if (debug_flag)
+					{
+						TRACE("\n  link no. %d, %d, %d ->%d", i, temp_reversed_PathLinkList[i]
+							, m_FromIDAry[temp_reversed_PathLinkList[i]], m_ToIDAry[temp_reversed_PathLinkList[i]]);
 					}
 
-					g_ProgramStop();
 				}
 
-				temp_reversed_PathLinkList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
-				PredNode = NodePredVectorPerType[pVeh->m_PricingType][PredNode];
-			}
+				
+				NodeSize = LinkSize + 1; 
 
-			// the first node in the shortest path is the super zone center, should not be counted
-
-			int j = 0;
-
-			int NodeNumberSum = 0;
-			for (int i = NodeSize - 1; i >= 0; i--)
-			{
-				NodeNumberSum += temp_reversed_PathLinkList[i];
-				PathNodeList[j++] = temp_reversed_PathLinkList[i];
-
-				ASSERT(PathNodeList[j] < m_PhysicalNodeSize);
-			}
-
-			float m_gap;
-			float ExperiencedTravelTime = pVeh->m_TripTime;
-
-
-			m_gap = ExperiencedTravelTime - TotalCost;
-			if (m_gap < 0) m_gap = 0.0;
-
-			if (NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
-				m_gap = 0.0;
-
-
-			g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
-			g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedTravelTime);
-			g_CurrentNumOfVehiclesForUEGapCalculation += 1;
-
-
-
-			// Jason : accumulate number of vehicles switching paths
-			g_CurrentNumOfVehiclesSwitched += 1;
-
-			pVeh->m_bConsiderToSwitch = true;
-			pVeh->m_NodeSize = NodeSize;
-
-			if (pVeh->m_LinkAry != NULL)
-			{
-				delete pVeh->m_LinkAry;
-			}
-
-			if (pVeh->m_NodeSize >= 2)
-			{
-				pVeh->m_bConsiderToSwitch = true;
-
-				pVeh->m_LinkAry = new SVehicleLink[NodeSize];
-
-				if (pVeh->m_LinkAry == NULL)
-				{
-					cout << "Insufficient memory for allocating vehicle arrays!";
-					g_ProgramStop();
-				}
-
-				pVeh->m_NodeNumberSum = 0;
-				pVeh->m_Distance = 0;
-
+				int NodeNumberSum = 0;
 				for (int i = 0; i < NodeSize - 1; i++) // NodeSize-1 is the number of links along the paths
 				{
-					pVeh->m_LinkAry[i].LinkNo = GetLinkNoByNodeIndex(PathNodeList[i], PathNodeList[i + 1]);
-					pVeh->m_NodeNumberSum += PathNodeList[i];
-					pVeh->m_Distance += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_Length;
+					NodeNumberSum += PathLinkList[i];
 				}
-				//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
+			
+				float m_gap;
+				float ExperiencedTravelTime = pVeh->m_TripTime;
 
-				//// check whether or not this is a new path
-				//int PathIndex = 0;
-				//for(int p=1; p<=PathArray[pVeh->m_DestinationZoneID].NumOfPaths; p++)
-				//{
-				//	if(pVeh->m_NodeNumberSum == PathArray[pVeh->m_DestinationZoneID].PathNodeSums[p])
-				//	{
-				//		PathIndex = p;
-				//		break;
-				//	}
-				//}
-				//if(PathIndex == 0) // a new path found
-				//	g_NewPathWithSwitchedVehicles++;	
 
-				pVeh->m_bSwitch = true;
+				m_gap = ExperiencedTravelTime - TotalCost;
+				if (m_gap < 0) m_gap = 0.0;
 
-			}
-			else
-			{
-				pVeh->m_bLoaded = false;
-				pVeh->m_bComplete = false;
+				if (NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
+					m_gap = 0.0;
 
-				if (iteration == 0)
+#pragma omp critical
 				{
-					g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
+					g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+					g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedTravelTime);
+					g_CurrentNumOfVehiclesForUEGapCalculation += 1;
+
+
+
+					// Jason : accumulate number of vehicles switching paths
+					g_CurrentNumOfVehiclesSwitched += 1;
+				}
+				pVeh->m_bConsiderToSwitch = true;
+				pVeh->m_NodeSize = NodeSize;
+
+				if (pVeh->m_LinkAry != NULL)
+				{
+					delete pVeh->m_LinkAry;
+				}
+
+				if (pVeh->m_NodeSize >= 2)
+				{
+					pVeh->m_bConsiderToSwitch = true;
+
+					pVeh->m_LinkAry = new SVehicleLink[NodeSize];
+
+					if (pVeh->m_LinkAry == NULL)
+					{
+						cout << "Insufficient memory for allocating vehicle arrays!";
+						g_ProgramStop();
+					}
+
+					pVeh->m_NodeNumberSum = 0;
+					pVeh->m_Distance = 0;
+
+					for (int i = 0; i < NodeSize - 1; i++) // NodeSize-1 is the number of links along the paths
+					{
+						pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
+
+						pVeh->m_NodeNumberSum += pVeh->m_LinkAry[i].LinkNo;
+
+						if (pVeh->m_LinkAry[i].LinkNo < g_LinkVector.size())
+						{
+						pVeh->m_Distance += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_Length;
+
+						}
+					}
+
+					pVeh->m_bSwitch = true;
+				}
+				else
+				{
+					pVeh->m_bLoaded = false;
+					pVeh->m_bComplete = false;
+
+					if (iteration == 0)
+					{
+						g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
+					}
 				}
 			}
+			else  // without movement delay information
+			{
+
+				NodeSize = 0;
+				PredNode = NodePredVectorPerType[pVeh->m_PricingType][DestinationCentriod];
+				while (PredNode != OriginCentriod && PredNode != -1) // scan backward in the predessor array of the shortest path calculation results
+				{
+					if (NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1)
+					{
+
+						g_LogFile << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
+
+						for (int i = 0; i < NodeSize; i++)
+						{
+							cout << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
+							cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+
+
+							g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+
+						}
+
+						g_ProgramStop();
+					}
+
+					temp_reversed_PathLinkList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
+					PredNode = NodePredVectorPerType[pVeh->m_PricingType][PredNode];
+				}
+
+				// the first node in the shortest path is the super zone center, should not be counted
+
+				int j = 0;
+
+				int NodeNumberSum = 0;
+				for (int i = NodeSize - 1; i >= 0; i--)
+				{
+					NodeNumberSum += temp_reversed_PathLinkList[i];
+					PathNodeList[j++] = temp_reversed_PathLinkList[i];
+
+					ASSERT(PathNodeList[j] < m_PhysicalNodeSize);
+				}
+
+				float m_gap;
+				float ExperiencedTravelTime = pVeh->m_TripTime;
+
+
+				m_gap = ExperiencedTravelTime - TotalCost;
+				if (m_gap < 0) m_gap = 0.0;
+
+				if (NodeNumberSum == pVeh->m_NodeNumberSum)  //same path
+					m_gap = 0.0;
+
+#pragma omp critical
+				{
+					g_CurrentGapValue += m_gap; // Jason : accumulate g_CurrentGapValue only when iteration >= 1
+					g_CurrentRelativeGapValue += m_gap / max(0.1, ExperiencedTravelTime);
+					g_CurrentNumOfVehiclesForUEGapCalculation += 1;
+					// Jason : accumulate number of vehicles switching paths
+					g_CurrentNumOfVehiclesSwitched += 1;
+				}
+				pVeh->m_bConsiderToSwitch = true;
+				pVeh->m_NodeSize = NodeSize;
+
+				if (pVeh->m_LinkAry != NULL)
+				{
+					delete pVeh->m_LinkAry;
+				}
+
+				if (pVeh->m_NodeSize >= 2)
+				{
+					pVeh->m_bConsiderToSwitch = true;
+
+					pVeh->m_LinkAry = new SVehicleLink[NodeSize];
+
+					if (pVeh->m_LinkAry == NULL)
+					{
+						cout << "Insufficient memory for allocating vehicle arrays!";
+						g_ProgramStop();
+					}
+
+					pVeh->m_NodeNumberSum = 0;
+					pVeh->m_Distance = 0;
+
+					for (int i = 0; i < NodeSize - 1; i++) // NodeSize-1 is the number of links along the paths
+					{
+						pVeh->m_LinkAry[i].LinkNo = GetLinkNoByNodeIndex(PathNodeList[i], PathNodeList[i + 1]);
+						pVeh->m_NodeNumberSum += PathNodeList[i];
+						pVeh->m_Distance += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_Length;
+					}
+					//cout << pVeh->m_VehicleID <<  " Distance" << pVeh->m_Distance <<  endl;;
+
+					//// check whether or not this is a new path
+					//int PathIndex = 0;
+					//for(int p=1; p<=PathArray[pVeh->m_DestinationZoneID].NumOfPaths; p++)
+					//{
+					//	if(pVeh->m_NodeNumberSum == PathArray[pVeh->m_DestinationZoneID].PathNodeSums[p])
+					//	{
+					//		PathIndex = p;
+					//		break;
+					//	}
+					//}
+					//if(PathIndex == 0) // a new path found
+					//	g_NewPathWithSwitchedVehicles++;	
+					pVeh->m_bSwitch = true;
+
+				}
+				else
+				{
+					pVeh->m_bLoaded = false;
+					pVeh->m_bComplete = false;
+
+					if (iteration == 0)
+					{
+						g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
+					}
+				}
+			}//without movement
 		} // if(bSwitchFlag)
 	}
 
@@ -1458,7 +1633,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 	g_AssignmentLogFile << g_GetAppRunningTime() << "," << iteration << "," << p_SimuOutput->AvgTravelTime << "," << p_SimuOutput->AvgTTI << "," << p_SimuOutput->AvgDistance << "," << p_SimuOutput->SwitchPercentage << "," << p_SimuOutput->NumberofVehiclesCompleteTrips << "," << PercentageComplete << "%,";
 
-	g_AssignmentLogFile << p_SimuOutput->AvgUEGap << "," << p_SimuOutput->TotalDemandDeviation << "," << p_SimuOutput->LinkVolumeAvgAbsError << "," << p_SimuOutput->LinkVolumeRootMeanSquaredError << "," << p_SimuOutput->LinkVolumeAvgAbsPercentageError;
+	g_AssignmentLogFile << p_SimuOutput->AvgUEGap << "," << p_SimuOutput->TotalDemandDeviation << "," << p_SimuOutput->LinkVolumeAvgAbsError << "," << /*p_SimuOutput->LinkVolumeRootMeanSquaredError <<*/ "," << p_SimuOutput->LinkVolumeAvgAbsPercentageError;
 
 	g_AssignmentLogFile << endl;
 
@@ -1499,7 +1674,14 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		g_SummaryStatFile.SetFieldName("ODME: slope =observed/estimated link count");
 		g_SummaryStatFile.SetFieldName("ODME: r_squared link count");
 
+		if (g_ObsTravelTimeAvailableFlag)
+		{
+			g_SummaryStatFile.SetFieldName("ODME: Absolute link speed error");
+			g_SummaryStatFile.SetFieldName("ODME: % link speed error");
+			g_SummaryStatFile.SetFieldName("ODME: slope =observed/estimated link speed");
+			g_SummaryStatFile.SetFieldName("ODME: r_squared link speed");
 
+		}
 		if (g_ObsDensityAvailableFlag)
 		{
 			g_SummaryStatFile.SetFieldName("ODME: Absolute lane density error");
@@ -1619,12 +1801,20 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		p_SimuOutput->AvgRelativeUEGap = 0;
 
 		g_SummaryStatFile.SetValueByFieldName("ODME: number of data points", p_SimuOutput->ODME_result_link_count.data_size);
+
 		g_SummaryStatFile.SetValueByFieldName("ODME: Absolute link count error", p_SimuOutput->LinkVolumeAvgAbsError);
 		g_SummaryStatFile.SetValueByFieldName("ODME: % link count error", p_SimuOutput->LinkVolumeAvgAbsPercentageError);
-
 		g_SummaryStatFile.SetValueByFieldName("ODME: slope =observed/estimated link count", p_SimuOutput->ODME_result_link_count.slope);
 		g_SummaryStatFile.SetValueByFieldName("ODME: r_squared link count", p_SimuOutput->ODME_result_link_count.rsqr);
 
+		if (g_ObsTravelTimeAvailableFlag)
+		{
+		
+		g_SummaryStatFile.SetValueByFieldName("ODME: Absolute link speed error", p_SimuOutput->LinkSpeedAvgAbsError);
+		g_SummaryStatFile.SetValueByFieldName("ODME: % link speed error", p_SimuOutput->LinkSpeedAvgAbsPercentageError);
+		g_SummaryStatFile.SetValueByFieldName("ODME: slope =observed/estimated link speed", p_SimuOutput->ODME_result_link_speed.slope);
+		g_SummaryStatFile.SetValueByFieldName("ODME: r_squared link speed", p_SimuOutput->ODME_result_link_speed.rsqr);
+		}
 		if (g_ObsDensityAvailableFlag)
 		{
 			g_SummaryStatFile.SetValueByFieldName("ODME: slope =observed/estimated lane density", p_SimuOutput->ODME_result_lane_density.slope);
@@ -1850,17 +2040,18 @@ void g_ZoneBasedDynamicTrafficAssignment()
 								{
 
 									bool debug_flag = false;
-
-									for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
-									{
-										g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-									}
-
-									if (g_ODEstimationFlag && iteration >= g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
-										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration);
-									else
-										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration, debug_flag);
-
+									
+										if (g_ODEstimationFlag && iteration >= g_ODEstimation_StartingIteration)  // perform path flow adjustment after at least 10 normal OD estimation
+											g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration);
+										else
+										{
+											for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
+											{
+												g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(CurZoneID, g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+												g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_time + g_AggregationTimetInterval, iteration, debug_flag);
+											}
+										}
+									
 								}
 							} // for each departure time
 

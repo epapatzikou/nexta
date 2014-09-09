@@ -52,12 +52,12 @@ struc_LinearRegressionResult LeastRegression(std::vector <SensorDataPoint> &Data
 
 	if(DataVector.size()<1 && g_ODEstimationFlag ==1)
 	{
-		cout << "OD demand estiation mode: No sensor data are available for the simulation time period." << endl;
-		cout << " Please check if sensor_count.csv has the correct data in fields start_time_in_min, and end_time_in_min." << endl;
-		cout << " Please check if input_scenario_settings.csv has the correct calibration_data_start_time_in_min, and calibration_data_start_time_in_min which should at least cover a certain time period of sensor data." << endl;
+		//cout << "OD demand estimation mode: No sensor data are available for the simulation time period." << endl;
+		//cout << " Please check if sensor_count.csv has the correct data in fields start_time_in_min, and end_time_in_min." << endl;
+		//cout << " Please check if input_scenario_settings.csv has the correct calibration_data_start_time_in_min, and calibration_data_start_time_in_min which should at least cover a certain time period of sensor data." << endl;
 	
 
-		g_ProgramStop();
+		//g_ProgramStop();
 		return result;
 	}
 
@@ -180,6 +180,7 @@ bool g_floating_point_value_less_than(double value1, double value2)
 {
 	long lValue1 = (long) (value1*g_precision_constant2);
 	long lValue2 = (long) (value2*g_precision_constant2);
+
 
 	if(lValue1<lValue2)
 		return true;
@@ -691,6 +692,72 @@ int g_read_number_of_numerical_values(char* line_string, int length)
 
 }
 
+int g_read_numbers_from_a_line(FILE *f, std::vector<float> &ValueVector)
+//read a floating point number from the current pointer of the file,
+//skip all spaces
+
+{
+	char ch, buf[32];
+
+	int string_index = 0;
+
+	ValueVector.clear();
+
+	/* returns -1 if end of file is reached */
+	while (1)
+	{
+
+		int i = 0;
+		int flag = 1;
+
+		while (true)
+		{
+			ch = getc(f);
+			if (ch == EOF)
+				return -100;
+			if (isdigit(ch))
+				break;
+
+			if (ch == '\n')
+				return ValueVector.size();
+
+			if (ch == '-')
+				flag = -1;
+			else
+				flag = 1;
+
+		};
+		if (ch == EOF)
+			return -100;
+
+		while (isdigit(ch) || ch == '.') {
+			buf[i++] = ch;
+			ch = getc(f);
+
+		}
+		buf[i] = 0;
+
+		double value = atof(buf);
+		if (value>-0.0000001)  // positive values
+		{
+			ValueVector.push_back(value);
+
+		}
+
+		if (ch == '\n')
+			return ValueVector.size();
+
+	}
+
+	/* atof function converts a character string (char *) into a doubleing
+	pointer equivalent, and if the string is not a floting point number,
+	a zero will be return.
+	*/
+
+	return ValueVector.size();
+
+}
+
 int g_GetPrivateProfileInt( LPCTSTR section, LPCTSTR key, int def_value, LPCTSTR filename,bool print_out) 
 {
 	char lpbuffer[64];
@@ -1037,7 +1104,4 @@ double WELLRNG512a (void){
 	state_i = (state_i + 15) & 0x0000000fU;
 	return ((double) STATE[state_i]) * FACT;
 }
-
-
-
 

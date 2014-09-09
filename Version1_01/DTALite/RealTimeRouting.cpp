@@ -279,10 +279,8 @@ void g_ApplyExternalPathInput(int departure_time_begin)
 			int VehicleID = g_TDOVehicleArray[origin_zone_index][AssignmentInterval].VehicleArray[vi];
 			DTAVehicle* pVeh  = g_VehicleMap[VehicleID];
 
-			if(pVeh->m_InformationClass == info_hist)
-			{
 			g_UseExternalPath(pVeh);
-			}			
+
 		} // for each vehicle on this OD pair
 	}
 }
@@ -311,8 +309,7 @@ void g_ShortestPathDataMemoryAllocation()
 {
 
 
-
-	if(g_use_routing_policy_from_external_input == 1)
+	if (g_use_routing_policy_from_external_input == 1 )
 	{	
 		g_ODPathSetVector = AllocateDynamicArray<ODPathSet>(g_ODZoneIDSize+1,g_ODZoneIDSize+1);
 	}
@@ -465,7 +462,7 @@ void g_AgentBasedPathAdjustmentWithRealTimeInfo(int ProcessID, int VehicleID , d
 
 
 //			// add link to VMS respons link
-//#ifdef  _large_memory_usage
+//#ifdef  _large_memory_usage_lr
 //			bool bLinkAdded = false;
 //			for(int i =0; i< pVeh->m_VMSResponseVector.size(); i++)
 //			{
@@ -646,7 +643,7 @@ void g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(int VehicleID , double cur
 
 
 //			// add link to VMS respons link
-//#ifdef  _large_memory_usage
+//#ifdef  _large_memory_usage_lr
 //			bool bLinkAdded = false;
 //			for(int i =0; i< pVeh->m_VMSResponseVector.size(); i++)
 //			{
@@ -1349,19 +1346,14 @@ bool g_ReadRealTimeTripData(int current_time_in_minute, bool b_InitialLoadingFla
 
 				AddPathToVehicle(pVehicle, path_node_sequence, file_name);
 			}
-			else
+			else if (g_use_routing_policy_from_external_input)
 			{
-				if (g_use_routing_policy_from_external_input && pVehicle->m_InformationClass != info_hist_learning)
-				{
-					g_UseExternalPath(pVehicle);
-				}
-			}
-			//} else if (pVehicle->m_InformationClass == info_hist_learning)
-			//{
-			//	//fetch new path later
-			//
-			//}
+					cout << " use external file from routing policy for vehicle " << pVehicle->m_VehicleID << endl;
 
+					g_UseExternalPath(pVehicle);
+			}
+			
+			
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 			pVehicle->m_ArrivalTime = 0;
 			pVehicle->m_bComplete = false;

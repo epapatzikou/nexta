@@ -20,6 +20,8 @@ eChangeLinkAttribute_backwardwave_speed_mph,
 eChangeLinkAttribute_backwardwave_speed_kmph,
 eChangeLinkAttribute_saturation_flow_rate,
 eChangeLinkAttribute_effective_green_time,
+eChangeLinkAttribute_loop_code,
+eChangeLinkAttribute_orientation_code,
 };
 
 class CDlgPathList : public CBaseDialog
@@ -29,7 +31,7 @@ class CDlgPathList : public CBaseDialog
 public:
 
 	void ChangeLinkAttributeDialog();
-	void ChangeLinkAttributeAlongPath(float value);
+	void ChangeLinkAttributeAlongPath(float value, CString value_string);
 
 	eChangeLinkAttributeMode m_ChangeLinkAttributeMode;
 	int m_MOEAggregationIntervalInMin;
@@ -126,4 +128,6 @@ public:
 	afx_msg void OnContourHccontourplot();
 	afx_msg void OnDataGenerateenergyuse();
 	afx_msg void OnBnClickedPathDataExportCsv();
+	afx_msg void OnChangeattributesforlinksalongpathLoopcode();
+	afx_msg void OnChangeattributesforlinksalongpathDirectioncode();
 };
