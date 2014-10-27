@@ -568,7 +568,6 @@ void g_UseExternalPath(DTAVehicle* pVehicle)
 
 			if (random_value <= g_ODPathSetVector[OrgZoneSequentialNo][DestZoneSequentialNo].PathSet[i].CumulativeRatio)
 			{
-				i = i - 1;
 				break;
 			}
 
@@ -589,6 +588,8 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 {
 	LineCount = 0;
 
+	bool bOutputDebugLogFile = true;
+
 	g_AllocateDynamicArrayForVehicles();
 	float start_time_value = -100;
 
@@ -602,7 +603,11 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 		if (bOutputLogFlag)
 		{
 			cout << "reading file " << file_name << endl;
+
 		}
+		if (bOutputDebugLogFile)
+			fprintf(g_DebugLogFile, "reading file %s\n", file_name.c_str());
+
 		int line_no = 1;
 
 		int i = 0;
@@ -625,6 +630,11 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			int trip_id = 0;
 
 			parser_agent.GetValueByFieldNameRequired("trip_id", trip_id);
+
+			if (bOutputDebugLogFile)
+				fprintf(g_DebugLogFile, "reading trip_id = %d", trip_id);
+
+
 			DTAVehicle* pVehicle = 0;
 
 			pVehicle = new (std::nothrow) DTAVehicle;
@@ -711,8 +721,10 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			}
 
 			pVehicle->m_DepartureTime = departure_time;
+			pVehicle->m_PreferredDepartureTime = departure_time;
 			int beginning_departure_time = departure_time;
 
+			ASSERT(pVehicle->m_DepartureTime < 4000);
 
 			if (pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
 			{
@@ -748,6 +760,31 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 
 				parser_agent.GetValueByFieldName("information_type", pVehicle->m_InformationClass); //default is 0;
+
+
+				if (pVehicle->m_InformationClass >= 3)
+				{
+
+				double time_to_start_information_retrieval = -1.0;
+				parser_agent.GetValueByFieldName("time_to_start_information_retrieval", time_to_start_information_retrieval); //default is -1;
+
+					if (time_to_start_information_retrieval >=0)
+					{
+						pVehicle->m_TimeToRetrieveInfo = time_to_start_information_retrieval;
+					}
+
+					pVehicle->m_EnrouteInformationUpdatingTimeIntervalInMin = g_information_updating_interval_in_min;
+
+					double information_updating_interval_in_min = -1.0;
+					parser_agent.GetValueByFieldName("information_updating_interval_in_min", information_updating_interval_in_min); //default is -1;
+
+					if (information_updating_interval_in_min >= 0)
+					{
+						pVehicle->m_EnrouteInformationUpdatingTimeIntervalInMin = information_updating_interval_in_min;
+					}
+
+				}
+
 				parser_agent.GetValueByFieldName("value_of_time", VOT);
 
 				if (VOT >= 1)  // only with valid value
@@ -760,7 +797,18 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 
 			}
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+			pVehicle->m_ArrivalTime = 0;
+			pVehicle->m_bComplete = false;
+			pVehicle->m_bLoaded = false;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+			pVehicle->m_Distance = 0;
 
+			pVehicle->m_NodeSize = 0;
+
+			pVehicle->m_NodeNumberSum = 0;
+			pVehicle->m_Distance = 0;
 			int number_of_nodes = 0;
 			parser_agent.GetValueByFieldName("number_of_nodes", number_of_nodes);
 
@@ -781,24 +829,18 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			}   // condition 3: no path is available from external input, before the simulation, DTALite will calculate the path into 
 			
 
-			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
-			pVehicle->m_ArrivalTime = 0;
-			pVehicle->m_bComplete = false;
-			pVehicle->m_bLoaded = false;
-			pVehicle->m_TollDollarCost = 0;
-			pVehicle->m_Emissions = 0;
-			pVehicle->m_Distance = 0;
 
-			pVehicle->m_NodeSize = 0;
-
-			pVehicle->m_NodeNumberSum = 0;
-			pVehicle->m_Distance = 0;
 
 			int number_of_agents = 1;
 
 			float ending_departure_time = 0;
 
 			g_VehicleVector.push_back(pVehicle);
+
+			if (bOutputDebugLogFile)
+			{
+				fprintf(g_DebugLogFile, "adding vehicle: total size =%d\n", g_VehicleVector.size());
+			}
 			g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
 			int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
@@ -1669,8 +1711,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 
 	int total_demand_type = 2;
 
-	int StatisticsIntervalSize = max(1, (DemandLoadingEndTimeInMin - DemandLoadingStartTimeInMin) / g_AggregationTimetInterval);
-
+	int StatisticsIntervalSize = max(1, g_NumberOfSPCalculationPeriods);
 
 	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
 	//	StatisticsIntervalSize << " 15-min time intervals" << endl;
@@ -1763,7 +1804,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 								if (dest_node_index >= 0) // convert node number to internal node id
 								{
 
-									int time_interval_no = (departure_time - DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
+									int time_interval_no = departure_time_index;
 									ODTravelTime[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
 									ODDistance[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
 									ODDollarCost[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDollarCostAry[dest_node_index];
@@ -1815,10 +1856,11 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 			{
 
 
-				for (int departure_time = DemandLoadingStartTimeInMin; departure_time < DemandLoadingEndTimeInMin; departure_time += g_AggregationTimetInterval)
+				for (int departure_time_index = 0; departure_time_index < g_NumberOfSPCalculationPeriods; departure_time_index++)
 				{
 
-					int time_interval_no = (departure_time - DemandLoadingStartTimeInMin) / g_AggregationTimetInterval;
+					int departure_time = g_AssignmentIntervalStartTimeInMin[departure_time_index];
+					int time_interval_no = departure_time_index;
 					
 
 					int origin_zone = iterZone->first;

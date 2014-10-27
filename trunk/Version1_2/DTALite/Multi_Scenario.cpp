@@ -151,7 +151,6 @@ void g_MultiScenarioTrafficAssignment()
 	if(g_InitializeLogFiles()==0) 
 		return;
 
-	g_ReadRealTimeSimulationSettingsFile();
 
 	g_SummaryStatFile.Open("output_summary.csv");
 	g_SummaryStatFile.WriteTextLabel("DTALite:\nA Fast Open Source DTA Engine\n");
@@ -472,6 +471,8 @@ void g_MultiScenarioTrafficAssignment()
 
 				g_ODEstimationFlag = 0;
 
+				CCSVParser parser_RTSimulation_settings;
+
 			switch (g_UEAssignmentMethod)
 			{
 			case assignment_MSA: 
@@ -533,7 +534,35 @@ void g_MultiScenarioTrafficAssignment()
 
 
 			case assignment_real_time_simulation:
-				g_SummaryStatFile.WriteParameterValue("Assignment method", "Perform real time simulation. Required files: \\real_time_data_exchange\\real_time_simulation_settings.txt and other related data files per time interval");
+
+
+				if (g_use_routing_policy_from_external_input == 1)
+				{
+					g_SummaryStatFile.WriteParameterValue("Assignment method", "Real time simulation with automatically generated routing policy");
+				}
+				else
+				{
+					g_SummaryStatFile.WriteParameterValue("Assignment method", "Real time simulation without with automatically generated routing policy");
+				}
+
+				if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv", false) == false)
+				{
+					cout << "Assignment method = Real time simulation (specified in input_scenario_settings.csv)" << endl;
+					cout << "File input_real_time_simulation_settings.csv is required for real time simulation mode." << endl;
+					g_ProgramStop();
+				}
+				else
+				{
+					parser_RTSimulation_settings.CloseCSVFile();
+				}
+
+				if (g_UEAssignmentMethod == assignment_real_time_simulation)
+				{
+					g_DemandLoadingStartTimeInMin = 0;
+					g_DemandLoadingEndTimeInMin = 1440;
+					g_PlanningHorizon = 1440;
+				}
+
 				break;
 
 			case assignment_integration_with_ABM:
@@ -562,6 +591,7 @@ void g_MultiScenarioTrafficAssignment()
 
 			}
 
+			g_ReadRealTimeSimulationSettingsFile();
 
 
 			if (g_UEAssignmentMethod == assignment_real_time_simulation)
@@ -613,8 +643,6 @@ void g_MultiScenarioTrafficAssignment()
 
 
 			g_SummaryStatFile.WriteTextString(" ");
-
-
 
 
 			g_ValidationDataStartTimeInMin = 0;

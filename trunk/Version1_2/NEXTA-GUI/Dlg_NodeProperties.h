@@ -35,4 +35,5 @@ public:
 	afx_msg void OnBnClickedButton();
 
 	afx_msg void OnCbnSelchangeCombo1();
+	int m_CycleLength;
 };

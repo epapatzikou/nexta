@@ -195,6 +195,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					+ weight * 	max(pLink->m_FreeFlowTravelTime , 
 					pLink->total_departure_based_travel_time/max(1, pLink->departure_count));
 
+				ASSERT(pLink->m_prevailing_travel_time <= 9000);
+
 				if(pLink->m_FromNodeNumber == 5 && pLink->m_ToNodeNumber == 6)
 				{
 					TRACE("current time %f; prevailing time = %f\n",CurrentTime,  pLink->m_prevailing_travel_time);
@@ -211,8 +213,14 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 
         // user_defined information updating 
+		int time_clock_in_min = meso_simulation_time_interval_no / 10;
 
-        int time_clock_in_min  = meso_simulation_time_interval_no/10;
+		if (g_use_routing_policy_from_external_input == 1 && meso_simulation_time_interval_no % 10 == 0 && DayNo == 0 && time_clock_in_min%g_AggregationTimetInterval == 0)
+		{ // read input path ratio every 15 min
+
+			ReadTimeDependentRoutingPolicyData((int)(CurrentTime));
+
+		}
         if(meso_simulation_time_interval_no%10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min)!= g_RealTimeSimulationSettingsMap.end())
         {  // we need to update travel time and agent file
 
@@ -221,13 +229,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
         }
 
-		if (meso_simulation_time_interval_no % 50 == 0 )
-		{  // we need to update travel time and agent file
-
-			g_ExchangeRealTimeSimulationData(DayNo, (int)(CurrentTime));  // version 1
-
-
-		}
 
 		if (g_UEAssignmentMethod == assignment_metro_sim)
 		{
@@ -235,12 +236,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		}
 
 
-	if(g_use_routing_policy_from_external_input == 1 && meso_simulation_time_interval_no%10 == 0 && DayNo ==0 && time_clock_in_min%g_AggregationTimetInterval == 0 )
-	{ // read input path ratio every 15 min
-	
-		ReadTimeDependentRoutingPolicyData((int)(CurrentTime));
-	
-	}
 
 	if (g_use_global_path_set_flag == 1 && meso_simulation_time_interval_no % 10 == 0 && time_clock_in_min%g_AggregationTimetInterval == 0)
 	{  // every 15 min, output the current vehicle volume 
@@ -273,7 +268,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 		{
 
 			if(pVeh->m_InformationClass == info_pre_trip || 
-				pVeh->m_InformationClass == info_en_route )
+				pVeh->m_InformationClass == info_en_route_and_pre_trip )
 				{  // vehicle rerouting
 					computation_element.veh_id = pVeh->m_VehicleID;
 					computation_element.current_time_stamp = CurrentTime;
@@ -1200,10 +1195,13 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						{
 							TravelTime= g_VehicleMap[vehicle_id]->m_LinkAry[link_sequence_no].AbsArrivalTimeOnDSN -
 								g_VehicleMap[vehicle_id]->m_LinkAry[link_sequence_no-1].AbsArrivalTimeOnDSN;
+							ASSERT(TravelTime<9000);
+
 						}else
 						{
 							TravelTime= g_VehicleMap[vehicle_id]->m_LinkAry[link_sequence_no].AbsArrivalTimeOnDSN -
 								g_VehicleMap[vehicle_id]->m_DepartureTime ;
+							ASSERT(TravelTime<9000);
 
 						}
 
@@ -1340,6 +1338,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						pLink-> departure_count +=1;
 						pLink-> total_departure_based_travel_time += TravelTime;
 
+						ASSERT(pLink->total_departure_based_travel_time<9000);
+
 						//										TRACE("time %d, total travel time %f\n",t_link_arrival_time, pLink->m_LinkMOEAry[t_link_arrival_time].TotalTravelTime);
 
 						p_Nextlink->LinkInCapacity -=1; // reduce available space capacity by 1
@@ -1354,7 +1354,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 							int IS_id  = p_Nextlink->GetInformationResponseID(DayNo,CurrentTime);
 
-						if(pVehicle->m_InformationClass == info_en_route ||
+						if(pVehicle->m_InformationClass == info_en_route_and_pre_trip ||
 						(IS_id >= 0 && pVehicle->GetRandomRatio()*100 < p_Nextlink->MessageSignVector [IS_id].ResponsePercentage)||
 						(bRadioMessageActive && pVehicle->GetRandomRatio()*100 < network_wide_RadioMessageResponsePercentage ))
 						{  // vehicle rerouting
@@ -1459,6 +1459,8 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 					}
 					pLink-> departure_count +=1;
 					pLink-> total_departure_based_travel_time += TravelTime;
+
+					ASSERT(pLink->total_departure_based_travel_time<9000);
 
 
 					if(pLink->m_FromNodeNumber == 6 && pLink->m_ToNodeNumber == 4 && CurrentTime>=60)

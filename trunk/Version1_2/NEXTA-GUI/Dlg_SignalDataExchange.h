@@ -32,4 +32,5 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnLbnSelchangeListInfo();
 	float m_PeakHourFactor;
+	afx_msg void OnEnChangeEditPeakHourFactor();
 };

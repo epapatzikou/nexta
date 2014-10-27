@@ -579,8 +579,12 @@ bool CTLiteDoc::ReadSensorSpeedData(LPCTSTR lpszFileName, bool ErrorMessage)
 				element.link_from_node_id = pLink->m_FromNodeNumber;
 				element.link_to_node_id = pLink->m_ToNodeNumber;
 
-			
-				
+				DTASensorData sensor_data_element;
+				sensor_data_element.start_time_in_min = start_time_in_min;
+				sensor_data_element.end_time_in_min = end_time_in_min;
+				sensor_data_element.speed = speed;
+
+				pLink->m_SensorDataVector.push_back(sensor_data_element);
 
 				for (int t = start_time_in_min; t< min(1440, end_time_in_min); t++)
 				{

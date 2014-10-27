@@ -94,7 +94,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 				pVeh->m_DestinationZoneID  = pVeh->m_DestinationZoneID_Updated;
 				pVeh->m_DestinationNodeID =  g_ZoneMap[pVeh->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVeh->m_VehicleID%100)/100.0f); 
 
-				pVeh->m_InformationClass = info_en_route; // 3, so all the vehicles will access real-time information 
+				pVeh->m_InformationClass = info_en_route_and_pre_trip; // 3, so all the vehicles will access real-time information 
 				pVeh->m_TimeToRetrieveInfo = 99999; // no more update
 
 				b_switch_flag = true;
@@ -125,7 +125,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		}
 
 		// if this is an enroute info vehicle, 
-		if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true &&
+		if(pVeh->m_InformationClass == info_en_route_and_pre_trip && pVeh->m_bLoaded == true &&
 			int(pVeh->m_DepartureTime) < current_time &&
 			(int)(pVeh->m_TimeToRetrieveInfo) <= current_time && pVeh ->m_bComplete == false)
 		{
@@ -154,7 +154,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 
 		int StartingNodeID = pVeh->m_OriginNodeID;
 
-		if(pVeh->m_InformationClass == info_en_route  && pVeh->m_bLoaded == true )  // en route info, has not reached destination yet
+		if(pVeh->m_InformationClass == info_en_route_and_pre_trip  && pVeh->m_bLoaded == true )  // en route info, has not reached destination yet
 		{
 			int CurrentLinkID = pVeh->m_LinkAry[pVeh->m_SimLinkSequenceNo].LinkNo;
 			StartingNodeID = g_LinkVector[CurrentLinkID]->m_ToNodeID;
@@ -182,7 +182,7 @@ void DTANetworkForSP::AgentBasedPathAdjustment(int DayNo, int zone,int departure
 		NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, StartingNodeID , pVeh->m_DepartureTime , pVeh->m_DestinationZoneID , pVeh->m_DestinationNodeID, pVeh->m_PricingType , pVeh->m_VOT, PathLinkList, TotalCost,bGeneralizedCostFlag, bDebugFlag);
 
 
-	if(pVeh->m_InformationClass == info_en_route && pVeh->m_bLoaded == true )  // en route info
+	if(pVeh->m_InformationClass == info_en_route_and_pre_trip && pVeh->m_bLoaded == true )  // en route info
 	{
 
 		int count = pVeh->m_SimLinkSequenceNo;
@@ -751,6 +751,14 @@ void g_ReadRealTimeSimulationSettingsFile()
 	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv",false))
 	{
 
+		if (g_UEAssignmentMethod != assignment_real_time_simulation)
+		{
+			cout << "File input_real_time_simulation_settings.csv exists in the project folder." << endl;
+			cout << "If you want to use real time simulation mode, please make sure the traffic_assignment_method = 8 in input_scenario_settings.csv as assignment_real_time_simulation" << endl;
+			cout << "If you do not want to use real time simulation mode, please rename or delete file input_real_time_simulation_settings.csv." << endl;
+			g_ProgramStop();
+		}
+
 		// we enable information updating for real-time simulation mode
 		g_bInformationUpdatingAndReroutingFlag  = true;
 
@@ -1000,6 +1008,7 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_min)
 			
 			//if(timestamp_in_min%15 ==0)  //rebuild the shoret path network every 15 min
 			//	bRebuildNetwork = true;
+
 
 			// use input link travel time 
 			g_BuildPathsForAgents(iteration,bRebuildNetwork,false,timestamp_in_min, timestamp_in_min+15);

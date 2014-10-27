@@ -15,7 +15,7 @@ CDlg_NodeProperties::CDlg_NodeProperties(CWnd* pParent /*=NULL*/)
 	, NodeID(0)
 	, NodeName(_T(""))
 	, ZoneID(0)
-
+	, m_CycleLength(0)
 {
 
 }
@@ -33,6 +33,8 @@ void CDlg_NodeProperties::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_SPEEDLIMIT, ZoneID);
 	DDV_MinMaxLong(pDX, ZoneID, 0, 1000000);
 	DDX_Control(pDX, IDC_COMBO1, m_ControlTypeComboBox);
+	DDX_Text(pDX, IDC_EDIT_CYCLE_LENGTH, m_CycleLength);
+	DDV_MinMaxInt(pDX, m_CycleLength, 0, 500);
 }
 
 
@@ -120,5 +122,12 @@ void CDlg_NodeProperties::OnBnClickedCancel()
 
 void CDlg_NodeProperties::OnCbnSelchangeCombo1()
 {
-	// TODO: Add your control notification handler code here
+	ControlType = m_ControlTypeVector[m_ControlTypeComboBox.GetCurSel()];
+
+	if (ControlType != m_pDoc->m_ControlType_PretimedSignal && ControlType != m_pDoc->m_ControlType_ActuatedSignal)
+	{
+		m_CycleLength = 0;
+
+	}
+
 }

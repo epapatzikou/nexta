@@ -379,8 +379,7 @@ void CDlg_SignalDataExchange::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 
 	DDX_Control(pDX, IDC_LIST_INFO, m_InfoList);
-	DDX_Text(pDX, IDC_EDIT_PEAK_HOUR_FACTOR, m_PeakHourFactor);
-	DDV_MinMaxFloat(pDX, m_PeakHourFactor, 0, 2);
+
 }
 
 
@@ -390,6 +389,7 @@ BEGIN_MESSAGE_MAP(CDlg_SignalDataExchange, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_GENERATE_VISSIM_DATA, &CDlg_SignalDataExchange::OnBnClickedButtonGenerateVissimData)
 	ON_BN_CLICKED(IDOK, &CDlg_SignalDataExchange::OnBnClickedOk)
 	ON_LBN_SELCHANGE(IDC_LIST_INFO, &CDlg_SignalDataExchange::OnLbnSelchangeListInfo)
+	ON_EN_CHANGE(IDC_EDIT_PEAK_HOUR_FACTOR, &CDlg_SignalDataExchange::OnEnChangeEditPeakHourFactor)
 END_MESSAGE_MAP()
 
 
@@ -464,4 +464,15 @@ BOOL CDlg_SignalDataExchange::OnInitDialog()
 void CDlg_SignalDataExchange::OnLbnSelchangeListInfo()
 {
 	// TODO: Add your control notification handler code here
+}
+
+
+void CDlg_SignalDataExchange::OnEnChangeEditPeakHourFactor()
+{
+	// TODO:  If this is a RICHEDIT control, the control will not
+	// send this notification unless you override the CDialog::OnInitDialog()
+	// function and call CRichEditCtrl().SetEventMask()
+	// with the ENM_CHANGE flag ORed into the mask.
+
+	// TODO:  Add your control notification handler code here
 }

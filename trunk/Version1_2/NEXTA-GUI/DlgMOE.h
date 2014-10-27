@@ -259,4 +259,6 @@ public:
 	afx_msg void OnUpdateDataShowsimulationtimeseries(CCmdUI *pCmdUI);
 	afx_msg void OnDataShowgrid();
 	afx_msg void OnUpdateDataShowgrid(CCmdUI *pCmdUI);
+	afx_msg void OnMoeNumberofqueuedvehicles();
+	afx_msg void OnMoeNumberofqueuedvehicles33788();
 };
