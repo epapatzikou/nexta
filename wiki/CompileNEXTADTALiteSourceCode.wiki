@@ -5,13 +5,13 @@
 
 Requirement: 
 
-Visual Studio 2008/2010
+Visual Studio 2008/2010/2013
 SVN version control 
 
 
 Latest version: 
-DTALite simulation engine: \Version1_01\DTALite
-NEXTA graphical user interface: \Version1_01\NEXTA-GUI
+DTALite simulation engine: \Version1_2\DTALite
+NEXTA graphical user interface: \Version1_2\NEXTA-GUI
 
 = Details =
 
@@ -53,7 +53,7 @@ https://nexta.googlecode.com/svn/trunk/
 NEXTA GUi source code can be found under  "C:\NEXTA_OpenSource\Version1_01\NEXTA-GUI"
 
 
-==3. Use Visual C++ 2008/2010 to build the NEXTA package ==
+==3. Use Visual C++ 2008/2010/2013 to build the NEXTA package ==
 
 1. Open Visual C++, Click on menu File -> Open ->Project/Solution, Open file  C:\NEXTA_OpenSource\Version1_0\NEXTA-GUI\TLite.sln to open NEXTA project. 
 
