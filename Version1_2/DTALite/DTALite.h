@@ -30,9 +30,9 @@
 #include "resource.h"
 
 //#define _large_memory_usage_lr
-//#define _large_memory_usage
+#define _large_memory_usage
 
-//#define _high_level_memory_usage
+#define _high_level_memory_usage
 #include <math.h>
 #include <deque>
 #include <map>
@@ -46,7 +46,7 @@ using namespace std;
 #define PI 3.1415626
 #define _MAX_STRING_LINE 30000
 
-enum e_traffic_information_class { info_hist_based_on_routing_policy = 0, learning_from_hist_travel_time, info_pre_trip, info_en_route, info_personalized_info, info_eco_so};
+enum e_traffic_information_class { info_hist_based_on_routing_policy = 0, learning_from_hist_travel_time, info_pre_trip, info_en_route_and_pre_trip, info_personalized_info, info_eco_so};
 enum e_traffic_flow_model { tfm_BPR =0, tfm_point_queue, tfm_spatial_queue, tfm_newells_model, tfm_newells_model_with_emissions, trm_car_following};
 enum e_demand_loading_mode { demand_matrix_file_mode = 0, vehicle_binary_file_mode, real_time_demand_matrix_file_mode, accessibility_demand_mode};
 enum e_signal_representation_model {signal_model_continuous_flow = 0,  signal_model_link_effective_green_time, signal_model_movement_effective_green_time };
@@ -1843,7 +1843,8 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	void SetupMOE()
 	{
-
+		departure_count = 0;
+		total_departure_based_travel_time = 0;
 		m_CumulativeOutCapacityCount = 0;
 		m_CumulativeOutCapacityCountAtPreviousInterval = 0;
 		m_CumulativeInCapacityCountAtPreviousInterval =0 ;
@@ -2542,6 +2543,7 @@ public:
 	bool  m_bImpacted;
 
 	double m_TimeToRetrieveInfo;
+	double m_EnrouteInformationUpdatingTimeIntervalInMin;
 
 	bool m_bRadioMessageResponseFlag;
 
@@ -2611,7 +2613,7 @@ public:
 #endif 
 
 
-#ifdef _large_memory_usage_lr
+#ifdef _large_memory_usage
 	std::vector<DTAVMSRespone> m_VMSResponseVector;
 	std::map<int, int> m_OperatingModeCount;
 	std::map<int, int> m_SpeedCount;
@@ -2623,6 +2625,7 @@ public:
 	DTAVehicle()
 	{
 
+		m_DepartureTime = 0;
 		m_bMeetTarget = false;
 		m_NodeNumberSum = 0;
 		m_OriginNodeID = -1;
@@ -2650,6 +2653,7 @@ public:
 		Energy = CO2 = NOX = CO = HC = 0;
 		m_PrevSpeed = 0;
 		m_TimeToRetrieveInfo = -1;
+		m_EnrouteInformationUpdatingTimeIntervalInMin = -1;  // default value 
 		m_SimLinkSequenceNo = 0;
 
 		m_NumberOfSamples =0;
@@ -2739,12 +2743,14 @@ public:
 
 	DTA_vhc_simple()
 	{
+	m_DepartureTime = 0;
 	m_DemandType = 1;
 	m_VehicleType = 1;
 	m_PricingType = 1;
 	m_InformationClass = info_hist_based_on_routing_policy;
 	m_Age = 0;
 	m_TimeToRetrieveInfo = 0;
+
 	
 	m_VOT = 10;
 	}

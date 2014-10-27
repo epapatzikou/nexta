@@ -672,16 +672,6 @@ void g_ReadAMSSignalData()
 				}
 			}
 
-
-			//if (g_SignalRepresentationFlag == signal_model_movement_effective_green_time && CycleLength >= 1 && QEM_GreenStartTime >= QEM_GreenEndTime && turn_type.find("Right") == string::npos)
-			//{
-			//	cout << "Movement " << up_node_id << " ->" << node_id << " ->" << dest_node_id <<
-			//		" has green time interval" << QEM_GreenStartTime << ", " << QEM_GreenEndTime << endl << "Please check AMS_movement.csv." << endl << "DTALite will simulate this node as no-control." << endl;
-			//	zero_effective_green_time_error_count++;
-
-			//	g_NodeVector[middle_node_id].m_ControlType = g_settings.no_signal_control_type_code;
-
-			//}
 		}
 	}
 }

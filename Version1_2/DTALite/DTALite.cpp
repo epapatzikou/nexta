@@ -552,6 +552,18 @@ void g_ReadInputFiles()
 			parser_node.GetValueByFieldName("x",Node.m_pt .x);
 			parser_node.GetValueByFieldName("y",Node.m_pt .y);
 
+			if (control_type == g_settings.pretimed_signal_control_type_code ||
+				control_type == g_settings.actuated_signal_control_type_code)
+			{
+			
+				int cycle_length_in_second = 0;
+				parser_node.GetValueByFieldName("cycle_length_in_second", cycle_length_in_second);
+				Node.m_CycleLength_In_Second = cycle_length_in_second;
+				int offset_in_second = 0;
+				parser_node.GetValueByFieldName("offset_in_second", offset_in_second);
+				Node.m_SignalOffset_In_Second = offset_in_second;
+
+			}
 
 			
 
@@ -744,6 +756,11 @@ void g_ReadInputFiles()
 	cout << "Step 3: Reading file input_link.csv..."<< endl;
 	g_LogFile << "Step 3: Reading file input_link.csv..." << endl;
 
+	int  count_effective_green_time = 0;
+	double total_effective_green_time = 0;
+	double total_signal_link_capacity = 0;
+	double total_signal_link_cycle_length = 0;
+
 	int i = 0;
 
 	int max_number_of_warnings_to_be_showed = 5;
@@ -917,7 +934,7 @@ void g_ReadInputFiles()
 			}
 
 
-			if(!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour",capacity))
+			if (!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour", capacity))
 			{
 				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
 				{
@@ -1211,6 +1228,25 @@ void g_ReadInputFiles()
 
 				pLink->m_LaneCapacity= capacity * g_LinkTypeMap[type].capacity_adjustment_factor ;
 
+				if (g_SignalRepresentationFlag == signal_model_link_effective_green_time || 
+					g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+				{
+					if (g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code || 
+						g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.actuated_signal_control_type_code)
+					{
+						pLink->m_EffectiveGreenTime_In_Second = max(0.1, pLink->m_LaneCapacity / 1800) *  g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
+						g_LogFile << "Link " << pLink->m_FromNodeNumber << " -> " << pLink->m_ToNodeNumber << " has an effective green time = " << pLink->m_EffectiveGreenTime_In_Second  <<  endl;
+						
+						pLink->m_DownstreamCycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
+						pLink->m_DownstreamNodeSignalOffset_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
+
+						count_effective_green_time++;
+						total_effective_green_time += pLink->m_EffectiveGreenTime_In_Second;
+						total_signal_link_capacity += pLink->m_LaneCapacity;
+						total_signal_link_cycle_length += g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
+
+					}
+				}
 
 				pLink->m_LinkTypeName  = g_LinkTypeMap[type].link_type_name;
 
@@ -1326,6 +1362,26 @@ void g_ReadInputFiles()
 
 	g_SummaryStatFile.WriteParameterValue ("# of Links", g_LinkVector.size());
 
+	if (g_SignalRepresentationFlag == signal_model_link_effective_green_time)
+	{
+		g_SummaryStatFile.WriteParameterValue("--Parameters for link effective green time mode --", "");
+
+		g_SummaryStatFile.WriteParameterValue("# of Links with Effective Green Time", count_effective_green_time);
+
+		float avg_effective_green_time = total_effective_green_time / max(1, count_effective_green_time);
+		g_SummaryStatFile.WriteParameterValue("Avg Effective Green Time (sec)", avg_effective_green_time);
+
+		float avg_lane_capacity = total_signal_link_capacity / max(1, count_effective_green_time);
+		g_SummaryStatFile.WriteParameterValue("Avg Signalized Lane Capacity (vph)", avg_lane_capacity);
+
+		float avg_cycle_length = total_signal_link_cycle_length / max(1, count_effective_green_time);
+		g_SummaryStatFile.WriteParameterValue("Avg Cycle length (sec)", avg_cycle_length);
+
+		g_SummaryStatFile.WriteParameterValue("---- ", "");
+
+		cout << "# of Links with Effective Green Time = " << count_effective_green_time << endl;
+		cout << "Avg Effective Green Time (sec) = " << avg_effective_green_time << endl;
+	}
 	// freeway, types
 
 
@@ -1344,7 +1400,11 @@ void g_ReadInputFiles()
 	// step 3.2 movement input
 
 	g_ReadAMSMovementData();
-	g_ReadAMSSignalData();
+
+	if (g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
+	{
+		g_ReadAMSSignalData();
+	}
 	//*******************************
 	// step 4: zone input
 
@@ -1849,45 +1909,59 @@ void g_ReadInputFiles()
 	// step 10: demand trip file input
 
 	// initialize the demand loading range, later resized by CreateVehicles
-
+	if (g_UEAssignmentMethod != assignment_real_time_simulation)
+	{
+	
 	g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
 
 	////////////////////////////////////// VOT
+
 	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
 	g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
+	}
+
+
 	g_ReadAssignmentPeriodSettings();
 
+	if (g_UEAssignmentMethod != assignment_real_time_simulation)
+	{
 
-	if (g_UEAssignmentMethod == assignment_vehicle_binary_file_based_scenario_evaluation )
-	{
-		g_ReadAgentBinFile("agent.bin", true);
-	}
-	else if (g_UEAssignmentMethod == assignment_system_optimal)
-	{
-		g_ReadAgentBinFile("agent.bin", true);  
-	}
-	else if (g_UEAssignmentMethod == assignment_metro_sim)
-	{
-		g_ReadAgentBinFile("agent.bin", false);
+		if (g_UEAssignmentMethod == assignment_vehicle_binary_file_based_scenario_evaluation)
+		{
+			g_ReadAgentBinFile("agent.bin", true);
+		}
+		else if (g_UEAssignmentMethod == assignment_system_optimal)
+		{
+			g_ReadAgentBinFile("agent.bin", true);
+		}
+		else if (g_UEAssignmentMethod == assignment_metro_sim)
+		{
+			g_ReadAgentBinFile("agent.bin", false);
+		}
+		else
+		{  // this is the common mode for loading demand files using demand meta database. 
+			g_ReadDemandFileBasedOnMetaDatabase();
+		}
 	}
 	else
-	{  // this is the common mode for loading demand files using demand meta database. 
-		g_ReadDemandFileBasedOnMetaDatabase();
-	}
-
-	if (g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
 	{
-		//reset simulation horizon to make sure it is longer than the demand loading horizon
-		g_PlanningHorizon = g_DemandLoadingEndTimeInMin + 300;
 
-		for (unsigned link_index = 0; link_index< g_LinkVector.size(); link_index++)
-		{
-			DTALink* pLink = g_LinkVector[link_index];
-			pLink->ResizeData(g_PlanningHorizon);
-		}
-
+		g_AllocateDynamicArrayForVehicles();
 	}
 
+		if (g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
+		{
+			//reset simulation horizon to make sure it is longer than the demand loading horizon
+			g_PlanningHorizon = g_DemandLoadingEndTimeInMin + 300;
+
+			for (unsigned link_index = 0; link_index < g_LinkVector.size(); link_index++)
+			{
+				DTALink* pLink = g_LinkVector[link_index];
+				pLink->ResizeData(g_PlanningHorizon);
+			}
+
+		}
+	
 
 	g_LogFile << " -- zone-specific demand data -- " << endl;
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -3369,13 +3443,13 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 		float link_volume_in_veh_per_hour_for_all_lanes;
 		float density_in_veh_per_mile_per_lane;
 		float speed_in_mph;
-		float exit_queue_length;
+		float exit_queue_length;  // in ratio
 		int cumulative_arrival_count;
 		int cumulative_departure_count;
 
 		int time_dependent_left_arrival_count;
 		int time_dependent_left_departure_count;
-		int number_of_through_and_right_queued_vehicles;
+		int number_of_queued_vehicles;
 		int number_of_left_queued_vehicles;
 
 		int cumulative_SOV_revenue;
@@ -3395,7 +3469,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 	{
 		if (bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,cumulative_arrival_count,cumulative_departure_count,time_stamp_for_end_of_congestion,time_dependent_left_arrival_count,time_dependent_left_departure_count,number_of_through_and_right_queued_vehicles,number_of_left_queued_vehicles,cumulative_SOV_revenue,cumulative_HOV_revenue,total_energy,total_CO2,total_NOX,total_CO,total_HC,energy_miles_per_gallon,CO2_per_mile,NOX_per_mile,CO_per_mile,HC_per_mile\n");
+			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,number_of_queued_vehicles,cumulative_arrival_count,cumulative_departure_count,time_stamp_for_end_of_congestion,time_dependent_left_arrival_count,time_dependent_left_departure_count,number_of_left_queued_vehicles,cumulative_SOV_revenue,cumulative_HOV_revenue,total_energy,total_CO2,total_NOX,total_CO,total_HC,energy_miles_per_gallon,CO2_per_mile,NOX_per_mile,CO_per_mile,HC_per_mile\n");
 		}
 
 		for (unsigned li = 0; li< g_LinkVector.size(); li++)
@@ -3428,7 +3502,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 					int day_no = Iteration;
 
-					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,%d",
+					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,%d,%d",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
@@ -3439,6 +3513,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 						(pLink->m_LinkMOEAry[time].CumulativeDepartureCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) / pLink->m_Length / pLink->m_InflowNumLanes,
 						pLink->GetSpeed(time),
 						queue_length_ratio * 100,
+						pLink->m_LinkMOEAry[time].ExitQueueLength,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount,
 						pLink->m_LinkMOEAry[time].EndTimeOfPartialCongestion );
@@ -3468,7 +3543,7 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 					tdmoe_element.time_dependent_left_arrival_count = pLink->m_LinkMOEAry[time].IntervalLeftArrivalCount;
 					tdmoe_element.time_dependent_left_departure_count = pLink->m_LinkMOEAry[time].IntervalLeftDepartureCount;
-					tdmoe_element.number_of_through_and_right_queued_vehicles = pLink->m_LinkMOEAry[time].ExitQueueLength;
+					tdmoe_element.number_of_queued_vehicles = pLink->m_LinkMOEAry[time].ExitQueueLength;
 					tdmoe_element.number_of_left_queued_vehicles = pLink->m_LinkMOEAry[time].LeftExit_QueueLength;
 
 
@@ -3500,7 +3575,6 @@ void OutputLinkMOEData(char fname[_MAX_PATH], int Iteration, bool bStartWithEmpt
 
 					fprintf(st, "%d,", tdmoe_element.time_dependent_left_arrival_count);
 					fprintf(st, "%d,", tdmoe_element.time_dependent_left_departure_count);
-					fprintf(st, "%d,", tdmoe_element.number_of_through_and_right_queued_vehicles);
 					fprintf(st, "%d,", tdmoe_element.number_of_left_queued_vehicles);
 
 
@@ -3715,7 +3789,7 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 
 		if(bStartWithEmpty)
 		{
-			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,cumulative_arrival_count,cumulative_departure_count,");
+			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,number_of_queued_vehicles,cumulative_arrival_count,cumulative_departure_count,");
 			//time_dependent_left_arrival_count, time_dependent_left_departure_count, number_of_through_and_right_queued_vehicles, number_of_left_queued_vehicles, 
 			
 			if (bRevenueData)
@@ -3760,7 +3834,7 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 
 					int day_no = Iteration ; 
 
-					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,",
+					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,%d,",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
@@ -3771,6 +3845,7 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 						tdmoe_element.density_in_veh_per_mile_per_lane,
 						pLink->GetSpeed(time, header.aggregation_time_interval),
 						queue_length_ratio*100,
+						pLink->m_LinkMOEAry[time].ExitQueueLength,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
@@ -4219,6 +4294,9 @@ void g_ReadDTALiteSettings()
 	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
 	g_use_routing_policy_from_external_input = g_GetPrivateProfileInt("assignment", "use_routing_policy_from_external_input", 0, g_DTASettingFileName);
 	g_output_routing_policy_file = g_GetPrivateProfileInt("output", "external_routing_policy", 0, g_DTASettingFileName);
+
+	if (g_use_routing_policy_from_external_input == 1)
+		g_output_routing_policy_file = 1; 
 
 	if(!g_OutputEmissionOperatingModeData)
 		g_OutputSecondBySecondEmissionData = 0;

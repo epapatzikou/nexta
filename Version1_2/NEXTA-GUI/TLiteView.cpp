@@ -7633,20 +7633,20 @@ void CTLiteView::OnNodeMovementproperties()
 
 
 
-		CPage_Node_Phase PhasePage;
+		//CPage_Node_Phase PhasePage;
 
-		if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal
-			|| pNode->m_ControlType == pDoc->m_ControlType_ActuatedSignal)
-		{
-			PhasePage.m_psp.pszTitle = _T("Phase");
-			PhasePage.m_psp.dwFlags |= PSP_USETITLE;
-			PhasePage.m_pDoc = pDoc;
-			PhasePage.m_PeakHourFactor = pDoc->m_PeakHourFactor ;
-			PhasePage.m_CurrentNodeNumber = pNode->m_NodeNumber;
-			PhasePage.m_CurrentNode_Name = pNode->m_Name.c_str () ;
-			PhasePage.m_Offset = pNode->m_SignalOffsetInSecond;
-			sheet.AddPage(&PhasePage);  // 0
-		}
+		//if(pNode->m_ControlType == pDoc->m_ControlType_PretimedSignal
+		//	|| pNode->m_ControlType == pDoc->m_ControlType_ActuatedSignal)
+		//{
+		//	PhasePage.m_psp.pszTitle = _T("Phase");
+		//	PhasePage.m_psp.dwFlags |= PSP_USETITLE;
+		//	PhasePage.m_pDoc = pDoc;
+		//	PhasePage.m_PeakHourFactor = pDoc->m_PeakHourFactor ;
+		//	PhasePage.m_CurrentNodeNumber = pNode->m_NodeNumber;
+		//	PhasePage.m_CurrentNode_Name = pNode->m_Name.c_str () ;
+		//	PhasePage.m_Offset = pNode->m_SignalOffsetInSecond;
+		//	sheet.AddPage(&PhasePage);  // 0
+		//}
 
 		sheet.SetActivePage (0);
 		if(sheet.DoModal() == IDOK)
@@ -8134,6 +8134,7 @@ void CTLiteView::OnNodeNodeproperties()
 		dlg.NodeName   = pNode->m_Name .c_str ();
 		dlg.ZoneID  = pNode->m_ZoneID  ;
 		dlg.ControlType = pNode->m_ControlType ;
+		dlg.m_CycleLength = pNode->m_CycleLengthInSecond;
 
 		if(dlg.DoModal() == IDOK)
 		{
@@ -8151,7 +8152,7 @@ void CTLiteView::OnNodeNodeproperties()
 				pDoc->PushBackNetworkState();
 				pNode->m_Name  = strStd;
 				pNode->m_ZoneID = dlg.ZoneID;
-
+				pNode->m_CycleLengthInSecond = dlg.m_CycleLength;
 				pNode ->m_ControlType = dlg.ControlType;
 
 			}
@@ -8471,8 +8472,8 @@ void CTLiteView::DrawNodeMovements(CDC* pDC, DTANode* pNode, CRect PlotRect)
 		CString str_text;
 
 
-		float number_of_hours = max(0.01,(timing_plan.end_time_in_min - timing_plan. start_time_in_min )/60.0);
-		float sim_turn_hourly_count = movement.sim_turn_count/ number_of_hours;
+		float number_of_hours = max(0.01, (pDoc->m_DemandLoadingEndTimeInMin - pDoc->m_DemandLoadingStartTimeInMin) / 60.0);
+		float sim_turn_hourly_count = movement.sim_turn_count / number_of_hours;
 
 		//empty label
 		str_text.Format("");

@@ -301,6 +301,9 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
 		DTAVehicle* pVeh = g_VehicleMap[VehicleID];
 
+		if (pVeh->m_ExternalTripID == 17931 && pVeh->m_NodeSize == 0)
+			TRACE("");
+
 		pVeh->m_bConsiderToSwitch = false;
 		pVeh->m_bSwitch = false;
 
@@ -587,7 +590,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 		if (bSwitchFlag)  // for all vehicles that need to switch
 		{
 
-			pVeh->m_DepartureTime = pVeh->m_PreferredDepartureTime + final_departuret_time_shift;
+			//pVeh->m_DepartureTime = pVeh->m_PreferredDepartureTime + final_departuret_time_shift;
 
 			pVeh->SetMinCost(TotalCost);
 
@@ -624,7 +627,12 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 				for (int i = 0; i < NodeSize - 1; i++)
 				{
 					pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
-					NodeNumberSum += PathLinkList[i];
+
+					if (i==0)
+						NodeNumberSum += g_LinkVector[PathLinkList[i]]->m_FromNodeNumber;
+
+					NodeNumberSum += g_LinkVector[PathLinkList[i]]->m_ToNodeNumber;
+
 
 					/*if(g_LinkVector[pVeh->m_LinkAry [i].LinkNo]==NULL)
 					{
@@ -664,6 +672,9 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 
 				pVeh->m_Distance = Distance;
 				pVeh->m_NodeNumberSum = NodeNumberSum;
+
+				if (NodeNumberSum >=200)
+				TRACE("node num: %d\n", NodeNumberSum);
 
 
 				if (pVeh->m_PricingType == 4)  //assign travel time for transit users
@@ -1026,7 +1037,10 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 					{
 						pVeh->m_LinkAry[i].LinkNo = PathLinkList[i];
 
-						pVeh->m_NodeNumberSum += pVeh->m_LinkAry[i].LinkNo;
+						if (i==0)
+							pVeh->m_NodeNumberSum += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_FromNodeNumber;
+
+						pVeh->m_NodeNumberSum += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_ToNodeNumber;
 
 						if (pVeh->m_LinkAry[i].LinkNo < g_LinkVector.size())
 						{

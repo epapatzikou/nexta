@@ -545,12 +545,9 @@ CAPTION "Traffic Control and Microscopic Simulation Data Exchange"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     PUSHBUTTON      "OK",IDOK,131,229,50,14
-    PUSHBUTTON      "Generate Synchro  Universal Traffic Data Format (UTDF) files",IDC_BUTTON_GENERATE_DATA,23,50,230,14
-    PUSHBUTTON      "Perform Quick Estimation Method (QEM) for Signals",IDC_BUTTON_QEM,24,30,230,14
-    PUSHBUTTON      "Generate Path Flow Data and simulation.anm file for VISSIM Simulation",IDC_BUTTON_GENERATE_VISSIM_DATA,24,73,230,14
-    LISTBOX         IDC_LIST_INFO,39,111,214,108,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_EDIT_PEAK_HOUR_FACTOR,239,6,40,14,ES_AUTOHSCROLL
-    LTEXT           "Peak hour conversion factor from entire simulation horizon:",IDC_STATIC,39,10,193,8
+    PUSHBUTTON      "Generate Synchro  Universal Traffic Data Format (UTDF) files",IDC_BUTTON_GENERATE_DATA,25,26,230,14
+    PUSHBUTTON      "Generate Path Flow Data and simulation.anm file for VISSIM Simulation",IDC_BUTTON_GENERATE_VISSIM_DATA,25,57,230,14
+    LISTBOX         IDC_LIST_INFO,29,111,224,108,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_DIALOG_DemandPattern DIALOGEX 0, 0, 534, 180
@@ -931,13 +928,13 @@ BEGIN
     COMBOBOX        IDC_COMBO_Aggregation_Interval,167,189,85,120,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_DIALOG_NodeProperties DIALOGEX 0, 0, 273, 118
+IDD_DIALOG_NodeProperties DIALOGEX 0, 0, 273, 135
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Node Properties"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    PUSHBUTTON      "Cancel",ID_CANCEL,190,94,76,13
-    DEFPUSHBUTTON   "OK",IDOK,103,95,65,12
+    PUSHBUTTON      "Cancel",ID_CANCEL,190,115,76,13
+    DEFPUSHBUTTON   "OK",IDOK,103,116,65,12
     EDITTEXT        IDC_EDIT_NODE_ID,62,7,62,14,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Node ID:",-1,7,7,30,8
     EDITTEXT        IDC_EDIT_SPEEDLIMIT,82,54,52,14,ES_AUTOHSCROLL | ES_NUMBER
@@ -946,6 +943,8 @@ BEGIN
     LTEXT           "Node Name:",-1,7,31,40,8
     EDITTEXT        IDC_EDIT_STREET_NAME,63,30,169,14,ES_AUTOHSCROLL
     LTEXT           "Associated Zone ID:",-1,7,56,66,8
+    EDITTEXT        IDC_EDIT_CYCLE_LENGTH,82,90,52,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Cycle Length (sec):",-1,7,92,63,8
 END
 
 IDD_DIALOG_NODE_MOVEMENTS DIALOGEX 0, 0, 683, 345
@@ -1746,7 +1745,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 266
         TOPMARGIN, 7
-        BOTTOMMARGIN, 111
+        BOTTOMMARGIN, 128
     END
 
     IDD_DIALOG_NODE_MOVEMENTS, DIALOG
@@ -2536,6 +2535,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Add Sensor on Selected Link", ID_LINK_ADDSENSOR
         MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
+        MENUITEM "Overwrite Sensor Location and Sensor Count Data", ID_DETECTOR_OVERWRITESENSORLOCATIONANDSENSORCOUNTDATA
         MENUITEM SEPARATOR
         MENUITEM "Export Link Flow Proportion Matrix to CSV File", ID_DETECTOR_EXPORTLINKFLOWPROPORTIONMATRIXTOCSVFILE
         MENUITEM "Use OD Estimation Optimization Excel Program", ID_DETECTOR_USEODESTIMATIONOPTIMIZATIONEXCELPROGRAM
@@ -2648,6 +2648,7 @@ BEGIN
         MENUITEM "Speed (km/h)",                ID_MOETYPE_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE1_DENSITY
         MENUITEM "Queue Length Percentage",     ID_MOETYPE1_QUEUELENGTH
+        MENUITEM "Number Of Queued Vehicles",   ID_MOE_NUMBEROFQUEUEDVEHICLES
         MENUITEM SEPARATOR
         MENUITEM "Energy (miles per gallon per vehicle)", ID_MOE_ENERGY
         MENUITEM "CO2 (kg/vehicle/mile)",       ID_MOE_CO2
@@ -2670,6 +2671,7 @@ BEGIN
         MENUITEM "Speed (km/h)",                ID_MOETYPE2_SPEED
         MENUITEM "Density (vpmph)",             ID_MOETYPE2_DENSITY
         MENUITEM "Queue Length Percentage",     ID_MOETYPE2_QUEUELENGTH
+        MENUITEM "Number Of Queued Vehicles",   ID_MOE_NUMBEROFQUEUEDVEHICLES33788
         MENUITEM SEPARATOR
         MENUITEM "Energy (miles per gallon per vehicle)", ID_MOE2_ENERGY
         MENUITEM "CO2 (kg/vehicle/mile)",       ID_MOE2_CO2
@@ -2904,6 +2906,7 @@ BEGIN
             MENUITEM "Clean Sensor Data with Reasonable Range", ID_SENSORTOOLS_CLEANSENSORDATAWITHREASONABLERANGE
             MENUITEM "View Validation Plot for Link Count", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT
             MENUITEM "View Validation Plot for Lane Density", ID_MOE_VIEWODDEMANDESTIMATIONSUMMARYPLOT_LaneDensity
+            MENUITEM "View Validation Plot for Link Speed", ID_SENSORTOOLS_VIEWVALIDATIONPLOTFORLINKSPEED
             MENUITEM "Generate Aggregated Data and View Validation Results in Excel", ID_SENSORTOOLS_CONVERTTOHOURCOUNT
         END
         MENUITEM SEPARATOR

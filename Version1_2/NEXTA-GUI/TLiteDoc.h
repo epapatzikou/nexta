@@ -1289,6 +1289,7 @@ public:
 	bool SaveInputPathCSVFile(LPCTSTR lpszFileName);
 
 	int ReadAMSMovementCSVFile(LPCTSTR lpszFileName, int NodeNumber);
+	int ReadAMSSignalControlCSVFile(LPCTSTR lpszFileName);
 
 	void ReadVehicleCSVFile(LPCTSTR lpszFileName);
 	bool ReadVehicleBinFile(LPCTSTR lpszFileName,int version_number);
@@ -1989,6 +1990,8 @@ public:
 	std::map<CString, DTANodeMovement*> m_MovementPointerMap;  // turnning movement pointer
 
 
+
+
 	DTANodeMovement* FindMovement(int FromNodeNumber,int ToNodeNumber, int DestNodeNumber)
 	{
 		DTANodeMovement*  pMovement = NULL;
@@ -2022,6 +2025,7 @@ public:
 
 
 	void ExportSynchroVersion6Files(std::string TimingPlanName = "ALLDAY");
+	void ExportSynchroVersion6UTDFSeparateFiles();
 	bool m_bMovementAvailableFlag;
 	void ExportQEMData(int NodeNumber);
 	bool ReadSynchroPreGeneratedLayoutFile(LPCTSTR lpszFileName);
@@ -2376,7 +2380,7 @@ public:
 	void RunExcelAutomation();
 	void OpenCSVFileInExcel(CString filename);
 	void Constructandexportsignaldata();
-	void ExportDataForQEMFile(CString filename);
+	void ExportDataForQEMFile(CString filename, bool bUseSequentialNodeID);
 	void ConstructandexportVISSIMdata(bool bUseSequentialNodeNumber);
 	void ReadSynchroUniversalDataFiles();
 
@@ -2834,6 +2838,8 @@ public:
 	afx_msg void OnNetworktoolsGenerateloopcodeanddirectioncode();
 	afx_msg void OnSensortoolsCleansensordatawithreasonablerange();
 	afx_msg void OnReferenceCreatespeedsensormappingforbaselinenetwork();
+	afx_msg void OnDetectorOverwritesensorlocationandsensorcountdata();
+	afx_msg void OnSensortoolsViewvalidationplotforlinkspeed();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

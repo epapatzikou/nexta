@@ -125,23 +125,17 @@ BOOL CPage_Node_Movement::OnInitDialog()
 	m_Column_names.push_back ("Direction"); //3
 
 	m_Column_names.push_back ("Prohibition"); //4
-	m_Column_names.push_back ("# of Lanes"); //5
 
 	m_Column_names.push_back ("Simu Total Volume"); //6
 	m_Column_names.push_back ("Simu Hourly Volume"); //7
 	m_Column_names.push_back ("Simu Delay (sec)"); //8
 
-	if(m_bSigalizedNode == true)
-	{
-	m_Column_names.push_back ("Green Start Time"); //9
-	m_Column_names.push_back ("Green End Time"); //10
+	//if(m_bSigalizedNode == true)
+	//{
+	//m_Column_names.push_back ("Green Start Time"); //9
+	//m_Column_names.push_back ("Green End Time"); //10
 
-	m_Column_names.push_back ("Sat Flow Rate Per Lane Group"); //11
-	m_Column_names.push_back ("QEM VOC"); //8
-	m_Column_names.push_back ("QEM Control Delay (sec)"); //8
-	m_Column_names.push_back ("QEM LOS"); //8
-
-	}
+	//}
 
 	CHeaderCtrl* pHeader = m_ListCtrl.GetHeaderCtrl();
 	if( pHeader!=NULL)
@@ -155,26 +149,6 @@ BOOL CPage_Node_Movement::OnInitDialog()
 
 		CGridColumnTrait* pTrait = NULL;
 		//              pTrait = new CGridColumnTraitEdit();
-
-		if(m_Column_names[i].find ("# of Lanes")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-
-		if(m_Column_names[i].find ("Sat Flow Rate Per Lane Group")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-
-		if(m_Column_names[i].find ("Green Start Time")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-		if(m_Column_names[i].find ("Green End Time")!=  string::npos)
-		{
-			pTrait = new CGridColumnTraitEdit();
-		}
-
 
 		if(m_Column_names[i].find ("Turn Type")!=  string::npos)
 		{
@@ -200,9 +174,9 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		m_ListCtrl.InsertColumnTrait((int)i,m_Column_names.at(i).c_str(),LVCFMT_LEFT,-1,-1, pTrait);
 
 		if(i<=10)
-			m_ListCtrl.SetColumnWidth((int)i,60);
+			m_ListCtrl.SetColumnWidth((int)i,100);
 		else
-			m_ListCtrl.SetColumnWidth((int)i,80);
+			m_ListCtrl.SetColumnWidth((int)i,100);
 	}
 
 
@@ -255,18 +229,6 @@ BOOL CPage_Node_Movement::OnInitDialog()
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 		str.Format ("%.1f",movement.QEM_EndTime  ); // green end green time 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
-
-		str.Format ("%.0f",movement.QEM_SatFlow     ); 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
-
-		str.Format ("%.0f",movement.QEM_VOC    ); 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
-
-		str.Format ("%.2f",movement.QEM_Delay    ); 
-		m_ListCtrl.SetItemText(Index, column_index++,str );
-
-		str.Format ("%s",movement.QEM_LOS    ); 
 		m_ListCtrl.SetItemText(Index, column_index++,str );
 
 	}

@@ -134,7 +134,8 @@ enum DTA_SIG_MOVEMENT
 enum DTA_SIG_MOVEMENT_ROW
    {
 	    DTA_MOVEMENT_ATTRIBUTE_UpNode = 0,
-	    DTA_MOVEMENT_ATTRIBUTE_DestNode,
+		DTA_MOVEMENT_ATTRIBUTE_DestNode,
+		DTA_MOVEMENT_ATTRIBUTE_StreetName,
 		DTA_MOVEMENT_ATTRIBUTE_TurnVolume,
 		DTA_MOVEMENT_ATTRIBUTE_Lanes,
 		DTA_MOVEMENT_ATTRIBUTE_Shared,
@@ -254,7 +255,7 @@ enum DTA_SIG_PHASE_ROW
 	PHASE_MOVEMENT_VECTOR,
 	DTA_PHASE_ATTRIBUTE_MAX_ROW};
 
-enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_inflow_volume,link_outflow_volume,link_in_and_outflow_volume,link_travel_time,speed_mph,link_density,link_queue_length,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count, energy_miles_per_gallon, emission_CO,emission_CO2,emission_NOX,emission_HC};
+enum eLinkMOEMode {no_display,lane_volume,speed_kmh, cummulative_volume, oblique_cummulative_volume, link_inflow_volume,link_outflow_volume,link_in_and_outflow_volume,link_travel_time,speed_mph,link_density,link_queue_length_ratio,number_of_queued_vehicles,link_traveltime, link_travel_time_plus_prediction, vehicle_trajectory,cumulative_SOV_count,cumulative_HOV_count,cumulative_truck_count,cumulative_intermodal_count, energy_miles_per_gallon, emission_CO,emission_CO2,emission_NOX,emission_HC};
 enum eLinkDataType { eSimulationData, eSensorData, eFloatingCarData };
 
 class DTA_Movement_Data_Matrix
@@ -1387,6 +1388,8 @@ public:
 		m_DistanceToRoot = 0;
 		m_CycleLengthInSecond = 0;
 		m_SignalOffsetInSecond = 0;
+		m_QEMCycleLengthInSecond = 0;
+		m_QEMSignalOffsetInSecond = 0;
 		m_NumberofPhases = 0;
 		m_bSignalData = false;
 		m_External_OD_flag = 0;
@@ -1432,6 +1435,7 @@ public:
 
 	std::vector<int> m_OutgoingLinkVector;
 	std::vector<int> m_IncomingLinkVector;
+	
 	int m_IncomingNonConnectors;
 
 	std::map<std::string, DTANodeMovementVector > m_MovementDataMap;  // key is the timing plan name; default is FREE
@@ -1665,8 +1669,14 @@ public:
 
 	 
 	bool m_bConnectedToFreewayORRamp;
+
 	int m_CycleLengthInSecond;
 	int m_SignalOffsetInSecond;
+
+	int m_QEMCycleLengthInSecond;
+	int m_QEMSignalOffsetInSecond;
+
+
 	int m_NumberofPhases;
 	float m_DistanceToRoot;
 	string m_Name;
@@ -1852,7 +1862,7 @@ public:
 	int cumulative_left_arrival_count;
 	int cumulative_left_departure_count;
 
-	int number_of_through_and_right_queued_vehicles;
+	int number_of_queued_vehicles;
 	int number_of_left_queued_vehicles;
 
 	float Energy;
@@ -1881,7 +1891,7 @@ public:
 		//cumulative_left_arrival_count = 0;
 		//cumulative_left_departure_count  = 0;
 
-		//number_of_through_and_right_queued_vehicles  = 0;
+		number_of_queued_vehicles  = 0;
 		//number_of_left_queued_vehicles  = 0;
 
 		UserDefinedValue = 0;
@@ -2958,6 +2968,31 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 				return this->m_SpeedLimit ;
 	}
 
+	float GetSimulatedSpeed(int current_time, int end_time)
+	{
+		float total_value = 0;
+		int total_count = 0;
+
+		current_time = current_time + g_SimulationDayNo * 1440;
+
+		for (int t = current_time; t< end_time; t++)
+		{
+			if (t < m_LinkMOEArySize)
+			{
+				if (t < m_LinkMOEArySize && m_LinkMOEAry[t].Density >= 0.1) // with flow
+				{
+					total_count++;
+					total_value += m_LinkMOEAry[t].Speed;
+				}
+			}
+		}
+
+		if (total_count >= 1)
+			return total_value / total_count;
+		else
+			return this->m_SpeedLimit;
+	}
+
 	float GetSimulationSpeed(int t)
 	{
 		t = t + g_SimulationDayNo * 1440;
@@ -3406,7 +3441,9 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 				case link_travel_time: value= GetSimulatedTravelTime (i); break;
 				case speed_mph: value= GetSimulatedSpeed (i); break;
 				case link_density: value= GetSimulatedDensity(i); break;
-				case link_queue_length: value= GetQueueLengthPercentage(i); break;
+				case link_queue_length_ratio: value= GetQueueLengthPercentage(i); break;
+				case number_of_queued_vehicles: value = GetNumberOfQueuedVeicles(i); break;
+					
 				case link_traveltime: value= GetSimulatedTravelTime(i); break;
 				case energy_miles_per_gallon: value= GetSimulatedEnergy (i)  ; break;
 				case emission_CO: value= GetSimulatedCO (i)  ; break;
@@ -3761,6 +3798,33 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 		return average;
 
 	}		
+
+	float GetNumberOfQueuedVeicles(int current_time)
+	{
+		int total_count = 0;
+		float total_value = 0;
+
+		current_time = current_time + g_SimulationDayNo * 1440;
+
+		for (int t = current_time; t< current_time + g_MOEAggregationIntervalInMin; t++)
+		{
+			if (t < m_LinkMOEArySize)
+			{
+
+				total_value += max(0, m_LinkMOEAry[t].number_of_queued_vehicles);
+
+				total_count++;
+			}
+		}
+
+		if (total_count >= 1)
+			return total_value / total_count;
+		else
+			return m_StaticTravelTime;
+
+
+		return 0;
+	}
 
 
 	float GetQueueLengthPercentage(int current_time )
