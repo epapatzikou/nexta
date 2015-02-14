@@ -359,15 +359,16 @@ void CTLiteApp::OnFileOpen()
 
 	}
 
-
+	
 
    if(dlg.DoModal() == IDOK)
    {
+	  CString PathName =   dlg.GetPathName(); 
       POSITION p = m_pDocManager->GetFirstDocTemplatePosition();
       CDocTemplate* pTemplate = m_pDocManager->GetNextDocTemplate(p);
       CTLiteDoc* pDoc = (CTLiteDoc*)pTemplate->OpenDocumentFile(0);
 	  pDoc->m_bLoadNetworkDataOnly = m_bLoadNetworkOnly;
-      pDoc->OnOpenDocument(dlg.GetPathName(),m_bLoadNetworkOnly );
+	  pDoc->OnOpenDocument(PathName, m_bLoadNetworkOnly);
    }
 }
 

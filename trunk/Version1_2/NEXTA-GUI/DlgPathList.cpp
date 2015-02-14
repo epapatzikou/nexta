@@ -179,6 +179,8 @@ BOOL CDlgPathList::OnInitDialog()
 	CGridRowTraitXP* pRowTrait = new CGridRowTraitXP;  // Hao: this ponter should be delete. 
 	m_ListCtrl.SetDefaultRowTrait(pRowTrait);
 
+
+
 	std::vector<std::string> m_Column_names;
 
 	_TCHAR *ColumnMOELabel[PATHDATACOLUMNSIZE] =

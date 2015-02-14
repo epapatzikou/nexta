@@ -515,8 +515,12 @@ void g_MultiScenarioTrafficAssignment()
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap-funciton with step size based adjustment");
 				break;
 
-			case assignment_accessibility_distanance:
+			case assignment_accessibility_distance:
 				g_SummaryStatFile.WriteParameterValue ("Routing method","Assessibility based on distance");
+				break;
+
+			case assignment_accessibility_travel_time:
+				g_SummaryStatFile.WriteParameterValue("Routing method", "Assessibility based on travel time");
 				break;
 
 			case assignment_OD_demand_estimation:
@@ -738,7 +742,11 @@ void g_MultiScenarioTrafficAssignment()
 
 			cout << "Agent based dynamic traffic assignment... " << endl;
 
-
+		if (g_UEAssignmentMethod == assignment_accessibility_travel_time)
+		{
+				g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv", true, 1, 0);
+				exit(0);
+		}
 
 		if (g_UEAssignmentMethod == assignment_LR_agent_based_system_optimization)  // 12
 		{

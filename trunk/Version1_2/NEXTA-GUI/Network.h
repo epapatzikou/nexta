@@ -390,6 +390,8 @@ using std::string;
 #define MAX_DAY_SIZE 1 
 
 extern int 	g_MOEAggregationIntervalInMin;
+extern int g_SelectedGPSCarID;
+extern int g_SelectedGPSDayNo;
 extern int 	g_ImpactStudyPeriodInMin;
 extern bool g_bShowRadarChart;
 
@@ -2412,6 +2414,11 @@ public:
 		m_ShapePoints.push_back(m_FromPoint);
 		m_ShapePoints.push_back(m_ToPoint);
 
+
+		m_Original_ShapePoints.clear();
+		m_Original_ShapePoints.push_back(m_FromPoint);
+		m_Original_ShapePoints.push_back(m_ToPoint);
+
 		CalculateShapePointRatios();
 
 		unsigned int last_shape_point_id = m_ShapePoints .size() -1;
@@ -4292,7 +4299,8 @@ class VehicleLocationRecord
 {
 	public:
 	
-	std::string agent_id;
+	int agent_id;
+	int day_no;
 	
 	double x;
 	double y;

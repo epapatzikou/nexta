@@ -1077,7 +1077,7 @@ int CTLiteDoc::AlternativeRouting(int NumberOfRoutes = 2)
 }
 
 
-int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork )
+int CTLiteDoc::Routing(bool bCheckConnectivity, bool bRebuildNetwork)
 {
 	CWaitCursor cws;
 	m_NodeSizeSP = 0;  // reset 

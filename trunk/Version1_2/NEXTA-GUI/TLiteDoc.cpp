@@ -1338,6 +1338,7 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 		fclose(pFile);
 	}
 
+	int error_count = 0;
 	/////////////////
 	fopen_s(&pFile,lpszFileName,"rb");
 	if(pFile!=NULL)
@@ -1387,7 +1388,14 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 
 			if (pLink == NULL || from_node_number != prev_from_node_number || to_node_number != prev_to_node_number)
 			{
-				pLink = FindLinkWithNodeNumbers(from_node_number, to_node_number, lpszFileName);
+				bool bWarningFlag = true;
+
+				if (error_count >= 1)
+				{
+					bWarningFlag = false;
+				}
+
+				pLink = FindLinkWithNodeNumbers(from_node_number, to_node_number, lpszFileName, bWarningFlag);
 			}
 			if(pLink!=NULL  )
 			{	
@@ -1438,7 +1446,8 @@ bool CTLiteDoc::ReadSimulationLinkMOEData_Bin(LPCTSTR lpszFileName)
 				//CString msg;
 				//msg.Format ("Please check if link %d->%d at file %s still exists in input_link.csv.", from_node_number , to_node_number, lpszFileName);  // +2 for the first field name line
 				//AfxMessageBox(msg);
-				break;
+				error_count++;
+				continue;
 			}
 
 
@@ -1744,6 +1753,15 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 
 	ReadModelAgentTrajectory(m_ProjectDirectory + "model_trajectory.csv");
 
+	ReadGPSTrajectory(m_ProjectDirectory + "CAR_GPS_data.csv");
+
+	//CString file_name;
+	//for (int day = 1; day < 31; day += 2)
+	//{
+	//	file_name.Format("CAR_GPS_10.%02d - 10.%02d.csv", day, day + 1);
+	//	ReadGPSTrajectory(m_ProjectDirectory + file_name);
+	//}
+
 	// read users' prespecified control type
 	ReadNodeControlTypeCSVFile(directory+"input_node_control_type.csv");
 	ReadLinkTypeCSVFile(directory+"input_link_type.csv");
@@ -1777,10 +1795,12 @@ BOOL CTLiteDoc::OnOpenTrafficNetworkDocument(CString ProjectFileName, bool bNetw
 	ReadBackgroundImageFile(ProjectFileName);
 
 
-	if(!ReadNodeCSVFile(directory+"input_node.csv") && m_BackgroundBitmapLoaded ==false)
+	if (ReadNodeCSVFile(directory + "input_node.csv") || m_BackgroundBitmapLoaded == true)
+	{
+	
+	if(!ReadLinkCSVFile(directory+"input_link.csv",false,false)) 
 		return false;
-	if(!ReadLinkCSVFile(directory+"input_link.csv",false,false) && m_BackgroundBitmapLoaded ==false) 
-		return false;
+	}
 
 	ReadReferenceLineCSVFile(directory + "optional_reference_line.csv" );
 	if(ReadZoneCSVFile(directory+"input_zone.csv"))
@@ -6054,7 +6074,7 @@ BOOL CTLiteDoc::SaveProject(LPCTSTR lpszPathName, int SelectedLayNo)
 					if(si!=itr->second.m_ShapePoints.size()-1)
 						fprintf(st," ");
 				}
-				fprintf(st,"\"</coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
+				fprintf(st,"\</coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
 				fprintf(st, "\n");
 			}
 		}
@@ -7885,6 +7905,8 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 
 		CString str_loading;
 		int count =0;
+
+
 		while(!feof(st))
 		{
 
@@ -8001,67 +8023,72 @@ bool CTLiteDoc::ReadVehicleBinFile(LPCTSTR lpszFileName, int version_number = 2)
 
 					m_PathNodeVectorSP[i] = node_element.NodeName;
 					pVehicle->m_NodeNumberSum += m_PathNodeVectorSP[i];
-					if(i>=1)
+					if (i >= 1)
 					{
 						DTALink* pLink = FastFindLinkWithNodeNumbers(m_PathNodeVectorSP[i - 1], m_PathNodeVectorSP[i]);
-						if (pLink == NULL)
+						if (pLink != NULL)
 						{
 							//	AfxMessageBox("Error in reading file agent.bin");
-							fclose(st);
 
+
+
+
+							pVehicle->m_NodeAry[i].LinkNo = pLink->m_LinkNo;
+
+							// random error beyond 6 seconds for better ainimation
+
+							float random_value = g_RNNOF()*0.01; // 0.1 min = 6 seconds
+
+							pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = node_element.AbsArrivalTimeOnDSN;
+
+							pLink->m_total_assigned_link_volume += 1;
+
+							if (pVehicle->m_NodeAry[i].ArrivalTimeOnDSN < 10000) //feasible arrival time
+							{
+
+
+								float travel_time = 0;
+
+								if (i >= 2)
+									travel_time = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i - 1].ArrivalTimeOnDSN;
+								else // first link
+									travel_time = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_DepartureTime;
+
+
+								if (travel_time - pLink->m_FreeFlowTravelTime > 100)
+									TRACE("");
+
+
+								if (travel_time >= 100)
+								{
+									TRACE("");
+
+								}
+								pLink->m_TotalTravelTime += travel_time;
+
+								float delay = travel_time - pLink->m_FreeFlowTravelTime;
+								pLink->m_total_delay += delay;
+								pLink->AddNodeDelay(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN, delay);
+							}
+							else
+							{
+								//TRACE("");
+
+								//TRACE("infeasible link; %f, %d\n", pLink->m_total_link_volume, pVehicle->m_VehicleID);
+
+							}
+
+
+							pLink->m_total_link_volume_of_incomplete_trips = pLink->m_total_link_volume - pLink->m_total_assigned_link_volume;
+
+						}
+						else
+						{  // missing link
+							
+							fclose(st);
 							return false;
 						}
-
-
-						pVehicle->m_NodeAry[i].LinkNo  = pLink->m_LinkNo ;
-
-						// random error beyond 6 seconds for better ainimation
-
-						float random_value = g_RNNOF()*0.01; // 0.1 min = 6 seconds
-
-						pVehicle->m_NodeAry[i].ArrivalTimeOnDSN = node_element.AbsArrivalTimeOnDSN;
-
-						pLink->m_total_assigned_link_volume +=1;
-
-						if( pVehicle->m_NodeAry[i].ArrivalTimeOnDSN <10000) //feasible arrival time
-						{
-
-
-							float travel_time  =  0;
-
-							if(i>=2)
-								travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_NodeAry[i-1].ArrivalTimeOnDSN;
-							else // first link
-								travel_time  = pVehicle->m_NodeAry[i].ArrivalTimeOnDSN - pVehicle->m_DepartureTime ;
-
-
-							if(travel_time- pLink->m_FreeFlowTravelTime> 100)
-								TRACE("");
-
-
-							if(travel_time >= 100)
-							{
-							TRACE("");
-							
-							}
-							pLink->m_TotalTravelTime += travel_time;
-
-						float delay = travel_time- pLink->m_FreeFlowTravelTime;
-						pLink->m_total_delay += delay;
-						pLink->AddNodeDelay(pVehicle->m_NodeAry[i].ArrivalTimeOnDSN ,delay);
-						}else
-						{
-							//TRACE("");
-
-							//TRACE("infeasible link; %f, %d\n", pLink->m_total_link_volume, pVehicle->m_VehicleID);
-
-						}
-
-
-						pLink->m_total_link_volume_of_incomplete_trips = pLink->m_total_link_volume - pLink->m_total_assigned_link_volume;
-
 					}
-
 
 
 				}
@@ -8968,8 +8995,8 @@ void CTLiteDoc::LoadSimulationOutput()
 	}
 
 
-	ReadModelLinkMOEData_Parser(m_ProjectDirectory+"model_linkMOE.csv");
-	ReadVehicleCSVFile_Parser(m_ProjectDirectory+ "model_trip.csv");
+	//ReadModelLinkMOEData_Parser(m_ProjectDirectory+"model_linkMOE.csv");
+	//ReadVehicleCSVFile_Parser(m_ProjectDirectory+ "model_trip.csv");
 
 
 	ReadInputPathCSVFile(m_ProjectDirectory+ "input_path.csv");
@@ -11696,11 +11723,28 @@ int CTLiteDoc::FindClassificationNo(DTAVehicle* pVehicle, VEHICLE_X_CLASSIFICATI
 		else
 			index = pVehicle->m_VOT /10 ; 
 		break;
-	case CLS_time_interval_15_min: index = pVehicle->m_DepartureTime /15; break;
-	case CLS_time_interval_30_min: index = pVehicle->m_DepartureTime /30; break;
-	case CLS_time_interval_60_min: index = pVehicle->m_DepartureTime /60; break;
-	case CLS_time_interval_2_hour: index = pVehicle->m_DepartureTime /120; break;
-	case CLS_time_interval_4_hour: index = pVehicle->m_DepartureTime /240; break;
+	case CLS_time_interval_15_min: index = pVehicle->m_DepartureTime /15; 
+		
+		if (m_VehicleSelectionMode == CLS_path_partial_trip)
+			index = pVehicle->m_path_start_node_departure_time / 15;
+
+		break;
+	case CLS_time_interval_30_min: index = pVehicle->m_DepartureTime /30; 
+		if (m_VehicleSelectionMode == CLS_path_partial_trip)
+			index = pVehicle->m_path_start_node_departure_time / 30;
+		break;
+	case CLS_time_interval_60_min: index = pVehicle->m_DepartureTime /60; 
+		if (m_VehicleSelectionMode == CLS_path_partial_trip)
+			index = pVehicle->m_path_start_node_departure_time / 60;
+		break;
+	case CLS_time_interval_2_hour: index = pVehicle->m_DepartureTime /120;
+		if (m_VehicleSelectionMode == CLS_path_partial_trip)
+			index = pVehicle->m_path_start_node_departure_time / 120;
+		break;
+	case CLS_time_interval_4_hour: index = pVehicle->m_DepartureTime /240; 
+		if (m_VehicleSelectionMode == CLS_path_partial_trip)
+			index = pVehicle->m_path_start_node_departure_time / 240;
+		break;
 
 	case CLS_distance_bin_0_2: index = pVehicle->m_Distance /0.2; break;
 	case CLS_distance_bin_1: index = pVehicle->m_Distance /1; break;
@@ -15003,7 +15047,7 @@ bool CTLiteDoc::ReadSensorTrajectoryData(LPCTSTR lpszFileName)
 			if(parser.GetValueByFieldName("y",element.y) == false)
 				break;
 
-				
+
 			AddLocationRecord(element);
 			
 			if(!bRectInitialized)
@@ -16146,10 +16190,10 @@ bool CTLiteDoc::ReadModelAgentTrajectory(LPCTSTR lpszFileName)
 				continue;
 
 
-			if(parser.GetValueByFieldName("x",element.x) == false)
+			if(parser.GetValueByFieldName("x",element.x, false) == false)
 				continue;
 
-			if(parser.GetValueByFieldName("y",element.y) == false)
+			if(parser.GetValueByFieldName("y",element.y, false) == false)
 				continue;
 
 
@@ -16187,7 +16231,7 @@ bool CTLiteDoc::ReadModelAgentTrajectory(LPCTSTR lpszFileName)
 
 			m_ZoneMap[0].m_ZoneID = 0;
 
-				std::map<std::string,VehicleLocationTimeIndexedMap>::iterator itr2;
+				std::map<int,VehicleLocationTimeIndexedMap>::iterator itr2;
 
 				for(itr2 = m_VehicleWithLocationVectorMap.begin();
 					itr2 != m_VehicleWithLocationVectorMap .end(); itr2++)
@@ -16234,6 +16278,161 @@ bool CTLiteDoc::ReadModelAgentTrajectory(LPCTSTR lpszFileName)
 		m_AgentLocationLoadingStatus.Format("%d agent location records for %d agents are loaded from file %s.",i,m_VehicleWithLocationVectorMap.size(),lpszFileName);	
 	}
 return true;
+}
+
+
+
+bool CTLiteDoc::ReadGPSTrajectory(LPCTSTR lpszFileName)
+{
+	CCSVParser parser;
+	int i = 0;
+
+	bool bRectInitialized = false;
+
+	if (parser.OpenCSVFile(CString2StdString(lpszFileName)))
+	{
+
+		while (parser.ReadRecord())
+		{
+
+			VehicleLocationRecord element;
+
+	
+
+			if (parser.GetValueByFieldName("car_id", element.agent_id) == false)
+				continue;
+
+
+			string geo_string;
+			if (parser.GetValueByFieldName("location", geo_string) == false)
+				continue;
+
+			std::vector<float> vect;
+
+			std::stringstream ss(geo_string);
+			float value;
+
+			while (ss >> value)
+			{
+				vect.push_back(value);
+
+				if (ss.peek() == ',')
+					ss.ignore();
+			}
+
+
+			if (vect.size() == 2)
+			{
+				element.y = vect[0];
+				element.x = vect[1];
+			}
+
+
+			string date_string;
+			if (parser.GetValueByFieldName("date", date_string) == false)
+				continue;
+
+			std::vector<int> date_vect;
+
+			std::stringstream ss_date(date_string);
+			int date_value;
+
+			while (ss_date >> date_value)
+			{
+				date_vect.push_back(date_value);
+
+				if (ss_date.peek() == ',' || ss_date.peek() == ' ' || ss_date.peek() == '-' || ss_date.peek() == ':')
+					ss_date.ignore();
+			}
+
+			if (date_vect.size() == 6)
+			{
+				int sec = date_vect[5] - date_vect[5] % 20;
+				element.time_stamp_in_second = date_vect[3] * 3600 + date_vect[4] * 60 + sec;  // hour, min, second
+			
+				element.day_no = date_vect[2];
+				if (element.time_stamp_in_second == 30780 && element.agent_id == 3)
+				{ 
+					TRACE("line no. %d", i);
+				}
+			}
+
+
+
+			AddLocationRecord(element);
+
+			if (!bRectInitialized)
+			{
+				m_NetworkRect.left = element.x;
+				m_NetworkRect.right = element.x;
+				m_NetworkRect.top = element.y;
+				m_NetworkRect.bottom = element.y;
+				bRectInitialized = true;
+			}
+
+			GDPoint point;
+			point.x = element.x;
+			point.y = element.y;
+
+			m_NetworkRect.Expand(point);
+
+
+			i++;
+
+		}
+
+
+		///
+
+		m_ZoneMap[0].m_ZoneID = 0;
+
+		std::map<int, VehicleLocationTimeIndexedMap>::iterator itr2;
+
+		for (itr2 = m_VehicleWithLocationVectorMap.begin();
+			itr2 != m_VehicleWithLocationVectorMap.end(); itr2++)
+		{		//scan all vehicle records at this timestamp
+
+
+			DTAVehicle* pVehicle = 0;
+			pVehicle = new DTAVehicle;
+			pVehicle->m_bGPSVehicle = true;
+			pVehicle->m_DayNo = 1;
+
+			pVehicle->m_VehicleID = m_VehicleSet.size();
+
+			pVehicle->m_OriginZoneID = 0;
+			pVehicle->m_DestinationZoneID = 0;
+
+			pVehicle->m_Distance = 10; // km to miles
+			pVehicle->m_DepartureTime = itr2->second.VehicleLocationRecordVector[0].time_stamp_in_second / 10;
+			pVehicle->m_ArrivalTime = itr2->second.VehicleLocationRecordVector[itr2->second.VehicleLocationRecordVector.size() - 1].time_stamp_in_second;
+
+
+			pVehicle->m_TripTime = pVehicle->m_ArrivalTime - pVehicle->m_DepartureTime;
+
+			if (g_Simulation_Time_Horizon < pVehicle->m_ArrivalTime)
+				g_Simulation_Time_Horizon = pVehicle->m_ArrivalTime;
+
+			pVehicle->m_bComplete = true;
+			pVehicle->m_DemandType = 1;
+
+			pVehicle->m_PricingType = 1;
+
+			//pVehicle->m_VehicleType = (unsigned char)g_read_integer(pFile);
+
+			pVehicle->m_VOT = 10;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+
+			m_VehicleSet.push_back(pVehicle);
+			m_VehicleIDMap[pVehicle->m_VehicleID] = pVehicle;
+
+
+		}
+
+		m_AgentLocationLoadingStatus.Format("%d agent location records for %d agents are loaded from file %s.", i, m_VehicleWithLocationVectorMap.size(), lpszFileName);
+	}
+	return true;
 }
 
 

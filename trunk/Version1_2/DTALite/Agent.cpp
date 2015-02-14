@@ -2036,6 +2036,8 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 								ODTravelTime[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
 								ODDistance[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
 
+								if (g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index]<=45)
+									iterZone->second.m_AccessibilityCount++;
 
 							}
 
@@ -2059,13 +2061,13 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 
 			if (PricingType == 1)
-				str.Format("skim%d.csv", time_interval_no);
+				str.Format("output_skim_min%d.csv", time_interval_no*15);
 			if (PricingType == 2)
-				str.Format("skim_HOV_%d.csv", time_interval_no);
+				str.Format("output_skim_HOV_min%d.csv", time_interval_no * 15);
 			if (PricingType == 3)
-				str.Format("skim_truck_%d.csv", time_interval_no);
+				str.Format("output_skim_truck_min_%d.csv", time_interval_no * 15);
 			if (PricingType == 4)
-				str.Format("skim_transit_%d.csv", time_interval_no);
+				str.Format("output_skim_transit_min%d.csv", time_interval_no * 15);
 
 
 			FILE* st = NULL;
@@ -2214,7 +2216,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 	if (ODDistance != NULL)
 		Deallocate3DDynamicArray<float>(ODDistance, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
 
-
+	g_OutputAccessibilityHeatMapKML();
 }
 
 void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_name, double CurrentTime)

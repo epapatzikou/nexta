@@ -497,6 +497,9 @@ void g_ReadInputFiles()
 
 
 	}
+
+
+	g_ReadAssignmentPeriodSettings();
 	//*******************************
 	// step 1: node input
 	cout << "Step 1: Reading file input_node.csv..."<< endl;
@@ -504,7 +507,7 @@ void g_ReadInputFiles()
 
 
 
-	if(g_UEAssignmentMethod != assignment_accessibility_distanance)  //  node control type is not required when calculating node-to-node distance 
+	if(g_UEAssignmentMethod != assignment_accessibility_distance)  //  node control type is not required when calculating node-to-node distance 
 	{
 		ReadNodeControlTypeCSVFile();
 	}
@@ -597,7 +600,7 @@ void g_ReadInputFiles()
 	cout << "Step 2: Reading file input_link_type.csv..."<< endl;
 	g_LogFile << "Step 2: Reading file input_link_type.csv.." << endl;
 
-	if(g_UEAssignmentMethod != assignment_accessibility_distanance)  //  link type is not required when calculating node-to-node distance 
+	if(g_UEAssignmentMethod != assignment_accessibility_distance)  //  link type is not required when calculating node-to-node distance 
 	{
 		CCSVParser parser_link_type;
 
@@ -831,7 +834,7 @@ void g_ReadInputFiles()
 
 			if (!parser_link.GetValueByFieldName("link_type", type))
 			{
-				if (g_UEAssignmentMethod != assignment_accessibility_distanance)
+				if (g_UEAssignmentMethod != assignment_accessibility_distance)
 				{
 
 					cout << "Field link_type has not been defined in file input_link.csv. Please check.";
@@ -905,7 +908,7 @@ void g_ReadInputFiles()
 
 			if(!parser_link.GetValueByFieldName("number_of_lanes",number_of_lanes))
 			{
-				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				if(g_UEAssignmentMethod != assignment_accessibility_distance)
 				{
 					cout << "Field number_of_lanes has not been defined in file input_link.csv. Please check.";
 					getchar();
@@ -936,7 +939,7 @@ void g_ReadInputFiles()
 
 			if (!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour", capacity))
 			{
-				if(g_UEAssignmentMethod != assignment_accessibility_distanance)
+				if(g_UEAssignmentMethod != assignment_accessibility_distance)
 				{
 					cout << "Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.";
 					getchar();
@@ -973,7 +976,7 @@ void g_ReadInputFiles()
 
 
 
-			if((g_UEAssignmentMethod != assignment_accessibility_distanance) && g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
+			if((g_UEAssignmentMethod != assignment_accessibility_distance) && g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
 			{
 				int round_down_type = int(type/10)*10;
 				if(g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())  // round down type exists
@@ -1190,7 +1193,7 @@ void g_ReadInputFiles()
 
 				pLink->m_Direction = link_direction;
 
-				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distanance && g_TrafficFlowModelFlag != tfm_BPR)
+				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distance && g_TrafficFlowModelFlag != tfm_BPR)
 					pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
 				else
 					pLink->m_Length= length;
@@ -1206,7 +1209,6 @@ void g_ReadInputFiles()
 
 				
 
-				pLink->m_BPRLaneCapacity  = pLink->m_LaneCapacity;
 				pLink->m_link_type= type;
 
 
@@ -1227,6 +1229,7 @@ void g_ReadInputFiles()
 
 
 				pLink->m_LaneCapacity= capacity * g_LinkTypeMap[type].capacity_adjustment_factor ;
+				pLink->m_BPRLaneCapacity = pLink->m_LaneCapacity;
 
 				if (g_SignalRepresentationFlag == signal_model_link_effective_green_time || 
 					g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
@@ -1276,6 +1279,10 @@ void g_ReadInputFiles()
 				g_NodeVector[pLink->m_FromNodeID ].m_TotalCapacity += (pLink->m_LaneCapacity* pLink->m_OutflowNumLanes);
 				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkVector.push_back(i);
 				g_NodeVector[pLink->m_FromNodeID ].m_OutgoingLinkVector .push_back(i);
+
+				if (g_NodeVector[pLink->m_FromNodeID].m_OutgoingLinkVector.size() > g_AdjLinkSize)
+					g_AdjLinkSize = g_NodeVector[pLink->m_FromNodeID].m_OutgoingLinkVector.size();
+
 
 				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkDelay.push_back(0);
 
@@ -1330,7 +1337,7 @@ void g_ReadInputFiles()
 					cout << " loading " << i/1000 << "K links..." << endl;
 				}
 
-				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != assignment_accessibility_distanance) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
+				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != assignment_accessibility_distance) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
 				{
 					cout << "The network has more than "<< MAX_LINK_NO << " links."<< endl <<"Please contact the developers for a new 64 bit version for this large-scale network." << endl;
 					getchar();
@@ -1385,17 +1392,13 @@ void g_ReadInputFiles()
 	// freeway, types
 
 
-	if(g_UEAssignmentMethod == assignment_accessibility_distanance)
+	if(g_UEAssignmentMethod == assignment_accessibility_distance)
 	{
 		g_AgentBasedShortestPathGeneration();
 		exit(0);
 	}
 
-	if(g_UEAssignmentMethod == assignment_accessibility_travel_time)
-	{
-		g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv",false, 1, 0);
-		exit(0);
-	}
+
 
 	// step 3.2 movement input
 
@@ -1641,6 +1644,41 @@ void g_ReadInputFiles()
 
 
 	g_SummaryStatFile.WriteParameterValue ("# of Activity Locations",activity_location_count);
+
+
+
+	//test if we have many activity locations per zone
+
+	int max_connectors = 0;
+	int max_connectors_zone_number = 0;
+
+
+	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+		if (iterZone->second.m_OriginActivityVector.size() > max_connectors)
+		{
+			max_connectors = iterZone->second.m_OriginActivityVector.size();
+			max_connectors_zone_number = iterZone->first;
+		}
+	}
+
+	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	{
+		if (iterZone->second.m_DestinationActivityVector .size() > max_connectors)
+		{
+			max_connectors = iterZone->second.m_DestinationActivityVector.size();
+			max_connectors_zone_number = iterZone->first;
+		}
+	}
+
+
+	g_LogFile << "Zone " << max_connectors_zone_number << " has a maximum of" << max_connectors << " connectors:" << endl;
+
+	if (max_connectors_zone_number >= g_AdjLinkSize)
+		g_AdjLinkSize = max_connectors_zone_number;
+		
+
+	
 
 	//*******************************
 	// step 5: vehicle type input
@@ -1909,7 +1947,9 @@ void g_ReadInputFiles()
 	// step 10: demand trip file input
 
 	// initialize the demand loading range, later resized by CreateVehicles
-	if (g_UEAssignmentMethod != assignment_real_time_simulation)
+	if (g_UEAssignmentMethod != assignment_real_time_simulation && 
+		g_UEAssignmentMethod != assignment_accessibility_travel_time &&
+		g_UEAssignmentMethod != assignment_accessibility_distance )
 	{
 	
 	g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
@@ -1921,27 +1961,37 @@ void g_ReadInputFiles()
 	}
 
 
-	g_ReadAssignmentPeriodSettings();
+
 
 	if (g_UEAssignmentMethod != assignment_real_time_simulation)
 	{
-
-		if (g_UEAssignmentMethod == assignment_vehicle_binary_file_based_scenario_evaluation)
+		if (g_UEAssignmentMethod == assignment_accessibility_travel_time || g_UEAssignmentMethod == assignment_accessibility_distance)
 		{
-			g_ReadAgentBinFile("agent.bin", true);
-		}
-		else if (g_UEAssignmentMethod == assignment_system_optimal)
-		{
-			g_ReadAgentBinFile("agent.bin", true);
-		}
-		else if (g_UEAssignmentMethod == assignment_metro_sim)
-		{
-			g_ReadAgentBinFile("agent.bin", false);
+			// do not load demand data
 		}
 		else
-		{  // this is the common mode for loading demand files using demand meta database. 
-			g_ReadDemandFileBasedOnMetaDatabase();
+		{
+			if (g_UEAssignmentMethod == assignment_vehicle_binary_file_based_scenario_evaluation)
+			{
+				g_ReadAgentBinFile("agent.bin", true);
+			}
+			else if (g_UEAssignmentMethod == assignment_system_optimal)
+			{
+				g_ReadAgentBinFile("agent.bin", true);
+			}
+			else if (g_UEAssignmentMethod == assignment_metro_sim)
+			{
+				g_ReadAgentBinFile("agent.bin", false);
+			}
+			else
+			{  // this is the common mode for loading demand files using demand meta database. 
+				g_ReadDemandFileBasedOnMetaDatabase();
+			}
+
+
 		}
+
+
 	}
 	else
 	{
@@ -1995,17 +2045,24 @@ void g_ReadInputFiles()
 	g_SummaryStatFile.WriteParameterValue("# of Intra-zone Vehicles (not be simulated)", g_number_of_intra_zone_trips);
 
 
-
-	CCSVParser parser_RTSimulation_settings;
-	if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv", false) == false)
+	if (g_UEAssignmentMethod != assignment_accessibility_travel_time && g_UEAssignmentMethod != assignment_accessibility_distance)
 	{
 
-		if (g_VehicleVector.size() == 0) // if input_real_time_simulation_settings does not exist
+		CCSVParser parser_RTSimulation_settings;
+		if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv", false) == false)
 		{
-			cout << "no vehicle to be simulated. Please check input data." << endl;
-			g_ProgramStop();
+
+			if (g_VehicleVector.size() == 0) // if input_real_time_simulation_settings does not exist
+			{
+				cout << "no vehicle to be simulated. Please check input data." << endl;
+				g_ProgramStop();
+			}
 		}
+
+
 	}
+
+
 
 	g_SummaryStatFile.WriteTextLabel("Starting Time of Demand Loading (min)=,");
 	g_SummaryStatFile.WriteNumber(g_DemandLoadingStartTimeInMin);
@@ -2121,12 +2178,16 @@ void g_ReadInputFiles()
 		g_ReadInputLinkTravelTime_Parser();
 	}
 
-
+	if (g_TrafficFlowModelFlag ==  tfm_newells_model_with_emissions)
+	{
+	
 	ReadInputEmissionRateFile();
+	ReadInputCycleAverageEmissionFactors();
+
 	ReadFractionOfOperatingModeForBaseCycle();
 	SetupOperatingModeVector();
 
-
+	}
 	int LinkSizeForLinkCostArray = g_LinkVector.size() + g_NodeVector.size(); // double the size to account for artificial connectors
 	g_LinkTDCostAry = AllocateDynamicArray<DTALinkToll>(LinkSizeForLinkCostArray, g_NumberOfSPCalculationPeriods);
 
@@ -4401,7 +4462,7 @@ void g_ReadDTALiteSettings()
 		g_AssignmentLogFile << "[network_design]," << "target_travel_time_in_min=," << g_NetworkDesignTargetTravelTime << endl;
 	}
 
-	if(g_UEAssignmentMethod == assignment_accessibility_distanance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 
+	if(g_UEAssignmentMethod == assignment_accessibility_distance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 
 		g_PlanningHorizon = 1;
 
 	srand(g_RandomSeed);
@@ -4432,8 +4493,8 @@ void g_FreeMemory(bool exit_flag = true)
 	cout << "Free memory... " << endl;
 
 	// Free pointers
-	// ask the operation system to free the memory  after the program complete
-	return;
+	// ask the operating system to free the memory  after the program complete
+	exit(0);
 
 	int LinkSizeForLinkCostArray = g_LinkVector.size() + g_NodeVector.size(); // double the size to account for artificial connectors
 
@@ -4947,6 +5008,89 @@ void g_OutputSummaryKML(Traffic_MOE moe_mode)
 	}
 }
 
+
+void g_OutputAccessibilityHeatMapKML()
+{
+
+	float base_rate = 1;
+
+	FILE* st;
+		fopen_s(&st, "output_accessibility.kml", "w");
+
+	if (st != NULL)
+	{
+		fprintf(st, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fprintf(st, "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+		fprintf(st, "<Document>\n");
+
+		fprintf(st, "<name>accessibility</name>\n");
+
+		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+		{
+
+			for (int i = 0; i < iterZone->second.m_OriginActivityVector.size(); i++)
+			{
+				int node_id = iterZone->second.m_OriginActivityVector[i];
+				int count = iterZone->second.m_AccessibilityCount;
+
+				count = count / 10;
+
+				float x = g_NodeVector[node_id].m_pt.x;
+				float y = g_NodeVector[node_id].m_pt.y;
+				for (int k = 0; k < count; k++)
+				{
+
+					fprintf(st, "\t<Placemark>\n");
+					fprintf(st, "\t <name>%d</name>\n", k+1);
+					fprintf(st, "\t <description>zone%d</description>\n", iterZone->second.m_ZoneNumber );
+					fprintf(st, "\t <Point><coordinates>%f,%f,0</coordinates></Point>\n", x, y);
+					fprintf(st, "\t</Placemark>\n");
+
+				}  // for each count
+
+			}
+
+		}
+
+		fprintf(st, "</Document>\n");
+		fprintf(st, "</kml>\n");
+		fclose(st);
+	}
+
+	// csv file
+	fopen_s(&st, "output_accessibility.csv", "w");
+
+	if (st != NULL)
+	{
+		fprintf(st, "zone_id,total_count,count_no,geometry\n");
+
+		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+		{
+
+			for (int i = 0; i < iterZone->second.m_OriginActivityVector.size(); i++)
+			{
+				int node_id = iterZone->second.m_OriginActivityVector[i];
+				int count = iterZone->second.m_AccessibilityCount;
+
+				count = count / 10;
+
+				float x = g_NodeVector[node_id].m_pt.x;
+				float y = g_NodeVector[node_id].m_pt.y;
+				for (int k = 0; k < count; k++)
+				{
+
+					fprintf(st, "%d,%d,%d,", iterZone->second.m_ZoneNumber, count,k+1);
+					fprintf(st, "\"<Point><coordinates>%f,%f</coordinates></Point>\"\n",x,y);
+
+				}  // for each count
+			}
+
+		}
+
+
+		fclose(st);
+	}
+}
 
 
 void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes)
@@ -5915,8 +6059,9 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							continue; // origin zone  has not been defined, skipped. 
 						}
 
+						int total_demand =  (int)(total_demand_in_demand_file);
 						if (origin_zone%100 == 0)
-							cout << "Reading file no." << file_sequence_no << ": " << file_name << " at zone " << origin_zone << " ... " << endl;
+							cout << "Reading file no." << file_sequence_no << ": " << file_name << " at zone " << origin_zone << ",total demand = " << total_demand << "..." << endl;
 
 						for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 						{
@@ -6121,7 +6266,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			}else	
 			{
-				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, dynasmart, agent_csv, agent_bin, trip_csv,transims_trip_file."<< endl;
+				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, full_matrix, dynasmart, agent_csv, agent_bin, trip_csv,transims_trip_file."<< endl;
 				g_ProgramStop();
 
 			}
@@ -6183,10 +6328,16 @@ void g_ReadAssignmentPeriodSettings()
 			int period_start_flag = 0;
 			parser.GetValueByFieldName("period_start_flag", period_start_flag);
 
+			int index = 0;
+			std::string start_time;
+
+			parser.GetValueByFieldName("index", index);
+
+			parser.GetValueByFieldName("start_time", start_time);
+
 
 			if (i * 15 >= g_DemandLoadingStartTimeInMin && i * 15 < g_PlanningHorizon)
 			{
-				g_AssignmentIntervalIndex[i] = index_counter;
 
 				if (period_start_flag == 1 && i * 15 != g_DemandLoadingStartTimeInMin)   // if see 1, increaese the index counter by 1, if we are at the boundary of interval then there is no need to swtich to next time interval
 				{
@@ -6195,6 +6346,9 @@ void g_ReadAssignmentPeriodSettings()
 					g_AssignmentIntervalEndTimeInMin[index_counter-1] = i * 15;
 					g_AssignmentIntervalStartTimeInMin[index_counter] = i * 15;
 				}
+
+				g_AssignmentIntervalIndex[i] = index_counter;
+
 					
 
 			}
