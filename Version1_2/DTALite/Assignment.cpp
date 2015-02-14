@@ -186,7 +186,7 @@ void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,
 void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignment, we now generate and assign path for each individual vehicle (as an agent with personalized value of time, value of reliability)
 {
 	// reset random number seeds
-	int node_size = g_NodeVector.size() + 1 + g_ODZoneNumberSize;
+	int node_size = g_NodeVector.size() + 1 + g_ODZoneIDSize;
 	int link_size = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	cout << ":: start assignment " << g_GetAppRunningTime() << endl;
@@ -811,20 +811,58 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 
 
 		int OriginCentriod = m_PhysicalNodeSize;
-		int DestinationCentriod = m_PhysicalNodeSize + pVeh->m_DestinationZoneID;
 
-		float TotalCost = LabelCostVectorPerType[pVeh->m_PricingType][DestinationCentriod];
-		if (TotalCost > MAX_SPLABEL - 10)
+		int destination_zone_no = g_ZoneMap[pVeh->m_DestinationZoneID].m_ZoneSequentialNo;
+		int DestinationCentriod = m_PhysicalNodeSize + 1+ destination_zone_no;  // map m_ZoneSequentialNo to DestinationCentriod
+
+
+		double TotalCost =  MAX_SPLABEL;
+		if (g_ShortestPathWithMovementDelayFlag)  // consider movement delay
 		{
-			cout << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
-			g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. " << endl;
-			pVeh->m_NodeSize = 0;
-			continue;
+			//step 1: find the incoming link has the lowerest cost to the destinatin node
+			int destination = DestinationCentriod;
+			int link_id_with_min_cost = -1;
+			int i;
+			for (i = 0; i < m_InboundSizeAry[destination]; i++)
+			{
+				int incoming_link = m_InboundLinkAry[destination][i];
+				if (LabelCostVectorPerType[pVeh->m_PricingType][incoming_link] < TotalCost && LinkPredVectorPerType[pVeh->m_PricingType][incoming_link] >= 0)
+				{
+					TotalCost = LabelCostVectorPerType[pVeh->m_PricingType][incoming_link];
+					link_id_with_min_cost = incoming_link;
+				}
+			}
 
+			if (TotalCost > MAX_SPLABEL - 10)
+			{
+
+
+				{
+				cout << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
+				//g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. " << endl;
+				pVeh->m_NodeSize = 0;
+				continue;
+				}
+			}
+		}
+		else  // no movement delay
+		{
+			if (LabelCostVectorPerType[pVeh->m_PricingType][DestinationCentriod] > MAX_SPLABEL - 10)
+			{
+
+
+				{
+					cout << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Please check warning.log for details. " << endl;
+					//g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. " << endl;
+					pVeh->m_NodeSize = 0;
+					continue;
+				}
+
+			}
+		
+		
 		}
 
-		if (TotalCost >= 1000)
-			TRACE("");
 
 		bool bSwitchFlag = false;
 		pVeh->m_bConsiderToSwitch = false;
@@ -1056,9 +1094,14 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 					pVeh->m_bLoaded = false;
 					pVeh->m_bComplete = false;
 
+
+					
 					if (iteration == 0)
 					{
+						#pragma omp critical
+						{
 						g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
+						}
 					}
 				}
 			}
@@ -1071,17 +1114,20 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 				{
 					if (NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1)
 					{
-
-						g_LogFile << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
-
-						for (int i = 0; i < NodeSize; i++)
+#pragma omp critical
 						{
-							cout << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
-							cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+
+							g_LogFile << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
+
+							for (int i = 0; i < NodeSize; i++)
+							{
+								cout << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
+								cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
 
 
-							g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+								g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
 
+							}
 						}
 
 						break;
@@ -1179,8 +1225,12 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 
 					if (iteration == 0)
 					{
-						g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
-					}
+						#pragma omp critical
+						{
+
+							g_WarningFile << "Warning: vehicle " << pVeh->m_VehicleID << " from zone " << pVeh->m_OriginZoneID << " to zone " << pVeh->m_DestinationZoneID << " does not have a physical path. Path Cost:" << TotalCost << endl;
+						}
+						}
 				}
 			}//without movement
 		} // if(bSwitchFlag)
@@ -1430,7 +1480,7 @@ void ConstructPathArrayForEachODT(PathArrayForEachODT PathArray[], int zone, int
 void g_AgentBasedShortestPathGeneration()
 {
 
-	// find unique origin node
+	// find unique origin nodegf
 	// find unique destination node
 
 	int node_size = g_NodeVector.size();
@@ -1953,7 +2003,7 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 
 void g_ZoneBasedDynamicTrafficAssignment()
 {
-	int node_size = g_NodeVector.size() + 1 + g_ODZoneNumberSize;
+	int node_size = g_NodeVector.size() + 1 + g_ODZoneIDSize;
 
 	int connector_count = 0;
 
@@ -2025,7 +2075,10 @@ void g_ZoneBasedDynamicTrafficAssignment()
 						if (g_ZoneMap[CurZoneID].m_OriginVehicleSize > 0)  // only this origin zone has vehicles, then we build the network
 						{
 							// create network for shortest path calculation at this processor
-							g_TimeDependentNetwork_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration, CurZoneID);  // build network for this zone, because different zones have different connectors...
+						//	cout << "Processor " << id << " starts building network for zone centriod for zone " << CurZoneID << endl;
+
+								g_TimeDependentNetwork_MP[ProcessID].BuildNetworkBasedOnZoneCentriod(iteration, CurZoneID);  // build network for this zone, because different zones have different connectors...
+						//		cout << "Processor " << id << " end building network for zone centriod for zone " << CurZoneID << endl;
 
 							if (Actual_ODZoneSize > 300)  // only for large networks
 							{
@@ -2058,8 +2111,9 @@ void g_ZoneBasedDynamicTrafficAssignment()
 												g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(CurZoneID, g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 											}
 										}
+
 										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_end_time, iteration, debug_flag);
-									}
+										}
 
 								}
 							} // for each departure time

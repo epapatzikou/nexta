@@ -37,21 +37,21 @@ int g_path_error = 0;
 int g_FindAssignmentIntervalIndexFromTime(float time_in_min)
 {
 
-
+	int return_value = 0;
 	if (time_in_min < g_DemandLoadingStartTimeInMin)
 		return 0;
 	else if (time_in_min < g_PlanningHorizon)
 	{
 		int interval_with_15_min = max(0, int(time_in_min+0.1) / 15);
 	
-		return g_AssignmentIntervalIndex[interval_with_15_min];
+		return_value = g_AssignmentIntervalIndex[interval_with_15_min];
 	}
 	else
 	{
-		return max(0,g_NumberOfSPCalculationPeriods - 1);
+		return_value =  max(0, g_NumberOfSPCalculationPeriods - 1);
 	}
 
-
+	return min(return_value, g_NumberOfSPCalculationPeriods - 1);
 }
 
 int g_FindAssignmentIntervalLengthInMinFromTime(float time_in_min)
@@ -183,17 +183,19 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 	unsigned int i;
 	int t;
 
-	for(i=0; i< m_PhysicalNodeSize + g_ODZoneNumberSize+1; i++)
+	for (i = 0; i< m_PhysicalNodeSize + g_ODZoneIDSize + 1; i++)
 	{
 		m_OutboundSizeAry[i] = 0;
 		m_InboundSizeAry[i] =0;
 	}
-
-	BuildPhysicalNetwork(DayNo,CurZoneID,g_TrafficFlowModelFlag);
+	// step 1: build physical network: 
+//	cout << " step 1: build physical network " << endl;
+	BuildPhysicalNetwork(DayNo, CurZoneID, g_TrafficFlowModelFlag);
 
 	int LinkID = g_LinkVector.size();
+//	cout << "  step 2: add outgoing connectors from origin zone center(m_PhysicalNodeSize)  " << endl;
 
-	// add outgoing connectors from origin zone center(m_PhysicalNodeSize) to zone centriods
+	// step 2: add outgoing connectors from origin zone center(m_PhysicalNodeSize) to zone centriods
 	for(i = 0; i< g_ZoneMap[CurZoneID].m_OriginActivityVector.size(); i++)
 	{
 		FromID = m_PhysicalNodeSize; // m_PhysicalNodeSize is the centriod number for CurZoneNo
@@ -242,8 +244,9 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 	}
 
 
+//	cout << " step 3: add incoming connector to destination zone " << endl;
 
-	// add incoming connector to destination zone which is not CurZoneNo connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
+	// step 3: add incoming connector to destination zone which is not CurZoneNo connector from the centriod corresponding to the current zone: node ID = m_PhysicalNodeSize, to this physical node's ID
 	std::map<int, DTAZone>::iterator iterZone;
 	for (iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
@@ -254,7 +257,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 			for(i = 0; i< zone.m_DestinationActivityVector .size(); i++)
 			{
 				FromID = zone.m_DestinationActivityVector[i];; // m_PhysicalNodeSize is the centriod number for CurZoneNo
-				ToID =   m_PhysicalNodeSize + iterZone->first ; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneID start from 1
+				ToID = m_PhysicalNodeSize + 1+  zone.m_ZoneSequentialNo; // m_PhysicalNodeSize is the centriod number for CurZoneNo, note that  .m_ZoneSequentialNo start from 0
 
 				m_OutboundNodeAry[FromID][m_OutboundSizeAry[FromID]] = ToID;
 				m_OutboundLinkAry[FromID][m_OutboundSizeAry[FromID]] = LinkID;
@@ -313,7 +316,7 @@ void DTANetworkForSP::BuildNetworkBasedOnZoneCentriod(int DayNo,int CurZoneID)  
 			}
 		}
 	}
-	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneNumberSize;
+	m_NodeSize = m_PhysicalNodeSize + 1 + g_ODZoneIDSize;
 	m_LinkSize = LinkID;
 }
 
@@ -349,6 +352,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 	}
 
 	// add physical links
+	//cout << "add physical links " << endl;
 
 		unsigned li;
 		for(li = 0; li< g_LinkVector.size(); li++)
@@ -356,6 +360,9 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 			DTALink* pLink = g_LinkVector[li];
 		FromID = pLink->m_FromNodeID;
 		ToID   = pLink->m_ToNodeID;
+
+
+	//	cout << "add link no." << li <<  endl;
 
 			if( pLink->m_FromNodeNumber == 6 && pLink->m_ToNodeNumber == 7)
 			{
@@ -463,6 +470,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 
 	}
 
+//	cout << "construct outbound movement vector " << endl;
 
 	// construct outbound movement vector
 	for(li = 0; li< g_LinkVector.size(); li++)
@@ -745,6 +753,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			int link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(LabelTimeAry[FromID]);
 
+			link_entering_time_interval = min(link_entering_time_interval, m_NumberOfSPCalculationIntervals);
 
 			NewDistance    = LabelDistanceAry[FromID] + m_LinkTDDistanceAry[LinkID];
 
@@ -1810,6 +1819,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					continue;
 
 				int link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(LinkLabelTimeAry[FromLinkID]);
+				if (g_TrafficFlowModelFlag == tfm_BPR)
+				{  // for BPR function, the time index we look up has to be the departure time based, regardless the experienced time along the route
+					link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(departure_time);
+
+				}
 
 				//  original code				NewTime	= LinkLabelTimeAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];  // time-dependent travel times come from simulator
 
@@ -1940,9 +1954,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
+		distance_cost_flag = false;
 
-
-		debug_flag = true;
+		debug_flag = false;
 		int i;
 		float AdditionalCostInMin = 0;
 
@@ -2003,6 +2017,12 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				LinkID = m_OutboundLinkAry[FromID][i];
 				ToID = m_OutboundNodeAry[FromID][i];
 
+				if (i >= g_AdjLinkSize || LinkID >= m_LinkSize)
+				{
+					cout << "LinkID >= m_LinkSize" << endl;
+					cout << LinkID << ">=" << m_LinkSize << "FromID = " << g_NodeVector[FromID].m_NodeNumber << "i=" << i << endl;
+					getchar();
+				}
 				if (ToID == origin)
 					continue;
 
@@ -2031,6 +2051,12 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 				int link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(LabelTimeAry[FromID]);
 
+
+				if (g_TrafficFlowModelFlag == tfm_BPR)
+				{  // for BPR function, the time index we look up has to be the departure time based, regardless the experienced time along the route
+					link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(departure_time);
+
+				}
 				if (distance_cost_flag)
 					NewTime = LabelTimeAry[FromID];
 				else // distance
@@ -2041,24 +2067,29 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				else
 					NewCost = LabelCostVectorPerType[pricing_type][FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
 
-				if (VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist)
-				{ // with VOT and toll
-					AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
-					if (debug_flag)
-						TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
+				bool with_toll_flag = false;
 
-					NewCost += AdditionalCostInMin;
+				if (with_toll_flag)
+				{
+				
+					if (VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist)
+					{ // with VOT and toll
+						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+						if (debug_flag)
+							TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
+
+						NewCost += AdditionalCostInMin;
+					}
+
+					if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
+					{ // with VOT and toll
+						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+						if (debug_flag)
+							TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
+
+						NewCost += AdditionalCostInMin;
+					}
 				}
-
-				if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
-				{ // with VOT and toll
-					AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
-					if (debug_flag)
-						TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
-
-					NewCost += AdditionalCostInMin;
-				}
-
 
 				if (NewCost < LabelCostVectorPerType[pricing_type][ToID]) // be careful here: we only compare cost not time
 				{

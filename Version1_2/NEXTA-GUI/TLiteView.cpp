@@ -322,6 +322,7 @@ CPen g_PenStopSignNodeColor(PS_SOLID,1,RGB(205,200,177));
 CPen g_PenSignalNodeColor(PS_SOLID,1,RGB(255,0,0));
 
 CPen g_GPSTrajectoryColor(PS_SOLID, 1, RGB(255,105,180));
+CPen g_GPSTrajectoryColor0(PS_SOLID, 0, RGB(0, 0, 0));
 
 CPen g_PenNodeColor(PS_SOLID,1,RGB(0,0,0));
 
@@ -534,7 +535,7 @@ CTLiteView::CTLiteView()
 
 	m_bShowWalkLinksOnly = false;
 	m_MoveLayerNo = 0;
-	m_bShowCompleteTrajectory = false;
+	m_bShowCompleteTrajectory = true;
 	m_bShowAllCompleteTrajectory = false;
 	m_bShowTransitLinksOnly = false;
 	m_bShowWalkLinksOnly = false;
@@ -2242,11 +2243,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		long timestamp_in_second = (long)(g_Simulation_Time_Stamp*60 + 0.5); // *60 convert min to second, +0.5, round to nearest integer
 
 
-		if(m_bShowAllCompleteTrajectory)
+		if (m_bShowAllCompleteTrajectory || m_bShowCompleteTrajectory)
 		{
+
+			pDC->SelectObject(&g_WhiteBrush);
+
+
+
+
+	
 					//with vehicle location data at this time stamp
 
-				std::map<std::string,VehicleLocationTimeIndexedMap>::iterator itr2;
+				std::map<int,VehicleLocationTimeIndexedMap>::iterator itr2;
 
 				for(itr2 = pDoc->m_VehicleWithLocationVectorMap.begin();
 					itr2 != pDoc->m_VehicleWithLocationVectorMap .end(); itr2++)
@@ -2255,20 +2263,38 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				std::vector<VehicleLocationRecord>::iterator itr;
 
 
+				if (g_SelectedGPSCarID >= 1 && (*itr2).first != g_SelectedGPSCarID)  //  g_SelectedGPSCarID >=1 show selected gps car only
+					continue;
+
+
 				bool b_ini_flag = false;
 				CPoint point, to_point;
 
+				int last_second = -1;
 				for(itr = (*itr2).second .VehicleLocationRecordVector.begin ();
 					itr != (*itr2).second .VehicleLocationRecordVector.end (); itr++)
 
 				{
-	
+
+					if (g_SelectedGPSDayNo >= 1 && (*itr).day_no != g_SelectedGPSDayNo)
+						continue;
+
+					g_SelectColorCode(pDC, (*itr).agent_id % 5);
+
 					GDPoint pt;
 					pt.x = (*itr).x ; 
 					pt.y = (*itr).y;
 
+					int current_second = (*itr).time_stamp_in_second;
 
-					node_size = 3;
+					if (last_second != -1 && (current_second - last_second) >= 600)  // more than 10 min
+					{
+						b_ini_flag = false; // restart drawing
+					}
+
+					last_second = current_second; 
+
+						node_size = 1;
 					/// starting drawing nodes in normal mode
 						pDC->Ellipse(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);
@@ -2315,11 +2341,16 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					b_ini_flag = true;
 				
 				}
+
 				}
 	
 		
 		
 		}
+
+
+		pDC->SelectObject(&g_BlackBrush);
+		pDC->SelectObject(&g_GPSTrajectoryColor);
 
 			if(pDoc->m_VehicleLocationMap.find(timestamp_in_second) != pDoc->m_VehicleLocationMap.end())
 			{
@@ -2332,13 +2363,21 @@ void CTLiteView::DrawObjects(CDC* pDC)
 					itr != pDoc->m_VehicleLocationMap[timestamp_in_second].VehicleLocationRecordVector .end(); itr++)
 				{		//scan all vehicle records at this timestamp
 
+					if (g_SelectedGPSCarID >= 1 && (*itr).agent_id != g_SelectedGPSCarID)  //  g_SelectedGPSCarID >=1 show selected gps car only
+						continue;
+
+					if (g_SelectedGPSDayNo >= 1 && (*itr).day_no != g_SelectedGPSDayNo)
+						continue;
 					GDPoint pt;
 					pt.x = (*itr).x ; 
 					pt.y = (*itr).y;
 
+					pDC->SelectObject(&g_GPSTrajectoryColor0);
+
+					g_SelectBrushColor(pDC, (*itr).agent_id % 5);
 					CPoint point = NPtoSP(pt);
 
-					node_size = 3;
+					node_size = 5;
 					/// starting drawing nodes in normal mode
 						pDC->Ellipse(point.x - node_size, point.y + node_size,
 							point.x + node_size, point.y - node_size);

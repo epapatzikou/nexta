@@ -72,4 +72,10 @@ public:
 	afx_msg void OnCbnSelchangeComboDatasource();
 	CComboBox m_Combo_Aggregation_Interval;
 	afx_msg void OnCbnSelchangeComboAggregationInterval();
+	CListBox m_GPSCarIDList;
+	afx_msg void OnLbnSelchangeListGpsCarTextLabel();
+	afx_msg void OnLbnDblclkListGpsCarTextLabel();
+	CListBox m_GPSDayList;
+	afx_msg void OnLbnSelchangeListGpsDayTextLabel2();
+	afx_msg void OnLbnDblclkListGpsDayTextLabel2();
 };

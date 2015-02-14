@@ -67,7 +67,7 @@ void g_AgentBasedOptimization()  // this is an adaptation of OD trip based assig
 {
 
 	// reset random number seeds
-	int node_size = g_NodeVector.size() + 1 + g_ODZoneNumberSize;
+	int node_size = g_NodeVector.size() + 1 + g_ODZoneIDSize;
 	int link_size = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
 
 	cout << ":: start agent-based optimization " << g_GetAppRunningTime() << endl;

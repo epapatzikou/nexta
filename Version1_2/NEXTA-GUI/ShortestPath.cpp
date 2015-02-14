@@ -64,14 +64,14 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 		FromID = (*iterLink)->m_FromNodeID;
 		ToID   = (*iterLink)->m_ToNodeID;
 
-		if((*iterLink)->m_FromNodeNumber == 7535)
+		if (FromID == 19)
 		{
 		TRACE("");
 		}
 
-		if((*iterLink)->m_bConnector)  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
+		if ((*iterLink)->m_bConnector || (*iterLink)->m_bTransit || (*iterLink)->m_bWalking)  // no connectors: here we might have some problems here, as the users cannot select a zone centroid as origin/destination
 		{
-			if(FromID!=OriginNodeID && ToID !=DestinationNodeID)
+			if(FromID!=OriginNodeID && ToID !=DestinationNodeID)  // if not the first link or last link, skip
 				continue; 
 		}
 
@@ -80,8 +80,6 @@ void DTANetworkForSP::BuildPhysicalNetwork(std::list<DTANode*>*	p_NodeSet, std::
 
 		int link_type = (*iterLink)->m_link_type ;
 
-		if( (*iterLink)->m_bTransit  || (*iterLink)->m_bWalking )  
-			continue;
 
 		m_FromIDAry[(*iterLink)->m_LinkNo] = FromID;
 		m_ToIDAry[(*iterLink)->m_LinkNo]   = ToID;

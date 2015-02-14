@@ -58,7 +58,7 @@ assignment_day_to_day_learning_threshold_route_choice,
 assignment_OD_demand_estimation,
 assignment_day_to_day_learning_threshold_route_and_departure_time_choice,
 assignment_accessibility_travel_time,
-assignment_accessibility_distanance,
+assignment_accessibility_distance,
 assignment_vehicle_binary_file_based_scenario_evaluation,
 assignment_real_time_simulation,  /*8 for ABM+DTA integration*/
 assignment_integration_with_ABM,
@@ -426,6 +426,8 @@ public:
 
 	std::vector<GDPoint> m_ShapePoints;
 
+	int m_AccessibilityCount;
+
 	float m_DemandGenerationRatio ;
 
 	int GetRandomOriginNodeIDInZone(float random_ratio)
@@ -469,6 +471,7 @@ public:
 
 	DTAZone()
 	{
+		m_AccessibilityCount = 0;
 		m_DemandGenerationRatio = 1.0f;
 		m_ZoneSequentialNo = 0;
 		m_Capacity  =0;
@@ -1072,9 +1075,18 @@ public:
 		m_CumuArrivalFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);         // for Cumulative flow counts: unit is per simulation time interval. e.g. 6 seconds 
 		m_CumuDeparturelFlow.resize(MAX_TIME_INTERVAL_ADCURVE+1);      // TimeSize  (unit: min), TimeSize*10 = 0.1 min: number of simulation time intervals
 
+
+		m_BPRLinkVolumeVector.resize(g_NumberOfSPCalculationPeriods);
+		m_BPRLinkTravelTimeVector.resize(g_NumberOfSPCalculationPeriods);
+
 		m_StochaticCapcityFlag = 0;
-		m_BPRLinkVolume = 0;
-		m_BPRLinkTravelTime = 0;
+
+		for (int p = 0; p < g_NumberOfSPCalculationPeriods; p++)
+		{
+			m_BPRLinkVolumeVector[p] = 0;
+			m_BPRLinkTravelTimeVector[p] = 0;
+		}
+
 		m_bMergeFlag = 0;
 		m_MergeOnrampLinkID = -1;
 		m_MergeMainlineLinkID = -1;
@@ -1741,8 +1753,8 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	int m_BackwardWaveTimeInSimulationInterval; // simulation time interval
 
-	float m_BPRLinkVolume;
-	float m_BPRLinkTravelTime;
+	vector<float> m_BPRLinkVolumeVector;
+	vector<float> m_BPRLinkTravelTimeVector;
 
 	//  multi-day equilibirum: travel time for stochastic capacity
 	float m_BPRLaneCapacity;
@@ -1786,10 +1798,10 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 		m_Day2DayLinkMOEVector.clear();
 	};
 
-	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, int DayNo=0, float Time = -1)
+	float GetFreeMovingTravelTime(int TrafficModelFlag = 2, int DayNo=0, float Time = -1, int assignment_period_no = 0)
 	{
 		if(TrafficModelFlag == 0) // BRP model
-			return m_BPRLinkTravelTime;
+			return m_BPRLinkTravelTimeVector[assignment_period_no];
 		else 
 		{
 			for(unsigned int il = 0; il< CapacityReductionVector.size(); il++)
@@ -1838,7 +1850,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 	float GetHistoricalTravelTime(int Time = -1)
 	{	// default value for now
-		return m_BPRLinkTravelTime;
+		return m_BPRLinkTravelTimeVector[0];
 	}
 
 	void SetupMOE()
@@ -1856,8 +1868,12 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 		m_MinimMovingTravelTime = m_FreeFlowTravelTime;
 		total_departure_based_travel_time = m_FreeFlowTravelTime;
 		m_prevailing_travel_time = m_FreeFlowTravelTime;
-		m_BPRLinkVolume = 0;
-		m_BPRLinkTravelTime = m_FreeFlowTravelTime;
+
+		for (int p = 0; p < m_BPRLinkVolumeVector.size(); p++)
+		{
+			m_BPRLinkVolumeVector[p] = 0;
+			m_BPRLinkTravelTimeVector[p] = m_FreeFlowTravelTime;
+		}
 		m_FFTT_simulation_interval = int(m_FreeFlowTravelTime/g_DTASimulationInterval);
 		LoadingBufferVector = NULL;
 
@@ -2130,8 +2146,12 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 
 		// condition 2:  BRF travel time
 
-		if(TrafficModelFlag == tfm_BPR) // BPR model
-			return m_BPRLinkTravelTime;
+		if (TrafficModelFlag == tfm_BPR) // BPR model
+		{
+			int period_no = 0;
+			period_no = g_FindAssignmentIntervalIndexFromTime(starting_time);
+			return m_BPRLinkTravelTimeVector[period_no];
+		}
 
 
 
@@ -3407,8 +3427,8 @@ public:
 		NodeStatusAry = new int[m_NodeSize];                    // Node status array used in KSP;
 
 		NodePredVectorPerType   =  AllocateDynamicArray<int>(MAX_PRICING_TYPE_SIZE,m_NodeSize);
-		LinkPredVectorPerType = AllocateDynamicArray<int>(MAX_PRICING_TYPE_SIZE, m_LinkSize);
-		LabelCostVectorPerType = AllocateDynamicArray<float>(MAX_PRICING_TYPE_SIZE, m_LinkSize);
+		LinkPredVectorPerType = AllocateDynamicArray<int>(MAX_PRICING_TYPE_SIZE, max(m_NodeSize, m_LinkSize));
+		LabelCostVectorPerType = AllocateDynamicArray<float>(MAX_PRICING_TYPE_SIZE, max(m_NodeSize, m_LinkSize));
 
 		NodePredAry = new int[m_NodeSize];
 		LinkNoAry = new int[m_NodeSize];
@@ -3525,8 +3545,8 @@ public:
 
 
 		DeallocateDynamicArray<int>(NodePredVectorPerType,MAX_PRICING_TYPE_SIZE,m_NodeSize);
-		DeallocateDynamicArray<int>(LinkPredVectorPerType, MAX_PRICING_TYPE_SIZE, m_LinkSize);
-		DeallocateDynamicArray<float>(LabelCostVectorPerType, MAX_PRICING_TYPE_SIZE, m_LinkSize);
+		DeallocateDynamicArray<int>(LinkPredVectorPerType, MAX_PRICING_TYPE_SIZE, max(m_NodeSize,m_LinkSize));
+		DeallocateDynamicArray<float>(LabelCostVectorPerType, MAX_PRICING_TYPE_SIZE, max(m_NodeSize, m_LinkSize));
 
 		if(LinkNoAry) delete LinkNoAry;
 		if(LabelTimeAry) delete LabelTimeAry;
@@ -3546,7 +3566,8 @@ public:
 		if(m_NodeSize==0)
 			return;
 
-		Clean();
+		// do not free memory now
+		// Clean();
 
 
 	};
@@ -4264,6 +4285,7 @@ void g_ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeString, int
 void g_OutputLinkOutCapacitySummary();
 void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
+void g_OutputAccessibilityHeatMapKML();
 
 extern CString g_GetAppRunningTime(bool with_title = true);
 extern CString g_GetAppRunningTimePerIteration(bool with_title = true);

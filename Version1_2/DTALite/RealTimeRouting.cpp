@@ -335,8 +335,10 @@ void g_ShortestPathDataMemoryAllocation()
 		g_ODPathSetVector = AllocateDynamicArray<ODPathSet>(g_ODZoneIDSize+1,g_ODZoneIDSize+1);
 	}
 
-	int node_size  = g_NodeVector.size() +1 + g_ODZoneNumberSize;
+	int node_size = g_NodeVector.size() + 1+  g_ODZoneIDSize;
 	int link_size  = g_LinkVector.size() + g_NodeVector.size(); // maximal number of links including connectors assuming all the nodes are destinations
+
+	cout << "Allocate Memory: node_size= " << node_size << ",link_size =" << link_size << endl;
 
 
 	// under zone based mode, we add connectors for each destination 

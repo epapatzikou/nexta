@@ -34,6 +34,8 @@ void CDlg_DisplayConfiguration::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBOTIMINGPLAN, m_TimingPlanComboBox);
 	DDX_Control(pDX, IDC_COMBO_DataSource, m_ComboDataSourceType);
 	DDX_Control(pDX, IDC_COMBO_Aggregation_Interval, m_Combo_Aggregation_Interval);
+	DDX_Control(pDX, IDC_LIST_GPS_CAR_TEXT_LABEL, m_GPSCarIDList);
+	DDX_Control(pDX, IDC_LIST_GPS_DAY_TEXT_LABEL2, m_GPSDayList);
 }
 
 
@@ -61,6 +63,10 @@ BEGIN_MESSAGE_MAP(CDlg_DisplayConfiguration, CDialog)
 	ON_CBN_SELCHANGE(IDC_COMBOTIMINGPLAN, &CDlg_DisplayConfiguration::OnCbnSelchangeCombotimingplan)
 	ON_CBN_SELCHANGE(IDC_COMBO_DataSource, &CDlg_DisplayConfiguration::OnCbnSelchangeComboDatasource)
 	ON_CBN_SELCHANGE(IDC_COMBO_Aggregation_Interval, &CDlg_DisplayConfiguration::OnCbnSelchangeComboAggregationInterval)
+	ON_LBN_SELCHANGE(IDC_LIST_GPS_CAR_TEXT_LABEL, &CDlg_DisplayConfiguration::OnLbnSelchangeListGpsCarTextLabel)
+	ON_LBN_DBLCLK(IDC_LIST_GPS_CAR_TEXT_LABEL, &CDlg_DisplayConfiguration::OnLbnDblclkListGpsCarTextLabel)
+	ON_LBN_SELCHANGE(IDC_LIST_GPS_DAY_TEXT_LABEL2, &CDlg_DisplayConfiguration::OnLbnSelchangeListGpsDayTextLabel2)
+	ON_LBN_DBLCLK(IDC_LIST_GPS_DAY_TEXT_LABEL2, &CDlg_DisplayConfiguration::OnLbnDblclkListGpsDayTextLabel2)
 END_MESSAGE_MAP()
 
 
@@ -94,7 +100,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Node_Label.AddString("Offset In Second for Signals only");
 	m_Node_Label.AddString("Intersection Name");
 	m_Node_Label.AddString("Control Type");
-//	m_Node_Label.AddString("Reserved Value");
+	m_Node_Label.AddString("Distance from Source Node in Mile");
 
 
 	m_Node_Label.SetCurSel ((int)(m_ShowNodeTextMode));
@@ -387,13 +393,13 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	//}
 	//
 
-	//m_AggregationValueVector.push_back(1);
-	//m_AggregationValueVector.push_back(5);
-	//m_AggregationValueVector.push_back(15);
-	//m_AggregationValueVector.push_back(30);
-	//m_AggregationValueVector.push_back(60);
-	//m_AggregationValueVector.push_back(120);
-	//m_AggregationValueVector.push_back(1440);
+	m_AggregationValueVector.push_back(1);
+	m_AggregationValueVector.push_back(5);
+	m_AggregationValueVector.push_back(15);
+	m_AggregationValueVector.push_back(30);
+	m_AggregationValueVector.push_back(60);
+	m_AggregationValueVector.push_back(120);
+	m_AggregationValueVector.push_back(1440);
 
 	//for(unsigned int i = 0;  i< m_AggregationValueVector.size (); i++)
 	//{
@@ -417,16 +423,42 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	//m_SizeTextControl_List.AddString ("Increase Link/Movement Text Size");
 	//m_SizeTextControl_List.AddString ("Decrease Link/Movement Text Size");
 
+	CString GPSCarIDString;
+
+	m_GPSCarIDList.AddString("All");
+
+	for (int car = 1; car <= 10; car++)
+	{
+		GPSCarIDString.Format("Car %d", car);
+		m_GPSCarIDList.AddString(GPSCarIDString);
+	}
+
+	m_GPSCarIDList.SetCurSel(0);
+	CString GPSDayString;
+
+	m_GPSDayList.AddString("All");
+
+	for (int day = 1; day <= 31; day++)
+	{
+		GPSDayString.Format("Day %d", day);
+		m_GPSDayList.AddString(GPSDayString);
+	}
+
+	m_GPSDayList.SetCurSel(0);
+
+
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
 void CDlg_DisplayConfiguration::OnLbnSelchangeMoeAggregationIntervalList()
 {
-	g_MOEAggregationIntervalInMin = m_AggregationValueVector [ m_AggregationIntervalList.GetCurSel()];
-
+//	if (m_AggregationValueVector.size() >=  m_AggregationIntervalList.GetCurSel()1)
+//	g_MOEAggregationIntervalInMin = m_AggregationValueVector [ m_AggregationIntervalList.GetCurSel()];
 //
-	pView->Invalidate ();
+////
+//	pView->Invalidate ();
 }
 
 void CDlg_DisplayConfiguration::OnLbnSelchangeListZoneTextLabel()
@@ -449,9 +481,10 @@ void CDlg_DisplayConfiguration::OnLbnSelchangeListMovementTextLabel()
 
 void CDlg_DisplayConfiguration::OnLbnSelchangeListGpsTextLabel()
 {
-	pView->m_ShowGPSTextMode  = (GPS_display_mode)m_GPS_Label.GetCurSel();
 
-	pView->Invalidate ();
+	//pView->m_ShowGPSTextMode  = (GPS_display_mode)m_GPS_Label.GetCurSel();
+
+	//pView->Invalidate ();
 }
 
 
@@ -625,4 +658,33 @@ void CDlg_DisplayConfiguration::OnCbnSelchangeComboAggregationInterval()
 	g_MOEAggregationIntervalInMin = aggregation_interval_vector [ m_Combo_Aggregation_Interval.GetCurSel()];
 
 	Invalidate ();
+}
+
+
+void CDlg_DisplayConfiguration::OnLbnSelchangeListGpsCarTextLabel()
+{
+
+	g_SelectedGPSCarID = m_GPSCarIDList.GetCurSel();
+	pView->Invalidate();
+}
+
+
+void CDlg_DisplayConfiguration::OnLbnDblclkListGpsCarTextLabel()
+{
+	g_SelectedGPSCarID = m_GPSCarIDList.GetCurSel();
+	pView->Invalidate();
+}
+
+
+void CDlg_DisplayConfiguration::OnLbnSelchangeListGpsDayTextLabel2()
+{
+	g_SelectedGPSDayNo = m_GPSDayList.GetCurSel();
+	pView->Invalidate();	// TODO: Add your control notification handler code here
+}
+
+
+void CDlg_DisplayConfiguration::OnLbnDblclkListGpsDayTextLabel2()
+{
+	g_SelectedGPSDayNo = m_GPSDayList.GetCurSel();
+	pView->Invalidate();
 }

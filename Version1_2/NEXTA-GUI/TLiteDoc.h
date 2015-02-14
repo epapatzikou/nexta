@@ -1144,6 +1144,8 @@ public:
 	std::list<DTALink*>		m_SubareaLinkSet;
 	std::map<int, DTAZone>	m_ZoneMap;
 
+
+
 	std::list<DTAPoint*>	m_DTAPointSet;
 	std::list<DTALine*>		m_DTALineSet;
 
@@ -1296,7 +1298,7 @@ public:
 	void UpdateMovementDataFromVehicleTrajector();
 
 	std::map<long,VehicleLocationTimeIndexedMap> m_VehicleLocationMap;
-	std::map<std::string,VehicleLocationTimeIndexedMap> m_VehicleWithLocationVectorMap;
+	std::map<int,VehicleLocationTimeIndexedMap> m_VehicleWithLocationVectorMap;
 
 	void AddLocationRecord(VehicleLocationRecord element)
 	{
@@ -1309,6 +1311,9 @@ public:
 	}
 
 	bool ReadModelAgentTrajectory(LPCTSTR lpszFileName);
+	bool ReadGPSTrajectory(LPCTSTR lpszFileName);
+
+
 
 	bool ReadAimCSVFiles(LPCTSTR lpszFileName, int date_id);
 	bool ReadGPSBinFile(LPCTSTR lpszFileName, int date_id,int max_GPS_data_count);
@@ -2255,7 +2260,8 @@ public:
 			{
 							return NULL;
 
-			}else
+			}
+			else if (bWarmingFlag == true)
 			{
 			msg.Format ("Link %d-> %d cannot be found in file %s.", FromNodeNumber, ToNodeNumber,FileName);
 			AfxMessageBox(msg);
@@ -2266,14 +2272,7 @@ public:
 
 	DTALink* FastFindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
 	{
-			DTANode* pFromNode = m_NodeNumberMap[FromNodeNumber];
-			for (unsigned int i = 0; i< pFromNode->m_OutgoingLinkVector.size(); i++)
-			{
-				DTALink* pLink = m_LinkNoMap[pFromNode->m_OutgoingLinkVector[i]];
-
-				if (pLink->m_ToNodeNumber == ToNodeNumber)
-					return pLink;
-			}
+		return FindLinkWithNodeNumbers(FromNodeNumber, ToNodeNumber);
 	}
 	//DTALink* FindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber, CString FileName = "", bool bWarmingFlag = false)
 	//{
