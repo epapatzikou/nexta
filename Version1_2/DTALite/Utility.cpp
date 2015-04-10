@@ -275,10 +275,10 @@ float g_RNNOF()
 }
 
 
-bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType, int &InformationClass, float &VOT, int &Age)
+bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &InformationClass, float &VOT, int &Age)
 {
-
-	if(g_DemandTypeMap.find(demand_type) == g_DemandTypeMap.end())
+	int demand_type_no = demand_type - 1;
+	if (demand_type_no >=  g_DemandTypeVector.size())
 	{
 		cout << "Error: The demand file has demand_type = " << demand_type << ", which has not been defined in input_demand_type.csv."<< endl;
 		g_ProgramStop();
@@ -292,38 +292,18 @@ bool g_GetVehicleAttributes(int demand_type, int &VehicleType, int &PricingType,
 	int i;
 
 
-	//step 2: pricing type
-	PricingType = g_DemandTypeMap[demand_type].pricing_type; // pricing_type start from 1
-
-	if (PricingType < 0)
-	{
-		cout << "Error: PricingType < 0 in function g_GetVehicleAttributes()." << endl;
-		g_ProgramStop();
-
-	}
-
-	for(i= 1; i<= g_VehicleTypeVector.size(); i++)
-	{
-		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_type_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_type_percentage[i])
-			VehicleType = i;
-	}
 
 
-	//step 3: information type
+	//step 2: information type
 	// default to historical info as class 1
 	InformationClass = 1;
 	RandomPercentage= g_GetRandomRatio() * 100; 
 	for(i= 1; i< MAX_INFO_CLASS_SIZE; i++)
 	{
-		if(RandomPercentage >= g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i-1] &&  RandomPercentage < g_DemandTypeMap[demand_type].cumulative_info_class_percentage[i])
+		if (RandomPercentage >= g_DemandTypeVector[demand_type_no].cumulative_info_class_percentage[i - 1] && RandomPercentage < g_DemandTypeVector[demand_type_no].cumulative_info_class_percentage[i])
 			InformationClass = i; // return pretrip as 2 or enoute as 3
 	}
 
-	if(PricingType == 4) 
-	{
-		VehicleType = 0;  // no vehicle type
-		InformationClass = 0;
-	}
 
 	Age = 0; // default value
 	if(VehicleType>=1) 
@@ -831,6 +811,7 @@ void g_FreeMemoryForVehicleVector()
 
 	g_VehicleVector.clear();
 	g_VehicleMap.clear();
+	g_VehicleTDListMap.clear();
 	cout << "Complete. " << endl;
 }
 CString g_GetTimeStampString(int time_stamp_in_min)

@@ -103,9 +103,13 @@ void g_WriteUserDefinedMOE(CCSVWriter  &g_MultiScenarioSummaryStatFile, int day_
 
 			float percentage = Count*100.0f / max(1, g_SimulationResult.number_of_vehicles);
 
+			int demand_type_no = demand_type - 1;
 
-			g_MultiScenarioSummaryStatFile.SetValueByFieldName("percentage_" + g_DemandTypeMap[demand_type].demand_type_name, percentage);
-
+			if (demand_type_no < g_DemandTypeVector.size())
+			{
+			
+			g_MultiScenarioSummaryStatFile.SetValueByFieldName("percentage_" + g_DemandTypeVector[demand_type_no].demand_type_name, percentage);
+			}
 			g_MultiScenarioSummaryStatFile.SetValueByFieldName("#_of_vehicles_" + moe_category_label, Count);
 			g_MultiScenarioSummaryStatFile.SetValueByFieldName("percentage_" + moe_category_label, percentage);
 			g_MultiScenarioSummaryStatFile.SetValueByFieldName("avg_travel_time(min)_" + moe_category_label, AvgTripTime);
@@ -499,17 +503,8 @@ void g_MultiScenarioTrafficAssignment()
 				}
 
 				break;
-			case assignment_day_to_day_learning_threshold_route_and_departure_time_choice:
-				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day to day learning with departure time choice and bounded rationality rule");
-				for(int day = 2; day <= TotalUEIterationNumber; day ++)
-				{
-
-					CString str_day2day;
-					str_day2day.Format("Day No.%d: Perc of considering to switch routes",day);
-
-					g_SummaryStatFile.WriteParameterValue (str_day2day,g_LearningPercVector[day]);
-			
-				}
+			case assignment_day_to_day_SILK_learning:
+				g_SummaryStatFile.WriteParameterValue ("Assignment method","Day-to-day SILK Learning");
 				break;
 			case assignment_gap_function_MSA_step_size:
 				g_SummaryStatFile.WriteParameterValue ("Assignment method","Gap-funciton with step size based adjustment");
@@ -549,10 +544,10 @@ void g_MultiScenarioTrafficAssignment()
 					g_SummaryStatFile.WriteParameterValue("Assignment method", "Real time simulation without with automatically generated routing policy");
 				}
 
-				if (parser_RTSimulation_settings.OpenCSVFile("input_real_time_simulation_settings.csv", false) == false)
+				if (parser_RTSimulation_settings.OpenCSVFile("input_simulation_schedule.csv", false) == false)
 				{
 					cout << "Assignment method = Real time simulation (specified in input_scenario_settings.csv)" << endl;
-					cout << "File input_real_time_simulation_settings.csv is required for real time simulation mode." << endl;
+					cout << "File input_simulation_schedule.csv is required for real time simulation mode." << endl;
 					g_ProgramStop();
 				}
 				else
@@ -569,8 +564,8 @@ void g_MultiScenarioTrafficAssignment()
 
 				break;
 
-			case assignment_integration_with_ABM:
-				g_SummaryStatFile.WriteParameterValue("Assignment method", "Perform real time simulation with ABM model. Required files: ____");
+			case assignment_integration_with_AGENT_PLUS:
+				g_SummaryStatFile.WriteParameterValue("Assignment method", "Perform real time simulation with Agent + model. Required files: ____");
 				break;
 
 			case assignment_system_optimal:

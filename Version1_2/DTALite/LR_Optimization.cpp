@@ -212,7 +212,7 @@ void 	DTANetworkForSP::ResourcePricing_Subgraident(int iteration)
 		float subgradient = 0;
 
 		// determien the price
-		if (pLink->TollVector.size() > 0)
+		if (pLink->m_NetworkDesignFlag >= 1)
 		{
 			for (ti = 0; ti < m_NumberOfTDSPCalculationIntervals; ti += 1)
 			{
@@ -248,7 +248,7 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 	for (li = 0; li < g_LinkVector.size(); li++)
 	{
 		DTALink* pLink = g_LinkVector[li];
-		if (pLink->TollVector.size() > 0)
+		if (pLink->m_NetworkDesignFlag >= 1)  // links to be built
 		{
 			VehicleLinkPrice element;
 			element.LinkNo = pLink->m_LinkNo;
@@ -299,7 +299,7 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 
 
 
-	std::sort(Global_RoadPriceVector.begin(), Global_RoadPriceVector.end());
+	std::sort(Global_RoadPriceVector.begin(), Global_RoadPriceVector.end());  //knapsack sorting 
 	
 	CString str;
 	float dual_resource_price = 0;
@@ -506,7 +506,7 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 		stepsize = 0.05 * const_stepsize;
 
 
-	int VehicleSize = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size();
+	VehicleSize = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.size();
 	for (int vi = 0; vi < VehicleSize; vi++)
 	{
 		int VehicleID = g_TDOVehicleArray[g_ZoneMap[zone].m_ZoneSequentialNo][AssignmentInterval].VehicleArray[vi];
@@ -545,7 +545,7 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 			for (li = 0; li < g_LinkVector.size(); li++)
 			{
 				DTALink* pLink = g_LinkVector[li];
-				if (pLink->TollVector.size() > 0)
+				if (pLink->m_NetworkDesignFlag ==1)
 				{
 					VehicleLinkPrice element;
 					element.LinkNo = pLink->m_LinkNo;
@@ -633,7 +633,7 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 		float OptimialTravelTimeInMin = 0;
 
 		NodeSize = FindOptimalNodePath_TDLabelCorrecting_DQ(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime,
-			pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, TargeTravelTimeInMin, OptimialTravelTimeInMin, bDebugFlag);
+			pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, TargeTravelTimeInMin, OptimialTravelTimeInMin, bDebugFlag);
 
 		float TargeTravelTimeInMin_global = TargeTravelTimeInMin;
 		if (NodeSize >= 2 && OptimialTravelTimeInMin <= TargeTravelTimeInMin_global && TotalCost <= 1)   // a feasible path that meets the travel time target with lower road price of pie than 1
@@ -663,10 +663,15 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 		
 					Distance += g_LinkVector[pVeh->m_LinkAry[i].LinkNo]->m_Length;
 
-					if (g_LinkVector[PathLinkList[i]]->m_TollSequenceNo >= 0)  // candidate link
+					if (g_LinkVector[PathLinkList[i]]->m_NetworkDesignFlag >= 1)  // candidate link
 					{
-						int TollSequenceNo = g_LinkVector[PathLinkList[i]]->m_TollSequenceNo;
-						pVeh->m_PersonalizedRoadPriceVector[TollSequenceNo].RoadUsageFlag = 1;
+						int NetworkDesignSequenceNo = g_LinkVector[PathLinkList[i]]->m_NetworkDesignSequenceNo;
+
+						if (NetworkDesignSequenceNo >= 0 && NetworkDesignSequenceNo < pVeh->m_PersonalizedRoadPriceVector.size())
+						{
+						
+						pVeh->m_PersonalizedRoadPriceVector[NetworkDesignSequenceNo].RoadUsageFlag = 1;
+						}
 					}
 
 
@@ -1417,7 +1422,7 @@ float DTANetworkForSP::AgentBasedUpperBoundSolutionGeneration(int zone, int depa
 		for (li = 0; li < g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			if (pLink->m_TollSequenceNo >= 0 && pLink->m_NetworkDesignBuildCapacity <= 0.1)
+			if (pLink->m_NetworkDesignFlag >= 1 && pLink->m_NetworkDesignBuildCapacity <= 0.1)
 			{
 
 				for (ti = 0; ti < m_NumberOfTDSPCalculationIntervals; ti += 1)
@@ -1444,7 +1449,7 @@ float DTANetworkForSP::AgentBasedUpperBoundSolutionGeneration(int zone, int depa
 		float OptimialTravelTimeInMin = 0;
 
 		NodeSize = FindOptimalNodePath_TDLabelCorrecting_DQ(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime,
-			pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, TargeTravelTimeInMin, OptimialTravelTimeInMin, bDebugFlag);
+			pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, TargeTravelTimeInMin, OptimialTravelTimeInMin, bDebugFlag);
 
 		float TargeTravelTimeInMin_global = TargeTravelTimeInMin;
 		if (NodeSize >= 2 && OptimialTravelTimeInMin <= TargeTravelTimeInMin_global && TotalCost <= 1)   // a feasible path that meets the travel time target with lower road price of pie than 1

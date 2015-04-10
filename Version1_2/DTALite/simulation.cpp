@@ -39,91 +39,6 @@ extern bool g_VehicularCarFollowingSimulation(int DayNo, double CurrentTime, int
 extern  int NUMBER_OF_CAR_FOLLOWING_SIMULATION_INTERVALS_PER_SECOND;
 extern ofstream g_LogFile;
 
-bool g_RealTimeSimulationDataExchange(int meso_simulation_time_interval_no)
-{
-	int time_clock_in_min = meso_simulation_time_interval_no / 10;
-	int time_clock_in_second = meso_simulation_time_interval_no * 6;
-
-	if (g_RealTimeSimulationSettings.input_link_attribute_generated_from_external_program == 1 &&
-		time_clock_in_second % g_RealTimeSimulationSettings.input_link_attribute_updating_time_interval_in_second == 0)
-	{
-		while (1)
-		{
-			if (g_ReadRealTimeLinkAttributeData(time_clock_in_second) == true)
-			{
-				cout << "File " << " has been read. Continue" << endl;
-				break;
-			}
-			else
-			{
-				cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
-				Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
-			}
-
-		}
-	}
-
-	if (g_RealTimeSimulationSettings.input_trip_generated_from_external_program == 1 &&
-		time_clock_in_min % g_RealTimeSimulationSettings.input_trip_updating_time_interval_in_min == 0)
-	{
-		while (1)
-		{
-			if (g_ReadRealTimeTripData(time_clock_in_min, false) == true)
-			{
-				cout << "File " << " has been read. Continue" << endl;
-				break;
-			}
-			else
-			{
-				cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
-				Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
-			}
-
-		}
-	}
-
-
-	if (g_RealTimeSimulationSettings.output_routing_policy_generated_to_external_program == 1 &&
-		time_clock_in_min % g_RealTimeSimulationSettings.output_routing_policy_updating_time_interval_in_min == 0)
-	{
-		CString str;
-		str.Format(".//real_time_data_exchange//output_routing_policy_min%d.csv", time_clock_in_min);
-
-		ofstream output_routing_policy_file;
-		int demand_look_up_window_in_min = 120;
-		int demand_start_time_in_min = max(0, time_clock_in_min - demand_look_up_window_in_min);
-		int demand_end_time_in_min = time_clock_in_min;
-
-		output_routing_policy_file.open(str);
-		//	output_ODImpact_file.open ("output_ImpactedOD.csv");
-		if (output_routing_policy_file.is_open())
-		{
-
-			g_OutputTimeDependentRoutingPolicyData(output_routing_policy_file,
-				demand_start_time_in_min, demand_end_time_in_min, 1);
-
-			output_routing_policy_file.close();
-		}
-		else
-		{
-			cout << "Error: File " << str << " cannot be opened.\n" << endl;
-			g_ProgramStop();
-		}
-	}
-
-	if (g_RealTimeSimulationSettings.output_routing_policy_generated_to_external_program == 1 &&
-		time_clock_in_min % g_RealTimeSimulationSettings.output_routing_policy_updating_time_interval_in_min == 0)
-	{
-		CString str;
-		str.Format(".//real_time_data_exchange//output_skim_data_min%d.csv", time_clock_in_min);
-
-		g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(CString2StdString(str), time_clock_in_min);
-	}
-
-
-
-	return true;
-}
 bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_time_interval_no, e_traffic_flow_model TrafficFlowModelFlag)
 {
 	int trace_step = 14;
@@ -142,7 +57,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 	std::list<struc_vehicle_item>::iterator vii;
 
-	int vehicle_id_trace = 7;
+	int vehicle_id_trace = 19;
 	int link_id_trace = -1;
 
 
@@ -214,17 +129,12 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 	// user_defined information updating 
 	int time_clock_in_min = meso_simulation_time_interval_no / 10;
+	int time_clock_in_second = meso_simulation_time_interval_no *6;
 
-	if (g_use_routing_policy_from_external_input == 1 && meso_simulation_time_interval_no % 10 == 0 && DayNo == 0 && time_clock_in_min%g_AggregationTimetInterval == 0)
-	{ // read input path ratio every 15 min
-
-		ReadTimeDependentRoutingPolicyData((int)(CurrentTime));
-
-	}
-	if (meso_simulation_time_interval_no % 10 == 0 && g_RealTimeSimulationSettingsMap.find(time_clock_in_min) != g_RealTimeSimulationSettingsMap.end())
+	if (g_RealTimeSimulationSettingsMap.find(time_clock_in_second) != g_RealTimeSimulationSettingsMap.end())
 	{  // we need to update travel time and agent file
 
-		g_ExchangeRealTimeSimulationData(DayNo, (int)(CurrentTime));  // version 1
+		g_ExchangeRealTimeSimulationData(DayNo, time_clock_in_second);  // version 1
 
 
 	}
@@ -244,11 +154,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 	}
 
-	// new real time data face
-	g_RealTimeSimulationDataExchange(meso_simulation_time_interval_no); // version 2
-
-
-
 	// load vehicle into network
 
 	// step 1: scan all the vehicles, if a vehicle's start time >= CurrentTime, and there is available space in the first link,
@@ -261,10 +166,19 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	struc_real_time_path_computation_element computation_element;
 
 
-	for (iterVM = g_VehicleMap.find(g_LastLoadedVehicleID); iterVM != g_VehicleMap.end(); iterVM++)
+	int simulation_time_no = time_stamp_in_min * 10 + meso_simulation_time_interval_no % 10;
+	
+	for (int vehicle_v = 0; vehicle_v < g_VehicleTDListMap[simulation_time_no].m_VehicleIDVector.size(); vehicle_v++)
 	{
-		DTAVehicle* pVeh = iterVM->second;
-		if (pVeh->m_bLoaded == false && g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime))  // not being loaded
+		DTAVehicle* pVeh = g_VehicleMap[g_VehicleTDListMap[simulation_time_no].m_VehicleIDVector[vehicle_v]];
+		TRACE("VEH ID = %d\n", pVeh->m_VehicleID);
+		if (pVeh->m_VehicleID == 19)
+		{
+			TRACE("");
+
+		}
+
+		if (pVeh->m_bLoaded == false )  // not being loaded
 		{
 
 			if (pVeh->m_InformationClass == info_pre_trip ||
@@ -277,7 +191,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 			}
 
-			if (pVeh->m_PricingType == 4)
+			if (pVeh->m_DemandType == 4)
 			{
 				//transit route simulation
 
@@ -378,12 +292,6 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 		}
 
-		if (g_floating_point_value_less_than_or_eq_comparison(pVeh->m_DepartureTime, CurrentTime) == false)
-		{
-			break;
-		}
-
-
 	}
 
 	int number_of_threads = g_number_of_CPU_threads_for_real_time_routing();
@@ -416,7 +324,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 	{
 		DTALink * pLink = g_LinkVector[li];
 
-		if (pLink->m_FromNodeNumber == 1 && pLink->m_ToNodeNumber == 5 && CurrentTime >= 600)
+		if (pLink->m_FromNodeNumber == 601 && pLink->m_ToNodeNumber == 1 && CurrentTime >= 1)
 		{
 			TRACE("");
 		}
@@ -461,9 +369,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 				pLink->CFlowArrivalCount += 1;
 
 
-				int pricing_type = g_VehicleMap[vi.veh_id]->m_PricingType;
-				pLink->CFlowArrivalCount_PricingType[pricing_type] += 1;
-				pLink->CFlowArrivalRevenue_PricingType[pricing_type] += pLink->GetTollRateInDollar(DayNo, CurrentTime, pricing_type);
+				int pricing_type = g_VehicleMap[vi.veh_id]->m_DemandType;
+				pLink->CFlowArrivalCount_DemandType[pricing_type] += 1;
+				pLink->CFlowArrivalRevenue_DemandType[pricing_type] += pLink->GetTollRateInDollar(DayNo, CurrentTime, pricing_type);
 
 				DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
 
@@ -673,6 +581,11 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 			DTALink* pLink = g_LinkVector[li];
 
+
+			if (pLink->m_FromNodeNumber == 601 && pLink->m_ToNodeNumber == 1 && CurrentTime >= 1)
+			{
+				TRACE("");
+			}
 
 			float PerHourCapacity = pLink->GetHourlyPerLaneCapacity(CurrentTime);  // static capacity from BRP function
 			float PerHourCapacityAtCurrentSimulatioInterval = PerHourCapacity;
@@ -1073,7 +986,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 			int li = g_NodeVector[node].m_IncomingLinkVector[incoming_link_sequence];
 
 			DTALink* pLink = g_LinkVector[li];
-			if (debug_flag && (pLink->m_FromNodeNumber == 1 && pLink->m_ToNodeNumber == 3) && CurrentTime >= 421)
+			if (debug_flag && (pLink->m_FromNodeNumber == 601 && pLink->m_ToNodeNumber == 1) && CurrentTime >= 1)
 			{
 				TRACE("Step 3: Time %f, Link: %d -> %d: tracing queue: capacity: %d, queue size %d \n",
 					CurrentTime, g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
@@ -1085,12 +998,53 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 			int vehicle_out_count = pLink->LinkOutCapacity;
 
-			//			g_LogFile << "link out capaity:"<< CurrentTime << " "  << g_NodeVector[pLink->m_FromNodeID] << " ->" << g_NodeVector[pLink->m_ToNodeID]<<" Cap:" << vehicle_out_count<< "queue:" << pLink->ExitQueue.size() << endl;
+			//pre-calculate the number of vehicles can be sent out based on PCE
+			// LinkOutCapacity is based on PCE
 
 			if (pLink->ExitQueue.size() <= pLink->LinkOutCapacity)
 			{      // under capacity, constrained by existing queue
 				vehicle_out_count = pLink->ExitQueue.size();
 			}
+
+
+			float vehicle_demand_counter = 0;
+			int agent_counter = 0;
+			for (std::list<struc_vehicle_item>::iterator i = pLink->ExitQueue.begin(); i != pLink->ExitQueue.end(); ++i)
+			{
+
+				struc_vehicle_item vi = (*i);
+				DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
+
+				if (debug_flag && pVehicle->m_VehicleID == 19)
+				{
+					TRACE("");
+				}
+				float prev_vehicle_demand_counter = vehicle_demand_counter;
+				vehicle_demand_counter += pVehicle->m_PCE;
+
+				if (vehicle_demand_counter > vehicle_out_count)
+				{
+					float difference = vehicle_demand_counter - vehicle_out_count;
+					float chance_to_go = (pVehicle->m_PCE - difference) / max(0.0001, pVehicle->m_PCE);
+
+					float RandomNumber = pLink->GetRandomRatio();
+
+					if (RandomNumber < chance_to_go)
+						agent_counter++; // allow the agent to go 
+					else
+						// do not allow
+
+					break;
+				}
+
+				agent_counter++;
+
+			}
+
+			vehicle_out_count = agent_counter;  // assign  the agent counter back to vehicle_out_count. 
+
+			//			g_LogFile << "link out capaity:"<< CurrentTime << " "  << g_NodeVector[pLink->m_FromNodeID] << " ->" << g_NodeVector[pLink->m_ToNodeID]<<" Cap:" << vehicle_out_count<< "queue:" << pLink->ExitQueue.size() << endl;
+
 
 			//////////////left turn handling  ///////////////////////
 			int vehicle_left_out_count = pLink->LinkLeftOutCapacity;
@@ -1336,9 +1290,9 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						p_Nextlink->CFlowArrivalCount += 1;
 						pLink->CFlowDepartureCount += 1;
 
-						int pricing_type = g_VehicleMap[vi.veh_id]->m_PricingType;
-						p_Nextlink->CFlowArrivalCount_PricingType[pricing_type] += 1;
-						p_Nextlink->CFlowArrivalRevenue_PricingType[pricing_type] += p_Nextlink->GetTollRateInDollar(DayNo, CurrentTime, pricing_type);
+						int pricing_type = g_VehicleMap[vi.veh_id]->m_DemandType;
+						p_Nextlink->CFlowArrivalCount_DemandType[pricing_type] += 1;
+						p_Nextlink->CFlowArrivalRevenue_DemandType[pricing_type] += p_Nextlink->GetTollRateInDollar(DayNo, CurrentTime, pricing_type);
 
 						DTAVehicle* pVehicle = g_VehicleMap[vi.veh_id];
 						int vehicle_type = g_VehicleMap[vi.veh_id]->m_VehicleType;
@@ -1349,7 +1303,7 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 						pVehicle->m_TollDollarCost += p_Nextlink->GetTollRateInDollar(DayNo, CurrentTime, pricing_type);
 
 
-						if (p_Nextlink->CFlowArrivalCount != (p_Nextlink->CFlowArrivalCount_PricingType[1] + p_Nextlink->CFlowArrivalCount_PricingType[2] + p_Nextlink->CFlowArrivalCount_PricingType[3] + p_Nextlink->CFlowArrivalCount_PricingType[4]))
+						if (p_Nextlink->CFlowArrivalCount != (p_Nextlink->CFlowArrivalCount_DemandType[1] + p_Nextlink->CFlowArrivalCount_DemandType[2] + p_Nextlink->CFlowArrivalCount_DemandType[3] + p_Nextlink->CFlowArrivalCount_DemandType[4]))
 						{
 							//						TRACE("error!");
 						}
@@ -1384,7 +1338,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 							(IS_id >= 0 && pVehicle->GetRandomRatio() * 100 < p_Nextlink->MessageSignVector[IS_id].ResponsePercentage) ||
 							(bRadioMessageActive && pVehicle->GetRandomRatio() * 100 < network_wide_RadioMessageResponsePercentage))
 						{  // vehicle rerouting
-							g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(pVehicle->m_VehicleID, CurrentTime);
+#pragma omp critical
+							{
+								g_OpenMPAgentBasedPathAdjustmentWithRealTimeInfo(pVehicle->m_VehicleID, CurrentTime, IS_id, p_Nextlink->MessageSignVector[IS_id]);
+							}
 						}
 
 
@@ -1571,10 +1528,10 @@ bool g_VehicularSimulation(int DayNo, double CurrentTime, int meso_simulation_ti
 
 			// toll collection 
 
-			//for(int pt = 1; pt < MAX_PRICING_TYPE_SIZE; pt++)
+			//for(int pt = 1; pt < MAX_DEMAND_TYPE_SIZE; pt++)
 			//{
-			//	pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount_PricingType[pt] = pLink->CFlowArrivalCount_PricingType[pt];
-			//	pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeRevenue_PricingType[pt] = pLink->CFlowArrivalRevenue_PricingType[pt];
+			//	pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeArrivalCount_DemandType[pt] = pLink->CFlowArrivalCount_DemandType[pt];
+			//	pLink->m_LinkMOEAry [time_stamp_in_min].CumulativeRevenue_DemandType[pt] = pLink->CFlowArrivalRevenue_DemandType[pt];
 			//}
 
 			//for (int vt = 0; vt < MAX_VEHICLE_TYPE_SIZE; vt++)
@@ -1644,7 +1601,7 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag 
 				int period_no = g_FindAssignmentIntervalIndexFromTime((*vIte)->m_DepartureTime);
 				for (int i = 0; i < (*vIte)->m_NodeSize - 1; i++)
 				{
-					g_LinkVector[(*vIte)->m_LinkAry[i].LinkNo]->m_BPRLinkVolumeVector[period_no]++;
+					g_LinkVector[(*vIte)->m_LinkAry[i].LinkNo]->m_BPRLinkVolumeVector[period_no]+=1;
 				}
 			}
 		}
@@ -1660,10 +1617,11 @@ NetworkLoadingOutput g_NetworkLoading(e_traffic_flow_model TrafficFlowModelFlag 
 			{
 				double hourly_demand_loading_muliplier = 1.0;
 				hourly_demand_loading_muliplier = 60.0 / max(1, g_AssignmentIntervalEndTimeInMin[p] - g_AssignmentIntervalStartTimeInMin[p]);
-				double voc = pLink->m_BPRLinkVolumeVector[p] * hourly_demand_loading_muliplier / (max(1, pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes()));
+				double link_volume = pLink->m_BPRLinkVolumeVector[p];
+				double voc = link_volume * hourly_demand_loading_muliplier / (max(1, pLink->m_BPRLaneCapacity*pLink->GetNumberOfLanes()));
 				pLink->m_BPRLinkTravelTimeVector[p] = pLink->m_FreeFlowTravelTime*(1.0f + pLink->m_BPR_Alpha *(powf(voc, pLink->m_BPR_Beta)));
-
-				TRACE("");
+			
+				TRACE("BPR link volume: %d\n", pLink->m_BPRLinkVolumeVector[p]);
 				//float maximum_travel_time_ratio = 10;
 				//if(pLink->m_FreeFlowTravelTime >0.01 && pLink->m_BPRLinkTravelTime > pLink->m_FreeFlowTravelTime * maximum_travel_time_ratio )
 				//{  // if BRP travel time is extremely large, 10 times slower than the speed limit, then enforce a minimum moving speed to move the vehicles outof the network....
