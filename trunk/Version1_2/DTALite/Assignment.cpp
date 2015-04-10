@@ -134,11 +134,11 @@ void g_BuildPathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputLog,
 									g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time_index, iteration);
 								else
 								{
-									for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
+									for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)  // from SOV, HOV, truck
 									{
-										if (g_SimulationResult.number_of_vehicles_PricingType[pricing_type] >= 1)
+										if (g_SimulationResult.number_of_vehicles_DemandType[demand_type] >= 1)
 										{
-											g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerPricingType(CurZoneID, g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+											g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue_PerDemandType(CurZoneID, g_NodeVector.size(), departure_time, demand_type, g_DemandTypeVector[demand_type-1].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 										}
 									}
 									g_TimeDependentNetwork_MP[id].ZoneBasedPathAssignment(CurZoneID, departure_time, departure_end_time, iteration, debug_flag);
@@ -217,8 +217,18 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 	number_of_threads = g_number_of_CPU_threads();
 
+	if (g_use_routing_policy_from_external_input)
+	{ // read input path ratio every 15 min
 
 
+		for (int departure_time_index = 0; departure_time_index < g_NumberOfSPCalculationPeriods; departure_time_index++)
+		{
+
+			int departure_time = g_AssignmentIntervalStartTimeInMin[departure_time_index];
+			ReadTimeDependentRoutingPolicyData(departure_time);
+		}
+
+	}
 	// ----------* start of outer loop *----------
 	for (iteration = 0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
 	{
@@ -236,6 +246,32 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 
 		g_SetupTDTollValue(iteration);
+
+		
+
+
+		if (g_UEAssignmentMethod == assignment_day_to_day_SILK_learning && iteration>=1)
+		{
+			while (1)
+			{
+
+				int number_of_vehicles = 0;
+			
+				g_FreeMemoryForVehicleVector();
+
+				if (g_ReadTripCSVFile(g_CreateFileName("input_agent", true, iteration), false, number_of_vehicles) == true)
+				{
+					cout << "File " << " has been read. Continue" << endl;
+					break;
+				}
+				else
+				{
+					cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
+					Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
+				}
+
+			}
+		}
 
 		if (g_VehicleLoadingMode == vehicle_binary_file_mode && iteration == 0)
 		{
@@ -265,6 +301,11 @@ void g_AgentBasedAssisnment()  // this is an adaptation of OD trip based assignm
 
 		SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, 0, iteration);
 		g_GenerateSimulationSummary(iteration, NotConverged, TotalNumOfVehiclesGenerated, &SimuOutput);
+
+		if (g_UEAssignmentMethod == assignment_day_to_day_SILK_learning)
+		{
+			g_OutputMOEData(iteration, true);
+		}
 
 	}  // for each assignment iteration
 
@@ -307,7 +348,8 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 		pVeh->m_bConsiderToSwitch = false;
 		pVeh->m_bSwitch = false;
 
-
+		if (pVeh->m_InformationClass == 0 && pVeh->m_NodeSize >= 2)  // skip updating the path from assignment 
+			continue; 
 		/// finding optimal path 
 		bool bDebugFlag = false;
 
@@ -346,8 +388,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 					switching_rate = 0.001;
 			}
 		}
-		if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
-			g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)
+		if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice)
 		{
 			switching_rate = float(g_LearningPercVector[iteration + 1]) / 100.0f; // 1: day-to-day learning
 			// all agents have also to subject to bounded rationality rules
@@ -396,7 +437,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 					bDebugFlag = true;
 				}
 
-				NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
+				NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 				total_node_size += NodeSize;
 
 
@@ -413,65 +454,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 		}
 		else
 		{ // iteration >=1
-			if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)
-			{
-				float gain_factor = 0.1f;
-
-				if (iteration <= 1)
-				{
-					pVeh->m_EstimatedTravelTime = ExperiencedGeneralizedTravelTime;
-				}
-				else
-				{
-					pVeh->m_EstimatedTravelTime = pVeh->m_EstimatedTravelTime*(1 - gain_factor) + ExperiencedGeneralizedTravelTime*(gain_factor);
-				}
-
-				bSwitchFlag = false;
-				// agent based implementation
-
-				DTADecisionAlternative min_cost_alternative;
-				int departuret_time_shift = 0;
-
-				// swtich: find shortest path
-				TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, TempPathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
-
-				min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, 0, TempNodeSize, TempPathLinkList);
-
-				if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)  //departure time choice
-				{
-					departuret_time_shift = -5; //leave early
-					// leaving option: +5*
-					TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime + departuret_time_shift, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, TempPathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
-					// add additional cost due to leaving early
-					TotalCost += fabs(departuret_time_shift*g_DepartureTimeChoiceEarlyDelayPenalty);
-					min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, departuret_time_shift, TempNodeSize, TempPathLinkList);
-
-					departuret_time_shift = 5; //leave later
-					// leaving option: +5*
-					TempNodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime + departuret_time_shift, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, TempPathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
-
-					// add additional cost due to leaving late
-					TotalCost += fabs(departuret_time_shift*g_DepartureTimeChoiceLateDelayPenalty);
-					min_cost_alternative.UpdateForLowerAlternativeCost(TotalCost, departuret_time_shift, TempNodeSize, TempPathLinkList);
-
-				}
-				//switching to the min cost alternative
-
-				if (min_cost_alternative.total_cost < pVeh->m_EstimatedTravelTime - g_TravelTimeDifferenceForSwitching
-					|| min_cost_alternative.total_cost*(1 + g_RelativeTravelTimePercentageDifferenceForSwitching / 100) < pVeh->m_EstimatedTravelTime)
-				{
-					bSwitchFlag = true;
-					final_departuret_time_shift = min_cost_alternative.final_departuret_time_shift;
-
-					NodeSize = min_cost_alternative.node_size; // copy the shortest path array and # of nodes along the path
-
-					for (int n = 0; n < NodeSize; n++)
-					{
-						PathLinkList[n] = min_cost_alternative.path_link_list[n];
-					}
-				}
-			}
-			else if (RandomNumber < switching_rate)  // g_Day2DayAgentLearningMethod==0: no learning, just switching 
+			if (RandomNumber < switching_rate)  // g_Day2DayAgentLearningMethod==0: no learning, just switching 
 			{
 
 				if (g_UEAssignmentMethod == assignment_system_optimal )
@@ -519,13 +502,13 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 							if (pVeh->m_InformationClass == info_personalized_info)
 							{
 								bGeneralizedCostFlag = false;
-								NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, starting_node_id, starting_time_in_min, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
+								NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, starting_node_id, starting_time_in_min, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 							}
 
 							if (pVeh->m_InformationClass == info_eco_so)
 							{
 								bGeneralizedCostFlag = true;
-								NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, starting_node_id, starting_time_in_min, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
+								NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, starting_node_id, starting_time_in_min, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 							}
 
 
@@ -567,7 +550,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 				}
 				else
 				{
-					NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
+					NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 					bSwitchFlag = true;
 
 				}
@@ -673,11 +656,9 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 				pVeh->m_Distance = Distance;
 				pVeh->m_NodeNumberSum = NodeNumberSum;
 
-				if (NodeNumberSum >=200)
-				TRACE("node num: %d\n", NodeNumberSum);
 
 
-				if (pVeh->m_PricingType == 4)  //assign travel time for transit users
+				if (pVeh->m_DemandType == 4)  //assign travel time for transit users
 				{
 					pVeh->m_ArrivalTime = pVeh->m_DepartureTime + 0.1;  // at leat 0.1 min
 
@@ -741,7 +722,7 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 		{  // not switch but we calculate gap function
 			if (g_CalculateUEGapForAllAgents ==1 )
 			{
-				NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_PricingType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
+				NodeSize = FindBestPathWithVOT(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime, pVeh->m_DestinationZoneID, pVeh->m_DestinationNodeID, pVeh->m_DemandType, pVeh->m_VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, bDebugFlag);
 				total_node_size += NodeSize;
 
 				int NodeNumberSum = 0;
@@ -815,6 +796,8 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 		int destination_zone_no = g_ZoneMap[pVeh->m_DestinationZoneID].m_ZoneSequentialNo;
 		int DestinationCentriod = m_PhysicalNodeSize + 1+ destination_zone_no;  // map m_ZoneSequentialNo to DestinationCentriod
 
+		if (pVeh->m_InformationClass == 0  && pVeh->m_NodeSize >=2)  // skip updating the path from assignment 
+			continue;
 
 		double TotalCost =  MAX_SPLABEL;
 		if (g_ShortestPathWithMovementDelayFlag)  // consider movement delay
@@ -826,9 +809,9 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 			for (i = 0; i < m_InboundSizeAry[destination]; i++)
 			{
 				int incoming_link = m_InboundLinkAry[destination][i];
-				if (LabelCostVectorPerType[pVeh->m_PricingType][incoming_link] < TotalCost && LinkPredVectorPerType[pVeh->m_PricingType][incoming_link] >= 0)
+				if (LabelCostVectorPerType[pVeh->m_DemandType][incoming_link] < TotalCost && LinkPredVectorPerType[pVeh->m_DemandType][incoming_link] >= 0)
 				{
-					TotalCost = LabelCostVectorPerType[pVeh->m_PricingType][incoming_link];
+					TotalCost = LabelCostVectorPerType[pVeh->m_DemandType][incoming_link];
 					link_id_with_min_cost = incoming_link;
 				}
 			}
@@ -847,7 +830,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 		}
 		else  // no movement delay
 		{
-			if (LabelCostVectorPerType[pVeh->m_PricingType][DestinationCentriod] > MAX_SPLABEL - 10)
+			if (LabelCostVectorPerType[pVeh->m_DemandType][DestinationCentriod] > MAX_SPLABEL - 10)
 			{
 
 
@@ -870,7 +853,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 		pVeh->m_bSwitch = false;
 
 
-		if (iteration > 0) // update path assignments -> determine whether or not the vehicle will switch
+		if (iteration > 0 && pVeh->m_InformationClass != 0) // update path assignments -> determine whether or not the vehicle will switch
 		{
 
 
@@ -899,8 +882,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 				}
 			}
 
-			if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice ||
-				g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_and_departure_time_choice)
+			if (g_UEAssignmentMethod == assignment_day_to_day_learning_threshold_route_choice )
 			{
 				switching_rate = float(g_LearningPercVector[iteration + 1]) / 100.0f; // 1: day-to-day learning
 				// all agents have also to subject to bounded rationality rules
@@ -954,9 +936,9 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 				for (i = 0; i< m_InboundSizeAry[destination]; i++)
 				{
 					int incoming_link = m_InboundLinkAry[destination][i];
-					if (LabelCostVectorPerType[pVeh->m_PricingType][incoming_link] < min_cost && LinkPredVectorPerType[pVeh->m_PricingType][incoming_link] >= 0)
+					if (LabelCostVectorPerType[pVeh->m_DemandType][incoming_link] < min_cost && LinkPredVectorPerType[pVeh->m_DemandType][incoming_link] >= 0)
 					{
-						min_cost = LabelCostVectorPerType[pVeh->m_PricingType][incoming_link];
+						min_cost = LabelCostVectorPerType[pVeh->m_DemandType][incoming_link];
 						link_id_with_min_cost = incoming_link;
 					}
 				}
@@ -979,7 +961,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 
 				int LinkSize = 0;
 				temp_reversed_PathLinkList[LinkSize] = link_id_with_min_cost;  // last link to destination  // skip the last link by not using LinkSize++
-				int PrevLinkID = LinkPredVectorPerType[pVeh->m_PricingType ][link_id_with_min_cost];
+				int PrevLinkID = LinkPredVectorPerType[pVeh->m_DemandType ][link_id_with_min_cost];
 
 				if (PrevLinkID == -1)
 				{
@@ -992,11 +974,11 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 				{
 					ASSERT(LinkSize< MAX_NODE_SIZE_IN_A_PATH - 1);
 
-					if (LinkPredVectorPerType[pVeh->m_PricingType][PrevLinkID] != -1)
+					if (LinkPredVectorPerType[pVeh->m_DemandType][PrevLinkID] != -1)
 					{
-						temp_reversed_PathLinkList[LinkSize++] = LinkPredVectorPerType[pVeh->m_PricingType][PrevLinkID];
+						temp_reversed_PathLinkList[LinkSize++] = LinkPredVectorPerType[pVeh->m_DemandType][PrevLinkID];
 					}
-					PrevLinkID = LinkPredVectorPerType[pVeh->m_PricingType][PrevLinkID];
+					PrevLinkID = LinkPredVectorPerType[pVeh->m_DemandType][PrevLinkID];
 				}
 
 				int j = 0;
@@ -1109,7 +1091,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 			{
 
 				NodeSize = 0;
-				PredNode = NodePredVectorPerType[pVeh->m_PricingType][DestinationCentriod];
+				PredNode = NodePredVectorPerType[pVeh->m_DemandType][DestinationCentriod];
 				while (PredNode != OriginCentriod && PredNode != -1) // scan backward in the predessor array of the shortest path calculation results
 				{
 					if (NodeSize >= MAX_NODE_SIZE_IN_A_PATH - 1)
@@ -1122,10 +1104,10 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 							for (int i = 0; i < NodeSize; i++)
 							{
 								cout << "error in path finding: too many nodes: OD pair: " << zone << " -> " << pVeh->m_DestinationZoneID << endl;
-								cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+								cout << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_DemandType][temp_reversed_PathLinkList[i]] << endl;
 
 
-								g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_PricingType][temp_reversed_PathLinkList[i]] << endl;
+								g_LogFile << "Node sequence " << i << ":node " << g_NodeVector[temp_reversed_PathLinkList[i]].m_NodeNumber << ",cost: " << LabelCostVectorPerType[pVeh->m_DemandType][temp_reversed_PathLinkList[i]] << endl;
 
 							}
 						}
@@ -1134,7 +1116,7 @@ void DTANetworkForSP::ZoneBasedPathAssignment(int zone, int departure_time_begin
 					}
 
 					temp_reversed_PathLinkList[NodeSize++] = PredNode;  // node index 0 is the physical node, we do not add OriginCentriod into PathNodeList, so NodeSize contains all physical nodes.
-					PredNode = NodePredVectorPerType[pVeh->m_PricingType][PredNode];
+					PredNode = NodePredVectorPerType[pVeh->m_DemandType][PredNode];
 				}
 
 				// the first node in the shortest path is the super zone center, should not be counted
@@ -1264,9 +1246,12 @@ void DTANetworkForSP::HistInfoZoneBasedPathAssignment(int zone, int departure_ti
 			if (pVeh->m_NodeSize >0) // path assigned (from input_agent.csv)
 				continue;
 
+			if (pVeh->m_InformationClass == 0 && pVeh->m_NodeSize >=2)  // skip updating the path from assignment 
+				continue;
+
 			BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime, g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 			//using historical short-term travel time
-			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), pVeh->m_DepartureTime, pVeh->m_PricingType, pVeh->m_VOT, false, false, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), pVeh->m_DepartureTime, pVeh->m_DemandType, pVeh->m_VOT, false, false, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 			int OriginCentriod = m_PhysicalNodeSize;  // as root node
 			int DestinationCentriod = m_PhysicalNodeSize + pVeh->m_DestinationZoneID;
@@ -1960,9 +1945,9 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 	//		element.AvgTravelTime= pLink->GetTravelTimeByMin(iteration,0, pLink->m_SimulationHorizon,g_TrafficFlowModelFlag);
 	//		element.AvgSpeed = pLink->m_Length / max(0.00001,element.AvgTravelTime) *60;  // unit: mph
 	//
-	//		for(int i = 1; i < MAX_PRICING_TYPE_SIZE; i++)
+	//		for(int i = 1; i < MAX_demand_type_SIZE; i++)
 	//		{
-	//			element.CumulativeArrivalCount_PricingType[i] = pLink->CFlowArrivalCount_PricingType[i];
+	//			element.CumulativeArrivalCount_DemandType[i] = pLink->CFlowArrivalCount_DemandType[i];
 	//		}
 	//
 	//		element.m_NumberOfCrashes =  pLink->m_NumberOfCrashes;
@@ -2022,6 +2007,19 @@ void g_ZoneBasedDynamicTrafficAssignment()
 	int TotalNumOfVehiclesGenerated = 0;
 	int number_of_threads = g_number_of_CPU_threads();
 
+
+	if (g_use_routing_policy_from_external_input ==1)
+	{ // read input path ratio every 15 min
+
+
+		for (int departure_time_index = 0; departure_time_index < g_NumberOfSPCalculationPeriods; departure_time_index++)
+		{
+
+			int departure_time = g_AssignmentIntervalStartTimeInMin[departure_time_index];
+			ReadTimeDependentRoutingPolicyData(departure_time);
+		}
+
+	}
 	cout << "# of Computer Processors = " << number_of_threads << endl;
 
 //	int Current_AggregationTimetInterval = g_AggregationTimetInterval;
@@ -2042,6 +2040,28 @@ void g_ZoneBasedDynamicTrafficAssignment()
 		g_TotalMeasurementDeviation = 0;
 		int Actual_ODZoneSize = g_ZoneMap.size();  // Actual_ODZoneSize can be < ODZoneSize after subarea cut with new zones
 
+		if (g_UEAssignmentMethod == assignment_day_to_day_SILK_learning && iteration >= 1)
+		{
+			while (1)
+			{
+
+				int number_of_vehicles = 0;
+
+				g_FreeMemoryForVehicleVector();
+
+				if (g_ReadTripCSVFile(g_CreateFileName("input_agent", true, iteration), false, number_of_vehicles) == true)
+				{
+					cout << "File " << " has been read. Continue" << endl;
+					break;
+				}
+				else
+				{
+					cout << "wait for " << g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second << " seconds... " << endl;
+					Sleep(g_RealTimeSimulationSettings.synchronization_sleep_time_interval_in_second * 1000); // wait for x second
+				}
+
+			}
+		}
 		if (!(g_VehicleLoadingMode == vehicle_binary_file_mode && iteration == 0))  // we do not need to generate initial paths for vehicles for the first iteration of vehicle loading mode
 		{
 			g_EstimationLogFile << "----- Iteration = " << iteration << " ------" << endl;
@@ -2104,11 +2124,11 @@ void g_ZoneBasedDynamicTrafficAssignment()
 										g_TimeDependentNetwork_MP[ProcessID].ZoneBasedPathAssignment_ODEstimation(CurZoneID, departure_time_index, iteration);
 									else
 									{
-										for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)  // from SOV, HOV, truck
+										for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)  // from SOV, HOV, truck
 										{
-											if (g_SimulationResult.number_of_vehicles_PricingType[pricing_type] >= 1)
+											if (g_SimulationResult.number_of_vehicles_DemandType[demand_type] >= 1)
 											{
-												g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerPricingType(CurZoneID, g_NodeVector.size(), departure_time, pricing_type, g_PricingTypeMap[pricing_type].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+												g_TimeDependentNetwork_MP[ProcessID].TDLabelCorrecting_DoubleQueue_PerDemandType(CurZoneID, g_NodeVector.size(), departure_time, demand_type, g_DemandTypeVector[demand_type-1].default_VOT, false, debug_flag);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 											}
 										}
 
@@ -2137,6 +2157,11 @@ void g_ZoneBasedDynamicTrafficAssignment()
 			g_GenerateSimulationSummary(iteration, NotConverged, TotalNumOfVehiclesGenerated, &SimuOutput);
 
 		}	// end of outer loop
+
+		if (g_UEAssignmentMethod == assignment_day_to_day_SILK_learning)
+		{
+			g_OutputMOEData(iteration,true);
+		}
 
 	} // for each assignment iteration
 

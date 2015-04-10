@@ -89,10 +89,13 @@ void g_SetupTDTollValue(int DayNo)
 					g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bMonetaryTollExist = true;
 
 
-					for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+					for (int demand_type = 1; demand_type <=g_DemandTypeVector.size(); demand_type++)
 					{
-
-						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->TollVector[itoll].TollRate[pricing_type];
+						if (pLink->TollVector[itoll].TollRate[demand_type] >= 0.00001)
+						{
+						
+						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->TollVector[itoll].TollRate[demand_type];
+						}
 					}
 				}
 			}
@@ -127,14 +130,14 @@ void g_SetupTDTollValue(int DayNo)
 					// UE
 					// comment for now: xuesong, 09/10/2014			g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[0] = pLink->m_LinkMOEAry[t].CO2 / max(1, LinkInFlow) / 1000;  // this is average energy per vehicle for using this link at time t
 
-					for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+					for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
 					{
 						if (t < pLink->m_LinkMOEAry.size())
 						{
 
-							// comment for now: xuesong, 09/10/2014						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->m_LinkMOEAry[t].SystemOptimalMarginalCost;
+							// comment for now: xuesong, 09/10/2014						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->m_LinkMOEAry[t].SystemOptimalMarginalCost;
 
-							if (fabs(g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type]) >0.001)  // there is a toll value. 
+							if (fabs(g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type]) >0.001)  // there is a toll value. 
 							{
 								g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTravelTimeTollExist = true;
 							}
@@ -568,10 +571,14 @@ void DTANetworkForSP::UpdateCurrentTravelTime(int DayNo, double CurrentTime)  //
 					float speed = pLink->m_Length / AvgTravelTime * 60;
 
 
-					for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+					for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
 					{
 						// toll value from user external input: 
-						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->TollVector[itoll].TollRate[pricing_type];
+						if (pLink->TollVector[itoll].TollRate[demand_type] >= 0.00001)
+						{
+						
+						g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->TollVector[itoll].TollRate[demand_type];
+						}
 					}
 				}
 			}
@@ -579,24 +586,24 @@ void DTANetworkForSP::UpdateCurrentTravelTime(int DayNo, double CurrentTime)  //
 			// system optimal assignment mode:
 			if (g_UEAssignmentMethod == assignment_system_optimal)
 			{
-				for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+				for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
 				{
 					if (t < pLink->m_LinkMOEAry.size())
 					{
-						if (pricing_type == 1)  // travel time SO
+						if (demand_type == 1)  // travel time SO
 						{
-							// comment for now: xuesong, 09/10/2014				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->m_LinkMOEAry[t].SystemOptimalMarginalCost;
+							// comment for now: xuesong, 09/10/2014				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->m_LinkMOEAry[t].SystemOptimalMarginalCost;
 						}
-						if (pricing_type == 2)  // energey SO
+						if (demand_type == 2)  // energey SO
 						{
-							// comment for now: xuesong, 09/10/2014			g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->m_LinkMOEAry[t].Energy;
+							// comment for now: xuesong, 09/10/2014			g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->m_LinkMOEAry[t].Energy;
 						}
-						if (pricing_type == 3)  // CO2 SO
+						if (demand_type == 3)  // CO2 SO
 						{
-							// comment for now: xuesong, 09/10/2014	g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] = pLink->m_LinkMOEAry[t].CO2;
+							// comment for now: xuesong, 09/10/2014	g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] = pLink->m_LinkMOEAry[t].CO2;
 						}
 
-						if (fabs(g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[pricing_type] ) >0.001)  // there is a toll value. 
+						if (fabs(g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[demand_type] ) >0.001)  // there is a toll value. 
 						{
 							// comment for now: xuesong, 09/10/2014	g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bTravelTimeTollExist = true;
 						}
@@ -671,7 +678,7 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo, int CurrentTime, float
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false, 
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int demand_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false, 
 	bool bDistanceCostByProductOutput = false)
 // time -dependent label correcting algorithm with deque implementation
 {
@@ -771,15 +778,15 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 			DollarCost = 0;
 			if(VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist) 
 			{ // with VOT and toll
-				AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+				AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [demand_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 				NewCost += AdditionalCostInMin;
-				DollarCost = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+				DollarCost = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type];
 			}
 
 			if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 			{ 
-				pricing_type = 1; // travel time SO 
-				AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+				demand_type = 1; // travel time SO 
+				AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type];
 				if (debug_flag)
 					TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
 
@@ -851,7 +858,7 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 
 
-int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
+int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int demand_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
 // time-dependent label correcting algorithm with deque implementation
 {
 
@@ -866,10 +873,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 
 	if(g_ShortestPathWithMovementDelayFlag)
-	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, pricing_type, VOT, PathLinkList, TotalCost,bGeneralizedCostFlag, debug_flag);
+	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, demand_type, VOT, PathLinkList, TotalCost,bGeneralizedCostFlag, debug_flag);
 
-	if(pricing_type == 0) // unknown type
-		pricing_type = 1; 
+	if(demand_type == 0) // unknown type
+		demand_type = 1; 
 
 
 	if(debug_flag)
@@ -972,7 +979,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					if(preceived_travel_time< m_LinkFFTTAry[LinkID]*0.5)
 						preceived_travel_time< m_LinkFFTTAry[LinkID]*0.5;
 
-				if(pricing_type ==4)  // transit // special feature 3: transit travel time
+				if(demand_type ==4)  // transit // special feature 3: transit travel time
 					NewTime	= LabelTimeAry[FromID] + GetTDTransitTime(LinkID,link_entering_time_interval);  // time-dependent travel times come from simulator
 				else  // road users
 					NewTime	= LabelTimeAry[FromID] + preceived_travel_time;  // time-dependent travel times come from simulator
@@ -983,7 +990,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if(VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist) 
 			{ // with VOT and toll
-				toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+				toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue [demand_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 
 				if(debug_flag)
 					TRACE("\ntoll in min = %f",toll_in_min);
@@ -992,7 +999,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 			{
-				toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+				toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type];
 				if (debug_flag)
 					TRACE("AdditionalCostInMin = %f\n", toll_in_min);
 			}
@@ -1005,7 +1012,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewCost = LabelCostAry[FromID] + g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[0];  // consider generalized cost only without actual travel time, because it is difficult to convert trave time to generalized cost values 
 				else 
 				{  // non distance cost
-					if(pricing_type ==4)  // transit 
+					if(demand_type ==4)  // transit 
 						NewCost    = LabelCostAry[FromID] + GetTDTransitTime(LinkID,link_entering_time_interval) + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
 					else  // non transit
 						NewCost    = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
@@ -1105,7 +1112,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	}
 
 
-	int DTANetworkForSP::FindBestSystemOptimalPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
+	int DTANetworkForSP::FindBestSystemOptimalPathWithVOT(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int demand_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, bool ResponseToRadioMessage, bool debug_flag)   // Pointer to previous node (node)
 		// time-dependent label correcting algorithm with deque implementation
 	{
 
@@ -1120,10 +1127,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 		// comment it out as we do not need to consider movement delay at SO mode: too compplex. 
 		//if (g_ShortestPathWithMovementDelayFlag)
-		//	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, pricing_type, VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, debug_flag);
+		//	return FindBestPathWithVOT_Movement(origin_zone, origin, departure_time, destination_zone, destination, demand_type, VOT, PathLinkList, TotalCost, bGeneralizedCostFlag, debug_flag);
 
-		if (pricing_type == 0) // unknown type
-			pricing_type = 1;
+		if (demand_type == 0) // unknown type
+			demand_type = 1;
 
 
 		if (debug_flag)
@@ -1219,7 +1226,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					if (preceived_travel_time< m_LinkFFTTAry[LinkID] * 0.5)
 						preceived_travel_time< m_LinkFFTTAry[LinkID] * 0.5;
 
-					if (pricing_type == 4)  // transit // special feature 3: transit travel time
+					if (demand_type == 4)  // transit // special feature 3: transit travel time
 						NewTime = LabelTimeAry[FromID] + GetTDTransitTime(LinkID,link_entering_time_interval);  // time-dependent travel times come from simulator
 					else  // road users
 						NewTime = LabelTimeAry[FromID] + preceived_travel_time;  // time-dependent travel times come from simulator
@@ -1230,7 +1237,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 				if (VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist)
 				{ // with VOT and toll
-					toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+					toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 
 					if (debug_flag)
 						TRACE("\ntoll in min = %f", toll_in_min);
@@ -1239,7 +1246,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 				if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 				{
-					toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+					toll_in_min = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type];
 					if (debug_flag)
 						TRACE("AdditionalCostInMin = %f\n", toll_in_min);
 				}
@@ -1253,7 +1260,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewCost = LabelCostAry[FromID] + m_LinkTDDistanceAry[LinkID];  // do not take into account toll value
 				else
 				{  // non distance cost
-					if (pricing_type == 4)  // transit 
+					if (demand_type == 4)  // transit 
 						NewCost = LabelCostAry[FromID] + GetTDTransitTime(LinkID,link_entering_time_interval) + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
 					else  // non transit
 						NewCost = LabelCostAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
@@ -1353,7 +1360,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	}
 
 
-	int DTANetworkForSP::FindBestPathWithVOT_Movement(int origin_zone, int origin, int departure_time,  int destination_zone, int destination, int pricing_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool debug_flag=false)
+	int DTANetworkForSP::FindBestPathWithVOT_Movement(int origin_zone, int origin, int departure_time,  int destination_zone, int destination, int demand_type, float VOT,int PathLinkList[MAX_NODE_SIZE_IN_A_PATH],float &TotalCost, bool bGeneralizedCostFlag, bool debug_flag=false)
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
@@ -1480,7 +1487,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			else 
 			{// non- distance
 
-				if(pricing_type ==4)  // transit // special feature 3: transit travel time
+				if(demand_type ==4)  // transit // special feature 3: transit travel time
 					NewTime	= LinkLabelTimeAry[FromLinkID] + GetTDTransitTime(ToLinkID,link_entering_time_interval);  // time-dependent travel times come from simulator
 				else  // road users
 				{
@@ -1507,7 +1514,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			float toll_in_min = 0;			// special feature 5: road pricing
 			if(VOT > 0.01 && g_LinkTDCostAry[ToLinkID][link_entering_time_interval].m_bMonetaryTollExist)	
 			{ // with VOT and toll
-					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue [pricing_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue [demand_type]/VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 			}
 
 
@@ -1519,7 +1526,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 			if (g_LinkTDCostAry[ToLinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 			{
-				toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[pricing_type];
+				toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[demand_type];
 				if (debug_flag)
 					TRACE("AdditionalCostInMin = %f\n", toll_in_min);
 			}
@@ -1528,7 +1535,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewCost = LinkLabelCostAry[FromLinkID] + g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[0];  // we only consider the genralized cost value (without actual travel time)
 				else 
 				{  // non distance cost
-					if(pricing_type ==4)  // transit 
+					if(demand_type ==4)  // transit 
 						NewCost    = LinkLabelCostAry[FromLinkID] + GetTDTransitTime(ToLinkID,link_entering_time_interval) + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
 					else  // non transit
 						NewCost    = LinkLabelCostAry[FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
@@ -1625,7 +1632,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				//find shortest path without movement penality
 			g_ShortestPathWithMovementDelayFlag = false;
 
-			int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, pricing_type, 
+			int number_of_nodes = FindBestPathWithVOT(origin_zone, origin, departure_time,  destination_zone, destination, demand_type, 
 				VOT,PathLinkList,TotalCost, bGeneralizedCostFlag, debug_flag);
 			// check if the link(s) have the predecesssor
 
@@ -1692,7 +1699,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 
 
-	bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerPricingType_Movement(int CurZoneID, int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag)
+	bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerDemandType_Movement(int CurZoneID, int origin, int departure_time, int demand_type, float VOT, bool bDistanceCost, bool debug_flag)
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
@@ -1718,11 +1725,11 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 		for (i = 0; i <m_LinkSize; i++) // Initialization for all links
 		{
-			LinkPredVectorPerType[pricing_type][i] = -1;
+			LinkPredVectorPerType[demand_type][i] = -1;
 			LinkStatusAry[i] = 0;
 
 			LinkLabelTimeAry[i] = MAX_SPLABEL;
-			LabelCostVectorPerType[pricing_type][i] = MAX_SPLABEL;
+			LabelCostVectorPerType[demand_type][i] = MAX_SPLABEL;
 
 			//if (g_UserClassPerceptionErrorRatio[1] >= 0.001)  //probit loading 
 			//{
@@ -1741,9 +1748,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 			LinkLabelTimeAry[LinkID] = departure_time + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
 
 			if (bGeneralizedCostFlag == false)
-				LabelCostVectorPerType[pricing_type][LinkID] = departure_time + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
+				LabelCostVectorPerType[demand_type][LinkID] = departure_time + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
 			else  // for generalized cost, we start from cost of zero, other than start time
-				LabelCostVectorPerType[pricing_type][LinkID] = 0 + g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[0];
+				LabelCostVectorPerType[demand_type][LinkID] = 0 + g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[0];
 
 			LinkBasedSEList_push_back(LinkID);
 
@@ -1832,7 +1839,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				else
 				{// non- distance
 
-					if (pricing_type == 4)  // transit // special feature 3: transit travel time
+					if (demand_type == 4)  // transit // special feature 3: transit travel time
 						NewTime = LinkLabelTimeAry[FromLinkID] + GetTDTransitTime(ToLinkID,link_entering_time_interval);  // time-dependent travel times come from simulator
 					else  // road users
 					{
@@ -1852,14 +1859,14 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 
 
-				// original code			NewCost    = LabelCostVectorPerType[pricing_type][FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];
+				// original code			NewCost    = LabelCostVectorPerType[demand_type][FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i];
 
 
 				//  road pricing module
 				float toll_in_min = 0;			// special feature 5: road pricing
 				if (VOT > 0.01 && g_LinkTDCostAry[ToLinkID][link_entering_time_interval].m_bMonetaryTollExist)
 				{ // with VOT and toll
-					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[pricing_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[demand_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 				}
 
 
@@ -1871,24 +1878,24 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 				if (g_LinkTDCostAry[ToLinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 				{
-					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[pricing_type];
+					toll_in_min = g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[demand_type];
 					if (debug_flag)
 						TRACE("AdditionalCostInMin = %f\n", toll_in_min);
 				}
 				// special feature 6: update cost
 				if (bGeneralizedCostFlag)
-					NewCost = LabelCostVectorPerType[pricing_type][FromLinkID] + g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[0];  // we only consider the genralized cost value (without actual travel time)
+					NewCost = LabelCostVectorPerType[demand_type][FromLinkID] + g_LinkTDCostAry[ToLinkID][link_entering_time_interval].TollValue[0];  // we only consider the genralized cost value (without actual travel time)
 				else
 				{  // non distance cost
-					if (pricing_type == 4)  // transit 
-						NewCost = LabelCostVectorPerType[pricing_type][FromLinkID] + GetTDTransitTime(ToLinkID,link_entering_time_interval) + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
+					if (demand_type == 4)  // transit 
+						NewCost = LabelCostVectorPerType[demand_type][FromLinkID] + GetTDTransitTime(ToLinkID,link_entering_time_interval) + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
 					else  // non transit
-						NewCost = LabelCostVectorPerType[pricing_type][FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
+						NewCost = LabelCostVectorPerType[demand_type][FromLinkID] + m_LinkTDTimeAry[ToLinkID][link_entering_time_interval] + m_OutboundMovementDelayAry[FromLinkID][i] + toll_in_min;       // costs come from time-dependent tolls, VMS, information provisions
 
 				}
 
 
-				if (NewCost < LabelCostVectorPerType[pricing_type][ToLinkID] && NewCost < CostUpperBound) // special feature 7.1  we only compare cost not time
+				if (NewCost < LabelCostVectorPerType[demand_type][ToLinkID] && NewCost < CostUpperBound) // special feature 7.1  we only compare cost not time
 				{
 					if (debug_flag )  // physical nodes
 					{
@@ -1909,10 +1916,10 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 						NewTime = float(g_PlanningHorizon - 1);
 
 					LinkLabelTimeAry[ToLinkID] = NewTime;
-					LabelCostVectorPerType[pricing_type][ToLinkID] = NewCost;
+					LabelCostVectorPerType[demand_type][ToLinkID] = NewCost;
 
 					ASSERT(NewCost >= -0.00001);
-					LinkPredVectorPerType[pricing_type][ToLinkID] = FromLinkID;
+					LinkPredVectorPerType[demand_type][ToLinkID] = FromLinkID;
 
 
 					// Dequeue implementation
@@ -1933,9 +1940,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 				else
 				{
 
-					if (debug_flag == 1 && m_LinkConnectorFlag[ToLinkID] == 0  && LabelCostVectorPerType[pricing_type][ToLinkID] <= 900)  // physical nodes
+					if (debug_flag == 1 && m_LinkConnectorFlag[ToLinkID] == 0  && LabelCostVectorPerType[demand_type][ToLinkID] <= 900)  // physical nodes
 					{
-						TRACE("\n        not-UPDATEd to link %d, downstream node %d, new cost %f, old cost: %f, link travel time %f", ToLinkID, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber, NewCost, LabelCostVectorPerType[pricing_type][ToLinkID], m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
+						TRACE("\n        not-UPDATEd to link %d, downstream node %d, new cost %f, old cost: %f, link travel time %f", ToLinkID, g_NodeVector[m_ToIDAry[ToLinkID]].m_NodeNumber, NewCost, LabelCostVectorPerType[demand_type][ToLinkID], m_LinkTDTimeAry[ToLinkID][link_entering_time_interval]);
 					}
 
 				}
@@ -1950,37 +1957,37 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 	}
 
 
-	bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerPricingType(int CurZoneID, int origin, int departure_time, int pricing_type = 1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
+	bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue_PerDemandType(int CurZoneID, int origin, int departure_time, int demand_type = 1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false)
 		// time -dependent label correcting algorithm with deque implementation
 	{
 
 		distance_cost_flag = false;
 
-		debug_flag = false;
+		debug_flag = true;
 		int i;
 		float AdditionalCostInMin = 0;
 
 		if (m_OutboundSizeAry[origin] == 0)
 			return false;
 		if (g_ShortestPathWithMovementDelayFlag)
-			return TDLabelCorrecting_DoubleQueue_PerPricingType_Movement(CurZoneID, origin, departure_time, pricing_type, VOT, distance_cost_flag, debug_flag);
+			return TDLabelCorrecting_DoubleQueue_PerDemandType_Movement(CurZoneID, origin, departure_time, demand_type, VOT, distance_cost_flag, debug_flag);
 
 
 		for (i = 0; i <m_NodeSize; i++) // Initialization for all nodes
 		{
 
-			NodePredVectorPerType[pricing_type][i] = -1;
+			NodePredVectorPerType[demand_type][i] = -1;
 
 			NodeStatusAry[i] = 0;
 
 			LabelTimeAry[i] = MAX_SPLABEL;
-			LabelCostVectorPerType[pricing_type][i] = MAX_SPLABEL;
+			LabelCostVectorPerType[demand_type][i] = MAX_SPLABEL;
 
 		}
 
 		// Initialization for origin node
 		LabelTimeAry[origin] = float(departure_time);
-		LabelCostVectorPerType[pricing_type][origin] = 0;
+		LabelCostVectorPerType[demand_type][origin] = 0;
 
 		SEList_clear();
 		SEList_push_front(origin);
@@ -2063,18 +2070,18 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					NewTime = LabelTimeAry[FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];  // time-dependent travel times come from simulator
 
 				if (distance_cost_flag)
-					NewCost = LabelCostVectorPerType[pricing_type][FromID] + m_LinkTDDistanceAry[LinkID];
+					NewCost = LabelCostVectorPerType[demand_type][FromID] + m_LinkTDDistanceAry[LinkID];
 				else
-					NewCost = LabelCostVectorPerType[pricing_type][FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
+					NewCost = LabelCostVectorPerType[demand_type][FromID] + m_LinkTDTimeAry[LinkID][link_entering_time_interval];
 
-				bool with_toll_flag = false;
+				bool with_toll_flag = true;
 
 				if (with_toll_flag)
 				{
 				
 					if (VOT > 0.01 && g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bMonetaryTollExist)
 					{ // with VOT and toll
-						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
 						if (debug_flag)
 							TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
 
@@ -2083,7 +2090,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 					if (g_LinkTDCostAry[LinkID][link_entering_time_interval].m_bTravelTimeTollExist)
 					{ // with VOT and toll
-						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[pricing_type];
+						AdditionalCostInMin = g_LinkTDCostAry[LinkID][link_entering_time_interval].TollValue[demand_type];
 						if (debug_flag)
 							TRACE("AdditionalCostInMin = %f\n", AdditionalCostInMin);
 
@@ -2091,7 +2098,7 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 					}
 				}
 
-				if (NewCost < LabelCostVectorPerType[pricing_type][ToID]) // be careful here: we only compare cost not time
+				if (NewCost < LabelCostVectorPerType[demand_type][ToID]) // be careful here: we only compare cost not time
 				{
 					if (debug_flag  && ToID < m_PhysicalNodeSize)  // physical nodes
 					{
@@ -2103,9 +2110,9 @@ int DTANetworkForSP::FindBestPathWithVOT(int origin_zone, int origin, int depart
 
 					LabelTimeAry[ToID] = NewTime;
 
-					LabelCostVectorPerType[pricing_type][ToID] = NewCost;
+					LabelCostVectorPerType[demand_type][ToID] = NewCost;
 
-					NodePredVectorPerType[pricing_type][ToID] = FromID;
+					NodePredVectorPerType[demand_type][ToID] = FromID;
 
 					// Dequeue implementation
 					//

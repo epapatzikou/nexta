@@ -15,6 +15,20 @@
 #include <algorithm>
 
 using namespace std;
+
+void g_AddVehicleID2ListBasedonDepartureTime(DTAVehicle * pVehicle)
+{
+
+	if (pVehicle->m_VehicleID == 19)
+	{
+	
+		TRACE("");
+	}
+	int simulation_time_no = (int)(pVehicle->m_DepartureTime * 10);
+	g_VehicleTDListMap[simulation_time_no].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
+
+
+}
 void g_AllocateDynamicArrayForVehicles()
 {
 	if (g_TDOVehicleArray == NULL)  // has not allocated memory yet
@@ -122,13 +136,14 @@ void g_ReadDSPVehicleFile(string file_name)
 
 
 			//vehicle class
-			pVehicle->m_PricingType = g_read_integer(st);
+			pVehicle->m_DemandType = g_read_integer(st);
 
-			pVehicle->m_DemandType = pVehicle->m_PricingType;
+			pVehicle->m_DemandType = pVehicle->m_DemandType;
 			//vehicle type 
 
 			pVehicle->m_VehicleType = g_read_integer(st);
 			//information class  
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
 
 			pVehicle->m_InformationClass = g_read_integer(st);
 
@@ -211,6 +226,7 @@ void g_ReadDSPVehicleFile(string file_name)
 			}
 
 			g_VehicleVector.push_back(pVehicle);
+			g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
 			g_VehicleMap[i] = pVehicle;
 
 			int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
@@ -320,7 +336,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 		while (parser_agent.ReadRecord())
 		{
 
-			int agent_id = 0;
+			int agent_id = 100;
 
 			parser_agent.GetValueByFieldNameRequired("agent_id", agent_id);
 			DTAVehicle* pVehicle = 0;
@@ -344,7 +360,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 			}
 
-			pVehicle->m_VehicleID = i;
+			pVehicle->m_VehicleID = agent_id;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
 			parser_agent.GetValueByFieldNameRequired("from_zone_id", pVehicle->m_OriginZoneID);
@@ -352,6 +368,27 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 			int origin_node_id = -1;
 			int origin_node_number = -1;
+
+
+			std::vector<CCoordinate> CoordinateVector;
+			string geo_string;
+
+			if (parser_agent.GetValueByFieldName("geometry", geo_string) == false)
+			{
+				// overwrite when the field "geometry" exists
+				CGeometry geometry(geo_string);
+				CoordinateVector = geometry.GetCoordinateList();
+				for (int si = 0; si < CoordinateVector.size(); si++)
+				{
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					pVehicle->m_ShapePoints.push_back(pt);
+
+				}
+
+			}
+
 
 			parser_agent.GetValueByFieldName("origin_node_id", origin_node_number);
 
@@ -407,11 +444,19 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			}
 
 			parser_agent.GetValueByFieldNameRequired("demand_type", pVehicle->m_DemandType);
-			parser_agent.GetValueByFieldNameRequired("pricing_type", pVehicle->m_PricingType);
 			parser_agent.GetValueByFieldNameRequired("vehicle_type", pVehicle->m_VehicleType);
+
+			parser_agent.GetValueByFieldNameRequired("PCE", pVehicle->m_PCE);
+
+			if (pVehicle->m_PCE <=0.00001)
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
+			
 			parser_agent.GetValueByFieldNameRequired("information_type", pVehicle->m_InformationClass);
 			parser_agent.GetValueByFieldNameRequired("value_of_time", pVehicle->m_VOT);
 			parser_agent.GetValueByFieldNameRequired("vehicle_age", pVehicle->m_Age);
+
+
+			
 
 
 			pVehicle->m_attribute_update_time_in_min = -1;
@@ -437,17 +482,28 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 
 			int number_of_nodes = 0;
-			parser_agent.GetValueByFieldNameRequired("number_of_nodes", number_of_nodes);
+		//	parser_agent.GetValueByFieldNameRequired("number_of_nodes", number_of_nodes);
 
 			std::vector<int> path_node_sequence;
-			if (number_of_nodes >= 2)
+		//	if (number_of_nodes >= 2)
 			{
 				string path_node_sequence_str;
-				parser_agent.GetValueByFieldNameRequired("path_node_sequence", path_node_sequence_str);
+				if (parser_agent.GetValueByFieldName("path_node_sequence", path_node_sequence_str) == true)
+				{
+				
 
 				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
 				AddPathToVehicle(pVehicle, path_node_sequence, file_name.c_str());
+				number_of_nodes = path_node_sequence.size();
+
+				
+				}
+				
+				if (number_of_nodes <=2)
+					g_UseExternalPath(pVehicle);
+
+			
 			}
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
@@ -458,7 +514,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 			pVehicle->m_Emissions = 0;
 			pVehicle->m_Distance = 0;
 
-			pVehicle->m_NodeSize = 0;
+			pVehicle->m_NodeSize = number_of_nodes;
 
 			pVehicle->m_NodeNumberSum = 0;
 			pVehicle->m_Distance = 0;
@@ -505,6 +561,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 
 					g_VehicleVector.push_back(pNewVehicle);
+					g_AddVehicleID2ListBasedonDepartureTime(pNewVehicle);
 					g_VehicleMap[i] = pNewVehicle;
 
 
@@ -513,6 +570,7 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 				else
 				{
 					g_VehicleVector.push_back(pVehicle);
+					g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
 					g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
 				}
@@ -627,34 +685,48 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			}
 			count++;
 
-			int trip_id = 0;
+			int agent_id = 0;
 
-			parser_agent.GetValueByFieldNameRequired("trip_id", trip_id);
+			parser_agent.GetValueByFieldNameRequired("agent_id", agent_id);
 
 			if (bOutputDebugLogFile)
-				fprintf(g_DebugLogFile, "reading trip_id = %d", trip_id);
+				fprintf(g_DebugLogFile, "reading agent_id = %d", agent_id);
 
 
 			DTAVehicle* pVehicle = 0;
 
-			pVehicle = new (std::nothrow) DTAVehicle;
-			if (pVehicle == NULL)
+			if (g_VehicleMap.find(agent_id) != g_VehicleMap.end())
 			{
-				cout << "Insufficient memory...";
-				getchar();
-				exit(0);
-
+				pVehicle = g_VehicleMap[agent_id];
 			}
+			else
+			{
+
+				pVehicle = new (std::nothrow) DTAVehicle;
+				if (pVehicle == NULL)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+
+				}
+			}
+
+			// additional error checking for updating agent data
 
 			pVehicle->m_VehicleID = g_VehicleVector.size();
 
-			pVehicle->m_ExternalTripID = trip_id;
+			pVehicle->m_ExternalTripID = agent_id;
 
 
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
+			
+			int from_zone_id = pVehicle->m_OriginZoneID;
+			int to_zone_id = pVehicle->m_DestinationZoneID;
 
-			parser_agent.GetValueByFieldNameRequired("from_zone_id", pVehicle->m_OriginZoneID);
-			parser_agent.GetValueByFieldNameRequired("to_zone_id", pVehicle->m_DestinationZoneID);
+			parser_agent.GetValueByFieldNameRequired("from_zone_id", from_zone_id);
+			parser_agent.GetValueByFieldNameRequired("to_zone_id", to_zone_id);
+
 
 			if (g_ZoneMap.find(pVehicle->m_OriginZoneID) == g_ZoneMap.end() || g_ZoneMap.find(pVehicle->m_DestinationZoneID) == g_ZoneMap.end())
 			{
@@ -663,8 +735,17 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 				continue;
 			}
 
+			if (pVehicle->m_OriginZoneID != from_zone_id)
+			{
+				g_LogFile << " UPDATE Agent Data: origin zone =  " << pVehicle->m_OriginZoneID << "-> " << from_zone_id << endl;
+				pVehicle->m_OriginZoneID = from_zone_id;
+			}
 
-
+			if (pVehicle->m_DestinationZoneID != to_zone_id)
+			{
+				g_LogFile << " UPDATE Agent Data: destination zone =  " << pVehicle->m_DestinationZoneID << "-> " << to_zone_id << endl;
+				pVehicle->m_DestinationZoneID = to_zone_id;
+			}
 			int origin_node_id = -1;
 			int origin_node_number = -1;
 
@@ -690,8 +771,19 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			if (destination_node_id == -1)// no default destination node value, re-destination origin node
 				destination_node_id = g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);
 
-			pVehicle->m_OriginNodeID = origin_node_id;
-			pVehicle->m_DestinationNodeID = destination_node_id;
+			if (pVehicle->m_OriginNodeID != origin_node_id)
+			{
+				g_LogFile << " UPDATE Agent Data: origin node =  " << pVehicle->m_OriginNodeID << "-> " << origin_node_id << endl;
+
+				pVehicle->m_OriginNodeID = origin_node_id;
+			}
+			if (pVehicle->m_DestinationNodeID != destination_node_id)
+			{
+				g_LogFile << " UPDATE Agent Data: destination node =  " << pVehicle->m_DestinationNodeID << "-> " << destination_node_id << endl;
+
+				pVehicle->m_DestinationNodeID = destination_node_id;
+			}
+		
 
 
 			if (origin_node_id == destination_node_id)
@@ -709,7 +801,7 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			}
 
 			float departure_time = 0;
-			parser_agent.GetValueByFieldNameRequired("start_time_in_min", departure_time);
+			parser_agent.GetValueByFieldNameRequired("departure_time", departure_time);
 
 
 			if (start_time_value < 0)  // set first value
@@ -720,8 +812,15 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 				start_time_value = departure_time;
 			}
 
-			pVehicle->m_DepartureTime = departure_time;
-			pVehicle->m_PreferredDepartureTime = departure_time;
+			if (fabs(pVehicle->m_DepartureTime - departure_time) > 0.5)
+			{
+				g_LogFile << " UPDATE Agent Data: departure time=  " << pVehicle->m_DepartureTime << "-> " << departure_time << endl;
+				pVehicle->m_DepartureTime = departure_time;
+				pVehicle->m_PreferredDepartureTime = departure_time;
+			}
+
+
+
 			int beginning_departure_time = departure_time;
 
 			ASSERT(pVehicle->m_DepartureTime < 4000);
@@ -729,25 +828,26 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			if (pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
 			{
 
-				cout << "Error: trip_id " << trip_id << " in file " << file_name << " has a start time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " <<
+				cout << "Error: agent_id " << agent_id << " in file " << file_name << " has a start time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " <<
 					g_DemandLoadingStartTimeInMin << "->" << g_DemandLoadingEndTimeInMin << " (min)." << endl << "Please change the setting in section agent_input, demand_loading_end_time_in_min in file DTASettings.txt";
 				g_ProgramStop();
 			}
 
-			if (parser_agent.GetValueByFieldName("demand_type", pVehicle->m_DemandType) == true)
+			int demand_type = pVehicle->m_DemandType;
+			if (parser_agent.GetValueByFieldName("demand_type", demand_type) == true)
 			{
+				if (pVehicle->m_DemandType != demand_type)
+				pVehicle->m_DemandType = demand_type;
 
-				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_PricingType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 				// if there are values in the file, then update the related attributes; 
 				int VOT = 0;
-				int PricingType = 0;
+				int DemandType = 0;
 				int VehicleType = 0;
 
-				parser_agent.GetValueByFieldName("pricing_type", PricingType);
-				
-				if (PricingType >= 1)
-					pVehicle->m_PricingType = PricingType;
+
+			
 
 				
 				parser_agent.GetValueByFieldName("vehicle_type", VehicleType);
@@ -758,11 +858,17 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 					pVehicle->m_VehicleType = VehicleType;
 				}
 
+				int information_type = pVehicle->m_InformationClass;
 
-				parser_agent.GetValueByFieldName("information_type", pVehicle->m_InformationClass); //default is 0;
+				parser_agent.GetValueByFieldName("information_type", information_type); //default is 0;
 
+				if (information_type != pVehicle->m_InformationClass)
+				{
+					g_LogFile << " UPDATE Agent Data: information type =  " << pVehicle->m_InformationClass << "-> " << information_type << endl;
 
-				if (pVehicle->m_InformationClass >= 3)
+				}
+
+				if (pVehicle->m_InformationClass >= 3)  // enroute info
 				{
 
 				double time_to_start_information_retrieval = -1.0;
@@ -825,7 +931,7 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			else if (g_use_routing_policy_from_external_input) // condition 2: use routing policy from external input (saved from pervious iterations)
 			{
 				
-						g_UseExternalPath(pVehicle);
+				g_UseExternalPath(pVehicle);
 			}   // condition 3: no path is available from external input, before the simulation, DTALite will calculate the path into 
 			
 
@@ -836,6 +942,13 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			float ending_departure_time = 0;
 
 			g_VehicleVector.push_back(pVehicle);
+
+			if (pVehicle->m_VehicleID == 19)
+			{
+				TRACE("");
+
+			}
+			g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
 
 			if (bOutputDebugLogFile)
 			{
@@ -886,6 +999,417 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 }
 
+bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
+{
+	LineCount = 0;
+
+	bool bOutputDebugLogFile = true;
+
+	bool bUpdatePath = false;
+
+	g_AllocateDynamicArrayForVehicles();
+	float start_time_value = -100;
+
+	CCSVParser parser_agent;
+
+	float total_number_of_vehicles_to_be_generated = 0;
+
+	if (parser_agent.OpenCSVFile(file_name, false))
+	{
+
+		if (bOutputLogFlag)
+		{
+			cout << "reading file " << file_name << endl;
+
+		}
+		if (bOutputDebugLogFile)
+			fprintf(g_DebugLogFile, "reading file %s\n", file_name.c_str());
+
+		int line_no = 1;
+
+		int i = 0;
+
+		int count = 0;
+
+		int count_for_sameOD = 0;
+		int count_for_not_defined_zones = 0;
+
+		while (parser_agent.ReadRecord())
+		{
+
+			if ((count + 1) % 1000 == 0 && bOutputLogFlag)
+			{
+				cout << "reading " << count + 1 << " records..." << endl;
+
+			}
+			count++;
+
+			int agent_id = 0;
+
+			parser_agent.GetValueByFieldNameRequired("agent_id", agent_id);
+
+			if (bOutputDebugLogFile)
+				fprintf(g_DebugLogFile, "reading agent_id = %d", agent_id);
+
+
+			DTAVehicle* pVehicle = 0;
+
+			bool bCreateNewAgent = false;
+
+			if (g_VehicleMap.find(agent_id) != g_VehicleMap.end())
+			{
+				pVehicle = g_VehicleMap[agent_id];
+				bCreateNewAgent = false;
+			}
+			else
+			{
+
+				pVehicle = new (std::nothrow) DTAVehicle;
+				if (pVehicle == NULL)
+				{
+					cout << "Insufficient memory...";
+					getchar();
+					exit(0);
+
+				}
+				pVehicle->m_VehicleID = g_VehicleVector.size();
+				bCreateNewAgent = true;
+
+			}
+
+			// additional error checking for updating agent data
+
+
+			pVehicle->m_ExternalTripID = agent_id;
+
+
+			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
+
+			int from_zone_id = pVehicle->m_OriginZoneID;
+			int to_zone_id = pVehicle->m_DestinationZoneID;
+
+			parser_agent.GetValueByFieldName("from_zone_id", from_zone_id);
+			parser_agent.GetValueByFieldName("to_zone_id", to_zone_id);
+
+
+			if (g_ZoneMap.find(pVehicle->m_OriginZoneID) == g_ZoneMap.end() || g_ZoneMap.find(pVehicle->m_DestinationZoneID) == g_ZoneMap.end())
+			{
+				count_for_not_defined_zones++;
+
+				continue;
+			}
+
+			if (pVehicle->m_OriginZoneID != from_zone_id)
+			{
+				g_LogFile << " UPDATE Agent Data: origin zone =  " << pVehicle->m_OriginZoneID << "-> " << from_zone_id << endl;
+				pVehicle->m_OriginZoneID = from_zone_id;
+			}
+
+			if (pVehicle->m_DestinationZoneID != to_zone_id)
+			{
+				g_LogFile << " UPDATE Agent Data: destination zone =  " << pVehicle->m_DestinationZoneID << "-> " << to_zone_id << endl;
+				pVehicle->m_DestinationZoneID = to_zone_id;
+			}
+			int origin_node_id = -1;
+			int origin_node_number = -1;
+
+			parser_agent.GetValueByFieldName("origin_node_id", origin_node_number);
+
+			if (g_NodeNametoIDMap.find(origin_node_number) != g_NodeNametoIDMap.end())  // convert node number to internal node id
+			{
+				origin_node_id = g_NodeNametoIDMap[origin_node_number];
+			}
+
+			int destination_node_id = -1;
+			int destination_node_number = -1;
+			parser_agent.GetValueByFieldName("destination_node_id", destination_node_number);
+
+			if (g_NodeNametoIDMap.find(destination_node_number) != g_NodeNametoIDMap.end()) // convert node number to internal node id
+			{
+				destination_node_id = g_NodeNametoIDMap[destination_node_number];
+			}
+
+			if (origin_node_id == -1)  // no default origin node value, re-generate origin node
+				origin_node_id = g_ZoneMap[pVehicle->m_OriginZoneID].GetRandomOriginNodeIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+
+			if (destination_node_id == -1)// no default destination node value, re-destination origin node
+				destination_node_id = g_ZoneMap[pVehicle->m_DestinationZoneID].GetRandomDestinationIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);
+
+			if (pVehicle->m_OriginNodeID != origin_node_id)
+			{
+				g_LogFile << " UPDATE Agent Data: origin node =  " << pVehicle->m_OriginNodeID << "-> " << origin_node_id << endl;
+
+				pVehicle->m_OriginNodeID = origin_node_id;
+				bUpdatePath = true;
+			}
+			if (pVehicle->m_DestinationNodeID != destination_node_id)
+			{
+				g_LogFile << " UPDATE Agent Data: destination node =  " << pVehicle->m_DestinationNodeID << "-> " << destination_node_id << endl;
+
+				pVehicle->m_DestinationNodeID = destination_node_id;
+				bUpdatePath = true;
+
+			}
+
+
+
+			if (origin_node_id == destination_node_id)
+			{  // do not simulate intra zone traffic
+
+				count_for_sameOD++;
+				continue;
+			}
+
+			if (g_ZoneMap.find(pVehicle->m_OriginZoneID) != g_ZoneMap.end())
+			{
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_Demand += 1;
+				g_ZoneMap[pVehicle->m_OriginZoneID].m_OriginVehicleSize += 1;
+
+			}
+
+			float departure_time = 0;
+			if (parser_agent.GetValueByFieldName("departure_time", departure_time) == true)
+			{
+			
+
+			if (start_time_value < 0)  // set first value
+				start_time_value = departure_time;
+			else if (start_time_value > departure_time + 0.00001)  // check if the departure times are sequential
+			{
+				departure_time = start_time_value; // use a larger value 
+				start_time_value = departure_time;
+			}
+
+
+
+			if (fabs(pVehicle->m_DepartureTime - departure_time) > 0.5)
+			{
+				g_LogFile << " UPDATE Agent Data: departure time=  " << pVehicle->m_DepartureTime << "-> " << departure_time << endl;
+
+				bUpdatePath = true;
+
+				//remove vehicle id for the old departure time slot
+
+				int int_to_remove = pVehicle->m_VehicleID;
+				g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.erase(std::remove(g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.begin(), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end(), int_to_remove), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end());
+
+
+				//add vehicle id for the new departure time slot
+				g_VehicleTDListMap[departure_time * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
+
+				pVehicle->m_DepartureTime = departure_time;
+				pVehicle->m_PreferredDepartureTime = departure_time;
+
+
+			}
+
+			}
+
+
+
+
+
+
+			int beginning_departure_time = departure_time;
+
+			ASSERT(pVehicle->m_DepartureTime < 4000);
+
+			if (pVehicle->m_DepartureTime < g_DemandLoadingStartTimeInMin || pVehicle->m_DepartureTime > g_DemandLoadingEndTimeInMin)
+			{
+
+				cout << "Error: agent_id " << agent_id << " in file " << file_name << " has a start time of " << pVehicle->m_DepartureTime << ", which is out of the demand loading range: " <<
+					g_DemandLoadingStartTimeInMin << "->" << g_DemandLoadingEndTimeInMin << " (min)." << endl << "Please change the setting in section agent_input, demand_loading_end_time_in_min in file DTASettings.txt";
+				g_ProgramStop();
+			}
+
+			int demand_type = pVehicle->m_DemandType;
+			if (parser_agent.GetValueByFieldName("demand_type", demand_type) == true)
+			{
+				if (pVehicle->m_DemandType != demand_type)
+					pVehicle->m_DemandType = demand_type;
+
+				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+
+				// if there are values in the file, then update the related attributes; 
+				int VOT = 0;
+				int DemandType = 0;
+				int VehicleType = 0;
+
+
+
+				parser_agent.GetValueByFieldName("vehicle_type", VehicleType);
+
+				if (VehicleType >= 1)
+				{
+
+					pVehicle->m_VehicleType = VehicleType;
+				}
+
+				int information_type = pVehicle->m_InformationClass;
+
+				parser_agent.GetValueByFieldName("information_type", information_type); //default is 0;
+
+				if (information_type != pVehicle->m_InformationClass)
+				{
+					g_LogFile << " UPDATE Agent Data: information type =  " << pVehicle->m_InformationClass << "-> " << information_type << endl;
+
+				}
+
+				if (pVehicle->m_InformationClass >= 3)  // enroute info
+				{
+
+					double time_to_start_information_retrieval = -1.0;
+					parser_agent.GetValueByFieldName("time_to_start_information_retrieval", time_to_start_information_retrieval); //default is -1;
+
+					if (time_to_start_information_retrieval >= 0)
+					{
+						pVehicle->m_TimeToRetrieveInfo = time_to_start_information_retrieval;
+					}
+
+					pVehicle->m_EnrouteInformationUpdatingTimeIntervalInMin = g_information_updating_interval_in_min;
+
+					double information_updating_interval_in_min = -1.0;
+					parser_agent.GetValueByFieldName("information_updating_interval_in_min", information_updating_interval_in_min); //default is -1;
+
+					if (information_updating_interval_in_min >= 0)
+					{
+						pVehicle->m_EnrouteInformationUpdatingTimeIntervalInMin = information_updating_interval_in_min;
+					}
+
+				}
+
+				parser_agent.GetValueByFieldName("value_of_time", VOT);
+
+				if (VOT >= 1)  // only with valid value
+					pVehicle->m_VOT = VOT;
+
+				parser_agent.GetValueByFieldName("vehicle_age", pVehicle->m_Age);
+			}
+			else
+			{
+
+
+			}
+
+			if (bCreateNewAgent == true)
+			{
+			
+			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+			pVehicle->m_ArrivalTime = 0;
+			pVehicle->m_bComplete = false;
+			pVehicle->m_bLoaded = false;
+			pVehicle->m_TollDollarCost = 0;
+			pVehicle->m_Emissions = 0;
+			pVehicle->m_Distance = 0;
+
+			pVehicle->m_NodeSize = 0;
+
+			pVehicle->m_NodeNumberSum = 0;
+			pVehicle->m_Distance = 0;
+
+			}
+			int number_of_nodes = 0;
+			parser_agent.GetValueByFieldName("number_of_nodes", number_of_nodes);
+
+			std::vector<int> path_node_sequence;
+			if (number_of_nodes >= 2)  // condition 1: user external input in the min by min trip file
+			{
+				string path_node_sequence_str;
+				parser_agent.GetValueByFieldName("path_node_sequence", path_node_sequence_str);
+
+				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
+
+				AddPathToVehicle(pVehicle, path_node_sequence, file_name.c_str());
+			}
+			else if (g_use_routing_policy_from_external_input) // condition 2: use routing policy from external input (saved from pervious iterations)
+			{
+
+				g_UseExternalPath(pVehicle);
+			}   // condition 3: no path is available from external input, before the simulation, DTALite will calculate the path into 
+
+
+			std::vector<int> detour_node_sequence;
+			string detour_node_sequence_str;
+			if ( parser_agent.GetValueByFieldName("detour_node_sequence", detour_node_sequence_str) == true)
+			{
+			
+
+				detour_node_sequence = ParseLineToIntegers(detour_node_sequence_str);
+			
+				g_UpdateAgentPathBasedOnDetour(pVehicle->m_VehicleID, detour_node_sequence);
+			}
+
+			if (bUpdatePath)
+			{
+				g_UpdateAgentPathBasedOnNewDestinationOrDepartureTime(pVehicle->m_VehicleID);
+
+			}
+
+
+			int number_of_agents = 1;
+
+			float ending_departure_time = 0;
+
+			if (bCreateNewAgent == true)
+			{
+			
+			g_VehicleVector.push_back(pVehicle);
+
+			if (pVehicle->m_VehicleID == 19)
+			{
+				TRACE("");
+
+			}
+			g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
+
+			if (bOutputDebugLogFile)
+			{
+				fprintf(g_DebugLogFile, "adding vehicle: total size =%d\n", g_VehicleVector.size());
+			}
+			g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
+
+			int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
+
+			ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
+
+			}
+			i++;
+		}
+
+
+		line_no++;
+
+
+
+		if (bOutputLogFlag)
+		{
+
+			cout << count << " records have been read from file " << file_name << endl;
+
+			cout << i << " agents have been read from file " << file_name << endl;
+
+			if (count_for_sameOD >= 1)
+				cout << "there are " << count_for_sameOD << " agents with the same from_zone_id and to_zone_id, which will not be simulated. " << endl;
+
+
+			if (count_for_not_defined_zones >= 1)
+				cout << "there are " << count_for_not_defined_zones << " agents with zones not being defined in input_zone.csv file, which will not be simulated. " << endl;
+
+		}
+		LineCount = count;
+	}
+	else
+	{
+		cout << "Waiting for file " << file_name << "... " << endl;
+
+		return false;
+	}
+
+	return true;
+
+}
 bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag)
 {
 	g_AllocateDynamicArrayForVehicles();
@@ -996,7 +1520,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag)
 			}
 
 			//parser_agent.GetValueByFieldName("demand_type",pVehicle->m_DemandType);
-			//parser_agent.GetValueByFieldName("pricing_type",pVehicle->m_PricingType);
+
 			//parser_agent.GetValueByFieldName("vehicle_type",pVehicle->m_VehicleType);
 			//parser_agent.GetValueByFieldName("information_type",pVehicle->m_InformationClass);
 			//parser_agent.GetValueByFieldName("value_of_time",pVehicle->m_VOT);
@@ -1038,7 +1562,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag)
 			vhc.m_DemandType = demand_type;
 
 
-			g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_PricingType, vhc.m_InformationClass, vhc.m_VOT, vhc.m_Age);
+			g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType,  vhc.m_InformationClass, vhc.m_VOT, vhc.m_Age);
 
 			g_simple_vector_vehicles.push_back(vhc);
 
@@ -1084,7 +1608,8 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 
 	if (parser_demand_type.OpenCSVFile("Scenario_Demand_Type.csv", false))
 	{
-		g_DemandTypeMap.clear();
+		g_DemandTypeVector.clear();
+
 		float cumulative_demand_type_percentage = 0;
 
 		while (parser_demand_type.ReadRecord())
@@ -1093,7 +1618,6 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 
 			DemandType element;
 			int demand_type = 1;
-			int pricing_type = 0;
 			float average_VOT = 10;
 
 			if (parser_demand_type.GetValueByFieldName("demand_type", demand_type) == false)
@@ -1129,26 +1653,6 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			float ratio_personalized_info = 0;
 			float ratio_eco_so_info = 0;
 
-			if (parser_demand_type.GetValueByFieldName("pricing_type", pricing_type) == false)
-				break;
-
-			if (pricing_type < 0)
-			{
-				cout << "Error: Field pricing_type " << pricing_type << " should be >=1 in the Secnario_Demand_Type.csv file.";
-				g_ProgramStop();
-			}
-
-			if (pricing_type == 4 && element.demand_type_percentage >=1)
-			{
-				cout << "Error: Transit type is not supported in the agent file reshuffling. Please change demand_type_percentage = 0 for pricing_type = 4 (transit) in the Secnario_Demand_Type.csv file.";
-				g_ProgramStop();
-			}
-
-			if (pricing_type != 4 && element.vehicle_trip_multiplier_factor >= 1.001)
-			{
-				cout << "Field vehicle_trip_multiplier_factor should be <=1 in Scenario_Demand_Type.csv. Please check." << endl;
-				g_ProgramStop();
-			}
 			parser_demand_type.GetValueByFieldName("percentage_of_pretrip_info", ratio_pretrip);
 			parser_demand_type.GetValueByFieldName("percentage_of_enroute_info", ratio_enroute);
 			parser_demand_type.GetValueByFieldName("percentage_of_personalized_info", ratio_personalized_info);
@@ -1163,9 +1667,6 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			element.demand_type = demand_type;
 
 			parser_demand_type.GetValueByFieldName("demand_type_name", element.demand_type_name);
-
-			element.pricing_type = pricing_type;
-
 			element.info_class_percentage[1] = 0;  //learning 
 			element.info_class_percentage[2] = ratio_pretrip;
 			element.info_class_percentage[3] = ratio_enroute;
@@ -1206,7 +1707,7 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			}
 
 
-			g_DemandTypeMap[demand_type] = element;
+			g_DemandTypeVector.push_back(element);
 
 		}
 
@@ -1331,7 +1832,7 @@ else
 			element.cumulative_percentage_LB = cumulative_percentage;
 			cumulative_percentage += percentage;
 			element.cumulative_percentage_UB = cumulative_percentage;
-			//			TRACE("Pricing type = %d, [%f,%f]\n",pricing_type,element.cumulative_percentage_LB,element.cumulative_percentage_UB);
+			
 			g_VOTDistributionVector.push_back(element);
 
 		}
@@ -1438,12 +1939,13 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 			pVehicle->m_TripTime = header.trip_time;
 
 			pVehicle->m_DemandType = header.demand_type;
-			pVehicle->m_PricingType = header.pricing_type;
 
-			if (pVehicle->m_PricingType == 0) // unknown type
-				pVehicle->m_PricingType = 1;
+
+			if (pVehicle->m_DemandType == 0) // unknown type
+				pVehicle->m_DemandType = 1;
 
 			pVehicle->m_VehicleType = header.vehicle_type;
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
 			pVehicle->m_InformationClass = header.information_type;
 			pVehicle->m_VOT = header.value_of_time;
 			pVehicle->m_Age = header.age;
@@ -1459,19 +1961,15 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 
 				double previous_cumulative_percentage = 0;
 
-				for (std::map<int, DemandType>::iterator iterDemandType = g_DemandTypeMap.begin(); iterDemandType != g_DemandTypeMap.end(); iterDemandType++)
+				for (int type_no = 0; type_no < g_DemandTypeVector.size(); type_no++)
 				{
 
-					if (demand_type == -1)  // initialization 
-					{
-						demand_type = iterDemandType->first; // return pretrip as 2 or enoute as 3
-					}
 
-					double cumulative_percentage = iterDemandType->second.cumulative_demand_type_percentage;
+					double cumulative_percentage = g_DemandTypeVector[type_no].cumulative_demand_type_percentage;
 					if (RandomPercentage >= previous_cumulative_percentage && RandomPercentage <= cumulative_percentage)
 					{
-						vehicle_trip_multiplier_factor = iterDemandType->second.vehicle_trip_multiplier_factor;
-						demand_type = iterDemandType->first; // return pretrip as 2 or enoute as 3
+						vehicle_trip_multiplier_factor = g_DemandTypeVector[type_no].vehicle_trip_multiplier_factor;
+						demand_type = type_no;
 
 						previous_cumulative_percentage = cumulative_percentage;
 
@@ -1489,9 +1987,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 
 				pVehicle->m_DemandType = demand_type;
 
-
-
-				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_PricingType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 
 			}
@@ -1603,6 +2099,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 				{
 				
 				g_VehicleVector.push_back(pVehicle);
+				g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
 				g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
 				int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
@@ -1646,8 +2143,10 @@ void g_ResetVehicleType()
 		double RandomPercentage = g_GetRandomRatio() * 100;
 		for (int in = 0; in < MAX_INFO_CLASS_SIZE; in++)
 		{
-			if (RandomPercentage >= g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in - 1] &&
-				RandomPercentage < g_DemandTypeMap[pVehicle->m_DemandType].cumulative_info_class_percentage[in])
+			int demand_type_no = pVehicle->m_DemandType - 1;
+
+			if (RandomPercentage >= g_DemandTypeVector[demand_type_no].cumulative_info_class_percentage[in - 1] &&
+				RandomPercentage < g_DemandTypeVector[demand_type_no].cumulative_info_class_percentage[in])
 				pVehicle->m_InformationClass = in + 1; // return pretrip as 2 or enoute as 3
 		}
 	}
@@ -1661,7 +2160,7 @@ void g_ResetVehicleAttributeUsingDemandType()
 	{
 		DTAVehicle* pVehicle = iterVM->second;
 
-		g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_PricingType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+		g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 	}
 }
@@ -1770,7 +2269,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 
 		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
 		{
-			int PricingType = demand_type;
+			int DemandType = demand_type;
 
 			// from each origin zone
 			for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -1792,7 +2291,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 								int  departure_end_time = g_AssignmentIntervalEndTimeInMin[departure_time_index];
 
 
-							g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, PricingType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+							g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, DemandType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 
@@ -1805,9 +2304,9 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 								{
 
 									int time_interval_no = departure_time_index;
-									ODTravelTime[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
-									ODDistance[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
-									ODDollarCost[PricingType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDollarCostAry[dest_node_index];
+									ODTravelTime[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
+									ODDistance[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
+									ODDollarCost[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDollarCostAry[dest_node_index];
 
 
 								}
@@ -1829,7 +2328,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 	if (st != NULL)
 	{
 		//write header:
-		fprintf(st, "origin_zone_id, destination_zone_id, departure_time_in_min,");
+		fprintf(st, "origin_zone_id, destination_zone_id, departure_time,");
 		CString str;
 
 		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
@@ -1916,7 +2415,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 }
 
 
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, int PricingType, double CurrentTime)
+void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, int DemandType, double CurrentTime)
 {
 	bool bDistanceCost = false;
 
@@ -2021,7 +2520,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 					bDistanceCost = false;
 					for (int departure_time = ComputationStartTimeInMin; departure_time < ComputationEndTimeInMin; departure_time += g_AggregationTimetInterval)
 					{
-						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, PricingType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, DemandType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 						// to each destination zone
@@ -2060,13 +2559,13 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 			int time_interval_no = departure_time / g_AggregationTimetInterval;
 
 
-			if (PricingType == 1)
+			if (DemandType == 1)
 				str.Format("output_skim_min%d.csv", time_interval_no*15);
-			if (PricingType == 2)
+			if (DemandType == 2)
 				str.Format("output_skim_HOV_min%d.csv", time_interval_no * 15);
-			if (PricingType == 3)
+			if (DemandType == 3)
 				str.Format("output_skim_truck_min_%d.csv", time_interval_no * 15);
-			if (PricingType == 4)
+			if (DemandType == 4)
 				str.Format("output_skim_transit_min%d.csv", time_interval_no * 15);
 
 
@@ -2074,6 +2573,8 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 			fopen_s(&st, str, "w");
 			if (st != NULL)
 			{
+
+				fprintf(st, "origin_zone,destination_zone,demand_type,travel_time_in_min,travel_distance,travel_cost\n");
 
 
 				// from each origin zone
@@ -2136,7 +2637,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 			ODMOEArray[origin_zone_no][destination_zone_no].TotalVehicleSize += 1;
 			int arrival_time_window_begin_time_in_min = CurrentTime - g_AggregationTimetInterval;
-			if (pVehicle->m_PricingType == PricingType && pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && pVehicle->m_ArrivalTime >= arrival_time_window_begin_time_in_min)  // with physical path in the network
+			if (/*pVehicle->m_DemandType == DemandType && */pVehicle->m_NodeSize >= 2 && pVehicle->m_bComplete && pVehicle->m_ArrivalTime >= arrival_time_window_begin_time_in_min)  // with physical path in the network
 			{
 
 
@@ -2165,8 +2666,6 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 					= ODMOEArray[i][j].TotalDistance / max(1, ODMOEArray[i][j].TotalCompleteVehicleSize);
 			}
 		}
-		if (ODMOEArray != NULL)
-			DeallocateDynamicArray<ODStatistics>(ODMOEArray, total_number_of_zones, total_number_of_zones);
 
 		//
 
@@ -2174,7 +2673,9 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 		fopen_s(&st, file_name.c_str(), "w");
 		if (st != NULL)
 		{
-			//fprintf(st, "from_zone_id,to_zone_id,trip_time_in_min,trip_distance_in_mile\n");
+			g_LogFile << " output ODMOE data to file " << file_name << endl;
+
+			fprintf(st, "from_zone_id,to_zone_id,number_of_agents,trip_time_in_min,trip_distance_in_mile\n");
 
 			// from each origin zone
 			for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -2186,9 +2687,10 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 					for (int departure_time = ComputationStartTimeInMin; departure_time < ComputationEndTimeInMin; departure_time += g_AggregationTimetInterval)
 					{
 						int time_interval_no = (departure_time - ComputationStartTimeInMin) / g_AggregationTimetInterval;
-						fprintf(st, "%d,%d,%4.2f,%4.2f\n",
+						fprintf(st, "%d,%d,%d,%4.2f,%4.2f\n",
 							iterZone->first,
 							iterZone2->first,
+							ODMOEArray[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo].TotalCompleteVehicleSize,
 							ODTravelTime[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no],
 							ODDistance[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]
 							);
@@ -2197,16 +2699,20 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 				}
 			}
+		
+			fclose(st);
+
+		if (ODMOEArray != NULL)
+			DeallocateDynamicArray<ODStatistics>(ODMOEArray, total_number_of_zones, total_number_of_zones);
+
 		}
 		else
 		{
 			cout << "File " << file_name << " cannot be opened. Please check." << endl;
-
-			fclose(st);
 			g_ProgramStop();
 		}
 
-		fclose(st);
+
 
 	}
 
@@ -2240,14 +2746,14 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
 	//	StatisticsIntervalSize << " 15-min time intervals" << endl;
 	float*** ODTravelTime = NULL;
-	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, MAX_PRICING_TYPE_SIZE);
+	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, g_DemandTypeVector.size()+1);
 
 	float*** ODDistance = NULL;
-	ODDistance = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, MAX_PRICING_TYPE_SIZE);
+	ODDistance = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, g_DemandTypeVector.size() + 1);
 
 	for (int i = 0; i <= g_ODZoneIDSize; i++)
 	for (int j = 0; j <= g_ODZoneIDSize; j++)
-	for (int t = 0; t < MAX_PRICING_TYPE_SIZE; t++)
+	for (int t = 1; t <= g_DemandTypeVector.size(); t++)
 	{
 
 		if (i == j)
@@ -2264,7 +2770,7 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 
 	cout << "calculating real-time skim matrix on " << number_of_threads << " processors ... " << endl;
 
-	for (int pricing_type = 1; pricing_type < MAX_PRICING_TYPE_SIZE; pricing_type++)
+	for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
 	{
 
 #pragma omp parallel for
@@ -2293,7 +2799,7 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 					{
 
 						bDistanceCost = false;
-						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, CurrentTime, pricing_type, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, CurrentTime, demand_type, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 						// to each destination zone
@@ -2304,8 +2810,8 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 							if (dest_node_index >= 0) // convert node number to internal node id
 							{
 
-								ODTravelTime[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][pricing_type] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
-								ODDistance[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][pricing_type] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
+								ODTravelTime[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][demand_type] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
+								ODDistance[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][demand_type] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
 
 
 							}
@@ -2332,7 +2838,7 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 			for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
 			{
 
-				for (int t = 1; t < MAX_PRICING_TYPE_SIZE; t++)
+				for (int t = 1; t <= g_DemandTypeVector.size(); t++)
 				{
 
 					fprintf(st, "%d,%d,%4.2f,%4.2f\n",

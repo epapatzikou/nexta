@@ -1249,9 +1249,9 @@ void g_GenerateVehicleData_ODEstimation()
 
 			pVehicle->m_DemandType	= kvhc->m_DemandType;
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
-			pVehicle->m_PricingType 	= kvhc->m_PricingType ;
+			pVehicle->m_DemandType 	= kvhc->m_DemandType ;
 			pVehicle->m_VehicleType = kvhc->m_VehicleType;
-
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
 
 
 			if( kvhc->m_PathIndex  >= g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].m_ODTKPathVector.size())
@@ -1293,7 +1293,8 @@ void g_GenerateVehicleData_ODEstimation()
 				pVehicle->m_Distance+= g_LinkVector[pVehicle->m_LinkAry [j].LinkNo] ->m_Length ;
 			}
 			g_VehicleVector.push_back(pVehicle);
-			g_VehicleMap[i]  = pVehicle;  // i is the vehicle id
+			g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
+			g_VehicleMap[i] = pVehicle;  // i is the vehicle id
 
 			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][kvhc->m_DepartureTimeIndex ].VehicleArray .push_back(i);
 

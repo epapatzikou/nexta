@@ -45,8 +45,9 @@ extern std::vector<DTAVehicleType> g_VehicleTypeVector;
 extern std::vector<DTAVehicle*>		g_VehicleVector;
 extern std::map<int, DTAVehicle*> g_VehicleMap;
 
-extern std::map<int, DemandType> g_DemandTypeMap;
-extern std::map<int, PricingType> g_PricingTypeMap;
+extern std::map<int, DTAVehListPerTimeInterval> g_VehicleTDListMap;
+
+extern std::vector<DemandType> g_DemandTypeVector;
 extern std::map<int, DTALinkType> g_LinkTypeMap;
 extern std::map<int, string> g_NodeControlTypeMap;
 
@@ -242,6 +243,7 @@ class RealTimeSimulationSettings
 
 };
 
+extern void g_AddVehicleID2ListBasedonDepartureTime(DTAVehicle * pVehicle);
 extern std::map<int, RealTimeSimulationSettings>  g_RealTimeSimulationSettingsMap;
 
 extern HistoricalDemand g_HistDemand;
@@ -302,8 +304,8 @@ extern int g_VehiclePathOutputFlag;
 extern int g_OutputSecondBySecondEmissionData;
 extern float g_OutputSecondBySecondEmissionDataPercentage;
 extern int g_EmissionSmoothVehicleTrajectory;
-extern int g_start_departure_time_in_min_for_output_second_by_second_emission_data;
-extern int g_end_departure_time_in_min_for_output_second_by_second_emission_data;
+extern int g_start_departure_time_for_output_second_by_second_emission_data;
+extern int g_end_departure_time_for_output_second_by_second_emission_data;
 extern int g_OutputEmissionOperatingModeData;
 extern int g_TargetVehicleID_OutputSecondBySecondEmissionData;
 extern int g_TollingMethodFlag;
@@ -395,6 +397,12 @@ extern int g_use_global_path_set_flag;
 extern void g_BuildGlobalPathSet();
 extern void g_OutputCurrentGlobalPathSet(int SimulationTimeInMin);
 extern void g_ExchangeVISSIM_RealTime_Link_Status(int meso_simulation_time_interval_no);
+extern void g_ReadAgentTagSettings();
+
+void g_UpdateAgentPathBasedOnDetour(int VehicleID, std::vector<int> detour_node_sequence);
+void g_UpdateAgentPathBasedOnNewDestinationOrDepartureTime(int VehicleID);
+
+extern std::string g_CreateFileName(std::string common_file_name, bool Day2DayOutputFlag, int iteration);
 
 
 
