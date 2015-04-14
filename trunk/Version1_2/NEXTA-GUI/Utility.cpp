@@ -118,7 +118,7 @@ int g_read_number_of_numerical_values(char* line_string, int length, std::vector
 
 }
 
-float g_read_float_from_a_line(FILE *f)
+float g_read_float_from_a_line(FILE *f, int &end_of_line)
 //read a floating point number from the current pointer of the file,
 //skip all spaces
 
@@ -126,6 +126,7 @@ float g_read_float_from_a_line(FILE *f)
 	char ch, buf[ 32 ];
 	int i = 0;
 	int flag = 1;
+	end_of_line = 0;
 
 	/* returns -100 if end of line is reached */
 
@@ -151,6 +152,13 @@ float g_read_float_from_a_line(FILE *f)
 	while( isdigit( ch ) || ch == '.' ) {
 		buf[ i++ ] = ch;
 		ch = fgetc( f );
+		if (ch == '\n')
+		{
+		
+		end_of_line=1;
+		break;
+		}
+		
 
 	}
 	buf[ i ] = 0;
@@ -615,6 +623,8 @@ int g_read_integer_with_special_character(FILE* f, bool speicial_char_handling, 
 			flag = -1;
 		else
 			flag = 1;
+
+
 	};
 	if( ch == EOF ) return -1;
 
@@ -674,6 +684,7 @@ float g_read_float(FILE *f)
    char ch, buf[ 32 ];
    int i = 0;
    int flag = 1;
+   
 
    /* returns -1 if end of file is reached */
 
@@ -689,6 +700,7 @@ float g_read_float(FILE *f)
       else
          flag = 1;
 
+	  
       };
    if( ch == EOF ) return -1;
    while( isdigit( ch ) || ch == '.' ) 

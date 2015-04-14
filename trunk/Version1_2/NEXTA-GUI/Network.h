@@ -381,7 +381,7 @@ using std::string;
 #define MAX_VEHICLE_TYPE_SIZE 10
 #define MAX_TIME_INTERVAL_SIZE 96
 #define MAX_INFO_CLASS_SIZE 4
-#define MAX_PRICING_TYPE_SIZE  5
+#define MAX_PRICING_TYPE_SIZE  16
 
 
 #define _MAXIMUM_OPERATING_MODE_SIZE 41
@@ -1142,6 +1142,20 @@ public:
 	bool IsWalking()
 	{
 		if(type_code.find('w')!= string::npos)
+			return true;
+		else
+			return false;
+	}
+	bool IsParkingAndRide()
+	{
+		if (type_code.find('p') != string::npos)
+			return true;
+		else
+			return false;
+	}
+	bool IsBRT()
+	{
+		if (type_code.find('b') != string::npos)
 			return true;
 		else
 			return false;
@@ -2108,8 +2122,8 @@ public:
 
 		for(int p = 0; p  < MAX_PRICING_TYPE_SIZE; p++)
 		{
-		TollRate[p] = 0;
-		TollRateInMin [p] = 0;
+		TollRate[p] = 999;
+		TollRateInMin[p] = 999;
 		}
 	}
 
@@ -2128,6 +2142,7 @@ public:
 
 	DTALink(int TimeHorizon)  // TimeHorizon's unit: per min
 	{
+		m_network_design_flag = 0;
 		m_b_invalid_sensor = false;
 		m_sensor_hourly_lane_volume_min = 99999;
 		m_sensor_hourly_lane_volume_max = 0;
@@ -2763,6 +2778,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 	int m_Direction; 
 	bool m_bOneWayLink;
 	int m_LinkID;
+	int m_network_design_flag;
 
 
 	std::string m_geo_string;
@@ -2787,7 +2803,7 @@ float 	GetRampImpactedFlag(int DepartureTime = -1)
 	int m_EffectiveLeftTurnGreenTimeInSecond;
 	int m_GreenStartTimetInSecond;
 	string m_Mode_code;
-
+	string m_demand_type_code;
 
 	int m_DisplayLinkID;
 

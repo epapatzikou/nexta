@@ -678,23 +678,23 @@ float DTANetworkForSP::AgentBasedPathFindingAssignment(int zone, int departure_t
 							float transit_travel_time = 0;
 							DTALink* pLink = g_LinkVector[pVeh->m_LinkAry[i].LinkNo];
 
-							if (g_LinkTypeMap[pLink->m_link_type].IsTransit() == false)
-							{
-								if (g_LinkTypeMap[pLink->m_link_type].IsFreeway() == true)
-								{
-									transit_travel_time = 99999;
-								}
-								else
-								{
-									transit_travel_time = pLink->m_Length / 5 * 60;  // walking speed  = 5 mph			
-								}
+							//if (g_LinkTypeMap[pLink->m_link_type].IsTransit() == false)
+							//{
+							//	if (g_LinkTypeMap[pLink->m_link_type].IsFreeway() == true)
+							//	{
+							//		transit_travel_time = 99999;
+							//	}
+							//	else
+							//	{
+							//		transit_travel_time = pLink->m_Length / 5 * 60;  // walking speed  = 5 mph			
+							//	}
 
-							}
-							else
-							{
-								transit_travel_time = pLink->m_FreeFlowTravelTime;  // calculated from speed limit of bus
+							//}
+							//else
+							//{
+							//	transit_travel_time = pLink->m_FreeFlowTravelTime;  // calculated from speed limit of bus
 
-							}
+							//}
 
 
 							pVeh->m_LinkAry[i + 1].AbsArrivalTimeOnDSN =
@@ -1251,7 +1251,7 @@ void DTANetworkForSP::HistInfoZoneBasedPathAssignment(int zone, int departure_ti
 
 			BuildHistoricalInfoNetwork(zone, pVeh->m_DepartureTime, g_UserClassPerceptionErrorRatio[1]);  // build network for this zone, because different zones have different connectors...
 			//using historical short-term travel time
-			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), pVeh->m_DepartureTime, pVeh->m_DemandType, pVeh->m_VOT, false, false, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+			TDLabelCorrecting_DoubleQueue(g_NodeVector.size(), 0, pVeh->m_DepartureTime, pVeh->m_DemandType, pVeh->m_VOT, false, false, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 			int OriginCentriod = m_PhysicalNodeSize;  // as root node
 			int DestinationCentriod = m_PhysicalNodeSize + pVeh->m_DestinationZoneID;
@@ -1593,7 +1593,7 @@ void g_AgentBasedShortestPathGeneration()
 				}
 
 				// this generate the one-to-all shortest path tree
-				g_TimeDependentNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index, 0, 1, DEFAULT_VOT, true, true, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+				g_TimeDependentNetwork_MP.TDLabelCorrecting_DoubleQueue(node_index, 0, 0, 1, DEFAULT_VOT, true, true, false);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 				for (int dest_no = 0; dest_no < g_NodeVector[node_index].m_DestinationVector.size(); dest_no++)
 				{
@@ -1780,13 +1780,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		CString day_str;
 		day_str.Format("%d", day);
 
-
-		skim_file_name = "OD_skim_day" + CString2StdString(day_str) + ".csv";
-		cout << "outputing skim file" << skim_file_name << " ..." << endl;
-		g_AgentBasedAccessibilityMatrixGeneration(skim_file_name, true, 1, 0);
-		cout << "outputing skim file for all demand types" << skim_file_name << " ..." << endl;
-		skim_file_name = "output_OD_skim_day" + CString2StdString(day_str) + ".csv";
-		g_AccessibilityMatrixGenerationForAllDemandTypes(skim_file_name, true, 0);
+		for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
+			g_AgentBasedAccessibilityMatrixGeneration(true, demand_type, 0);
 
 		cout << "outputing link time-dependent MOE and trajectory data under skim outputting mode ..." << endl;
 		g_OutputMOEData(iteration);
@@ -1806,9 +1801,8 @@ void g_GenerateSimulationSummary(int iteration, bool NotConverged, int TotalNumO
 		day_str.Format("%d", day);
 
 
-		skim_file_name = "OD_HOV_skim_day" + CString2StdString(day_str) + ".csv";
-		cout << "outputing HOV skim file" << skim_file_name << " ..." << endl;
-		g_AgentBasedAccessibilityMatrixGeneration(skim_file_name, true, 2, 0);
+		for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
+			g_AgentBasedAccessibilityMatrixGeneration(true, 2, 0);
 	}
 	int day_no = iteration + 1;
 

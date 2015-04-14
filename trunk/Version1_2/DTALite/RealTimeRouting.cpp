@@ -1181,9 +1181,9 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_second)
 		int timestamp_in_min = timestamp_in_second / 60;
 
 		if (timestamp_in_second == g_DemandLoadingEndTimeInMin)  // time-dependent travel time (from current day)
-			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_second].output_od_moe_file, true, 1, timestamp_in_min);
+			g_AgentBasedAccessibilityMatrixGeneration(true, 1, timestamp_in_min);
 		else  // use prevailing travel time at current time based on the last 15 min experienced link travel times
-			g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_second].output_od_moe_file, false, 1, timestamp_in_min);
+			g_AgentBasedAccessibilityMatrixGeneration(false, 1, timestamp_in_min);
 
 		//ofstream output_ODTDMOE_file;
 
@@ -1288,7 +1288,7 @@ void g_ExchangeRealTimeSimulationData(int day_no,int timestamp_in_second)
 	if (day_no == 0 && timestamp_in_second == 0 && g_RealTimeSimulationSettingsMap[timestamp_in_second].output_od_moe_file.size() >= 1)
 		// at the first time interval  based on free_flow travel time
 	{
-		g_AgentBasedAccessibilityMatrixGeneration(g_RealTimeSimulationSettingsMap[timestamp_in_second].output_od_moe_file, false, 1, timestamp_in_second / 60);
+		g_AgentBasedAccessibilityMatrixGeneration(false, 1, timestamp_in_second / 60);
 
 
 	}

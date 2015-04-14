@@ -73,7 +73,7 @@ public:
 	COLORREF m_ArterialColor;
 	COLORREF m_ConnectorColor;
 	COLORREF m_TransitColor;
-	COLORREF m_WalkingColor;
+	COLORREF m_WalkingColor, m_ParkingandRideColor;
 
 	COLORREF m_BackgroundColor;
 

@@ -739,17 +739,14 @@ void g_MultiScenarioTrafficAssignment()
 
 		if (g_UEAssignmentMethod == assignment_accessibility_travel_time)
 		{
-				g_AgentBasedAccessibilityMatrixGeneration("output_od_travel_time.csv", true, 1, 0);
-				exit(0);
-		}
+				g_AccessibilityMatrixGenerationForAllDemandTypes(true, 0);
 
-		if (g_UEAssignmentMethod == assignment_LR_agent_based_system_optimization)  // 12
+		}else if (g_UEAssignmentMethod == assignment_LR_agent_based_system_optimization)  // 12
 		{
 			g_SummaryStatFile.WriteParameterValue("Routing method", "Lagrangian relaxation based, agent-based routing");
 			g_AgentBasedOptimization();
 			
-		}
-		else
+		}else
 		{
 
 			if (g_AgentBasedAssignmentFlag == 1)

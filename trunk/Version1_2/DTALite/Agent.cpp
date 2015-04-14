@@ -21,7 +21,7 @@ void g_AddVehicleID2ListBasedonDepartureTime(DTAVehicle * pVehicle)
 
 	if (pVehicle->m_VehicleID == 19)
 	{
-	
+
 		TRACE("");
 	}
 	int simulation_time_no = (int)(pVehicle->m_DepartureTime * 10);
@@ -64,7 +64,7 @@ void g_ReadDSPVehicleFile(string file_name)
 	}
 
 	g_AllocateDynamicArrayForVehicles();
-	
+
 
 	FILE* st = NULL;
 
@@ -143,7 +143,7 @@ void g_ReadDSPVehicleFile(string file_name)
 
 			pVehicle->m_VehicleType = g_read_integer(st);
 			//information class  
-			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType - 1].PCE;
 
 			pVehicle->m_InformationClass = g_read_integer(st);
 
@@ -262,7 +262,7 @@ bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence
 	{
 		pVehicle->m_LinkAry = new SVehicleLink[pVehicle->m_NodeSize];
 		pVehicle->m_NodeNumberSum = 0;
-	
+
 		pVehicle->m_Distance = 0;  // reset distanace when there are new paths assigned. 
 		for (int i = 0; i < pVehicle->m_NodeSize; i++)
 		{
@@ -448,15 +448,15 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 			parser_agent.GetValueByFieldNameRequired("PCE", pVehicle->m_PCE);
 
-			if (pVehicle->m_PCE <=0.00001)
-			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
-			
+			if (pVehicle->m_PCE <= 0.00001)
+				pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType - 1].PCE;
+
 			parser_agent.GetValueByFieldNameRequired("information_type", pVehicle->m_InformationClass);
 			parser_agent.GetValueByFieldNameRequired("value_of_time", pVehicle->m_VOT);
 			parser_agent.GetValueByFieldNameRequired("vehicle_age", pVehicle->m_Age);
 
 
-			
+
 
 
 			pVehicle->m_attribute_update_time_in_min = -1;
@@ -482,28 +482,28 @@ void g_ReadDTALiteAgentCSVFile(string file_name)
 
 
 			int number_of_nodes = 0;
-		//	parser_agent.GetValueByFieldNameRequired("number_of_nodes", number_of_nodes);
+			//	parser_agent.GetValueByFieldNameRequired("number_of_nodes", number_of_nodes);
 
 			std::vector<int> path_node_sequence;
-		//	if (number_of_nodes >= 2)
+			//	if (number_of_nodes >= 2)
 			{
 				string path_node_sequence_str;
 				if (parser_agent.GetValueByFieldName("path_node_sequence", path_node_sequence_str) == true)
 				{
-				
 
-				path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
-				AddPathToVehicle(pVehicle, path_node_sequence, file_name.c_str());
-				number_of_nodes = path_node_sequence.size();
+					path_node_sequence = ParseLineToIntegers(path_node_sequence_str);
 
-				
+					AddPathToVehicle(pVehicle, path_node_sequence, file_name.c_str());
+					number_of_nodes = path_node_sequence.size();
+
+
 				}
-				
-				if (number_of_nodes <=2)
+
+				if (number_of_nodes <= 2)
 					g_UseExternalPath(pVehicle);
 
-			
+
 			}
 
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
@@ -720,7 +720,7 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
-			
+
 			int from_zone_id = pVehicle->m_OriginZoneID;
 			int to_zone_id = pVehicle->m_DestinationZoneID;
 
@@ -783,7 +783,7 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 
 				pVehicle->m_DestinationNodeID = destination_node_id;
 			}
-		
+
 
 
 			if (origin_node_id == destination_node_id)
@@ -837,9 +837,9 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			if (parser_agent.GetValueByFieldName("demand_type", demand_type) == true)
 			{
 				if (pVehicle->m_DemandType != demand_type)
-				pVehicle->m_DemandType = demand_type;
+					pVehicle->m_DemandType = demand_type;
 
-				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 				// if there are values in the file, then update the related attributes; 
 				int VOT = 0;
@@ -847,14 +847,14 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 				int VehicleType = 0;
 
 
-			
 
-				
+
+
 				parser_agent.GetValueByFieldName("vehicle_type", VehicleType);
 
-				if (VehicleType >=1)
+				if (VehicleType >= 1)
 				{
-				
+
 					pVehicle->m_VehicleType = VehicleType;
 				}
 
@@ -871,10 +871,10 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 				if (pVehicle->m_InformationClass >= 3)  // enroute info
 				{
 
-				double time_to_start_information_retrieval = -1.0;
-				parser_agent.GetValueByFieldName("time_to_start_information_retrieval", time_to_start_information_retrieval); //default is -1;
+					double time_to_start_information_retrieval = -1.0;
+					parser_agent.GetValueByFieldName("time_to_start_information_retrieval", time_to_start_information_retrieval); //default is -1;
 
-					if (time_to_start_information_retrieval >=0)
+					if (time_to_start_information_retrieval >= 0)
 					{
 						pVehicle->m_TimeToRetrieveInfo = time_to_start_information_retrieval;
 					}
@@ -930,10 +930,10 @@ bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount)
 			}
 			else if (g_use_routing_policy_from_external_input) // condition 2: use routing policy from external input (saved from pervious iterations)
 			{
-				
+
 				g_UseExternalPath(pVehicle);
 			}   // condition 3: no path is available from external input, before the simulation, DTALite will calculate the path into 
-			
+
 
 
 
@@ -1170,38 +1170,38 @@ bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &
 			float departure_time = 0;
 			if (parser_agent.GetValueByFieldName("departure_time", departure_time) == true)
 			{
-			
-
-			if (start_time_value < 0)  // set first value
-				start_time_value = departure_time;
-			else if (start_time_value > departure_time + 0.00001)  // check if the departure times are sequential
-			{
-				departure_time = start_time_value; // use a larger value 
-				start_time_value = departure_time;
-			}
 
 
-
-			if (fabs(pVehicle->m_DepartureTime - departure_time) > 0.5)
-			{
-				g_LogFile << " UPDATE Agent Data: departure time=  " << pVehicle->m_DepartureTime << "-> " << departure_time << endl;
-
-				bUpdatePath = true;
-
-				//remove vehicle id for the old departure time slot
-
-				int int_to_remove = pVehicle->m_VehicleID;
-				g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.erase(std::remove(g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.begin(), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end(), int_to_remove), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end());
+				if (start_time_value < 0)  // set first value
+					start_time_value = departure_time;
+				else if (start_time_value > departure_time + 0.00001)  // check if the departure times are sequential
+				{
+					departure_time = start_time_value; // use a larger value 
+					start_time_value = departure_time;
+				}
 
 
-				//add vehicle id for the new departure time slot
-				g_VehicleTDListMap[departure_time * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
 
-				pVehicle->m_DepartureTime = departure_time;
-				pVehicle->m_PreferredDepartureTime = departure_time;
+				if (fabs(pVehicle->m_DepartureTime - departure_time) > 0.5)
+				{
+					g_LogFile << " UPDATE Agent Data: departure time=  " << pVehicle->m_DepartureTime << "-> " << departure_time << endl;
+
+					bUpdatePath = true;
+
+					//remove vehicle id for the old departure time slot
+
+					int int_to_remove = pVehicle->m_VehicleID;
+					g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.erase(std::remove(g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.begin(), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end(), int_to_remove), g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.end());
 
 
-			}
+					//add vehicle id for the new departure time slot
+					g_VehicleTDListMap[departure_time * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
+
+					pVehicle->m_DepartureTime = departure_time;
+					pVehicle->m_PreferredDepartureTime = departure_time;
+
+
+				}
 
 			}
 
@@ -1228,7 +1228,7 @@ bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &
 				if (pVehicle->m_DemandType != demand_type)
 					pVehicle->m_DemandType = demand_type;
 
-				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+				g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 				// if there are values in the file, then update the related attributes; 
 				int VOT = 0;
@@ -1293,19 +1293,19 @@ bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &
 
 			if (bCreateNewAgent == true)
 			{
-			
-			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
-			pVehicle->m_ArrivalTime = 0;
-			pVehicle->m_bComplete = false;
-			pVehicle->m_bLoaded = false;
-			pVehicle->m_TollDollarCost = 0;
-			pVehicle->m_Emissions = 0;
-			pVehicle->m_Distance = 0;
 
-			pVehicle->m_NodeSize = 0;
+				pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
+				pVehicle->m_ArrivalTime = 0;
+				pVehicle->m_bComplete = false;
+				pVehicle->m_bLoaded = false;
+				pVehicle->m_TollDollarCost = 0;
+				pVehicle->m_Emissions = 0;
+				pVehicle->m_Distance = 0;
 
-			pVehicle->m_NodeNumberSum = 0;
-			pVehicle->m_Distance = 0;
+				pVehicle->m_NodeSize = 0;
+
+				pVehicle->m_NodeNumberSum = 0;
+				pVehicle->m_Distance = 0;
 
 			}
 			int number_of_nodes = 0;
@@ -1330,12 +1330,12 @@ bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &
 
 			std::vector<int> detour_node_sequence;
 			string detour_node_sequence_str;
-			if ( parser_agent.GetValueByFieldName("detour_node_sequence", detour_node_sequence_str) == true)
+			if (parser_agent.GetValueByFieldName("detour_node_sequence", detour_node_sequence_str) == true)
 			{
-			
+
 
 				detour_node_sequence = ParseLineToIntegers(detour_node_sequence_str);
-			
+
 				g_UpdateAgentPathBasedOnDetour(pVehicle->m_VehicleID, detour_node_sequence);
 			}
 
@@ -1352,27 +1352,27 @@ bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &
 
 			if (bCreateNewAgent == true)
 			{
-			
-			g_VehicleVector.push_back(pVehicle);
 
-			if (pVehicle->m_VehicleID == 19)
-			{
-				TRACE("");
+				g_VehicleVector.push_back(pVehicle);
 
-			}
-			g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
+				if (pVehicle->m_VehicleID == 19)
+				{
+					TRACE("");
 
-			if (bOutputDebugLogFile)
-			{
-				fprintf(g_DebugLogFile, "adding vehicle: total size =%d\n", g_VehicleVector.size());
-			}
-			g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
+				}
+				g_VehicleTDListMap[(int)pVehicle->m_DepartureTime * 10].m_VehicleIDVector.push_back(pVehicle->m_VehicleID);
 
-			int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
+				if (bOutputDebugLogFile)
+				{
+					fprintf(g_DebugLogFile, "adding vehicle: total size =%d\n", g_VehicleVector.size());
+				}
+				g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
-			ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+				int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
 
-			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
+				ASSERT(pVehicle->m_OriginZoneID <= g_ODZoneNumberSize);
+
+				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
 
 			}
 			i++;
@@ -1562,7 +1562,7 @@ bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag)
 			vhc.m_DemandType = demand_type;
 
 
-			g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType,  vhc.m_InformationClass, vhc.m_VOT, vhc.m_Age);
+			g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_InformationClass, vhc.m_VOT, vhc.m_Age);
 
 			g_simple_vector_vehicles.push_back(vhc);
 
@@ -1661,7 +1661,7 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			if (ratio_eco_so_info >= 1)
 			{
 				g_EmissionDataOutputFlag = 2;  //enable emission output at each iteration
-			
+
 			}
 
 			element.demand_type = demand_type;
@@ -1673,9 +1673,9 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 			element.info_class_percentage[4] = ratio_personalized_info;
 			element.info_class_percentage[5] = ratio_eco_so_info;
 
-			
 
-			 
+
+
 			element.info_class_percentage[0] = 100 - ratio_enroute - ratio_pretrip - ratio_personalized_info - ratio_eco_so_info;
 
 			for (int ic = 0; ic < MAX_INFO_CLASS_SIZE; ic++)
@@ -1711,13 +1711,13 @@ void g_ReadScenarioFilesUnderAgentBinaryMode()
 
 		}
 
-if (cumulative_demand_type_percentage >= 99 && cumulative_demand_type_percentage <= 101)
-cumulative_demand_type_percentage = 100;
-else
-{
-	cout << "Error: Sum of demand_type_percentage =  " << cumulative_demand_type_percentage  << " which should be 100 in the Scenario_Demand_Type.csv file.";
+		if (cumulative_demand_type_percentage >= 99 && cumulative_demand_type_percentage <= 101)
+			cumulative_demand_type_percentage = 100;
+		else
+		{
+			cout << "Error: Sum of demand_type_percentage =  " << cumulative_demand_type_percentage << " which should be 100 in the Scenario_Demand_Type.csv file.";
 
-}
+		}
 
 	}
 	else
@@ -1801,7 +1801,7 @@ else
 
 	double cumulative_percentage = 0;
 
-	if (parser_VOT.OpenCSVFile("Scenario_VOT.csv",false))
+	if (parser_VOT.OpenCSVFile("Scenario_VOT.csv", false))
 	{
 		int i = 0;
 		int old_demand_type = 0;
@@ -1832,7 +1832,7 @@ else
 			element.cumulative_percentage_LB = cumulative_percentage;
 			cumulative_percentage += percentage;
 			element.cumulative_percentage_UB = cumulative_percentage;
-			
+
 			g_VOTDistributionVector.push_back(element);
 
 		}
@@ -1879,13 +1879,13 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 				break;
 
 			if (header.vehicle_id == 28)
-			TRACE("Vehicle ID = %d\n", header.vehicle_id);
+				TRACE("Vehicle ID = %d\n", header.vehicle_id);
 
 
 			if (header.number_of_nodes != 12)
 			{
 				TRACE("");
-			
+
 			}
 
 			if (result != 1)  // read end of file
@@ -1945,7 +1945,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 				pVehicle->m_DemandType = 1;
 
 			pVehicle->m_VehicleType = header.vehicle_type;
-			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType - 1].PCE;
 			pVehicle->m_InformationClass = header.information_type;
 			pVehicle->m_VOT = header.value_of_time;
 			pVehicle->m_Age = header.age;
@@ -2001,7 +2001,7 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 			if (header.number_of_nodes >= 1999)
 
 			{
-				cout <<  "Error in reading agent file: header.number_of_node = " << header.number_of_nodes <<endl;
+				cout << "Error in reading agent file: header.number_of_node = " << header.number_of_nodes << endl;
 				g_ProgramStop();
 			}
 			pVehicle->m_ArrivalTime = 0;
@@ -2097,16 +2097,16 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 				}
 				if (i >= pVehicle->m_NodeSize)
 				{
-				
-				g_VehicleVector.push_back(pVehicle);
-				g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
-				g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
-				int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
+					g_VehicleVector.push_back(pVehicle);
+					g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
+					g_VehicleMap[pVehicle->m_VehicleID] = pVehicle;
 
-				g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
-				
-				count++;
+					int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
+
+					g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(pVehicle->m_VehicleID);
+
+					count++;
 				}
 				if (count % 10000 == 0)
 					cout << "reading " << count / 1000 << "K agents from binary file " << file_name << endl;
@@ -2116,8 +2116,8 @@ bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info)
 
 		if (g_use_global_path_set_flag == 1)
 			g_BuildGlobalPathSet();
-		
-		
+
+
 		fclose(st);
 		return true;
 
@@ -2160,7 +2160,7 @@ void g_ResetVehicleAttributeUsingDemandType()
 	{
 		DTAVehicle* pVehicle = iterVM->second;
 
-		g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType,  pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
+		g_GetVehicleAttributes(pVehicle->m_DemandType, pVehicle->m_VehicleType, pVehicle->m_InformationClass, pVehicle->m_VOT, pVehicle->m_Age);
 
 	}
 }
@@ -2168,9 +2168,15 @@ void g_ResetVehicleAttributeUsingDemandType()
 
 
 
-void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTimeDependentFlag, double CurrentTime)
+void g_AccessibilityMatrixGenerationForAllDemandTypes(bool bTimeDependentFlag, double CurrentTime)
 {
 
+	CString file_name;
+	file_name.Format("output_skim.csv");
+
+	CString str_output_file_in_summary;
+	str_output_file_in_summary.Format("Output file =,%s\n", file_name);
+	g_SummaryStatFile.WriteTextLabel(str_output_file_in_summary);
 
 	bool bDistanceCost = false;
 
@@ -2208,9 +2214,9 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 	}
 	cout << "calculation interval " << DemandLoadingStartTimeInMin << " -> " << DemandLoadingEndTimeInMin << "min; with an aggregation time interval of " << g_AggregationTimetInterval << endl;
 
-	int total_demand_type = 2;
+	int total_demand_type = g_DemandTypeVector.size();
 
-	int StatisticsIntervalSize = max(1, g_NumberOfSPCalculationPeriods);
+	int StatisticsIntervalSize = max(1, (DemandLoadingEndTimeInMin - DemandLoadingStartTimeInMin) / g_AggregationTimetInterval);
 
 	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
 	//	StatisticsIntervalSize << " 15-min time intervals" << endl;
@@ -2223,6 +2229,12 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 	float**** ODDollarCost = NULL;
 	ODDollarCost = Allocate4DDynamicArray<float>(total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, StatisticsIntervalSize);
 
+	int number_of_travel_time_budget_intervals = 36;  // 5 min interval
+
+	int**** OAccessibilityMatrix = NULL;
+	int**** DAccessibilityMatrix = NULL;
+	OAccessibilityMatrix = Allocate4DDynamicArray<int>(total_demand_type + 1, g_ODZoneIDSize + 1, StatisticsIntervalSize, number_of_travel_time_budget_intervals);
+	DAccessibilityMatrix = Allocate4DDynamicArray<int>(total_demand_type + 1, g_ODZoneIDSize + 1, StatisticsIntervalSize, number_of_travel_time_budget_intervals);
 
 	for (int d = 1; d <= total_demand_type; d++)
 	for (int i = 0; i <= g_ODZoneIDSize; i++)
@@ -2238,12 +2250,20 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 		}
 		else
 		{
-			ODTravelTime[d][i][j][t] = 0;
-			ODDistance[d][i][j][t] = 0;
-			ODDollarCost[d][i][j][t] = 0.0;
+			ODTravelTime[d][i][j][t] = -1;
+			ODDistance[d][i][j][t] = -1;
+			ODDollarCost[d][i][j][t] = -1;
 		}
 	}
 
+	for (int d = 1; d <= total_demand_type; d++)
+	for (int i = 0; i <= g_ODZoneIDSize; i++)
+	for (int t = 0; t < StatisticsIntervalSize; t++)
+	for (int ttb = 0; ttb < number_of_travel_time_budget_intervals; ttb++)
+	{
+		OAccessibilityMatrix[d][i][t][ttb] = 0;
+		DAccessibilityMatrix[d][i][t][ttb] = 0;
+	}
 
 	if (bTimeDependentFlag)
 		cout << "calculating time-dependent skim matrix on " << number_of_threads << " processors ... " << endl;
@@ -2251,7 +2271,7 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 		cout << "calculating real-time skim matrix on " << number_of_threads << " processors ... " << endl;
 
 
-//#pragma omp parallel for
+	//#pragma omp parallel for
 	for (int ProcessID = 0; ProcessID < number_of_threads; ProcessID++)
 	{
 
@@ -2269,7 +2289,6 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 
 		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
 		{
-			int DemandType = demand_type;
 
 			// from each origin zone
 			for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -2284,16 +2303,11 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 					{
 
 						bDistanceCost = false;
-							for (int departure_time_index = 0; departure_time_index < g_NumberOfSPCalculationPeriods; departure_time_index ++)
-							{
+						for (int departure_time_index = 0; departure_time_index < StatisticsIntervalSize; departure_time_index++)
+						{
 
-								int departure_time = g_AssignmentIntervalStartTimeInMin[departure_time_index];
-								int  departure_end_time = g_AssignmentIntervalEndTimeInMin[departure_time_index];
-
-
-							g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, DemandType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
-
-
+							int departure_time = DemandLoadingStartTimeInMin + departure_time_index* g_AggregationTimetInterval;
+							g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, iterZone->first, departure_time, demand_type, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 							// to each destination zone
 							for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
@@ -2304,11 +2318,20 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 								{
 
 									int time_interval_no = departure_time_index;
-									ODTravelTime[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
-									ODDistance[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
-									ODDollarCost[DemandType][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDollarCostAry[dest_node_index];
 
+									float TravelTime = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
+									ODTravelTime[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
 
+									ODDistance[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
+									ODDollarCost[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDollarCostAry[dest_node_index];
+
+									int TTB_interval = min(number_of_travel_time_budget_intervals, TravelTime / 5);
+									//mark accessibility for TTB index less than TravelTime
+									for (int ttb = TTB_interval; ttb < number_of_travel_time_budget_intervals; ttb++)
+									{
+										OAccessibilityMatrix[demand_type][iterZone->second.m_ZoneSequentialNo][time_interval_no][ttb] += 1;
+										DAccessibilityMatrix[demand_type][iterZone2->second.m_ZoneSequentialNo][time_interval_no][ttb] += 1;
+									}
 								}
 
 							} //for each destination zone
@@ -2324,28 +2347,35 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 
 
 	FILE* st = NULL;
-	fopen_s(&st, file_name.c_str(), "w");
+	fopen_s(&st, file_name, "w");
 	if (st != NULL)
 	{
 		//write header:
-		fprintf(st, "origin_zone_id, destination_zone_id, departure_time,");
+		fprintf(st, "origin_zone, destination_zone, departure_time_in_min,");
 		CString str;
 
 		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
 		{
-
-			str.Format("demand_type_%d_generalized_travel_time,demand_type_%d_distance,demand_type_%d_dollar_cost,", demand_type, demand_type, demand_type);
+			str.Format("DT%d_TT_in_min,", demand_type);
 			fprintf(st, str);
+		}
 
+		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+		{
+			str.Format("DT%d_Distance,", demand_type);
+			fprintf(st, str);
+		}
+
+		for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+		{
+			str.Format("DT%d_Toll_Cost,", demand_type);
+			fprintf(st, str);
 		}
 
 		//str.Format("demand_type_%d_generalized_travel_time_diff,demand_type_%d_distance_diff,demand_type_%d_dollar_cost_diff,", total_demand_type, total_demand_type, total_demand_type);
 		fprintf(st, str);
 
-
 		fprintf(st, "\n");
-
-
 
 		// from each origin zone
 		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -2353,45 +2383,36 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 			// to each destination zone
 			for (std::map<int, DTAZone>::iterator iterZone2 = g_ZoneMap.begin(); iterZone2 != g_ZoneMap.end(); iterZone2++)
 			{
+				int origin_zone = iterZone->first;
+				int destination_zone = iterZone2->first;
 
 
-				for (int departure_time_index = 0; departure_time_index < g_NumberOfSPCalculationPeriods; departure_time_index++)
+				if (origin_zone != destination_zone)
 				{
-
-					int departure_time = g_AssignmentIntervalStartTimeInMin[departure_time_index];
-					int time_interval_no = departure_time_index;
-					
-
-					int origin_zone = iterZone->first;
-					int destination_zone = iterZone2->first;
-
-					fprintf(st, "%d,%d,%d,",
-						origin_zone,
-						destination_zone, departure_time);
-
-					for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+					for (int departure_time_index = 0; departure_time_index < StatisticsIntervalSize; departure_time_index++)
 					{
 
-						fprintf(st, "%4.2f,%4.2f,%4.2f,",
+						int departure_time = DemandLoadingStartTimeInMin + departure_time_index* g_AggregationTimetInterval;
+						int time_interval_no = departure_time_index;
 
-							ODTravelTime[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no],
-							ODDistance[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no],
-							ODDollarCost[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]);
+
+						fprintf(st, "%d,%d,%d,",
+							origin_zone,
+							destination_zone, departure_time);
+
+						for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+							fprintf(st, "%4.2f,",	ODTravelTime[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]);
+
+						for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+							fprintf(st, "%4.2f,", ODDistance[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]);
+
+						for (int demand_type = 1; demand_type <= total_demand_type; demand_type++)
+							fprintf(st, "%4.2f,", ODDollarCost[demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]);
+
+						fprintf(st, "\n");
+
 					}
 
-					//fprintf(st, "%4.2f,%4.2f,%4.2f,",
-
-					//	ODTravelTime[total_demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] -
-					//	ODTravelTime[1][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no],
-
-					//	ODDistance[total_demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] - 
-					//	ODDistance[1][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no],
-
-					//	ODDollarCost[total_demand_type][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]-
-					//	ODDollarCost[1][iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no]);
-
-
-					fprintf(st, "\n");
 				}  // each department type
 			}
 
@@ -2402,20 +2423,166 @@ void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTi
 	}
 	else
 	{
-		cout << "File " << file_name.c_str() << " cannot be opened." << endl;
+		cout << "File " << file_name << " cannot be opened." << endl;
 		getchar();
 		exit(0);
 
 	}
 
-	Deallocate4DDynamicArray(ODTravelTime, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
-	Deallocate4DDynamicArray(ODDistance, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
-	Deallocate4DDynamicArray(ODDollarCost, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
+
+	// csv file
+	fopen_s(&st, "output_accessibility.csv", "w");
+	str_output_file_in_summary.Format("Output file =,output_accessibility.csv\n");
+	g_SummaryStatFile.WriteTextLabel(str_output_file_in_summary);
+
+
+	if (st != NULL)
+	{
+		fprintf(st, "zone_id,departure_time_in_min,demand_type,");
+
+		for (int ttb = 1; ttb < number_of_travel_time_budget_intervals; ttb++)
+			fprintf(st, "OTTB_%d_min,", ttb*5);
+
+		for (int ttb = 1; ttb < number_of_travel_time_budget_intervals; ttb++)
+			fprintf(st, "DTTB_%d_min,", ttb * 5);
+
+		fprintf(st, "x,y,geometry,geometry\n");
+
+
+		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+		{
+
+			for (int t = 0; t < StatisticsIntervalSize; t++)
+			{
+				int demand_time = t + g_DemandLoadingStartTimeInMin / g_AggregationTimetInterval;
+
+
+				for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
+				{
+
+
+					fprintf(st, "%d,%d,%d,",
+						iterZone->second.m_ZoneNumber,
+						demand_time*g_AggregationTimetInterval,
+						demand_type);
+
+					for (int ttb = 1; ttb < number_of_travel_time_budget_intervals; ttb++)
+						fprintf(st, "%d,", OAccessibilityMatrix[demand_type][iterZone->second.m_ZoneSequentialNo][t][ttb]);
+
+					for (int ttb = 1; ttb < number_of_travel_time_budget_intervals; ttb++)
+						fprintf(st, "%d,", DAccessibilityMatrix[demand_type][iterZone->second.m_ZoneSequentialNo][t][ttb]);
+
+					int origin_node_indx = iterZone->second.GetRandomOriginNodeIDInZone((0) / 100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+
+					if (origin_node_indx >= 0)
+					{
+						float x = g_NodeVector[origin_node_indx].m_pt.x;
+						float y = g_NodeVector[origin_node_indx].m_pt.y;
+						fprintf(st, "%f,%f,\"<Point><coordinates>%f,%f</coordinates></Point>\",",
+							x,y,x, y);
+					}
+					else
+					{
+						fprintf(st, ",,,");
+					}
+
+					fprintf(st, "\"<Polygon><outerBoundaryIs><LinearRing><coordinates>");
+					for (unsigned int si = 0; si< iterZone->second.m_ShapePoints.size(); si++)
+					{
+						fprintf(st, "%f,%f,0.0", iterZone->second.m_ShapePoints[si].x, iterZone->second.m_ShapePoints[si].y);
+
+						if (si != iterZone->second.m_ShapePoints.size() - 1)
+							fprintf(st, " ");
+					}
+					fprintf(st, "\</coordinates></LinearRing></outerBoundaryIs></Polygon>\"");
+
+					fprintf(st, "\n");
+
+				}
+
+			}
+
+		}
+
+		fclose(st);
+	}
+	//for (int demand_type = 1; demand_type <= g_DemandTypeVector.size(); demand_type++)
+	//{
+
+	//	float base_rate = 1;
+
+
+	//	for (int t = 0; t < StatisticsIntervalSize; t++)
+	//	{
+	//		CString File_name;
+	//		File_name.Format("output_accessibility_demand_type_%d_min%d.kml", demand_type, g_DemandLoadingStartTimeInMin + t*g_AggregationTimetInterval);
+
+	//		CString str_output_file_in_summary;
+	//		str_output_file_in_summary.Format("Output file =,%s\n", File_name);
+	//		g_SummaryStatFile.WriteTextLabel(str_output_file_in_summary);
+
+
+	//		FILE* st;
+	//		fopen_s(&st, File_name, "w");
+
+	//		if (st != NULL)
+	//		{
+	//			fprintf(st, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	//			fprintf(st, "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+	//			fprintf(st, "<Document>\n");
+
+	//			fprintf(st, "<name>accessibility</name>\n");
+
+	//			for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+	//			{
+
+	//				for (int i = 0; i < iterZone->second.m_OriginActivityVector.size(); i++)
+	//				{
+	//					int node_id = iterZone->second.m_OriginActivityVector[i];
+
+	//					int count = 0;
+
+	//					int demand_time = t + g_DemandLoadingStartTimeInMin / g_AggregationTimetInterval;
+	//					if (demand_time <MAX_DEMAND_TIME_SIZE)
+	//						count = iterZone->second.m_AccessibilityCountMatrix[demand_type][t];
+
+	//					count = count / 10;
+
+	//					float x = g_NodeVector[node_id].m_pt.x;
+	//					float y = g_NodeVector[node_id].m_pt.y;
+	//					for (int k = 0; k < count; k++)
+	//					{
+
+	//						fprintf(st, "\t<Placemark>\n");
+	//						fprintf(st, "\t <name>%d</name>\n", k + 1);
+	//						fprintf(st, "\t <description>zone%d</description>\n", iterZone->second.m_ZoneNumber);
+	//						fprintf(st, "\t <Point><coordinates>%f,%f,0</coordinates></Point>\n", x, y);
+	//						fprintf(st, "\t</Placemark>\n");
+
+	//					}  // for each count
+	//				}
+
+	//			}
+
+	//		}
+
+	//		fprintf(st, "</Document>\n");
+	//		fprintf(st, "</kml>\n");
+	//		fclose(st);
+	//	}  // for each departure time
+	//}
+
+
+
+
+	//Deallocate4DDynamicArray(ODTravelTime, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
+	//Deallocate4DDynamicArray(ODDistance, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
+	//Deallocate4DDynamicArray(ODDollarCost, total_demand_type + 1, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
 
 }
 
 
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDependentFlag, int DemandType, double CurrentTime)
+void g_AgentBasedAccessibilityMatrixGeneration(bool bTimeDependentFlag, int DemandType, double CurrentTime)
 {
 	bool bDistanceCost = false;
 
@@ -2455,6 +2622,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 
 	int StatisticsIntervalSize = max(1, (ComputationEndTimeInMin - ComputationStartTimeInMin) / g_AggregationTimetInterval);
+
 
 
 	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
@@ -2520,7 +2688,7 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 					bDistanceCost = false;
 					for (int departure_time = ComputationStartTimeInMin; departure_time < ComputationEndTimeInMin; departure_time += g_AggregationTimetInterval)
 					{
-						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, departure_time, DemandType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, iterZone->first, departure_time, DemandType, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 						// to each destination zone
@@ -2534,9 +2702,6 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 								int time_interval_no = (departure_time - ComputationStartTimeInMin) / g_AggregationTimetInterval;
 								ODTravelTime[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index];
 								ODDistance[iterZone->second.m_ZoneSequentialNo][iterZone2->second.m_ZoneSequentialNo][time_interval_no] = g_TimeDependentNetwork_MP[id].LabelDistanceAry[dest_node_index];
-
-								if (g_TimeDependentNetwork_MP[id].LabelCostAry[dest_node_index]<=45)
-									iterZone->second.m_AccessibilityCount++;
 
 							}
 
@@ -2558,15 +2723,12 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 			CString str;
 			int time_interval_no = departure_time / g_AggregationTimetInterval;
 
+			str.Format("output_skim_demand_type_%d_min%d.csv", DemandType, time_interval_no * 15);
 
-			if (DemandType == 1)
-				str.Format("output_skim_min%d.csv", time_interval_no*15);
-			if (DemandType == 2)
-				str.Format("output_skim_HOV_min%d.csv", time_interval_no * 15);
-			if (DemandType == 3)
-				str.Format("output_skim_truck_min_%d.csv", time_interval_no * 15);
-			if (DemandType == 4)
-				str.Format("output_skim_transit_min%d.csv", time_interval_no * 15);
+			CString str_output_file_in_summary;
+			str_output_file_in_summary.Format("Output file =,%s\n", str);
+			g_SummaryStatFile.WriteTextLabel(str_output_file_in_summary);
+
 
 
 			FILE* st = NULL;
@@ -2670,10 +2832,11 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 		//
 
 		FILE* st = NULL;
-		fopen_s(&st, file_name.c_str(), "w");
+		fopen_s(&st, "OD_real_time_skim.csv", "w");
+
 		if (st != NULL)
 		{
-			g_LogFile << " output ODMOE data to file " << file_name << endl;
+			g_LogFile << " output ODMOE data to file OD_real_time_skim.csv" << endl;
 
 			fprintf(st, "from_zone_id,to_zone_id,number_of_agents,trip_time_in_min,trip_distance_in_mile\n");
 
@@ -2699,16 +2862,16 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 
 				}
 			}
-		
+
 			fclose(st);
 
-		if (ODMOEArray != NULL)
-			DeallocateDynamicArray<ODStatistics>(ODMOEArray, total_number_of_zones, total_number_of_zones);
+			if (ODMOEArray != NULL)
+				DeallocateDynamicArray<ODStatistics>(ODMOEArray, total_number_of_zones, total_number_of_zones);
 
 		}
 		else
 		{
-			cout << "File " << file_name << " cannot be opened. Please check." << endl;
+			cout << "File OD_real_time_skim.csv cannot be opened. Please check." << endl;
 			g_ProgramStop();
 		}
 
@@ -2722,7 +2885,6 @@ void g_AgentBasedAccessibilityMatrixGeneration(string file_name, bool bTimeDepen
 	if (ODDistance != NULL)
 		Deallocate3DDynamicArray<float>(ODDistance, g_ODZoneIDSize + 1, g_ODZoneIDSize + 1);
 
-	g_OutputAccessibilityHeatMapKML();
 }
 
 void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_name, double CurrentTime)
@@ -2746,7 +2908,7 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 	//cout << "allocating memory for time-dependent ODMOE data...for " << g_ODZoneIDSize << " X " <<  g_ODZoneIDSize << "zones for " << 
 	//	StatisticsIntervalSize << " 15-min time intervals" << endl;
 	float*** ODTravelTime = NULL;
-	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, g_DemandTypeVector.size()+1);
+	ODTravelTime = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, g_DemandTypeVector.size() + 1);
 
 	float*** ODDistance = NULL;
 	ODDistance = Allocate3DDynamicArray<float>(g_ODZoneIDSize + 1, g_ODZoneIDSize + 1, g_DemandTypeVector.size() + 1);
@@ -2799,7 +2961,7 @@ void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_nam
 					{
 
 						bDistanceCost = false;
-						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, CurrentTime, demand_type, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
+						g_TimeDependentNetwork_MP[id].TDLabelCorrecting_DoubleQueue(origin_node_indx, iterZone->first, CurrentTime, demand_type, DEFAULT_VOT, bDistanceCost, false, true);  // g_NodeVector.size() is the node ID corresponding to CurZoneNo
 
 
 						// to each destination zone

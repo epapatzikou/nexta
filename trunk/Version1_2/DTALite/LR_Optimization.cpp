@@ -38,7 +38,7 @@
 using namespace std;
 
 int g_NetworkDesignOptimalLinkSize = 3;
-float g_NetworkDesignTargetTravelTime = 12;
+float g_NetworkDesignTravelTimeBudget = 12;
 
 float g_NetworkDesignGlobalUpperBound = 9999999;
 float g_NetworkDesignGlobalLowerBound = -9999990;
@@ -72,6 +72,7 @@ void g_AgentBasedOptimization()  // this is an adaptation of OD trip based assig
 
 	cout << ":: start agent-based optimization " << g_GetAppRunningTime() << endl;
 	g_LogFile << ":: start agent-based optimization " << g_GetAppRunningTime() << endl;
+	g_NetworkDesignLogFile << ":: start agent-based optimization " << g_GetAppRunningTime() << endl;
 
 
 	int iteration = 0;
@@ -119,7 +120,8 @@ void g_AgentBasedOptimization()  // this is an adaptation of OD trip based assig
 	for (iteration = 0; NotConverged && iteration <= g_NumberOfIterations; iteration++)  // we exit from the loop under two conditions (1) converged, (2) reach maximum number of iterations
 	{
 		cout << "------- Iteration = " << iteration + 1 << "--------" << endl;
-
+		g_NetworkDesignLogFile << "Iteration =," << iteration + 1;
+		
 		g_CurrentGapValue = 0.0;
 		g_CurrentRelativeGapValue = 0.0;
 		g_CurrentNumOfVehiclesForUEGapCalculation = 0;
@@ -137,20 +139,30 @@ void g_AgentBasedOptimization()  // this is an adaptation of OD trip based assig
 	
 		g_GenerateUpperBoundFeasibleSolutionForAgents(g_DemandLoadingStartTimeInMin, g_DemandLoadingEndTimeInMin);
 
-		//cout << "---- Network Loading for Iteration " << iteration << "----" << endl;
-
-		//NetworkLoadingOutput SimuOutput;
-		//SimuOutput = g_NetworkLoading(g_TrafficFlowModelFlag, 0, iteration);
-
-
-		//g_GenerateSimulationSummary(iteration, NotConverged, TotalNumOfVehiclesGenerated, &SimuOutput);
-
+		g_NetworkDesignLogFile << endl;
 	}  // for each assignment iteration
+	g_NetworkDesignLogFile << "--Final Solution--" << endl;
+	g_NetworkDesignLogFile << "Link, Build Flag" << endl;
+
+	for (int li = 0; li < g_LinkVector.size(); li++)
+	{
+		DTALink* pLink = g_LinkVector[li];
+		if (pLink->m_NetworkDesignFlag >= 1)
+		{ 
+			CString str;
+			if (pLink->m_NetworkDesignBuildCapacity >0.99)
+				str.Format("%d -> %d,1\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
+			else 
+				str.Format("%d -> %d,0\n", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
+
+			g_NetworkDesignLogFile << str;
+		}
+	}
 
 
 	float  UpperBoundObjectiveFunctionValue = g_CalculateUpperBoundValue();
-	g_AssignmentLogFile << endl;
-	g_AssignmentLogFile << "Upper Bound Value = " << UpperBoundObjectiveFunctionValue << endl;
+	g_NetworkDesignLogFile << endl;
+	g_NetworkDesignLogFile << "Upper Bound Value = " << UpperBoundObjectiveFunctionValue << endl;
 
 
 
@@ -291,6 +303,7 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 				Global_RoadPriceVector[li].TotalTollColected += pVehicle->m_PersonalizedRoadPriceVector[li].RoadPrice;
 				Global_RoadPriceVector[li].RoadUsageFlag += pVehicle->m_PersonalizedRoadPriceVector[li].RoadUsageFlag;
 
+
 			}
 
 		}
@@ -304,6 +317,33 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 	CString str;
 	float dual_resource_price = 0;
 
+	for (li = 0; li < Global_RoadPriceVector.size(); li++)
+	{
+		int LinkNo = Global_RoadPriceVector[li].LinkNo;
+		DTALink* pLink = g_LinkVector[LinkNo];
+
+		if (pLink->m_NetworkDesignFlag >= 1)  // links to be built
+		{
+			pLink->m_LROptimizationLinkPrice.RoadPrice = Global_RoadPriceVector[li].RoadPrice;
+			pLink->m_LROptimizationLinkPrice.RoadUsageFlag = Global_RoadPriceVector[li].RoadUsageFlag;
+			pLink->m_LROptimizationLinkPrice.TotalTollColected = Global_RoadPriceVector[li].TotalTollColected;
+
+		}
+	
+
+	}
+	for (li = 0; li < g_LinkVector.size(); li++)
+	{
+		DTALink* pLink = g_LinkVector[li];
+		if (pLink->m_NetworkDesignFlag >= 1)  // links to be built
+		{
+			str.Format(",Link %d -> %d,LR Price =,%f,Volume =,%d,", 
+				pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, 
+				pLink->m_LROptimizationLinkPrice.RoadPrice, 
+				pLink->m_LROptimizationLinkPrice.RoadUsageFlag);
+			g_NetworkDesignLogFile << str;
+		}
+	}
 	int K = g_NetworkDesignOptimalLinkSize;
 	for (li = 0; li < Global_RoadPriceVector.size(); li++)
 	{
@@ -312,9 +352,12 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 		DTALink* pLink = g_LinkVector[LinkNo];
 
 		TRACE("\nLink %d -> %d: Price = %f ", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, Global_RoadPriceVector[li].RoadPrice );
-		str.Format(",Link %d -> %d: Price = %f Useage = %d", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, Global_RoadPriceVector[li].RoadPrice, Global_RoadPriceVector[li].RoadUsageFlag);
+		str.Format(",Rank No.%d, Link %d -> %d,Total LR Price =,%f,", li+1, 
+			pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, 
+			Global_RoadPriceVector[li].TotalTollColected);
 
-		g_AssignmentLogFile << str;
+
+		g_NetworkDesignLogFile << str;
 
 		if (li < K)
 		{
@@ -329,7 +372,7 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 	}
 
 
-
+	g_NetworkDesignLogFile << "Solution = ,";
 
 	for (li = 0; li < Global_RoadPriceVector.size(); li++)
 	{
@@ -339,8 +382,8 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 
 		if (pLink->m_NetworkDesignBuildCapacity >= 0.99)
 		{
-			str.Format("Build Link %d -> %d,", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
-			g_AssignmentLogFile << str;
+			str.Format(",Build Link, %d -> %d,", pLink->m_FromNodeNumber, pLink->m_ToNodeNumber);
+			g_NetworkDesignLogFile << str;
 		}
 	}
 
@@ -359,10 +402,10 @@ void g_NetworkDesignKnapsackProblem(int iteration, bool bRebuildNetwork, bool bO
 
 	float gap_percentage = (g_NetworkDesignGlobalUpperBound - g_NetworkDesignGlobalLowerBound) * 100 / max(0.001,g_NetworkDesignGlobalUpperBound);
 
-	g_AssignmentLogFile << "\niteration," << iteration << "," << g_GetAppRunningTime() << ",total_road_traveling_cost_cx_pie_x, " << total_road_traveling_cost << ", dual_resource_price_pie_y, " << dual_resource_price << ", LR_relaxed_objective_function_value, " << g_NetworkDesignGlobalLowerBound << ", UpperBound = , " << g_NetworkDesignGlobalUpperBound << ", relaitve gap = , " << gap_percentage << ", ";
+	g_NetworkDesignLogFile << "," << g_GetAppRunningTime() << ",total_road_traveling_cost_cx_pie_x=, " << total_road_traveling_cost << ", dual_resource_price_pie_y, " << dual_resource_price << ", LR_relaxed_objective_function_value, " << g_NetworkDesignGlobalLowerBound << ", UpperBound = , " << g_NetworkDesignGlobalUpperBound << ", relaitve gap = , " << gap_percentage << ", ";
 	cout << "\niteration," << iteration << ",total_road_traveling_cost_cx_pie_x," << total_road_traveling_cost << ",dual_resource_price_pie_y," << dual_resource_price << ",LR_relaxed_objective_function_value," << LR_relaxed_objective_function_value << "," << endl;
 
-	g_AssignmentLogFile << ",# of Links to be build=," << g_NetworkDesignOptimalLinkSize << ",";
+	g_NetworkDesignLogFile << ",# of Links to be build=," << g_NetworkDesignOptimalLinkSize << ",";
 
 #endif 
 }
@@ -424,6 +467,13 @@ void g_OptimizePathsForAgents(int iteration, bool bRebuildNetwork, bool bOutputL
 	{
 		cout << ":: complete optimization " << g_GetAppRunningTime() << endl;
 		g_LogFile << ":: complete optimization " << g_GetAppRunningTime() << endl;
+		bool bStartWithEmptyFile = true;
+		cout << "     outputing output_agent.csv... " << endl;
+
+		bool Day2DayOutputFlag = false; 
+		int iteration = 0;
+		OutputVehicleTrajectoryData(g_CreateFileName("output_agent", Day2DayOutputFlag, iteration),
+			g_CreateFileName("output_trip", Day2DayOutputFlag, iteration), iteration, true, false);
 
 	}
 }
@@ -629,7 +679,7 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 		pVeh->m_NodeSize = 0;
 
 
-		float TargeTravelTimeInMin = g_NetworkDesignTargetTravelTime;
+		float TargeTravelTimeInMin = g_NetworkDesignTravelTimeBudget;
 		float OptimialTravelTimeInMin = 0;
 
 		NodeSize = FindOptimalNodePath_TDLabelCorrecting_DQ(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime,
@@ -696,7 +746,7 @@ float DTANetworkForSP::AgentBasedPathOptimization(int zone, int departure_time_b
 
 }
 
-int DTANetworkForSP::FindOptimalNodePath_TDLabelCorrecting_DQ(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int pricing_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, float TargetTravelTime, float &OptimialTravelTimeInMin, bool bDebugFlag)
+int DTANetworkForSP::FindOptimalNodePath_TDLabelCorrecting_DQ(int origin_zone, int origin, int departure_time, int destination_zone, int destination, int demand_type, float VOT, int PathLinkList[MAX_NODE_SIZE_IN_A_PATH], float &TotalCost, bool bGeneralizedCostFlag, float TargetTravelTime, float &OptimialTravelTimeInMin, bool bDebugFlag)
 // time -dependent label correcting algorithm with deque implementati
 {
 
@@ -809,12 +859,19 @@ int DTANetworkForSP::FindOptimalNodePath_TDLabelCorrecting_DQ(int origin_zone, i
 						NewToNodeArrivalTimeInterval = t + 1;
 
 					NewToNodeArrivalTimeInterval = GetFeasibleTDSPTimeInterval(NewToNodeArrivalTimeInterval);
+					int		link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(t);
+
+
 
 
 					float NewCost = TD_LabelCostAry[FromID][t] + TD_LinkCostAry[LinkNo][t];
 					// costs come from time-dependent resource price or road toll
 
-
+					if (g_LinkTDCostAry[LinkNo][link_entering_time_interval].m_bMonetaryTollExist)
+					{ // with VOT and toll
+						float AdditionalCostInMin = g_LinkTDCostAry[LinkNo][link_entering_time_interval].TollValue[demand_type] / VOT * 60.0f;       // 60.0f for 60 min per hour, costs come from time-dependent tolls, VMS, information provisions
+						NewCost += AdditionalCostInMin;
+					}
 					if (debug_flag && TD_LinkCostAry[LinkNo][t] > 0.0001)
 					{
 						TRACE("\n         Pay Price  %f, link cost %f from time %d to time %d", NewCost, TD_LinkCostAry[LinkNo][t], t, NewToNodeArrivalTimeInterval);
@@ -1445,7 +1502,7 @@ float DTANetworkForSP::AgentBasedUpperBoundSolutionGeneration(int zone, int depa
 
 		
 
-		float TargeTravelTimeInMin = g_NetworkDesignTargetTravelTime;
+		float TargeTravelTimeInMin = g_NetworkDesignTravelTimeBudget;
 		float OptimialTravelTimeInMin = 0;
 
 		NodeSize = FindOptimalNodePath_TDLabelCorrecting_DQ(pVeh->m_OriginZoneID, pVeh->m_OriginNodeID, pVeh->m_DepartureTime,
@@ -1521,7 +1578,7 @@ void  g_NetworkDesignEnemerateAllSolutions()
 		{
 			TRACE("%d,", combination_array[ci]);
 
-			g_AssignmentLogFile << combination_array[ci] << " ";
+			g_NetworkDesignLogFile << combination_array[ci] << " ";
 
 			int LinNo = g_NetworkDesignRoadConstructionVector[combination_array[ci]].LinkNo;
 			DTALink* pLink = g_LinkVector[LinNo];
@@ -1533,17 +1590,17 @@ void  g_NetworkDesignEnemerateAllSolutions()
 		g_GenerateUpperBoundFeasibleSolutionForAgents(g_DemandLoadingStartTimeInMin, g_DemandLoadingEndTimeInMin);
 
 		float  UpperBoundObjectiveFunctionValue = g_CalculateUpperBoundValue();
-		g_AssignmentLogFile << "----- no." << count << ", UpperBoundObjectiveFunctionValue=," << UpperBoundObjectiveFunctionValue << endl;
+		g_NetworkDesignLogFile << "----- no." << count << ", UpperBoundObjectiveFunctionValue=," << UpperBoundObjectiveFunctionValue << endl;
 		count++;
 		if (MinUpperBound > UpperBoundObjectiveFunctionValue)
 		{
 			MinUpperBound = UpperBoundObjectiveFunctionValue;
-			g_AssignmentLogFile << "Upper Bound Value = " << MinUpperBound << endl;
+			g_NetworkDesignLogFile << "Upper Bound Value = " << MinUpperBound << endl;
 			for (int ci = 0; ci < combination_array.size(); ci++)
 			{
 				int LinNo = g_NetworkDesignRoadConstructionVector[combination_array[ci]].LinkNo;
 				DTALink* pLink = g_LinkVector[LinNo];
-				g_AssignmentLogFile << " link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << "" ;
+				g_NetworkDesignLogFile << " link " << pLink->m_FromNodeNumber << "->" << pLink->m_ToNodeNumber << "" ;
 
 			}
 

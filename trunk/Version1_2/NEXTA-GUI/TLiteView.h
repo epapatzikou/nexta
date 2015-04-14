@@ -70,6 +70,7 @@ enum link_text_display_mode
    link_display_count_sensor_id, 
    link_display_orientation_code,
    link_display_loop_code,
+   link_display_demand_type_code,
 
    link_display_link_key, 
 
@@ -732,6 +733,7 @@ bool m_bShowWalkLinksOnly;
 bool m_bShowFixedDetectorLocation;
 bool m_bShowSpeedSensorLocation;
 
+int m_DislayedDemandType;
 
 // Overrides
 public:
@@ -918,6 +920,16 @@ public:
 	afx_msg void OnUpdateDetectorShowfixedcountdetectorlocation(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateDetectorShowspeedsensorlocation(CCmdUI *pCmdUI);
 	afx_msg void OnDetectorShowfixedcountdetectorlocation();
+	afx_msg void OnShowallowedlinksfordemandtypeDemandtype1();
+	afx_msg void OnShowallowedlinksfordemandtypeDemandtype2();
+	afx_msg void OnShowallowedlinksfordemandtypeDemandtype3();
+	afx_msg void OnShowallowedlinksfordemandtypeDemandtype4();
+	afx_msg void OnUpdateShowallowedlinksfordemandtypeDemandtype1(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateShowallowedlinksfordemandtypeDemandtype2(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateShowallowedlinksfordemandtypeDemandtype3(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateShowallowedlinksfordemandtypeDemandtype4(CCmdUI *pCmdUI);
+	afx_msg void OnShowallowedlinksfordemandtypeShowall();
+	afx_msg void OnUpdateShowallowedlinksfordemandtypeShowall(CCmdUI *pCmdUI);
 };
 struct PieInfo
 {

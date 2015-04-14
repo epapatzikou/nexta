@@ -35,6 +35,7 @@ int read_2_float_points_from_a_string(CString str, double &value1, double &value
 int g_read_integer_with_char_O(FILE* f);
 
 float g_read_float(FILE *f);
+float g_read_float_from_a_line(FILE *f, int &end_of_line);
 
 double  g_FindClosestYResolution(double Value);
 double g_FindClosestMOEYResolution(double Value);

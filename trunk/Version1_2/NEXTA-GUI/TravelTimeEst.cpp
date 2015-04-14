@@ -674,8 +674,8 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 			sensor.SensorID = sensor_id;
 			parser.GetValueByFieldName("name", sensor.description);
 
-			parser.GetValueByFieldName("x", sensor.pt.x);
-			parser.GetValueByFieldName("y", sensor.pt.y);
+			parser.GetValueByFieldName("x", sensor.pt.x, false);
+			parser.GetValueByFieldName("y", sensor.pt.y, false);
 			parser.GetValueByFieldName("direction", sensor.direction);
 			parser.GetValueByFieldName("orientation_code", sensor.orientation_code);
 			parser.GetValueByFieldName("orientation2_code", sensor.orientation2_code);
@@ -709,15 +709,16 @@ bool CTLiteDoc::ReadSensorLocationData(LPCTSTR lpszFileName)
 
 
 		}
+	}
 
 		if (m_SensorMap.size()>0)
 		{
-			m_SensorLocationLoadingStatus.Format("%d sensor records are loaded from file sensor_count.csv.", data_count);
+			m_SensorLocationLoadingStatus.Format("%d sensor location records are loaded from file input_sensor_location.csv.", m_SensorMap.size());
 			return true;
 		}
 		else
 			return false; // no sensors have been specified
-	}
+	
 
 	return false;
 }

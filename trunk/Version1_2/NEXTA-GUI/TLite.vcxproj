@@ -483,6 +483,8 @@
     <Image Include="res\bmp00005.bmp" />
     <Image Include="res\bmp00006.bmp" />
     <Image Include="res\bmp00007.bmp" />
+    <Image Include="res\brttoll1.bmp" />
+    <Image Include="res\bustoll1.bmp" />
     <Image Include="res\icon1.ico" />
     <Image Include="res\idr_main.ico" />
     <Image Include="res\incident.bmp" />

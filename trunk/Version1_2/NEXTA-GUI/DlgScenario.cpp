@@ -127,10 +127,22 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		HeaderList.push_back("End Day No");
 		HeaderList.push_back("Start Time in Min");
 		HeaderList.push_back("End Time in min");
-		HeaderList.push_back("Charge for LOV ($)");
-		HeaderList.push_back("Charge for HOV ($)");
-		HeaderList.push_back("Charge for Truck ($)");
-		HeaderList.push_back("Charge for Intermodal ($)");
+
+		HeaderList.push_back("LOV");
+		HeaderList.push_back("HOV2");
+		HeaderList.push_back("HOV3+");
+		HeaderList.push_back("LIGHT_TRUCK");
+		HeaderList.push_back("HEAVY_TRUCK");
+		HeaderList.push_back("BUS");
+		HeaderList.push_back("BRT");
+		HeaderList.push_back("LIGHT_RAIL");
+		HeaderList.push_back("METRO");
+		HeaderList.push_back("RAIL");
+		HeaderList.push_back("PEDESTRIAN");
+		HeaderList.push_back("TAXI");
+		HeaderList.push_back("APP_BASED_TAXI");
+		HeaderList.push_back("PAX_INTERMODAL");
+		HeaderList.push_back("FREIGHT_INTERMODAL");
 
 
 		DefaultList.push_back("0");
@@ -138,9 +150,21 @@ void CDlgScenario::GetDefaultInfo(int i, std::vector<std::string>& HeaderList, s
 		DefaultList.push_back("100");
 		DefaultList.push_back("0");
 		DefaultList.push_back("1440");
+
 		DefaultList.push_back("0");
 		DefaultList.push_back("1");
 		DefaultList.push_back("1.5");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
+		DefaultList.push_back("0");
 		DefaultList.push_back("0");
 		break;
 	case 6:  //radio

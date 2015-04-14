@@ -181,7 +181,7 @@ double g_DTASimulationInterval = 0.10000; // min
 double g_UnitOfMileOrKM = 1.0000;
 double g_gain_factor_link_travel_time_from_external_input = 0.5;
 
-double g_CarFollowingSimulationInterval = 1.0/600; // 1/ 600 min
+double g_CarFollowingSimulationInterval = 1.0 / 600; // 1/ 600 min
 int g_number_of_intervals_per_min = 10; // round to nearest integer
 int g_number_of_car_following_intervals_per_min = 600; // round to nearest integer
 int g_AggregationTimetInterval = 15; // min
@@ -193,7 +193,7 @@ int g_AdjLinkSize = 100; // initial value of adjacent links
 
 int g_ODZoneNumberSize = 0;
 int g_ODZoneIDSize = 0;
-int g_number_of_prohibited_movements = 0; 
+int g_number_of_prohibited_movements = 0;
 int g_StartIterationsForOutputPath = 2;
 int g_EndIterationsForOutputPath = 2;
 
@@ -228,9 +228,9 @@ int g_NewPathWithSwitchedVehicles = 0; // number of new paths with vehicles swit
 
 float g_TotalDemandDeviation = 0;
 float g_UpdatedDemandPrintOutThreshold = 5;
-float g_TotalMeasurementDeviation = 0; 
+float g_TotalMeasurementDeviation = 0;
 
-float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = {0};
+float g_UserClassPerceptionErrorRatio[MAX_SIZE_INFO_USERS] = { 0 };
 int g_output_OD_path_MOE_file = 1;
 int g_output_OD_TD_path_MOE_file = 1;
 int g_output_OD_path_MOE_cutoff_volume = 1;
@@ -263,8 +263,8 @@ std::vector<TimeDependentDemandProfile> g_TimeDependentDemandProfileVector;
 int g_DemandLoadingStartTimeInMin = 0;
 int g_DemandLoadingEndTimeInMin = 0;
 
-int g_ValidationDataStartTimeInMin =0;
-int g_ValidationDataEndTimeInMin =0;
+int g_ValidationDataStartTimeInMin = 0;
+int g_ValidationDataEndTimeInMin = 0;
 
 int g_number_of_warnings = 0;  // use a global count to avoid warning messages when running multiple scenarioss
 
@@ -275,7 +275,7 @@ int g_Number_of_CompletedVehicles = 0;
 int g_Number_of_CompletedVehiclesThatSwitch = 0;
 int g_Number_of_GeneratedVehicles = 0;
 
-int g_InfoTypeSize  = 1;  // for shortest path with generalized costs depending on LOV, HOV, trucks or other vehicle classes.
+int g_InfoTypeSize = 1;  // for shortest path with generalized costs depending on LOV, HOV, trucks or other vehicle classes.
 int g_start_iteration_for_MOEoutput = 0;
 
 // for fast data acessing
@@ -285,7 +285,7 @@ int g_output_routing_policy_file = 0;
 
 int g_SystemOptimalStartingTimeinMin = 450;
 
-VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray =NULL; // TDO for time-dependent origin
+VehicleArrayForOriginDepartrureTimeInterval** g_TDOVehicleArray = NULL; // TDO for time-dependent origin
 
 std::vector<DTA_vhc_simple>   g_simple_vector_vehicles;	// vector of DSP_Vehicle, not pointer!;
 
@@ -301,24 +301,25 @@ CCSVWriter g_SummaryStatFile;
 CCSVWriter g_MultiScenarioSummaryStatFile;
 
 ofstream g_AssignmentLogFile;
+ofstream g_NetworkDesignLogFile;
 ofstream g_EstimationLogFile;
 ofstream g_WarningFile;
 
 e_traffic_flow_model g_TrafficFlowModelFlag = tfm_BPR;
 e_signal_representation_model g_SignalRepresentationFlag = signal_model_continuous_flow;
-float g_LearningPercVector[1000] = {10};
+float g_LearningPercVector[1000] = { 10 };
 
 int g_ShortestPathWithMovementDelayFlag = 0;
 int g_UseDefaultLaneCapacityFlag = 1;
 int g_UseFreevalRampMergeModelFlag = 0;
 int g_OutputLinkCapacityFlag = 0;
-int g_OutputLinkCapacityStarting_Time =0;
-int g_OutputLinkCapacityEnding_Time =300;
+int g_OutputLinkCapacityStarting_Time = 0;
+int g_OutputLinkCapacityEnding_Time = 300;
 int g_CalculateUEGapForAllAgents = 0;
 int g_EmissionDataOutputFlag = 0;
 int g_VehiclePathOutputFlag = 1;
 int g_TimeDependentODMOEOutputFlag = 0;
-int g_OutputSecondBySecondEmissionData =0;
+int g_OutputSecondBySecondEmissionData = 0;
 float g_OutputSecondBySecondEmissionDataPercentage = 0.1f;
 int g_start_departure_time_for_output_second_by_second_emission_data = 0;
 int g_end_departure_time_for_output_second_by_second_emission_data = 0;
@@ -328,7 +329,7 @@ int g_TargetVehicleID_OutputSecondBySecondEmissionData = 0;
 int g_TollingMethodFlag = 0;
 float g_VMTTollingRate = 0;
 
-int g_MergeNodeModelFlag=1;
+int g_MergeNodeModelFlag = 1;
 int g_FIFOConditionAcrossDifferentMovementFlag = 0;
 
 std::vector<NetworkMOE>  g_NetworkMOEAry;
@@ -373,39 +374,39 @@ void ReadNodeControlTypeCSVFile()
 	if (parser.OpenCSVFile("input_node_control_type.csv"))
 	{
 		int control_type_code;
-		int i=0;
-		while(parser.ReadRecord())
+		int i = 0;
+		while (parser.ReadRecord())
 		{
 			control_type_code = 0;
-			parser.GetValueByFieldName("unknown_control",control_type_code);
+			parser.GetValueByFieldName("unknown_control", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "unknown_control";
 
 			control_type_code = 1;
-			parser.GetValueByFieldName("no_control",control_type_code);
+			parser.GetValueByFieldName("no_control", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "no_control";
 
 			control_type_code = 2;
-			parser.GetValueByFieldName("yield_sign",control_type_code);
+			parser.GetValueByFieldName("yield_sign", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "yield_sign";
 
 			control_type_code = 3;
-			parser.GetValueByFieldName("2way_stop_sign",control_type_code);
+			parser.GetValueByFieldName("2way_stop_sign", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "2way_stop_sign";
 
 			control_type_code = 4;
-			parser.GetValueByFieldName("4way_stop_sign",control_type_code);
+			parser.GetValueByFieldName("4way_stop_sign", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "4way_stop_sign";
 
 			control_type_code = 5;
-			parser.GetValueByFieldName("pretimed_signal",control_type_code);
+			parser.GetValueByFieldName("pretimed_signal", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "pretimed_signal";
 
 			control_type_code = 6;
-			parser.GetValueByFieldName("actuated_signal",control_type_code);
+			parser.GetValueByFieldName("actuated_signal", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "actuated_signal";
 
 			control_type_code = 7;
-			parser.GetValueByFieldName("roundabout",control_type_code);
+			parser.GetValueByFieldName("roundabout", control_type_code);
 			g_NodeControlTypeMap[control_type_code] = "roundabout";
 
 
@@ -424,7 +425,7 @@ int FindNodeControlType(string control_type)
 {
 	for (std::map<int, string>::iterator iter_control_type = g_NodeControlTypeMap.begin(); iter_control_type != g_NodeControlTypeMap.end(); iter_control_type++)
 	{
-		if(iter_control_type->second.find(control_type) != string::npos)
+		if (iter_control_type->second.find(control_type) != string::npos)
 		{
 			return iter_control_type->first;
 		}
@@ -456,7 +457,7 @@ void g_ReadInputFiles()
 
 	for (int k = 0; k < 16; ++k)
 	{
-		state[k] = k+g_RandomSeed;
+		state[k] = k + g_RandomSeed;
 	}
 
 	InitWELLRNG512a(state);
@@ -468,46 +469,46 @@ void g_ReadInputFiles()
 	//test if output files can be opened
 	{
 		CCSVWriter File_vehicle_operating_mode;
-		File_vehicle_operating_mode.Open ("output_vehicle_operating_mode.csv");
+		File_vehicle_operating_mode.Open("output_vehicle_operating_mode.csv");
 
 		CCSVWriter File_output_ODMOE;
-		File_output_ODMOE.Open ("output_ODMOE.csv");
+		File_output_ODMOE.Open("output_ODMOE.csv");
 
 		CCSVWriter File_output_Agent;
-		File_output_Agent.Open ("output_agent.csv");
+		File_output_Agent.Open("output_agent.csv");
 
 		CCSVWriter File_output_ODME_table;
-		File_output_ODME_table.Open ("output_ODME_table.csv");
+		File_output_ODME_table.Open("output_ODME_table.csv");
 
 		CCSVWriter File_output_MovementMOE;
-		File_output_MovementMOE.Open ("output_MovementMOE.csv");
+		File_output_MovementMOE.Open("output_MovementMOE.csv");
 
 		CCSVWriter File_output_ODTDMOE;
-		File_output_ODTDMOE.Open ("output_ODTDMOE.csv");
+		File_output_ODTDMOE.Open("output_ODTDMOE.csv");
 
 		CCSVWriter File_output_PathMOE;
-		File_output_PathMOE.Open ("output_PathMOE.csv");
+		File_output_PathMOE.Open("output_PathMOE.csv");
 
 		CCSVWriter File_output_NetworkTDMOE;
-		File_output_NetworkTDMOE.Open ("output_NetworkTDMOE.csv");
+		File_output_NetworkTDMOE.Open("output_NetworkTDMOE.csv");
 
 		CCSVWriter File_output_LinkTDMOE;
-		File_output_LinkTDMOE.Open ("output_LinkTDMOE.csv");
+		File_output_LinkTDMOE.Open("output_LinkTDMOE.csv");
 
 		CCSVWriter File_output_LinkMOE;
-		File_output_LinkMOE.Open ("output_LinkMOE.csv");
+		File_output_LinkMOE.Open("output_LinkMOE.csv");
 
 		CCSVWriter File_output_LinkCapacity;
-		File_output_LinkCapacity.Open ("output_LinkCapacity.csv");
+		File_output_LinkCapacity.Open("output_LinkCapacity.csv");
 
 		CCSVWriter File_output_path;
-		File_output_path.Open ("output_path.csv");
+		File_output_path.Open("output_path.csv");
 
 		CCSVWriter File_output_2WayLink;
-		File_output_2WayLink.Open ("output_2WayLinkMOE.csv");
+		File_output_2WayLink.Open("output_2WayLinkMOE.csv");
 
 		CCSVWriter File_output_validation_results;
-		File_output_validation_results.Open ("output_validation_results.csv");
+		File_output_validation_results.Open("output_validation_results.csv");
 
 
 	}
@@ -516,63 +517,63 @@ void g_ReadInputFiles()
 	g_ReadAssignmentPeriodSettings();
 	//*******************************
 	// step 1: node input
-	cout << "Step 1: Reading file input_node.csv..."<< endl;
-	g_LogFile << "Step 1: Reading file input_node.csv..."<< endl;
+	cout << "Step 1: Reading file input_node.csv..." << endl;
+	g_LogFile << "Step 1: Reading file input_node.csv..." << endl;
 
 
 
-	if(g_UEAssignmentMethod != assignment_accessibility_distance)  //  node control type is not required when calculating node-to-node distance 
+	if (g_UEAssignmentMethod != assignment_accessibility_distance)  //  node control type is not required when calculating node-to-node distance 
 	{
 		ReadNodeControlTypeCSVFile();
 	}
 
-	if(FindNodeControlType("pretimed_signal")>0)  // valid record
+	if (FindNodeControlType("pretimed_signal") > 0)  // valid record
 	{
 		g_settings.pretimed_signal_control_type_code = FindNodeControlType("pretimed_signal");
 	}
 
-	if(FindNodeControlType("actuated_signal")>0)  //valid record
+	if (FindNodeControlType("actuated_signal") > 0)  //valid record
 	{
 		g_settings.actuated_signal_control_type_code = FindNodeControlType("actuated_signal");
 	}
 
-	if(FindNodeControlType("no_control")>0)  //valid record
+	if (FindNodeControlType("no_control") > 0)  //valid record
 	{
 		g_settings.no_signal_control_type_code = FindNodeControlType("no_control");
 	}
 
 	int NodeControlTypeCount[10];
 
-	for(int control_type_i = 0; control_type_i <10; control_type_i++)
+	for (int control_type_i = 0; control_type_i < 10; control_type_i++)
 	{
-		NodeControlTypeCount[control_type_i]  = 0;
+		NodeControlTypeCount[control_type_i] = 0;
 	}
 
 	CCSVParser parser_node;
 	if (parser_node.OpenCSVFile("input_node.csv"))
 	{
-		int i=0;
-		while(parser_node.ReadRecord())
+		int i = 0;
+		while (parser_node.ReadRecord())
 		{
 			int node_id;
 			DTANode* pNode = 0;
 
-			if(parser_node.GetValueByFieldNameRequired("node_id",node_id) == false)
+			if (parser_node.GetValueByFieldNameRequired("node_id", node_id) == false)
 				break;
 
 			int control_type = 0;
 
 
 			DTANode Node;
-			parser_node.GetValueByFieldName ("control_type",control_type);
+			parser_node.GetValueByFieldName("control_type", control_type);
 
-			parser_node.GetValueByFieldName("x",Node.m_pt .x);
-			parser_node.GetValueByFieldName("y",Node.m_pt .y);
+			parser_node.GetValueByFieldName("x", Node.m_pt.x);
+			parser_node.GetValueByFieldName("y", Node.m_pt.y);
 
 			if (control_type == g_settings.pretimed_signal_control_type_code ||
 				control_type == g_settings.actuated_signal_control_type_code)
 			{
-			
+
 				int cycle_length_in_second = 0;
 				parser_node.GetValueByFieldName("cycle_length_in_second", cycle_length_in_second);
 				Node.m_CycleLength_In_Second = cycle_length_in_second;
@@ -582,85 +583,87 @@ void g_ReadInputFiles()
 
 			}
 
-			
+
 
 			Node.m_NodeID = i;
 			Node.m_ZoneID = 0;
 			Node.m_NodeNumber = node_id;
-			Node.m_ControlType  = control_type;
+			Node.m_ControlType = control_type;
 
-			NodeControlTypeCount[control_type] +=1;
+			NodeControlTypeCount[control_type] += 1;
 			g_NodeVector.push_back(Node);
 			g_NodeNametoIDMap[node_id] = i;
 			i++;
 		}
-	}else
+	}
+	else
 	{
-		cout << "Error: File input_node.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_node.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 		g_ProgramStop();
 
 	}
 
-	g_SummaryStatFile.WriteParameterValue ("# of Nodes",g_NodeVector.size());
+	g_SummaryStatFile.WriteParameterValue("# of Nodes", g_NodeVector.size());
 
 
 	//*******************************
 	// step 2: link type input
 
-	cout << "Step 2: Reading file input_link_type.csv..."<< endl;
+	cout << "Step 2: Reading file input_link_type.csv..." << endl;
 	g_LogFile << "Step 2: Reading file input_link_type.csv.." << endl;
 
-	if(g_UEAssignmentMethod != assignment_accessibility_distance)  //  link type is not required when calculating node-to-node distance 
+	if (g_UEAssignmentMethod != assignment_accessibility_distance)  //  link type is not required when calculating node-to-node distance 
 	{
 		CCSVParser parser_link_type;
 
 		if (!parser_link_type.OpenCSVFile("input_link_type.csv"))
 		{
-			cout << "Error: File input_link_type.csv cannot be opened.\n Try to use default value."<< endl;
+			cout << "Error: File input_link_type.csv cannot be opened.\n Try to use default value." << endl;
 			g_ProgramStop();
-		
+
 
 		}
-		if (parser_link_type.inFile.is_open () || parser_link_type.OpenCSVFile("input_link_type.csv"))
+		if (parser_link_type.inFile.is_open() || parser_link_type.OpenCSVFile("input_link_type.csv"))
 		{
 
 			std::map<int, int> link_type_map;
 			int line_no = 0;
 
-			while(parser_link_type.ReadRecord())
+			while (parser_link_type.ReadRecord())
 			{
 				DTALinkType element;
 
-				if(parser_link_type.GetValueByFieldName("link_type",element.link_type ) == false)
+				if (parser_link_type.GetValueByFieldName("link_type", element.link_type) == false)
 				{
-					if(line_no==0)
+					if (line_no == 0)
 					{
-						cout << "Error: Field link_type cannot be found in file input_link_type.csv."<< endl;
+						cout << "Error: Field link_type cannot be found in file input_link_type.csv." << endl;
 						g_ProgramStop();
-					}else
+					}
+					else
 					{  // read empty line
 						break;
 					}
 				}
 
-				if(link_type_map.find(element.link_type) != link_type_map.end())
+				if (link_type_map.find(element.link_type) != link_type_map.end())
 				{
-					cout << "Error: Field link_type " << element.link_type << " has been defined more than once in file input_link_type.csv."<< endl;
+					cout << "Error: Field link_type " << element.link_type << " has been defined more than once in file input_link_type.csv." << endl;
 					g_ProgramStop();
 
 					break;
 				}
 
-				link_type_map[element.link_type ] = 1;
+				link_type_map[element.link_type] = 1;
 
 
 
-				if(parser_link_type.GetValueByFieldName("link_type_name",element.link_type_name ) == false)
+				if (parser_link_type.GetValueByFieldName("link_type_name", element.link_type_name) == false)
 				{
 					g_LogFile << "Warning: value link_type_name for link type " << element.link_type << " cannot be found in file input_link_type.csv." << endl;
 
 				}
-				if(parser_link_type.GetValueByFieldName("type_code",element.type_code  ) == false)
+				if (parser_link_type.GetValueByFieldName("type_code", element.type_code) == false)
 				{
 					cout << "Error: Field type_code for link type " << element.link_type << "cannot be found in file input_link_type.csv." << endl;
 					cout << "The corresponding links will not be added in the network." << endl;
@@ -671,85 +674,86 @@ void g_ReadInputFiles()
 				}
 
 
-				if(element.type_code.find_first_not_of("afrhwctnb")!=string::npos)
+				if (element.type_code.find_first_not_of("afrhwctnbp") != string::npos)
 				{
-					cout << "Error: invalid type_code for link type "<< element.link_type_name << " in input_link_type.csv = " << element.type_code << endl;
+					cout << "Error: invalid type_code for link type " << element.link_type_name << " in input_link_type.csv = " << element.type_code << endl;
 					g_ProgramStop();
 				}
 
-				parser_link_type.GetValueByFieldName("travel_time_bias_factor",element.link_type_bias_factor  );
+				parser_link_type.GetValueByFieldName("travel_time_bias_factor", element.link_type_bias_factor);
 
 
-				if(element.link_type_bias_factor  <=0.01 || element.link_type_bias_factor >=100)
+				if (element.link_type_bias_factor <= 0.01 || element.link_type_bias_factor >= 100)
 				{
-					cout << "Error: invalid link_type_bias_factor for link type "<< element.link_type_name << " in input_link_type.csv = " << element.link_type_bias_factor << endl;
+					cout << "Error: invalid link_type_bias_factor for link type " << element.link_type_name << " in input_link_type.csv = " << element.link_type_bias_factor << endl;
 					g_ProgramStop();
-				
+
 				}
 
-				parser_link_type.GetValueByFieldName("capacity_adjustment_factor",element.capacity_adjustment_factor  );
+				parser_link_type.GetValueByFieldName("capacity_adjustment_factor", element.capacity_adjustment_factor);
 
 
-				if(element.capacity_adjustment_factor  <=0.1 || element.capacity_adjustment_factor >=10)
+				if (element.capacity_adjustment_factor <= 0.1 || element.capacity_adjustment_factor >= 10)
 				{
-					cout << "Error: invalid capacity_adjustment_factor for link type "<< element.link_type_name << " in input_link_type.csv = " << element.capacity_adjustment_factor << endl;
+					cout << "Error: invalid capacity_adjustment_factor for link type " << element.link_type_name << " in input_link_type.csv = " << element.capacity_adjustment_factor << endl;
 					g_ProgramStop();
-				
+
 				}
 
-				parser_link_type.GetValueByFieldName("approximate_cycle_length_in_second",element.approximate_cycle_length_in_second  );
+				parser_link_type.GetValueByFieldName("approximate_cycle_length_in_second", element.approximate_cycle_length_in_second);
 
 
-				if(element.approximate_cycle_length_in_second  <=-2 || element.approximate_cycle_length_in_second >=1000)
+				if (element.approximate_cycle_length_in_second <= -2 || element.approximate_cycle_length_in_second >= 1000)
 				{
-					cout << "Error: invalid approximate_cycle_length_in_second for link type "<< element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
+					cout << "Error: invalid approximate_cycle_length_in_second for link type " << element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
 					g_ProgramStop();
-				
+
 				}
-				
-				parser_link_type.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane",element.saturation_flow_rate_in_vhc_per_hour_per_lane  );
+
+				parser_link_type.GetValueByFieldName("saturation_flow_rate_in_vhc_per_hour_per_lane", element.saturation_flow_rate_in_vhc_per_hour_per_lane);
 
 
-				if(element.saturation_flow_rate_in_vhc_per_hour_per_lane  <=-2 || element.saturation_flow_rate_in_vhc_per_hour_per_lane >=3000)
+				if (element.saturation_flow_rate_in_vhc_per_hour_per_lane <= -2 || element.saturation_flow_rate_in_vhc_per_hour_per_lane >= 3000)
 				{
-					cout << "Error: invalid saturation_flow_rate_in_vhc_per_hour_per_lane for link type "<< element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
+					cout << "Error: invalid saturation_flow_rate_in_vhc_per_hour_per_lane for link type " << element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
 					g_ProgramStop();
-				
+
 				}
 
-				if(element.approximate_cycle_length_in_second >=1)
+				if (element.approximate_cycle_length_in_second >= 1)
 				{
-				if(element.saturation_flow_rate_in_vhc_per_hour_per_lane  <=1)
-				{
-					cout << "Error: invalid saturation_flow_rate_in_vhc_per_hour_per_lane for link type with positive approximate_cycle_length_in_second"<< element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
-					g_ProgramStop();
-				
-				}
-				}
-
-
-				if(g_UseDefaultLaneCapacityFlag==1)
-				{
-					if(parser_link_type.GetValueByFieldName("default_lane_capacity",element.default_lane_capacity  ) == false)
+					if (element.saturation_flow_rate_in_vhc_per_hour_per_lane <= 1)
 					{
-						cout << "Error: Field default_lane_capacity cannot be found in file input_link_type.csv."<< endl;
+						cout << "Error: invalid saturation_flow_rate_in_vhc_per_hour_per_lane for link type with positive approximate_cycle_length_in_second" << element.link_type_name << " in input_link_type.csv = " << element.approximate_cycle_length_in_second << endl;
+						g_ProgramStop();
+
+					}
+				}
+
+
+				if (g_UseDefaultLaneCapacityFlag == 1)
+				{
+					if (parser_link_type.GetValueByFieldName("default_lane_capacity", element.default_lane_capacity) == false)
+					{
+						cout << "Error: Field default_lane_capacity cannot be found in file input_link_type.csv." << endl;
 						g_ProgramStop();
 					}
 				}
 
 
-				g_LinkTypeMap[element.link_type  ] = element;
+				g_LinkTypeMap[element.link_type] = element;
 
 				line_no++;
 			}
-		}else
+		}
+		else
 		{
-			cout << "Error: File input_link_type.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+			cout << "Error: File input_link_type.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 
 
 		}
 
-		g_SummaryStatFile.WriteParameterValue ("# of Link Types",g_LinkTypeMap.size());
+		g_SummaryStatFile.WriteParameterValue("# of Link Types", g_LinkTypeMap.size());
 
 	}
 
@@ -760,14 +764,14 @@ void g_ReadInputFiles()
 
 	char InputLinkFileName[_MAX_PATH];
 
-	GetPrivateProfileString("input_file","link_data","input_link.csv",InputLinkFileName,_MAX_PATH,g_DTASettingFileName);
+	GetPrivateProfileString("input_file", "link_data", "input_link.csv", InputLinkFileName, _MAX_PATH, g_DTASettingFileName);
 
 
-	int AllowExtremelyLowCapacityFlag = g_GetPrivateProfileInt("input_checking", "allow_extremely_low_capacity", 1, g_DTASettingFileName);	
-//	g_ProhibitUTurnOnFeewayLinkFlag = g_GetPrivateProfileInt("shortest_path", "prohibit_u_turn_on_freeway_link", 1, g_DTASettingFileName);	
+	int AllowExtremelyLowCapacityFlag = g_GetPrivateProfileInt("input_checking", "allow_extremely_low_capacity", 1, g_DTASettingFileName);
+	//	g_ProhibitUTurnOnFeewayLinkFlag = g_GetPrivateProfileInt("shortest_path", "prohibit_u_turn_on_freeway_link", 1, g_DTASettingFileName);	
 
 
-	cout << "Step 3: Reading file input_link.csv..."<< endl;
+	cout << "Step 3: Reading file input_link.csv..." << endl;
 	g_LogFile << "Step 3: Reading file input_link.csv..." << endl;
 
 	int  count_effective_green_time = 0;
@@ -789,7 +793,7 @@ void g_ReadInputFiles()
 	if (parser_link.OpenCSVFile(InputLinkFileName))
 	{
 		bool bNodeNonExistError = false;
-		while(parser_link.ReadRecord())
+		while (parser_link.ReadRecord())
 		{
 			int from_node_name = 0;
 			int to_node_name = 0;
@@ -801,13 +805,13 @@ void g_ReadInputFiles()
 			float KCritical = 10;
 			double capacity = 0;
 			int type;
-			string name, mode_code;
-			double K_jam,wave_speed_in_mph,AADT_conversion_factor;
+			string name, mode_code, demand_type_code;
+			double K_jam, wave_speed_in_mph, AADT_conversion_factor;
 
 			int org_link_id = 0;
-			if(!parser_link.GetValueByFieldName("from_node_id",from_node_name)) 
+			if (!parser_link.GetValueByFieldName("from_node_id", from_node_name))
 			{
-				if(i==0)
+				if (i == 0)
 				{
 					cout << "Field from_node_id has not been defined in file input_link.csv. Please check.";
 					getchar();
@@ -820,7 +824,7 @@ void g_ReadInputFiles()
 				}
 			}
 
-			if(!parser_link.GetValueByFieldName("to_node_id",to_node_name))
+			if (!parser_link.GetValueByFieldName("to_node_id", to_node_name))
 			{
 				cout << "Field to_node_id has not been defined in file input_link.csv. Please check.";
 				getchar();
@@ -830,6 +834,9 @@ void g_ReadInputFiles()
 
 			if (!parser_link.GetValueByFieldName("mode_code", mode_code))
 				mode_code = "";
+
+			if (!parser_link.GetValueByFieldName("demand_type_code", demand_type_code))
+				demand_type_code = "";
 
 			if (mode_code.compare("w") == 0)   // do not model walking-only link in this version
 				continue;
@@ -866,17 +873,17 @@ void g_ReadInputFiles()
 
 				if (missing_node_error <= 3)
 				{
-				cout << "from_node_id " << from_node_name << " in input_link.csv has not be defined in input_node.csv." << endl;
-				cout << "associated link_type : " << type << endl;
-				cout << "Please check error.log." << endl;
-				getchar();
+					cout << "from_node_id " << from_node_name << " in input_link.csv has not be defined in input_node.csv." << endl;
+					cout << "associated link_type : " << type << endl;
+					cout << "Please check error.log." << endl;
+					getchar();
 				}
-			missing_node_error++;
+				missing_node_error++;
 				continue;
 
 			}
 
-			if(g_NodeNametoIDMap.find(to_node_name)== g_NodeNametoIDMap.end())
+			if (g_NodeNametoIDMap.find(to_node_name) == g_NodeNametoIDMap.end())
 			{
 
 				fprintf(g_ErrorFile, "to_node_id %d in input_link.csv has not be defined in input_node.csv.", to_node_name);
@@ -885,45 +892,45 @@ void g_ReadInputFiles()
 					cout << "to_node_id " << to_node_name << " in input_link.csv has not be defined in input_node.csv. " << endl;
 					cout << "associated from_node_id: " << from_node_name << " ; link_type : " << type << endl;
 					cout << "Please check error.log." << endl;
- 					getchar();
+					getchar();
 				}
 				missing_node_error++;
 
 				continue;
 			}
 
-			parser_link.GetValueByFieldName("link_id",org_link_id);
+			parser_link.GetValueByFieldName("link_id", org_link_id);
 
-			if(!parser_link.GetValueByFieldName("direction",direction))
+			if (!parser_link.GetValueByFieldName("direction", direction))
 				direction = 1;
 
 			int netwrok_design_flag = 0;
 
-			parser_link.GetValueByFieldName("netwrok_design_flag", netwrok_design_flag);
+			parser_link.GetValueByFieldName("network_design_flag", netwrok_design_flag);
 
 
 
-			if(!parser_link.GetValueByFieldName("length",length_in_mile))
+			if (!parser_link.GetValueByFieldName("length", length_in_mile))
 			{
 
-				if(!parser_link.GetValueByFieldName("length_in_mile",length_in_mile))
+				if (!parser_link.GetValueByFieldName("length_in_mile", length_in_mile))
 				{
 
-				cout<< "Field length has not been defined in file input_link.csv. Please check.";
-				getchar();
-				exit(0);
+					cout << "Field length has not been defined in file input_link.csv. Please check.";
+					getchar();
+					exit(0);
 				}
 			}
 
-			if(length_in_mile>100)
+			if (length_in_mile > 100)
 			{
 				cout << "Link: " << from_node_name << "->" << to_node_name << " in input_link.csv has " << "length_in_mile = " << length_in_mile << " , which might be too long. Please check.";
 				//				sleep(5);
 			}
 
-			if(!parser_link.GetValueByFieldName("number_of_lanes",number_of_lanes))
+			if (!parser_link.GetValueByFieldName("number_of_lanes", number_of_lanes))
 			{
-				if(g_UEAssignmentMethod != assignment_accessibility_distance)
+				if (g_UEAssignmentMethod != assignment_accessibility_distance)
 				{
 					cout << "Field number_of_lanes has not been defined in file input_link.csv. Please check.";
 					getchar();
@@ -936,14 +943,14 @@ void g_ReadInputFiles()
 				number_of_lanes = 7; // reset # of lanes for connectors to a positive value
 			}
 
-			if(!parser_link.GetValueByFieldName("speed_limit",speed_limit_in_mph))
+			if (!parser_link.GetValueByFieldName("speed_limit", speed_limit_in_mph))
 			{
 
-				if(!parser_link.GetValueByFieldName("speed_limit_in_mph",speed_limit_in_mph))
+				if (!parser_link.GetValueByFieldName("speed_limit_in_mph", speed_limit_in_mph))
 				{
-				cout << "Field speed_limit_in_mph has not been defined in file input_link.csv. Please check.";
-				getchar();
-				exit(0);
+					cout << "Field speed_limit_in_mph has not been defined in file input_link.csv. Please check.";
+					getchar();
+					exit(0);
 				}
 			}
 			if (!parser_link.GetValueByFieldName("speed_at_capacity", speed_at_capacity))
@@ -954,7 +961,7 @@ void g_ReadInputFiles()
 
 			if (!parser_link.GetValueByFieldName("lane_capacity_in_vhc_per_hour", capacity))
 			{
-				if(g_UEAssignmentMethod != assignment_accessibility_distance)
+				if (g_UEAssignmentMethod != assignment_accessibility_distance)
 				{
 					cout << "Field lane_capacity_in_vhc_per_hour has not been defined in file input_link.csv. Please check.";
 					getchar();
@@ -966,38 +973,39 @@ void g_ReadInputFiles()
 			KCritical = capacity / max(10, speed_at_capacity); // e.g. 1500 vehicles/hour/lane / 30 mph = 50 vehicles /mile/lane
 
 
-			if(g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
-				capacity*=g_CapacityLoadingFactor;
+			if (g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
+				capacity *= g_CapacityLoadingFactor;
 
-	
+
 			int SaturationFlowRate;
 
 			float BPR_Alpha = 0.15f;
 			float BPR_Beta = 4.0f;
 
-			parser_link.GetValueByFieldName("BPR_alpha_term",BPR_Alpha);
-			parser_link.GetValueByFieldName("BPR_beta_term",BPR_Beta);
+			parser_link.GetValueByFieldName("BPR_alpha_term", BPR_Alpha);
+			parser_link.GetValueByFieldName("BPR_beta_term", BPR_Beta);
 
 
 
-			int LeftTurnBayLengthInFeet  = 0;
-			int LeftTurnCapacity  = 0;
+			int LeftTurnBayLengthInFeet = 0;
+			int LeftTurnCapacity = 0;
 			char link_direction;
 
 
-			parser_link.GetValueByFieldName("from_approach",link_direction);
+			parser_link.GetValueByFieldName("from_approach", link_direction);
 
 
 
 
 
-			if((g_UEAssignmentMethod != assignment_accessibility_distance) && g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
+			if ((g_UEAssignmentMethod != assignment_accessibility_distance) && g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
 			{
-				int round_down_type = int(type/10)*10;
-				if(g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())  // round down type exists
+				int round_down_type = int(type / 10) * 10;
+				if (g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())  // round down type exists
 				{
-					g_LinkTypeMap[type].type_code = g_LinkTypeMap[round_down_type].type_code ;
-				}else
+					g_LinkTypeMap[type].type_code = g_LinkTypeMap[round_down_type].type_code;
+				}
+				else
 				{
 					cout << "Link: " << from_node_name << "->" << to_node_name << " in input_link.csv has " << "link_type = " << type << ", which has not been defined in file input_link.csv. Please check. Use default link type: arterial.";
 					g_LinkTypeMap[type].type_code = 'a';
@@ -1009,40 +1017,40 @@ void g_ReadInputFiles()
 			}
 
 
-			if(!parser_link.GetValueByFieldName("AADT_conversion_factor",AADT_conversion_factor))
+			if (!parser_link.GetValueByFieldName("AADT_conversion_factor", AADT_conversion_factor))
 				AADT_conversion_factor = 0.1;
 
-			if(!parser_link.GetValueByFieldName("jam_density",K_jam))
+			if (!parser_link.GetValueByFieldName("jam_density", K_jam))
 			{
-				if(!parser_link.GetValueByFieldName("jam_density_in_vhc_pmpl",K_jam))
-				if(g_settings.use_mile_or_km_as_length_unit == 1)
+				if (!parser_link.GetValueByFieldName("jam_density_in_vhc_pmpl", K_jam))
+				if (g_settings.use_mile_or_km_as_length_unit == 1)
 					K_jam = 180;
 				else
-					K_jam = 180/g_ratio_mile_to_km;
+					K_jam = 180 / g_ratio_mile_to_km;
 			}
 
-			if(g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
-				K_jam*=g_CapacityLoadingFactor;
+			if (g_CapacityLoadingFactor < 0.999 || g_CapacityLoadingFactor > 1.001)
+				K_jam *= g_CapacityLoadingFactor;
 
-			if(!parser_link.GetValueByFieldName("wave_speed",wave_speed_in_mph))
+			if (!parser_link.GetValueByFieldName("wave_speed", wave_speed_in_mph))
 			{
-			if(!parser_link.GetValueByFieldName("wave_speed_in_mph",wave_speed_in_mph))
-			{
-				if(g_settings.use_mile_or_km_as_length_unit == 1)
-					wave_speed_in_mph = 12;
-				else
-					wave_speed_in_mph = 12/g_ratio_mile_to_km;
+				if (!parser_link.GetValueByFieldName("wave_speed_in_mph", wave_speed_in_mph))
+				{
+					if (g_settings.use_mile_or_km_as_length_unit == 1)
+						wave_speed_in_mph = 12;
+					else
+						wave_speed_in_mph = 12 / g_ratio_mile_to_km;
 
-			}
+				}
 			}
 
 
 			int ProhibitedU_Turn = 0;
 
-			parser_link.GetValueByFieldName("prohibited_u-turn,",ProhibitedU_Turn);
+			parser_link.GetValueByFieldName("prohibited_u-turn,", ProhibitedU_Turn);
 
 
-			if(from_node_name == 58987 && to_node_name == 54430) 
+			if (from_node_name == 58987 && to_node_name == 54430)
 			{
 				TRACE(" ");
 			}
@@ -1063,35 +1071,35 @@ void g_ReadInputFiles()
 			}
 
 
-			if(number_of_lanes == 0)  // skip this link 
+			if (number_of_lanes == 0)  // skip this link 
 			{
-				g_WarningFile << "link with 0 lane, skip:" <<from_node_name << " -> " <<to_node_name << endl;
+				g_WarningFile << "link with 0 lane, skip:" << from_node_name << " -> " << to_node_name << endl;
 				continue;
 			}
 
-			if(capacity <1)  // skip this link 
+			if (capacity < 1)  // skip this link 
 			{
-				g_WarningFile << "link with capacity " <<  capacity << ", skip: " <<from_node_name << " -> " <<to_node_name << endl;
+				g_WarningFile << "link with capacity " << capacity << ", skip: " << from_node_name << " -> " << to_node_name << endl;
 				continue;
 			}
 
-			if(speed_limit_in_mph <1)  // skip this link 
+			if (speed_limit_in_mph < 1)  // skip this link 
 			{
-				g_WarningFile << "link with speed limit " <<  speed_limit_in_mph << ", skip: " <<from_node_name << " -> " <<to_node_name << endl;
+				g_WarningFile << "link with speed limit " << speed_limit_in_mph << ", skip: " << from_node_name << " -> " << to_node_name << endl;
 				continue;
 			}
 
-			for(int link_code = link_code_start; link_code <=link_code_end; link_code++)
+			for (int link_code = link_code_start; link_code <= link_code_end; link_code++)
 			{
 
 				int FromID = from_node_name;
 				int ToID = to_node_name;
-				if(link_code == 1)  //AB link
+				if (link_code == 1)  //AB link
 				{
 					FromID = from_node_name;
 					ToID = to_node_name;
 				}
-				if(link_code == 2)  //BA link
+				if (link_code == 2)  //BA link
 				{
 					FromID = to_node_name;
 					ToID = from_node_name;
@@ -1099,65 +1107,65 @@ void g_ReadInputFiles()
 
 
 				pLink = new DTALink(g_PlanningHorizon);
-				if(pLink==NULL)
+				if (pLink == NULL)
 				{
-					cout << "Allocating memory error at line "<< i+1  << endl;
+					cout << "Allocating memory error at line " << i + 1 << endl;
 					getchar();
 					exit(0);
 
 				}
 
-				parser_link.GetValueByFieldName("name",pLink->m_Name,true);
+				parser_link.GetValueByFieldName("name", pLink->m_Name, true);
 
-				std::string link_key, count_sensor_id,speed_sensor_id;
+				std::string link_key, count_sensor_id, speed_sensor_id;
 
-				parser_link.GetValueByFieldName("link_key",link_key);
-				parser_link.GetValueByFieldName("count_sensor_id",count_sensor_id);
-				parser_link.GetValueByFieldName("speed_sensor_id",speed_sensor_id);
-				
-				if(link_key.size() > 0 ) 
-						g_LinkKeyMap[link_key] = pLink;
+				parser_link.GetValueByFieldName("link_key", link_key);
+				parser_link.GetValueByFieldName("count_sensor_id", count_sensor_id);
+				parser_link.GetValueByFieldName("speed_sensor_id", speed_sensor_id);
 
-				if(count_sensor_id.size() > 0 ) 
-						g_CountSensorIDMap[count_sensor_id] = pLink;
+				if (link_key.size() > 0)
+					g_LinkKeyMap[link_key] = pLink;
 
-				if(speed_sensor_id.size() > 0 ) 
-						g_SpeedSensorIDMap[speed_sensor_id] = pLink;
+				if (count_sensor_id.size() > 0)
+					g_CountSensorIDMap[count_sensor_id] = pLink;
+
+				if (speed_sensor_id.size() > 0)
+					g_SpeedSensorIDMap[speed_sensor_id] = pLink;
 
 
 				pLink->m_LinkNo = i;
 				pLink->m_RandomSeed = pLink->m_LinkNo; // assign a link specific random seed
 
-				pLink->m_OrgLinkID =  org_link_id;
-				pLink->m_link_code  = link_code;
+				pLink->m_OrgLinkID = org_link_id;
+				pLink->m_link_code = link_code;
 				pLink->m_FromNodeNumber = FromID;
 				pLink->m_ToNodeNumber = ToID;
-				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber ];
-				pLink->m_ToNodeID= g_NodeNametoIDMap[pLink->m_ToNodeNumber];
+				pLink->m_FromNodeID = g_NodeNametoIDMap[pLink->m_FromNodeNumber];
+				pLink->m_ToNodeID = g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
 				pLink->m_ProhibitedU_Turn = ProhibitedU_Turn;
 				pLink->m_NetworkDesignFlag = netwrok_design_flag;
 
 				if (netwrok_design_flag >= 1)
 				{
-				pLink->m_NetworkDesignSequenceNo = global_NetworkDesignSequenceNo++;
+					pLink->m_NetworkDesignSequenceNo = global_NetworkDesignSequenceNo++;
 				}
 				if (netwrok_design_flag == 1)
 					TRACE("consider adding links %d->%d", from_node_name, to_node_name);
 
-				if(ProhibitedU_Turn ==1)
+				if (ProhibitedU_Turn == 1)
 				{
 					g_ShortestPathWithMovementDelayFlag = true; // with movement input
-						string movement_id = GetMovementStringID(FromID, ToID , FromID);
-						int middle_node_id = g_NodeNametoIDMap[ToID ];
+					string movement_id = GetMovementStringID(FromID, ToID, FromID);
+					int middle_node_id = g_NodeNametoIDMap[ToID];
 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = FromID;
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = ToID ; 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = FromID;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = FromID;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = ToID;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = FromID;
 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
 
-						g_number_of_prohibited_movements++;
+					g_number_of_prohibited_movements++;
 				}
 
 
@@ -1168,101 +1176,104 @@ void g_ReadInputFiles()
 				string geo_string;
 
 				double link_coordinate_length = 0;
-				if(parser_link.GetValueByFieldName("geometry",geo_string) == false)
+				if (parser_link.GetValueByFieldName("geometry", geo_string) == false)
 				{
-				// overwrite when the field "geometry" exists
-				CGeometry geometry(geo_string);
-				CoordinateVector = geometry.GetCoordinateList();
-				for(int si = 0; si < CoordinateVector.size(); si++)
-				{
-					GDPoint	pt;
-					pt.x = CoordinateVector[si].X;
-					pt.y = CoordinateVector[si].Y;
-					pLink->m_ShapePoints .push_back (pt);
-
-					if(si>=1)
+					// overwrite when the field "geometry" exists
+					CGeometry geometry(geo_string);
+					CoordinateVector = geometry.GetCoordinateList();
+					for (int si = 0; si < CoordinateVector.size(); si++)
 					{
-						link_coordinate_length += pow( pow(CoordinateVector[si].X - CoordinateVector[si-1].X , 2) +  pow(CoordinateVector[si].Y - CoordinateVector[si-1].Y , 2),0.5);
+						GDPoint	pt;
+						pt.x = CoordinateVector[si].X;
+						pt.y = CoordinateVector[si].Y;
+						pLink->m_ShapePoints.push_back(pt);
 
+						if (si >= 1)
+						{
+							link_coordinate_length += pow(pow(CoordinateVector[si].X - CoordinateVector[si - 1].X, 2) + pow(CoordinateVector[si].Y - CoordinateVector[si - 1].Y, 2), 0.5);
+
+						}
 					}
-				}
 
 				}
-				
 
-				parser_link.GetValueByFieldName("geometry",pLink->m_geometry_string);
-				parser_link.GetValueByFieldName("geometry",pLink->m_original_geometry_string);
+
+				parser_link.GetValueByFieldName("geometry", pLink->m_geometry_string);
+				parser_link.GetValueByFieldName("geometry", pLink->m_original_geometry_string);
 
 
 				total_link_length += length_in_mile;
 				total_link_coordinate_length += link_coordinate_length;
 
 
-				pLink->m_SpeedLimit= speed_limit_in_mph;
+				pLink->m_SpeedLimit = speed_limit_in_mph;
 
 				pLink->m_SpeedAtCapacity = speed_at_capacity;
 				pLink->m_KCritical = KCritical;
-				
-				float	m_KCritical;
-				float length = max(0.00001,length_in_mile);  // minimum link length 0.0001
 
-				pLink->m_OutflowNumLanes= number_of_lanes;
+				float	m_KCritical;
+				float length = max(0.00001, length_in_mile);  // minimum link length 0.0001
+
+				pLink->m_OutflowNumLanes = number_of_lanes;
 				pLink->m_InflowNumLanes = number_of_lanes;
 
 				pLink->m_Orginal_OutflowNumLanes = number_of_lanes;
 				pLink->m_Orginal_InflowNumLane = number_of_lanes;
 
-				
+
 
 				pLink->m_Direction = link_direction;
 
-				if(g_AgentBasedAssignmentFlag != assignment_accessibility_distance && g_TrafficFlowModelFlag != tfm_BPR)
-					pLink->m_Length= max(length, pLink->m_SpeedLimit*0.1f/60.0f);  // we do not impose the minimum distance in this version
+				if (g_AgentBasedAssignmentFlag != assignment_accessibility_distance && g_TrafficFlowModelFlag != tfm_BPR)
+					pLink->m_Length = max(length, pLink->m_SpeedLimit*0.1f / 60.0f);  // we do not impose the minimum distance in this version
 				else
-					pLink->m_Length= length;
+					pLink->m_Length = length;
 
 
 
-				if(AllowExtremelyLowCapacityFlag == 0 && capacity < 10 && g_number_of_warnings<max_number_of_warnings_to_be_showed)
+				if (AllowExtremelyLowCapacityFlag == 0 && capacity < 10 && g_number_of_warnings < max_number_of_warnings_to_be_showed)
 				{
-					cout << "In file input_link.csv, line "<< i+1 << " has capacity <10" << capacity <<", which might not be realistic. Please correct the error." << endl;
+					cout << "In file input_link.csv, line " << i + 1 << " has capacity <10" << capacity << ", which might not be realistic. Please correct the error." << endl;
 					getchar();
 					g_number_of_warnings++;
 				}
 
-				
-
-				pLink->m_link_type= type;
 
 
+				pLink->m_link_type = type;
 
-				if(g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
+				pLink->demand_type_code = demand_type_code;
+
+
+
+				if (g_LinkTypeMap.find(type) == g_LinkTypeMap.end())
 				{
-					int round_down_type = int(type/10)*10;
-					if(g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())
+					int round_down_type = int(type / 10) * 10;
+					if (g_LinkTypeMap.find(round_down_type) != g_LinkTypeMap.end())
 					{
-						g_LinkTypeMap[type].type_code = g_LinkTypeMap[round_down_type].type_code ;
-					}else
+						g_LinkTypeMap[type].type_code = g_LinkTypeMap[round_down_type].type_code;
+					}
+					else
 					{
-						cout << "In file input_link.csv, line "<< i+1 << " has link type "<< type <<", which has not been defined in input_link_type.csv. Please correct. Use default link type: arterial street." << endl;
+						cout << "In file input_link.csv, line " << i + 1 << " has link type " << type << ", which has not been defined in input_link_type.csv. Please correct. Use default link type: arterial street." << endl;
 						g_LinkTypeMap[type].type_code = 'a';
 						getchar();
 					}
 				}
 
 
-				pLink->m_LaneCapacity= capacity * g_LinkTypeMap[type].capacity_adjustment_factor ;
+				pLink->m_LaneCapacity = capacity * g_LinkTypeMap[type].capacity_adjustment_factor;
 				pLink->m_BPRLaneCapacity = pLink->m_LaneCapacity;
 
-				if (g_SignalRepresentationFlag == signal_model_link_effective_green_time || 
+				if (g_SignalRepresentationFlag == signal_model_link_effective_green_time ||
 					g_SignalRepresentationFlag == signal_model_movement_effective_green_time)
 				{
-					if (g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code || 
+					if (g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.pretimed_signal_control_type_code ||
 						g_NodeVector[pLink->m_ToNodeID].m_ControlType == g_settings.actuated_signal_control_type_code)
 					{
 						pLink->m_EffectiveGreenTime_In_Second = max(0.1, pLink->m_LaneCapacity / 1800) *  g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
-						g_LogFile << "Link " << pLink->m_FromNodeNumber << " -> " << pLink->m_ToNodeNumber << " has an effective green time = " << pLink->m_EffectiveGreenTime_In_Second  <<  endl;
-						
+						g_LogFile << "Link " << pLink->m_FromNodeNumber << " -> " << pLink->m_ToNodeNumber << " has an effective green time = " << pLink->m_EffectiveGreenTime_In_Second << endl;
+
 						pLink->m_DownstreamCycleLength_In_Second = g_NodeVector[pLink->m_ToNodeID].m_CycleLength_In_Second;
 						pLink->m_DownstreamNodeSignalOffset_In_Second = g_NodeVector[pLink->m_ToNodeID].m_SignalOffset_In_Second;
 
@@ -1274,10 +1285,10 @@ void g_ReadInputFiles()
 					}
 				}
 
-				pLink->m_LinkTypeName  = g_LinkTypeMap[type].link_type_name;
+				pLink->m_LinkTypeName = g_LinkTypeMap[type].link_type_name;
 
 
-				pLink->m_bFreewayType = g_LinkTypeMap[type].IsFreeway ();
+				pLink->m_bFreewayType = g_LinkTypeMap[type].IsFreeway();
 				pLink->m_bArterialType = g_LinkTypeMap[type].IsArterial();
 
 
@@ -1287,45 +1298,45 @@ void g_ReadInputFiles()
 				pLink->m_AADTConversionFactor = AADT_conversion_factor;
 				pLink->m_BackwardWaveSpeed = wave_speed_in_mph;
 
-				if(g_LinkTypeMap[type].IsConnector () == true && g_NodeVector[pLink->m_ToNodeID]. m_ControlType!= g_settings.no_signal_control_type_code)
+				if (g_LinkTypeMap[type].IsConnector() == true && g_NodeVector[pLink->m_ToNodeID].m_ControlType != g_settings.no_signal_control_type_code)
 				{
 					//"no_control" for the downstream node of a connector
 					//							g_NodeVector[pLink->m_ToNodeID]. m_ControlType = no_signal_control_type_code;
-					if(control_node_number==0)
-						control_node_number= pLink->m_ToNodeNumber ;
+					if (control_node_number == 0)
+						control_node_number = pLink->m_ToNodeNumber;
 
 					//							signal_reset_count++;
 				}
 
-				pLink->m_VehicleSpaceCapacity = max(1,pLink->m_Length * pLink->m_OutflowNumLanes *K_jam); 
+				pLink->m_VehicleSpaceCapacity = max(1, pLink->m_Length * pLink->m_OutflowNumLanes *K_jam);
 
-				g_NodeVector[pLink->m_FromNodeID ].m_TotalCapacity += (pLink->m_LaneCapacity* pLink->m_OutflowNumLanes);
-				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkVector.push_back(i);
-				g_NodeVector[pLink->m_FromNodeID ].m_OutgoingLinkVector .push_back(i);
+				g_NodeVector[pLink->m_FromNodeID].m_TotalCapacity += (pLink->m_LaneCapacity* pLink->m_OutflowNumLanes);
+				g_NodeVector[pLink->m_ToNodeID].m_IncomingLinkVector.push_back(i);
+				g_NodeVector[pLink->m_FromNodeID].m_OutgoingLinkVector.push_back(i);
 
 				if (g_NodeVector[pLink->m_FromNodeID].m_OutgoingLinkVector.size() > g_AdjLinkSize)
 					g_AdjLinkSize = g_NodeVector[pLink->m_FromNodeID].m_OutgoingLinkVector.size();
 
 
-				g_NodeVector[pLink->m_ToNodeID ].m_IncomingLinkDelay.push_back(0);
+				g_NodeVector[pLink->m_ToNodeID].m_IncomingLinkDelay.push_back(0);
 
 				// prevent U turns on freeway links
-				if(g_ProhibitUTurnOnFeewayLinkFlag == 1 && g_LinkTypeMap[pLink->m_link_type].IsFreeway () == true)
+				if (g_ProhibitUTurnOnFeewayLinkFlag == 1 && g_LinkTypeMap[pLink->m_link_type].IsFreeway() == true)
 				{
 					g_ShortestPathWithMovementDelayFlag = true; // with movement input
 
-						string movement_id = GetMovementStringID(pLink->m_FromNodeNumber, pLink->m_ToNodeNumber , pLink->m_FromNodeNumber);
-						int middle_node_id = g_NodeNametoIDMap[pLink->m_ToNodeNumber ];
+					string movement_id = GetMovementStringID(pLink->m_FromNodeNumber, pLink->m_ToNodeNumber, pLink->m_FromNodeNumber);
+					int middle_node_id = g_NodeNametoIDMap[pLink->m_ToNodeNumber];
 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].turning_direction = "U-turn";
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = pLink->m_FromNodeNumber;
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = pLink->m_ToNodeNumber ; 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = pLink->m_FromNodeNumber;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].turning_direction = "U-turn";
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_from_node_id = pLink->m_FromNodeNumber;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].in_link_to_node_id = pLink->m_ToNodeNumber;
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].out_link_to_node_id = pLink->m_FromNodeNumber;
 
-						g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
+					g_NodeVector[middle_node_id].m_MovementMap[movement_id].b_turning_prohibited = true;   // assign movement to individual node
 
 
-				
+
 				}
 
 
@@ -1335,34 +1346,34 @@ void g_ReadInputFiles()
 
 
 
-		// tally statics for each link type
-		g_LinkTypeMap[pLink->m_link_type].number_of_links ++;
-		g_LinkTypeMap[pLink->m_link_type].total_lane_capacity += pLink->m_LaneCapacity ;
-		g_LinkTypeMap[pLink->m_link_type].total_speed_limit += pLink->m_SpeedLimit  ;
-		g_LinkTypeMap[pLink->m_link_type].total_number_of_lanes += pLink->m_OutflowNumLanes   ;
-		g_LinkTypeMap[pLink->m_link_type].total_k_jam += pLink->m_KJam    ;
-		g_LinkTypeMap[pLink->m_link_type].total_length += pLink->m_Length   ;
+				// tally statics for each link type
+				g_LinkTypeMap[pLink->m_link_type].number_of_links++;
+				g_LinkTypeMap[pLink->m_link_type].total_lane_capacity += pLink->m_LaneCapacity;
+				g_LinkTypeMap[pLink->m_link_type].total_speed_limit += pLink->m_SpeedLimit;
+				g_LinkTypeMap[pLink->m_link_type].total_number_of_lanes += pLink->m_OutflowNumLanes;
+				g_LinkTypeMap[pLink->m_link_type].total_k_jam += pLink->m_KJam;
+				g_LinkTypeMap[pLink->m_link_type].total_length += pLink->m_Length;
 
-			g_LinkVector.push_back(pLink);
-			string link_string_id = GetLinkStringID(FromID, ToID);
-			g_LinkMap[link_string_id] = pLink;
-			g_LinkIDMap[org_link_id] = pLink;
+				g_LinkVector.push_back(pLink);
+				string link_string_id = GetLinkStringID(FromID, ToID);
+				g_LinkMap[link_string_id] = pLink;
+				g_LinkIDMap[org_link_id] = pLink;
 
 
-			
+
 
 				i++;
 
 
 
-				if(i%1000==0)
+				if (i % 1000 == 0)
 				{
-					cout << " loading " << i/1000 << "K links..." << endl;
+					cout << " loading " << i / 1000 << "K links..." << endl;
 				}
 
-				if(i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != assignment_accessibility_distance) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
+				if (i == MAX_LINK_NO && g_AgentBasedAssignmentFlag != assignment_accessibility_distance) // g_AgentBasedAssignmentFlag == 2  -> no vehicle simulation
 				{
-					cout << "The network has more than "<< MAX_LINK_NO << " links."<< endl <<"Please contact the developers for a new 64 bit version for this large-scale network." << endl;
+					cout << "The network has more than " << MAX_LINK_NO << " links." << endl << "Please contact the developers for a new 64 bit version for this large-scale network." << endl;
 					getchar();
 					exit(0);
 
@@ -1371,18 +1382,19 @@ void g_ReadInputFiles()
 			}
 		}
 
-			g_UnitOfMileOrKM  =  	total_link_coordinate_length/max(0.1,total_link_length);
+		g_UnitOfMileOrKM = total_link_coordinate_length / max(0.1, total_link_length);
 
 
 
-	}else
+	}
+	else
 	{
-		cout << "Error: File input_link.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_link.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 		g_ProgramStop();
 	}
 
 
-	if(signal_reset_count>=1)
+	if (signal_reset_count >= 1)
 	{
 		cout << signal_reset_count << " nodes' control type is reset to 'no control', as they are connected to connectors. " << endl << "For example, node " << control_node_number << endl;
 		getchar();
@@ -1390,7 +1402,7 @@ void g_ReadInputFiles()
 
 	cout << " total # of links loaded = " << g_LinkVector.size() << endl;
 
-	g_SummaryStatFile.WriteParameterValue ("# of Links", g_LinkVector.size());
+	g_SummaryStatFile.WriteParameterValue("# of Links", g_LinkVector.size());
 
 	if (g_SignalRepresentationFlag == signal_model_link_effective_green_time)
 	{
@@ -1415,7 +1427,7 @@ void g_ReadInputFiles()
 	// freeway, types
 
 
-	if(g_UEAssignmentMethod == assignment_accessibility_distance)
+	if (g_UEAssignmentMethod == assignment_accessibility_distance)
 	{
 		g_AgentBasedShortestPathGeneration();
 		exit(0);
@@ -1448,46 +1460,46 @@ void g_ReadInputFiles()
 	{
 
 		int max_zone_number = 0;
-		int i=0;
+		int i = 0;
 
-		while(parser_zone.ReadRecord())
+		while (parser_zone.ReadRecord())
 		{
 			int zone_number;
 
-			if(parser_zone.GetValueByFieldName("zone_id",zone_number) == false)
+			if (parser_zone.GetValueByFieldName("zone_id", zone_number) == false)
 			{
 				cout << "Error: Field zone_id does not exist in input_zone.csv" << endl;
 				g_ProgramStop();
 				break;
 			}
 
-			if(zone_number ==0)
+			if (zone_number == 0)
 			{
 				cout << "Error: zone_id = 0 in input_zone.csv" << endl;
 				g_ProgramStop();
 			}
 
-			if(max_zone_number < zone_number)
+			if (max_zone_number < zone_number)
 				max_zone_number = zone_number;
 
 			DTAZone zone;
-				std::vector<CCoordinate> CoordinateVector;
-				string geo_string;
-				if(parser_zone.GetValueByFieldName("geometry",geo_string,true))
-				{
+			std::vector<CCoordinate> CoordinateVector;
+			string geo_string;
+			if (parser_zone.GetValueByFieldName("geometry", geo_string, true))
+			{
 				// overwrite when the field "geometry" exists
 				CGeometry geometry(geo_string);
 				CoordinateVector = geometry.GetCoordinateList();
-					for(int si = 0; si < CoordinateVector.size(); si++)
-					{
-						GDPoint	pt;
-						pt.x = CoordinateVector[si].X;
-						pt.y = CoordinateVector[si].Y;
-						zone.m_ShapePoints .push_back (pt);
-
-					}
+				for (int si = 0; si < CoordinateVector.size(); si++)
+				{
+					GDPoint	pt;
+					pt.x = CoordinateVector[si].X;
+					pt.y = CoordinateVector[si].Y;
+					zone.m_ShapePoints.push_back(pt);
 
 				}
+
+			}
 
 
 			zone.m_ZoneSequentialNo = i++;
@@ -1495,9 +1507,9 @@ void g_ReadInputFiles()
 
 		}
 
-		if(max_zone_number==0)
+		if (max_zone_number == 0)
 		{
-			cout<< "Error: 0 zone in input_zone.csv. Please check." << endl;
+			cout << "Error: 0 zone in input_zone.csv. Please check." << endl;
 			g_ProgramStop();
 
 		}
@@ -1505,19 +1517,20 @@ void g_ReadInputFiles()
 		g_ODZoneNumberSize = max_zone_number;
 
 
-	}else
+	}
+	else
 	{
-		cout << "input_zone.csv cannot be opened."<< endl;
+		cout << "input_zone.csv cannot be opened." << endl;
 		g_ProgramStop();
 	}
 
 	cout << "   # of zones =" << g_ZoneMap.size() << endl;
 
-	g_SummaryStatFile.WriteParameterValue ("# of Zones", g_ZoneMap.size());
+	g_SummaryStatFile.WriteParameterValue("# of Zones", g_ZoneMap.size());
 
 	// check how many centroids
 
-	cout << "Step 5: Reading files input_activity_location.csv..."<< endl;
+	cout << "Step 5: Reading files input_activity_location.csv..." << endl;
 	g_LogFile << "Step 5: Reading file input_activity_location.csv..." << endl;
 
 	CCSVParser parser_activity_location;
@@ -1527,30 +1540,30 @@ void g_ReadInputFiles()
 
 		ofstream activity_location_file;
 		activity_location_file.open("input_activity_location.csv");
-		if(activity_location_file.is_open ())
+		if (activity_location_file.is_open())
 		{
 			activity_location_file << "zone_id,node_id,external_OD_flag" << endl;
 
 			// use each node as possible zone
-			for(unsigned int i=0; i< g_NodeVector.size(); i++)
-			{  
-				activity_location_file << g_NodeVector[i].m_NodeNumber << "," << g_NodeVector[i].m_NodeNumber << ",0"<< endl;
+			for (unsigned int i = 0; i < g_NodeVector.size(); i++)
+			{
+				activity_location_file << g_NodeVector[i].m_NodeNumber << "," << g_NodeVector[i].m_NodeNumber << ",0" << endl;
 			}
 
 			activity_location_file.close();
 		}
 	}
 
-	int activity_location_count  = 0;
-	if (parser_activity_location.inFile .is_open () || parser_activity_location.OpenCSVFile("input_activity_location.csv"))
+	int activity_location_count = 0;
+	if (parser_activity_location.inFile.is_open() || parser_activity_location.OpenCSVFile("input_activity_location.csv"))
 	{
 		bool bMultipleZOneError = false;
 
-		while(parser_activity_location.ReadRecord())
+		while (parser_activity_location.ReadRecord())
 		{
 			int zone_number;
 
-			if(parser_activity_location.GetValueByFieldName("zone_id",zone_number) == false )
+			if (parser_activity_location.GetValueByFieldName("zone_id", zone_number) == false)
 				break;
 
 			if (zone_number == 18040)
@@ -1559,79 +1572,80 @@ void g_ReadInputFiles()
 			}
 
 			int node_number = 1;
-			if(parser_activity_location.GetValueByFieldName("node_id",node_number) == false )
+			if (parser_activity_location.GetValueByFieldName("node_id", node_number) == false)
 				break;
 
 			g_LogFile << zone_number << " -> " << node_number << endl;
 
-			if(g_NodeNametoIDMap.find(node_number) == g_NodeNametoIDMap.end())
+			if (g_NodeNametoIDMap.find(node_number) == g_NodeNametoIDMap.end())
 			{
-				cout <<"node_id = " << node_number << " in file input_activity_location has not been defined in input_node.csv. Please check."<< endl;
+				cout << "node_id = " << node_number << " in file input_activity_location has not been defined in input_node.csv. Please check." << endl;
 				g_ProgramStop();
 
 			}
 
 			int nodeid = g_NodeNametoIDMap[node_number];
-			if(g_ODZoneNumberSize < zone_number)
+			if (g_ODZoneNumberSize < zone_number)
 				g_ODZoneNumberSize = zone_number;
 
 			int external_od_flag;
-			if(parser_activity_location.GetValueByFieldName("external_OD_flag",external_od_flag) == false)
-				external_od_flag  =0 ;
+			if (parser_activity_location.GetValueByFieldName("external_OD_flag", external_od_flag) == false)
+				external_od_flag = 0;
 
 
-			if(zone_number <0)
+			if (zone_number < 0)
 			{
 				cout << "zone_id = " << zone_number << " in file input_activity_location. Please check." << endl;
 				g_ProgramStop();
 			}
 
-			if(external_od_flag >=2 || external_od_flag <=-2)
+			if (external_od_flag >= 2 || external_od_flag <= -2)
 			{
-				cout <<"Invalid external_od_flag = " << external_od_flag << " in file input_activity_location. Please check."<< endl;
+				cout << "Invalid external_od_flag = " << external_od_flag << " in file input_activity_location. Please check." << endl;
 				g_ProgramStop();
 			}
 
-			if(	g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID > 0)
+			if (g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID > 0)
 			{
-				g_WarningFile  <<"warning: node  " << node_number  << " have been used by more than one zone in file input_activity_location. Please check."<< endl;
-		
-			   bMultipleZOneError = true;
+				g_WarningFile << "warning: node  " << node_number << " have been used by more than one zone in file input_activity_location. Please check." << endl;
+
+				bMultipleZOneError = true;
 			}
 
 			g_NodeVector[g_NodeNametoIDMap[node_number]].m_ZoneID = zone_number;
 
-			DTANode ThisNode  = g_NodeVector[g_NodeNametoIDMap[node_number]];
-			if(external_od_flag != -1 && ThisNode.m_OutgoingLinkVector.size()>=1) // not external destination
+			DTANode ThisNode = g_NodeVector[g_NodeNametoIDMap[node_number]];
+			if (external_od_flag != -1 && ThisNode.m_OutgoingLinkVector.size() >= 1) // not external destination
 				g_ZoneMap[zone_number].m_OriginActivityVector.push_back(nodeid);
-			else if (external_od_flag ==0)
+			else if (external_od_flag == 0)
 			{
 				g_WarningFile << "node_id " << node_number << " in input_activity_location.csv has no outgoing link, which should not defined as an origin activity node. ";
 				g_WarningFile << "please set external_od_flag = -1 for node_id " << node_number << endl;
 
 			}
 
-			if(external_od_flag != 1 &&  ThisNode.m_IncomingLinkVector.size()>=1) // not external origin
+			if (external_od_flag != 1 && ThisNode.m_IncomingLinkVector.size() >= 1) // not external origin
 				g_ZoneMap[zone_number].m_DestinationActivityVector.push_back(nodeid);
 			else if (external_od_flag == 0)
-				{
+			{
 				g_WarningFile << "node_id " << node_number << " in input_activity_location.csv has no incoming link, which should not defined as a destination activity node. ";
 				g_WarningFile << "please set external_od_flag = 1 for node_id " << node_number << endl;
 
-				}
-			
+			}
 
-			g_ZoneMap[zone_number].m_Capacity += g_NodeVector[nodeid].m_TotalCapacity ;
 
-			if(g_ZoneMap[zone_number].m_OriginActivityVector.size() > g_AdjLinkSize)
+			g_ZoneMap[zone_number].m_Capacity += g_NodeVector[nodeid].m_TotalCapacity;
+
+			if (g_ZoneMap[zone_number].m_OriginActivityVector.size() > g_AdjLinkSize)
 				g_AdjLinkSize = g_ZoneMap[zone_number].m_OriginActivityVector.size();
 
 			activity_location_count++;
 		}
 
-	}else
+	}
+	else
 	{
-		cout << "input_activity_location.csv cannot be opened."<< endl;
+		cout << "input_activity_location.csv cannot be opened." << endl;
 		g_ProgramStop();
 	}
 
@@ -1639,9 +1653,9 @@ void g_ReadInputFiles()
 
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
-		if(iterZone->second.m_OriginActivityVector.size() > 30)
+		if (iterZone->second.m_OriginActivityVector.size() > 30)
 		{
-			g_LogFile << "Zone " << iterZone->first << ": # of connectors:" <<  iterZone->second.m_OriginActivityVector.size()<< endl;
+			g_LogFile << "Zone " << iterZone->first << ": # of connectors:" << iterZone->second.m_OriginActivityVector.size() << endl;
 		}
 	}
 
@@ -1651,15 +1665,15 @@ void g_ReadInputFiles()
 
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
-		if(max_zone_number < iterZone->first)
+		if (max_zone_number < iterZone->first)
 			max_zone_number = iterZone->first;
 
-		g_ZoneNo2NumberVector.push_back (iterZone->first);
+		g_ZoneNo2NumberVector.push_back(iterZone->first);
 	}
 
 	g_ODZoneIDSize = g_ZoneMap.size();
 
-	for(int i = 0; i<= max_zone_number; i++)
+	for (int i = 0; i <= max_zone_number; i++)
 	{
 		g_ZoneNumber2NoVector.push_back(-1);
 	}
@@ -1668,12 +1682,12 @@ void g_ReadInputFiles()
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
 		iterZone->second.m_ZoneNumber = iterZone->first;
-		g_ZoneNumber2NoVector[iterZone->first ] = iterZone->second .m_ZoneSequentialNo ;
+		g_ZoneNumber2NoVector[iterZone->first] = iterZone->second.m_ZoneSequentialNo;
 
 	}
 
 
-	g_SummaryStatFile.WriteParameterValue ("# of Activity Locations",activity_location_count);
+	g_SummaryStatFile.WriteParameterValue("# of Activity Locations", activity_location_count);
 
 
 
@@ -1694,7 +1708,7 @@ void g_ReadInputFiles()
 
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
 	{
-		if (iterZone->second.m_DestinationActivityVector .size() > max_connectors)
+		if (iterZone->second.m_DestinationActivityVector.size() > max_connectors)
 		{
 			max_connectors = iterZone->second.m_DestinationActivityVector.size();
 			max_connectors_zone_number = iterZone->first;
@@ -1706,25 +1720,25 @@ void g_ReadInputFiles()
 
 	if (max_connectors_zone_number >= g_AdjLinkSize)
 		g_AdjLinkSize = max_connectors_zone_number;
-		
 
-	
+
+
 
 	//*******************************
 	// step 5: vehicle type input
 
-	cout << "Step 6: Reading file input_vehicle_type.csv..."<< endl;
-	g_LogFile << "Step 6: Reading file input_vehicle_type.csv..."<< endl;
+	cout << "Step 6: Reading file input_vehicle_type.csv..." << endl;
+	g_LogFile << "Step 6: Reading file input_vehicle_type.csv..." << endl;
 
 	CCSVParser parser_vehicle_type;
 
 	if (!parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
 	{
-		cout << "input_vehicle_type.csv cannot be opened.  Use default values. "<< endl;
+		cout << "input_vehicle_type.csv cannot be opened.  Use default values. " << endl;
 
 		ofstream VehicleTypeFile;
 		VehicleTypeFile.open("input_vehicle_type.csv");
-		if(VehicleTypeFile.is_open ())
+		if (VehicleTypeFile.is_open())
 		{
 			VehicleTypeFile << "vehicle_type,vehicle_type_name,percentage_of_age_0,percentage_of_age_5,percentage_of_age_10,percentage_of_age_15" << endl;
 			VehicleTypeFile << "1,passenger car,25,25,25,25" << endl;
@@ -1736,61 +1750,61 @@ void g_ReadInputFiles()
 		}
 	}
 
-	if (parser_vehicle_type.inFile .is_open () || parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
+	if (parser_vehicle_type.inFile.is_open() || parser_vehicle_type.OpenCSVFile("input_vehicle_type.csv"))
 	{
 		g_VehicleTypeVector.clear();
-		while(parser_vehicle_type.ReadRecord())
+		while (parser_vehicle_type.ReadRecord())
 		{
-			int vehicle_type =0;
-			if(parser_vehicle_type.GetValueByFieldName("vehicle_type",vehicle_type) == false)
+			int vehicle_type = 0;
+			if (parser_vehicle_type.GetValueByFieldName("vehicle_type", vehicle_type) == false)
 				break;
 
 			string vehicle_type_name;
-			parser_vehicle_type.GetValueByFieldName("vehicle_type_name",vehicle_type_name);
+			parser_vehicle_type.GetValueByFieldName("vehicle_type_name", vehicle_type_name);
 
 
 
 
 			DTAVehicleType element;
 			element.vehicle_type = vehicle_type;
-			element.vehicle_type_name  = vehicle_type_name;
+			element.vehicle_type_name = vehicle_type_name;
 
 			double PCE = 1.0;
 			parser_vehicle_type.GetValueByFieldName("PCE", element.PCE);
 
 			if (element.PCE < 0.01)
 				element.PCE = 1; //default value: 1.0
-				
 
 
-			parser_vehicle_type.GetValueByFieldName("rolling_term_a",element.rollingTermA);
-			parser_vehicle_type.GetValueByFieldName("rotating_term_b",element.rotatingTermB);
-			parser_vehicle_type.GetValueByFieldName("drag_term_c",element.dragTermC);
-			parser_vehicle_type.GetValueByFieldName("source_mass",element.sourceMass);
+
+			parser_vehicle_type.GetValueByFieldName("rolling_term_a", element.rollingTermA);
+			parser_vehicle_type.GetValueByFieldName("rotating_term_b", element.rotatingTermB);
+			parser_vehicle_type.GetValueByFieldName("drag_term_c", element.dragTermC);
+			parser_vehicle_type.GetValueByFieldName("source_mass", element.sourceMass);
 
 
 			float percentage_of_age = 0;
 
-			int age =0;
+			int age = 0;
 
 			// initialize age vector from 0 year to 30 year
-			for(age = 0; age <= 30; age++)
+			for (age = 0; age <= 30; age++)
 			{
-				element.percentage_age_vector .push_back (0);
+				element.percentage_age_vector.push_back(0);
 			}
 
-			for(age = 0; age <= 30; age++)
+			for (age = 0; age <= 30; age++)
 			{
 				CString str_age;
-				str_age.Format ("percentage_of_age_%d",age);
+				str_age.Format("percentage_of_age_%d", age);
 
-				CT2CA pszConvertedAnsiString (str_age);
+				CT2CA pszConvertedAnsiString(str_age);
 				// construct a std::string using the LPCSTR input
-				std::string strStd (pszConvertedAnsiString);
+				std::string strStd(pszConvertedAnsiString);
 
-				if(parser_vehicle_type.GetValueByFieldName(strStd,percentage_of_age) == true) // with data
+				if (parser_vehicle_type.GetValueByFieldName(strStd, percentage_of_age) == true) // with data
 				{
-					element.percentage_age_vector [age] = percentage_of_age;
+					element.percentage_age_vector[age] = percentage_of_age;
 
 				}
 
@@ -1801,21 +1815,22 @@ void g_ReadInputFiles()
 
 		}
 
-	}else
+	}
+	else
 	{
-		cout << "input_vehicle_type.csv cannot be opened. "<< endl;
+		cout << "input_vehicle_type.csv cannot be opened. " << endl;
 		g_ProgramStop();
 
 	}
-	g_SummaryStatFile.WriteParameterValue ("# of Vehicle Types", g_VehicleTypeVector.size());
+	g_SummaryStatFile.WriteParameterValue("# of Vehicle Types", g_VehicleTypeVector.size());
 
 
 	//*******************************
 	// step 6: demand type input
 
 	CCSVParser parser_demand_type;
-	cout << "Step 7.1: Reading file input_demand_type.csv..."<< endl;
-	g_LogFile << "Step 7.1: Reading file input_demand_type.csv..."<< endl;
+	cout << "Step 7.1: Reading file input_demand_type.csv..." << endl;
+	g_LogFile << "Step 7.1: Reading file input_demand_type.csv..." << endl;
 	if (!parser_demand_type.OpenCSVFile("input_demand_type.csv"))
 	{
 		cout << "input_demand_type.csv cannot be opened. " << endl;
@@ -1823,21 +1838,21 @@ void g_ReadInputFiles()
 
 	}
 
-	if (parser_demand_type.inFile .is_open () || parser_demand_type.OpenCSVFile("input_demand_type.csv"))
+	if (parser_demand_type.inFile.is_open() || parser_demand_type.OpenCSVFile("input_demand_type.csv"))
 	{
 		g_DemandTypeVector.clear();
-		while(parser_demand_type.ReadRecord())
+		while (parser_demand_type.ReadRecord())
 		{
-			int demand_type =1;
+			int demand_type = 1;
 			int pricing_type = 0;
 			float average_VOT = 10;
 
-			if(parser_demand_type.GetValueByFieldName("demand_type",demand_type) == false)
+			if (parser_demand_type.GetValueByFieldName("demand_type", demand_type) == false)
 				break;
 
-			if (demand_type != g_DemandTypeVector.size()+1)
+			if (demand_type != g_DemandTypeVector.size() + 1)
 			{
-				cout << "Error: demand_type = " << demand_type << " in file input_demand_type.csv should be a sequential number: " << g_DemandTypeVector.size() +1 << endl << "Please check!";
+				cout << "Error: demand_type = " << demand_type << " in file input_demand_type.csv should be a sequential number: " << g_DemandTypeVector.size() + 1 << endl << "Please check!";
 
 				g_ProgramStop();
 			}
@@ -1849,21 +1864,21 @@ void g_ReadInputFiles()
 				g_ProgramStop();
 			}
 
-			
+
 			float ratio_pretrip = 0;
 			float ratio_enroute = 0;
 
 			float default_VOT = 12;
 			parser_demand_type.GetValueByFieldName("default_VOT", default_VOT);
-			
-			
-			parser_demand_type.GetValueByFieldName("percentage_of_pretrip_info",ratio_pretrip);
-			parser_demand_type.GetValueByFieldName("percentage_of_enroute_info",ratio_enroute);
+
+
+			parser_demand_type.GetValueByFieldName("percentage_of_pretrip_info", ratio_pretrip);
+			parser_demand_type.GetValueByFieldName("percentage_of_enroute_info", ratio_enroute);
 
 			DemandType element;
 			element.demand_type = demand_type;
 
-			parser_demand_type.GetValueByFieldName("demand_type_name",element.demand_type_name );
+			parser_demand_type.GetValueByFieldName("demand_type_name", element.demand_type_name);
 
 			element.default_VOT = default_VOT;
 
@@ -1872,29 +1887,30 @@ void g_ReadInputFiles()
 			element.info_class_percentage[3] = ratio_enroute;
 			element.info_class_percentage[0] = 100 - ratio_enroute - ratio_pretrip;
 
-			for(int ic = 1; ic < MAX_INFO_CLASS_SIZE; ic++)
+			for (int ic = 1; ic < MAX_INFO_CLASS_SIZE; ic++)
 			{
-				element.cumulative_info_class_percentage[ic] = element.cumulative_info_class_percentage[ic-1] + element.info_class_percentage[ic];
+				element.cumulative_info_class_percentage[ic] = element.cumulative_info_class_percentage[ic - 1] + element.info_class_percentage[ic];
 			}
-			for( int i=0; i< g_VehicleTypeVector.size()-1; i++)
+			for (int i = 0; i < g_VehicleTypeVector.size() - 1; i++)
 			{
 				std::ostringstream  str_percentage_of_vehicle_type;
-				str_percentage_of_vehicle_type << "percentage_of_vehicle_type" << i+1;
+				str_percentage_of_vehicle_type << "percentage_of_vehicle_type" << i + 1;
 
 				float percentage_vehicle_type = 0;
-				if(parser_demand_type.GetValueByFieldName(str_percentage_of_vehicle_type.str(),percentage_vehicle_type) == false)
+				if (parser_demand_type.GetValueByFieldName(str_percentage_of_vehicle_type.str(), percentage_vehicle_type) == false)
 				{
-					cout << "Error: Field percentage_of_vehicle_type " << i+1 << " cannot be found in the input_demand_type.csv file.";
-					cout << "In file input_vehicle_type.csv, " << g_VehicleTypeVector.size()  << " have been defined, so input_demand_type.csv should percentage_of_vehicle_type for all vehicle types.";
+					cout << "Error: Field percentage_of_vehicle_type " << i + 1 << " cannot be found in the input_demand_type.csv file.";
+					cout << "In file input_vehicle_type.csv, " << g_VehicleTypeVector.size() << " have been defined, so input_demand_type.csv should percentage_of_vehicle_type for all vehicle types.";
 
-					
+
 					g_ProgramStop();
 					return;
-				}else
+				}
+				else
 				{
-					element.vehicle_type_percentage[i+1] = percentage_vehicle_type;
+					element.vehicle_type_percentage[i + 1] = percentage_vehicle_type;
 
-					element.cumulative_type_percentage [i+1] = element.cumulative_type_percentage [i] + percentage_vehicle_type;
+					element.cumulative_type_percentage[i + 1] = element.cumulative_type_percentage[i] + percentage_vehicle_type;
 
 				}
 			}
@@ -1916,25 +1932,26 @@ void g_ReadInputFiles()
 
 		}
 
-	}else
+	}
+	else
 	{
-		cout << "Error: File input_demand_type.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_demand_type.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 		g_ProgramStop();
 	}
 
 	g_SummaryStatFile.WriteParameterValue("# of Demand Types", g_DemandTypeVector.size());
 
 
-	
+
 
 	// done with zone.csv
 
-	if(g_TrafficFlowModelFlag != tfm_BPR && g_TrafficFlowModelFlag != tfm_point_queue) 
+	if (g_TrafficFlowModelFlag != tfm_BPR && g_TrafficFlowModelFlag != tfm_point_queue)
 	{
-	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	PhysicalNetwork.Setup(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize,g_DemandLoadingStartTimeInMin);
-	PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag, true);
-	PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
+		DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon, g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+		PhysicalNetwork.Setup(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon, g_AdjLinkSize, g_DemandLoadingStartTimeInMin);
+		PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag, true);
+		PhysicalNetwork.IdentifyBottlenecks(g_StochasticCapacityMode);
 	}
 	//	ConnectivityChecking(&PhysicalNetwork);
 
@@ -1944,17 +1961,17 @@ void g_ReadInputFiles()
 	// step 10: demand trip file input
 
 	// initialize the demand loading range, later resized by CreateVehicles
-	if (g_UEAssignmentMethod != assignment_real_time_simulation && 
+	if (g_UEAssignmentMethod != assignment_real_time_simulation &&
 		g_UEAssignmentMethod != assignment_accessibility_travel_time &&
-		g_UEAssignmentMethod != assignment_accessibility_distance )
+		g_UEAssignmentMethod != assignment_accessibility_distance)
 	{
-	
-	g_SummaryStatFile.WriteTextLabel ("Demand Load Mode=,demand meta database");
 
-	////////////////////////////////////// VOT
+		g_SummaryStatFile.WriteTextLabel("Demand Load Mode=,demand meta database");
 
-	cout << "Step 10: Reading files based on user settings in meta database file..."<< endl;
-	g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
+		////////////////////////////////////// VOT
+
+		cout << "Step 10: Reading files based on user settings in meta database file..." << endl;
+		g_LogFile << "Step 10: Reading files  based on user settings in  meta database file..." << endl;
 	}
 
 
@@ -1996,19 +2013,21 @@ void g_ReadInputFiles()
 		g_AllocateDynamicArrayForVehicles();
 	}
 
-		if (g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
+	if (g_PlanningHorizon < g_DemandLoadingEndTimeInMin + 300)
+	{
+		//reset simulation horizon to make sure it is longer than the demand loading horizon
+		g_PlanningHorizon = g_DemandLoadingEndTimeInMin + 300;
+
+		for (unsigned link_index = 0; link_index < g_LinkVector.size(); link_index++)
 		{
-			//reset simulation horizon to make sure it is longer than the demand loading horizon
-			g_PlanningHorizon = g_DemandLoadingEndTimeInMin + 300;
-
-			for (unsigned link_index = 0; link_index < g_LinkVector.size(); link_index++)
-			{
-				DTALink* pLink = g_LinkVector[link_index];
-				pLink->ResizeData(g_PlanningHorizon);
-			}
-
+			DTALink* pLink = g_LinkVector[link_index];
+			pLink->ResizeData(g_PlanningHorizon);
 		}
-	
+
+	}
+
+	//use the user defined travel time 
+	g_ReadInputLinkTravelTime();
 
 	g_LogFile << " -- zone-specific demand data -- " << endl;
 	for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
@@ -2068,7 +2087,7 @@ void g_ReadInputFiles()
 	g_SummaryStatFile.WriteNumber(g_DemandLoadingEndTimeInMin);
 
 	g_SummaryStatFile.WriteTextLabel("Output Emission data=,");
-	if (g_EmissionDataOutputFlag>=1)
+	if (g_EmissionDataOutputFlag >= 1)
 		g_SummaryStatFile.WriteTextLabel("YES\n");
 	else
 		g_SummaryStatFile.WriteTextLabel("NO\n");
@@ -2175,14 +2194,14 @@ void g_ReadInputFiles()
 		g_ReadInputLinkTravelTime_Parser();
 	}
 
-	if (g_TrafficFlowModelFlag ==  tfm_newells_model_with_emissions)
+	if (g_TrafficFlowModelFlag == tfm_newells_model_with_emissions)
 	{
-	
-	ReadInputEmissionRateFile();
-	ReadInputCycleAverageEmissionFactors();
 
-	ReadFractionOfOperatingModeForBaseCycle();
-	SetupOperatingModeVector();
+		ReadInputEmissionRateFile();
+		ReadInputCycleAverageEmissionFactors();
+
+		ReadFractionOfOperatingModeForBaseCycle();
+		SetupOperatingModeVector();
 
 	}
 	int LinkSizeForLinkCostArray = g_LinkVector.size() + g_NodeVector.size(); // double the size to account for artificial connectors
@@ -2193,12 +2212,12 @@ void g_ReadInputFiles()
 // debug:
 
 
-int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, int PathIndex,bool bChangeHistDemandTable, int DepartureTimeIndex)
+int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicles, int demand_type, float starting_time_in_min, float ending_time_in_min, int PathIndex, bool bChangeHistDemandTable, int DepartureTimeIndex)
 {
-	if( origin_zone == destination_zone)  // do not simulate intra-zone traffic
+	if (origin_zone == destination_zone)  // do not simulate intra-zone traffic
 	{
 		g_number_of_intra_zone_trips += number_of_vehicles;
-		return 0; 
+		return 0;
 	}
 	// reset the range of demand loading interval
 
@@ -2206,7 +2225,7 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 	//g_LogFile << "r," << number_of_vehicles << "," << number_of_vehicles_generated << ",";
 
 
-	for(int i=0; i< number_of_vehicles_generated; i++)
+	for (int i = 0; i < number_of_vehicles_generated; i++)
 	{
 		DTA_vhc_simple vhc;
 		vhc.m_OriginZoneID = origin_zone;
@@ -2214,37 +2233,37 @@ int CreateVehicles(int origin_zone, int destination_zone, float number_of_vehicl
 		vhc.m_PathIndex = PathIndex;
 		vhc.m_DepartureTimeIndex = DepartureTimeIndex;
 
-		g_ZoneMap[origin_zone].m_OriginVehicleSize ++;
+		g_ZoneMap[origin_zone].m_OriginVehicleSize++;
 
 		// generate the random departure time during the interval
 		float RandomRatio = 0;
-		if(number_of_vehicles_generated <10) // small demand volume
+		if (number_of_vehicles_generated < 10) // small demand volume
 		{
-			RandomRatio= g_GetRandomRatioForVehicleGeneration(); // use random number twice to determine exact departure time of vehicles
+			RandomRatio = g_GetRandomRatioForVehicleGeneration(); // use random number twice to determine exact departure time of vehicles
 		}
 		else
 		{
-			RandomRatio = (i+1)*1.0f/(number_of_vehicles_generated+1); // uniform distribution
+			RandomRatio = (i + 1)*1.0f / (number_of_vehicles_generated + 1); // uniform distribution
 		}
 
-		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min-starting_time_in_min);
+		vhc.m_DepartureTime = starting_time_in_min + RandomRatio*(ending_time_in_min - starting_time_in_min);
 
-		if(vhc.m_DepartureTime  >=1000)
+		if (vhc.m_DepartureTime >= 1000)
 			TRACE("");
 
 		// important notes: to save memory and for simplicity, DTALite simulation still uses interval clock starts from as 0
 		// when we output the all statistics, we need to 
 		vhc.m_DemandType = demand_type;
 
-		if(g_ODEstimationFlag==1 )  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
+		if (g_ODEstimationFlag == 1)  // do not change hist demand when creating vehicles in the middle of  ODME , called by  g_GenerateVehicleData_ODEstimation()
 		{
-			int time_interval = g_FindAssignmentIntervalIndexFromTime(vhc.m_DepartureTime );
+			int time_interval = g_FindAssignmentIntervalIndexFromTime(vhc.m_DepartureTime);
 
-			if(bChangeHistDemandTable ==true)
-				g_HistDemand.AddValue(origin_zone,destination_zone,time_interval, 1); // to store the initial table as hist database
+			if (bChangeHistDemandTable == true)
+				g_HistDemand.AddValue(origin_zone, destination_zone, time_interval, 1); // to store the initial table as hist database
 		}
 
-		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_InformationClass , vhc.m_VOT, vhc.m_Age );
+		g_GetVehicleAttributes(vhc.m_DemandType, vhc.m_VehicleType, vhc.m_InformationClass, vhc.m_VOT, vhc.m_Age);
 
 
 		g_SimulationResult.number_of_vehicles_DemandType[vhc.m_DemandType]++;
@@ -2261,7 +2280,7 @@ void g_print_out_zone_activity_location(int ZoneID)
 	cout << "Zone " << ZoneID << " has the following OriginActivityVector. " << endl;
 	for (int i = 0; i < g_ZoneMap[ZoneID].m_OriginActivityVector.size(); i++)
 	{
-		cout << g_NodeVector[g_ZoneMap[ZoneID].m_OriginActivityVector[i]].m_NodeNumber  << endl;
+		cout << g_NodeVector[g_ZoneMap[ZoneID].m_OriginActivityVector[i]].m_NodeNumber << endl;
 
 	}
 	cout << "Zone " << ZoneID << " has the following DestinationActivityVector. " << endl;
@@ -2273,27 +2292,27 @@ void g_print_out_zone_activity_location(int ZoneID)
 }
 
 
-void g_ConvertDemandToVehicles() 
+void g_ConvertDemandToVehicles()
 {
 	int SkipDemandError = 0;
-	std::map<int,int> g_NoActivityZoneMap; 
-	cout << "Total number of vehicles to be simulated = "<< g_simple_vector_vehicles.size() << endl;
-	g_LogFile << "Total number of vehicles to be simulated = "<< g_simple_vector_vehicles.size() << endl;
+	std::map<int, int> g_NoActivityZoneMap;
+	cout << "Total number of vehicles to be simulated = " << g_simple_vector_vehicles.size() << endl;
+	g_LogFile << "Total number of vehicles to be simulated = " << g_simple_vector_vehicles.size() << endl;
 
 	std::sort(g_simple_vector_vehicles.begin(), g_simple_vector_vehicles.end());
 
-	std::vector<DTA_vhc_simple>::iterator kvhc =  g_simple_vector_vehicles.begin();
+	std::vector<DTA_vhc_simple>::iterator kvhc = g_simple_vector_vehicles.begin();
 
 	DTAVehicle* pVehicle = 0;
 
 	int i = 0;
-	while(kvhc != g_simple_vector_vehicles.end())
+	while (kvhc != g_simple_vector_vehicles.end())
 	{
-		if(kvhc->m_OriginZoneID!= kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
+		if (kvhc->m_OriginZoneID != kvhc->m_DestinationZoneID)    // only consider intra-zone traffic
 		{
 
 			pVehicle = new (std::nothrow) DTAVehicle;
-			if(pVehicle == NULL)
+			if (pVehicle == NULL)
 			{
 				cout << "Insufficient memory...";
 				getchar();
@@ -2301,17 +2320,17 @@ void g_ConvertDemandToVehicles()
 
 			}
 
-			pVehicle->m_VehicleID		= i;
+			pVehicle->m_VehicleID = i;
 			pVehicle->m_RandomSeed = pVehicle->m_VehicleID;
 
-			if(pVehicle->m_VehicleID>=21)
+			if (pVehicle->m_VehicleID >= 21)
 			{
 				TRACE("");
 			}
 
 
-			pVehicle->m_OriginZoneID	= kvhc->m_OriginZoneID ;
-			pVehicle->m_DestinationZoneID 	= kvhc->m_DestinationZoneID ;
+			pVehicle->m_OriginZoneID = kvhc->m_OriginZoneID;
+			pVehicle->m_DestinationZoneID = kvhc->m_DestinationZoneID;
 
 			if (g_ZoneMap[kvhc->m_OriginZoneID].m_OriginActivityVector.size() == 0)
 			{
@@ -2322,7 +2341,7 @@ void g_ConvertDemandToVehicles()
 				continue;
 			}
 
-			if (g_ZoneMap[kvhc->m_DestinationZoneID].m_DestinationActivityVector .size() == 0)
+			if (g_ZoneMap[kvhc->m_DestinationZoneID].m_DestinationActivityVector.size() == 0)
 			{
 				g_NoActivityZoneMap[kvhc->m_DestinationZoneID] = 1;
 				kvhc++;
@@ -2332,23 +2351,23 @@ void g_ConvertDemandToVehicles()
 				continue;
 			}
 
-			pVehicle->m_OriginNodeID	= g_ZoneMap[kvhc->m_OriginZoneID].GetRandomOriginNodeIDInZone ((pVehicle->m_VehicleID%100)/100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
-			pVehicle->m_DestinationNodeID 	=  g_ZoneMap[kvhc->m_DestinationZoneID].GetRandomDestinationIDInZone ((pVehicle->m_VehicleID%100)/100.0f); 
+			pVehicle->m_OriginNodeID = g_ZoneMap[kvhc->m_OriginZoneID].GetRandomOriginNodeIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);  // use pVehicle->m_VehicleID/100.0f as random number between 0 and 1, so we can reproduce the results easily
+			pVehicle->m_DestinationNodeID = g_ZoneMap[kvhc->m_DestinationZoneID].GetRandomDestinationIDInZone((pVehicle->m_VehicleID % 100) / 100.0f);
 
 
-			if(pVehicle->m_OriginNodeID==-1 )
+			if (pVehicle->m_OriginNodeID == -1)
 			{
 
 				g_NoActivityZoneMap[kvhc->m_OriginZoneID] = 1;
 				kvhc++;
-				cout << "Origin zone " << kvhc->m_OriginZoneID << " has no activity location defined in input_activity_location.csv. vehicle id = " << pVehicle->m_VehicleID  << endl;
+				cout << "Origin zone " << kvhc->m_OriginZoneID << " has no activity location defined in input_activity_location.csv. vehicle id = " << pVehicle->m_VehicleID << endl;
 				g_print_out_zone_activity_location(kvhc->m_OriginZoneID);
 				getchar();
 
 				continue;
 			}
 
-			if(pVehicle->m_DestinationNodeID==-1 )
+			if (pVehicle->m_DestinationNodeID == -1)
 			{
 
 				g_NoActivityZoneMap[kvhc->m_DestinationZoneID] = 1;
@@ -2361,48 +2380,48 @@ void g_ConvertDemandToVehicles()
 				continue;
 			}
 
-			pVehicle->m_DepartureTime	= kvhc->m_DepartureTime;
+			pVehicle->m_DepartureTime = kvhc->m_DepartureTime;
 			pVehicle->m_TimeToRetrieveInfo = pVehicle->m_DepartureTime;
 
-			pVehicle->m_DemandType	= kvhc->m_DemandType;
-			pVehicle->m_DemandType 	= kvhc->m_DemandType ;
+			pVehicle->m_DemandType = kvhc->m_DemandType;
+			pVehicle->m_DemandType = kvhc->m_DemandType;
 			pVehicle->m_VehicleType = kvhc->m_VehicleType;
 
-			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType-1].PCE;
+			pVehicle->m_PCE = g_VehicleTypeVector[pVehicle->m_VehicleType - 1].PCE;
 
 			pVehicle->m_InformationClass = kvhc->m_InformationClass;
 			pVehicle->m_VOT = kvhc->m_VOT;
-			pVehicle->m_Age  = kvhc->m_Age;
+			pVehicle->m_Age = kvhc->m_Age;
 
 			pVehicle->m_NodeSize = 0;  // initialize NodeSize as o
 			g_VehicleVector.push_back(pVehicle);
 			g_AddVehicleID2ListBasedonDepartureTime(pVehicle);
 			g_VehicleMap[i] = pVehicle;
 
-			if (g_use_routing_policy_from_external_input ==1)
+			if (g_use_routing_policy_from_external_input == 1)
 			{
 				g_UseExternalPath(pVehicle);
 			}
 
 			int AssignmentInterval = g_FindAssignmentIntervalIndexFromTime(pVehicle->m_DepartureTime);
-			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray .push_back(i);
+			g_TDOVehicleArray[g_ZoneMap[pVehicle->m_OriginZoneID].m_ZoneSequentialNo][AssignmentInterval].VehicleArray.push_back(i);
 			i++;
 		}
 		kvhc++;
 
-		if(i%10000==0 && i >0)
-			cout << "Generating " << i <<" agents... "<< endl;
+		if (i % 10000 == 0 && i > 0)
+			cout << "Generating " << i << " agents... " << endl;
 
 	}
 
-	if(g_NoActivityZoneMap.size()>=1)
+	if (g_NoActivityZoneMap.size() >= 1)
 	{
 		int b_ignore_demand_without_activity_location = g_GetPrivateProfileInt("assignment", "ignore_demand_without_activity_location", 1, g_DTASettingFileName);
 
 		if (b_ignore_demand_without_activity_location == 0)
 		{
 			cout << "The following zones have no activity location but have demand being defined in OD demand files." << endl;
-	
+
 		}
 		fprintf(g_ErrorFile, "The following zones have no activity location but have demand being defined in OD demand files.\n");
 		for (std::map<int, int>::iterator iterZone = g_NoActivityZoneMap.begin(); iterZone != g_NoActivityZoneMap.end(); iterZone++)
@@ -2411,10 +2430,10 @@ void g_ConvertDemandToVehicles()
 			{
 				cout << iterZone->first << endl;
 			}
-			fprintf(g_ErrorFile,"%d\n", iterZone->first);
+			fprintf(g_ErrorFile, "%d\n", iterZone->first);
 
 		}
-		
+
 		if (b_ignore_demand_without_activity_location == 0)
 		{
 			cout << "Please check input_activity_location.csv and demand files. You might need to manually prepare zone-to-node mapping in file input_activity_location file to ensure each zone has at least one activity node. " << endl;
@@ -2428,8 +2447,8 @@ void g_ConvertDemandToVehicles()
 	}
 
 
-	cout << "Total number of vehicles to be simulated = "<< g_simple_vector_vehicles.size() << endl;
-	g_simple_vector_vehicles.clear ();
+	cout << "Total number of vehicles to be simulated = " << g_simple_vector_vehicles.size() << endl;
+	g_simple_vector_vehicles.clear();
 }
 
 
@@ -2439,62 +2458,62 @@ void g_ReadInputLinkTravelTime_Parser()
 
 	CCSVParser parser_link_travel_time;
 
-	if (parser_link_travel_time.OpenCSVFile("input_link_travel_time.csv",false))
+	if (parser_link_travel_time.OpenCSVFile("input_link_travel_time.csv", false))
 	{
 
-		while(parser_link_travel_time.ReadRecord())
+		while (parser_link_travel_time.ReadRecord())
 		{
 			int from_node_id, to_node_id;
 
 			int starting_time_in_min = 0;
 			int ending_time_in_min = 1440;
 			float travel_time_in_min = 0;
-		
-			if(parser_link_travel_time.GetValueByFieldName("from_node_id",from_node_id) == false)
+
+			if (parser_link_travel_time.GetValueByFieldName("from_node_id", from_node_id) == false)
 				break;
-			if(parser_link_travel_time.GetValueByFieldName("to_node_id",to_node_id) == false)
+			if (parser_link_travel_time.GetValueByFieldName("to_node_id", to_node_id) == false)
 				break;
 
 
-			if(parser_link_travel_time.GetValueByFieldName("starting_time_in_min",starting_time_in_min) == false)
+			if (parser_link_travel_time.GetValueByFieldName("starting_time_in_min", starting_time_in_min) == false)
 				break;
-			if(parser_link_travel_time.GetValueByFieldName("ending_time_in_min",ending_time_in_min) == false)
-				break;
-
-			if(parser_link_travel_time.GetValueByFieldName("travel_time_in_min",travel_time_in_min) == false)
+			if (parser_link_travel_time.GetValueByFieldName("ending_time_in_min", ending_time_in_min) == false)
 				break;
 
-			if(g_LinkMap.find(GetLinkStringID(from_node_id,to_node_id))== g_LinkMap.end())
+			if (parser_link_travel_time.GetValueByFieldName("travel_time_in_min", travel_time_in_min) == false)
+				break;
+
+			if (g_LinkMap.find(GetLinkStringID(from_node_id, to_node_id)) == g_LinkMap.end())
 			{
-				cout << "Link " << from_node_id << "-> " << to_node_id << " at line " << line_no+1 << " of file input_link_travel_time.csv"  << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << from_node_id << "-> " << to_node_id << " at line " << line_no + 1 << " of file input_link_travel_time.csv" << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(from_node_id,to_node_id)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(from_node_id, to_node_id)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
 
-				if(starting_time_in_min>=0 && starting_time_in_min < ending_time_in_min && ending_time_in_min <  pLink->m_LinkMOEAry.size()
-					&& travel_time_in_min >=0.01)
+				if (starting_time_in_min >= 0 && starting_time_in_min < ending_time_in_min && ending_time_in_min < pLink->m_LinkMOEAry.size()
+					&& travel_time_in_min >= 0.01)
 				{
-					for(int t = starting_time_in_min ; t < ending_time_in_min; t++)
+					for (int t = starting_time_in_min; t < ending_time_in_min; t++)
 					{
-					pLink->m_LinkMOEAry[t]. UserDefinedTravelTime_in_min = travel_time_in_min;
+						pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min = travel_time_in_min;
 					}
 				}
 			}
 
-			if(line_no %100000 ==0)
+			if (line_no % 100000 == 0)
 			{
-				cout << g_GetAppRunningTime() << "Reading " << line_no/1000 << "K lines..."<< endl;
+				cout << g_GetAppRunningTime() << "Reading " << line_no / 1000 << "K lines..." << endl;
 			}
 			line_no++;
 
 		}
 	}
-		cout << " total # of link travel time records loaded = " << line_no << endl;
-		g_SummaryStatFile.WriteParameterValue ("# of Input Link Travel Time Records", line_no);
+	cout << " total # of link travel time records loaded = " << line_no << endl;
+	g_SummaryStatFile.WriteParameterValue("# of Input Link Travel Time Records", line_no);
 
 }
 
@@ -2503,33 +2522,33 @@ void g_CreateLinkTollVector()
 
 	// transfer toll set to dynamic toll vector (needed for multi-core computation)
 	int count = 0;
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li< g_LinkVector.size(); li++)
 	{
 
-		if(g_LinkVector[li]->pTollVector!=NULL)
+		if (g_LinkVector[li]->pTollVector != NULL)
 			delete g_LinkVector[li]->pTollVector;
 
-		if(g_LinkVector[li]->TollVector .size() >0)
+		if (g_LinkVector[li]->TollVector.size() >0)
 		{
-			g_LinkVector[li]->m_TollSize = g_LinkVector[li]->TollVector .size();
-			g_LinkVector[li]->pTollVector = new Toll[g_LinkVector[li]->m_TollSize ];
+			g_LinkVector[li]->m_TollSize = g_LinkVector[li]->TollVector.size();
+			g_LinkVector[li]->pTollVector = new Toll[g_LinkVector[li]->m_TollSize];
 
-			for(int s = 0; s<g_LinkVector[li]->m_TollSize; s++)
+			for (int s = 0; s < g_LinkVector[li]->m_TollSize; s++)
 			{
 				g_LinkVector[li]->pTollVector[s] = g_LinkVector[li]->TollVector[s];
 			}
 
 
-			count++;		
+			count++;
 		}
 
-	}	
+	}
 }
 
-void ReadIncidentScenarioFile(string FileName,int scenario_no)
+void ReadIncidentScenarioFile(string FileName, int scenario_no)
 {
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->IncidentCapacityReductionVector.clear(); // remove all previouly read records
@@ -2539,73 +2558,73 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 
 	FILE* st = NULL;
 
-	fopen_s(&st,FileName.c_str (),"r"); /// 
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r"); /// 
+	if (st != NULL)
 	{
-		cout << "Reading file " <<  FileName << " ..."<< endl;
-		g_LogFile << "Reading file " <<  FileName << endl;
+		cout << "Reading file " << FileName << " ..." << endl;
+		g_LogFile << "Reading file " << FileName << endl;
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn <=0) 
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
-			int dsn =  g_read_integer(st);
+			int dsn = g_read_integer(st);
 
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
 				int local_scenario_no = g_read_integer(st);
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st)-1; // start from zero
+				cs.StartDayNo = g_read_integer(st) - 1; // start from zero
 				cs.EndDayNo = cs.StartDayNo;
 
-				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
-				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+				if (cs.StartDayNo < 0) cs.StartDayNo = 0;
+				if (cs.EndDayNo < 0) cs.EndDayNo = 0;
 
-				if(cs.StartDayNo <0)
+				if (cs.StartDayNo < 0)
 				{
-					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Incident.csv. Please ensure Start Day >=0." <<endl;
+					cout << "Start day = " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Incident.csv. Please ensure Start Day >=0." << endl;
 					g_ProgramStop();
 				}
 
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 
-				if(cs.StartTime >= cs.EndTime )
+				if (cs.StartTime >= cs.EndTime)
 				{
-					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Incident.csv. Please ensure End Time >= Start Time." <<endl;
+					cout << "End Time = " << cs.EndTime << " < Start Time " << cs.StartTime << " in line " << count + 1 << "in file Scenario_Incident.csv. Please ensure End Time >= Start Time." << endl;
 					g_ProgramStop();
 				}
 
 
-				float percentage= g_read_float(st); 
+				float percentage = g_read_float(st);
 
-				cs.LaneClosureRatio = percentage/100.f; // percentage -> to ratio
+				cs.LaneClosureRatio = percentage / 100.f; // percentage -> to ratio
 
 
-				if(cs.LaneClosureRatio > 1.0)
+				if (cs.LaneClosureRatio > 1.0)
 					cs.LaneClosureRatio = 1.0;
-				if(cs.LaneClosureRatio < 0.0)
+				if (cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
 
-				if(cs.SpeedLimit < -0.1f)
+				if (cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << " in file Scenario_Incident.csv. Please check!" <<endl;
+					cout << "Speed Limit = " << cs.SpeedLimit << " % in line " << count + 1 << " in file Scenario_Incident.csv. Please check!" << endl;
 					g_ProgramStop();
 
 				}
 
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					pLink->IncidentCapacityReductionVector.push_back(cs);
 					count++;
@@ -2620,13 +2639,14 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 		g_SummaryStatFile.WriteNumber(count);
 
 		fclose(st);
-	}else
+	}
+	else
 	{
-		if(FileName.size()>0 && FileName.compare ("Scenario_Incident.csv")==0)  // external input files from multi-scenario runs
+		if (FileName.size() > 0 && FileName.compare("Scenario_Incident.csv") == 0)  // external input files from multi-scenario runs
 		{
-			cout << "File " << FileName << " cannot be opened. "  <<  endl;
-			g_LogFile  << "File " << FileName << " cannot be opened. "  <<  endl;
-//			getchar();				
+			cout << "File " << FileName << " cannot be opened. " << endl;
+			g_LogFile << "File " << FileName << " cannot be opened. " << endl;
+			//			getchar();				
 		}
 	}
 
@@ -2635,7 +2655,7 @@ void ReadIncidentScenarioFile(string FileName,int scenario_no)
 
 void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 {
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->CapacityReductionVector.clear(); // remove all previouly read records
@@ -2643,30 +2663,30 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 	}
 
 	FILE* st = NULL;
-	fopen_s(&st,FileName.c_str(),"r"); /// 
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r"); /// 
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn <=0) 
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
-			int dsn =  g_read_integer(st);
+			int dsn = g_read_integer(st);
 
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
-				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				if (pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
 				{
 					TRACE("");
 				}
@@ -2674,15 +2694,15 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st)-1; // start from zero
-				cs.EndDayNo = g_read_integer(st)-1;
+				cs.StartDayNo = g_read_integer(st) - 1; // start from zero
+				cs.EndDayNo = g_read_integer(st) - 1;
 
-				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
-				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+				if (cs.StartDayNo < 0) cs.StartDayNo = 0;
+				if (cs.EndDayNo < 0) cs.EndDayNo = 0;
 
-				if(cs.EndDayNo < cs.StartDayNo )
+				if (cs.EndDayNo < cs.StartDayNo)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+					cout << "End day = " << cs.EndDayNo << " < Start day " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." << endl;
 					g_ProgramStop();
 				}
 
@@ -2690,38 +2710,38 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 
-				if(cs.StartTime >= cs.EndTime )
+				if (cs.StartTime >= cs.EndTime)
 				{
-					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+					cout << "End Time = " << cs.EndTime << " < Start Time " << cs.StartTime << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." << endl;
 					g_ProgramStop();
 				}
 
 				float percentage = g_read_float(st);
 
-				if(percentage < 1.1f)
+				if (percentage < 1.1f)
 				{
-					cout << "Capacity Reduction Percentage = " <<  percentage << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+					cout << "Capacity Reduction Percentage = " << percentage << " % in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
 
 
-				cs.LaneClosureRatio= percentage/100.0f; // percentage -> to ratio
-				if(cs.LaneClosureRatio > 1.0)
+				cs.LaneClosureRatio = percentage / 100.0f; // percentage -> to ratio
+				if (cs.LaneClosureRatio > 1.0)
 					cs.LaneClosureRatio = 1.0;
-				if(cs.LaneClosureRatio < 0.0)
+				if (cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
 
-				if(cs.SpeedLimit < -0.1f)
+				if (cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+					cout << "Speed Limit = " << cs.SpeedLimit << " % in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					pLink->CapacityReductionVector.push_back(cs);
 					count++;
@@ -2737,16 +2757,17 @@ void ReadWorkZoneScenarioFile(string FileName, int scenario_no)
 
 
 		fclose(st);
-	}else
+	}
+	else
 	{
 
 		cout << "Work zone records = 0 " << endl;
 
-		if(FileName.size()>0 && FileName.compare ("Scenario_Work_Zone.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Work_Zone.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!"  <<  endl;
-			getchar();	
-		
+			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!" << endl;
+			getchar();
+
 		}
 	}
 
@@ -2756,30 +2777,30 @@ void ReadRampMeterScenarioFile(string FileName, int scenario_no)
 
 
 	FILE* st = NULL;
-	fopen_s(&st,FileName.c_str(),"r"); /// 
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r"); /// 
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn <=0) 
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
-			int dsn =  g_read_integer(st);
+			int dsn = g_read_integer(st);
 
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
-				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				if (pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
 				{
 					TRACE("");
 				}
@@ -2787,15 +2808,15 @@ void ReadRampMeterScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st)-1; // start from zero
-				cs.EndDayNo = g_read_integer(st)-1;
+				cs.StartDayNo = g_read_integer(st) - 1; // start from zero
+				cs.EndDayNo = g_read_integer(st) - 1;
 
-				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
-				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+				if (cs.StartDayNo < 0) cs.StartDayNo = 0;
+				if (cs.EndDayNo < 0) cs.EndDayNo = 0;
 
-				if(cs.EndDayNo < cs.StartDayNo )
+				if (cs.EndDayNo < cs.StartDayNo)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Day >= Start Day." <<endl;
+					cout << "End day = " << cs.EndDayNo << " < Start day " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Day >= Start Day." << endl;
 					g_ProgramStop();
 				}
 
@@ -2803,35 +2824,35 @@ void ReadRampMeterScenarioFile(string FileName, int scenario_no)
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 
-				if(cs.StartTime >= cs.EndTime )
+				if (cs.StartTime >= cs.EndTime)
 				{
-					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Time >= Start Time." <<endl;
+					cout << "End Time = " << cs.EndTime << " < Start Time " << cs.StartTime << " in line " << count + 1 << "in file Scenario_Ramp_Meter.csv. Please ensure End Time >= Start Time." << endl;
 					g_ProgramStop();
 				}
 
 				float service_rate = g_read_float(st);
 
-				if(service_rate < 1.1f || service_rate > 4000)
+				if (service_rate < 1.1f || service_rate > 4000)
 				{
-					cout << "Lane Capacity (vph) = " <<  service_rate << " % in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please check!" <<endl;
+					cout << "Lane Capacity (vph) = " << service_rate << " % in line " << count + 1 << "in file Scenario_Ramp_Meter.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
 
 
-				cs.LaneClosureRatio= (1 - service_rate/pLink->m_LaneCapacity);
+				cs.LaneClosureRatio = (1 - service_rate / pLink->m_LaneCapacity);
 
 				cs.SpeedLimit = g_read_float(st);
 
-				if(cs.SpeedLimit < -0.1f)
+				if (cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Ramp_Meter.csv. Please check!" <<endl;
+					cout << "Speed Limit = " << cs.SpeedLimit << " % in line " << count + 1 << "in file Scenario_Ramp_Meter.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					pLink->CapacityReductionVector.push_back(cs);
 					count++;
@@ -2847,16 +2868,17 @@ void ReadRampMeterScenarioFile(string FileName, int scenario_no)
 
 
 		fclose(st);
-	}else
+	}
+	else
 	{
 
 		cout << "Ramp meter  records = 0 " << endl;
 
-		if(FileName.size()>0 && FileName.compare ("Scenario_Ramp_Meter.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Ramp_Meter.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!"  <<  endl;
-			getchar();	
-		
+			cout << "File " << FileName << " cannot be opened. Please check or press any key to continue!" << endl;
+			getchar();
+
 		}
 	}
 
@@ -2867,30 +2889,30 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 
 
 	FILE* st = NULL;
-	fopen_s(&st,FileName.c_str(),"r"); /// 
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r"); /// 
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn <=0) 
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
-			int dsn =  g_read_integer(st);
+			int dsn = g_read_integer(st);
 
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
-				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				if (pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
 				{
 					TRACE("");
 				}
@@ -2898,27 +2920,27 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st)-1; // start from zero
-				cs.EndDayNo = g_read_integer(st)-1;
+				cs.StartDayNo = g_read_integer(st) - 1; // start from zero
+				cs.EndDayNo = g_read_integer(st) - 1;
 
-				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
-				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+				if (cs.StartDayNo < 0) cs.StartDayNo = 0;
+				if (cs.EndDayNo < 0) cs.EndDayNo = 0;
 
-				if(cs.StartDayNo <0)
+				if (cs.StartDayNo < 0)
 				{
-					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
+					cout << "Start day = " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." << endl;
 					g_ProgramStop();
 				}
 
-				if(cs.EndDayNo <0)
+				if (cs.EndDayNo < 0)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
+					cout << "End day = " << cs.EndDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." << endl;
 					g_ProgramStop();
 				}
 
-				if(cs.EndDayNo < cs.StartDayNo )
+				if (cs.EndDayNo < cs.StartDayNo)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+					cout << "End day = " << cs.EndDayNo << " < Start day " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." << endl;
 					g_ProgramStop();
 				}
 
@@ -2926,38 +2948,38 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 
-				if(cs.StartTime >= cs.EndTime )
+				if (cs.StartTime >= cs.EndTime)
 				{
-					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+					cout << "End Time = " << cs.EndTime << " < Start Time " << cs.StartTime << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." << endl;
 					g_ProgramStop();
 				}
 
 				float percentage = g_read_float(st);
 
-				if(percentage < 1.1f)
+				if (percentage < 1.1f)
 				{
-					cout << "Capacity Reduction Percentage = " <<  percentage << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+					cout << "Capacity Reduction Percentage = " << percentage << " % in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
 
 
-				cs.LaneClosureRatio= percentage/100.0f; // percentage -> to ratio
-				if(cs.LaneClosureRatio > 1.0)
+				cs.LaneClosureRatio = percentage / 100.0f; // percentage -> to ratio
+				if (cs.LaneClosureRatio > 1.0)
 					cs.LaneClosureRatio = 1.0;
-				if(cs.LaneClosureRatio < 0.0)
+				if (cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
 
-				if(cs.SpeedLimit < -0.1f)
+				if (cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << "in file Scenario_Work_Zone.csv. Please check!" <<endl;
+					cout << "Speed Limit = " << cs.SpeedLimit << " % in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					pLink->CapacityReductionVector.push_back(cs);
 					count++;
@@ -2973,14 +2995,15 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 
 
 		fclose(st);
-	}else
+	}
+	else
 	{
 
 		cout << "Weather records = 0 " << endl;
 
-		if(FileName.size()>0 && FileName.compare ("Scenario_Weather.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Weather.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+			cout << "File " << FileName << " cannot be opened. Please check!" << endl;
 			g_ProgramStop();
 		}
 	}
@@ -2988,7 +3011,7 @@ void ReadWeatherScenarioFile(string FileName, int scenario_no)
 }
 void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 {
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->EvacuationImpactVector.clear(); // remove all previouly read records
@@ -2996,30 +3019,30 @@ void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 	}
 
 	FILE* st = NULL;
-	fopen_s(&st,FileName.c_str(),"r"); /// 
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r"); /// 
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn <=0) 
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
-			int dsn =  g_read_integer(st);
+			int dsn = g_read_integer(st);
 
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
-				if( pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
+				if (pLink->m_FromNodeNumber == 12730 && pLink->m_ToNodeNumber == 12742)
 				{
 					TRACE("");
 				}
@@ -3027,27 +3050,27 @@ void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 				int local_scenario_no = g_read_integer(st);
 
 				CapacityReduction cs;
-				cs.StartDayNo = g_read_integer(st)-1; // start from zero
-				cs.EndDayNo = g_read_integer(st)-1;
+				cs.StartDayNo = g_read_integer(st) - 1; // start from zero
+				cs.EndDayNo = g_read_integer(st) - 1;
 
-				if( cs.StartDayNo <0) cs.StartDayNo  = 0;
-				if( cs.EndDayNo <0) cs.EndDayNo  = 0;
+				if (cs.StartDayNo < 0) cs.StartDayNo = 0;
+				if (cs.EndDayNo < 0) cs.EndDayNo = 0;
 
-				if(cs.StartDayNo <0)
+				if (cs.StartDayNo < 0)
 				{
-					cout << "Start day = " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." <<endl;
+					cout << "Start day = " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure Start Day >=0." << endl;
 					g_ProgramStop();
 				}
 
-				if(cs.EndDayNo <0)
+				if (cs.EndDayNo < 0)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." <<endl;
+					cout << "End day = " << cs.EndDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >=1." << endl;
 					g_ProgramStop();
 				}
 
-				if(cs.EndDayNo < cs.StartDayNo )
+				if (cs.EndDayNo < cs.StartDayNo)
 				{
-					cout << "End day = " <<  cs.EndDayNo << " < Start day " <<  cs.StartDayNo << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." <<endl;
+					cout << "End day = " << cs.EndDayNo << " < Start day " << cs.StartDayNo << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Day >= Start Day." << endl;
 					g_ProgramStop();
 				}
 
@@ -3055,29 +3078,29 @@ void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 				cs.StartTime = g_read_integer(st);
 				cs.EndTime = g_read_integer(st);
 
-				if(cs.StartTime >= cs.EndTime )
+				if (cs.StartTime >= cs.EndTime)
 				{
-					cout << "End Time = " <<  cs.EndTime << " < Start Time " <<  cs.StartTime << " in line " << count +1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." <<endl;
+					cout << "End Time = " << cs.EndTime << " < Start Time " << cs.StartTime << " in line " << count + 1 << "in file Scenario_Work_Zone.csv. Please ensure End Time >= Start Time." << endl;
 					g_ProgramStop();
 				}
 
 				float percentage = g_read_float(st);
 
-				cs.LaneClosureRatio= percentage/100.0f; // percentage -> to ratio
-				if(cs.LaneClosureRatio > 1.0)
+				cs.LaneClosureRatio = percentage / 100.0f; // percentage -> to ratio
+				if (cs.LaneClosureRatio > 1.0)
 					cs.LaneClosureRatio = 1.0;
-				if(cs.LaneClosureRatio < 0.0)
+				if (cs.LaneClosureRatio < 0.0)
 					cs.LaneClosureRatio = 0.0;
 				cs.SpeedLimit = g_read_float(st);
 
-				if(cs.SpeedLimit < -0.1f)
+				if (cs.SpeedLimit < -0.1f)
 				{
-					cout << "Speed Limit = " <<  cs.SpeedLimit << " % in line " << count +1 << " in file Scenario_Work_Zone.csv. Please check!" <<endl;
+					cout << "Speed Limit = " << cs.SpeedLimit << " % in line " << count + 1 << " in file Scenario_Work_Zone.csv. Please check!" << endl;
 
 					g_ProgramStop();
 
 				}
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					//evacuation data record goes to both capacity reduction and evacuation vectors. the latter is used to inform drivers to switch
 					pLink->EvacuationImpactVector.push_back(cs);
@@ -3097,14 +3120,15 @@ void ReadEvacuationScenarioFile(string FileName, int scenario_no)
 
 
 		fclose(st);
-	}else
+	}
+	else
 	{
 
 		cout << "evacuation linkrecords = 0 " << endl;
 
-		if(FileName.size()>0 && FileName.compare ("Scenario_Evacuation_Zone.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Evacuation_Zone.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+			cout << "File " << FileName << " cannot be opened. Please check!" << endl;
 			g_ProgramStop();
 		}
 	}
@@ -3117,47 +3141,47 @@ void ReadMovementScenarioFile(string FileName, int scenario_no)
 	CCSVParser parser_movement;
 	int count = 0;
 
-	if (parser_movement.OpenCSVFile(FileName,false))
+	if (parser_movement.OpenCSVFile(FileName, false))
 	{
-		int i=1;
+		int i = 1;
 
-		while(parser_movement.ReadRecord())
+		while (parser_movement.ReadRecord())
 		{
 			int record_scenario_no = 0;
 			DTANodeMovement element;
-			parser_movement.GetValueByFieldNameWithPrintOut("scenario_no",record_scenario_no);
+			parser_movement.GetValueByFieldNameWithPrintOut("scenario_no", record_scenario_no);
 
-			parser_movement.GetValueByFieldNameWithPrintOut("node_id",element.in_link_to_node_id);
+			parser_movement.GetValueByFieldNameWithPrintOut("node_id", element.in_link_to_node_id);
 
-			parser_movement.GetValueByFieldNameWithPrintOut("incoming_link_from_node_id",element.in_link_from_node_id);
+			parser_movement.GetValueByFieldNameWithPrintOut("incoming_link_from_node_id", element.in_link_from_node_id);
 
-			if(g_LinkMap.find(GetLinkStringID(element.in_link_from_node_id,element.in_link_to_node_id))== g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(element.in_link_from_node_id, element.in_link_to_node_id)) == g_LinkMap.end())
 			{
-				cout << "Link " << element.in_link_from_node_id << "-> " << element.in_link_to_node_id << " at line " << i+1 << " of file input_movement.csv" << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << element.in_link_from_node_id << "-> " << element.in_link_to_node_id << " at line " << i + 1 << " of file input_movement.csv" << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
 
-			parser_movement.GetValueByFieldNameWithPrintOut("outgoing_link_to_node_id",element.out_link_to_node_id );
-			if(g_LinkMap.find(GetLinkStringID(element.in_link_to_node_id,element.out_link_to_node_id))== g_LinkMap.end())
+			parser_movement.GetValueByFieldNameWithPrintOut("outgoing_link_to_node_id", element.out_link_to_node_id);
+			if (g_LinkMap.find(GetLinkStringID(element.in_link_to_node_id, element.out_link_to_node_id)) == g_LinkMap.end())
 			{
-				cout << "Link " << element.in_link_to_node_id << "-> " << element.out_link_to_node_id << " at line " << i+1 << " of file input_movement.csv" << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << element.in_link_to_node_id << "-> " << element.out_link_to_node_id << " at line " << i + 1 << " of file input_movement.csv" << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			parser_movement.GetValueByFieldNameWithPrintOut ("effective_green_time_in_min",element.movement_effective_green_time_in_min );
+			parser_movement.GetValueByFieldNameWithPrintOut("effective_green_time_in_min", element.movement_effective_green_time_in_min);
 
-			parser_movement.GetValueByFieldName("turning_direction",element.turning_direction );
+			parser_movement.GetValueByFieldName("turning_direction", element.turning_direction);
 
 
 
-			if(element.movement_hourly_capacity>=0)  
+			if (element.movement_hourly_capacity >= 0)
 			{
 
 				string movement_id = GetMovementStringID(element.in_link_from_node_id, element.in_link_to_node_id, element.out_link_to_node_id);
 				int middle_node_id = g_NodeNametoIDMap[element.in_link_to_node_id];
 
-				if(record_scenario_no==0 || record_scenario_no == scenario_no )
+				if (record_scenario_no == 0 || record_scenario_no == scenario_no)
 				{
 					g_NodeVector[middle_node_id].m_MovementMap[movement_id] = element;  // assign movement to individual node
 					count++;
@@ -3172,10 +3196,10 @@ void ReadMovementScenarioFile(string FileName, int scenario_no)
 	g_SummaryStatFile.WriteTextLabel("# of movement records=");
 	g_SummaryStatFile.WriteNumber(count);
 }
-void ReadVMSScenarioFile(string FileName,int scenario_no)
+void ReadVMSScenarioFile(string FileName, int scenario_no)
 {
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->MessageSignVector.clear(); // remove all previouly read records
@@ -3184,8 +3208,8 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 
 	FILE* st = NULL;
 
-	fopen_s(&st,FileName.c_str(),"r");
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r");
+	if (st != NULL)
 	{
 
 		cout << "Reading file " << FileName << endl;
@@ -3193,38 +3217,38 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 
 		g_read_a_line(st);
 		int count = 0;
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st);
-			if(usn<=0)
+			int usn = g_read_integer(st);
+			if (usn <= 0)
 				break;
 
-			int dsn =  g_read_integer(st);
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			int dsn = g_read_integer(st);
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
 				int local_scenario_no = g_read_integer(st);
 
 				MessageSign is;
 
 				is.Type = 1;
-				is.StartDayNo  = g_read_integer(st)-1;  // start from day zero
-				is.EndDayNo   = g_read_integer(st)-1;  // start from day zero
+				is.StartDayNo = g_read_integer(st) - 1;  // start from day zero
+				is.EndDayNo = g_read_integer(st) - 1;  // start from day zero
 
-				if( is.StartDayNo <0) is.StartDayNo  = 0;
-				if( is.EndDayNo <0) is.EndDayNo  = 0;
+				if (is.StartDayNo < 0) is.StartDayNo = 0;
+				if (is.EndDayNo < 0) is.EndDayNo = 0;
 
 				is.StartTime = g_read_integer(st);
 				is.EndTime = g_read_integer(st);
 				is.VMS_no = g_read_integer(st);
-				is.ResponsePercentage =  g_read_float(st);
+				is.ResponsePercentage = g_read_float(st);
 
 				is.NumberOfSubpaths = g_read_float(st);
 
@@ -3240,7 +3264,7 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 						if (i >= 1)
 						{
 							DTALink* pDetourLink = g_LinkMap[GetLinkStringID(is.DetourNodeSequenceArray[path][i - 1], is.DetourNodeSequenceArray[path][i])];
-							is.DetourLinkSequenceArray[path][i-1] = pDetourLink->m_LinkNo;
+							is.DetourLinkSequenceArray[path][i - 1] = pDetourLink->m_LinkNo;
 						}
 
 					}
@@ -3250,7 +3274,7 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 				}
 
 
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					g_bInformationUpdatingAndReroutingFlag = true;
 
@@ -3267,13 +3291,14 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 		g_SummaryStatFile.WriteNumber(count);
 
 		fclose(st);
-	}else
+	}
+	else
 	{
-		cout << "VMS records = 0"<< endl;
+		cout << "VMS records = 0" << endl;
 
-		if(FileName.size()>0 && FileName.compare ("Scenario_Dynamic_Message_Sign.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Dynamic_Message_Sign.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check and press any key to continue!"  <<  endl;
+			cout << "File " << FileName << " cannot be opened. Please check and press any key to continue!" << endl;
 			getchar();
 		}
 
@@ -3284,94 +3309,103 @@ void ReadVMSScenarioFile(string FileName,int scenario_no)
 void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 {
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->TollVector.clear(); // remove all previouly read records
 
 	}
 
+
+	// generate toll based on demand type code in input_link.csv file
+	int demand_mode_type_count = 0;
+
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
+	{
+		if (g_LinkVector[li]->demand_type_code.size() >= 1)
+		{  // with data string
+
+			Toll tc;  // toll collection
+			tc.StartDayNo = 0;
+			tc.EndDayNo = 999;
+
+			tc.StartTime = 0;
+			tc.EndTime = 99999;
+
+			std::string demand_type_code = g_LinkVector[li]->demand_type_code;
+
+
+			for (int pt = 1; pt <= g_DemandTypeVector.size(); pt++)
+			{
+				CString number;
+				number.Format("%d", pt);
+
+				std::string str_number = CString2StdString(number);
+				if (demand_type_code.find(str_number) == std::string::npos)   // do not find this number
+				{
+					tc.TollRate[pt] = 999;
+					demand_mode_type_count++;
+				}
+
+			}  //end of pt
+			g_LinkVector[li]->TollVector.push_back(tc);
+
+		}
+
+	}
+
+	g_SummaryStatFile.WriteTextLabel("# of demand type code based toll records=");
+	g_SummaryStatFile.WriteNumber(demand_mode_type_count);
+
 	FILE* st = NULL;
 
-	fopen_s(&st,FileName.c_str(),"r");
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r");
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
 
 
 		char  str_line[2000]; // input string
-		int str_line_size;
+		int str_line_size = 1000;
 		g_read_a_line(st, str_line, str_line_size); //  skip the first line  // with HOV 2 and 3
 
-		float TotalTollValue[MAX_DEMAND_TYPE_SIZE]={0};
+		float TotalTollValue[MAX_DEMAND_TYPE_SIZE] = { 0 };
 
 		int count = 0;
 
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st,false);
+			int usn = g_read_integer(st, false);
 
-			if(usn <=0)
+			if (usn <= 0)
 				break;
 
-			int dsn =  g_read_integer(st,false);
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			int dsn = g_read_integer(st, false);
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
 				int local_scenario_no = g_read_integer(st);
 
 				Toll tc;  // toll collection
-				tc.StartDayNo  = g_read_integer(st,false)-1;  // start from zero
-				tc.EndDayNo  = g_read_integer(st,false)-1;  // start from zero
+				tc.StartDayNo = g_read_integer(st, false) - 1;  // start from zero
+				tc.EndDayNo = g_read_integer(st, false) - 1;  // start from zero
 
-				tc.StartTime = g_read_integer(st,false);
-				tc.EndTime = g_read_integer(st,false);
+				tc.StartTime = g_read_integer(st, false);
+				tc.EndTime = g_read_integer(st, false);
 
-				int demand_type = g_read_integer(st, false);
-				
-				if (demand_type <= -1 || demand_type >= g_DemandTypeVector.size())
+				for (int pt = 1; pt < MAX_DEMAND_TYPE_SIZE; pt++)  // last one is transit fare
 				{
-					cout << " demand type =" << demand_type << "which is an invalid number. " << endl;
-						g_ProgramStop();
-				}
 
-				float toll_value = g_read_float(st);
-
-				if (demand_type >=1 && toll_value <= -998)  // only allow this demand type
-				{
-					for (int pt = 1; pt< MAX_DEMAND_TYPE_SIZE; pt++)  // last one is transit fare
-					{
-						tc.TollRate[pt] = 999;
-					}
-				
-					tc.TollRate[demand_type] = 0;
-				}
-
-				if (demand_type == 0)
-				{
-					for (int pt = 1; pt< MAX_DEMAND_TYPE_SIZE; pt++)  // last one is transit fare
-					{
-						tc.TollRate[pt] = toll_value;
-					}
-
-				}
-				else if (demand_type<g_DemandTypeVector.size())
-				{
-					tc.TollRate[demand_type] = toll_value;
-
-				}
-				else
-				{
-					
-
+					float toll_value = g_read_float(st);
+					tc.TollRate[pt] = toll_value;
 
 				}
 
@@ -3396,7 +3430,7 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 
 				//}
 
-				if(local_scenario_no==0 || local_scenario_no == scenario_no)
+				if (local_scenario_no == 0 || local_scenario_no == scenario_no)
 				{
 					count++;
 					pLink->TollVector.push_back(tc);
@@ -3421,11 +3455,12 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 
 		fclose(st);
 
-	}else
+	}
+	else
 	{
-		if(FileName.size()>0 && FileName.compare ("Scenario_Toll.csv")!=0)
+		if (FileName.size() > 0 && FileName.compare("Scenario_Toll.csv") != 0)
 		{
-			cout << "File " << FileName << " cannot be opened. Please check!"  <<  endl;
+			cout << "File " << FileName << " cannot be opened. Please check!" << endl;
 			g_ProgramStop();
 		}
 
@@ -3439,7 +3474,7 @@ void ReadLinkTollScenarioFile(string FileName, int scenario_no)
 void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 {
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		g_LinkVector[li]->m_RadioMessageVector.clear(); // remove all previouly read records
@@ -3448,8 +3483,8 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 
 	FILE* st = NULL;
 
-	fopen_s(&st,FileName.c_str(),"r");
-	if(st!=NULL)
+	fopen_s(&st, FileName.c_str(), "r");
+	if (st != NULL)
 	{
 		cout << "Reading file " << FileName << endl;
 		g_LogFile << "Reading file " << FileName << endl;
@@ -3457,32 +3492,32 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 
 		int count = 0;
 
-		while(true)
+		while (true)
 		{
-			int usn  = g_read_integer(st,false);
+			int usn = g_read_integer(st, false);
 
-			if(usn <=0)
+			if (usn <= 0)
 				break;
 
-			int dsn =  g_read_integer(st,false);
-			if(g_LinkMap.find(GetLinkStringID(usn,dsn))== g_LinkMap.end())
+			int dsn = g_read_integer(st, false);
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
 			{
-				cout << "Link " << usn << "-> " << dsn << " at line " << count+1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file" << FileName << " has not been defined in input_link.csv. Please check.";
 				g_ProgramStop();
 			}
 
-			DTALink* pLink = g_LinkMap[GetLinkStringID(usn,dsn)];
+			DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
 
-			if(pLink!=NULL)
+			if (pLink != NULL)
 			{
 				int local_scenario_no = g_read_integer(st);
 
-				RadioMessage rm;  
-				rm.StartDayNo  = g_read_integer(st,false)-1;  // start from zero
-				rm.EndDayNo  = g_read_integer(st,false)-1;  // start from zero
+				RadioMessage rm;
+				rm.StartDayNo = g_read_integer(st, false) - 1;  // start from zero
+				rm.EndDayNo = g_read_integer(st, false) - 1;  // start from zero
 
-				rm.StartTime = g_read_integer(st,false);
-				rm.EndTime = g_read_integer(st,false);
+				rm.StartTime = g_read_integer(st, false);
+				rm.EndTime = g_read_integer(st, false);
 
 				rm.ResponsePercentage = g_read_float(st);
 				rm.DelayPenaltyInMin = g_read_float(st);
@@ -3499,7 +3534,8 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 
 		fclose(st);
 
-	}else
+	}
+	else
 	{
 		//if(FileName.size()>0 && FileName.compare ("Scenario_Link_Based_Toll.csv")!=0)
 		//{
@@ -3507,7 +3543,7 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 		//	g_ProgramStop();
 		//}
 
-		g_SummaryStatFile.WriteTextString ("File Scenario_Radio_Message.csv cannot be opened");
+		g_SummaryStatFile.WriteTextString("File Scenario_Radio_Message.csv cannot be opened");
 	}
 
 
@@ -3515,21 +3551,21 @@ void ReadRadioMessageScenarioFile(string FileName, int scenario_no)
 }
 void g_ReadScenarioInputFiles(int scenario_no)
 {
-	ReadIncidentScenarioFile("Scenario_Incident.csv",scenario_no);
-	ReadLinkTollScenarioFile("Scenario_Toll.csv",scenario_no);
-	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv",scenario_no);
-	ReadRampMeterScenarioFile("Scenario_Ramp_Meter.csv",scenario_no);
+	ReadIncidentScenarioFile("Scenario_Incident.csv", scenario_no);
+	ReadLinkTollScenarioFile("Scenario_Toll.csv", scenario_no);
+	ReadWorkZoneScenarioFile("Scenario_Work_Zone.csv", scenario_no);
+	ReadRampMeterScenarioFile("Scenario_Ramp_Meter.csv", scenario_no);
 
-	if(g_ODEstimationFlag == false)
+	if (g_ODEstimationFlag == false)
 	{
-		ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv",scenario_no);
-//		ReadRadioMessageScenarioFile("Scenario_Radio_Message.csv",scenario_no);
+		ReadVMSScenarioFile("Scenario_Dynamic_Message_Sign.csv", scenario_no);
+		//		ReadRadioMessageScenarioFile("Scenario_Radio_Message.csv",scenario_no);
 	}
 
 	//ReadEvacuationScenarioFile("Scenario_Evacuation_Zone.csv",scenario_no);
 	//ReadWeatherScenarioFile("Scenario_Weather.csv",scenario_no);
 
-	ReadMovementScenarioFile("Scenario_Movement.csv",scenario_no);
+	ReadMovementScenarioFile("Scenario_Movement.csv", scenario_no);
 
 }
 void FreeMemory()
@@ -3598,7 +3634,7 @@ void OutputLinkMOEData(std::string fname, int Iteration, bool bStartWithEmpty)
 			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,number_of_queued_vehicles,cumulative_arrival_count,cumulative_departure_count,time_stamp_for_end_of_congestion,time_dependent_left_arrival_count,time_dependent_left_departure_count,number_of_left_queued_vehicles,cumulative_SOV_revenue,cumulative_HOV_revenue,total_energy,total_CO2,total_NOX,total_CO,total_HC,energy_miles_per_gallon,CO2_per_mile,NOX_per_mile,CO_per_mile,HC_per_mile\n");
 		}
 
-		for (unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 
 			DTALink* pLink = g_LinkVector[li];
@@ -3642,7 +3678,7 @@ void OutputLinkMOEData(std::string fname, int Iteration, bool bStartWithEmpty)
 						pLink->m_LinkMOEAry[time].ExitQueueLength,
 						pLink->m_LinkMOEAry[time].CumulativeArrivalCount,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount,
-						pLink->m_LinkMOEAry[time].EndTimeOfPartialCongestion );
+						pLink->m_LinkMOEAry[time].EndTimeOfPartialCongestion);
 
 					tdmoe_element.day_no = day_no;
 					tdmoe_element.from_node_id = g_NodeVector[pLink->m_FromNodeID].m_NodeNumber;
@@ -3710,7 +3746,7 @@ void OutputLinkMOEData(std::string fname, int Iteration, bool bStartWithEmpty)
 
 					for (pt = 1; pt < MAX_DEMAND_TYPE_SIZE - 1; pt++)  //SOV, HOV, Truck
 					{
-//						fprintf(st, "%6.2f,", pLink->m_LinkMOEAry[time].CumulativeRevenue_DemandType[pt]);
+						//						fprintf(st, "%6.2f,", pLink->m_LinkMOEAry[time].CumulativeRevenue_DemandType[pt]);
 						fprintf(st, "%0.0f,");
 					}
 #ifdef _high_level_memory_usage
@@ -3749,7 +3785,7 @@ void OutputLinkMOEData(std::string fname, int Iteration, bool bStartWithEmpty)
 
 		fprintf(st_link_travel_time, "from_node_id,to_node_id,day_no,starting_time_in_min,ending_time_in_min,travel_time_in_min\n");
 
-		for (unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 
 			DTALink* pLink = g_LinkVector[li];
@@ -3784,12 +3820,12 @@ void OutputLinkMOEData(std::string fname, int Iteration, bool bStartWithEmpty)
 	{
 		fprintf(st_trajectory, "agent_id,time_stamp_in_second,time_stamp_in_min,x,y,to_x,to_y,link_key,within_link_distance,within_link_distance_percentage\n");
 
-		for (unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 
 			DTALink* pLink = g_LinkVector[li];
 
-			for (unsigned v = 0; v< pLink->m_VehicleLocationVector.size(); v++)
+			for (unsigned v = 0; v < pLink->m_VehicleLocationVector.size(); v++)
 			{
 				struc_VehicleLocationRecord element = pLink->m_VehicleLocationVector[v];
 
@@ -3823,18 +3859,18 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 	FILE* st_trajectory = NULL;
 	FILE* st_link_travel_time = NULL;
 
-	if(bStartWithEmpty)
-		fopen_s(&st,fname,"w");
+	if (bStartWithEmpty)
+		fopen_s(&st, fname, "w");
 	else
-		fopen_s(&st,fname,"a");
+		fopen_s(&st, fname, "a");
 
-	fopen_s(&st_link_travel_time,"input_link_travel_time.csv","w");
+	fopen_s(&st_link_travel_time, "input_link_travel_time.csv", "w");
 
 	DeleteFile("output_LinkTDMOE.bin");  // remove output_LinkTDMOE.bin as we will use new file format
 
-	fopen_s(&st_struct,"output_CompactLinkTDMOE.bin","wb");
+	fopen_s(&st_struct, "output_CompactLinkTDMOE.bin", "wb");
 
-//	fopen_s(&st_trajectory,"model_trajectory.csv","w");
+	//	fopen_s(&st_trajectory,"model_trajectory.csv","w");
 
 	std::set<DTALink*>::iterator iterLink;
 
@@ -3891,9 +3927,9 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 		float HC;
 
 	} struct_TD_EmissionMOE;
-	
 
-	if(st!=NULL)
+
+	if (st != NULL)
 	{
 
 		struct_TDSimpleMOE_HEADER header;
@@ -3913,21 +3949,21 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 		bool bEmissionData = false;
 		bool bRevenueData = false;
 
-		if(bStartWithEmpty)
+		if (bStartWithEmpty)
 		{
 			fprintf(st, "from_node_id,to_node_id,link_id_from_to,day_no,timestamp_in_min,travel_time_in_min,delay_in_min,link_in_volume_number_of_veh,link_out_volume_number_of_veh,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,queue_length_percentage,number_of_queued_vehicles,cumulative_arrival_count,cumulative_departure_count,");
 			//time_dependent_left_arrival_count, time_dependent_left_departure_count, number_of_through_and_right_queued_vehicles, number_of_left_queued_vehicles, 
-			
+
 			if (bRevenueData)
 				fprintf(st, "cumulative_SOV_revenue, cumulative_HOV_revenue,");
 
 			if (bEmissionData)
-				fprintf(st,"total_energy, total_CO2, total_NOX, total_CO, total_HC, energy_miles_per_gallon, CO2_per_mile, NOX_per_mile, CO_per_mile, HC_per_mile");
+				fprintf(st, "total_energy, total_CO2, total_NOX, total_CO, total_HC, energy_miles_per_gallon, CO2_per_mile, NOX_per_mile, CO_per_mile, HC_per_mile");
 
 			fprintf(st, "\n");
 		}
 
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
 
@@ -3945,64 +3981,64 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 				struct_TDSimpleMOE tdmoe_element;
 				tdmoe_element.timestamp_in_min = time;
 
-				if(time < pLink->m_LinkMOEAry.size())
+				if (time < pLink->m_LinkMOEAry.size())
 				{
 					float LinkInFlow = float(pLink->GetArrivalFlow(time, header.aggregation_time_interval));
 
 					float LinkOutFlow = float(pLink->GetDepartureFlow(time, header.aggregation_time_interval));
 					float travel_time = pLink->GetTravelTimeByMin(Iteration, time, header.aggregation_time_interval, g_TrafficFlowModelFlag);
-				float queue_length_ratio  = 0 ;
+					float queue_length_ratio = 0;
 
-				tdmoe_element.density_in_veh_per_mile_per_lane = 
-					(pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) / pLink->m_Length / pLink->m_OutflowNumLanes;
+					tdmoe_element.density_in_veh_per_mile_per_lane =
+						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) / pLink->m_Length / pLink->m_OutflowNumLanes;
 
-						queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/(pLink->m_KJam * pLink->m_Length * pLink->m_OutflowNumLanes); /* in ratio*/
+					queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength / (pLink->m_KJam * pLink->m_Length * pLink->m_OutflowNumLanes); /* in ratio*/
 
-					int day_no = Iteration ; 
+					int day_no = Iteration;
 
 					fprintf(st, "%d,%d,%d->%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,%3.2f,%d,%d,%d,",
-						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
-						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
-						day_no,time,
-						travel_time, travel_time - pLink->m_FreeFlowTravelTime ,
-						LinkInFlow,LinkOutFlow,LinkInFlow*60.0/pLink->m_OutflowNumLanes ,LinkInFlow*60.0,
+						day_no, time,
+						travel_time, travel_time - pLink->m_FreeFlowTravelTime,
+						LinkInFlow, LinkOutFlow, LinkInFlow*60.0 / pLink->m_OutflowNumLanes, LinkInFlow*60.0,
 						tdmoe_element.density_in_veh_per_mile_per_lane,
 						pLink->GetSpeed(time, header.aggregation_time_interval),
-						queue_length_ratio*100,
+						queue_length_ratio * 100,
 						pLink->m_LinkMOEAry[time].ExitQueueLength,
-						pLink->m_LinkMOEAry[time].CumulativeArrivalCount ,
+						pLink->m_LinkMOEAry[time].CumulativeArrivalCount,
 						pLink->m_LinkMOEAry[time].CumulativeDepartureCount);
 
-					tdmoe_element. travel_time_in_min = travel_time;
+					tdmoe_element.travel_time_in_min = travel_time;
 
-//	count total node delay for each inbound link
+					//	count total node delay for each inbound link
 
 					double delay_in_min = travel_time - pLink->m_FreeFlowTravelTime;
 					g_NodeVector[pLink->m_ToNodeID].m_TotalDelay += delay_in_min;
-					g_NodeVector[pLink->m_ToNodeID].AddIncomingLinkDelay(li,delay_in_min);
+					g_NodeVector[pLink->m_ToNodeID].AddIncomingLinkDelay(li, delay_in_min);
 
-					tdmoe_element. link_volume_in_veh_per_hour_for_all_lanes = LinkInFlow*60.0;
+					tdmoe_element.link_volume_in_veh_per_hour_for_all_lanes = LinkInFlow*60.0;
 					tdmoe_element.speed_in_mph = pLink->GetSpeed(time, header.aggregation_time_interval);
-					tdmoe_element. exit_queue_length = queue_length_ratio; /* in ratio*/;
-					tdmoe_element. cumulative_arrival_count = pLink->m_LinkMOEAry[time].CumulativeArrivalCount;
-					tdmoe_element. cumulative_departure_count = pLink->m_LinkMOEAry[time].CumulativeDepartureCount;
-					
+					tdmoe_element.exit_queue_length = queue_length_ratio; /* in ratio*/;
+					tdmoe_element.cumulative_arrival_count = pLink->m_LinkMOEAry[time].CumulativeArrivalCount;
+					tdmoe_element.cumulative_departure_count = pLink->m_LinkMOEAry[time].CumulativeDepartureCount;
+
 					struct_TD_EmissionMOE emission_moe;
-					if(LinkInFlow >=1)
+					if (LinkInFlow >= 1)
 					{
 #ifdef _high_level_memory_usage
-						float Energy = pLink->m_LinkMOEAry [time].Energy;
+						float Energy = pLink->m_LinkMOEAry[time].Energy;
 
-					if(Energy >=1)
-					{
-					emission_moe.Energy = pLink->m_Length / max(0.00000001, Energy / 1000 / 121.7 / LinkInFlow);
-					emission_moe.CO2 = pLink->m_LinkMOEAry[time].CO2 / 1000 / LinkInFlow / pLink->m_Length;
-					emission_moe.NOX = pLink->m_LinkMOEAry[time].NOX / LinkInFlow / pLink->m_Length;
-					emission_moe.CO = pLink->m_LinkMOEAry[time].CO / LinkInFlow / pLink->m_Length;
-					emission_moe.HC = pLink->m_LinkMOEAry[time].HC / LinkInFlow / pLink->m_Length;
-					}
+						if (Energy >= 1)
+						{
+							emission_moe.Energy = pLink->m_Length / max(0.00000001, Energy / 1000 / 121.7 / LinkInFlow);
+							emission_moe.CO2 = pLink->m_LinkMOEAry[time].CO2 / 1000 / LinkInFlow / pLink->m_Length;
+							emission_moe.NOX = pLink->m_LinkMOEAry[time].NOX / LinkInFlow / pLink->m_Length;
+							emission_moe.CO = pLink->m_LinkMOEAry[time].CO / LinkInFlow / pLink->m_Length;
+							emission_moe.HC = pLink->m_LinkMOEAry[time].HC / LinkInFlow / pLink->m_Length;
+						}
 #endif
 					}
 
@@ -4021,70 +4057,72 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 
 					if (bEmissionData)
 					{
-					
+
 #ifdef		_high_level_memory_usage				
-					fprintf(st, "%f,",pLink->m_LinkMOEAry [time]. Energy); // total
-					fprintf(st, "%f,",pLink->m_LinkMOEAry [time]. CO2/1000);
-					fprintf(st, "%f,",pLink->m_LinkMOEAry [time]. NOX);
-					fprintf(st, "%f,",pLink->m_LinkMOEAry [time]. CO);
-					fprintf(st, "%f,",pLink->m_LinkMOEAry [time]. HC);
+						fprintf(st, "%f,", pLink->m_LinkMOEAry[time].Energy); // total
+						fprintf(st, "%f,", pLink->m_LinkMOEAry[time].CO2 / 1000);
+						fprintf(st, "%f,", pLink->m_LinkMOEAry[time].NOX);
+						fprintf(st, "%f,", pLink->m_LinkMOEAry[time].CO);
+						fprintf(st, "%f,", pLink->m_LinkMOEAry[time].HC);
 #endif
-					fprintf(st, "%f,", emission_moe.Energy); //miles per unit
-					fprintf(st, "%f,", emission_moe.CO2);
-					fprintf(st, "%f,", emission_moe.NOX);
-					fprintf(st, "%f,", emission_moe.CO);
-					fprintf(st, "%f,", emission_moe.HC);
+						fprintf(st, "%f,", emission_moe.Energy); //miles per unit
+						fprintf(st, "%f,", emission_moe.CO2);
+						fprintf(st, "%f,", emission_moe.NOX);
+						fprintf(st, "%f,", emission_moe.CO);
+						fprintf(st, "%f,", emission_moe.HC);
 					}
 
-					fprintf(st,"\n");
+					fprintf(st, "\n");
 
 				}
 				fwrite(&tdmoe_element, sizeof(tdmoe_element), 1, st_struct);
 
 			}
 
-			}
+		}
 		fclose(st);
 		fclose(st_struct);
-	}else
+	}
+	else
 	{
 		fprintf(g_ErrorFile, "File output_LinkTDMOE.csv cannot be opened. It might be currently used and locked by EXCEL.");
-		cout << "Error: File output_LinkTDMOE.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File output_LinkTDMOE.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 		cin.get();  // pause
 	}
 
-	if(st_link_travel_time!=NULL)
+	if (st_link_travel_time != NULL)
 	{
 
 		fprintf(st_link_travel_time, "from_node_id,to_node_id,day_no,starting_time_in_min,ending_time_in_min,travel_time_in_min\n");
 
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 
 			DTALink* pLink = g_LinkVector[li];
-			for(int time = g_DemandLoadingStartTimeInMin; time<= g_SimululationReadyToEnd;time+=15)
+			for (int time = g_DemandLoadingStartTimeInMin; time <= g_SimululationReadyToEnd; time += 15)
 			{
-				if(time < pLink->m_LinkMOEAry.size())
+				if (time < pLink->m_LinkMOEAry.size())
 				{
-					float travel_time = pLink->GetTravelTimeByMin(Iteration,time,15,g_TrafficFlowModelFlag);
-					int day_no = Iteration ; 
+					float travel_time = pLink->GetTravelTimeByMin(Iteration, time, 15, g_TrafficFlowModelFlag);
+					int day_no = Iteration;
 
-					if(fabs(travel_time - pLink->m_FreeFlowTravelTime )>=0.01)
+					if (fabs(travel_time - pLink->m_FreeFlowTravelTime) >= 0.01)
 					{
-					fprintf(st_link_travel_time, "%d,%d,%d,%d,%d,%.2f\n",
-						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, 
-						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
-						0,time,time+15,
-						travel_time);
-					}
+						fprintf(st_link_travel_time, "%d,%d,%d,%d,%d,%.2f\n",
+							g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
+							g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
+							0, time, time + 15,
+							travel_time);
 					}
 				}
+			}
 		}
 		fclose(st_link_travel_time);
-	}else
+	}
+	else
 	{
 		fprintf(g_ErrorFile, "File input_link_travel_time.csv cannot be opened. It might be currently used and locked by EXCEL.");
-		cout << "Error: File input_link_travel_time.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+		cout << "Error: File input_link_travel_time.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 		cin.get();  // pause
 	}
 
@@ -4093,57 +4131,58 @@ void OutputLinkMOEDataHybridFormat(char fname[_MAX_PATH], int Iteration, bool bS
 	if (b_Model_trajectory)
 	{
 
-	if(st_trajectory!=NULL)
-	{
-		fprintf(st_trajectory, "agent_id,time_stamp_in_second,time_stamp_in_min,x,y,to_x,to_y,link_key,within_link_distance,within_link_distance_percentage\n");
-
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		if (st_trajectory != NULL)
 		{
+			fprintf(st_trajectory, "agent_id,time_stamp_in_second,time_stamp_in_min,x,y,to_x,to_y,link_key,within_link_distance,within_link_distance_percentage\n");
 
-			DTALink* pLink = g_LinkVector[li];
-			
-			for(unsigned v = 0; v< pLink->m_VehicleLocationVector .size(); v++)
+			for (unsigned li = 0; li < g_LinkVector.size(); li++)
 			{
-				struc_VehicleLocationRecord element  = pLink->m_VehicleLocationVector[v] ;
 
-				element.within_link_distance;
+				DTALink* pLink = g_LinkVector[li];
+
+				for (unsigned v = 0; v < pLink->m_VehicleLocationVector.size(); v++)
+				{
+					struc_VehicleLocationRecord element = pLink->m_VehicleLocationVector[v];
+
+					element.within_link_distance;
 
 
-				double ratio  = element.within_link_distance/pLink->m_Length; 
-				GDPoint pt ;
-				pt = pLink->GetRelativePosition(ratio);
-				fprintf(st_trajectory, "%d,%.1f,%.3f,%f,%f,,,%d->%d,%f,%f\n",  element.vehicle_id,element.time_stamp_in_second,element.time_stamp_in_second/60.0, pt.x ,pt.y,pLink->m_FromNodeNumber ,
-					pLink->m_ToNodeNumber , element.within_link_distance, ratio*100);
-			
+					double ratio = element.within_link_distance / pLink->m_Length;
+					GDPoint pt;
+					pt = pLink->GetRelativePosition(ratio);
+					fprintf(st_trajectory, "%d,%.1f,%.3f,%f,%f,,,%d->%d,%f,%f\n", element.vehicle_id, element.time_stamp_in_second, element.time_stamp_in_second / 60.0, pt.x, pt.y, pLink->m_FromNodeNumber,
+						pLink->m_ToNodeNumber, element.within_link_distance, ratio * 100);
+
+				}
+
 			}
-	
+			fclose(st_trajectory);
 		}
-		fclose(st_trajectory);
-	}else
-	{
-		fprintf(g_ErrorFile, "File model_trajectory.csv cannot be opened. It might be currently used and locked by EXCEL.");
-		cout << "Error: File model_trajectory.csv cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
-		cin.get();  // pause
-	}
+		else
+		{
+			fprintf(g_ErrorFile, "File model_trajectory.csv cannot be opened. It might be currently used and locked by EXCEL.");
+			cout << "Error: File model_trajectory.csv cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
+			cin.get();  // pause
+		}
 	}
 }
 
 
-void OutputRealTimeLinkMOEData(std::string fname, int current_time_in_min, int ouput_MOE_aggregation_time_interval_in_min,  bool bTravelTimeOnly)
+void OutputRealTimeLinkMOEData(std::string fname, int current_time_in_min, int ouput_MOE_aggregation_time_interval_in_min, bool bTravelTimeOnly)
 {
 
 	FILE* st = NULL;
 
-	fopen_s(&st,fname.c_str(),"w");
+	fopen_s(&st, fname.c_str(), "w");
 
 	std::set<DTALink*>::iterator iterLink;
 
-	if(st!=NULL)
+	if (st != NULL)
 	{
 
 		g_LogFile << " current time: " << current_time_in_min << "min, output link moe data to file " << fname << endl;
 
-		if(bTravelTimeOnly)
+		if (bTravelTimeOnly)
 		{
 			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min\n");
 		}
@@ -4152,45 +4191,46 @@ void OutputRealTimeLinkMOEData(std::string fname, int current_time_in_min, int o
 			fprintf(st, "from_node_id,to_node_id,timestamp_in_min,travel_time_in_min,delay_in_min,link_volume_in_veh_per_hour_per_lane,link_volume_in_veh_per_hour_for_all_lanes,density_in_veh_per_mile_per_lane,speed_in_mph,exit_queue_length_ratio\n");
 		}
 
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 
 			DTALink* pLink = g_LinkVector[li];
-			for (int time = max(0,current_time_in_min - ouput_MOE_aggregation_time_interval_in_min); time < current_time_in_min; time++)
+			for (int time = max(0, current_time_in_min - ouput_MOE_aggregation_time_interval_in_min); time < current_time_in_min; time++)
 			{
 
-				float LinkInFlow = float(pLink->GetArrivalFlow(time, ouput_MOE_aggregation_time_interval_in_min ));
-				float travel_time = pLink->GetTravelTimeByMin(0,time,ouput_MOE_aggregation_time_interval_in_min,g_TrafficFlowModelFlag);
+				float LinkInFlow = float(pLink->GetArrivalFlow(time, ouput_MOE_aggregation_time_interval_in_min));
+				float travel_time = pLink->GetTravelTimeByMin(0, time, ouput_MOE_aggregation_time_interval_in_min, g_TrafficFlowModelFlag);
 
-				float queue_length_ratio  = 0 ;
+				float queue_length_ratio = 0;
 
-				queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength/max(0.01,(pLink->m_KJam * pLink->m_Length * pLink->m_OutflowNumLanes)); /* in ratio*/
+				queue_length_ratio = pLink->m_LinkMOEAry[time].ExitQueueLength / max(0.01, (pLink->m_KJam * pLink->m_Length * pLink->m_OutflowNumLanes)); /* in ratio*/
 
-				if(bTravelTimeOnly)
+				if (bTravelTimeOnly)
 				{
 					fprintf(st, "%d,%d,%d,%6.2f",
-						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,time,
+						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber, time,
 						travel_time);
 
-					fprintf(st,"\n");
+					fprintf(st, "\n");
 
 
-				}else
+				}
+				else
 				{
 
 					fprintf(st, "%d,%d,%d,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%6.2f,%3.2f,",
 						g_NodeVector[pLink->m_FromNodeID].m_NodeNumber,
 						g_NodeVector[pLink->m_ToNodeID].m_NodeNumber,
 						time,
-						travel_time, 
-						travel_time - pLink->m_FreeFlowTravelTime ,
+						travel_time,
+						travel_time - pLink->m_FreeFlowTravelTime,
 						LinkInFlow*60.0 / pLink->m_OutflowNumLanes,  /*per lane*/
 						LinkInFlow*60.0,  /*per link hourly */
 						(pLink->m_LinkMOEAry[time].CumulativeArrivalCount - pLink->m_LinkMOEAry[time].CumulativeDepartureCount) / pLink->m_Length / pLink->m_OutflowNumLanes,  /*density*/
-						pLink->m_Length/max(0.1,travel_time)*60.0,
+						pLink->m_Length / max(0.1, travel_time)*60.0,
 						queue_length_ratio);
 
-					fprintf(st,"\n");
+					fprintf(st, "\n");
 				}
 
 			}
@@ -4200,9 +4240,10 @@ void OutputRealTimeLinkMOEData(std::string fname, int current_time_in_min, int o
 		}  //all links
 
 		fclose(st);
-	}else
+	}
+	else
 	{
-		cout << "Error: File " << fname << " cannot be opened.\n It might be currently used and locked. Please any key to continue."<< endl;
+		cout << "Error: File " << fname << " cannot be opened.\n It might be currently used and locked. Please any key to continue." << endl;
 		cin.get();  // pause
 	}
 
@@ -4211,30 +4252,30 @@ void OutputRealTimeLinkMOEData(std::string fname, int current_time_in_min, int o
 
 void OutputNetworkMOEData(ofstream &output_NetworkTDMOE_file)
 {
-	output_NetworkTDMOE_file<< "time_stamp_in_min,cumulative_in_flow_count,cumulative_out_flow_count,number_vehicles_in_network,flow_in_a_min,avg_trip_time_in_min" << endl;
+	output_NetworkTDMOE_file << "time_stamp_in_min,cumulative_in_flow_count,cumulative_out_flow_count,number_vehicles_in_network,flow_in_a_min,avg_trip_time_in_min" << endl;
 
-	for(int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon;time++)
+	for (int time = g_DemandLoadingStartTimeInMin; time< g_PlanningHorizon; time++)
 	{
-		if(g_NetworkMOEAry[time].Flow_in_a_min > 0)
+		if (g_NetworkMOEAry[time].Flow_in_a_min > 0)
 			g_NetworkMOEAry[time].AvgTripTime = g_NetworkMOEAry[time].AbsArrivalTimeOnDSN_in_a_min / g_NetworkMOEAry[time].Flow_in_a_min;
 
-		if(time >=1)
+		if (time >= 1)
 		{
-			if(g_NetworkMOEAry[time].CumulativeInFlow < g_NetworkMOEAry[time-1].CumulativeInFlow)
-				g_NetworkMOEAry[time].CumulativeInFlow = g_NetworkMOEAry[time-1].CumulativeInFlow;
+			if (g_NetworkMOEAry[time].CumulativeInFlow < g_NetworkMOEAry[time - 1].CumulativeInFlow)
+				g_NetworkMOEAry[time].CumulativeInFlow = g_NetworkMOEAry[time - 1].CumulativeInFlow;
 
-			if(g_NetworkMOEAry[time].CumulativeOutFlow < g_NetworkMOEAry[time-1].CumulativeOutFlow)
-				g_NetworkMOEAry[time].CumulativeOutFlow = g_NetworkMOEAry[time-1].CumulativeOutFlow;
+			if (g_NetworkMOEAry[time].CumulativeOutFlow < g_NetworkMOEAry[time - 1].CumulativeOutFlow)
+				g_NetworkMOEAry[time].CumulativeOutFlow = g_NetworkMOEAry[time - 1].CumulativeOutFlow;
 		}
 
-		output_NetworkTDMOE_file<< time << "," << 
-			g_NetworkMOEAry[time].CumulativeInFlow <<"," <<
-			g_NetworkMOEAry[time].CumulativeOutFlow <<"," <<
-			g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow <<"," <<
-			g_NetworkMOEAry[time].Flow_in_a_min <<"," <<
-			g_NetworkMOEAry[time].AvgTripTime <<"," << endl;
+		output_NetworkTDMOE_file << time << "," <<
+			g_NetworkMOEAry[time].CumulativeInFlow << "," <<
+			g_NetworkMOEAry[time].CumulativeOutFlow << "," <<
+			g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow << "," <<
+			g_NetworkMOEAry[time].Flow_in_a_min << "," <<
+			g_NetworkMOEAry[time].AvgTripTime << "," << endl;
 
-		if(time > g_DemandLoadingStartTimeInMin+10 && ((g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow) == 0))
+		if (time > g_DemandLoadingStartTimeInMin + 10 && ((g_NetworkMOEAry[time].CumulativeInFlow - g_NetworkMOEAry[time].CumulativeOutFlow) == 0))
 			break; // stop, as all vehicles leave. 
 	}
 
@@ -4256,27 +4297,28 @@ int g_InitializeLogFiles()
 	g_AppLastIterationStartTime = g_AppStartTime;
 
 
-	g_LogFile.open ("output_simulation.log", ios::out);
+	g_LogFile.open("output_simulation.log", ios::out);
 	if (g_LogFile.is_open())
 	{
 		g_LogFile.width(12);
-		g_LogFile.precision(3) ;
+		g_LogFile.precision(3);
 		g_LogFile.setf(ios::fixed);
-	}else
+	}
+	else
 	{
 		cout << "File output_simulation.log cannot be opened, and it might be locked by another program or the target data folder is read-only." << endl;
 		cin.get();  // pause
 		return 0;
 	}
 
-	g_AssignmentLogFile.open ("output_assignment_log.csv", ios::out);
+	g_AssignmentLogFile.open("output_assignment_log.csv", ios::out);
 	if (g_AssignmentLogFile.is_open())
 	{
 		g_AssignmentLogFile.width(12);
-		g_AssignmentLogFile.precision(3) ;
+		g_AssignmentLogFile.precision(3);
 		g_AssignmentLogFile.setf(ios::fixed);
 		g_AssignmentLogFile << "CPU_time,iteration_no,avg_travel_time_in_min,travel_time_index,avg_travel_distance_in_mile,vehicle_route_switching_rate,number_of_vehicles_completing_trips,perc_of_vehicles_completing_trips,avg_travel_time_gap_per_vehicle_in_min,target_demand_deviation,abs_estimation_error_of_link_volume,RMSE_of_est_link_volume,avg_abs_perc_error_of_est_link_volume, ";
-		g_AssignmentLogFile	<<  endl;
+		g_AssignmentLogFile << endl;
 
 	}
 	else
@@ -4286,8 +4328,24 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
+	g_NetworkDesignLogFile.open("output_network_design_log.csv", ios::out);
+	if (g_NetworkDesignLogFile.is_open())
+	{
+		g_NetworkDesignLogFile.width(12);
+		g_NetworkDesignLogFile.precision(3);
+		g_NetworkDesignLogFile.setf(ios::fixed);
 
-	
+		g_NetworkDesignLogFile << endl;
+
+	}
+	else
+	{
+		cout << "File output_network_design_log.csv cannot be opened, and it might be locked by another program!" << endl;
+		cin.get();  // pause
+		return 0;
+	}
+
+
 	g_scenario_short_description.open("output_scenario_short_description.csv", ios::out);
 	if (g_scenario_short_description.is_open())
 	{
@@ -4302,13 +4360,14 @@ int g_InitializeLogFiles()
 		return 0;
 	}
 
-	g_EstimationLogFile.open ("output_ODME_log.csv", ios::out);
+	g_EstimationLogFile.open("output_ODME_log.csv", ios::out);
 	if (g_EstimationLogFile.is_open())
 	{
 		g_EstimationLogFile.width(12);
-		g_EstimationLogFile.precision(3) ;
+		g_EstimationLogFile.precision(3);
 		g_EstimationLogFile.setf(ios::fixed);
-	}else
+	}
+	else
 	{
 		cout << "File output_ODME_MOE cannot be opened, and it might be locked by another program!" << endl;
 		cin.get();  // pause
@@ -4316,13 +4375,14 @@ int g_InitializeLogFiles()
 	}
 
 
-	g_WarningFile.open ("warning.log", ios::out);
+	g_WarningFile.open("warning.log", ios::out);
 	if (g_WarningFile.is_open())
 	{
 		g_WarningFile.width(12);
-		g_WarningFile.precision(3) ;
+		g_WarningFile.precision(3);
 		g_WarningFile.setf(ios::fixed);
-	}else
+	}
+	else
 	{
 		cout << "File warning.log cannot be opened, and it might be locked by another program!" << endl;
 		cin.get();  // pause
@@ -4332,14 +4392,14 @@ int g_InitializeLogFiles()
 	DWORD dwReturn;                                    //Declare needed variables
 	char szBuffer[MAX_PATH];                           //Allocate (easily) a buffer
 	//using MAX_PATH equate
-	dwReturn = GetCurrentDirectory(MAX_PATH,szBuffer); //Call Api Function
+	dwReturn = GetCurrentDirectory(MAX_PATH, szBuffer); //Call Api Function
 
 	cout << "--- Current Directory: " << szBuffer << " ---" << endl << endl;
 	g_LogFile << "--- Current Directory: " << szBuffer << " ---" << endl << endl;
 
 
 	CCSVParser parser_MOE_settings;
-	if (!parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv",false))
+	if (!parser_MOE_settings.OpenCSVFile("input_MOE_settings.csv", false))
 	{
 		// use default files
 		CCSVWriter csv_output("input_MOE_settings.csv");
@@ -4371,8 +4431,8 @@ int g_InitializeLogFiles()
 
 	}
 
-	fopen_s(&g_ErrorFile,"error.log","w");
-	if(g_ErrorFile==NULL)
+	fopen_s(&g_ErrorFile, "error.log", "w");
+	if (g_ErrorFile == NULL)
 	{
 		cout << "Cannot open file error.log! Another instance of DTALite might be running on the same folder." << endl;
 		cin.get();  // pause
@@ -4386,7 +4446,7 @@ int g_InitializeLogFiles()
 		cin.get();  // pause
 		return 0;
 	}
-	
+
 	//		g_RunStaticExcel();
 	return 1;
 }
@@ -4396,26 +4456,26 @@ void g_ReadDTALiteSettings()
 
 	// if  ./DTASettings.ini does not exist, then we should print out all the default settings for user to change
 	//
-	g_AdjLinkSize = g_GetPrivateProfileInt("shortest_path", "max_size_of_adjacent_links", 30, g_DTASettingFileName);	
+	g_AdjLinkSize = g_GetPrivateProfileInt("shortest_path", "max_size_of_adjacent_links", 30, g_DTASettingFileName);
 
-	if(g_AdjLinkSize < 30)
+	if (g_AdjLinkSize < 30)
 		g_AdjLinkSize = 30;
 
-	g_AggregationTimetInterval = g_GetPrivateProfileInt("shortest_path", "travel_time_aggregation_interval_in_min", 15, g_DTASettingFileName);	
-	
-	if(g_AggregationTimetInterval <1)
+	g_AggregationTimetInterval = g_GetPrivateProfileInt("shortest_path", "travel_time_aggregation_interval_in_min", 15, g_DTASettingFileName);
+
+	if (g_AggregationTimetInterval < 1)
 		g_AggregationTimetInterval = 1;
 
-	g_settings.AdditionalYellowTimeForSignals = g_GetPrivateProfileInt("simulation", "additional_amber_time_per_link_per_cycle", 4, g_DTASettingFileName);	
+	g_settings.AdditionalYellowTimeForSignals = g_GetPrivateProfileInt("simulation", "additional_amber_time_per_link_per_cycle", 4, g_DTASettingFileName);
 	//	g_settings.IteraitonNoStartSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "starting_iteration_no", 1, g_DTASettingFileName);
 	//	g_settings.IteraitonStepSizeSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "number_of_iterations_per_optimization", 5, g_DTASettingFileName);
 	//	g_settings.DefaultCycleTimeSignalOptimization = g_GetPrivateProfileInt("signal_optimization", "default_cycle_time_in_sec", 60, g_DTASettingFileName);
 
-	g_UseDefaultLaneCapacityFlag = g_GetPrivateProfileInt("simulation", "use_default_lane_capacity", 0, g_DTASettingFileName);	
+	g_UseDefaultLaneCapacityFlag = g_GetPrivateProfileInt("simulation", "use_default_lane_capacity", 0, g_DTASettingFileName);
 	//	g_UseFreevalRampMergeModelFlag = g_GetPrivateProfileInt("simulation", "use_freeval_merge_model", 0, g_DTASettingFileName);	
-	g_OutputLinkCapacityFlag = g_GetPrivateProfileInt("simulation", "output_link_capacity_file", 0, g_DTASettingFileName);	
-	g_OutputLinkCapacityStarting_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_start_time_in_min", 0, g_DTASettingFileName);	
-	g_OutputLinkCapacityEnding_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_end_time_in_min", 300, g_DTASettingFileName);	
+	g_OutputLinkCapacityFlag = g_GetPrivateProfileInt("simulation", "output_link_capacity_file", 0, g_DTASettingFileName);
+	g_OutputLinkCapacityStarting_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_start_time_in_min", 0, g_DTASettingFileName);
+	g_OutputLinkCapacityEnding_Time = g_GetPrivateProfileInt("simulation", "output_link_capacity_end_time_in_min", 300, g_DTASettingFileName);
 	g_settings.use_point_queue_model_for_on_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_on_ramps", 1, g_DTASettingFileName);
 	g_settings.use_point_queue_model_for_off_ramps = g_GetPrivateProfileInt("simulation", "use_point_queue_for_off_ramps", 1, g_DTASettingFileName);
 
@@ -4423,25 +4483,25 @@ void g_ReadDTALiteSettings()
 
 	g_EmissionDataOutputFlag = g_GetPrivateProfileInt("emission", "output_emission_data", 1, g_DTASettingFileName);
 
-	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);	
+	g_OutputEmissionOperatingModeData = g_GetPrivateProfileInt("emission", "output_opreating_mode_data", 0, g_DTASettingFileName);
 	g_use_routing_policy_from_external_input = g_GetPrivateProfileInt("assignment", "use_routing_policy_from_external_input", 0, g_DTASettingFileName);
 	g_output_routing_policy_file = g_GetPrivateProfileInt("output", "external_routing_policy", 0, g_DTASettingFileName);
 
 	if (g_use_routing_policy_from_external_input == 1)
-		g_output_routing_policy_file = 1; 
+		g_output_routing_policy_file = 1;
 
-	if(!g_OutputEmissionOperatingModeData)
+	if (!g_OutputEmissionOperatingModeData)
 		g_OutputSecondBySecondEmissionData = 0;
 	else
 	{
-		g_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "output_second_by_second_emission_data", 0, g_DTASettingFileName);	
-		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "sampling_percentange_for_outputting_second_by_second_emission_data", 1, g_DTASettingFileName);	
+		g_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "output_second_by_second_emission_data", 0, g_DTASettingFileName);
+		g_OutputSecondBySecondEmissionDataPercentage = g_GetPrivateProfileFloat("emission", "sampling_percentange_for_outputting_second_by_second_emission_data", 1, g_DTASettingFileName);
 		g_EmissionSmoothVehicleTrajectory = g_GetPrivateProfileFloat("emission", "smooth_vehicle_trajectory", 1, g_DTASettingFileName);
-		g_start_departure_time_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "start_departure_time_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
-		g_end_departure_time_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "end_departure_time_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
+		g_start_departure_time_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "start_departure_time_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);
+		g_end_departure_time_for_output_second_by_second_emission_data = g_GetPrivateProfileInt("emission", "end_departure_time_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);
 	}
 
-	g_TargetVehicleID_OutputSecondBySecondEmissionData =   g_GetPrivateProfileInt("emission", "target_vehicle_id_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);	
+	g_TargetVehicleID_OutputSecondBySecondEmissionData = g_GetPrivateProfileInt("emission", "target_vehicle_id_for_output_second_by_second_emission_data", 0, g_DTASettingFileName);
 
 	//		g_TollingMethodFlag = g_GetPrivateProfileInt("tolling", "method_flag", 0, g_DTASettingFileName);	
 	//		g_VMTTollingRate = g_GetPrivateProfileFloat("tolling", "VMTRate", 0, g_DTASettingFileName);
@@ -4450,25 +4510,25 @@ void g_ReadDTALiteSettings()
 	g_ParallelComputingMode = 1;
 
 
-	g_RandomizedCapacityMode = g_GetPrivateProfileInt("simulation", "ramdomized_capacity",0, g_DTASettingFileName);
-	g_CapacityLoadingFactor = g_GetPrivateProfileInt("simulation", "capcaity_loading_factor",1, g_DTASettingFileName);
+	g_RandomizedCapacityMode = g_GetPrivateProfileInt("simulation", "ramdomized_capacity", 0, g_DTASettingFileName);
+	g_CapacityLoadingFactor = g_GetPrivateProfileInt("simulation", "capcaity_loading_factor", 1, g_DTASettingFileName);
 
 	g_StochasticCapacityMode = g_GetPrivateProfileInt("simulation", "stochatic_capacity_mode", 1, g_DTASettingFileName);
 
 	g_MergeNodeModelFlag = 0;
 	//	g_MergeNodeModelFlag = g_GetPrivateProfileInt("simulation", "merge_node_model", 0, g_DTASettingFileName);	
-	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);	
+	g_FIFOConditionAcrossDifferentMovementFlag = g_GetPrivateProfileInt("simulation", "first_in_first_out_condition_across_different_movements", 0, g_DTASettingFileName);
 	g_MinimumInFlowRatio = g_GetPrivateProfileFloat("simulation", "minimum_link_in_flow_ratio", 0.00f, g_DTASettingFileName);
 	g_RelaxInFlowConstraintAfterDemandLoadingTime = g_GetPrivateProfileFloat("simulation", "use_point_queue_model_x_min_after_demand_loading_period", 60.0f, g_DTASettingFileName);
-	g_MaxDensityRatioForVehicleLoading  = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
+	g_MaxDensityRatioForVehicleLoading = g_GetPrivateProfileFloat("simulation", "max_density_ratio_for_loading_vehicles", 0.8f, g_DTASettingFileName);
 	g_DefaultSaturationFlowRate_in_vehphpl = g_GetPrivateProfileFloat("simulation", "default_saturation_flow_rate_in_vehphpl", 1800, g_DTASettingFileName);
 
 	g_AgentBasedAssignmentFlag = g_GetPrivateProfileInt("assignment", "agent_based_assignment", 0, g_DTASettingFileName);
 	g_AggregationTimetInterval = g_GetPrivateProfileInt("assignment", "aggregation_time_interval_in_min", 15, g_DTASettingFileName);
 
-	g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, g_DTASettingFileName);	
-	g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, g_DTASettingFileName);	
-	g_UpdatedDemandPrintOutThreshold  = g_GetPrivateProfileFloat("estimation", "updated_demand_print_out_threshold", 5, g_DTASettingFileName);	
+	g_NumberOfInnerIterations = g_GetPrivateProfileInt("assignment", "number_of_inner_iterations", 0, g_DTASettingFileName);
+	g_ConvergencyRelativeGapThreshold_in_perc = g_GetPrivateProfileFloat("assignment", "convergency_relative_gap_threshold_percentage", 5, g_DTASettingFileName);
+	g_UpdatedDemandPrintOutThreshold = g_GetPrivateProfileFloat("estimation", "updated_demand_print_out_threshold", 5, g_DTASettingFileName);
 
 	//g_StartIterationsForOutputPath = g_GetPrivateProfileInt("output", "start_iteration_output_path", g_NumberOfIterations, g_DTASettingFileName);	
 	//g_EndIterationsForOutputPath = g_GetPrivateProfileInt("output", "end_iteration_output_path", g_NumberOfIterations, g_DTASettingFileName);	
@@ -4479,7 +4539,7 @@ void g_ReadDTALiteSettings()
 	//if(g_EndIterationsForOutputPath > g_NumberOfIterations)
 	//	g_EndIterationsForOutputPath = g_NumberOfIterations;
 
-	g_StartIterationsForOutputPath = g_EndIterationsForOutputPath = g_NumberOfIterations -1;
+	g_StartIterationsForOutputPath = g_EndIterationsForOutputPath = g_NumberOfIterations - 1;
 
 	g_DepartureTimeChoiceEarlyDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_early_delay_penalty", 0.969387755f, g_DTASettingFileName); // default is non learning
 	g_DepartureTimeChoiceLateDelayPenalty = g_GetPrivateProfileFloat("assignment", "departure_time_choice_late_delay_penalty", 1.306122449f, g_DTASettingFileName); // default is non learning
@@ -4488,58 +4548,56 @@ void g_ReadDTALiteSettings()
 	g_RelativeTravelTimePercentageDifferenceForSwitching = g_GetPrivateProfileFloat("assignment",
 		"relative_travel_time_difference_in_percentage_for_switching_in_percentage", 15, g_DTASettingFileName);
 
-	if(g_DemandLoadingEndTimeInMin >=2000)
+	if (g_DemandLoadingEndTimeInMin >= 2000)
 	{
-		cout << "Error: g_DemandLoadingEndTimeInMin >=2000" ;
+		cout << "Error: g_DemandLoadingEndTimeInMin >=2000";
 		g_ProgramStop();
 	}
 
 	g_DetermineDemandLoadingPeriod();
 
-	g_start_iteration_for_MOEoutput = g_GetPrivateProfileInt("output", "start_iteration_for_MOE", -1, g_DTASettingFileName);	
+	g_start_iteration_for_MOEoutput = g_GetPrivateProfileInt("output", "start_iteration_for_MOE", -1, g_DTASettingFileName);
 
-	g_UserClassPerceptionErrorRatio[1] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_historical_info_travelers_perception_error",0.3f,g_DTASettingFileName);	
-	
-	if( g_UserClassPerceptionErrorRatio[1] <=-0.01 || g_UserClassPerceptionErrorRatio[1] >=1.0)
+	g_UserClassPerceptionErrorRatio[1] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_historical_info_travelers_perception_error", 0.3f, g_DTASettingFileName);
+
+	if (g_UserClassPerceptionErrorRatio[1] <= -0.01 || g_UserClassPerceptionErrorRatio[1] >= 1.0)
 	{
-	
-		cout << "Input error: coefficient_of_variation_of_historical_info_travelers_perception_error should be between 0 and 1." <<endl << "The current value in configuration file DTASettings.txt is " <<  g_UserClassPerceptionErrorRatio[1] << endl;
+
+		cout << "Input error: coefficient_of_variation_of_historical_info_travelers_perception_error should be between 0 and 1." << endl << "The current value in configuration file DTASettings.txt is " << g_UserClassPerceptionErrorRatio[1] << endl;
 		g_ProgramStop();
-	
+
 	}
-	
-	g_UserClassPerceptionErrorRatio[2] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_pretrip_info_travelers_perception_error",0.05f,g_DTASettingFileName);	
-	g_UserClassPerceptionErrorRatio[3] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_en-route_info_travelers_perception_error",0.05f,g_DTASettingFileName);	
+
+	g_UserClassPerceptionErrorRatio[2] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_pretrip_info_travelers_perception_error", 0.05f, g_DTASettingFileName);
+	g_UserClassPerceptionErrorRatio[3] = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_en-route_info_travelers_perception_error", 0.05f, g_DTASettingFileName);
 
 
 	g_SystemOptimalStartingTimeinMin = g_GetPrivateProfileInt("system_optimal_assignment", "re_routing_start_time_in_min", 0, g_DTASettingFileName);
 
-	g_VMSPerceptionErrorRatio          = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_VMS_perception_error",0.05f,g_DTASettingFileName);	
-	g_information_updating_interval_in_min = g_GetPrivateProfileInt("traveler_information", "information_updating_interval",5,g_DTASettingFileName);	
+	g_VMSPerceptionErrorRatio = g_GetPrivateProfileFloat("traveler_information", "coefficient_of_variation_of_VMS_perception_error", 0.05f, g_DTASettingFileName);
+	g_information_updating_interval_in_min = g_GetPrivateProfileInt("traveler_information", "information_updating_interval", 5, g_DTASettingFileName);
 
-	g_output_OD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file",0,g_DTASettingFileName);
-	g_output_OD_TD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file",0,g_DTASettingFileName);
+	g_output_OD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file", 0, g_DTASettingFileName);
+	g_output_OD_TD_path_MOE_file = g_GetPrivateProfileInt("output", "OD_path_MOE_file", 0, g_DTASettingFileName);
 
-	g_output_OD_path_MOE_cutoff_volume =  g_GetPrivateProfileInt("output", "OD_path_MOE_cutoff_volume",1,g_DTASettingFileName); 
-
-
+	g_output_OD_path_MOE_cutoff_volume = g_GetPrivateProfileInt("output", "OD_path_MOE_cutoff_volume", 1, g_DTASettingFileName);
 
 	g_NetworkDesignOptimalLinkSize = g_GetPrivateProfileInt("network_design", "number_of_links_to_be_built", 1, g_DTASettingFileName);
-	g_NetworkDesignTargetTravelTime = g_GetPrivateProfileInt("network_design", "target_travel_time_in_min", 12, g_DTASettingFileName);
+	g_NetworkDesignTravelTimeBudget = g_GetPrivateProfileInt("network_design", "travel_time_budget_in_min", 12, g_DTASettingFileName);
 
 	if (g_UEAssignmentMethod == assignment_LR_agent_based_system_optimization)  // 12
 	{
 		g_AssignmentLogFile << "[network_design]," << "number_of_links_to_be_built=," << g_NetworkDesignOptimalLinkSize << endl;
-		g_AssignmentLogFile << "[network_design]," << "target_travel_time_in_min=," << g_NetworkDesignTargetTravelTime << endl;
+		g_AssignmentLogFile << "[network_design]," << "target_travel_time_in_min=," << g_NetworkDesignTravelTimeBudget << endl;
 	}
 
-	if(g_UEAssignmentMethod == assignment_accessibility_distance || g_UEAssignmentMethod == assignment_accessibility_travel_time ) 
+	if (g_UEAssignmentMethod == assignment_accessibility_distance || g_UEAssignmentMethod == assignment_accessibility_travel_time)
 		g_PlanningHorizon = 1;
 
 	srand(g_RandomSeed);
 	g_LogFile << "Simulation Horizon (min) = " << g_PlanningHorizon << endl;
 	g_LogFile << "Departure Time Interval (min) = " << g_AggregationTimetInterval << endl;
-	g_LogFile << "Number of Iterations = "<< g_NumberOfIterations << endl;
+	g_LogFile << "Number of Iterations = " << g_NumberOfIterations << endl;
 
 
 	if (g_VehicleLoadingMode == vehicle_binary_file_mode)
@@ -4549,7 +4607,7 @@ void g_ReadDTALiteSettings()
 
 
 
-	if(g_start_iteration_for_MOEoutput == -1)  // no value specified
+	if (g_start_iteration_for_MOEoutput == -1)  // no value specified
 	{
 
 		g_start_iteration_for_MOEoutput = g_NumberOfIterations;
@@ -4640,7 +4698,7 @@ void g_FreeMemory(bool exit_flag = true)
 void g_CloseFiles()
 {
 
-	if(g_ErrorFile);
+	if (g_ErrorFile);
 	fclose(g_ErrorFile);
 
 	if (g_DebugLogFile);
@@ -4649,6 +4707,7 @@ void g_CloseFiles()
 	g_LogFile.close();
 	g_scenario_short_description.close();
 	g_AssignmentLogFile.close();
+	g_NetworkDesignLogFile.close();
 	g_WarningFile.close();
 
 
@@ -4665,11 +4724,12 @@ void g_TrafficAssignmentSimulation()
 	cout << "Start Traffic Assignment/Simulation... " << endl;
 
 	// to simplfy the computational process, we only perform agent-based assignment
-	if(g_AgentBasedAssignmentFlag==0)
+	if (g_AgentBasedAssignmentFlag == 0)
 	{
 		cout << "OD Demand based dynamic traffic assignment... " << endl;
 		g_ZoneBasedDynamicTrafficAssignment(); // multi-iteration dynamic traffic assignment
-	}else
+	}
+	else
 	{
 		cout << "Agent based dynamic traffic assignment... " << endl;
 		g_AgentBasedAssisnment();  // agent-based assignment
@@ -4679,14 +4739,14 @@ void g_TrafficAssignmentSimulation()
 
 void g_DTALiteMain()
 {
-	if(g_InitializeLogFiles()==0) 
+	if (g_InitializeLogFiles() == 0)
 		return;
 
 	g_ReadDTALiteSettings();
 	g_TrafficAssignmentSimulation();
 	g_OutputSimulationStatistics(g_NumberOfIterations);
 	g_CloseFiles();
-	
+
 	g_FreeMemory();
 
 
@@ -4718,27 +4778,27 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 	g_DTALiteMultiScenarioMain();
 
-//	exit(0);   // rely on operating system to release all memory
+	//	exit(0);   // rely on operating system to release all memory
 	return nRetCode;
 }
 
 void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 {
 
-	g_LogFile << "The following freeway/highway bottlenecks are identified."<< endl;
+	g_LogFile << "The following freeway/highway bottlenecks are identified." << endl;
 
 	// ! there is an freeway or highway downstream with less number of lanes
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
-		if( g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsFreeway ()  &&  m_OutboundSizeAry[g_LinkVector[li]->m_ToNodeID] ==1)  // freeway or highway
+		if (g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsFreeway() && m_OutboundSizeAry[g_LinkVector[li]->m_ToNodeID] == 1)  // freeway or highway
 		{
 			int FromID = g_LinkVector[li]->m_FromNodeID;
-			int ToID   = g_LinkVector[li]->m_ToNodeID;
+			int ToID = g_LinkVector[li]->m_ToNodeID;
 
-			for(int i=0; i< m_OutboundSizeAry[ToID]; i++)
+			for (int i = 0; i < m_OutboundSizeAry[ToID]; i++)
 			{
-				DTALink* pNextLink =  g_LinkVector[m_OutboundLinkAry[ToID][i]];
-				if(g_LinkTypeMap[pNextLink->m_link_type ].IsFreeway () && pNextLink->m_OutflowNumLanes < g_LinkVector[li]->m_OutflowNumLanes && pNextLink->m_ToNodeID != FromID)
+				DTALink* pNextLink = g_LinkVector[m_OutboundLinkAry[ToID][i]];
+				if (g_LinkTypeMap[pNextLink->m_link_type].IsFreeway() && pNextLink->m_OutflowNumLanes < g_LinkVector[li]->m_OutflowNumLanes && pNextLink->m_ToNodeID != FromID)
 				{
 					//					g_LinkVector[li]->m_StochaticCapcityFlag = StochasticCapacityFlag;  //lane drop from current link to next link
 					g_LogFile << "lane drop:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeNumber << endl;
@@ -4752,22 +4812,23 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 	// merge: one outgoing link, two more incoming links with at least freeway link
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 		int incoming_link_freeway_and_ramp_count = 0;
 		bool no_arterial_incoming_link = true;
-		for(int incoming_link = 0; incoming_link <  m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]; incoming_link++) // one outgoing link without considering u-turn
+		for (int incoming_link = 0; incoming_link < m_InboundSizeAry[g_LinkVector[li]->m_FromNodeID]; incoming_link++) // one outgoing link without considering u-turn
 		{
 			int incoming_link_id = m_InboundLinkAry[g_LinkVector[li]->m_FromNodeID][incoming_link];
 
-			if((g_LinkVector[incoming_link_id]->m_FromNodeID != g_LinkVector[li]->m_ToNodeID)) // non-uturn link
+			if ((g_LinkVector[incoming_link_id]->m_FromNodeID != g_LinkVector[li]->m_ToNodeID)) // non-uturn link
 			{
-				if(g_LinkTypeMap[g_LinkVector[incoming_link_id]->m_link_type ].IsFreeway() //freeway link
-					|| g_LinkTypeMap[g_LinkVector[incoming_link_id]->m_link_type].IsRamp ())
+				if (g_LinkTypeMap[g_LinkVector[incoming_link_id]->m_link_type].IsFreeway() //freeway link
+					|| g_LinkTypeMap[g_LinkVector[incoming_link_id]->m_link_type].IsRamp())
 				{
 					incoming_link_freeway_and_ramp_count++;
 
-				}else
+				}
+				else
 				{
 					no_arterial_incoming_link = false;
 
@@ -4775,12 +4836,12 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 			}
 
 		}
-		if(incoming_link_freeway_and_ramp_count >=2 && no_arterial_incoming_link)
+		if (incoming_link_freeway_and_ramp_count >= 2 && no_arterial_incoming_link)
 		{
 
-			if( m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID] ==1)
+			if (m_OutboundSizeAry[g_LinkVector[li]->m_FromNodeID] == 1)
 			{
-				TRACE("\nMerge link: %d->%d",g_LinkVector[li]->m_FromNodeNumber , g_LinkVector[li]->m_ToNodeNumber );
+				TRACE("\nMerge link: %d->%d", g_LinkVector[li]->m_FromNodeNumber, g_LinkVector[li]->m_ToNodeNumber);
 				g_LinkVector[li]->m_bMergeFlag = 1;
 
 			}
@@ -4790,36 +4851,36 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 	}
 
 	// first count # of incoming freeway, highway or ramp links to each freeway/highway link
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 		int FromID = g_LinkVector[li]->m_FromNodeID;
-		if(g_LinkVector[li]->m_bMergeFlag ==1 && m_InboundSizeAry[FromID] == 2)  // is a merge bottlebeck link with two incoming links
+		if (g_LinkVector[li]->m_bMergeFlag == 1 && m_InboundSizeAry[FromID] == 2)  // is a merge bottlebeck link with two incoming links
 		{
 			int il;
 			bool bRampExistFlag = false;
 			bool bFreewayExistFlag = false;
 
-			for(il = 0; il<m_InboundSizeAry[FromID]; il++)
+			for (il = 0; il < m_InboundSizeAry[FromID]; il++)
 			{
-				if(g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type].IsRamp ())  // on ramp as incoming link
+				if (g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type].IsRamp())  // on ramp as incoming link
 				{
 					bRampExistFlag = true;
 
 					g_LinkVector[m_InboundLinkAry[FromID][il]]->m_bOnRampType = true;
 					g_LinkVector[li]->m_MergeOnrampLinkID = m_InboundLinkAry[FromID][il];
 				}
-				if(g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type ].IsFreeway () || 
-					g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type ].IsHighway ())  // freeway or highway
+				if (g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type].IsFreeway() ||
+					g_LinkTypeMap[g_LinkVector[m_InboundLinkAry[FromID][il]]->m_link_type].IsHighway())  // freeway or highway
 				{
 					bFreewayExistFlag = true;
 					g_LinkVector[li]->m_MergeMainlineLinkID = m_InboundLinkAry[FromID][il];
 				}
-				if(bRampExistFlag && bFreewayExistFlag)
+				if (bRampExistFlag && bFreewayExistFlag)
 				{
 					g_LinkVector[li]->m_bMergeFlag = 2; // merge with ramp and mainline street
-					g_LogFile << "merge with ramp:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeNumber ;
-					g_LogFile << " with onramp:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_FromNodeID].m_NodeNumber  << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_ToNodeID].m_NodeNumber ;
-					g_LogFile << " and freeway mainline:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_FromNodeID ].m_NodeNumber << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_ToNodeID].m_NodeNumber << endl;
+					g_LogFile << "merge with ramp:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeNumber;
+					g_LogFile << " with onramp:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeOnrampLinkID]->m_ToNodeID].m_NodeNumber;
+					g_LogFile << " and freeway mainline:" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_FromNodeID].m_NodeNumber << " ->" << g_NodeVector[g_LinkVector[g_LinkVector[li]->m_MergeMainlineLinkID]->m_ToNodeID].m_NodeNumber << endl;
 					break;
 				}
 
@@ -4828,25 +4889,25 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 
 		}
 
-		if(g_LinkVector[li]->m_bMergeFlag ==1 || g_LinkVector[li]->m_bMergeFlag ==2)
+		if (g_LinkVector[li]->m_bMergeFlag == 1 || g_LinkVector[li]->m_bMergeFlag == 2)
 		{
 			// merge with several merging ramps
 			int ij;
 			int TotalNumberOfLanes = 0;
-			for( ij= 0; ij<m_InboundSizeAry[FromID]; ij++)
+			for (ij = 0; ij < m_InboundSizeAry[FromID]; ij++)
 			{
-				TotalNumberOfLanes += g_LinkVector[ m_InboundLinkAry[FromID][ij]]->m_OutflowNumLanes ;
+				TotalNumberOfLanes += g_LinkVector[m_InboundLinkAry[FromID][ij]]->m_OutflowNumLanes;
 			}
 
-			for( ij= 0; ij<m_InboundSizeAry[FromID]; ij++)
+			for (ij = 0; ij < m_InboundSizeAry[FromID]; ij++)
 			{
 				MergeIncomingLink mil;
 				mil.m_LinkNo = m_InboundLinkAry[FromID][ij];
-				mil.m_link_type = g_LinkVector[mil.m_LinkNo]->m_link_type ;
-				mil.m_OutflowNumLanes = g_LinkVector[mil.m_LinkNo]->m_OutflowNumLanes ;
-				mil.m_LinkInCapacityRatio = (float)(mil.m_OutflowNumLanes)/TotalNumberOfLanes;
+				mil.m_link_type = g_LinkVector[mil.m_LinkNo]->m_link_type;
+				mil.m_OutflowNumLanes = g_LinkVector[mil.m_LinkNo]->m_OutflowNumLanes;
+				mil.m_LinkInCapacityRatio = (float)(mil.m_OutflowNumLanes) / TotalNumberOfLanes;
 				g_LinkVector[li]->MergeIncomingLinkVector.push_back(mil);
-				g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[g_LinkVector[mil.m_LinkNo]->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[g_LinkVector[mil.m_LinkNo]->m_ToNodeID].m_NodeNumber <<  " with " << g_LinkVector[mil.m_LinkNo]->m_OutflowNumLanes  << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
+				g_LogFile << "merge into freeway with multiple freeway/ramps:" << "No." << ij << " " << g_NodeVector[g_LinkVector[mil.m_LinkNo]->m_FromNodeID].m_NodeNumber << " -> " << g_NodeVector[g_LinkVector[mil.m_LinkNo]->m_ToNodeID].m_NodeNumber << " with " << g_LinkVector[mil.m_LinkNo]->m_OutflowNumLanes << " lanes and in flow capacity split " << mil.m_LinkInCapacityRatio << endl;
 			}
 
 		}
@@ -4854,25 +4915,26 @@ void DTANetworkForSP::IdentifyBottlenecks(int StochasticCapacityFlag)
 	}
 
 	// determine offramp
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
-		if(g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsRamp ()) 
+		if (g_LinkTypeMap[g_LinkVector[li]->m_link_type].IsRamp())
 		{
 
-			if(g_LinkVector[li]->m_bOnRampType == false)
+			if (g_LinkVector[li]->m_bOnRampType == false)
 			{
 
 				g_LinkVector[li]->m_bOffRampType = true;
 
-				g_LogFile << "Offramp:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeNumber  << " -> " << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeNumber << endl;
+				g_LogFile << "Offramp:" << g_NodeVector[g_LinkVector[li]->m_FromNodeID].m_NodeNumber << " -> " << g_NodeVector[g_LinkVector[li]->m_ToNodeID].m_NodeNumber << endl;
 
-				if(g_settings.use_point_queue_model_for_off_ramps)
+				if (g_settings.use_point_queue_model_for_off_ramps)
 				{
 					g_LinkVector[li]->m_VehicleSpaceCapacity = 99999; // change to point queue model for offramp
 				}
-			}else
+			}
+			else
 			{
-				if(g_settings.use_point_queue_model_for_on_ramps)
+				if (g_settings.use_point_queue_model_for_on_ramps)
 				{
 					g_LinkVector[li]->m_VehicleSpaceCapacity = 99999; // change to point queue model for offramp
 				}
@@ -4894,20 +4956,20 @@ void DTASafetyPredictionModel::UpdateCrashRateForAllLinks()
 
 	std::set<DTALink*>::iterator iterLink;
 
-	for(unsigned li = 0; li< g_LinkVector.size(); li++)
+	for (unsigned li = 0; li < g_LinkVector.size(); li++)
 	{
 
 		DTALink* pLink = g_LinkVector[li];
 
-		pLink->m_AADT = pLink->CFlowArrivalCount/max(pLink->m_AADTConversionFactor,0.0001) ;
+		pLink->m_AADT = pLink->CFlowArrivalCount / max(pLink->m_AADTConversionFactor, 0.0001);
 
-		double CrashRate= 0;
-		if( g_LinkTypeMap[pLink->m_link_type].IsFreeway ())  // freeway
+		double CrashRate = 0;
+		if (g_LinkTypeMap[pLink->m_link_type].IsFreeway())  // freeway
 		{
-			pLink->m_NumberOfCrashes  = EstimateFreewayCrashRatePerYear(pLink->m_AADT , pLink->m_Length );
+			pLink->m_NumberOfCrashes = EstimateFreewayCrashRatePerYear(pLink->m_AADT, pLink->m_Length);
 		}
 
-		if( g_LinkTypeMap[pLink->m_link_type].IsArterial ())   //arterial
+		if (g_LinkTypeMap[pLink->m_link_type].IsArterial())   //arterial
 		{
 
 			// gather two-way data
@@ -4919,22 +4981,22 @@ void DTASafetyPredictionModel::UpdateCrashRateForAllLinks()
 
 			DTALink* pReversedLink = NULL;
 
-			if( g_LinkMap.find(GetLinkStringID(pLink->m_ToNodeNumber,pLink->m_FromNodeNumber)) != g_LinkMap.end())
+			if (g_LinkMap.find(GetLinkStringID(pLink->m_ToNodeNumber, pLink->m_FromNodeNumber)) != g_LinkMap.end())
 			{
-				pReversedLink =  g_LinkMap[GetLinkStringID(pLink->m_ToNodeNumber,pLink->m_FromNodeNumber)];
+				pReversedLink = g_LinkMap[GetLinkStringID(pLink->m_ToNodeNumber, pLink->m_FromNodeNumber)];
 			}
 
-			if(pReversedLink != NULL)
-			{ 
+			if (pReversedLink != NULL)
+			{
 				two_way_AADT += pReversedLink->m_AADT;
-				crash_ratio_on_this_link =  pLink->m_AADT/max(1,two_way_AADT);
+				crash_ratio_on_this_link = pLink->m_AADT / max(1, two_way_AADT);
 			}
 
 
-			pLink->m_NumberOfCrashes  = 
+			pLink->m_NumberOfCrashes =
 				EstimateArterialCrashRatePerYear(crash_ratio_on_this_link, pLink->m_NumberOfFatalAndInjuryCrashes, pLink->m_NumberOfPDOCrashes,
 				pLink->m_Intersection_NumberOfCrashes, pLink->m_Intersection_NumberOfFatalAndInjuryCrashes, pLink->m_Intersection_NumberOfPDOCrashes,
-				two_way_AADT, 
+				two_way_AADT,
 				pLink->m_Length,
 				pLink->m_Num_Driveways_Per_Mile,
 				pLink->m_volume_proportion_on_minor_leg,
@@ -4954,143 +5016,38 @@ void g_OutputSummaryKML(Traffic_MOE moe_mode)
 	float base_rate = 1;
 
 	FILE* st;
-	if(moe_mode == MOE_crashes)
+	if (moe_mode == MOE_crashes)
 	{
-		fopen_s(&st,"simulated_crashes.kml","w");
+		fopen_s(&st, "simulated_crashes.kml", "w");
 		base_rate = 1;
 	}
-	if(moe_mode == MOE_CO2)
+	if (moe_mode == MOE_CO2)
 	{
-		fopen_s(&st,"simulated_CO2.kml","w");
+		fopen_s(&st, "simulated_CO2.kml", "w");
 
-		float total_CO2 = 0 ;
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		float total_CO2 = 0;
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			total_CO2 += pLink->TotalCO2 ;
+			total_CO2 += pLink->TotalCO2;
 		}
 
-		base_rate = total_CO2/5000;  // generate abound 5000 place marks per area
+		base_rate = total_CO2 / 5000;  // generate abound 5000 place marks per area
 	}
-	if(moe_mode == MOE_total_energy)
+	if (moe_mode == MOE_total_energy)
 	{
-		fopen_s(&st,"simulated_total_energy.kml","w");
+		fopen_s(&st, "simulated_total_energy.kml", "w");
 
-		float total_energy = 0 ;
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
+		float total_energy = 0;
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
 			DTALink* pLink = g_LinkVector[li];
-			total_energy += pLink->TotalEnergy ;
+			total_energy += pLink->TotalEnergy;
 		}
 
-		base_rate = total_energy/5000;  // generate abound 5000 place marks per area
+		base_rate = total_energy / 5000;  // generate abound 5000 place marks per area
 	}
 
-
-	if(st!=NULL)
-	{
-		fprintf(st,"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-		fprintf(st,"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
-		fprintf(st,"<Document>\n");
-
-		if(moe_mode == MOE_crashes)
-			fprintf(st,"<name>simulated_crashes</name>\n");
-		if(moe_mode == MOE_CO2)
-			fprintf(st,"<name>simulated_emission_CO2_event: unit: %.3f (g//hr)</name>\n",base_rate);
-		if(moe_mode == MOE_total_energy)
-			fprintf(st,"<name>simulated_t_event: unit: %.3f (J//hr)</name>\n",base_rate);
-
-
-		int total_count = 0;
-
-		for(unsigned li = 0; li< g_LinkVector.size(); li++)
-		{
-			DTALink* pLink = g_LinkVector[li];
-
-			int count  = 0;
-
-			float value = 0;
-
-			switch (moe_mode)
-			{
-			case MOE_crashes:
-				value =   pLink->m_NumberOfCrashes/base_rate;break;
-			case MOE_CO2:
-				value =   pLink->TotalCO2 /base_rate;break;
-			case MOE_total_energy:
-				value =   pLink->TotalEnergy /base_rate;break;
-			default:
-				value = 0;
-			}
-
-
-
-			count = (int)(value);
-			float residual = value  - count;
-			if(g_GetRandomRatio() < residual)
-				count ++;
-
-
-			for(int i = 0; i < count; i++)
-			{
-				float random_ratio = g_GetRandomRatio(); 
-
-				float x, y;
-				if( pLink  ->m_ShapePoints .size() ==2)
-				{
-					x = random_ratio * pLink  ->m_ShapePoints[0].x + (1-random_ratio)* pLink  ->m_ShapePoints[1].x;
-					y = random_ratio * pLink  ->m_ShapePoints[0].y + (1-random_ratio)* pLink  ->m_ShapePoints[1].y;
-				}else if (pLink  ->m_ShapePoints .size() >0)
-				{
-					int shape_point_id = pLink  ->m_ShapePoints .size()*random_ratio;
-					x = pLink  ->m_ShapePoints[shape_point_id].x;
-					y = pLink  ->m_ShapePoints[shape_point_id].y;
-				}
-
-
-				fprintf(st,"\t<Placemark>\n");
-				fprintf(st,"\t <name>%d</name>\n",total_count);
-
-				if(moe_mode == MOE_crashes)
-				{
-
-					if(g_GetRandomRatio()* pLink->m_NumberOfCrashes < pLink  ->m_NumberOfFatalAndInjuryCrashes)
-					{
-						fprintf(st,"\t <description>fatal crash</description>\n");
-					}else if(g_GetRandomRatio()* pLink->m_NumberOfCrashes < pLink  ->m_NumberOfPDOCrashes)
-					{
-						fprintf(st,"\t <description>PTO crash</description>\n");
-					}else
-					{
-						fprintf(st,"\t <description>crash</description>\n");
-					}
-				}
-				if(moe_mode == MOE_CO2 || moe_mode == MOE_total_energy )
-				{
-					fprintf(st,"\t <description>%d-%d</description>\n",g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber);
-				}
-
-
-				fprintf(st,"\t <Point><coordinates>%f,%f,0</coordinates></Point>\n",x,y);
-				fprintf(st,"\t</Placemark>\n");
-
-				total_count++;
-			}  // for each count
-		} // for each link   
-		fprintf(st,"</Document>\n");
-		fprintf(st,"</kml>\n");
-		fclose(st);
-	}
-}
-
-
-void g_OutputAccessibilityHeatMapKML()
-{
-
-	float base_rate = 1;
-
-	FILE* st;
-		fopen_s(&st, "output_accessibility.kml", "w");
 
 	if (st != NULL)
 	{
@@ -5098,80 +5055,105 @@ void g_OutputAccessibilityHeatMapKML()
 		fprintf(st, "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
 		fprintf(st, "<Document>\n");
 
-		fprintf(st, "<name>accessibility</name>\n");
+		if (moe_mode == MOE_crashes)
+			fprintf(st, "<name>simulated_crashes</name>\n");
+		if (moe_mode == MOE_CO2)
+			fprintf(st, "<name>simulated_emission_CO2_event: unit: %.3f (g//hr)</name>\n", base_rate);
+		if (moe_mode == MOE_total_energy)
+			fprintf(st, "<name>simulated_t_event: unit: %.3f (J//hr)</name>\n", base_rate);
 
-		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
+
+		int total_count = 0;
+
+		for (unsigned li = 0; li < g_LinkVector.size(); li++)
 		{
+			DTALink* pLink = g_LinkVector[li];
 
-			for (int i = 0; i < iterZone->second.m_OriginActivityVector.size(); i++)
+			int count = 0;
+
+			float value = 0;
+
+			switch (moe_mode)
 			{
-				int node_id = iterZone->second.m_OriginActivityVector[i];
-				int count = iterZone->second.m_AccessibilityCount;
-
-				count = count / 10;
-
-				float x = g_NodeVector[node_id].m_pt.x;
-				float y = g_NodeVector[node_id].m_pt.y;
-				for (int k = 0; k < count; k++)
-				{
-
-					fprintf(st, "\t<Placemark>\n");
-					fprintf(st, "\t <name>%d</name>\n", k+1);
-					fprintf(st, "\t <description>zone%d</description>\n", iterZone->second.m_ZoneNumber );
-					fprintf(st, "\t <Point><coordinates>%f,%f,0</coordinates></Point>\n", x, y);
-					fprintf(st, "\t</Placemark>\n");
-
-				}  // for each count
-
+			case MOE_crashes:
+				value = pLink->m_NumberOfCrashes / base_rate; break;
+			case MOE_CO2:
+				value = pLink->TotalCO2 / base_rate; break;
+			case MOE_total_energy:
+				value = pLink->TotalEnergy / base_rate; break;
+			default:
+				value = 0;
 			}
 
-		}
 
+
+			count = (int)(value);
+			float residual = value - count;
+			if (g_GetRandomRatio() < residual)
+				count++;
+
+
+			for (int i = 0; i < count; i++)
+			{
+				float random_ratio = g_GetRandomRatio();
+
+				float x, y;
+				if (pLink->m_ShapePoints.size() == 2)
+				{
+					x = random_ratio * pLink->m_ShapePoints[0].x + (1 - random_ratio)* pLink->m_ShapePoints[1].x;
+					y = random_ratio * pLink->m_ShapePoints[0].y + (1 - random_ratio)* pLink->m_ShapePoints[1].y;
+				}
+				else if (pLink->m_ShapePoints.size() >0)
+				{
+					int shape_point_id = pLink->m_ShapePoints.size()*random_ratio;
+					x = pLink->m_ShapePoints[shape_point_id].x;
+					y = pLink->m_ShapePoints[shape_point_id].y;
+				}
+
+
+				fprintf(st, "\t<Placemark>\n");
+				fprintf(st, "\t <name>%d</name>\n", total_count);
+
+				if (moe_mode == MOE_crashes)
+				{
+
+					if (g_GetRandomRatio()* pLink->m_NumberOfCrashes < pLink->m_NumberOfFatalAndInjuryCrashes)
+					{
+						fprintf(st, "\t <description>fatal crash</description>\n");
+					}
+					else if (g_GetRandomRatio()* pLink->m_NumberOfCrashes < pLink->m_NumberOfPDOCrashes)
+					{
+						fprintf(st, "\t <description>PTO crash</description>\n");
+					}
+					else
+					{
+						fprintf(st, "\t <description>crash</description>\n");
+					}
+				}
+				if (moe_mode == MOE_CO2 || moe_mode == MOE_total_energy)
+				{
+					fprintf(st, "\t <description>%d-%d</description>\n", g_NodeVector[pLink->m_FromNodeID].m_NodeNumber, g_NodeVector[pLink->m_ToNodeID].m_NodeNumber);
+				}
+
+
+				fprintf(st, "\t <Point><coordinates>%f,%f,0</coordinates></Point>\n", x, y);
+				fprintf(st, "\t</Placemark>\n");
+
+				total_count++;
+			}  // for each count
+		} // for each link   
 		fprintf(st, "</Document>\n");
 		fprintf(st, "</kml>\n");
-		fclose(st);
-	}
-
-	// csv file
-	fopen_s(&st, "output_accessibility.csv", "w");
-
-	if (st != NULL)
-	{
-		fprintf(st, "zone_id,total_count,count_no,geometry\n");
-
-		for (std::map<int, DTAZone>::iterator iterZone = g_ZoneMap.begin(); iterZone != g_ZoneMap.end(); iterZone++)
-		{
-
-			for (int i = 0; i < iterZone->second.m_OriginActivityVector.size(); i++)
-			{
-				int node_id = iterZone->second.m_OriginActivityVector[i];
-				int count = iterZone->second.m_AccessibilityCount;
-
-				count = count / 10;
-
-				float x = g_NodeVector[node_id].m_pt.x;
-				float y = g_NodeVector[node_id].m_pt.y;
-				for (int k = 0; k < count; k++)
-				{
-
-					fprintf(st, "%d,%d,%d,", iterZone->second.m_ZoneNumber, count,k+1);
-					fprintf(st, "\"<Point><coordinates>%f,%f</coordinates></Point>\"\n",x,y);
-
-				}  // for each count
-			}
-
-		}
-
-
 		fclose(st);
 	}
 }
 
 
+
 void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes)
 {
-	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon,g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
-	PhysicalNetwork.BuildPhysicalNetwork(0,0,g_TrafficFlowModelFlag);
+	DTANetworkForSP PhysicalNetwork(g_NodeVector.size(), g_LinkVector.size(), g_PlanningHorizon, g_AdjLinkSize);  //  network instance for single processor in multi-thread environment
+	PhysicalNetwork.BuildPhysicalNetwork(0, 0, g_TrafficFlowModelFlag);
 	int LinkID = PhysicalNetwork.GetLinkNoByNodeIndex(g_NodeNametoIDMap[usn], g_NodeNametoIDMap[dsn]);
 
 	DTALink* pLink = g_LinkVector[LinkID];
@@ -5227,10 +5209,10 @@ void g_SetLinkAttributes(int usn, int dsn, int NumOfLanes)
 
 void g_ErrorMesssage_for_0_demand(std::string file_name, std::string format_type)
 {
-cout << "Error: File " << file_name << " contain 0 trips." << endl;
-cout << "Please check if format_type = " << format_type << " is correct." << endl;
-cout << "DTALite supports the following format: " << g_SupportedDemandFormat << endl;
-g_ProgramStop();
+	cout << "Error: File " << file_name << " contain 0 trips." << endl;
+	cout << "Please check if format_type = " << format_type << " is correct." << endl;
+	cout << "DTALite supports the following format: " << g_SupportedDemandFormat << endl;
+	g_ProgramStop();
 }
 
 void g_DetermineDemandLoadingPeriod()
@@ -5288,7 +5270,7 @@ void g_DetermineDemandLoadingPeriod()
 				g_ProgramStop();
 			}
 
-			if (end_time_in_min>1440)
+			if (end_time_in_min > 1440)
 			{
 				cout << "end_time_in_min should be less than 1440 min in input_demand_meta_data.csv" << endl;
 				g_ProgramStop();
@@ -5341,9 +5323,9 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 
 	//step 2:
-	if(g_ODEstimationFlag==1 )
+	if (g_ODEstimationFlag == 1)
 	{
-		g_HistDemand.Initialize ();
+		g_HistDemand.Initialize();
 	}
 
 	CCSVParser parser;
@@ -5352,47 +5334,47 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	//step 3:
 	if (parser.OpenCSVFile("input_demand_meta_data.csv"))
 	{
-		int i=0;
+		int i = 0;
 
-		while(parser.ReadRecord())
+		while (parser.ReadRecord())
 		{
 
-			int file_sequence_no =1;
+			int file_sequence_no = 1;
 			string file_name;
-			string format_type= "null";
+			string format_type = "null";
 			int number_of_lines_to_be_skipped = 0;
 			int subtotal_in_last_column = 0;
 			int demand_type_in_3rd_column = 0;
 
-			int start_time_in_min = 0; 
+			int start_time_in_min = 0;
 			int end_time_in_min = 1440;
 			int number_of_demand_types = 0;
 			float local_demand_loading_multiplier = 1;
-			char demand_type_field_name[20] ;
-			int demand_type_code[20]={0};
+			char demand_type_field_name[20];
+			int demand_type_code[20] = { 0 };
 
 			int demand_format_flag = 0;
 
-			if(parser.GetValueByFieldNameWithPrintOut("file_sequence_no",file_sequence_no)==false)
+			if (parser.GetValueByFieldNameWithPrintOut("file_sequence_no", file_sequence_no) == false)
 				break;
 
-			if(file_sequence_no <=-1)  // skip negative sequence no 
+			if (file_sequence_no <= -1)  // skip negative sequence no 
 				continue;
 
-			parser.GetValueByFieldNameWithPrintOut("file_name",file_name);
+			parser.GetValueByFieldNameWithPrintOut("file_name", file_name);
 
 
 
-			parser.GetValueByFieldNameWithPrintOut("start_time_in_min",start_time_in_min);
-			parser.GetValueByFieldNameWithPrintOut("end_time_in_min",end_time_in_min);
+			parser.GetValueByFieldNameWithPrintOut("start_time_in_min", start_time_in_min);
+			parser.GetValueByFieldNameWithPrintOut("end_time_in_min", end_time_in_min);
 
-			if(end_time_in_min>1440)
+			if (end_time_in_min > 1440)
 			{
 				cout << "end_time_in_min should be less than 1440 min in input_demand_meta_data.csv" << endl;
 				g_ProgramStop();
 			}
 
-			if(start_time_in_min < 0 )
+			if (start_time_in_min < 0)
 			{
 				cout << "start_time_in_min should be greater than 0 min in input_demand_meta_data.csv" << endl;
 				g_ProgramStop();
@@ -5402,66 +5384,66 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				break;
 			}
 
-			parser.GetValueByFieldNameWithPrintOut("format_type",format_type);
-			if(format_type.find ("null")!= string::npos)  // skip negative sequence no 
+			parser.GetValueByFieldNameWithPrintOut("format_type", format_type);
+			if (format_type.find("null") != string::npos)  // skip negative sequence no 
 			{
-				cout << "Please provide format_type in file input_demand_meta_data.csv" <<endl;
+				cout << "Please provide format_type in file input_demand_meta_data.csv" << endl;
 				g_ProgramStop();
 			}
 
 			{ // error checking
 
-				if (file_name.find ("AMS_OD_table.csv")!= string::npos && format_type.find("column")== string::npos)
+				if (file_name.find("AMS_OD_table.csv") != string::npos && format_type.find("column") == string::npos)
 				{
-					cout << "Please specify column format for demand file AMS_OD_table.csv, other than " << format_type << endl; 
+					cout << "Please specify column format for demand file AMS_OD_table.csv, other than " << format_type << endl;
 				}
 
-				if (file_name.find ("demand.dat")!= string::npos && format_type.find("dynasmart")== string::npos)
+				if (file_name.find("demand.dat") != string::npos && format_type.find("dynasmart") == string::npos)
 				{
-					cout << "Please specify dynasmart format for demand file demand.dat, other than " << format_type << endl; 			
+					cout << "Please specify dynasmart format for demand file demand.dat, other than " << format_type << endl;
 				}
 
-				if (file_name.find ("demand_HOV.dat")!= string::npos && format_type.find("dynasmart")== string::npos)
+				if (file_name.find("demand_HOV.dat") != string::npos && format_type.find("dynasmart") == string::npos)
 				{
-					cout << "Please specify dynasmart format for demand file demand_HOV.dat, other than " << format_type << endl; 			
+					cout << "Please specify dynasmart format for demand file demand_HOV.dat, other than " << format_type << endl;
 				}
 
-				if (file_name.find ("demand_truck.dat")!= string::npos && format_type.find("dynasmart")== string::npos)
+				if (file_name.find("demand_truck.dat") != string::npos && format_type.find("dynasmart") == string::npos)
 				{
-					cout << "Please specify dynasmart format for demand_truck file demand.dat, other than " << format_type << endl; 			
+					cout << "Please specify dynasmart format for demand_truck file demand.dat, other than " << format_type << endl;
 				}
-				if (file_name.compare  ("agent.bin")== 0 && format_type.find("agent_bin")== string::npos)
+				if (file_name.compare("agent.bin") == 0 && format_type.find("agent_bin") == string::npos)
 				{
-					cout << "Please specify agent_bin format for agent binary file , other than " << format_type << endl; 			
+					cout << "Please specify agent_bin format for agent binary file , other than " << format_type << endl;
 				}
 
 			}
 
-			parser.GetValueByFieldNameWithPrintOut("number_of_lines_to_be_skipped",number_of_lines_to_be_skipped);
-			parser.GetValueByFieldNameWithPrintOut("subtotal_in_last_column",subtotal_in_last_column);
-			parser.GetValueByFieldName("demand_type_in_3rd_column",demand_type_in_3rd_column);
+			parser.GetValueByFieldNameWithPrintOut("number_of_lines_to_be_skipped", number_of_lines_to_be_skipped);
+			parser.GetValueByFieldNameWithPrintOut("subtotal_in_last_column", subtotal_in_last_column);
+			parser.GetValueByFieldName("demand_type_in_3rd_column", demand_type_in_3rd_column);
 
-			int apply_additional_time_dependent_profile =0;	
-			parser.GetValueByFieldNameWithPrintOut("apply_additional_time_dependent_profile",apply_additional_time_dependent_profile);
-			parser.GetValueByFieldNameWithPrintOut("loading_multiplier",local_demand_loading_multiplier);
+			int apply_additional_time_dependent_profile = 0;
+			parser.GetValueByFieldNameWithPrintOut("apply_additional_time_dependent_profile", apply_additional_time_dependent_profile);
+			parser.GetValueByFieldNameWithPrintOut("loading_multiplier", local_demand_loading_multiplier);
 
 
-			double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE] = {0};
+			double time_dependent_ratio[MAX_TIME_INTERVAL_SIZE] = { 0 };
 
 			double total_ratio = 0;
-			if(apply_additional_time_dependent_profile==1)
+			if (apply_additional_time_dependent_profile == 1)
 			{
-				for(int time_index = start_time_in_min/15; time_index < end_time_in_min/15; time_index++)  // / 15 converts min to 15-min interval for demand patterns
+				for (int time_index = start_time_in_min / 15; time_index < end_time_in_min / 15; time_index++)  // / 15 converts min to 15-min interval for demand patterns
 				{
-					std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo (time_index);
+					std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo(time_index);
 
 					time_dependent_ratio[time_index] = 0;
-					parser.GetValueByFieldNameWithPrintOut(time_stamp_str,time_dependent_ratio[time_index]);
+					parser.GetValueByFieldNameWithPrintOut(time_stamp_str, time_dependent_ratio[time_index]);
 					total_ratio += time_dependent_ratio[time_index];
 				}
 
 
-				if( total_ratio < 0.001)
+				if (total_ratio < 0.001)
 				{
 					cout << "Error: apply_additional_time_dependent_profile = 1, but the total temporal ratio read from file input_temporal_demand_profile.csv is 0, which means no demand will be loaded. " << endl;
 					g_ProgramStop();
@@ -5469,11 +5451,11 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 			}
 
-			parser.GetValueByFieldNameWithPrintOut("number_of_demand_types",number_of_demand_types);
+			parser.GetValueByFieldNameWithPrintOut("number_of_demand_types", number_of_demand_types);
 
-			if(demand_type_in_3rd_column == 1)
+			if (demand_type_in_3rd_column == 1)
 			{
-				if(number_of_demand_types != 1)
+				if (number_of_demand_types != 1)
 				{
 					cout << "Error: number_of_demand_types should be 1 when demand_type_in_3rd_column is set to 1. The current value is " << number_of_demand_types << endl;
 					g_ProgramStop();
@@ -5483,34 +5465,34 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 			}
 
 
-			for(int type = 1; type <= number_of_demand_types; type++)
+			for (int type = 1; type <= number_of_demand_types; type++)
 			{
-				sprintf(demand_type_field_name,"demand_type_%d",type);
-				int demand_type= -1;
-				parser.GetValueByFieldNameWithPrintOut(demand_type_field_name,demand_type);
+				sprintf(demand_type_field_name, "demand_type_%d", type);
+				int demand_type = -1;
+				parser.GetValueByFieldNameWithPrintOut(demand_type_field_name, demand_type);
 
-				if(demand_type <= 0)
+				if (demand_type <= 0)
 				{
-					cout << "Missing input: no value has been specified for field " << demand_type_field_name << " in file " << file_name << " in demand meta file input_demand_meta_data.csv. "<< endl; 
+					cout << "Missing input: no value has been specified for field " << demand_type_field_name << " in file " << file_name << " in demand meta file input_demand_meta_data.csv. " << endl;
 					g_ProgramStop();
 
 				}
 
 
-				demand_type_code[type]  = demand_type;
-			}  
+				demand_type_code[type] = demand_type;
+			}
 
 
 
 
 
 
-			if(format_type.find("column")!= string::npos)  // or muliti-column
+			if (format_type.find("column") != string::npos)  // or muliti-column
 			{
 
-				if(number_of_demand_types==0)
+				if (number_of_demand_types == 0)
 				{
-					cout <<  "number_of_demand_types = 0 in file input_demand_meta_data.csv. Please check." << endl;
+					cout << "number_of_demand_types = 0 in file input_demand_meta_data.csv. Please check." << endl;
 					g_ProgramStop();
 				}
 
@@ -5520,29 +5502,29 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				FILE* st;
 
 				//test # of numerical values per line
-				fopen_s(&st,file_name.c_str (), "r");
-				if (st!=NULL)
+				fopen_s(&st, file_name.c_str(), "r");
+				if (st != NULL)
 				{
 
 					char  str_line[_MAX_STRING_LINE]; // input string
 					int str_line_size = _MAX_STRING_LINE;
 
 					// skip lines
-					for(int line_skip = 0 ;line_skip < number_of_lines_to_be_skipped;line_skip++)
+					for (int line_skip = 0; line_skip < number_of_lines_to_be_skipped; line_skip++)
 					{
 						str_line_size = _MAX_STRING_LINE;
-						g_read_a_line(st,str_line, str_line_size); //  skip the first line
+						g_read_a_line(st, str_line, str_line_size); //  skip the first line
 						cout << str_line << endl;
 					}
 
 					str_line_size = _MAX_STRING_LINE;
-					g_read_a_line(st,str_line, str_line_size); //  skip the first line
-					int number_of_values = g_read_number_of_numerical_values(str_line,str_line_size);
+					g_read_a_line(st, str_line, str_line_size); //  skip the first line
+					int number_of_values = g_read_number_of_numerical_values(str_line, str_line_size);
 
-					if(demand_type_in_3rd_column == 1)
+					if (demand_type_in_3rd_column == 1)
 					{
 
-						if(number_of_values != 4)
+						if (number_of_values != 4)
 						{
 							cout << "demand_type_in_3rd_column = 1, please make sure there are 4 values per line" << endl;
 							g_ProgramStop();
@@ -5562,40 +5544,40 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 				// read the file formaly after the test. 
 
-				fopen_s(&st,file_name.c_str (), "r");
-				if (st!=NULL)
+				fopen_s(&st, file_name.c_str(), "r");
+				if (st != NULL)
 				{
 					char  str_line[2000]; // input string
 					int str_line_size = _MAX_STRING_LINE;
 
 					// skip lines
-					for(int line_skip = 0 ;line_skip < number_of_lines_to_be_skipped;line_skip++)
+					for (int line_skip = 0; line_skip < number_of_lines_to_be_skipped; line_skip++)
 					{
 						str_line_size = _MAX_STRING_LINE;
-						g_read_a_line(st,str_line, str_line_size); //  skip the first line
+						g_read_a_line(st, str_line, str_line_size); //  skip the first line
 						cout << str_line << endl;
 					}
 
 					bFileReady = true;
 					int line_no = number_of_lines_to_be_skipped;
 
-					while(true)
+					while (true)
 					{
 						int origin_zone = g_read_integer(st);
 
-						if(origin_zone <=0)
+						if (origin_zone <= 0)
 						{
 
-							if(line_no==1 && !feof(st))  // read only one line, but has not reached the end of the line
+							if (line_no == 1 && !feof(st))  // read only one line, but has not reached the end of the line
 							{
-								cout << endl << "Error: Only one line has been read from file. Are there multiple columns of demand type in file " << file_name <<  " per line?" << endl;
+								cout << endl << "Error: Only one line has been read from file. Are there multiple columns of demand type in file " << file_name << " per line?" << endl;
 								g_ProgramStop();
 
 							}
 							break;
 						}
 
-						if(origin_zone > g_ODZoneNumberSize) 
+						if (origin_zone > g_ODZoneNumberSize)
 						{
 							cout << endl << "Error: Line " << line_no << " origin zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
 							g_ProgramStop();
@@ -5603,85 +5585,87 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						int destination_zone = g_read_integer(st);
 
-						if(destination_zone > g_ODZoneNumberSize) 
+						if (destination_zone > g_ODZoneNumberSize)
 						{
-							cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of "<< g_ODZoneNumberSize <<" in input_zone.csv. Please check." << endl;
+							cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of " << g_ODZoneNumberSize << " in input_zone.csv. Please check." << endl;
 							g_ProgramStop();
 						}
 
 
-						if(demand_type_in_3rd_column == 1)
+						if (demand_type_in_3rd_column == 1)
 						{
-							demand_type_code[1] =  g_read_integer(st);  // read the user specified demand type per row
+							demand_type_code[1] = g_read_integer(st);  // read the user specified demand type per row
 
 						}
 
-						float number_of_vehicles ;
+						float number_of_vehicles;
 
 
 
 
-						for(int type = 1; type <= number_of_demand_types; type++)
+						for (int type = 1; type <= number_of_demand_types; type++)
 						{
 
 							float demand_value = g_read_float_from_a_line(st);
 
-							if(demand_value<-99) // encounter return 
+							if (demand_value < -99) // encounter return 
 							{
-								break; 
+								break;
 							}
 
-							number_of_vehicles =  demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
+							number_of_vehicles = demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
 
-							if(demand_type_code[type]>=1)  // load this demand type
+							if (demand_type_code[type] >= 1)  // load this demand type
 							{
 
 								total_demand_in_demand_file += number_of_vehicles;
 
 
 								// we generate vehicles here for each OD data line
-								if(line_no<=5)  // read only one line, but has not reached the end of the line
-									cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
+								if (line_no <= 5)  // read only one line, but has not reached the end of the line
+									cout << "origin:" << origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
 
-								if(g_ZoneMap.find(origin_zone)!= g_ZoneMap.end())
+								if (g_ZoneMap.find(origin_zone) != g_ZoneMap.end())
 								{
 									g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 
-									if(apply_additional_time_dependent_profile==1)  // use time-dependent profile
+									if (apply_additional_time_dependent_profile == 1)  // use time-dependent profile
 									{
-										for(int time_interval = start_time_in_min/15; time_interval < end_time_in_min/15; time_interval++)
+										for (int time_interval = start_time_in_min / 15; time_interval < end_time_in_min / 15; time_interval++)
 										{
-											if(time_dependent_ratio [time_interval] > 0.000001) // this is the last one applicable
+											if (time_dependent_ratio[time_interval] > 0.000001) // this is the last one applicable
 											{
 												// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
-												double number_of_vehicles_to_be_loaded = time_dependent_ratio [time_interval] * number_of_vehicles;
-												CreateVehicles(origin_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type_code[type],time_interval*15,(time_interval+1)*15);
+												double number_of_vehicles_to_be_loaded = time_dependent_ratio[time_interval] * number_of_vehicles;
+												CreateVehicles(origin_zone, destination_zone, number_of_vehicles_to_be_loaded, demand_type_code[type], time_interval * 15, (time_interval + 1) * 15);
 											}
 										}
-									}else // do not use time-dependent profile
+									}
+									else // do not use time-dependent profile
 									{
-										CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],start_time_in_min,end_time_in_min);
+										CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], start_time_in_min, end_time_in_min);
 
 									}
 								}
 								//  given the number of OD demand voluem to be created. we need to apply time-dependent profile for each data block , 
 
 
-								if(line_no %100000 ==0)
+								if (line_no % 100000 == 0)
 								{
 									cout << g_GetAppRunningTime() << "Reading file no." << file_sequence_no << ": " << file_name << " at " << line_no / 1000 << "K lines..." << endl;
 								}
 
 
-							}else if(type!=0)  // if demand type == 0 then we will skip this value. By doing so, we can reading only one demand type per record with demand-type specific departure time loading profile. e.g. truck vs. HOV
+							}
+							else if (type != 0)  // if demand type == 0 then we will skip this value. By doing so, we can reading only one demand type per record with demand-type specific departure time loading profile. e.g. truck vs. HOV
 							{
-								cout << "demand type " << type << " in file input_demand_meta_data has not been defined. Please check." <<endl;
+								cout << "demand type " << type << " in file input_demand_meta_data has not been defined. Please check." << endl;
 								g_ProgramStop();
 
 							}
 						}  // for each demand type
 
-						if(subtotal_in_last_column ==1)
+						if (subtotal_in_last_column == 1)
 							g_read_float_from_a_line(st);  // so skip this last number
 
 						//if(line_no >= max_line_number)
@@ -5689,27 +5673,29 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 						line_no++;
 					}  // scan lines
 
-					if(total_demand_in_demand_file<0.5f)
+					if (total_demand_in_demand_file < 0.5f)
 					{
-						g_ErrorMesssage_for_0_demand(file_name,format_type);
+						g_ErrorMesssage_for_0_demand(file_name, format_type);
 
 					}
 
 					fclose(st);
-				}else  //open file
+				}
+				else  //open file
 				{
-					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 					g_ProgramStop();
 
 				}
 
 				CString demand_file_str;
 
-				demand_file_str.Format("Reading demand file,%s,cumulative # of agents=,%d,\n", file_name.c_str (),g_simple_vector_vehicles.size());
+				demand_file_str.Format("Reading demand file,%s,cumulative # of agents=,%d,\n", file_name.c_str(), g_simple_vector_vehicles.size());
 				g_SummaryStatFile.WriteTextLabel(demand_file_str);
 
 
-			} else if (format_type.compare("emme_matrix") == 0)
+			}
+			else if (format_type.compare("emme_matrix") == 0)
 			{
 
 				if (number_of_demand_types == 0)
@@ -5738,17 +5724,17 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 						str_line_size = _MAX_STRING_LINE;
 						g_read_a_line(st, str_line, str_line_size); //  skip the first line
 						cout << str_line << endl; \
-						
-						line_no++;
+
+							line_no++;
 					}
 
 					int type = 1;
-					
+
 
 					while (true)
 					{
 						std::vector<float> ValueVector;
-						int end_of_flag_flag = g_read_numbers_from_a_line(st, ValueVector);  
+						int end_of_flag_flag = g_read_numbers_from_a_line(st, ValueVector);
 
 						if (end_of_flag_flag < 0)  // end of file
 							break;
@@ -5770,96 +5756,96 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 								break;
 							}
 
-						
 
-						if (origin_zone > g_ODZoneNumberSize)
-						{
-							cout << endl << "Error: Line " << line_no << " origin zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
-							g_ProgramStop();
-						}
 
-						int number_of_OD_pairs = (ValueVector.size() - 1)/2;
-						for (int n = 0; n< number_of_OD_pairs; n++)
-						{
-							int destination_zone = ValueVector[2*n+1];
-
-							if (destination_zone > g_ODZoneNumberSize)
+							if (origin_zone > g_ODZoneNumberSize)
 							{
-								cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of " << g_ODZoneNumberSize << " in input_zone.csv. Please check." << endl;
+								cout << endl << "Error: Line " << line_no << " origin zone = " << origin_zone << ", which is greater than the maximum zone number. Please check." << endl;
 								g_ProgramStop();
 							}
 
-
-													
-						float number_of_vehicles = 0;
-
-											
-						float demand_value = ValueVector[2 * n + 2];
-
-							if (demand_value < -99) // encounter return 
+							int number_of_OD_pairs = (ValueVector.size() - 1) / 2;
+							for (int n = 0; n< number_of_OD_pairs; n++)
 							{
-								break;
-							}
+								int destination_zone = ValueVector[2 * n + 1];
 
-							number_of_vehicles = demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
-
-							if (demand_type_code[type] >= 1)  // load this demand type
-							{
-
-								total_demand_in_demand_file += number_of_vehicles;
-								
-								// we generate vehicles here for each OD data line
-								if (line_no <= 5)  // read only one line, but has not reached the end of the line
-									cout << "origin:" << origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
-
-								if (g_ZoneMap.find(origin_zone) != g_ZoneMap.end())
+								if (destination_zone > g_ODZoneNumberSize)
 								{
-									g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
+									cout << endl << "Error: Line " << line_no << " destination zone = " << destination_zone << ", which is greater than the maximum zone number of " << g_ODZoneNumberSize << " in input_zone.csv. Please check." << endl;
+									g_ProgramStop();
+								}
 
-									if (apply_additional_time_dependent_profile == 1)  // use time-dependent profile
+
+
+								float number_of_vehicles = 0;
+
+
+								float demand_value = ValueVector[2 * n + 2];
+
+								if (demand_value < -99) // encounter return 
+								{
+									break;
+								}
+
+								number_of_vehicles = demand_value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;
+
+								if (demand_type_code[type] >= 1)  // load this demand type
+								{
+
+									total_demand_in_demand_file += number_of_vehicles;
+
+									// we generate vehicles here for each OD data line
+									if (line_no <= 5)  // read only one line, but has not reached the end of the line
+										cout << "origin:" << origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
+
+									if (g_ZoneMap.find(origin_zone) != g_ZoneMap.end())
 									{
-										for (int time_interval = start_time_in_min / 15; time_interval < end_time_in_min / 15; time_interval++)
+										g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
+
+										if (apply_additional_time_dependent_profile == 1)  // use time-dependent profile
 										{
-											if (time_dependent_ratio[time_interval] > 0.000001) // this is the last one applicable
+											for (int time_interval = start_time_in_min / 15; time_interval < end_time_in_min / 15; time_interval++)
 											{
-												// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
-												double number_of_vehicles_to_be_loaded = time_dependent_ratio[time_interval] * number_of_vehicles;
-												CreateVehicles(origin_zone, destination_zone, number_of_vehicles_to_be_loaded, demand_type_code[type], time_interval * 15, (time_interval + 1) * 15);
+												if (time_dependent_ratio[time_interval] > 0.000001) // this is the last one applicable
+												{
+													// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
+													double number_of_vehicles_to_be_loaded = time_dependent_ratio[time_interval] * number_of_vehicles;
+													CreateVehicles(origin_zone, destination_zone, number_of_vehicles_to_be_loaded, demand_type_code[type], time_interval * 15, (time_interval + 1) * 15);
+												}
 											}
 										}
+										else // do not use time-dependent profile
+										{
+											float number_of_time_dependent_intervals = max(1, (end_time_in_min - start_time_in_min) / g_AggregationTimetInterval);
+											CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], start_time_in_min, end_time_in_min);
+
+										}
 									}
-									else // do not use time-dependent profile
+									//  given the number of OD demand voluem to be created. we need to apply time-dependent profile for each data block , 
+
+
+									if (line_no % 100000 == 0)
 									{
-										float number_of_time_dependent_intervals = max(1, (end_time_in_min - start_time_in_min) / g_AggregationTimetInterval);
-										CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], start_time_in_min, end_time_in_min);
-
+										cout << g_GetAppRunningTime() << "Reading file no." << file_sequence_no << ": " << file_name << " at " << line_no / 1000 << "K lines..." << endl;
 									}
+
+
 								}
-								//  given the number of OD demand voluem to be created. we need to apply time-dependent profile for each data block , 
-
-
-								if (line_no % 100000 == 0)
+								else if (type != 0)  // if demand type == 0 then we will skip this value. By doing so, we can reading only one demand type per record with demand-type specific departure time loading profile. e.g. truck vs. HOV
 								{
-									cout << g_GetAppRunningTime() << "Reading file no." << file_sequence_no << ": " << file_name << " at " << line_no / 1000 << "K lines..." << endl;
+									cout << "demand type " << type << " in file input_demand_meta_data has not been defined. Please check." << endl;
+									g_ProgramStop();
+
 								}
 
-
-							}
-							else if (type != 0)  // if demand type == 0 then we will skip this value. By doing so, we can reading only one demand type per record with demand-type specific departure time loading profile. e.g. truck vs. HOV
-							{
-								cout << "demand type " << type << " in file input_demand_meta_data has not been defined. Please check." << endl;
-								g_ProgramStop();
-
-							}
-
-						}  // for each OD pair
+							}  // for each OD pair
 						}   // end if 
 						//if(line_no >= max_line_number)
 						//break;
 						line_no++;
 					}  // scan lines
 
-					if (total_demand_in_demand_file<0.5f)
+					if (total_demand_in_demand_file < 0.5f)
 					{
 						g_ErrorMesssage_for_0_demand(file_name, format_type);
 
@@ -5881,7 +5867,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 
 			}
-			else if (format_type.compare("matrix")== 0)
+			else if (format_type.compare("matrix") == 0)
 			{
 
 				if (g_detect_if_a_file_is_column_format(file_name.c_str()) == true)
@@ -5901,11 +5887,11 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				if (parser.OpenCSVFile(file_name))
 				{
 					int control_type_code;
-					int i=0;
-					if(parser.ReadRecord())
+					int i = 0;
+					if (parser.ReadRecord())
 					{
-						parser.ConvertLineStringValueToIntegers ();
-						LineIntegerVector = parser.LineIntegerVector ;
+						parser.ConvertLineStringValueToIntegers();
+						LineIntegerVector = parser.LineIntegerVector;
 					}
 
 				}
@@ -5917,8 +5903,8 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				int i;
 
 				FILE* st;
-				fopen_s(&st,file_name.c_str (), "r");
-				if (st!=NULL)
+				fopen_s(&st, file_name.c_str(), "r");
+				if (st != NULL)
 				{
 					// read the first line
 					g_read_a_line(st);
@@ -5926,13 +5912,13 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 					cout << "number of zones to be read = " << number_of_zones << endl;
 
 					//test if a zone has been defined. 
-					for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
+					for (int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 					{
 						int zone = LineIntegerVector[destination_zone_index];
 
-						if(g_ZoneMap.find(zone)== g_ZoneMap.end())
+						if (g_ZoneMap.find(zone) == g_ZoneMap.end())
 						{
-							cout << "Zone "  << zone << " (no." << destination_zone_index+1 << " in the first line) of file " << file_name << " has not been defined in input_zone.csv. Please check." <<endl;
+							cout << "Zone " << zone << " (no." << destination_zone_index + 1 << " in the first line) of file " << file_name << " has not been defined in input_zone.csv. Please check." << endl;
 							g_ProgramStop();
 
 						}
@@ -5941,50 +5927,51 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 
 					int line_no = 0;
-					for(int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
+					for (int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
 					{
 						int origin_zone = g_read_integer(st); // read the origin zone number
 
 
-						cout << "Reading file no." << file_sequence_no << " "<< file_name << " at zone " << origin_zone << " ... " << endl;
+						cout << "Reading file no." << file_sequence_no << " " << file_name << " at zone " << origin_zone << " ... " << endl;
 
-						for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
+						for (int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 						{
 							int destination_zone = LineIntegerVector[destination_zone_index];
 							float value = g_read_float(st);
 
-							float number_of_vehicles =  value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
+							float number_of_vehicles = value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
 
-							if(line_no<=5)  // read only one line, but has not reached the end of the line
-								cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
+							if (line_no <= 5)  // read only one line, but has not reached the end of the line
+								cout << "origin:" << origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
 
 							line_no++;
 							int type = 1;  // first demand type definition
-							if(demand_type_code[type]>=1)  // feasible demand type
+							if (demand_type_code[type] >= 1)  // feasible demand type
 							{
 								total_demand_in_demand_file += number_of_vehicles;
 
 								g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 								// condition 1: without time-dependent profile 
 
-								if(apply_additional_time_dependent_profile==1)  // use time-dependent profile
+								if (apply_additional_time_dependent_profile == 1)  // use time-dependent profile
 								{
-									for(int time_interval = start_time_in_min/15; time_interval < end_time_in_min/15; time_interval++)
+									for (int time_interval = start_time_in_min / 15; time_interval < end_time_in_min / 15; time_interval++)
 									{
-										if(time_dependent_ratio [time_interval] > 0.000001) // this is the last one applicable
+										if (time_dependent_ratio[time_interval] > 0.000001) // this is the last one applicable
 										{
 											// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
-											double number_of_vehicles_to_be_loaded = time_dependent_ratio [time_interval] * number_of_vehicles;
+											double number_of_vehicles_to_be_loaded = time_dependent_ratio[time_interval] * number_of_vehicles;
 
-											CreateVehicles(origin_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type_code[type],time_interval*15,(time_interval+1)*15);
+											CreateVehicles(origin_zone, destination_zone, number_of_vehicles_to_be_loaded, demand_type_code[type], time_interval * 15, (time_interval + 1) * 15);
 										}
 									}
-								}else // do not use time-dependent profile
+								}
+								else // do not use time-dependent profile
 								{
 
-									float number_of_time_dependent_intervals= max(1,(end_time_in_min-start_time_in_min)/15);
+									float number_of_time_dependent_intervals = max(1, (end_time_in_min - start_time_in_min) / 15);
 
-									CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],start_time_in_min,end_time_in_min);
+									CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], start_time_in_min, end_time_in_min);
 
 								}
 
@@ -5993,25 +5980,27 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						}
 						//
-						if(subtotal_in_last_column==1)
+						if (subtotal_in_last_column == 1)
 							g_read_float(st); //read sub total value
 
 					}
 
-					if(total_demand_in_demand_file<0.5f)
+					if (total_demand_in_demand_file < 0.5f)
 					{
 						g_ErrorMesssage_for_0_demand(file_name, format_type);
 					}
 
 					fclose(st);
-				}else  //open file
+				}
+				else  //open file
 				{
-					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 					g_ProgramStop();
 
 				}
 
-			} else if (format_type.compare("full_matrix")== 0)
+			}
+			else if (format_type.compare("full_matrix") == 0)
 			{
 				vector<int> LineIntegerVector;
 
@@ -6020,11 +6009,11 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				if (parser.OpenCSVFile(file_name))
 				{
 					int control_type_code;
-					int i=0;
-					if(parser.ReadRecord())
+					int i = 0;
+					if (parser.ReadRecord())
 					{
-						parser.ConvertLineStringValueToIntegers ();
-						LineIntegerVector = parser.LineIntegerVector ;
+						parser.ConvertLineStringValueToIntegers();
+						LineIntegerVector = parser.LineIntegerVector;
 					}
 
 				}
@@ -6036,8 +6025,8 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 				int i;
 
 				FILE* st;
-				fopen_s(&st,file_name.c_str (), "r");
-				if (st!=NULL)
+				fopen_s(&st, file_name.c_str(), "r");
+				if (st != NULL)
 				{
 					// read the first line
 					g_read_a_line(st);
@@ -6048,29 +6037,29 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 					int ZoneIndexArray[15000];
 					for (int zone_index = 0; zone_index < number_of_zones; zone_index++)
-					{ 
+					{
 						ZoneIndexArray[zone_index] = 1;
 						if (g_ZoneMap.find(zone_index) == g_ZoneMap.end())
 						{
 							ZoneIndexArray[zone_index] = -1; // origin zone or destination zone has not been defined, skipped. 
 						}
-						
+
 					}
 
-					for(int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
+					for (int origin_zone_index = 0; origin_zone_index < number_of_zones; origin_zone_index++)
 					{
 						int origin_zone = g_read_integer(st); // read the origin zone number
 
-						if (g_ZoneMap.find(origin_zone) == g_ZoneMap.end() )
+						if (g_ZoneMap.find(origin_zone) == g_ZoneMap.end())
 						{
 							continue; // origin zone  has not been defined, skipped. 
 						}
 
-						int total_demand =  (int)(total_demand_in_demand_file);
-						if (origin_zone%100 == 0)
+						int total_demand = (int)(total_demand_in_demand_file);
+						if (origin_zone % 100 == 0)
 							cout << "Reading file no." << file_sequence_no << ": " << file_name << " at zone " << origin_zone << ",total demand = " << total_demand << "..." << endl;
 
-						for(int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
+						for (int destination_zone_index = 0; destination_zone_index < number_of_zones; destination_zone_index++)
 						{
 							int destination_zone = LineIntegerVector[destination_zone_index];
 							float value = g_read_float(st);
@@ -6081,38 +6070,39 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 							}
 
 
-							float number_of_vehicles =  value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
+							float number_of_vehicles = value*g_DemandGlobalMultiplier*local_demand_loading_multiplier;  // read the value
 
-							if(line_no<=5)  // read only one line, but has not reached the end of the line
-								cout << "origin:" <<  origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
+							if (line_no <= 5)  // read only one line, but has not reached the end of the line
+								cout << "origin:" << origin_zone << ", destination: " << destination_zone << ", value = " << number_of_vehicles << endl;
 
 							line_no++;
 							int type = 1;  // first demand type definition
-							if(demand_type_code[type]>=1)  // feasible demand type
+							if (demand_type_code[type] >= 1)  // feasible demand type
 							{
 								total_demand_in_demand_file += number_of_vehicles;
 
 								g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
 								// condition 1: without time-dependent profile 
 
-								if(apply_additional_time_dependent_profile==1)  // use time-dependent profile
+								if (apply_additional_time_dependent_profile == 1)  // use time-dependent profile
 								{
-									for(int time_interval = start_time_in_min/15; time_interval < end_time_in_min/15; time_interval++)
+									for (int time_interval = start_time_in_min / 15; time_interval < end_time_in_min / 15; time_interval++)
 									{
-										if(time_dependent_ratio [time_interval] > 0.000001) // this is the last one applicable
+										if (time_dependent_ratio[time_interval] > 0.000001) // this is the last one applicable
 										{
 											// reset the time interval, create vehicles with the same origin, destination, changed # of vehicles, and time interval
-											double number_of_vehicles_to_be_loaded = time_dependent_ratio [time_interval] * number_of_vehicles;
+											double number_of_vehicles_to_be_loaded = time_dependent_ratio[time_interval] * number_of_vehicles;
 
-											CreateVehicles(origin_zone,destination_zone,number_of_vehicles_to_be_loaded,demand_type_code[type],time_interval*15,(time_interval+1)*15);
+											CreateVehicles(origin_zone, destination_zone, number_of_vehicles_to_be_loaded, demand_type_code[type], time_interval * 15, (time_interval + 1) * 15);
 										}
 									}
-								}else // do not use time-dependent profile
+								}
+								else // do not use time-dependent profile
 								{
 
-									float number_of_time_dependent_intervals= max(1,(end_time_in_min-start_time_in_min)/15);
+									float number_of_time_dependent_intervals = max(1, (end_time_in_min - start_time_in_min) / 15);
 
-									CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],start_time_in_min,end_time_in_min);
+									CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], start_time_in_min, end_time_in_min);
 
 								}
 
@@ -6121,57 +6111,60 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						}
 						//
-						if(subtotal_in_last_column==1)
+						if (subtotal_in_last_column == 1)
 							g_read_float(st); //read sub total value
 
 					}
 
-					if(total_demand_in_demand_file<0.5f)
+					if (total_demand_in_demand_file < 0.5f)
 					{
 						g_ErrorMesssage_for_0_demand(file_name, format_type);
 					}
 
 					fclose(st);
-				}else  //open file
+				}
+				else  //open file
 				{
-					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 					g_ProgramStop();
 
 				}
 
 
 			}
-			else if(format_type.find("agent_csv")!= string::npos)
+			else if (format_type.find("agent_csv") != string::npos)
 			{
 				g_AgentBasedAssignmentFlag = 1;
 				g_ReadDTALiteAgentCSVFile(file_name);
 				return;
-			}else if(format_type.find("dsp_vehicle_dat")!= string::npos)
-			{  
+			}
+			else if (format_type.find("dsp_vehicle_dat") != string::npos)
+			{
 				g_AgentBasedAssignmentFlag = 1;
 				g_ReadDTALiteAgentCSVFile(file_name);
 				return;
-			}else if (format_type.find("agent_bin") != string::npos)
+			}
+			else if (format_type.find("agent_bin") != string::npos)
 			{
 				g_AgentBasedAssignmentFlag = 1;
-				g_ReadAgentBinFile(file_name,false);
+				g_ReadAgentBinFile(file_name, false);
 				return;
 			}
 			else if (format_type.find("dynasmart") != string::npos)
 			{
 
 				int type = 1;  // first demand type definition
-				if(demand_type_code[type]>=1)  // feasible demand type
+				if (demand_type_code[type] >= 1)  // feasible demand type
 				{
 
 					bool bFileReady = false;
 					int i;
 
 					FILE* st;
-					fopen_s(&st,file_name.c_str (), "r");
-					if (st!=NULL)
+					fopen_s(&st, file_name.c_str(), "r");
+					if (st != NULL)
 					{
-						int num_zones =  g_ZoneMap.size();
+						int num_zones = g_ZoneMap.size();
 						int num_matrices = 0;
 
 						num_matrices = g_read_integer(st);
@@ -6180,7 +6173,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 						std::vector<int> TimeIntevalVector;
 						// Start times
 						int i;
-						for(i = 0; i < num_matrices; i++)
+						for (i = 0; i < num_matrices; i++)
 						{
 							int start_time = g_read_float(st);
 							TimeIntevalVector.push_back(start_time);
@@ -6189,7 +6182,7 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						int time_interval = 60; // min
 
-						if(TimeIntevalVector.size() >=2)
+						if (TimeIntevalVector.size() >= 2)
 							time_interval = TimeIntevalVector[1] - TimeIntevalVector[0];
 
 						// read the last value
@@ -6199,95 +6192,100 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 
 						long line_no = 2;
 						float total_demand = 0;
-						for(i = 0; i < num_matrices; i++)
+						for (i = 0; i < num_matrices; i++)
 						{
 							// Find a line with non-blank values to start
 							// Origins
-							double DSP_start_time= g_read_float(st) + start_time_in_min; // start time
-							double DSP_end_time= DSP_start_time + time_interval; // end time
+							double DSP_start_time = g_read_float(st) + start_time_in_min; // start time
+							double DSP_end_time = DSP_start_time + time_interval; // end time
 
-							for(int origin_zone=1; origin_zone<= num_zones; origin_zone++)
-								for(int destination_zone=1; destination_zone<= num_zones; destination_zone++)
+							for (int origin_zone = 1; origin_zone <= num_zones; origin_zone++)
+							for (int destination_zone = 1; destination_zone <= num_zones; destination_zone++)
+							{
+								float value = g_read_float(st);
+								float number_of_vehicles = value* demand_factor*local_demand_loading_multiplier * g_DemandGlobalMultiplier;
+								total_demand_in_demand_file += number_of_vehicles;
+
+								// obtain demand table type
+								float number_of_time_dependent_intervals = max(1, (DSP_end_time - DSP_start_time) / 15);
+
+
+								g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
+
+
+								if (origin_zone != destination_zone)
 								{
-									float value = g_read_float(st);
-									float number_of_vehicles =  value* demand_factor*local_demand_loading_multiplier * g_DemandGlobalMultiplier;
-									total_demand_in_demand_file += number_of_vehicles;
-
-									// obtain demand table type
-									float number_of_time_dependent_intervals= max(1,(DSP_end_time-DSP_start_time)/15);
-
-
-									g_ZoneMap[origin_zone].m_Demand += number_of_vehicles;
-
-
-									if(origin_zone!= destination_zone)
-									{
-									CreateVehicles(origin_zone,destination_zone,number_of_vehicles,demand_type_code[type],DSP_start_time,DSP_end_time);
+									CreateVehicles(origin_zone, destination_zone, number_of_vehicles, demand_type_code[type], DSP_start_time, DSP_end_time);
 									line_no++;
 
-									if ((line_no ) % 6000 == 0 && line_no >0)
+									if ((line_no) % 6000 == 0 && line_no > 0)
 									{
-										cout << g_GetAppRunningTime() << "Reading file " << file_name << " at "<< line_no/6000 << "K lines..."<< endl;
+										cout << g_GetAppRunningTime() << "Reading file " << file_name << " at " << line_no / 6000 << "K lines..." << endl;
 									}
 
 									line_no++;
-									}
-
 								}
+
+							}
 
 						} // time-dependent matrix
 
 						fclose(st);
-					}else
+					}
+					else
 					{
 
-						cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+						cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 						g_ProgramStop();
 
 						//
 					}
 
-					if(total_demand_in_demand_file<0.5f)
+					if (total_demand_in_demand_file < 0.5f)
 					{
 						g_ErrorMesssage_for_0_demand(file_name, format_type);
 					}
 
 
-				}else  //open file
+				}
+				else  //open file
 				{
-					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL."<< endl;
+					cout << "Error: File " << file_name << " cannot be opened.\n It might be currently used and locked by EXCEL." << endl;
 					g_ProgramStop();
 
 				}
 
-			}else if(format_type.find("trip_csv")!= string::npos)
+			}
+			else if (format_type.find("trip_csv") != string::npos)
 			{
 				int number_of_vehicles = 0;
 				cout << "Reading file no." << file_sequence_no << ": " << file_name << " ... " << endl;
 
 				g_ReadTripCSVFile(file_name, false, number_of_vehicles);
 				total_demand_in_demand_file += number_of_vehicles;
-			}else if(format_type.find("transims_trip_file")!= string::npos)
+			}
+			else if (format_type.find("transims_trip_file") != string::npos)
 			{
-				g_ReadTRANSIMSTripFile(file_name,true);
+				g_ReadTRANSIMSTripFile(file_name, true);
 
-			}else	
+			}
+			else
 			{
-				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, full_matrix, dynasmart, agent_csv, agent_bin, trip_csv,transims_trip_file."<< endl;
+				cout << "Error: format_type = " << format_type << " is not supported. Currently DTALite supports multi_column, matrix, full_matrix, dynasmart, agent_csv, agent_bin, trip_csv,transims_trip_file." << endl;
 				g_ProgramStop();
 
 			}
-		} 
+		}
 	}
 
 
-	g_SummaryStatFile.WriteRecord ();
-	g_LogFile << "Total demand volume = "<< total_demand_in_demand_file << endl;
+	g_SummaryStatFile.WriteRecord();
+	g_LogFile << "Total demand volume = " << total_demand_in_demand_file << endl;
 
 	cout << "Total demand volume = " << total_demand_in_demand_file << endl;
 
 	// create vehicle heres...
-	cout << "Step 11: Converting demand flow to vehicles..."<< endl;
+	cout << "Step 11: Converting demand flow to vehicles..." << endl;
 	g_scenario_short_description << "load vehicles from user demand.csv;";
 
 	// round the demand loading horizon using g_AggregationTimetInterval as time unit
@@ -6297,11 +6295,10 @@ void g_ReadDemandFileBasedOnMetaDatabase()
 	g_ConvertDemandToVehicles();
 
 }
-
 void g_ReadAssignmentPeriodSettings()
 {
 	g_SummaryStatFile.WriteTextLabel("\n");
-	g_NumberOfSPCalculationPeriods = min(MAX_TIME_INTERVAL_SIZE-1, max(1, (g_PlanningHorizon - g_DemandLoadingStartTimeInMin) / g_AggregationTimetInterval));
+	g_NumberOfSPCalculationPeriods = min(MAX_TIME_INTERVAL_SIZE - 1, max(1, (g_PlanningHorizon - g_DemandLoadingStartTimeInMin) / g_AggregationTimetInterval));
 
 	for (int t = 0; t < MAX_TIME_INTERVAL_SIZE; t++)
 	{
@@ -6316,15 +6313,15 @@ void g_ReadAssignmentPeriodSettings()
 	}
 
 	CCSVParser parser;
-	if (parser.OpenCSVFile("input_assignment_interval_settings.csv", false)) 
-	{	
+	if (parser.OpenCSVFile("input_assignment_interval_settings.csv", false))
+	{
 
 		for (int t = 0; t < MAX_TIME_INTERVAL_SIZE; t++)
 		{
 			g_AssignmentIntervalIndex[t] = 0;   // if we have file input, then we need to set the interval index to 0 for all intervals
 		}
 
-		g_AssignmentIntervalIndex[int(g_DemandLoadingStartTimeInMin / 15)] = 0; 
+		g_AssignmentIntervalIndex[int(g_DemandLoadingStartTimeInMin / 15)] = 0;
 		int index_counter = 0;
 		int i = 0;
 
@@ -6350,13 +6347,13 @@ void g_ReadAssignmentPeriodSettings()
 				{
 					index_counter++;
 
-					g_AssignmentIntervalEndTimeInMin[index_counter-1] = i * 15;
+					g_AssignmentIntervalEndTimeInMin[index_counter - 1] = i * 15;
 					g_AssignmentIntervalStartTimeInMin[index_counter] = i * 15;
 				}
 
 				g_AssignmentIntervalIndex[i] = index_counter;
 
-					
+
 
 			}
 
@@ -6401,18 +6398,18 @@ void g_BuildGridSystem()
 	g_GridMatrix = AllocateDynamicArray<GridNodeSet>(_MAX_TRANSIT_GRID_SIZE, _MAX_TRANSIT_GRID_SIZE);
 
 	bool bRectInitialized = false;
-	for (int i = 0; i <  g_NodeVector.size(); i++)
+	for (int i = 0; i < g_NodeVector.size(); i++)
 	{
-			if (!bRectInitialized)
-			{
-				g_GridRect.left = g_NodeVector[i].m_pt .x;
-				g_GridRect.right = g_NodeVector[i].m_pt.x;
-				g_GridRect.top = g_NodeVector[i].m_pt.y;
-				g_GridRect.bottom = g_NodeVector[i].m_pt.y;
-				bRectInitialized = true;
-			}
+		if (!bRectInitialized)
+		{
+			g_GridRect.left = g_NodeVector[i].m_pt.x;
+			g_GridRect.right = g_NodeVector[i].m_pt.x;
+			g_GridRect.top = g_NodeVector[i].m_pt.y;
+			g_GridRect.bottom = g_NodeVector[i].m_pt.y;
+			bRectInitialized = true;
+		}
 
-			g_GridRect.Expand(g_NodeVector[i].m_pt);
+		g_GridRect.Expand(g_NodeVector[i].m_pt);
 	}
 
 	g_GridXStep = max(0.0001, g_GridRect.Width() / _MAX_TRANSIT_GRID_SIZE);
@@ -6423,19 +6420,19 @@ void g_BuildGridSystem()
 	for (int i = 0; i < g_NodeVector.size(); i++)
 	{
 
-			int x_key = (g_NodeVector[i].m_pt.x - g_GridRect.left) / g_GridXStep;
-			int y_key = (g_NodeVector[i].m_pt.y - g_GridRect.bottom) / g_GridYStep;
+		int x_key = (g_NodeVector[i].m_pt.x - g_GridRect.left) / g_GridXStep;
+		int y_key = (g_NodeVector[i].m_pt.y - g_GridRect.bottom) / g_GridYStep;
 
-			//feasible region
-			x_key = max(0, x_key);
-			x_key = min(_MAX_TRANSIT_GRID_SIZE - 1, x_key);
+		//feasible region
+		x_key = max(0, x_key);
+		x_key = min(_MAX_TRANSIT_GRID_SIZE - 1, x_key);
 
-			y_key = max(0, y_key);
-			y_key = min(_MAX_TRANSIT_GRID_SIZE - 1, y_key);
+		y_key = max(0, y_key);
+		y_key = min(_MAX_TRANSIT_GRID_SIZE - 1, y_key);
 
-			g_GridMatrix[x_key][y_key].m_NodeVector.push_back(g_NodeVector[i].m_NodeID);
-			g_GridMatrix[x_key][y_key].m_NodeX.push_back(g_NodeVector[i].m_pt.x);
-			g_GridMatrix[x_key][y_key].m_NodeY.push_back(g_NodeVector[i].m_pt.y);
+		g_GridMatrix[x_key][y_key].m_NodeVector.push_back(g_NodeVector[i].m_NodeID);
+		g_GridMatrix[x_key][y_key].m_NodeX.push_back(g_NodeVector[i].m_pt.x);
+		g_GridMatrix[x_key][y_key].m_NodeY.push_back(g_NodeVector[i].m_pt.y);
 	}
 
 }
@@ -6510,14 +6507,14 @@ void g_MatchODForAgents()
 		int StartFlag = 0; // 0: not start yet, 1: start node chain, 2: end node chain
 
 		int origin_node = -1;
-			int destination_node = -1;
+		int destination_node = -1;
 
 		for (int i = 0; i < pVehicle->m_ShapePoints.size(); i++)
 		{
 			GDPoint pt = pVehicle->m_ShapePoints[i];
 			int node_id = g_FindClosestNode(pt.x, pt.y, 0.1, 0);
 
-			if (node_id >=0) // the node exists in subarea 
+			if (node_id >= 0) // the node exists in subarea 
 			{
 
 				if (StartFlag == 1)
@@ -6550,5 +6547,56 @@ void g_MatchODForAgents()
 
 
 
+	}
+}
+
+void g_ReadInputLinkTravelTime()
+{
+
+	CCSVParser parser;
+
+
+	//step 3:
+	if (parser.OpenCSVFile("input_link_travel_time.csv"))
+	{
+		int count = 0;
+
+		while (parser.ReadRecord())
+		{
+			int usn = 0;
+			int dsn = 0;
+
+			parser.GetValueByFieldName("from_node_id", usn);
+			parser.GetValueByFieldName("to_node_id", dsn);
+
+			if (g_LinkMap.find(GetLinkStringID(usn, dsn)) == g_LinkMap.end())
+			{
+				cout << "Link " << usn << "-> " << dsn << " at line " << count + 1 << " of file input_link_travel_time.csv has not been defined in input_link.csv. Please check.";
+			}
+			else
+			{
+
+				DTALink* pLink = g_LinkMap[GetLinkStringID(usn, dsn)];
+
+				for (int time_index = g_DemandLoadingStartTimeInMin / 15; time_index < g_DemandLoadingEndTimeInMin / 15; time_index++)  // / 15 converts min to 15-min interval for demand patterns
+				{
+					std::string time_stamp_str = g_GetTimeStampStrFromIntervalNo(time_index);
+
+					float travel_time = -1;
+					parser.GetValueByFieldName(time_stamp_str, travel_time);
+
+					if (travel_time > 0)
+					{
+						int start_time_in_min = time_index * 15;
+						int time_step_in_min = (time_index + 1) * 15;
+						pLink->UseUserDefinedAttribute(start_time_in_min, time_step_in_min, travel_time);
+					}
+				}
+			}
+			count++;
+
+		}
+
+		parser.CloseCSVFile();
 	}
 }
