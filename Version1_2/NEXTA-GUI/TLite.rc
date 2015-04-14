@@ -382,7 +382,7 @@ BEGIN
     COMBOBOX        IDC_COMBO_VOT_UB,460,74,42,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "Value of Time Range",IDC_STATIC,453,26,76,67
     COMBOBOX        IDC_COMBO_DemandType,113,32,46,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Trip\nType:",IDC_STATIC,113,15,43,16
+    LTEXT           "Demand\nType:",IDC_STATIC,113,15,43,16
     DEFPUSHBUTTON   "Export",ID_EXPORT_PATH_DATA,244,288,29,14,NOT WS_TABSTOP
     DEFPUSHBUTTON   "Export",ID_EXPORT_VEHICLE_DATA,500,289,29,14,NOT WS_TABSTOP
     PUSHBUTTON      "Find Critical OD Pairs",ID_FindCriticalOD,451,7,78,19,0,WS_EX_STATICEDGE
@@ -1980,6 +1980,9 @@ IDB_LINK_CLOSURE        BITMAP                  "res\\bmp00005.bmp"
 IDR_MAINFRAME4          BITMAP                  "res\\bmp00006.bmp"
 IDB_RADIOMESSAGE        BITMAP                  "res\\vms1.bmp"
 IDB_RAMP                BITMAP                  "res\\ramp.bmp"
+IDB_BUSTOLL             BITMAP                  "res\\toll1.bmp"
+IDB_BRTTOLL             BITMAP                  "res\\bustoll1.bmp"
+IDB_PRTOLL              BITMAP                  "res\\brttoll1.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2441,6 +2444,15 @@ BEGIN
         MENUITEM "View Link Data Table",        ID_LINK_VIEWLINKDATA
         MENUITEM "View Link-based Scenario Data", ID_LINK_VIEWLINK
         MENUITEM SEPARATOR
+        POPUP "Show Allowed Links for Demand Type"
+        BEGIN
+            MENUITEM "Show All",                    ID_SHOWALLOWEDLINKSFORDEMANDTYPE_SHOWALL
+            MENUITEM "Demand Type 1",               ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE1
+            MENUITEM "Demand Type 2",               ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE2
+            MENUITEM "Demand Type 3",               ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE3
+            MENUITEM "Demand Type 4",               ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE4
+        END
+        MENUITEM SEPARATOR
         POPUP "Change Link Type Color"
         BEGIN
             MENUITEM "Freeway",                     ID_CHANGELINKTYPECOLOR_FREEWAY
@@ -2579,6 +2591,9 @@ BEGIN
         MENUITEM "Add Link-based Toll",         ID_LINK_ADDLINK
         MENUITEM "Add HOV Toll",                ID_LINK_ADDHOVTOLL
         MENUITEM "Add HOT Toll",                ID_LINK_ADDHOTTOLL
+        MENUITEM "Add Bus Toll",                ID_TOLL_ADDBUSTOLL
+        MENUITEM "Add BRT Toll",                ID_TOLL_ADDBRTTOLL
+        MENUITEM "Add Metro Toll",              ID_TOLL_ADDMETROTOLL
         MENUITEM SEPARATOR
         MENUITEM "Delete Link-based Toll on Selected Link", ID_DELETE_LINK
     END

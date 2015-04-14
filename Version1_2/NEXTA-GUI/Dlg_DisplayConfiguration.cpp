@@ -158,6 +158,7 @@ BOOL CDlg_DisplayConfiguration::OnInitDialog()
 	m_Link_Label.AddString("Count Sensor ID");
 	m_Link_Label.AddString("Orientation Code");
 	m_Link_Label.AddString("Loop Code");
+	m_Link_Label.AddString("Demand Type Code");
 
 	m_Link_Label.AddString("Link Key (for model MOE)");
 

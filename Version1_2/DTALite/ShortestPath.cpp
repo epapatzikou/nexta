@@ -101,22 +101,22 @@ void g_SetupTDTollValue(int DayNo)
 			}
 		}
 
-		if (g_LinkTypeMap[pLink->m_link_type].IsTransit()
-			|| g_LinkTypeMap[pLink->m_link_type].IsWalking())  // 
-		{  // transit or walking link
+		//if (g_LinkTypeMap[pLink->m_link_type].IsTransit()
+		//	|| g_LinkTypeMap[pLink->m_link_type].IsWalking())  // 
+		//{  // transit or walking link
 
-			for (int t = g_DemandLoadingStartTimeInMin; t < g_PlanningHorizon; t += g_AggregationTimetInterval)
-			{
-				int		link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(t);
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bMonetaryTollExist = true;
+		//	for (int t = g_DemandLoadingStartTimeInMin; t < g_PlanningHorizon; t += g_AggregationTimetInterval)
+		//	{
+		//		int		link_entering_time_interval = g_FindAssignmentIntervalIndexFromTime(t);
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].m_bMonetaryTollExist = true;
 
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[1] = 100;  // transit links do not allow SOV
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[2] = 100;  // transit links do not allow HOV
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[3] = 100; // transit links do not allow trucks
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[4] = 0;  // default zero cost
-				g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[0] = pLink->m_Length;  //default use distance
-			}
-		}
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[1] = 100;  // transit links do not allow SOV
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[2] = 100;  // transit links do not allow HOV
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[3] = 100; // transit links do not allow trucks
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[4] = 0;  // default zero cost
+		//		g_LinkTDCostAry[pLink->m_LinkNo][link_entering_time_interval].TollValue[0] = pLink->m_Length;  //default use distance
+		//	}
+		//}
 
 
 			if (g_UEAssignmentMethod == assignment_system_optimal)
@@ -448,9 +448,7 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 			if (pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min >= 0.1 && DayNo==0)  // with valid data
 			{
 			
-				AvgTravelTime = (1.0 - g_gain_factor_link_travel_time_from_external_input)* AvgTravelTime
-					+ pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min * g_gain_factor_link_travel_time_from_external_input;
-
+				AvgTravelTime = pLink->m_LinkMOEAry[t].UserDefinedTravelTime_in_min;
 			}
 
 			AvgTravelTime*=g_LinkTypeMap[pLink->m_link_type ].link_type_bias_factor;
@@ -533,6 +531,10 @@ void DTANetworkForSP::BuildPhysicalNetwork(int DayNo, int CurrentZoneNo, e_traff
 	}
 
 	m_LinkSize = g_LinkVector.size();
+
+	int iteration = 1;
+	g_SetupTDTollValue(iteration);
+
 }
 void DTANetworkForSP::UpdateCurrentTravelTime(int DayNo, double CurrentTime)  // for agent based 
 {
@@ -678,7 +680,7 @@ void DTANetworkForSP::BuildTravelerInfoNetwork(int DayNo, int CurrentTime, float
 }
 
 
-bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int demand_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false, 
+bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int origin_zone, int departure_time, int demand_type=1, float VOT = 10, bool distance_cost_flag = false, bool debug_flag = false, 
 	bool bDistanceCostByProductOutput = false)
 // time -dependent label correcting algorithm with deque implementation
 {
@@ -750,6 +752,25 @@ bool DTANetworkForSP::TDLabelCorrecting_DoubleQueue(int origin, int departure_ti
 
 			if(ToID == origin)
 				continue;
+
+
+			if (m_LinkConnectorFlag[LinkID] == 1)  // only check the following speical condition when a link is a connector
+			{
+				int OriginTAZ = m_OutboundConnectorOriginZoneIDAry[FromID][i];
+				int DestinationTAZ = m_OutboundConnectorDestinationZoneIDAry[FromID][i];
+
+				if (OriginTAZ >= 1 /* TAZ >=1*/ && DestinationTAZ <= 0 && OriginTAZ != origin_zone)
+					continue;  // special feature 1: skip connectors with origin TAZ only and do not belong to this origin zone
+
+				//if (DestinationTAZ >= 1 /* TAZ >=1*/ && OriginTAZ <= 0 && DestinationTAZ != destination_zone)
+				//	continue;  // special feature 2: skip connectors with destination TAZ that do not belong to this destination zone
+
+				//if (OriginTAZ >= 1 /* TAZ >=1*/ && OriginTAZ != origin_zone  && DestinationTAZ >= 1 /* TAZ >=1*/ && DestinationTAZ != destination_zone)
+				//	continue;  // special feature 3: skip connectors (with both TAZ at two ends) that do not belong to the origin/destination zones
+
+				if (ToID == origin) // special feature 2: no detour at origin
+					continue;
+			}
 
 			if(debug_flag )  // physical nodes
 			{

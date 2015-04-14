@@ -28,7 +28,7 @@ using namespace std;
 std::map<int, int> NodeIDtoZoneNameMap;
 
 extern int g_read_number_of_numerical_values(char* line_string, int length, std::vector<float>& values);
-float g_read_float_from_a_line(FILE *f);
+float g_read_float_from_a_line(FILE *f, int &end_of_line);
 
 bool CTLiteDoc::ReadGPSData(string FileName)
 {
@@ -2918,8 +2918,8 @@ void CTLiteDoc::SaveDSPDemandFiles(CString OriginDirectory, CString DestinationD
 
 						for(int type = 1; type <= number_of_demand_types; type++)
 						{
-
-							float demand_value = g_read_float_from_a_line(st);
+							int end_of_line = 0;
+							float demand_value = g_read_float_from_a_line(st, end_of_line);
 
 							if(demand_value<-99) // encounter return 
 							{

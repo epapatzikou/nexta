@@ -281,6 +281,16 @@ BEGIN_MESSAGE_MAP(CTLiteView, CView)
 	ON_UPDATE_COMMAND_UI(ID_DETECTOR_SHOWFIXEDCOUNTDETECTORLOCATION, &CTLiteView::OnUpdateDetectorShowfixedcountdetectorlocation)
 	ON_UPDATE_COMMAND_UI(ID_DETECTOR_SHOWSPEEDSENSORLOCATION, &CTLiteView::OnUpdateDetectorShowspeedsensorlocation)
 	ON_COMMAND(ID_DETECTOR_SHOWFIXEDCOUNTDETECTORLOCATION, &CTLiteView::OnDetectorShowfixedcountdetectorlocation)
+	ON_COMMAND(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE1, &CTLiteView::OnShowallowedlinksfordemandtypeDemandtype1)
+	ON_COMMAND(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE2, &CTLiteView::OnShowallowedlinksfordemandtypeDemandtype2)
+	ON_COMMAND(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE3, &CTLiteView::OnShowallowedlinksfordemandtypeDemandtype3)
+	ON_COMMAND(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE4, &CTLiteView::OnShowallowedlinksfordemandtypeDemandtype4)
+	ON_UPDATE_COMMAND_UI(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE1, &CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype1)
+	ON_UPDATE_COMMAND_UI(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE2, &CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype2)
+	ON_UPDATE_COMMAND_UI(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE3, &CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype3)
+	ON_UPDATE_COMMAND_UI(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_DEMANDTYPE4, &CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype4)
+	ON_COMMAND(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_SHOWALL, &CTLiteView::OnShowallowedlinksfordemandtypeShowall)
+	ON_UPDATE_COMMAND_UI(ID_SHOWALLOWEDLINKSFORDEMANDTYPE_SHOWALL, &CTLiteView::OnUpdateShowallowedlinksfordemandtypeShowall)
 	END_MESSAGE_MAP()
 
 // CTLiteView construction/destruction
@@ -530,6 +540,7 @@ void g_SelectSuperThickPenColor(CDC* pDC, int ColorCount)
 
 CTLiteView::CTLiteView()
 {
+	m_DislayedDemandType = 0;
 	m_bShowFixedDetectorLocation = true;
 	m_bShowSpeedSensorLocation = true;
 
@@ -1086,8 +1097,8 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		CPoint FromPoint,ToPoint;
 		CRect link_rect;
 
-		CPen pen_freeway, pen_ramp, pen_arterial, pen_connector,pen_transit,pen_walking;
-		CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector,brush_walking;
+		CPen pen_freeway, pen_ramp, pen_arterial, pen_connector, pen_transit, pen_walking, pen_parking_and_ride;
+		CBrush brush_freeway, brush_ramp, brush_arterial, brush_connector, brush_walking, brush_parking_and_ride;
 
 		pen_freeway.CreatePen (PS_SOLID, 1, theApp.m_FreewayColor);
 		brush_freeway.CreateSolidBrush (theApp.m_FreewayColor);
@@ -1101,10 +1112,14 @@ void CTLiteView::DrawObjects(CDC* pDC)
 		pen_connector.CreatePen (PS_SOLID, 1, theApp.m_ConnectorColor);
 		brush_connector.CreateSolidBrush (theApp.m_ConnectorColor);
 
-		pen_transit.CreatePen (PS_SOLID, 1, theApp.m_TransitColor);
+		pen_transit.CreatePen (PS_SOLID, 3, theApp.m_TransitColor);
 
-		pen_walking.CreatePen (PS_SOLID, 1, theApp.m_WalkingColor);
+		pen_walking.CreatePen (PS_SOLID, 4, theApp.m_WalkingColor);
+		pen_parking_and_ride.CreatePen(PS_SOLID, 3, theApp.m_ParkingandRideColor);
+
+		
 		brush_walking.CreateSolidBrush (theApp.m_WalkingColor);
+		brush_parking_and_ride.CreateSolidBrush(theApp.m_ParkingandRideColor);
 
 		// recongenerate the lind band width offset only when chaning display mode or on volume mode
 		if(	pDoc -> m_PrevLinkMOEMode != pDoc -> m_LinkMOEMode || 
@@ -1294,7 +1309,13 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				{
 					pDC->SelectObject(&pen_walking);
 					pDC->SelectObject(&brush_walking);
-				}else
+				}
+				else if (pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsParkingAndRide())
+				{
+					pDC->SelectObject(&pen_parking_and_ride);
+					pDC->SelectObject(&brush_parking_and_ride);
+				}
+				else
 				{
 					pDC->SelectObject(&pen_arterial);
 					pDC->SelectObject(&g_BrushLinkBand);   //default brush
@@ -1356,6 +1377,18 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				continue;
 			}
 
+
+			if (m_DislayedDemandType >= 1)  //show the allowed demand type only
+			{
+				CString number;
+				number.Format("%d", m_DislayedDemandType);
+
+				std::string str_number = GetDocument()->CString2StdString(number);
+				if ((*iLink)->m_demand_type_code.find(str_number) == std::string::npos)   // do not find this number
+					continue; // do not display 
+
+			}
+
 			//step 6: draw link as line or band/bar
 			if(m_link_display_mode == link_display_mode_line )  
 			{
@@ -1397,9 +1430,15 @@ void CTLiteView::DrawObjects(CDC* pDC)
 				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
 				DrawBitmap(pDC, ScenarioPoint, IDB_VMS);
 			}
-			if (pMainFrame->m_bShowLayerMap[layer_toll] == true && ((*iLink)->GetTollValue(g_Simulation_Time_Stamp) >= 0.1 || (g_Simulation_Time_Stamp == 0 && (*iLink)->TollVector.size() > 0)))
+			if (pMainFrame->m_bShowLayerMap[layer_toll] == true )
 			{
 				ScenarioPoint = NPtoSP((*iLink)->GetRelativePosition(0.6));  // get relative position of a link 
+				if(pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsParkingAndRide())
+					DrawBitmap(pDC, ScenarioPoint, IDB_PRTOLL);
+				else if (pDoc->m_LinkTypeMap[(*iLink)->m_link_type].IsBRT())
+					DrawBitmap(pDC, ScenarioPoint, IDB_BRTTOLL);
+			
+				if (((*iLink)->GetTollValue(g_Simulation_Time_Stamp) >= 0.1 || (g_Simulation_Time_Stamp == 0 && (*iLink)->TollVector.size() > 0)))
 				DrawBitmap(pDC, ScenarioPoint, IDB_TOLL);
 			}
 			if ((*iLink)->m_AdditionalCost >= 1 && pMainFrame->m_bShowLayerMap[layer_path] == true)
@@ -1563,6 +1602,9 @@ void CTLiteView::DrawObjects(CDC* pDC)
 
 				case link_display_loop_code:
 					str_text.Format("%s", (*iLink)->m_loop_code.c_str()); break;
+				
+				case link_display_demand_type_code:
+					str_text.Format("%s", (*iLink)->m_demand_type_code.c_str()); break;
 
 				case link_display_link_key: 
 					str_text.Format ("%s", (*iLink)->m_LinkKey); break;
@@ -9106,3 +9148,69 @@ void CTLiteView::OnUpdateDetectorShowspeedsensorlocation(CCmdUI *pCmdUI)
 }
 
 
+
+
+void CTLiteView::OnShowallowedlinksfordemandtypeDemandtype1()
+{
+	m_DislayedDemandType = 1;
+	Invalidate();
+}
+
+
+
+void CTLiteView::OnShowallowedlinksfordemandtypeDemandtype2()
+{
+	m_DislayedDemandType = 2;
+	Invalidate();
+}
+
+
+void CTLiteView::OnShowallowedlinksfordemandtypeDemandtype3()
+{
+	m_DislayedDemandType = 3;
+	Invalidate();
+}
+
+
+void CTLiteView::OnShowallowedlinksfordemandtypeDemandtype4()
+{
+	m_DislayedDemandType = 4;
+	Invalidate();
+}
+
+
+void CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype1(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_DislayedDemandType ==1);
+}
+
+
+void CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype2(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_DislayedDemandType == 2);
+}
+
+
+void CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype3(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_DislayedDemandType == 3);
+}
+
+
+void CTLiteView::OnUpdateShowallowedlinksfordemandtypeDemandtype4(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_DislayedDemandType == 4);
+}
+
+
+void CTLiteView::OnShowallowedlinksfordemandtypeShowall()
+{
+	m_DislayedDemandType = 0;
+	Invalidate();
+}
+
+
+void CTLiteView::OnUpdateShowallowedlinksfordemandtypeShowall(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(m_DislayedDemandType == 0);
+}

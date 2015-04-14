@@ -2267,7 +2267,7 @@ public:
 			AfxMessageBox(msg);
 			return NULL;
 			}
-
+			return NULL;
 	}
 
 	DTALink* FastFindLinkWithNodeNumbers(int FromNodeNumber, int ToNodeNumber)
@@ -2839,6 +2839,9 @@ public:
 	afx_msg void OnReferenceCreatespeedsensormappingforbaselinenetwork();
 	afx_msg void OnDetectorOverwritesensorlocationandsensorcountdata();
 	afx_msg void OnSensortoolsViewvalidationplotforlinkspeed();
+	afx_msg void OnTollAddbustoll();
+	afx_msg void OnTollAddbrttoll();
+	afx_msg void OnTollAddmetrotoll();
 };
 extern std::list<CTLiteDoc*>	g_DocumentList;
 extern bool g_TestValidDocument(CTLiteDoc* pDoc);

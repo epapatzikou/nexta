@@ -983,7 +983,7 @@ void ConnectivityChecking(DTANetworkForSP* pPhysicalNetwork)
 	// starting with first node with origin nodes;
 	pPhysicalNetwork->BuildPhysicalNetwork(0,-1,g_TrafficFlowModelFlag);
 
-	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0,1,DEFAULT_VOT,false,false,false);  // CurNodeID is the node ID
+	pPhysicalNetwork->TDLabelCorrecting_DoubleQueue(OriginForTesting,0, 0,1,DEFAULT_VOT,false,false,false);  // CurNodeID is the node ID
 	// assign shortest path calculation results to label array
 
 

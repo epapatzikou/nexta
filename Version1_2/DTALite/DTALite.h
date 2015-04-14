@@ -82,7 +82,8 @@ extern e_signal_representation_model g_SignalRepresentationFlag;
 
 #define MAX_INFO_CLASS_SIZE 7
 #define MAX_VEHICLE_TYPE_SIZE 10
-#define MAX_DEMAND_TYPE_SIZE  5
+#define MAX_DEMAND_TYPE_SIZE  10 // because C starts from 0 
+#define MAX_DEMAND_TIME_SIZE  96 // because C starts from 0 
 #define MAX_TIME_INTERVAL_SIZE 300
 
 #define MAX_SIZE_INFO_USERS 5 
@@ -156,6 +157,180 @@ extern int g_NumberOfSPCalculationPeriods;
 extern int g_FindAssignmentIntervalIndexFromTime(float time_in_min);
 
 extern int g_FindAssignmentIntervalLengthInMinFromTime(float time_in_min);
+
+
+template <typename T>
+T **AllocateDynamicArray(int nRows, int nCols)
+{
+	T **dynamicArray;
+
+	dynamicArray = new (std::nothrow) T*[nRows];
+
+	if (dynamicArray == NULL)
+	{
+		cout << "Error: insufficient memory.";
+		g_ProgramStop();
+
+	}
+
+	for (int i = 0; i < nRows; i++)
+	{
+		dynamicArray[i] = new (std::nothrow) T[nCols];
+
+		if (dynamicArray[i] == NULL)
+		{
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
+		}
+
+	}
+
+	return dynamicArray;
+}
+
+template <typename T>
+void DeallocateDynamicArray(T** dArray, int nRows, int nCols)
+{
+	if (!dArray)
+		return;
+
+	for (int x = 0; x < nRows; x++)
+	{
+		delete[] dArray[x];
+	}
+
+	delete[] dArray;
+
+}
+
+
+template <typename T>
+T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
+{
+	T ***dynamicArray;
+
+	dynamicArray = new (std::nothrow) T**[nX];
+
+	if (dynamicArray == NULL)
+	{
+		cout << "Error: insufficient memory.";
+		g_ProgramStop();
+	}
+
+	for (int x = 0; x < nX; x++)
+	{
+		dynamicArray[x] = new (std::nothrow) T*[nY];
+
+		if (dynamicArray[x] == NULL)
+		{
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
+		}
+
+		for (int y = 0; y < nY; y++)
+		{
+			dynamicArray[x][y] = new (std::nothrow) T[nZ];
+			if (dynamicArray[x][y] == NULL)
+			{
+				cout << "Error: insufficient memory.";
+				g_ProgramStop();
+			}
+		}
+	}
+
+	return dynamicArray;
+
+}
+
+template <typename T>
+void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
+{
+	if (!dArray)
+		return;
+	for (int x = 0; x < nX; x++)
+	{
+		for (int y = 0; y < nY; y++)
+		{
+			delete[] dArray[x][y];
+		}
+
+		delete[] dArray[x];
+	}
+
+	delete[] dArray;
+
+}
+
+
+
+template <typename T>
+T ****Allocate4DDynamicArray(int nM, int nX, int nY, int nZ)
+{
+	T ****dynamicArray;
+
+	dynamicArray = new (std::nothrow) T***[nX];
+
+	if (dynamicArray == NULL)
+	{
+		cout << "Error: insufficient memory.";
+		g_ProgramStop();
+	}
+	for (int m = 0; m < nM; m++)
+	{
+		dynamicArray[m] = new (std::nothrow) T**[nX];
+
+		if (dynamicArray[m] == NULL)
+		{
+			cout << "Error: insufficient memory.";
+			g_ProgramStop();
+		}
+
+		for (int x = 0; x < nX; x++)
+		{
+			dynamicArray[m][x] = new (std::nothrow) T*[nY];
+
+			if (dynamicArray[m][x] == NULL)
+			{
+				cout << "Error: insufficient memory.";
+				g_ProgramStop();
+			}
+
+			for (int y = 0; y < nY; y++)
+			{
+				dynamicArray[m][x][y] = new (std::nothrow) T[nZ];
+				if (dynamicArray[m][x][y] == NULL)
+				{
+					cout << "Error: insufficient memory.";
+					g_ProgramStop();
+				}
+			}
+		}
+	}
+	return dynamicArray;
+
+}
+
+template <typename T>
+void Deallocate4DDynamicArray(T**** dArray, int nM, int nX, int nY)
+{
+	if (!dArray)
+		return;
+	for (int m = 0; m < nM; m++)
+	{
+		for (int x = 0; x < nX; x++)
+		{
+			for (int y = 0; y < nY; y++)
+			{
+				delete[] dArray[m][x][y];
+			}
+
+			delete[] dArray[m][x];
+		}
+		delete[] dArray[m];
+	}
+	delete[] dArray;
+
+}
 
 class DemandType
 {
@@ -507,9 +682,8 @@ public:
 
 	std::vector<GDPoint> m_ShapePoints;
 
-	int m_AccessibilityCount;
-
 	float m_DemandGenerationRatio ;
+
 
 	int GetRandomOriginNodeIDInZone(float random_ratio)
 	{
@@ -552,7 +726,8 @@ public:
 
 	DTAZone()
 	{
-		m_AccessibilityCount = 0;
+
+
 		m_DemandGenerationRatio = 1.0f;
 		m_ZoneSequentialNo = 0;
 		m_Capacity  =0;
@@ -1081,6 +1256,27 @@ public:
 
 
 };
+class VehicleLinkPrice
+{
+public:
+	int LinkNo;
+	float RoadPrice;    // pie variable 
+	int RoadUsageFlag;  // X variable 
+	float TotalTollColected;
+
+	VehicleLinkPrice()
+	{
+		RoadPrice = 0;
+		RoadUsageFlag = 0;
+		TotalTollColected = 0;
+
+	}
+
+	bool operator<(const VehicleLinkPrice &other) const
+	{
+		return RoadPrice > other.RoadPrice;   // reverse sorting, from large to small
+	}
+};
 
 class DTALink
 {
@@ -1185,6 +1381,8 @@ public:
 		}
 
 	};
+
+	VehicleLinkPrice m_LROptimizationLinkPrice; 
 
 	void	ComputeVSP_FastMethod();
 
@@ -1800,6 +1998,8 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 	// optional for display only
 	int	m_link_type;
 
+	string demand_type_code;
+
 	bool m_bFreewayType;  //created to store the freeway type, used in simulation
 	bool m_bArterialType;
 	bool m_bSignalizedArterialType;
@@ -2031,7 +2231,7 @@ return pow(((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)),0.5);
 			m_LinkMOEAry[t] .UserDefinedTravelTime_in_min = -1;
 		}
 	}
-	void UpdateFutureLinkAttribute(int start_time_in_min, int time_step_in_min, float travel_time = -1, float toll_value_in_dollar = -1, float lane_capacity = -1) 
+	void UseUserDefinedAttribute(int start_time_in_min, int time_step_in_min, float travel_time = -1, float toll_value_in_dollar = -1, float lane_capacity = -1) 
 	{
 		for(int t = max(0,start_time_in_min); t<= min(start_time_in_min + time_step_in_min, m_SimulationHorizon); t++)
 		{
@@ -2356,6 +2556,7 @@ public:
 	int link_type;
 	string link_type_name;
 	string type_code;
+
 	int safety_prediction_model_id;
 	float link_type_bias_factor;
 	float capacity_adjustment_factor;
@@ -2426,7 +2627,7 @@ public:
 			return false;
 	}
 
-	bool IsTransit()
+	/*bool IsTransit()
 	{
 		if(type_code.find('t')!= string::npos)
 			return true;
@@ -2439,7 +2640,7 @@ public:
 			return true;
 		else
 			return false;
-	}
+	}*/
 };
 
 class DTAPath
@@ -2571,27 +2772,6 @@ public:
 
 };
 
-class VehicleLinkPrice 
-{
-public:
-	int LinkNo;
-	float RoadPrice;    // pie variable 
-	int RoadUsageFlag;  // X variable 
-	float TotalTollColected;
-
-	VehicleLinkPrice()
-	{
-		RoadPrice = 0;
-		RoadUsageFlag = 0;
-		TotalTollColected = 0;
-
-	}
-
-	bool operator<(const VehicleLinkPrice &other) const
-	{
-		return RoadPrice > other.RoadPrice;   // reverse sorting, from large to small
-	}
-};
 
 class DTAVehListPerTimeInterval
 {
@@ -2946,179 +3126,6 @@ public:
 	}
 };
 
-
-template <typename T>
-T **AllocateDynamicArray(int nRows, int nCols)
-{
-	T **dynamicArray;
-
-	dynamicArray = new (std::nothrow) T*[nRows];
-
-	if(dynamicArray == NULL)
-	{
-		cout << "Error: insufficient memory.";
-		g_ProgramStop();
-
-	}
-
-	for( int i = 0 ; i < nRows ; i++ )
-	{
-		dynamicArray[i] = new (std::nothrow) T[nCols];
-
-		if (dynamicArray[i] == NULL)
-		{
-			cout << "Error: insufficient memory.";
-			g_ProgramStop();
-		}
-
-	}
-
-	return dynamicArray;
-}
-
-template <typename T>
-void DeallocateDynamicArray(T** dArray,int nRows, int nCols)
-{
-	if(!dArray)
-		return;
-
-	for(int x = 0; x < nRows; x++)
-	{
-		delete[] dArray[x];
-	}
-
-	delete [] dArray;
-
-}
-
-
-template <typename T>
-T ***Allocate3DDynamicArray(int nX, int nY, int nZ)
-{
-	T ***dynamicArray;
-
-	dynamicArray = new (std::nothrow) T**[nX];
-
-	if (dynamicArray == NULL)
-	{
-		cout << "Error: insufficient memory.";
-		g_ProgramStop();
-	}
-
-	for( int x = 0 ; x < nX ; x++ )
-	{
-		dynamicArray[x] = new (std::nothrow) T*[nY];
-
-		if (dynamicArray[x] == NULL)
-		{
-			cout << "Error: insufficient memory.";
-			g_ProgramStop();
-		}
-
-		for( int y = 0 ; y < nY ; y++ )
-		{
-			dynamicArray[x][y] = new (std::nothrow) T[nZ];
-			if (dynamicArray[x][y] == NULL)
-			{
-				cout << "Error: insufficient memory.";
-				g_ProgramStop();
-			}
-		}
-	}
-
-	return dynamicArray;
-
-}
-
-template <typename T>
-void Deallocate3DDynamicArray(T*** dArray, int nX, int nY)
-{
-	if(!dArray)
-		return;
-	for(int x = 0; x < nX; x++)
-	{
-		for(int y = 0; y < nY; y++)
-		{
-			delete[] dArray[x][y];
-		}
-
-		delete[] dArray[x];
-	}
-
-	delete[] dArray;
-
-}
-
-
-
-template <typename T>
-T ****Allocate4DDynamicArray(int nM, int nX, int nY, int nZ)
-{
-	T ****dynamicArray;
-
-	dynamicArray = new (std::nothrow) T***[nX];
-
-	if (dynamicArray == NULL)
-	{
-		cout << "Error: insufficient memory.";
-		g_ProgramStop();
-	}
-	for (int m = 0; m < nM; m++)
-	{
-		dynamicArray[m] = new (std::nothrow) T**[nX];
-
-		if (dynamicArray[m] == NULL)
-		{
-			cout << "Error: insufficient memory.";
-			g_ProgramStop();
-		}
-
-		for (int x = 0; x < nX; x++)
-		{
-			dynamicArray[m][x] = new (std::nothrow) T*[nY];
-
-			if (dynamicArray[m][x] == NULL)
-			{
-				cout << "Error: insufficient memory.";
-				g_ProgramStop();
-			}
-
-			for (int y = 0; y < nY; y++)
-			{
-				dynamicArray[m][x][y] = new (std::nothrow) T[nZ];
-				if (dynamicArray[m][x][y] == NULL)
-				{
-					cout << "Error: insufficient memory.";
-					g_ProgramStop();
-				}
-			}
-		}
-	}
-	return dynamicArray;
-
-}
-
-template <typename T>
-void Deallocate4DDynamicArray(T**** dArray, int nM, int nX, int nY)
-{
-	if (!dArray)
-		return;
-	for (int m = 0; m < nM; m++)
-	{
-		for (int x = 0; x < nX; x++)
-		{
-			for (int y = 0; y < nY; y++)
-			{
-				delete[] dArray[m][x][y];
-			}
-
-			delete[] dArray[m][x];
-		}
-		delete[] dArray[m];
-	}
-	delete[] dArray;
-
-}
 
 template <typename M> void FreeClearMap( M & amap ) 
 {
@@ -3650,7 +3657,7 @@ public:
 	void UpdateCurrentTravelTime(int DayNo, double CurrentTime = 0);
 	void IdentifyBottlenecks(int StochasticCapacityFlag);
 
-	bool TDLabelCorrecting_DoubleQueue(int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag, bool bDistanceCostOutput);   // Pointer to previous node (node)
+	bool TDLabelCorrecting_DoubleQueue(int origin, int origin_zone, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag, bool bDistanceCostOutput);   // Pointer to previous node (node)
 	bool TDLabelCorrecting_DoubleQueue_PerDemandType(int CurZoneID, int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 	bool TDLabelCorrecting_DoubleQueue_PerDemandType_Movement(int CurZoneID, int origin, int departure_time, int pricing_type, float VOT, bool bDistanceCost, bool debug_flag);   // Pointer to previous node (node)
 
@@ -4337,6 +4344,7 @@ void g_ReadDTALiteAgentBinFile(string file_name);
 void g_ReadDTALiteAgentCSVFile(string file_name);
 void g_ReadDSPVehicleFile(string file_name);
 bool g_ReadAgentBinFile(string file_name, bool b_with_updated_demand_type_info = false);
+void g_ReadInputLinkTravelTime();
 bool g_ReadTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount);
 bool g_ReadRealTimeInputTripCSVFile(string file_name, bool bOutputLogFlag, int &LineCount);
 bool g_ReadTRANSIMSTripFile(string file_name, bool bOutputLogFlag);
@@ -4366,8 +4374,6 @@ void g_ExportLink3DLayerToKMLFiles(CString file_name, CString GISTypeString, int
 void g_OutputLinkOutCapacitySummary();
 void g_Output2WayLinkMOESummary(ofstream &LinkMOESummaryFile, int cut_off_volume=0);
 void g_OutputSummaryKML(Traffic_MOE moe_mode);
-void g_OutputAccessibilityHeatMapKML();
-
 extern CString g_GetAppRunningTime(bool with_title = true);
 extern CString g_GetAppRunningTimePerIteration(bool with_title = true);
 
@@ -4407,8 +4413,8 @@ extern CString g_GetTimeStampString(int time_stamp_in_mine);
 extern void g_FreeMemoryForVehicleVector();
 
 void g_AgentBasedShortestPathGeneration();
-void g_AgentBasedAccessibilityMatrixGeneration(string file_name,  bool bTimeDependentFlag, int DemandType, double CurrentTime);
-void g_AccessibilityMatrixGenerationForAllDemandTypes(string file_name, bool bTimeDependentFlag, double CurrentTime);
+void g_AgentBasedAccessibilityMatrixGeneration(bool bTimeDependentFlag, int DemandType, double CurrentTime);
+void g_AccessibilityMatrixGenerationForAllDemandTypes(bool bTimeDependentFlag, double CurrentTime);
 void g_AgentBasedAccessibilityMatrixGenerationExtendedSingleFile(string file_name, double CurrentTime);
 
 extern bool g_ReadLinkMeasurementFile();
@@ -4446,6 +4452,7 @@ extern ofstream g_LogFile;
 extern CCSVWriter g_SummaryStatFile;
 extern CCSVWriter g_MultiScenarioSummaryStatFile;
 extern ofstream g_AssignmentLogFile;
+extern ofstream g_NetworkDesignLogFile;
 extern ofstream g_EstimationLogFile;
 extern float g_LearningPercVector[1000];
 void g_DTALiteMain();
@@ -4512,7 +4519,7 @@ extern C_RealTimeSimulationSettings g_RealTimeSimulationSettings;
 extern bool AddPathToVehicle(DTAVehicle * pVehicle, std::vector<int> path_node_sequence, CString FileName);
 
 extern int g_NetworkDesignOptimalLinkSize;
-extern float g_NetworkDesignTargetTravelTime;
+extern float g_NetworkDesignTravelTimeBudget;
 
 extern void g_SetupTDTollValue(int DayNo);
 

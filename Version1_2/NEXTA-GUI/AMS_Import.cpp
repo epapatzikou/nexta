@@ -1112,6 +1112,13 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 	LinkID_ToNodeNumber_Map[link_id] = to_node_id;
 
 	CString name =  poFeature->GetFieldAsString(link_name.c_str ());
+
+	// construct a std::string using the LPCSTR input
+	std::string  std_name(name);
+
+	std::replace(std_name.begin(), std_name.end(), '"', ' ');
+
+	
 	int type = 0;
 	//				if(link_type_name.size() >=1)
 	type = poFeature->GetFieldAsInteger(link_type_name.c_str ());
@@ -1452,9 +1459,9 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		continue;
 	}
 
-	if(length > 100)
+	if(length > 5000)
 	{
-		str_msg.Format ("The length of link %d -> %d is longer than 100 miles, please ensure the unit of link length in the link sheet is mile.\n",from_node_id,to_node_id);
+		str_msg.Format ("The length of link %d -> %d is longer than 5000 miles, please ensure the unit of link length in the link sheet is mile.\n",from_node_id,to_node_id);
 	}
 
 	if(number_of_lanes ==0)
@@ -1483,7 +1490,7 @@ BOOL CTLiteDoc::OnOpenAMSDocument(CString FileName)
 		int m_SimulationHorizon = 1;
 		DTALink* pLink = new DTALink(m_SimulationHorizon);
 		pLink->m_LinkNo = m_LinkSet.size();
-		pLink->m_Name  = name;
+		pLink->m_Name = std_name;
 		pLink->m_OrgDir = direction;
 		pLink->m_LinkID = link_id;
 

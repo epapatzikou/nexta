@@ -603,13 +603,28 @@ void CDlg_GISDataExport::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszSha
 		// link layer 
 
 		OGRLayer *poLayer;
-		poLayer = poDS->CreateLayer( "link", NULL, wkbLineString, NULL );
-		if( poLayer == NULL )
-		{
-			m_MessageList.AddString ("link Layer creation failed");
-			return;
-		}
 
+		if (m_GIS_data_type == GIS_Point_Type)
+		{
+			poLayer = poDS->CreateLayer("node", NULL, wkbPoint, NULL);
+			if (poLayer == NULL)
+			{
+				m_MessageList.AddString("node Layer creation failed");
+				return;
+			}
+
+		
+		}
+		else
+		{
+
+			poLayer = poDS->CreateLayer("link", NULL, wkbLineString, NULL);
+			if (poLayer == NULL)
+			{
+				m_MessageList.AddString("link Layer creation failed");
+				return;
+			}
+		}
 
 
 		vector<string> HeaderVector = parser.GetHeaderVector();
@@ -683,7 +698,7 @@ void CDlg_GISDataExport::ExportToGISFile(LPCTSTR lpszCSVFileName,LPCTSTR lpszSha
 				if(HeaderVector[i]!="geometry")
 				{
 					if(HeaderVector[i].find ("name") !=  string::npos || HeaderVector[i].find ("code") !=  string::npos)
-					{
+					{ // when the field name is name or ccode
 
 						std::string str_value;
 
