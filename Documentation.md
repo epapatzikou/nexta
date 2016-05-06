@@ -1,0 +1,1 @@
+&lt;wiki:gadget url="http://nexta.googlecode.com/svn/wiki/user\_guide\_display\_gadget.xml" height="800" width = "100%" /&gt;
